@@ -112,9 +112,9 @@ is populated and the data-source query count is constant for N=2 and N=50; an ab
 
 > Depends on US3 (QueryExecutor).
 
-- [ ] T022 [P] [US4] Write failing `tests/Unit/Data/EagerLoadTest.php`: belongs-to id-collection produces the distinct foreign-key id set; an entity with an empty foreign key contributes nothing (FR-018, FR-020).
-- [ ] T023 [US4] Write failing `tests/Integration/Data/EagerLoadTest.php`: `->with('relation')` populates the relation on every Model; the data-source query count is the same for N=2 and N=50 (no N+1); absent relation → empty (FR-019, SC-004).
-- [ ] T024 [US4] Implement eager loading in `QueryExecutor` — collect distinct belongs-to foreign keys across the result set, resolve in one batched query (`post__in`), attach each related Model; absent → empty relation. Guard gate; validate quickstart Scenario 4.
+- [X] T022 [P] [US4] Write failing `tests/Unit/Data/EagerLoadTest.php`: belongs-to id-collection produces the distinct foreign-key id set; an entity with an empty foreign key contributes nothing (FR-018, FR-020).
+- [X] T023 [US4] Write failing `tests/Integration/Data/EagerLoadTest.php`: `->with('relation')` populates the relation on every Model; the data-source query count is the same for N=2 and N=50 (no N+1); absent relation → empty (FR-019, SC-004).
+- [X] T024 [US4] Implement eager loading in `QueryExecutor` — collect distinct belongs-to foreign keys across the result set, resolve in one batched query (`post__in`), attach each related Model; absent → empty relation. Guard gate; validate quickstart Scenario 4.
 
 **Checkpoint**: all four stories independently functional.
 

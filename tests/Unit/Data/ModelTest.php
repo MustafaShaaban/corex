@@ -35,7 +35,7 @@ it('returns the caller default for an absent attribute', function () {
 
 it('declares its post type, fields, and belongs-to relation', function () {
     expect(Job::postType())->toBe('job')
-        ->and(Job::fields())->toBe(['salary' => 'job_salary'])
+        ->and(Job::fields())->toBe(['salary' => 'job_salary', 'company_id' => 'company_id'])
         ->and(Job::relations()['company']['type'])->toBe('belongsTo');
 });
 

@@ -71,7 +71,7 @@ final class Job extends Model
 
     public static function fields(): array
     {
-        return ['salary' => 'job_salary'];
+        return ['salary' => 'job_salary', 'company_id' => 'company_id'];
     }
 
     public static function casts(): array

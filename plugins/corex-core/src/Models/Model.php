@@ -71,6 +71,15 @@ abstract class Model
         return $this->cast($attribute, $this->attributes[$attribute]);
     }
 
+    /**
+     * Return a NEW Model with one attribute added/replaced (immutable copy).
+     * Used to attach an eager-loaded relation without mutating the original.
+     */
+    public function withAttribute(string $attribute, mixed $value): static
+    {
+        return new static(array_merge($this->attributes, [$attribute => $value]));
+    }
+
     private function cast(string $attribute, mixed $value): mixed
     {
         $type = static::casts()[$attribute] ?? null;
