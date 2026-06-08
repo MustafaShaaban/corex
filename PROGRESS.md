@@ -79,7 +79,14 @@
   `phpunit-integration.xml.dist` + `composer test:integration`. Deferred to their stories:
   `subscribers()`/`controllerPaths()` on ServiceProvider (US3/US4); config/composer-extra provider
   sources (US2). **US1 (the MVP) is COMPLETE.**
-  **Next: US2 (T018–T024) — layered Config engine (`.env`→options→defaults).**
+  **US2 DONE (T018–T024, 2026-06-08) — layered Config engine:** `Corex\Support\Config\`
+  ConfigInterface + Source + Repository (first-source-wins precedence) + Sources/{Defaults, Options
+  (`corex_`-prefixed `get_option`), Dotenv (`vlucas/phpdotenv` array-backed; absent→empty FR-013,
+  malformed→log+empty FR-014)}. `CoreServiceProvider` binds `ConfigInterface` (defaults
+  `config/app.php`), registered in `Boot`; `Config` facade. TDD: 10 ConfigTest cases (precedence
+  SC-003, fallback, absent, malformed) + integration `Config::get`=='Corex' on real WP. Unit 32 /
+  integration 3 green; Guard Gate clean. `.env` at `dirname(COREX_CORE_PATH,2)`. `.gitattributes` added.
+  **Next: US3 (T025–T029) — declarative HookRegistry.**
 
 ## Interruption note
 The environment gap (no WordPress core) was discovered **between Phase 4 and Phase 5**, before any

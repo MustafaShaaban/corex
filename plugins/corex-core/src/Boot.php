@@ -11,6 +11,7 @@ namespace Corex;
 defined('ABSPATH') || exit;
 
 use Corex\Foundation\Application;
+use Corex\Foundation\CoreServiceProvider;
 use RuntimeException;
 
 /**
@@ -39,8 +40,8 @@ final class Boot
 
         $debug = defined('WP_DEBUG') && WP_DEBUG;
 
-        // Core service providers are registered here as the foundation grows (US2+).
-        self::$app = new Application($debug, providers: []);
+        // Core service providers; modules and add-ons contribute their own (US2+).
+        self::$app = new Application($debug, providers: [CoreServiceProvider::class]);
         self::$app->boot();
     }
 

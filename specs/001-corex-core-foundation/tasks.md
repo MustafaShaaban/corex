@@ -90,16 +90,16 @@ to follow precedence; an unknown key returns the fallback; a malformed `.env` lo
 
 ### Tests for User Story 2 (write first, MUST FAIL)
 
-- [ ] T018 [P] [US2] `tests/Unit/Foundation/ConfigTest.php`: precedence env>option>default; missing→fallback (FR-012); absent `.env` ok (FR-013); malformed `.env` → source empty + `BootLogger` called, lower layers serve (FR-014); SC-003 four combinations.
+- [X] T018 [P] [US2] `tests/Unit/Foundation/ConfigTest.php`: precedence env>option>default; missing→fallback (FR-012); absent `.env` ok (FR-013); malformed `.env` → source empty + `BootLogger` called, lower layers serve (FR-014); SC-003 four combinations.
 
 ### Implementation for User Story 2
 
-- [ ] T019 [P] [US2] `plugins/corex-core/src/Support/Config/ConfigInterface.php` (`get`/`has`) + `Support/Config/Source.php` (`has`/`get`).
-- [ ] T020 [P] [US2] `plugins/corex-core/src/Support/Config/Sources/{DefaultsSource,OptionsSource,DotenvSource}.php`; `DotenvSource` uses `vlucas/phpdotenv` safe/immutable load and catches malformed input → `BootLogger` (depends on T019, T006).
-- [ ] T021 [US2] `plugins/corex-core/src/Support/Config/Repository.php` — ordered-source precedence engine implementing `ConfigInterface` (depends on T019, T020).
-- [ ] T022 [P] [US2] `plugins/corex-core/src/Support/Facades/Config.php` — `Config::get()/has()` over the bound `ConfigInterface`.
-- [ ] T023 [US2] `plugins/corex-core/src/Foundation/CoreServiceProvider.php` — bind `ConfigInterface` (Repository + Sources) as a singleton, ship `plugins/corex-core/config/app.php` defaults (incl. `app.providers`, `app.env`), and register this provider in the Application's core list (depends on US1, T021).
-- [ ] T024 [US2] Guard gate on the US2 diff; validate quickstart Scenarios 3 & 4.
+- [X] T019 [P] [US2] `plugins/corex-core/src/Support/Config/ConfigInterface.php` (`get`/`has`) + `Support/Config/Source.php` (`has`/`get`).
+- [X] T020 [P] [US2] `plugins/corex-core/src/Support/Config/Sources/{DefaultsSource,OptionsSource,DotenvSource}.php`; `DotenvSource` uses `vlucas/phpdotenv` safe/immutable load and catches malformed input → `BootLogger` (depends on T019, T006).
+- [X] T021 [US2] `plugins/corex-core/src/Support/Config/Repository.php` — ordered-source precedence engine implementing `ConfigInterface` (depends on T019, T020).
+- [X] T022 [P] [US2] `plugins/corex-core/src/Support/Facades/Config.php` — `Config::get()/has()` over the bound `ConfigInterface`.
+- [X] T023 [US2] `plugins/corex-core/src/Foundation/CoreServiceProvider.php` — bind `ConfigInterface` (Repository + Sources) as a singleton, ship `plugins/corex-core/config/app.php` defaults (incl. `app.providers`, `app.env`), and register this provider in the Application's core list (depends on US1, T021).
+- [X] T024 [US2] Guard gate on the US2 diff; validate quickstart Scenarios 3 & 4.
 
 **Checkpoint**: config-driven boot; providers can now be configured.
 

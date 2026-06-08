@@ -13,6 +13,8 @@ use Corex\Boot;
 use Corex\Container\Container;
 use Corex\Foundation\Application;
 use Corex\Support\BootLogger;
+use Corex\Support\Facades\Config;
+use Corex\Support\Config\ConfigInterface;
 
 it('self-boots once on plugins_loaded with no fatals', function () {
     expect(did_action('plugins_loaded'))->toBeGreaterThan(0)
@@ -24,5 +26,12 @@ it('exposes a working container that resolves foundation services', function () 
     $container = Boot::app()->container();
 
     expect($container)->toBeInstanceOf(Container::class)
-        ->and($container->make(BootLogger::class))->toBeInstanceOf(BootLogger::class);
+        ->and($container->make(BootLogger::class))->toBeInstanceOf(BootLogger::class)
+        ->and($container->make(ConfigInterface::class))->toBeInstanceOf(ConfigInterface::class);
+});
+
+it('resolves layered configuration through the Config facade', function () {
+    // No .env, no override option → the shipped default wins.
+    expect(Config::get('app.name'))->toBe('Corex')
+        ->and(Config::get('does.not.exist', 'fallback'))->toBe('fallback');
 });
