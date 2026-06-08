@@ -32,7 +32,10 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- (nothing — spec 002 data layer COMPLETE; spec 003 not yet started)
+- **SPEC 003 — CLI generators (`wp corex make:*`).** Spec written:
+  `specs/003-cli-generators/spec.md` (Draft); quality checklist passed. 4 developer journeys (P1 stub
+  engine + make:model, P1 the make:repository/controller/service set, P2 safety/--force/validation, P2
+  WP-CLI-optional); 16 FRs, 6 SCs. Next in the Spec Kit flow: `/speckit-clarify` → `/speckit-plan`.
 
 > **✅ SPEC 002 — data layer — COMPLETE (2026-06-08).** All 29 tasks; US1–US4 + wiring/polish.
 > **77 tests green** (66 unit headless + 11 integration on real `./wp`); site HTTP 200. Guard Gate
