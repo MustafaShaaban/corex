@@ -18,19 +18,19 @@ guard on every src class file.
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Create `plugins/corex-core/config/security.php` (`['throttle' => ['limit' => 60, 'window' => 60]]`, ABSPATH guard); create `tests/Unit/Security/`.
+- [X] T001 [P] Create `plugins/corex-core/config/security.php` (`['throttle' => ['limit' => 60, 'window' => 60]]`, ABSPATH guard); create `tests/Unit/Security/`.
 
 ## Phase 2: Foundational
 
-- [ ] T002 [P] `Http/Middleware/Middleware.php` interface (`process(Request, callable $next): Response`).
-- [ ] T003 [P] `Http/Middleware/Request.php` (immutable: method/input/nonce/nonceAction/throttleKey; `withInput`).
-- [ ] T004 [P] `Http/Middleware/Response.php` (`ok()`/`reject()`/`isOk()`).
+- [X] T002 [P] `Http/Middleware/Middleware.php` interface (`process(Request, callable $next): Response`).
+- [X] T003 [P] `Http/Middleware/Request.php` (immutable: method/input/nonce/nonceAction/throttleKey; `withInput`).
+- [X] T004 [P] `Http/Middleware/Response.php` (`ok()`/`reject()`/`isOk()`).
 
 ## Phase 3: User Story 1 — Pipeline (Priority: P1) 🎯 MVP
 
-- [ ] T005 [P] [US1] Write failing `tests/Unit/Security/PipelineTest.php`: order (outer→inner, handler reached when none reject); a rejecting middleware stops inner + handler; empty list → handler; a throwing middleware → reject + logged, handler not run (FR-002–FR-004, FR-006, SC-001, SC-004).
-- [ ] T006 [US1] Implement `Http/Middleware/Pipeline.php` (right-fold onion; try/catch → `Response::reject`, logged).
-- [ ] T007 [US1] Guard gate.
+- [X] T005 [P] [US1] Write failing `tests/Unit/Security/PipelineTest.php`: order (outer→inner, handler reached when none reject); a rejecting middleware stops inner + handler; empty list → handler; a throwing middleware → reject + logged, handler not run (FR-002–FR-004, FR-006, SC-001, SC-004).
+- [X] T006 [US1] Implement `Http/Middleware/Pipeline.php` (right-fold onion; try/catch → `Response::reject`, logged).
+- [X] T007 [US1] Guard gate.
 
 ## Phase 4: User Story 2 — The four core middleware (Priority: P1)
 
