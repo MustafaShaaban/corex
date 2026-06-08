@@ -42,7 +42,11 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-**Active plan:** `specs/002-data-layer/plan.md` (Model + Field driver + Repository + QueryBuilder).
+**Active plan:** `specs/003-cli-generators/plan.md` (wp corex make:* stub generators). Built on
+specs 001 (container/providers/Config) + 002 (Model/Repository/Service/Controller shapes it
+scaffolds). WP-CLI is optional (`class_exists('WP_CLI')` gate); the generator engine (render+write) is
+pure/headless-testable, separate from the WP-CLI command layer. Earlier plans (superseded):
+**Active plan (prev):** `specs/002-data-layer/plan.md` (Model + Field driver + Repository + QueryBuilder).
 For technologies, structure, contracts, and validation, read that plan and its siblings
 (`research.md`, `data-model.md`, `contracts/`, `quickstart.md`). Built on the **complete** corex-core
 foundation (spec 001): `Boot`, custom PSR-11 `Container`, `ServiceProvider` seam, `Config`,

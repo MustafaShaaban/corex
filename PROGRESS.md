@@ -35,7 +35,7 @@
 - **SPEC 003 — CLI generators (`wp corex make:*`).** Spec written:
   `specs/003-cli-generators/spec.md` (Draft); quality checklist passed. 4 developer journeys (P1 stub
   engine + make:model, P1 the make:repository/controller/service set, P2 safety/--force/validation, P2
-  WP-CLI-optional); 16 FRs, 6 SCs. `/speckit-clarify` done (recommended options auto-selected): output path/namespace/prefix from Config (FR-002); `{{ }}` placeholders (FR-001); make:model scaffolds class only. Next: `/speckit-plan`.
+  WP-CLI-optional); 16 FRs, 6 SCs. `/speckit-clarify` done (recommended options auto-selected): output path/namespace/prefix from Config (FR-002); `{{ }}` placeholders (FR-001); make:model scaffolds class only. `/speckit-plan` done (Constitution PASS): engine (StubRenderer/GeneratorEngine/GeneratorResult/Naming) is pure+headless-testable; `MakeCommand`/`CliServiceProvider` are the only WP-CLI seam (registered when `class_exists(WP_CLI)`); stubs in packages/cli/stubs. Next: `/speckit-tasks`.
 
 > **✅ SPEC 002 — data layer — COMPLETE (2026-06-08).** All 29 tasks; US1–US4 + wiring/polish.
 > **77 tests green** (66 unit headless + 11 integration on real `./wp`); site HTTP 200. Guard Gate
