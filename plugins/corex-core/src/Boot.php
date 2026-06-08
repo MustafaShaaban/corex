@@ -10,6 +10,7 @@ namespace Corex;
 
 defined('ABSPATH') || exit;
 
+use Corex\Cli\CliServiceProvider;
 use Corex\Foundation\Application;
 use Corex\Foundation\CoreServiceProvider;
 use Corex\Foundation\DataServiceProvider;
@@ -42,7 +43,11 @@ final class Boot
         $debug = defined('WP_DEBUG') && WP_DEBUG;
 
         // Core service providers; modules and add-ons contribute their own (US2+).
-        self::$app = new Application($debug, providers: [CoreServiceProvider::class, DataServiceProvider::class]);
+        self::$app = new Application($debug, providers: [
+            CoreServiceProvider::class,
+            DataServiceProvider::class,
+            CliServiceProvider::class,
+        ]);
         self::$app->boot();
     }
 

@@ -96,10 +96,10 @@ suffix); each generated file passes the guards unedited.
 **Independent Test**: with WP-CLI present the commands register; with it absent the framework loads with
 no error; the engine works headlessly.
 
-- [ ] T020 [P] [US4] `packages/cli/src/Commands/MakeCommand.php` — parse the name arg + `--force`, pick the generator for the subcommand, call the engine, report via `WP_CLI::success/warning/error`.
-- [ ] T021 [US4] `packages/cli/src/CliServiceProvider.php` — bind StubRenderer/Naming/GeneratorEngine/the four generators/`GeneratorContext` (from Config); `boot()` registers `wp corex make:*` only when `class_exists('WP_CLI')`; add `CliServiceProvider::class` to `Boot`'s core provider list (depends on US1–US3).
-- [ ] T022 [US4] Write `tests/Integration/Cli/CommandRegistrationTest.php`: in WP-CLI context the `corex make:model` command is registered; the data-layer/foundation boot still clean (FR-012, SC-005). (Skips gracefully if WP-CLI not loaded in the test runtime.)
-- [ ] T023 [US4] Guard gate; validate quickstart Scenario 4.
+- [X] T020 [P] [US4] `packages/cli/src/Commands/MakeCommand.php` — parse the name arg + `--force`, pick the generator for the subcommand, call the engine, report via `WP_CLI::success/warning/error`.
+- [X] T021 [US4] `packages/cli/src/CliServiceProvider.php` — bind StubRenderer/Naming/GeneratorEngine/the four generators/`GeneratorContext` (from Config); `boot()` registers `wp corex make:*` only when `class_exists('WP_CLI')`; add `CliServiceProvider::class` to `Boot`'s core provider list (depends on US1–US3).
+- [X] T022 [US4] Write `tests/Integration/Cli/CommandRegistrationTest.php`: in WP-CLI context the `corex make:model` command is registered; the data-layer/foundation boot still clean (FR-012, SC-005). (Skips gracefully if WP-CLI not loaded in the test runtime.)
+- [X] T023 [US4] Guard gate; validate quickstart Scenario 4.
 
 **Checkpoint**: all four stories functional.
 
