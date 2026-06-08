@@ -8,6 +8,14 @@
 
 **Input**: User description: "Forms engine — the next module after theme/tokens. Forms are an application of the existing architecture (security middleware, data layer, a new event-dispatch seam): a code-defined Form schema, a headless validator, a secured submit lifecycle that dispatches a FormSubmittedEvent to listeners, a thin EventDispatcher seam, and an FSE form block. Out of scope: admin submissions viewer, CRM/webhook listeners, multi-step/conditional logic, file uploads, full email templating (Corex Mail)."
 
+## Clarifications
+
+### Session 2026-06-08
+
+- Q: When a field's value fails more than one of its rules, does the validator report the first failing rule or all of them? → A: The first failing rule per field ("bail per field") — at most one error per field, evaluated in rule order.
+- Q: How does the store listener persist a submission? → A: As a Corex-owned custom post type (`corex_submission`) via the existing data layer (spec 002), keyed/queryable by form slug — no custom table.
+- Q: If a listener throws during dispatch, what happens to the other listeners and the submission result? → A: The failure is isolated and logged; remaining listeners still run, and the submission is still accepted (dispatch is best-effort, not transactional).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Validate submitted values against a form's rules (Priority: P1)
@@ -84,7 +92,7 @@ An editor adds a Corex Form block to a page and selects a registered form. The f
 
 - **Unknown form identifier** at submit or block render → a clear, non-fatal error (rejected submission / editor notice), never a crash.
 - **Unknown validation rule** in a schema → fails closed at registration/resolution (surfaced to the developer), never a silent pass.
-- **A listener throws** during dispatch → the failure is isolated and logged; one failing listener does not abort the others or corrupt the success response (delivery guarantees beyond "attempted" are out of scope here).
+- **A listener throws** during dispatch → the failure is isolated and logged; the remaining listeners still run and the submission is still accepted (dispatch is best-effort, not transactional; delivery guarantees beyond "attempted" are out of scope here).
 - **Duplicate field names** in a schema → rejected at schema resolution.
 - **Payload contains fields not in the schema** → ignored (not persisted, not validated); only declared fields are processed.
 - **Empty optional field** → valid; absent value treated as empty, not as a rule violation unless `required`.
@@ -95,7 +103,7 @@ An editor adds a Corex Form block to a page and selects a registered form. The f
 ### Functional Requirements
 
 - **FR-001**: The system MUST let a form be defined in code as a schema of named, typed fields, each carrying an ordered list of validation rules; one definition is the single source of truth for that form.
-- **FR-002**: The system MUST provide a headless validator that runs a field's rules against submitted values and returns a structured result: validity, per-field errors (rule key + message), and the normalized values.
+- **FR-002**: The system MUST provide a headless validator that runs a field's rules against submitted values and returns a structured result: validity, per-field errors (rule key + message), and the normalized values. Rules are evaluated in declaration order and the validator records **at most one error per field** — the first failing rule ("bail per field").
 - **FR-003**: The validator MUST support at least the rules `required`, `email`, `max:N`, `min:N`, and `numeric`, and MUST be extensible with additional named rules without modifying existing ones.
 - **FR-004**: Validation messages MUST be translation-ready and MUST NOT depend on a WordPress runtime to be produced (the rules→errors logic is pure).
 - **FR-005**: The system MUST provide a form-schema resolver that normalizes a form definition (fields → a canonical rule set), rejecting duplicate field names and unknown rules.
@@ -105,7 +113,8 @@ An editor adds a Corex Form block to a page and selects a registered form. The f
 - **FR-009**: The submit path MUST enforce identity and intent before any side effect: a valid nonce, input sanitization, and rate limiting, reusing the existing security middleware (Principle VII) rather than hand-rolled checks; a missing/invalid nonce MUST fail closed.
 - **FR-010**: The submit path MUST include a honeypot (and rate-limit) spam defense; a tripped honeypot MUST reject the submission with no side effect and no error disclosure.
 - **FR-011**: On validation failure the system MUST return the per-field errors and run no listener/side effect.
-- **FR-012**: The system MUST ship one example form (contact: name/email/message) with an email listener (notifies a configured recipient) and a store listener (persists the submission, retrievable by form identifier).
+- **FR-012**: The system MUST ship one example form (contact: name/email/message) with an email listener (notifies a configured recipient) and a store listener (persists the submission as a `corex_submission` custom post type via the data layer, retrievable by form identifier).
+- **FR-012a**: Dispatch MUST be best-effort and isolated: if one listener fails (throws), the failure is logged, the remaining listeners still run, and the submission is still accepted (dispatch is not transactional).
 - **FR-013**: The system MUST provide an FSE block that renders a registered form from its schema, including accessible labels/markup, the nonce and honeypot fields, and required-field indication.
 - **FR-014**: The form block's client script MUST load only on pages that contain the block.
 - **FR-015**: All form styling MUST use theme.json design tokens and logical (RTL-first) CSS — no hardcoded colors/sizes/fonts and no CSS framework; all user-facing strings MUST be internationalized.
@@ -121,7 +130,7 @@ An editor adds a Corex Form block to a page and selects a registered form. The f
 - **Validation Result**: The outcome of validating a payload — validity flag, per-field errors (rule key + translatable message), and the normalized values.
 - **Event**: An immutable object describing something that happened (e.g. a form submission), carrying the form identifier and the validated values.
 - **Listener**: A unit of side effect (email, store) registered against an event type and invoked on dispatch.
-- **Submission**: The validated values of one successful form submission, persisted by the store listener and retrievable by form identifier.
+- **Submission**: The validated values of one successful form submission, persisted by the store listener as a `corex_submission` custom post type (via the data layer) and retrievable by form identifier.
 
 ## Success Criteria *(mandatory)*
 
@@ -134,12 +143,13 @@ An editor adds a Corex Form block to a page and selects a registered form. The f
 - **SC-005**: The form block renders every schema field with associated labels and required markers, includes the nonce and honeypot, references only preset tokens, and enqueues its script only when present on the page.
 - **SC-006**: A submission that fails validation never reaches a listener (zero side effects on failure) — verified by tests.
 - **SC-007**: The module adds no hardcoded colors/sizes/fonts and no CSS framework; all visible strings are translation-ready (RTL verified).
+- **SC-008**: When one listener throws during dispatch, the remaining listeners still run and the submission is still accepted — verified by a test (best-effort, isolated dispatch).
 
 ## Assumptions
 
 - **Submit transport**: a REST endpoint under the Corex namespace (e.g. `corex/v1/forms/{slug}`) is used for submission — the modern, testable boundary — rather than `admin-ajax`. The security gate is applied as middleware on this route. (Recommended default; the lifecycle is transport-agnostic above the boundary.)
 - **Event seam location**: the `EventDispatcher` seam lives in corex-core (`Corex\Events`) because it is foundational and shared (Corex Mail and add-ons will consume it); the forms module (`Corex\Forms`) consumes it. Introduced here because Forms is its first consumer.
-- **Store listener persistence**: submissions are persisted through the existing data layer (a Corex-owned submission record keyed by form slug); the admin viewer for them is out of scope (Corex Mail / a later DataViews spec).
+- **Store listener persistence**: submissions are persisted through the existing data layer as a Corex-owned `corex_submission` custom post type, keyed/queryable by form slug; the admin viewer for them is out of scope (Corex Mail / a later DataViews spec).
 - **Email listener**: sends a plain notification to a configured recipient via the platform mail boundary; rich templates/queueing are Corex Mail (spec 009). This listener is a thin, replaceable boundary.
 - **Module placement**: the forms module ships as `plugins/corex-forms` (namespace `Corex\Forms`), consistent with the other first-party modules; it registers its provider through the standard extension seam.
 - **Client behavior**: progressive enhancement — the form posts to the REST endpoint via a small script; the field markup and labels are server-rendered so the form is meaningful without JS. The Interactivity API niceties (animated responses) are presentation polish, not required for the lifecycle.
