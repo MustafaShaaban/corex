@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Corex\Tests\Fixtures\Data;
 
+use Corex\Database\QueryExecutor;
 use Corex\Fields\FieldDriver;
 use Corex\Models\Model;
 use Corex\Repositories\Hydrator;
@@ -37,7 +38,9 @@ final class JobRepository extends PostRepository
 {
     public static function make(FakeFieldDriver $fields): self
     {
-        return new self($fields, new Hydrator($fields));
+        $hydrator = new Hydrator($fields);
+
+        return new self($fields, $hydrator, new QueryExecutor($hydrator), 500);
     }
 
     protected function model(): string

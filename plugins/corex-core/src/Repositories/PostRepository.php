@@ -10,6 +10,8 @@ namespace Corex\Repositories;
 
 defined('ABSPATH') || exit;
 
+use Corex\Database\QueryBuilder;
+use Corex\Database\QueryExecutor;
 use Corex\Fields\FieldDriver;
 use Corex\Models\Model;
 use RuntimeException;
@@ -36,6 +38,8 @@ abstract class PostRepository implements RepositoryInterface
     public function __construct(
         protected readonly FieldDriver $fields,
         protected readonly Hydrator $hydrator,
+        protected readonly QueryExecutor $executor,
+        protected readonly int $cap = 500,
     ) {
     }
 
@@ -43,6 +47,11 @@ abstract class PostRepository implements RepositoryInterface
      * @return class-string<Model>
      */
     abstract protected function model(): string;
+
+    public function query(): QueryBuilder
+    {
+        return new QueryBuilder($this->model(), $this->executor, $this->cap);
+    }
 
     public function find(int $id): ?Model
     {

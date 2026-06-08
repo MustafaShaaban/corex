@@ -91,13 +91,13 @@ values bound as data.
 
 > Depends on Model + Field driver + Hydrator.
 
-- [ ] T015 [P] [US3] Write failing `tests/Unit/Data/QueryBuilderTest.php`: `where`/`orderBy`/`limit`/`with` build correct `WP_Query` args; `posts_per_page = min(limit, cap)` and never `-1` (cap from config, default 500); a filter value lands in `meta_query` as data; a metacharacter value is bound literally (FR-013–FR-016, SC-005, SC-006).
-- [ ] T016 [P] [US3] Write failing `tests/Unit/Data/CollectionTest.php`: `first()`, `isEmpty()`, `count()`, iteration; empty when nothing matches (FR-017).
-- [ ] T017 [US3] `plugins/corex-core/src/Database/Collection.php` — immutable `Countable`/`IteratorAggregate` over `list<Model>`.
-- [ ] T018 [US3] `plugins/corex-core/src/Database/QueryBuilder.php` — fluent `where/orderBy/limit/with`; `toArgs()` (cap via `config('query.max', 500)`, values into `meta_query`); `get()`/`first()` delegate to the executor (depends on T003, T017).
-- [ ] T019 [US3] `plugins/corex-core/src/Database/QueryExecutor.php` — the only `WP_Query` caller: run args, hydrate each post into a Model (via Hydrator), return a `Collection` (no eager loading yet) (depends on T012, T017).
-- [ ] T020 [US3] Write failing `tests/Integration/Data/QueryExecutorTest.php`: real posts → filtered/ordered `Collection<Model>`; empty result is an empty Collection. Make it pass.
-- [ ] T021 [US3] Guard gate on the US3 diff; validate quickstart Scenario 3.
+- [X] T015 [P] [US3] Write failing `tests/Unit/Data/QueryBuilderTest.php`: `where`/`orderBy`/`limit`/`with` build correct `WP_Query` args; `posts_per_page = min(limit, cap)` and never `-1` (cap from config, default 500); a filter value lands in `meta_query` as data; a metacharacter value is bound literally (FR-013–FR-016, SC-005, SC-006).
+- [X] T016 [P] [US3] Write failing `tests/Unit/Data/CollectionTest.php`: `first()`, `isEmpty()`, `count()`, iteration; empty when nothing matches (FR-017).
+- [X] T017 [US3] `plugins/corex-core/src/Database/Collection.php` — immutable `Countable`/`IteratorAggregate` over `list<Model>`.
+- [X] T018 [US3] `plugins/corex-core/src/Database/QueryBuilder.php` — fluent `where/orderBy/limit/with`; `toArgs()` (cap via `config('query.max', 500)`, values into `meta_query`); `get()`/`first()` delegate to the executor (depends on T003, T017).
+- [X] T019 [US3] `plugins/corex-core/src/Database/QueryExecutor.php` — the only `WP_Query` caller: run args, hydrate each post into a Model (via Hydrator), return a `Collection` (no eager loading yet) (depends on T012, T017).
+- [X] T020 [US3] Write failing `tests/Integration/Data/QueryExecutorTest.php`: real posts → filtered/ordered `Collection<Model>`; empty result is an empty Collection. Make it pass.
+- [X] T021 [US3] Guard gate on the US3 diff; validate quickstart Scenario 3.
 
 **Checkpoint**: fluent, safe, capped querying returns Collections of Models.
 
