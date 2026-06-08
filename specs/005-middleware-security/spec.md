@@ -19,6 +19,14 @@ checks live in middleware, never hand-written in controllers. A SecurityModule r
 middleware aliases in the container so routes reference them by name. The "users" are Corex module
 developers; the indirect beneficiaries are site visitors (protected requests).
 
+## Clarifications
+
+### Session 2026-06-08
+
+- Q: How does a middleware short-circuit — exception or a returned value? → A: A middleware returns a `Response` value object to short-circuit (the pipeline returns it); passing through calls `next`. A middleware that *throws* is caught and converted to a rejection `Response` (fail-closed, logged) — exceptions are not the normal rejection path.
+- Q: Which requests require a nonce by default? → A: Non-GET / state-changing requests require a valid nonce; the policy is configurable. Read-only (GET) requests are not nonce-gated by default.
+- Q: How is throttle state stored and what is the default limit? → A: WP transient storage keyed by the throttle key; default 60 requests per 60-second window, both configurable via the Config engine (`security.throttle.*`).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Run a handler through a middleware pipeline (Priority: P1)
@@ -136,7 +144,8 @@ the correct middleware; confirm the framework loads with the module and the alia
 **Pipeline**
 
 - **FR-001**: A middleware MUST implement one interface: given the request and a "next" callable, it
-  either returns a response (short-circuit) or calls next to pass control inward.
+  either returns a `Response` value (short-circuit) or calls next to pass control inward. A middleware
+  that throws MUST be caught and converted to a rejection `Response` (FR-006), not propagated.
 - **FR-002**: The pipeline MUST run an ordered list of middleware around a final handler (onion model):
   outer middleware wrap inner ones; the handler is the innermost.
 - **FR-003**: A short-circuiting middleware MUST prevent later middleware and the handler from running;
@@ -149,12 +158,13 @@ the correct middleware; confirm the framework loads with the module and the alia
 
 **Core middleware**
 
-- **FR-007**: A **nonce** middleware MUST reject a state-changing request without a valid nonce and pass
-  one with a valid nonce.
+- **FR-007**: A **nonce** middleware MUST reject a state-changing (non-GET) request without a valid
+  nonce and pass one with a valid nonce; which requests require a nonce is configurable.
 - **FR-008**: A **capability** (auth) middleware MUST reject a request whose current user lacks a
   required capability and pass one whose user has it.
 - **FR-009**: A **throttle** middleware MUST reject requests for a key beyond a configured limit within a
-  window and pass within the limit; the count MUST reset after the window.
+  window and pass within the limit; the count MUST reset after the window. State is stored in WP
+  transients; the default is 60 requests per 60s, configurable via Config (`security.throttle.*`).
 - **FR-010**: A **sanitize** middleware MUST pass the handler only the cleaned, expected input shape
   (unexpected keys removed; values sanitized).
 - **FR-011**: On any rejection, the handler MUST NOT run and no handler side effect MUST occur.

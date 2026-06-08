@@ -34,7 +34,7 @@
 - Cross-cutting security feature; "users" are Corex module developers. WP nonces/capabilities/transients
   are named because they are the *platform security primitives* the middleware wrap (the subject of
   constitution Principle VII), not arbitrary implementation choices.
-- Decisions deferred to `/speckit-clarify` (none block planning; noted in Assumptions): (a) the exact
-  rejection representation (exception vs a response value the pipeline returns), (b) the nonce-required
-  request policy default, (c) throttle storage (transient vs object cache) and default limit/window.
+- Resolved in the 2026-06-08 `/speckit-clarify` session (recommended options): rejection = a `Response`
+  value (throwing middleware caught → rejection, fail-closed); nonce gates non-GET requests (FR-007);
+  throttle uses WP transients, default 60/60s, configurable (FR-009). No `[NEEDS CLARIFICATION]`.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
