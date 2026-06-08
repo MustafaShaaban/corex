@@ -32,10 +32,16 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- **SPEC 006 — Theme + design tokens.** Spec written + clarified (recommended): brand.json at
-  `theme/brand.json` (configurable); unknown-path overrides added via deep merge; applied via
-  `wp_theme_json_data_theme` filter. 4 journeys (P1 token source, P1 brand.json overrides, P2 style
-  variations, P2 skin discipline); 15 FRs, 7 SCs. Headless core = the deep-merge BrandResolver. `/speckit-plan` done (Constitution PASS, Principle I/V headline): BrandResolver (merge/read, headless), ThemeServiceProvider (wp_theme_json_data_theme filter), theme.json token source, theme/styles/dark.json variation. `/speckit-tasks` done: 15 tasks. Next: `/speckit-implement`.
+- _(nothing mid-flight — spec 006 complete; pick up at **Next**.)_
+
+> **✅ SPEC 006 — Theme + design tokens — COMPLETE (2026-06-08).** All 15 tasks; US1–US4 + polish.
+> `Corex\Theme\BrandResolver` (pure deep-merge: assoc merged key-by-key, siblings preserved, unknown
+> added, scalars/lists replaced; read missing/malformed → [], malformed logged) + `ThemeServiceProvider`
+> (binds the resolver; hooks `wp_theme_json_data_theme` to read brand.json from `config('theme.brand_path')`
+> or the active theme root and merge it). `theme/theme.json` is the v3 token source; `theme/styles/dark.json`
+> a token-only variation. 10 theme tests (BrandResolver, theme.json/dark.json validity, skin discipline).
+> **126 tests green (111 unit + 15 integration); site HTTP 200; real-WP smoke confirms siblings preserved.**
+> README "Theme & design tokens" section added. Followed the plan as written (no new DECISIONS entry).
 
 > **✅ SPEC 005 — Middleware + Security — COMPLETE (2026-06-08).** All 22 tasks; US1–US4 + polish.
 > 101 unit + 15 integration green; site HTTP 200. Principle VII delivered: onion `Pipeline` (value
@@ -179,7 +185,12 @@ not leave broken code. The last completed unit of work is the Phase 4 skeleton +
 bootstrap; the next unit is the Phase 5 corex-core foundation (not yet begun).
 
 ## Next (recommended order)
-1. **SPEC 006 — Theme + design tokens** [PHASE 10] — next per COREX-SPECKIT-START. The FSE block theme: theme.json design tokens (single source of truth, exposed as CSS variables), per-site brand.json runtime overrides, style variations; presentation only (Principle I/V). _(superseded note for 005 below)_
+1. **SPEC 007 — Forms** [PHASE 11] — next per COREX-SPECKIT-START "The rhythm from here". Form
+   handling built on the middleware/security layer (nonce + sanitize + validation), controller-driven,
+   token-styled FSE form blocks. Spec Kit flow: `/speckit-specify` → `/clarify` → `/plan` → `/tasks`
+   → `/implement`, ONE task at a time with the Guard Gate + Pest tests. Headless core = the validator.
+
+<!-- prev --> **SPEC 006 — Theme + design tokens** [PHASE 10] — ✅ COMPLETE (2026-06-08). theme.json token source + brand.json runtime overrides (BrandResolver) + style variations + skin discipline. _(superseded note for 005 below)_
 
 <!-- prev --> **SPEC 005 — Middleware + Security** [PHASE 9] — next per COREX-SPECKIT-START. Declarative route middleware (nonce/auth/throttle/sanitize) + the SecurityModule; controllers declare middleware, applied automatically (Principle VII). Built on corex-core + data layer. _(superseded note for 004 below)_
 

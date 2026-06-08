@@ -268,6 +268,29 @@ runs on a rejection. The four standard aliases are registered by the `SecurityMo
 An unknown middleware name **fails closed** (resolves to a rejecting middleware), never a silent skip.
 Controllers contain **no** hand-written nonce/capability checks — the middleware own them (Principle VII).
 
+## Theme & design tokens
+
+The theme is a **skin**: `theme/theme.json` (v3) is the single source of design tokens — colors,
+font sizes, spacing, layout — exposed as `--wp--preset--*` CSS custom properties. The theme's styling
+consumes only those variables (no hardcoded colors/sizes/fonts, no CSS framework), and registers no
+post types, taxonomies, or routes — that logic lives in the plugins.
+
+A site rebrands with a **`brand.json`** placed at the active theme root (or the path in
+`config('theme.brand_path')`). `ThemeServiceProvider` reads it on the `wp_theme_json_data_theme`
+filter and deep-merges it onto the theme.json data:
+
+```php
+use Corex\Theme\BrandResolver;
+
+$merged = $resolver->merge($themeJsonData, $resolver->read('/path/to/brand.json'));
+```
+
+`BrandResolver::merge()` is pure and headless: associative arrays merge key-by-key (the deepest
+overriding key wins, siblings preserved, unknown keys added); scalars and lists are replaced
+wholesale. A missing `brand.json` yields `[]` (defaults stand); a malformed one yields `[]` and is
+logged, so a bad file never breaks the site. Full alternate styles live in `theme/styles/*.json`
+(e.g. `dark.json`) and WordPress auto-registers them as selectable style variations.
+
 ## Boot-time problems
 
 Malformed configuration, unresolvable dependencies, and broken providers are written to the
