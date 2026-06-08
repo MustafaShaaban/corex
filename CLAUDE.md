@@ -1,0 +1,51 @@
+# Corex — Agent Entry Point (Claude Code)
+
+You are working on **Corex**, a professional, Laravel-inspired WordPress framework.
+Namespace `Corex\`, CLI `wp corex`, CSS prefix `--corex-`. Target: WordPress 7.0+,
+PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
+
+## BEFORE doing anything
+1. Read `specs/constitution.md` — the non-negotiable rules. They override everything.
+   (Canonical source lives at `.specify/memory/constitution.md`; `specs/constitution.md`
+   mirrors it for the source-of-truth hierarchy.)
+2. Read `PROGRESS.md` — current status and the recommended next step. Continue from "Next".
+3. Read the active spec in `specs/` for the module you're touching.
+4. Skim `COREX-FRAMEWORK.md` for the architecture if unfamiliar; `COREX-WORKING-GUIDE.md`
+   for how we work. `COREX-EMAIL-ADDON.md` is the Corex Mail spec for when its turn comes.
+
+## Source-of-truth hierarchy (top wins) — COREX-WORKING-GUIDE.md §A.1
+1. `specs/constitution.md`  2. `COREX-FRAMEWORK.md`  3. the active module spec
+4. `PROGRESS.md`  5. the code. If code contradicts the constitution, the code is wrong.
+
+## WHILE working
+- Follow the constitution exactly. If a request conflicts with it, say so rather than comply.
+- Use the `wp corex make:*` generators (once built) rather than hand-writing boilerplate.
+- Keep controllers thin; logic goes in services; data access in repositories.
+- Everything injected via the PSR-11 container — never `new` a dependency inside a method.
+- All styling via `theme.json` CSS variables. No hardcoded colors/sizes/fonts. No CSS frameworks.
+- Logical CSS properties (RTL-first). No optional plugin (ACF/Woo/Polylang) as a hard dependency.
+
+## AFTER producing any code (Definition of Done — COREX-WORKING-GUIDE.md §D.4)
+- **Guard Gate:** run the relevant guard skill on the diff BEFORE presenting it. Auto-install
+  it first if missing. No diff ships until its guard runs clean.
+  - any production code → `clean-code-guard`
+  - WP plugin/theme/block/REST/AJAX/query → `wp-guard`
+  - WooCommerce code → `woo-guard` (on top of wp-guard)
+  - test code → `test-guard`   ·   docs/README/docstrings → `docs-guard`
+- Write tests (Pest unit, Jest for JS blocks, Playwright E2E). i18n-ready, RTL-verified, WCAG 2.2 AA.
+- Update `PROGRESS.md`; log any non-trivial decision in `DECISIONS.md`.
+- **End every response with a NEXT STEP block** (format in COREX-WORKING-GUIDE.md §A.3 / constitution).
+
+## Spec Kit workflow (commands are namespaced `speckit-*`)
+`/speckit-constitution` → `/speckit-specify` → `/speckit-clarify` → `/speckit-plan`
+→ `/speckit-tasks` → `/speckit-implement`. Write the spec before the code; review between tasks.
+Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
+
+<!-- SPECKIT START -->
+**Active plan:** `specs/001-corex-core-foundation/plan.md` (corex-core foundation, Phase 5).
+For technologies, project structure, contracts, and validation, read that plan and its sibling
+artifacts (`research.md`, `data-model.md`, `contracts/`, `quickstart.md`). Tech: PHP 8.3,
+`league/container` (behind `Corex\Container`), `vlucas/phpdotenv`, Pest + Brain Monkey. The
+Service Provider (`Corex\Foundation\ServiceProvider`) is the single extension seam for all
+modules/add-ons.
+<!-- SPECKIT END -->

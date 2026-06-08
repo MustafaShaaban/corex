@@ -1,0 +1,61 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/theme.json",
+    "version": 3,
+    "settings": {
+        "appearanceTools": true,
+        "useRootPaddingAwareAlignments": true,
+        "layout": {
+            "contentSize": "768px",
+            "wideSize": "1200px"
+        },
+        "color": {
+            "palette": [
+                { "slug": "primary", "color": "#0B1F3B", "name": "Primary" },
+                { "slug": "accent", "color": "#00C2FF", "name": "Accent" },
+                { "slug": "surface", "color": "#FFFFFF", "name": "Surface" },
+                { "slug": "ink", "color": "#11181C", "name": "Ink" }
+            ]
+        },
+        "typography": {
+            "fluid": true,
+            "fontFamilies": [
+                {
+                    "slug": "heading",
+                    "name": "Heading",
+                    "fontFamily": "system-ui, sans-serif"
+                },
+                {
+                    "slug": "arabic",
+                    "name": "Arabic",
+                    "fontFamily": "'Noto Sans Arabic', system-ui, sans-serif"
+                }
+            ],
+            "fontSizes": [
+                { "slug": "sm", "size": "clamp(0.875rem, 1vw, 1rem)", "name": "Small" },
+                { "slug": "lg", "size": "clamp(1.25rem, 2vw, 1.5rem)", "name": "Large" },
+                { "slug": "hero", "size": "clamp(2.5rem, 6vw, 4rem)", "name": "Hero" }
+            ]
+        },
+        "spacing": {
+            "units": ["%", "px", "em", "rem", "vw", "vh"],
+            "spacingSizes": [
+                { "slug": "30", "size": "1rem", "name": "1" },
+                { "slug": "50", "size": "2rem", "name": "2" },
+                { "slug": "80", "size": "4rem", "name": "3" }
+            ]
+        }
+    },
+    "styles": {
+        "typography": {
+            "fontFamily": "var(--wp--preset--font-family--heading)"
+        },
+        "color": {
+            "background": "var(--wp--preset--color--surface)",
+            "text": "var(--wp--preset--color--ink)"
+        }
+    },
+    "templateParts": [
+        { "name": "header", "title": "Header", "area": "header" },
+        { "name": "footer", "title": "Footer", "area": "footer" }
+    ]
+}

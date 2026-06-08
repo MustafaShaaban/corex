@@ -1,0 +1,82 @@
+# ───────────────────────── Dependencies ─────────────────────────
+/vendor/
+**/vendor/
+/node_modules/
+**/node_modules/
+composer.phar
+
+# ───────────────────────── Build output ─────────────────────────
+# Compiled/minified assets are generated from source (SCSS, JS) — never committed.
+/build/
+**/build/
+/dist/
+**/dist/
+*.map
+**/*.css.map
+.cache/
+.parcel-cache/
+
+# ───────────────────────── Environment / secrets ────────────────
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+auth.json
+
+# ───────────────────────── WordPress core & runtime ─────────────
+# Corex is the framework SOURCE (theme/ + plugins/*). A running WordPress install
+# (./wp) and any site runtime artifacts are NOT part of the framework and are not committed.
+/wp/
+wp-config.php
+wp-cli.local.yml
+/wp-cli.phar
+/wp-content/uploads/
+/wp-content/upgrade/
+/wp-content/cache/
+/wp-content/wflogs/
+/wp-content/uploads.bak/
+*.sql
+*.sql.gz
+*.log
+error_log
+
+# ───────────────────────── PHP tooling ──────────────────────────
+.phpunit.result.cache
+.phpunit.cache/
+.phpcs.cache
+.php-cs-fixer.cache
+.phpstan.cache/
+
+# ───────────────────────── JS / test tooling ────────────────────
+.wp-env.override.json
+coverage/
+.nyc_output/
+/tests/_output/
+/tests/_support/_generated/
+playwright-report/
+test-results/
+/playwright/.cache/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ───────────────────────── Agent / editor state ─────────────────
+# Keep committed: .claude/skills/, .claude/commands/, .specify/
+# Ignore only local, machine-specific or secret-bearing agent state.
+.claude/settings.local.json
+.claude/.credentials.json
+.claude/projects/
+.claude/todos/
+.mcp.local.json
+
+# ───────────────────────── OS / IDE noise ───────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.history/
+*.swp
+*~

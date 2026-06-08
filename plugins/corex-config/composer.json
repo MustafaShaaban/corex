@@ -1,0 +1,9 @@
+{
+    "name": "corex/config",
+    "description": "Corex Config — settings UI, .env resolution, feature flags, and security headers.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.3"
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "$schema": "https://raw.githubusercontent.com/WordPress/gutenberg/trunk/schemas/json/wp-env.json",
+    "core": "WordPress/WordPress#master",
+    "phpVersion": "8.3",
+    "plugins": [
+        "./plugins/corex-core",
+        "./plugins/corex-blocks",
+        "./plugins/corex-config"
+    ],
+    "themes": [
+        "./theme"
+    ],
+    "config": {
+        "WP_DEBUG": true,
+        "WP_DEBUG_LOG": true,
+        "SCRIPT_DEBUG": true
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "name": "corex/core",
+    "description": "Corex Core — the self-booting MVC engine (PSR-11 container, controllers, services, repositories, events, abilities).",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.3",
+        "psr/container": "^2.0",
+        "vlucas/phpdotenv": "^5.6"
+    }
+}

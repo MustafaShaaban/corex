@@ -1,0 +1,22 @@
+{
+    "name": "corex-framework",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Corex — WordPress framework monorepo (npm workspaces root).",
+    "license": "GPL-2.0-or-later",
+    "engines": {
+        "node": ">=20"
+    },
+    "workspaces": [
+        "plugins/corex-blocks",
+        "packages/build-tools"
+    ],
+    "scripts": {
+        "build": "npm run build --workspaces --if-present",
+        "start": "wp-env start",
+        "stop": "wp-env stop"
+    },
+    "devDependencies": {
+        "@wordpress/env": "^10.6.0"
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "name": "corex/cli",
+    "description": "wp corex — Corex CLI commands and generator stubs, built on WP-CLI.",
+    "type": "library",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.3"
+    }
+}

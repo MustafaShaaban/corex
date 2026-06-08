@@ -1,0 +1,139 @@
+#requires -Version 5.1
+<#
+.SYNOPSIS
+    Bootstrap (or repair) the local WordPress dev environment for the Corex monorepo on WAMP.
+
+.DESCRIPTION
+    Corex is a framework, not a site: this repo holds the framework SOURCE (theme/, plugins/*)
+    and a local WordPress install lives in ./wp (gitignored). This script reproduces that
+    environment idempotently — safe to re-run, and the single command to run after cloning the
+    repo OR after renaming/moving the repo folder (it recreates the wp-content junctions for the
+    repo's CURRENT path, so it survives a rename like blackstone-new-site -> corex).
+
+    Steps: ensure the MySQL client is on PATH -> download WP core into ./wp -> create wp-config.php
+    -> create the database -> install WordPress -> junction theme/ and plugins/* into
+    wp/wp-content -> activate the Corex theme + plugins -> verify.
+
+    Real symlinks (mklink /D) need elevation; this uses directory JUNCTIONS (mklink /J), which do
+    not. See DECISIONS.md #18 and the constitution "Environment Gate".
+
+.EXAMPLE
+    powershell -File .\scripts\setup-wordpress.ps1
+    powershell -File .\scripts\setup-wordpress.ps1 -SiteUrl http://corex.local -AdminEmail you@example.com
+#>
+[CmdletBinding()]
+param(
+    [string]$SiteUrl       = 'http://corex.local',
+    [string]$Title         = 'Corex',
+    [string]$AdminUser     = 'admin',
+    [string]$AdminEmail    = 'admin@example.com',
+    [string]$AdminPassword = 'changeme',
+    [string]$DbName        = 'corex',
+    [string]$DbUser        = 'root',
+    [string]$DbPass        = '',
+    [string]$DbHost        = 'localhost',
+    [string]$DbPrefix      = 'cx_',
+    [string]$WpDir         = 'wp',
+    [string]$MysqlBin      = ''   # auto-detected from WAMP if empty
+)
+
+# WP-CLI emits warnings to stderr on idempotent re-runs (e.g. "plugin already active"); under
+# 'Stop', PowerShell 5.1 turns native-command stderr into a fatal error. Use 'Continue' and check
+# exit codes explicitly on the must-succeed steps.
+$ErrorActionPreference = 'Continue'
+
+function Fail([string]$Message) { Write-Host "ERROR: $Message" -ForegroundColor Red; exit 1 }
+
+# Repo root = parent of this scripts/ folder. Path-independent: works after a folder rename.
+$Root   = Split-Path -Parent $PSScriptRoot
+Set-Location $Root
+$WpPath = Join-Path $Root $WpDir
+
+# --- MySQL client on PATH (wp db ... shells out to mysql.exe; WAMP doesn't add it to PATH) ---
+if (-not $MysqlBin) {
+    $found = Get-ChildItem 'C:\wamp64\bin\mysql\*\bin', 'C:\wamp64\bin\mariadb\*\bin' -ErrorAction SilentlyContinue |
+        Where-Object { Test-Path (Join-Path $_.FullName 'mysql.exe') } | Select-Object -First 1
+    if ($found) { $MysqlBin = $found.FullName }
+}
+if ($MysqlBin -and (Test-Path $MysqlBin)) { $env:PATH = "$MysqlBin;$env:PATH" }
+
+Write-Host "== Corex WordPress setup ==  repo: $Root" -ForegroundColor Cyan
+
+# --- 1. WordPress core ---
+if (-not (Test-Path (Join-Path $WpPath 'wp-load.php'))) {
+    Write-Host "Downloading WordPress core into ./$WpDir ..."
+    & wp core download --path="$WpPath" --skip-content --locale=en_US
+    if ($LASTEXITCODE -ne 0) { Fail "wp core download failed." }
+} else {
+    Write-Host "WordPress core already present in ./$WpDir."
+}
+
+# --- 2. wp-config.php ---
+if (-not (Test-Path (Join-Path $WpPath 'wp-config.php'))) {
+    Write-Host "Creating wp-config.php ..."
+    @"
+define( 'WP_DEBUG', true );
+define( 'WP_DEBUG_LOG', true );
+define( 'WP_DEBUG_DISPLAY', false );
+"@ | & wp config create --path="$WpPath" --dbname="$DbName" --dbuser="$DbUser" `
+        --dbpass="$DbPass" --dbhost="$DbHost" --dbprefix="$DbPrefix" --locale=en_US --extra-php
+    if ($LASTEXITCODE -ne 0) { Fail "wp config create failed." }
+} else {
+    Write-Host "wp-config.php already present."
+}
+
+# --- 3. Database (create if absent; "already exists" is fine) ---
+& wp db create --path="$WpPath" 2>$null
+if ($LASTEXITCODE -eq 0) { Write-Host "Database '$DbName' created." }
+else { Write-Host "Database '$DbName' already exists (ok)." }
+
+# --- 4. Install (or just align URLs if already installed) ---
+& wp core is-installed --path="$WpPath" 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Installing WordPress ..."
+    & wp core install --path="$WpPath" --url="$SiteUrl" --title="$Title" `
+        --admin_user="$AdminUser" --admin_email="$AdminEmail" --admin_password="$AdminPassword" --skip-email
+    if ($LASTEXITCODE -ne 0) { Fail "wp core install failed." }
+} else {
+    Write-Host "WordPress already installed; ensuring siteurl/home = $SiteUrl ."
+    & wp option update siteurl "$SiteUrl" --path="$WpPath" | Out-Null
+    & wp option update home    "$SiteUrl" --path="$WpPath" | Out-Null
+}
+
+# --- 5. Map the monorepo into wp-content via junctions (recreated for the current path) ---
+function Set-Junction {
+    param([string]$Link, [string]$Target)
+    # rmdir on a junction removes only the link, never the target. cmd swallows its own stderr.
+    cmd /c "if exist `"$Link`" rmdir `"$Link`" 2>nul"
+    cmd /c "mklink /J `"$Link`" `"$Target`"" | Out-Null
+    Write-Host ("  junction  {0}  ->  {1}" -f ([System.IO.Path]::GetFileName($Link)), $Target)
+}
+$themesDir  = Join-Path $WpPath 'wp-content\themes'
+$pluginsDir = Join-Path $WpPath 'wp-content\plugins'
+New-Item -ItemType Directory -Force -Path $themesDir, $pluginsDir | Out-Null
+
+Write-Host "Wiring monorepo -> wp-content:"
+Set-Junction (Join-Path $themesDir 'corex') (Join-Path $Root 'theme')
+Get-ChildItem (Join-Path $Root 'plugins') -Directory | ForEach-Object {
+    Set-Junction (Join-Path $pluginsDir $_.Name) $_.FullName
+}
+# Add-ons are WP-plugin-shaped Composer packages; junction any that contain a PHP file.
+$addonsRoot = Join-Path $Root 'addons'
+if (Test-Path $addonsRoot) {
+    Get-ChildItem $addonsRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { Get-ChildItem $_.FullName -Filter '*.php' -ErrorAction SilentlyContinue } |
+        ForEach-Object { Set-Junction (Join-Path $pluginsDir $_.Name) $_.FullName }
+}
+
+# --- 6. Activate theme + plugins (WP resolves "Requires Plugins" order) ---
+& wp theme activate corex --path="$WpPath" | Out-Null
+$pluginSlugs = (Get-ChildItem (Join-Path $Root 'plugins') -Directory).Name
+& wp plugin activate @pluginSlugs --path="$WpPath" | Out-Null
+
+# --- 7. Verify (the constitution's Environment Gate) ---
+Write-Host "`n== Verification ==" -ForegroundColor Cyan
+& wp theme list --path="$WpPath"
+& wp plugin list --path="$WpPath"
+Write-Host "`nSite : $SiteUrl"
+Write-Host "Admin: $SiteUrl/wp-admin/  ($AdminUser)"
+Write-Host "Done." -ForegroundColor Green

@@ -1,0 +1,43 @@
+{
+    "name": "corex/framework",
+    "description": "Corex — a professional, Laravel-inspired WordPress framework (monorepo root).",
+    "type": "project",
+    "license": "GPL-2.0-or-later",
+    "homepage": "https://github.com/bseit/corex",
+    "require": {
+        "php": ">=8.3",
+        "psr/container": "^2.0",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "require-dev": {
+        "pestphp/pest": "^2.34",
+        "brain/monkey": "^2.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Corex\\": "plugins/corex-core/src/",
+            "Corex\\Blocks\\": "plugins/corex-blocks/src/",
+            "Corex\\Config\\": "plugins/corex-config/src/",
+            "Corex\\Cli\\": "packages/cli/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Corex\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "test": "pest",
+        "test:unit": "pest --testsuite=Unit",
+        "test:integration": "pest --testsuite=Integration"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

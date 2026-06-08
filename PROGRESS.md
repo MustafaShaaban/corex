@@ -1,0 +1,113 @@
+# Corex — Progress
+
+> Live status file. A new session's first action: read this, then continue from **Next**.
+> Updated at the end of every working session.
+
+## Done
+- [x] **Bootstrap** — environment verified (PHP 8.3.6, Composer 2.4.2, Node 22.14, npm 10.9,
+      WP-CLI 2.11, git 2.33, uvx 0.11.16).
+- [x] **Tooling** — Spec Kit initialized in place (`.specify/`, `.claude/skills/speckit-*`,
+      commands namespaced `speckit-*`). Five guard skills installed
+      (`wp-guard`, `woo-guard`, `clean-code-guard`, `test-guard`, `docs-guard`).
+- [x] **Git** — repo on `main`, `.gitignore` for WP+PHP+Node (no commit yet).
+- [x] **Continuity scaffolding** — `CLAUDE.md`, `AGENTS.md`, `PROGRESS.md`, `DECISIONS.md`.
+- [x] **Constitution** — `.specify/memory/constitution.md` v1.0.0 (10 principles + Next Step Rule +
+      Guard Gate + Definition of Done + source-of-truth hierarchy). `specs/constitution.md` pointer
+      stub; plan-template Constitution Check gate pre-filled with the 10 Corex gates.
+- [x] **Repo structure (Phase 4)** — monorepo skeleton per §4: `theme/` (block theme: style.css,
+      theme.json v3, templates/parts), `plugins/corex-{core,blocks,config}` (WP headers + guarded
+      autoloader, no logic), `addons/`, `packages/{cli,build-tools}`, `docs/`, `tests/`. Root
+      `composer.json` (PSR-4 `Corex\` + 4 sub-prefixes, single authoritative autoload) and root
+      `package.json` (npm workspaces). Verified: php -l clean, all JSON valid, `composer install`
+      wires all 5 prefixes, WP header parser recognizes 3 plugins + the theme. Guards clean
+      (wp-guard, clean-code-guard, docs-guard).
+- [x] **WordPress environment (Phases C–D)** — installed WP **7.0** into `./wp/` (WP-CLI on WAMP;
+      added missing `wp-cli/wp-cli-bundle`), DB `corex` on MySQL 8.3.0, prefix `cx_`. Mapped the
+      monorepo into `wp/wp-content/` via **junctions** (theme + 3 plugins). Theme + all 3 plugins
+      **activated**; site boots at **http://corex.local** (admin `/wp-admin/`), no Corex fatals.
+      Constitution amended to **v1.1.0** (Environment Gate). Details: DECISIONS.md #18. The exact
+      install/mapping procedure is recorded so this never repeats.
+
+> Environment is correctly bootstrapped. Skeleton loads cleanly in a real WP install; still no
+> framework business logic — that begins in Phase 5.
+
+## In progress
+- **PHASE 5 — corex-core foundation.** Spec written: `specs/001-corex-core-foundation/spec.md`
+  (Draft). Quality checklist passed (`checklists/requirements.md`). 5 prioritized developer
+  journeys: P1 Boot+Container, P1 Config, P2 HookRegistry, P3 ControllerMap; 22 FRs, 7 success
+  criteria. `/speckit-clarify` done (2026-06-08, 5 Qs answered → Clarifications section): controller
+  discovery = directory + PSR-4 scan; interface resolution = explicit bindings (FR-007a); `.env`
+  loader = `vlucas/phpdotenv`; container access = bounded global accessor, framework-boundary only
+  (FR-008a); error surfacing = debug log always + admin notice on `WP_DEBUG` (FR-023).
+  `/speckit-plan` done (2026-06-08): `plan.md` + `research.md` + `data-model.md` +
+  `contracts/foundation-contracts.md` + `quickstart.md`. Constitution Check PASS (no violations).
+  Architecture: `Boot` → `Foundation\Application` → `Container` (wraps `league/container`) →
+  Service-Provider register/boot lifecycle; `Support\Config` engine (`.env`/`vlucas/phpdotenv` →
+  options → defaults); `Hooks\HookRegistry` + `SubscribesToHooks`; `Http\ControllerMap` (PSR-4 scan).
+  **Service Provider is the single extension seam** for all future modules/add-ons (scalability).
+  Config-home conflict resolved → DECISIONS #19 + FRAMEWORK §2 amended.
+  `/speckit-tasks` done (2026-06-08): `tasks.md` — 38 tasks, TDD-ordered, grouped by the 4 user
+  stories. Phase 1 Setup (T001–T004) → Phase 2 Foundational/BootLogger (T005–T006) → US1 Boot+
+  Container [MVP] (T007–T017) → US2 Config (T018–T024) → US3 Hooks (T025–T029) → US4 ControllerMap
+  (T030–T033) → Polish (T034–T038).
+  **Implementation — Phase 1 Setup DONE (T001–T004, 2026-06-08):** added `psr/container`,
+  `league/container` 4.x, `vlucas/phpdotenv` 5.6.3 (root + corex-core composer.json) and dev deps
+  `pestphp/pest` 2.36.1 + `brain/monkey`; created the Pest harness (`tests/bootstrap.php`,
+  `tests/Pest.php`, `Unit`/`Integration` base `TestCase`s, `phpunit.xml.dist`, `composer test*`
+  scripts); scaffolded `src/{Foundation,Hooks,Http,Container/Exceptions,Support/Config/Sources,
+  Support/Facades}`. Verified: unit suite green, WP still boots HTTP 200 with new deps. test-guard
+  run clean (removed a framework-guarantee smoke test per Rule 7).
+  **Phase 2 DONE (T005–T006, 2026-06-08):** `BootLogger` (`src/Support/BootLogger.php`) TDD'd —
+  6 Pest tests red-first then green (14 assertions); always writes the debug log, surfaces a single
+  capability-gated, escaped, i18n admin notice only when debug; never throws (FR-023, SC-008).
+  Guard Gate clean (wp-guard + clean-code-guard + test-guard). Added the **ABSPATH direct-access
+  guard convention** for all src class files + test-bootstrap `ABSPATH` define (DECISIONS #20).
+  **US1 checkpoint (a) DONE (T007, T010, T011, 2026-06-08) — the Container:** `Corex\Container\`
+  `Container` + `ContainerInterface` (PSR-11 + bind/singleton/instance/make) + 4 exceptions. TDD: 11
+  Pest tests red-first then green (full suite 17 passed). Autowiring, shared vs transient, param
+  overrides, optional defaults, cycle detection, FR-007a/009 precise messages. **Engine reversal:**
+  dropped `league/container` for a focused custom container (it can't detect cycles / clean unbound
+  messages) — DECISIONS #21; research.md R1 + plan.md corrected. WP still boots HTTP 200.
+  Guard Gate clean (clean-code-guard; wp-guard N/A beyond the ABSPATH guard; test-guard).
+  **Next: US1 checkpoint (b) — boot lifecycle (T008/T009 tests, T012 ServiceProvider, T013
+  ProviderRepository, T014 Application, T015 Boot, T016 Corex facade).**
+
+## Interruption note
+The environment gap (no WordPress core) was discovered **between Phase 4 and Phase 5**, before any
+corex-core foundation code was written. So **no module files are half-built** — the interruption did
+not leave broken code. The last completed unit of work is the Phase 4 skeleton + this environment
+bootstrap; the next unit is the Phase 5 corex-core foundation (not yet begun).
+
+## Next (recommended order)
+1. **corex-core foundation** — `/speckit-specify` → `/clarify` → `/plan` → `/tasks` →
+   `/implement`, ONE task at a time: Boot (self-init on `plugins_loaded`), PSR-11 DI Container,
+   ControllerMap auto-discovery, HookRegistry, Config (.env → options → defaults). [PHASE 5]
+   After each task: run wp-guard + clean-code-guard, write Pest tests, update PROGRESS/DECISIONS,
+   then STOP for review.
+
+Module build order after the foundation (COREX-SPECKIT-START.md "The rhythm from here"):
+Model + Field driver (ACF-optional) + QueryBuilder → CLI generators → corex-blocks →
+Middleware + Security → theme + design tokens → Forms → Abilities/MCP → Corex Mail → other
+add-ons (profile-manager, woo) → setup wizard + demo content.
+
+## Environment quick reference
+- **Site:** http://corex.local · **Admin:** http://corex.local/wp-admin/ (`admin` / `123456`)
+- **WP core:** `./wp/` (gitignored, WP 7.0) · **monorepo → WP:** junctions in `wp/wp-content/`
+- **WP-CLI:** target the install with `--path=wp`. For `wp db …` commands, prepend the MySQL client:
+  `export PATH="/c/wamp64/bin/mysql/mysql8.3.0/bin:$PATH"`
+- Full procedure + rationale: DECISIONS.md #18; rule: constitution "Environment Gate" (v1.1.0).
+- **Folder-rename gotcha:** the `wp/wp-content/` junctions store the repo's **absolute path**, so
+  renaming/moving the repo folder breaks all four. Repoint them (theme + 3 plugins) to the new path
+  with `cmd /c rmdir <link>` then `cmd /c mklink /J <link> <target>`. (Done 2026-06-08 after the
+  rename `blackstone-new-site` → `corex`; vhost still serves http://corex.local.)
+
+## Open decisions
+- **Deploy target** — undecided (DECISIONS.md #11, status Open). Does not block current work.
+
+## Last session summary
+2026-06-07 — PHASE 0–4 complete + WordPress environment bootstrapped. Verified env, installed Spec
+Kit + guard skills, git on `main` (Azure DevOps remote), continuity scaffolding, constitution
+(now v1.1.0 — added the Environment Gate), §4 monorepo skeleton (guards clean). Then fixed the
+missing-WordPress gap: installed WP 7.0 into `./wp/` via WP-CLI on WAMP, mapped the monorepo in via
+junctions, activated the Corex theme + 3 plugins (site boots at http://corex.local). Decisions
+#15–18 logged. Next: PHASE 5 — corex-core foundation via the Spec Kit flow, one task at a time.
