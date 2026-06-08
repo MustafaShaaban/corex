@@ -55,9 +55,9 @@ duplicate name → discover returns only the valid, de-duped blocks; malformed l
 **Independent Test**: a block folder with a `Renderer.php` → the registrar's callback resolves it from
 the container and returns its output; a renderer that throws → empty string + logged.
 
-- [ ] T007 [P] [US3] Write failing `tests/Unit/Blocks/RenderDelegationTest.php`: the render closure resolves a fake `BlockRenderer` from a real Container and returns its markup; a throwing renderer yields '' and a BootLogger entry (FR-008, FR-010).
-- [ ] T008 [US3] Implement `plugins/corex-blocks/src/DynamicBlockRegistrar.php` — `register(array $block)` calls `register_block_type($dir, $args)`; if `$dir/Renderer.php` exists, `$args['render_callback']` resolves the renderer from the container (try/catch → ''+log). Expose the callback factory as a unit-testable method.
-- [ ] T009 [US3] Guard gate (wp-guard on register_block_type usage; render output escaped).
+- [X] T007 [P] [US3] Write failing `tests/Unit/Blocks/RenderDelegationTest.php`: the render closure resolves a fake `BlockRenderer` from a real Container and returns its markup; a throwing renderer yields '' and a BootLogger entry (FR-008, FR-010).
+- [X] T008 [US3] Implement `plugins/corex-blocks/src/DynamicBlockRegistrar.php` — `register(array $block)` calls `register_block_type($dir, $args)`; if `$dir/Renderer.php` exists, `$args['render_callback']` resolves the renderer from the container (try/catch → ''+log). Expose the callback factory as a unit-testable method.
+- [X] T009 [US3] Guard gate (wp-guard on register_block_type usage; render output escaped).
 
 **Checkpoint**: dynamic blocks render thin + injected.
 
@@ -70,10 +70,10 @@ the container and returns its output; a renderer that throws → empty string + 
 **Independent Test**: a `RepositoryConnector` over a stubbed Repository → `value(field)` returns the
 escaped field value; a missing record/field → safe fallback.
 
-- [ ] T010 [P] [US4] Write failing `tests/Unit/Blocks/RepositoryConnectorTest.php`: `value()` returns the Repository field (escaped); a missing record/field → fallback, not error (FR-012, FR-013).
-- [ ] T011 [US4] Implement `plugins/corex-blocks/src/Connectors/RepositoryConnector.php` (abstract; field resolution via the injected Repository, escaped + empty-safe).
-- [ ] T012 [US4] Implement `plugins/corex-blocks/src/Connectors/ConnectorRegistry.php` — `register(Connector ...)` → `register_block_bindings_source($name, ['label'=>…, 'get_value_callback'=>…])` (FR-011, FR-019).
-- [ ] T013 [US4] Guard gate (wp-guard on register_block_bindings_source; values escaped).
+- [X] T010 [P] [US4] Write failing `tests/Unit/Blocks/RepositoryConnectorTest.php`: `value()` returns the Repository field (escaped); a missing record/field → fallback, not error (FR-012, FR-013).
+- [X] T011 [US4] Implement `plugins/corex-blocks/src/Connectors/RepositoryConnector.php` (abstract; field resolution via the injected Repository, escaped + empty-safe).
+- [X] T012 [US4] Implement `plugins/corex-blocks/src/Connectors/ConnectorRegistry.php` — `register(Connector ...)` → `register_block_bindings_source($name, ['label'=>…, 'get_value_callback'=>…])` (FR-011, FR-019).
+- [X] T013 [US4] Guard gate (wp-guard on register_block_bindings_source; values escaped).
 
 **Checkpoint**: connectors registrable; values Repository-sourced + escaped.
 
