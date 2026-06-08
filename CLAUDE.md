@@ -42,7 +42,10 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-**Active plan:** `specs/006-theme-tokens/plan.md` (theme.json token source + brand.json deep-merge
+**Active plan:** `specs/007-forms-engine/plan.md` (Form schema + headless Validator + shared
+EventDispatcher seam in corex-core + secured REST submit lifecycle reusing the spec-005 middleware
++ email/store listeners + FSE form block; new plugin corex-forms). Built on specs 001–006. Earlier:
+**Active plan (prev):** `specs/006-theme-tokens/plan.md` (theme.json token source + brand.json deep-merge
 resolver via wp_theme_json_data_theme + style variations; theme is a skin). Built on specs 001–005.
 Earlier:
 **Active plan (prev):** `specs/005-middleware-security/plan.md` (declarative middleware pipeline + nonce/auth/
