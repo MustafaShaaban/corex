@@ -34,12 +34,12 @@ guard on every src class file.
 
 ## Phase 4: User Story 2 — The four core middleware (Priority: P1)
 
-- [ ] T008 [P] [US2] Write failing `tests/Unit/Security/MiddlewareTest.php`: Nonce (non-GET no/invalid → reject, valid → pass), Capability (current_user_can), Throttle (transient count vs limit; reset after window), Sanitize (handler sees only cleaned shape) — WP funcs stubbed (FR-007–FR-010, SC-002).
-- [ ] T009 [P] [US2] `Http/Middleware/NonceMiddleware.php` (wp_verify_nonce; GET passes; configurable methods).
-- [ ] T010 [P] [US2] `Http/Middleware/CapabilityMiddleware.php` (current_user_can($cap)).
-- [ ] T011 [P] [US2] `Http/Middleware/ThrottleMiddleware.php` (get_transient/set_transient; config limit/window).
-- [ ] T012 [P] [US2] `Http/Middleware/SanitizeMiddleware.php` (reduce input to expected shape via WP sanitizers).
-- [ ] T013 [US2] Guard gate (wp-guard: nonce/cap/transient/sanitizer usage).
+- [X] T008 [P] [US2] Write failing `tests/Unit/Security/MiddlewareTest.php`: Nonce (non-GET no/invalid → reject, valid → pass), Capability (current_user_can), Throttle (transient count vs limit; reset after window), Sanitize (handler sees only cleaned shape) — WP funcs stubbed (FR-007–FR-010, SC-002).
+- [X] T009 [P] [US2] `Http/Middleware/NonceMiddleware.php` (wp_verify_nonce; GET passes; configurable methods).
+- [X] T010 [P] [US2] `Http/Middleware/CapabilityMiddleware.php` (current_user_can($cap)).
+- [X] T011 [P] [US2] `Http/Middleware/ThrottleMiddleware.php` (get_transient/set_transient; config limit/window).
+- [X] T012 [P] [US2] `Http/Middleware/SanitizeMiddleware.php` (reduce input to expected shape via WP sanitizers).
+- [X] T013 [US2] Guard gate (wp-guard: nonce/cap/transient/sanitizer usage).
 
 ## Phase 5: User Story 3 — Declarative resolution (Priority: P2)
 
