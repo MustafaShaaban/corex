@@ -42,7 +42,10 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-**Active plan:** `specs/003-cli-generators/plan.md` (wp corex make:* stub generators). Built on
+**Active plan:** `specs/004-block-engine/plan.md` (corex-blocks: discovery + conditional assets +
+container-resolved render + Block-Bindings connectors; server-rendered, no JS build). Built on
+specs 001–003. Earlier (superseded):
+**Active plan (prev):** `specs/003-cli-generators/plan.md` (wp corex make:* stub generators). Built on
 specs 001 (container/providers/Config) + 002 (Model/Repository/Service/Controller shapes it
 scaffolds). WP-CLI is optional (`class_exists('WP_CLI')` gate); the generator engine (render+write) is
 pure/headless-testable, separate from the WP-CLI command layer. Earlier plans (superseded):
