@@ -24,7 +24,7 @@ failing test (TDD). Pure logic is unit-tested headlessly (Pest + Brain Monkey); 
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Create `plugins/corex-core/config/query.php` returning `['max' => 500]` (ABSPATH guard + `return`); create `tests/Unit/Data/` and `tests/Integration/Data/` directories.
+- [X] T001 [P] Create `plugins/corex-core/config/query.php` returning `['max' => 500]` (ABSPATH guard + `return`); create `tests/Unit/Data/` and `tests/Integration/Data/` directories.
 
 ---
 
@@ -32,8 +32,8 @@ failing test (TDD). Pure logic is unit-tested headlessly (Pest + Brain Monkey); 
 
 **Purpose**: the read-only Model value object — used by US1, US3, US4.
 
-- [ ] T002 [P] Write failing `tests/Unit/Data/ModelTest.php`: typed attribute access via `casts()` (int/bool/date/array); `get()` returns a default for an absent attribute; `id()`; read-only (no setter); hydratable from a plain array with no DB (FR-001–FR-003).
-- [ ] T003 Implement `plugins/corex-core/src/Models/Model.php` — abstract read-only value object: `__construct(array)`, `get()`, `id()`, abstract `postType()`/`fields()`, default `relations()`/`casts()`; cast on read. No setters, no `save()`.
+- [X] T002 [P] Write failing `tests/Unit/Data/ModelTest.php`: typed attribute access via `casts()` (int/bool/date/array); `get()` returns a default for an absent attribute; `id()`; read-only (no setter); hydratable from a plain array with no DB (FR-001–FR-003).
+- [X] T003 Implement `plugins/corex-core/src/Models/Model.php` — abstract read-only value object: `__construct(array)`, `get()`, `id()`, abstract `postType()`/`fields()`, default `relations()`/`casts()`; cast on read. No setters, no `save()`.
 
 **Checkpoint**: Model ready; user stories can begin.
 
@@ -50,12 +50,12 @@ field returns the caller default.
 
 > Independent of US1/US3 (operates on entity ids, not Models).
 
-- [ ] T004 [P] [US2] Write failing `tests/Unit/Data/FieldDriverTest.php`: `MetaFieldDriver` get/set via stubbed `get_post_meta`/`update_post_meta` (empty → default); `AcfFieldDriver` via stubbed `get_field`/`update_field` (null → default); `FieldResolver` returns Acf driver when `get_field`+`update_field` exist, else Meta (FR-009–FR-012, SC-002).
-- [ ] T005 [P] [US2] `plugins/corex-core/src/Fields/FieldDriver.php` — interface `get(int,string,mixed=null)` / `set(int,string,mixed)`.
-- [ ] T006 [US2] `plugins/corex-core/src/Fields/MetaFieldDriver.php` — native meta; empty → caller default (depends on T005).
-- [ ] T007 [US2] `plugins/corex-core/src/Fields/AcfFieldDriver.php` — `get_field`/`update_field`; null → caller default (depends on T005).
-- [ ] T008 [US2] `plugins/corex-core/src/Fields/FieldResolver.php` — select driver via `function_exists('get_field') && function_exists('update_field')` (FR-010).
-- [ ] T009 [US2] Guard gate (clean-code + wp-guard + test-guard) on the US2 diff; validate quickstart Scenario 2.
+- [X] T004 [P] [US2] Write failing `tests/Unit/Data/FieldDriverTest.php`: `MetaFieldDriver` get/set via stubbed `get_post_meta`/`update_post_meta` (empty → default); `AcfFieldDriver` via stubbed `get_field`/`update_field` (null → default); `FieldResolver` returns Acf driver when `get_field`+`update_field` exist, else Meta (FR-009–FR-012, SC-002).
+- [X] T005 [P] [US2] `plugins/corex-core/src/Fields/FieldDriver.php` — interface `get(int,string,mixed=null)` / `set(int,string,mixed)`.
+- [X] T006 [US2] `plugins/corex-core/src/Fields/MetaFieldDriver.php` — native meta; empty → caller default (depends on T005).
+- [X] T007 [US2] `plugins/corex-core/src/Fields/AcfFieldDriver.php` — `get_field`/`update_field`; null → caller default (depends on T005).
+- [X] T008 [US2] `plugins/corex-core/src/Fields/FieldResolver.php` — select driver via `function_exists('get_field') && function_exists('update_field')` (FR-010).
+- [X] T009 [US2] Guard gate (clean-code + wp-guard + test-guard) on the US2 diff; validate quickstart Scenario 2.
 
 **Checkpoint**: field access works with and without ACF.
 
