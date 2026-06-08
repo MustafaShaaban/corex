@@ -11,7 +11,40 @@ declare(strict_types=1);
 
 namespace Corex\Tests\Fixtures\Data;
 
+use Corex\Fields\FieldDriver;
 use Corex\Models\Model;
+use Corex\Repositories\Hydrator;
+use Corex\Repositories\PostRepository;
+
+/** In-memory field driver for repository tests (real collaborator, no WP). */
+final class FakeFieldDriver implements FieldDriver
+{
+    /** @var array<int, array<string, mixed>> */
+    public array $store = [];
+
+    public function get(int $entityId, string $key, mixed $default = null): mixed
+    {
+        return $this->store[$entityId][$key] ?? $default;
+    }
+
+    public function set(int $entityId, string $key, mixed $value): void
+    {
+        $this->store[$entityId][$key] = $value;
+    }
+}
+
+final class JobRepository extends PostRepository
+{
+    public static function make(FakeFieldDriver $fields): self
+    {
+        return new self($fields, new Hydrator($fields));
+    }
+
+    protected function model(): string
+    {
+        return Job::class;
+    }
+}
 
 final class Company extends Model
 {

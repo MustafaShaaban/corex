@@ -71,11 +71,11 @@ typed Model with core + declared fields; a missing id returns `null`.
 
 > Depends on Model (Phase 2) + Field driver (US2, for declared-field hydration).
 
-- [ ] T010 [P] [US1] Write failing `tests/Unit/Data/PostRepositoryTest.php`: `find()` hydrates a Model (core post fields + declared fields via the field driver) or returns `null` when absent (FR-005); `create`/`update`/`delete` via stubbed `wp_insert_post`/`wp_update_post`/`wp_delete_post` return the Model/bool (FR-006); the repo is the only data caller (FR-004).
-- [ ] T011 [P] [US1] `plugins/corex-core/src/Repositories/RepositoryInterface.php` — `find`/`query`/`create`/`update`/`delete` (contract C2).
-- [ ] T012 [US1] `plugins/corex-core/src/Repositories/Hydrator.php` — turn a `WP_Post`/array + field driver into a Model (shared by repository and executor; DRY) (depends on T003, US2).
-- [ ] T013 [US1] `plugins/corex-core/src/Repositories/PostRepository.php` — abstract post-backed repo (Model class + post type); implements the interface; sole caller of WP data functions; uses the Hydrator + field driver (depends on T011, T012).
-- [ ] T014 [US1] Guard gate on the US1 diff; validate quickstart Scenario 1.
+- [X] T010 [P] [US1] Write failing `tests/Unit/Data/PostRepositoryTest.php`: `find()` hydrates a Model (core post fields + declared fields via the field driver) or returns `null` when absent (FR-005); `create`/`update`/`delete` via stubbed `wp_insert_post`/`wp_update_post`/`wp_delete_post` return the Model/bool (FR-006); the repo is the only data caller (FR-004).
+- [X] T011 [P] [US1] `plugins/corex-core/src/Repositories/RepositoryInterface.php` — `find`/`query`/`create`/`update`/`delete` (contract C2).
+- [X] T012 [US1] `plugins/corex-core/src/Repositories/Hydrator.php` — turn a `WP_Post`/array + field driver into a Model (shared by repository and executor; DRY) (depends on T003, US2).
+- [X] T013 [US1] `plugins/corex-core/src/Repositories/PostRepository.php` — abstract post-backed repo (Model class + post type); implements the interface; sole caller of WP data functions; uses the Hydrator + field driver (depends on T011, T012).
+- [X] T014 [US1] Guard gate on the US1 diff; validate quickstart Scenario 1.
 
 **Checkpoint**: entities read/written as typed Models through the Repository.
 
