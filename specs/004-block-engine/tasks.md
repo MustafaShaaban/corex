@@ -22,14 +22,14 @@ connector value) are unit-tested; WP registration + the rendered example are int
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Create `tests/Unit/Blocks/` and `tests/Integration/Blocks/`; confirm `Corex\Blocks` → `plugins/corex-blocks/src` autoload resolves.
+- [X] T001 [P] Create `tests/Unit/Blocks/` and `tests/Integration/Blocks/`; confirm `Corex\Blocks` → `plugins/corex-blocks/src` autoload resolves.
 
 ---
 
 ## Phase 2: Foundational
 
-- [ ] T002 [P] `plugins/corex-blocks/src/BlockRenderer.php` — interface `render(array $attributes, string $content, object $block): string`.
-- [ ] T003 [P] `plugins/corex-blocks/src/Connectors/Connector.php` — interface `name(): string`, `value(string $field, array $args): mixed`.
+- [X] T002 [P] `plugins/corex-blocks/src/BlockRenderer.php` — interface `render(array $attributes, string $content, object $block): string`.
+- [X] T003 [P] `plugins/corex-blocks/src/Connectors/Connector.php` — interface `name(): string`, `value(string $field, array $args): mixed`.
 
 ---
 
@@ -40,9 +40,9 @@ connector value) are unit-tested; WP registration + the rendered example are int
 **Independent Test**: a temp dir with a valid block, a non-block folder, a malformed `block.json`, and a
 duplicate name → discover returns only the valid, de-duped blocks; malformed logged; empty set ok.
 
-- [ ] T004 [P] [US1] Write failing `tests/Unit/Blocks/BlockMapTest.php`: `discover()` returns valid block folders (dir/name/metadata); skips non-blocks; logs+skips malformed `block.json`; de-dupes by name; empty set ok (FR-001–FR-004).
-- [ ] T005 [US1] Implement `plugins/corex-blocks/src/BlockMap.php` (scan one folder level, parse+validate `block.json`, de-dupe, log malformed via BootLogger).
-- [ ] T006 [US1] Guard gate; (integration registration is proven with the example block in Phase 6).
+- [X] T004 [P] [US1] Write failing `tests/Unit/Blocks/BlockMapTest.php`: `discover()` returns valid block folders (dir/name/metadata); skips non-blocks; logs+skips malformed `block.json`; de-dupes by name; empty set ok (FR-001–FR-004).
+- [X] T005 [US1] Implement `plugins/corex-blocks/src/BlockMap.php` (scan one folder level, parse+validate `block.json`, de-dupe, log malformed via BootLogger).
+- [X] T006 [US1] Guard gate; (integration registration is proven with the example block in Phase 6).
 
 **Checkpoint**: MVP — blocks discovered by convention.
 
