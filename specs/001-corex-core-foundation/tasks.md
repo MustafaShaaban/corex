@@ -156,11 +156,11 @@ ignored; an empty `Controllers/` still boots.
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T034 [P] Write `plugins/corex-core/README.md` + `docs/foundation.md`: provider-authoring guide, container/config/hooks usage, the `extra.corex.providers` add-on seam (run docs-guard).
-- [ ] T035 [P] Add `.env.example` entries for the `app.*` keys the foundation reads; confirm `.env` is gitignored.
-- [ ] T036 Run full `quickstart.md` validation (all 6 scenarios) against `./wp`; confirm SC-001/SC-006/SC-008 in a real install.
-- [ ] T037 [P] Final guard pass (clean-code-guard + wp-guard + test-guard) on the entire feature diff; confirm the headless unit suite is green with all optional plugins absent (SC-007).
-- [ ] T038 Update `PROGRESS.md` (Phase 5 done) and `DECISIONS.md` (any new choices); verify the Definition-of-Done checklist for the feature.
+- [X] T034 [P] Write `plugins/corex-core/README.md` + `docs/foundation.md`: provider-authoring guide, container/config/hooks usage, the `extra.corex.providers` add-on seam (run docs-guard).
+- [X] T035 [P] Add `.env.example` entries for the `app.*` keys the foundation reads; confirm `.env` is gitignored.
+- [X] T036 Run full `quickstart.md` validation (all 6 scenarios) against `./wp`; confirm SC-001/SC-006/SC-008 in a real install.
+- [X] T037 [P] Final guard pass (clean-code-guard + wp-guard + test-guard) on the entire feature diff; confirm the headless unit suite is green with all optional plugins absent (SC-007).
+- [X] T038 Update `PROGRESS.md` (Phase 5 done) and `DECISIONS.md` (any new choices); verify the Definition-of-Done checklist for the feature.
 
 ---
 

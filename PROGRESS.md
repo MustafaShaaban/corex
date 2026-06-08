@@ -32,6 +32,17 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
+- (nothing — spec 001 corex-core foundation COMPLETE; spec 002 not yet started)
+
+> **✅ SPEC 001 — corex-core foundation — COMPLETE (2026-06-08).** All 38 tasks done; US1–US4 +
+> Polish. 46 tests green (42 unit headless + 4 integration on real `./wp`); site HTTP 200. Guard Gate
+> clean on every increment. Definition of Done met: constitution-compliant, Pest tests green, guards
+> clean, admin-notice UI i18n/escaped, docs (`corex-core/README.md`, `.env.example`) accurate
+> (docs-guard clean), PROGRESS + DECISIONS (#19–21) updated. Commits: `c7acfca` (baseline+US1a),
+> `3aad291` (US1b), `9ac5b4a` (US2), `56b92c3` (US3), `f46d022` (US4). Delivered: `Boot` (self-init on
+> plugins_loaded), custom PSR-11 `Container`, Service-Provider lifecycle, layered `Config`,
+> `HookRegistry`, `ControllerMap`. The detailed build log for spec 001 is below.
+
 - **PHASE 5 — corex-core foundation.** Spec written: `specs/001-corex-core-foundation/spec.md`
   (Draft). Quality checklist passed (`checklists/requirements.md`). 5 prioritized developer
   journeys: P1 Boot+Container, P1 Config, P2 HookRegistry, P3 ControllerMap; 22 FRs, 7 success
@@ -101,16 +112,16 @@ not leave broken code. The last completed unit of work is the Phase 4 skeleton +
 bootstrap; the next unit is the Phase 5 corex-core foundation (not yet begun).
 
 ## Next (recommended order)
-1. **corex-core foundation** — `/speckit-specify` → `/clarify` → `/plan` → `/tasks` →
-   `/implement`, ONE task at a time: Boot (self-init on `plugins_loaded`), PSR-11 DI Container,
-   ControllerMap auto-discovery, HookRegistry, Config (.env → options → defaults). [PHASE 5]
-   After each task: run wp-guard + clean-code-guard, write Pest tests, update PROGRESS/DECISIONS,
-   then STOP for review.
+1. **SPEC 002 — Model + Field driver (ACF-optional) + QueryBuilder** [PHASE 6] — the next module per
+   COREX-SPECKIT-START "The rhythm from here". Spec Kit flow: `/speckit-specify` → `/clarify` →
+   `/plan` → `/tasks` → `/implement`, ONE task at a time with the Guard Gate + Pest tests, building
+   on the corex-core foundation (providers, container, config). Models as value objects; a Field
+   driver behind an interface (native meta vs ACF, Principle IX — ACF never a hard dependency); a
+   fluent QueryBuilder wrapper (not a full ORM, FRAMEWORK §7).
 
-Module build order after the foundation (COREX-SPECKIT-START.md "The rhythm from here"):
-Model + Field driver (ACF-optional) + QueryBuilder → CLI generators → corex-blocks →
-Middleware + Security → theme + design tokens → Forms → Abilities/MCP → Corex Mail → other
-add-ons (profile-manager, woo) → setup wizard + demo content.
+Module build order after Model/QueryBuilder (COREX-SPECKIT-START.md "The rhythm from here"):
+CLI generators → corex-blocks → Middleware + Security → theme + design tokens → Forms →
+Abilities/MCP → Corex Mail → other add-ons (profile-manager, woo) → setup wizard + demo content.
 
 ## Environment quick reference
 - **Site:** http://corex.local · **Admin:** http://corex.local/wp-admin/ (`admin` / `123456`)
