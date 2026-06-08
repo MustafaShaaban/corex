@@ -11,6 +11,7 @@ namespace Corex\Foundation;
 defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
+use Corex\Hooks\HookRegistry;
 use Corex\Support\BootLogger;
 use Throwable;
 
@@ -29,6 +30,7 @@ final class ProviderRepository
     public function __construct(
         private readonly ContainerInterface $container,
         private readonly BootLogger $logger,
+        private readonly HookRegistry $hooks,
     ) {
     }
 
@@ -80,9 +82,17 @@ final class ProviderRepository
     {
         try {
             $provider->boot();
+            $this->wireSubscribers($provider);
         } catch (Throwable $e) {
             // Resilient boot: a broken provider is logged, never fatal (FR-023).
             $this->logger->error(sprintf('Provider [%s] failed to boot: %s', $provider::class, $e->getMessage()));
+        }
+    }
+
+    private function wireSubscribers(ServiceProvider $provider): void
+    {
+        foreach ($provider->subscribers() as $subscriberClass) {
+            $this->hooks->register($subscriberClass);
         }
     }
 }

@@ -8,14 +8,17 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Functions;
 use Corex\Container\Container;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\Application;
 use Corex\Foundation\ProviderRepository;
+use Corex\Hooks\HookRegistry;
 use Corex\Support\BootLogger;
 use Corex\Tests\Fixtures\Providers\ProviderA;
 use Corex\Tests\Fixtures\Providers\ProviderB;
 use Corex\Tests\Fixtures\Providers\Recorder;
+use Corex\Tests\Fixtures\Providers\SubscribingProvider;
 use Corex\Tests\Fixtures\Providers\ThrowingProvider;
 
 require_once __DIR__ . '/ProviderFixtures.php';
@@ -31,7 +34,7 @@ function makeRepository(?BootLogger $logger = null): array
     $container->instance(ContainerInterface::class, $container);
     $logger ??= new BootLogger(debug: false);
 
-    return [new ProviderRepository($container, $logger), $logger];
+    return [new ProviderRepository($container, $logger, new HookRegistry($container)), $logger];
 }
 
 it('registers all providers before booting any of them', function () {
@@ -67,4 +70,10 @@ it('boots the application once and exposes its container', function () {
 
     expect(array_filter(Recorder::$calls, fn ($c) => $c === 'A::register'))->toHaveCount(1)
         ->and($app->container())->toBeInstanceOf(Container::class);
+});
+
+it('wires a provider hook subscribers during the boot pass', function () {
+    Functions\expect('add_filter')->once()->with('init', \Mockery::type('array'), 10, 1);
+
+    (new Application(debug: false, providers: [SubscribingProvider::class]))->boot();
 });

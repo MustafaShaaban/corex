@@ -12,7 +12,10 @@ declare(strict_types=1);
 namespace Corex\Tests\Fixtures\Providers;
 
 use Corex\Foundation\ServiceProvider;
+use Corex\Tests\Fixtures\Hooks\ActionSubscriber;
 use RuntimeException;
+
+require_once __DIR__ . '/HookFixtures.php';
 
 final class Recorder
 {
@@ -58,5 +61,17 @@ final class ThrowingProvider extends ServiceProvider
     public function register(): void
     {
         throw new RuntimeException('register boom');
+    }
+}
+
+final class SubscribingProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+    }
+
+    public function subscribers(): array
+    {
+        return [ActionSubscriber::class];
     }
 }

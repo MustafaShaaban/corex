@@ -117,14 +117,14 @@ mapped methods; the subscriber is container-resolved; double registration does n
 
 ### Tests for User Story 3 (write first, MUST FAIL)
 
-- [ ] T025 [P] [US3] `tests/Unit/Foundation/HookRegistryTest.php`: mapped action runs its method; filter runs at declared priority with declared args (FR-015); subscriber resolved from container (FR-016); same subscriber wired twice → single registration (FR-017, SC-004).
+- [X] T025 [P] [US3] `tests/Unit/Foundation/HookRegistryTest.php`: mapped action runs its method; filter runs at declared priority with declared args (FR-015); subscriber resolved from container (FR-016); same subscriber wired twice → single registration (FR-017, SC-004).
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] `plugins/corex-core/src/Hooks/SubscribesToHooks.php` — interface `hooks(): array` (contract C4 shape).
-- [ ] T027 [US3] `plugins/corex-core/src/Hooks/HookRegistry.php` — resolve subscriber from container, wire `add_action`/`add_filter` per entry (default priority 10 / args 1), dedupe by `FQCN::method@hook` (depends on US1, T026).
-- [ ] T028 [US3] Wire `ServiceProvider::subscribers()` into `HookRegistry` during the Application boot pass (depends on T027, T014).
-- [ ] T029 [US3] Guard gate on the US3 diff; validate quickstart Scenario 5.
+- [X] T026 [P] [US3] `plugins/corex-core/src/Hooks/SubscribesToHooks.php` — interface `hooks(): array` (contract C4 shape).
+- [X] T027 [US3] `plugins/corex-core/src/Hooks/HookRegistry.php` — resolve subscriber from container, wire `add_action`/`add_filter` per entry (default priority 10 / args 1), dedupe by `FQCN::method@hook` (depends on US1, T026).
+- [X] T028 [US3] Wire `ServiceProvider::subscribers()` into `HookRegistry` during the Application boot pass (depends on T027, T014).
+- [X] T029 [US3] Guard gate on the US3 diff; validate quickstart Scenario 5.
 
 **Checkpoint**: modules can attach behavior declaratively.
 

@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Container\Container;
 use Corex\Container\ContainerInterface;
+use Corex\Hooks\HookRegistry;
 use Corex\Support\BootLogger;
 
 /**
@@ -51,10 +52,12 @@ final class Application
         $this->booted = true;
 
         $logger = new BootLogger($this->debug);
+        $hooks = new HookRegistry($this->container);
         $this->container->instance(ContainerInterface::class, $this->container);
         $this->container->instance(BootLogger::class, $logger);
+        $this->container->instance(HookRegistry::class, $hooks);
 
-        $repository = new ProviderRepository($this->container, $logger);
+        $repository = new ProviderRepository($this->container, $logger, $hooks);
         $repository->load($this->providers);
     }
 

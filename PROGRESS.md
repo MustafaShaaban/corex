@@ -86,7 +86,13 @@
   `config/app.php`), registered in `Boot`; `Config` facade. TDD: 10 ConfigTest cases (precedence
   SC-003, fallback, absent, malformed) + integration `Config::get`=='Corex' on real WP. Unit 32 /
   integration 3 green; Guard Gate clean. `.env` at `dirname(COREX_CORE_PATH,2)`. `.gitattributes` added.
-  **Next: US3 (T025–T029) — declarative HookRegistry.**
+  **US3 DONE (T025–T029, 2026-06-08) — declarative HookRegistry:** `Corex\Hooks\` SubscribesToHooks
+  (`hooks(): array`) + HookRegistry (resolves subscriber from container, `add_filter` for actions +
+  filters, normalizes `hook=>method | [method,priority,args]`, dedups by `class::method@hook`).
+  Wired via `ServiceProvider::subscribers()` (re-added, now consumed) → `ProviderRepository`
+  `wireSubscribers()` in the boot pass; `Application` builds+binds the registry. TDD: 4 HookRegistry
+  tests + a provider-wiring test. Unit 37 / integration 3 green; Guard Gate clean.
+  **Next: US4 (T030–T033) — controller auto-discovery (ControllerMap, PSR-4 scan).**
 
 ## Interruption note
 The environment gap (no WordPress core) was discovered **between Phase 4 and Phase 5**, before any

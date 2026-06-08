@@ -36,4 +36,14 @@ abstract class ServiceProvider
     public function boot(): void
     {
     }
+
+    /**
+     * Hook-subscriber classes this provider contributes; wired during the boot pass.
+     *
+     * @return list<class-string<\Corex\Hooks\SubscribesToHooks>>
+     */
+    public function subscribers(): array
+    {
+        return [];
+    }
 }
