@@ -22,6 +22,14 @@ dependency — the framework runs fully without it; the commands simply do not r
 absent. The generator engine (render a stub → write a file) is separated from the WP-CLI layer so it is
 unit-testable headlessly. The "users" are Corex application developers.
 
+## Clarifications
+
+### Session 2026-06-08
+
+- Q: How does a generator resolve the output base path, namespace, and prefix? → A: From the Config engine (`app.*`, shipped defaults, set during `wp corex init`); the artifact's conventional sub-path (`Models/`, `Repositories/`, `Controllers/`, `Services/`) is appended to the base.
+- Q: What placeholder format do stubs use? → A: Double-brace, spaced: `{{ class }}`, `{{ namespace }}`, `{{ prefix }}`, etc. An unprovided placeholder referenced by a stub is an error (FR-003).
+- Q: Does `make:model` accept `--cpt`/`--rest`/`--ability` style flags in v1? → A: No — v1 scaffolds the class skeleton only; those flags and the other generators (block/migration/seeder/…) are out of scope for spec 003.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Scaffold a class from a stub (Priority: P1)
@@ -142,10 +150,12 @@ registered; exercise the generator engine directly (no WP-CLI) and confirm it re
 
 **Generator engine**
 
-- **FR-001**: The system MUST render a stub by substituting named placeholders (at minimum: class name,
-  namespace, project prefix, and artifact-derived values such as a post type) with the requested values.
-- **FR-002**: The system MUST write the rendered result to the conventional location for the artifact
-  type, creating the target directory if it does not exist.
+- **FR-001**: The system MUST render a stub by substituting named **double-brace placeholders**
+  (`{{ class }}`, `{{ namespace }}`, `{{ prefix }}`, and artifact-derived values such as a post type)
+  with the requested values.
+- **FR-002**: The system MUST resolve the output base path, namespace, and prefix from the Config engine
+  (set during `wp corex init`) and append the artifact's conventional sub-path, writing the rendered
+  result there and creating the target directory if it does not exist.
 - **FR-003**: A rendered file MUST contain no remaining placeholder tokens; an unprovided placeholder
   referenced by a stub MUST be reported as an error, not written.
 - **FR-004**: The generator engine (render + path resolution + write) MUST be separable from the CLI

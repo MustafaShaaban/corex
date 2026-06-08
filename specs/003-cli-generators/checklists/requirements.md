@@ -35,8 +35,8 @@
   journeys (consistent with specs 001–002).
 - WP-CLI is named because it is the *subject* of a constitutional requirement (Principle IX: optional
   runtime, not a hard dependency) — it constrains behavior, not implementation choice.
-- Decisions deferred to `/speckit-clarify` (none block planning; noted in Assumptions): (a) how the
-  generator resolves the output base path + namespace/prefix (config vs flags vs the active module),
-  (b) the placeholder delimiter/format, (c) whether `make:model` accepts a related `--cpt` style flag in
-  v1 or strictly scaffolds the class.
+- Resolved in the 2026-06-08 `/speckit-clarify` session (recommended options selected; see spec
+  Clarifications): output base path + namespace + prefix come from the Config engine (FR-002);
+  placeholders are double-brace `{{ ... }}` (FR-001); `make:model` v1 scaffolds the class only (no
+  `--cpt/--rest/--ability`). No `[NEEDS CLARIFICATION]` markers.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
