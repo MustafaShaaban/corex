@@ -32,6 +32,15 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
+- (nothing — spec 005 Middleware+Security COMPLETE; spec 006 not yet started)
+
+> **✅ SPEC 005 — Middleware + Security — COMPLETE (2026-06-08).** All 22 tasks; US1–US4 + polish.
+> 101 unit + 15 integration green; site HTTP 200. Principle VII delivered: onion `Pipeline` (value
+> short-circuit; throw→fail-closed reject), four middleware (Nonce/Capability/Throttle/Sanitize),
+> `MiddlewareResolver` (alias:param, unknown→RejectingMiddleware), `SecurityModule` (aliases
+> nonce/auth/throttle/sanitize), wired into Boot. WP security fns at the middleware boundary;
+> fully headless-testable. Commits: f7dc649 (US1), f84ed36 (US2), fdc4820 (US3). Build log below.
+
 - **SPEC 005 — Middleware + Security.** Spec written: `specs/005-middleware-security/spec.md`
   (Draft); checklist passed. 4 developer journeys (P1 pipeline, P1 four core middleware, P2 declarative
   attachment, P2 SecurityModule); 18 FRs, 6 SCs. `/speckit-clarify` done (recommended): Response value short-circuit (throw→reject fail-closed); nonce gates non-GET; throttle transient 60/60s. `/speckit-plan` done (Constitution PASS): onion `Pipeline`, `MiddlewareResolver` (alias:param, unknown→fail-closed), four middleware, `SecurityModule`; all headless-testable. `/speckit-tasks` done: 22 tasks (Setup → interface/Request/Response → US1 Pipeline → US2 four middleware → US3 resolver → US4 SecurityModule → polish). Next: `/speckit-implement`.
@@ -167,7 +176,9 @@ not leave broken code. The last completed unit of work is the Phase 4 skeleton +
 bootstrap; the next unit is the Phase 5 corex-core foundation (not yet begun).
 
 ## Next (recommended order)
-1. **SPEC 005 — Middleware + Security** [PHASE 9] — next per COREX-SPECKIT-START. Declarative route middleware (nonce/auth/throttle/sanitize) + the SecurityModule; controllers declare middleware, applied automatically (Principle VII). Built on corex-core + data layer. _(superseded note for 004 below)_
+1. **SPEC 006 — Theme + design tokens** [PHASE 10] — next per COREX-SPECKIT-START. The FSE block theme: theme.json design tokens (single source of truth, exposed as CSS variables), per-site brand.json runtime overrides, style variations; presentation only (Principle I/V). _(superseded note for 005 below)_
+
+<!-- prev --> **SPEC 005 — Middleware + Security** [PHASE 9] — next per COREX-SPECKIT-START. Declarative route middleware (nonce/auth/throttle/sanitize) + the SecurityModule; controllers declare middleware, applied automatically (Principle VII). Built on corex-core + data layer. _(superseded note for 004 below)_
 
 <!-- prev --> **SPEC 004 — corex-blocks (block engine)** [PHASE 8] — next per COREX-SPECKIT-START. FSE blocks with auto-discovery, conditional assets (block.json), Interactivity API, model→block connectors. Built on corex-core + data layer. _(superseded planning note for 003 below)_
 

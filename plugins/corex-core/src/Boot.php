@@ -15,6 +15,7 @@ use Corex\Cli\CliServiceProvider;
 use Corex\Foundation\Application;
 use Corex\Foundation\CoreServiceProvider;
 use Corex\Foundation\DataServiceProvider;
+use Corex\Security\SecurityModule;
 use RuntimeException;
 
 /**
@@ -49,6 +50,7 @@ final class Boot
             DataServiceProvider::class,
             CliServiceProvider::class,
             BlocksServiceProvider::class,
+            SecurityModule::class,
         ]);
         self::$app->boot();
     }

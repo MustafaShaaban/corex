@@ -49,15 +49,15 @@ guard on every src class file.
 
 ## Phase 6: User Story 4 — SecurityModule (Priority: P2)
 
-- [ ] T017 [US4] `Security/SecurityModule.php` — bind alias factories `nonce`/`auth`/`throttle`/`sanitize`, `MiddlewareResolver`, `Pipeline`; add to `Boot`'s provider list.
-- [ ] T018 [P] [US4] Write `tests/Unit/Security/SecurityModuleTest.php` or extend resolver test: each standard alias resolves to its middleware (FR-016, SC-005). (Headless: build the resolver with the alias bindings.)
-- [ ] T019 [US4] Guard gate.
+- [X] T017 [US4] `Security/SecurityModule.php` — bind alias factories `nonce`/`auth`/`throttle`/`sanitize`, `MiddlewareResolver`, `Pipeline`; add to `Boot`'s provider list.
+- [X] T018 [P] [US4] Write `tests/Unit/Security/SecurityModuleTest.php` or extend resolver test: each standard alias resolves to its middleware (FR-016, SC-005). (Headless: build the resolver with the alias bindings.)
+- [X] T019 [US4] Guard gate.
 
 ## Phase 7: Polish
 
-- [ ] T020 [P] Update `plugins/corex-core/README.md` with a middleware/security section; docs-guard.
-- [ ] T021 Final guard pass; confirm the headless unit suite passes with no optional plugins (SC-006); site still boots.
-- [ ] T022 Update `PROGRESS.md` + `DECISIONS.md`; verify Definition of Done.
+- [X] T020 [P] Update `plugins/corex-core/README.md` with a middleware/security section; docs-guard.
+- [X] T021 Final guard pass; confirm the headless unit suite passes with no optional plugins (SC-006); site still boots.
+- [X] T022 Update `PROGRESS.md` + `DECISIONS.md`; verify Definition of Done.
 
 ---
 

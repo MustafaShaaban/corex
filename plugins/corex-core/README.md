@@ -242,6 +242,32 @@ A site editor binds a core block attribute to `corex/career` via the WordPress B
 value is sourced through the Repository (the only data-source layer) and escaped on output. Block
 styling uses `theme.json` CSS variables and logical properties (RTL-correct by default).
 
+## Middleware & security
+
+Security is declarative — controllers route and validate; middleware enforce. A controller declares the
+middleware that protect its actions; the framework runs them automatically before the handler:
+
+```php
+// declared on a controller/route:
+public function middleware(): array { return ['nonce', 'auth:manage_options', 'throttle']; }
+
+// the framework resolves and runs them:
+$mw = $resolver->resolveAll($controller->middleware());
+$response = $pipeline->run($request, $handler, ...$mw);
+```
+
+Each middleware returns a `Response` to short-circuit (reject) or calls `$next` to pass inward (onion
+model). A middleware that throws is caught and converted to a fail-closed rejection; the handler never
+runs on a rejection. The four standard aliases are registered by the `SecurityModule`:
+
+- `nonce` — rejects a state-changing (non-GET) request without a valid WP nonce.
+- `auth:<capability>` — rejects unless `current_user_can(<capability>)`.
+- `throttle` — rate-limits by key (transient-backed; `config('security.throttle.*')`, default 60/60s).
+- `sanitize` — reduces input to the declared, sanitized shape before the handler sees it.
+
+An unknown middleware name **fails closed** (resolves to a rejecting middleware), never a silent skip.
+Controllers contain **no** hand-written nonce/capability checks — the middleware own them (Principle VII).
+
 ## Boot-time problems
 
 Malformed configuration, unresolvable dependencies, and broken providers are written to the
