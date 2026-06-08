@@ -129,6 +129,75 @@ provider's `controllerPaths()`) is discovered and registered with the container 
 annotations, no central list. Abstract classes, interfaces, and non-class files are
 ignored.
 
+## Data layer
+
+Read and write WordPress data without touching `WP_Query`, `$wpdb`, or `get_post_meta` directly.
+
+**Model** — a read-only value object. Declare the entity's shape:
+
+```php
+use Corex\Models\Model;
+
+final class Job extends Model {
+    public static function postType(): string { return 'job'; }
+    public static function fields(): array    { return ['salary' => 'job_salary', 'company_id' => 'company_id']; }
+    public static function casts(): array     { return ['salary' => 'int']; }
+    public static function relations(): array {
+        return ['company' => ['type' => 'belongsTo', 'model' => Company::class, 'foreignKey' => 'company_id']];
+    }
+}
+
+$job->id();                 // int
+$job->get('salary');        // cast to int; a default is returned for an absent attribute
+$job->get('missing', 0);    // 0
+```
+
+Models hold data only — no `save()`. `withAttribute($name, $value)` returns a *new* Model (used to
+attach eager-loaded relations).
+
+**Repository** — the only layer that talks to the data source. Extend `PostRepository`:
+
+```php
+use Corex\Repositories\PostRepository;
+
+final class JobRepository extends PostRepository {
+    protected function model(): string { return Job::class; }
+}
+
+$jobs = Corex\Boot::app()->container()->make(JobRepository::class);
+$jobs->find(12);                       // ?Job — null when absent
+$jobs->create(['title' => 'Dev', 'salary' => 90000]);   // Job (persisted, fresh)
+$jobs->update(12, ['salary' => 95000]);
+$jobs->delete(12);                     // bool
+```
+
+`PostRepository` autowires the field driver, hydrator, and query executor — **bind your concrete
+repository in your own service provider** (it has no other dependencies to declare).
+
+**Field driver (ACF-optional)** — declared fields resolve through ACF when it is installed and native
+post meta when it is not, behind one interface. Your model/repository code is identical either way;
+the framework runs fully with ACF absent.
+
+**QueryBuilder** — fluent, capped, and safe:
+
+```php
+$jobs->query()
+    ->where('salary', 80000, '>=')     // declared field → meta_query (value bound as data)
+    ->where('post_status', 'publish')  // core field → WP_Query arg
+    ->orderBy('salary', 'DESC')
+    ->limit(20)
+    ->with('company')                  // eager-load a belongs-to relation (no N+1)
+    ->get();                           // Collection<Job> — empty, never null, when nothing matches
+```
+
+An unbounded query is capped at `config('query.max')` (default 500) — never `posts_per_page => -1`.
+Eager loading a relation across N entities runs a bounded number of queries (a belongs-to relation
+is two queries, not N+1). A `Collection` exposes `all()`, `first()`, `isEmpty()`, `count()`, and
+iterates.
+
+> v1 covers post-backed entities and the belongs-to relation; the contracts are shaped to add
+> taxonomy/user/custom-table sources and has-many/taxonomy relations later.
+
 ## Boot-time problems
 
 Malformed configuration, unresolvable dependencies, and broken providers are written to the

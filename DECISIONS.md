@@ -299,3 +299,16 @@ league for bindings + our autowiring hybrid (rejected — fragile two-system coo
 illuminate/container or php-di (rejected — heavier coupling than a foundation needs).
 Impact: research.md R1 + plan.md Technical Context updated in the same change.
 Status: Final.
+
+## #22 — Config engine aggregates all config/*.php files
+Date: 2026-06-08
+Context: spec 002's QueryBuilder cap must be configurable via the Config engine (`query.max`), but
+CoreServiceProvider loaded only config/app.php into the defaults layer.
+Decision: CoreServiceProvider now globs `config/*.php` and keys each by basename (config/app.php →
+`app`, config/query.php → `query`), so every shipped config file is exposed through `Config::get()`
+(Laravel-style). Consequently config/app.php was **unwrapped** — it returns its keys directly
+(`['name'=>...]`) rather than `['app'=>[...]]`, since the filename now provides the namespace.
+Why: the right, scalable home for per-concern config; `Config::get('query.max')` and
+`Config::get('app.name')` both resolve. Add-ons can ship their own config files later.
+Impact: behavior of `Config::get('app.name')` unchanged; the spec-001 integration test still passes.
+Status: Final.

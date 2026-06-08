@@ -32,6 +32,19 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
+- (nothing — spec 002 data layer COMPLETE; spec 003 not yet started)
+
+> **✅ SPEC 002 — data layer — COMPLETE (2026-06-08).** All 29 tasks; US1–US4 + wiring/polish.
+> **77 tests green** (66 unit headless + 11 integration on real `./wp`); site HTTP 200. Guard Gate
+> clean (incl. a final whole-module pass: `WP_Query` confined to `QueryExecutor`, WP data calls to
+> their layers). Definition of Done met. Delivered: `Models\Model` (read-only value object) ·
+> `Repositories\{RepositoryInterface,Hydrator,PostRepository}` (sole data caller) ·
+> `Fields\{FieldDriver,MetaFieldDriver,AcfFieldDriver,FieldResolver}` (ACF-optional, native default —
+> Principle IX) · `Database\{Collection,QueryBuilder,QueryExecutor}` (capped, value-bound, belongs-to
+> eager loading, no N+1) · `Foundation\DataServiceProvider`. DECISIONS #22 (multi-file config).
+> Commits: `5f83de0` (Model+US2), `b32a0a7` (US1), `aa05419` (US3), `b6c1c08` (US4),
+> `3a044e8` (wiring). Detailed build log below.
+
 - **SPEC 002 — data layer (Model + Field driver + Repository + QueryBuilder).** Spec written:
   `specs/002-data-layer/spec.md` (Draft); quality checklist passed. 4 developer journeys (P1 Model+
   Repository, P1 ACF-optional Field driver, P2 fluent QueryBuilder, P2 eager loading); 23 FRs, 7 SCs.
@@ -125,14 +138,13 @@ not leave broken code. The last completed unit of work is the Phase 4 skeleton +
 bootstrap; the next unit is the Phase 5 corex-core foundation (not yet begun).
 
 ## Next (recommended order)
-1. **SPEC 002 — Model + Field driver (ACF-optional) + QueryBuilder** [PHASE 6] — the next module per
+1. **SPEC 003 — CLI generators (`wp corex make:*`)** [PHASE 7] — the next module per
    COREX-SPECKIT-START "The rhythm from here". Spec Kit flow: `/speckit-specify` → `/clarify` →
-   `/plan` → `/tasks` → `/implement`, ONE task at a time with the Guard Gate + Pest tests, building
-   on the corex-core foundation (providers, container, config). Models as value objects; a Field
-   driver behind an interface (native meta vs ACF, Principle IX — ACF never a hard dependency); a
-   fluent QueryBuilder wrapper (not a full ORM, FRAMEWORK §7).
+   `/plan` → `/tasks` → `/implement`, ONE task at a time with the Guard Gate + Pest tests. Stub-based
+   generators (`make:model`, `make:controller`, `make:repository`, …) built on the corex-core CLI
+   surface (`packages/cli`, namespace `Corex\Cli`), scaffolding the patterns specs 001–002 established.
 
-Module build order after Model/QueryBuilder (COREX-SPECKIT-START.md "The rhythm from here"):
+Module build order after CLI generators (COREX-SPECKIT-START.md "The rhythm from here"):
 CLI generators → corex-blocks → Middleware + Security → theme + design tokens → Forms →
 Abilities/MCP → Corex Mail → other add-ons (profile-manager, woo) → setup wizard + demo content.
 
