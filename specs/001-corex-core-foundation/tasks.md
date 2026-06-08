@@ -59,19 +59,19 @@ auto-injected; booting twice yields one set of registrations.
 ### Tests for User Story 1 (write first, MUST FAIL)
 
 - [X] T007 [P] [US1] `tests/Unit/Foundation/ContainerTest.php`: `singleton` same vs `bind` new instance; `make` autowires ctor type-hints; unbound interface hint → `BindingResolutionException` (names interface, FR-007a); unhinted scalar → `BindingResolutionException` (names class+param, FR-009); A→B→A → `CircularDependencyException` (FR-010). ✅ 11 tests, red-first; + params override, optional default, has(), get()/PSR-11.
-- [ ] T008 [P] [US1] `tests/Unit/Foundation/ApplicationTest.php`: provider lifecycle runs `register()` for all then `boot()` for all; duplicate provider deduped; a provider throwing is caught and logged (FR-023), boot continues; `Boot` is idempotent (FR-002, SC-006).
-- [ ] T009 [P] [US1] `tests/Integration/BootContextsTest.php`: framework boots with no fatals in front-end, admin, REST, WP-CLI, cron with no theme/optional plugins active (FR-001, FR-003, FR-004, SC-001).
+- [X] T008 [P] [US1] `tests/Unit/Foundation/ApplicationTest.php`: provider lifecycle runs `register()` for all then `boot()` for all; duplicate provider deduped; a provider throwing is caught and logged (FR-023), boot continues; `Boot` is idempotent (FR-002, SC-006).
+- [X] T009 [P] [US1] `tests/Integration/BootContextsTest.php`: framework boots with no fatals in front-end, admin, REST, WP-CLI, cron with no theme/optional plugins active (FR-001, FR-003, FR-004, SC-001).
 
 ### Implementation for User Story 1
 
 - [X] T010 [P] [US1] `plugins/corex-core/src/Container/ContainerInterface.php` (extends `Psr\Container\ContainerInterface` with `bind`/`singleton`/`instance`/`make`) + `Container/Exceptions/{ContainerException,BindingResolutionException,CircularDependencyException,EntryNotFoundException}.php`. ✅ (`tag`/`tagged` dropped — YAGNI, DECISIONS #21.)
 - [X] T011 [US1] `plugins/corex-core/src/Container/Container.php` — **custom** PSR-11 container (reflection autowiring, shared/transient bindings, resolving-stack cycle detection); `league/container` reversed (DECISIONS #21). ✅ 11 tests green; clean-code-guard clean.
-- [ ] T012 [P] [US1] `plugins/corex-core/src/Foundation/ServiceProvider.php` — abstract base: `register()`, `boot()`, `subscribers()`, `controllerPaths()` (per contracts C3).
-- [ ] T013 [US1] `plugins/corex-core/src/Foundation/ProviderRepository.php` — collect providers from core list + `config('app.providers')` + Composer `extra.corex.providers` (read root `vendor/composer/installed.json`); dedupe by class-string; two-pass register/boot (depends on T012).
-- [ ] T014 [US1] `plugins/corex-core/src/Foundation/Application.php` — build `Container`, register core bindings (BootLogger, self), run `ProviderRepository`; wrap each provider call in try/catch → `BootLogger` (depends on T011, T012, T013).
-- [ ] T015 [US1] `plugins/corex-core/src/Boot.php` — `init()` hooks `boot()` on `plugins_loaded`; static idempotency guard; `app()` accessor; wire `Corex\Boot::init()` into `plugins/corex-core/corex-core.php` (depends on T014).
-- [ ] T016 [P] [US1] `plugins/corex-core/src/Support/Facades/Corex.php` — bounded global accessor `Corex::make()` reading `Boot::app()` (FR-008a; docblock states framework-boundary-only).
-- [ ] T017 [US1] Run guard gate (clean-code-guard + wp-guard) on the US1 diff; validate quickstart Scenarios 1 & 2; fix until green.
+- [X] T012 [P] [US1] `plugins/corex-core/src/Foundation/ServiceProvider.php` — abstract base: `register()`, `boot()`, `subscribers()`, `controllerPaths()` (per contracts C3).
+- [X] T013 [US1] `plugins/corex-core/src/Foundation/ProviderRepository.php` — collect providers from core list + `config('app.providers')` + Composer `extra.corex.providers` (read root `vendor/composer/installed.json`); dedupe by class-string; two-pass register/boot (depends on T012).
+- [X] T014 [US1] `plugins/corex-core/src/Foundation/Application.php` — build `Container`, register core bindings (BootLogger, self), run `ProviderRepository`; wrap each provider call in try/catch → `BootLogger` (depends on T011, T012, T013).
+- [X] T015 [US1] `plugins/corex-core/src/Boot.php` — `init()` hooks `boot()` on `plugins_loaded`; static idempotency guard; `app()` accessor; wire `Corex\Boot::init()` into `plugins/corex-core/corex-core.php` (depends on T014).
+- [X] T016 [P] [US1] `plugins/corex-core/src/Support/Facades/Corex.php` — bounded global accessor `Corex::make()` reading `Boot::app()` (FR-008a; docblock states framework-boundary-only).
+- [X] T017 [US1] Run guard gate (clean-code-guard + wp-guard) on the US1 diff; validate quickstart Scenarios 1 & 2; fix until green.
 
 **Checkpoint**: MVP — the framework boots and resolves dependencies. STOP and validate.
 

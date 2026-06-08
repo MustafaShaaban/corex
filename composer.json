@@ -35,8 +35,8 @@
     },
     "scripts": {
         "test": "pest",
-        "test:unit": "pest --testsuite=Unit",
-        "test:integration": "pest --testsuite=Integration"
+        "test:unit": "pest",
+        "test:integration": "pest --configuration=phpunit-integration.xml.dist"
     },
     "minimum-stability": "stable",
     "prefer-stable": true

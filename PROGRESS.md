@@ -69,8 +69,17 @@
   dropped `league/container` for a focused custom container (it can't detect cycles / clean unbound
   messages) — DECISIONS #21; research.md R1 + plan.md corrected. WP still boots HTTP 200.
   Guard Gate clean (clean-code-guard; wp-guard N/A beyond the ABSPATH guard; test-guard).
-  **Next: US1 checkpoint (b) — boot lifecycle (T008/T009 tests, T012 ServiceProvider, T013
-  ProviderRepository, T014 Application, T015 Boot, T016 Corex facade).**
+  **US1 checkpoint (b) DONE (T008/T009, T012–T017, 2026-06-08) — boot lifecycle:**
+  `Corex\Foundation\` ServiceProvider (register/boot seam) + ProviderRepository (two-pass
+  register→boot, dedupe, failure isolation) + Application (composition root). `Corex\Boot` self-hooks
+  `plugins_loaded` (idempotent) + `Corex\Support\Facades\Corex` bounded accessor; `corex-core.php`
+  wired. TDD: unit 23 passed (38 assertions) + **integration 2 passed against real WP** (self-boots,
+  container resolves services — SC-001). Guard Gate clean (clean-code + wp-guard + test-guard).
+  Per-suite test bootstraps added (unit defines ABSPATH; integration loads `./wp`) →
+  `phpunit-integration.xml.dist` + `composer test:integration`. Deferred to their stories:
+  `subscribers()`/`controllerPaths()` on ServiceProvider (US3/US4); config/composer-extra provider
+  sources (US2). **US1 (the MVP) is COMPLETE.**
+  **Next: US2 (T018–T024) — layered Config engine (`.env`→options→defaults).**
 
 ## Interruption note
 The environment gap (no WordPress core) was discovered **between Phase 4 and Phase 5**, before any

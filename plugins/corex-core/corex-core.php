@@ -54,5 +54,7 @@ if (! defined('COREX_CORE_PATH')) {
     }
 })();
 
-// No business logic yet. Corex\Boot::init() self-registration on plugins_loaded
-// is implemented in the corex-core foundation module (see PROGRESS.md → Next).
+// Self-register the framework on plugins_loaded (no-op until the autoloader is present).
+if (class_exists(\Corex\Boot::class)) {
+    \Corex\Boot::init();
+}
