@@ -35,8 +35,7 @@
 - **SPEC 006 — Theme + design tokens.** Spec written + clarified (recommended): brand.json at
   `theme/brand.json` (configurable); unknown-path overrides added via deep merge; applied via
   `wp_theme_json_data_theme` filter. 4 journeys (P1 token source, P1 brand.json overrides, P2 style
-  variations, P2 skin discipline); 15 FRs, 7 SCs. Headless core = the deep-merge BrandResolver. Next:
-  `/speckit-plan`.
+  variations, P2 skin discipline); 15 FRs, 7 SCs. Headless core = the deep-merge BrandResolver. `/speckit-plan` done (Constitution PASS, Principle I/V headline): BrandResolver (merge/read, headless), ThemeServiceProvider (wp_theme_json_data_theme filter), theme.json token source, theme/styles/dark.json variation. Next: `/speckit-tasks` → `/speckit-implement`.
 
 > **✅ SPEC 005 — Middleware + Security — COMPLETE (2026-06-08).** All 22 tasks; US1–US4 + polish.
 > 101 unit + 15 integration green; site HTTP 200. Principle VII delivered: onion `Pipeline` (value

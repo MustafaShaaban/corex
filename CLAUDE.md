@@ -42,7 +42,10 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-**Active plan:** `specs/005-middleware-security/plan.md` (declarative middleware pipeline + nonce/auth/
+**Active plan:** `specs/006-theme-tokens/plan.md` (theme.json token source + brand.json deep-merge
+resolver via wp_theme_json_data_theme + style variations; theme is a skin). Built on specs 001–005.
+Earlier:
+**Active plan (prev):** `specs/005-middleware-security/plan.md` (declarative middleware pipeline + nonce/auth/
 throttle/sanitize + SecurityModule; Principle VII; headless-testable). Built on specs 001–004. Earlier:
 **Active plan (prev):** `specs/004-block-engine/plan.md` (corex-blocks: discovery + conditional assets +
 container-resolved render + Block-Bindings connectors; server-rendered, no JS build). Built on
