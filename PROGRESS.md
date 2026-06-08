@@ -32,7 +32,10 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- (nothing — spec 003 CLI generators COMPLETE; spec 004 not yet started)
+- **SPEC 004 — corex-blocks (block engine).** Spec written: `specs/004-block-engine/spec.md`
+  (Draft); checklist passed. 4 developer journeys (P1 auto-discovery+registration, P1 conditional
+  assets, P2 dynamic render via container, P2 model→block connector seam) + one example block; 18 FRs,
+  7 SCs. Next: `/speckit-clarify` → `/speckit-plan`.
 
 > **✅ SPEC 003 — CLI generators — COMPLETE (2026-06-08).** All 26 tasks; US1–US4 + polish.
 > 80 unit + 12 integration green; verified on real WP-CLI (`wp corex make:model` creates a lint-clean,
