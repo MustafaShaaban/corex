@@ -12,9 +12,7 @@ declare(strict_types=1);
 defined('ABSPATH') || exit;
 
 return [
-    'app' => [
-        'name'      => 'Corex',
-        'env'       => 'production',
-        'providers' => [],
-    ],
+    'name'      => 'Corex',
+    'env'       => 'production',
+    'providers' => [],
 ];

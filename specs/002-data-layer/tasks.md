@@ -122,8 +122,8 @@ is populated and the data-source query count is constant for N=2 and N=50; an ab
 
 ## Phase 7: Wiring & Polish
 
-- [ ] T025 `plugins/corex-core/src/Foundation/DataServiceProvider.php` — bind `FieldDriver` (via `FieldResolver`), a `QueryBuilder` factory, `QueryExecutor`, and the `query.php` config; add `DataServiceProvider::class` to `Boot`'s core provider list.
-- [ ] T026 [P] Write `tests/Integration/Data/DataLayerBootTest.php`: the data layer resolves through the container after boot on the real `./wp`; with ACF absent the full unit suite passes (SC-003).
+- [X] T025 `plugins/corex-core/src/Foundation/DataServiceProvider.php` — bind `FieldDriver` (via `FieldResolver`), a `QueryBuilder` factory, `QueryExecutor`, and the `query.php` config; add `DataServiceProvider::class` to `Boot`'s core provider list.
+- [X] T026 [P] Write `tests/Integration/Data/DataLayerBootTest.php`: the data layer resolves through the container after boot on the real `./wp`; with ACF absent the full unit suite passes (SC-003).
 - [ ] T027 [P] Update `plugins/corex-core/README.md` with a Data Layer section (Model/Repository/Field driver/QueryBuilder usage); run docs-guard.
 - [ ] T028 Run full `quickstart.md` validation (Scenarios 1–4) against `./wp`; final guard pass (clean-code + wp-guard + test-guard); confirm the headless unit suite is green with no optional plugins (SC-003, SC-007).
 - [ ] T029 Update `PROGRESS.md` (spec 002 done) and `DECISIONS.md` (any new choices); verify the Definition-of-Done checklist.

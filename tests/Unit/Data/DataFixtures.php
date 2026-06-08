@@ -40,7 +40,7 @@ final class JobRepository extends PostRepository
     {
         $hydrator = new Hydrator($fields);
 
-        return new self($fields, $hydrator, new QueryExecutor($hydrator), 500);
+        return new self($fields, $hydrator, new QueryExecutor($hydrator));
     }
 
     protected function model(): string

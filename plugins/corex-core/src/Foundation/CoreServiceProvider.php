@@ -44,11 +44,20 @@ final class CoreServiceProvider extends ServiceProvider
     }
 
     /**
+     * Aggregate every shipped config file as `basename => contents`
+     * (config/app.php → 'app', config/query.php → 'query', …).
+     *
      * @return array<string, mixed>
      */
     private function defaults(): array
     {
-        return require COREX_CORE_PATH . 'config/app.php';
+        $defaults = [];
+
+        foreach (glob(COREX_CORE_PATH . 'config/*.php') ?: [] as $file) {
+            $defaults[basename($file, '.php')] = require $file;
+        }
+
+        return $defaults;
     }
 
     private function projectRoot(): string

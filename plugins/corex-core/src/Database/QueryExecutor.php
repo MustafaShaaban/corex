@@ -21,8 +21,18 @@ use WP_Query;
  */
 final class QueryExecutor
 {
-    public function __construct(private readonly Hydrator $hydrator)
+    public function __construct(
+        private readonly Hydrator $hydrator,
+        private readonly int $maxResults = 500,
+    ) {
+    }
+
+    /**
+     * The configured cap a QueryBuilder applies to an unbounded query (FR-015).
+     */
+    public function maxResults(): int
     {
+        return $this->maxResults;
     }
 
     /**

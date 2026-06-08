@@ -39,7 +39,6 @@ abstract class PostRepository implements RepositoryInterface
         protected readonly FieldDriver $fields,
         protected readonly Hydrator $hydrator,
         protected readonly QueryExecutor $executor,
-        protected readonly int $cap = 500,
     ) {
     }
 
@@ -50,7 +49,7 @@ abstract class PostRepository implements RepositoryInterface
 
     public function query(): QueryBuilder
     {
-        return new QueryBuilder($this->model(), $this->executor, $this->cap);
+        return new QueryBuilder($this->model(), $this->executor, $this->executor->maxResults());
     }
 
     public function find(int $id): ?Model
