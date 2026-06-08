@@ -34,7 +34,7 @@
 ## In progress
 - **SPEC 005 — Middleware + Security.** Spec written: `specs/005-middleware-security/spec.md`
   (Draft); checklist passed. 4 developer journeys (P1 pipeline, P1 four core middleware, P2 declarative
-  attachment, P2 SecurityModule); 18 FRs, 6 SCs. Next: `/speckit-clarify` → `/speckit-plan`.
+  attachment, P2 SecurityModule); 18 FRs, 6 SCs. `/speckit-clarify` done (recommended): Response value short-circuit (throw→reject fail-closed); nonce gates non-GET; throttle transient 60/60s. `/speckit-plan` done (Constitution PASS): onion `Pipeline`, `MiddlewareResolver` (alias:param, unknown→fail-closed), four middleware, `SecurityModule`; all headless-testable. Next: `/speckit-tasks` → `/speckit-implement`.
 
 > **✅ SPEC 004 — corex-blocks (block engine) — COMPLETE (2026-06-08).** All 22 tasks; US1–US4 +
 > example block + polish. 89 unit + 15 integration green; verified on real WP (block
