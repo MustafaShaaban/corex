@@ -66,11 +66,11 @@ shape.
 **Independent Test**: each generator writes the correct artifact (base class/contract, sub-path,
 suffix); each generated file passes the guards unedited.
 
-- [ ] T013 [P] [US2] `packages/cli/src/Generators/RepositoryGenerator.php` + `stubs/repository.stub` — extends `Corex\Repositories\PostRepository`, declares `model()`.
-- [ ] T014 [P] [US2] `packages/cli/src/Generators/ControllerGenerator.php` + `stubs/controller.stub` — a thin controller (constructor-injected service, routes/validates only).
-- [ ] T015 [P] [US2] `packages/cli/src/Generators/ServiceGenerator.php` + `stubs/service.stub` — a service (constructor-injected repository, holds logic).
-- [ ] T016 [US2] Write failing `tests/Unit/Cli/GeneratorSetTest.php`: each of the four generators yields the correct `stub/suffix/subPath/placeholders` and renders a valid file in a temp dir (FR-005, FR-006). Make it pass.
-- [ ] T017 [US2] Guard gate on the four generated outputs (clean-code + wp-guard must pass unedited); validate quickstart Scenario 2 (SC-002).
+- [X] T013 [P] [US2] `packages/cli/src/Generators/RepositoryGenerator.php` + `stubs/repository.stub` — extends `Corex\Repositories\PostRepository`, declares `model()`.
+- [X] T014 [P] [US2] `packages/cli/src/Generators/ControllerGenerator.php` + `stubs/controller.stub` — a thin controller (constructor-injected service, routes/validates only).
+- [X] T015 [P] [US2] `packages/cli/src/Generators/ServiceGenerator.php` + `stubs/service.stub` — a service (constructor-injected repository, holds logic).
+- [X] T016 [US2] Write failing `tests/Unit/Cli/GeneratorSetTest.php`: each of the four generators yields the correct `stub/suffix/subPath/placeholders` and renders a valid file in a temp dir (FR-005, FR-006). Make it pass.
+- [X] T017 [US2] Guard gate on the four generated outputs (clean-code + wp-guard must pass unedited); validate quickstart Scenario 2 (SC-002).
 
 **Checkpoint**: all four MVC artifacts scaffold.
 
@@ -82,8 +82,8 @@ suffix); each generated file passes the guards unedited.
 
 **Independent Test**: re-run → skipped; `--force` → overwritten; invalid name → rejected, no file.
 
-- [ ] T018 [P] [US3] Write `tests/Unit/Cli/SafetyTest.php`: idempotent skip, force overwrite, and invalid-name rejection (no file written) across the engine + Naming (FR-008, FR-009, SC-003, SC-004).
-- [ ] T019 [US3] Harden any gap the safety tests expose; ensure `GeneratorResult` carries a clear message for each outcome (FR-011); guard gate; validate quickstart Scenario 3.
+- [X] T018 [P] [US3] Write `tests/Unit/Cli/SafetyTest.php`: idempotent skip, force overwrite, and invalid-name rejection (no file written) across the engine + Naming (FR-008, FR-009, SC-003, SC-004).
+- [X] T019 [US3] Harden any gap the safety tests expose; ensure `GeneratorResult` carries a clear message for each outcome (FR-011); guard gate; validate quickstart Scenario 3.
 
 **Checkpoint**: generators are safe to re-run.
 

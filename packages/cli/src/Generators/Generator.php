@@ -26,4 +26,17 @@ abstract class Generator
      * @return array<string, string>
      */
     abstract public function placeholders(string $className, GeneratorContext $context): array;
+
+    /**
+     * The class name with this artifact's suffix removed (e.g. CareerRepository → Career).
+     */
+    protected function baseName(string $className): string
+    {
+        $suffix = $this->suffix();
+
+        return $suffix !== '' && str_ends_with($className, $suffix)
+            ? substr($className, 0, -strlen($suffix))
+            : $className;
+    }
 }
+

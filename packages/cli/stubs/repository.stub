@@ -1,0 +1,25 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+defined('ABSPATH') || exit;
+
+use Corex\Repositories\PostRepository;
+use {{ model_fqcn }};
+
+/**
+ * {{ class }} — the sole data-access layer for {{ model }} entities.
+ */
+final class {{ class }} extends PostRepository
+{
+    protected function model(): string
+    {
+        return {{ model }}::class;
+    }
+}

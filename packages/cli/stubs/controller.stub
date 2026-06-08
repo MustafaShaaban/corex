@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+defined('ABSPATH') || exit;
+
+use {{ service_fqcn }};
+
+/**
+ * {{ class }} — thin controller; routes and validates, then calls the service.
+ */
+final class {{ class }}
+{
+    public function __construct(private readonly {{ service }} $service)
+    {
+    }
+}

@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+defined('ABSPATH') || exit;
+
+use {{ repository_fqcn }};
+
+/**
+ * {{ class }} — business logic for {{ model }}.
+ */
+final class {{ class }}
+{
+    public function __construct(private readonly {{ repository }} $repository)
+    {
+    }
+}
