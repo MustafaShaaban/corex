@@ -35,7 +35,13 @@
 - **SPEC 002 — data layer (Model + Field driver + Repository + QueryBuilder).** Spec written:
   `specs/002-data-layer/spec.md` (Draft); quality checklist passed. 4 developer journeys (P1 Model+
   Repository, P1 ACF-optional Field driver, P2 fluent QueryBuilder, P2 eager loading); 23 FRs, 7 SCs.
-  Next in the Spec Kit flow: `/speckit-clarify` (3 deferred decisions noted) → `/speckit-plan`.
+  `/speckit-clarify` done (2026-06-08, 5 decisions). `/speckit-plan` done (2026-06-08): `plan.md` +
+  `research.md` + `data-model.md` + `contracts/data-layer-contracts.md` + `quickstart.md`. Constitution
+  Check PASS. Architecture: `Models\Model` (read-only value object) · `Repositories\{RepositoryInterface,
+  PostRepository}` (sole data caller) · `Fields\{FieldDriver,FieldResolver,Meta/AcfFieldDriver}` (ACF-
+  optional) · `Database\{QueryBuilder (builds capped WP_Query args) → QueryExecutor (only WP_Query
+  caller) → Collection}` · `DataServiceProvider`. Key testability split: QueryBuilder is a pure
+  arg-builder (unit), QueryExecutor runs the query (integration). Next: `/speckit-tasks`.
 
 > **✅ SPEC 001 — corex-core foundation — COMPLETE (2026-06-08).** All 38 tasks done; US1–US4 +
 > Polish. 46 tests green (42 unit headless + 4 integration on real `./wp`); site HTTP 200. Guard Gate

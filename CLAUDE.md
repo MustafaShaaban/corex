@@ -42,10 +42,11 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-**Active plan:** `specs/001-corex-core-foundation/plan.md` (corex-core foundation, Phase 5).
-For technologies, project structure, contracts, and validation, read that plan and its sibling
-artifacts (`research.md`, `data-model.md`, `contracts/`, `quickstart.md`). Tech: PHP 8.3,
-`league/container` (behind `Corex\Container`), `vlucas/phpdotenv`, Pest + Brain Monkey. The
-Service Provider (`Corex\Foundation\ServiceProvider`) is the single extension seam for all
-modules/add-ons.
+**Active plan:** `specs/002-data-layer/plan.md` (Model + Field driver + Repository + QueryBuilder).
+For technologies, structure, contracts, and validation, read that plan and its siblings
+(`research.md`, `data-model.md`, `contracts/`, `quickstart.md`). Built on the **complete** corex-core
+foundation (spec 001): `Boot`, custom PSR-11 `Container`, `ServiceProvider` seam, `Config`,
+`HookRegistry`, `ControllerMap`. Tech: PHP 8.3, Pest + Brain Monkey; ACF behind a `FieldDriver`
+(native-meta fallback, never a hard dependency); QueryBuilder builds capped `WP_Query` args, executed
+by a thin `QueryExecutor`.
 <!-- SPECKIT END -->
