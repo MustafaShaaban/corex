@@ -20,6 +20,16 @@ It builds directly on the corex-core foundation (container, service providers, c
 presentation, controllers, or business rules — it is the data-access layer the later modules
 (controllers, blocks, forms, add-ons) depend on. The "users" are Corex module developers.
 
+## Clarifications
+
+### Session 2026-06-08
+
+- Q: Which entity sources are in scope for v1? → A: Posts only (custom post types); the Repository/Model contracts are shaped so taxonomy-, user-, and custom-table-backed sources can be added later without changing calling code.
+- Q: Are Models read-only value objects or do they persist themselves? → A: Strictly read-only value objects; all create/update/delete go through the Repository (which returns an updated Model). Models hold data only — no `save()`, no data-source coupling (Principle III).
+- Q: How does the field driver behave when ACF is active? → A: It reads/writes through ACF's own API (handling complex field types + return-format coercion) when ACF is present, and through native post meta when ACF is absent — the developer uses the same logical field name either way.
+- Q: Which relation types does eager loading support in v1? → A: A single "belongs-to" relation (an entity references one related entity by a stored post id), eager-loaded in a bounded query count; the relation contract is shaped to add has-many and taxonomy relations later.
+- Q: What is the default unbounded-query safety cap? → A: 500 results, configurable via the Config engine (`query.max`); an unbounded "fetch all" is capped at this value rather than executed uncapped.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Read an entity through a Model and Repository (Priority: P1)
@@ -149,8 +159,8 @@ stays bounded (does not grow linearly with the number of entities).
 
 **Model**
 
-- **FR-001**: A Model MUST describe an entity as typed attributes (a value object); it MUST NOT contain
-  query logic, data-source calls, or business rules.
+- **FR-001**: A Model MUST describe an entity as typed attributes (a read-only value object); it MUST
+  NOT contain query logic, data-source calls, persistence methods (no `save()`), or business rules.
 - **FR-002**: A Model's attributes MUST be exposed with their declared types (e.g. id as integer, dates
   as date values).
 - **FR-003**: A Model MUST be constructible from a data-source record by its Repository and be usable
@@ -170,8 +180,10 @@ stays bounded (does not grow linearly with the number of entities).
 
 - **FR-008**: Custom-field access MUST go through a single field-access abstraction (interface); calling
   code MUST NOT reference ACF directly.
-- **FR-009**: The abstraction MUST resolve fields through ACF when ACF is present and through native
-  WordPress meta when it is not, behind the same interface (driver selection at runtime).
+- **FR-009**: The abstraction MUST resolve fields through ACF's own API (handling complex field types
+  and return-format coercion) when ACF is present, and through native WordPress meta when it is not,
+  behind the same interface (driver selection at runtime). The caller references a field by a single
+  logical name that maps to the ACF field name or the meta key respectively.
 - **FR-010**: The framework MUST run fully with ACF absent — no field-driver code path may hard-depend
   on ACF classes/functions.
 - **FR-011**: Reading a missing field MUST return a caller-supplied default, never an error.
@@ -184,15 +196,18 @@ stays bounded (does not grow linearly with the number of entities).
   and limit, returning a collection of Models.
 - **FR-014**: The QueryBuilder MUST be a wrapper over the platform query mechanism, not a full ORM; it
   MUST NOT introduce its own SQL dialect.
-- **FR-015**: The QueryBuilder MUST refuse or safely cap an unbounded "fetch all" request; the cap MUST
-  be configurable via the Config engine.
+- **FR-015**: The QueryBuilder MUST safely cap an unbounded "fetch all" request at a maximum (default
+  **500**) rather than execute it uncapped; the cap MUST be configurable via the Config engine
+  (`query.max`).
 - **FR-016**: Developer-supplied filter values MUST be bound as data (prepared), never concatenated into
   a query.
 - **FR-017**: The QueryBuilder MUST return an empty collection (not null/error) when nothing matches.
 
 **Eager loading**
 
-- **FR-018**: The QueryBuilder MUST support declaring related data to eager-load for a collection.
+- **FR-018**: The QueryBuilder MUST support declaring a **belongs-to** relation (an entity referencing
+  one related entity by a stored post id) to eager-load for a collection; the relation contract is
+  shaped to add has-many and taxonomy relations later.
 - **FR-019**: Eager-loading a relation across N entities MUST use a bounded number of queries (no N+1).
 - **FR-020**: A relation with no related record MUST resolve as empty for that Model, not as an error.
 

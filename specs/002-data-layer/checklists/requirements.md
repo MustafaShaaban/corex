@@ -36,8 +36,8 @@
 - ACF is named because it is the *subject* of a constitutional requirement (Principle IX: optional
   plugins behind a driver) — it constrains behavior, not implementation choice. WP_Query/`$wpdb`/meta
   appear only in the Input echo and Assumptions as the data-source context, not as prescribed APIs.
-- Three decisions deliberately deferred to `/speckit-clarify` (none block planning; all noted in
-  Assumptions): (a) exactly which entity sources are in scope for v1 (posts-first assumed), (b) whether
-  Models are strictly read-only value objects vs. carrying a `save()` convenience, (c) the default
-  value of the unbounded-query safety cap.
+- Resolved in the 2026-06-08 `/speckit-clarify` session (see spec Clarifications): entity sources =
+  posts only (v1); Models = strictly read-only value objects (writes via Repository); field driver =
+  ACF API when present / native meta when absent (FR-009); eager loading = belongs-to relation (v1,
+  FR-018); query cap = 500, configurable via `query.max` (FR-015). No `[NEEDS CLARIFICATION]` markers.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
