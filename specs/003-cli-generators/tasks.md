@@ -107,9 +107,9 @@ no error; the engine works headlessly.
 
 ## Phase 7: Wiring & Polish
 
-- [ ] T024 [P] Update `plugins/corex-core/README.md` (or a CLI doc) with a `wp corex make:*` section; run docs-guard.
-- [ ] T025 Run full `quickstart.md` validation against `./wp`; final guard pass (clean-code + wp-guard + test-guard) incl. the generated outputs; confirm the headless unit suite passes with no WP-CLI and no optional plugins (SC-006).
-- [ ] T026 Update `PROGRESS.md` (spec 003 done) + `DECISIONS.md` (any new choices); verify Definition of Done.
+- [X] T024 [P] Update `plugins/corex-core/README.md` (or a CLI doc) with a `wp corex make:*` section; run docs-guard.
+- [X] T025 Run full `quickstart.md` validation against `./wp`; final guard pass (clean-code + wp-guard + test-guard) incl. the generated outputs; confirm the headless unit suite passes with no WP-CLI and no optional plugins (SC-006).
+- [X] T026 Update `PROGRESS.md` (spec 003 done) + `DECISIONS.md` (any new choices); verify Definition of Done.
 
 ---
 

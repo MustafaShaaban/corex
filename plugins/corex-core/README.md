@@ -198,6 +198,25 @@ iterates.
 > v1 covers post-backed entities and the belongs-to relation; the contracts are shaped to add
 > taxonomy/user/custom-table sources and has-many/taxonomy relations later.
 
+## CLI generators
+
+Scaffold the framework's own patterns with `wp corex make:*` (registered only when WP-CLI is present —
+the framework runs fully without it):
+
+```bash
+wp corex make:model Career            # read-only Model → <app>/Models/Career.php
+wp corex make:repository Career        # PostRepository bound to Career → Repositories/
+wp corex make:service Career           # service with its repository injected → Services/
+wp corex make:controller Career        # thin controller with its service injected → Controllers/
+wp corex make:model Career --force     # overwrite an existing file (otherwise the run is skipped)
+```
+
+Each generated file is constitution-shaped (read-only Models, thin controllers, fat services,
+repositories own data access, constructor injection, `ABSPATH` guard) and passes the guards unedited.
+The output base path, namespace, and prefix come from the Config engine (`app.path`, `app.namespace`,
+`app.prefix`) — set per project by `wp corex init`; when `app.path` is empty the default is
+`wp-content/corex-app`. An invalid class name is rejected before any file is written.
+
 ## Boot-time problems
 
 Malformed configuration, unresolvable dependencies, and broken providers are written to the

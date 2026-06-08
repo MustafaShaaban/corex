@@ -32,6 +32,15 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
+- (nothing — spec 003 CLI generators COMPLETE; spec 004 not yet started)
+
+> **✅ SPEC 003 — CLI generators — COMPLETE (2026-06-08).** All 26 tasks; US1–US4 + polish.
+> 80 unit + 12 integration green; verified on real WP-CLI (`wp corex make:model` creates a lint-clean,
+> namespaced, ABSPATH-guarded Model; idempotent + --force). `WP_CLI` confined to MakeCommand +
+> CliServiceProvider (Principle IX). Engine (StubRenderer/Naming/GeneratorEngine) fully headless.
+> Generators: model/repository/controller/service. Commits: 819c66a (engine+make:model), e4d2316
+> (set+safety), 2bb5688 (WP-CLI). Detailed build log below.
+
 - **SPEC 003 — CLI generators (`wp corex make:*`).** Spec written:
   `specs/003-cli-generators/spec.md` (Draft); quality checklist passed. 4 developer journeys (P1 stub
   engine + make:model, P1 the make:repository/controller/service set, P2 safety/--force/validation, P2
@@ -141,7 +150,9 @@ not leave broken code. The last completed unit of work is the Phase 4 skeleton +
 bootstrap; the next unit is the Phase 5 corex-core foundation (not yet begun).
 
 ## Next (recommended order)
-1. **SPEC 003 — CLI generators (`wp corex make:*`)** [PHASE 7] — the next module per
+1. **SPEC 004 — corex-blocks (block engine)** [PHASE 8] — next per COREX-SPECKIT-START. FSE blocks with auto-discovery, conditional assets (block.json), Interactivity API, model→block connectors. Built on corex-core + data layer. _(superseded planning note for 003 below)_
+
+<!-- prev --> **SPEC 003 — CLI generators (`wp corex make:*`)** [PHASE 7] — the next module per
    COREX-SPECKIT-START "The rhythm from here". Spec Kit flow: `/speckit-specify` → `/clarify` →
    `/plan` → `/tasks` → `/implement`, ONE task at a time with the Guard Gate + Pest tests. Stub-based
    generators (`make:model`, `make:controller`, `make:repository`, …) built on the corex-core CLI
