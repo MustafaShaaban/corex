@@ -35,8 +35,8 @@
   beneficiaries. `block.json`, Interactivity API, and Block Bindings/Connectors are named because they
   are the *WordPress platform contracts* this engine builds on (the subject of constitution Principle VI
   and FRAMEWORK §5/§8), not arbitrary implementation choices.
-- Decisions deferred to `/speckit-clarify` (none block planning; noted in Assumptions): (a) the exact
-  example block (static vs dynamic; what it displays), (b) whether the connector example binds via the
-  WP Block Bindings API specifically or a Corex binding shim if core support is partial in the target
-  WP, (c) how much of the JS build pipeline is in scope vs deferred.
+- Resolved in the 2026-06-08 `/speckit-clarify` session (recommended options selected; see spec
+  Clarifications): the example block is a dynamic, server-rendered block showing a connector-bound
+  Corex field (FR-018); connectors register via the WP Block Bindings API with a thin Corex source
+  fallback (FR-019); spec 004 is server-rendered PHP only (no JS build). No `[NEEDS CLARIFICATION]`.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.

@@ -19,6 +19,14 @@ and the connector seam — plus one minimal example block that proves it. It bui
 (container, providers, config) and the data layer (the Models/Repositories connectors expose). The
 "users" are Corex theme/module developers; the indirect beneficiaries are site editors.
 
+## Clarifications
+
+### Session 2026-06-08
+
+- Q: What is the one example block this spec ships? → A: A dynamic, server-rendered block that displays a Corex entity field via a connector — it exercises discovery + conditional assets + container-resolved render + the connector seam end-to-end with **no JS build required**.
+- Q: How does an editor bind a block attribute to a connector? → A: Connectors register through the WP Block Bindings API (WP 7.0); the example binds a core block attribute to a Repository-backed connector field. If core binding support is partial in the target WP, a thin Corex binding source fills the gap behind the same registration.
+- Q: How much of the JS build pipeline is in scope? → A: None — spec 004 delivers **server-rendered PHP** blocks/engine only (no webpack/Jest build). Interactive (Interactivity-API) blocks and the build pipeline are a later concern; the example block needs no JS build.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Blocks register themselves by convention (Priority: P1)
@@ -180,7 +188,12 @@ in the output.
   (no jQuery, no Bootstrap JS).
 - **FR-017**: Everything MUST work with no optional plugin (ACF/Woo/Polylang) installed.
 - **FR-018**: The PHP discovery/registration/connector logic MUST be exercisable in headless automated
-  tests; the feature ships one minimal example block that proves the engine end-to-end.
+  tests; the feature ships **one dynamic, server-rendered example block** (no JS build required) that
+  proves discovery + conditional assets + container-resolved render + a Repository-backed connector
+  binding end-to-end.
+- **FR-019**: Connectors MUST register through the WP Block Bindings API (WP 7.0); where core binding
+  support is partial, a thin Corex binding source MUST fill the gap behind the same registration so
+  calling/editor code is unchanged.
 
 ### Key Entities
 
