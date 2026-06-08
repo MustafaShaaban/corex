@@ -32,7 +32,10 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- (nothing — spec 001 corex-core foundation COMPLETE; spec 002 not yet started)
+- **SPEC 002 — data layer (Model + Field driver + Repository + QueryBuilder).** Spec written:
+  `specs/002-data-layer/spec.md` (Draft); quality checklist passed. 4 developer journeys (P1 Model+
+  Repository, P1 ACF-optional Field driver, P2 fluent QueryBuilder, P2 eager loading); 23 FRs, 7 SCs.
+  Next in the Spec Kit flow: `/speckit-clarify` (3 deferred decisions noted) → `/speckit-plan`.
 
 > **✅ SPEC 001 — corex-core foundation — COMPLETE (2026-06-08).** All 38 tasks done; US1–US4 +
 > Polish. 46 tests green (42 unit headless + 4 integration on real `./wp`); site HTTP 200. Guard Gate
