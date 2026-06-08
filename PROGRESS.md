@@ -41,7 +41,11 @@
   PostRepository}` (sole data caller) · `Fields\{FieldDriver,FieldResolver,Meta/AcfFieldDriver}` (ACF-
   optional) · `Database\{QueryBuilder (builds capped WP_Query args) → QueryExecutor (only WP_Query
   caller) → Collection}` · `DataServiceProvider`. Key testability split: QueryBuilder is a pure
-  arg-builder (unit), QueryExecutor runs the query (integration). Next: `/speckit-tasks`.
+  arg-builder (unit), QueryExecutor runs the query (integration).
+  `/speckit-tasks` done (2026-06-08): `tasks.md` — 29 tasks, TDD-ordered. Setup (T001) → Foundational
+  Model (T002–T003) → US2 Field driver (T004–T009) → US1 Repository (T010–T014) → US3 QueryBuilder
+  (T015–T021) → US4 eager loading (T022–T024) → Wiring/Polish (T025–T029). Next: `/speckit-implement`
+  — ONE task at a time with the Guard Gate, starting at T001.
 
 > **✅ SPEC 001 — corex-core foundation — COMPLETE (2026-06-08).** All 38 tasks done; US1–US4 +
 > Polish. 46 tests green (42 unit headless + 4 integration on real `./wp`); site HTTP 200. Guard Gate
