@@ -15,4 +15,10 @@ return [
     'name'      => 'Corex',
     'env'       => 'production',
     'providers' => [],
+
+    // Generator target (set by `wp corex init`). Empty path → the CLI provider
+    // falls back to a default under wp-content.
+    'namespace' => 'App',
+    'prefix'    => 'corex',
+    'path'      => '',
 ];

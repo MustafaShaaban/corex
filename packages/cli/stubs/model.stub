@@ -1,0 +1,34 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+defined('ABSPATH') || exit;
+
+use Corex\Models\Model;
+
+/**
+ * {{ class }} entity (read-only value object).
+ */
+final class {{ class }} extends Model
+{
+    public static function postType(): string
+    {
+        return '{{ post_type }}';
+    }
+
+    /**
+     * Logical field name => meta/ACF key.
+     *
+     * @return array<string, string>
+     */
+    public static function fields(): array
+    {
+        return [];
+    }
+}

@@ -24,17 +24,17 @@ clean-code + wp-guard (FR-007).**
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Add `namespace`, `prefix`, `path` defaults to `plugins/corex-core/config/app.php`; create `tests/Unit/Cli/` and `tests/Integration/Cli/`; confirm `Corex\Cli` → `packages/cli/src` autoload resolves.
+- [X] T001 [P] Add `namespace`, `prefix`, `path` defaults to `plugins/corex-core/config/app.php`; create `tests/Unit/Cli/` and `tests/Integration/Cli/`; confirm `Corex\Cli` → `packages/cli/src` autoload resolves.
 
 ---
 
 ## Phase 2: Foundational (shared by all stories)
 
-- [ ] T002 [P] Write failing `tests/Unit/Cli/StubRendererTest.php`: replaces every `{{ token }}`; a leftover `{{ … }}` raises `UnresolvedPlaceholderException` (FR-001, FR-003).
-- [ ] T003 Implement `packages/cli/src/Generators/StubRenderer.php` (+ `UnresolvedPlaceholderException`).
-- [ ] T004 [P] Write failing `tests/Unit/Cli/NamingTest.php`: normalize + apply suffix; strip existing suffix; reject empty/illegal/reserved names with `InvalidNameException`; `postTypeFor` snake-cases (FR-009, FR-010).
-- [ ] T005 Implement `packages/cli/src/Support/Naming.php` (+ `InvalidNameException`).
-- [ ] T006 [P] Implement `packages/cli/src/Generators/GeneratorContext.php` (basePath/namespace/prefix value object).
+- [X] T002 [P] Write failing `tests/Unit/Cli/StubRendererTest.php`: replaces every `{{ token }}`; a leftover `{{ … }}` raises `UnresolvedPlaceholderException` (FR-001, FR-003).
+- [X] T003 Implement `packages/cli/src/Generators/StubRenderer.php` (+ `UnresolvedPlaceholderException`).
+- [X] T004 [P] Write failing `tests/Unit/Cli/NamingTest.php`: normalize + apply suffix; strip existing suffix; reject empty/illegal/reserved names with `InvalidNameException`; `postTypeFor` snake-cases (FR-009, FR-010).
+- [X] T005 Implement `packages/cli/src/Support/Naming.php` (+ `InvalidNameException`).
+- [X] T006 [P] Implement `packages/cli/src/Generators/GeneratorContext.php` (basePath/namespace/prefix value object).
 
 **Checkpoint**: render + naming + context ready.
 
@@ -47,12 +47,12 @@ clean-code + wp-guard (FR-007).**
 **Independent Test**: run the Model generator into a temp dir; a `Models/<Name>.php` is written with all
 placeholders replaced and no leftover tokens; re-running skips, `--force` overwrites.
 
-- [ ] T007 [P] [US1] Write failing `tests/Unit/Cli/GeneratorEngineTest.php`: `generate()` returns `created` and writes the file (dir created); existing file + no force → `skipped` (unchanged); + force → overwritten; a stub with an unprovided token → error/exception, no file (FR-002, FR-003, FR-008).
-- [ ] T008 [US1] Implement `packages/cli/src/Generators/{Generator.php (abstract), GeneratorResult.php}`.
-- [ ] T009 [US1] Implement `packages/cli/src/Generators/GeneratorEngine.php` (resolve path from context+subPath, render via StubRenderer, write idempotently with force) (depends on T003, T005, T006, T008).
-- [ ] T010 [P] [US1] Implement `packages/cli/src/Generators/ModelGenerator.php` + `packages/cli/stubs/model.stub` — a read-only `Corex\Models\Model` subclass (postType/fields/casts), ABSPATH guard, i18n-ready.
-- [ ] T011 [US1] Write failing `tests/Unit/Cli/ModelGeneratorTest.php`: `make:model Career` into a temp dir produces a valid Model at `Models/Career.php`, zero leftover `{{ }}`, namespace/prefix from the context (SC-001). Make it pass.
-- [ ] T012 [US1] Guard gate (incl. running `clean-code-guard` + `wp-guard` on the *generated* Career.php); validate quickstart Scenario 1.
+- [X] T007 [P] [US1] Write failing `tests/Unit/Cli/GeneratorEngineTest.php`: `generate()` returns `created` and writes the file (dir created); existing file + no force → `skipped` (unchanged); + force → overwritten; a stub with an unprovided token → error/exception, no file (FR-002, FR-003, FR-008).
+- [X] T008 [US1] Implement `packages/cli/src/Generators/{Generator.php (abstract), GeneratorResult.php}`.
+- [X] T009 [US1] Implement `packages/cli/src/Generators/GeneratorEngine.php` (resolve path from context+subPath, render via StubRenderer, write idempotently with force) (depends on T003, T005, T006, T008).
+- [X] T010 [P] [US1] Implement `packages/cli/src/Generators/ModelGenerator.php` + `packages/cli/stubs/model.stub` — a read-only `Corex\Models\Model` subclass (postType/fields/casts), ABSPATH guard, i18n-ready.
+- [X] T011 [US1] Write failing `tests/Unit/Cli/ModelGeneratorTest.php`: `make:model Career` into a temp dir produces a valid Model at `Models/Career.php`, zero leftover `{{ }}`, namespace/prefix from the context (SC-001). Make it pass.
+- [X] T012 [US1] Guard gate (incl. running `clean-code-guard` + `wp-guard` on the *generated* Career.php); validate quickstart Scenario 1.
 
 **Checkpoint**: MVP — scaffolds a Model. STOP and validate.
 
