@@ -46,4 +46,15 @@ abstract class ServiceProvider
     {
         return [];
     }
+
+    /**
+     * Controller locations this module exposes for auto-discovery, as
+     * PSR-4 namespace prefix => directory. Scanned during the boot pass.
+     *
+     * @return array<string, string>
+     */
+    public function controllerPaths(): array
+    {
+        return [];
+    }
 }

@@ -14,7 +14,10 @@ use Corex\Container\ContainerInterface;
 use Corex\Foundation\Application;
 use Corex\Foundation\ProviderRepository;
 use Corex\Hooks\HookRegistry;
+use Corex\Http\ControllerMap;
 use Corex\Support\BootLogger;
+use Corex\Tests\Fixtures\Controllers\PingController;
+use Corex\Tests\Fixtures\Providers\DiscoveringProvider;
 use Corex\Tests\Fixtures\Providers\ProviderA;
 use Corex\Tests\Fixtures\Providers\ProviderB;
 use Corex\Tests\Fixtures\Providers\Recorder;
@@ -34,7 +37,10 @@ function makeRepository(?BootLogger $logger = null): array
     $container->instance(ContainerInterface::class, $container);
     $logger ??= new BootLogger(debug: false);
 
-    return [new ProviderRepository($container, $logger, new HookRegistry($container)), $logger];
+    return [
+        new ProviderRepository($container, $logger, new HookRegistry($container), new ControllerMap($container)),
+        $logger,
+    ];
 }
 
 it('registers all providers before booting any of them', function () {
@@ -76,4 +82,13 @@ it('wires a provider hook subscribers during the boot pass', function () {
     Functions\expect('add_filter')->once()->with('init', \Mockery::type('array'), 10, 1);
 
     (new Application(debug: false, providers: [SubscribingProvider::class]))->boot();
+});
+
+it('discovers a provider controllers during the boot pass', function () {
+    $app = new Application(debug: false, providers: [DiscoveringProvider::class]);
+    $app->boot();
+
+    $map = $app->container()->make(ControllerMap::class);
+
+    expect($map->controllers())->toContain(PingController::class);
 });

@@ -75,3 +75,15 @@ final class SubscribingProvider extends ServiceProvider
         return [ActionSubscriber::class];
     }
 }
+
+final class DiscoveringProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+    }
+
+    public function controllerPaths(): array
+    {
+        return ['Corex\\Tests\\Fixtures\\Controllers\\' => dirname(__DIR__, 2) . '/Fixtures/Controllers'];
+    }
+}

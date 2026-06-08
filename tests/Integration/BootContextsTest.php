@@ -35,3 +35,10 @@ it('resolves layered configuration through the Config facade', function () {
     expect(Config::get('app.name'))->toBe('Corex')
         ->and(Config::get('does.not.exist', 'fallback'))->toBe('fallback');
 });
+
+it('wires controller discovery (an empty core Controllers dir is non-fatal)', function () {
+    $map = Boot::app()->container()->make(\Corex\Http\ControllerMap::class);
+
+    expect($map)->toBeInstanceOf(\Corex\Http\ControllerMap::class)
+        ->and($map->controllers())->toBeArray();
+});

@@ -142,13 +142,13 @@ ignored; an empty `Controllers/` still boots.
 
 ### Tests for User Story 4 (write first, MUST FAIL)
 
-- [ ] T030 [P] [US4] `tests/Unit/Foundation/ControllerMapTest.php`: instantiable class in `Controllers/` discovered + bound; abstract/interface/trait/non-class skipped (FR-019); empty set boots (FR-020, SC-005).
+- [X] T030 [P] [US4] `tests/Unit/Foundation/ControllerMapTest.php`: instantiable class in `Controllers/` discovered + bound; abstract/interface/trait/non-class skipped (FR-019); empty set boots (FR-020, SC-005).
 
 ### Implementation for User Story 4
 
-- [ ] T031 [US4] `plugins/corex-core/src/Http/ControllerMap.php` — PSR-4 scan of `namespace→dir` maps; keep only instantiable classes; register each as a container binding (depends on US1).
-- [ ] T032 [US4] Wire `ServiceProvider::controllerPaths()` into `ControllerMap` during the Application boot pass; add core's own `Corex\Controllers\` → `src/Controllers/` map to `CoreServiceProvider` (depends on T031, T023).
-- [ ] T033 [US4] Add a sample `plugins/corex-core/src/Controllers/PingController.php` proving discovery (no logic); guard gate; validate quickstart Scenario 6.
+- [X] T031 [US4] `plugins/corex-core/src/Http/ControllerMap.php` — PSR-4 scan of `namespace→dir` maps; keep only instantiable classes; register each as a container binding (depends on US1).
+- [X] T032 [US4] Wire `ServiceProvider::controllerPaths()` into `ControllerMap` during the Application boot pass; add core's own `Corex\Controllers\` → `src/Controllers/` map to `CoreServiceProvider` (depends on T031, T023).
+- [X] T033 [US4] Add a sample `plugins/corex-core/src/Controllers/PingController.php` proving discovery (no logic); guard gate; validate quickstart Scenario 6.
 
 **Checkpoint**: all four stories independently functional.
 

@@ -36,6 +36,14 @@ final class CoreServiceProvider extends ServiceProvider
     }
 
     /**
+     * @return array<string, string>
+     */
+    public function controllerPaths(): array
+    {
+        return ['Corex\\Controllers\\' => COREX_CORE_PATH . 'src/Controllers'];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function defaults(): array

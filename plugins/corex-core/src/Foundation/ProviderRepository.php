@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
 use Corex\Hooks\HookRegistry;
+use Corex\Http\ControllerMap;
 use Corex\Support\BootLogger;
 use Throwable;
 
@@ -31,6 +32,7 @@ final class ProviderRepository
         private readonly ContainerInterface $container,
         private readonly BootLogger $logger,
         private readonly HookRegistry $hooks,
+        private readonly ControllerMap $controllers,
     ) {
     }
 
@@ -83,6 +85,7 @@ final class ProviderRepository
         try {
             $provider->boot();
             $this->wireSubscribers($provider);
+            $this->discoverControllers($provider);
         } catch (Throwable $e) {
             // Resilient boot: a broken provider is logged, never fatal (FR-023).
             $this->logger->error(sprintf('Provider [%s] failed to boot: %s', $provider::class, $e->getMessage()));
@@ -93,6 +96,15 @@ final class ProviderRepository
     {
         foreach ($provider->subscribers() as $subscriberClass) {
             $this->hooks->register($subscriberClass);
+        }
+    }
+
+    private function discoverControllers(ServiceProvider $provider): void
+    {
+        $paths = $provider->controllerPaths();
+
+        if ($paths !== []) {
+            $this->controllers->discover($paths);
         }
     }
 }
