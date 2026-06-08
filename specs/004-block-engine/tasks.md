@@ -87,10 +87,10 @@ engine end-to-end.
 **Independent Test (integration, ./wp)**: the example block registers; on a page with it the style is
 enqueued (and absent otherwise); its dynamic render shows a connector-bound field; no global asset.
 
-- [ ] T014 [P] [US2] `plugins/corex-blocks/src/blocks/entity-field/block.json` (name `corex/entity-field`, an attribute, conditional `style`, dynamic `render`/api version) + `style.css` (theme.json tokens + logical properties only).
-- [ ] T015 [US2] `plugins/corex-blocks/src/blocks/entity-field/Renderer.php` (`BlockRenderer`) — thin, escaped, i18n; delegates display of the bound value.
-- [ ] T016 [US2] Write `tests/Integration/Blocks/ExampleBlockTest.php`: `register_block_type` registers `corex/entity-field`; rendering the block outputs its markup; its style is registered/enqueued conditionally; no framework-global asset (FR-005, FR-006, SC-002, SC-003).
-- [ ] T017 [US2] Guard gate (wp-guard + the example block RTL/tokens/i18n/WCAG).
+- [X] T014 [P] [US2] `plugins/corex-blocks/src/blocks/entity-field/block.json` (name `corex/entity-field`, an attribute, conditional `style`, dynamic `render`/api version) + `style.css` (theme.json tokens + logical properties only).
+- [X] T015 [US2] `plugins/corex-blocks/src/blocks/entity-field/Renderer.php` (`BlockRenderer`) — thin, escaped, i18n; delegates display of the bound value.
+- [X] T016 [US2] Write `tests/Integration/Blocks/ExampleBlockTest.php`: `register_block_type` registers `corex/entity-field`; rendering the block outputs its markup; its style is registered/enqueued conditionally; no framework-global asset (FR-005, FR-006, SC-002, SC-003).
+- [X] T017 [US2] Guard gate (wp-guard + the example block RTL/tokens/i18n/WCAG).
 
 **Checkpoint**: example block proves discovery + assets + render end-to-end.
 
@@ -98,11 +98,11 @@ enqueued (and absent otherwise); its dynamic render shows a connector-bound fiel
 
 ## Phase 7: Wiring & Polish
 
-- [ ] T018 `plugins/corex-blocks/src/BlocksServiceProvider.php` — bind BlockMap/DynamicBlockRegistrar/ConnectorRegistry + the example Renderer/Connector; `boot()` hooks `init` to discover+register blocks then connectors; add `BlocksServiceProvider::class` to `Boot`'s provider list.
-- [ ] T019 [P] Write `tests/Integration/Blocks/BlocksBootTest.php`: blocks register on init in real WP; with ACF/Woo/Polylang absent the suite passes (FR-017, SC-005).
-- [ ] T020 [P] Update `plugins/corex-blocks/README.md` (or the corex-core docs) with a block-engine section; run docs-guard.
-- [ ] T021 Run full `quickstart.md` validation against `./wp`; final guard pass; confirm the headless unit suite passes with no optional plugins (SC-007).
-- [ ] T022 Update `PROGRESS.md` (spec 004 done) + `DECISIONS.md` (any new choices); verify Definition of Done.
+- [X] T018 `plugins/corex-blocks/src/BlocksServiceProvider.php` — bind BlockMap/DynamicBlockRegistrar/ConnectorRegistry + the example Renderer/Connector; `boot()` hooks `init` to discover+register blocks then connectors; add `BlocksServiceProvider::class` to `Boot`'s provider list.
+- [X] T019 [P] Write `tests/Integration/Blocks/BlocksBootTest.php`: blocks register on init in real WP; with ACF/Woo/Polylang absent the suite passes (FR-017, SC-005).
+- [X] T020 [P] Update `plugins/corex-blocks/README.md` (or the corex-core docs) with a block-engine section; run docs-guard.
+- [X] T021 Run full `quickstart.md` validation against `./wp`; final guard pass; confirm the headless unit suite passes with no optional plugins (SC-007).
+- [X] T022 Update `PROGRESS.md` (spec 004 done) + `DECISIONS.md` (any new choices); verify Definition of Done.
 
 ---
 

@@ -32,6 +32,18 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
+- (nothing — spec 004 block engine COMPLETE; spec 005 not yet started)
+
+> **✅ SPEC 004 — corex-blocks (block engine) — COMPLETE (2026-06-08).** All 22 tasks; US1–US4 +
+> example block + polish. 89 unit + 15 integration green; verified on real WP (block
+> `corex/entity-field` registered on init; connector registers as a Block Bindings source; site
+> HTTP 200). `register_block_type`/`register_block_bindings_source` confined to DynamicBlockRegistrar +
+> ConnectorRegistry (Principle VI). Delivered: BlockMap (convention discovery, headless),
+> DynamicBlockRegistrar (container-resolved, non-fatal render), Connectors\{Connector,
+> RepositoryConnector,ConnectorRegistry} (escaped/empty-safe), the entity-field example block
+> (theme.json tokens + logical CSS), BlocksServiceProvider. DECISIONS #23 (renderer FQCN in block.json).
+> Commits: 0cb5aca (US1), 5c543b8 (US3+US4). Detailed build log below.
+
 - **SPEC 004 — corex-blocks (block engine).** Spec written: `specs/004-block-engine/spec.md`
   (Draft); checklist passed. 4 developer journeys (P1 auto-discovery+registration, P1 conditional
   assets, P2 dynamic render via container, P2 model→block connector seam) + one example block; 18 FRs,
@@ -153,7 +165,9 @@ not leave broken code. The last completed unit of work is the Phase 4 skeleton +
 bootstrap; the next unit is the Phase 5 corex-core foundation (not yet begun).
 
 ## Next (recommended order)
-1. **SPEC 004 — corex-blocks (block engine)** [PHASE 8] — next per COREX-SPECKIT-START. FSE blocks with auto-discovery, conditional assets (block.json), Interactivity API, model→block connectors. Built on corex-core + data layer. _(superseded planning note for 003 below)_
+1. **SPEC 005 — Middleware + Security** [PHASE 9] — next per COREX-SPECKIT-START. Declarative route middleware (nonce/auth/throttle/sanitize) + the SecurityModule; controllers declare middleware, applied automatically (Principle VII). Built on corex-core + data layer. _(superseded note for 004 below)_
+
+<!-- prev --> **SPEC 004 — corex-blocks (block engine)** [PHASE 8] — next per COREX-SPECKIT-START. FSE blocks with auto-discovery, conditional assets (block.json), Interactivity API, model→block connectors. Built on corex-core + data layer. _(superseded planning note for 003 below)_
 
 <!-- prev --> **SPEC 003 — CLI generators (`wp corex make:*`)** [PHASE 7] — the next module per
    COREX-SPECKIT-START "The rhythm from here". Spec Kit flow: `/speckit-specify` → `/clarify` →

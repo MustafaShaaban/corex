@@ -217,6 +217,31 @@ The output base path, namespace, and prefix come from the Config engine (`app.pa
 `app.prefix`) — set per project by `wp corex init`; when `app.path` is empty the default is
 `wp-content/corex-app`. An invalid class name is rejected before any file is written.
 
+## Blocks
+
+Blocks register themselves by convention. Drop a folder with a `block.json` under
+`plugins/corex-blocks/src/blocks/<name>/`; on `init` the engine discovers and registers it — no central
+list. A block's declared assets (`style`/`script` in `block.json`) load **only** when the block renders
+(Principle VI; the framework enqueues no global library).
+
+A dynamic (server-rendered) block names its renderer in `block.json` (`"corex": { "renderer": "…" }`);
+the engine resolves that `Corex\Blocks\BlockRenderer` from the container so the render stays thin and
+injectable, and a render that throws yields empty output (logged), never a fatal page.
+
+To surface Corex data in the editor, register a connector:
+
+```php
+final class CareerConnector extends Corex\Blocks\Connectors\RepositoryConnector {
+    public function name(): string { return 'corex/career'; }
+    // value() resolves a field through the injected Repository (escaped, empty-safe)
+}
+// in a provider boot(): $registry->register(new CareerConnector($careerRepository));
+```
+
+A site editor binds a core block attribute to `corex/career` via the WordPress Block Bindings API; the
+value is sourced through the Repository (the only data-source layer) and escaped on output. Block
+styling uses `theme.json` CSS variables and logical properties (RTL-correct by default).
+
 ## Boot-time problems
 
 Malformed configuration, unresolvable dependencies, and broken providers are written to the

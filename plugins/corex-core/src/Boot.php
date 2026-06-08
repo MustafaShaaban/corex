@@ -10,6 +10,7 @@ namespace Corex;
 
 defined('ABSPATH') || exit;
 
+use Corex\Blocks\BlocksServiceProvider;
 use Corex\Cli\CliServiceProvider;
 use Corex\Foundation\Application;
 use Corex\Foundation\CoreServiceProvider;
@@ -47,6 +48,7 @@ final class Boot
             CoreServiceProvider::class,
             DataServiceProvider::class,
             CliServiceProvider::class,
+            BlocksServiceProvider::class,
         ]);
         self::$app->boot();
     }

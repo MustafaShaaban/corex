@@ -312,3 +312,16 @@ Why: the right, scalable home for per-concern config; `Config::get('query.max')`
 `Config::get('app.name')` both resolve. Add-ons can ship their own config files later.
 Impact: behavior of `Config::get('app.name')` unchanged; the spec-001 integration test still passes.
 Status: Final.
+
+## #23 — Dynamic block renderer declared in block.json (not by folder convention)
+Date: 2026-06-08
+Context: block folders are kebab-case (`entity-field`) per the block.json `name` convention, but
+kebab-case is not a valid PHP namespace segment, so a renderer class cannot be PSR-4-autoloaded from
+inside the block folder.
+Decision: a dynamic block declares its renderer's FQCN in `block.json` under `corex.renderer`; the
+renderer lives in a PSR-4-valid namespace (e.g. `Corex\Blocks\Examples\EntityFieldRenderer`) and is
+resolved from the container by `DynamicBlockRegistrar`. The block folder stays kebab; the renderer is
+decoupled from the folder name.
+Why: keeps WP/block.json conventions (kebab names) and PHP autoloading (PSR-4) both correct, with an
+explicit, greppable renderer reference; avoids fragile folder-name→namespace transforms.
+Status: Final.

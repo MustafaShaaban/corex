@@ -1,0 +1,16 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/entity-field",
+	"title": "Entity Field",
+	"category": "widgets",
+	"icon": "database",
+	"description": "Displays a Corex entity field (dynamic, server-rendered).",
+	"textdomain": "corex",
+	"attributes": {
+		"value": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false },
+	"style": "file:./style.css",
+	"corex": { "renderer": "Corex\\Blocks\\Examples\\EntityFieldRenderer" }
+}
