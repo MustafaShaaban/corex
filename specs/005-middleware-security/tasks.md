@@ -43,9 +43,9 @@ guard on every src class file.
 
 ## Phase 5: User Story 3 — Declarative resolution (Priority: P2)
 
-- [ ] T014 [P] [US3] Write failing `tests/Unit/Security/MiddlewareResolverTest.php`: resolve `alias:param` (param passed); `resolveAll`; unknown alias → RejectingMiddleware (fail closed) (FR-012, FR-014, FR-015, SC-004).
-- [ ] T015 [US3] `Http/Middleware/RejectingMiddleware.php` + `Http/Middleware/MiddlewareResolver.php`.
-- [ ] T016 [US3] Guard gate.
+- [X] T014 [P] [US3] Write failing `tests/Unit/Security/MiddlewareResolverTest.php`: resolve `alias:param` (param passed); `resolveAll`; unknown alias → RejectingMiddleware (fail closed) (FR-012, FR-014, FR-015, SC-004).
+- [X] T015 [US3] `Http/Middleware/RejectingMiddleware.php` + `Http/Middleware/MiddlewareResolver.php`.
+- [X] T016 [US3] Guard gate.
 
 ## Phase 6: User Story 4 — SecurityModule (Priority: P2)
 
