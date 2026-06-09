@@ -28,6 +28,9 @@ final class DataServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->container->singleton(\Corex\Database\Casts\Caster::class);
+        $this->container->singleton(\Corex\Database\Schema\Migrator::class);
+
         $this->container->singleton(
             FieldResolver::class,
             static fn (ContainerInterface $c): FieldResolver => new FieldResolver(
