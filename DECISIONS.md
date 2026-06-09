@@ -508,3 +508,19 @@ cross-table relations, a fluent query builder, and migration versioning/rollback
 Why: gives the Laravel-like custom-table experience securely, on the conventions WordPress already ships
 (dbDelta), without overbuilding; unblocks Newsletter (013) and Careers (014).
 Status: Final.
+
+## #37 — Captcha as a fail-closed driver add-on; upload validation in core
+Date: 2026-06-10
+Context: public Newsletter/Careers submissions need anti-spam + (careers) safe file uploads — shared
+enablers, so they precede those features.
+Decision: a `Captcha` interface (addon `corex-captcha`) with `none`/`honeypot`/remote drivers; the remote
+driver covers reCAPTCHA/Turnstile/hCaptcha (all `{success}`-shaped) by verify-URL + secret, selected by
+`captcha.driver`/`captcha.secret` config. **Remote verification is fail-closed** (missing secret/token,
+transport error, or non-success → false) and the secret is never logged. The **upload validator** lives in
+corex-core (`Security\Upload`): it rejects upload errors, empty/oversized files, disallowed MIME types, and
+mismatched extensions on the descriptor only (no caller path → traversal-safe); the boundary store
+(`wp_handle_upload`) re-checks the real MIME. Deferred: v3 score thresholds, Akismet, virus scanning, image
+processing.
+Why: provider-agnostic anti-spam + safe uploads, both fully unit-testable (only the provider HTTP call is a
+boundary), shipped before the features that need them.
+Status: Final.

@@ -32,7 +32,15 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- _(nothing mid-flight — spec 011 complete; pick up at **Next**.)_
+- _(nothing mid-flight — spec 012 complete; pick up at **Next**.)_
+
+> **✅ SPEC 012 — Captcha drivers + Secure uploads — COMPLETE (2026-06-10).** US1–US2. **177 unit + 25
+> integration green.** Upload (core, pure): `Security\Upload\UploadValidator` (rejects upload errors,
+> empty/oversized, disallowed MIME, mismatched extension; descriptor-only, path-safe). Captcha (new addon
+> **`addons/corex-captcha`**, `Corex\Captcha`): `Captcha` interface + `NullCaptcha`/`HoneypotCaptcha`/
+> `RemoteCaptcha` (reCAPTCHA/Turnstile/hCaptcha, fail-closed, secret never logged) + config-driven
+> `CaptchaResolver`. 5 + 5 unit tests. DECISIONS #37. README added. Enablers for Newsletter (013) + Careers
+> (014). On `feature/012-captcha-uploads`.
 
 > **✅ SPEC 011 — Custom Tables + TableRepository — COMPLETE (2026-06-10).** US1–US2. **167 unit + 25
 > integration green.** Core data foundation (corex-core) for many-row entities. Pure: `Database\Schema\Table`
@@ -249,11 +257,14 @@ per-story commits with the Guard Gate. **Pending (not yet done):** open the PR `
 ## Next (recommended order)
 Per **`ROADMAP.md`** (the locked 009–017 plan). Published to origin through **v0.8.1** (`main`/`develop`
 + tags, green CI). Releases since are local until pushed.
-1. **Spec 012 — Captcha drivers + Secure uploads** (addon `corex-captcha` + core upload util) — anti-spam
-   (honeypot/reCAPTCHA/Turnstile/hCaptcha behind one interface) + path-safe MIME/size-validated uploads.
-   Then 013 Newsletter (needs 011+012) → 014 Careers → 015 Call → 016 brand/admin → 017 admin dashboard.
+1. **Spec 013 — Newsletter / Subscriptions** (addon `corex-newsletter`) — subscribe form (topics), subscriber
+   custom table, double opt-in (signed tokens), suppression/unsubscribe, GDPR consent, on-publish trigger
+   (post in topic → email confirmed subscribers via the mail queue). Builds on 008/011/012 + the event seam.
+   Then 014 Careers → 015 Call → 016 brand/admin → 017 admin dashboard.
 2. **Browser-verified follow-ups** (need a browser/build env): company-kit visuals + more page compositions;
    custom JS-edit blocks; the React admin dashboard (017).
+
+<!-- prev --> **SPEC 012 — Captcha drivers + Secure uploads** [PHASE 16] — ✅ COMPLETE (2026-06-10). Captcha driver system (corex-captcha) + core upload validator. _(superseded note below)_
 
 <!-- prev --> **SPEC 011 — Custom Tables + TableRepository** [PHASE 15] — ✅ COMPLETE (2026-06-10). Schema builder + Migrator + typed TableRepository + casts in corex-core. _(superseded note below)_
 
