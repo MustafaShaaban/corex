@@ -20,6 +20,7 @@ use Corex\Foundation\DataServiceProvider;
 use Corex\Email\MailServiceProvider;
 use Corex\Forms\FormsServiceProvider;
 use Corex\Kit\KitServiceProvider;
+use Corex\Newsletter\NewsletterServiceProvider;
 use Corex\Security\SecurityModule;
 use Corex\Theme\ThemeServiceProvider;
 use Corex\Ui\UiServiceProvider;
@@ -65,6 +66,7 @@ final class Boot
             UiServiceProvider::class,
             KitServiceProvider::class,
             CaptchaServiceProvider::class,
+            NewsletterServiceProvider::class,
         ]);
         self::$app->boot();
     }
