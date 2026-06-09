@@ -32,7 +32,15 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- _(nothing mid-flight — spec 014 complete; pick up at **Next**.)_
+- _(nothing mid-flight — spec 015 complete; pick up at **Next**.)_
+
+> **✅ SPEC 015 — Call Request — COMPLETE (2026-06-10).** US1. **192 unit + 28 integration green.** New
+> add-on **`addons/corex-bookings`** (`Corex\Bookings`). Core (pure, tested): `LeaderDirectory` (configured
+> leaders) + `CallRequestService` (validate leader + contact → store → notify leader + confirm visitor; zero
+> side effects on rejection). Boundary: `CallRequestRepository` (`corex_call_requests` custom table) + store,
+> request REST route (honeypot+captcha), leader/confirm email templates; leaders from `bookings.leaders`.
+> 3 unit + 1 integration; data path verified on real WP. DECISIONS #40. README added. **Completes the
+> Blackstone feature set (contact + newsletter + careers + call).** On `feature/015-call-request`.
 
 > **✅ SPEC 014 — Careers — COMPLETE (2026-06-10).** US1–US3. **189 unit + 27 integration green.** New
 > add-on **`addons/corex-careers`** (`Corex\Careers`). Core (pure, tested): `StatusFlow` (valid pipeline
@@ -276,9 +284,12 @@ per-story commits with the Guard Gate. **Pending (not yet done):** open the PR `
 ## Next (recommended order)
 Per **`ROADMAP.md`** (the locked 009–017 plan). Published to origin through **v0.8.1** (`main`/`develop`
 + tags, green CI). Releases since are local until pushed.
-1. **Spec 015 — Call Request** (addon `corex-bookings`) — request-a-call form (pick a leader + preferred
-   time + contact) → store (custom table) → notify the leader + confirm the visitor (Mail). Then 016
-   brand/admin → 017 admin dashboard (React — **needs a build/browser env, can't be verified headlessly**).
+1. **Spec 016 — Corex Brand Identity + Admin Branding** (`corex-config`) — define Corex's identity (navy +
+   cyan, an SVG mark) + a configurable logo replacing the WP admin-bar/login/footer logo. Testable parts:
+   the SVG/asset + the config + the login/admin-bar hooks; the visual result needs a browser.
+2. **Spec 017 — Admin Dashboard / Settings** (React/DataViews) — **needs a Node build + a browser to author
+   and verify; cannot be built/verified in this headless environment.** Will be scaffolded + flagged for
+   the user's build/browser env.
 2. **Browser-verified follow-ups** (need a browser/build env): company-kit visuals + more page compositions;
    custom JS-edit blocks; the React admin dashboard (017).
 
