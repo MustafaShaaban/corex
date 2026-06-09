@@ -4,6 +4,21 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.8.0] — 2026-06-09
+
+### Added
+- **Corex Mail (MVP)** (new `corex-email` add-on, spec 008): a one-line `Mail` API; code-registered
+  templates with whitelisted, escaped `{{ path }}` merge variables wrapped in a brand layout (from
+  `theme.json`/`brand.json`, RTL-aware); a security gate (header-injection guard + recipient
+  validation); fixed/role/dynamic recipient resolution; a `MailDriver` abstraction with a default
+  `WpMailDriver` (`wp_mail`, from-identity from Config); and a queryable `corex_email_log` audit (CPT).
+- **Mail seam** in corex-core (`Corex\Mail\Mailer` + `MailRequest`): a transport-neutral interface so
+  modules send email without depending on a concrete engine (detect-and-defer via the container).
+
+### Changed
+- Forms (`SendEmailListener`) now delivers the contact notification through Corex Mail when active
+  (templated + logged), falling back to `wp_mail` otherwise — no hard dependency either way.
+
 ## [0.7.0] — 2026-06-09
 
 ### Added
@@ -33,5 +48,6 @@ All notable changes to Corex are documented here. The format follows
   (spec 005); the theme token source + `brand.json` runtime override resolver + style variations
   (spec 006).
 
+[0.8.0]: https://github.com/MustafaShaaban/corex/releases/tag/v0.8.0
 [0.7.0]: https://github.com/MustafaShaaban/corex/releases/tag/v0.7.0
 [0.6.0]: https://github.com/MustafaShaaban/corex/releases/tag/v0.6.0
