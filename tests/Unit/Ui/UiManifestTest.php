@@ -19,7 +19,7 @@ it('enumerates the actual dynamic blocks and section patterns', function () {
     Functions\when('__')->returnArg();
     Functions\when('esc_html__')->returnArg();
 
-    $blocksDir = dirname(__DIR__, 3) . '/addons/corex-ui/src/blocks';
+    $blocksDir = dirname(__DIR__, 3) . '/addons/corex-ui/src/Blocks';
     $manifest  = (new UiManifest(new PatternLibrary(), $blocksDir))->describe();
 
     expect($manifest['blocks'])->toContain('corex/posts', 'corex/breadcrumbs', 'corex/copyright');
