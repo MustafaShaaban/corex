@@ -12,9 +12,12 @@ defined('ABSPATH') || exit;
 
 use Corex\Blocks\BlockMap;
 use Corex\Blocks\DynamicBlockRegistrar;
+use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Ui\Blocks\PostsProvider;
 use Corex\Ui\Blocks\WpPostsProvider;
+use Corex\Ui\Patterns\PatternLibrary;
+use Corex\Ui\Patterns\PatternRegistrar;
 
 /**
  * Boots the Corex UI library: binds the dynamic-block renderers' dependencies,
@@ -26,11 +29,25 @@ final class UiServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->container->singleton(PostsProvider::class, WpPostsProvider::class);
+
+        $this->container->singleton(
+            UiManifest::class,
+            static fn (ContainerInterface $c): UiManifest => new UiManifest($c->make(PatternLibrary::class), __DIR__ . '/blocks'),
+        );
     }
 
     public function boot(): void
     {
         add_action('init', [$this, 'registerBlocks']);
+        add_action('init', [$this, 'registerPatterns']);
+    }
+
+    /**
+     * Register the Corex pattern category and the section patterns.
+     */
+    public function registerPatterns(): void
+    {
+        $this->container->make(PatternRegistrar::class)->register();
     }
 
     /**
