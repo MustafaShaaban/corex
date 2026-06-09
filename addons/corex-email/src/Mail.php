@@ -11,6 +11,7 @@ namespace Corex\Email;
 defined('ABSPATH') || exit;
 
 use Corex\Email\Message\MessageBuilder;
+use Corex\Email\Recipients\RecipientResolver;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Email\Template\TemplateRenderer;
 use Corex\Support\Facades\Corex;
@@ -31,6 +32,7 @@ final class Mail
             $to,
             Corex::make(TemplateRegistry::class),
             Corex::make(TemplateRenderer::class),
+            Corex::make(RecipientResolver::class),
             Corex::make(MailService::class),
         );
     }

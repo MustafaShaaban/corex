@@ -11,6 +11,9 @@ namespace Corex\Email;
 defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
+use Corex\Email\Recipients\RecipientResolver;
+use Corex\Email\Recipients\UserDirectory;
+use Corex\Email\Recipients\WpUserDirectory;
 use Corex\Email\Template\Layout;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Email\Template\TemplateRenderer;
@@ -36,6 +39,13 @@ final class MailServiceProvider extends ServiceProvider
         $this->container->singleton(
             TemplateRenderer::class,
             static fn (ContainerInterface $c): TemplateRenderer => new TemplateRenderer($c->make(Layout::class)),
+        );
+
+        $this->container->singleton(UserDirectory::class, WpUserDirectory::class);
+
+        $this->container->singleton(
+            RecipientResolver::class,
+            static fn (ContainerInterface $c): RecipientResolver => new RecipientResolver($c->make(UserDirectory::class)),
         );
     }
 

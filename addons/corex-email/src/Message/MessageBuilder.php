@@ -12,20 +12,22 @@ defined('ABSPATH') || exit;
 
 use Corex\Email\EmailResult;
 use Corex\Email\MailService;
+use Corex\Email\Recipients\RecipientResolver;
 use Corex\Email\Template\MailContext;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Email\Template\TemplateRenderer;
 
 /**
- * The fluent API behind the Mail facade. Collects recipients and either a template
- * + context or an ad-hoc subject + body, then `build()`s an immutable EmailMessage
- * (rendering the template through the renderer). `send()` hands the message to the
+ * The fluent API behind the Mail facade. Collects recipients (fixed/role/dynamic)
+ * and either a template + context or an ad-hoc subject + body, then `build()`s an
+ * immutable EmailMessage — resolving recipients through the RecipientResolver and
+ * rendering the template through the renderer. `send()` hands the message to the
  * MailService. `build()` is pure and independently testable.
  */
 final class MessageBuilder
 {
-    /** @var list<string> */
-    private array $to;
+    /** @var list<array{type:string,value:string}> */
+    private array $recipients = [];
     /** @var list<string> */
     private array $cc = [];
     /** @var list<string> */
@@ -38,15 +40,32 @@ final class MessageBuilder
     private array $context = [];
 
     /**
-     * @param string|list<string> $to
+     * @param string|list<string> $to fixed recipient address(es)
      */
     public function __construct(
         string|array $to,
         private readonly TemplateRegistry $templates,
         private readonly TemplateRenderer $renderer,
+        private readonly RecipientResolver $resolver,
         private readonly MailService $service,
     ) {
-        $this->to = array_values((array) $to);
+        foreach (array_values((array) $to) as $address) {
+            $this->recipients[] = ['type' => 'fixed', 'value' => $address];
+        }
+    }
+
+    public function toRole(string $role): self
+    {
+        $this->recipients[] = ['type' => 'role', 'value' => $role];
+
+        return $this;
+    }
+
+    public function toDynamic(string $contextPath): self
+    {
+        $this->recipients[] = ['type' => 'dynamic', 'value' => $contextPath];
+
+        return $this;
     }
 
     /**
@@ -132,6 +151,8 @@ final class MessageBuilder
 
     private function message(string $subject, string $body): EmailMessage
     {
-        return new EmailMessage($this->to, $this->cc, $this->bcc, $this->replyTo, $subject, $body);
+        $to = $this->resolver->resolve($this->recipients, new MailContext($this->context))['valid'];
+
+        return new EmailMessage($to, $this->cc, $this->bcc, $this->replyTo, $subject, $body);
     }
 }
