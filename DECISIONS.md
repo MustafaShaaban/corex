@@ -568,3 +568,16 @@ effects on rejection. The request REST route is honeypot + captcha gated. Deferr
 real availability calendars, time-zone handling, and reminders.
 Why: the smallest correct shape that completes the Blackstone feature set, reusing every prior seam.
 Status: Final.
+
+## #41 — Corex product brand (navy + cyan SVG) in corex-config, separate from client branding
+Date: 2026-06-10
+Context: Corex had no identity; the user asked for one, applied in wp-admin, and kept distinct from client
+sites (which stay neutral).
+Decision: Corex's identity is **navy `#0B1F3B` + cyan `#00C2FF`** with a scalable **SVG** layered-core mark
++ wordmark, bundled in `corex-config/assets`. A pure `BrandingService` resolves the logo URL (config
+`brand.logo_url` override → bundled default) + the login CSS + the configured footer/login-url; `AdminBranding`
+applies them via `login_head`/`login_headerurl`/`admin_footer_text`. This is the **product** brand (#12A),
+in core (`corex-config`), never client-site styling (#12B stays neutral, overridden by the client's
+`brand.json`). Deferred: the admin-bar logo node, a Corex admin color scheme, and the React settings UI (017).
+Why: gives Corex a real, configurable identity now (fully unit-testable), without bleeding into client sites.
+Status: Final.
