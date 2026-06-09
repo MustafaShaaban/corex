@@ -20,6 +20,7 @@
             "Corex\\Config\\": "plugins/corex-config/src/",
             "Corex\\Forms\\": "plugins/corex-forms/src/",
             "Corex\\Email\\": "addons/corex-email/src/",
+            "Corex\\Ui\\": "addons/corex-ui/src/",
             "Corex\\Cli\\": "packages/cli/src/"
         }
     },

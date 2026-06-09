@@ -438,3 +438,43 @@ caught + logged). The queue (Action Scheduler), retries, rate limiting, attachme
 deferred — additive changes behind the same `MailService`/`MailDriver` seams.
 Why: ships a secure MVP without credential storage; the abstractions make every deferred piece additive.
 Status: Final.
+
+---
+
+## Post-0.8 roadmap decisions
+
+## #33 — Roadmap restructure + packaging: features are add-ons, foundations are core, designs are blocks
+Date: 2026-06-09
+Context: planning toward the first real consumer (Blackstone EIT). The user expanded scope — a reusable
+block library, a full company-website kit, professional newsletter + careers + call-request flows, Corex's
+own brand identity, and an admin settings/dashboard — and asked that designs be composed of Corex blocks
+and that feature modules be add-ons where appropriate.
+Decision: adopt `ROADMAP.md` (specs 009–017) with this packaging rule — `plugins/` = free core
+(engine/data/blocks/config), `addons/` = optional **features** (the commercial / marketplace layer),
+`theme/` = the neutral skin. "Everything is blocks": a **Corex UI block library** (`corex-ui`, spec 009)
+is the foundation, and the **Company Website Kit** (`corex-kit-company`, spec 010) composes those blocks
+into patterns + universal FSE templates — neutral/un-branded so client sites (Blackstone) apply their
+Figma via `brand.json` + a style variation. **Custom tables** (011, core) precede the data-heavy features.
+**Newsletter** (013), **Careers** (014), **Call Request** (015) are feature add-ons built on forms + mail
++ events + tables, with **captcha drivers + secure uploads** (012) as shared anti-spam/security enablers.
+Corex gets its **own product identity** (navy `#0B1F3B` + cyan `#00C2FF`, geometric sans, a layered-core
+SVG mark) + **admin branding** (016) and a **React/DataViews admin dashboard** (017, `corex-config`),
+kept separate from client branding (Principle: the client base stays neutral).
+Why: matches the framework's plugin/addon philosophy and the free-core/paid-add-on marketplace strategy;
+"blocks first" makes every design reusable; doing custom tables before subscribers/applications avoids a
+CPT-scale dead end. The premature spec 009 "starter-kit" draft is superseded — the kit returns as spec 010
+composing the block library.
+Status: Final (sequence adjustable per project need).
+
+## #34 — Corex UI MVP is no-JS-build: server-rendered dynamic blocks + section patterns
+Date: 2026-06-09
+Context: "everything is blocks", but this environment has no browser and no verified JS block build, and a
+rich custom-edit block library needs `@wordpress/scripts` + an editor to author and verify.
+Decision: the `corex-ui` MVP ships **server-rendered dynamic blocks** (`corex/posts`/`breadcrumbs`/
+`copyright`, via the spec-004 engine, PHP-testable) for live data, and **block patterns** (core-block
+compositions under a "Corex" category) for content sections — both token-only, RTL, accessible, i18n,
+headless-verifiable. Custom JS-edit blocks + the build pipeline are a later spec (need a browser/build env).
+The `UiManifest` reads the actual `block.json` files so it cannot drift from what is registered.
+Why: delivers a real, fully-tested block/pattern library now without unverifiable JS/editor work; the
+build-based rich blocks layer on additively when an authoring/verification environment exists.
+Status: Final.

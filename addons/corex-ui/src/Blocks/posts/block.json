@@ -1,0 +1,16 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/posts",
+	"title": "Corex Posts",
+	"category": "widgets",
+	"icon": "list-view",
+	"description": "A list of recent posts as accessible cards (dynamic, bounded).",
+	"textdomain": "corex",
+	"attributes": {
+		"count": { "type": "number", "default": 3 }
+	},
+	"supports": { "html": false },
+	"style": "file:./style.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\PostsRenderer" }
+}
