@@ -34,8 +34,11 @@ final class WpMailDriver implements MailDriver
             $headers[] = 'From: ' . $from;
         }
 
-        if ($message->replyTo !== null && $message->replyTo !== '') {
-            $headers[] = 'Reply-To: ' . $message->replyTo;
+        $replyTo = ($message->replyTo !== null && $message->replyTo !== '')
+            ? $message->replyTo
+            : sanitize_email((string) $this->config->get('mail.reply_to', ''));
+        if ($replyTo !== '') {
+            $headers[] = 'Reply-To: ' . $replyTo;
         }
 
         foreach ($message->cc as $cc) {
