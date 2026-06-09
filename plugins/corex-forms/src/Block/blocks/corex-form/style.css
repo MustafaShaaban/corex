@@ -1,0 +1,58 @@
+/*
+ * Corex Form block — styling consumes theme.json design tokens only (no hardcoded
+ * colors/sizes/fonts) and uses logical properties, so it is RTL-correct by default.
+ * Loaded conditionally (only when the block renders).
+ */
+.corex-form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--50);
+	text-align: start;
+}
+
+.corex-form__field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--30);
+}
+
+.corex-form__label {
+	color: var(--wp--preset--color--ink);
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-form__required {
+	color: var(--wp--preset--color--accent);
+}
+
+.corex-form__input {
+	padding-block: var(--wp--preset--spacing--30);
+	padding-inline: var(--wp--preset--spacing--30);
+	color: var(--wp--preset--color--ink);
+	background-color: var(--wp--preset--color--surface);
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-form__submit {
+	align-self: start;
+	padding-block: var(--wp--preset--spacing--30);
+	padding-inline: var(--wp--preset--spacing--50);
+	color: var(--wp--preset--color--surface);
+	background-color: var(--wp--preset--color--primary);
+}
+
+.corex-form__status {
+	margin-block-start: var(--wp--preset--spacing--30);
+	color: var(--wp--preset--color--ink);
+}
+
+/*
+ * Honeypot — present for bots but removed from view and the a11y tree. Off-screen
+ * (not display:none, which some bots skip); the inline offset is functional
+ * accessible-hiding plumbing, the same pattern as WordPress core's .screen-reader-text,
+ * not a design value — hence the literal offset rather than a token.
+ */
+.corex-form__hp {
+	position: absolute;
+	inset-inline-start: -9999px;
+}

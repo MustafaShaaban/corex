@@ -24,6 +24,9 @@ use Corex\Http\Middleware\Response;
  */
 final class FormSubmissionService
 {
+    /** The hidden anti-bot field name, shared by the controller and the block renderer. */
+    public const HONEYPOT_KEY = 'corex_hp';
+
     public function __construct(
         private readonly FormRegistry $forms,
         private readonly SchemaResolver $resolver,
@@ -48,7 +51,7 @@ final class FormSubmissionService
     /**
      * @param array<string,mixed> $input sanitized values (the honeypot key included)
      */
-    public function handle(string $slug, array $input, string $honeypotKey = 'corex_hp'): Response
+    public function handle(string $slug, array $input, string $honeypotKey = self::HONEYPOT_KEY): Response
     {
         $form = $this->forms->find($slug);
 

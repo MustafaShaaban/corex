@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/form",
+	"title": "Corex Form",
+	"category": "widgets",
+	"icon": "feedback",
+	"description": "Renders a registered Corex form (server-rendered, secured submit).",
+	"textdomain": "corex",
+	"attributes": {
+		"formSlug": { "type": "string", "default": "contact" }
+	},
+	"supports": { "html": false },
+	"style": "file:./style.css",
+	"viewScript": "file:./view.js",
+	"corex": { "renderer": "Corex\\Forms\\Block\\FormBlockRenderer" }
+}

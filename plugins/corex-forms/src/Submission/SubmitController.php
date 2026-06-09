@@ -29,8 +29,6 @@ use WP_REST_Response;
  */
 final class SubmitController
 {
-    private const HONEYPOT_KEY = 'corex_hp';
-
     public function __construct(
         private readonly FormSubmissionService $service,
         private readonly Pipeline $pipeline,
@@ -66,7 +64,7 @@ final class SubmitController
 
         $response = $this->pipeline->run(
             $corexRequest,
-            fn (Request $r): Response => $this->service->handle($slug, $r->input, self::HONEYPOT_KEY),
+            fn (Request $r): Response => $this->service->handle($slug, $r->input, FormSubmissionService::HONEYPOT_KEY),
             ...$this->middlewareFor($slug),
         );
 
@@ -95,7 +93,7 @@ final class SubmitController
      */
     private function sanitizeShape(array $schema): array
     {
-        $shape = [self::HONEYPOT_KEY => 'sanitize_text_field'];
+        $shape = [FormSubmissionService::HONEYPOT_KEY => 'sanitize_text_field'];
 
         foreach ($schema as $name => $field) {
             $shape[$name] = match ($field->type) {

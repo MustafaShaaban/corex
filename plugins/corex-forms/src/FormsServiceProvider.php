@@ -10,9 +10,12 @@ namespace Corex\Forms;
 
 defined('ABSPATH') || exit;
 
+use Corex\Blocks\BlockMap;
+use Corex\Blocks\DynamicBlockRegistrar;
 use Corex\Container\ContainerInterface;
 use Corex\Events\ListenerProvider;
 use Corex\Foundation\ServiceProvider;
+use Corex\Forms\Block\FormBlockRenderer;
 use Corex\Forms\Forms\ContactForm;
 use Corex\Forms\Listeners\SendEmailListener;
 use Corex\Forms\Listeners\StoreSubmissionListener;
@@ -54,6 +57,7 @@ final class FormsServiceProvider extends ServiceProvider
         $this->container->singleton(SendEmailListener::class);
         $this->container->singleton(FormSubmissionService::class);
         $this->container->singleton(SubmitController::class);
+        $this->container->singleton(FormBlockRenderer::class);
     }
 
     public function boot(): void
@@ -62,10 +66,24 @@ final class FormsServiceProvider extends ServiceProvider
         $this->registerListeners();
 
         add_action('init', [$this, 'registerSubmissionPostType']);
+        add_action('init', [$this, 'registerFormBlock']);
 
         add_action('rest_api_init', function (): void {
             $this->container->make(SubmitController::class)->register();
         });
+    }
+
+    /**
+     * Discover and register the form block. Its view script + style are declared in
+     * block.json, so WordPress loads them only on pages where the block renders (FR-014).
+     */
+    public function registerFormBlock(): void
+    {
+        $registrar = $this->container->make(DynamicBlockRegistrar::class);
+
+        foreach ($this->container->make(BlockMap::class)->discover(__DIR__ . '/Block/blocks') as $block) {
+            $registrar->register($block);
+        }
     }
 
     /**
