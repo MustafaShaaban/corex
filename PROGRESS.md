@@ -32,7 +32,15 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- _(nothing mid-flight — spec 010 complete; pick up at **Next**.)_
+- _(nothing mid-flight — spec 011 complete; pick up at **Next**.)_
+
+> **✅ SPEC 011 — Custom Tables + TableRepository — COMPLETE (2026-06-10).** US1–US2. **167 unit + 25
+> integration green.** Core data foundation (corex-core) for many-row entities. Pure: `Database\Schema\Table`
+> (fluent columns → dbDelta-friendly CREATE TABLE) + `Database\Casts\Caster` (int/bool/string/decimal/
+> array-json/datetime both directions; malformed json → []). Boundary: `Database\Schema\Migrator` (create/
+> drop/exists via dbDelta, `{prefix}corex_` namespace) + `Repositories\TableRepository` (typed CRUD +
+> where; `$wpdb->prepare` for all variables; validated identifiers). 3 unit + 3 integration; CRUD verified
+> on real WP. DECISIONS #36. corex-core README "Custom tables" added. On `feature/011-custom-tables`.
 
 > **✅ SPEC 010 — Company Website Kit (MVP) — COMPLETE (2026-06-09).** US1–US3. **164 unit + 22
 > integration green.** New add-on **`addons/corex-kit-company`** (`Corex\Kit`): `Blueprint` + `BlueprintRegistry`
@@ -241,11 +249,13 @@ per-story commits with the Guard Gate. **Pending (not yet done):** open the PR `
 ## Next (recommended order)
 Per **`ROADMAP.md`** (the locked 009–017 plan). Published to origin through **v0.8.1** (`main`/`develop`
 + tags, green CI). Releases since are local until pushed.
-1. **Spec 011 — Custom Tables + TableRepository** (core, corex-core data) — migrations/schema builder +
-   `TableRepository` + casts; the data foundation for subscribers/applications/bookings. Then 012 captcha+
-   uploads → 013 Newsletter → 014 Careers → 015 Call → 016 brand/admin → 017 admin dashboard (per ROADMAP).
-2. **Company kit follow-ups** (browser-verified): more page compositions (About/Services/Team/Blog), a
-   neutral style variation, demo content — once a browser is available to author/verify them.
+1. **Spec 012 — Captcha drivers + Secure uploads** (addon `corex-captcha` + core upload util) — anti-spam
+   (honeypot/reCAPTCHA/Turnstile/hCaptcha behind one interface) + path-safe MIME/size-validated uploads.
+   Then 013 Newsletter (needs 011+012) → 014 Careers → 015 Call → 016 brand/admin → 017 admin dashboard.
+2. **Browser-verified follow-ups** (need a browser/build env): company-kit visuals + more page compositions;
+   custom JS-edit blocks; the React admin dashboard (017).
+
+<!-- prev --> **SPEC 011 — Custom Tables + TableRepository** [PHASE 15] — ✅ COMPLETE (2026-06-10). Schema builder + Migrator + typed TableRepository + casts in corex-core. _(superseded note below)_
 
 <!-- prev --> **SPEC 010 — Company Website Kit** [PHASE 14] — ✅ COMPLETE (2026-06-09). Blueprint manifest + universal FSE templates (front-page composes corex/* patterns) + header/footer parts; new add-on corex-kit-company. _(superseded note below)_
 
