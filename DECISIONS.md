@@ -478,3 +478,18 @@ The `UiManifest` reads the actual `block.json` files so it cannot drift from wha
 Why: delivers a real, fully-tested block/pattern library now without unverifiable JS/editor work; the
 build-based rich blocks layer on additively when an authoring/verification environment exists.
 Status: Final.
+
+## #35 — Kit architecture: FSE templates in the theme, the Blueprint manifest in the add-on
+Date: 2026-06-09
+Context: a "kit" must compose modules into a deployable company site, but FSE templates/parts are
+inherently theme files, while the kit should be a discoverable, swappable unit.
+Decision: the **universal FSE templates + parts live in the theme** (`theme/templates`, `theme/parts`) —
+the constitution's home for presentation, so they remain when the kit add-on is deactivated. The **Blueprint
+manifest + registry** are the add-on's only code (`corex-kit-company`, `Corex\Kit`): `CompanyBlueprint`
+declares required/recommended modules + the templates/parts/patterns it relies on. The `front-page` composes
+the spec-009 section patterns via `wp:pattern` refs; the footer composes the `corex/copyright` block. All
+token-only/RTL/accessible; visual/editor validity is browser-verified, not claimed. Future kits add their
+own patterns + a Blueprint without touching the theme skeleton.
+Why: keeps FSE conventions (templates are the theme's) while making kits discoverable/swappable; the theme
+stays the durable skin, the kit a thin composition manifest.
+Status: Final.
