@@ -493,3 +493,18 @@ own patterns + a Blueprint without touching the theme skeleton.
 Why: keeps FSE conventions (templates are the theme's) while making kits discoverable/swappable; the theme
 stays the durable skin, the kit a thin composition manifest.
 Status: Final.
+
+## #36 — Custom tables: dbDelta + a typed TableRepository in core, the only query layer
+Date: 2026-06-10
+Context: subscribers/applications/bookings are many queryable rows with relations/status — a poor fit for
+CPTs (scale, query, filtering). Spec 011 adds the custom-table layer the data-heavy features need.
+Decision: a pure `Schema\Table` builder (fluent columns → `CREATE TABLE`) + a `Casts\Caster` (both
+directions); a `Schema\Migrator` that creates/drops idempotently via WordPress's **`dbDelta`** under
+`{prefix}corex_`; and an abstract `Repositories\TableRepository` (typed insert/find/update/delete/where).
+**Every variable query is `$wpdb->prepare`d**; table/column identifiers are code-defined (never request
+input) and the `where` column is validated against `^[a-z0-9_]+$`. The repository is the sole query layer
+(Principle III). Modules create their tables on activation. Deferred: extra indexes, foreign keys,
+cross-table relations, a fluent query builder, and migration versioning/rollback history.
+Why: gives the Laravel-like custom-table experience securely, on the conventions WordPress already ships
+(dbDelta), without overbuilding; unblocks Newsletter (013) and Careers (014).
+Status: Final.

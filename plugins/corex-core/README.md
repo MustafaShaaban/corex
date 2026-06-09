@@ -198,6 +198,32 @@ iterates.
 > v1 covers post-backed entities and the belongs-to relation; the contracts are shaped to add
 > taxonomy/user/custom-table sources and has-many/taxonomy relations later.
 
+**Custom tables** — for entities that are many queryable rows (subscribers, applications, bookings),
+not posts. Define the schema fluently and run it idempotently, then use a typed `TableRepository`:
+
+```php
+use Corex\Database\Schema\Table;
+
+$this->migrator->create(
+    (new Table('subscribers'))->id()->string('email')->boolean('confirmed')
+        ->text('topics')->datetime('confirmed_at', nullable: true)->timestamps()
+);
+
+final class SubscriberRepository extends Corex\Repositories\TableRepository {
+    protected function table(): string { return 'subscribers'; }
+    protected function casts(): array  { return ['confirmed' => 'bool', 'topics' => 'json']; }
+}
+
+$id  = $subscribers->insert(['email' => 'a@b.com', 'confirmed' => false, 'topics' => ['news']]);
+$row = $subscribers->find($id);          // ['confirmed' => false, 'topics' => ['news'], …] — typed
+$subscribers->where('email', 'a@b.com'); // parameterized; [] when none
+```
+
+Tables are created under the site prefix + a `corex_` namespace via WordPress's idempotent `dbDelta`
+(modules create their tables on activation). Every variable query is parameterized; values cast to/from
+their declared types (`int`/`bool`/`string`/`decimal`/`array`/`json`/`datetime`); a malformed stored JSON
+value hydrates to `[]`. The repository is the only layer that runs the queries (Principle III).
+
 ## CLI generators
 
 Scaffold the framework's own patterns with `wp corex make:*` (registered only when WP-CLI is present —
