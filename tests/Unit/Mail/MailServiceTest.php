@@ -1,11 +1,12 @@
 <?php
 
 /**
- * Unit tests for the send orchestrator (spec US1: FR-001, FR-011, SC-005).
+ * Unit tests for the send orchestrator (spec US1+US2: FR-001, FR-006, FR-007, FR-011,
+ * SC-002, SC-004, SC-005).
  *
- * Delivery goes through the driver and is recorded once; a driver failure is caught and
- * logged as `failed` — the service never throws. Real collaborators (fake driver + fake
- * log store at the boundary); no internal mocks.
+ * Header injection and invalid recipients are blocked before delivery; a driver failure
+ * is caught and logged. Real collaborators (fake driver + fake log at the boundary, a real
+ * HeaderGuard); no internal mocks. The service never throws.
  *
  * @package Corex\Tests\Unit\Mail
  */
@@ -16,6 +17,7 @@ use Corex\Email\Driver\MailDriver;
 use Corex\Email\Log\EmailLogStore;
 use Corex\Email\MailService;
 use Corex\Email\Message\EmailMessage;
+use Corex\Email\Security\HeaderGuard;
 use Corex\Support\BootLogger;
 
 function fakeDriver(): MailDriver
@@ -51,16 +53,24 @@ function fakeLogStore(): EmailLogStore
     };
 }
 
-function message(): EmailMessage
+function mailService(MailDriver $driver, EmailLogStore $log): MailService
 {
-    return new EmailMessage(['to@example.com'], [], [], null, 'Hi', '<p>x</p>');
+    return new MailService($driver, $log, new HeaderGuard(), new BootLogger(debug: false));
 }
 
-it('delivers a message and records it as sent', function () {
+/**
+ * @param list<string> $to
+ */
+function message(array $to = ['to@example.com'], string $subject = 'Hi'): EmailMessage
+{
+    return new EmailMessage($to, [], [], null, $subject, '<p>x</p>');
+}
+
+it('delivers a valid message and records it as sent', function () {
     $driver = fakeDriver();
     $log    = fakeLogStore();
 
-    $result = (new MailService($driver, $log, new BootLogger(debug: false)))->deliver(message());
+    $result = mailService($driver, $log)->deliver(message());
 
     expect($result->isSent())->toBeTrue()
         ->and($driver->sent)->toHaveCount(1)
@@ -72,10 +82,9 @@ it('records failed when the driver returns false', function () {
     $driver->result = false;
     $log = fakeLogStore();
 
-    $result = (new MailService($driver, $log, new BootLogger(debug: false)))->deliver(message());
+    $result = mailService($driver, $log)->deliver(message());
 
-    expect($result->isSent())->toBeFalse()
-        ->and($result->status)->toBe('failed')
+    expect($result->status)->toBe('failed')
         ->and($log->records)->toBe(['failed']);
 });
 
@@ -84,9 +93,40 @@ it('catches a throwing driver, records failed, and never throws', function () {
     $driver->throw = true;
     $log = fakeLogStore();
 
-    $result = (new MailService($driver, $log, new BootLogger(debug: false)))->deliver(message());
+    $result = mailService($driver, $log)->deliver(message());
 
-    expect($result->isSent())->toBeFalse()
-        ->and($result->status)->toBe('failed')
+    expect($result->status)->toBe('failed')
+        ->and($log->records)->toBe(['failed']);
+});
+
+it('rejects a header-injected subject without sending', function () {
+    $driver = fakeDriver();
+    $log    = fakeLogStore();
+
+    $result = mailService($driver, $log)->deliver(message(subject: "Hi\r\nBcc: victim@example.com"));
+
+    expect($result->status)->toBe('rejected')
+        ->and($driver->sent)->toBe([])     // nothing delivered
+        ->and($log->records)->toBe(['rejected']);
+});
+
+it('drops invalid recipients but still delivers to the valid ones', function () {
+    $driver = fakeDriver();
+    $log    = fakeLogStore();
+
+    $result = mailService($driver, $log)->deliver(message(['good@example.com', 'not-an-email']));
+
+    expect($result->isSent())->toBeTrue()
+        ->and($driver->sent[0]->to)->toBe(['good@example.com']); // invalid dropped
+});
+
+it('fails without sending when every recipient is invalid', function () {
+    $driver = fakeDriver();
+    $log    = fakeLogStore();
+
+    $result = mailService($driver, $log)->deliver(message(['nope', 'also-bad']));
+
+    expect($result->status)->toBe('failed')
+        ->and($driver->sent)->toBe([])
         ->and($log->records)->toBe(['failed']);
 });

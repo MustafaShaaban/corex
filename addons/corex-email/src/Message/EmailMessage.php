@@ -31,12 +31,4 @@ final class EmailMessage
         public readonly array $headers = [],
     ) {
     }
-
-    /**
-     * @param list<string> $to
-     */
-    public function withRecipients(array $to): self
-    {
-        return new self($to, $this->cc, $this->bcc, $this->replyTo, $this->subject, $this->body, $this->headers);
-    }
 }
