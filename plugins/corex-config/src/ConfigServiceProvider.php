@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Config\Branding\AdminBranding;
 use Corex\Config\Branding\BrandingService;
+use Corex\Config\Settings\AdminDashboard;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Support\Config\ConfigInterface;
@@ -33,10 +34,12 @@ final class ConfigServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(AdminBranding::class);
+        $this->container->singleton(AdminDashboard::class);
     }
 
     public function boot(): void
     {
         $this->container->make(AdminBranding::class)->register();
+        $this->container->make(AdminDashboard::class)->register();
     }
 }
