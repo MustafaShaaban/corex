@@ -325,3 +325,67 @@ decoupled from the folder name.
 Why: keeps WP/block.json conventions (kebab names) and PHP autoloading (PSR-4) both correct, with an
 explicit, greppable renderer reference; avoids fragile folder-name→namespace transforms.
 Status: Final.
+
+---
+
+## Spec 007 decisions (forms engine)
+
+## #24 — The event seam lives in corex-core (`Corex\Events`), not in corex-forms
+Date: 2026-06-09
+Context: forms needs to dispatch a submission to multiple listeners (store, email). The dispatcher
+could live in the forms plugin, but Corex Mail and future add-ons need the same seam.
+Decision: `ListenerProvider` + `EventDispatcher` + the `Event` marker live in corex-core
+(`EventServiceProvider`, registered in `Boot`). The forms plugin consumes them. Dispatch is ordered
+(registration order), once-each, and best-effort (a throwing listener is caught + logged via
+`BootLogger`; the rest still run).
+Why: a shared, foundational concern belongs in the engine so every module reuses one registry; it
+keeps forms as an *application* of the architecture, not the owner of cross-cutting plumbing.
+Status: Final.
+
+## #25 — Submissions are a non-public `corex_submission` CPT, persisted via the data layer
+Date: 2026-06-09
+Context: a submission must be stored and queryable by form slug; its fields are dynamic per form.
+Decision: `Submission` (a Model with `postType() = corex_submission`, empty static `fields()`) +
+`SubmissionRepository extends PostRepository`. The repository creates a private post and writes the
+form slug and each validated value as `corex_field_*` meta via the injected `FieldDriver` — so
+Principle III holds (the repository is the only data-source layer; no `wp_insert_post` in listeners).
+Dynamic field names preclude a static `Model::fields()` map, hence the meta is written explicitly.
+Why: keeps persistence behind the repository while supporting arbitrary per-form fields; queryable by
+`corex_form_slug` meta. No custom table needed for v1.
+Status: Final.
+
+## #26 — Validator bails per field; rules return i18n message keys
+Date: 2026-06-09
+Context: a field with several rules could accumulate many errors; messages must be translatable
+without a WordPress runtime (the validator is pure).
+Decision: the validator records at most one error per field — the first failing rule in declared
+order (bail per field). Rules return an i18n message **key** (`required`, `email`, `max`, …) or null,
+never a sentence; the presentation layer owns the translated text. Field names normalize to a
+canonical key (used for the input name and `corex_field_*` meta); two names that normalize to the
+same key, and unknown rules, are rejected at schema resolution (fail closed, developer-visible).
+Why: predictable, minimal error payloads; pure/headless validation; translation stays at the edge.
+Status: Final.
+
+## #27 — `Response::reject` gains an optional payload (cross-spec, spec-005)
+Date: 2026-06-09
+Context: a 422 must carry per-field validation errors, but the spec-005 `Response::reject` produced a
+null-valued rejection.
+Decision: `reject(string $reason, int $status = 403, mixed $payload = null)` — the payload populates
+the existing `value`. Backward compatible: all prior two-argument callers are unchanged (value stays
+null). The forms controller maps a rejection's array payload to the `errors` body.
+Why: the smallest additive change that lets any endpoint return a structured rejection body; avoids a
+forms-local result type duplicating `Response`.
+Status: Final.
+
+## #28 — The public submit endpoint is secured by middleware, not a capability
+Date: 2026-06-09
+Context: a contact form is submitted by anonymous visitors, so `current_user_can` cannot gate it; a
+writing REST route still must prove intent.
+Decision: `register_rest_route` uses `permission_callback => '__return_true'`; identity/intent are
+enforced by the declarative middleware pipeline (`nonce` on the WP REST nonce via `X-WP-Nonce` →
+form-shaped `sanitize` → `throttle`) plus a `corex_hp` honeypot. The controller hand-writes no
+security checks (Principle VII). The generic `sanitize` alias carries no shape, so the controller
+supplies a form-shaped sanitizer derived from the schema.
+Why: the correct model for a public submission — a nonce + rate limit + honeypot, not a capability;
+keeps security automatic and declarative.
+Status: Final.

@@ -18,6 +18,7 @@
             "Corex\\": "plugins/corex-core/src/",
             "Corex\\Blocks\\": "plugins/corex-blocks/src/",
             "Corex\\Config\\": "plugins/corex-config/src/",
+            "Corex\\Forms\\": "plugins/corex-forms/src/",
             "Corex\\Cli\\": "packages/cli/src/"
         }
     },

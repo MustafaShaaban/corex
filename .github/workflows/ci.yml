@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint + headless tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.3']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --no-check-publish
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Lint PHP source
+        run: find plugins packages -name '*.php' -print0 | xargs -0 -n1 -P4 php -l
+
+      - name: Headless unit tests (Pest)
+        run: composer test
+
+# Not yet wired here (tracked in CONTRIBUTING.md):
+#   - Integration tests (composer test:integration) need a WordPress + MySQL service
+#     (wp-env) provisioned in CI; run locally against ./wp for now.
+#   - The guard gates (clean-code/wp/test/docs) are run by the coding agent on each diff
+#     per the constitution; a CI shim can enforce them once a runner exists.
+#   - PHPCS (WordPress-Extra) + ESLint (@wordpress) once their configs are added.
