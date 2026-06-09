@@ -11,6 +11,7 @@ namespace Corex;
 defined('ABSPATH') || exit;
 
 use Corex\Blocks\BlocksServiceProvider;
+use Corex\Bookings\BookingsServiceProvider;
 use Corex\Captcha\CaptchaServiceProvider;
 use Corex\Careers\CareersServiceProvider;
 use Corex\Cli\CliServiceProvider;
@@ -69,6 +70,7 @@ final class Boot
             CaptchaServiceProvider::class,
             NewsletterServiceProvider::class,
             CareersServiceProvider::class,
+            BookingsServiceProvider::class,
         ]);
         self::$app->boot();
     }
