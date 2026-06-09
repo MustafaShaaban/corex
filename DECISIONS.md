@@ -556,3 +556,15 @@ recruiter admin screen (spec 017), CV virus scanning, scheduled interviews.
 Why: the right storage per data shape (CPT vs table), with file safety reusing the spec-012 validator, and a
 fully unit-testable application core.
 Status: Final.
+
+## #40 — Call request: configured leaders + a custom-table request flow
+Date: 2026-06-10
+Context: a "book a call with a leader" flow that stores the request and notifies the right person, reusing
+the now-built table + mail + captcha seams.
+Decision: leaders are configured (`bookings.leaders`: `{id,name,email}`) via a pure `LeaderDirectory` (the
+public list omits emails); a pure `CallRequestService` validates the leader + contact, stores in
+`corex_call_requests` (spec 011), and notifies the leader + confirms the visitor via Mail — zero side
+effects on rejection. The request REST route is honeypot + captcha gated. Deferred: a leaders CPT/screen,
+real availability calendars, time-zone handling, and reminders.
+Why: the smallest correct shape that completes the Blackstone feature set, reusing every prior seam.
+Status: Final.

@@ -25,6 +25,7 @@
             "Corex\\Captcha\\": "addons/corex-captcha/src/",
             "Corex\\Newsletter\\": "addons/corex-newsletter/src/",
             "Corex\\Careers\\": "addons/corex-careers/src/",
+            "Corex\\Bookings\\": "addons/corex-bookings/src/",
             "Corex\\Cli\\": "packages/cli/src/"
         }
     },
