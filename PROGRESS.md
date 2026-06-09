@@ -32,7 +32,17 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- _(nothing mid-flight — spec 008 complete; pick up at **Next**.)_
+- _(nothing mid-flight — spec 009 complete; pick up at **Next**.)_
+
+> **✅ SPEC 009 — Corex UI block library (MVP) — COMPLETE (2026-06-09).** US1–US3. **159 unit + 22
+> integration green.** New add-on **`addons/corex-ui`** (`Corex\Ui`). Three server-rendered `corex/*`
+> dynamic blocks (posts/breadcrumbs/copyright; injected PostsProvider for testability; bounded, escaped,
+> token-styled) + five section patterns (hero/features/cta/testimonial/contact, the last composing
+> `corex/form`) under a "Corex" inserter category, all token-only (theme.json presets) + RTL + i18n +
+> neutral, + a `UiManifest` (reads the actual block.json files; for kit discovery). All blocks + patterns
+> + category verified registered on real WP. Guard Gate clean. DECISIONS #34. README added. _No-JS-build_
+> MVP; custom JS-edit blocks + the build pipeline deferred. **Editor/visual validity of pattern markup
+> needs a browser to confirm.** Built on `feature/009-corex-ui` off develop.
 
 > **✅ SPEC 008 — Corex Mail (MVP) — COMPLETE (2026-06-09).** All 29 tasks; US1–US4 + polish.
 > **151 unit + 22 integration green** on real `./wp`. New add-on **`addons/corex-email`** (`Corex\Email`)
@@ -220,12 +230,15 @@ per-story commits with the Guard Gate. **Pending (not yet done):** open the PR `
 `CONTRIBUTING.md`/`CHANGELOG.md`, GitHub branch protection. See DECISIONS #11.
 
 ## Next (recommended order)
-1. **Push to origin** (outward-facing — needs explicit go): push `main`, `develop`, and tags
-   `v0.6.0`/`v0.7.0`/`v0.8.0`; enable GitHub branch protection + the CI gate (`.github/workflows/ci.yml`)
-   on PRs into `develop`/`main`. Nothing is pushed yet.
-2. **Next module** — per COREX-SPECKIT-START "The rhythm": **Abilities/MCP** (agent layer). _Practical
-   reprioritization candidates given current progress: a Corex Mail follow-up (queue/attachments/admin UI),
-   a Frontend Site Builder MVP, Custom Tables/migrations, or Starter Kits — decide with the user._
+Per **`ROADMAP.md`** (the locked 009–017 plan). Published to origin through **v0.8.1** (`main`/`develop`
++ tags, green CI). Releases since are local until pushed.
+1. **Spec 010 — Company Website Kit** (`corex-kit-company` + theme templates) — compose the spec-009 blocks
+   + patterns into universal FSE templates (front-page/page/single/archive/search/404/index + header/footer)
+   + page compositions (Home/About/Services/Team/Contact/Blog) + a neutral style variation + a Blueprint
+   manifest. Designed via `ui-ux-pro-max`. Then 011 Custom Tables → 013 Newsletter → 014 Careers, etc.
+2. **Push the new releases** (v0.9.0+) to origin when ready (outward-facing).
+
+<!-- prev --> **SPEC 009 — Corex UI block library** [PHASE 13] — ✅ COMPLETE (2026-06-09). Server-rendered corex/* dynamic blocks + Corex section patterns + UI manifest; new add-on corex-ui. _(superseded note below)_
 
 <!-- prev --> **SPEC 008 — Corex Mail (MVP)** [PHASE 12] — ✅ COMPLETE (2026-06-09). Templated secure send + event-seam Mailer + wp_mail driver + email log; new add-on corex-email; Forms delegates to it. _(superseded note below)_
 
