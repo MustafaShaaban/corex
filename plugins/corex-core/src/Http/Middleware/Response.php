@@ -29,9 +29,13 @@ final class Response
         return new self(true, $value, '', 200);
     }
 
-    public static function reject(string $reason, int $status = 403): self
+    /**
+     * @param mixed $payload optional structured body for the rejection (e.g. per-field
+     *                       validation errors); defaults to null for opaque rejections
+     */
+    public static function reject(string $reason, int $status = 403, mixed $payload = null): self
     {
-        return new self(false, null, $reason, $status);
+        return new self(false, $payload, $reason, $status);
     }
 
     public function isOk(): bool
