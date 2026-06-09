@@ -1,0 +1,27 @@
+/*
+ * Corex Posts — token-only, logical CSS (RTL-correct), conditional asset.
+ */
+.corex-posts {
+	display: grid;
+	/* 16rem is a functional responsive grid track (layout structure), not a design
+	   token — colors/spacing/fonts below all resolve from theme.json. */
+	grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+	gap: var(--wp--preset--spacing--50);
+}
+
+.corex-posts__item {
+	padding: var(--wp--preset--spacing--50);
+	background-color: var(--wp--preset--color--surface);
+	text-align: start;
+}
+
+.corex-posts__title {
+	font-size: var(--wp--preset--font-size--lg);
+	color: var(--wp--preset--color--ink);
+	margin-block: 0;
+}
+
+.corex-posts__empty {
+	color: var(--wp--preset--color--ink);
+	text-align: start;
+}

@@ -1,0 +1,13 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/copyright",
+	"title": "Corex Copyright",
+	"category": "widgets",
+	"icon": "info-outline",
+	"description": "Footer copyright line — current year + site name (dynamic).",
+	"textdomain": "corex",
+	"supports": { "html": false },
+	"style": "file:./style.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\CopyrightRenderer" }
+}

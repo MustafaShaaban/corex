@@ -1,0 +1,9 @@
+/*
+ * Corex Copyright — token-only, logical CSS (RTL-correct), conditional asset.
+ */
+.corex-copyright {
+	color: var(--wp--preset--color--ink);
+	font-size: var(--wp--preset--font-size--sm);
+	text-align: start;
+	margin-block: var(--wp--preset--spacing--30);
+}

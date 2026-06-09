@@ -1,0 +1,13 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/breadcrumbs",
+	"title": "Corex Breadcrumbs",
+	"category": "widgets",
+	"icon": "arrow-right-alt2",
+	"description": "Accessible breadcrumb trail from the site home to the current page (dynamic).",
+	"textdomain": "corex",
+	"supports": { "html": false },
+	"style": "file:./style.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\BreadcrumbsRenderer" }
+}
