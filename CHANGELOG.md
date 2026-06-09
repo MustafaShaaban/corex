@@ -4,6 +4,33 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.17.0] — 2026-06-10
+
+### Added
+- **Admin Dashboard / Settings** (`corex-config`, spec 017): a top-level Corex admin menu + a
+  server-rendered settings screen (brand/mail/forms/captcha) that persists to the options the Config
+  engine reads. (The React/DataViews UI is the deferred upgrade — needs a Node build + browser.)
+- **Corex Brand Identity + Admin Branding** (`corex-config`, spec 016): Corex's SVG logo (navy + cyan)
+  + login/footer admin branding, configurable, separate from client branding.
+- **Call Request** (`corex-bookings`, spec 015): request-a-call flow → custom table + leader/visitor mail.
+- **Careers** (`corex-careers`, spec 014): job CPT + taxonomies, `corex/jobs` block, secure application
+  flow (CV validated, stored, notified) + a status pipeline.
+- **Newsletter / Subscriptions** (`corex-newsletter`, spec 013): topic subscriptions, double opt-in
+  (signed tokens), unsubscribe/suppression, GDPR consent, on-publish trigger.
+- **Captcha + Secure uploads** (`corex-captcha` + core, spec 012): a fail-closed captcha driver system
+  (honeypot/reCAPTCHA/Turnstile/hCaptcha) + a path-safe upload validator.
+- **Custom Tables + TableRepository** (core, spec 011): a schema builder + `dbDelta` migrator + typed
+  `TableRepository` (casts), the foundation for subscribers/applications/bookings.
+- **Company Website Kit** (`corex-kit-company` + theme, spec 010): universal FSE templates + a Blueprint
+  manifest composing the Corex blocks/patterns.
+- **Corex UI block library** (`corex-ui`, spec 009): server-rendered `corex/*` blocks + token-only section
+  patterns under a "Corex" category + a UI manifest.
+
+> Spans v0.9.0–v0.17.0 (one tagged release per spec). The full per-spec history is in `PROGRESS.md` /
+> `DECISIONS.md`. Tags: v0.9.0 (UI) · v0.10.0 (Kit) · v0.11.0 (Tables) · v0.12.0 (Captcha/Uploads) ·
+> v0.13.0 (Newsletter) · v0.14.0 (Careers) · v0.15.0 (Call) · v0.16.0 (Branding) · v0.17.0 (Admin).
+> Plus hotfixes v0.8.1 / v0.9.1 (cross-platform autoload casing, caught by CI).
+
 ## [0.8.0] — 2026-06-09
 
 ### Added
