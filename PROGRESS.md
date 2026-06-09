@@ -32,7 +32,16 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- _(nothing mid-flight — spec 016 complete; pick up at **Next**.)_
+- _(nothing mid-flight — **spec 017 complete; the ROADMAP.md plan (009–017) is fully delivered**; pick up at **Next**.)_
+
+> **✅ SPEC 017 — Admin Dashboard / Settings — COMPLETE (2026-06-10).** US1. **198 unit + 29 integration
+> green.** Built into **`corex-config`** (`Corex\Config\Settings`). A top-level "Corex" admin menu + a
+> server-rendered settings screen (brand/mail/forms/captcha). Pure: `SettingsRegistry` (schema) +
+> `SettingsForm` (escaped form). `SettingsStore` persists each field to the prefixed option the Config
+> engine reads (so settings flow into the framework with no extra wiring); `AdminDashboard` registers the
+> menu + save (nonce + manage_options + sanitize). 2 unit + 1 integration (saved setting read back via
+> Config). DECISIONS #42. README updated. **The React/DataViews UI (tables, setup wizard, health-check) is
+> the deferred upgrade — needs a Node build + browser.** On `feature/017-admin-dashboard`.
 
 > **✅ SPEC 016 — Corex Brand Identity + Admin Branding — COMPLETE (2026-06-10).** US1–US2. **196 unit + 28
 > integration green.** Built into **`corex-config`** (`Corex\Config`). Corex's own SVG logo (navy + cyan
@@ -292,12 +301,24 @@ per-story commits with the Guard Gate. **Pending (not yet done):** open the PR `
 ## Next (recommended order)
 Per **`ROADMAP.md`** (the locked 009–017 plan). Published to origin through **v0.8.1** (`main`/`develop`
 + tags, green CI). Releases since are local until pushed.
-1. **Spec 016 — Corex Brand Identity + Admin Branding** (`corex-config`) — define Corex's identity (navy +
-   cyan, an SVG mark) + a configurable logo replacing the WP admin-bar/login/footer logo. Testable parts:
-   the SVG/asset + the config + the login/admin-bar hooks; the visual result needs a browser.
-2. **Spec 017 — Admin Dashboard / Settings** (React/DataViews) — **needs a Node build + a browser to author
-   and verify; cannot be built/verified in this headless environment.** Will be scaffolded + flagged for
-   the user's build/browser env.
+**🎉 The ROADMAP.md plan (specs 009–017) is fully delivered and released (v0.6.0 → v0.17.0), all CI-green.**
+What remains needs **a browser / Node build environment** (which this headless WAMP setup lacks) — these are
+the honest follow-ups, not new specs:
+1. **Browser/visual verification** of the FSE templates + patterns (spec 010), the `corex/*` blocks (spec
+   009), the form/newsletter/careers/call flows over HTTP + their email rendering, and the admin branding +
+   settings screens. All register/store/validate correctly headlessly; their **rendered appearance** is
+   unverified here.
+2. **Build-dependent upgrades:** the **React/DataViews admin UI** (spec 017's deferred layer — tables, setup
+   wizard, health-check), custom **JS-edit blocks** (spec 009's deferred layer), and a `@wordpress/scripts`
+   asset pipeline.
+3. **Deferred within shipped specs:** the **mail queue** (Action Scheduler) for bulk newsletter sends; the
+   CV **file-move** (`wp_handle_upload`) in careers; multi-provider mail drivers; more company-kit page
+   compositions + a style variation.
+4. **Apache** is down in this env (no admin rights) — start full WAMP from the tray for the browser smoke.
+
+<!-- prev --> **SPEC 017 — Admin Dashboard / Settings** [PHASE 21] — ✅ COMPLETE (2026-06-10). Settings registry/form/store + Corex admin menu; React UI deferred. _(superseded note below)_
+
+<!-- prev --> **SPEC 016 — Corex Brand Identity + Admin Branding** [PHASE 20] — ✅ COMPLETE (2026-06-10). Corex SVG identity + login/footer admin branding in corex-config. _(superseded note below)_
 2. **Browser-verified follow-ups** (need a browser/build env): company-kit visuals + more page compositions;
    custom JS-edit blocks; the React admin dashboard (017).
 

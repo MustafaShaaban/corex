@@ -581,3 +581,18 @@ in core (`corex-config`), never client-site styling (#12B stays neutral, overrid
 `brand.json`). Deferred: the admin-bar logo node, a Corex admin color scheme, and the React settings UI (017).
 Why: gives Corex a real, configurable identity now (fully unit-testable), without bleeding into client sites.
 Status: Final.
+
+## #42 — Admin settings persist to the Config option layer; React UI deferred to a build env
+Date: 2026-06-10
+Context: Corex needs a control panel; the constitution favors a React/DataViews admin, but this environment
+has no Node build and no browser to author or verify a React app — building one unseen would be unverifiable.
+Decision: ship the **verifiable server-rendered foundation** — a `SettingsRegistry` (schema) + `SettingsForm`
+(escaped HTML, pure) + `SettingsStore` that persists each setting to the **prefixed option the Config engine's
+option layer already reads** (`brand.footer_text` → `corex_brand_footer_text`), so saved settings flow into
+the framework with **no extra wiring** + an `AdminDashboard` (menu + nonce/capability/sanitized save). The
+**React/DataViews/DataForm UI** (DataViews tables for submissions/subscribers/applications, the setup wizard,
+a health-check runner) is the **deferred upgrade** — explicitly flagged as needing a Node build + a browser,
+not claimed as done.
+Why: delivers a working, fully-tested admin now and keeps settings wiring trivial (one option namespace);
+honest about the React layer rather than shipping unverifiable JS.
+Status: Final.
