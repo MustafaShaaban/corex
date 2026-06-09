@@ -314,6 +314,32 @@ request. `dispatch()` returns the event. `ListenerProvider` and `EventDispatcher
 container singletons, so every module shares one registry. Corex Forms builds on this seam,
 and Corex Mail will reuse it.
 
+## Mail seam
+
+A neutral mail interface lets a module send email without depending on any concrete mail engine.
+Depend on `Corex\Mail\Mailer`; describe the message with the primitive `Corex\Mail\MailRequest`
+(scalars/arrays only). A consumer checks the container to decide whether a real engine is active
+(detect-and-defer):
+
+```php
+use Corex\Mail\Mailer;
+use Corex\Mail\MailRequest;
+
+if ($container->has(Mailer::class)) {
+    $container->make(Mailer::class)->send(new MailRequest(
+        to: [$recipient],
+        templateName: 'contact-notification',
+        context: ['submission' => $values, 'site' => ['name' => get_bloginfo('name')]],
+    ));
+} else {
+    wp_mail($recipient, $subject, $body);   // fallback when no engine is bound
+}
+```
+
+corex-core ships only the seam; the **Corex Mail** add-on binds an implementation that renders the
+template, validates recipients, guards against header injection, delivers, and logs. `Mailer::send()`
+is best-effort and never throws. This is the same pattern the Forms email listener uses.
+
 ## Boot-time problems
 
 Malformed configuration, unresolvable dependencies, and broken providers are written to the

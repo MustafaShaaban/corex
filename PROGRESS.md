@@ -32,7 +32,20 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- _(nothing mid-flight — spec 007 complete; pick up at **Next**.)_
+- _(nothing mid-flight — spec 008 complete; pick up at **Next**.)_
+
+> **✅ SPEC 008 — Corex Mail (MVP) — COMPLETE (2026-06-09).** All 29 tasks; US1–US4 + polish.
+> **151 unit + 22 integration green** on real `./wp`. New add-on **`addons/corex-email`** (`Corex\Email`)
+> + the neutral **`Corex\Mail\Mailer`** seam in corex-core. Delivered: pure cores — `Template\{MailContext
+> (whitelisted dotted get), TemplateRenderer ({{ path }} merge, htmlspecialchars-escaped, brand Layout from
+> theme.json/brand.json), EmailTemplate, TemplateRegistry}`, `Security\HeaderGuard` (CR/LF/control reject),
+> `Recipients\RecipientResolver` (fixed/role/dynamic, validated); the boundary — `MailService` (guard →
+> validate → driver → log; best-effort, never throws), `Driver\WpMailDriver` (wp_mail, config from-identity),
+> `Log\{EmailLog, EmailLogRepository}` (`corex_email_log` CPT via the data layer, byStatus), `WpUserDirectory`
+> (capped), the `Mail` facade + `MessageBuilder`, `RequestMailer` binding the seam, `ContactNotificationTemplate`.
+> **Forms `SendEmailListener` now delegates to the Mailer seam when bound, else wp_mail** (detect-and-defer,
+> Principle IX). Guard Gate clean each story. DECISIONS #29–#32. READMEs: corex-email (new) + corex-core
+> "Mail seam". Built on `feature/008-corex-mail` off develop.
 
 > **✅ SPEC 007 — Forms engine — COMPLETE (2026-06-09).** All 33 tasks; US1–US4 + polish.
 > **131 unit + 19 integration green** on real `./wp`; `corex/form` block registered with a per-block
@@ -207,12 +220,14 @@ per-story commits with the Guard Gate. **Pending (not yet done):** open the PR `
 `CONTRIBUTING.md`/`CHANGELOG.md`, GitHub branch protection. See DECISIONS #11.
 
 ## Next (recommended order)
-1. **Land spec 007** — push `feature/007-forms-engine` + open its PR into `develop`, push `v0.6.0` +
-   `develop` to origin, then add CI (lint + Pest + guard gates) as the merge gate. Merge develop→main
-   at the next stable checkpoint and tag `v0.7.0`.
-2. **Next module** — per COREX-SPECKIT-START "The rhythm": **Abilities/MCP** (agent layer), then
-   **Corex Mail**. _Roadmap discussion in flight may reprioritize toward a Mail MVP / Site Builder /
-   Starter Kits sequence — decide with the user before starting `/speckit-specify` on the next spec._
+1. **Push to origin** (outward-facing — needs explicit go): push `main`, `develop`, and tags
+   `v0.6.0`/`v0.7.0`/`v0.8.0`; enable GitHub branch protection + the CI gate (`.github/workflows/ci.yml`)
+   on PRs into `develop`/`main`. Nothing is pushed yet.
+2. **Next module** — per COREX-SPECKIT-START "The rhythm": **Abilities/MCP** (agent layer). _Practical
+   reprioritization candidates given current progress: a Corex Mail follow-up (queue/attachments/admin UI),
+   a Frontend Site Builder MVP, Custom Tables/migrations, or Starter Kits — decide with the user._
+
+<!-- prev --> **SPEC 008 — Corex Mail (MVP)** [PHASE 12] — ✅ COMPLETE (2026-06-09). Templated secure send + event-seam Mailer + wp_mail driver + email log; new add-on corex-email; Forms delegates to it. _(superseded note below)_
 
 <!-- prev --> **SPEC 007 — Forms** [PHASE 11] — ✅ COMPLETE (2026-06-09). Headless validator + event seam + secured REST submit + FSE form block; new plugin corex-forms. _(superseded note below)_
 

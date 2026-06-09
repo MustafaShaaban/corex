@@ -19,6 +19,7 @@
             "Corex\\Blocks\\": "plugins/corex-blocks/src/",
             "Corex\\Config\\": "plugins/corex-config/src/",
             "Corex\\Forms\\": "plugins/corex-forms/src/",
+            "Corex\\Email\\": "addons/corex-email/src/",
             "Corex\\Cli\\": "packages/cli/src/"
         }
     },

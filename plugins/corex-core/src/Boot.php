@@ -16,6 +16,7 @@ use Corex\Foundation\Application;
 use Corex\Events\EventServiceProvider;
 use Corex\Foundation\CoreServiceProvider;
 use Corex\Foundation\DataServiceProvider;
+use Corex\Email\MailServiceProvider;
 use Corex\Forms\FormsServiceProvider;
 use Corex\Security\SecurityModule;
 use Corex\Theme\ThemeServiceProvider;
@@ -57,6 +58,7 @@ final class Boot
             SecurityModule::class,
             ThemeServiceProvider::class,
             FormsServiceProvider::class,
+            MailServiceProvider::class,
         ]);
         self::$app->boot();
     }
