@@ -32,7 +32,16 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- _(nothing mid-flight — spec 009 complete; pick up at **Next**.)_
+- _(nothing mid-flight — spec 010 complete; pick up at **Next**.)_
+
+> **✅ SPEC 010 — Company Website Kit (MVP) — COMPLETE (2026-06-09).** US1–US3. **164 unit + 22
+> integration green.** New add-on **`addons/corex-kit-company`** (`Corex\Kit`): `Blueprint` + `BlueprintRegistry`
+> (pure) + `CompanyBlueprint` manifest (required corex-ui; recommended forms/mail; templates/parts/patterns).
+> Theme gained the universal FSE templates — `front-page` (composes the corex/* hero/features/cta/contact
+> patterns), `page`, `single`, `archive`, `search`, `404` — + enhanced `header` (site title + nav) and
+> `footer` (`corex/copyright` block) parts; token-only, RTL, accessible. 5 unit tests (registry/manifest +
+> template presence + token-only scan); blueprint + front-page verified on real WP. DECISIONS #35. README
+> added. **Visual/editor validity of templates/patterns needs a browser to confirm.** On `feature/010-company-kit`.
 
 > **✅ SPEC 009 — Corex UI block library (MVP) — COMPLETE (2026-06-09).** US1–US3. **159 unit + 22
 > integration green.** New add-on **`addons/corex-ui`** (`Corex\Ui`). Three server-rendered `corex/*`
@@ -232,11 +241,13 @@ per-story commits with the Guard Gate. **Pending (not yet done):** open the PR `
 ## Next (recommended order)
 Per **`ROADMAP.md`** (the locked 009–017 plan). Published to origin through **v0.8.1** (`main`/`develop`
 + tags, green CI). Releases since are local until pushed.
-1. **Spec 010 — Company Website Kit** (`corex-kit-company` + theme templates) — compose the spec-009 blocks
-   + patterns into universal FSE templates (front-page/page/single/archive/search/404/index + header/footer)
-   + page compositions (Home/About/Services/Team/Contact/Blog) + a neutral style variation + a Blueprint
-   manifest. Designed via `ui-ux-pro-max`. Then 011 Custom Tables → 013 Newsletter → 014 Careers, etc.
-2. **Push the new releases** (v0.9.0+) to origin when ready (outward-facing).
+1. **Spec 011 — Custom Tables + TableRepository** (core, corex-core data) — migrations/schema builder +
+   `TableRepository` + casts; the data foundation for subscribers/applications/bookings. Then 012 captcha+
+   uploads → 013 Newsletter → 014 Careers → 015 Call → 016 brand/admin → 017 admin dashboard (per ROADMAP).
+2. **Company kit follow-ups** (browser-verified): more page compositions (About/Services/Team/Blog), a
+   neutral style variation, demo content — once a browser is available to author/verify them.
+
+<!-- prev --> **SPEC 010 — Company Website Kit** [PHASE 14] — ✅ COMPLETE (2026-06-09). Blueprint manifest + universal FSE templates (front-page composes corex/* patterns) + header/footer parts; new add-on corex-kit-company. _(superseded note below)_
 
 <!-- prev --> **SPEC 009 — Corex UI block library** [PHASE 13] — ✅ COMPLETE (2026-06-09). Server-rendered corex/* dynamic blocks + Corex section patterns + UI manifest; new add-on corex-ui. _(superseded note below)_
 

@@ -18,6 +18,7 @@ use Corex\Foundation\CoreServiceProvider;
 use Corex\Foundation\DataServiceProvider;
 use Corex\Email\MailServiceProvider;
 use Corex\Forms\FormsServiceProvider;
+use Corex\Kit\KitServiceProvider;
 use Corex\Security\SecurityModule;
 use Corex\Theme\ThemeServiceProvider;
 use Corex\Ui\UiServiceProvider;
@@ -61,6 +62,7 @@ final class Boot
             FormsServiceProvider::class,
             MailServiceProvider::class,
             UiServiceProvider::class,
+            KitServiceProvider::class,
         ]);
         self::$app->boot();
     }

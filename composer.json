@@ -21,6 +21,7 @@
             "Corex\\Forms\\": "plugins/corex-forms/src/",
             "Corex\\Email\\": "addons/corex-email/src/",
             "Corex\\Ui\\": "addons/corex-ui/src/",
+            "Corex\\Kit\\": "addons/corex-kit-company/src/",
             "Corex\\Cli\\": "packages/cli/src/"
         }
     },
