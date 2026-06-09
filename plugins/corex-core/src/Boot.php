@@ -13,8 +13,10 @@ defined('ABSPATH') || exit;
 use Corex\Blocks\BlocksServiceProvider;
 use Corex\Cli\CliServiceProvider;
 use Corex\Foundation\Application;
+use Corex\Events\EventServiceProvider;
 use Corex\Foundation\CoreServiceProvider;
 use Corex\Foundation\DataServiceProvider;
+use Corex\Forms\FormsServiceProvider;
 use Corex\Security\SecurityModule;
 use Corex\Theme\ThemeServiceProvider;
 use RuntimeException;
@@ -48,11 +50,13 @@ final class Boot
         // Core service providers; modules and add-ons contribute their own (US2+).
         self::$app = new Application($debug, providers: [
             CoreServiceProvider::class,
+            EventServiceProvider::class,
             DataServiceProvider::class,
             CliServiceProvider::class,
             BlocksServiceProvider::class,
             SecurityModule::class,
             ThemeServiceProvider::class,
+            FormsServiceProvider::class,
         ]);
         self::$app->boot();
     }

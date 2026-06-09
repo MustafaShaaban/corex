@@ -32,7 +32,21 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- _(nothing mid-flight — spec 006 complete; pick up at **Next**.)_
+- _(nothing mid-flight — spec 007 complete; pick up at **Next**.)_
+
+> **✅ SPEC 007 — Forms engine — COMPLETE (2026-06-09).** All 33 tasks; US1–US4 + polish.
+> **131 unit + 19 integration green** on real `./wp`; `corex/form` block registered with a per-block
+> view script (conditional asset). New plugin **`plugins/corex-forms`** (`Corex\Forms`) + the shared
+> event seam in corex-core (`Corex\Events`). Delivered: pure cores — `Validation\{Validator (bail per
+> field), RuleRegistry, Rules/*, ValidationResult}` + `Schema\{SchemaResolver, FieldSchema}`;
+> `Events\{Event, ListenerProvider, EventDispatcher (ordered, best-effort), EventServiceProvider}`;
+> the secured lifecycle — `Submission\{SubmitController (REST corex/v1/forms/{slug} → nonce→sanitize→
+> throttle pipeline), FormSubmissionService (honeypot→validate→dispatch), FormSubmittedEvent,
+> Submission + SubmissionRepository}`, `Listeners\{StoreSubmissionListener, SendEmailListener}`,
+> `Form`/`FormRegistry` + `Forms\ContactForm`; the `corex/form` FSE block (`Block\FormBlockRenderer` +
+> block.json/view.js/token-only style). `Response::reject` gained an optional payload (DECISIONS #27).
+> Guard Gate clean each story (clean-code + wp-guard + test-guard + docs-guard). DECISIONS #24–#28.
+> READMEs: corex-forms (new) + corex-core "Events" section. Built under the new git flow — see Workflow.
 
 > **✅ SPEC 006 — Theme + design tokens — COMPLETE (2026-06-08).** All 15 tasks; US1–US4 + polish.
 > `Corex\Theme\BrandResolver` (pure deep-merge: assoc merged key-by-key, siblings preserved, unknown
@@ -184,11 +198,23 @@ corex-core foundation code was written. So **no module files are half-built** �
 not leave broken code. The last completed unit of work is the Phase 4 skeleton + this environment
 bootstrap; the next unit is the Phase 5 corex-core foundation (not yet begun).
 
+## Workflow (git-flow-lite — adopted 2026-06-09)
+Per COREX-FRAMEWORK §19. `main` = production-ready, tagged releases only; `develop` = integration;
+`feature/*` = short-lived work off develop. Foundation tagged **`v0.6.0`** (specs 001–006). Spec 007
+was built on `feature/007-forms-engine` off `develop` (setup commit on develop), Conventional Commits,
+per-story commits with the Guard Gate. **Pending (not yet done):** open the PR `feature/007-forms-engine
+→ develop`, push branches/tag to origin, add CI (lint+test+guards) before the first merge, add
+`CONTRIBUTING.md`/`CHANGELOG.md`, GitHub branch protection. See DECISIONS #11.
+
 ## Next (recommended order)
-1. **SPEC 007 — Forms** [PHASE 11] — next per COREX-SPECKIT-START "The rhythm from here". Form
-   handling built on the middleware/security layer (nonce + sanitize + validation), controller-driven,
-   token-styled FSE form blocks. Spec Kit flow: `/speckit-specify` → `/clarify` → `/plan` → `/tasks`
-   → `/implement`, ONE task at a time with the Guard Gate + Pest tests. Headless core = the validator.
+1. **Land spec 007** — push `feature/007-forms-engine` + open its PR into `develop`, push `v0.6.0` +
+   `develop` to origin, then add CI (lint + Pest + guard gates) as the merge gate. Merge develop→main
+   at the next stable checkpoint and tag `v0.7.0`.
+2. **Next module** — per COREX-SPECKIT-START "The rhythm": **Abilities/MCP** (agent layer), then
+   **Corex Mail**. _Roadmap discussion in flight may reprioritize toward a Mail MVP / Site Builder /
+   Starter Kits sequence — decide with the user before starting `/speckit-specify` on the next spec._
+
+<!-- prev --> **SPEC 007 — Forms** [PHASE 11] — ✅ COMPLETE (2026-06-09). Headless validator + event seam + secured REST submit + FSE form block; new plugin corex-forms. _(superseded note below)_
 
 <!-- prev --> **SPEC 006 — Theme + design tokens** [PHASE 10] — ✅ COMPLETE (2026-06-08). theme.json token source + brand.json runtime overrides (BrandResolver) + style variations + skin discipline. _(superseded note for 005 below)_
 
@@ -212,6 +238,12 @@ Abilities/MCP → Corex Mail → other add-ons (profile-manager, woo) → setup 
 - **WP-CLI:** target the install with `--path=wp`. For `wp db …` commands, prepend the MySQL client:
   `export PATH="/c/wamp64/bin/mysql/mysql8.3.0/bin:$PATH"`
 - Full procedure + rationale: DECISIONS.md #18; rule: constitution "Environment Gate" (v1.1.0).
+- **DB/Apache start without admin:** the WAMP services (`wampmysqld64`/`wampapache64`) need an elevated
+  shell to start via the Service Manager. If they're stopped, launch the MySQL binary directly (no
+  elevation): `Start-Process "C:\wamp64\bin\mysql\mysql8.3.0\bin\mysqld.exe" -ArgumentList '--defaults-file="C:\wamp64\bin\mysql\mysql8.3.0\my.ini"' -WindowStyle Hidden`
+  (DB `corex` lives in that instance's data dir; port 3306). WP-CLI + the integration suite only need
+  MySQL. The browser **HTTP-200 smoke needs Apache** — start full WAMP from the tray (the agent can't
+  elevate). Done 2026-06-09: started mysqld this way to satisfy the Environment Gate.
 - **Folder-rename gotcha:** the `wp/wp-content/` junctions store the repo's **absolute path**, so
   renaming/moving the repo folder breaks all four. Repoint them (theme + 3 plugins) to the new path
   with `cmd /c rmdir <link>` then `cmd /c mklink /J <link> <target>`. (Done 2026-06-08 after the
@@ -222,7 +254,7 @@ Abilities/MCP → Corex Mail → other add-ons (profile-manager, woo) → setup 
 
 ## Last session summary
 2026-06-07 — PHASE 0–4 complete + WordPress environment bootstrapped. Verified env, installed Spec
-Kit + guard skills, git on `main` (Azure DevOps remote), continuity scaffolding, constitution
+Kit + guard skills, git on `main` (GitHub remote: github.com/MustafaShaaban/corex), continuity scaffolding, constitution
 (now v1.1.0 — added the Environment Gate), §4 monorepo skeleton (guards clean). Then fixed the
 missing-WordPress gap: installed WP 7.0 into `./wp/` via WP-CLI on WAMP, mapped the monorepo in via
 junctions, activated the Corex theme + 3 plugins (site boots at http://corex.local). Decisions

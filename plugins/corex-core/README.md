@@ -291,6 +291,29 @@ wholesale. A missing `brand.json` yields `[]` (defaults stand); a malformed one 
 logged, so a bad file never breaks the site. Full alternate styles live in `theme/styles/*.json`
 (e.g. `dark.json`) and WordPress auto-registers them as selectable style variations.
 
+## Events
+
+A framework-wide event seam lets modules react to what happens elsewhere without coupling
+to each other. Register a listener for an event class; dispatch an event object; every
+listener for that class runs once, in registration order:
+
+```php
+use Corex\Events\EventDispatcher;
+use Corex\Events\ListenerProvider;
+
+$provider = $c->make(ListenerProvider::class);
+$provider->listen(OrderPlaced::class, $sendReceipt);   // any callable(object): void
+
+$c->make(EventDispatcher::class)->dispatch(new OrderPlaced($order));
+```
+
+An event is any object (mark it with the `Corex\Events\Event` interface to signal intent).
+Dispatch is **best-effort**: a listener that throws is caught and logged (via `BootLogger`),
+and the remaining listeners still run — one failing listener never blocks the others or the
+request. `dispatch()` returns the event. `ListenerProvider` and `EventDispatcher` are
+container singletons, so every module shares one registry. Corex Forms builds on this seam,
+and Corex Mail will reuse it.
+
 ## Boot-time problems
 
 Malformed configuration, unresolvable dependencies, and broken providers are written to the
