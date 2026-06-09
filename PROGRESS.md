@@ -32,7 +32,17 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- _(nothing mid-flight — spec 012 complete; pick up at **Next**.)_
+- _(nothing mid-flight — spec 013 complete; pick up at **Next**.)_
+
+> **✅ SPEC 013 — Newsletter / Subscriptions — COMPLETE (2026-06-10).** US1–US3. **185 unit + 26
+> integration green.** New add-on **`addons/corex-newsletter`** (`Corex\Newsletter`). Core (pure, tested):
+> `TokenSigner` (HMAC, fail-closed) + `SubscriptionService` (double opt-in subscribe/confirm/unsubscribe;
+> consent required; no dup/enumeration) + `PublishNotifier` (topic-intersection targeting). Boundary:
+> `SubscriberRepository` (`corex_subscribers` custom table) + `WpSubscriberStore`, `newsletter_topic`
+> taxonomy, signed confirm/unsubscribe link handler, subscribe REST route (honeypot+captcha),
+> transition_post_status listener, confirm/notify Corex Mail templates. 8 unit + 1 integration; data path
+> verified on real WP. DECISIONS #38. README added. **Email rendering + full REST/publish-over-HTTP need a
+> browser; bulk send via the mail queue is deferred.** On `feature/013-newsletter`.
 
 > **✅ SPEC 012 — Captcha drivers + Secure uploads — COMPLETE (2026-06-10).** US1–US2. **177 unit + 25
 > integration green.** Upload (core, pure): `Security\Upload\UploadValidator` (rejects upload errors,
@@ -257,10 +267,9 @@ per-story commits with the Guard Gate. **Pending (not yet done):** open the PR `
 ## Next (recommended order)
 Per **`ROADMAP.md`** (the locked 009–017 plan). Published to origin through **v0.8.1** (`main`/`develop`
 + tags, green CI). Releases since are local until pushed.
-1. **Spec 013 — Newsletter / Subscriptions** (addon `corex-newsletter`) — subscribe form (topics), subscriber
-   custom table, double opt-in (signed tokens), suppression/unsubscribe, GDPR consent, on-publish trigger
-   (post in topic → email confirmed subscribers via the mail queue). Builds on 008/011/012 + the event seam.
-   Then 014 Careers → 015 Call → 016 brand/admin → 017 admin dashboard.
+1. **Spec 014 — Careers** (addon `corex-careers`) — job entity + taxonomies, `corex/jobs` block + single-job
+   template, application form with secure CV upload (spec 012), application pipeline, notifications (Mail).
+   Then 015 Call → 016 brand/admin → 017 admin dashboard (React — needs a build/browser env).
 2. **Browser-verified follow-ups** (need a browser/build env): company-kit visuals + more page compositions;
    custom JS-edit blocks; the React admin dashboard (017).
 

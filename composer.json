@@ -23,6 +23,7 @@
             "Corex\\Ui\\": "addons/corex-ui/src/",
             "Corex\\Kit\\": "addons/corex-kit-company/src/",
             "Corex\\Captcha\\": "addons/corex-captcha/src/",
+            "Corex\\Newsletter\\": "addons/corex-newsletter/src/",
             "Corex\\Cli\\": "packages/cli/src/"
         }
     },
