@@ -524,3 +524,20 @@ processing.
 Why: provider-agnostic anti-spam + safe uploads, both fully unit-testable (only the provider HTTP call is a
 boundary), shipped before the features that need them.
 Status: Final.
+
+## #38 — Newsletter: double opt-in with HMAC-signed links; on-publish via the event/post hook
+Date: 2026-06-10
+Context: a professional, GDPR-correct newsletter must not trust unconfirmed emails, must allow secure
+one-click unsubscribe from an email (where nonces don't fit), and must email subscribers when relevant
+content publishes.
+Decision: a pure `SubscriptionService` (consent required; subscribe → `pending`; no duplicate/enumeration)
+over an injected `SubscriberStore` (custom table `corex_subscribers`, spec 011) + the Mailer seam (008).
+Confirm/unsubscribe use **HMAC-signed tokens** (`TokenSigner`) — the token is the authenticator, so the GET
+email links carry their own auth (no nonce, the accepted email-link pattern); a tampered token is rejected
+(fail-closed). The subscribe REST route is honeypot + captcha (012) gated. Publishing a post in a
+`newsletter_topic` fires `transition_post_status` → `PublishNotifier` emails the confirmed subscribers whose
+topics intersect. **Deferred:** the Action Scheduler **queue** (bounded synchronous send for now), bounce
+handling, campaigns/segments, and the subscriber admin screen (spec 017).
+Why: the secure, standards-correct shape of subscriptions, fully unit-testable at the core, reusing the
+custom-table + mail + captcha + event seams already built.
+Status: Final.
