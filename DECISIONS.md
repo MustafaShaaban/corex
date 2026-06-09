@@ -541,3 +541,18 @@ handling, campaigns/segments, and the subscriber admin screen (spec 017).
 Why: the secure, standards-correct shape of subscriptions, fully unit-testable at the core, reusing the
 custom-table + mail + captcha + event seams already built.
 Status: Final.
+
+## #39 — Careers: jobs as a CPT, applications in a custom table, file-safe apply
+Date: 2026-06-10
+Context: careers needs job content (low volume) + many application rows (queryable, with a pipeline) + the
+single most dangerous input (a CV upload).
+Decision: jobs are a `corex_job` CPT with department/location/type taxonomies + a `corex/jobs` block;
+applications are a `corex_applications` custom table (spec 011). The pure `ApplicationService` validates the
+required fields + the CV via the spec-012 `UploadValidator` (allowed type/ext + size; descriptor-only),
+stores, and notifies HR + the applicant via Mail — **zero side effects on rejection**. The pure `StatusFlow`
+permits only adjacent pipeline transitions. The apply REST route is honeypot + captcha gated; the validated
+CV is moved by the boundary (`wp_handle_upload` to a protected location), never a caller path. Deferred: the
+recruiter admin screen (spec 017), CV virus scanning, scheduled interviews.
+Why: the right storage per data shape (CPT vs table), with file safety reusing the spec-012 validator, and a
+fully unit-testable application core.
+Status: Final.
