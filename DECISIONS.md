@@ -389,3 +389,52 @@ supplies a form-shaped sanitizer derived from the schema.
 Why: the correct model for a public submission — a nonce + rate limit + honeypot, not a capability;
 keeps security automatic and declarative.
 Status: Final.
+
+---
+
+## Spec 008 decisions (Corex Mail MVP)
+
+## #29 — A neutral `Corex\Mail\Mailer` seam in corex-core; Corex Mail is a consumer, not a Forms dep
+Date: 2026-06-09
+Context: Forms must send templated mail when Corex Mail is present and fall back otherwise, without a
+hard dependency; in a monorepo `class_exists` is unreliable (all classes autoload regardless of activation).
+Decision: corex-core defines `Corex\Mail\Mailer` (interface) + `MailRequest` (a primitive value object —
+scalars/arrays only). The Corex Mail add-on binds a `RequestMailer` implementation; Forms checks
+`container->has(Mailer::class)` (the real activation signal) and delegates, else `wp_mail`. The seam carries
+no Corex Mail types, so neither side hard-depends on the other (Principle IX) — the same pattern as the
+spec-007 event seam.
+Why: container binding is the true detect-and-defer switch; keeps both add-ons decoupled.
+Status: Final.
+
+## #30 — Email templates: code-registered, flat `{{ path }}` whitelisted merge, escape on output
+Date: 2026-06-09
+Context: merge variables are the classic email template-injection/XSS vector.
+Decision: templates are PHP classes (`name`/`subject`/`body`) returning straight-line text with flat
+`{{ path }}` placeholders. The renderer resolves each path only from a pre-assembled, whitelisted
+`MailContext` (out-of-whitelist/absent → empty), and escapes every body value with `htmlspecialchars`
+(pure, no WP) before wrapping it in the brand layout. No control structures, no PHP-eval. The layout's
+brand color/logo/name come from the resolved `theme.json` (incl. `brand.json`) at runtime; email-client
+limits force inline styles, whose only literals are functional structure (600px width), never design tokens.
+Why: closes injection/XSS by construction while staying pure and headless-testable; rebrand stays config.
+Status: Final.
+
+## #31 — The email audit log is a `corex_email_log` CPT via the data layer
+Date: 2026-06-09
+Context: every send must be recorded and queryable by status; custom tables are not yet a framework capability.
+Decision: a non-public `corex_email_log` CPT through a `PostRepository` (implementing the `EmailLogStore`
+interface so the service stays headless-testable). Status/recipients/subject are **declared** model fields
+(`corex_mail_*` meta) so the log is queryable via the QueryBuilder (`byStatus`). Swappable for a custom-table
+store later without changing the engine. Retention/pruning deferred.
+Why: reuses the only persistence layer that exists today; an interface keeps the orchestrator pure.
+Status: Final.
+
+## #32 — Default delivery via `wp_mail`; from-identity from Config; provider drivers deferred
+Date: 2026-06-09
+Context: storing SMTP/provider credentials safely needs the (unbuilt) `Cryptor`; the engine must ship securely now.
+Decision: the default `WpMailDriver` delegates to `wp_mail` (honoring the site's existing SMTP), behind a
+`MailDriver` interface. The from-identity + reply-to come from the Config engine (`mail.from.*`, `mail.reply_to`)
+and are `sanitize_*`'d into headers. Sending is synchronous + best-effort (`send()` never throws; a failure is
+caught + logged). The queue (Action Scheduler), retries, rate limiting, attachments, and provider drivers are
+deferred — additive changes behind the same `MailService`/`MailDriver` seams.
+Why: ships a secure MVP without credential storage; the abstractions make every deferred piece additive.
+Status: Final.
