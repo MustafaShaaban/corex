@@ -32,7 +32,15 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- _(nothing mid-flight — spec 015 complete; pick up at **Next**.)_
+- _(nothing mid-flight — spec 016 complete; pick up at **Next**.)_
+
+> **✅ SPEC 016 — Corex Brand Identity + Admin Branding — COMPLETE (2026-06-10).** US1–US2. **196 unit + 28
+> integration green.** Built into **`corex-config`** (`Corex\Config`). Corex's own SVG logo (navy + cyan
+> layered-core mark, `plugins/corex-config/assets/corex-logo.svg`). `BrandingService` (pure): logo URL
+> (config override → default), login CSS, configured footer/login-url. `AdminBranding` hooks the login
+> logo + login link + admin footer ("Powered by Corex"); `ConfigServiceProvider` wires it (early in Boot).
+> 4 unit tests; hooks verified registered on real WP. Product brand kept separate from the neutral client
+> base. DECISIONS #41. README added. **Rendered admin appearance needs a browser.** On `feature/016-branding`.
 
 > **✅ SPEC 015 — Call Request — COMPLETE (2026-06-10).** US1. **192 unit + 28 integration green.** New
 > add-on **`addons/corex-bookings`** (`Corex\Bookings`). Core (pure, tested): `LeaderDirectory` (configured
