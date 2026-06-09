@@ -1,0 +1,19 @@
+/*
+ * Corex Breadcrumbs — token-only, logical CSS (RTL-correct), conditional asset.
+ */
+.corex-breadcrumbs ol {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wp--preset--spacing--30);
+	list-style: none;
+	padding-inline-start: 0;
+	margin-block: var(--wp--preset--spacing--30);
+	color: var(--wp--preset--color--ink);
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-breadcrumbs li + li::before {
+	content: "/";
+	margin-inline-end: var(--wp--preset--spacing--30);
+	opacity: 0.6;
+}

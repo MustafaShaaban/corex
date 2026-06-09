@@ -20,6 +20,7 @@ use Corex\Email\MailServiceProvider;
 use Corex\Forms\FormsServiceProvider;
 use Corex\Security\SecurityModule;
 use Corex\Theme\ThemeServiceProvider;
+use Corex\Ui\UiServiceProvider;
 use RuntimeException;
 
 /**
@@ -59,6 +60,7 @@ final class Boot
             ThemeServiceProvider::class,
             FormsServiceProvider::class,
             MailServiceProvider::class,
+            UiServiceProvider::class,
         ]);
         self::$app->boot();
     }
