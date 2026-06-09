@@ -122,6 +122,28 @@ sends via the fallback.
 - A merge value contains HTML/script → escaped on output; never rendered as live markup.
 - A very large context → only whitelisted, declared paths are resolved (no unbounded traversal).
 
+## Clarifications
+
+### Session 2026-06-09 (informed defaults — recommended options auto-selected)
+
+- **Q: How is the email audit log stored?** → A post-backed, non-public `corex_email_log` CPT via the
+  spec-002 data layer (consistent with the spec-007 submission store), with status/recipients/template as
+  meta — since custom tables are not yet a framework capability. A custom-table store can replace it later
+  without changing the engine.
+- **Q: What merge syntax do MVP templates support?** → Flat `{{ path }}` placeholders with dotted paths
+  resolved against the whitelisted context (e.g. `{{ user.name }}`). Control structures (`{{#if}}`, loops)
+  are **deferred**; an MVP template is straight-line text with placeholders.
+- **Q: What body format do templates produce?** → An HTML body (the template's body source) merged and
+  escaped, then wrapped in the shared brand layout. The ad-hoc/`raw` path sends the caller-supplied body
+  as-is (the caller owns its escaping), still passing the header-injection and recipient gates.
+- **Q: What does a "role" recipient resolve to?** → Every current user in that WordPress role with a valid
+  email, via a single bounded query (capped like all framework queries) — not an unbounded user scan.
+- **Q: What does `send()` return, and can it throw?** → It returns a result object indicating sent/failed/
+  rejected; it never throws — a driver error or a security rejection is caught and logged (best-effort,
+  non-fatal), so a triggering request or event dispatch is never aborted.
+- **Q: Which header fields does the injection guard cover?** → Subject, from, reply-to, and any recipient
+  display name — a CR, LF, or other control character in any of them rejects the message before delivery.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
