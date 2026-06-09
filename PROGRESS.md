@@ -32,7 +32,16 @@
 > framework business logic — that begins in Phase 5.
 
 ## In progress
-- _(nothing mid-flight — spec 013 complete; pick up at **Next**.)_
+- _(nothing mid-flight — spec 014 complete; pick up at **Next**.)_
+
+> **✅ SPEC 014 — Careers — COMPLETE (2026-06-10).** US1–US3. **189 unit + 27 integration green.** New
+> add-on **`addons/corex-careers`** (`Corex\Careers`). Core (pure, tested): `StatusFlow` (valid pipeline
+> transitions), `ApplicationService` (validate fields + CV via spec-012 → store → notify; zero side effects
+> on rejection), `JobsRenderer` (accessible job cards). Boundary: `corex_job` CPT + dept/location/type
+> taxonomies, `corex/jobs` block, `ApplicationRepository` (`corex_applications` custom table) + store, apply
+> REST route (honeypot+captcha), HR/applicant email templates. 4 unit + 1 integration; CPT/block + data path
+> verified on real WP. DECISIONS #39. README added. **CV file-move + apply-over-HTTP need a browser.** On
+> `feature/014-careers`.
 
 > **✅ SPEC 013 — Newsletter / Subscriptions — COMPLETE (2026-06-10).** US1–US3. **185 unit + 26
 > integration green.** New add-on **`addons/corex-newsletter`** (`Corex\Newsletter`). Core (pure, tested):
@@ -267,9 +276,9 @@ per-story commits with the Guard Gate. **Pending (not yet done):** open the PR `
 ## Next (recommended order)
 Per **`ROADMAP.md`** (the locked 009–017 plan). Published to origin through **v0.8.1** (`main`/`develop`
 + tags, green CI). Releases since are local until pushed.
-1. **Spec 014 — Careers** (addon `corex-careers`) — job entity + taxonomies, `corex/jobs` block + single-job
-   template, application form with secure CV upload (spec 012), application pipeline, notifications (Mail).
-   Then 015 Call → 016 brand/admin → 017 admin dashboard (React — needs a build/browser env).
+1. **Spec 015 — Call Request** (addon `corex-bookings`) — request-a-call form (pick a leader + preferred
+   time + contact) → store (custom table) → notify the leader + confirm the visitor (Mail). Then 016
+   brand/admin → 017 admin dashboard (React — **needs a build/browser env, can't be verified headlessly**).
 2. **Browser-verified follow-ups** (need a browser/build env): company-kit visuals + more page compositions;
    custom JS-edit blocks; the React admin dashboard (017).
 

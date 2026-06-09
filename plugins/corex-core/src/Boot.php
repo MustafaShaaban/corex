@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Blocks\BlocksServiceProvider;
 use Corex\Captcha\CaptchaServiceProvider;
+use Corex\Careers\CareersServiceProvider;
 use Corex\Cli\CliServiceProvider;
 use Corex\Foundation\Application;
 use Corex\Events\EventServiceProvider;
@@ -67,6 +68,7 @@ final class Boot
             KitServiceProvider::class,
             CaptchaServiceProvider::class,
             NewsletterServiceProvider::class,
+            CareersServiceProvider::class,
         ]);
         self::$app->boot();
     }
