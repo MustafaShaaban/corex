@@ -32,7 +32,10 @@ final class UiServiceProvider extends ServiceProvider
 
         $this->container->singleton(
             UiManifest::class,
-            static fn (ContainerInterface $c): UiManifest => new UiManifest($c->make(PatternLibrary::class), __DIR__ . '/blocks'),
+            // Block metadata lives under the (case-exact) Blocks/ dir alongside the renderers;
+            // BlockMap scans only */block.json, so the .php classes are ignored. The exact case
+            // matters on case-sensitive filesystems (Linux/CI).
+            static fn (ContainerInterface $c): UiManifest => new UiManifest($c->make(PatternLibrary::class), __DIR__ . '/Blocks'),
         );
     }
 
@@ -58,7 +61,7 @@ final class UiServiceProvider extends ServiceProvider
     {
         $registrar = $this->container->make(DynamicBlockRegistrar::class);
 
-        foreach ($this->container->make(BlockMap::class)->discover(__DIR__ . '/blocks') as $block) {
+        foreach ($this->container->make(BlockMap::class)->discover(__DIR__ . '/Blocks') as $block) {
             $registrar->register($block);
         }
     }
