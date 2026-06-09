@@ -33,7 +33,7 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Lint PHP source
-        run: find plugins packages -name '*.php' -print0 | xargs -0 -n1 -P4 php -l
+        run: find plugins packages addons -name '*.php' -print0 | xargs -0 -n1 -P4 php -l
 
       - name: Headless unit tests (Pest)
         run: composer test
