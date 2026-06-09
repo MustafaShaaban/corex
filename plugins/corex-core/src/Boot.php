@@ -15,6 +15,7 @@ use Corex\Cli\CliServiceProvider;
 use Corex\Foundation\Application;
 use Corex\Foundation\CoreServiceProvider;
 use Corex\Foundation\DataServiceProvider;
+use Corex\Forms\FormsServiceProvider;
 use Corex\Security\SecurityModule;
 use Corex\Theme\ThemeServiceProvider;
 use RuntimeException;
@@ -53,6 +54,7 @@ final class Boot
             BlocksServiceProvider::class,
             SecurityModule::class,
             ThemeServiceProvider::class,
+            FormsServiceProvider::class,
         ]);
         self::$app->boot();
     }
