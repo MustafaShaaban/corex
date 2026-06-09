@@ -26,6 +26,7 @@ use Corex\Forms\Submission\SubmissionRepository;
 use Corex\Forms\Submission\SubmitController;
 use Corex\Forms\Validation\RuleRegistry;
 use Corex\Forms\Validation\Validator;
+use Corex\Support\Config\ConfigInterface;
 
 /**
  * Boots the forms engine: binds the headless cores (schema resolver, validator,
@@ -54,7 +55,10 @@ final class FormsServiceProvider extends ServiceProvider
         $this->container->singleton(FormRegistry::class);
         $this->container->singleton(SubmissionRepository::class);
         $this->container->singleton(StoreSubmissionListener::class);
-        $this->container->singleton(SendEmailListener::class);
+        $this->container->singleton(
+            SendEmailListener::class,
+            static fn (ContainerInterface $c): SendEmailListener => new SendEmailListener($c, $c->make(ConfigInterface::class)),
+        );
         $this->container->singleton(FormSubmissionService::class);
         $this->container->singleton(SubmitController::class);
         $this->container->singleton(FormBlockRenderer::class);
