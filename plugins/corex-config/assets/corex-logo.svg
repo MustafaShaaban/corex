@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 56" role="img" aria-label="Corex">
+  <title>Corex</title>
+  <!-- Mark: a navy core square with a cyan module ring + core node (layered framework). -->
+  <g>
+    <rect x="4" y="4" width="48" height="48" rx="13" fill="#0B1F3B"/>
+    <rect x="16" y="16" width="24" height="24" rx="7" fill="none" stroke="#00C2FF" stroke-width="3.5"/>
+    <circle cx="28" cy="28" r="5" fill="#00C2FF"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="66" y="37" font-family="'Space Grotesk','Segoe UI',system-ui,sans-serif" font-size="30" font-weight="700" fill="#0B1F3B" letter-spacing="0.5">Corex</text>
+</svg>

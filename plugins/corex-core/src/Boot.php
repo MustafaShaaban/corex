@@ -15,6 +15,7 @@ use Corex\Bookings\BookingsServiceProvider;
 use Corex\Captcha\CaptchaServiceProvider;
 use Corex\Careers\CareersServiceProvider;
 use Corex\Cli\CliServiceProvider;
+use Corex\Config\ConfigServiceProvider;
 use Corex\Foundation\Application;
 use Corex\Events\EventServiceProvider;
 use Corex\Foundation\CoreServiceProvider;
@@ -57,6 +58,7 @@ final class Boot
         // Core service providers; modules and add-ons contribute their own (US2+).
         self::$app = new Application($debug, providers: [
             CoreServiceProvider::class,
+            ConfigServiceProvider::class,
             EventServiceProvider::class,
             DataServiceProvider::class,
             CliServiceProvider::class,
