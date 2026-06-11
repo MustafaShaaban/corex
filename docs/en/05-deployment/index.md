@@ -19,8 +19,8 @@ and CI/CD — with a Mermaid topology diagram.
 | Page | Target | Phase |
 |---|---|---|
 | [`docker.md`](./docker.md) | Docker (dev compose + multi-stage prod image) | ✅ D3 |
-| `azure-app-service.md` | Azure App Service | D4 |
-| `azure-vm.md` | Azure VM (Ubuntu + nginx + php-fpm + MariaDB + Certbot + UFW) | D4 |
+| [`azure-app-service.md`](./azure-app-service.md) | Azure App Service | ✅ D4 |
+| [`azure-vm.md`](./azure-vm.md) | Azure VM (Ubuntu + nginx + php-fpm + MariaDB + Certbot + UFW) | ✅ D4 |
 | `aws-beanstalk.md` | AWS Elastic Beanstalk (+ RDS, S3, CloudFront) | D5 |
 | `aws-ec2-rds.md` | AWS EC2 + RDS (manual) | D5 |
 | `cpanel-shared-hosting.md` | cPanel shared hosting (no-symlink strategy) | D6 |

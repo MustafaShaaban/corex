@@ -27,7 +27,7 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D4: `05-deployment/` — Azure
 
-- [ ] T009 Author Azure App Service + Azure VM recipes (provision→config→deploy-from-tag→HTTPS→secrets→backups→rollback→zero-downtime→CI/CD→topology diagram).
+- [x] T009 Author Azure App Service + Azure VM recipes (provision→config→deploy-from-tag→HTTPS→secrets→backups→rollback→zero-downtime→CI/CD→topology diagram).
 
 ## Phase D5: `05-deployment/` — AWS
 
