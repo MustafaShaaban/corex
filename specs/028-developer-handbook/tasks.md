@@ -31,7 +31,7 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D5: `05-deployment/` — AWS
 
-- [ ] T010 Author AWS Elastic Beanstalk + EC2+RDS recipes (same recipe shape + topology diagrams).
+- [x] T010 Author AWS Elastic Beanstalk + EC2+RDS recipes (same recipe shape + topology diagrams).
 
 ## Phase D6: `05-deployment/` — shared hosting + CI/CD
 
