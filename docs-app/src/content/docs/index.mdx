@@ -1,0 +1,57 @@
+---
+title: Corex
+description: A professional, Laravel-inspired WordPress framework — blocks, forms, queries, CLI, and add-ons.
+template: splash
+hero:
+  tagline: A Laravel-inspired WordPress framework. Spec-first. Block-native. RTL by default.
+  actions:
+    - text: Get started
+      link: /getting-started/overview/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/MustafaShaaban/corex
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## What is Corex?
+
+Corex is a WordPress framework with a clean, layered architecture: a self-booting core
+(`corex-core`), a PSR-11 container, thin controllers over fat services over repositories,
+dynamic FSE blocks as reusable components, a shared-schema forms engine, a fluent
+QueryBuilder, a `wp corex make:*` CLI, and runtime design tokens (`theme.json` → CSS
+variables → per-site `brand.json`).
+
+Target: **WordPress 7.0+, PHP 8.3+**, FSE block themes. Namespace `Corex\`, CLI
+`wp corex`, CSS prefix `--corex-`.
+
+<CardGrid stagger>
+	<Card title="Spec-first" icon="open-book">
+		Every module is specified before it is built; the spec is the source of truth.
+	</Card>
+	<Card title="Everything injected" icon="puzzle">
+		Dependencies resolve through a PSR-11 container — testable by construction.
+	</Card>
+	<Card title="Blocks are components" icon="add-document">
+		All blocks are dynamic and server-rendered; sections compose from them.
+	</Card>
+	<Card title="RTL first" icon="translate">
+		Logical CSS properties everywhere; Arabic layouts correct by default.
+	</Card>
+</CardGrid>
+
+## Where to next
+
+- **New to Corex?** Start at [Getting Started](/getting-started/overview/) and spin up a site.
+- **Building?** Jump to a guide: [forms](/guides/forms/), [blocks](/guides/blocks/),
+  [queries](/guides/queries/), [the CLI](/guides/cli/).
+- **Hit an error?** The [Troubleshooting](/troubleshooting/) page covers the real ones
+  (e.g. *"block not supported"*, a missing WordPress install).
+
+:::note
+These docs describe the **real code** in this repository. The class/API reference under
+*Internals Reference* is generated from the source so it can't drift.
+:::
