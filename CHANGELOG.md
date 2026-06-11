@@ -4,6 +4,47 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.18.0] — 2026-06-11
+
+The "Finish Corex" initiative — brought into full spec-first compliance (retrospective specs 018–024)
+and remediated (P1–P6), merged via PR #1 with CI green.
+
+### Added
+- **Front-end build pipeline** (spec 018): `@wordpress/scripts` across npm workspaces; every `corex/*`
+  dynamic block now has editor-side registration (`registerBlockType` + `ServerSideRender` +
+  InspectorControls), compiled token-only styles + auto RTL, and a "Corex" inserter category.
+- **CLI** `wp corex make:block` + `wp corex docs:generate` (spec 019): a one-name dynamic-block
+  scaffolder and an AST-based (no class loading) per-class internals reference generator.
+- **Shared form validation + flexible builder** (spec 020): one PHP schema is the source of truth —
+  exported to the block, mirrored by `validation.js`, re-validated server-side (authoritative); a
+  per-type `FieldRenderer` (SRP) renders every input type accessibly + token-only with whitelisted attrs.
+- **QueryBuilder complex queries + feature flags** (spec 021): `orWhere`/`whereMeta`/`whereBetween`/
+  `whereTax`/`whereDate`/`search`/`orderByNumeric`/`paginate` (pure, capped, value-bound) and a
+  feature-flag layer (`config/features.php` + `FeatureFlags` + `Config::enabled()`).
+- **Documentation web app** (spec 022): Astro + Starlight under `docs-app/` — getting-started, guides,
+  architecture, FAQ, troubleshooting + the generated reference, client-side Pagefind search, RTL-ready.
+- **Portfolio + WooCommerce site kits** (spec 023): `corex-kit-portfolio` (`corex_project` CPT +
+  `corex/projects` block + FSE templates) and a gated, HPOS-safe `corex-kit-woo`; company-kit manifest
+  drift-protection.
+- **Deferred tail** (spec 024): gated mail queue (Action Scheduler, lazy worker), read-only WP 7.0
+  Abilities, and a setup wizard (pure planner + admin-gated screen + `BlueprintActivator`).
+- **Tests**: a block-`index.js` Jest test + a root `jest.config.js` scoping JS tests to Corex; an
+  environment-gated Playwright E2E smoke (`tests/e2e/`).
+
+### Changed
+- `QueryBuilder::orderBy` no longer takes a boolean flag — use the new `orderByNumeric()` (clean-code P3).
+- Admin-menu screens (`AdminDashboard`, `SetupWizardScreen`) route their cap + nonce check through the
+  shared `Corex\Security\Admin\AdminGuard` instead of hand-rolling it (Principle VII scope, P5).
+- `SetupWizardScreen` slimmed to render + gate, delegating side effects to `BlueprintActivator` (SRP).
+
+### Fixed
+- Mail-queue worker registers lazily, fixing an early-boot regression that loaded the `corex` textdomain
+  too soon (zero-notice boot).
+
+### Governance
+- Constitution **v1.2.1** — Principle VII scope clarification (admin screens → `AdminGuard`).
+- Retrospective specs **018–024** restore spec-first compliance (Principle X); DECISIONS #56–#58.
+
 ## [0.17.0] — 2026-06-10
 
 ### Added
