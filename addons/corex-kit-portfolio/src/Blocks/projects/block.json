@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/projects",
+	"title": "Corex Projects",
+	"category": "corex",
+	"icon": "portfolio",
+	"description": "A grid of recent portfolio projects as accessible cards (dynamic, bounded).",
+	"textdomain": "corex",
+	"attributes": {
+		"count": { "type": "number", "default": 6 }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Portfolio\\Blocks\\ProjectsRenderer" }
+}

@@ -1,0 +1,31 @@
+/**
+ * Corex Jobs — token-only, logical CSS (RTL-correct), conditional asset.
+ * Compiled by @wordpress/scripts; loaded only when the block renders.
+ */
+.corex-jobs {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--30);
+}
+
+.corex-jobs__item {
+	padding: var(--wp--preset--spacing--30);
+	background-color: var(--wp--preset--color--surface);
+	text-align: start;
+}
+
+.corex-jobs__title {
+	font-size: var(--wp--preset--font-size--lg);
+	color: var(--wp--preset--color--ink);
+	margin-block: 0;
+}
+
+.corex-jobs__meta {
+	color: var(--wp--preset--color--ink);
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-jobs__empty {
+	color: var(--wp--preset--color--ink);
+	text-align: start;
+}

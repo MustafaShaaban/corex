@@ -1,6 +1,17 @@
 <!--
 SYNC IMPACT REPORT
-Latest amendment: 1.0.0 → 1.1.0 (MINOR — added the Environment Gate operating rule).
+Latest amendment: 1.2.0 → 1.2.1 (PATCH — clarified Principle VII's scope: admin-menu screens are exempt
+from the route middleware pipeline but MUST use the shared AdminGuard helper, not hand-rolled cap+nonce).
+  - 1.2.1 (2026-06-11): Principle VII scope clarification (admin-menu screens → AdminGuard). Remediation
+    P5 of the compliance review. No new principle; existing AdminDashboard + SetupWizardScreen refactored
+    onto `Corex\Security\Admin\AdminGuard` (5 Pest tests). Templates unaffected. DECISIONS.md #58.
+  - 1.2.0 (2026-06-11): Added "The Pre-Implementation Confirmation Rule (mandatory)" under
+    Operating Rules — every request must be confirmed against the constitution + specs before
+    implementing; non-trivial work follows the Spec Kit flow (no code without a spec); the
+    relevant guard runs before any diff is presented; PROGRESS/DECISIONS are updated and every
+    response ends with NEXT STEP; a request to skip these requires an explicit, logged exception.
+    Adopted after a compliance review found the 13-item "Finish Corex" initiative was built
+    without spec files. Templates unaffected. DECISIONS.md #54.
   - 1.1.0 (2026-06-07): Added "The Environment Gate (mandatory)" under Operating Rules —
     a working WordPress install that recognizes the Corex theme + plugins is required before
     any framework code is written or resumed. Templates unaffected. DECISIONS.md #18.
@@ -78,6 +89,11 @@ Rationale: pay only for what renders.
 - Routes MUST declare their middleware (`nonce`, `auth`, `throttle`, `sanitize`).
 - Controllers MUST NOT hand-write security checks; the middleware applies them.
 - Output MUST be escaped, input sanitized, queries prepared, capabilities + nonces enforced.
+- Scope clarification (v1.2.1): this declarative pipeline governs Corex **routes** — the REST/AJAX
+  controller lifecycle that carries a `Request`/`Response` through the middleware `Pipeline`. WordPress
+  **admin-menu screens** (`admin_menu`/`admin_init` page callbacks) are a different lifecycle with no Corex
+  `Request`, so they are exempt from the pipeline — but they MUST NOT hand-roll their cap + nonce check
+  either; they route it through the single shared `Corex\Security\Admin\AdminGuard` helper. (DECISIONS #58.)
 Rationale: security that is automatic cannot be forgotten.
 
 ### VIII. RTL Is a First-Class Citizen
@@ -162,6 +178,31 @@ working WordPress install around it. Therefore:
 Rationale: framework code written against an absent WordPress is unverifiable — the gap that
 prompted this rule.
 
+### The Pre-Implementation Confirmation Rule (mandatory)
+
+Applies to **every** request, idea, or discussion — not only large builds. Before writing
+any code or making any change in response to a request, the agent MUST:
+
+1. **Confirm against the standard first.** Check the request against this constitution and
+   the relevant spec(s). If it conflicts, **say so and stop** — surface the conflict and wait
+   for the user, rather than complying.
+2. **Spec before code (Spec Kit flow).** For any non-trivial implementation, follow
+   `/speckit-specify → /clarify → /plan → /tasks → /implement`. A reviewed spec MUST exist in
+   `specs/` **before** the code is written (Principle X). No code without a spec.
+3. **Guard before the diff.** Run the relevant guard skill (Guard Gate) clean on the change
+   before presenting it; install the guard first if it is missing.
+4. **Update continuity + close the loop.** Update `PROGRESS.md` and log non-trivial choices in
+   `DECISIONS.md`, and end every response with the NEXT STEP block.
+5. **Exceptions are explicit.** If the user asks for something that skips any of the above, the
+   agent MUST remind them of this rule and obtain the user's **explicit confirmation of the
+   exception** before proceeding, and record the exception in `DECISIONS.md`. Autonomy or an
+   "implement it" instruction is NOT, by itself, an exception to spec-first or the Guard Gate.
+
+Rationale: an autonomous "Finish Corex" initiative delivered working, tested code but **bypassed
+the Spec Kit flow** — no spec files were written before the code. Authority order (A.1) puts the
+constitution above any prose brief; this rule makes "confirm, then spec, then build" the default
+that a brief cannot silently override.
+
 ## Source-of-Truth Hierarchy
 
 When anything conflicts, resolve in this order (top wins):
@@ -188,4 +229,4 @@ If code contradicts the constitution, the code is wrong, not the constitution.
   The Spec Kit `/speckit-plan` Constitution Check gate enforces this before implementation.
 - Architectural changes MUST update `COREX-FRAMEWORK.md` in the same change (its §26 rule).
 
-**Version**: 1.1.0 | **Ratified**: 2026-06-07 | **Last Amended**: 2026-06-07
+**Version**: 1.2.1 | **Ratified**: 2026-06-07 | **Last Amended**: 2026-06-11

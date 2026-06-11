@@ -30,5 +30,10 @@ final class KitServiceProvider extends ServiceProvider
         $this->container->make(BlueprintRegistry::class)->register(
             $this->container->make(CompanyBlueprint::class),
         );
+
+        // The setup wizard is admin-only; its planning core is the pure SetupWizard.
+        if (is_admin()) {
+            $this->container->make(SetupWizardScreen::class)->register();
+        }
     }
 }

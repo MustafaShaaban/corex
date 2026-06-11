@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "corex/posts",
 	"title": "Corex Posts",
-	"category": "widgets",
+	"category": "corex",
 	"icon": "list-view",
 	"description": "A list of recent posts as accessible cards (dynamic, bounded).",
 	"textdomain": "corex",
@@ -11,6 +11,7 @@
 		"count": { "type": "number", "default": 3 }
 	},
 	"supports": { "html": false },
-	"style": "file:./style.css",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Ui\\Blocks\\PostsRenderer" }
 }

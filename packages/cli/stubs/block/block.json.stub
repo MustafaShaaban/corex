@@ -1,0 +1,15 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "{{ block_name }}",
+	"title": "{{ title }}",
+	"category": "corex",
+	"icon": "block-default",
+	"description": "{{ title }} — a dynamic, server-rendered Corex block.",
+	"textdomain": "{{ text_domain }}",
+	"attributes": {},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "{{ renderer_fqcn }}" }
+}

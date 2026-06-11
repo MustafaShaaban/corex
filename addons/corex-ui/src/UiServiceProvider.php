@@ -60,8 +60,10 @@ final class UiServiceProvider extends ServiceProvider
     public function registerBlocks(): void
     {
         $registrar = $this->container->make(DynamicBlockRegistrar::class);
+        $built = dirname(__DIR__) . '/build/blocks';
+        $blocksDir = is_dir($built) ? $built : __DIR__ . '/Blocks';
 
-        foreach ($this->container->make(BlockMap::class)->discover(__DIR__ . '/Blocks') as $block) {
+        foreach ($this->container->make(BlockMap::class)->discover($blocksDir) as $block) {
             $registrar->register($block);
         }
     }

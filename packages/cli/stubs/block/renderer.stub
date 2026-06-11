@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+defined('ABSPATH') || exit;
+
+use Corex\Blocks\BlockRenderer;
+
+/**
+ * Server render for the {{ block_name }} block. Keep it thin: build escaped markup
+ * from the (bounded) attributes — no data-source calls or business rules here.
+ * Inject a service/repository via the container for anything beyond presentation.
+ */
+final class {{ class }} implements BlockRenderer
+{
+    /**
+     * @param array<string, mixed> $attributes
+     */
+    public function render(array $attributes, string $content, object $block): string
+    {
+        return sprintf(
+            '<div class="%s">%s</div>',
+            esc_attr('{{ css_class }}'),
+            esc_html__('{{ title }}', '{{ text_domain }}')
+        );
+    }
+}

@@ -41,7 +41,35 @@ final class DynamicBlockRegistrar
             $args['render_callback'] = $this->renderCallback($renderer);
         }
 
-        register_block_type($block['dir'], $args);
+        $type = register_block_type($block['dir'], $args);
+
+        $this->registerScriptTranslations($type);
+    }
+
+    /**
+     * Make each block's scripts i18n-ready: the `__()` strings in index.js (editor) and
+     * view.js (front end, e.g. the form's validation messages) only resolve once their
+     * handle is bound to the text domain. Covers editor, view, and front-end handles.
+     * No-op when the block ships no JS. Safe on older cores that lack a handle list
+     * (guarded with `??`).
+     *
+     * @param \WP_Block_Type|false $type
+     */
+    private function registerScriptTranslations(mixed $type): void
+    {
+        if (! $type instanceof \WP_Block_Type) {
+            return;
+        }
+
+        $handles = array_merge(
+            $type->editor_script_handles ?? [],
+            $type->view_script_handles ?? [],
+            $type->script_handles ?? [],
+        );
+
+        foreach (array_unique($handles) as $handle) {
+            wp_set_script_translations($handle, 'corex');
+        }
     }
 
     /**

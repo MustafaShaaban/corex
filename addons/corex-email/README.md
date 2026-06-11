@@ -114,3 +114,13 @@ per-language template variants, and the WooCommerce override.
 composer test              # headless: renderer, header guard, recipient resolver, mail service
 composer test:integration  # real ./wp: templated send + log, header-injection rejection, the Mailer seam
 ```
+
+## Mail queue (bulk sends)
+
+Behind the `mail_queue` feature flag, the `Mailer` seam is decorated by `QueuedMailer`: a
+send is **queued** via Action Scheduler when (a) Action Scheduler is available and (b) the
+flag is on — otherwise it sends inline, exactly as before. Action Scheduler ships with
+WooCommerce and many plugins; without it the queue is simply never used (never a hard
+dependency). Enable per-site with the `corex_features_mail_queue` option or
+`FEATURES_MAIL_QUEUE=1`. The `MailQueueGate` decision and the `MailRequest` payload
+round-trip are unit-tested.

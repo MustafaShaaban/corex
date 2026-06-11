@@ -55,10 +55,77 @@ final class SchemaResolver
                 (string) ($definition['label'] ?? (string) $key),
                 $rules,
                 $this->isRequired($rules),
+                $this->parseOptions($definition['options'] ?? []),
+                $this->labelMode((string) ($definition['label_mode'] ?? 'visible')),
+                $this->width((string) ($definition['width'] ?? 'full')),
+                (string) ($definition['class'] ?? ''),
+                $this->parseAttrs($definition['attrs'] ?? []),
             );
         }
 
         return $schema;
+    }
+
+    /**
+     * Choice options as a value => label string map (used by select/radio/checkbox).
+     * Accepts a map or a plain list (list items become their own value + label).
+     *
+     * @param array<int|string,mixed> $options
+     *
+     * @return array<string,string>
+     */
+    private function parseOptions(array $options): array
+    {
+        $parsed = [];
+
+        foreach ($options as $value => $label) {
+            if (is_int($value)) {
+                $parsed[(string) $label] = (string) $label;
+
+                continue;
+            }
+
+            $parsed[(string) $value] = (string) $label;
+        }
+
+        return $parsed;
+    }
+
+    private function labelMode(string $mode): string
+    {
+        return in_array($mode, ['visible', 'hidden', 'inline'], true) ? $mode : 'visible';
+    }
+
+    private function width(string $width): string
+    {
+        return in_array($width, ['full', 'half', 'third', 'two-thirds', 'quarter'], true) ? $width : 'full';
+    }
+
+    /**
+     * Extra HTML attributes, restricted to a safe set so a definition can never override
+     * the renderer-controlled structural/security attributes (name, id, type, class,
+     * required, aria-*). Keys and values are coerced to strings.
+     *
+     * @param array<int|string,mixed> $attrs
+     *
+     * @return array<string,string>
+     */
+    private function parseAttrs(array $attrs): array
+    {
+        $reserved = ['name', 'id', 'type', 'class', 'required', 'value', 'aria-describedby'];
+        $parsed = [];
+
+        foreach ($attrs as $key => $value) {
+            $attr = strtolower((string) $key);
+
+            if (! is_string($key) || in_array($attr, $reserved, true) || str_starts_with($attr, 'on')) {
+                continue;
+            }
+
+            $parsed[$attr] = (string) $value;
+        }
+
+        return $parsed;
     }
 
     /**
