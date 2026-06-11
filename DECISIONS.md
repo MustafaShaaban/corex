@@ -943,3 +943,21 @@ Why: silent cascades (auto-activating deps, auto-disabling dependents) cause sur
 refusal keeps the admin in control and the state always consistent. 9 unit + 1 integration tests; wp-guard +
 clean-code clean; the screen hook is confirmed wired on real WP (the menu render is the Apache-gated smoke).
 Status: Final.
+
+## #61 — Block library expansion: scalar-attribute server-rendered component blocks; accordion via native <details>
+Date: 2026-06-11
+Context: spec 027 — grow the corex/* library with the component blocks kits need. The design tension: rich
+multi-item blocks usually need bespoke repeater editor UI (React), which is heavy.
+Decision: ship four new server-rendered dynamic blocks — `corex/stat`, `corex/testimonial`, `corex/pricing`,
+`corex/accordion` — driven by **scalar/text attributes** edited via sidebar `TextControl`/`TextareaControl` +
+`ServerSideRender` preview, not bespoke repeaters. Multi-item blocks read a **simple per-line attribute**
+(pricing features = one per line; accordion items = `Title | Content` per line). The **accordion uses native
+`<details>`/`<summary>`** — fully accessible + keyboard-operable with **no JavaScript**. Each block drops into
+`addons/corex-ui/src/Blocks/` and is **auto-discovered** by the corex-blocks engine (no registration change);
+each renderer is a pure `BlockRenderer` (attributes → escaped, token-only HTML), unit-tested headlessly. JS
+multi-panel tabs + a media-repeater gallery are deferred to a later Interactivity-API increment.
+Why: keeps the editor UX simple and the render server-authoritative + testable, while still covering the
+common component vocabulary; native `<details>` gives accessible disclosure for free. 5 unit tests; token-only
+scan clean; built + verified live (all four register dynamic, in the Corex category, with compiled style +
+RTL). wp-guard + clean-code clean.
+Status: Final.

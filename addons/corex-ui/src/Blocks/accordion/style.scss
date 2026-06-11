@@ -1,0 +1,27 @@
+/**
+ * Corex Accordion — token-only, logical CSS (RTL-correct), conditional asset.
+ * Native <details>/<summary>: accessible + keyboard-operable with no JavaScript.
+ */
+.corex-accordion {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--30);
+
+	&__item {
+		background-color: var(--wp--preset--color--surface);
+	}
+
+	&__summary {
+		padding: var(--wp--preset--spacing--30);
+		font-size: var(--wp--preset--font-size--lg);
+		color: var(--wp--preset--color--ink);
+		cursor: pointer;
+	}
+
+	&__content {
+		padding-block-end: var(--wp--preset--spacing--30);
+		padding-inline: var(--wp--preset--spacing--30);
+		font-size: var(--wp--preset--font-size--sm);
+		color: var(--wp--preset--color--ink);
+	}
+}

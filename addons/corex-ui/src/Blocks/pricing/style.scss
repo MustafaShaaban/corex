@@ -1,0 +1,44 @@
+/**
+ * Corex Pricing — token-only, logical CSS (RTL-correct), conditional asset.
+ */
+.corex-pricing {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--30);
+	padding: var(--wp--preset--spacing--50);
+	background-color: var(--wp--preset--color--surface);
+	text-align: start;
+
+	&__plan {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--lg);
+		color: var(--wp--preset--color--ink);
+	}
+
+	&__price {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--hero);
+		color: var(--wp--preset--color--primary);
+	}
+
+	&__period {
+		font-size: var(--wp--preset--font-size--sm);
+		color: var(--wp--preset--color--ink);
+		margin-inline-start: var(--wp--preset--spacing--30);
+	}
+
+	&__features {
+		margin: 0;
+		padding-inline-start: var(--wp--preset--spacing--50);
+		color: var(--wp--preset--color--ink);
+	}
+
+	&__cta {
+		align-self: start;
+		padding-block: var(--wp--preset--spacing--30);
+		padding-inline: var(--wp--preset--spacing--50);
+		background-color: var(--wp--preset--color--primary);
+		color: var(--wp--preset--color--surface);
+		text-decoration: none;
+	}
+}

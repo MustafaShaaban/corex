@@ -1,0 +1,19 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/stat",
+	"title": "Corex Stat",
+	"category": "corex",
+	"icon": "chart-bar",
+	"description": "A single statistic — a value, a label, and an optional description (dynamic).",
+	"textdomain": "corex",
+	"attributes": {
+		"value": { "type": "string", "default": "" },
+		"label": { "type": "string", "default": "" },
+		"description": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\StatRenderer" }
+}
