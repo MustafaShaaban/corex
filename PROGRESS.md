@@ -302,9 +302,13 @@ Order: P1 → P2 → P3 → P4 → P5 → P6. **Remediation APPROVED by the user
 >   **7 unit + 2 integration green; 281 unit total**; wp-guard + clean-code clean. Verified live: soft + full
 >   dry-runs preview correctly, `--hard` without the safeguard refuses with zero changes. DECISIONS #59;
 >   CLI README updated.
-> - [ ] **`026-addon-manager`** — next: a server-rendered "Corex Add-ons" admin screen (enable/disable each
->   add-on + its flag, dependency-aware) using the shared `AdminGuard`. Full Spec Kit flow.
-> - [ ] **`027-block-library-expansion`** — grow the `corex/*` block library (team/stats/pricing/gallery/
+> - [x] **`026-addon-manager` — COMPLETE + IMPLEMENTED (2026-06-11).** A "Corex Add-ons" submenu in
+>   `corex-config` (full Spec Kit flow on `feature/026-addon-manager`). Pure `AddonRegistry` + `AddonManager`
+>   (dependency-aware: refuse + explain, no silent cascade — kits require `corex-ui`), an `AddonsScreen`
+>   (renders + gates via the shared `AdminGuard`, escaped + i18n + RTL), and an `AddonActivator` (plugin + flag
+>   in sync). **9 unit + 1 integration green; 290 unit total**; wp-guard + clean-code clean. Screen hook
+>   confirmed wired on real WP (menu render is the Apache-gated smoke). DECISIONS #60; corex-config README updated.
+> - [ ] **`027-block-library-expansion`** — next: grow the `corex/*` block library (team/stats/pricing/gallery/
 >   accordion/tabs/testimonial) via `wp corex make:block`, token-only + dynamic + accessible + RTL.
 >
 > **Still env-gated (not skipped):** the **browser smoke** + **executing** the Playwright E2E need full

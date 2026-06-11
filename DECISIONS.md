@@ -926,3 +926,20 @@ Why: fail-closed (Principle VII) for an irreversible action, with the safety pro
 layer (no WP/DB needed to test it). Verified live: soft + full dry-runs preview correctly, and `--hard` without
 the safeguard refuses with zero changes. 7 unit + 2 integration tests; wp-guard + clean-code clean.
 Status: Final. (The wipe itself is not run against the dev DB — its gate is proven by the refusal path + units.)
+
+## #60 — Add-on manager: dependency-aware toggles that refuse + explain (no silent cascade)
+Date: 2026-06-11
+Context: spec 026 — a "Corex Add-ons" admin screen to enable/disable each corex-* add-on (plugin + feature
+flag) with dependency awareness. The question: what happens on a dependency conflict?
+Decision: **refuse + explain, never cascade.** Disabling an add-on an active add-on requires is refused
+(naming the dependent); enabling an add-on whose required dependency is inactive is refused (naming the
+missing dependency); the rendered list shows the reason on each blocked add-on. The decisions live in a pure
+`AddonRegistry` (the known add-ons + their `requires` edges — kits require corex-ui, mirroring the blueprints)
++ a pure `AddonManager` (`canEnable`/`canDisable` + `missingDependencies`/`blockingDependents`), so the safety
+property is unit-tested with no WP. The `AddonsScreen` renders + gates (shared `AdminGuard`, cap + nonce) and
+delegates plugin/flag writes to `AddonActivator`; a single toggle keeps the plugin activation and the feature
+flag in sync. Lives in corex-config beside AdminDashboard + SetupWizardScreen (same menu, guard, discipline).
+Why: silent cascades (auto-activating deps, auto-disabling dependents) cause surprise side effects; deterministic
+refusal keeps the admin in control and the state always consistent. 9 unit + 1 integration tests; wp-guard +
+clean-code clean; the screen hook is confirmed wired on real WP (the menu render is the Apache-gated smoke).
+Status: Final.

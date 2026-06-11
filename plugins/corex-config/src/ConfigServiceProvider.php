@@ -10,6 +10,7 @@ namespace Corex\Config;
 
 defined('ABSPATH') || exit;
 
+use Corex\Config\Addons\AddonsScreen;
 use Corex\Config\Branding\AdminBranding;
 use Corex\Config\Branding\BrandingService;
 use Corex\Config\Settings\AdminDashboard;
@@ -35,11 +36,13 @@ final class ConfigServiceProvider extends ServiceProvider
 
         $this->container->singleton(AdminBranding::class);
         $this->container->singleton(AdminDashboard::class);
+        $this->container->singleton(AddonsScreen::class);
     }
 
     public function boot(): void
     {
         $this->container->make(AdminBranding::class)->register();
         $this->container->make(AdminDashboard::class)->register();
+        $this->container->make(AddonsScreen::class)->register();
     }
 }

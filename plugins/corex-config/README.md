@@ -31,11 +31,24 @@ $store->save('brand.footer_text', 'Powered by Acme');   // → option corex_bran
 Config::get('brand.footer_text');                        // 'Powered by Acme'
 ```
 
+## Add-ons screen
+
+A **Corex → Add-ons** submenu lists every Corex add-on with its state (Active / Inactive / Not installed) and,
+where it has one, its feature flag. Enabling or disabling an add-on toggles **its plugin and its feature flag
+together**. The screen is **dependency-aware**: it refuses to disable an add-on an active add-on requires
+(naming the dependent), and refuses to enable one whose dependency is inactive (naming the missing
+dependency) — so a toggle can never leave the site broken.
+
+The decisions are the pure, unit-tested `Corex\Config\Addons\AddonRegistry` + `AddonManager` (the kit add-ons
+require `corex-ui`, mirroring the blueprints); the `AddonsScreen` only renders + gates (via the shared
+`Corex\Security\Admin\AdminGuard`, cap + nonce) and delegates the plugin/flag writes to `AddonActivator`.
+Companion to the setup wizard (which composes a whole kit at once).
+
 ## Tests
 
 ```bash
-composer test              # headless: branding service + the settings registry/form + the bundled SVG
-composer test:integration  # real ./wp: a saved setting is read back through the Config engine
+composer test              # headless: branding + settings + the add-on registry/manager dependency rules
+composer test:integration  # real ./wp: a saved setting read back; the add-on activator flag sync
 ```
 
 > The **React/DataViews UI** (DataViews tables for submissions/subscribers/applications, the setup wizard,
