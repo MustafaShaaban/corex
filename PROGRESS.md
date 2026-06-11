@@ -343,8 +343,16 @@ surfaced; the user chose **split-by-audience**. Resolution + scope: **DECISIONS 
   glossary + translation-memory. Delivered in **phases D1–D12, one per session**; no new runtime/build dep;
   Mermaid diagrams (GitHub-native). The brief's hand-written class reference is **dropped** in favour of the
   generator. **No `docs/` content authored yet — D1 (scaffolding) is the next session.**
-  **▶ NEXT:** D1 — templates (`_template.md` + class-ref link-stub), `_glossary.md`, `_translation-memory.md`,
-  `docs/README.md`, and update `COREX-FRAMEWORK.md §4` (Working-Guide Part F) — per spec 028 tasks T001–T006.
+- [x] **D1 — Scaffolding COMPLETE (2026-06-12).** Created the handbook skeleton under `docs/`:
+  `en/_template.md` (per-page template w/ the command→expected-output + tool-intro conventions),
+  `en/_class-reference-stub.md` (link-stub → generated docs-app reference, not hand-written),
+  `_glossary.md` (18 domain terms + Arabic column), `_translation-memory.md` (locked English terms),
+  `README.md` (entry point: audience tiers + section map + "what lives where" + language picker), and
+  `en/{00-getting-started,04-team-workflow,05-deployment,06-cookbooks,07-troubleshooting,08-contributing}/index.md`
+  navigational stubs (`stability: planned`). Updated `COREX-FRAMEWORK.md §4` (docs/ = handbook; docs-app/ =
+  site). docs-guard self-check clean (refs real or `planned`; architecture linked not duplicated; fences tagged).
+  **▶ NEXT:** D2 — author the five `00-getting-started/` OS guides (Windows+WAMP, Windows+XAMPP, Linux, macOS,
+  wp-env) per spec 028 task T007. Say: **"go — run D2 of spec 028"**.
 - [ ] D2 (5-OS getting-started) · D3 (Docker) · D4 (Azure) · D5 (AWS) · D6 (cPanel + CI/CD) · D7 (team-workflow)
   · D8 (cookbooks) · D9 (troubleshooting/contributing) · D10 (`ar/` mirror) · D11 (cross-link audit) · D12
   (verification pass). _Open decision: repo CI — GitHub Actions (current) vs Azure Pipelines — settle in /clarify._

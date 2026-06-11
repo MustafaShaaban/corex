@@ -10,12 +10,12 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D1: Scaffolding (templates, glossary, README) — 🎯 first implementation session
 
-- [ ] T001 Create `docs/en/_template.md` (front-matter + section skeleton + the command/expected-output + tool-intro conventions from `data-model.md`/`contracts/page-contract.md`).
-- [ ] T002 Create the **class-reference link-stub** template (a short stub that links to the generated docs-app reference; `stability: planned` when the class isn't built) — replaces the brief's hand-written class page.
-- [ ] T003 Create `docs/_glossary.md` seeded with the domain terms (Corex, Service Provider, Repository, Container, Event Bus, Middleware, Block, Blueprint/Kit, Feature flag, Guard Gate, Spec Kit, AdminGuard, Mailer seam, Field driver) + an empty Arabic column.
-- [ ] T004 Create `docs/_translation-memory.md` listing the locked (never-translated) English terms (class names/namespaces, methods, env vars, hooks, CLI flags, paths, product names).
-- [ ] T005 Create `docs/README.md` — entry point, the three audience tiers, the section map, and a language-picker stub (en / ar-pending).
-- [ ] T006 Update `COREX-FRAMEWORK.md §4` + the existing `docs/README.md` note to reflect `docs/` now hosting the authored handbook (Working Guide Part F); update PROGRESS + add a DECISIONS entry (the split-by-audience decision); NEXT STEP → D2.
+- [x] T001 Create `docs/en/_template.md` (front-matter + section skeleton + the command/expected-output + tool-intro conventions from `data-model.md`/`contracts/page-contract.md`).
+- [x] T002 Create the **class-reference link-stub** template (a short stub that links to the generated docs-app reference; `stability: planned` when the class isn't built) — replaces the brief's hand-written class page.
+- [x] T003 Create `docs/_glossary.md` seeded with the domain terms (Corex, Service Provider, Repository, Container, Event Bus, Middleware, Block, Blueprint/Kit, Feature flag, Guard Gate, Spec Kit, AdminGuard, Mailer seam, Field driver) + an empty Arabic column.
+- [x] T004 Create `docs/_translation-memory.md` listing the locked (never-translated) English terms (class names/namespaces, methods, env vars, hooks, CLI flags, paths, product names).
+- [x] T005 Create `docs/README.md` — entry point, the three audience tiers, the section map, and a language-picker stub (en / ar-pending).
+- [x] T006 Update `COREX-FRAMEWORK.md §4` + the existing `docs/README.md` note to reflect `docs/` now hosting the authored handbook (Working Guide Part F); update PROGRESS + add a DECISIONS entry (the split-by-audience decision); NEXT STEP → D2.
 
 ## Phase D2: `00-getting-started/` (5 OS guides)
 
