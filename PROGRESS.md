@@ -291,8 +291,37 @@ Order: P1 → P2 → P3 → P4 → P5 → P6. **Remediation APPROVED by the user
 > admin + JS-edit blocks remain a documented forward upgrade. Forward feature specs **025–027**
 > (project-reset, addon-manager, block-library-expansion) are queued in the backlog above, to be built via the
 > full Spec Kit slash-command flow when picked up.
-> **▶ NEXT: merge PR #1 once reviewed** (then `develop`→`main` per git-flow-lite), and run the browser smoke
-> when full WAMP is up.
+> **✅ RELEASED v0.18.0 (2026-06-11).** PR #1 merged into `develop` (CI green); `develop`→`main` promoted as
+> the **Release v0.18.0** commit (no-ff, clean merge); tagged **`v0.18.0`** and pushed; **CI green on `main`**.
+> CHANGELOG `[0.18.0]` added. The "Finish Corex" initiative is now released and spec-first compliant end-to-end.
+> **▶ FORWARD SPECS (025–027) — in progress via the full Spec Kit flow (spec-first):**
+> - [x] **`025-project-reset` — COMPLETE + IMPLEMENTED (2026-06-11).** `wp corex reset` (soft + gated full).
+>   Full Spec Kit flow (spec/plan/research/data-model/contracts/quickstart/tasks) on `feature/025-project-reset`.
+>   Pure `ResetPlanner` + fail-closed `ResetGate`, thin `ResetCommand`, `ResetExecutor` (WP boundary); the
+>   destructive DB wipe is behind a typed `--yes-i-mean-it` safeguard (+ WP-CLI confirm) and **never auto-runs**.
+>   **7 unit + 2 integration green; 281 unit total**; wp-guard + clean-code clean. Verified live: soft + full
+>   dry-runs preview correctly, `--hard` without the safeguard refuses with zero changes. DECISIONS #59;
+>   CLI README updated.
+> - [x] **`026-addon-manager` — COMPLETE + IMPLEMENTED (2026-06-11).** A "Corex Add-ons" submenu in
+>   `corex-config` (full Spec Kit flow on `feature/026-addon-manager`). Pure `AddonRegistry` + `AddonManager`
+>   (dependency-aware: refuse + explain, no silent cascade — kits require `corex-ui`), an `AddonsScreen`
+>   (renders + gates via the shared `AdminGuard`, escaped + i18n + RTL), and an `AddonActivator` (plugin + flag
+>   in sync). **9 unit + 1 integration green; 290 unit total**; wp-guard + clean-code clean. Screen hook
+>   confirmed wired on real WP (menu render is the Apache-gated smoke). DECISIONS #60; corex-config README updated.
+> - [x] **`027-block-library-expansion` — COMPLETE + IMPLEMENTED (2026-06-11).** Four new server-rendered
+>   `corex/*` component blocks in `corex-ui` (full Spec Kit flow on `feature/027-block-library-expansion`):
+>   **`corex/stat`, `corex/testimonial`, `corex/pricing`, `corex/accordion`** — scalar/text-attribute driven
+>   (sidebar controls + `ServerSideRender`), pure `BlockRenderer`s (escaped, token-only, RTL), accordion via
+>   native `<details>` (accessible, no JS). Auto-discovered (no engine change). **5 unit green; 295 unit total**;
+>   token-only scan clean; wp-guard + clean-code clean. **Built + verified live**: all four register dynamic, in
+>   the Corex category, with compiled `style-index.css` + `-rtl.css`. DECISIONS #61; corex-ui README updated.
+>   _(JS tabs + a media-repeater gallery are an explicit later Interactivity-API increment.)_
+>
+> 🎉 **FORWARD SPECS 025–027 COMPLETE (2026-06-11)** — all three built spec-first via the full Spec Kit flow,
+> each tested, guarded, documented, verified on real WP, and merged to develop via its own PR (CI green).
+>
+> **Still env-gated (not skipped):** the **browser smoke** + **executing** the Playwright E2E need full
+> WAMP/Apache + a browser this headless box lacks; the React/DataViews admin remains a build-env upgrade.
 
 **Debug-log audit (2026-06-11, user-requested):** found + fixed a real regression — the item-13 mail queue
 resolved the dispatcher at `plugins_loaded`, eagerly building the mail stack → `wp_get_global_settings` →

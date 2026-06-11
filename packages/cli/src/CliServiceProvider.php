@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Cli\Commands\DocsCommand;
 use Corex\Cli\Commands\MakeCommand;
+use Corex\Cli\Commands\ResetCommand;
 use Corex\Cli\Docs\ClassDocReader;
 use Corex\Cli\Docs\DocsGenerator;
 use Corex\Cli\Docs\MarkdownDocRenderer;
@@ -23,6 +24,9 @@ use Corex\Cli\Generators\ModelGenerator;
 use Corex\Cli\Generators\RepositoryGenerator;
 use Corex\Cli\Generators\ServiceGenerator;
 use Corex\Cli\Generators\StubRenderer;
+use Corex\Cli\Reset\ResetExecutor;
+use Corex\Cli\Reset\ResetGate;
+use Corex\Cli\Reset\ResetPlanner;
 use Corex\Cli\Support\Naming;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
@@ -116,6 +120,15 @@ final class CliServiceProvider extends ServiceProvider
             'corex docs:generate',
             static function (array $args, array $assoc) use ($docs): void {
                 $docs->generate($args, $assoc);
+            },
+        );
+
+        $reset = new ResetCommand(new ResetPlanner(), new ResetGate(), new ResetExecutor());
+
+        WP_CLI::add_command(
+            'corex reset',
+            static function (array $args, array $assoc) use ($reset): void {
+                $reset->run($args, $assoc);
             },
         );
     }

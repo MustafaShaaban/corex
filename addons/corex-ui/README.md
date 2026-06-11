@@ -4,8 +4,9 @@ The Corex UI block library: server-rendered `corex/*` dynamic blocks plus a cura
 token-only, accessible, RTL section patterns under a single **Corex** inserter category. Designs
 are composed of these units. Optional add-on; requires `corex-core` and the `corex-blocks` engine.
 
-> No JS build in this version — dynamic blocks are server-rendered (spec-004 engine) and content
-> sections are block patterns. Custom JS-edit blocks + the build pipeline are a later spec.
+> Dynamic blocks are server-rendered (spec-004 engine) with editor registration + compiled token-only
+> styles via the `@wordpress/scripts` build pipeline (spec 018); content sections are block patterns.
+> Run `npm run build` to compile each block's editor script + `style-index.css` (+ RTL).
 
 ## Dynamic blocks
 
@@ -14,9 +15,14 @@ are composed of these units. Optional add-on; requires `corex-core` and the `cor
 | `corex/posts` | Recent posts as accessible linked cards (`count` attribute, bounded 1–12; empty state) |
 | `corex/breadcrumbs` | An accessible `nav` breadcrumb trail to the current page |
 | `corex/copyright` | The current year + site name (footer line) |
+| `corex/stat` | A single statistic — `value`, `label`, optional `description` |
+| `corex/testimonial` | A quote with attribution — accessible `figure`/`blockquote`/`figcaption` (`quote`/`author`/`role`) |
+| `corex/pricing` | A pricing card — `plan`, `price`, `period`, `features` (one per line), optional CTA |
+| `corex/accordion` | Accessible disclosures from `items` (one `Title \| Content` per line) — native `<details>`, no JS |
 
 Each is server-rendered, escaped, and token-styled; its CSS loads only where the block renders
-(declared in `block.json`).
+(declared in `block.json`). The component blocks (spec 027) take scalar/text attributes edited in the
+block sidebar; multi-item blocks (pricing features, accordion items) read a simple per-line attribute.
 
 ## Section patterns
 

@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/accordion",
+	"title": "Corex Accordion",
+	"category": "corex",
+	"icon": "menu",
+	"description": "Accessible disclosure panels from a simple list (dynamic, no JavaScript).",
+	"textdomain": "corex",
+	"attributes": {
+		"items": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\AccordionRenderer" }
+}

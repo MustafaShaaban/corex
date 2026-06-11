@@ -1,0 +1,19 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/testimonial",
+	"title": "Corex Testimonial",
+	"category": "corex",
+	"icon": "format-quote",
+	"description": "A testimonial quote with attribution (dynamic, accessible figure).",
+	"textdomain": "corex",
+	"attributes": {
+		"quote": { "type": "string", "default": "" },
+		"author": { "type": "string", "default": "" },
+		"role": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\TestimonialRenderer" }
+}

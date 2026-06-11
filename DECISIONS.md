@@ -909,3 +909,55 @@ Why: two real callers today (not speculative), identical duplicated security kno
 place to harden later. Forcing the request/response pipeline onto a non-request admin callback would be the
 wrong abstraction. Constitution amended to **v1.2.1** with the Principle VII scope clarification.
 Status: Final.
+
+## #59 — `wp corex reset`: a pure planner + a fail-closed gate, destructive wipe behind a typed safeguard
+Date: 2026-06-11
+Context: spec 025 — a reset command with a reversible-ish soft mode and a destructive full mode (DB wipe). The
+risk is a wipe firing by accident or from an automated path.
+Decision: split the command into a pure `ResetPlanner` (mode + gathered `ResetInventory` → ordered `ResetPlan`
+of `ResetAction`s, no WP), a pure `ResetGate` (`permits()` — soft always, full only when `confirmed`), a thin
+WP-CLI `ResetCommand` (gathers the inventory, plans, dry-runs/refuses/executes), and a `ResetExecutor` (the WP
+boundary). The destructive `db-wipe` is reachable only through three independent checks — the typed safeguard
+`--yes-i-mean-it` sets `confirmed`, the gate permits only then, and the planner emits `db-wipe` only for full
+mode — with the decisive check being the pure, unit-tested gate. Soft mode deactivates **add-ons** only (the
+framework plugins + theme stay), clears `corex_*` options/flags, and removes the wizard-seeded demo, touching
+nothing else. "Fresh Corex starter" = clean WP + Corex theme + Corex core, no add-ons/options/flags/demo.
+Why: fail-closed (Principle VII) for an irreversible action, with the safety property provable at the pure
+layer (no WP/DB needed to test it). Verified live: soft + full dry-runs preview correctly, and `--hard` without
+the safeguard refuses with zero changes. 7 unit + 2 integration tests; wp-guard + clean-code clean.
+Status: Final. (The wipe itself is not run against the dev DB — its gate is proven by the refusal path + units.)
+
+## #60 — Add-on manager: dependency-aware toggles that refuse + explain (no silent cascade)
+Date: 2026-06-11
+Context: spec 026 — a "Corex Add-ons" admin screen to enable/disable each corex-* add-on (plugin + feature
+flag) with dependency awareness. The question: what happens on a dependency conflict?
+Decision: **refuse + explain, never cascade.** Disabling an add-on an active add-on requires is refused
+(naming the dependent); enabling an add-on whose required dependency is inactive is refused (naming the
+missing dependency); the rendered list shows the reason on each blocked add-on. The decisions live in a pure
+`AddonRegistry` (the known add-ons + their `requires` edges — kits require corex-ui, mirroring the blueprints)
++ a pure `AddonManager` (`canEnable`/`canDisable` + `missingDependencies`/`blockingDependents`), so the safety
+property is unit-tested with no WP. The `AddonsScreen` renders + gates (shared `AdminGuard`, cap + nonce) and
+delegates plugin/flag writes to `AddonActivator`; a single toggle keeps the plugin activation and the feature
+flag in sync. Lives in corex-config beside AdminDashboard + SetupWizardScreen (same menu, guard, discipline).
+Why: silent cascades (auto-activating deps, auto-disabling dependents) cause surprise side effects; deterministic
+refusal keeps the admin in control and the state always consistent. 9 unit + 1 integration tests; wp-guard +
+clean-code clean; the screen hook is confirmed wired on real WP (the menu render is the Apache-gated smoke).
+Status: Final.
+
+## #61 — Block library expansion: scalar-attribute server-rendered component blocks; accordion via native <details>
+Date: 2026-06-11
+Context: spec 027 — grow the corex/* library with the component blocks kits need. The design tension: rich
+multi-item blocks usually need bespoke repeater editor UI (React), which is heavy.
+Decision: ship four new server-rendered dynamic blocks — `corex/stat`, `corex/testimonial`, `corex/pricing`,
+`corex/accordion` — driven by **scalar/text attributes** edited via sidebar `TextControl`/`TextareaControl` +
+`ServerSideRender` preview, not bespoke repeaters. Multi-item blocks read a **simple per-line attribute**
+(pricing features = one per line; accordion items = `Title | Content` per line). The **accordion uses native
+`<details>`/`<summary>`** — fully accessible + keyboard-operable with **no JavaScript**. Each block drops into
+`addons/corex-ui/src/Blocks/` and is **auto-discovered** by the corex-blocks engine (no registration change);
+each renderer is a pure `BlockRenderer` (attributes → escaped, token-only HTML), unit-tested headlessly. JS
+multi-panel tabs + a media-repeater gallery are deferred to a later Interactivity-API increment.
+Why: keeps the editor UX simple and the render server-authoritative + testable, while still covering the
+common component vocabulary; native `<details>` gives accessible disclosure for free. 5 unit tests; token-only
+scan clean; built + verified live (all four register dynamic, in the Corex category, with compiled style +
+RTL). wp-guard + clean-code clean.
+Status: Final.
