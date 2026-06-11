@@ -4,6 +4,24 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.19.0] — 2026-06-11
+
+The forward specs 025–027, each built spec-first via the full Spec Kit flow, tested, guarded, verified on
+real WordPress, and merged via its own PR (CI green).
+
+### Added
+- **`wp corex reset`** (spec 025): return a Corex site to a clean state. **Soft** mode deactivates Corex
+  add-ons, clears `corex_*` options + feature flags, and removes the wizard-seeded demo — touching only
+  Corex's footprint. **Full** mode (`--hard`) wipes the DB to a fresh Corex starter, gated behind a typed
+  `--yes-i-mean-it` safeguard (+ WP-CLI confirm) so it never auto-runs. `--dry-run` previews either mode.
+  Pure `ResetPlanner` + fail-closed `ResetGate`; the wipe lives only in `ResetExecutor`.
+- **Corex Add-ons screen** (spec 026): a "Corex → Add-ons" admin screen (in `corex-config`) to enable/disable
+  each add-on — toggling its plugin and feature flag together — with dependency awareness (refuse + explain,
+  no silent cascade). Pure `AddonRegistry` + `AddonManager`; gated by the shared `AdminGuard`.
+- **New `corex/*` component blocks** (spec 027): `corex/stat`, `corex/testimonial`, `corex/pricing`, and
+  `corex/accordion` — server-rendered, token-only, RTL, accessible (the accordion uses native `<details>`,
+  no JS). Auto-discovered with no engine change.
+
 ## [0.18.0] — 2026-06-11
 
 The "Finish Corex" initiative — brought into full spec-first compliance (retrospective specs 018–024)
