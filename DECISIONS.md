@@ -909,3 +909,20 @@ Why: two real callers today (not speculative), identical duplicated security kno
 place to harden later. Forcing the request/response pipeline onto a non-request admin callback would be the
 wrong abstraction. Constitution amended to **v1.2.1** with the Principle VII scope clarification.
 Status: Final.
+
+## #59 — `wp corex reset`: a pure planner + a fail-closed gate, destructive wipe behind a typed safeguard
+Date: 2026-06-11
+Context: spec 025 — a reset command with a reversible-ish soft mode and a destructive full mode (DB wipe). The
+risk is a wipe firing by accident or from an automated path.
+Decision: split the command into a pure `ResetPlanner` (mode + gathered `ResetInventory` → ordered `ResetPlan`
+of `ResetAction`s, no WP), a pure `ResetGate` (`permits()` — soft always, full only when `confirmed`), a thin
+WP-CLI `ResetCommand` (gathers the inventory, plans, dry-runs/refuses/executes), and a `ResetExecutor` (the WP
+boundary). The destructive `db-wipe` is reachable only through three independent checks — the typed safeguard
+`--yes-i-mean-it` sets `confirmed`, the gate permits only then, and the planner emits `db-wipe` only for full
+mode — with the decisive check being the pure, unit-tested gate. Soft mode deactivates **add-ons** only (the
+framework plugins + theme stay), clears `corex_*` options/flags, and removes the wizard-seeded demo, touching
+nothing else. "Fresh Corex starter" = clean WP + Corex theme + Corex core, no add-ons/options/flags/demo.
+Why: fail-closed (Principle VII) for an irreversible action, with the safety property provable at the pure
+layer (no WP/DB needed to test it). Verified live: soft + full dry-runs preview correctly, and `--hard` without
+the safeguard refuses with zero changes. 7 unit + 2 integration tests; wp-guard + clean-code clean.
+Status: Final. (The wipe itself is not run against the dev DB — its gate is proven by the refusal path + units.)

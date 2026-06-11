@@ -294,13 +294,21 @@ Order: P1 → P2 → P3 → P4 → P5 → P6. **Remediation APPROVED by the user
 > **✅ RELEASED v0.18.0 (2026-06-11).** PR #1 merged into `develop` (CI green); `develop`→`main` promoted as
 > the **Release v0.18.0** commit (no-ff, clean merge); tagged **`v0.18.0`** and pushed; **CI green on `main`**.
 > CHANGELOG `[0.18.0]` added. The "Finish Corex" initiative is now released and spec-first compliant end-to-end.
-> **▶ NEXT (genuinely remaining, all env-/scope-gated — not skipped work):**
-> 1. **Browser smoke** (needs full WAMP/Apache up): visual verification of blocks, patterns, kit storefronts,
->    admin screens, and the form/newsletter/careers/call flows over HTTP; **execute** the Playwright E2E
->    (`tests/e2e/`, `npm run test:e2e` after `npx playwright install`).
-> 2. **Forward feature specs 025–027** (project-reset CLI · addon-manager admin screen · block-library
->    expansion) via the full Spec Kit slash-command flow — these precede new code, so spec-first.
-> 3. **Build-dependent upgrades:** the React/DataViews admin (spec 017's deferred layer) + custom JS-edit blocks.
+> **▶ FORWARD SPECS (025–027) — in progress via the full Spec Kit flow (spec-first):**
+> - [x] **`025-project-reset` — COMPLETE + IMPLEMENTED (2026-06-11).** `wp corex reset` (soft + gated full).
+>   Full Spec Kit flow (spec/plan/research/data-model/contracts/quickstart/tasks) on `feature/025-project-reset`.
+>   Pure `ResetPlanner` + fail-closed `ResetGate`, thin `ResetCommand`, `ResetExecutor` (WP boundary); the
+>   destructive DB wipe is behind a typed `--yes-i-mean-it` safeguard (+ WP-CLI confirm) and **never auto-runs**.
+>   **7 unit + 2 integration green; 281 unit total**; wp-guard + clean-code clean. Verified live: soft + full
+>   dry-runs preview correctly, `--hard` without the safeguard refuses with zero changes. DECISIONS #59;
+>   CLI README updated.
+> - [ ] **`026-addon-manager`** — next: a server-rendered "Corex Add-ons" admin screen (enable/disable each
+>   add-on + its flag, dependency-aware) using the shared `AdminGuard`. Full Spec Kit flow.
+> - [ ] **`027-block-library-expansion`** — grow the `corex/*` block library (team/stats/pricing/gallery/
+>   accordion/tabs/testimonial) via `wp corex make:block`, token-only + dynamic + accessible + RTL.
+>
+> **Still env-gated (not skipped):** the **browser smoke** + **executing** the Playwright E2E need full
+> WAMP/Apache + a browser this headless box lacks; the React/DataViews admin remains a build-env upgrade.
 
 **Debug-log audit (2026-06-11, user-requested):** found + fixed a real regression — the item-13 mail queue
 resolved the dispatcher at `plugins_loaded`, eagerly building the mail stack → `wp_get_global_settings` →

@@ -80,6 +80,33 @@ npm run build        # or: npm run start  (watch mode)
 
 Existing blocks are **skipped** unless `--force` is passed.
 
+### `reset` — return a Corex site to a clean state
+
+```bash
+wp corex reset                                   # SOFT reset (default)
+wp corex reset --dry-run                          # preview the soft reset (no changes)
+wp corex reset --hard --dry-run                   # preview the full reset (no wipe)
+wp corex reset --hard                              # REFUSED — missing --yes-i-mean-it
+wp corex reset --hard --yes-i-mean-it --yes       # FULL reset → fresh Corex starter
+```
+
+Two modes:
+
+- **Soft** (default): deactivates every Corex **add-on** (the framework plugins
+  `corex-core`/`corex-blocks`/`corex-forms`/`corex-config` and the theme stay active),
+  deletes every `corex_*` option + feature flag, and removes the wizard-seeded demo Home
+  page (reverting the front-page settings). It touches **only** Corex's own footprint —
+  non-Corex content is never modified.
+- **Full / hard** (`--hard`): wipes the database and restores a **fresh Corex starter** —
+  a clean WordPress with only the Corex theme active and no add-ons, options, flags, or
+  demo content. **This is destructive and irreversible**, so it is gated: it refuses
+  unless you pass the typed safeguard `--yes-i-mean-it` (in addition to WP-CLI's `--yes`).
+  A new admin password is generated and printed.
+
+`--dry-run` prints the ordered plan for either mode and changes nothing. The decision
+logic (the plan + the safety gate) is the pure, unit-tested `Corex\Cli\Reset\ResetPlanner`
++ `ResetGate`; only `ResetExecutor` touches WordPress.
+
 ## Adding a generator
 
 Single-class generators extend `Corex\Cli\Generators\Generator` (a stub name, a
