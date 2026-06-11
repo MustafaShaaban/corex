@@ -39,7 +39,7 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D7: `04-team-workflow/`
 
-- [ ] T012 Author onboarding + git-flow-lite + Conventional Commits + PR review + the Claude Code/Spec Kit loop + the Guard Gate — **linking** to `COREX-WORKING-GUIDE.md` + the constitution (no rule duplication).
+- [x] T012 Author onboarding + git-flow-lite + Conventional Commits + PR review + the Claude Code/Spec Kit loop + the Guard Gate — **linking** to `COREX-WORKING-GUIDE.md` + the constitution (no rule duplication).
 
 ## Phase D8: `06-cookbooks/`
 
