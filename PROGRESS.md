@@ -291,8 +291,16 @@ Order: P1 → P2 → P3 → P4 → P5 → P6. **Remediation APPROVED by the user
 > admin + JS-edit blocks remain a documented forward upgrade. Forward feature specs **025–027**
 > (project-reset, addon-manager, block-library-expansion) are queued in the backlog above, to be built via the
 > full Spec Kit slash-command flow when picked up.
-> **▶ NEXT: merge PR #1 once reviewed** (then `develop`→`main` per git-flow-lite), and run the browser smoke
-> when full WAMP is up.
+> **✅ RELEASED v0.18.0 (2026-06-11).** PR #1 merged into `develop` (CI green); `develop`→`main` promoted as
+> the **Release v0.18.0** commit (no-ff, clean merge); tagged **`v0.18.0`** and pushed; **CI green on `main`**.
+> CHANGELOG `[0.18.0]` added. The "Finish Corex" initiative is now released and spec-first compliant end-to-end.
+> **▶ NEXT (genuinely remaining, all env-/scope-gated — not skipped work):**
+> 1. **Browser smoke** (needs full WAMP/Apache up): visual verification of blocks, patterns, kit storefronts,
+>    admin screens, and the form/newsletter/careers/call flows over HTTP; **execute** the Playwright E2E
+>    (`tests/e2e/`, `npm run test:e2e` after `npx playwright install`).
+> 2. **Forward feature specs 025–027** (project-reset CLI · addon-manager admin screen · block-library
+>    expansion) via the full Spec Kit slash-command flow — these precede new code, so spec-first.
+> 3. **Build-dependent upgrades:** the React/DataViews admin (spec 017's deferred layer) + custom JS-edit blocks.
 
 **Debug-log audit (2026-06-11, user-requested):** found + fixed a real regression — the item-13 mail queue
 resolved the dispatcher at `plugins_loaded`, eagerly building the mail stack → `wp_get_global_settings` →
