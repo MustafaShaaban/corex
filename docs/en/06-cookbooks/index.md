@@ -2,22 +2,25 @@
 title: Cookbooks
 description: Recipes for complex, real-world Corex scenarios — each with two worked examples.
 audience: contributor
-stability: planned       # authored in phase D8
+stability: stable
 last_verified: null
 ---
 
 # Cookbooks
 
-Task-oriented recipes for the harder scenarios. Each page states the problem, when it applies, **at least two
-worked examples of different shapes**, and the pitfalls — and links to the relevant generated class reference
-in docs-app rather than restating it.
+Task-oriented recipes for the harder scenarios. Each page states the problem, gives **two worked examples of
+different shapes**, lists the pitfalls, and links to the relevant generated reference in docs-app (rather than
+restating it).
 
-> **Status:** scaffolded; authored in **phase D8**.
+## Recipes
 
-## Pages (planned)
+| Recipe | The problem it solves |
+|---|---|
+| [WooCommerce detect-and-defer](./woocommerce-detect-and-defer.md) | Use WooCommerce when present, never make it a hard dependency. |
+| [Multisite](./multisite.md) | Per-site options/flags + which capability gates network actions. |
+| [Headless](./headless.md) | Drive the Corex backend from a separate front end over REST. |
+| [AI-agent flows](./ai-agent-flows.md) | Expose safe, read-only, cap-gated abilities to agents (WP 7.0 Abilities). |
+| [Paid (Pro) add-ons](./paid-add-ons.md) | Gate commercial features on the Pro edition flag without forking. |
 
-- WooCommerce **detect-and-defer** (optional integration, never a hard dependency).
-- **Multisite** considerations.
-- **Headless** mode.
-- **AI-agent-driven** flows (the WP 7.0 Abilities surface).
-- Building a **paid add-on** (the commercial/Pro gate).
+Every recipe is grounded in a real Corex pattern (the Woo gate, feature flags, the Abilities provider, the
+forms REST route) — see each page's "See also" for the generated class reference.

@@ -8,7 +8,7 @@ last_verified: null
 
 # Onboarding a new developer
 
-This is the path from "I just got repo access" to "I shipped my first reviewed change". It **links** to the
+This is the path from "I have repo access" to "I shipped my first reviewed change". It **links** to the
 authoritative documents rather than restating their rules — read those; this page tells you the order.
 
 ## Day one checklist

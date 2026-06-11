@@ -43,7 +43,7 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D8: `06-cookbooks/`
 
-- [ ] T013 Author cookbooks — Woo detect-and-defer, multisite, headless mode, AI-agent-driven flows, paid add-ons — each its own page with ≥2 examples of different shapes.
+- [x] T013 Author cookbooks — Woo detect-and-defer, multisite, headless mode, AI-agent-driven flows, paid add-ons — each its own page with ≥2 examples of different shapes.
 
 ## Phase D9: `07-troubleshooting/` + `08-contributing/`
 

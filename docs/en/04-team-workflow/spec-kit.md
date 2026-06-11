@@ -34,7 +34,7 @@ flowchart LR
 
 ## The rules that never bend
 
-- **No code before its spec.** If you are tempted to "just build it", open the spec first
+- **No code before its spec.** If you are tempted to skip ahead and build it, open the spec first
   ([why](../../../DECISIONS.md) — see the compliance review that produced specs 018–024).
 - **Every response ends with a `NEXT STEP` block** (Just completed / Recommended next / Why / Alternatives) so
   any teammate — or the next agent session — can resume instantly.
