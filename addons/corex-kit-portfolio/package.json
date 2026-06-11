@@ -1,0 +1,11 @@
+{
+    "name": "@corex/kit-portfolio",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Corex Portfolio kit — projects CPT, a dynamic projects-grid block, and portfolio FSE templates.",
+    "license": "GPL-2.0-or-later",
+    "scripts": {
+        "build": "wp-scripts build --webpack-src-dir=src/Blocks --output-path=build/blocks",
+        "start": "wp-scripts start --webpack-src-dir=src/Blocks --output-path=build/blocks"
+    }
+}

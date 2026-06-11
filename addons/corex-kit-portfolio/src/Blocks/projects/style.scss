@@ -1,0 +1,37 @@
+/**
+ * Corex Projects — token-only, logical CSS (RTL-correct), conditional asset.
+ * Compiled by @wordpress/scripts; loaded only when the block renders.
+ */
+.corex-projects {
+	display: grid;
+	/* Functional responsive grid track (layout), not a token — colours/spacing/fonts
+	   below all resolve from theme.json. */
+	grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+	gap: var(--wp--preset--spacing--50);
+}
+
+.corex-projects__item {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--30);
+	background-color: var(--wp--preset--color--surface);
+	padding: var(--wp--preset--spacing--40);
+	text-align: start;
+}
+
+.corex-projects__thumb {
+	inline-size: 100%;
+	block-size: auto;
+	object-fit: cover;
+}
+
+.corex-projects__title {
+	font-size: var(--wp--preset--font-size--lg);
+	color: var(--wp--preset--color--ink);
+	margin-block: 0;
+}
+
+.corex-projects__empty {
+	color: var(--wp--preset--color--ink);
+	text-align: start;
+}
