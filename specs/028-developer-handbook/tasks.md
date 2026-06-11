@@ -55,7 +55,7 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D11: Cross-link + planned audit
 
-- [ ] T016 Verify every architecture/reference need is a link into docs-app (zero duplication); audit `stability: planned` markers against the specs that will produce them.
+- [x] T016 Verify every architecture/reference need is a link into docs-app (zero duplication); audit `stability: planned` markers against the specs that will produce them.
 
 ## Phase D12: Verification pass
 

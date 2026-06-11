@@ -2,7 +2,7 @@
 title: Deployment
 description: Run Corex with Docker, and deploy it to Azure, AWS, or shared hosting — full step-by-step recipes.
 audience: ops
-stability: planned       # authored in phases D3–D6
+stability: stable        # recipes authored (phases D3–D6)
 last_verified: null
 ---
 
