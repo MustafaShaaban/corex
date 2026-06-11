@@ -42,10 +42,14 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-**Active plan:** `specs/018-build-pipeline-blocks/plan.md` (RETROSPECTIVE — @wordpress/scripts build
+**Active plan:** _none — all specs 001–027 are delivered + released (v0.18.0 → v0.19.0)._ Most recent:
+`specs/027-block-library-expansion/plan.md` (four server-rendered `corex/*` component blocks —
+stat/testimonial/pricing/accordion — token-only, RTL, accessible). Before it: `026-addon-manager`
+(dependency-aware add-on screen) and `025-project-reset` (`wp corex reset`, soft + gated full). The P1
+retrospective backfill 018–024 reconciled the "Finish Corex" initiative to specs. Earlier:
+**Active plan (prev):** `specs/018-build-pipeline-blocks/plan.md` (RETROSPECTIVE — @wordpress/scripts build
 pipeline + dynamic block editor registration via ServerSideRender + "Corex" inserter category +
-add-on activation; reconciles items 1–2 of the "Finish Corex" initiative to a spec. First of the P1
-retrospective-spec backfill 018–024; see PROGRESS "COMPLIANCE REVIEW"). Built on spec 004. Earlier:
+add-on activation; reconciles items 1–2 of the "Finish Corex" initiative to a spec). Built on spec 004. Earlier:
 **Active plan (prev):** `specs/007-forms-engine/plan.md` (Form schema + headless Validator + shared
 EventDispatcher seam in corex-core + secured REST submit lifecycle reusing the spec-005 middleware
 + email/store listeners + FSE form block; new plugin corex-forms). Built on specs 001–006. Earlier:
