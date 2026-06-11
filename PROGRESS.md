@@ -320,8 +320,13 @@ Order: P1 → P2 → P3 → P4 → P5 → P6. **Remediation APPROVED by the user
 > 🎉 **FORWARD SPECS 025–027 COMPLETE (2026-06-11)** — all three built spec-first via the full Spec Kit flow,
 > each tested, guarded, documented, verified on real WP, and merged to develop via its own PR (CI green).
 >
-> **Still env-gated (not skipped):** the **browser smoke** + **executing** the Playwright E2E need full
-> WAMP/Apache + a browser this headless box lacks; the React/DataViews admin remains a build-env upgrade.
+> ✅ **RELEASED v0.19.0 (2026-06-11).** `develop`→`main` promoted as **Release v0.19.0** (clean no-ff merge),
+> tagged **`v0.19.0`**, pushed; **CI green on `main`**. CHANGELOG `[0.19.0]` added. Specs 025–027 shipped.
+> **Every spec in the repo (001–027) is now complete, implemented, and released** (v0.18.0 → v0.19.0).
+>
+> **Still env-gated (not skipped):** the **browser smoke** + **executing** the Playwright E2E (`tests/e2e/`)
+> need full WAMP/Apache + a browser this headless box lacks; the React/DataViews admin and JS multi-panel
+> tabs + a media-repeater gallery remain documented build-env / Interactivity-API increments.
 
 **Debug-log audit (2026-06-11, user-requested):** found + fixed a real regression — the item-13 mail queue
 resolved the dispatcher at `plugins_loaded`, eagerly building the mail stack → `wp_get_global_settings` →
