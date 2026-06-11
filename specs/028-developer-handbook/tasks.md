@@ -23,7 +23,7 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D3: `05-deployment/` — Docker dev + prod
 
-- [ ] T008 Author the Docker dev `docker compose` (php-fpm/web/db/cache/mail) + monorepo bind-mount mapping + up/down/reset/test commands; the multi-stage prod Dockerfile; dev + prod **Mermaid** topology diagrams.
+- [x] T008 Author the Docker dev `docker compose` (php-fpm/web/db/cache/mail) + monorepo bind-mount mapping + up/down/reset/test commands; the multi-stage prod Dockerfile; dev + prod **Mermaid** topology diagrams.
 
 ## Phase D4: `05-deployment/` — Azure
 
