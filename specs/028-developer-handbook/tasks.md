@@ -47,7 +47,7 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D9: `07-troubleshooting/` + `08-contributing/`
 
-- [ ] T014 Author the troubleshooting section (the real errors) + the contributing on-ramp (links to CONTRIBUTING + Working Guide).
+- [x] T014 Author the troubleshooting section (the real errors) + the contributing on-ramp (links to CONTRIBUTING + Working Guide).
 
 ## Phase D10: `docs/ar/` mirror
 

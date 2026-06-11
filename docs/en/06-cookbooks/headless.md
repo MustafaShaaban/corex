@@ -29,7 +29,7 @@ curl -X POST https://corex.example.com/wp-json/corex/v1/forms/contact \
 { "ok": true, "message": "Thanks — we'll be in touch." }
 ```
 
-The nonce + throttle + sanitize middleware still apply (Principle VII) — a headless client is just another
+The nonce + throttle + sanitize middleware still apply (Principle VII) — a headless client is only another
 caller of the same secured route.
 
 ## Example 2 — read site/structure via the WP 7.0 Abilities surface
