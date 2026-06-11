@@ -328,6 +328,27 @@ Order: P1 → P2 → P3 → P4 → P5 → P6. **Remediation APPROVED by the user
 > need full WAMP/Apache + a browser this headless box lacks; the React/DataViews admin and JS multi-panel
 > tabs + a media-repeater gallery remain documented build-env / Interactivity-API increments.
 
+---
+## ▶ NEW MODULE — Developer & operations handbook (spec 028), spec-first (2026-06-12)
+
+A large "official documentation" brief came in. Per its own STEP 0 + the source-of-truth hierarchy, the
+conflicts with the released `docs-app/` (spec 022) + the generated class reference (DECISIONS #50) were
+surfaced; the user chose **split-by-audience**. Resolution + scope: **DECISIONS #62**.
+
+- [x] **`specs/028-developer-handbook/` — SPEC COMPLETE (specify + plan + tasks + research/data-model/
+  contracts/quickstart).** On `feature/028-developer-handbook`. An in-repo `/docs` GitHub-native Markdown
+  **contributor & operations handbook** (5-OS setup, Docker dev/prod, deployment recipes Azure/AWS/cPanel +
+  CI/CD, team workflow, cookbooks, troubleshooting) that **links** to docs-app for architecture + the
+  **generated** class reference (zero duplication; #50 honored). i18n via `en/` + `ar/` placeholder mirror +
+  glossary + translation-memory. Delivered in **phases D1–D12, one per session**; no new runtime/build dep;
+  Mermaid diagrams (GitHub-native). The brief's hand-written class reference is **dropped** in favour of the
+  generator. **No `docs/` content authored yet — D1 (scaffolding) is the next session.**
+  **▶ NEXT:** D1 — templates (`_template.md` + class-ref link-stub), `_glossary.md`, `_translation-memory.md`,
+  `docs/README.md`, and update `COREX-FRAMEWORK.md §4` (Working-Guide Part F) — per spec 028 tasks T001–T006.
+- [ ] D2 (5-OS getting-started) · D3 (Docker) · D4 (Azure) · D5 (AWS) · D6 (cPanel + CI/CD) · D7 (team-workflow)
+  · D8 (cookbooks) · D9 (troubleshooting/contributing) · D10 (`ar/` mirror) · D11 (cross-link audit) · D12
+  (verification pass). _Open decision: repo CI — GitHub Actions (current) vs Azure Pipelines — settle in /clarify._
+
 **Debug-log audit (2026-06-11, user-requested):** found + fixed a real regression — the item-13 mail queue
 resolved the dispatcher at `plugins_loaded`, eagerly building the mail stack → `wp_get_global_settings` →
 `corex` textdomain loaded too early (34× notice + a 14× "headers already sent" cascade). Fix: lazy worker
