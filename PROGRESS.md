@@ -351,8 +351,17 @@ surfaced; the user chose **split-by-audience**. Resolution + scope: **DECISIONS 
   `en/{00-getting-started,04-team-workflow,05-deployment,06-cookbooks,07-troubleshooting,08-contributing}/index.md`
   navigational stubs (`stability: planned`). Updated `COREX-FRAMEWORK.md §4` (docs/ = handbook; docs-app/ =
   site). docs-guard self-check clean (refs real or `planned`; architecture linked not duplicated; fences tagged).
-  **▶ NEXT:** D2 — author the five `00-getting-started/` OS guides (Windows+WAMP, Windows+XAMPP, Linux, macOS,
-  wp-env) per spec 028 task T007. Say: **"go — run D2 of spec 028"**.
+- [x] **D2 — Getting-started (5 OS guides) COMPLETE (2026-06-12).** Authored
+  `docs/en/00-getting-started/{windows-wamp,windows-xampp,linux,macos,wp-env}.md` + a linked section index.
+  Each is beginner-first with inline tool intros (description + per-OS install + verify command + expected
+  output), command→expected-output throughout, the monorepo→`wp-content/` mapping (junctions on Windows via
+  `scripts/setup-wordpress.ps1`; symlinks on Linux/macOS; auto-mapped by `wp-env.json` on Docker), and a
+  `wp theme list`/`wp plugin list` boot verification. Grounded in the **real** setup script + wp-env.json (not
+  invented). docs-guard self-check clean (refs exist, every opening fence tagged, no architecture duplication,
+  no "simply"/"just").
+  **▶ NEXT:** D3 — `05-deployment/` Docker dev (`docker compose`: php-fpm/web/db/cache/mail) + monorepo
+  bind-mount mapping + up/down/reset/test commands + the multi-stage prod Dockerfile + dev/prod Mermaid
+  topology diagrams (task T008). Say: **"go — run D3 of spec 028"**.
 - [ ] D2 (5-OS getting-started) · D3 (Docker) · D4 (Azure) · D5 (AWS) · D6 (cPanel + CI/CD) · D7 (team-workflow)
   · D8 (cookbooks) · D9 (troubleshooting/contributing) · D10 (`ar/` mirror) · D11 (cross-link audit) · D12
   (verification pass). _Open decision: repo CI — GitHub Actions (current) vs Azure Pipelines — settle in /clarify._

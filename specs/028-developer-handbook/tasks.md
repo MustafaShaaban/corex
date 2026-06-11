@@ -19,7 +19,7 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D2: `00-getting-started/` (5 OS guides)
 
-- [ ] T007 Author the five guides — Windows+WAMP, Windows+XAMPP, Linux (Ubuntu/Debian), macOS, wp-env/Docker — each per the getting-started contract (tool intros, command→expected-output, monorepo mapping, boot verification).
+- [x] T007 Author the five guides — Windows+WAMP, Windows+XAMPP, Linux (Ubuntu/Debian), macOS, wp-env/Docker — each per the getting-started contract (tool intros, command→expected-output, monorepo mapping, boot verification).
 
 ## Phase D3: `05-deployment/` — Docker dev + prod
 
