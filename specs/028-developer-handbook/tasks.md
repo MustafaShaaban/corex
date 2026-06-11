@@ -51,7 +51,7 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D10: `docs/ar/` mirror
 
-- [ ] T015 Scaffold `docs/ar/` as a file-for-file placeholder mirror of `docs/en/` (front-matter + `> TODO: translation pending`).
+- [x] T015 Scaffold `docs/ar/` as a file-for-file placeholder mirror of `docs/en/` (front-matter + `> TODO: translation pending`).
 
 ## Phase D11: Cross-link + planned audit
 
