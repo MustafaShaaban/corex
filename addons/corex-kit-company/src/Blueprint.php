@@ -48,4 +48,12 @@ abstract class Blueprint
     {
         return [];
     }
+
+    /**
+     * @return list<string> feature-flag slugs the kit needs enabled (e.g. woocommerce_kit)
+     */
+    public function featureFlags(): array
+    {
+        return [];
+    }
 }

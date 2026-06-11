@@ -1,0 +1,10 @@
+/**
+ * {{ title }} — token-only styling (no hardcoded colors/sizes/fonts) with logical
+ * properties (RTL-correct by default). Imported by index.js, compiled by
+ * @wordpress/scripts to style-index.css, loaded only when the block renders.
+ */
+.{{ css_class }} {
+	display: block;
+	color: var(--wp--preset--color--foreground);
+	text-align: start;
+}

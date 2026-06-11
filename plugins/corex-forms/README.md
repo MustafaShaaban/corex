@@ -34,6 +34,39 @@ Register it with the `FormRegistry` in a provider's `boot()`. Field names are no
 a canonical key (used for the input name and the `corex_field_*` meta); two names that
 normalize to the same key are rejected at schema resolution, as is an unknown rule.
 
+### Field definition reference
+
+A new form is **configuration, not reinvention** — every input type and layout knob is a
+key on the field definition:
+
+| Key | Values | Notes |
+|---|---|---|
+| `type` | `text` `email` `number` `tel` `url` `password` `date` `file` `textarea` `select` `radio` `checkbox` `checkbox-group` `toggle` | unknown → `text` |
+| `rules` | list of `required` `email` `max:N` `min:N` `numeric` | drives front **and** back validation |
+| `label` | string | the `<label>`/`<legend>` text |
+| `options` | `value => label` map (or a plain list) | required for `select` `radio` `checkbox-group` |
+| `label_mode` | `visible` (default) `hidden` `inline` | `hidden` keeps the label for screen readers only |
+| `width` | `full` (default) `half` `third` `two-thirds` `quarter` | the form is a 12-col grid → columns or rows |
+| `class` | string | extra class on the control |
+| `attrs` | `name => value` map | extra HTML attributes (e.g. `placeholder`, `min`, `step`, `autocomplete`) |
+
+`attrs` is whitelisted: the structural/security attributes (`name` `id` `type` `class`
+`required` `value` `aria-describedby`) and any `on*` event handler are dropped, so a
+definition can never override the renderer's wiring or inject inline JS. Choice fields
+(`radio`/`checkbox-group`) render as an accessible `<fieldset><legend>` with one input each;
+`checkbox-group` submits an array (`name[]`).
+
+```php
+'topic' => [
+    'type'    => 'select',
+    'label'   => __('Topic', 'corex'),
+    'rules'   => ['required'],
+    'options' => ['sales' => __('Sales', 'corex'), 'support' => __('Support', 'corex')],
+    'width'   => 'half',
+],
+'consent' => ['type' => 'checkbox', 'label' => __('I agree', 'corex'), 'rules' => ['required'], 'label_mode' => 'inline'],
+```
+
 ## Validation
 
 The validator is pure (no WordPress) and runs the rules in order, recording **at most one
@@ -61,6 +94,41 @@ ignored. v1 rules:
 
 Errors are returned as message **keys** (`required`, `email`, `max`, …) so the presentation
 layer owns the translated text.
+
+## One schema, front + back
+
+The form definition is the **single source of truth**. The same resolved schema that the
+server validates against is **exported to the browser**, so client-side validation is never
+a second hand-maintained copy of the rules.
+
+- **Export.** `SchemaExporter::toArray()` turns the resolved schema into a JSON-able list
+  (`name`, `type`, `label`, `required`, `rules`). The form block embeds it on the `<form>`
+  as `data-corex-schema` (escaped with `esc_attr( wp_json_encode( … ) )`).
+- **Client.** The block's `view.js` reads `data-corex-schema` and validates with
+  `validation.js` — rule functions that **mirror the PHP rules exactly** (same bail-per-field
+  order; empty passes the non-`required` rules; `max`/`min` apply to numbers or string
+  length). On failure it fills each field's `role="alert"` error region (the same message
+  keys, translated via `@wordpress/i18n`) and focuses the first invalid control.
+- **Server stays authoritative.** A valid client check still posts to the secured REST route,
+  where the server **re-validates the identical schema**. The client check is UX only — never
+  a trust boundary. Server-side field errors come back in the same key shape and render the
+  same way.
+
+The shared rules are unit-tested on both sides — PHP (`tests/Unit/Forms/ValidatorTest`,
+`SchemaExporterTest`) and JS (`validation.test.js`, run by `npm run test:js`).
+
+### Adding a validated form
+
+There is nothing extra to wire for validation — **define the `Form` and register it**, and
+both the server and the generated client validation follow from it:
+
+1. Create a `Form` subclass with your `$slug` and `fields()` (type + `rules` + `label`).
+2. Register it with the `FormRegistry` in a provider `boot()`.
+3. Place the **Corex Form** block and set its `formSlug` to your slug.
+4. Run `npm run build` (compiles the block's `view.js` + `style.scss`).
+
+Submissions validate client-side instantly and server-side authoritatively, from the one
+schema.
 
 ## Submit lifecycle
 
@@ -95,9 +163,11 @@ submission is still accepted.
 
 Add the **Corex Form** block (`corex/form`) and choose a form by slug (`formSlug`
 attribute, default `contact`). It server-renders the form from its schema: every field with
-a label-bound input, required markers (`aria-required`), an `aria-live` status region, the
-REST nonce, and the honeypot. Styling uses `theme.json` tokens and logical properties
-(RTL-correct); the view script and style load only on pages where the block is present.
+a label-bound input, required markers (`aria-required`), a per-field `role="alert"` error
+region (`aria-describedby`), an `aria-live` status region, the embedded schema, the REST
+nonce, and the honeypot. It submits via **AJAX by default** (one shared handler — see *One
+schema, front + back*). Styling uses `theme.json` tokens and logical properties (RTL-correct);
+the view script and style load only on pages where the block is present.
 
 ## Configuration
 

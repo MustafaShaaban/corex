@@ -1,0 +1,25 @@
+# build output
+dist/
+# generated types
+.astro/
+
+# Generated API reference — produced by `wp corex docs:generate` from the source,
+# so it is rebuilt, not committed. The hand-written reference/index.md is kept.
+src/content/docs/reference/*/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store

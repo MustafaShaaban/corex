@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "corex/form",
 	"title": "Corex Form",
-	"category": "widgets",
+	"category": "corex",
 	"icon": "feedback",
 	"description": "Renders a registered Corex form (server-rendered, secured submit).",
 	"textdomain": "corex",
@@ -11,7 +11,8 @@
 		"formSlug": { "type": "string", "default": "contact" }
 	},
 	"supports": { "html": false },
-	"style": "file:./style.css",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
 	"viewScript": "file:./view.js",
 	"corex": { "renderer": "Corex\\Forms\\Block\\FormBlockRenderer" }
 }

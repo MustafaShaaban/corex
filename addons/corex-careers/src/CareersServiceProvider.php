@@ -103,7 +103,9 @@ final class CareersServiceProvider extends ServiceProvider
         );
 
         $registrar = $this->container->make(DynamicBlockRegistrar::class);
-        foreach ($this->container->make(BlockMap::class)->discover(dirname(__DIR__) . '/blocks') as $block) {
+        $built = dirname(__DIR__) . '/build/blocks';
+        $blocksDir = is_dir($built) ? $built : dirname(__DIR__) . '/blocks';
+        foreach ($this->container->make(BlockMap::class)->discover($blocksDir) as $block) {
             $registrar->register($block);
         }
 

@@ -8,12 +8,15 @@ declare(strict_types=1);
 
 namespace Corex\Config\Settings;
 
+use Corex\Security\Admin\AdminGuard;
+
 defined('ABSPATH') || exit;
 
 /**
  * The Corex admin area: a top-level menu + a server-rendered settings screen. Saving
- * verifies the nonce + capability, sanitizes each declared field, and persists it to
- * the option the Config engine reads. The React/DataViews UI is the deferred upgrade.
+ * verifies the nonce + capability (via the shared AdminGuard), sanitizes each declared
+ * field, and persists it to the option the Config engine reads. The React/DataViews UI
+ * is the deferred upgrade.
  */
 final class AdminDashboard
 {
@@ -21,6 +24,7 @@ final class AdminDashboard
         private readonly SettingsRegistry $registry,
         private readonly SettingsForm $form,
         private readonly SettingsStore $store,
+        private readonly AdminGuard $guard,
     ) {
     }
 
@@ -45,7 +49,7 @@ final class AdminDashboard
 
     public function render(): void
     {
-        if (! current_user_can('manage_options')) {
+        if (! $this->guard->authorized()) {
             return;
         }
 
@@ -59,11 +63,7 @@ final class AdminDashboard
 
     public function maybeSave(): void
     {
-        if (! isset($_POST['corex_settings_nonce']) || ! current_user_can('manage_options')) {
-            return;
-        }
-
-        if (wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['corex_settings_nonce'])), 'corex_settings') === false) {
+        if (! $this->guard->verifiedPost('corex_settings_nonce', 'corex_settings')) {
             return;
         }
 

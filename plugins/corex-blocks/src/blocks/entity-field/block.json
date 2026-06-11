@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "corex/entity-field",
 	"title": "Entity Field",
-	"category": "widgets",
+	"category": "corex",
 	"icon": "database",
 	"description": "Displays a Corex entity field (dynamic, server-rendered).",
 	"textdomain": "corex",
@@ -11,6 +11,7 @@
 		"value": { "type": "string", "default": "" }
 	},
 	"supports": { "html": false },
-	"style": "file:./style.css",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Blocks\\Examples\\EntityFieldRenderer" }
 }

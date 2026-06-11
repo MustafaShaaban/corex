@@ -1,0 +1,29 @@
+/**
+ * {{ title }} — editor registration for a DYNAMIC block. The markup is produced
+ * server-side by the PHP renderer ({{ class }}); the editor previews it via
+ * <ServerSideRender> so the preview matches the front end exactly. Registering the
+ * type here is what stops the editor reporting "not supported".
+ */
+import './style.scss';
+
+import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps } from '@wordpress/block-editor';
+import ServerSideRender from '@wordpress/server-side-render';
+import metadata from './block.json';
+
+registerBlockType( metadata.name, {
+	edit: ( { attributes } ) => {
+		const blockProps = useBlockProps();
+
+		return (
+			<div { ...blockProps }>
+				<ServerSideRender
+					block={ metadata.name }
+					attributes={ attributes }
+				/>
+			</div>
+		);
+	},
+	// Dynamic block: nothing is saved to post content; the server renders it.
+	save: () => null,
+} );

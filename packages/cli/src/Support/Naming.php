@@ -46,4 +46,21 @@ final class Naming
     {
         return strtolower((string) preg_replace('/(?<!^)[A-Z]/', '_$0', $className));
     }
+
+    /**
+     * Kebab-case block slug from a class name: `TeamMember` → `team-member`.
+     * Used for the block folder + the `<prefix>/<slug>` block name.
+     */
+    public function blockSlugFor(string $className): string
+    {
+        return str_replace('_', '-', $this->postTypeFor($className));
+    }
+
+    /**
+     * Human title from a class name: `TeamMember` → `Team Member`.
+     */
+    public function titleFor(string $className): string
+    {
+        return trim((string) preg_replace('/(?<!^)[A-Z]/', ' $0', $className));
+    }
 }

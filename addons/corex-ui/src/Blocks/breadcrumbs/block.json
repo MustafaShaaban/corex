@@ -3,11 +3,12 @@
 	"apiVersion": 3,
 	"name": "corex/breadcrumbs",
 	"title": "Corex Breadcrumbs",
-	"category": "widgets",
+	"category": "corex",
 	"icon": "arrow-right-alt2",
 	"description": "Accessible breadcrumb trail from the site home to the current page (dynamic).",
 	"textdomain": "corex",
 	"supports": { "html": false },
-	"style": "file:./style.css",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Ui\\Blocks\\BreadcrumbsRenderer" }
 }

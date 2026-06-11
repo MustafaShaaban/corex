@@ -1,0 +1,124 @@
+/**
+ * Corex Form block — token-only styling (no hardcoded colors/sizes/fonts) with
+ * logical properties (RTL-correct by default). Compiled by @wordpress/scripts;
+ * loaded conditionally (only when the block renders), per Principle VI.
+ */
+.corex-form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--50);
+	text-align: start;
+}
+
+.corex-form {
+	/* Fields flow in a responsive grid so per-field widths give columns or rows. */
+	display: grid;
+	grid-template-columns: repeat(12, 1fr);
+}
+
+.corex-form__field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--30);
+	border: 0; /* reset for fieldset groups */
+	padding: 0;
+	margin: 0;
+	grid-column: span 12;
+}
+
+/* Column widths — opt-in per field; default full row. */
+.corex-form__field--half { grid-column: span 6; }
+.corex-form__field--third { grid-column: span 4; }
+.corex-form__field--two-thirds { grid-column: span 8; }
+.corex-form__field--quarter { grid-column: span 3; }
+
+@media (max-width: 600px) {
+	.corex-form__field { grid-column: span 12; }
+}
+
+/* Label display modes. */
+.corex-form__label--hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.corex-form__label--inline {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--20);
+}
+
+/* Choice fields (radio / checkbox groups + single checkbox/toggle). */
+.corex-form__option {
+	display: flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--20);
+}
+
+.corex-form__option-label {
+	color: var(--wp--preset--color--ink);
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-form__label {
+	color: var(--wp--preset--color--ink);
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-form__required {
+	color: var(--wp--preset--color--accent);
+}
+
+.corex-form__input {
+	padding-block: var(--wp--preset--spacing--30);
+	padding-inline: var(--wp--preset--spacing--30);
+	color: var(--wp--preset--color--ink);
+	background-color: var(--wp--preset--color--surface);
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-form__submit {
+	align-self: start;
+	padding-block: var(--wp--preset--spacing--30);
+	padding-inline: var(--wp--preset--spacing--50);
+	color: var(--wp--preset--color--surface);
+	background-color: var(--wp--preset--color--primary);
+}
+
+.corex-form__status {
+	margin-block-start: var(--wp--preset--spacing--30);
+	color: var(--wp--preset--color--ink);
+}
+
+/* Field-level validation message, filled by the shared client/server validator. */
+.corex-form__error {
+	color: var(--wp--preset--color--danger, var(--wp--preset--color--accent));
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-form__error:empty {
+	display: none;
+}
+
+.corex-form__input[aria-invalid="true"] {
+	outline: 2px solid var(--wp--preset--color--danger, var(--wp--preset--color--accent));
+	outline-offset: 1px;
+}
+
+/*
+ * Honeypot — present for bots but removed from view and the a11y tree. Off-screen
+ * (not display:none, which some bots skip); the inline offset is functional
+ * accessible-hiding plumbing (the same pattern as core's .screen-reader-text),
+ * not a design value — hence the literal offset rather than a token.
+ */
+.corex-form__hp {
+	position: absolute;
+	inset-inline-start: -9999px;
+}

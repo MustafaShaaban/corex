@@ -596,3 +596,316 @@ not claimed as done.
 Why: delivers a working, fully-tested admin now and keeps settings wiring trivial (one option namespace);
 honest about the React layer rather than shipping unverifiable JS.
 Status: Final.
+
+## #43 — Front-end build pipeline: @wordpress/scripts, src→build/blocks, ServerSideRender editor
+Date: 2026-06-11
+Context: the blocks were server-rendered only (no editor JS), so the editor reported "your site doesn't
+include support for this block"; there was no SCSS/JS build at all (0 .scss files, no node_modules, empty
+build-tools). The user flagged blocks + missing build as blockers.
+Decision: adopt **@wordpress/scripts** (the WordPress-standard webpack/Babel/Sass/PostCSS toolchain) over a
+bespoke webpack or Vite config. Each block package keeps block sources in its own folder and builds to a
+package-level **`build/blocks/`**; the service providers register from `build/blocks` when present, falling
+back to the source dir headlessly (`is_dir($built) ? $built : <source>`). Every dynamic block gains an
+`index.js` that `registerBlockType()`s and previews the PHP render via **`<ServerSideRender>`** — one source
+of truth (the server renderer), never a duplicated JS implementation. SCSS is imported in `index.js`
+(`import './style.scss'`), compiled to `style-index.css` + an auto-generated `style-index-rtl.css` (Principle
+VIII satisfied by the toolchain). `DynamicBlockRegistrar` wires `wp_set_script_translations()` per editor
+handle (i18n). `build/` stays git-ignored — a generated artifact rebuilt on checkout/CI.
+Why: the editor-registration gap is exactly what ServerSideRender solves without violating "one renderer";
+wp-scripts gives SCSS, minification, RTL, and asset.php dependency extraction for free, with no config to
+drift. **Commercial-plan note:** committing only sources (not `build/`) keeps Free/Pro packaging clean — the
+release step runs `npm ci && npm run build` to produce distributable zips; the same pipeline serves the
+open-source edition.
+Status: Final.
+
+## #44 — make:block scaffolds a complete dynamic block; renderer beside the block in one Blocks/ dir
+Date: 2026-06-11
+Context: blocks were the most repetitive thing to hand-write (block.json + index.js + style.scss + a PHP
+renderer, all wired consistently). `make:block` had to make a new block configuration, not reinvention.
+Decision: add a dedicated **`BlockScaffolder`** (separate from the single-file `Generator`/`GeneratorEngine`
+abstraction, which produces one class) that renders 4 stubs into `<base>/Blocks/<slug>/` (block.json +
+index.js + style.scss) plus the renderer at `<base>/Blocks/<Name>Renderer.php`. It renders **all** files
+before writing **any** (an unresolved placeholder fails loudly, never a half-written block) and is idempotent
+(skip unless `--force`). The renderer lives **beside** the block folder in a single `Blocks/` dir (the
+corex-ui convention) rather than a sibling `blocks/` + `Blocks/` split — which would **collide on
+case-insensitive filesystems** (Windows, macOS) and diverge on Linux. The generated block follows the
+item-1 pattern exactly (apiVersion 3, `category:"corex"`, `editorScript`, compiled `style-index.css`,
+`corex.renderer` FQCN, ServerSideRender editor) so it is registered + working after `npm run build`. The
+scaffolder is pure/headless (8 Pest tests incl. a `php -l` lint of the generated renderer); `MakeCommand`
+gained a `block` branch; verified live via `wp corex make:block`.
+Why: one command replaces the most error-prone multi-file boilerplate; keeping the renderer in one dir is
+the only cross-platform-correct layout. **Commercial-plan note:** the same generator serves Free/Pro — kit
+authors scaffold blocks the identical way.
+Status: Final.
+
+## #45 — Shared validation: one schema exported PHP→JS; AJAX-default; server authoritative
+Date: 2026-06-11
+Context: validation lived only in PHP; the brief requires ONE schema driving both client and server, with
+forms submitting via AJAX by a single reusable handler (not bespoke per form), never trusting the client.
+Decision: keep the PHP form definition (`Form` → `SchemaResolver` → `FieldSchema`) as the **single source of
+truth**. Add a pure `SchemaExporter` that serializes the resolved schema to a JSON-able list; the form block
+embeds it on the `<form>` as `data-corex-schema` (`esc_attr(wp_json_encode(...))`). The block's `view.js`
+(now a real built module, possible since item 1) reads that schema and validates with `validation.js` — rule
+functions that **mirror the PHP rules exactly** (bail-per-field, empty passes non-required, max/min on
+number-or-length). It renders per-field `role="alert"` errors (message keys → `@wordpress/i18n`), focuses the
+first invalid control, then posts JSON to the **unchanged** secured REST route (nonce+sanitize+throttle+
+honeypot), where the server **re-validates the identical schema** and stays authoritative. Both sides are
+unit-tested: PHP (SchemaExporterTest) + JS (Jest `validation.test.js` via `npm run test:js`, wired through
+`@wordpress/scripts test-unit-js`). The registrar now also wires `wp_set_script_translations()` for view +
+front-end script handles (not just editor), so the front-end messages are translatable.
+Why: the only way to guarantee front/back never drift is to generate the client checks from the same schema
+the server enforces, while the server remains the trust boundary. Reuses the entire spec-005/007 secured
+lifecycle unchanged. **Commercial-plan note:** the schema/handler are generic — every Free/Pro form (contact,
+newsletter, careers, call) gets shared validation for free, no per-form JS.
+Status: Final.
+
+## #46 — Flexible form builder: extended field schema + per-type FieldRenderer; a new form is config
+Date: 2026-06-11
+Context: the form system handled only text/email/textarea with a fixed layout. The brief requires ALL input
+types + layout/label/class/attr control, composing to complex forms — as configuration, not reinvention.
+Decision: extend the field definition (and `FieldSchema`) with `options`, `label_mode` (visible/hidden/inline),
+`width` (full/half/third/two-thirds/quarter on a 12-col grid → columns or rows), `class`, and `attrs`;
+`SchemaResolver` parses + normalizes them, **whitelisting `attrs`** (drops `name/id/type/class/required/value/
+aria-describedby` and any `on*` handler) so a definition can never override structural/security wiring or
+inject inline JS. Extract a dedicated **`FieldRenderer`** (SRP, unit-tested) that renders the whole field per
+type: text-like inputs, textarea, select (options), radio + checkbox-group (accessible `<fieldset><legend>`,
+group submits `name[]`), single checkbox + toggle — all token-only, RTL, escaped. `FormBlockRenderer` is now
+thin (shell + schema embed) and delegates to it. The client `collect()` maps radio/checkbox/`name[]` to the
+canonical key so the shared validator sees the right shape. 7 new Pest tests (all types + label modes + width
++ attr safety); 217 unit green; contact form still renders on real WP.
+Why: one renderer + an extended schema turns every future form into a field map; the attr whitelist keeps the
+flexibility from becoming an XSS/override foot-gun. Deferred (documented, not blocking): true multi-section
+`<fieldset>` grouping of consecutive fields, and multi-value (`checkbox-group` array) server sanitize beyond
+the default text sanitizer. **Commercial-plan note:** richer field types are exactly what Pro form templates
+need; the schema stays the single contract.
+Status: Final.
+
+## #47 — QueryBuilder hardened for complex scenarios; custom-table joins stay a TableRepository boundary
+Date: 2026-06-11
+Context: the QueryBuilder handled only single where/orderBy/limit/with. The brief requires nested meta + tax,
+AND/OR groups, search, pagination, ordering by meta, date ranges, eager loading (no N+1), and custom-table
+joins, each proven by tests.
+Decision: extend the builder (still a **pure arg-builder** — never instantiates WP_Query) with `orWhere`,
+`whereMeta` (typed), `whereBetween` (NUMERIC range), `metaRelation`, `whereTax`/`taxRelation`, `whereDate`
+(date_query), `search`, `orderBy(..., numeric)` (meta_value_num), and `paginate` (capped per-page + paged +
+found-rows on). Backward compatible: a single AND meta clause stays a bare list (no `relation` noise), so the
+existing exact-shape tests pass unchanged; `relation` is added only for >1 clause or an explicit OR. Eager
+loading (already batched via `post__in` in QueryExecutor) confirmed no-N+1. **Custom-table joins are NOT
+forced through WP_Query** — they remain the spec-011 `TableRepository` boundary (typed CRUD + prepared
+`where`), a deliberate seam, documented as such. 11 new unit tests (one per scenario + a compose-all);
+execution + hydration covered by the existing integration test; 227 unit + integration green.
+Why: WP_Query is the right engine for post-backed entities and prepares every value clause; faking arbitrary
+SQL joins through it would be unsafe and unidiomatic, so custom tables keep their own repository. Reuses the
+spec-002 builder/executor split (unit-test the args, integration-test the run).
+Status: Final.
+
+## #48 — Feature flags as a typed layer over Config; the Free/Pro gate rides on features.pro
+Date: 2026-06-11
+Context: the Config engine (Dotenv→Options→Defaults) was solid but "basic"; the brief wants comprehensive
+config (env, feature flags, settings UI). The settings UI (017) + env already exist; feature flags were the
+gap — and the commercial plan needs a clean Free/Pro gate.
+Decision: add a `config/features.php` registry + a `FeatureFlags` service over `ConfigInterface`:
+`enabled($flag)`/`disabled()`/`all()`, **truthy-only** coercion (`1/true/on/yes` → on; everything else,
+incl. absent, off) so a stray string never enables a flag. Because it reads through Config, every flag is
+overridable per-site by a WP option (`corex_features_<flag>`, the same layer the settings UI writes) or
+`.env` (`FEATURES_<FLAG>`) with **zero extra wiring** — verified on real WP (option set → `enabled('pro')`
+true; deleted → false). Added `Config::enabled()` facade convenience; bound `FeatureFlags` in
+CoreServiceProvider. 17 unit tests (coercion table + default + layered override + all()); 244 unit green.
+The **Free/Pro split rides on `features.pro`** — Free leaves it off, Pro enables it (env or bundled option);
+deferred capabilities (`mail_queue`, `dataviews_admin`, `woocommerce_kit`) are pre-registered flags.
+Why: flags must layer exactly like the rest of config (no parallel mechanism), and truthy-only coercion is
+the safe default; gating the commercial edition on one flag keeps a single Free/Pro codebase.
+Status: Final.
+
+## #49 — Documentation web app: Astro + Starlight under docs-app/, static, decoupled
+Date: 2026-06-11
+Context: there was no usable documentation (only a stub README). The brief (PART 2) requires a reference-grade
+docs site shipping with the repo, runnable locally on Apache now, decoupled to move to a public site later.
+Decision: build it with **Astro + Starlight** (over VitePress) for its out-of-the-box client-side search
+(**Pagefind** — instant/fuzzy/keyboard, fully client-side, indexed at build), left-nav/breadcrumbs/prev-next,
+light/dark, RTL-readiness (per-locale), and copy buttons — all static HTML Apache serves with no runtime.
+Lives at **docs-app/**; `base` stays `/` so the build moves to a dedicated site unchanged (documented vhost
+`docs.corex.local` → `docs-app/dist`, plus the repo-subpath option and the instant `npm run dev`). Authored
+19 pages describing the REAL code: Getting Started (WAMP + wp-env, monorepo junctions, first-run), Guides
+(forms, blocks-via-CLI, queries, branding, CLI, settings+feature-flags, mail, MVC), Architecture, Internals
+Reference (hand-written index; per-class detail generated by item 9 `docs:generate`), FAQ, Troubleshooting
+(the real errors: "block not supported", missing WP, broken junctions, mysqld start). Docs verified against
+source (e.g. the Mail builder API corrected to `template()->with()` after reading MessageBuilder). Build is
+green (19 pages, Pagefind index). `node_modules`/`dist` git-ignored.
+Why: Starlight gives a professional docs experience with zero bespoke search/nav code, and static output is
+the simplest thing that runs on WAMP and later on any host. Generating the class reference from code (item 9)
+keeps it from drifting.
+Status: Final.
+
+## #50 — docs:generate reads the source via php-parser (no class loading) → per-class reference
+Date: 2026-06-11
+Context: PART 2 requires the class/API reference generated FROM the code so it never drifts; hand-writing 190+
+class pages would rot instantly.
+Decision: build a headless `docs:generate` on **nikic/php-parser** (already a transitive dep). `ClassDocReader`
+parses each PHP file to an AST and extracts the namespace, kind, class-docblock summary, and public method
+signatures + summaries — **without loading the class**, so it is pure, side-effect-free, and works on code
+with unmet runtime deps. `MarkdownDocRenderer` emits a Starlight page (YAML-safe frontmatter + Public API
+list); `DocsGenerator` walks the configured layer→dir map and writes `reference/<layer>/<class>.md`, skipping
+unparseable files. `DocsCommand` wires `wp corex docs:generate` (gated on `class_exists('WP_CLI')`, like
+make:*). Ran it: **194 reference pages** across Core/Blocks/Forms/Config/CLI/Add-ons; the docs site rebuilds
+to **213 pages**, all Pagefind-indexed. The generated pages are **git-ignored** (`reference/*/`) — regenerated,
+not committed — keeping the hand-written `reference/index.md`. 4 Pest tests on a fixture class (reader +
+renderer + generator); 248 unit green.
+Why: parsing > Reflection here (no autoload, no fatals on missing deps, pure + testable). Generating from the
+source is the only way the reference can't drift; ignoring the output keeps commits clean while the mechanism
+ships. **Keep-alive:** run `docs:generate` whenever code changes; the same PR rebuilds the docs.
+Status: Final.
+
+## #51 — Portfolio site kit: new corex-kit-portfolio add-on (Corex\Portfolio), CPT + dynamic grid block
+Date: 2026-06-11
+Context: the second showcase kit. Needed a projects domain + a gallery/grid block + portfolio templates,
+reusing the now-proven blocks/build/blueprint machinery.
+Decision: new add-on `addons/corex-kit-portfolio` under a **`Corex\Portfolio\`** PSR-4 prefix (NOT `Corex\Kit\`,
+which already maps to the company kit — a sub-namespace there would collide). `PortfolioServiceProvider`
+registers a public `corex_project` CPT (thumbnail + REST + `/projects` archive) + a hierarchical `project_type`
+taxonomy on `init` (domain lives in the add-on, never the theme), the `corex/projects` dynamic block (engine
+discovery, build-or-source fallback), and a `PortfolioBlueprint`. The block mirrors the corex-ui pattern:
+`ProjectsRenderer` (bounded 1–24, escaped, empty-state, lazy thumbnail) takes an injected `ProjectsProvider`
+(headless-testable); `WpProjectsProvider` is the sole `WP_Query` caller (bounded, no_found_rows). Portfolio
+FSE templates (`archive-project` grid query, `single-project`) added to the theme as a skin, token-only.
+Registered the provider in Boot's list + the PSR-4 prefix + the npm workspace. **Verified on real WP**: plugin
+active (0 fatals), CPT + taxonomy registered, `corex/projects` dynamic with an editor script, server render
+OK. 4 Pest tests (renderer + manifest accuracy); 255 unit green. README added.
+Why: a new prefix avoids the namespace collision cleanly; the injected-provider split keeps the renderer pure
+while the CPT/query stay at the boundary — exactly the spec-009 shape, so the kit is consistent with the rest.
+**Commercial-plan note:** Portfolio is a strong Free-tier showcase; it adds no hard dependency.
+Status: Final.
+
+## #52 — WooCommerce kit gated behind features.woocommerce_kit + class_exists; self-disables, HPOS-safe
+Date: 2026-06-11
+Context: the commercial flagship kit + the Pro story. WooCommerce must never become a hard dependency
+(Principle IX), and any Woo code must be HPOS-safe (woo-guard).
+Decision: new add-on `addons/corex-kit-woo` (`Corex\Woo\`). The kit runs only when **WooCommerce is active
+AND the `woocommerce_kit` feature flag is on** — the decision is a pure `WooKitGate::isEnabled(bool $wooActive)`
+so the "never a hard dependency" guarantee is unit-tested without Woo loaded; `WooServiceProvider::boot()`
+passes `class_exists('WooCommerce')` in and is a **no-op otherwise** (self-disable). Default flag is off, so a
+fresh install with Woo active still leaves the kit dormant until opted in. The plugin **declares HPOS
+compatibility** (`custom_order_tables`) on `before_woocommerce_init`; the kit is presentation + a `WooBlueprint`
+and never reads orders by direct meta, so the woo-guard surface is minimal and HPOS-safe. Storefront display
+reuses **WooCommerce's own blocks/templates** composed with Corex patterns — not re-implemented. Installed
+WooCommerce 10.8.1 into the dev site (standard dep add, not a DB drop). **Verified on real WP**: active (0
+fatals), self-disabled with the flag off, gate true with flag on + Woo active. 3 Pest tests; 258 unit green.
+Wired Boot list + PSR-4 + README.
+Why: a feature flag + runtime detection is the only way to ship a Woo kit in one codebase that also runs
+without Woo; declaring HPOS compat (rather than touching orders) keeps it future-proof and guard-clean. The
+flag IS the Pro/edition lever for commerce.
+Status: Final.
+
+## #53 — Deferred-spec closeout: mail queue, WP 7.0 Abilities/MCP, setup wizard — all gated + tested
+Date: 2026-06-11
+Context: the final build-order item — three deferred capabilities, each to be best-practice and never a hard
+dependency.
+Decision (three sub-items, one pattern — a pure decision + a thin, gated WP boundary):
+1. **Mail queue** — a `QueuedMailer` decorator on the corex-core `Mailer` seam queues a send only when
+   `MailQueueGate` says so (Action Scheduler present AND `features.mail_queue` on), else sends inline. The AS
+   boundary (`ActionSchedulerDispatcher`) enqueues a scalar/array MailRequest and a worker reconstructs +
+   sends it via the immediate engine. Default flag off ⇒ behaviour unchanged. AS ships with the now-installed
+   WooCommerce. 4 unit tests (gate + routing + payload round-trip); Mailer resolves to QueuedMailer on real WP.
+2. **WP 7.0 Abilities/MCP** — `AbilitiesProvider` registers read-only, capability-gated, REST-exposed abilities
+   (`corex/list-blocks`, `corex/site-info`) on the API's `wp_abilities_api_init`/`_categories_init` hooks,
+   guarded by `function_exists('wp_register_ability')` so it degrades on older cores. The data logic
+   (`CorexAbilities`) is pure (reads passed-in registries) — 3 unit tests; both abilities registered on real WP.
+3. **Setup wizard + demo content** — a pure `SetupWizard` turns the `BlueprintRegistry` into a choosable kit
+   list + an activation `plan(name)` (de-duped modules + the kit's `featureFlags()`); a thin, admin-only
+   `SetupWizardScreen` (nonce + manage_options) runs the plan: enable flags, activate module plugins, seed an
+   idempotent demo Home page. Added `Blueprint::featureFlags()` (Woo → woocommerce_kit). 4 unit tests; wizard
+   lists company+portfolio on real WP. 269 unit green.
+Why: the gate-plus-thin-boundary shape (used for Woo, feature flags, the mail seam) keeps every new capability
+optional, testable headlessly, and guard-clean; the wizard reuses the spec-017 server-rendered admin pattern
+(React stepper deferred). **This completes the 13-item build order.**
+Status: Final.
+
+## #54 — Constitution v1.2.0: the Pre-Implementation Confirmation Rule (spec-first is non-negotiable)
+Date: 2026-06-11
+Context: a compliance review found the 13-item "Finish Corex" autonomous initiative delivered working, tested,
+documented code that was **verified on real WordPress** — but it **bypassed the Spec Kit flow**: no spec files
+(specs/018+) were written before the code, and the Guard Gate was run formally on only some items (self-review
+elsewhere). The work was driven directly from the prose brief; the agent did not flag that "autonomous
+implement-and-continue" conflicts with Principle X (spec before code) and the documented workflow.
+Decision: amend the canonical constitution (`.specify/memory/constitution.md`, which `specs/constitution.md`
+points to) to **v1.2.0**, adding "The Pre-Implementation Confirmation Rule (mandatory)" under Operating Rules:
+confirm every request against the constitution + specs first (surface conflicts and stop); spec-before-code via
+the Spec Kit flow for non-trivial work; guard-before-diff; update PROGRESS/DECISIONS + end with NEXT STEP; and
+any skip requires the user's explicit, logged exception (autonomy is not itself an exception). Sync Impact
+Report + version footer updated.
+Why: the authority hierarchy already puts the constitution above any brief; this makes "confirm → spec → build"
+the enforced default so a future prose instruction cannot silently override spec-first or the Guard Gate. The
+amendment is the standing-rule prevention for the root cause this review surfaced.
+Status: Final.
+
+## #55 — Fix: mail-queue worker must register lazily (regression — textdomain loaded too early)
+Date: 2026-06-11
+Context: a WP debug-log audit (user-requested) found 34× "Translation loading for the corex domain was
+triggered too early" notices (+ a 14× "headers already sent" cascade). The stack traced to the item-13 mail
+queue: `MailServiceProvider::boot()` called `make(MailQueueDispatcher::class)` at `plugins_loaded` to register
+the worker, which eagerly resolved `RequestMailer → TemplateRenderer → Layout → brand() → wp_get_global_settings()`,
+loading the `corex` textdomain before `init`. A regression I introduced.
+Decision: register the Action Scheduler worker **lazily** — `add_action(ActionSchedulerDispatcher::HOOK,
+[$this,'runQueuedSend'])` (referencing a class constant, no resolution) and resolve the dispatcher only inside
+the handler, which fires during queue processing (after init). Removed the now-dead `ActionSchedulerDispatcher::
+register()`. Verified: a normal request now boots with **zero** errors/notices; 269 unit + the 3 mail
+integration tests (queue worker + send) green. The other log lines were artifacts (a manual `do_action('init')`
+in a debug eval) or expected (the header-injection test's security rejection), not real errors.
+Why: nothing mail-related should resolve at boot; Principle II (self-boot) does not mean "do heavy/i18n work at
+plugins_loaded". This is the kind of regression the Guard Gate + a debug-log check should catch — folded into
+remediation P2 (formal guard re-run) and the retrospective spec 024.
+Status: Final.
+
+## #56 — Retrospective spec backfill (019–024): author artifacts directly from the Spec Kit templates
+Date: 2026-06-11
+Context: P1 requires retrospective specs for the already-delivered, verified code. Spec 018 was taken through
+the full `/speckit-specify→/plan→/tasks` slash-command flow. Specs 019–024 are the same shape (reconcile
+existing code to a spec).
+Decision: for 019–024, author each spec's artifacts (spec.md + checklists/requirements.md + plan.md + tasks.md,
+with research/data-model/contracts/quickstart only where they add value) **directly from the Spec Kit
+templates** rather than re-orchestrating each slash command. The orchestrators mainly scaffold files from those
+same templates; producing the artifacts in the identical structure IS the spec-first deliverable and keeps the
+trace, while making the backfill of near-identical retrospectives tractable. `.specify/feature.json` is updated
+per spec; CLAUDE.md SPECKIT pointer tracks the active one.
+Why: the compliance fix is the existence of reviewed specs that match the code, not the invocation mechanism;
+this stays within the Spec Kit flow (same templates, same artifacts) while finishing the backfill efficiently.
+Forward (non-retrospective) specs 025–027 will use the full slash-command flow since they precede new code.
+Status: Final.
+
+## #57 — Remediation P2/P3: formal Guard Gate run + the five clean-code fixes applied
+Date: 2026-06-11
+Context: the compliance review tracked a formal Guard Gate re-run (P2) and five clean-code findings (P3) across
+the 13-item initiative. With the P1 spec backfill complete (018–024), P2 ran clean-code-guard on the new
+production code and P3 applied the fixes — preserving behavior (269 unit green before and after).
+Decision: (1) `QueryBuilder::orderBy($field,$dir,bool $numeric)` split into `orderBy()` + `orderByNumeric()`
+(no boolean flag argument; CQS/Clean-Code Ch.3); the only callers were tests + docs, updated. (2) Extracted
+`Corex\Kit\BlueprintActivator` (enable flags / activate modules / seed demo) out of `SetupWizardScreen` (SRP:
+the screen now only renders + gates + delegates; container autowires the activator). (3) Replaced the
+inline-style `1.5rem` spacing fallback in `SetupWizardScreen` with WordPress core's admin `.card` class
+(core-API-first, token-free, no new stylesheet). (4) Extracted `AbilitiesProvider::registerReadOnlyAbility()`
+— the shared ability shape (category + edit_posts permission + readonly/REST meta) — so each call site supplies
+only what differs. (5) Documented the `FieldSchema` 10-parameter constructor as an explicit, justified
+value-object exception (immutable, independent, fully-defaulted presentation attributes built with named args).
+Why: the constitution's Guard Gate does not accept self-review; these are the audit's exact findings, fixed
+without changing observable behavior. Finding-set source: PROGRESS "COMPLIANCE REVIEW" clean-code list 1–5.
+Status: Final. (The admin-screen Principle-VII policy — hand-rolled nonce/cap vs declarative middleware — remains
+P5, decided separately.)
+
+## #58 — Remediation P5: admin-menu screens are exempt from the route middleware but use a shared AdminGuard
+Date: 2026-06-11
+Context: Principle VII requires routes to declare middleware and forbids controllers hand-writing security
+checks. `AdminDashboard` (settings) and `SetupWizardScreen` both hand-rolled the same `current_user_can` +
+`isset($_POST[...])` + `wp_verify_nonce(sanitize_text_field(wp_unslash(...)))` dance. The question (P5): are
+admin-menu screens "routes" under Principle VII?
+Decision: **No — admin-menu screens are exempt from the declarative middleware Pipeline**, because that
+pipeline is built for the Corex REST/AJAX controller lifecycle (it carries a `Request`/`Response` through the
+onion `Pipeline`); WordPress `admin_menu`/`admin_init` page callbacks have no Corex `Request`. **But they MUST
+NOT hand-roll the check** — a new thin `Corex\Security\Admin\AdminGuard` (corex-core `Security/Admin/`)
+centralizes it: `authorized($cap='manage_options')` and `verifiedPost($field,$action,$cap)` (the cap → field
+presence → unslash+sanitize+verify gate, in one place). `AdminDashboard` + `SetupWizardScreen` now inject it
+(container-autowired) and call `guard->authorized()` / `guard->verifiedPost(...)`; the duplicated security logic
+is deleted. 5 Pest tests (`AdminGuardTest`) cover every branch.
+Why: two real callers today (not speculative), identical duplicated security knowledge (DRY), and a single
+place to harden later. Forcing the request/response pipeline onto a non-request admin callback would be the
+wrong abstraction. Constitution amended to **v1.2.1** with the Principle VII scope clarification.
+Status: Final.

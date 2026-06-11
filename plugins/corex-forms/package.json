@@ -1,0 +1,11 @@
+{
+    "name": "@corex/forms",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Corex Forms — dynamic form block with shared-schema validation and AJAX submit.",
+    "license": "GPL-2.0-or-later",
+    "scripts": {
+        "build": "wp-scripts build --webpack-src-dir=src/Block/blocks --output-path=build/blocks",
+        "start": "wp-scripts start --webpack-src-dir=src/Block/blocks --output-path=build/blocks"
+    }
+}
