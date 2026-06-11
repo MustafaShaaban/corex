@@ -30,3 +30,19 @@ composer test   # headless: the Blueprint registry/manifest + template presence 
 > Template **presence**, structure references, token-only, and the manifest are covered headlessly.
 > The **visual/editor** correctness of the templates and pattern composition should be confirmed in a
 > browser.
+
+### Manifest accuracy
+
+A dedicated test (`CompanyKitManifestTest`) cross-checks the blueprint against reality: every
+template/part it declares **must** exist as a theme file, and every pattern it composes **must** be one
+the UI library (`PatternLibrary`) actually provides. The manifest can't silently drift away from the
+files and patterns it points at.
+
+## Setup wizard
+
+A **Setup Wizard** submenu (under the Corex menu) lists the registered kits and, on apply
+(nonce + `manage_options`), runs the kit's plan: enables its feature flags, activates its
+module plugins, and seeds an idempotent demo Home page. The planning core (`SetupWizard`:
+`kits()` + `plan(name)`) is pure and unit-tested; the screen is the thin admin boundary
+(a React stepped wizard is the deferred upgrade). Kits declare their flags via
+`Blueprint::featureFlags()`.

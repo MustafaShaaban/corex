@@ -12,9 +12,11 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Forms\Block\FieldRenderer;
 use Corex\Forms\Block\FormBlockRenderer;
 use Corex\Forms\FormRegistry;
 use Corex\Forms\Forms\ContactForm;
+use Corex\Forms\Schema\SchemaExporter;
 use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Validation\RuleRegistry;
 
@@ -24,16 +26,23 @@ function renderContactForm(array $attributes): string
     Functions\when('esc_html__')->returnArg();
     Functions\when('esc_attr__')->returnArg();
     Functions\when('esc_html')->returnArg();
-    Functions\when('esc_attr')->returnArg();
+    // Mirror WP's attribute encoding so the embedded JSON is realistically escaped.
+    Functions\when('esc_attr')->alias(static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES));
     Functions\when('esc_url')->returnArg();
     Functions\when('sanitize_key')->alias(fn (string $key): string => strtolower($key));
     Functions\when('wp_create_nonce')->justReturn('test-nonce');
     Functions\when('rest_url')->alias(fn (string $path): string => 'https://example.test/wp-json/' . $path);
+    Functions\when('wp_json_encode')->alias(static fn ($data): string => (string) json_encode($data));
 
     $registry = new FormRegistry();
     $registry->register(new ContactForm());
 
-    $renderer = new FormBlockRenderer($registry, new SchemaResolver(new RuleRegistry()));
+    $renderer = new FormBlockRenderer(
+        $registry,
+        new SchemaResolver(new RuleRegistry()),
+        new SchemaExporter(),
+        new FieldRenderer(),
+    );
 
     return $renderer->render($attributes, '', (object) []);
 }
@@ -53,6 +62,17 @@ it('renders every field with an associated label, required marker, nonce, and ho
         ->toContain('aria-required="true"')        // required fields marked for AT
         ->toContain('data-corex-nonce="test-nonce"') // nonce carried for the JS X-WP-Nonce header
         ->toContain('name="corex_hp"');             // honeypot present
+});
+
+it('embeds the exported schema and accessible error regions for the shared validator', function () {
+    $html = renderContactForm(['formSlug' => 'contact']);
+
+    expect($html)
+        ->toContain('data-corex-schema=')                 // schema exported to the client
+        ->toContain('&quot;name&quot;:&quot;email&quot;') // a known field is in the embedded JSON
+        ->toContain('data-corex-field="email"')           // field wrapper hook for JS targeting
+        ->toContain('id="corex-contact-email-error"')     // per-field error region
+        ->toContain('aria-describedby="corex-contact-email-error"'); // input points at it
 });
 
 it('uses no hardcoded colors or sizes in the rendered markup (token-only)', function () {

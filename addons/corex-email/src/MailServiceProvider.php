@@ -23,10 +23,15 @@ use Corex\Email\Template\Layout;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Email\Template\TemplateRenderer;
 use Corex\Email\Templates\ContactNotificationTemplate;
+use Corex\Email\Queue\ActionSchedulerDispatcher;
+use Corex\Email\Queue\MailQueueDispatcher;
+use Corex\Email\Queue\MailQueueGate;
+use Corex\Email\Queue\QueuedMailer;
 use Corex\Foundation\ServiceProvider;
 use Corex\Mail\Mailer;
 use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Support\Config\FeatureFlags;
 
 /**
  * Boots the mail engine: binds the headless cores (renderer, header guard, recipient
@@ -76,14 +81,33 @@ final class MailServiceProvider extends ServiceProvider
             ),
         );
 
-        // The corex-core Mailer seam → this engine (detect-and-defer for Forms, etc.).
+        // The immediate engine (sends inline). The queue worker also uses this.
         $this->container->singleton(
-            Mailer::class,
-            static fn (ContainerInterface $c): Mailer => new RequestMailer(
+            RequestMailer::class,
+            static fn (ContainerInterface $c): RequestMailer => new RequestMailer(
                 $c->make(TemplateRegistry::class),
                 $c->make(TemplateRenderer::class),
                 $c->make(RecipientResolver::class),
                 $c->make(MailService::class),
+            ),
+        );
+
+        $this->container->singleton(
+            MailQueueDispatcher::class,
+            static fn (ContainerInterface $c): MailQueueDispatcher => new ActionSchedulerDispatcher(
+                $c->make(RequestMailer::class),
+            ),
+        );
+
+        // The corex-core Mailer seam → the queued decorator (detect-and-defer for Forms,
+        // etc.). It queues only when Action Scheduler is present AND the mail_queue flag
+        // is on; otherwise it sends inline, exactly as before.
+        $this->container->singleton(
+            Mailer::class,
+            static fn (ContainerInterface $c): Mailer => new QueuedMailer(
+                $c->make(RequestMailer::class),
+                new MailQueueGate($c->make(FeatureFlags::class)),
+                $c->make(MailQueueDispatcher::class),
             ),
         );
     }
@@ -95,6 +119,28 @@ final class MailServiceProvider extends ServiceProvider
         $this->container->make(TemplateRegistry::class)->register(
             $this->container->make(ContactNotificationTemplate::class),
         );
+
+        // Hook the queue worker LAZILY. Resolving the dispatcher here (plugins_loaded)
+        // would eagerly build the mail stack (RequestMailer → TemplateRenderer → Layout
+        // → wp_get_global_settings) and load the `corex` textdomain before `init` — the
+        // "translation triggered too early" notice. The handler resolves the dispatcher
+        // only when a queued send actually fires (during queue processing, after init).
+        add_action(ActionSchedulerDispatcher::HOOK, [$this, 'runQueuedSend'], 10, 1);
+    }
+
+    /**
+     * Process one queued mail send. Resolves the dispatcher lazily so boot never builds
+     * the mail stack; a no-op when Action Scheduler is not the bound dispatcher.
+     *
+     * @param array<string,mixed> $payload
+     */
+    public function runQueuedSend(array $payload): void
+    {
+        $dispatcher = $this->container->make(MailQueueDispatcher::class);
+
+        if ($dispatcher instanceof ActionSchedulerDispatcher) {
+            $dispatcher->handle($payload);
+        }
     }
 
     /**

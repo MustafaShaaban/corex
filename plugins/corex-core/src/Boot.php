@@ -11,6 +11,7 @@ namespace Corex;
 defined('ABSPATH') || exit;
 
 use Corex\Blocks\BlocksServiceProvider;
+use Corex\Abilities\AbilitiesProvider;
 use Corex\Bookings\BookingsServiceProvider;
 use Corex\Captcha\CaptchaServiceProvider;
 use Corex\Careers\CareersServiceProvider;
@@ -24,9 +25,11 @@ use Corex\Email\MailServiceProvider;
 use Corex\Forms\FormsServiceProvider;
 use Corex\Kit\KitServiceProvider;
 use Corex\Newsletter\NewsletterServiceProvider;
+use Corex\Portfolio\PortfolioServiceProvider;
 use Corex\Security\SecurityModule;
 use Corex\Theme\ThemeServiceProvider;
 use Corex\Ui\UiServiceProvider;
+use Corex\Woo\WooServiceProvider;
 use RuntimeException;
 
 /**
@@ -73,6 +76,9 @@ final class Boot
             NewsletterServiceProvider::class,
             CareersServiceProvider::class,
             BookingsServiceProvider::class,
+            PortfolioServiceProvider::class,
+            WooServiceProvider::class,
+            AbilitiesProvider::class,
         ]);
         self::$app->boot();
     }
