@@ -96,6 +96,31 @@ Config::get('missing.key', 'fallback');
 - A missing `.env` is fine; a malformed `.env` is logged and ignored — boot continues on
   options/defaults. See `.env.example`.
 
+Shipped config namespaces (one file each in `config/`): `app`, `query`, `security`, `theme`,
+`features`. A site overrides any key through the **settings UI** (`corex-config`, which persists
+to the `corex_*` options the option layer reads) or `.env` — never by editing the defaults.
+
+### Feature flags
+
+`features.*` flags gate optional/edition behaviour through the same layered engine, so a flag
+flips by option (`corex_features_<flag>`) or env (`FEATURES_<FLAG>`) with no code change. Only a
+truthy value (`1/true/on/yes`) enables a flag; anything else (including absent) is off.
+
+```php
+use Corex\Support\Facades\Config;
+use Corex\Support\Config\FeatureFlags;
+
+Config::enabled('mail_queue');                  // false until enabled
+$flags = $container->make(FeatureFlags::class); // inject where you need it
+$flags->enabled('pro');                          // edition gate
+$flags->all();                                   // ['pro' => false, 'mail_queue' => false, …]
+```
+
+Registered flags (`config/features.php`): `pro` (edition gate), `mail_queue`, `dataviews_admin`,
+`woocommerce_kit`. Add a flag by adding a key to `config/features.php`; it is then readable,
+overridable, and reported by `all()`. The **Free/Pro split** rides on `features.pro` — Free builds
+leave it off; Pro distributions enable it (env or bundled option).
+
 ## Declarative hooks
 
 A class declares the WordPress actions/filters it responds to; the framework wires them,
@@ -195,8 +220,47 @@ Eager loading a relation across N entities runs a bounded number of queries (a b
 is two queries, not N+1). A `Collection` exposes `all()`, `first()`, `isEmpty()`, `count()`, and
 iterates.
 
-> v1 covers post-backed entities and the belongs-to relation; the contracts are shaped to add
-> taxonomy/user/custom-table sources and has-many/taxonomy relations later.
+**Complex queries.** The builder is a pure arg-builder — every method below adds to a capped,
+value-bound `WP_Query` args array (proven per-scenario in `tests/Unit/Data/QueryBuilderTest`):
+
+| Method | Builds | Example |
+|---|---|---|
+| `where($field, $value, $compare)` | declared field → `meta_query`; core field → arg | `->where('salary', 80000, '>=')` |
+| `orWhere($field, $value, $compare)` | a meta condition under an `OR` relation | `->orWhere('salary', 30000, '<=')` |
+| `whereMeta($key, $value, $compare, $type)` | a raw-meta condition with an explicit SQL type | `->whereMeta('featured', '1', '=', 'NUMERIC')` |
+| `whereBetween($field, $min, $max)` | a numeric `BETWEEN` range | `->whereBetween('salary', 40000, 90000)` |
+| `metaRelation('OR'\|'AND')` | the relation joining meta conditions | `->metaRelation('OR')` |
+| `whereTax($tax, $terms, $field, $op)` | a `tax_query` clause (term_id/slug/name) | `->whereTax('department', [3,4])` |
+| `taxRelation('OR'\|'AND')` | the relation joining tax clauses | `->taxRelation('OR')` |
+| `whereDate($after, $before, $inclusive)` | a post-date range (`date_query`) | `->whereDate('2026-01-01', '2026-06-30')` |
+| `search($term)` | full-text `s` | `->search('senior php')` |
+| `orderBy($field, $dir)` | `meta_value` (declared) or core orderby | `->orderBy('title', 'ASC')` |
+| `orderByNumeric($field, $dir)` | `meta_value_num` (declared, numeric sort) | `->orderByNumeric('salary', 'DESC')` |
+| `paginate($perPage, $page)` | capped `posts_per_page` + `paged` + found-rows on | `->paginate(20, 2)` |
+| `with($relation)` | eager-load a belongs-to relation (no N+1) | `->with('company')` |
+
+They compose — one chain can carry nested meta (AND/OR) + a tax query + a date range + search +
+meta-numeric ordering + pagination + eager loading. Values are always passed as data into the
+relevant `*_query` clause (never interpolated), so `WP_Query` prepares them.
+
+```php
+$jobs->query()
+    ->where('salary', 50000, '>=')
+    ->whereBetween('salary', 50000, 120000)
+    ->metaRelation('AND')
+    ->whereTax('department', 'engineering', 'slug')
+    ->whereDate('2026-01-01')
+    ->search('engineer')
+    ->orderByNumeric('salary', 'DESC')
+    ->paginate(20, 1)
+    ->with('company')
+    ->get();
+```
+
+**Custom-table entities** (many-row data, not posts) use the spec-011 `TableRepository` instead of
+`WP_Query` — typed CRUD + `where()` with `$wpdb->prepare()`. Cross-table **joins** are that
+repository's boundary (a deliberate seam), not faked through `WP_Query`; reach for it when an entity
+is a row in a `{prefix}corex_*` table rather than a post.
 
 **Custom tables** — for entities that are many queryable rows (subscribers, applications, bookings),
 not posts. Define the schema fluently and run it idempotently, then use a typed `TableRepository`:
@@ -378,3 +442,12 @@ notice. Boot stays non-fatal.
 composer test              # headless unit suite (Pest + Brain Monkey)
 composer test:integration  # boots the real ./wp install
 ```
+
+## Abilities (WP 7.0 / MCP)
+
+When the WordPress 7.0 Abilities API is present, Corex registers read-only, capability-gated
+abilities for agent/MCP discovery — `corex/list-blocks` (the registered `corex/*` blocks) and
+`corex/site-info` (a small site/framework summary) — under a `corex` ability category. They
+are annotated `readonly` and exposed in REST. The provider is guarded by
+`function_exists('wp_register_ability')`, so the framework runs unchanged on older cores; the
+data logic (`CorexAbilities`) is pure and unit-tested.

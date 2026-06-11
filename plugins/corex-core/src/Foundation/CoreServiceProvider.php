@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Container\ContainerInterface;
 use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Support\Config\FeatureFlags;
 use Corex\Support\Config\Repository;
 use Corex\Support\Config\Sources\DefaultsSource;
 use Corex\Support\Config\Sources\DotenvSource;
@@ -33,6 +34,13 @@ final class CoreServiceProvider extends ServiceProvider
                 new DefaultsSource($this->defaults()),
             ]);
         });
+
+        $this->container->singleton(
+            FeatureFlags::class,
+            static fn (ContainerInterface $container): FeatureFlags => new FeatureFlags(
+                $container->make(ConfigInterface::class),
+            ),
+        );
     }
 
     /**
