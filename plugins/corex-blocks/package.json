@@ -5,7 +5,7 @@
     "description": "Corex block engine — auto-discovered FSE blocks, connectors, and conditional assets.",
     "license": "GPL-2.0-or-later",
     "scripts": {
-        "build": "wp-scripts build",
-        "start": "wp-scripts start"
+        "build": "wp-scripts build --webpack-src-dir=src/blocks --output-path=build/blocks",
+        "start": "wp-scripts start --webpack-src-dir=src/blocks --output-path=build/blocks"
     }
 }

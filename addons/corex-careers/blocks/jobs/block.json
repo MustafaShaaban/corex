@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "corex/jobs",
 	"title": "Corex Jobs",
-	"category": "widgets",
+	"category": "corex",
 	"icon": "businessperson",
 	"description": "A list of open positions as accessible cards (dynamic, bounded).",
 	"textdomain": "corex",
@@ -11,6 +11,7 @@
 		"count": { "type": "number", "default": 10 }
 	},
 	"supports": { "html": false },
-	"style": "file:./style.css",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
 	"corex": { "renderer": "Corex\\Careers\\Block\\JobsRenderer" }
 }

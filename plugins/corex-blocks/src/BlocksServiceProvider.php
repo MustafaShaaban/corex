@@ -39,12 +39,40 @@ final class BlocksServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        add_filter('block_categories_all', [$this, 'registerBlockCategory']);
+
         add_action('init', function (): void {
             $registrar = $this->container->make(DynamicBlockRegistrar::class);
+            $built = dirname(__DIR__) . '/build/blocks';
+            $blocksDir = is_dir($built) ? $built : __DIR__ . '/blocks';
 
-            foreach ($this->container->make(BlockMap::class)->discover(__DIR__ . '/blocks') as $block) {
+            foreach ($this->container->make(BlockMap::class)->discover($blocksDir) as $block) {
                 $registrar->register($block);
             }
         });
+    }
+
+    /**
+     * Add the "Corex" inserter category so every corex/* block groups together,
+     * separate from core's Widgets/Design groups. Prepended once; idempotent.
+     *
+     * @param array<int, array{slug: string, title: string, icon?: string|null}> $categories
+     * @return array<int, array{slug: string, title: string, icon?: string|null}>
+     */
+    public function registerBlockCategory(array $categories): array
+    {
+        foreach ($categories as $category) {
+            if (($category['slug'] ?? '') === 'corex') {
+                return $categories;
+            }
+        }
+
+        array_unshift($categories, [
+            'slug'  => 'corex',
+            'title' => __('Corex', 'corex'),
+            'icon'  => null,
+        ]);
+
+        return $categories;
     }
 }
