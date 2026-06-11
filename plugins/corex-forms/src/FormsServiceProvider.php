@@ -84,8 +84,10 @@ final class FormsServiceProvider extends ServiceProvider
     public function registerFormBlock(): void
     {
         $registrar = $this->container->make(DynamicBlockRegistrar::class);
+        $built = dirname(__DIR__) . '/build/blocks';
+        $blocksDir = is_dir($built) ? $built : __DIR__ . '/Block/blocks';
 
-        foreach ($this->container->make(BlockMap::class)->discover(__DIR__ . '/Block/blocks') as $block) {
+        foreach ($this->container->make(BlockMap::class)->discover($blocksDir) as $block) {
             $registrar->register($block);
         }
     }
