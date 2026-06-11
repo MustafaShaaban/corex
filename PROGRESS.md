@@ -269,8 +269,30 @@ Order: P1 → P2 → P3 → P4 → P5 → P6. **Remediation APPROVED by the user
 > new shared `Corex\Security\Admin\AdminGuard` (`authorized()` + `verifiedPost()`). Refactored `AdminDashboard`
 > + `SetupWizardScreen` onto it (container-autowired; duplicated security logic deleted). **5 `AdminGuardTest`
 > Pest cases; 274 unit green.** Constitution **v1.2.1** clarifies Principle VII's scope; DECISIONS #58.
-> **▶ NEXT: P6 — git hygiene.** Commit the remediation per spec group (Conventional Commits) on a feature
-> branch → PR into develop → CI green. This is the final remediation phase.
+> **✅ P6 — git hygiene DONE (2026-06-11).** Branched `feature/finish-corex-018-024` off develop; committed the
+> entire initiative + backfill + remediation as **8 Conventional Commits** (one per spec group 018–024 + a
+> continuity commit). Pushed to origin; opened **PR #1 → develop**
+> (https://github.com/MustafaShaaban/corex/pull/1). **CI GREEN** (composer validate + php -l on all source +
+> `composer test` = 274 Pest unit, 29s). Left for the user to review + merge (a PR this size warrants review;
+> P6's deliverable ends at "CI green", not auto-merge).
+>
+> ## 🎉 COMPLIANCE REMEDIATION COMPLETE (2026-06-11) — P1 → P6 all delivered
+> The 13-item "Finish Corex" initiative is now **fully spec-first compliant** and on a reviewed PR:
+> - **P1** retrospective specs 018–024 (spec/plan/tasks, reconciled to code).
+> - **P2** formal clean-code guard pass (no new criticals).
+> - **P3** the five clean-code fixes applied (behavior preserved).
+> - **P4** block-`index.js` Jest (verified green) + e2e smoke scaffold (env-gated).
+> - **P5** AdminGuard decision + refactor (constitution v1.2.1).
+> - **P6** 8 commits → PR #1 → CI green.
+>
+> **Honest remaining follow-ups (environment-gated, NOT skipped work):** browser/visual verification of blocks,
+> patterns, kit storefronts, admin screens, and the email/form/kit flows over HTTP; **executing** the Playwright
+> E2E smoke (`tests/e2e/`) — all need Apache + a browser this headless WAMP lacks. The deferred React/DataViews
+> admin + JS-edit blocks remain a documented forward upgrade. Forward feature specs **025–027**
+> (project-reset, addon-manager, block-library-expansion) are queued in the backlog above, to be built via the
+> full Spec Kit slash-command flow when picked up.
+> **▶ NEXT: merge PR #1 once reviewed** (then `develop`→`main` per git-flow-lite), and run the browser smoke
+> when full WAMP is up.
 
 **Debug-log audit (2026-06-11, user-requested):** found + fixed a real regression — the item-13 mail queue
 resolved the dispatcher at `plugins_loaded`, eagerly building the mail stack → `wp_get_global_settings` →
