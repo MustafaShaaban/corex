@@ -35,7 +35,7 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D6: `05-deployment/` — shared hosting + CI/CD
 
-- [ ] T011 Author the cPanel shared-hosting recipe (no-symlink strategy) + the CI/CD wiring page + the cross-cutting secrets/backups/zero-downtime page.
+- [x] T011 Author the cPanel shared-hosting recipe (no-symlink strategy) + the CI/CD wiring page + the cross-cutting secrets/backups/zero-downtime page.
 
 ## Phase D7: `04-team-workflow/`
 
