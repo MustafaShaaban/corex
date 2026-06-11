@@ -1,0 +1,22 @@
+/**
+ * Corex Testimonial — token-only, logical CSS (RTL-correct), conditional asset.
+ */
+.corex-testimonial {
+	margin: 0;
+	padding: var(--wp--preset--spacing--50);
+	background-color: var(--wp--preset--color--surface);
+	text-align: start;
+
+	&__quote {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--lg);
+		color: var(--wp--preset--color--ink);
+	}
+
+	&__cite {
+		margin-block-start: var(--wp--preset--spacing--30);
+		font-size: var(--wp--preset--font-size--sm);
+		color: var(--wp--preset--color--primary);
+		font-style: normal;
+	}
+}

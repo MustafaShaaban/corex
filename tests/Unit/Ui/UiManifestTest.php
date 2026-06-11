@@ -22,7 +22,9 @@ it('enumerates the actual dynamic blocks and section patterns', function () {
     $blocksDir = dirname(__DIR__, 3) . '/addons/corex-ui/src/Blocks';
     $manifest  = (new UiManifest(new PatternLibrary(), $blocksDir))->describe();
 
-    expect($manifest['blocks'])->toContain('corex/posts', 'corex/breadcrumbs', 'corex/copyright');
+    expect($manifest['blocks'])->toContain('corex/posts', 'corex/breadcrumbs', 'corex/copyright')
+        // The spec-027 component blocks are auto-discovered with no engine change.
+        ->toContain('corex/stat', 'corex/testimonial', 'corex/pricing', 'corex/accordion');
 
     $patternNames = array_column($manifest['patterns'], 'name');
     expect($patternNames)->toContain('corex/hero', 'corex/contact')

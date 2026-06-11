@@ -308,8 +308,17 @@ Order: P1 → P2 → P3 → P4 → P5 → P6. **Remediation APPROVED by the user
 >   (renders + gates via the shared `AdminGuard`, escaped + i18n + RTL), and an `AddonActivator` (plugin + flag
 >   in sync). **9 unit + 1 integration green; 290 unit total**; wp-guard + clean-code clean. Screen hook
 >   confirmed wired on real WP (menu render is the Apache-gated smoke). DECISIONS #60; corex-config README updated.
-> - [ ] **`027-block-library-expansion`** — next: grow the `corex/*` block library (team/stats/pricing/gallery/
->   accordion/tabs/testimonial) via `wp corex make:block`, token-only + dynamic + accessible + RTL.
+> - [x] **`027-block-library-expansion` — COMPLETE + IMPLEMENTED (2026-06-11).** Four new server-rendered
+>   `corex/*` component blocks in `corex-ui` (full Spec Kit flow on `feature/027-block-library-expansion`):
+>   **`corex/stat`, `corex/testimonial`, `corex/pricing`, `corex/accordion`** — scalar/text-attribute driven
+>   (sidebar controls + `ServerSideRender`), pure `BlockRenderer`s (escaped, token-only, RTL), accordion via
+>   native `<details>` (accessible, no JS). Auto-discovered (no engine change). **5 unit green; 295 unit total**;
+>   token-only scan clean; wp-guard + clean-code clean. **Built + verified live**: all four register dynamic, in
+>   the Corex category, with compiled `style-index.css` + `-rtl.css`. DECISIONS #61; corex-ui README updated.
+>   _(JS tabs + a media-repeater gallery are an explicit later Interactivity-API increment.)_
+>
+> 🎉 **FORWARD SPECS 025–027 COMPLETE (2026-06-11)** — all three built spec-first via the full Spec Kit flow,
+> each tested, guarded, documented, verified on real WP, and merged to develop via its own PR (CI green).
 >
 > **Still env-gated (not skipped):** the **browser smoke** + **executing** the Playwright E2E need full
 > WAMP/Apache + a browser this headless box lacks; the React/DataViews admin remains a build-env upgrade.
