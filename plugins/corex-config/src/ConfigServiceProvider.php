@@ -34,6 +34,8 @@ use Corex\Config\Insights\Providers\PerformanceProvider;
 use Corex\Config\Insights\Providers\ReadinessProvider;
 use Corex\Config\Insights\ReadinessScorer;
 use Corex\Config\Settings\AdminDashboard;
+use Corex\Config\Settings\FieldSections;
+use Corex\Config\Settings\SettingsRegistry;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Support\Config\ConfigInterface;
@@ -46,6 +48,14 @@ final class ConfigServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // The built-in settings screen autowires SettingsForm, which depends on the FieldSections
+        // seam (spec 039) — bind it to the concrete SettingsRegistry so it resolves. (Option pages
+        // construct SettingsForm explicitly with their own FieldSections, so they don't need this.)
+        $this->container->bind(
+            FieldSections::class,
+            static fn (ContainerInterface $c): FieldSections => $c->make(SettingsRegistry::class),
+        );
+
         $this->container->singleton(
             BrandingService::class,
             static fn (ContainerInterface $c): BrandingService => new BrandingService(
