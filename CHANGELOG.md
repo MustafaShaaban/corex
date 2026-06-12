@@ -4,6 +4,18 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.20.1] — 2026-06-12
+
+### Fixed (documentation)
+- Refreshed the **docs-app** product site for specs 025–028, which it had not yet reflected:
+  - Regenerated the per-class internals reference (`wp corex docs:generate` → 231 pages) so it includes the
+    reset CLI, add-on manager, the four new component blocks, `AdminGuard`, and the corrected
+    `orderBy`/`orderByNumeric` signature.
+  - **CLI guide**: documented `wp corex docs:generate` and `wp corex reset` (soft + gated full).
+  - **Blocks guide**: listed the built-in `corex/*` library, including `stat`/`testimonial`/`pricing`/`accordion`.
+  - **Configuration guide**: documented the Add-ons and Setup Wizard admin screens.
+  - **Getting-started overview**: cross-links the in-repo Developer & Operations Handbook (`docs/`).
+
 ## [0.20.0] — 2026-06-12
 
 ### Added
