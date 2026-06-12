@@ -19,7 +19,7 @@ defined('ABSPATH') || exit;
  */
 final class SettingsForm
 {
-    public function __construct(private readonly SettingsRegistry $registry)
+    public function __construct(private readonly FieldSections $registry)
     {
     }
 

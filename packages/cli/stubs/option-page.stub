@@ -1,0 +1,37 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+defined('ABSPATH') || exit;
+
+use Corex\Config\Options\OptionPage;
+
+/**
+ * {{ class }} — a custom admin option page. Register its page() with the OptionPageRegistry
+ * (e.g. in a service provider's boot()):
+ *
+ *   $container->make(Corex\Config\Options\OptionPageRegistry::class)
+ *       ->register((new {{ class }}())->page());
+ */
+final class {{ class }}
+{
+    public function page(): OptionPage
+    {
+        return new OptionPage(
+            slug: '{{ slug }}',
+            title: '{{ title }}',
+            menuLabel: '{{ title }}',
+            capability: 'manage_options',
+            parent: 'corex-settings',
+            fields: [
+                ['key' => '{{ slug }}.example', 'label' => 'Example', 'type' => 'text'],
+            ],
+        );
+    }
+}
