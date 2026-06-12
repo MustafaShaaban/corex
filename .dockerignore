@@ -1,0 +1,10 @@
+# Corex Docker build context excludes (spec 028).
+.git
+wp/                     # the local WordPress install (host-only, gitignored)
+**/node_modules
+**/build                # compiled in the assets stage, not copied from host
+docs-app/dist
+docs-app/node_modules
+vendor/                 # installed in the vendor stage, not copied from host
+*.log
+.env

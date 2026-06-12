@@ -180,7 +180,10 @@ corex-framework/
 │   ├── build-tools/                # shared webpack/vite/gulp config
 │   └── phpcs-config/               # coding standard
 │
-├── docs/                           # THIS FILE + HOOKS.md, MODES.md, etc.
+├── docs/                           # in-repo Developer & Ops Handbook (spec 028): setup, Docker,
+│                                   #   deployment, team workflow, cookbooks (Markdown + Mermaid).
+│                                   #   Product docs + the GENERATED class reference live in docs-app/.
+├── docs-app/                       # published documentation website (Astro + Starlight, spec 022)
 ├── specs/                          # Spec Kit specs + constitution
 ├── tests/                          # Pest, Jest, Playwright
 ├── .github/workflows/              # or azure-pipelines.yml

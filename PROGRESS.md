@@ -328,6 +328,60 @@ Order: P1 → P2 → P3 → P4 → P5 → P6. **Remediation APPROVED by the user
 > need full WAMP/Apache + a browser this headless box lacks; the React/DataViews admin and JS multi-panel
 > tabs + a media-repeater gallery remain documented build-env / Interactivity-API increments.
 
+---
+## ▶ NEW MODULE — Developer & operations handbook (spec 028), spec-first (2026-06-12)
+
+A large "official documentation" brief came in. Per its own STEP 0 + the source-of-truth hierarchy, the
+conflicts with the released `docs-app/` (spec 022) + the generated class reference (DECISIONS #50) were
+surfaced; the user chose **split-by-audience**. Resolution + scope: **DECISIONS #62**.
+
+- [x] **`specs/028-developer-handbook/` — SPEC COMPLETE (specify + plan + tasks + research/data-model/
+  contracts/quickstart).** On `feature/028-developer-handbook`. An in-repo `/docs` GitHub-native Markdown
+  **contributor & operations handbook** (5-OS setup, Docker dev/prod, deployment recipes Azure/AWS/cPanel +
+  CI/CD, team workflow, cookbooks, troubleshooting) that **links** to docs-app for architecture + the
+  **generated** class reference (zero duplication; #50 honored). i18n via `en/` + `ar/` placeholder mirror +
+  glossary + translation-memory. Delivered in **phases D1–D12, one per session**; no new runtime/build dep;
+  Mermaid diagrams (GitHub-native). The brief's hand-written class reference is **dropped** in favour of the
+  generator. **No `docs/` content authored yet — D1 (scaffolding) is the next session.**
+- [x] **D1 — Scaffolding COMPLETE (2026-06-12).** Created the handbook skeleton under `docs/`:
+  `en/_template.md` (per-page template w/ the command→expected-output + tool-intro conventions),
+  `en/_class-reference-stub.md` (link-stub → generated docs-app reference, not hand-written),
+  `_glossary.md` (18 domain terms + Arabic column), `_translation-memory.md` (locked English terms),
+  `README.md` (entry point: audience tiers + section map + "what lives where" + language picker), and
+  `en/{00-getting-started,04-team-workflow,05-deployment,06-cookbooks,07-troubleshooting,08-contributing}/index.md`
+  navigational stubs (`stability: planned`). Updated `COREX-FRAMEWORK.md §4` (docs/ = handbook; docs-app/ =
+  site). docs-guard self-check clean (refs real or `planned`; architecture linked not duplicated; fences tagged).
+- [x] **D2 — Getting-started (5 OS guides) COMPLETE (2026-06-12).** Authored
+  `docs/en/00-getting-started/{windows-wamp,windows-xampp,linux,macos,wp-env}.md` + a linked section index.
+  Each is beginner-first with inline tool intros (description + per-OS install + verify command + expected
+  output), command→expected-output throughout, the monorepo→`wp-content/` mapping (junctions on Windows via
+  `scripts/setup-wordpress.ps1`; symlinks on Linux/macOS; auto-mapped by `wp-env.json` on Docker), and a
+  `wp theme list`/`wp plugin list` boot verification. Grounded in the **real** setup script + wp-env.json (not
+  invented). docs-guard self-check clean (refs exist, every opening fence tagged, no architecture duplication,
+  no "simply"/"just").
+- [x] **D3–D12 COMPLETE (2026-06-12).** The full handbook is authored:
+  - **D3 Docker** — real `docker-compose.yml` (nginx/php-fpm/MariaDB/redis/mailpit) + entrypoint symlinking the
+    monorepo into wp-content + multi-stage `Dockerfile` + `docker/` configs + `docker.md` (dev+prod Mermaid).
+  - **D4 Azure** (App Service slots + VM atomic releases) · **D5 AWS** (Beanstalk + EC2/RDS) · **D6** cPanel
+    (no-symlink) + CI/CD + secrets/backups/zero-downtime — each a full recipe (provision→deploy-from-tag→HTTPS→
+    secrets→backups→rollback→zero-downtime→CI/CD) with a topology diagram.
+  - **D7 team-workflow** (onboarding, branching/commits, Spec Kit loop, quality gates — links the authoritative
+    docs) · **D8 cookbooks** (Woo detect-and-defer, multisite, headless, AI-agent flows, paid add-ons — 2
+    examples each, grounded in real code) · **D9 troubleshooting + contributing**.
+  - **D10** `docs/ar/` file-for-file placeholder mirror (28 pages, generator `scripts/make-ar-mirror.py`).
+  - **D11** cross-link audit (226 internal links, 0 broken; 0 stray `planned`; zero arch/reference duplication).
+  - **D12** verification pass: WAMP guide run against the live env (stamped `last_verified`), **caught + fixed a
+    real drift** (theme version 0.1.0 ≠ release tag), honest env-gated status tables for the other targets.
+
+> 🎉 **SPEC 028 — DEVELOPER & OPS HANDBOOK COMPLETE (2026-06-12).** All 12 phases delivered spec-first; the
+> in-repo `docs/` handbook (setup × 5 OS · Docker · 5 deployment targets · team workflow · cookbooks ·
+> troubleshooting · contributing · `ar/` scaffold) links to docs-app for architecture + the generated class
+> reference (zero duplication). docs-guard self-checks clean throughout; no new runtime/build deps.
+> **▶ NEXT: PR `feature/028-developer-handbook` → develop → CI green → merge → release.**
+- [ ] D2 (5-OS getting-started) · D3 (Docker) · D4 (Azure) · D5 (AWS) · D6 (cPanel + CI/CD) · D7 (team-workflow)
+  · D8 (cookbooks) · D9 (troubleshooting/contributing) · D10 (`ar/` mirror) · D11 (cross-link audit) · D12
+  (verification pass). _Open decision: repo CI — GitHub Actions (current) vs Azure Pipelines — settle in /clarify._
+
 **Debug-log audit (2026-06-11, user-requested):** found + fixed a real regression — the item-13 mail queue
 resolved the dispatcher at `plugins_loaded`, eagerly building the mail stack → `wp_get_global_settings` →
 `corex` textdomain loaded too early (34× notice + a 14× "headers already sent" cascade). Fix: lazy worker
