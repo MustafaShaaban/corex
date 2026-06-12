@@ -17,7 +17,11 @@ use Corex\Config\Data\DataAdminScreen;
 use Corex\Config\Data\DataController;
 use Corex\Config\Data\DataRegistry;
 use Corex\Config\Data\SubmissionsSource;
+use Corex\Config\Data\TableDataSource;
 use Corex\Config\Data\WpSubmissionsReader;
+use Corex\Config\Data\WpTableDataReader;
+use Corex\Database\Schema\ManagedTables;
+use Corex\Database\Schema\Migrator;
 use Corex\Config\Insights\InsightRegistry;
 use Corex\Config\Insights\InsightStore;
 use Corex\Config\Insights\InsightsController;
@@ -57,6 +61,12 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(DataRegistry::class, function (ContainerInterface $c): DataRegistry {
             $registry = new DataRegistry();
             $registry->register(new SubmissionsSource(new WpSubmissionsReader()));
+
+            // Every table an app marked managed appears as its own source — no admin code (spec 038).
+            $reader = new WpTableDataReader($c->make(Migrator::class));
+            foreach ($c->make(ManagedTables::class)->all() as $table) {
+                $registry->register(new TableDataSource($table, $reader));
+            }
 
             return $registry;
         });

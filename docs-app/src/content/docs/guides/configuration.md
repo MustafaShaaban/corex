@@ -36,7 +36,12 @@ capability + nonce check):
   and **creates the kit’s pages** (a composed front page + About/Contact, etc.) idempotently. The seeded
   pages are tracked so `wp corex reset` removes exactly them.
 - **Data** — a DataViews table of your form **submissions** (and any registered Corex custom-table source),
-  with sorting, pagination, and delete. Served by the cap-gated `corex/v1/data` REST routes.
+  with sorting, pagination, and delete. Served by the cap-gated `corex/v1/data` REST routes. **Custom tables
+  appear automatically**: mark a Corex-managed table *managed* (register a `ManagedTable` with the
+  `ManagedTables` registry) and it shows up here like a post-type list — no admin code, opt-in, with prepared +
+  bounded queries (spec 038).
+- **Insights** — performance (PageSpeed/Lighthouse) + agent-readiness cards with a Run button (see
+  [Insights](./insights.md)).
 
 ## Feature flags
 

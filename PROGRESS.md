@@ -897,3 +897,17 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   secrets set as write-only fields in Settings. **18 new tests + 368 total green**; wp-guard clean. DECISIONS #71.
   docs-app `guides/insights` + corex-config README.
   **▶ NEXT:** roadmap 029–037 delivered. Cut a release (v0.22.0 → main) and then check the WP/WAMP error logs.
+
+- [x] **v0.22.0 released (2026-06-12)** — roadmap 029–037 to `main`, tagged, GitHub release; framework headers +
+  `COREX_*_VERSION` stamped to 0.22.0 via `wp corex version`. CI + Docs green (bumped Docs CI to Node 22 for
+  Astro 6). **Log fixes:** the `FormsListController` namespace fatal (broke the site editor) + idempotent block
+  registration (PR #15); the `wp-dataviews` unregistered-dep notice (declared only when registered).
+
+- [x] **`specs/038-custom-table-admin/` — COMPLETE + IMPLEMENTED (2026-06-12).** Any Corex-managed table now
+  appears in **Corex → Data** automatically (user request). A pure `ManagedTable` + `ManagedTables` registry
+  (corex-core) → a `TableDataSource` (key `table-<name>`) seeded into the spec-030 `DataRegistry`, so the existing
+  screen + REST + AdminGuard render it with **no new UI**. The `$wpdb` `WpTableDataReader` is the only boundary —
+  **prepared** (`%i`/`%d`) + **bounded** (`LIMIT`); the shaping is pure + tested. **Opt-in** (never enumerates
+  arbitrary tables). **5 new tests + 373 total green**; wp-guard clean. DECISIONS #72. docs-app `guides/
+  configuration` + corex-config README.
+  **▶ NEXT:** spec **039 — easy option pages** (a declarative `OptionPage` + `wp corex make:option-page`).
