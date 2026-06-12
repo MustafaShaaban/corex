@@ -1,0 +1,51 @@
+/**
+ * Corex Team — token-only, logical CSS (RTL-correct), conditional asset.
+ */
+.corex-team {
+	display: grid;
+	/* 16rem is a functional responsive grid track (layout structure), not a design size. */
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+	gap: var(--wp--preset--spacing--50);
+
+	&__member {
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--20);
+		margin: 0;
+		padding: var(--wp--preset--spacing--40);
+		background-color: var(--wp--preset--color--surface);
+		border-radius: var(--wp--custom--radius--lg);
+		box-shadow: var(--wp--preset--shadow--sm);
+		text-align: center;
+	}
+
+	&__photo {
+		inline-size: 100%;
+		aspect-ratio: 1;
+		object-fit: cover;
+		border-radius: var(--wp--custom--radius--full);
+	}
+
+	&__caption {
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--10);
+	}
+
+	&__name {
+		font-size: var(--wp--preset--font-size--lg);
+		font-weight: 600;
+		color: var(--wp--preset--color--ink);
+	}
+
+	&__role {
+		font-size: var(--wp--preset--font-size--sm);
+		color: var(--wp--preset--color--primary);
+	}
+
+	&__bio {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--base);
+		color: var(--wp--preset--color--ink-soft);
+	}
+}

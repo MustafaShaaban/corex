@@ -1,0 +1,20 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/cta",
+	"title": "Corex Call to Action",
+	"category": "corex",
+	"icon": "megaphone",
+	"description": "A call-to-action banner — heading, supporting line, and a button (dynamic, edited inline).",
+	"textdomain": "corex",
+	"attributes": {
+		"title": { "type": "string", "default": "" },
+		"text": { "type": "string", "default": "" },
+		"ctaText": { "type": "string", "default": "" },
+		"ctaUrl": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false, "anchor": true },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\CtaRenderer" }
+}

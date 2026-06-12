@@ -1,0 +1,23 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/hero",
+	"title": "Corex Hero",
+	"category": "corex",
+	"icon": "cover-image",
+	"description": "A page hero — eyebrow, heading, subheadline, a button, and an optional background image (dynamic, edited inline).",
+	"textdomain": "corex",
+	"attributes": {
+		"eyebrow": { "type": "string", "default": "" },
+		"title": { "type": "string", "default": "" },
+		"subtitle": { "type": "string", "default": "" },
+		"level": { "type": "number", "default": 2 },
+		"ctaText": { "type": "string", "default": "" },
+		"ctaUrl": { "type": "string", "default": "" },
+		"image": { "type": "object", "default": {} }
+	},
+	"supports": { "html": false, "anchor": true },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\HeroRenderer" }
+}

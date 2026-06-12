@@ -1,0 +1,65 @@
+/**
+ * Corex Hero — token-only, logical CSS (RTL-correct), conditional asset.
+ */
+.corex-hero {
+	position: relative;
+	display: grid;
+	overflow: hidden;
+	padding-block: var(--wp--preset--spacing--80);
+	padding-inline: var(--wp--preset--spacing--50);
+	background-color: var(--wp--preset--color--surface-alt);
+	border-radius: var(--wp--custom--radius--lg);
+	text-align: center;
+
+	&__bg {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+	}
+
+	&__inner {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--30);
+		align-items: center;
+		max-inline-size: var(--wp--style--global--content-size, 100%);
+		margin-inline: auto;
+	}
+
+	&__eyebrow {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--sm);
+		text-transform: uppercase;
+		color: var(--wp--preset--color--primary);
+	}
+
+	&__title {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--hero);
+		line-height: 1.1;
+		color: var(--wp--preset--color--ink);
+	}
+
+	&__subtitle {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--lg);
+		color: var(--wp--preset--color--ink-soft);
+	}
+
+	&__cta {
+		display: inline-block;
+		margin-block-start: var(--wp--preset--spacing--20);
+		padding-block: var(--wp--preset--spacing--30);
+		padding-inline: var(--wp--preset--spacing--50);
+		background-color: var(--wp--preset--color--primary);
+		color: var(--wp--preset--color--surface);
+		border-radius: var(--wp--custom--radius--md);
+		text-decoration: none;
+		box-shadow: var(--wp--preset--shadow--sm);
+	}
+}

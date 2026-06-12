@@ -1095,3 +1095,25 @@ tested while WP does the signed install. 8 update tests + 328 total green; wp-gu
 timeout, ABSPATH guards, i18n'd popup string, no secret in the check). Install-from-admin round-trip is
 env-gated (needs a published release + browser).
 Status: Final.
+
+## #69 — Block library v2: five marketing/layout blocks on the inline architecture (hero/cta/team/gallery/tabs)
+Date: 2026-06-12
+Context: spec 035. Users said there weren't enough custom blocks and the existing ones were too simple — a real
+site needs hero/CTA/team/gallery/tabbed sections, editable like a modern page builder.
+Decision: add five new dynamic, server-rendered blocks in corex-ui, all on the spec-029 inline-editing hybrid
+(RichText `edit` → attributes; `save: () => null`; PHP `<Name>Renderer` via `corex.renderer`; auto-discovered by
+the corex-blocks engine + the spec-018 build): **hero** (eyebrow/title/subtitle + gated CTA + optional
+media-library background), **cta** (heading/text + gated button), **team** (repeatable members with media-library
+photo + name/role/bio), **gallery** (repeatable media-library images + captions), **tabs** (repeatable label/
+content). Two deliberate choices: (1) image blocks use the **WordPress media library** (`MediaUpload`/
+`MediaPlaceholder`, store `{id,url,alt}`, render real `<img>` with alt + lazy/async) — never pasted URLs;
+(2) **tabs ship zero view JavaScript** — an accessible CSS-only `:checked` radio/label disclosure (focusable,
+arrow-key navigable), preserving Principle VI even for an interactive widget. Renderers degrade gracefully
+(empty/partial input → the documented "renders nothing"/skip rules) and stay token-only (spec-033 shadow/radius/
+spacing; logical CSS; structural `rem` grid tracks carry a justifying comment, the posts-block precedent).
+"stats-grid" is intentionally NOT a new block — it's several `corex/stat` in a grid container.
+Why: enough blocks to build a full landing page (hero → stats → team → gallery → cta) with no theme code, all
+edited on-canvas, all accessible/RTL/i18n. 7 Pest renderer tests + 27 Jest (10 suites) + 335 total green; all 12
+blocks build; token-only scan clean; wp-guard clean (escaping per field, esc_url media, lazy img). Editor/visual
+behavior is env-gated.
+Status: Final.

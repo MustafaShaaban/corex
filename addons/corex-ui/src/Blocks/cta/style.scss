@@ -1,0 +1,42 @@
+/**
+ * Corex Call to Action — token-only, logical CSS (RTL-correct), conditional asset.
+ */
+.corex-cta {
+	padding-block: var(--wp--preset--spacing--70);
+	padding-inline: var(--wp--preset--spacing--50);
+	background-color: var(--wp--preset--color--primary);
+	border-radius: var(--wp--custom--radius--lg);
+	box-shadow: var(--wp--preset--shadow--md);
+	text-align: center;
+
+	&__inner {
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--30);
+		align-items: center;
+	}
+
+	&__title {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--2xl);
+		color: var(--wp--preset--color--surface);
+	}
+
+	&__text {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--lg);
+		color: var(--wp--preset--color--surface);
+	}
+
+	&__button {
+		display: inline-block;
+		margin-block-start: var(--wp--preset--spacing--20);
+		padding-block: var(--wp--preset--spacing--30);
+		padding-inline: var(--wp--preset--spacing--60);
+		background-color: var(--wp--preset--color--surface);
+		color: var(--wp--preset--color--primary);
+		border-radius: var(--wp--custom--radius--md);
+		text-decoration: none;
+		box-shadow: var(--wp--preset--shadow--sm);
+	}
+}
