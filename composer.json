@@ -47,7 +47,8 @@
         "test": "pest",
         "test:unit": "pest",
         "test:integration": "pest --configuration=phpunit-integration.xml.dist",
-        "docs:generate": "php scripts/generate-docs.php"
+        "docs:generate": "php scripts/generate-docs.php",
+        "i18n:pot": "wp i18n make-pot . plugins/corex-core/languages/corex.pot --domain=corex --exclude=wp,vendor,node_modules,docs-app,dist,build,tests"
     },
     "minimum-stability": "stable",
     "prefer-stable": true

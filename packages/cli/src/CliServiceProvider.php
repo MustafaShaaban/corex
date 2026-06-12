@@ -11,8 +11,12 @@ namespace Corex\Cli;
 defined('ABSPATH') || exit;
 
 use Corex\Cli\Commands\DocsCommand;
+use Corex\Cli\Commands\DoctorCommand;
 use Corex\Cli\Commands\MakeCommand;
 use Corex\Cli\Commands\ResetCommand;
+use Corex\Cli\Commands\VersionCommand;
+use Corex\Cli\Release\VersionPlan;
+use Corex\Health\HealthModule;
 use Corex\Cli\Docs\ClassDocReader;
 use Corex\Cli\Docs\DocsGenerator;
 use Corex\Cli\Docs\MarkdownDocRenderer;
@@ -131,6 +135,47 @@ final class CliServiceProvider extends ServiceProvider
                 $reset->run($args, $assoc);
             },
         );
+
+        $doctor = new DoctorCommand($this->container->make(HealthModule::class));
+
+        WP_CLI::add_command(
+            'corex doctor',
+            static function (array $args, array $assoc) use ($doctor): void {
+                $doctor->run($args, $assoc);
+            },
+        );
+
+        $version = new VersionCommand(new VersionPlan(), $this->versionFiles($root));
+
+        WP_CLI::add_command(
+            'corex version',
+            static function (array $args, array $assoc) use ($version): void {
+                $version->run($args, $assoc);
+            },
+        );
+    }
+
+    /**
+     * The framework files that carry a version header or `COREX_*_VERSION` constant, stamped
+     * together by `wp corex version` so the headers never drift from the release tag (spec 036).
+     *
+     * @return list<string>
+     */
+    private function versionFiles(string $root): array
+    {
+        $candidates = [
+            $root . '/plugins/corex-core/corex-core.php',
+            $root . '/plugins/corex-blocks/corex-blocks.php',
+            $root . '/plugins/corex-forms/corex-forms.php',
+            $root . '/plugins/corex-config/corex-config.php',
+            $root . '/theme/style.css',
+        ];
+
+        foreach (glob($root . '/addons/*/*.php') ?: [] as $addonFile) {
+            $candidates[] = $addonFile;
+        }
+
+        return array_values(array_filter($candidates, 'is_file'));
     }
 
     private function context(ConfigInterface $config): GeneratorContext

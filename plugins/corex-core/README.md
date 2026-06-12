@@ -458,6 +458,15 @@ unless you configure a source you control. An update replaces **framework files 
 `brand.json`, content, and data are never touched. Full guide + the safe-edit boundary:
 [`docs/en/05-deployment/updates-and-distribution.md`](../../docs/en/05-deployment/updates-and-distribution.md).
 
+## Health check
+
+`HealthReport` folds a set of independent `HealthProbe`s (PHP/WordPress version, a block theme active,
+`brand.json` present, uploads writable) into one report whose overall status is the worst finding. The
+aggregator + probes are pure (WP values injected), so they're unit-tested headlessly. `HealthModule`
+registers them into **Tools → Site Health**, and `wp corex doctor` renders the same report (non-zero exit
+on critical). Probes are advisory where appropriate (a classic theme / missing brand → recommended, not a
+failure — Principle IX) and critical only where they must be.
+
 ## Tests
 
 ```bash

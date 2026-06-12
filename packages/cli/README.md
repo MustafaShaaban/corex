@@ -107,6 +107,28 @@ Two modes:
 logic (the plan + the safety gate) is the pure, unit-tested `Corex\Cli\Reset\ResetPlanner`
 + `ResetGate`; only `ResetExecutor` touches WordPress.
 
+### `doctor` — health check (spec 036)
+
+```bash
+wp corex doctor                                   # health report; non-zero exit if critical
+```
+
+Runs the Corex health probes — the same checks shown in **Tools → Site Health** (PHP/WordPress
+version, a block theme active, `brand.json` present, uploads writable) — and **exits non-zero on a
+critical finding**, so it gates CI and works over SSH. The judgement is the pure, unit-tested
+`Corex\Health\HealthReport` + probes; the command and the Site Health registration are thin boundaries.
+
+### `version` — stamp a release version (spec 036)
+
+```bash
+wp corex version 0.22.0 --dry-run                 # preview which files would change
+wp corex version 0.22.0                           # stamp every framework header + COREX_*_VERSION
+```
+
+Aligns every framework plugin/theme header and `COREX_*_VERSION` constant to one semver, so the headers
+never drift from the release tag. The pure, unit-tested `Corex\Cli\Release\VersionPlan` computes the edits
+(returning only files that actually change); the command reads the files and writes (or previews) the plan.
+
 ## Adding a generator
 
 Single-class generators extend `Corex\Cli\Generators\Generator` (a stub name, a

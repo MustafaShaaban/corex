@@ -872,3 +872,16 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   wp-guard clean. DECISIONS #69. docs-app `guides/blocks` + corex-ui README updated.
   **▶ NEXT:** spec **036 — health-check, demo content, versioning alignment, i18n/.pot, OSS hygiene**
   (CONTRIBUTING/LICENSE/.editorconfig).
+
+- [x] **`specs/036-health-hygiene/` — COMPLETE + IMPLEMENTED (2026-06-12).** Release-readiness bundle. Two pure
+  engines + hygiene. **Health:** `HealthProbe` + probes (PHP/WP version, block theme, brand present, uploads
+  writable) folded by a pure `HealthReport` (overall = worst; `hasCritical()`); `HealthModule` registers them
+  into **Site Health** and `wp corex doctor` renders the same report (non-zero exit on critical). **Versioning:**
+  a pure `VersionPlan` + `wp corex version <semver> [--dry-run]` stamps every framework header + `COREX_*_VERSION`
+  to one semver (idempotent; returns only changed files) — kills the `0.1.0` drift. **i18n:** one shared `corex`
+  domain loaded on `init`; `composer i18n:pot` → `plugins/corex-core/languages/corex.pot`. **Hygiene:** LICENSE
+  (GPL-2.0-or-later), CODE_OF_CONDUCT, SECURITY, .editorconfig, GitHub issue/PR templates. (Demo content was
+  already delivered by spec 031.) **15 new tests (HealthReport 4 + Probes 6 + VersionPlan 5) + 350 total green**;
+  composer valid; wp-guard clean. DECISIONS #70. docs-app `guides/cli` + corex-core/CLI READMEs updated.
+  **▶ NEXT:** spec **037 — site readiness + performance dashboard** (Cloudflare + Lighthouse widgets + on-demand
+  check) — user-requested; full Spec Kit.
