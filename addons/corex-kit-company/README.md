@@ -46,3 +46,12 @@ module plugins, and seeds an idempotent demo Home page. The planning core (`Setu
 `kits()` + `plan(name)`) is pure and unit-tested; the screen is the thin admin boundary
 (a React stepped wizard is the deferred upgrade). Kits declare their flags via
 `Blueprint::featureFlags()`.
+
+
+## Pages
+
+Applying the kit **creates its pages** (Home as the front page, About, Contact) by composing the Corex
+section patterns — idempotently (existing slugs are skipped) and tracked (`_corex_kit_page` meta +
+`corex_kit_seeded_pages`), so `wp corex reset` removes exactly the kit pages. Declared in
+`CompanyBlueprint::pages()`; created by `BlueprintActivator::seedPages()` (planned by the pure `KitPagePlanner`).
+Spec 031.

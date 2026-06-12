@@ -63,4 +63,35 @@ final class CompanyBlueprint extends Blueprint
     {
         return ['corex/hero', 'corex/features', 'corex/cta', 'corex/testimonial', 'corex/contact'];
     }
+
+    /**
+     * @return list<array{title:string,slug:string,content:string,front?:bool}>
+     */
+    public function pages(): array
+    {
+        return [
+            [
+                'title'   => __('Home', 'corex'),
+                'slug'    => 'home',
+                'front'   => true,
+                'content' => '<!-- wp:pattern {"slug":"corex/hero"} /-->'
+                    . '<!-- wp:pattern {"slug":"corex/features"} /-->'
+                    . '<!-- wp:pattern {"slug":"corex/cta"} /-->'
+                    . '<!-- wp:pattern {"slug":"corex/contact"} /-->',
+            ],
+            [
+                'title'   => __('About', 'corex'),
+                'slug'    => 'about',
+                'content' => '<!-- wp:heading {"level":1} --><h1>' . esc_html__('About us', 'corex') . '</h1><!-- /wp:heading -->'
+                    . '<!-- wp:paragraph --><p>' . esc_html__('Tell your story here.', 'corex') . '</p><!-- /wp:paragraph -->'
+                    . '<!-- wp:pattern {"slug":"corex/testimonial"} /-->',
+            ],
+            [
+                'title'   => __('Contact', 'corex'),
+                'slug'    => 'contact',
+                'content' => '<!-- wp:heading {"level":1} --><h1>' . esc_html__('Contact', 'corex') . '</h1><!-- /wp:heading -->'
+                    . '<!-- wp:pattern {"slug":"corex/contact"} /-->',
+            ],
+        ];
+    }
 }
