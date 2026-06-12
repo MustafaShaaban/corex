@@ -1004,3 +1004,20 @@ abandoning the dynamic-block principle or the server-render contract. 23 Jest + 
 300 unit green; wp-guard clean (kses for rich, cap-gated REST). Browser-visual is env-gated. This establishes
 the inline-block architecture the library expansion (spec 035) builds on.
 Status: Final.
+
+## #64 — Admin data management: a DataSource abstraction behind one DataViews screen
+Date: 2026-06-12
+Context: spec 030. Form submissions were stored (corex_submission CPT) but invisible in admin, and custom tables
+(TableRepository) had no admin UI — the user couldn't find or manage their data.
+Decision: a **Corex → Data** React screen renders a `@wordpress/dataviews` table of a selected **DataSource**
+(`key/label/columns/rows/total/delete`). Form submissions are the reference `SubmissionsSource` (shaped via an
+injected `SubmissionsReader` so the row-shaping is unit-tested; `WpSubmissionsReader` is the WP_Query boundary);
+any add-on registers a custom-table source implementing the same interface to appear in the same screen. A
+cap-gated `DataController` serves it: `GET corex/v1/data/<source>` (`manage_options`) and
+`DELETE .../<id>` (`manage_options` + REST nonce). DataViews is accessed from the runtime `wp.dataviews` global
+(declared as a `wp-dataviews` script dep) with a plain-table fallback, so the bundle stays lean and the screen
+works across WP versions. Lives in corex-config beside the other admin screens (shared AdminGuard).
+Why: one generic screen serves both submissions and custom tables; the abstraction is what makes custom-table
+data manageable without per-table UI. 8 unit tests; live-verified the controller shapes 33 real submissions
+(cols=3); both block/admin bundles build; wp-guard clean (cap+nonce REST). React-visual is env-gated.
+Status: Final.
