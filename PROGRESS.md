@@ -359,9 +359,25 @@ surfaced; the user chose **split-by-audience**. Resolution + scope: **DECISIONS 
   `wp theme list`/`wp plugin list` boot verification. Grounded in the **real** setup script + wp-env.json (not
   invented). docs-guard self-check clean (refs exist, every opening fence tagged, no architecture duplication,
   no "simply"/"just").
-  **▶ NEXT:** D3 — `05-deployment/` Docker dev (`docker compose`: php-fpm/web/db/cache/mail) + monorepo
-  bind-mount mapping + up/down/reset/test commands + the multi-stage prod Dockerfile + dev/prod Mermaid
-  topology diagrams (task T008). Say: **"go — run D3 of spec 028"**.
+- [x] **D3–D12 COMPLETE (2026-06-12).** The full handbook is authored:
+  - **D3 Docker** — real `docker-compose.yml` (nginx/php-fpm/MariaDB/redis/mailpit) + entrypoint symlinking the
+    monorepo into wp-content + multi-stage `Dockerfile` + `docker/` configs + `docker.md` (dev+prod Mermaid).
+  - **D4 Azure** (App Service slots + VM atomic releases) · **D5 AWS** (Beanstalk + EC2/RDS) · **D6** cPanel
+    (no-symlink) + CI/CD + secrets/backups/zero-downtime — each a full recipe (provision→deploy-from-tag→HTTPS→
+    secrets→backups→rollback→zero-downtime→CI/CD) with a topology diagram.
+  - **D7 team-workflow** (onboarding, branching/commits, Spec Kit loop, quality gates — links the authoritative
+    docs) · **D8 cookbooks** (Woo detect-and-defer, multisite, headless, AI-agent flows, paid add-ons — 2
+    examples each, grounded in real code) · **D9 troubleshooting + contributing**.
+  - **D10** `docs/ar/` file-for-file placeholder mirror (28 pages, generator `scripts/make-ar-mirror.py`).
+  - **D11** cross-link audit (226 internal links, 0 broken; 0 stray `planned`; zero arch/reference duplication).
+  - **D12** verification pass: WAMP guide run against the live env (stamped `last_verified`), **caught + fixed a
+    real drift** (theme version 0.1.0 ≠ release tag), honest env-gated status tables for the other targets.
+
+> 🎉 **SPEC 028 — DEVELOPER & OPS HANDBOOK COMPLETE (2026-06-12).** All 12 phases delivered spec-first; the
+> in-repo `docs/` handbook (setup × 5 OS · Docker · 5 deployment targets · team workflow · cookbooks ·
+> troubleshooting · contributing · `ar/` scaffold) links to docs-app for architecture + the generated class
+> reference (zero duplication). docs-guard self-checks clean throughout; no new runtime/build deps.
+> **▶ NEXT: PR `feature/028-developer-handbook` → develop → CI green → merge → release.**
 - [ ] D2 (5-OS getting-started) · D3 (Docker) · D4 (Azure) · D5 (AWS) · D6 (cPanel + CI/CD) · D7 (team-workflow)
   · D8 (cookbooks) · D9 (troubleshooting/contributing) · D10 (`ar/` mirror) · D11 (cross-link audit) · D12
   (verification pass). _Open decision: repo CI — GitHub Actions (current) vs Azure Pipelines — settle in /clarify._
