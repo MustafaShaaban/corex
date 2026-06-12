@@ -4,6 +4,28 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.20.0] — 2026-06-12
+
+### Added
+- **Developer & Operations Handbook** (`docs/`, spec 028): an in-repo, GitHub-native Markdown handbook for
+  setting up, dockerizing, deploying, and contributing to Corex — built spec-first across 12 phases and split
+  by audience from the published `docs-app/` site (which keeps the product docs + the generated class
+  reference; the handbook links to it, never duplicating).
+  - **Getting started**: five OS guides (Windows WAMP/XAMPP, Linux, macOS, wp-env), grounded in the real setup
+    script + `wp-env.json`.
+  - **Docker**: a one-command dev stack (`docker-compose.yml` with nginx/php-fpm/MariaDB/redis/mailpit and a
+    monorepo-mapping entrypoint) and a multi-stage production `Dockerfile`.
+  - **Deployment recipes**: Azure App Service, Azure VM, AWS Elastic Beanstalk, AWS EC2+RDS, and cPanel — each
+    covering provisioning, deploy-from-tag, HTTPS, secrets, backups, rollback, zero-downtime, and CI/CD, with a
+    Mermaid topology diagram.
+  - **Team workflow** (onboarding, git-flow-lite, Conventional Commits, the Spec Kit loop, quality gates),
+    **cookbooks** (Woo detect-and-defer, multisite, headless, AI-agent flows, paid add-ons), **troubleshooting**,
+    and **contributing**.
+  - A **glossary**, a **translation-memory** of locked English terms, and an `en/` → `ar/` placeholder mirror
+    for the future Arabic translation phase.
+- Docker/CI config at the repo root (`docker-compose.yml`, `Dockerfile`, `docker/`, `.dockerignore`) — dev/deploy
+  tooling only; no framework runtime dependency added.
+
 ## [0.19.0] — 2026-06-11
 
 The forward specs 025–027, each built spec-first via the full Spec Kit flow, tested, guarded, verified on
