@@ -1,0 +1,61 @@
+name: Docs
+
+# Rebuild the documentation site on deploy: regenerate the per-class reference from source
+# (so it can never drift — DECISIONS #50) and build the Astro/Starlight site (spec 022/028).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'plugins/**'
+      - 'packages/**'
+      - 'addons/**'
+      - 'docs-app/**'
+      - 'scripts/generate-docs.php'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Regenerate reference + build docs site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress
+
+      # Headless equivalent of `wp corex docs:generate` — needs no WordPress, only the source.
+      - name: Generate the class reference
+        run: composer docs:generate
+
+      - name: Build the documentation site
+        working-directory: docs-app
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload the built site
+        uses: actions/upload-artifact@v4
+        with:
+          name: corex-docs-site
+          path: docs-app/dist
+          if-no-files-found: error
+
+# To publish to GitHub Pages: in the repo, Settings → Pages → Source: "GitHub Actions";
+# then add `pages: write` and `id-token: write` to `permissions` above and append a deploy
+# job that runs `actions/upload-pages-artifact@v3` (path: docs-app/dist) + `actions/deploy-pages@v4`.
