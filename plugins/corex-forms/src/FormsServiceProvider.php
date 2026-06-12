@@ -22,6 +22,7 @@ use Corex\Forms\Listeners\StoreSubmissionListener;
 use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Submission\FormSubmissionService;
 use Corex\Forms\Submission\FormSubmittedEvent;
+use Corex\Forms\Submission\FormsListController;
 use Corex\Forms\Submission\SubmissionRepository;
 use Corex\Forms\Submission\SubmitController;
 use Corex\Forms\Validation\RuleRegistry;

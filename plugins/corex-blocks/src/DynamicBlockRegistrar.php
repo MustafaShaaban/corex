@@ -34,6 +34,13 @@ final class DynamicBlockRegistrar
      */
     public function register(array $block): void
     {
+        // Idempotent: if the same block name is already registered (e.g. the discovery hook ran
+        // twice, or the plugin is loaded from two locations in a monorepo dev setup), skip it
+        // rather than emit WordPress's "already registered" notice.
+        if (\WP_Block_Type_Registry::get_instance()->is_registered($block['name'])) {
+            return;
+        }
+
         $args = [];
         $renderer = $block['metadata']['corex']['renderer'] ?? null;
 
