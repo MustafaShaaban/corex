@@ -3,7 +3,7 @@
  * Plugin Name:       Corex Captcha
  * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       The Corex captcha driver system — verify an anti-bot challenge behind one interface (none / honeypot / reCAPTCHA / Turnstile / hCaptcha), selected by configuration. Fail-closed for remote providers.
- * Version:           0.23.0
+ * Version:           0.23.1
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
@@ -22,7 +22,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_CAPTCHA_VERSION')) {
-    define('COREX_CAPTCHA_VERSION', '0.23.0');
+    define('COREX_CAPTCHA_VERSION', '0.23.1');
 }
 
 (static function (): void {

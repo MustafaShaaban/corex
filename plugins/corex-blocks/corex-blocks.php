@@ -3,7 +3,7 @@
  * Plugin Name:       Corex Blocks
  * Plugin URI:        https://github.com/bseit/corex
  * Description:       The Corex block engine — auto-discovered FSE blocks, model→block connectors, and conditional (per-block) asset loading.
- * Version:           0.23.0
+ * Version:           0.23.1
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
@@ -24,7 +24,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_BLOCKS_VERSION')) {
-    define('COREX_BLOCKS_VERSION', '0.23.0');
+    define('COREX_BLOCKS_VERSION', '0.23.1');
 }
 if (! defined('COREX_BLOCKS_FILE')) {
     define('COREX_BLOCKS_FILE', __FILE__);

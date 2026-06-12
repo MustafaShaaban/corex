@@ -4,6 +4,15 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.23.1] — 2026-06-12
+
+### Fixed
+- **Boot regression** introduced in 0.23.0: `ConfigServiceProvider` failed to boot
+  (`Cannot resolve [FieldSections]: it is not instantiable`) because the spec-039 `FieldSections` interface had no
+  concrete binding, so the container could not autowire `SettingsForm` for the settings screen. Bind
+  `FieldSections` → `SettingsRegistry`, and add a container-wiring regression test that exercises the autowire
+  path the unit tests had bypassed.
+
 ## [0.23.0] — 2026-06-12
 
 Admin extensibility — making custom data and custom settings pages first-class, from a deep-review follow-up.
