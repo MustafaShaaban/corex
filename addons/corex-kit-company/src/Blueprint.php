@@ -56,4 +56,16 @@ abstract class Blueprint
     {
         return [];
     }
+
+    /**
+     * The pages the kit creates when applied — each composing the kit's existing corex/*
+     * patterns/blocks. One page may be marked `front` to become the static front page.
+     * Default: none (a kit that ships templates but seeds no pages).
+     *
+     * @return list<array{title:string,slug:string,content:string,front?:bool}>
+     */
+    public function pages(): array
+    {
+        return [];
+    }
 }

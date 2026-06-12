@@ -9,10 +9,17 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Functions;
 use Corex\Kit\BlueprintRegistry;
 use Corex\Kit\Company\CompanyBlueprint;
 use Corex\Kit\SetupWizard;
 use Corex\Woo\WooBlueprint;
+
+beforeEach(function () {
+    // Blueprint::pages() composes translatable page content.
+    Functions\when('__')->returnArg();
+    Functions\when('esc_html__')->returnArg();
+});
 
 function wizardWithKits(): SetupWizard
 {
@@ -42,7 +49,7 @@ it('plans a kit into de-duped modules and its feature flags', function () {
 });
 
 it('returns an empty plan for an unknown kit', function () {
-    expect(wizardWithKits()->plan('nope'))->toBe(['modules' => [], 'flags' => []]);
+    expect(wizardWithKits()->plan('nope'))->toBe(['modules' => [], 'flags' => [], 'pages' => []]);
 });
 
 it('plans the company kit with no feature flags', function () {

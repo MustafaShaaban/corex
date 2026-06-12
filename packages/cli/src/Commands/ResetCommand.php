@@ -97,7 +97,19 @@ final class ResetCommand
             addonPlugins: $this->activeAddons(),
             optionKeys: $this->corexOptionKeys(),
             demoPageId: $this->demoPageId(),
+            pageIds: $this->kitPageIds(),
         );
+    }
+
+    /**
+     * The pages a kit seeded (tracked in `corex_kit_seeded_pages`) — removed by a soft reset
+     * so exactly the kit content goes, never user content (spec 031).
+     *
+     * @return list<int>
+     */
+    private function kitPageIds(): array
+    {
+        return array_values(array_map('intval', (array) get_option('corex_kit_seeded_pages', [])));
     }
 
     /**

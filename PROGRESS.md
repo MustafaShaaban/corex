@@ -819,3 +819,12 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   admin React builds; **live-verified the controller shapes 33 real submissions** (cols=3). wp-guard clean.
   DECISIONS #64. corex-config README + docs-app config guide updated. _(React-visual env-gated.)_
   **▶ NEXT:** spec **031 — kits that build a real site** (applying a kit scaffolds its pages/content).
+
+- [x] **`specs/031-kit-content/` — COMPLETE + IMPLEMENTED (2026-06-12).** Kits now **build a real site**:
+  `Blueprint::pages()` declares pages composing the kit's corex/* patterns; a pure `KitPagePlanner` makes
+  seeding idempotent (skips existing slugs); `BlueprintActivator::seedPages()` creates them (tracked via
+  `_corex_kit_page` + `corex_kit_seeded_pages`), sets the front page, and the soft reset (spec 025) removes
+  exactly the kit pages. Company = home/about/contact, Portfolio = home/projects. **3 unit + 311 PHP total
+  green**; **verified live** (about/contact created, home skipped as pre-existing, re-apply no-dup, reset
+  dry-run lists the kit pages). wp-guard clean. DECISIONS #65. docs-app + company README updated.
+  **▶ NEXT:** spec **032 — modern settings UX** (media uploader, select/toggle fields, admin branding).

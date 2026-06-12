@@ -21,16 +21,21 @@ final class ResetInventory
     /**
      * @param list<string> $addonPlugins active corex-* plugin files (excludes core + theme)
      * @param list<string> $optionKeys   corex_* option keys to delete
+     * @param list<int>    $pageIds      kit-seeded page ids to remove (spec 031)
      */
     public function __construct(
         public readonly array $addonPlugins = [],
         public readonly array $optionKeys = [],
         public readonly ?int $demoPageId = null,
+        public readonly array $pageIds = [],
     ) {
     }
 
     public function isEmpty(): bool
     {
-        return $this->addonPlugins === [] && $this->optionKeys === [] && $this->demoPageId === null;
+        return $this->addonPlugins === []
+            && $this->optionKeys === []
+            && $this->demoPageId === null
+            && $this->pageIds === [];
     }
 }

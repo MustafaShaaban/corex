@@ -58,17 +58,19 @@ final class ResetPlanner
      */
     private function demoRemoval(ResetInventory $inventory): array
     {
-        if ($inventory->demoPageId === null) {
-            return [];
+        $ids = $inventory->pageIds;
+        if ($inventory->demoPageId !== null) {
+            $ids[] = $inventory->demoPageId;
         }
 
-        return [
-            new ResetAction(
+        return array_map(
+            static fn (int $id): ResetAction => new ResetAction(
                 ResetAction::REMOVE_DEMO,
-                (string) $inventory->demoPageId,
-                sprintf('Remove the seeded demo Home page (#%d) and revert the front-page settings.', $inventory->demoPageId),
+                (string) $id,
+                sprintf('Remove the seeded kit page (#%d) and revert the front-page settings if needed.', $id),
             ),
-        ];
+            array_values(array_unique($ids)),
+        );
     }
 
     /**

@@ -1021,3 +1021,20 @@ Why: one generic screen serves both submissions and custom tables; the abstracti
 data manageable without per-table UI. 8 unit tests; live-verified the controller shapes 33 real submissions
 (cols=3); both block/admin bundles build; wp-guard clean (cap+nonce REST). React-visual is env-gated.
 Status: Final.
+
+## #65 — Kits build a real site: Blueprint::pages() + idempotent, tracked, reversible seeding
+Date: 2026-06-12
+Context: spec 031. Applying a kit created no pages — only the wizard seeded a single demo Home, once. The site
+stayed empty; kits looked broken.
+Decision: `Blueprint::pages()` declares a kit's pages (`{title,slug,content,front?}`), composing the kit's
+existing corex/* patterns/blocks (never invented). A pure `KitPagePlanner::toCreate()` skips slugs that already
+exist (idempotent — re-applying never duplicates). `BlueprintActivator::seedPages()` creates each planned page
+(`wp_insert_post` published), marks it `_corex_kit_page`, records its id in `corex_kit_seeded_pages`, and sets
+the front page where declared — replacing the old single `seedDemoHome`. The wizard's `plan()` now carries
+`pages`. The soft reset (spec 025) reads `corex_kit_seeded_pages` and removes **exactly** those pages (a list<int>
+in the inventory → remove actions), so a reset cleans up kit content without touching user content. Company kit:
+home(front)/about/contact; Portfolio: home(front)/projects.
+Why: a kit must produce a visible site; idempotency-by-slug + tracking-by-marker make it safe to re-apply and
+exactly reversible. 3 unit + 311 PHP total green; verified live (about/contact created, home skipped as
+pre-existing, 2nd run no-dup, reset dry-run lists the kit pages). wp-guard clean. Visual is env-gated.
+Status: Final.
