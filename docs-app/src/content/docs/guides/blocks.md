@@ -72,6 +72,17 @@ category — all server-rendered, token-only, and RTL-correct:
 | `corex/pricing` | A pricing card — plan, price, features, optional CTA |
 | `corex/accordion` | Accessible disclosures from a list — native `<details>`, no JavaScript |
 
-The component blocks (`stat`/`testimonial`/`pricing`/`accordion`) take scalar/text attributes
-edited in the block sidebar; multi-item ones read a simple per-line attribute. Each is a pure
-`BlockRenderer` — see its generated page in the **Reference**.
+## Inline editing (modern, in-canvas)
+
+The component blocks (`stat`/`testimonial`/`pricing`/`accordion`) are edited **inline on the
+canvas** — you type the heading, quote, price, or panel text directly into the block like a
+modern page builder (not only in the right sidebar). They stay **dynamic**: the text lives in
+block attributes, `save` returns `null`, and the PHP renderer produces the markup from those
+attributes (so the editor and the front end share one source of truth). Rich text (bold,
+italic, links) is preserved safely with `wp_kses_post`. Repeatable lists — pricing features,
+accordion panels — are added/removed as inline rows.
+
+The **form** block lets you **pick a form from a dropdown** of the registered forms (no more
+typing a slug); the list comes from the cap-gated `corex/v1/forms` route.
+
+Each block is a pure `BlockRenderer` — see its generated page in the **Reference**.

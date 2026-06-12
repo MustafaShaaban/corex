@@ -985,3 +985,22 @@ Why: a second copy of getting-started/architecture/reference would drift (the fa
 prevent); splitting by audience gives each surface a home with no overlap, and in-repo Markdown renders on
 GitHub where operators/contributors read ops docs. Honors specs 019/022 + #50.
 Status: Final (structure). Open: repo-CI choice (GitHub Actions vs Azure Pipelines) — /clarify.
+
+## #63 — Inline-editable blocks: the dynamic-and-RichText hybrid; form selector over free-text slug
+Date: 2026-06-12
+Context: spec 029. Every Corex block was server-rendered + edited only via InspectorControls (right pane) — no
+inline canvas editing, and the form block made you type a slug ("contact"). The tension: the constitution wants
+dynamic/server-rendered blocks (Principle VI), but modern inline editing usually implies static save-markup.
+Decision: use the **hybrid** — the block's `edit` renders `RichText` (inline on the canvas) bound to block
+**attributes**; `save: () => null`; the PHP `render_callback` reads those attributes and outputs the markup.
+The block stays dynamic AND gains inline editing (one source of truth). Rich attributes render with
+**`wp_kses_post`** (safe inline HTML), plain fields keep `esc_url`/`esc_html`. The four component blocks
+(stat/testimonial/pricing/accordion) are converted; pricing `features` and accordion `items` become **array**
+attributes (repeatable RichText rows), with the renderers keeping the legacy delimited-string parse as a
+**fallback** so already-placed blocks still render. The form block replaces its free-text `formSlug` with a
+**SelectControl** populated from a new cap-gated read-only route `GET corex/v1/forms` (slug + label only).
+Why: fixes the #1 editor-UX complaint (edit in the canvas like a page builder; pick data from a list) without
+abandoning the dynamic-block principle or the server-render contract. 23 Jest + renderer/REST Pest tests;
+300 unit green; wp-guard clean (kses for rich, cap-gated REST). Browser-visual is env-gated. This establishes
+the inline-block architecture the library expansion (spec 035) builds on.
+Status: Final.

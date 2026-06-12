@@ -8,7 +8,7 @@
 	"description": "Accessible disclosure panels from a simple list (dynamic, no JavaScript).",
 	"textdomain": "corex",
 	"attributes": {
-		"items": { "type": "string", "default": "" }
+		"items": { "type": "array", "default": [], "items": { "type": "object" } }
 	},
 	"supports": { "html": false },
 	"editorScript": "file:./index.js",

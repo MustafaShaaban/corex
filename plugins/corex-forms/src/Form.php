@@ -36,6 +36,15 @@ abstract class Form
     }
 
     /**
+     * A human label for the form, shown in the block's form selector. Defaults to a
+     * humanized slug; a concrete form may override for a nicer name.
+     */
+    public function label(): string
+    {
+        return $this->slug === '' ? '' : ucwords(str_replace(['-', '_'], ' ', $this->slug));
+    }
+
+    /**
      * Listener service ids for this form's submissions. The default set stores the
      * submission and emails a notification; concrete forms may override.
      *

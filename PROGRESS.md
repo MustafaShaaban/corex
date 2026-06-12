@@ -791,3 +791,22 @@ Kit + guard skills, git on `main` (GitHub remote: github.com/MustafaShaaban/core
 missing-WordPress gap: installed WP 7.0 into `./wp/` via WP-CLI on WAMP, mapped the monorepo in via
 junctions, activated the Corex theme + 3 plugins (site boots at http://corex.local). Decisions
 #15–18 logged. Next: PHASE 5 — corex-core foundation via the Spec Kit flow, one task at a time.
+
+---
+## ▶ ROADMAP 029–036 (2026-06-12) — deep-review backlog, spec-first, autonomous
+
+A user-driven deep review surfaced real gaps (kits create no pages, no submissions/table admin, sidebar-only
+block editing, URL-only settings, no self-update, thin design). Roadmap: **029** interactive inline blocks ·
+**030** DataViews admin · **031** kits build a site · **032** modern settings UX · **033** design system ·
+**034** self-update + distribution · **035** block library v2 · **036** health-check/demo/versioning/i18n/OSS.
+Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
+
+- [x] **`specs/029-interactive-blocks/` — COMPLETE + IMPLEMENTED (2026-06-12).** The dynamic-and-RichText hybrid:
+  stat/testimonial/pricing/accordion are now **edited inline on the canvas** (RichText → attributes →
+  server render, `save:()=>null`), rich text via `wp_kses_post`; pricing `features` + accordion `items` became
+  array attributes (repeatable rows) with legacy-string fallbacks. The `corex/form` block **selects a form from
+  a dropdown** fed by the new cap-gated `GET corex/v1/forms`. **23 Jest + 300 PHP unit green**; both block
+  bundles build; all 5 blocks register dynamic live; the form-list controller returns `[{slug,label}]` live.
+  wp-guard clean (kses/cap-gated REST). DECISIONS #63. docs-app blocks guide + corex-ui README updated.
+  _(Browser-visual confirmation of the editing UX is env-gated.)_
+  **▶ NEXT:** spec **030 — admin data management (DataViews)** for form submissions + custom tables.

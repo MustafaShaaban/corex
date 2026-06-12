@@ -29,8 +29,9 @@ final class TestimonialRenderer implements BlockRenderer
             return '';
         }
 
+        // Inline-RichText fields (spec 029) → wp_kses_post (safe inline HTML preserved).
         $html = '<figure class="corex-testimonial"><blockquote class="corex-testimonial__quote">'
-            . esc_html($quote) . '</blockquote>';
+            . wp_kses_post($quote) . '</blockquote>';
 
         $cite = $this->attribution(
             trim((string) ($attributes['author'] ?? '')),
@@ -38,7 +39,7 @@ final class TestimonialRenderer implements BlockRenderer
         );
 
         if ($cite !== '') {
-            $html .= '<figcaption class="corex-testimonial__cite">&mdash; ' . esc_html($cite) . '</figcaption>';
+            $html .= '<figcaption class="corex-testimonial__cite">&mdash; ' . wp_kses_post($cite) . '</figcaption>';
         }
 
         return $html . '</figure>';
