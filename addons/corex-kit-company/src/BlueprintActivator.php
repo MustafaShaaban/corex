@@ -8,19 +8,30 @@ declare(strict_types=1);
 
 namespace Corex\Kit;
 
+use Corex\Provisioning\ApplyOutcome;
+use Corex\Provisioning\PageContent;
+use Corex\Provisioning\PageDisposition;
+use Corex\Provisioning\PagePlanner;
+
 defined('ABSPATH') || exit;
 
 /**
- * Applies a planned kit: enables its feature flags, activates its module plugins, and seeds
- * the kit's pages (composing its patterns; one becomes the front page). The side-effecting
- * half of the setup wizard, kept apart from the admin screen (one actor: site provisioning).
- * Page seeding is idempotent (the KitPagePlanner skips existing slugs) and tracked
- * (`_corex_kit_page` meta + the `corex_kit_seeded_pages` option) so a reset removes exactly
- * the kit pages (spec 031).
+ * Applies a planned kit: enables its feature flags, activates its module plugins, and seeds the kit's pages
+ * (composing its patterns; one becomes the front page). The side-effecting half of the setup wizard, kept
+ * apart from the admin screen (one actor: site provisioning).
+ *
+ * Page handling is classified by the pure {@see PagePlanner} into create / adopt / skip (spec 041): a page
+ * whose slug is absent is created; a pre-existing **empty** page (or an un-populated kit placeholder) is
+ * **adopted** — populated in place; a page that already holds user content is skipped untouched. The front
+ * page is set after the loop whenever the declared home was created or adopted, so a kit apply never leaves a
+ * blank front page. Each page records its disposition in `_corex_kit_page` (`created` | `adopted`) so a reset
+ * deletes created pages but only empties adopted ones (never a page the user owned). Returns an
+ * {@see ApplyOutcome} the wizard renders as a summary (and spec 042 reuses).
  */
 final class BlueprintActivator
 {
     public const SEEDED_OPTION = 'corex_kit_seeded_pages';
+    public const PAGE_META     = '_corex_kit_page';
 
     private const MODULE_FILES = [
         'corex-ui'          => 'corex-ui/corex-ui.php',
@@ -30,37 +41,88 @@ final class BlueprintActivator
         'corex-kit-company' => 'corex-kit-company/corex-kit-company.php',
     ];
 
-    public function __construct(private readonly KitPagePlanner $planner = new KitPagePlanner())
-    {
+    public function __construct(
+        private readonly PagePlanner $planner = new PagePlanner(),
+        private readonly PageContent $content = new PageContent(),
+    ) {
     }
 
     /**
      * @param array{flags:list<string>,modules:list<string>,pages?:list<array{title:string,slug:string,content:string,front?:bool}>} $plan
      */
-    public function apply(array $plan): void
+    public function apply(array $plan): ApplyOutcome
     {
-        $this->enableFlags($plan['flags']);
-        $this->activateModules($plan['modules']);
-        $this->seedPages($plan['pages'] ?? []);
+        $flags   = $this->enableFlags($plan['flags']);
+        $modules = $this->activateModules($plan['modules']);
+
+        return $this->seedPages($plan['pages'] ?? [], $modules, $flags);
     }
 
     /**
-     * Create a kit's pages that don't already exist (idempotent), set the front page, and
-     * record the created ids so a reset can remove exactly them.
+     * Classify, then create or populate each declared page (idempotent, never overwriting user content), set
+     * the front page when the declared home was created or adopted, and record dispositions for a safe reset.
      *
      * @param list<array{title:string,slug:string,content:string,front?:bool}> $pages
+     * @param list<string>                                                      $modules
+     * @param list<string>                                                      $flags
      */
-    public function seedPages(array $pages): void
+    public function seedPages(array $pages, array $modules = [], array $flags = []): ApplyOutcome
     {
-        $toCreate = $this->planner->toCreate($pages, $this->existingSlugs($pages));
+        $dispositions = $this->planner->plan($pages, $this->signals($pages));
 
-        if ($toCreate === []) {
-            return;
+        $bySlug = [];
+        foreach ($pages as $page) {
+            $bySlug[$page['slug']] = $page;
         }
 
-        $seeded = (array) get_option(self::SEEDED_OPTION, []);
+        $seeded      = array_values(array_map('intval', (array) get_option(self::SEEDED_OPTION, [])));
+        $results     = [];
+        $frontPageId = null;
 
-        foreach ($toCreate as $page) {
+        foreach ($dispositions as $disposition) {
+            $page   = $bySlug[$disposition->slug];
+            $result = $this->persist($disposition, $page);
+
+            if ($result['pageId'] !== null && ! in_array($result['pageId'], $seeded, true)) {
+                $seeded[] = $result['pageId'];
+            }
+
+            $isFront = ($page['front'] ?? false) === true
+                && $result['pageId'] !== null
+                && $disposition->action !== PageDisposition::SKIP;
+
+            if ($isFront) {
+                $frontPageId = $result['pageId'];
+            }
+
+            $results[] = [
+                'disposition' => $disposition,
+                'pageId'      => $result['pageId'],
+                'isFront'     => $isFront,
+                'persistedAs' => $result['persistedAs'],
+            ];
+        }
+
+        if ($frontPageId !== null) {
+            update_option('show_on_front', 'page');
+            update_option('page_on_front', $frontPageId);
+        }
+
+        update_option(self::SEEDED_OPTION, array_values(array_unique($seeded)));
+
+        return new ApplyOutcome($results, $modules, $flags, $frontPageId);
+    }
+
+    /**
+     * Create or populate one page per its disposition; skip records nothing.
+     *
+     * @param array{title:string,slug:string,content:string,front?:bool} $page
+     *
+     * @return array{pageId:?int,persistedAs:?string}
+     */
+    private function persist(PageDisposition $disposition, array $page): array
+    {
+        if ($disposition->action === PageDisposition::CREATE) {
             $id = wp_insert_post([
                 'post_title'   => $page['title'],
                 'post_name'    => $page['slug'],
@@ -70,66 +132,105 @@ final class BlueprintActivator
             ]);
 
             if (! is_int($id) || $id <= 0) {
-                continue;
+                return ['pageId' => null, 'persistedAs' => null];
             }
 
-            update_post_meta($id, '_corex_kit_page', '1');
-            $seeded[] = $id;
+            update_post_meta($id, self::PAGE_META, PageDisposition::PERSISTED_CREATED);
 
-            if (($page['front'] ?? false) === true) {
-                update_option('show_on_front', 'page');
-                update_option('page_on_front', $id);
-            }
+            return ['pageId' => $id, 'persistedAs' => PageDisposition::PERSISTED_CREATED];
         }
 
-        update_option(self::SEEDED_OPTION, array_values(array_unique($seeded)));
+        if ($disposition->action === PageDisposition::ADOPT) {
+            $existing = get_page_by_path($page['slug']);
+
+            if (! $existing instanceof \WP_Post) {
+                return ['pageId' => null, 'persistedAs' => null];
+            }
+
+            wp_update_post(['ID' => $existing->ID, 'post_content' => $page['content']]);
+
+            // A kit placeholder stays Corex-owned (created → deleted on reset); a user's empty page becomes
+            // adopted (reset only empties it, never deletes a page the user already had).
+            $persistedAs = $disposition->reason === 'kit_placeholder'
+                ? PageDisposition::PERSISTED_CREATED
+                : PageDisposition::PERSISTED_ADOPTED;
+            update_post_meta($existing->ID, self::PAGE_META, $persistedAs);
+
+            return ['pageId' => $existing->ID, 'persistedAs' => $persistedAs];
+        }
+
+        return ['pageId' => null, 'persistedAs' => null];
     }
 
     /**
-     * The slugs (from the declared set) that already exist as pages — fed to the planner.
+     * Per-slug signal (exists / is-empty / is-kit-placeholder) for the pure planner.
      *
      * @param list<array{slug:string}> $pages
      *
-     * @return list<string>
+     * @return array<string,array{exists:bool,isEmpty:bool,isKitPlaceholder:bool}>
      */
-    private function existingSlugs(array $pages): array
+    private function signals(array $pages): array
     {
-        $existing = [];
+        $signals = [];
+
         foreach ($pages as $page) {
-            if (get_page_by_path($page['slug']) !== null) {
-                $existing[] = $page['slug'];
+            $existing = get_page_by_path($page['slug']);
+
+            if (! $existing instanceof \WP_Post) {
+                $signals[$page['slug']] = ['exists' => false, 'isEmpty' => false, 'isKitPlaceholder' => false];
+
+                continue;
             }
+
+            $isEmpty    = $this->content->isBlank((string) get_post_field('post_content', $existing->ID));
+            $hasKitMeta = (string) get_post_meta($existing->ID, self::PAGE_META, true) !== '';
+
+            $signals[$page['slug']] = [
+                'exists'           => true,
+                'isEmpty'          => $isEmpty,
+                'isKitPlaceholder' => $hasKitMeta && $isEmpty,
+            ];
         }
 
-        return $existing;
+        return $signals;
     }
 
     /**
      * @param list<string> $flags
+     *
+     * @return list<string> the flags enabled
      */
-    private function enableFlags(array $flags): void
+    private function enableFlags(array $flags): array
     {
         foreach ($flags as $flag) {
             update_option('corex_features_' . sanitize_key($flag), '1');
         }
+
+        return $flags;
     }
 
     /**
      * @param list<string> $modules
+     *
+     * @return list<string> the modules that were activated
      */
-    private function activateModules(array $modules): void
+    private function activateModules(array $modules): array
     {
         if (! function_exists('activate_plugin')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
+
+        $activated = [];
 
         foreach ($modules as $module) {
             $file = self::MODULE_FILES[$module] ?? null;
 
             if ($file !== null && ! is_plugin_active($file)) {
                 activate_plugin($file); // returns WP_Error on failure; non-fatal here
+                $activated[] = $module;
             }
         }
-    }
 
+        return $activated;
+    }
 }
