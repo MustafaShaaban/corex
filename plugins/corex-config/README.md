@@ -89,6 +89,29 @@ error. The Readiness card is useful from native signals alone; a configured Clou
 security signal. Secrets (`insights.psi.key`, `insights.cloudflare.token`, `insights.cloudflare.account_id`) are
 set in **Corex → Settings** (write-only password fields). (Spec 037.)
 
+## Option pages (Corex → custom screens)
+
+Add your own admin settings page with one declaration — no form HTML, nonce, or save loop (spec 039):
+
+```php
+use Corex\Config\Options\OptionPage;
+
+$container->make(Corex\Config\Options\OptionPageRegistry::class)->register(new OptionPage(
+    slug: 'billing', title: 'Billing', menuLabel: 'Billing',
+    capability: 'manage_options', parent: 'corex-settings',
+    fields: [
+        ['key' => 'billing.tax_id', 'label' => 'Tax ID', 'type' => 'text'],
+        ['key' => 'billing.logo',   'label' => 'Logo',   'type' => 'media'],
+    ],
+));
+```
+
+An `OptionPage` is a `FieldSections` — the **same seam** the built-in settings screen uses — so the one
+`SettingsForm` (per-type controls) + the one save loop render and persist it with **no duplicated form code**.
+The `OptionPageScreen` adds the menu and saves on submit (capability + per-page nonce + per-type sanitise; output
+escaped per type). Field keys are ordinary `Config` dot-keys, readable via `$config->get(...)`; `password` fields
+are write-only. Scaffold one with `wp corex make:option-page <Name>`.
+
 ## Tests
 
 ```bash

@@ -911,3 +911,14 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   arbitrary tables). **5 new tests + 373 total green**; wp-guard clean. DECISIONS #72. docs-app `guides/
   configuration` + corex-config README.
   **▶ NEXT:** spec **039 — easy option pages** (a declarative `OptionPage` + `wp corex make:option-page`).
+
+- [x] **`specs/039-option-pages/` — COMPLETE + IMPLEMENTED (2026-06-12).** Add a custom admin settings page with
+  one declaration (user request). A declarative `OptionPage` (slug/title/menu/capability/parent/fields) registered
+  in an `OptionPageRegistry` becomes a real screen — rendered by the **existing** spec-032 `SettingsForm` controls
+  and persisted by `SettingsStore`, cap + per-page-nonce gated. Reuse is enabled by a tiny `FieldSections`
+  interface that **both** `SettingsRegistry` and `OptionPage` satisfy (no form code duplicated; settings tests
+  unchanged). A `wp corex make:option-page <Name>` generator scaffolds a definition. The pure pieces (page,
+  registry, generator output) are tested; the screen + CLI are thin. **6 new tests + 379 total green**; wp-guard
+  clean (cap + nonce + sanitize + escape). DECISIONS #73. docs-app `guides/option-pages` + corex-config/CLI READMEs.
+  **▶ NEXT:** all open user requests addressed (custom tables + option pages). Awaiting the next feature, or cut a
+  v0.23.0 release for 038–039.

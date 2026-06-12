@@ -1186,3 +1186,24 @@ Why: the most-requested gap from the deep review — custom data visible + manag
 safely, with one declaration and zero UI code. 5 new tests (ManagedTable/registry 2 + TableDataSource 3) + 373
 total green; wp-guard clean (prepared + bounded). Live admin view is env-gated.
 Status: Final.
+
+## #73 — Easy option pages: a declarative OptionPage reusing the settings form via a FieldSections seam
+Date: 2026-06-12
+Context: spec 039 (user-requested). The user wanted it easy to create a custom admin option page. The settings
+screen (spec 032) already had per-field-type controls + secured save, but they were tied to the one global
+SettingsRegistry — no way to reuse them for a custom page.
+Decision: a declarative `OptionPage` value (slug, title, menu label, capability, parent, fields) registered in an
+`OptionPageRegistry` becomes a real admin settings screen. The reuse is enabled by extracting a tiny
+`FieldSections` interface (`sections()` + `keys()`) that **both** `SettingsRegistry` and `OptionPage` satisfy, and
+retyping `SettingsForm` to it (no behaviour change — existing settings tests stay green). The `OptionPageScreen`
+adds each page's menu (top-level or a submenu of its parent), renders with the shared `SettingsForm` controls, and
+saves on `admin_init` — verifying the page **capability** + a **per-page nonce**, unslashing + sanitising each
+value by its field type (Principle VII), persisting via the existing `SettingsStore` (so values are readable via
+`Config`). `password` fields stay write-only. A `wp corex make:option-page <Name>` generator scaffolds a page
+definition (the spec-003 engine + a new stub, WP-CLI-gated). The pure pieces (OptionPage, registry, the generator
+output) are unit-tested; the screen + CLI command are thin boundaries.
+Why: one declaration + one register call gives a developer a secured, token-styled, fully-functional option page
+with zero form/nonce/save code — reusing the settings controls rather than reinventing them. 6 new tests
+(OptionPage 4 + registry 1 + generator 1) + 379 total green; wp-guard clean (cap + nonce + sanitize + escape,
+prefixed menus). Live admin render/save is env-gated.
+Status: Final.

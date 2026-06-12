@@ -14,7 +14,7 @@ defined('ABSPATH') || exit;
  * Declares the configurable Corex settings — sections and fields. Pure. Each field
  * key is a Config dot-key, so saving it persists to the option the Config engine reads.
  */
-final class SettingsRegistry
+final class SettingsRegistry implements FieldSections
 {
     /**
      * @return array<string,array{title:string,fields:array<string,array{label:string,type:string,options?:array<string,string>}>}>
