@@ -1117,3 +1117,27 @@ edited on-canvas, all accessible/RTL/i18n. 7 Pest renderer tests + 27 Jest (10 s
 blocks build; token-only scan clean; wp-guard clean (escaping per field, esc_url media, lazy img). Editor/visual
 behavior is env-gated.
 Status: Final.
+
+## #70 — Release readiness: Site Health probes, one-step version stamping, shared i18n domain, OSS hygiene
+Date: 2026-06-12
+Context: spec 036, the "Finish Corex" release-readiness bundle. A site couldn't self-diagnose; the plugin/theme
+headers drifted from the release tag (read `0.1.0`); the text domain wasn't loaded; and the repo lacked the
+open-source files contributors/researchers expect.
+Decision: ship two pure engines + hygiene. (1) **Health** — a `HealthProbe` interface + small concrete probes
+(PHP/WP version, block theme active, brand present, uploads writable) folded by a pure `HealthReport` (overall =
+worst status; `hasCritical()`); a `HealthModule` registers them into WordPress **Site Health** (`site_status_tests`)
+and `wp corex doctor` renders the same report with a non-zero exit on critical (CI/SSH-friendly). Probes are
+advisory where appropriate (classic theme / missing brand → recommended, never a hard failure — Principle IX).
+(2) **Versioning** — a pure `VersionPlan` computes per-file header + `COREX_*_VERSION` edits for a target semver
+(rewrites only the first/header `Version:` line + every constant; returns only changed files → idempotent);
+`wp corex version <semver> [--dry-run]` applies/previews across the framework plugins, theme, and add-ons.
+(3) **i18n** — one shared literal `corex` text domain loaded on `init` by corex-core; a `composer i18n:pot` step
+writes `plugins/corex-core/languages/corex.pot`. (4) **Hygiene** — `LICENSE` (GPL-2.0-or-later, assembled from the
+bundled WP license text), `CODE_OF_CONDUCT.md` (Contributor Covenant, linked not reproduced), `SECURITY.md`,
+`.editorconfig`, and GitHub issue/PR templates. "Demo content" from the roadmap line was already delivered by
+spec 031 (kits seed real pages), so it is not re-added here.
+Why: a 1.0-track framework must self-diagnose, keep versions aligned automatically, ship translation-ready, and
+carry standard OSS files. The two engines stay pure + unit-tested; Site Health + WP-CLI are thin boundaries. 15
+new tests (HealthReport 4 + Probes 6 + VersionPlan 5) + 350 total green; composer valid; wp-guard clean (Site
+Health escaping, ABSPATH guards, real WP hooks). `.pot` generation + Site Health UI are env-gated.
+Status: Final.
