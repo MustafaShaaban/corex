@@ -4,6 +4,39 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.22.0] — 2026-06-12
+
+The second round of deep-review work (specs 033–037) plus release hygiene — finishing the initiative a user
+review surfaced, and adding a user-requested insights dashboard.
+
+### Added / Changed
+- **Design system overhaul** (spec 033): a real `theme.json` design system — expanded palette + state colors, a
+  full type + spacing scale, **shadow presets** + **radius tokens**, `styles.elements`, and an **Editorial**
+  style variation. The card blocks gained depth (token-only).
+- **Self-update + distribution** (spec 034): Corex updates through WordPress's own plugin-update flow (an
+  `Update URI` + a configured manifest endpoint), **fail-safe** and never phoning home unless configured. A
+  documented **safe-edit boundary**: updates replace framework files only — never `corex-app/`, `brand.json`,
+  content, or data.
+- **Block library v2** (spec 035): five new inline-edited, server-rendered blocks — **hero, cta, team, gallery,
+  tabs** — with media-library images and a **no-JavaScript** CSS-only tabs widget. Enough to build a full
+  landing page from Corex blocks.
+- **Health, versioning, i18n & OSS hygiene** (spec 036): a **Site Health** integration + `wp corex doctor`
+  (non-zero exit on critical); `wp corex version <semver>` stamps every framework header/constant in one step; a
+  shared `corex` text domain + `composer i18n:pot`; and `LICENSE`, `CODE_OF_CONDUCT`, `SECURITY`, `.editorconfig`,
+  and GitHub templates.
+- **Insights dashboard** (spec 037): a **Corex → Insights** screen with two Run-on-demand cards — **Performance**
+  (PageSpeed Insights / Lighthouse) and **Readiness** (agent-readiness signals + an optional Cloudflare scan) —
+  scored, graded, cached, cap+nonce-gated, and gracefully degrading with no keys.
+
+### Fixed
+- Resolved a fatal (`FormsListController` resolved to the wrong namespace, breaking `rest_api_init`/the site
+  editor) and made dynamic block registration **idempotent** (no more "already registered" notices on a
+  double-firing discovery hook).
+
+### Versioning
+- All framework plugin/theme headers + `COREX_*_VERSION` constants are now aligned to the release (0.22.0),
+  ending the `0.1.0` drift — stamped with the new `wp corex version` (spec 036).
+
 ## [0.21.0] — 2026-06-12
 
 The first round of deep-review fixes (specs 029–032) — addressing real gaps a user review surfaced.
