@@ -26,6 +26,15 @@ screen (brand / mail / forms / captcha). It persists each field to the `corex_*`
 the Config option layer reads — so a saved setting flows into the framework with no extra
 wiring.
 
+Two companion screens sit under the same **Corex** menu (all share the `AdminGuard`
+capability + nonce check):
+
+- **Add-ons** — enable/disable each Corex add-on (its plugin **and** its feature flag,
+  together), dependency-aware (it refuses a toggle that would break a dependency, e.g.
+  disabling `corex-ui` while a kit needs it).
+- **Setup Wizard** — pick a starter kit and apply it (enable its flags, activate its
+  modules, seed a demo home page).
+
 ## Feature flags
 
 `features.*` flags gate optional or edition behaviour through the same layered engine:

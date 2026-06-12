@@ -39,3 +39,10 @@ Either way you then **[wire the monorepo](/getting-started/monorepo-wiring/)** i
 Run `composer install` (PHP autoload + dev tools) and `npm install` (block/docs build)
 from the repo root before anything else.
 :::
+
+:::note[Looking for setup, Docker, or deployment guides?]
+This site is the **product & API documentation**. Step-by-step **local setup (per OS),
+Docker, deployment recipes (Azure / AWS / cPanel), CI/CD, and team workflow** live in the
+in-repo **Developer & Operations Handbook** at [`docs/`](https://github.com/MustafaShaaban/corex/tree/main/docs)
+— it renders directly on GitHub.
+:::

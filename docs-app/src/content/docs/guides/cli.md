@@ -27,6 +27,26 @@ wp corex make:block Pricing             # then: npm run build
 
 Existing files are **skipped** unless `--force` is passed.
 
+## Operational commands
+
+Beyond the generators, the CLI ships two operational commands:
+
+| Command | Does |
+|---|---|
+| `wp corex docs:generate` | Regenerates the per-class internals reference from the source (AST-based, no class loading) into the docs site's `reference/`. Run it after code changes so the reference can't drift. |
+| `wp corex reset` | Returns a Corex site to a clean state. **Soft** (default) deactivates add-ons, clears `corex_*` options + feature flags, and removes the wizard-seeded demo. **Full** (`--hard`) wipes the database to a fresh Corex starter. |
+
+```bash
+wp corex docs:generate                              # refresh the class reference
+
+wp corex reset --dry-run                            # preview the soft reset (changes nothing)
+wp corex reset                                      # soft reset
+wp corex reset --hard --yes-i-mean-it --yes         # FULL reset — DB wipe (gated)
+```
+
+The full reset is **destructive and irreversible**, so it refuses unless the typed safeguard `--yes-i-mean-it`
+is passed in addition to WP-CLI's `--yes`. Without it, `--hard` prints what it *would* do and changes nothing.
+
 ## Where files go
 
 Targets come from the Config engine (`config/app.php`, overridable by options or `.env`):

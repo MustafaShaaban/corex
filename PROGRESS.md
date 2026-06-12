@@ -376,8 +376,14 @@ surfaced; the user chose **split-by-audience**. Resolution + scope: **DECISIONS 
 > 🎉 **SPEC 028 — DEVELOPER & OPS HANDBOOK COMPLETE (2026-06-12).** All 12 phases delivered spec-first; the
 > in-repo `docs/` handbook (setup × 5 OS · Docker · 5 deployment targets · team workflow · cookbooks ·
 > troubleshooting · contributing · `ar/` scaffold) links to docs-app for architecture + the generated class
-> reference (zero duplication). docs-guard self-checks clean throughout; no new runtime/build deps.
-> **▶ NEXT: PR `feature/028-developer-handbook` → develop → CI green → merge → release.**
+> reference (zero duplication). docs-guard self-checks clean throughout; no new runtime/build deps. DECISIONS #62.
+>
+> ✅ **RELEASED v0.20.0 (2026-06-12).** PR #5 merged into `develop` (CI green); `develop`→`main` promoted as
+> **Release v0.20.0** (clean no-ff), tagged **`v0.20.0`**, pushed; **CI green on `main`**. CHANGELOG `[0.20.0]`.
+> **Every spec in the repo (001–028) is complete, implemented, and released** (v0.18.0 → v0.20.0).
+> **▶ Remaining = environment-gated only:** the browser smoke + Playwright E2E execution (need Apache + a
+> browser); live execution of the Docker/Azure/AWS/cPanel recipes (need a Docker daemon + cloud accounts). No
+> unbuilt scope, no open spec.
 - [ ] D2 (5-OS getting-started) · D3 (Docker) · D4 (Azure) · D5 (AWS) · D6 (cPanel + CI/CD) · D7 (team-workflow)
   · D8 (cookbooks) · D9 (troubleshooting/contributing) · D10 (`ar/` mirror) · D11 (cross-link audit) · D12
   (verification pass). _Open decision: repo CI — GitHub Actions (current) vs Azure Pipelines — settle in /clarify._
