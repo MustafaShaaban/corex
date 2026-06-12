@@ -810,3 +810,12 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   wp-guard clean (kses/cap-gated REST). DECISIONS #63. docs-app blocks guide + corex-ui README updated.
   _(Browser-visual confirmation of the editing UX is env-gated.)_
   **▶ NEXT:** spec **030 — admin data management (DataViews)** for form submissions + custom tables.
+
+- [x] **`specs/030-data-admin/` — COMPLETE + IMPLEMENTED (2026-06-12).** A **Corex → Data** admin screen (React,
+  `@wordpress/dataviews` with a plain-table fallback) lists form **submissions** + any registered custom-table
+  source, with delete. Built on a pure `DataSource` abstraction (submissions = reference `SubmissionsSource` +
+  `WpSubmissionsReader` boundary; add-ons register their own over a `TableRepository`), served by the cap-gated
+  `corex/v1/data/<source>` REST (`manage_options`; deletes need a nonce). **8 unit + 308 PHP total green**;
+  admin React builds; **live-verified the controller shapes 33 real submissions** (cols=3). wp-guard clean.
+  DECISIONS #64. corex-config README + docs-app config guide updated. _(React-visual env-gated.)_
+  **▶ NEXT:** spec **031 — kits that build a real site** (applying a kit scaffolds its pages/content).

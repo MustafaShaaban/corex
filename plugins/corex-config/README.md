@@ -44,6 +44,17 @@ require `corex-ui`, mirroring the blueprints); the `AddonsScreen` only renders +
 `Corex\Security\Admin\AdminGuard`, cap + nonce) and delegates the plugin/flag writes to `AddonActivator`.
 Companion to the setup wizard (which composes a whole kit at once).
 
+## Data screen (Corex → Data)
+
+A **Corex → Data** admin screen shows your form **submissions** — and any registered Corex custom-table data
+source — in a `@wordpress/dataviews` table (sortable, paginated, with a delete action). The data is served by
+the cap-gated `corex/v1/data/<source>` REST routes (`manage_options`; deletes require a nonce).
+
+It is built on a pure `DataSource` abstraction (`key/label/columns/rows/total/delete`): the submissions source is
+the reference implementation (`SubmissionsSource` + the `WpSubmissionsReader` boundary); an add-on registers its
+own `DataSource` (e.g. over a `TableRepository`) to appear in the same screen with no new UI code. The screen
+renders + gates via the shared `AdminGuard`. (Spec 030.)
+
 ## Tests
 
 ```bash

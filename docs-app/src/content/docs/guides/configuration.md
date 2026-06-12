@@ -34,6 +34,8 @@ capability + nonce check):
   disabling `corex-ui` while a kit needs it).
 - **Setup Wizard** — pick a starter kit and apply it (enable its flags, activate its
   modules, seed a demo home page).
+- **Data** — a DataViews table of your form **submissions** (and any registered Corex custom-table source),
+  with sorting, pagination, and delete. Served by the cap-gated `corex/v1/data` REST routes.
 
 ## Feature flags
 

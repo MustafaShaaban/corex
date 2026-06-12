@@ -13,6 +13,11 @@ defined('ABSPATH') || exit;
 use Corex\Config\Addons\AddonsScreen;
 use Corex\Config\Branding\AdminBranding;
 use Corex\Config\Branding\BrandingService;
+use Corex\Config\Data\DataAdminScreen;
+use Corex\Config\Data\DataController;
+use Corex\Config\Data\DataRegistry;
+use Corex\Config\Data\SubmissionsSource;
+use Corex\Config\Data\WpSubmissionsReader;
 use Corex\Config\Settings\AdminDashboard;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
@@ -37,6 +42,17 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(AdminBranding::class);
         $this->container->singleton(AdminDashboard::class);
         $this->container->singleton(AddonsScreen::class);
+
+        // Data screen: a registry seeded with the submissions source, the REST controller,
+        // and the React screen (spec 030).
+        $this->container->singleton(DataRegistry::class, function (ContainerInterface $c): DataRegistry {
+            $registry = new DataRegistry();
+            $registry->register(new SubmissionsSource(new WpSubmissionsReader()));
+
+            return $registry;
+        });
+        $this->container->singleton(DataController::class);
+        $this->container->singleton(DataAdminScreen::class);
     }
 
     public function boot(): void
@@ -44,5 +60,10 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(AdminBranding::class)->register();
         $this->container->make(AdminDashboard::class)->register();
         $this->container->make(AddonsScreen::class)->register();
+        $this->container->make(DataAdminScreen::class)->register();
+
+        add_action('rest_api_init', function (): void {
+            $this->container->make(DataController::class)->register();
+        });
     }
 }

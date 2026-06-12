@@ -2,7 +2,7 @@
     "name": "corex-framework",
     "version": "0.1.0",
     "private": true,
-    "description": "Corex — WordPress framework monorepo (npm workspaces root).",
+    "description": "Corex \u2014 WordPress framework monorepo (npm workspaces root).",
     "license": "GPL-2.0-or-later",
     "engines": {
         "node": ">=20"
@@ -13,7 +13,8 @@
         "plugins/corex-forms",
         "addons/corex-ui",
         "addons/corex-careers",
-        "addons/corex-kit-portfolio"
+        "addons/corex-kit-portfolio",
+        "plugins/corex-config"
     ],
     "scripts": {
         "build": "npm run build --workspaces --if-present",
