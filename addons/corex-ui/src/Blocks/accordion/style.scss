@@ -9,6 +9,8 @@
 
 	&__item {
 		background-color: var(--wp--preset--color--surface);
+		border-radius: var(--wp--custom--radius--md);
+		box-shadow: var(--wp--preset--shadow--sm);
 	}
 
 	&__summary {

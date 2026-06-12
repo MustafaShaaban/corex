@@ -1056,3 +1056,20 @@ service unchanged; the header logo answers "where's the branding". 4 form-render
 green; live-verified the controls render + AdminDashboard resolves with BrandingService. wp-guard clean
 (escaping per type, no inline px — the logo uses the HTML height attribute). Visual is env-gated.
 Status: Final.
+
+## #67 — Design system overhaul: richer tokens (shadows/radii/state colors) + element styles + a variation
+Date: 2026-06-12
+Context: spec 033. The design looked bare/flat — only 4 colors, 3 font sizes, 3 spacing steps, no shadows, no
+radii, no element styling. Blocks looked unstyled.
+Decision: expand `theme/theme.json` **additively** (every existing slug preserved, so nothing breaks): palette
++ surface-alt/border/ink-soft/primary-dark/accent-dark + state colors (success/warning/error/info); a real type
+scale (xs/base/xl/2xl + sm/lg/hero); a full spacing scale (10/20/40/60/70 + 30/50/80); **shadow presets**
+(sm/md/lg under `settings.shadow.presets`); and **radius tokens** (`settings.custom.radius` sm/md/lg/full →
+`--wp--custom--radius--*`). Add `styles.elements` for button/link/heading (token colours + radius + spacing) and
+a base line-height/block-gap. The card blocks (posts/testimonial/pricing/accordion) now use the shadow + radius
+tokens for depth + rounded corners (token-only, logical CSS). A new **Editorial** style variation ships
+alongside Dark. The token-only discipline is enforced: the styles test now forbids hex colours + px/rem size
+literals (allowing `var(--wp--…)` tokens + unitless line-height/font-weight).
+Why: a framework needs a real design system out of the box; additive expansion avoids breaking existing
+blocks/patterns. 6 token tests + 320 total green; SCSS builds; token-only scans clean. Visual is env-gated.
+Status: Final.
