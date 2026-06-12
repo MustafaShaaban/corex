@@ -4,6 +4,22 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.21.0] — 2026-06-12
+
+The first round of deep-review fixes (specs 029–032) — addressing real gaps a user review surfaced.
+
+### Added / Changed
+- **Inline-editable blocks** (spec 029): the component blocks (`stat`/`testimonial`/`pricing`/`accordion`) are
+  now **edited inline on the canvas** (RichText) while staying dynamic; the `corex/form` block **picks a form
+  from a dropdown** (the cap-gated `corex/v1/forms` route) instead of a typed slug.
+- **Corex → Data admin** (spec 030): a `@wordpress/dataviews` screen to **view and delete form submissions**
+  (and any registered custom-table source), via the cap-gated `corex/v1/data` REST. A `DataSource` abstraction
+  lets custom tables plug in.
+- **Kits build a real site** (spec 031): applying a kit now **creates its pages** (composed front page + About/
+  Contact, etc.) idempotently and reversibly (tracked so `wp corex reset` removes exactly them).
+- **Modern settings UX** (spec 032): the logo is set with a **media picker** (no URL typing), the captcha driver
+  is a **dropdown**, and the configured **logo shows in the settings header**.
+
 ## [0.20.1] — 2026-06-12
 
 ### Fixed (documentation)
