@@ -56,3 +56,22 @@ A dynamic block still needs editor-side `registerBlockType()` or WordPress shows
 *"Your site doesn't include support for this block."* The `index.js` provides it; the
 build compiles it (and an auto-generated RTL stylesheet). See
 [Troubleshooting](/troubleshooting/) if the editor still complains.
+
+## The built-in `corex/*` library
+
+The `corex-ui` add-on ships a set of ready-made dynamic blocks under the **Corex** inserter
+category — all server-rendered, token-only, and RTL-correct:
+
+| Block | Renders |
+|---|---|
+| `corex/posts` | Recent posts as accessible linked cards (bounded count) |
+| `corex/breadcrumbs` | An accessible breadcrumb trail |
+| `corex/copyright` | The current year + site name |
+| `corex/stat` | A single statistic — value, label, optional description |
+| `corex/testimonial` | A quote with attribution (`<figure>`/`<blockquote>`/`<figcaption>`) |
+| `corex/pricing` | A pricing card — plan, price, features, optional CTA |
+| `corex/accordion` | Accessible disclosures from a list — native `<details>`, no JavaScript |
+
+The component blocks (`stat`/`testimonial`/`pricing`/`accordion`) take scalar/text attributes
+edited in the block sidebar; multi-item ones read a simple per-line attribute. Each is a pure
+`BlockRenderer` — see its generated page in the **Reference**.
