@@ -1038,3 +1038,21 @@ Why: a kit must produce a visible site; idempotency-by-slug + tracking-by-marker
 exactly reversible. 3 unit + 311 PHP total green; verified live (about/contact created, home skipped as
 pre-existing, 2nd run no-dup, reset dry-run lists the kit pages). wp-guard clean. Visual is env-gated.
 Status: Final.
+
+## #66 — Modern settings UX: per-field-type rendering + media picker + branding in the header
+Date: 2026-06-12
+Context: spec 032. The settings screen rendered every field as a bare input — you pasted a logo URL instead of
+uploading, the captcha driver was free text, and the branding was hard to find.
+Decision: `SettingsForm` renders per **field type** (text/email/url/password input, `media` picker, `select`,
+`checkbox`) via a `control()` switch — registry-driven, every value escaped per type (esc_url for media,
+esc_attr for value, options validated). The registry marks `brand.logo_url` as `media` and `captcha.driver` as
+a `select`. A tiny vanilla `assets/settings.js` wires the WordPress media frame to media fields (set value +
+preview), enqueued only on the settings screen (+ `wp_enqueue_media()`); the field **degrades to an editable
+URL input** with no JS, so saving still works and the stored value stays the image URL `BrandingService`
+reads. `AdminDashboard` shows the configured logo in the screen header (escaped, only when set) so the branding
+is findable. Saving stays nonce + cap gated (AdminGuard, unchanged).
+Why: uploading-not-URL and the right control per field are basic modern UX; storing the URL keeps the branding
+service unchanged; the header logo answers "where's the branding". 4 form-rendering unit tests; 315 PHP total
+green; live-verified the controls render + AdminDashboard resolves with BrandingService. wp-guard clean
+(escaping per type, no inline px — the logo uses the HTML height attribute). Visual is env-gated.
+Status: Final.

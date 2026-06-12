@@ -828,3 +828,11 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   green**; **verified live** (about/contact created, home skipped as pre-existing, re-apply no-dup, reset
   dry-run lists the kit pages). wp-guard clean. DECISIONS #65. docs-app + company README updated.
   **▶ NEXT:** spec **032 — modern settings UX** (media uploader, select/toggle fields, admin branding).
+
+- [x] **`specs/032-settings-ux/` — COMPLETE + IMPLEMENTED (2026-06-12).** Modern settings UX: `SettingsForm`
+  renders per **field type** (input/`media`/`select`/`checkbox`); the logo is a **media picker** (wp.media
+  wiring in `assets/settings.js`, degrades to a URL field with no JS), the captcha driver a **select**, and the
+  configured **logo shows in the settings header** (branding findable). All values escaped per type; saving
+  stays nonce+cap gated. **4 unit + 315 PHP total green**; live-verified the controls render + AdminDashboard
+  resolves with BrandingService. wp-guard clean. DECISIONS #66. docs-app + corex-config README updated.
+  **▶ NEXT:** spec **033 — design system overhaul** (richer tokens, shadows/radii/fonts, style variations).

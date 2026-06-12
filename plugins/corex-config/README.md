@@ -68,3 +68,11 @@ composer test:integration  # real ./wp: a saved setting read back; the add-on ac
 
 > The rendered admin appearance (the login page showing the Corex logo) is a browser check. The full
 > **settings/dashboard UI** (React/DataViews) is spec 017 and needs a Node build + a browser to author.
+
+
+## Modern settings controls (spec 032)
+
+The settings screen renders the right control per field: the **logo** is a WordPress **media picker** (pick or
+upload — no URL typing; the value is the image URL the branding reads), the **captcha driver** is a **select**,
+and fields can be `text/email/url/password/media/select/checkbox`. The configured logo appears in the settings
+header so the branding is findable. The media wiring degrades to an editable URL field without JavaScript.
