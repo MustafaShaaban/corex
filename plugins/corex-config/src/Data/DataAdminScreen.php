@@ -67,9 +67,15 @@ final class DataAdminScreen
             ? require $base . '/build/admin/index.asset.php'
             : ['dependencies' => [], 'version' => 'dev'];
 
-        // The React uses the core DataViews component from the runtime `wp.dataviews` global;
-        // declaring `wp-dataviews` ensures it is loaded where the WordPress version ships it.
-        $deps = array_merge($asset['dependencies'], ['wp-dataviews']);
+        // The React uses the core DataViews component from the runtime `wp.dataviews` global.
+        // Only declare `wp-dataviews` as a dependency when WordPress actually registers that
+        // handle (newer cores) — otherwise enqueueing an unregistered dep emits a notice, and
+        // the React already falls back to a plain table when the global is absent.
+        $deps = $asset['dependencies'];
+
+        if (wp_script_is('wp-dataviews', 'registered')) {
+            $deps[] = 'wp-dataviews';
+        }
 
         wp_enqueue_script(
             'corex-data',

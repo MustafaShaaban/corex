@@ -17,6 +17,7 @@ Target the install with `--path` when not run from the WordPress root.
 | `wp corex make:controller <Name>` | a thin controller → `<base>/Controllers/<Name>Controller.php` |
 | `wp corex make:service <Name>` | a service → `<base>/Services/<Name>Service.php` |
 | `wp corex make:block <Name>` | a complete dynamic block → `<base>/Blocks/<slug>/` + renderer |
+| `wp corex make:option-page <Name>` | a declarative `OptionPage` definition → `<base>/Options/<Name>.php` (see [Custom option pages](/guides/option-pages/)) |
 
 ```bash
 wp corex make:model Invoice

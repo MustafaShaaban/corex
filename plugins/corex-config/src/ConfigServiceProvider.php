@@ -17,7 +17,13 @@ use Corex\Config\Data\DataAdminScreen;
 use Corex\Config\Data\DataController;
 use Corex\Config\Data\DataRegistry;
 use Corex\Config\Data\SubmissionsSource;
+use Corex\Config\Data\TableDataSource;
 use Corex\Config\Data\WpSubmissionsReader;
+use Corex\Config\Data\WpTableDataReader;
+use Corex\Config\Options\OptionPageRegistry;
+use Corex\Config\Options\OptionPageScreen;
+use Corex\Database\Schema\ManagedTables;
+use Corex\Database\Schema\Migrator;
 use Corex\Config\Insights\InsightRegistry;
 use Corex\Config\Insights\InsightStore;
 use Corex\Config\Insights\InsightsController;
@@ -58,6 +64,12 @@ final class ConfigServiceProvider extends ServiceProvider
             $registry = new DataRegistry();
             $registry->register(new SubmissionsSource(new WpSubmissionsReader()));
 
+            // Every table an app marked managed appears as its own source — no admin code (spec 038).
+            $reader = new WpTableDataReader($c->make(Migrator::class));
+            foreach ($c->make(ManagedTables::class)->all() as $table) {
+                $registry->register(new TableDataSource($table, $reader));
+            }
+
             return $registry;
         });
         $this->container->singleton(DataController::class);
@@ -86,6 +98,11 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(InsightsController::class, static fn (ContainerInterface $c): InsightsController =>
             new InsightsController($c->make(InsightRegistry::class), $c->make(InsightStore::class)));
         $this->container->singleton(InsightsScreen::class);
+
+        // Custom option pages: a registry an app fills with declarative OptionPages, and the
+        // screen that renders + saves each one with the shared SettingsForm/Store (spec 039).
+        $this->container->singleton(OptionPageRegistry::class);
+        $this->container->singleton(OptionPageScreen::class);
     }
 
     public function boot(): void
@@ -95,6 +112,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(AddonsScreen::class)->register();
         $this->container->make(DataAdminScreen::class)->register();
         $this->container->make(InsightsScreen::class)->register();
+        $this->container->make(OptionPageScreen::class)->register();
 
         add_action('rest_api_init', function (): void {
             $this->container->make(DataController::class)->register();

@@ -55,6 +55,24 @@ the reference implementation (`SubmissionsSource` + the `WpSubmissionsReader` bo
 own `DataSource` (e.g. over a `TableRepository`) to appear in the same screen with no new UI code. The screen
 renders + gates via the shared `AdminGuard`. (Spec 030.)
 
+**Custom tables appear automatically.** Mark any Corex-managed table **managed** and it shows up in Corex → Data
+like a post-type list — browsable, paginated, and deletable — with no admin code (spec 038):
+
+```php
+// in a service provider's boot(), once the table exists
+$container->make(Corex\Database\Schema\ManagedTables::class)->register(
+    new Corex\Database\Schema\ManagedTable('invoices', __('Invoices', 'corex'), [
+        ['id' => 'number', 'label' => __('Number', 'corex')],
+        ['id' => 'total',  'label' => __('Total', 'corex')],
+    ]),
+);
+```
+
+Each managed table becomes a `TableDataSource` (key `table-<name>`). The `$wpdb` access is the
+`WpTableDataReader` boundary — every query is **prepared** (`%i` identifiers, `%d` ids) and the page read is
+**bounded** (`LIMIT/OFFSET`); the row/column shaping is the pure, unit-tested `TableDataSource`. It is **opt-in**:
+Corex never enumerates arbitrary database tables.
+
 ## Insights screen (Corex → Insights)
 
 A **Corex → Insights** screen shows two result cards — **Performance** (Google PageSpeed Insights / Lighthouse)
@@ -70,6 +88,29 @@ REST run, and the cards are thin boundaries. Runs go through the cap+nonce-gated
 error. The Readiness card is useful from native signals alone; a configured Cloudflare token adds a URL-scan
 security signal. Secrets (`insights.psi.key`, `insights.cloudflare.token`, `insights.cloudflare.account_id`) are
 set in **Corex → Settings** (write-only password fields). (Spec 037.)
+
+## Option pages (Corex → custom screens)
+
+Add your own admin settings page with one declaration — no form HTML, nonce, or save loop (spec 039):
+
+```php
+use Corex\Config\Options\OptionPage;
+
+$container->make(Corex\Config\Options\OptionPageRegistry::class)->register(new OptionPage(
+    slug: 'billing', title: 'Billing', menuLabel: 'Billing',
+    capability: 'manage_options', parent: 'corex-settings',
+    fields: [
+        ['key' => 'billing.tax_id', 'label' => 'Tax ID', 'type' => 'text'],
+        ['key' => 'billing.logo',   'label' => 'Logo',   'type' => 'media'],
+    ],
+));
+```
+
+An `OptionPage` is a `FieldSections` — the **same seam** the built-in settings screen uses — so the one
+`SettingsForm` (per-type controls) + the one save loop render and persist it with **no duplicated form code**.
+The `OptionPageScreen` adds the menu and saves on submit (capability + per-page nonce + per-type sanitise; output
+escaped per type). Field keys are ordinary `Config` dot-keys, readable via `$config->get(...)`; `password` fields
+are write-only. Scaffold one with `wp corex make:option-page <Name>`.
 
 ## Tests
 

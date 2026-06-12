@@ -49,6 +49,7 @@ export default defineConfig({
 						{ label: 'Apply a brand', slug: 'guides/branding' },
 						{ label: 'The CLI', slug: 'guides/cli' },
 						{ label: 'Settings & feature flags', slug: 'guides/configuration' },
+						{ label: 'Custom option pages', slug: 'guides/option-pages' },
 						{ label: 'Send email (Corex Mail)', slug: 'guides/mail' },
 						{ label: 'Model · Controller · Service', slug: 'guides/mvc' },
 						{ label: 'Updates & distribution', slug: 'guides/updates' },

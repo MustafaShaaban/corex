@@ -1166,3 +1166,44 @@ page. 18 new tests (Grade 3 + Store 3 + PSI 3 + Readiness 3 + Cloudflare 3 + Con
 wp-guard clean (remote get/post + timeout, cap+nonce on run, escaped output, no secret echo, conditional
 enqueue). Live PSI/Cloudflare runs are env-gated.
 Status: Final.
+
+## #72 — Custom tables in the admin: opt-in ManagedTable → auto-registered DataSource (no new UI)
+Date: 2026-06-12
+Context: spec 038 (user-requested, raised repeatedly). The Data screen (spec 030) could show any DataSource, but a
+custom table only appeared if you hand-registered one — the user wanted "if I created a custom table I should find
+the table view for it in the admin like post types."
+Decision: a Corex-managed table now appears in Corex → Data automatically. A pure `ManagedTable` (name + label +
+ordered columns) registered in a `ManagedTables` registry (corex-core, bound in DataServiceProvider) is turned by
+corex-config into a `TableDataSource` (key `table-<name>`) that implements the spec-030 `DataSource`; the
+ConfigServiceProvider seeds the `DataRegistry` with one per managed table, so the existing screen + REST +
+AdminGuard render it with **no new UI**. The `$wpdb` access is a thin `WpTableDataReader` boundary — every query
+**prepared** (`%i` identifiers, `%d` ids), the page read **bounded** (`LIMIT/OFFSET`), the count prepared — while
+the row/column shaping (drop extra columns, default missing, id + declared columns) is the pure, unit-tested
+`TableDataSource`. **Opt-in by design** (Principle IX): Corex never enumerates arbitrary tables; only those an app
+explicitly marks managed appear, behind a namespaced `table-` key. Read + delete only (matching submissions);
+row editing is out of scope.
+Why: the most-requested gap from the deep review — custom data visible + manageable in the admin like a post type,
+safely, with one declaration and zero UI code. 5 new tests (ManagedTable/registry 2 + TableDataSource 3) + 373
+total green; wp-guard clean (prepared + bounded). Live admin view is env-gated.
+Status: Final.
+
+## #73 — Easy option pages: a declarative OptionPage reusing the settings form via a FieldSections seam
+Date: 2026-06-12
+Context: spec 039 (user-requested). The user wanted it easy to create a custom admin option page. The settings
+screen (spec 032) already had per-field-type controls + secured save, but they were tied to the one global
+SettingsRegistry — no way to reuse them for a custom page.
+Decision: a declarative `OptionPage` value (slug, title, menu label, capability, parent, fields) registered in an
+`OptionPageRegistry` becomes a real admin settings screen. The reuse is enabled by extracting a tiny
+`FieldSections` interface (`sections()` + `keys()`) that **both** `SettingsRegistry` and `OptionPage` satisfy, and
+retyping `SettingsForm` to it (no behaviour change — existing settings tests stay green). The `OptionPageScreen`
+adds each page's menu (top-level or a submenu of its parent), renders with the shared `SettingsForm` controls, and
+saves on `admin_init` — verifying the page **capability** + a **per-page nonce**, unslashing + sanitising each
+value by its field type (Principle VII), persisting via the existing `SettingsStore` (so values are readable via
+`Config`). `password` fields stay write-only. A `wp corex make:option-page <Name>` generator scaffolds a page
+definition (the spec-003 engine + a new stub, WP-CLI-gated). The pure pieces (OptionPage, registry, the generator
+output) are unit-tested; the screen + CLI command are thin boundaries.
+Why: one declaration + one register call gives a developer a secured, token-styled, fully-functional option page
+with zero form/nonce/save code — reusing the settings controls rather than reinventing them. 6 new tests
+(OptionPage 4 + registry 1 + generator 1) + 379 total green; wp-guard clean (cap + nonce + sanitize + escape,
+prefixed menus). Live admin render/save is env-gated.
+Status: Final.

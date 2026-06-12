@@ -897,3 +897,28 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   secrets set as write-only fields in Settings. **18 new tests + 368 total green**; wp-guard clean. DECISIONS #71.
   docs-app `guides/insights` + corex-config README.
   **▶ NEXT:** roadmap 029–037 delivered. Cut a release (v0.22.0 → main) and then check the WP/WAMP error logs.
+
+- [x] **v0.22.0 released (2026-06-12)** — roadmap 029–037 to `main`, tagged, GitHub release; framework headers +
+  `COREX_*_VERSION` stamped to 0.22.0 via `wp corex version`. CI + Docs green (bumped Docs CI to Node 22 for
+  Astro 6). **Log fixes:** the `FormsListController` namespace fatal (broke the site editor) + idempotent block
+  registration (PR #15); the `wp-dataviews` unregistered-dep notice (declared only when registered).
+
+- [x] **`specs/038-custom-table-admin/` — COMPLETE + IMPLEMENTED (2026-06-12).** Any Corex-managed table now
+  appears in **Corex → Data** automatically (user request). A pure `ManagedTable` + `ManagedTables` registry
+  (corex-core) → a `TableDataSource` (key `table-<name>`) seeded into the spec-030 `DataRegistry`, so the existing
+  screen + REST + AdminGuard render it with **no new UI**. The `$wpdb` `WpTableDataReader` is the only boundary —
+  **prepared** (`%i`/`%d`) + **bounded** (`LIMIT`); the shaping is pure + tested. **Opt-in** (never enumerates
+  arbitrary tables). **5 new tests + 373 total green**; wp-guard clean. DECISIONS #72. docs-app `guides/
+  configuration` + corex-config README.
+  **▶ NEXT:** spec **039 — easy option pages** (a declarative `OptionPage` + `wp corex make:option-page`).
+
+- [x] **`specs/039-option-pages/` — COMPLETE + IMPLEMENTED (2026-06-12).** Add a custom admin settings page with
+  one declaration (user request). A declarative `OptionPage` (slug/title/menu/capability/parent/fields) registered
+  in an `OptionPageRegistry` becomes a real screen — rendered by the **existing** spec-032 `SettingsForm` controls
+  and persisted by `SettingsStore`, cap + per-page-nonce gated. Reuse is enabled by a tiny `FieldSections`
+  interface that **both** `SettingsRegistry` and `OptionPage` satisfy (no form code duplicated; settings tests
+  unchanged). A `wp corex make:option-page <Name>` generator scaffolds a definition. The pure pieces (page,
+  registry, generator output) are tested; the screen + CLI are thin. **6 new tests + 379 total green**; wp-guard
+  clean (cap + nonce + sanitize + escape). DECISIONS #73. docs-app `guides/option-pages` + corex-config/CLI READMEs.
+  **▶ NEXT:** all open user requests addressed (custom tables + option pages). Awaiting the next feature, or cut a
+  v0.23.0 release for 038–039.
