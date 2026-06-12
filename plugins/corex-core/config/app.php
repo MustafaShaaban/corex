@@ -21,4 +21,11 @@ return [
     'namespace' => 'App',
     'prefix'    => 'corex',
     'path'      => '',
+
+    // Self-update source (spec 034). The URL of a JSON manifest describing the latest
+    // framework release ({version, package, url, requires, tested}). Empty → updates are a
+    // no-op: Corex never phones home unless you configure a source you control.
+    'updates'   => [
+        'endpoint' => '',
+    ],
 ];

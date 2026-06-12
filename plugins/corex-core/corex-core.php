@@ -6,6 +6,7 @@
  * Version:           0.1.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
+ * Update URI:        https://github.com/bseit/corex
  * Author:            Mustafa Shaaban + team
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html

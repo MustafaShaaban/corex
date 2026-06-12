@@ -18,6 +18,8 @@ use Corex\Support\Config\Repository;
 use Corex\Support\Config\Sources\DefaultsSource;
 use Corex\Support\Config\Sources\DotenvSource;
 use Corex\Support\Config\Sources\OptionsSource;
+use Corex\Update\UpdateChecker;
+use Corex\Update\UpdateService;
 
 /**
  * The foundation's own provider. Binds the layered config engine
@@ -41,6 +43,26 @@ final class CoreServiceProvider extends ServiceProvider
                 $container->make(ConfigInterface::class),
             ),
         );
+
+        $this->container->singleton(
+            UpdateService::class,
+            static fn (ContainerInterface $container): UpdateService => new UpdateService(
+                new UpdateChecker(),
+                plugin_basename(COREX_CORE_FILE),
+                'corex-core',
+                COREX_CORE_VERSION,
+                $container->make(ConfigInterface::class),
+            ),
+        );
+    }
+
+    /**
+     * Wire Corex into WordPress's plugin-update flow so a published newer version surfaces as
+     * an available update in wp-admin (spec 034). Fail-safe: no configured source → no-op.
+     */
+    public function boot(): void
+    {
+        $this->container->make(UpdateService::class)->register();
     }
 
     /**
