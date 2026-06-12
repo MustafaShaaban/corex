@@ -30,6 +30,18 @@ auto-mapped by Docker), and a boot verification (`wp theme list` shows `corex`).
 > use [wp-env](./wp-env.md). For the full add-on set with native performance, use
 > [Linux](./linux.md) / [macOS](./macos.md) / [WAMP](./windows-wamp.md).
 
+## Verification status (D12)
+
+| Guide | Verified |
+|---|---|
+| [Windows + WAMP](./windows-wamp.md) | ✅ **2026-06-12** — run against the project's live WAMP environment (`wp theme list`/`wp plugin list` confirmed; `composer test` 295 green). |
+| [Windows + XAMPP](./windows-xampp.md) | ⏳ authored; not yet run on a clean XAMPP machine. |
+| [Linux](./linux.md) · [macOS](./macos.md) | ⏳ authored; not yet run on a clean Linux/macOS machine. |
+| [wp-env (Docker)](./wp-env.md) | ⏳ authored; needs a Docker daemon to run. |
+
+> The unverified guides reuse the **same** WP-CLI flow and the real `scripts/setup-wordpress.ps1` /
+> `wp-env.json`, so their commands are accurate; the ⏳ marks a clean-machine run, not a doubt about the steps.
+
 ## After setup
 
 - Learn how the team works: [Team workflow](../04-team-workflow/).

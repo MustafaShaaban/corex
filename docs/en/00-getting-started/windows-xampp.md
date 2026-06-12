@@ -100,7 +100,7 @@ Wiring monorepo -> wp-content:
   junction  corex  ->  C:\xampp\htdocs\corex\theme
   ...
 == Verification ==
-| corex | active | none   | 0.19.0  |
+| corex | active | none   | 0.1.0   |
 Site : http://corex.local
 Done.
 ```
@@ -140,7 +140,7 @@ wp plugin list --path=wp --status=active --field=name
 ```
 
 ```text
-| corex | active | none   | 0.19.0  |
+| corex | active | none   | 0.1.0   |
 corex-core
 corex-blocks
 corex-config

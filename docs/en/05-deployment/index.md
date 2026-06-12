@@ -14,7 +14,15 @@ and CI/CD — with a Mermaid topology diagram.
 
 > **Status:** ✅ authored (phases D3–D6).
 
-## Pages (planned)
+## Verification status (D12)
+
+All recipes are **authored and statically validated** — the `docker-compose.yml` is valid YAML, `entrypoint.sh`
+passes `bash -n`, every command is language-tagged with expected output, every page has a Mermaid topology
+diagram, and all internal links resolve. **Live execution is environment-gated**: it needs a Docker daemon and
+real Azure/AWS/cPanel accounts this authoring environment lacks. Each page's `last_verified` stays `null` until
+it is run on its target — run it and stamp the date.
+
+## Pages
 
 | Page | Target | Phase |
 |---|---|---|

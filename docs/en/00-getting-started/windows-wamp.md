@@ -3,7 +3,7 @@ title: Local setup — Windows + WAMP
 description: Get a working Corex development environment on Windows using WAMP, end to end.
 audience: setup
 stability: stable
-last_verified: null        # stamped by the phase-D12 verification pass
+last_verified: 2026-06-12   # verified against the project's live WAMP dev environment (D12)
 ---
 
 # Local setup — Windows + WAMP
@@ -170,7 +170,7 @@ Wiring monorepo -> wp-content:
 +-------+--------+--------+---------+
 | name  | status | update | version |
 +-------+--------+--------+---------+
-| corex | active | none   | 0.19.0  |
+| corex | active | none   | 0.1.0   |
 +-------+--------+--------+---------+
 Site : http://corex.local
 Done.
@@ -203,7 +203,7 @@ wp theme list --path=wp
 +-------+--------+--------+---------+
 | name  | status | update | version |
 +-------+--------+--------+---------+
-| corex | active | none   | 0.19.0  |
+| corex | active | none   | 0.1.0   |
 +-------+--------+--------+---------+
 ```
 

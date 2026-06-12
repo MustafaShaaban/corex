@@ -108,7 +108,7 @@ npx wp-env run cli wp theme list
 ```
 
 ```text
-| corex | active | none   | 0.19.0  |
+| corex | active | none   | 0.1.0   |
 ```
 
 ```bash

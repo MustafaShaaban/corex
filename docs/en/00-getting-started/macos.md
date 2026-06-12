@@ -137,7 +137,7 @@ wp plugin list --path=wp --status=active --field=name
 ```
 
 ```text
-| corex | active | none   | 0.19.0  |
+| corex | active | none   | 0.1.0   |
 corex-core
 corex-blocks
 corex-config

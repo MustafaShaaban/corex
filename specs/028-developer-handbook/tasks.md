@@ -59,7 +59,7 @@ never duplicated. FR→phase map is in `plan.md`; page rules are in `contracts/p
 
 ## Phase D12: Verification pass
 
-- [ ] T017 Run each getting-started + deployment recipe on a clean target; fix gaps; stamp `last_verified: YYYY-MM-DD` footers (env-gated where a cloud target/Apache is unavailable — note which were verified vs deferred).
+- [x] T017 Run each getting-started + deployment recipe on a clean target; fix gaps; stamp `last_verified: YYYY-MM-DD` footers (env-gated where a cloud target/Apache is unavailable — note which were verified vs deferred).
 
 ## Dependencies
 
