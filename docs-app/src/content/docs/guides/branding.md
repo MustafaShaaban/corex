@@ -40,3 +40,12 @@ theme stays a skin.
 All styling uses logical properties (`margin-inline-start`, `inset-inline-end`, …), so
 Arabic (RTL) layouts are correct by default. The block build also emits an automatic
 `*-rtl.css` per stylesheet.
+
+
+## The design system (spec 033)
+
+`theme.json` ships a real token system: an expanded palette (surface/border/ink-soft + state colours), a
+multi-step type scale, a full spacing scale, **shadow** presets (`--wp--preset--shadow--sm|md|lg`), and **radius**
+tokens (`--wp--custom--radius--sm|md|lg|full`). Buttons/links/headings are styled from tokens, and the card
+blocks use shadow + radius for depth. Switch the whole look with a **style variation** (Dark or Editorial) in
+the Site Editor. Everything stays token-only — no hardcoded colours or sizes.

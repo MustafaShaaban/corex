@@ -836,3 +836,12 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   stays nonce+cap gated. **4 unit + 315 PHP total green**; live-verified the controls render + AdminDashboard
   resolves with BrandingService. wp-guard clean. DECISIONS #66. docs-app + corex-config README updated.
   **▶ NEXT:** spec **033 — design system overhaul** (richer tokens, shadows/radii/fonts, style variations).
+
+- [x] **`specs/033-design-system/` — COMPLETE + IMPLEMENTED (2026-06-12).** A real design system in `theme.json`
+  (additive — existing slugs preserved): expanded palette (surface-alt/border/ink-soft + state colors), a full
+  type scale (xs/base/xl/2xl + sm/lg/hero), a complete spacing scale, **shadow presets** + **radius tokens**,
+  and `styles.elements` (button/link/heading). The card blocks (posts/testimonial/pricing/accordion) gained
+  **depth** (shadow + radius tokens, token-only). New **Editorial** style variation alongside Dark. **6 token
+  tests + 320 total green**; SCSS builds; token-only scans clean (the styles test now forbids hex/px-rem
+  literals, allowing tokens + line-height/weight). DECISIONS #67. docs-app branding guide updated.
+  **▶ NEXT:** spec **034 — self-update mechanism + distribution** (plugin-style update notifications).

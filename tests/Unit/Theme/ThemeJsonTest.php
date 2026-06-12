@@ -33,14 +33,18 @@ it('ships a valid v3 theme.json that defines every token palette', function () u
         ->and($json['settings']['layout'])->toBeArray()->not->toBeEmpty();
 });
 
-it('exposes the theme styling through preset variables only (no hardcoded values)', function () use ($themeDir) {
+it('exposes the theme styling through tokens (no hardcoded colours or sizes)', function () use ($themeDir) {
     $styles = corex_read_json($themeDir . '/theme.json')['styles'];
 
-    // Every leaf in styles that references a value uses a --wp--preset--* custom property.
+    // Colours/sizes/fonts come from tokens (var(--wp--…)); literal typographic ratios
+    // (line-height) and weights (font-weight) are allowed — they are not colours or sizes.
+    // What is forbidden is a hardcoded hex colour or a px/rem/em size literal.
     array_walk_recursive($styles, function ($leaf): void {
-        if (is_string($leaf)) {
-            expect($leaf)->toContain('var(--wp--preset--');
+        if (! is_string($leaf)) {
+            return;
         }
+        expect($leaf)->not->toMatch('/#[0-9a-fA-F]{3,8}\b/')        // no hex colour
+            ->not->toMatch('/\b\d*\.?\d+(px|rem|em)\b/');           // no size literal
     });
 });
 

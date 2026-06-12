@@ -5,6 +5,8 @@
 	margin: 0;
 	padding: var(--wp--preset--spacing--50);
 	background-color: var(--wp--preset--color--surface);
+	box-shadow: var(--wp--preset--shadow--md);
+	border-radius: var(--wp--custom--radius--lg);
 	text-align: start;
 
 	&__quote {

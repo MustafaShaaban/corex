@@ -1,0 +1,35 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/theme.json",
+    "version": 3,
+    "title": "Editorial",
+    "settings": {
+        "color": {
+            "palette": [
+                { "slug": "primary", "color": "#1A1A1A", "name": "Primary" },
+                { "slug": "primary-dark", "color": "#000000", "name": "Primary dark" },
+                { "slug": "accent", "color": "#C8553D", "name": "Accent" },
+                { "slug": "accent-dark", "color": "#A33E2A", "name": "Accent dark" },
+                { "slug": "surface", "color": "#FBF8F1", "name": "Surface" },
+                { "slug": "surface-alt", "color": "#F2ECDF", "name": "Surface alt" },
+                { "slug": "border", "color": "#E0D8C8", "name": "Border" },
+                { "slug": "ink", "color": "#1A1A1A", "name": "Ink" },
+                { "slug": "ink-soft", "color": "#5C564C", "name": "Ink soft" }
+            ]
+        },
+        "typography": {
+            "fontFamilies": [
+                {
+                    "slug": "heading",
+                    "name": "Heading",
+                    "fontFamily": "Georgia, 'Times New Roman', serif"
+                }
+            ]
+        }
+    },
+    "styles": {
+        "color": {
+            "background": "var(--wp--preset--color--surface)",
+            "text": "var(--wp--preset--color--ink)"
+        }
+    }
+}
