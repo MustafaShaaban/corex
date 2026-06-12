@@ -19,13 +19,21 @@ are composed of these units. Optional add-on; requires `corex-core` and the `cor
 | `corex/testimonial` | A quote with attribution — accessible `figure`/`blockquote`/`figcaption` (`quote`/`author`/`role`) |
 | `corex/pricing` | A pricing card — `plan`, `price`, `period`, `features` (one per line), optional CTA |
 | `corex/accordion` | Accessible disclosures from `items` (one `Title \| Content` per line) — native `<details>`, no JS |
+| `corex/hero` | A page hero — `eyebrow`/`title`/`subtitle`, gated CTA, optional media-library background `image` |
+| `corex/cta` | A call-to-action banner — `title`/`text` + a gated button |
+| `corex/team` | A responsive grid of `members[]` — media-library photo, `name`/`role`/`bio`; nameless skipped |
+| `corex/gallery` | A responsive CSS grid of `images[]` from the media library, alt text + optional captions |
+| `corex/tabs` | Tabbed content from `tabs[]` — a CSS-only accessible widget with **no view JavaScript** |
 
 Each is server-rendered, escaped, and token-styled; its CSS loads only where the block renders
-(declared in `block.json`). The component blocks (`stat`/`testimonial`/`pricing`/`accordion`) are **edited
-inline on the canvas** (RichText) while staying dynamic — the renderer reads the attributes and renders rich
-text safely with `wp_kses_post`; repeatable lists (pricing features, accordion panels) are inline rows. The
+(declared in `block.json`). The component blocks (`stat`/`testimonial`/`pricing`/`accordion` plus the
+spec-035 set `hero`/`cta`/`team`/`gallery`/`tabs`) are **edited inline on the canvas** (RichText) while
+staying dynamic — the renderer reads the attributes and renders rich text safely with `wp_kses_post`;
+repeatable lists (pricing features, accordion panels, team members, gallery images, tabs) are inline rows.
+Image blocks pick from the **media library** (storing `{id, url, alt}`, rendering real `<img>` with alt +
+lazy loading), and `tabs` ships **zero front-end JavaScript** (a CSS `:checked` radio/label disclosure). The
 `corex/form` block **selects a form from a dropdown** (the cap-gated `corex/v1/forms` route), not a typed slug.
-(Spec 029.)
+(Specs 029, 035.)
 
 ## Section patterns
 

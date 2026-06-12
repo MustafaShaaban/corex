@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/gallery",
+	"title": "Corex Gallery",
+	"category": "corex",
+	"icon": "format-gallery",
+	"description": "A responsive image gallery from the media library, with alt text and optional captions (dynamic).",
+	"textdomain": "corex",
+	"attributes": {
+		"images": { "type": "array", "default": [] }
+	},
+	"supports": { "html": false, "anchor": true },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\GalleryRenderer" }
+}

@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/team",
+	"title": "Corex Team",
+	"category": "corex",
+	"icon": "groups",
+	"description": "A responsive grid of team members — photo, name, role, and bio (dynamic, edited inline).",
+	"textdomain": "corex",
+	"attributes": {
+		"members": { "type": "array", "default": [] }
+	},
+	"supports": { "html": false, "anchor": true },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\TeamRenderer" }
+}

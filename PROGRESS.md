@@ -859,3 +859,16 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   `guides/updates`. Install-from-admin round-trip is env-gated.
   **▶ NEXT:** spec **035 — block library expansion v2** (team/gallery/tabs/stats-grid/hero on the 029 inline
   architecture).
+
+- [x] **`specs/035-block-library-v2/` — COMPLETE + IMPLEMENTED (2026-06-12).** Five new dynamic, inline-edited,
+  server-rendered blocks in corex-ui on the spec-029 hybrid: **hero** (eyebrow/title/subtitle + gated CTA +
+  optional media-library background), **cta** (heading/text + gated button), **team** (repeatable members,
+  media-library photo + name/role/bio), **gallery** (repeatable media-library images + captions), **tabs**
+  (repeatable label/content). Image blocks use the **media library** (`{id,url,alt}`, real `<img>` + lazy/async),
+  not pasted URLs; **tabs ship zero view JavaScript** (CSS-only `:checked` radio/label disclosure, focusable +
+  arrow-key navigable — Principle VI even for an interactive widget). Renderers degrade gracefully and stay
+  token-only (spec-033 tokens, logical CSS). Enough to build a full landing page (hero → stats → team → gallery →
+  cta) with no theme code. **7 Pest renderer tests + 27 Jest (10 suites) + 335 total green**; all 12 blocks build;
+  wp-guard clean. DECISIONS #69. docs-app `guides/blocks` + corex-ui README updated.
+  **▶ NEXT:** spec **036 — health-check, demo content, versioning alignment, i18n/.pot, OSS hygiene**
+  (CONTRIBUTING/LICENSE/.editorconfig).

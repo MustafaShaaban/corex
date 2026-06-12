@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/tabs",
+	"title": "Corex Tabs",
+	"category": "corex",
+	"icon": "table-row-after",
+	"description": "Tabbed content with no front-end JavaScript — a CSS-only accessible tabs pattern (dynamic, edited inline).",
+	"textdomain": "corex",
+	"attributes": {
+		"tabs": { "type": "array", "default": [] }
+	},
+	"supports": { "html": false, "anchor": true },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\TabsRenderer" }
+}

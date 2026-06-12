@@ -71,16 +71,29 @@ category — all server-rendered, token-only, and RTL-correct:
 | `corex/testimonial` | A quote with attribution (`<figure>`/`<blockquote>`/`<figcaption>`) |
 | `corex/pricing` | A pricing card — plan, price, features, optional CTA |
 | `corex/accordion` | Accessible disclosures from a list — native `<details>`, no JavaScript |
+| `corex/hero` | A page hero — eyebrow, heading, subheadline, button, optional background image |
+| `corex/cta` | A call-to-action banner — heading, supporting line, button |
+| `corex/team` | A responsive grid of team members — photo, name, role, bio |
+| `corex/gallery` | A responsive image gallery from the media library, with captions |
+| `corex/tabs` | Tabbed content with **no front-end JavaScript** (a CSS-only accessible tabs pattern) |
+
+Together these are enough to build a full landing page — **hero → stats → team → gallery → cta** —
+entirely from Corex blocks, with no theme code. (A "stats grid" is just several `corex/stat` blocks
+inside a columns/grid container.)
 
 ## Inline editing (modern, in-canvas)
 
-The component blocks (`stat`/`testimonial`/`pricing`/`accordion`) are edited **inline on the
-canvas** — you type the heading, quote, price, or panel text directly into the block like a
-modern page builder (not only in the right sidebar). They stay **dynamic**: the text lives in
-block attributes, `save` returns `null`, and the PHP renderer produces the markup from those
-attributes (so the editor and the front end share one source of truth). Rich text (bold,
-italic, links) is preserved safely with `wp_kses_post`. Repeatable lists — pricing features,
-accordion panels — are added/removed as inline rows.
+The component blocks (`stat`/`testimonial`/`pricing`/`accordion`/`hero`/`cta`/`team`/`gallery`/
+`tabs`) are edited **inline on the canvas** — you type the heading, quote, price, or panel text
+directly into the block like a modern page builder (not only in the right sidebar). They stay
+**dynamic**: the text lives in block attributes, `save` returns `null`, and the PHP renderer
+produces the markup from those attributes (so the editor and the front end share one source of
+truth). Rich text (bold, italic, links) is preserved safely with `wp_kses_post`. Repeatable lists
+— pricing features, accordion panels, team members, gallery images, tabs — are added/removed as
+inline rows. Image blocks (`hero`/`team`/`gallery`) pick from the **media library** (no pasted
+URLs), storing `{id, url, alt}` and rendering real `<img>` with alt text + lazy loading. `tabs`
+renders an accessible tabbed widget with **zero view JavaScript** (a CSS-only radio/label pattern),
+so it works even with scripts disabled.
 
 The **form** block lets you **pick a form from a dropdown** of the registered forms (no more
 typing a slug); the list comes from the cap-gated `corex/v1/forms` route.

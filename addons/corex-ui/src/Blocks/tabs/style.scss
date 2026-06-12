@@ -1,0 +1,80 @@
+/**
+ * Corex Tabs — token-only, logical CSS (RTL-correct), NO view JavaScript.
+ *
+ * Front end: a CSS-only disclosure. Each tab is `radio + label + panel`; the hidden radios share
+ * a name, so checking one (click the label, or arrow-key between them) reveals exactly one panel
+ * via the `:checked` sibling rule. Labels are reordered above the panels with flex `order`.
+ * The `.is-editing` class (editor only) opts out of the hiding so all panels stay visible to edit.
+ */
+.corex-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wp--preset--spacing--10);
+
+	&__radio {
+		/* Visually hidden but kept in the tab order + focusable (accessible toggle). */
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+
+	&__label {
+		order: 1;
+		cursor: pointer;
+		padding-block: var(--wp--preset--spacing--20);
+		padding-inline: var(--wp--preset--spacing--40);
+		color: var(--wp--preset--color--ink-soft);
+		border-radius: var(--wp--custom--radius--md) var(--wp--custom--radius--md) 0 0;
+	}
+
+	&__panel {
+		order: 2;
+		inline-size: 100%;
+		padding: var(--wp--preset--spacing--40);
+		background-color: var(--wp--preset--color--surface);
+		border-radius: 0 var(--wp--custom--radius--md) var(--wp--custom--radius--md);
+		box-shadow: var(--wp--preset--shadow--sm);
+		color: var(--wp--preset--color--ink);
+	}
+}
+
+/* Front-end interactivity (skipped while editing, where every panel must stay visible). */
+.corex-tabs:not(.is-editing) {
+	.corex-tabs__panel {
+		display: none;
+	}
+
+	.corex-tabs__radio:checked + .corex-tabs__label {
+		background-color: var(--wp--preset--color--surface);
+		color: var(--wp--preset--color--primary);
+	}
+
+	.corex-tabs__radio:checked + .corex-tabs__label + .corex-tabs__panel {
+		display: block;
+	}
+
+	.corex-tabs__radio:focus-visible + .corex-tabs__label {
+		/* 0.125rem is a focus-ring thickness (a11y affordance), not a design size. */
+		outline: 0.125rem solid var(--wp--preset--color--primary);
+		outline-offset: 0.125rem;
+	}
+}
+
+/* Editor: stack each tab's label + panel for editing. */
+.corex-tabs.is-editing {
+	display: block;
+
+	.corex-tabs__edit-row {
+		margin-block-end: var(--wp--preset--spacing--30);
+	}
+
+	.corex-tabs__label {
+		display: inline-block;
+		font-weight: 600;
+		color: var(--wp--preset--color--ink);
+	}
+}
