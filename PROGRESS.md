@@ -885,3 +885,15 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   composer valid; wp-guard clean. DECISIONS #70. docs-app `guides/cli` + corex-core/CLI READMEs updated.
   **▶ NEXT:** spec **037 — site readiness + performance dashboard** (Cloudflare + Lighthouse widgets + on-demand
   check) — user-requested; full Spec Kit.
+
+- [x] **`specs/037-insights-dashboard/` — COMPLETE + IMPLEMENTED (2026-06-12).** A **Corex → Insights** dashboard
+  (corex-config) with two Run-on-demand cards on a pluggable `InsightProvider` seam: **Performance** (Google
+  PageSpeed Insights / Lighthouse → score + Core Web Vitals + top opportunities) and **Readiness** (agent-readiness
+  — HTTPS, `llms.txt`, sitemap, agent-permitting robots, MCP abilities — scored natively, enriched by a Cloudflare
+  URL-scan when configured). Pure + unit-tested core (`Grade` A–F, `PsiNormalizer`, `CloudflareNormalizer`,
+  `ReadinessScorer`, `InsightStore` cache+history); thin fetch/REST/cards. **Graceful degradation** (Principle IX:
+  no key/token → a useful "configure me" state, async scan → pending, never errors). **Secure** (Principle VII:
+  runs are `manage_options` + REST nonce; **secrets never in a response**). Vanilla `apiFetch` cards (no build);
+  secrets set as write-only fields in Settings. **18 new tests + 368 total green**; wp-guard clean. DECISIONS #71.
+  docs-app `guides/insights` + corex-config README.
+  **▶ NEXT:** roadmap 029–037 delivered. Cut a release (v0.22.0 → main) and then check the WP/WAMP error logs.

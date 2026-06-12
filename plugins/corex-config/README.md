@@ -55,6 +55,22 @@ the reference implementation (`SubmissionsSource` + the `WpSubmissionsReader` bo
 own `DataSource` (e.g. over a `TableRepository`) to appear in the same screen with no new UI code. The screen
 renders + gates via the shared `AdminGuard`. (Spec 030.)
 
+## Insights screen (Corex → Insights)
+
+A **Corex → Insights** screen shows two result cards — **Performance** (Google PageSpeed Insights / Lighthouse)
+and **Readiness** (the site's agent-readiness: HTTPS, an `llms.txt`, a sitemap, agent-permitting robots, exposed
+MCP abilities) — each with a **Run check** button. Every result is **scored, graded (A–F), cached, and
+history-kept**.
+
+It is built on a pluggable `InsightProvider` seam; each provider's **normaliser/scorer is pure and unit-tested**
+(`PsiNormalizer`, `CloudflareNormalizer`, `ReadinessScorer`, `Grade`, `InsightStore`), while the HTTP fetch, the
+REST run, and the cards are thin boundaries. Runs go through the cap+nonce-gated `corex/v1/insights[/run]` routes
+(`manage_options` + a REST nonce); **secrets are never returned** in a response. Providers **degrade gracefully**
+(Principle IX): with no PSI key or Cloudflare token the cards still render a useful "configure me" state and never
+error. The Readiness card is useful from native signals alone; a configured Cloudflare token adds a URL-scan
+security signal. Secrets (`insights.psi.key`, `insights.cloudflare.token`, `insights.cloudflare.account_id`) are
+set in **Corex → Settings** (write-only password fields). (Spec 037.)
+
 ## Tests
 
 ```bash

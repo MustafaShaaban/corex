@@ -1141,3 +1141,28 @@ carry standard OSS files. The two engines stay pure + unit-tested; Site Health +
 new tests (HealthReport 4 + Probes 6 + VersionPlan 5) + 350 total green; composer valid; wp-guard clean (Site
 Health escaping, ABSPATH guards, real WP hooks). `.pot` generation + Site Health UI are env-gated.
 Status: Final.
+
+## #71 — Insights dashboard: a pluggable, scored, graceful provider seam (PSI performance + agent-readiness/Cloudflare)
+Date: 2026-06-12
+Context: spec 037 (user-requested). The user wanted "is the website agent-ready" + "Google insights for
+performance" as two admin widgets with a Run button — one Cloudflare, one Lighthouse — and asked for it to be
+genuinely useful, not just the literal ask.
+Decision: build a **Corex → Insights** dashboard in corex-config on a pluggable `InsightProvider` seam. Two
+providers ship: **Performance** (Google PageSpeed Insights / Lighthouse → score + Core Web Vitals + top
+opportunities) and **Readiness** (the site's agent-readiness — HTTPS, `llms.txt`, sitemap, agent-permitting
+robots, exposed MCP abilities — scored natively, enriched by a Cloudflare URL-scan when a token is configured).
+Beyond the literal ask: (1) a pure scoring vocabulary (`Grade`: 0–100 → A–F + good/recommended/critical, shared
+with the health screen); (2) every provider's normaliser/scorer is **pure + unit-tested** (`PsiNormalizer`,
+`CloudflareNormalizer`, `ReadinessScorer`), the fetch/REST/cards thin; (3) results are **cached + history-kept**
+(`InsightStore`); (4) **graceful degradation** (Principle IX) — no key/token → a useful "configure me" state, an
+async Cloudflare scan → a `pending` result, never an error/fatal; (5) **security** (Principle VII) — runs are
+`manage_options` + REST nonce and **secrets never appear in a response** (the `InsightResult` value carries only
+scores/metrics/recommendations); (6) the readiness card is useful with **zero** third-party config because the
+native signals always score. The admin cards are a small vanilla `apiFetch` script (no build) with token-fallback
+admin-palette CSS (wp-admin context, where Corex theme tokens aren't loaded). Secrets are set as write-only
+password fields in Settings (spec 032). A new card = one more registered provider, no UI change.
+Why: a trustworthy, extensible, self-contained insights surface that works out of the box and never blocks the
+page. 18 new tests (Grade 3 + Store 3 + PSI 3 + Readiness 3 + Cloudflare 3 + Controller 3) + 368 total green;
+wp-guard clean (remote get/post + timeout, cap+nonce on run, escaped output, no secret echo, conditional
+enqueue). Live PSI/Cloudflare runs are env-gated.
+Status: Final.
