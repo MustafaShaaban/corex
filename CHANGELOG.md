@@ -4,6 +4,27 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.23.0] — 2026-06-12
+
+Admin extensibility — making custom data and custom settings pages first-class, from a deep-review follow-up.
+
+### Added
+- **Custom tables in the admin** (spec 038): mark any Corex-managed table **managed** (one `ManagedTable`
+  declaration) and it appears in **Corex → Data** automatically — browsable, paginated, deletable — like a
+  post-type list, with no admin code. The `$wpdb` reader is **prepared** (`%i`/`%d`) and **bounded** (`LIMIT`);
+  opt-in, so Corex never enumerates arbitrary tables.
+- **Easy option pages** (spec 039): declare an `OptionPage` (title, menu, capability, fields) + register it to get
+  a real, secured admin settings screen — rendered by the existing settings controls and saved cap + per-page
+  nonce gated, with no form/nonce/save code. Reuse is enabled by a `FieldSections` seam shared with the built-in
+  settings. Scaffold one with **`wp corex make:option-page <Name>`**.
+
+### Fixed
+- The `wp-dataviews` "dependencies that are not registered" notice on the Data screen — the handle is now declared
+  only when WordPress actually registers it (the React already falls back to a plain table).
+
+### Versioning
+- All framework plugin/theme headers + `COREX_*_VERSION` constants aligned to 0.23.0 (`wp corex version`).
+
 ## [0.22.0] — 2026-06-12
 
 The second round of deep-review work (specs 033–037) plus release hygiene — finishing the initiative a user
