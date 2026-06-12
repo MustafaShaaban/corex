@@ -791,3 +791,48 @@ Kit + guard skills, git on `main` (GitHub remote: github.com/MustafaShaaban/core
 missing-WordPress gap: installed WP 7.0 into `./wp/` via WP-CLI on WAMP, mapped the monorepo in via
 junctions, activated the Corex theme + 3 plugins (site boots at http://corex.local). Decisions
 #15–18 logged. Next: PHASE 5 — corex-core foundation via the Spec Kit flow, one task at a time.
+
+---
+## ▶ ROADMAP 029–036 (2026-06-12) — deep-review backlog, spec-first, autonomous
+
+A user-driven deep review surfaced real gaps (kits create no pages, no submissions/table admin, sidebar-only
+block editing, URL-only settings, no self-update, thin design). Roadmap: **029** interactive inline blocks ·
+**030** DataViews admin · **031** kits build a site · **032** modern settings UX · **033** design system ·
+**034** self-update + distribution · **035** block library v2 · **036** health-check/demo/versioning/i18n/OSS.
+Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
+
+- [x] **`specs/029-interactive-blocks/` — COMPLETE + IMPLEMENTED (2026-06-12).** The dynamic-and-RichText hybrid:
+  stat/testimonial/pricing/accordion are now **edited inline on the canvas** (RichText → attributes →
+  server render, `save:()=>null`), rich text via `wp_kses_post`; pricing `features` + accordion `items` became
+  array attributes (repeatable rows) with legacy-string fallbacks. The `corex/form` block **selects a form from
+  a dropdown** fed by the new cap-gated `GET corex/v1/forms`. **23 Jest + 300 PHP unit green**; both block
+  bundles build; all 5 blocks register dynamic live; the form-list controller returns `[{slug,label}]` live.
+  wp-guard clean (kses/cap-gated REST). DECISIONS #63. docs-app blocks guide + corex-ui README updated.
+  _(Browser-visual confirmation of the editing UX is env-gated.)_
+  **▶ NEXT:** spec **030 — admin data management (DataViews)** for form submissions + custom tables.
+
+- [x] **`specs/030-data-admin/` — COMPLETE + IMPLEMENTED (2026-06-12).** A **Corex → Data** admin screen (React,
+  `@wordpress/dataviews` with a plain-table fallback) lists form **submissions** + any registered custom-table
+  source, with delete. Built on a pure `DataSource` abstraction (submissions = reference `SubmissionsSource` +
+  `WpSubmissionsReader` boundary; add-ons register their own over a `TableRepository`), served by the cap-gated
+  `corex/v1/data/<source>` REST (`manage_options`; deletes need a nonce). **8 unit + 308 PHP total green**;
+  admin React builds; **live-verified the controller shapes 33 real submissions** (cols=3). wp-guard clean.
+  DECISIONS #64. corex-config README + docs-app config guide updated. _(React-visual env-gated.)_
+  **▶ NEXT:** spec **031 — kits that build a real site** (applying a kit scaffolds its pages/content).
+
+- [x] **`specs/031-kit-content/` — COMPLETE + IMPLEMENTED (2026-06-12).** Kits now **build a real site**:
+  `Blueprint::pages()` declares pages composing the kit's corex/* patterns; a pure `KitPagePlanner` makes
+  seeding idempotent (skips existing slugs); `BlueprintActivator::seedPages()` creates them (tracked via
+  `_corex_kit_page` + `corex_kit_seeded_pages`), sets the front page, and the soft reset (spec 025) removes
+  exactly the kit pages. Company = home/about/contact, Portfolio = home/projects. **3 unit + 311 PHP total
+  green**; **verified live** (about/contact created, home skipped as pre-existing, re-apply no-dup, reset
+  dry-run lists the kit pages). wp-guard clean. DECISIONS #65. docs-app + company README updated.
+  **▶ NEXT:** spec **032 — modern settings UX** (media uploader, select/toggle fields, admin branding).
+
+- [x] **`specs/032-settings-ux/` — COMPLETE + IMPLEMENTED (2026-06-12).** Modern settings UX: `SettingsForm`
+  renders per **field type** (input/`media`/`select`/`checkbox`); the logo is a **media picker** (wp.media
+  wiring in `assets/settings.js`, degrades to a URL field with no JS), the captcha driver a **select**, and the
+  configured **logo shows in the settings header** (branding findable). All values escaped per type; saving
+  stays nonce+cap gated. **4 unit + 315 PHP total green**; live-verified the controls render + AdminDashboard
+  resolves with BrandingService. wp-guard clean. DECISIONS #66. docs-app + corex-config README updated.
+  **▶ NEXT:** spec **033 — design system overhaul** (richer tokens, shadows/radii/fonts, style variations).

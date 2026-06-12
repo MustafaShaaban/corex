@@ -48,20 +48,24 @@ final class SetupWizard
      * recommended, de-duped, order preserved) and the feature flags to enable. Returns
      * an empty plan for an unknown kit.
      *
-     * @return array{modules:list<string>,flags:list<string>}
+     * @return array{modules:list<string>,flags:list<string>,pages:list<array{title:string,slug:string,content:string,front?:bool}>}
      */
     public function plan(string $name): array
     {
         $blueprint = $this->registry->find($name);
 
         if ($blueprint === null) {
-            return ['modules' => [], 'flags' => []];
+            return ['modules' => [], 'flags' => [], 'pages' => []];
         }
 
         $modules = array_values(array_unique(
             array_merge($blueprint->requiredModules(), $blueprint->recommendedModules())
         ));
 
-        return ['modules' => $modules, 'flags' => $blueprint->featureFlags()];
+        return [
+            'modules' => $modules,
+            'flags'   => $blueprint->featureFlags(),
+            'pages'   => $blueprint->pages(),
+        ];
     }
 }

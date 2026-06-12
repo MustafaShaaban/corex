@@ -21,8 +21,11 @@ are composed of these units. Optional add-on; requires `corex-core` and the `cor
 | `corex/accordion` | Accessible disclosures from `items` (one `Title \| Content` per line) — native `<details>`, no JS |
 
 Each is server-rendered, escaped, and token-styled; its CSS loads only where the block renders
-(declared in `block.json`). The component blocks (spec 027) take scalar/text attributes edited in the
-block sidebar; multi-item blocks (pricing features, accordion items) read a simple per-line attribute.
+(declared in `block.json`). The component blocks (`stat`/`testimonial`/`pricing`/`accordion`) are **edited
+inline on the canvas** (RichText) while staying dynamic — the renderer reads the attributes and renders rich
+text safely with `wp_kses_post`; repeatable lists (pricing features, accordion panels) are inline rows. The
+`corex/form` block **selects a form from a dropdown** (the cap-gated `corex/v1/forms` route), not a typed slug.
+(Spec 029.)
 
 ## Section patterns
 

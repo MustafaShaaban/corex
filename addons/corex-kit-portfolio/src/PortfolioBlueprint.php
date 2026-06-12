@@ -63,4 +63,28 @@ final class PortfolioBlueprint extends Blueprint
     {
         return ['corex/hero', 'corex/cta'];
     }
+
+    /**
+     * @return list<array{title:string,slug:string,content:string,front?:bool}>
+     */
+    public function pages(): array
+    {
+        return [
+            [
+                'title'   => __('Home', 'corex'),
+                'slug'    => 'home',
+                'front'   => true,
+                'content' => '<!-- wp:pattern {"slug":"corex/hero"} /-->'
+                    . '<!-- wp:heading {"level":2} --><h2>' . esc_html__('Selected work', 'corex') . '</h2><!-- /wp:heading -->'
+                    . '<!-- wp:corex/projects /-->'
+                    . '<!-- wp:pattern {"slug":"corex/cta"} /-->',
+            ],
+            [
+                'title'   => __('Projects', 'corex'),
+                'slug'    => 'projects',
+                'content' => '<!-- wp:heading {"level":1} --><h1>' . esc_html__('Projects', 'corex') . '</h1><!-- /wp:heading -->'
+                    . '<!-- wp:corex/projects /-->',
+            ],
+        ];
+    }
 }

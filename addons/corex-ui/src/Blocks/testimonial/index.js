@@ -1,48 +1,44 @@
 /**
- * Corex Testimonial — editor registration for a DYNAMIC block. The PHP
- * TestimonialRenderer builds the figure/blockquote/figcaption; the sidebar edits the
- * quote/author/role and the editor previews via <ServerSideRender>.
+ * Corex Testimonial — DYNAMIC block edited INLINE (spec 029). Quote/author/role are
+ * RichText regions typed directly on the canvas; the PHP TestimonialRenderer builds the
+ * accessible figure/blockquote/figcaption server-side from the attributes.
  */
 import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, TextControl, TextareaControl } from '@wordpress/components';
-import ServerSideRender from '@wordpress/server-side-render';
+import { useBlockProps, RichText } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
 registerBlockType( metadata.name, {
 	edit: ( { attributes, setAttributes } ) => {
-		const blockProps = useBlockProps();
+		const blockProps = useBlockProps( { className: 'corex-testimonial' } );
 		const { quote, author, role } = attributes;
 
 		return (
-			<div { ...blockProps }>
-				<InspectorControls>
-					<PanelBody title={ __( 'Testimonial', 'corex' ) }>
-						<TextareaControl
-							__nextHasNoMarginBottom
-							label={ __( 'Quote', 'corex' ) }
-							value={ quote }
-							onChange={ ( v ) => setAttributes( { quote: v } ) }
-						/>
-						<TextControl
-							__nextHasNoMarginBottom
-							label={ __( 'Author', 'corex' ) }
-							value={ author }
-							onChange={ ( v ) => setAttributes( { author: v } ) }
-						/>
-						<TextControl
-							__nextHasNoMarginBottom
-							label={ __( 'Role', 'corex' ) }
-							value={ role }
-							onChange={ ( v ) => setAttributes( { role: v } ) }
-						/>
-					</PanelBody>
-				</InspectorControls>
-				<ServerSideRender block={ metadata.name } attributes={ attributes } />
-			</div>
+			<figure { ...blockProps }>
+				<RichText
+					tagName="blockquote"
+					className="corex-testimonial__quote"
+					value={ quote }
+					onChange={ ( v ) => setAttributes( { quote: v } ) }
+					placeholder={ __( 'The testimonial quote…', 'corex' ) }
+				/>
+				<figcaption className="corex-testimonial__cite">
+					<RichText
+						tagName="span"
+						value={ author }
+						onChange={ ( v ) => setAttributes( { author: v } ) }
+						placeholder={ __( 'Author', 'corex' ) }
+					/>
+					<RichText
+						tagName="span"
+						value={ role }
+						onChange={ ( v ) => setAttributes( { role: v } ) }
+						placeholder={ __( 'Role (optional)', 'corex' ) }
+					/>
+				</figcaption>
+			</figure>
 		);
 	},
 	save: () => null,

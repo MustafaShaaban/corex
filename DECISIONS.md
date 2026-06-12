@@ -985,3 +985,74 @@ Why: a second copy of getting-started/architecture/reference would drift (the fa
 prevent); splitting by audience gives each surface a home with no overlap, and in-repo Markdown renders on
 GitHub where operators/contributors read ops docs. Honors specs 019/022 + #50.
 Status: Final (structure). Open: repo-CI choice (GitHub Actions vs Azure Pipelines) — /clarify.
+
+## #63 — Inline-editable blocks: the dynamic-and-RichText hybrid; form selector over free-text slug
+Date: 2026-06-12
+Context: spec 029. Every Corex block was server-rendered + edited only via InspectorControls (right pane) — no
+inline canvas editing, and the form block made you type a slug ("contact"). The tension: the constitution wants
+dynamic/server-rendered blocks (Principle VI), but modern inline editing usually implies static save-markup.
+Decision: use the **hybrid** — the block's `edit` renders `RichText` (inline on the canvas) bound to block
+**attributes**; `save: () => null`; the PHP `render_callback` reads those attributes and outputs the markup.
+The block stays dynamic AND gains inline editing (one source of truth). Rich attributes render with
+**`wp_kses_post`** (safe inline HTML), plain fields keep `esc_url`/`esc_html`. The four component blocks
+(stat/testimonial/pricing/accordion) are converted; pricing `features` and accordion `items` become **array**
+attributes (repeatable RichText rows), with the renderers keeping the legacy delimited-string parse as a
+**fallback** so already-placed blocks still render. The form block replaces its free-text `formSlug` with a
+**SelectControl** populated from a new cap-gated read-only route `GET corex/v1/forms` (slug + label only).
+Why: fixes the #1 editor-UX complaint (edit in the canvas like a page builder; pick data from a list) without
+abandoning the dynamic-block principle or the server-render contract. 23 Jest + renderer/REST Pest tests;
+300 unit green; wp-guard clean (kses for rich, cap-gated REST). Browser-visual is env-gated. This establishes
+the inline-block architecture the library expansion (spec 035) builds on.
+Status: Final.
+
+## #64 — Admin data management: a DataSource abstraction behind one DataViews screen
+Date: 2026-06-12
+Context: spec 030. Form submissions were stored (corex_submission CPT) but invisible in admin, and custom tables
+(TableRepository) had no admin UI — the user couldn't find or manage their data.
+Decision: a **Corex → Data** React screen renders a `@wordpress/dataviews` table of a selected **DataSource**
+(`key/label/columns/rows/total/delete`). Form submissions are the reference `SubmissionsSource` (shaped via an
+injected `SubmissionsReader` so the row-shaping is unit-tested; `WpSubmissionsReader` is the WP_Query boundary);
+any add-on registers a custom-table source implementing the same interface to appear in the same screen. A
+cap-gated `DataController` serves it: `GET corex/v1/data/<source>` (`manage_options`) and
+`DELETE .../<id>` (`manage_options` + REST nonce). DataViews is accessed from the runtime `wp.dataviews` global
+(declared as a `wp-dataviews` script dep) with a plain-table fallback, so the bundle stays lean and the screen
+works across WP versions. Lives in corex-config beside the other admin screens (shared AdminGuard).
+Why: one generic screen serves both submissions and custom tables; the abstraction is what makes custom-table
+data manageable without per-table UI. 8 unit tests; live-verified the controller shapes 33 real submissions
+(cols=3); both block/admin bundles build; wp-guard clean (cap+nonce REST). React-visual is env-gated.
+Status: Final.
+
+## #65 — Kits build a real site: Blueprint::pages() + idempotent, tracked, reversible seeding
+Date: 2026-06-12
+Context: spec 031. Applying a kit created no pages — only the wizard seeded a single demo Home, once. The site
+stayed empty; kits looked broken.
+Decision: `Blueprint::pages()` declares a kit's pages (`{title,slug,content,front?}`), composing the kit's
+existing corex/* patterns/blocks (never invented). A pure `KitPagePlanner::toCreate()` skips slugs that already
+exist (idempotent — re-applying never duplicates). `BlueprintActivator::seedPages()` creates each planned page
+(`wp_insert_post` published), marks it `_corex_kit_page`, records its id in `corex_kit_seeded_pages`, and sets
+the front page where declared — replacing the old single `seedDemoHome`. The wizard's `plan()` now carries
+`pages`. The soft reset (spec 025) reads `corex_kit_seeded_pages` and removes **exactly** those pages (a list<int>
+in the inventory → remove actions), so a reset cleans up kit content without touching user content. Company kit:
+home(front)/about/contact; Portfolio: home(front)/projects.
+Why: a kit must produce a visible site; idempotency-by-slug + tracking-by-marker make it safe to re-apply and
+exactly reversible. 3 unit + 311 PHP total green; verified live (about/contact created, home skipped as
+pre-existing, 2nd run no-dup, reset dry-run lists the kit pages). wp-guard clean. Visual is env-gated.
+Status: Final.
+
+## #66 — Modern settings UX: per-field-type rendering + media picker + branding in the header
+Date: 2026-06-12
+Context: spec 032. The settings screen rendered every field as a bare input — you pasted a logo URL instead of
+uploading, the captcha driver was free text, and the branding was hard to find.
+Decision: `SettingsForm` renders per **field type** (text/email/url/password input, `media` picker, `select`,
+`checkbox`) via a `control()` switch — registry-driven, every value escaped per type (esc_url for media,
+esc_attr for value, options validated). The registry marks `brand.logo_url` as `media` and `captcha.driver` as
+a `select`. A tiny vanilla `assets/settings.js` wires the WordPress media frame to media fields (set value +
+preview), enqueued only on the settings screen (+ `wp_enqueue_media()`); the field **degrades to an editable
+URL input** with no JS, so saving still works and the stored value stays the image URL `BrandingService`
+reads. `AdminDashboard` shows the configured logo in the screen header (escaped, only when set) so the branding
+is findable. Saving stays nonce + cap gated (AdminGuard, unchanged).
+Why: uploading-not-URL and the right control per field are basic modern UX; storing the URL keeps the branding
+service unchanged; the header logo answers "where's the branding". 4 form-rendering unit tests; 315 PHP total
+green; live-verified the controls render + AdminDashboard resolves with BrandingService. wp-guard clean
+(escaping per type, no inline px — the logo uses the HTML height attribute). Visual is env-gated.
+Status: Final.

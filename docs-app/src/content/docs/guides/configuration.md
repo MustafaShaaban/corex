@@ -32,8 +32,11 @@ capability + nonce check):
 - **Add-ons** — enable/disable each Corex add-on (its plugin **and** its feature flag,
   together), dependency-aware (it refuses a toggle that would break a dependency, e.g.
   disabling `corex-ui` while a kit needs it).
-- **Setup Wizard** — pick a starter kit and apply it (enable its flags, activate its
-  modules, seed a demo home page).
+- **Setup Wizard** — pick a starter kit and apply it: it enables the kit’s flags, activates its modules,
+  and **creates the kit’s pages** (a composed front page + About/Contact, etc.) idempotently. The seeded
+  pages are tracked so `wp corex reset` removes exactly them.
+- **Data** — a DataViews table of your form **submissions** (and any registered Corex custom-table source),
+  with sorting, pagination, and delete. Served by the cap-gated `corex/v1/data` REST routes.
 
 ## Feature flags
 

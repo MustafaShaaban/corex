@@ -46,7 +46,8 @@
     "scripts": {
         "test": "pest",
         "test:unit": "pest",
-        "test:integration": "pest --configuration=phpunit-integration.xml.dist"
+        "test:integration": "pest --configuration=phpunit-integration.xml.dist",
+        "docs:generate": "php scripts/generate-docs.php"
     },
     "minimum-stability": "stable",
     "prefer-stable": true
