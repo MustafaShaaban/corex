@@ -31,7 +31,12 @@ final class BlocksServiceProvider extends ServiceProvider
 
         $this->container->singleton(
             DynamicBlockRegistrar::class,
-            static fn (ContainerInterface $c): DynamicBlockRegistrar => new DynamicBlockRegistrar($c, $c->make(BootLogger::class)),
+            static fn (ContainerInterface $c): DynamicBlockRegistrar => new DynamicBlockRegistrar(
+                $c,
+                $c->make(BootLogger::class),
+                $c->make(PluginMountMap::class),
+                $c->make(BlockPathResolver::class),
+            ),
         );
 
         $this->container->singleton(ConnectorRegistry::class);

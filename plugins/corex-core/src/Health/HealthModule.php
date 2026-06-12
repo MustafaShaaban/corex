@@ -10,6 +10,7 @@ namespace Corex\Health;
 
 defined('ABSPATH') || exit;
 
+use Corex\Health\Probes\BlockAssetsProbe;
 use Corex\Health\Probes\BrandPresentProbe;
 use Corex\Health\Probes\PhpVersionProbe;
 use Corex\Health\Probes\ThemeActiveProbe;
@@ -52,7 +53,57 @@ final class HealthModule
             new ThemeActiveProbe(function_exists('wp_is_block_theme') && wp_is_block_theme()),
             new BrandPresentProbe($brandPath !== '' && file_exists($brandPath)),
             new UploadsWritableProbe(empty($uploads['error']) && wp_is_writable($uploads['basedir'])),
+            new BlockAssetsProbe($this->blockAssets(), function_exists('plugins_url') ? plugins_url() : ''),
         ]);
+    }
+
+    /**
+     * Collect every registered `corex/*` block's script/style asset URLs (spec 040), so the probe can flag any
+     * that embed a filesystem path. Reads only — guarded so it is a no-op before the block/asset APIs exist.
+     *
+     * @return list<array{name:string,urls:list<string>}>
+     */
+    private function blockAssets(): array
+    {
+        if (! class_exists('WP_Block_Type_Registry') || ! function_exists('wp_scripts') || ! function_exists('wp_styles')) {
+            return [];
+        }
+
+        $scripts = wp_scripts();
+        $styles  = wp_styles();
+        $blocks  = [];
+
+        foreach (\WP_Block_Type_Registry::get_instance()->get_all_registered() as $name => $type) {
+            if (strpos((string) $name, 'corex/') !== 0) {
+                continue;
+            }
+
+            $urls = [];
+
+            foreach (['editor_script_handles', 'view_script_handles', 'script_handles'] as $property) {
+                foreach (($type->{$property} ?? []) as $handle) {
+                    $src = $scripts->registered[$handle]->src ?? '';
+
+                    if ($src !== '') {
+                        $urls[] = (string) $src;
+                    }
+                }
+            }
+
+            foreach (['editor_style_handles', 'style_handles'] as $property) {
+                foreach (($type->{$property} ?? []) as $handle) {
+                    $src = $styles->registered[$handle]->src ?? '';
+
+                    if ($src !== '') {
+                        $urls[] = (string) $src;
+                    }
+                }
+            }
+
+            $blocks[] = ['name' => (string) $name, 'urls' => $urls];
+        }
+
+        return $blocks;
     }
 
     /**
