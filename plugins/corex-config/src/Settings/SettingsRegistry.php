@@ -17,7 +17,7 @@ defined('ABSPATH') || exit;
 final class SettingsRegistry
 {
     /**
-     * @return array<string,array{title:string,fields:array<string,array{label:string,type:string}>}>
+     * @return array<string,array{title:string,fields:array<string,array{label:string,type:string,options?:array<string,string>}>}>
      */
     public function sections(): array
     {
@@ -25,7 +25,7 @@ final class SettingsRegistry
             'brand' => [
                 'title'  => 'Brand',
                 'fields' => [
-                    'brand.logo_url'    => ['label' => 'Admin logo URL', 'type' => 'url'],
+                    'brand.logo_url'    => ['label' => 'Admin logo', 'type' => 'media'],
                     'brand.footer_text' => ['label' => 'Admin footer text', 'type' => 'text'],
                 ],
             ],
@@ -45,7 +45,17 @@ final class SettingsRegistry
             'captcha' => [
                 'title'  => 'Captcha',
                 'fields' => [
-                    'captcha.driver' => ['label' => 'Captcha driver (none/honeypot/turnstile/...)', 'type' => 'text'],
+                    'captcha.driver' => [
+                        'label'   => 'Captcha driver',
+                        'type'    => 'select',
+                        'options' => [
+                            'none'      => 'None',
+                            'honeypot'  => 'Honeypot',
+                            'recaptcha' => 'reCAPTCHA',
+                            'turnstile' => 'Cloudflare Turnstile',
+                            'hcaptcha'  => 'hCaptcha',
+                        ],
+                    ],
                     'captcha.secret' => ['label' => 'Captcha secret', 'type' => 'password'],
                 ],
             ],
