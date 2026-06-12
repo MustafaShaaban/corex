@@ -20,6 +20,7 @@ beforeEach(function () {
     Functions\when('esc_html__')->returnArg();
     Functions\when('esc_attr')->returnArg();
     Functions\when('esc_url')->returnArg();
+    Functions\when('wp_kses_post')->returnArg(); // rich inline fields (spec 029)
 });
 
 $block = (object) [];
@@ -43,12 +44,12 @@ it('renders a testimonial as a figure/blockquote/figcaption, empty quote -> noth
         ->and((new TestimonialRenderer())->render(['author' => 'Sam'], '', $block))->toBe('');
 });
 
-it('renders a pricing card with feature list and a CTA only when text+url are set', function () use ($block) {
+it('renders a pricing card with an array feature list and a CTA only when text+url are set', function () use ($block) {
     $html = (new PricingRenderer())->render([
         'plan'     => 'Pro',
         'price'    => '$29',
         'period'   => '/mo',
-        'features' => "Unlimited\nPriority support\n",
+        'features' => ['Unlimited', 'Priority support'],      // spec-029 array attribute
         'ctaText'  => 'Buy',
         'ctaUrl'   => 'https://example.com/buy',
     ], '', $block);
@@ -64,15 +65,31 @@ it('renders a pricing card with feature list and a CTA only when text+url are se
         ->not->toContain('corex-pricing__cta');
 });
 
-it('renders accordion items as native details/summary, empty -> nothing', function () use ($block) {
+it('falls back to a legacy newline feature string (backwards data)', function () use ($block) {
+    $html = (new PricingRenderer())->render(['plan' => 'Pro', 'features' => "A\nB"], '', $block);
+
+    expect($html)->toContain('<ul class="corex-pricing__features"><li>A</li><li>B</li></ul>');
+});
+
+it('renders accordion items from an array of {title,content}, empty -> nothing', function () use ($block) {
     $html = (new AccordionRenderer())->render([
-        'items' => "What is Corex? | A WordPress framework.\nIs it free? | Yes.\nTitle only\n",
+        'items' => [
+            ['title' => 'What is Corex?', 'content' => 'A WordPress framework.'],
+            ['title' => 'Title only', 'content' => ''],
+        ],
     ], '', $block);
 
     expect($html)->toContain('<div class="corex-accordion">')
         ->toContain('<details class="corex-accordion__item"><summary class="corex-accordion__summary">What is Corex?</summary><div class="corex-accordion__content">A WordPress framework.</div></details>')
         ->toContain('<summary class="corex-accordion__summary">Title only</summary>')
-        ->and((new AccordionRenderer())->render(['items' => ''], '', $block))->toBe('');
+        ->and((new AccordionRenderer())->render(['items' => []], '', $block))->toBe('');
+});
+
+it('falls back to a legacy delimited accordion string (backwards data)', function () use ($block) {
+    $html = (new AccordionRenderer())->render(['items' => "Q | A\nTitle only"], '', $block);
+
+    expect($html)->toContain('<summary class="corex-accordion__summary">Q</summary><div class="corex-accordion__content">A</div>')
+        ->toContain('<summary class="corex-accordion__summary">Title only</summary>');
 });
 
 it('uses no hardcoded colors or pixel sizes in any rendered markup (token-only)', function () use ($block) {

@@ -61,6 +61,7 @@ final class FormsServiceProvider extends ServiceProvider
         );
         $this->container->singleton(FormSubmissionService::class);
         $this->container->singleton(SubmitController::class);
+        $this->container->singleton(FormsListController::class);
         $this->container->singleton(FormBlockRenderer::class);
     }
 
@@ -74,6 +75,7 @@ final class FormsServiceProvider extends ServiceProvider
 
         add_action('rest_api_init', function (): void {
             $this->container->make(SubmitController::class)->register();
+            $this->container->make(FormsListController::class)->register();
         });
     }
 

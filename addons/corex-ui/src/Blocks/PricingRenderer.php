@@ -31,24 +31,25 @@ final class PricingRenderer implements BlockRenderer
             return '';
         }
 
+        // Inline-RichText fields (spec 029) → wp_kses_post; the CTA href stays esc_url.
         $html = '<div class="corex-pricing">';
 
         if ($plan !== '') {
-            $html .= sprintf('<h3 class="corex-pricing__plan">%s</h3>', esc_html($plan));
+            $html .= sprintf('<h3 class="corex-pricing__plan">%s</h3>', wp_kses_post($plan));
         }
 
         if ($price !== '') {
-            $html .= '<p class="corex-pricing__price">' . esc_html($price);
+            $html .= '<p class="corex-pricing__price">' . wp_kses_post($price);
             $period = trim((string) ($attributes['period'] ?? ''));
 
             if ($period !== '') {
-                $html .= sprintf('<span class="corex-pricing__period">%s</span>', esc_html($period));
+                $html .= sprintf('<span class="corex-pricing__period">%s</span>', wp_kses_post($period));
             }
 
             $html .= '</p>';
         }
 
-        $html .= $this->features((string) ($attributes['features'] ?? ''));
+        $html .= $this->features($attributes['features'] ?? []);
         $html .= $this->cta(
             trim((string) ($attributes['ctaText'] ?? '')),
             trim((string) ($attributes['ctaUrl'] ?? '')),
@@ -57,9 +58,19 @@ final class PricingRenderer implements BlockRenderer
         return $html . '</div>';
     }
 
-    private function features(string $raw): string
+    /**
+     * Feature list. Accepts the spec-029 array attribute (one rich string per item) or, as
+     * a fallback, the legacy newline-delimited string so already-placed blocks still render.
+     *
+     * @param array<int,string>|string $raw
+     */
+    private function features(array|string $raw): string
     {
-        $lines = array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $raw) ?: []));
+        $lines = is_array($raw)
+            ? $raw
+            : (preg_split('/\r\n|\r|\n/', $raw) ?: []);
+
+        $lines = array_filter(array_map(static fn ($f): string => trim((string) $f), $lines));
 
         if ($lines === []) {
             return '';
@@ -67,7 +78,7 @@ final class PricingRenderer implements BlockRenderer
 
         $items = '';
         foreach ($lines as $feature) {
-            $items .= sprintf('<li>%s</li>', esc_html($feature));
+            $items .= sprintf('<li>%s</li>', wp_kses_post($feature));
         }
 
         return sprintf('<ul class="corex-pricing__features">%s</ul>', $items);
@@ -79,6 +90,6 @@ final class PricingRenderer implements BlockRenderer
             return '';
         }
 
-        return sprintf('<a class="corex-pricing__cta" href="%s">%s</a>', esc_url($url), esc_html($text));
+        return sprintf('<a class="corex-pricing__cta" href="%s">%s</a>', esc_url($url), wp_kses_post($text));
     }
 }

@@ -32,18 +32,20 @@ final class StatRenderer implements BlockRenderer
             return '';
         }
 
+        // Fields are edited inline with RichText (spec 029), so they may carry safe inline
+        // HTML (bold/italic/links) — escape with wp_kses_post, not esc_html.
         $html = '<div class="corex-stat">';
 
         if ($value !== '') {
-            $html .= sprintf('<span class="corex-stat__value">%s</span>', esc_html($value));
+            $html .= sprintf('<span class="corex-stat__value">%s</span>', wp_kses_post($value));
         }
 
         if ($label !== '') {
-            $html .= sprintf('<span class="corex-stat__label">%s</span>', esc_html($label));
+            $html .= sprintf('<span class="corex-stat__label">%s</span>', wp_kses_post($label));
         }
 
         if ($desc !== '') {
-            $html .= sprintf('<p class="corex-stat__desc">%s</p>', esc_html($desc));
+            $html .= sprintf('<p class="corex-stat__desc">%s</p>', wp_kses_post($desc));
         }
 
         return $html . '</div>';

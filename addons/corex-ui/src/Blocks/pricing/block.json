@@ -11,7 +11,7 @@
 		"plan": { "type": "string", "default": "" },
 		"price": { "type": "string", "default": "" },
 		"period": { "type": "string", "default": "" },
-		"features": { "type": "string", "default": "" },
+		"features": { "type": "array", "default": [], "items": { "type": "string" } },
 		"ctaText": { "type": "string", "default": "" },
 		"ctaUrl": { "type": "string", "default": "" }
 	},
