@@ -31,6 +31,10 @@ final class DataServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Database\Casts\Caster::class);
         $this->container->singleton(\Corex\Database\Schema\Migrator::class);
 
+        // The registry of tables an app marks managed (spec 038); corex-config reads it to seed
+        // the Corex → Data screen with a source per table. Apps register their tables into it.
+        $this->container->singleton(\Corex\Database\Schema\ManagedTables::class);
+
         $this->container->singleton(
             FieldResolver::class,
             static fn (ContainerInterface $c): FieldResolver => new FieldResolver(

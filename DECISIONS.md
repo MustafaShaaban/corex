@@ -1166,3 +1166,23 @@ page. 18 new tests (Grade 3 + Store 3 + PSI 3 + Readiness 3 + Cloudflare 3 + Con
 wp-guard clean (remote get/post + timeout, cap+nonce on run, escaped output, no secret echo, conditional
 enqueue). Live PSI/Cloudflare runs are env-gated.
 Status: Final.
+
+## #72 — Custom tables in the admin: opt-in ManagedTable → auto-registered DataSource (no new UI)
+Date: 2026-06-12
+Context: spec 038 (user-requested, raised repeatedly). The Data screen (spec 030) could show any DataSource, but a
+custom table only appeared if you hand-registered one — the user wanted "if I created a custom table I should find
+the table view for it in the admin like post types."
+Decision: a Corex-managed table now appears in Corex → Data automatically. A pure `ManagedTable` (name + label +
+ordered columns) registered in a `ManagedTables` registry (corex-core, bound in DataServiceProvider) is turned by
+corex-config into a `TableDataSource` (key `table-<name>`) that implements the spec-030 `DataSource`; the
+ConfigServiceProvider seeds the `DataRegistry` with one per managed table, so the existing screen + REST +
+AdminGuard render it with **no new UI**. The `$wpdb` access is a thin `WpTableDataReader` boundary — every query
+**prepared** (`%i` identifiers, `%d` ids), the page read **bounded** (`LIMIT/OFFSET`), the count prepared — while
+the row/column shaping (drop extra columns, default missing, id + declared columns) is the pure, unit-tested
+`TableDataSource`. **Opt-in by design** (Principle IX): Corex never enumerates arbitrary tables; only those an app
+explicitly marks managed appear, behind a namespaced `table-` key. Read + delete only (matching submissions);
+row editing is out of scope.
+Why: the most-requested gap from the deep review — custom data visible + manageable in the admin like a post type,
+safely, with one declaration and zero UI code. 5 new tests (ManagedTable/registry 2 + TableDataSource 3) + 373
+total green; wp-guard clean (prepared + bounded). Live admin view is env-gated.
+Status: Final.

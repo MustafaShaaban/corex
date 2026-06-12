@@ -55,6 +55,24 @@ the reference implementation (`SubmissionsSource` + the `WpSubmissionsReader` bo
 own `DataSource` (e.g. over a `TableRepository`) to appear in the same screen with no new UI code. The screen
 renders + gates via the shared `AdminGuard`. (Spec 030.)
 
+**Custom tables appear automatically.** Mark any Corex-managed table **managed** and it shows up in Corex → Data
+like a post-type list — browsable, paginated, and deletable — with no admin code (spec 038):
+
+```php
+// in a service provider's boot(), once the table exists
+$container->make(Corex\Database\Schema\ManagedTables::class)->register(
+    new Corex\Database\Schema\ManagedTable('invoices', __('Invoices', 'corex'), [
+        ['id' => 'number', 'label' => __('Number', 'corex')],
+        ['id' => 'total',  'label' => __('Total', 'corex')],
+    ]),
+);
+```
+
+Each managed table becomes a `TableDataSource` (key `table-<name>`). The `$wpdb` access is the
+`WpTableDataReader` boundary — every query is **prepared** (`%i` identifiers, `%d` ids) and the page read is
+**bounded** (`LIMIT/OFFSET`); the row/column shaping is the pure, unit-tested `TableDataSource`. It is **opt-in**:
+Corex never enumerates arbitrary database tables.
+
 ## Insights screen (Corex → Insights)
 
 A **Corex → Insights** screen shows two result cards — **Performance** (Google PageSpeed Insights / Lighthouse)
