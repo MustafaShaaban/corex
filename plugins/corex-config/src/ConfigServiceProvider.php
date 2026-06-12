@@ -11,11 +11,13 @@ namespace Corex\Config;
 defined('ABSPATH') || exit;
 
 use Corex\Config\Addons\AddonsScreen;
+use Corex\Config\Addons\KitActivationNotice;
 use Corex\Config\Branding\AdminBranding;
 use Corex\Config\Branding\BrandingService;
 use Corex\Config\Data\DataAdminScreen;
 use Corex\Config\Data\DataController;
 use Corex\Config\Data\DataRegistry;
+use Corex\Config\Data\SubmissionsReader;
 use Corex\Config\Data\SubmissionsSource;
 use Corex\Config\Data\TableDataSource;
 use Corex\Config\Data\WpSubmissionsReader;
@@ -68,11 +70,14 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(AdminDashboard::class);
         $this->container->singleton(AddonsScreen::class);
 
+        // The submissions reader, shared by the Data source and the dashboard "Site status" card (spec 042).
+        $this->container->singleton(SubmissionsReader::class, static fn (): WpSubmissionsReader => new WpSubmissionsReader());
+
         // Data screen: a registry seeded with the submissions source, the REST controller,
         // and the React screen (spec 030).
         $this->container->singleton(DataRegistry::class, function (ContainerInterface $c): DataRegistry {
             $registry = new DataRegistry();
-            $registry->register(new SubmissionsSource(new WpSubmissionsReader()));
+            $registry->register(new SubmissionsSource($c->make(SubmissionsReader::class)));
 
             // Every table an app marked managed appears as its own source — no admin code (spec 038).
             $reader = new WpTableDataReader($c->make(Migrator::class));
@@ -120,6 +125,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(AdminBranding::class)->register();
         $this->container->make(AdminDashboard::class)->register();
         $this->container->make(AddonsScreen::class)->register();
+        $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();
         $this->container->make(InsightsScreen::class)->register();
         $this->container->make(OptionPageScreen::class)->register();

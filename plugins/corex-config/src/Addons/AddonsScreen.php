@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Config\Addons;
 
+use Corex\Provisioning\KitProvisioner;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -26,6 +27,8 @@ final class AddonsScreen
         private readonly AddonManager $manager,
         private readonly AddonActivator $activator,
         private readonly AdminGuard $guard,
+        private readonly KitProvisioner $provisioner,
+        private readonly PendingKits $pending,
     ) {
     }
 
@@ -143,6 +146,14 @@ final class AddonsScreen
 
         $this->activator->enable($addon);
         $this->notice(sprintf(/* translators: %s: add-on label */ __('Enabled %s.', 'corex'), $addon->label), 'success');
+
+        // If the enabled add-on is a kit, queue its activation prompt (spec 042) — content is never applied
+        // automatically; the prompt lets the admin choose to apply the starter content.
+        $kit = $this->provisioner->kitForModule($addon->slug);
+
+        if ($kit !== null) {
+            $this->pending->add($kit);
+        }
     }
 
     private function tryDisable(Addon $addon): void

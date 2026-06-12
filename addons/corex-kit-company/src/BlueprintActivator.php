@@ -66,9 +66,22 @@ final class BlueprintActivator
      * @param list<string>                                                      $modules
      * @param list<string>                                                      $flags
      */
+    /**
+     * Read-only: classify the declared pages against current site state (no writes) — the basis of the
+     * activation preview (spec 042). The same classification a real apply uses.
+     *
+     * @param list<array{title:string,slug:string,content:string,front?:bool}> $pages
+     *
+     * @return list<\Corex\Provisioning\PageDisposition>
+     */
+    public function classify(array $pages): array
+    {
+        return $this->planner->plan($pages, $this->signals($pages));
+    }
+
     public function seedPages(array $pages, array $modules = [], array $flags = []): ApplyOutcome
     {
-        $dispositions = $this->planner->plan($pages, $this->signals($pages));
+        $dispositions = $this->classify($pages);
 
         $bySlug = [];
         foreach ($pages as $page) {
