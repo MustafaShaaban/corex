@@ -436,6 +436,28 @@ Malformed configuration, unresolvable dependencies, and broken providers are wri
 WordPress debug log. When `WP_DEBUG` is on, they also appear as a single dismissible admin
 notice. Boot stays non-fatal.
 
+## Self-update
+
+Corex updates through WordPress's own plugin-update flow. The Core plugin declares an `Update URI`
+header so WP routes its update check to Corex; on each check `UpdateService` fetches a JSON manifest
+from `updates.endpoint` (config, default empty), and a pure `UpdateChecker` decides — by `version_compare`
+— whether it advertises a newer release. If so, a standard update object is injected into WP's update
+transient and the update appears in **Plugins → Updates**, installed by WordPress's own updater.
+
+```php
+// config/app.php (or .env: COREX_UPDATES_ENDPOINT=…)
+'updates' => ['endpoint' => 'https://updates.example.com/corex/manifest.json'],
+```
+
+```json
+{ "version": "0.22.0", "package": "https://…/corex-core.zip", "url": "https://…", "requires": "7.0", "tested": "7.0" }
+```
+
+**Fail-safe:** an empty, unreachable, or malformed source is a silent no-op — Corex never phones home
+unless you configure a source you control. An update replaces **framework files only**; your `corex-app/`,
+`brand.json`, content, and data are never touched. Full guide + the safe-edit boundary:
+[`docs/en/05-deployment/updates-and-distribution.md`](../../docs/en/05-deployment/updates-and-distribution.md).
+
 ## Tests
 
 ```bash

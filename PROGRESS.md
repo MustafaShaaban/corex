@@ -845,3 +845,17 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   tests + 320 total green**; SCSS builds; token-only scans clean (the styles test now forbids hex/px-rem
   literals, allowing tokens + line-height/weight). DECISIONS #67. docs-app branding guide updated.
   **▶ NEXT:** spec **034 — self-update mechanism + distribution** (plugin-style update notifications).
+
+- [x] **`specs/034-self-update/` — COMPLETE + IMPLEMENTED (2026-06-12).** Corex updates through WordPress's
+  own plugin-update flow. A pure `UpdateChecker` (`check(currentVersion, manifest): ?array`, semver) decides
+  if a newer release is published; an `UpdateService` (corex-core) declares an `Update URI` header, hooks
+  `pre_set_site_transient_update_plugins` + `plugins_api`, fetches a JSON manifest from `updates.endpoint`
+  (config default empty) via `wp_remote_get`, and injects a standard update object — WP's own updater installs
+  the package. **Fail-safe:** empty/unreachable/malformed source → silent no-op (Corex never phones home unless
+  you configure a source you control). The **safe-edit boundary** is documented + true by construction: an
+  update replaces framework files only — never `corex-app/`, `brand.json`, content, or data. **8 update tests +
+  328 total green**; wp-guard clean (wp_remote_get + timeout, ABSPATH guards, i18n'd popup, no secret).
+  DECISIONS #68. Deployment guide `docs/en/05-deployment/updates-and-distribution.md` + docs-app
+  `guides/updates`. Install-from-admin round-trip is env-gated.
+  **▶ NEXT:** spec **035 — block library expansion v2** (team/gallery/tabs/stats-grid/hero on the 029 inline
+  architecture).

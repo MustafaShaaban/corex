@@ -1073,3 +1073,25 @@ literals (allowing `var(--wp--…)` tokens + unitless line-height/font-weight).
 Why: a framework needs a real design system out of the box; additive expansion avoids breaking existing
 blocks/patterns. 6 token tests + 320 total green; SCSS builds; token-only scans clean. Visual is env-gated.
 Status: Final.
+
+## #68 — Self-update: WP-native plugin-update flow, fail-safe, with a documented safe-edit boundary
+Date: 2026-06-12
+Context: spec 034. Users asked how they'd be notified of new releases and — critically — whether an update
+would overwrite their work. WordPress already has a first-class plugin-update UX; reinventing it would be both
+more work and less trustworthy.
+Decision: Corex routes its own updates through WordPress's plugin-update flow. A pure `UpdateChecker`
+(`check(currentVersion, manifest): ?array`) decides via `version_compare` whether the manifest advertises a
+newer version. An `UpdateService` (corex-core) declares an `Update URI` header (so WP checks Corex, not
+wordpress.org), hooks `pre_set_site_transient_update_plugins` + `plugins_api`, fetches a JSON manifest from a
+configured endpoint (`updates.endpoint`, default empty) via `wp_remote_get`, and injects a standard update
+object — WP's own updater installs the package. **Fail-safe:** empty/unreachable/malformed source → silent
+no-op (Principle IX: the update source is optional config, never a hard dependency; Corex never phones home
+unless you configure a source you control). The **safe-edit boundary** is documented + true by construction:
+an update replaces framework files only (`plugins/corex-*`, framework add-ons, theme scaffold/tokens) and
+never `corex-app/`, `brand.json`, content, or data — because everything you author lives outside the framework
+plugins. A deployment guide documents publishing a manifest + package (GitHub Releases / static host).
+Why: trustworthy, familiar, and safe-by-design updates; the pure checker keeps the version logic headless and
+tested while WP does the signed install. 8 update tests + 328 total green; wp-guard clean (wp_remote_get with
+timeout, ABSPATH guards, i18n'd popup string, no secret in the check). Install-from-admin round-trip is
+env-gated (needs a published release + browser).
+Status: Final.
