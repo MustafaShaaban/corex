@@ -436,6 +436,37 @@ Malformed configuration, unresolvable dependencies, and broken providers are wri
 WordPress debug log. When `WP_DEBUG` is on, they also appear as a single dismissible admin
 notice. Boot stays non-fatal.
 
+## Self-update
+
+Corex updates through WordPress's own plugin-update flow. The Core plugin declares an `Update URI`
+header so WP routes its update check to Corex; on each check `UpdateService` fetches a JSON manifest
+from `updates.endpoint` (config, default empty), and a pure `UpdateChecker` decides — by `version_compare`
+— whether it advertises a newer release. If so, a standard update object is injected into WP's update
+transient and the update appears in **Plugins → Updates**, installed by WordPress's own updater.
+
+```php
+// config/app.php (or .env: COREX_UPDATES_ENDPOINT=…)
+'updates' => ['endpoint' => 'https://updates.example.com/corex/manifest.json'],
+```
+
+```json
+{ "version": "0.22.0", "package": "https://…/corex-core.zip", "url": "https://…", "requires": "7.0", "tested": "7.0" }
+```
+
+**Fail-safe:** an empty, unreachable, or malformed source is a silent no-op — Corex never phones home
+unless you configure a source you control. An update replaces **framework files only**; your `corex-app/`,
+`brand.json`, content, and data are never touched. Full guide + the safe-edit boundary:
+[`docs/en/05-deployment/updates-and-distribution.md`](../../docs/en/05-deployment/updates-and-distribution.md).
+
+## Health check
+
+`HealthReport` folds a set of independent `HealthProbe`s (PHP/WordPress version, a block theme active,
+`brand.json` present, uploads writable) into one report whose overall status is the worst finding. The
+aggregator + probes are pure (WP values injected), so they're unit-tested headlessly. `HealthModule`
+registers them into **Tools → Site Health**, and `wp corex doctor` renders the same report (non-zero exit
+on critical). Probes are advisory where appropriate (a classic theme / missing brand → recommended, not a
+failure — Principle IX) and critical only where they must be.
+
 ## Tests
 
 ```bash

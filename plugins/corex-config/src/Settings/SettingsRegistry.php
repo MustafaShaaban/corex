@@ -59,6 +59,14 @@ final class SettingsRegistry
                     'captcha.secret' => ['label' => 'Captcha secret', 'type' => 'password'],
                 ],
             ],
+            'insights' => [
+                'title'  => 'Insights',
+                'fields' => [
+                    'insights.psi.key'              => ['label' => 'PageSpeed Insights API key', 'type' => 'password'],
+                    'insights.cloudflare.token'     => ['label' => 'Cloudflare API token', 'type' => 'password'],
+                    'insights.cloudflare.account_id' => ['label' => 'Cloudflare account ID', 'type' => 'text'],
+                ],
+            ],
         ];
     }
 

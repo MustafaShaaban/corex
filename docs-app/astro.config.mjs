@@ -51,6 +51,8 @@ export default defineConfig({
 						{ label: 'Settings & feature flags', slug: 'guides/configuration' },
 						{ label: 'Send email (Corex Mail)', slug: 'guides/mail' },
 						{ label: 'Model · Controller · Service', slug: 'guides/mvc' },
+						{ label: 'Updates & distribution', slug: 'guides/updates' },
+						{ label: 'Insights (performance & readiness)', slug: 'guides/insights' },
 					],
 				},
 				{

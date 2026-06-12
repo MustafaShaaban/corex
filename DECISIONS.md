@@ -1056,3 +1056,113 @@ service unchanged; the header logo answers "where's the branding". 4 form-render
 green; live-verified the controls render + AdminDashboard resolves with BrandingService. wp-guard clean
 (escaping per type, no inline px — the logo uses the HTML height attribute). Visual is env-gated.
 Status: Final.
+
+## #67 — Design system overhaul: richer tokens (shadows/radii/state colors) + element styles + a variation
+Date: 2026-06-12
+Context: spec 033. The design looked bare/flat — only 4 colors, 3 font sizes, 3 spacing steps, no shadows, no
+radii, no element styling. Blocks looked unstyled.
+Decision: expand `theme/theme.json` **additively** (every existing slug preserved, so nothing breaks): palette
++ surface-alt/border/ink-soft/primary-dark/accent-dark + state colors (success/warning/error/info); a real type
+scale (xs/base/xl/2xl + sm/lg/hero); a full spacing scale (10/20/40/60/70 + 30/50/80); **shadow presets**
+(sm/md/lg under `settings.shadow.presets`); and **radius tokens** (`settings.custom.radius` sm/md/lg/full →
+`--wp--custom--radius--*`). Add `styles.elements` for button/link/heading (token colours + radius + spacing) and
+a base line-height/block-gap. The card blocks (posts/testimonial/pricing/accordion) now use the shadow + radius
+tokens for depth + rounded corners (token-only, logical CSS). A new **Editorial** style variation ships
+alongside Dark. The token-only discipline is enforced: the styles test now forbids hex colours + px/rem size
+literals (allowing `var(--wp--…)` tokens + unitless line-height/font-weight).
+Why: a framework needs a real design system out of the box; additive expansion avoids breaking existing
+blocks/patterns. 6 token tests + 320 total green; SCSS builds; token-only scans clean. Visual is env-gated.
+Status: Final.
+
+## #68 — Self-update: WP-native plugin-update flow, fail-safe, with a documented safe-edit boundary
+Date: 2026-06-12
+Context: spec 034. Users asked how they'd be notified of new releases and — critically — whether an update
+would overwrite their work. WordPress already has a first-class plugin-update UX; reinventing it would be both
+more work and less trustworthy.
+Decision: Corex routes its own updates through WordPress's plugin-update flow. A pure `UpdateChecker`
+(`check(currentVersion, manifest): ?array`) decides via `version_compare` whether the manifest advertises a
+newer version. An `UpdateService` (corex-core) declares an `Update URI` header (so WP checks Corex, not
+wordpress.org), hooks `pre_set_site_transient_update_plugins` + `plugins_api`, fetches a JSON manifest from a
+configured endpoint (`updates.endpoint`, default empty) via `wp_remote_get`, and injects a standard update
+object — WP's own updater installs the package. **Fail-safe:** empty/unreachable/malformed source → silent
+no-op (Principle IX: the update source is optional config, never a hard dependency; Corex never phones home
+unless you configure a source you control). The **safe-edit boundary** is documented + true by construction:
+an update replaces framework files only (`plugins/corex-*`, framework add-ons, theme scaffold/tokens) and
+never `corex-app/`, `brand.json`, content, or data — because everything you author lives outside the framework
+plugins. A deployment guide documents publishing a manifest + package (GitHub Releases / static host).
+Why: trustworthy, familiar, and safe-by-design updates; the pure checker keeps the version logic headless and
+tested while WP does the signed install. 8 update tests + 328 total green; wp-guard clean (wp_remote_get with
+timeout, ABSPATH guards, i18n'd popup string, no secret in the check). Install-from-admin round-trip is
+env-gated (needs a published release + browser).
+Status: Final.
+
+## #69 — Block library v2: five marketing/layout blocks on the inline architecture (hero/cta/team/gallery/tabs)
+Date: 2026-06-12
+Context: spec 035. Users said there weren't enough custom blocks and the existing ones were too simple — a real
+site needs hero/CTA/team/gallery/tabbed sections, editable like a modern page builder.
+Decision: add five new dynamic, server-rendered blocks in corex-ui, all on the spec-029 inline-editing hybrid
+(RichText `edit` → attributes; `save: () => null`; PHP `<Name>Renderer` via `corex.renderer`; auto-discovered by
+the corex-blocks engine + the spec-018 build): **hero** (eyebrow/title/subtitle + gated CTA + optional
+media-library background), **cta** (heading/text + gated button), **team** (repeatable members with media-library
+photo + name/role/bio), **gallery** (repeatable media-library images + captions), **tabs** (repeatable label/
+content). Two deliberate choices: (1) image blocks use the **WordPress media library** (`MediaUpload`/
+`MediaPlaceholder`, store `{id,url,alt}`, render real `<img>` with alt + lazy/async) — never pasted URLs;
+(2) **tabs ship zero view JavaScript** — an accessible CSS-only `:checked` radio/label disclosure (focusable,
+arrow-key navigable), preserving Principle VI even for an interactive widget. Renderers degrade gracefully
+(empty/partial input → the documented "renders nothing"/skip rules) and stay token-only (spec-033 shadow/radius/
+spacing; logical CSS; structural `rem` grid tracks carry a justifying comment, the posts-block precedent).
+"stats-grid" is intentionally NOT a new block — it's several `corex/stat` in a grid container.
+Why: enough blocks to build a full landing page (hero → stats → team → gallery → cta) with no theme code, all
+edited on-canvas, all accessible/RTL/i18n. 7 Pest renderer tests + 27 Jest (10 suites) + 335 total green; all 12
+blocks build; token-only scan clean; wp-guard clean (escaping per field, esc_url media, lazy img). Editor/visual
+behavior is env-gated.
+Status: Final.
+
+## #70 — Release readiness: Site Health probes, one-step version stamping, shared i18n domain, OSS hygiene
+Date: 2026-06-12
+Context: spec 036, the "Finish Corex" release-readiness bundle. A site couldn't self-diagnose; the plugin/theme
+headers drifted from the release tag (read `0.1.0`); the text domain wasn't loaded; and the repo lacked the
+open-source files contributors/researchers expect.
+Decision: ship two pure engines + hygiene. (1) **Health** — a `HealthProbe` interface + small concrete probes
+(PHP/WP version, block theme active, brand present, uploads writable) folded by a pure `HealthReport` (overall =
+worst status; `hasCritical()`); a `HealthModule` registers them into WordPress **Site Health** (`site_status_tests`)
+and `wp corex doctor` renders the same report with a non-zero exit on critical (CI/SSH-friendly). Probes are
+advisory where appropriate (classic theme / missing brand → recommended, never a hard failure — Principle IX).
+(2) **Versioning** — a pure `VersionPlan` computes per-file header + `COREX_*_VERSION` edits for a target semver
+(rewrites only the first/header `Version:` line + every constant; returns only changed files → idempotent);
+`wp corex version <semver> [--dry-run]` applies/previews across the framework plugins, theme, and add-ons.
+(3) **i18n** — one shared literal `corex` text domain loaded on `init` by corex-core; a `composer i18n:pot` step
+writes `plugins/corex-core/languages/corex.pot`. (4) **Hygiene** — `LICENSE` (GPL-2.0-or-later, assembled from the
+bundled WP license text), `CODE_OF_CONDUCT.md` (Contributor Covenant, linked not reproduced), `SECURITY.md`,
+`.editorconfig`, and GitHub issue/PR templates. "Demo content" from the roadmap line was already delivered by
+spec 031 (kits seed real pages), so it is not re-added here.
+Why: a 1.0-track framework must self-diagnose, keep versions aligned automatically, ship translation-ready, and
+carry standard OSS files. The two engines stay pure + unit-tested; Site Health + WP-CLI are thin boundaries. 15
+new tests (HealthReport 4 + Probes 6 + VersionPlan 5) + 350 total green; composer valid; wp-guard clean (Site
+Health escaping, ABSPATH guards, real WP hooks). `.pot` generation + Site Health UI are env-gated.
+Status: Final.
+
+## #71 — Insights dashboard: a pluggable, scored, graceful provider seam (PSI performance + agent-readiness/Cloudflare)
+Date: 2026-06-12
+Context: spec 037 (user-requested). The user wanted "is the website agent-ready" + "Google insights for
+performance" as two admin widgets with a Run button — one Cloudflare, one Lighthouse — and asked for it to be
+genuinely useful, not just the literal ask.
+Decision: build a **Corex → Insights** dashboard in corex-config on a pluggable `InsightProvider` seam. Two
+providers ship: **Performance** (Google PageSpeed Insights / Lighthouse → score + Core Web Vitals + top
+opportunities) and **Readiness** (the site's agent-readiness — HTTPS, `llms.txt`, sitemap, agent-permitting
+robots, exposed MCP abilities — scored natively, enriched by a Cloudflare URL-scan when a token is configured).
+Beyond the literal ask: (1) a pure scoring vocabulary (`Grade`: 0–100 → A–F + good/recommended/critical, shared
+with the health screen); (2) every provider's normaliser/scorer is **pure + unit-tested** (`PsiNormalizer`,
+`CloudflareNormalizer`, `ReadinessScorer`), the fetch/REST/cards thin; (3) results are **cached + history-kept**
+(`InsightStore`); (4) **graceful degradation** (Principle IX) — no key/token → a useful "configure me" state, an
+async Cloudflare scan → a `pending` result, never an error/fatal; (5) **security** (Principle VII) — runs are
+`manage_options` + REST nonce and **secrets never appear in a response** (the `InsightResult` value carries only
+scores/metrics/recommendations); (6) the readiness card is useful with **zero** third-party config because the
+native signals always score. The admin cards are a small vanilla `apiFetch` script (no build) with token-fallback
+admin-palette CSS (wp-admin context, where Corex theme tokens aren't loaded). Secrets are set as write-only
+password fields in Settings (spec 032). A new card = one more registered provider, no UI change.
+Why: a trustworthy, extensible, self-contained insights surface that works out of the box and never blocks the
+page. 18 new tests (Grade 3 + Store 3 + PSI 3 + Readiness 3 + Cloudflare 3 + Controller 3) + 368 total green;
+wp-guard clean (remote get/post + timeout, cap+nonce on run, escaped output, no secret echo, conditional
+enqueue). Live PSI/Cloudflare runs are env-gated.
+Status: Final.

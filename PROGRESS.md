@@ -836,3 +836,64 @@ Each via the full Spec Kit cycle + docs + docs-app + PR/CI.
   stays nonce+cap gated. **4 unit + 315 PHP total green**; live-verified the controls render + AdminDashboard
   resolves with BrandingService. wp-guard clean. DECISIONS #66. docs-app + corex-config README updated.
   **▶ NEXT:** spec **033 — design system overhaul** (richer tokens, shadows/radii/fonts, style variations).
+
+- [x] **`specs/033-design-system/` — COMPLETE + IMPLEMENTED (2026-06-12).** A real design system in `theme.json`
+  (additive — existing slugs preserved): expanded palette (surface-alt/border/ink-soft + state colors), a full
+  type scale (xs/base/xl/2xl + sm/lg/hero), a complete spacing scale, **shadow presets** + **radius tokens**,
+  and `styles.elements` (button/link/heading). The card blocks (posts/testimonial/pricing/accordion) gained
+  **depth** (shadow + radius tokens, token-only). New **Editorial** style variation alongside Dark. **6 token
+  tests + 320 total green**; SCSS builds; token-only scans clean (the styles test now forbids hex/px-rem
+  literals, allowing tokens + line-height/weight). DECISIONS #67. docs-app branding guide updated.
+  **▶ NEXT:** spec **034 — self-update mechanism + distribution** (plugin-style update notifications).
+
+- [x] **`specs/034-self-update/` — COMPLETE + IMPLEMENTED (2026-06-12).** Corex updates through WordPress's
+  own plugin-update flow. A pure `UpdateChecker` (`check(currentVersion, manifest): ?array`, semver) decides
+  if a newer release is published; an `UpdateService` (corex-core) declares an `Update URI` header, hooks
+  `pre_set_site_transient_update_plugins` + `plugins_api`, fetches a JSON manifest from `updates.endpoint`
+  (config default empty) via `wp_remote_get`, and injects a standard update object — WP's own updater installs
+  the package. **Fail-safe:** empty/unreachable/malformed source → silent no-op (Corex never phones home unless
+  you configure a source you control). The **safe-edit boundary** is documented + true by construction: an
+  update replaces framework files only — never `corex-app/`, `brand.json`, content, or data. **8 update tests +
+  328 total green**; wp-guard clean (wp_remote_get + timeout, ABSPATH guards, i18n'd popup, no secret).
+  DECISIONS #68. Deployment guide `docs/en/05-deployment/updates-and-distribution.md` + docs-app
+  `guides/updates`. Install-from-admin round-trip is env-gated.
+  **▶ NEXT:** spec **035 — block library expansion v2** (team/gallery/tabs/stats-grid/hero on the 029 inline
+  architecture).
+
+- [x] **`specs/035-block-library-v2/` — COMPLETE + IMPLEMENTED (2026-06-12).** Five new dynamic, inline-edited,
+  server-rendered blocks in corex-ui on the spec-029 hybrid: **hero** (eyebrow/title/subtitle + gated CTA +
+  optional media-library background), **cta** (heading/text + gated button), **team** (repeatable members,
+  media-library photo + name/role/bio), **gallery** (repeatable media-library images + captions), **tabs**
+  (repeatable label/content). Image blocks use the **media library** (`{id,url,alt}`, real `<img>` + lazy/async),
+  not pasted URLs; **tabs ship zero view JavaScript** (CSS-only `:checked` radio/label disclosure, focusable +
+  arrow-key navigable — Principle VI even for an interactive widget). Renderers degrade gracefully and stay
+  token-only (spec-033 tokens, logical CSS). Enough to build a full landing page (hero → stats → team → gallery →
+  cta) with no theme code. **7 Pest renderer tests + 27 Jest (10 suites) + 335 total green**; all 12 blocks build;
+  wp-guard clean. DECISIONS #69. docs-app `guides/blocks` + corex-ui README updated.
+  **▶ NEXT:** spec **036 — health-check, demo content, versioning alignment, i18n/.pot, OSS hygiene**
+  (CONTRIBUTING/LICENSE/.editorconfig).
+
+- [x] **`specs/036-health-hygiene/` — COMPLETE + IMPLEMENTED (2026-06-12).** Release-readiness bundle. Two pure
+  engines + hygiene. **Health:** `HealthProbe` + probes (PHP/WP version, block theme, brand present, uploads
+  writable) folded by a pure `HealthReport` (overall = worst; `hasCritical()`); `HealthModule` registers them
+  into **Site Health** and `wp corex doctor` renders the same report (non-zero exit on critical). **Versioning:**
+  a pure `VersionPlan` + `wp corex version <semver> [--dry-run]` stamps every framework header + `COREX_*_VERSION`
+  to one semver (idempotent; returns only changed files) — kills the `0.1.0` drift. **i18n:** one shared `corex`
+  domain loaded on `init`; `composer i18n:pot` → `plugins/corex-core/languages/corex.pot`. **Hygiene:** LICENSE
+  (GPL-2.0-or-later), CODE_OF_CONDUCT, SECURITY, .editorconfig, GitHub issue/PR templates. (Demo content was
+  already delivered by spec 031.) **15 new tests (HealthReport 4 + Probes 6 + VersionPlan 5) + 350 total green**;
+  composer valid; wp-guard clean. DECISIONS #70. docs-app `guides/cli` + corex-core/CLI READMEs updated.
+  **▶ NEXT:** spec **037 — site readiness + performance dashboard** (Cloudflare + Lighthouse widgets + on-demand
+  check) — user-requested; full Spec Kit.
+
+- [x] **`specs/037-insights-dashboard/` — COMPLETE + IMPLEMENTED (2026-06-12).** A **Corex → Insights** dashboard
+  (corex-config) with two Run-on-demand cards on a pluggable `InsightProvider` seam: **Performance** (Google
+  PageSpeed Insights / Lighthouse → score + Core Web Vitals + top opportunities) and **Readiness** (agent-readiness
+  — HTTPS, `llms.txt`, sitemap, agent-permitting robots, MCP abilities — scored natively, enriched by a Cloudflare
+  URL-scan when configured). Pure + unit-tested core (`Grade` A–F, `PsiNormalizer`, `CloudflareNormalizer`,
+  `ReadinessScorer`, `InsightStore` cache+history); thin fetch/REST/cards. **Graceful degradation** (Principle IX:
+  no key/token → a useful "configure me" state, async scan → pending, never errors). **Secure** (Principle VII:
+  runs are `manage_options` + REST nonce; **secrets never in a response**). Vanilla `apiFetch` cards (no build);
+  secrets set as write-only fields in Settings. **18 new tests + 368 total green**; wp-guard clean. DECISIONS #71.
+  docs-app `guides/insights` + corex-config README.
+  **▶ NEXT:** roadmap 029–037 delivered. Cut a release (v0.22.0 → main) and then check the WP/WAMP error logs.

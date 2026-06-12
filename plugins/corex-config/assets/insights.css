@@ -1,0 +1,102 @@
+/**
+ * Corex Insights cards — token-only, logical CSS (RTL-correct), accessible. Falls back to the
+ * WordPress admin palette variables where Corex tokens aren't loaded in wp-admin.
+ */
+.corex-insights {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+	gap: var(--wp--preset--spacing--40, 1.25rem);
+	margin-block-start: var(--wp--preset--spacing--30, 1rem);
+}
+
+.corex-insight-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--20, 0.75rem);
+	padding: var(--wp--preset--spacing--40, 1.25rem);
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: var(--wp--custom--radius--md, 8px);
+	border-inline-start-width: 4px;
+}
+
+.corex-insight-card.is-good {
+	border-inline-start-color: #00a32a;
+}
+
+.corex-insight-card.is-recommended {
+	border-inline-start-color: #dba617;
+}
+
+.corex-insight-card.is-critical {
+	border-inline-start-color: #d63638;
+}
+
+.corex-insight-card__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--wp--preset--spacing--20, 0.75rem);
+}
+
+.corex-insight-card__head h2 {
+	margin: 0;
+	font-size: 1.25rem;
+}
+
+.corex-insight-card__score {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	min-inline-size: 3.5rem;
+	line-height: 1.1;
+}
+
+.corex-insight-card__grade {
+	font-size: 1.75rem;
+	font-weight: 700;
+}
+
+.corex-insight-card__num {
+	font-size: 0.75rem;
+	color: #50575e;
+}
+
+.corex-insight-card__summary {
+	margin: 0;
+	color: #50575e;
+}
+
+.corex-insight-card__metrics,
+.corex-insight-card__recs {
+	margin: 0;
+	padding-inline-start: 0;
+	list-style: none;
+}
+
+.corex-insight-card__metric {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--wp--preset--spacing--20, 0.75rem);
+	padding-block: 0.25rem;
+	border-block-end: 1px solid #f0f0f1;
+}
+
+.corex-insight-card__recs {
+	padding-inline-start: 1.1rem;
+	list-style: disc;
+	color: #50575e;
+}
+
+.corex-insight-card__foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--wp--preset--spacing--20, 0.75rem);
+	margin-block-start: auto;
+}
+
+.corex-insight-card__time {
+	font-size: 0.8rem;
+	color: #787c82;
+}
