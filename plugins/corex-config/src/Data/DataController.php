@@ -35,6 +35,12 @@ final class DataController
         ]);
 
         register_rest_route('corex/v1', '/data/(?P<source>[\w-]+)/(?P<id>\d+)', [
+            'methods'             => 'GET',
+            'callback'            => [$this, 'show'],
+            'permission_callback' => [$this, 'canManage'],
+        ]);
+
+        register_rest_route('corex/v1', '/data/(?P<source>[\w-]+)/(?P<id>\d+)', [
             'methods'             => 'DELETE',
             'callback'            => [$this, 'remove'],
             'permission_callback' => [$this, 'canDelete'],
@@ -79,13 +85,53 @@ final class DataController
         ];
     }
 
+    /**
+     * The query payload for a source — search/filter/sort/paginate when the source is
+     * queryable (spec 045), else plain pagination (unchanged for non-queryable sources).
+     *
+     * @return array{columns:list<array{id:string,label:string}>,rows:list<array<string,scalar>>,total:int}|null
+     */
+    public function queryPayload(string $sourceKey, DataQuery $query): ?array
+    {
+        $source = $this->registry->find($sourceKey);
+
+        if ($source === null) {
+            return null;
+        }
+
+        if ($source instanceof QueryableDataSource) {
+            return [
+                'columns' => $source->columns(),
+                'rows'    => $source->query($query),
+                'total'   => $source->count($query),
+            ];
+        }
+
+        return [
+            'columns' => $source->columns(),
+            'rows'    => $source->rows($query->page, $query->perPage),
+            'total'   => $source->total(),
+        ];
+    }
+
+    /**
+     * Build the query from the (sanitised) request params.
+     */
+    public function queryFrom(WP_REST_Request $request): DataQuery
+    {
+        return DataQuery::from([
+            'search'   => sanitize_text_field((string) $request->get_param('search')),
+            'form'     => sanitize_key((string) $request->get_param('form')),
+            'sort'     => sanitize_key((string) $request->get_param('sort')),
+            'dir'      => sanitize_key((string) $request->get_param('dir')),
+            'page'     => (int) ($request->get_param('page') ?: 1),
+            'per_page' => (int) ($request->get_param('per_page') ?: 20),
+        ]);
+    }
+
     public function index(WP_REST_Request $request): WP_REST_Response
     {
-        $payload = $this->payload(
-            (string) $request->get_param('source'),
-            (int) ($request->get_param('page') ?: 1),
-            (int) ($request->get_param('per_page') ?: 20),
-        );
+        $payload = $this->queryPayload((string) $request->get_param('source'), $this->queryFrom($request));
 
         if ($payload === null) {
             return new WP_REST_Response(
@@ -95,6 +141,24 @@ final class DataController
         }
 
         return new WP_REST_Response(ResponseEnvelope::success($payload)->toArray());
+    }
+
+    public function show(WP_REST_Request $request): WP_REST_Response
+    {
+        $source = $this->registry->find((string) $request->get_param('source'));
+
+        $record = $source instanceof QueryableDataSource
+            ? $source->record((int) $request->get_param('id'))
+            : null;
+
+        if ($record === null) {
+            return new WP_REST_Response(
+                ResponseEnvelope::error('not_found', __('That record was not found.', 'corex'))->toArray(),
+                404,
+            );
+        }
+
+        return new WP_REST_Response(ResponseEnvelope::success($record)->toArray());
     }
 
     public function remove(WP_REST_Request $request): WP_REST_Response

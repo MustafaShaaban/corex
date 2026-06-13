@@ -71,7 +71,7 @@ US3 = Insights/PSI diagnostics (P1) · US4 = rich add-on manifests (P2) · US5 =
 - [x] T026 Run the Guard Gate on the full diff: clean-code-guard, wp-guard (AdminGuard cap+nonce, escaping, remote-get, **no secret in any response**), test-guard, docs-guard. Fix findings.
 - [x] T027 Token-only scan over `control-panel.css`; confirm status legibility without color (WCAG) + logical/RTL.
 - [x] T028 Run suites: `composer test` (Pest) + `npm run test:js` (Jest) green; record counts. Attempt the env-gated Playwright smoke or record it as environment-gated.
-- [ ] T029 Update `PROGRESS.md` + log `DECISIONS.md` #78; end with the NEXT STEP block. Commit → PR → CI → merge.
+- [x] T029 Update `PROGRESS.md` + log `DECISIONS.md` #78; end with the NEXT STEP block. Commit → PR → CI → merge.
 
 ---
 
