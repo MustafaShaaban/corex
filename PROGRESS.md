@@ -44,10 +44,37 @@ distribution · 051 Design Language System · 052 visual/E2E in CI. *(Pre-work, 
   - **US4 (admin parity):** the Insights + Data controllers emit the envelope (additive, statuses preserved);
     `insights.js` + the Data React app call `window.Corex.api`/`envelope.data` (dead `@wordpress/api-fetch` import
     removed); `InsightsScreen`/`DataAdminScreen` declare `corex-runtime` as a dependency; both rebuilt.
-  - **▶ NEXT:** commit 043 (Conventional Commits) → PR → CI green → merge to develop; then **spec 044** (admin control
-    panel & integrations) per the roadmap. Release batching per the v0.x rhythm (e.g. 043[+044…] → a tagged release).
-    Browser smoke (`tests/e2e/`) remains the standing env-gated follow-up. (The optional agent-context hook is
-    env-blocked — Python absent on PATH — skipped; PROGRESS is the record.)
+  - **MERGED to develop** via **PR #20** (CI green, 25s; branch deleted) — 043 is done end-to-end.
+  - Release batches per the v0.x rhythm (043[+044…] → a tagged `develop`→`main` release). Browser smoke
+    (`tests/e2e/`) remains the standing env-gated follow-up. (The optional agent-context hook is env-blocked.)
+- [~] **`specs/044-admin-control-panel/` — PLANNED + FOUNDATION IMPLEMENTED (2026-06-13).** On
+  `feature/044-admin-control-panel`. Full Spec Kit planning: spec + checklist (all PASS, 0 `[NEEDS CLARIFICATION]`) ·
+  plan (Constitution PASS) · research (D1–D9) · data-model · contracts/{test-actions,domain-status} · quickstart ·
+  tasks (**29 tasks**, US1–US5). Scope: control-panel IA (per-domain status cards + onboarding checklist), captcha
+  config + Test-verification button, Insights/PSI diagnostics (local-URL detection + failure classification), rich
+  add-on manifests, authorship cleanup — all reusing 032/026/037/016/012 + the 043 envelope/runtime, **no new store,
+  no new driver**, every test action AdminGuard-gated + envelope-shaped + **no secret**.
+  - **Foundation + US1 (MVP) + US2-core DONE + green (T001–T011), 11/29 tasks:**
+    - Foundation: pure `Corex\Config\ControlPanel\{DomainStatus,ControlPanelStatus,OnboardingStep,OnboardingChecklist}`.
+    - US1: `ControlPanelView` (cards + checklist, escaped, status by icon+text not color) wired into `AdminDashboard`
+      (autowired — renders the panel from the settings values) + `assets/control-panel.css` (token/admin-fallback, RTL),
+      conditionally enqueued on the settings screen.
+    - US2-core: `SettingsRegistry` captcha section extended (site_key + v3 score_threshold + action; secret stays
+      write-only) + pure `Corex\Config\Captcha\CaptchaDiagnostic` (ok/missing_keys/invalid_keys/network_error/
+      not_applicable — **secret-free by construction**).
+    - **Tests: 19 new Pest (DomainStatus 6 + OnboardingChecklist 4 + ControlPanelView 4 + CaptchaDiagnostic 5) →
+      full suite 445 Pest green.** Guard self-check clean (escaped, no secret in the panel, conditional enqueue).
+  - **US2–US5 DONE (26/29 tasks):** US2 — `Corex\Captcha\CaptchaDiagnostic` (error-code aware, secret-free) +
+    `CaptchaTestController` (REST, cap+nonce, envelope, in the captcha add-on for domain ownership). US3 — pure
+    `SiteUrlReachability` + `PsiDiagnostic` (local_url/http_error/quota/invalid_key/invalid_response/ok, admin-only
+    scrubbed detail) wired into `PerformanceProvider` (the vague message is gone). US4 — `Addon` manifest extended
+    (summary/description/provides/needsKeys/docsUrl + `needsConfiguration()`/`missingKeys()`), populated + rendered
+    on the Add-ons screen. US5 — every framework `Author:` header → `Mustafa Shaaban` (no "team") + CONTRIBUTING note.
+    Docs: configuration.md + insights.md guides updated. **461 Pest + 40 Jest green.** Guard Gate clean. DECISIONS #78.
+  - **▶ 044 essentially COMPLETE (US1–US5 implemented + tested).** Remaining = **browser-gated only**: the captcha
+    **Test verification** button JS (T013) + a dedicated `/insights/test` action+button (T019) — the dashboard PSI run
+    already shows the classified message. **Roadmap: 043 merged; 044 done (US1–US5); 045–052 next.**
+    **▶ NEXT:** commit 044 → PR → CI → merge to develop; then **spec 045** (data-management pro).
 
 ---
 ## ▶ RESUME HERE (2026-06-13) — deep review + connectivity specs (040–042), spec-first

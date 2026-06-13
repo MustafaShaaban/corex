@@ -47,3 +47,12 @@ by registering another provider — security, SEO, or accessibility — with no 
 
 - [Settings & feature flags](./configuration.md) — where the Insights credentials live.
 - [The CLI](./cli.md) — `wp corex doctor` runs the framework health check (distinct from these site audits).
+
+## Diagnosing a failed performance check
+
+When PageSpeed can't be read, Corex classifies the cause instead of showing a generic error
+(spec 044): a **local/private URL** (`localhost`, `*.local`, `127.0.0.1`, private ranges) is caught
+before the call and explained — PageSpeed can only crawl a public URL — and other failures are
+distinguished as `http_error`, `quota`, `invalid_key`, or `invalid_response`, each with a next
+action. The PageSpeed API key is *recommended* (not required); raw diagnostic detail is shown to
+`manage_options` admins only and is scrubbed of any key/token.

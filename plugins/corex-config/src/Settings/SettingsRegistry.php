@@ -56,7 +56,10 @@ final class SettingsRegistry implements FieldSections
                             'hcaptcha'  => 'hCaptcha',
                         ],
                     ],
-                    'captcha.secret' => ['label' => 'Captcha secret', 'type' => 'password'],
+                    'captcha.site_key'        => ['label' => 'Site key', 'type' => 'text'],
+                    'captcha.secret'          => ['label' => 'Secret key', 'type' => 'password'],
+                    'captcha.score_threshold' => ['label' => 'reCAPTCHA v3 score threshold', 'type' => 'text'],
+                    'captcha.action'          => ['label' => 'reCAPTCHA v3 action', 'type' => 'text'],
                 ],
             ],
             'insights' => [
