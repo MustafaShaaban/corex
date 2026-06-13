@@ -38,15 +38,15 @@ US4 = SubmissionStore seam (P2).
 
 ## Phase 6: US4 — SubmissionStore seam (P2)
 
-- [ ] T014 [P] [US4] Pest `tests/Unit/Forms/PostMetaSubmissionStoreTest.php` — save/query/find/delete shaping over the corex_submission storage (reader injected).
-- [ ] T015 [US4] Define `Corex\Forms\Submission\SubmissionStore` (interface) + `PostMetaSubmissionStore` (default driver) until T014 green; bind it.
-- [ ] T016 [US4] Refactor `StoreSubmissionListener` (and the Data submissions reader) to go through the seam — behavior unchanged; existing submission tests stay green.
+- [x] T014 [P] [US4] Pest `tests/Unit/Forms/PostMetaSubmissionStoreTest.php` — save/query/find/delete shaping over the corex_submission storage (reader injected).
+- [x] T015 [US4] Define `Corex\Forms\Submission\SubmissionStore` (interface) + `PostMetaSubmissionStore` (default driver) until T014 green; bind it.
+- [x] T016 [US4] Refactor `StoreSubmissionListener` (and the Data submissions reader) to go through the seam — behavior unchanged; existing submission tests stay green.
 
 ## Phase 7: Polish
 
-- [ ] T017 [P] Docs: docs-app queries/data guide — the query/export/detail + the store-seam boundary (post-meta now, custom-table later, out of scope). corex-config README.
-- [ ] T018 Guard Gate (clean-code, wp-guard — prepared search/cap+nonce/escaped/no-secret/bounded export, test-guard, docs-guard). Fix findings.
-- [ ] T019 Suites green (`composer test` + `npm run test:js`); record counts. Playwright smoke env-gated.
+- [x] T017 [P] Docs: docs-app queries/data guide — the query/export/detail + the store-seam boundary (post-meta now, custom-table later, out of scope). corex-config README.
+- [x] T018 Guard Gate (clean-code, wp-guard — prepared search/cap+nonce/escaped/no-secret/bounded export, test-guard, docs-guard). Fix findings.
+- [x] T019 Suites green (`composer test` + `npm run test:js`); record counts. Playwright smoke env-gated.
 - [ ] T020 Update `PROGRESS.md` + `DECISIONS.md` #79; NEXT STEP. Commit → PR → CI → merge.
 
 ---

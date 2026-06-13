@@ -59,3 +59,9 @@ it('renders a missing value as empty', function () {
 
     expect($csv)->toBe("Date,Form\r\nd,\r\n");
 });
+
+it('neutralises a formula-injection value with a leading quote', function () {
+    $csv = $this->writer->write([['id' => 'v', 'label' => 'V']], [['v' => '=1+2']]);
+
+    expect($csv)->toBe("V\r\n'=1+2\r\n");
+});

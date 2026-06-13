@@ -48,6 +48,12 @@ final class CsvWriter
 
     private function escape(string $value): string
     {
+        // Guard against CSV formula injection: a value led by =, +, -, @ (or a control char)
+        // could be executed as a formula by a spreadsheet. Prefix it with a single quote.
+        if ($value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            $value = "'" . $value;
+        }
+
         if (preg_match('/[",\r\n]/', $value) === 1) {
             return '"' . str_replace('"', '""', $value) . '"';
         }

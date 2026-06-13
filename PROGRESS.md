@@ -22,10 +22,13 @@
 - **US2 (export):** `DataExportController` — `admin_post` CSV download, cap+nonce, bounded to 5000 rows, only
   declared columns (no secret); pure `csvFor` tested.
 - **US3 (detail) backend:** `record()` → readable label→value fields + the GET `/data/{source}/{id}` endpoint.
-- **▶ NEXT for 045:** **US4** `SubmissionStore` seam (interface + `PostMetaSubmissionStore` driver in corex-forms;
-  refactor `StoreSubmissionListener` through it — custom-table driver out of scope) + the **browser-gated** React UI
-  (T009 search/sort/paginate, T011 export button, T013 detail view) + polish (docs/guards) → commit→PR→CI→merge.
-  Then **046–052**. Roadmap: 043+044 merged; 045 backend done; `v0.25.0` (043+044) staged on develop, not cut.
+- **US4 DONE:** `Corex\Forms\Submission\SubmissionStore` seam — `SubmissionRepository` (post-meta) is the default
+  driver; `StoreSubmissionListener` depends on the seam (DIP). Custom-table driver out of scope. + docs guide
+  `guides/data.md`, CSV formula-injection guard. **479 Pest + 40 Jest green.** DECISIONS #79.
+- **▶ 045 BACKEND COMPLETE (US1–US4).** 15/20 tasks. Remaining = **browser-gated** React UI (T009 search/sort/
+  paginate, T011 export button, T013 detail view) + T007 (TableDataSource queryable — deferred, pagination fallback).
+  Backend is backward-compatible (existing React app works). **▶ NEXT:** push → PR → CI → merge 045; then **046–052**.
+  Roadmap: 043+044 merged; 045 backend done (mergeable); `v0.25.0` staged on develop, not cut.
 
 ---
 ## ▶ RESUME HERE (2026-06-13, later) — roadmap 043–052 + spec 043 PLANNED (ready to implement)

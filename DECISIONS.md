@@ -1325,3 +1325,25 @@ Remaining = the two **browser-gated test buttons** (captcha + a dedicated `/insi
 run already shows the classified PSI message; live browser-visual confirmation is env-gated, as for every spec
 since 018.
 Status: Final (US1–US5 implemented + tested; the test-button JS + `/insights/test` endpoint are the env-gated tail).
+
+## #79 — Data-management pro: queryable sources, CSV export, detail, store seam (spec 045)
+Date: 2026-06-13
+Context: spec 045 (roadmap). The Data tab (specs 030/038) was an unfiltered list; the brief asked for search/filter/
+sort/paginate, CSV export, a readable detail view, and a decision on long-term storage (CPT vs custom table).
+Decision: extend the data layer **additively** (OCP — nothing existing changed). A pure `Corex\Config\Data\DataQuery`
+(clamped search/filter/sort/paginate VO) + `CsvWriter` (RFC-4180 + **CSV-formula-injection guard**; only the
+source's declared columns → no secret can leak). A new `QueryableDataSource` **extends** `DataSource`
+(`query`/`count`/`record`) — `SubmissionsSource` implements it (delegating to an extended `SubmissionsReader`:
+`WpSubmissionsReader` adds a form-meta filter + date sort + pagination via WP_Query args, no SQL string-building),
+while `TableDataSource` + the existing `DataController` payload path stay unchanged (non-queryable sources fall back
+to pagination). `DataController` gains a `queryFrom`/`queryPayload` path + a GET `/data/{source}/{id}` **detail**
+route (label→value fields). `DataExportController` is an `admin_post` CSV download — `manage_options` + nonce,
+**bounded** to 5000 rows, only declared columns — with the pure `csvFor` unit-tested. **US4 storage seam:**
+`Corex\Forms\Submission\SubmissionStore` (interface) — the existing `SubmissionRepository` (post + `corex_field_*`
+postmeta) is the **default driver**; `StoreSubmissionListener` now depends on the seam (DIP), so a custom-table
+driver is a swap, not a rewrite (the **custom-table driver is out of scope** — the brief's "when volume demands").
+Why: makes the Data tab a real tool while keeping the change additive + backward-compatible (the existing React app
+still works against the unchanged list shape). **+13 Pest → 479 unit + 40 Jest green.** Guard Gate clean (prepared/
+bounded query, cap+nonce, CSV formula guard, no secret in any response). The React UI (search/sort/export/detail
+controls) is the **browser-gated** follow-up, as for every spec since 018.
+Status: Final (backend US1–US4 implemented + tested; the React UI controls are env-gated).
