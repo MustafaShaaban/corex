@@ -1297,3 +1297,31 @@ removed); `InsightsScreen` + `DataAdminScreen` declare `corex-runtime` as a scri
 Pest + 40 Jest still green. Live browser-visual confirmation is environment-gated (Apache down), as for every spec
 since 018.
 Status: Final (043 fully implemented across US1–US4; only the Playwright browser smoke is env-gated).
+
+## #78 — Admin control panel + integration diagnostics (spec 044)
+Date: 2026-06-13
+Context: spec 044 (roadmap item, keystone-built-on-043). The Corex settings felt like a flat form; captcha was
+configured blind; PageSpeed failures showed a vague "could not be read"; add-ons gave no explanation; headers
+credited a non-existent "team". Reuses 032/026/037/016/012 + the 043 envelope/runtime — no new store, no new driver.
+Decision: a control-panel layer of **pure services** over the existing settings. `Corex\Config\ControlPanel\
+{DomainStatus,ControlPanelStatus,OnboardingStep,OnboardingChecklist}` derive a per-domain status (configured/
+needs_setup/error) + an onboarding checklist from the already-stored settings; `ControlPanelView` renders status
+cards (status by icon+text, not color alone — WCAG) + the checklist, wired into the autowired `AdminDashboard`
+with a token/admin-fallback `control-panel.css` (conditional enqueue). Captcha: the `SettingsRegistry` section gains
+a site key + v3 score-threshold/action (secret stays write-only); a **`CaptchaTestController` in the captcha add-on**
+(domain ownership — corex-config gains no captcha dependency) probes the configured provider and answers with the
+spec-043 envelope classified by the pure, **secret-free** `Corex\Captcha\CaptchaDiagnostic` (reads provider
+error-codes to tell invalid-secret from a bad probe token). Insights: pure `SiteUrlReachability` (local/private URL
+detection) + `PsiDiagnostic` (local_url/http_error/quota/invalid_key/invalid_response/ok, admin-only detail scrubbed
+of key/token) now drive `PerformanceProvider` — the generic message is gone. Add-ons: the `Addon` manifest gains
+summary/description/provides/needsKeys/docsUrl (additive defaults) + `needsConfiguration()`/`missingKeys()`, rendered
+on the Add-ons screen. Authorship: every framework header → `Author: Mustafa Shaaban` (no "team"); convention in
+CONTRIBUTING.
+Why: makes the single install feel like a professional control panel and turns blind integration setup into
+confident, diagnosable configuration — reusing the 043 contract for the test actions. **+38 Pest (DomainStatus 6 +
+OnboardingChecklist 4 + ControlPanelView 4 + CaptchaDiagnostic 6 + SiteUrlReachability 4 + PsiDiagnostic 7 +
+AddonManifest 4 + wiring) → 461 unit green.** Guard Gate clean (no secret in any response; escaped; cap+nonce).
+Remaining = the two **browser-gated test buttons** (captcha + a dedicated `/insights/test` action) — the dashboard
+run already shows the classified PSI message; live browser-visual confirmation is env-gated, as for every spec
+since 018.
+Status: Final (US1–US5 implemented + tested; the test-button JS + `/insights/test` endpoint are the env-gated tail).

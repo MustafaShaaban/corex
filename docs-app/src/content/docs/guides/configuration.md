@@ -63,3 +63,21 @@ live in `config/features.php`: `pro`, `mail_queue`, `dataviews_admin`, `woocomme
 The Free/Pro split rides on `features.pro` — Free builds leave it off; Pro distributions
 enable it. One codebase, gated by a flag.
 :::
+
+## The control panel
+
+The Corex settings screen is a **control panel** (spec 044): the settings are grouped into
+domains (Branding, Mail, Forms, Captcha, Insights, …), each shown as a card with a status —
+**configured**, **needs setup**, or **error** — conveyed by an icon and text (not color alone).
+A domain that needs attention shows what is missing and a "how to set this up" link, and the
+dashboard carries an **onboarding checklist** of the steps still to do (with an "all set" state
+when nothing remains). Status is derived from your existing settings — nothing new is stored.
+
+## Captcha
+
+Pick a driver (none / honeypot / reCAPTCHA v3 / Turnstile / hCaptcha). Key-based drivers show a
+**site key** and a write-only **secret**, plus a score threshold and action for reCAPTCHA v3. The
+**Test verification** action (provided by the Corex Captcha add-on) probes the configured provider
+and reports a specific result — `ok`, `missing_keys`, `invalid_keys`, or `network_error` — through
+the standard response envelope. The secret is used only in the outbound probe and never appears in
+a response.

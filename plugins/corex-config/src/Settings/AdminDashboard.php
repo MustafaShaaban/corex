@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Settings;
 
 use Corex\Config\Branding\BrandingService;
+use Corex\Config\ControlPanel\ControlPanelView;
 use Corex\Config\Dashboard\SiteStatusCardRenderer;
 use Corex\Security\Admin\AdminGuard;
 
@@ -32,6 +33,7 @@ final class AdminDashboard
         private readonly AdminGuard $guard,
         private readonly BrandingService $branding,
         private readonly SiteStatusCardRenderer $status,
+        private readonly ControlPanelView $panel,
     ) {
     }
 
@@ -61,14 +63,19 @@ final class AdminDashboard
             return;
         }
 
+        $base = dirname(__DIR__, 2) . '/corex-config.php';
+
         wp_enqueue_media(); // the media frame the picker opens
         wp_enqueue_script(
             'corex-settings',
-            plugins_url('assets/settings.js', dirname(__DIR__, 2) . '/corex-config.php'),
+            plugins_url('assets/settings.js', $base),
             ['media-views'],
             '1.0.0',
             true,
         );
+
+        // The control-panel card/checklist styling (spec 044) — only on this screen (Principle VI).
+        wp_enqueue_style('corex-control-panel', plugins_url('assets/control-panel.css', $base), [], '1.0.0');
     }
 
     public function render(): void
@@ -85,9 +92,30 @@ final class AdminDashboard
         // A live "Site status" card — what the enabled add-ons actually did + where the data is (spec 042).
         $this->status->render();
 
+        // The control panel: an onboarding checklist + one status card per domain (spec 044).
+        // The cards/checklist are already escaped by ControlPanelView.
+        echo $this->panel->render($this->settingValues());
+
         // The form HTML is built with per-value escaping in SettingsForm.
         echo $this->form->render(fn (string $key): string => $this->store->get($key), $nonce)
             . '</div>';
+    }
+
+    /**
+     * The current settings values (Config dot-key => value) the control panel derives
+     * its per-domain status from.
+     *
+     * @return array<string,mixed>
+     */
+    private function settingValues(): array
+    {
+        $values = [];
+
+        foreach ($this->registry->keys() as $key) {
+            $values[$key] = $this->store->get($key);
+        }
+
+        return $values;
     }
 
     private function renderHeader(): void

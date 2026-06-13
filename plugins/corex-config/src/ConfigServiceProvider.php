@@ -35,6 +35,7 @@ use Corex\Config\Insights\Normalizers\PsiNormalizer;
 use Corex\Config\Insights\Providers\PerformanceProvider;
 use Corex\Config\Insights\Providers\ReadinessProvider;
 use Corex\Config\Insights\ReadinessScorer;
+use Corex\Config\Insights\SiteUrlReachability;
 use Corex\Config\Settings\AdminDashboard;
 use Corex\Config\Settings\FieldSections;
 use Corex\Config\Settings\SettingsRegistry;
@@ -99,6 +100,7 @@ final class ConfigServiceProvider extends ServiceProvider
             $registry = new InsightRegistry();
             $registry->register(new PerformanceProvider(
                 new PsiNormalizer(),
+                new SiteUrlReachability(),
                 (string) $config->get('insights.psi.key', ''),
             ));
             $registry->register(new ReadinessProvider(
