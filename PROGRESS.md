@@ -4,6 +4,33 @@
 > Updated at the end of every working session.
 
 ---
+## ▶ RESUME HERE (2026-06-13, latest) — roadmap 043–052: 043+044 MERGED, 045 backend done
+
+**Specs 043 + 044 are COMPLETE + MERGED to develop** (PRs #20, #21, CI green). See their detailed entries below.
+- **043** — `ResponseEnvelope` + `EnvelopeResponder` + buildless `window.Corex` runtime; forms/Insights/Data on it.
+- **044** — admin control panel (status cards + onboarding checklist), captcha + PSI diagnostics, rich add-on
+  manifests, authorship cleanup. 461 Pest + 40 Jest. DECISIONS #77/#78.
+
+**Spec 045 (data-management pro) — BACKEND DONE + TESTED (uncommitted→checkpoint commit on `feature/045-data-management-pro`).**
+9/20 tasks; **477 Pest green** (+12 this spec). Spec→plan→data-model→contract→quickstart→tasks all written.
+- **Foundation:** pure `Corex\Config\Data\DataQuery` (clamped query VO) + `CsvWriter` (RFC-4180, only declared
+  columns → no-secret tested).
+- **US1 (find):** additive `QueryableDataSource` (extends `DataSource` — OCP, nothing broke); `SubmissionsSource`
+  query/count/record + `WpSubmissionsReader` query/count/find (form filter via meta + date sort + paginate);
+  `DataController` query path (`queryFrom`/`queryPayload`) + a GET detail route. Backward-compatible (the existing
+  React app's page/per_page calls still work).
+- **US2 (export):** `DataExportController` — `admin_post` CSV download, cap+nonce, bounded to 5000 rows, only
+  declared columns (no secret); pure `csvFor` tested.
+- **US3 (detail) backend:** `record()` → readable label→value fields + the GET `/data/{source}/{id}` endpoint.
+- **US4 DONE:** `Corex\Forms\Submission\SubmissionStore` seam — `SubmissionRepository` (post-meta) is the default
+  driver; `StoreSubmissionListener` depends on the seam (DIP). Custom-table driver out of scope. + docs guide
+  `guides/data.md`, CSV formula-injection guard. **479 Pest + 40 Jest green.** DECISIONS #79.
+- **▶ 045 BACKEND COMPLETE (US1–US4).** 15/20 tasks. Remaining = **browser-gated** React UI (T009 search/sort/
+  paginate, T011 export button, T013 detail view) + T007 (TableDataSource queryable — deferred, pagination fallback).
+  Backend is backward-compatible (existing React app works). **▶ NEXT:** push → PR → CI → merge 045; then **046–052**.
+  Roadmap: 043+044 merged; 045 backend done (mergeable); `v0.25.0` staged on develop, not cut.
+
+---
 ## ▶ RESUME HERE (2026-06-13, later) — roadmap 043–052 + spec 043 PLANNED (ready to implement)
 
 A 23-point strategic brief ("agency/platform" direction) was analysed. **Key finding: ~40% was already shipped**

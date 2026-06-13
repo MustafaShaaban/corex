@@ -131,6 +131,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(DataAdminScreen::class)->register();
         $this->container->make(InsightsScreen::class)->register();
         $this->container->make(OptionPageScreen::class)->register();
+        $this->container->make(\Corex\Config\Data\DataExportController::class)->register(); // CSV export (spec 045)
 
         add_action('rest_api_init', function (): void {
             $this->container->make(DataController::class)->register();

@@ -45,6 +45,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Create a form', slug: 'guides/forms' },
 						{ label: 'Response contract & runtime', slug: 'guides/frontend-runtime' },
+						{ label: 'Manage submission data', slug: 'guides/data' },
 						{ label: 'Create a block (CLI)', slug: 'guides/blocks' },
 						{ label: 'Write queries', slug: 'guides/queries' },
 						{ label: 'Apply a brand', slug: 'guides/branding' },
