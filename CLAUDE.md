@@ -42,9 +42,18 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-**Active plan:** _none — all specs 001–027 are delivered + released (v0.18.0 → v0.19.0)._ Most recent:
-`specs/027-block-library-expansion/plan.md` (four server-rendered `corex/*` component blocks —
-stat/testimonial/pricing/accordion — token-only, RTL, accessible). Before it: `026-addon-manager`
+**Active plan:** `specs/041-kit-front-page/plan.md` (kit apply never leaves a blank front page — pure
+`KitPagePlanner::plan()` classifies each declared page create/adopt/skip; `BlueprintActivator` populates
+adopted pages + sets the front page after the loop for a created|adopted home + records `_corex_kit_page`=
+created|adopted; CLI `ResetExecutor` deletes created pages but only empties adopted ones; returns an
+`ApplyOutcome` the wizard shows as a summary). Part of the 2026-06-13 connectivity batch with
+`specs/040-block-asset-urls/plan.md` (junction/symlink-safe block asset URLs — normalize block dir under
+`WP_PLUGIN_DIR` at the `DynamicBlockRegistrar` chokepoint + `BlockAssetsProbe` health check) and
+`specs/042-kit-activation/spec.md` (unified prompt-to-apply activation + "what changed" summary + dashboard
+status card; depends on 041). Build order: 040 + 041 → 042. Specs 001–039 delivered + released
+(v0.18.0 → v0.23.1). Earlier:
+**Active plan (prev):** `specs/027-block-library-expansion/plan.md` (four server-rendered `corex/*` component
+blocks — stat/testimonial/pricing/accordion — token-only, RTL, accessible). Before it: `026-addon-manager`
 (dependency-aware add-on screen) and `025-project-reset` (`wp corex reset`, soft + gated full). The P1
 retrospective backfill 018–024 reconciled the "Finish Corex" initiative to specs. Earlier:
 **Active plan (prev):** `specs/018-build-pipeline-blocks/plan.md` (RETROSPECTIVE — @wordpress/scripts build

@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Settings;
 
 use Corex\Config\Branding\BrandingService;
+use Corex\Config\Dashboard\SiteStatusCardRenderer;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -30,6 +31,7 @@ final class AdminDashboard
         private readonly SettingsStore $store,
         private readonly AdminGuard $guard,
         private readonly BrandingService $branding,
+        private readonly SiteStatusCardRenderer $status,
     ) {
     }
 
@@ -79,6 +81,9 @@ final class AdminDashboard
 
         echo '<div class="wrap">';
         $this->renderHeader();
+
+        // A live "Site status" card — what the enabled add-ons actually did + where the data is (spec 042).
+        $this->status->render();
 
         // The form HTML is built with per-value escaping in SettingsForm.
         echo $this->form->render(fn (string $key): string => $this->store->get($key), $nonce)

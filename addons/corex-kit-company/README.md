@@ -55,3 +55,29 @@ section patterns — idempotently (existing slugs are skipped) and tracked (`_co
 `corex_kit_seeded_pages`), so `wp corex reset` removes exactly the kit pages. Declared in
 `CompanyBlueprint::pages()`; created by `BlueprintActivator::seedPages()` (planned by the pure `KitPagePlanner`).
 Spec 031.
+
+## Applying a kit never leaves a blank front page (spec 041)
+
+Applying a kit classifies each declared page and acts accordingly, so a re-apply is safe and a pre-existing
+empty page is filled in rather than skipped:
+
+- **create** — the slug doesn't exist → the page is created with the kit's content.
+- **adopt** — the slug exists but the page is **empty** (or an un-populated kit placeholder) → it is populated
+  in place (same page id), recorded as `adopted`.
+- **skip** — the slug exists with real user content → it is left untouched.
+
+The front page is set to the declared home whenever that page was created or adopted (so a kit always yields a
+real front page); if the home is skipped because the user already has content there, the existing front page is
+kept. The decision is the pure `Corex\Provisioning\PagePlanner` (in corex-core); `BlueprintActivator` is the
+WordPress boundary and returns an `ApplyOutcome` the wizard renders as a created/populated/skipped summary.
+
+**Reset safety:** `wp corex reset` (soft) **deletes** pages the kit created but only **empties** a page it
+adopted (a pre-existing page the user owned is never deleted) — tracked via the `_corex_kit_page` meta
+(`created` | `adopted`).
+
+## Driving activation from elsewhere (spec 042)
+
+The kit framework binds `Corex\Provisioning\KitProvisioner` (a corex-core interface) to `BlueprintKitProvisioner`,
+so other code (the Add-ons screen, the dashboard) can list applicable kits, compute a **read-only** apply preview,
+and run apply through the one shared path — without depending on this add-on. With the kit framework inactive the
+interface resolves to a `NullKitProvisioner` and consumers degrade gracefully.

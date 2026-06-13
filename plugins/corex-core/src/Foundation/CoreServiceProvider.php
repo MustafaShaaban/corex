@@ -62,6 +62,13 @@ final class CoreServiceProvider extends ServiceProvider
                 $container->make(ConfigInterface::class),
             ),
         );
+
+        // Default kit-activation seam (spec 042): a Null Object so corex-config can always resolve
+        // KitProvisioner and degrade gracefully. The kit framework overrides this binding when active.
+        $this->container->singleton(
+            \Corex\Provisioning\KitProvisioner::class,
+            static fn (): \Corex\Provisioning\NullKitProvisioner => new \Corex\Provisioning\NullKitProvisioner(),
+        );
     }
 
     /**

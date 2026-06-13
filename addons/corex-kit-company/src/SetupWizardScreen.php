@@ -82,14 +82,24 @@ final class SetupWizardScreen
             return;
         }
 
-        $name = sanitize_key(wp_unslash($_POST['corex_kit']));
+        $name    = sanitize_key(wp_unslash($_POST['corex_kit']));
+        $outcome = $this->activator->apply($this->wizard->plan($name));
 
-        $this->activator->apply($this->wizard->plan($name));
+        $created   = count($outcome->created());
+        $populated = count($outcome->populated());
+        $skipped   = count($outcome->skipped());
 
-        add_action('admin_notices', static function () use ($name): void {
-            echo '<div class="notice notice-success is-dismissible"><p>'
-                . esc_html(sprintf(/* translators: %s: kit name */ __('Applied the "%s" kit.', 'corex'), $name))
-                . '</p></div>';
+        add_action('admin_notices', static function () use ($name, $created, $populated, $skipped): void {
+            $summary = sprintf(
+                /* translators: 1: kit name, 2: pages created, 3: pages populated, 4: pages left unchanged */
+                __('Applied the "%1$s" kit — %2$d page(s) created, %3$d populated, %4$d left unchanged.', 'corex'),
+                $name,
+                $created,
+                $populated,
+                $skipped,
+            );
+
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($summary) . '</p></div>';
         });
     }
 }

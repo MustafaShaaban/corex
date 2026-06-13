@@ -26,6 +26,8 @@ final class DynamicBlockRegistrar
     public function __construct(
         private readonly ContainerInterface $container,
         private readonly BootLogger $logger,
+        private readonly PluginMountMap $mountMap,
+        private readonly BlockPathResolver $resolver,
     ) {
     }
 
@@ -48,7 +50,11 @@ final class DynamicBlockRegistrar
             $args['render_callback'] = $this->renderCallback($renderer);
         }
 
-        $type = register_block_type($block['dir'], $args);
+        // Normalize the block dir back under WP_PLUGIN_DIR so plugins_url() derives a correct asset URL on any
+        // mount (junction/symlink/realpath-resolved) — spec 040. A no-op when the dir is already under it.
+        $dir = $this->resolver->resolve($block['dir'], $this->mountMap->pluginsDir(), $this->mountMap->mounts());
+
+        $type = register_block_type($dir, $args);
 
         $this->registerScriptTranslations($type);
     }

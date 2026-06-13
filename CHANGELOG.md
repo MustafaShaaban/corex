@@ -4,6 +4,37 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.24.0] — 2026-06-13
+
+Connectivity — making kit activation visible and transparent, from a user-driven deep review that found the
+framework "felt disconnected" (enabling kits seemed to do nothing; submissions were hard to find).
+
+### Added
+- **Prompt-to-apply kit activation** (spec 042): enabling a kit add-on (Corex → Add-ons) now surfaces a
+  dismissible prompt previewing exactly what applying would do (pages created / filled in / left unchanged, the
+  front page, the modules) — **read-only** until you choose **Apply**, which runs the one shared apply path and
+  shows a "what changed" summary. A corex-core `KitProvisioner` seam (with a `NullKitProvisioner` default) lets the
+  Add-ons screen and dashboard drive activation without depending on a kit add-on (Principle IX).
+- **Corex dashboard "Site status" card** (spec 042): shows which kits are applied, the live contact-submission
+  count linked to **Corex → Data**, and the current front-page status — with an actionable empty state, degrading
+  gracefully when the forms add-on or kit framework is inactive.
+- **Block-assets health check** (spec 040): `BlockAssetsProbe` flags any registered `corex/*` block whose
+  script/style URL embeds a filesystem path, in **Site Health** and `wp corex doctor`, so a misconfigured mount is
+  diagnosed instead of showing as a blank editor panel.
+
+### Fixed
+- **Kit apply never leaves a blank front page** (spec 041): page seeding now classifies each declared page
+  **create / adopt (populate an empty or placeholder page) / skip (existing user content)** instead of skipping
+  any slug that already exists, and the front page is set whenever the declared home was created or adopted. A
+  soft reset deletes pages the kit **created** but only **empties** a page it **adopted** (a pre-existing page the
+  user owned is never deleted). Applying the Company kit creates the previously-missing About/Contact pages.
+
+### Changed
+- **Junction/symlink-safe block asset URLs** (spec 040): `DynamicBlockRegistrar` normalizes each discovered block
+  directory back under `WP_PLUGIN_DIR` before `register_block_type` (pure `BlockPathResolver` + `PluginMountMap`),
+  so editor/view/style URLs resolve correctly on any mount (Windows junction, POSIX symlink, realpath-resolved/CI).
+  A no-op for the already-correct junction case (no regression). Preventive hardening.
+
 ## [0.23.1] — 2026-06-12
 
 ### Fixed

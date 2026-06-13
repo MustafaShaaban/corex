@@ -4,6 +4,60 @@
 > Updated at the end of every working session.
 
 ---
+## ▶ RESUME HERE (2026-06-13) — deep review + connectivity specs (040–042), spec-first
+
+Post-v0.23.1 the user reported the framework "feels disconnected" (enabling add-ons/kits seems to do
+nothing; kits add no pages/blocks; couldn't find contact submissions). A **deep review on the live install**
+found the code works at the data layer (13 plugins boot, 12 blocks register with clean URLs, **34
+`corex_submission` rows**, `GET /corex/v1/data/submissions` → 200) — the gap is the **activation model +
+visibility**, plus one real bug:
+- **Blank front page bug:** `page_on_front=2511` ("Home") has **0 blocks** — `KitPagePlanner::toCreate()`
+  skips any slug that already exists and `BlueprintActivator::seedPages()` sets the front page only inside the
+  create loop, so a pre-existing empty Home is skipped and never populated/assigned.
+- **Fragmented activation:** Addon Manager (`AddonActivator::enable`) only flips plugin+flag (no content);
+  seeding lives only in the Company Setup Wizard. Enabling a kit changes nothing visible.
+- **Submissions discoverability:** data exists + REST serves it, but the only window is the React Data screen.
+
+Three specs authored spec-first in response (each spec.md + checklists/requirements.md, all checklist items
+PASS, 0 `[NEEDS CLARIFICATION]`):
+- **`specs/040-block-asset-urls/` — spec + PLAN COMPLETE.** Junction/symlink-safe block asset URLs: a single
+  normalization at the `DynamicBlockRegistrar` chokepoint maps every block dir back under `WP_PLUGIN_DIR`
+  before `register_block_type` (pure `BlockPathResolver` + `PluginMountMap`), + a `BlockAssetsProbe` in the
+  spec-036 health seam. Preventive hardening (0/33 malformed today). plan.md + research/data-model/contracts/
+  quickstart all written; Constitution Check PASS. **Next: `/speckit-tasks`.**
+- **`specs/041-kit-front-page/` — SPEC COMPLETE.** The blank-front-page bugfix: classify each declared kit
+  page create/**adopt**(empty or kit-placeholder)/skip(user content); always set the front page when home was
+  created or adopted; soft reset deletes created pages but only **empties** adopted pre-existing ones. Pure
+  classifier. **Next: `/speckit-plan`.**
+- **`specs/042-kit-activation/` — SPEC COMPLETE (depends on 041).** Unified kit activation: enabling a kit
+  prompts "apply starter content?" with a read-only **preview** (create/populate/skip + front page + modules),
+  Apply runs the **single shared apply path** (= 041 rules) and shows a "what changed" **summary**, + a Corex
+  dashboard "Site status" card (applied kits, live submission count → Data, front-page status). User chose the
+  **prompt-to-apply** model (not auto-apply). Server-rendered, AdminGuard-gated, no new dep. **Next: `/speckit-plan`.**
+
+> ✅ **ALL THREE IMPLEMENTED + COMMITTED (2026-06-13)** on `feature/connectivity-040-042` (the three per-spec
+> branches were consolidated — these are one cohesive connectivity batch). Per-spec commits: docs(specs) →
+> fix(kit) 041 → feat(kit) 042 → feat(blocks) 040. **Full suite 415 green** (was 379). wp-guard clean on each.
+> DECISIONS #74 (040) · #75 (041) · #76 (042).
+> - **041 — DONE.** Pure `Corex\Provisioning` seam (PagePlanner/PageContent/PageDisposition/ApplyOutcome in
+>   corex-core); BlueprintActivator create/adopt/skip + front-page-after-loop + `_corex_kit_page` meta; ResetExecutor
+>   created→delete / adopted→empty. **Live: applying the company kit created the genuinely-missing About+Contact
+>   pages** (2527/2528). ⚠️ **Correction:** the live "Home" page was NOT blank — it holds a `wp:pattern corex/hero`
+>   ref that renders (h1 "Build something great" …); the "0 blocks" deep-review reading was a `substr_count('wp:corex')`
+>   miss of `wp:pattern`. 041 is still a correct robustness fix; the headline live "blank homepage" did not exist.
+> - **042 — DONE.** corex-core `KitProvisioner` seam (+ NullKitProvisioner) → corex-kit-company `BlueprintKitProvisioner`;
+>   enable→pending prompt (`KitActivationNotice`, AdminGuard-gated, read-only preview) → shared apply → "what changed"
+>   summary; Corex dashboard "Site status" card (applied kits, live submission count → Data, front-page status).
+>   **Live: provisioner resolves to the real adapter, lists company(3)+portfolio(2), preview read-only.**
+> - **040 — DONE.** `BlockPathResolver` + `PluginMountMap` normalize the block dir under WP_PLUGIN_DIR at the
+>   `DynamicBlockRegistrar` chokepoint; `BlockAssetsProbe` in the spec-036 health seam. **Live: 0/17 malformed URLs,
+>   probe = good.** Preventive hardening (no live bug under junctions).
+>
+> **▶ NEXT:** push `feature/connectivity-040-042` → open PR into develop → CI green. Then docs-app guides + READMEs
+> follow-up, then a release (v0.24.0) once merged. Browser-visual confirmation of the prompt/card stays env-gated.
+
+---
+
 ## ▶ RESUME HERE (2026-06-11) — "Finish Corex" initiative, autonomous mode
 
 **New initiative** (supersedes the "all specs done" status below): a 13-item build order to close the
