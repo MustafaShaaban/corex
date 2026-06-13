@@ -44,6 +44,12 @@ final class FormBlockRenderer implements BlockRenderer
             return '';
         }
 
+        // Conditional load (Principle VI): the shared runtime + its styles enqueue only
+        // here, where a form actually renders — never globally. The runtime drives the
+        // submit lifecycle and auto-binds this form (spec 043).
+        wp_enqueue_script('corex-runtime');
+        wp_enqueue_style('corex-runtime');
+
         // Resolve the schema once: it both renders the fields and is exported to the
         // client so JS validates against the SAME definition the server enforces.
         $schema = $this->resolver->resolve($form->fields());

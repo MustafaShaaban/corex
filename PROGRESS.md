@@ -4,6 +4,52 @@
 > Updated at the end of every working session.
 
 ---
+## ▶ RESUME HERE (2026-06-13, later) — roadmap 043–052 + spec 043 PLANNED (ready to implement)
+
+A 23-point strategic brief ("agency/platform" direction) was analysed. **Key finding: ~40% was already shipped**
+(update mechanism=034, design-system/blocks=027/029/033/035, kit value=031/041/042, data table=030/038, settings
+field-types=032, insights graceful states=037, health/license=036) — those are *discoverability/docs* gaps, not new
+builds. The real frontier = the leap from framework → **platform you run an agency on**. Regrouped into **10 specs
+(043–052)**; the user chose **keystone-first** ordering and a standing mandate to proceed autonomously through the
+roadmap, accepting the recommended option at each fork, inside the Spec Kit flow + Guard Gate, until 052 ships.
+
+Roadmap: **043** request/response contract + frontend runtime kit (keystone) · 044 admin control panel &
+integrations · 045 data-pro (search/filter/export + SubmissionStore seam) · 046 REST resources & headless · 047
+AssetManager + env modes · 048 media/WebP · **049 `make:site` client-site platform** (capstone) · 050 team ops &
+distribution · 051 Design Language System · 052 visual/E2E in CI. *(Pre-work, not a spec: bring Apache up + run the
+`tests/e2e/` Playwright smoke to de-asterisk every browser-unverified "done" since 018.)*
+
+- [x] **`specs/043-response-runtime-kit/` — SPEC + PLAN + TASKS COMPLETE (spec-first, full Spec Kit flow).** On
+  `feature/043-response-runtime-kit`. spec.md + checklists/requirements.md (all PASS, **0 `[NEEDS CLARIFICATION]`**
+  — clarify skipped, every fork resolved in Assumptions) · plan.md (**Constitution Check PASS, no violations**) ·
+  research.md (D1–D9) · data-model.md · contracts/{response-envelope,runtime-api}.md · quickstart.md · tasks.md
+  (**28 tasks**, TDD-ordered, by user story US1–US4). Scope: pure `Corex\Http\ResponseEnvelope` value object +
+  `EnvelopeResponder` (corex-core) + buildless `window.Corex` runtime (api/forms/loading/notices + 4 events,
+  no jQuery/no build, `wp.apiFetch`→`fetch` fallback), token-styled CSS, **conditional enqueue** as a `corex-runtime`
+  dependency; migrate forms `view.js` + Insights + Data React app onto it; **additive/backward-compatible** envelope
+  (today's `{ok,message,errors,values}` becomes a conformant superset).
+- [x] **`specs/043` — IMPLEMENTATION COMPLETE (2026-06-13).** All four user stories (US1–US4) done + green;
+  Guard Gate clean (wp-guard + clean-code + docs-guard). **27/28 tasks**; only T027's Playwright smoke is env-gated.
+  Delivered:
+  - **corex-core:** `Corex\Http\ResponseEnvelope` (pure VO) + `EnvelopeResponder` (status map) + `HttpServiceProvider`
+    (registers the `corex-runtime` script/style, wired into `Boot`); `assets/js/corex-runtime.js` (buildless
+    `window.Corex`: api/forms/loading/notices + 4 events, `wp.apiFetch`→`fetch` fallback) + `assets/css/corex-runtime.css`
+    (token-only, admin fallbacks, RTL).
+  - **corex-forms:** `SubmitController::toRest()` emits the envelope (additive — preserves pipeline status, mirrors
+    `values`); `view.js` reduced to a thin bootstrap (rebuilt); `validation.js`/`validation.test.js` **deleted** (the
+    runtime is the single validator). `FormBlockRenderer` enqueues `corex-runtime` on render (conditional, Principle VI).
+  - **Tests:** **426 Pest unit** (+11 Http) + **40 Jest** (+11 runtime, net of the removed validation suite) green.
+  - **Docs:** new docs-app guide `guides/frontend-runtime.md` (+ sidebar entry) + corex-core/corex-forms README
+    sections; fixed a stale `validation.js` reference in `forms.md`. DECISIONS #77.
+  - **US4 (admin parity):** the Insights + Data controllers emit the envelope (additive, statuses preserved);
+    `insights.js` + the Data React app call `window.Corex.api`/`envelope.data` (dead `@wordpress/api-fetch` import
+    removed); `InsightsScreen`/`DataAdminScreen` declare `corex-runtime` as a dependency; both rebuilt.
+  - **▶ NEXT:** commit 043 (Conventional Commits) → PR → CI green → merge to develop; then **spec 044** (admin control
+    panel & integrations) per the roadmap. Release batching per the v0.x rhythm (e.g. 043[+044…] → a tagged release).
+    Browser smoke (`tests/e2e/`) remains the standing env-gated follow-up. (The optional agent-context hook is
+    env-blocked — Python absent on PATH — skipped; PROGRESS is the record.)
+
+---
 ## ▶ RESUME HERE (2026-06-13) — deep review + connectivity specs (040–042), spec-first
 
 Post-v0.23.1 the user reported the framework "feels disconnected" (enabling add-ons/kits seems to do

@@ -1264,3 +1264,36 @@ Why: makes activation visible, consensual, and transparent — the fix for "enab
 data." Pure view models + adapter unit-tested; 404→415 total green across 040/041/042. wp-guard clean. Live-verified
 the provisioner resolves to the real adapter and previews read-only. Browser-visual confirmation is env-gated.
 Status: Final.
+
+## #77 — One response envelope + a buildless window.Corex runtime (spec 043)
+Date: 2026-06-13
+Context: spec 043, the keystone of the 043–052 roadmap. Forms, admin actions (Insights/Data), and future
+REST/headless each shaped their own JSON and hand-rolled their own fetch/nonce/error plumbing (the form's
+`view.js`, the vanilla `insights.js`, the Data React app). The brief asked for a unified response contract
+(item 8) + a vanilla frontend kit (item 9).
+Decision: a pure, immutable `Corex\Http\ResponseEnvelope` value object (corex-core) is the one wire shape —
+success `{ ok, message, data }`, error `{ ok, code, message, errors?, details }` — built via `success()`/
+`validation()`/`error()` and never carrying a secret; a thin `EnvelopeResponder` maps it to a WP_REST_Response
+(200/422/403/400). The client half is `corex-runtime`, a **buildless** `window.Corex` (no jQuery, no build step;
+modelled on the existing `insights.js` IIFE) registered by a new `HttpServiceProvider` and **enqueued only where a
+form/screen declares it** (Principle VI) — `Corex.api` (nonce-attaching request that always resolves to a
+normalised-envelope Result, timeout/network/non-JSON → error, never throws — a documented contract, not a swallowed
+error), `Corex.forms.bind` (schema-mirrored validation reusing the spec-020 `data-corex-schema` + the existing DOM
+hooks, server stays authoritative), `Corex.loading` (disable/spinner/`aria-busy`/dedupe/restore), `Corex.notices`,
+and the `corex:request:*`/`corex:form:*` events. The migration is **additive/backward-compatible**: `SubmitController`
+now emits the envelope but preserves its authoritative pipeline status (e.g. 429) and mirrors `values` at the top
+level for one release; the superseded `view.js` is now a thin bootstrap and `validation.js`/`validation.test.js` are
+deleted (the runtime is the single validator source — no duplication). Token-only CSS with wp-admin fallbacks
+(DECISIONS #71 precedent), logical/RTL, WCAG (live-region status + `aria-busy`).
+Why: a uniform contract every later surface (044 admin, 045 data-pro, 046 headless, 049 starter slice) stands on,
+and a reusable client primitive so a new form/request needs one `bind`/`api` call and zero bespoke plumbing.
+Tests: +11 Pest (ResponseEnvelope 7 + EnvelopeResponder 4) → **426 unit green**; +11 Jest (api/forms/loading/events)
+→ **40 JS green** (net of the deleted validation suite). Guard Gate clean: wp-guard (conditional enqueue, nonce,
+escaped/`textContent`, REST mapping), clean-code (removed a speculative `forceFetch` flag), docs-guard (new
+frontend-runtime guide + fixed a stale `validation.js` doc reference).
+**US4 done:** the Insights + Data controllers now emit the envelope (additive, statuses preserved); `insights.js`
+and the Data React app call `window.Corex.api` and read `envelope.data` (the dead `@wordpress/api-fetch` import
+removed); `InsightsScreen` + `DataAdminScreen` declare `corex-runtime` as a script dependency. Both rebuilt; 426
+Pest + 40 Jest still green. Live browser-visual confirmation is environment-gated (Apache down), as for every spec
+since 018.
+Status: Final (043 fully implemented across US1–US4; only the Playwright browser smoke is env-gated).

@@ -72,6 +72,8 @@ final class DataAdminScreen
         // handle (newer cores) — otherwise enqueueing an unregistered dep emits a notice, and
         // the React already falls back to a plain table when the global is absent.
         $deps = $asset['dependencies'];
+        // The shared runtime (spec 043): the app calls window.Corex.api for envelope-shaped data.
+        $deps[] = 'corex-runtime';
 
         if (wp_script_is('wp-dataviews', 'registered')) {
             $deps[] = 'wp-dataviews';

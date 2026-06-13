@@ -467,6 +467,20 @@ registers them into **Tools → Site Health**, and `wp corex doctor` renders the
 on critical). Probes are advisory where appropriate (a classic theme / missing brand → recommended, not a
 failure — Principle IX) and critical only where they must be.
 
+## Response contract & frontend runtime
+
+`Corex\Http\ResponseEnvelope` is the one canonical shape of every Corex response — a pure, immutable
+value object built via `success()` / `validation()` / `error()` that never carries a secret. Success →
+`{ ok, message, data }`; error → `{ ok, code, message, errors?, details }`. `Corex\Http\EnvelopeResponder`
+maps it to a `WP_REST_Response` (success → 200, validation → 422, forbidden → 403, other → 400).
+
+The matching client is `corex-runtime` — a buildless `window.Corex` (no jQuery) registered by
+`HttpServiceProvider` and enqueued **only** where a form/screen declares it (Principle VI). It exposes
+`Corex.api` (nonce-attaching request → normalised envelope, never throws), `Corex.forms.bind` (schema-mirrored
+validation + server-authoritative error rendering), `Corex.loading` (disable/spinner/`aria-busy`/dedupe), and
+`Corex.notices`, plus the `corex:request:*` / `corex:form:*` events. See the docs-app guide
+"The response contract & frontend runtime".
+
 ## Tests
 
 ```bash
