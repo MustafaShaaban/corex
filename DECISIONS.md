@@ -1207,3 +1207,60 @@ with zero form/nonce/save code — reusing the settings controls rather than rei
 (OptionPage 4 + registry 1 + generator 1) + 379 total green; wp-guard clean (cap + nonce + sanitize + escape,
 prefixed menus). Live admin render/save is env-gated.
 Status: Final.
+
+## #74 — Junction/symlink-safe block asset URLs + a health probe (spec 040)
+Date: 2026-06-13
+Context: a deep review worried that add-on block assets 404 with malformed URLs
+(`…/wp-content/plugins/C:/wamp64/www/corex/addons/…`). Verified: under the current Windows-junction mount all
+33 asset URLs are correct (0 malformed). The failure only appears if a block dir is realpath-resolved outside
+WP_PLUGIN_DIR (POSIX symlink mounts, a realpath() call, or the PHP realpath cache), where `plugins_url()` can't
+strip the prefix. So this is preventive hardening + observability, not a live bug fix.
+Decision: a pure `Corex\Blocks\BlockPathResolver` maps any discovered block dir back to its WP_PLUGIN_DIR-relative
+mount location before `register_block_type`, applied at the single `DynamicBlockRegistrar` chokepoint every
+provider routes through (no per-provider change). `PluginMountMap` is the realpath boundary (scandir + realpath
+per plugin entry → realTarget⇒mount-name). Already-under-plugins paths return byte-for-byte unchanged (no
+regression). A `BlockAssetsProbe` (+ pure `AssetUrlHealth`) folds into the spec-036 health seam and flags any
+registered `corex/*` block whose asset URL embeds a filesystem path, in Site Health + `wp corex doctor`.
+Why: the bug's worst trait was silence (a 404 editor asset with nothing in the log); the framework must not rely
+on the junction accident across dev/CI/Linux mounts. Verified against a synthetic realpath path (headless) and
+live (0/17 malformed, probe = good). 11 tests; 415 total green. wp-guard clean.
+Status: Final.
+
+## #75 — Kit apply never leaves a blank front page: create/adopt/skip + reset safety (spec 041)
+Date: 2026-06-13
+Context: `KitPagePlanner::toCreate()` skipped any slug that already existed and `BlueprintActivator::seedPages()`
+set the front page only inside the create loop — so a pre-existing empty page at a kit slug was skipped and never
+populated/assigned. (Note: the live "Home" page was NOT actually blank — it holds a `wp:pattern` reference that
+renders; the headline live symptom was a measurement error. The fix is still correct and it created the genuinely
+missing About/Contact pages.)
+Decision: a pure `Corex\Provisioning\PagePlanner` classifies each declared page **create** (slug absent) /
+**adopt** (exists but empty or an un-populated kit placeholder → populate in place) / **skip** (exists with user
+content → never touch), from per-slug signals (`PageContent::isBlank`) the WP boundary supplies. `BlueprintActivator`
+populates adopted pages, sets the front page **after** the loop for a created|adopted home, records the disposition
+in `_corex_kit_page` (`created`|`adopted`), and returns a value-object `ApplyOutcome`. The CLI `ResetExecutor`
+branches on that meta: **created → delete** (as before); **adopted → empty + untrack** (never delete a page the
+user owned). The pure provisioning value objects live in **corex-core** (`Corex\Provisioning\`) so spec 042 reuses
+them without a core→add-on dependency.
+Why: a site kit must produce a populated front page and must never overwrite user content or delete a user's page
+on reset. Pure classifier is headlessly testable; full suite green. wp-guard clean. DECISIONS supersedes the old
+binary KitPagePlanner (removed).
+Status: Final.
+
+## #76 — Unified prompt-to-apply kit activation + Site-status card (spec 042)
+Date: 2026-06-13
+Context: the real "disconnect" — enabling a kit (Addon Manager) only flipped a plugin + flag and created no
+content; seeding lived in a separate wizard, so enabling a kit changed nothing visible, and submissions (though
+present + served) were buried.
+Decision: a corex-core `KitProvisioner` interface (+ `NullKitProvisioner` default, `KitSummary`, `ApplyPreview`)
+is the seam corex-config depends on — resolved optionally so it degrades gracefully when no kit framework is
+active (Principle IX); the kit framework binds the real `BlueprintKitProvisioner`. The user chose **prompt-to-apply**
+(not auto-apply): enabling a kit add-on queues a pending prompt (`PendingKits`); `KitActivationNotice` renders a
+dismissible banner previewing create/populate/skip + front page (read-only, reusing spec-041's classifier via
+`BlueprintActivator::classify`), with Apply / Not-now gated by the shared `AdminGuard`, then a "what changed"
+summary. Apply routes through the one shared `BlueprintActivator` (no duplicated seeding). A Corex dashboard
+"Site status" card (`SiteStatusCardRenderer` + pure `SiteStatusCard`) shows applied kits, the live submission
+count linked to Corex → Data, and the front-page status, with an actionable empty state.
+Why: makes activation visible, consensual, and transparent — the fix for "enabling does nothing / can't find my
+data." Pure view models + adapter unit-tested; 404→415 total green across 040/041/042. wp-guard clean. Live-verified
+the provisioner resolves to the real adapter and previews read-only. Browser-visual confirmation is env-gated.
+Status: Final.

@@ -35,12 +35,26 @@ PASS, 0 `[NEEDS CLARIFICATION]`):
   dashboard "Site status" card (applied kits, live submission count → Data, front-page status). User chose the
   **prompt-to-apply** model (not auto-apply). Server-rendered, AdminGuard-gated, no new dep. **Next: `/speckit-plan`.**
 
-**Git hygiene NOTE:** branches `feature/040-block-asset-urls`, `feature/041-kit-front-page`,
-`feature/042-kit-activation` were each cut off develop but **nothing is committed yet** — all spec artifacts sit
-uncommitted in the working tree on `feature/042` (they carried across the `checkout -b`s). Organize into
-per-spec commits (git-flow-lite) when the user approves implementation/commit. CLAUDE.md SPECKIT pointer → 040.
-
-Recommended order to build: **040 (independent) and 041 (bugfix) → 042 (needs 041).**
+> ✅ **ALL THREE IMPLEMENTED + COMMITTED (2026-06-13)** on `feature/connectivity-040-042` (the three per-spec
+> branches were consolidated — these are one cohesive connectivity batch). Per-spec commits: docs(specs) →
+> fix(kit) 041 → feat(kit) 042 → feat(blocks) 040. **Full suite 415 green** (was 379). wp-guard clean on each.
+> DECISIONS #74 (040) · #75 (041) · #76 (042).
+> - **041 — DONE.** Pure `Corex\Provisioning` seam (PagePlanner/PageContent/PageDisposition/ApplyOutcome in
+>   corex-core); BlueprintActivator create/adopt/skip + front-page-after-loop + `_corex_kit_page` meta; ResetExecutor
+>   created→delete / adopted→empty. **Live: applying the company kit created the genuinely-missing About+Contact
+>   pages** (2527/2528). ⚠️ **Correction:** the live "Home" page was NOT blank — it holds a `wp:pattern corex/hero`
+>   ref that renders (h1 "Build something great" …); the "0 blocks" deep-review reading was a `substr_count('wp:corex')`
+>   miss of `wp:pattern`. 041 is still a correct robustness fix; the headline live "blank homepage" did not exist.
+> - **042 — DONE.** corex-core `KitProvisioner` seam (+ NullKitProvisioner) → corex-kit-company `BlueprintKitProvisioner`;
+>   enable→pending prompt (`KitActivationNotice`, AdminGuard-gated, read-only preview) → shared apply → "what changed"
+>   summary; Corex dashboard "Site status" card (applied kits, live submission count → Data, front-page status).
+>   **Live: provisioner resolves to the real adapter, lists company(3)+portfolio(2), preview read-only.**
+> - **040 — DONE.** `BlockPathResolver` + `PluginMountMap` normalize the block dir under WP_PLUGIN_DIR at the
+>   `DynamicBlockRegistrar` chokepoint; `BlockAssetsProbe` in the spec-036 health seam. **Live: 0/17 malformed URLs,
+>   probe = good.** Preventive hardening (no live bug under junctions).
+>
+> **▶ NEXT:** push `feature/connectivity-040-042` → open PR into develop → CI green. Then docs-app guides + READMEs
+> follow-up, then a release (v0.24.0) once merged. Browser-visual confirmation of the prompt/card stays env-gated.
 
 ---
 
