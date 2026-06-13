@@ -66,7 +66,9 @@ final class InsightsScreen
         $base = dirname(__DIR__, 2) . '/corex-config.php';
 
         wp_enqueue_style('corex-insights', plugins_url('assets/insights.css', $base), [], '1.0.0');
-        wp_enqueue_script('corex-insights', plugins_url('assets/insights.js', $base), ['wp-api-fetch'], '1.0.0', true);
+        // Depends on the shared runtime (spec 043): the script talks to the envelope through
+        // window.Corex.api, and corex-runtime brings wp-i18n.
+        wp_enqueue_script('corex-insights', plugins_url('assets/insights.js', $base), ['corex-runtime'], '1.0.0', true);
 
         wp_localize_script('corex-insights', 'corexInsights', [
             'restUrl'   => esc_url_raw(rest_url('corex/v1/insights')),

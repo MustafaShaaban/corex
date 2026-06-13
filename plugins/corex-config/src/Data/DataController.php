@@ -10,6 +10,7 @@ namespace Corex\Config\Data;
 
 defined('ABSPATH') || exit;
 
+use Corex\Http\ResponseEnvelope;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -87,10 +88,13 @@ final class DataController
         );
 
         if ($payload === null) {
-            return new WP_REST_Response(['error' => 'unknown_source'], 404);
+            return new WP_REST_Response(
+                ResponseEnvelope::error('unknown_source', __('Unknown data source.', 'corex'))->toArray(),
+                404,
+            );
         }
 
-        return new WP_REST_Response($payload);
+        return new WP_REST_Response(ResponseEnvelope::success($payload)->toArray());
     }
 
     public function remove(WP_REST_Request $request): WP_REST_Response
@@ -98,11 +102,21 @@ final class DataController
         $source = $this->registry->find((string) $request->get_param('source'));
 
         if ($source === null) {
-            return new WP_REST_Response(['error' => 'unknown_source'], 404);
+            return new WP_REST_Response(
+                ResponseEnvelope::error('unknown_source', __('Unknown data source.', 'corex'))->toArray(),
+                404,
+            );
         }
 
         $deleted = $source->delete((int) $request->get_param('id'));
 
-        return new WP_REST_Response(['deleted' => $deleted], $deleted ? 200 : 404);
+        if (! $deleted) {
+            return new WP_REST_Response(
+                ResponseEnvelope::error('not_found', __('That item no longer exists.', 'corex'))->toArray(),
+                404,
+            );
+        }
+
+        return new WP_REST_Response(ResponseEnvelope::success(['deleted' => true])->toArray());
     }
 }

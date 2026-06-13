@@ -9,7 +9,6 @@
  */
 import { createRoot, render, useState, useEffect, useCallback } from '@wordpress/element';
 import { Button } from '@wordpress/components';
-import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 
 const config = window.corexData || { restUrl: '', nonce: '', sources: [] };
@@ -27,29 +26,28 @@ function useSource() {
 		if ( ! sourceKey ) {
 			return;
 		}
-		apiFetch( {
-			url: `${ config.restUrl }/${ sourceKey }?page=${ page }&per_page=${ perPage }`,
-			headers: { 'X-WP-Nonce': config.nonce },
-		} )
-			.then( ( res ) => {
-				setData( res.rows.map( ( r, i ) => ( { id: r.id ?? i, ...r } ) ) );
-				setColumns( res.columns );
-				setTotal( res.total );
-			} )
-			.catch( () => {
-				setData( [] );
-				setTotal( 0 );
+		// The shared runtime speaks the envelope (spec 043); it always resolves.
+		window.Corex.api
+			.get( `${ config.restUrl }/${ sourceKey }?page=${ page }&per_page=${ perPage }`, { nonce: config.nonce } )
+			.then( ( result ) => {
+				const payload = result.envelope.ok ? result.envelope.data : null;
+				if ( ! payload ) {
+					setData( [] );
+					setTotal( 0 );
+					return;
+				}
+				setData( payload.rows.map( ( r, i ) => ( { id: r.id ?? i, ...r } ) ) );
+				setColumns( payload.columns );
+				setTotal( payload.total );
 			} );
 	}, [ sourceKey, page ] );
 
 	useEffect( load, [ load ] );
 
 	const remove = ( id ) =>
-		apiFetch( {
-			url: `${ config.restUrl }/${ sourceKey }/${ id }`,
-			method: 'DELETE',
-			headers: { 'X-WP-Nonce': config.nonce },
-		} ).then( load );
+		window.Corex.api
+			.delete( `${ config.restUrl }/${ sourceKey }/${ id }`, { nonce: config.nonce } )
+			.then( load );
 
 	return { sourceKey, setSourceKey, data, columns, total, page, setPage, perPage, remove };
 }

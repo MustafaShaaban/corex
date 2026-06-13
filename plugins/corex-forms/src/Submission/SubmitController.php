@@ -11,6 +11,7 @@ namespace Corex\Forms\Submission;
 defined('ABSPATH') || exit;
 
 use Corex\Forms\Schema\FieldSchema;
+use Corex\Http\ResponseEnvelope;
 use Corex\Http\Middleware\Middleware;
 use Corex\Http\Middleware\MiddlewareResolver;
 use Corex\Http\Middleware\Pipeline;
@@ -125,18 +126,36 @@ final class SubmitController
         return md5($ip);
     }
 
+    /**
+     * Map the middleware Response to the canonical envelope (spec 043), preserving the
+     * pipeline's authoritative HTTP status (e.g. 429 from the throttle). Additive: the
+     * success body still mirrors `values` at the top level for one release, and the
+     * error body keeps `message`/`errors` while adding `code`/`details`.
+     */
     private function toRest(Response $response): WP_REST_Response
     {
         if ($response->isOk()) {
-            return new WP_REST_Response(['ok' => true, 'values' => $response->value], 200);
+            $body = ResponseEnvelope::success(['values' => $response->value])->toArray();
+            $body['values'] = $response->value; // back-compat mirror (one release)
+
+            return new WP_REST_Response($body, 200);
         }
 
-        $body = ['ok' => false, 'message' => $response->reason];
+        $errors = is_array($response->value) ? $response->value : [];
 
-        if (is_array($response->value) && $response->value !== []) {
-            $body['errors'] = $response->value;
-        }
+        $envelope = $errors !== []
+            ? ResponseEnvelope::validation($errors, $response->reason)
+            : ResponseEnvelope::error($this->codeForStatus($response->status), $response->reason);
 
-        return new WP_REST_Response($body, $response->status);
+        return new WP_REST_Response($envelope->toArray(), $response->status);
+    }
+
+    private function codeForStatus(int $status): string
+    {
+        return match ($status) {
+            401, 403 => 'forbidden',
+            429      => 'rate_limited',
+            default  => 'error',
+        };
     }
 }
