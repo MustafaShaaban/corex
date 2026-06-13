@@ -53,8 +53,13 @@ PASS, 0 `[NEEDS CLARIFICATION]`):
 >   `DynamicBlockRegistrar` chokepoint; `BlockAssetsProbe` in the spec-036 health seam. **Live: 0/17 malformed URLs,
 >   probe = good.** Preventive hardening (no live bug under junctions).
 >
-> **▶ NEXT:** push `feature/connectivity-040-042` → open PR into develop → CI green. Then docs-app guides + READMEs
-> follow-up, then a release (v0.24.0) once merged. Browser-visual confirmation of the prompt/card stays env-gated.
+> ✅ **RELEASED v0.24.0 (2026-06-13).** PR #19 merged into `develop` (CI green, 30s); `develop`→`main` promoted as
+> **Release v0.24.0** (no-ff), tagged **`v0.24.0`**, pushed; **main CI green (28s)**; GitHub release published.
+> Framework headers + `COREX_*_VERSION` stamped to 0.24.0 via `wp corex version`. CHANGELOG `[0.24.0]` added.
+> Specs 001–042 are now complete, implemented, and released (v0.18.0 → v0.24.0).
+> **▶ Remaining = environment-gated only:** browser-visual confirmation of the activation prompt + Site-status card,
+> and executing the Playwright E2E (`tests/e2e/`) — both need Apache + a browser. The docs-app guides (vs the
+> READMEs already updated) for 040–042 are an optional follow-up. No open spec, no unbuilt scope.
 
 ---
 
