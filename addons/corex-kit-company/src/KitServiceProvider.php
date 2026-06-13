@@ -10,19 +10,32 @@ namespace Corex\Kit;
 
 defined('ABSPATH') || exit;
 
+use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Kit\Company\CompanyBlueprint;
+use Corex\Kit\Provisioning\BlueprintKitProvisioner;
+use Corex\Provisioning\KitProvisioner;
 
 /**
  * Registers the starter-kit Blueprint registry and the Company Website blueprint.
  * The kit's FSE templates/parts live in the theme (the skin); this provider only
- * contributes the discoverable manifest.
+ * contributes the discoverable manifest. It also binds the corex-core KitProvisioner
+ * seam (spec 042) so corex-config can drive activation without depending on this add-on.
  */
 final class KitServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->container->singleton(BlueprintRegistry::class);
+
+        $this->container->singleton(
+            KitProvisioner::class,
+            static fn (ContainerInterface $c): BlueprintKitProvisioner => new BlueprintKitProvisioner(
+                $c->make(BlueprintRegistry::class),
+                $c->make(SetupWizard::class),
+                $c->make(BlueprintActivator::class),
+            ),
+        );
     }
 
     public function boot(): void

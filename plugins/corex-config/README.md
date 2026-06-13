@@ -133,3 +133,20 @@ The settings screen renders the right control per field: the **logo** is a WordP
 upload — no URL typing; the value is the image URL the branding reads), the **captcha driver** is a **select**,
 and fields can be `text/email/url/password/media/select/checkbox`. The configured logo appears in the settings
 header so the branding is findable. The media wiring degrades to an editable URL field without JavaScript.
+
+## Prompt-to-apply kit activation + the Site-status card (spec 042)
+
+Enabling a kit used to flip a plugin + feature flag and create nothing, so it looked like nothing happened.
+Now, enabling a kit add-on (Corex → Add-ons) queues an activation prompt instead of changing anything silently:
+
+- `KitActivationNotice` shows a dismissible banner — *"The \<kit\> kit is ready. Apply its starter content?"* —
+  previewing exactly what applying would do (which pages are created / filled in / left unchanged, and which
+  becomes the front page). The preview is **read-only** (no writes until you choose **Apply**).
+- **Apply** runs the kit through the one shared apply path (spec 041 rules) and shows a "what changed" summary
+  with links to the created/populated pages and the site. **Not now** dismisses the prompt (recallable).
+- Apply and dismiss are capability + nonce gated via the shared `AdminGuard`.
+
+The Corex dashboard (the top **Corex** screen) gains a **Site status** card: which kits are applied, the live
+contact-submission count linked to **Corex → Data**, and the current front-page status — with an actionable empty
+state when nothing is applied. It reads the optional `KitProvisioner` seam and the submissions source, and
+degrades gracefully (count `0`, never an error) when the forms add-on or kit framework is inactive.

@@ -20,3 +20,20 @@ require_once dirname(__DIR__) . '/vendor/autoload.php';
 if (! defined('ABSPATH')) {
     define('ABSPATH', dirname(__DIR__) . '/');
 }
+
+// Minimal WP_Post stub so boundary code that type-checks `instanceof \WP_Post` (e.g. the kit page
+// adopt path, spec 041) stays WP-idiomatic yet runnable headlessly. Only the fields the suite reads.
+if (! class_exists('WP_Post')) {
+    class WP_Post
+    {
+        public int $ID = 0;
+
+        /** @param array<string,mixed> $fields */
+        public function __construct(array $fields = [])
+        {
+            foreach ($fields as $key => $value) {
+                $this->{$key} = $value;
+            }
+        }
+    }
+}

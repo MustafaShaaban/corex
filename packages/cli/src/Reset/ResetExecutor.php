@@ -10,6 +10,7 @@ namespace Corex\Cli\Reset;
 
 defined('ABSPATH') || exit;
 
+use Corex\Provisioning\PageDisposition;
 use WP_CLI;
 
 /**
@@ -51,7 +52,16 @@ final class ResetExecutor
 
     private function removeDemo(int $pageId): void
     {
-        // Revert the static front page the wizard set, then delete the seeded page.
+        // A page the kit only *adopted* (populated a pre-existing empty page the user owned) is never deleted —
+        // it is emptied and untracked, so a reset can't destroy a page Corex did not create (spec 041 FR-008).
+        if ((string) get_post_meta($pageId, '_corex_kit_page', true) === PageDisposition::PERSISTED_ADOPTED) {
+            wp_update_post(['ID' => $pageId, 'post_content' => '']);
+            delete_post_meta($pageId, '_corex_kit_page');
+
+            return;
+        }
+
+        // A page the kit *created* (or a legacy seeded page): revert the front page the wizard set, then delete it.
         if ((int) get_option('page_on_front') === $pageId) {
             update_option('show_on_front', 'posts');
             delete_option('page_on_front');
