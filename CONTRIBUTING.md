@@ -84,7 +84,7 @@ A UI change is not done until it is **browser-verified** — "env-gated" is a CI
   block editor, the Corex admin, or a front-end page with Corex blocks — catching item-20-class JS/asset
   regressions. A tiny, documented allow-list (`tests/e2e/helpers.js`) exempts known third-party noise.
 
-These run automatically in CI on PRs + nightly via `.github/workflows/e2e.yml` (it provisions wp-env, activates
+These run in CI nightly + on-demand (workflow_dispatch) via `.github/workflows/e2e.yml` — PRs stay gated by the fast unit CI, and you trigger the browser job before a release or to confirm a UI change. It (it provisions wp-env, activates
 Corex, installs Playwright, and runs the suite). To run locally:
 
 ```bash
