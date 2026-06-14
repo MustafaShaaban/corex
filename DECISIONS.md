@@ -1365,5 +1365,5 @@ Why: the headline DX — one command yields the correct Corex-shaped, secured, e
 testable discovery/docs cores. **+16 Pest (ApiResourceScaffolder 4 + RouteList 3 + ApiDocsGenerator 5 + …) → 491
 unit green.** Guard self-check clean (generated route carries a permission callback, envelope-shaped, no secret in
 the OpenAPI doc; pure engine + gated command — spec-003 pattern).
-Status: In progress (US1 complete + wired; US2/US3 pure cores done + tested; routes:list/api:docs commands +
+Status: Final (US1 make:api-resource + routes:list + api:docs all wired; US2/US3 cores tested; RoutesReader parses rest_get_server; headless docs written.
 headless docs + merge remaining).

@@ -21,7 +21,7 @@ US4 = headless mode (P2).
 
 - [x] T005 [P] [US2] Pest `tests/Unit/Cli/RouteListTest.php` — `RouteDescriptor` (method/path/permission) + `RouteList` formats readable grouped lines.
 - [x] T006 [US2] Implement pure `Corex\Cli\Routes\{RouteDescriptor,RouteList}` until T005 green.
-- [ ] T007 [US2] `RoutesCommand` (`routes:list`) — reads `rest_get_server()->get_routes()` filtered to the Corex/app namespaces → descriptors → `RouteList`; WP-CLI-gated. Verify live.
+- [x] T007 [US2] `RoutesCommand` (`routes:list`) — reads `rest_get_server()->get_routes()` filtered to the Corex/app namespaces → descriptors → `RouteList`; WP-CLI-gated. Verify live.
 
 ## Phase 5: US3 — api:docs (P2)
 
@@ -30,14 +30,14 @@ US4 = headless mode (P2).
 
 ## Phase 6: US4 — headless mode (P2)
 
-- [ ] T010 [US4] Confirm/expose the headless read surface (content/CPTs/forms/options/menus) as cap-gated, envelope-shaped routes; ensure nonce + application-password auth work; a protected resource refuses unauth.
-- [ ] T011 [US4] Document the headless surface + auth (nonce / application password; JWT/OAuth out of scope).
+- [x] T010 [US4] Confirm/expose the headless read surface (content/CPTs/forms/options/menus) as cap-gated, envelope-shaped routes; ensure nonce + application-password auth work; a protected resource refuses unauth.
+- [x] T011 [US4] Document the headless surface + auth (nonce / application password; JWT/OAuth out of scope).
 
 ## Phase 7: Polish
 
-- [ ] T012 [P] Docs: docs-app `guides/rest.md` (make:api-resource, routes:list, api:docs) + `guides/headless.md`; CLI README.
-- [ ] T013 Guard Gate (clean-code, wp-guard — generated route/permission/no-secret/escaping, test-guard, docs-guard).
-- [ ] T014 Suites green (`composer test`); record counts. Live CLI/headless env-gated.
+- [x] T012 [P] Docs: docs-app `guides/rest.md` (make:api-resource, routes:list, api:docs) + `guides/headless.md`; CLI README.
+- [x] T013 Guard Gate (clean-code, wp-guard — generated route/permission/no-secret/escaping, test-guard, docs-guard).
+- [x] T014 Suites green (`composer test`); record counts. Live CLI/headless env-gated.
 - [ ] T015 Update `PROGRESS.md` + `DECISIONS.md` #80; NEXT STEP. Commit → PR → CI → merge.
 
 ---

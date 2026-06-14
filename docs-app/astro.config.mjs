@@ -46,6 +46,8 @@ export default defineConfig({
 						{ label: 'Create a form', slug: 'guides/forms' },
 						{ label: 'Response contract & runtime', slug: 'guides/frontend-runtime' },
 						{ label: 'Manage submission data', slug: 'guides/data' },
+						{ label: 'REST resources', slug: 'guides/rest' },
+						{ label: 'Headless WordPress', slug: 'guides/headless' },
 						{ label: 'Create a block (CLI)', slug: 'guides/blocks' },
 						{ label: 'Write queries', slug: 'guides/queries' },
 						{ label: 'Apply a brand', slug: 'guides/branding' },
