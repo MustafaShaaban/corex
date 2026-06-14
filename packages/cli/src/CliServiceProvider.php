@@ -25,6 +25,8 @@ use Corex\Assets\AssetReport;
 use Corex\Cli\Docs\ApiDocsGenerator;
 use Corex\Cli\Generators\ApiResourceScaffolder;
 use Corex\Cli\Generators\BlockScaffolder;
+use Corex\Cli\Release\ComplianceCheck;
+use Corex\Cli\Release\ReleasePackagePlan;
 use Corex\Cli\Routes\RouteList;
 use Corex\Cli\Routes\RoutesReader;
 use Corex\Cli\Site\SiteScaffolder;
@@ -177,6 +179,67 @@ final class CliServiceProvider extends ServiceProvider
             static function (): void {
                 delete_transient('corex_asset_manifest');
                 WP_CLI::success('Corex asset cache cleared.');
+            },
+        );
+
+        // Team ops + distribution (spec 050): compliance check, release packaging, local docs.
+        $frameworkPaths = [
+            'plugins/corex-core', 'plugins/corex-blocks', 'plugins/corex-config', 'plugins/corex-forms',
+            'theme', 'packages/cli', 'addons/corex-ui', 'addons/corex-email', 'addons/corex-captcha',
+            'addons/corex-newsletter', 'addons/corex-careers', 'addons/corex-bookings', 'addons/corex-media',
+            'addons/corex-kit-company', 'addons/corex-kit-portfolio', 'addons/corex-kit-woo',
+        ];
+        $cliRoot = dirname(__DIR__, 3);
+
+        WP_CLI::add_command(
+            'corex compliance:check',
+            static function (array $args, array $assoc) use ($frameworkPaths): void {
+                $files  = isset($assoc['files']) ? array_filter(array_map('trim', explode(',', (string) $assoc['files']))) : [];
+                $result = (new ComplianceCheck())->evaluate(array_values($files), $frameworkPaths, ! empty($assoc['allow-framework']));
+
+                if ($result['passed']) {
+                    WP_CLI::success('Compliance OK — no Corex framework files changed.');
+
+                    return;
+                }
+
+                foreach ($result['violations'] as $violation) {
+                    WP_CLI::log(sprintf('  ✗ framework file changed: %s', $violation));
+                }
+                WP_CLI::error('Compliance failed — client work must not edit Corex framework folders.');
+            },
+        );
+
+        WP_CLI::add_command(
+            'corex package:update',
+            static function (array $args, array $assoc) use ($frameworkPaths): void {
+                $version  = (string) ($args[0] ?? '');
+                $download = (string) ($assoc['download-url'] ?? '');
+                $plan     = new ReleasePackagePlan($frameworkPaths, ['/tests/', '/specs/', 'node_modules', '.git/', 'wp-config', '.env']);
+                $manifest = $plan->manifest($version, $download, (string) ($assoc['changelog'] ?? 'Bug fixes and improvements.'));
+
+                WP_CLI::log((string) wp_json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                WP_CLI::success(sprintf('Manifest planned for %s (framework-only; build the ZIP from the included paths).', $version));
+            },
+        );
+
+        WP_CLI::add_command(
+            'corex docs:sync',
+            static function () use ($cliRoot): void {
+                $built = $cliRoot . '/docs-app/dist';
+                if (! is_dir($built)) {
+                    WP_CLI::warning('No built docs found — run `npm run build` in docs-app/ first.');
+
+                    return;
+                }
+                WP_CLI::success(sprintf('Docs available at %s — copy into .corex/docs/ (git-ignored) to read locally.', $built));
+            },
+        );
+
+        WP_CLI::add_command(
+            'corex docs:serve',
+            static function (): void {
+                WP_CLI::log('Serve the docs locally: `cd docs-app && npm run dev` → http://localhost:4321');
             },
         );
 
