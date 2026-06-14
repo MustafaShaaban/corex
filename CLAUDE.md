@@ -42,7 +42,20 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-**Active plan:** `specs/053-platform-roadmap-closeout/plan.md` (close the gap between the "043–052 COMPLETE /
+**Active plan:** `specs/054-corex-full-dls/plan.md` (turn the thin 051 catalog into a full, **native-first** DLS,
+driven by the gap analysis in `research.md`. Evidence findings: radius+layout tokens already exist → the real
+token gaps are **motion/focus/z-index** (US2 adds them + documents all groups); **most candidate "components" are
+WordPress core blocks to document or Corex block styles, not new blocks** — the **only** justified new block is
+**`corex/modal`** (native `<dialog>` focus-trap/ESC, degrades without JS); card/section/table-striped/button-
+variants/empty-state ship as **block styles**, skeleton as a token-only utility, toast = the 043
+`window.Corex.notices` runtime. US1 expands `DesignSystemCatalog` to the full taxonomy (drift-checked, with a
+`mechanism` field so block-style/core/deferred entries aren't mistaken for blocks); US4 adds the justified
+patterns (section-header/content-split/stats/FAQ/posts-news) + page templates (landing/contact/form) + a docs-app
+design-system section (every component with when-to-use/when-not-to-use). Home = corex-ui; token-only/runtime;
+Constitution PASS. Non-scope: rebuilding core-covered elements, copying external DS code/brand/names, the spec-053
+closeout, a public marketing site. Next: `/speckit-tasks`. Superseded prior plan below.
+
+**Active plan (prev — DONE, merged):** `specs/053-platform-roadmap-closeout/plan.md` (close the gap between the "043–052 COMPLETE /
 v0.25.0" claim and the code — no new architecture, consuming surfaces only: **US1** rewrite the stale README +
 reconcile PROGRESS/045+049 `tasks.md` checkboxes + add a feature-PR docs rule; **US2** build the missing Data
 admin React controls (search/source+form filter/sortable headers/pagination/CSV-export button/detail
