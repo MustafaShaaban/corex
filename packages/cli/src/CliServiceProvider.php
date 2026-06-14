@@ -20,6 +20,8 @@ use Corex\Health\HealthModule;
 use Corex\Cli\Docs\ClassDocReader;
 use Corex\Cli\Docs\DocsGenerator;
 use Corex\Cli\Docs\MarkdownDocRenderer;
+use Corex\Assets\AssetManager;
+use Corex\Assets\AssetReport;
 use Corex\Cli\Docs\ApiDocsGenerator;
 use Corex\Cli\Generators\ApiResourceScaffolder;
 use Corex\Cli\Generators\BlockScaffolder;
@@ -141,6 +143,30 @@ final class CliServiceProvider extends ServiceProvider
                 $version = defined('COREX_CORE_VERSION') ? COREX_CORE_VERSION : '0.0.0';
                 $doc     = (new ApiDocsGenerator())->generate($routesReader->read($namespaces), 'Corex API', $version);
                 WP_CLI::log((string) wp_json_encode($doc, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            },
+        );
+
+        // Asset diagnostics + cache reset (spec 047).
+        $assets = $this->container->make(AssetManager::class);
+
+        WP_CLI::add_command(
+            'corex assets:doctor',
+            static function () use ($assets): void {
+                $report  = new AssetReport();
+                $present = is_file(COREX_CORE_PATH . 'build/manifest.json');
+                $samples = ['build/index.js' => $assets->version('build/index.js')];
+
+                foreach ($report->lines($report->build($assets->environment(), $present, $samples)) as $line) {
+                    WP_CLI::log($line);
+                }
+            },
+        );
+
+        WP_CLI::add_command(
+            'corex cache:clear',
+            static function (): void {
+                delete_transient('corex_asset_manifest');
+                WP_CLI::success('Corex asset cache cleared.');
             },
         );
 

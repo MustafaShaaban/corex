@@ -38,7 +38,7 @@ US4 = headless mode (P2).
 - [x] T012 [P] Docs: docs-app `guides/rest.md` (make:api-resource, routes:list, api:docs) + `guides/headless.md`; CLI README.
 - [x] T013 Guard Gate (clean-code, wp-guard — generated route/permission/no-secret/escaping, test-guard, docs-guard).
 - [x] T014 Suites green (`composer test`); record counts. Live CLI/headless env-gated.
-- [ ] T015 Update `PROGRESS.md` + `DECISIONS.md` #80; NEXT STEP. Commit → PR → CI → merge.
+- [x] T015 Update `PROGRESS.md` + `DECISIONS.md` #80; NEXT STEP. Commit → PR → CI → merge.
 
 ---
 
