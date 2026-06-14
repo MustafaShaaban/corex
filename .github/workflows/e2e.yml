@@ -1,0 +1,53 @@
+name: E2E
+
+on:
+  # The browser job is heavier than the fast unit CI and depends on a provisioned wp-env, so
+  # it runs nightly + on-demand (not on every PR) — PRs stay gated by ci.yml; this is the
+  # standing browser gate. Trigger it manually before a release or to confirm a UI change.
+  schedule:
+    - cron: '0 3 * * *' # nightly browser smoke
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright E2E + console sweep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build blocks
+        run: npm run build
+
+      - name: Start WordPress (wp-env)
+        run: npm run env:start
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E smoke + console sweep
+        run: npm run test:e2e
+
+      - name: Stop WordPress
+        if: always()
+        run: npm run env:stop
