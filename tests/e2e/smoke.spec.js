@@ -10,24 +10,14 @@
  */
 const { test, expect } = require( '@playwright/test' );
 
-const ADMIN_USER = process.env.COREX_ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.COREX_ADMIN_PASS || '123456';
-
-async function login( page ) {
-	await page.goto( '/wp-login.php' );
-	await page.fill( '#user_login', ADMIN_USER );
-	await page.fill( '#user_pass', ADMIN_PASS );
-	await page.click( '#wp-submit' );
-	await expect( page ).toHaveURL( /wp-admin/ );
-}
-
 test( 'a corex block is recognised in the editor inserter', async ( { page } ) => {
-	await login( page );
 	await page.goto( '/wp-admin/post-new.php?post_type=page' );
 
-	// Open the inserter and search for a Corex block.
-	await page.getByLabel( /Toggle block inserter/i ).click();
-	await page.getByPlaceholder( /Search/i ).fill( 'Corex' );
+	// Open the inserter and search for a Corex block. The toggle's accessible name has
+	// varied across Gutenberg versions ("Block Inserter" in WP 7.0, "Toggle block
+	// inserter"/"Add block" earlier) — match any so the smoke survives a WP bump.
+	await page.getByRole( 'button', { name: /block inserter|toggle block inserter|add block/i } ).first().click();
+	await page.getByPlaceholder( /Search/i ).first().fill( 'Corex' );
 
 	// At least one corex/* block appears (not the "unsupported" placeholder).
 	await expect( page.locator( '.block-editor-block-types-list__item' ).first() ).toBeVisible();
@@ -40,20 +30,31 @@ test( 'the contact form validates and accepts a submission', async ( { page } ) 
 	const form = page.locator( 'form[data-corex-schema]' );
 	await expect( form ).toBeVisible();
 
-	// Empty submit → client validation shows a field error (no navigation).
-	await form.getByRole( 'button', { name: /send|submit/i } ).click();
-	await expect( form.locator( '[role="alert"]' ).first() ).not.toBeEmpty();
+	const name = form.locator( 'input[name="name"]' );
+	const email = form.locator( 'input[name="email"]' );
+	const message = form.locator( 'textarea[name="message"], input[name="message"]' ).first();
+	const send = form.getByRole( 'button', { name: /send|submit/i } );
+
+	// Empty submit → native `required` constraint blocks submission (progressive
+	// enhancement; the field reports invalid and no request leaves the browser).
+	await send.click();
+	await expect.poll( () => name.evaluate( ( el ) => el.checkValidity() ) ).toBe( false );
+
+	// A value that passes native validation but fails the schema (name > max:120) → the
+	// Corex JS validator (window.Corex.forms) renders an inline error in the field's region.
+	await name.fill( 'x'.repeat( 121 ) );
+	await email.fill( 'smoke@example.com' );
+	await message.fill( 'Hello from Playwright.' );
+	await send.click();
+	await expect( form.locator( '#corex-contact-name-error' ) ).not.toBeEmpty();
 
 	// Valid submit → success response region.
-	await form.locator( 'input[name="name"]' ).fill( 'Smoke Test' );
-	await form.locator( 'input[name="email"]' ).fill( 'smoke@example.com' );
-	await form.locator( 'textarea[name="message"], input[name="message"]' ).first().fill( 'Hello from Playwright.' );
-	await form.getByRole( 'button', { name: /send|submit/i } ).click();
+	await name.fill( 'Smoke Test' );
+	await send.click();
 	await expect( page.locator( '.corex-form__status, [role="status"]' ).first() ).toBeVisible();
 } );
 
 test( 'the setup wizard applies a kit', async ( { page } ) => {
-	await login( page );
 	await page.goto( '/wp-admin/admin.php?page=corex-setup' );
 
 	await expect( page.getByRole( 'heading', { name: /Setup Wizard/i } ) ).toBeVisible();
