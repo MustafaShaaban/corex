@@ -3,7 +3,7 @@
 /**
  * Plugin Name:       Corex Media
  * Description:       Optional media optimization for Corex — WebP on upload + an optimized <picture> helper.
- * Version:           0.26.0
+ * Version:           0.26.1
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Author:            Mustafa Shaaban

@@ -4,7 +4,47 @@
 > Updated at the end of every working session.
 
 ---
-## ▶ RESUME HERE (2026-06-14, latest) — spec 054 full DLS: US1–US4 ALL SHIPPED, ready to push/PR
+## ▶ RESUME HERE (2026-06-15, latest) — E2E suite executed; found + fixed a real asset-URL bug (PR pending)
+
+**The env-gated spec-052 Playwright suite was finally run against the live WAMP site (Apache up).** Hardened it to
+run reliably, and its **console-error sweep caught a real bug on its first live run** — now fixed on
+`fix/addon-block-asset-urls`.
+
+- **Bug:** add-ons Corex loads via its Boot provider list (not WP `active_plugins`) — `corex-careers`,
+  `corex-kit-portfolio` — emitted **malformed block asset URLs** (`…/plugins/C:/wamp64/www/corex/addons/…/style-index.css`)
+  → 6× `403` in the editor. Root-caused to WordPress's `$wp_plugin_paths`/`plugin_basename()` only knowing
+  symlinked plugins it activates itself; the spec-040 resolver is undone by WP's own `realpath()` of block.json.
+- **Fix:** `Corex\Blocks\PluginRealpathRegistrar` replays `wp_register_plugin_realpath()` for every junctioned mount
+  at boot. **Verified live:** the 403s are gone, URLs resolve under `/wp-content/plugins/corex-…/`. DECISIONS #90.
+- **E2E hardening:** WP 7.0 "Block Inserter" selector; contact-form assertions match the native-`required` + JS-schema
+  design; `storageState` global-setup auth (fixes the cold-first-login flake); deterministic editor-ready waits
+  (not `networkidle`); 60s timeout. **Full Playwright suite now 6/6 green (twice).**
+- **Verification:** **566 Pest** (+3 `PluginRealpathRegistrar`) · **6/6 Playwright** · Guard Gate clean
+  (wp/clean-code/test). CHANGELOG `[Unreleased]`.
+- **▶ NEXT:** push `fix/addon-block-asset-urls` → PR into `develop` → CI green → merge; then a **v0.26.1** patch
+  release (the asset-URL fix warrants it). The spec-052 E2E can now run green locally whenever Apache is up.
+
+---
+## ▶ (HISTORICAL) 2026-06-14 — 🎉 RELEASED v0.26.0; specs 001–054 delivered, no open scope
+
+**Specs 053 (closeout) + 054 (full DLS) are merged and RELEASED as v0.26.0.** Both feature branches merged to
+`develop` (PRs #30, #32); the batch was promoted `develop`→`main` (no-ff) as **Release v0.26.0**, version-stamped
+across all 15 framework headers/constants via `wp corex version 0.26.0`, CHANGELOG `[0.26.0]` + README updated,
+tagged **`v0.26.0`**, **main CI green** (CI 32s + Docs 41s), GitHub release published.
+
+- **Verification before release (DoD gate):** **563 Pest · 55 Jest (15 suites) · docs build 268 pages** — all green.
+- **Project status — at a completion milestone.** Specs **001–054 are delivered, tested, and released**
+  (v0.18.0 → v0.26.0). **Spec 055 (documentation-productization) is NOT warranted** — its docs scope was absorbed by
+  053 (honest README + the §D.5 documentation-in-every-PR rule) and 054 (the docs-app Design System section).
+  DECISIONS #89.
+- **▶ Only standing remainder = environment-gated** (not new build scope): the spec-052 Playwright sweep — modal
+  a11y (open/ESC/backdrop/focus-return, RTL, console-clean) + Data-flow E2E — runs via wp-env in CI (nightly +
+  on-demand); the suites are ready in `tests/e2e/`. It cannot run in this headless WAMP (no Apache/browser).
+- **▶ NEXT:** nothing is unbuilt or unspecced. New work needs a new direction from the user (a new spec via the
+  Spec Kit flow), or run the env-gated E2E once an Apache/browser environment is available.
+
+---
+## ▶ (HISTORICAL) 2026-06-14 — spec 054 full DLS: US1–US4 ALL SHIPPED, ready to push/PR
 
 **Spec 054 (full DLS) is implemented end-to-end** on `feature/054-dls-components` — all four user stories done +
 green. US1 (catalog + gap analysis) and US2 (foundations tokens + docs) shipped earlier; US3 (`corex/modal` +

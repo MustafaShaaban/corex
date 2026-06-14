@@ -80,3 +80,6 @@ desktop.ini
 .history/
 *.swp
 *~
+
+# Playwright E2E saved auth state (storageState)
+tests/e2e/.auth/

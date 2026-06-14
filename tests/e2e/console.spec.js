@@ -7,14 +7,18 @@
  * ENVIRONMENT-GATED: needs wp-env up + `npx playwright install`. Runs in the e2e workflow.
  */
 const { test, expect } = require( '@playwright/test' );
-const { login, collectConsoleErrors } = require( './helpers' );
+const { collectConsoleErrors } = require( './helpers' );
 
 test( 'the block editor loads with no console errors', async ( { page } ) => {
 	const errors = collectConsoleErrors( page );
 
-	await login( page );
 	await page.goto( '/wp-admin/post-new.php?post_type=page' );
-	await page.waitForLoadState( 'networkidle' );
+	// `networkidle` is unreliable here — the editor keeps connections open (heartbeat),
+	// so it may never idle. Wait for a concrete interactive signal instead: the editor
+	// toolbar's inserter toggle being visible means the editor hydrated.
+	await expect(
+		page.getByRole( 'button', { name: /block inserter|toggle block inserter|add block/i } ).first()
+	).toBeVisible();
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
@@ -22,7 +26,6 @@ test( 'the block editor loads with no console errors', async ( { page } ) => {
 test( 'the Corex settings screen loads with no console errors', async ( { page } ) => {
 	const errors = collectConsoleErrors( page );
 
-	await login( page );
 	await page.goto( '/wp-admin/admin.php?page=corex-settings' );
 	await page.waitForLoadState( 'networkidle' );
 
