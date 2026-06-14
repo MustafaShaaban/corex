@@ -42,7 +42,20 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-**Active plan:** `specs/041-kit-front-page/plan.md` (kit apply never leaves a blank front page — pure
+**Active plan:** `specs/053-platform-roadmap-closeout/plan.md` (close the gap between the "043–052 COMPLETE /
+v0.25.0" claim and the code — no new architecture, consuming surfaces only: **US1** rewrite the stale README +
+reconcile PROGRESS/045+049 `tasks.md` checkboxes + add a feature-PR docs rule; **US2** build the missing Data
+admin React controls (search/source+form filter/sortable headers/pagination/CSV-export button/detail
+drawer/loading+error+empty states) over the existing `corex/v1/data` query+detail routes + `admin_post`
+export; **US3** wire the captcha **Test** button JS in corex-captcha over `POST /captcha/test` — the real gap;
+insights "Run check" already exists, so verify+polish its classified secret-safe message; **US4** add the
+`make:site --starter` slice (`packages/cli/stubs/starter/**` model/repo/service/controller-on-envelope/block/
+option/test/REMOVE-EXAMPLE.md + a standalone starter block theme with `@wordpress/scripts` SCSS/JS, dev-only
+maps, minified prod, manifest cache-busting, url/path/version helper) + wire `--starter`/`--minimal` into
+`SiteScaffolder`/`MakeCommand` (default omits). Constitution Check PASS, no violations. Non-scope: new DLS atoms
+(→054), Excel/PDF export, AVIF/CDN/Azure Blob. Next: `/speckit-tasks`. Superseded prior plan below.
+
+**Active plan (prev):** `specs/041-kit-front-page/plan.md` (kit apply never leaves a blank front page — pure
 `KitPagePlanner::plan()` classifies each declared page create/adopt/skip; `BlueprintActivator` populates
 adopted pages + sets the front page after the loop for a created|adopted home + records `_corex_kit_page`=
 created|adopted; CLI `ResetExecutor` deletes created pages but only empties adopted ones; returns an
