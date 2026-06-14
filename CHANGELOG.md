@@ -4,7 +4,7 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
-## [Unreleased]
+## [0.26.1] — 2026-06-15
 
 ### Fixed
 
