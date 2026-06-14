@@ -1,0 +1,8 @@
+/* {{ name }} example block — token-only, logical properties (RTL-correct). */
+.{{ theme_slug }}-example {
+	display: grid;
+	gap: var({{ css_prefix }}gap, 0.5rem);
+	margin: 0;
+	padding-inline-start: 0;
+	list-style: none;
+}

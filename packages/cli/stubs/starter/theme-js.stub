@@ -1,0 +1,11 @@
+/**
+ * {{ name }} theme front-end entry. Importing the SCSS here lets wp-scripts compile one
+ * stylesheet (assets/build/main.css) with a hashed assets/build/main.asset.php for
+ * cache-busting. Add your site's progressive-enhancement behaviour below.
+ */
+import './main.scss';
+
+// Example: feature-detect, then enhance. Keep it small and dependency-free.
+document.addEventListener( 'DOMContentLoaded', () => {
+	// Your front-end behaviour here.
+} );

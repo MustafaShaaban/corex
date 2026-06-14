@@ -151,32 +151,32 @@ reserved name refused); `wp corex make:site Acme --starter` runs live (env-gated
 
 ### Tests first (TDD)
 
-- [ ] T027 [P] [US4] Pest `tests/Unit/Cli/SiteScaffolderStarterTest.php`: `--starter` emits the slice
+- [X] T027 [P] [US4] Pest `tests/Unit/Cli/SiteScaffolderStarterTest.php`: `--starter` emits the slice
   (model/repo/service/controller/block+renderer/option/test/`REMOVE-EXAMPLE.md`) + starter-theme assets, every
   generated `.php` passes `php -l`, identifiers client-namespaced; default and `--minimal` omit the slice;
   idempotent without `--force`; a name normalizing to `corex` is refused. (contracts/make-site-starter.md)
 
 ### Implementation
 
-- [ ] T028 [P] [US4] Author `packages/cli/stubs/starter/**`: client-namespaced model, repository, service,
+- [X] T028 [P] [US4] Author `packages/cli/stubs/starter/**`: client-namespaced model, repository, service,
   controller using the **spec-043 response envelope**, dynamic block (`block.json`+`index.js`+`style.scss`+
   renderer, token-only/RTL), option page (AdminGuard-gated), a matching test, and `REMOVE-EXAMPLE.md` listing
   the slice files. (FR-018, FR-020, D8)
-- [ ] T029 [P] [US4] Author the **standalone starter theme** stubs under `packages/cli/stubs/starter/theme/**`:
+- [X] T029 [P] [US4] Author the **standalone starter theme** stubs under `packages/cli/stubs/starter/theme/**`:
   `style.css` (not a child theme), `theme.json` consuming Corex tokens, templates/parts, `assets/src/*.scss` +
   `*.js`, `package.json` build scripts (`@wordpress/scripts`: dev source maps, minified prod, hashed
   `*.asset.php`), and `inc/Assets.php` (`url()`/`path()`/`version()` over the manifest for images/icons/fonts).
   (FR-019, D9)
-- [ ] T030 [US4] Extend `SiteScaffolder::scaffold()` with the `starter` option: when true, add the slice + theme
+- [X] T030 [US4] Extend `SiteScaffolder::scaffold()` with the `starter` option: when true, add the slice + theme
   assets to the render-all-before-write map; default/`starter=false` unchanged. Keep pure (no WP). (FR-018/021/
   023, D8)
-- [ ] T031 [US4] Wire flags in `packages/cli/src/Commands/MakeCommand.php` `runSite()`:
+- [X] T031 [US4] Wire flags in `packages/cli/src/Commands/MakeCommand.php` `runSite()`:
   `starter => (bool)($assoc['starter'] ?? false) && ! ($assoc['minimal'] ?? false)`; ensure `--minimal`/
   `--plugin-only`/`--theme-only`/`--force` all recognized; report created files + the REMOVE-EXAMPLE guidance.
   (FR-021/022)
-- [ ] T032 [US4] Verify Pest (T027) green; run `wp corex make:site Acme --starter` live if env permits, else
+- [X] T032 [US4] Verify Pest (T027) green; run `wp corex make:site Acme --starter` live if env permits, else
   record env-gated. (SC-006)
-- [ ] T033 [US4] **Guard Gate (US4)**: `clean-code-guard` + `wp-guard` (generated route/envelope/escaping/
+- [X] T033 [US4] **Guard Gate (US4)**: `clean-code-guard` + `wp-guard` (generated route/envelope/escaping/
   no-secret) + `test-guard` (incl. generated `php -l`) + `docs-guard` (REMOVE-EXAMPLE + generated governance
   accuracy). Fix findings. (FR-025)
 
