@@ -22,6 +22,7 @@ use Corex\Events\EventServiceProvider;
 use Corex\Foundation\CoreServiceProvider;
 use Corex\Foundation\DataServiceProvider;
 use Corex\Foundation\HttpServiceProvider;
+use Corex\Assets\AssetsServiceProvider;
 use Corex\Email\MailServiceProvider;
 use Corex\Forms\FormsServiceProvider;
 use Corex\Kit\KitServiceProvider;
@@ -63,6 +64,7 @@ final class Boot
         self::$app = new Application($debug, providers: [
             CoreServiceProvider::class,
             HttpServiceProvider::class,
+            AssetsServiceProvider::class,
             ConfigServiceProvider::class,
             EventServiceProvider::class,
             DataServiceProvider::class,

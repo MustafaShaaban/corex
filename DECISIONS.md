@@ -1367,3 +1367,21 @@ unit green.** Guard self-check clean (generated route carries a permission callb
 the OpenAPI doc; pure engine + gated command — spec-003 pattern).
 Status: Final (US1 make:api-resource + routes:list + api:docs all wired; US2/US3 cores tested; RoutesReader parses rest_get_server; headless docs written.
 headless docs + merge remaining).
+
+## #81 — Asset manager & environments (spec 047)
+Date: 2026-06-14
+Context: spec 047 (roadmap) — a formal asset/performance layer: url/path/version helpers + per-environment
+cache-busting, so a release never serves stale CSS/JS and local edits are always seen.
+Decision: pure cores in corex-core `Corex\Assets` — `AssetEnvironment` (config → local/staging/production,
+production-safe default; source maps only in local), `BuildManifest` (source → hashed file + hash, malformed/absent
+→ empty), `AssetVersion` (local → filemtime, staging/prod → manifest hash else framework/site version; a missing
+asset or a `../`/`/`/`:` traversal → safe fallback). The `AssetManager` boundary (`url`/`path`/`version`) is plain
+string + native `filemtime` work (so it is unit-tested without WordPress); `AssetsServiceProvider` wires it for
+corex-core (base dir/URL via `plugins_url`, env via `wp_get_environment_type()` fallback, manifest from
+`build/manifest.json`, `COREX_CORE_VERSION` fallback). `assets:doctor` (pure `AssetReport`) + `cache:clear` are
+WP-CLI-gated. Site plugins (spec 049) build their own manager for their own base the same way.
+Why: one helper for correct, junction-safe URLs + deterministic, environment-correct cache-busting — the
+asset/performance primitive the generated sites need. **+19 Pest → 512 unit + 40 Jest green.** Guard Gate clean
+(traversal guard, gated CLI, no secret in the report; pure cores + thin boundary — spec-003/036 pattern). Live
+enqueue/source-map behaviour is env-gated.
+Status: Final.
