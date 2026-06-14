@@ -4,7 +4,12 @@ description: Search, filter, sort, export, and read form submissions — and the
 ---
 
 **Corex → Data** lists every form submission (and any registered custom table, spec 038) in one cap-gated
-screen. Spec 045 makes it a real tool.
+screen. Spec 045 built the **query/export/detail backend** documented below (REST + `admin-post`).
+
+> **Status (2026-06-14):** the REST/query/export/detail layer below is implemented and tested. The matching
+> **admin-screen controls** (search box, source/form filter, sortable headers, an export button, and a detail
+> drawer with loading/error/empty states) are being completed under spec **053** (US2); until then the screen
+> paginates and deletes. This note is removed when 053 US2 ships those controls.
 
 ## Query: search, filter, sort, paginate
 

@@ -4,7 +4,34 @@
 > Updated at the end of every working session.
 
 ---
-## ▶ RESUME HERE (2026-06-14) — 🎉 ROADMAP 043–052 COMPLETE — RELEASED v0.25.0
+## ▶ RESUME HERE (2026-06-14, latest) — ⚠️ CORRECTION + spec 053 closeout in progress
+
+**An honest audit (2026-06-14) found the "ROADMAP 043–052 COMPLETE" banner below overstated.** The *backends*
+for 043–052 shipped and are unit-tested, and v0.25.0 is tagged — but several **user-facing tails were never
+built**, and some docs/checkboxes claimed completeness the code does not support:
+- **045 Data screen** — backend (query/search/sort/filter/CSV-export/detail) is done + tested, but the **React
+  admin UI** only paginates + deletes (no search/filter/sort/export button/detail/loading-error-empty states).
+- **044 captcha test** — `CaptchaTestController` exists but **corex-captcha ships no JS**, so the Test button is
+  not wired in the UI. (Insights "Run check" *does* exist in `insights.js`.)
+- **049 make:site** — the `--starter` slice was **never built** (`packages/cli/stubs/starter/` is absent; the
+  generated plugin has only empty folders); `MakeCommand::runSite` does not parse `--starter`/`--minimal`
+  (049 T008 was a stale/false checkbox — now corrected in `specs/049/tasks.md`).
+- **051 DLS** — is a taxonomy catalog + alert/badge, **not a full DLS** (deferred to spec 054).
+- **README.md** — said "bootstrap stage / no framework code yet" (false) — **rewritten** as an honest entry point.
+
+**Remediation (approved 2026-06-14): three forward specs, spec-first.**
+- **`053-platform-roadmap-closeout`** — fix the false claims + finish the tails (US1 docs honesty ✅ in progress ·
+  US2 Data UI · US3 captcha/insights test buttons · US4 `make:site --starter`/`--minimal`). Full Spec Kit flow
+  done (spec/plan/research/data-model/contracts/quickstart/tasks; Constitution PASS). **▶ NEXT: implement
+  053 US1→US4** on `feature/053-platform-roadmap-closeout`.
+- **`054-corex-full-dls`** — full DLS inventory → gap analysis → roadmap → build (after 053).
+- **`055-documentation-productization`** — if docs scope warrants a separate spec.
+
+The "🎉 COMPLETE" entry below is preserved as the historical log of what *was* shipped (the backends + release),
+read it with this correction in mind. DECISIONS #87.
+
+---
+## ▶ (HISTORICAL — see correction above) 2026-06-14 — ROADMAP 043–052 backends shipped — RELEASED v0.25.0
 
 **The entire "platform" roadmap (specs 043–052) is delivered, merged, and released.** All ten built spec-first
 via the full Spec Kit flow (specify→plan→tasks→implement), each TDD + Guard Gate clean + CI-verified merged via its
@@ -27,7 +54,7 @@ own PR (#20–#29), then promoted `develop`→`main` as **Release v0.25.0** (ver
 029–039 (recognised up front and surfaced via docs, not re-spec'd). **Env-gated remainder (now a CI gate, not an
 open excuse):** the spec-052 E2E/console workflow runs nightly + on-demand via wp-env (+ the browser-gated UI tails:
 043/044's test buttons, 045's React Data controls, the 049 starter slice — documented follow-ups).
-**▶ Next:** none mandated — the roadmap is complete. Pick up new work or the documented follow-ups.
+**▶ Next:** *(superseded — see the correction entry at the top of this file; the user-facing tails are tracked by spec 053).*
 
 ---
 ## ▶ RESUME HERE (2026-06-13, latest) — roadmap 043–052: 043+044 MERGED, 045 backend done
