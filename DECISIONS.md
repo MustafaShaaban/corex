@@ -1385,3 +1385,22 @@ asset/performance primitive the generated sites need. **+19 Pest → 512 unit + 
 (traversal guard, gated CLI, no secret in the report; pure cores + thin boundary — spec-003/036 pattern). Live
 enqueue/source-map behaviour is env-gated.
 Status: Final.
+
+## #82 — Media & image optimization (spec 048)
+Date: 2026-06-14
+Context: spec 048 (roadmap) — a real media performance plan: WebP on upload + an optimized <picture> helper +
+graceful degradation + an image-support probe. Optional add-on (Principle IX).
+Decision: a new optional add-on `addons/corex-media` (`Corex\Media\`, in Boot's provider list + self-gating). Pure
+cores: `ImageCapability` (gd/imagick/webp/avif value object + static detect()), `ConversionPlan` (jpeg/png +
+webp-capable → convert to a sibling .webp preserving the original; non-image/already-webp/unsupported → skip),
+`PictureRenderer` (escaped <picture>: webp <source> + <img> fallback, lazy/async, fetchpriority=high+eager for the
+LCP image, responsive srcset; no webp → plain <img>; empty alt valid), `MediaImageProbe` (advisory GD/Imagick/WebP/
+AVIF → Site Health/doctor, never critical). Thin boundaries: `WebpConverter` (GD/Imagick, fail-safe — corrupt/
+oversized → original), `MediaImage` helper (attachment → renderer data via WP image funcs; degrades to <img>),
+`MediaServiceProvider` (gated: hooks the converter on `wp_generate_attachment_metadata` only when `canWebp()`, adds
+the probe via a NEW `corex_health_probes` filter added to `HealthModule` so add-ons extend Site Health without core
+depending on them). corex-media added to the AddonRegistry (rich manifest). AVIF generation + CDN out of scope.
+Why: smaller, modern images by default with zero hand-written <img>, fully optional + graceful. **+9 Pest → 520
+unit + 40 Jest green.** Guard Gate clean (escaped markup, fail-safe converter touching only the WP attachment path,
+advisory probe, no secret; pure cores + thin boundary). Live conversion/probe behaviour is env-gated (needs GD/Imagick).
+Status: Final.

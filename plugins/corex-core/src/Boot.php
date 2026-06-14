@@ -82,6 +82,7 @@ final class Boot
             BookingsServiceProvider::class,
             PortfolioServiceProvider::class,
             WooServiceProvider::class,
+            \Corex\Media\MediaServiceProvider::class,
             AbilitiesProvider::class,
         ]);
         self::$app->boot();
