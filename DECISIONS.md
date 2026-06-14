@@ -1426,3 +1426,21 @@ accurate; no secret). **US3 starter vertical slice (one working model→service�
 the documented follow-up** (the empty correctly-namespaced structure already works); the `wp/` repo layout + Azure
 pipeline + update packaging are spec 050, the design-system SCSS depth spec 051.
 Status: Final (US1 plugin+theme + US2 governance + US4 flags/command shipped; US3 starter slice is a follow-up increment).
+
+## #84 — Team ops & distribution (spec 050)
+Date: 2026-06-14
+Context: spec 050 (roadmap) — close the distribution loop + enforce the client/framework boundary, on top of the
+shipped spec-034 update mechanism + the spec-049 boundary.
+Decision: two pure cores in `Corex\Cli\Release` — `ReleasePackagePlan` (`includes(path)` = framework src minus
+tests/specs/node_modules/client/secrets; `manifest()` = the spec-034 format) and `ComplianceCheck`
+(`evaluate(changedFiles, forbiddenPrefixes, allowFramework)` → {passed, violations}, matching by **path prefix** not
+substring, with an override) — wrapped by thin WP-CLI-gated commands: `compliance:check` (CI fails a PR that edits a
+Corex framework folder, naming the files; passes client plugin/theme/docs/specs), `package:update` (emits the
+framework-only manifest), `docs:sync`/`docs:serve` (local docs access — `.corex/docs/` is git-ignored by the spec-049
+generated `.gitignore`). Plus `guides/deployment.md` (Azure DevOps per-site repo + App Service + branch policies
+requiring review + a green pipeline + compliance + secrets/uploads/rollback). No secret in any package/manifest/docs.
+Why: the boundary that spec 049 documents is now **enforced** in CI, and the framework can actually be packaged for
+the spec-034 self-update — the team/agency distribution loop. **+7 Pest → 537 unit + 40 Jest green.** Guard Gate
+clean (pure cores + gated commands; prefix-match avoids false positives; no secret). The live ZIP build + git diff +
+docs serve are env-gated boundaries.
+Status: Final.
