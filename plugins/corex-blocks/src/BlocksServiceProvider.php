@@ -39,11 +39,23 @@ final class BlocksServiceProvider extends ServiceProvider
             ),
         );
 
+        $this->container->singleton(
+            PluginRealpathRegistrar::class,
+            static fn (ContainerInterface $c): PluginRealpathRegistrar => new PluginRealpathRegistrar(
+                $c->make(PluginMountMap::class),
+            ),
+        );
+
         $this->container->singleton(ConnectorRegistry::class);
     }
 
     public function boot(): void
     {
+        // Teach WordPress where every junctioned Corex add-on really lives before any asset URL
+        // is derived, so add-ons loaded via Boot (not WP's active_plugins) get correct block/
+        // asset URLs instead of a broken `…/plugins/C:/…` path (spec 040).
+        $this->container->make(PluginRealpathRegistrar::class)->register();
+
         add_filter('block_categories_all', [$this, 'registerBlockCategory']);
 
         add_action('init', function (): void {

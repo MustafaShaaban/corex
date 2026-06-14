@@ -13,13 +13,20 @@
  */
 const { defineConfig, devices } = require( '@playwright/test' );
 
+const { STORAGE_STATE } = require( './global-setup' );
+
 module.exports = defineConfig( {
 	testDir: '.',
-	timeout: 30_000,
+	// The block editor is a heavy React app; on a cold OPcache / loaded box it can take a
+	// while to become interactive. 60s gives headroom without masking a real hang.
+	timeout: 60_000,
 	fullyParallel: false,
 	reporter: 'list',
+	// Authenticate once (global-setup) and reuse the session — no per-test login race.
+	globalSetup: require.resolve( './global-setup.js' ),
 	use: {
 		baseURL: process.env.COREX_BASE_URL || 'http://corex.local',
+		storageState: STORAGE_STATE,
 		trace: 'on-first-retry',
 	},
 	projects: [
