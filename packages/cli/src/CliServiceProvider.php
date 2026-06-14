@@ -27,6 +27,7 @@ use Corex\Cli\Generators\ApiResourceScaffolder;
 use Corex\Cli\Generators\BlockScaffolder;
 use Corex\Cli\Routes\RouteList;
 use Corex\Cli\Routes\RoutesReader;
+use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Generators\ControllerGenerator;
 use Corex\Cli\Generators\GeneratorContext;
 use Corex\Cli\Generators\GeneratorEngine;
@@ -89,6 +90,14 @@ final class CliServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(
+            SiteScaffolder::class,
+            fn (ContainerInterface $c): SiteScaffolder => new SiteScaffolder(
+                $c->make(StubRenderer::class),
+                dirname(__DIR__) . '/stubs',
+            ),
+        );
+
+        $this->container->singleton(
             DocsGenerator::class,
             static fn (): DocsGenerator => new DocsGenerator(new ClassDocReader(), new MarkdownDocRenderer()),
         );
@@ -113,9 +122,10 @@ final class CliServiceProvider extends ServiceProvider
             $this->container->make(BlockScaffolder::class),
             $this->container->make(GeneratorContext::class),
             $this->container->make(ApiResourceScaffolder::class),
+            $this->container->make(SiteScaffolder::class),
         );
 
-        foreach (['model', 'repository', 'controller', 'service', 'option-page', 'block', 'api-resource'] as $type) {
+        foreach (['model', 'repository', 'controller', 'service', 'option-page', 'block', 'api-resource', 'site'] as $type) {
             WP_CLI::add_command(
                 "corex make:{$type}",
                 static function (array $args, array $assoc) use ($command, $type): void {

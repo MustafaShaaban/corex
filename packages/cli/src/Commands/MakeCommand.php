@@ -18,6 +18,8 @@ use Corex\Cli\Generators\Generator;
 use Corex\Cli\Generators\GeneratorContext;
 use Corex\Cli\Generators\GeneratorEngine;
 use Corex\Cli\Generators\GeneratorResult;
+use Corex\Cli\Site\SiteScaffolder;
+use Corex\Cli\Site\SiteScaffoldResult;
 use Throwable;
 use WP_CLI;
 
@@ -37,6 +39,7 @@ final class MakeCommand
         private readonly ?BlockScaffolder $blockScaffolder = null,
         private readonly ?GeneratorContext $context = null,
         private readonly ?ApiResourceScaffolder $apiScaffolder = null,
+        private readonly ?SiteScaffolder $siteScaffolder = null,
     ) {
     }
 
@@ -54,6 +57,12 @@ final class MakeCommand
 
         if ($type === 'api-resource') {
             $this->runApiResource($args[0] ?? '', (bool) ($assoc['force'] ?? false));
+
+            return;
+        }
+
+        if ($type === 'site') {
+            $this->runSite($args[0] ?? '', $assoc);
 
             return;
         }
@@ -153,5 +162,50 @@ final class MakeCommand
 
         WP_CLI::success(sprintf('API resource scaffolded: %s', $result->apiDir));
         WP_CLI::log('Register its Routes class (->register() on rest_api_init) and fill in the service.');
+    }
+
+    /**
+     * Scaffold a client site (plugin + theme + governance) under `--path` (default: the
+     * current directory + the site slug). Flags: --plugin-only / --theme-only / --force.
+     *
+     * @param array<string,mixed> $assoc
+     */
+    private function runSite(string $name, array $assoc): void
+    {
+        if ($this->siteScaffolder === null) {
+            WP_CLI::error('Site scaffolding is unavailable (no scaffolder bound).');
+
+            return;
+        }
+
+        $output = isset($assoc['path']) ? (string) $assoc['path'] : getcwd() . '/' . sanitize_title($name);
+
+        $options = [
+            'force'       => (bool) ($assoc['force'] ?? false),
+            'plugin_only' => (bool) ($assoc['plugin-only'] ?? false),
+            'theme_only'  => (bool) ($assoc['theme-only'] ?? false),
+        ];
+
+        try {
+            $result = $this->siteScaffolder->scaffold($name, $output, $options);
+        } catch (Throwable $e) {
+            WP_CLI::error($e->getMessage());
+
+            return;
+        }
+
+        if ($result->status === SiteScaffoldResult::CREATED) {
+            foreach ($result->paths as $path) {
+                WP_CLI::log(sprintf('  + %s', $path));
+            }
+            WP_CLI::success(sprintf('Client site scaffolded: %s', $result->siteDir));
+            WP_CLI::log('Edit only the client plugin/theme — never the Corex framework. See AGENTS.md.');
+
+            return;
+        }
+
+        $result->status === SiteScaffoldResult::SKIPPED
+            ? WP_CLI::warning(sprintf('%s (%s)', $result->message, $result->siteDir))
+            : WP_CLI::error($result->message ?? 'Site scaffolding failed.');
     }
 }

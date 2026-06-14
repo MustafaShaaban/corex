@@ -50,6 +50,7 @@ export default defineConfig({
 						{ label: 'Headless WordPress', slug: 'guides/headless' },
 						{ label: 'Assets & cache-busting', slug: 'guides/assets' },
 						{ label: 'Image optimization', slug: 'guides/media' },
+						{ label: 'Build a client site', slug: 'guides/client-site' },
 						{ label: 'Create a block (CLI)', slug: 'guides/blocks' },
 						{ label: 'Write queries', slug: 'guides/queries' },
 						{ label: 'Apply a brand', slug: 'guides/branding' },

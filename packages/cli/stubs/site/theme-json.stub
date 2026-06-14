@@ -1,0 +1,13 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"settings": {
+		"appearanceTools": true,
+		"useRootPaddingAwareAlignments": true,
+		"custom": {
+			"{{ theme_slug }}": {
+				"comment": "Site design tokens are exposed as --wp--custom--{{ theme_slug }}--* and the {{ css_prefix }}* convention."
+			}
+		}
+	}
+}

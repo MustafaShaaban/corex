@@ -1404,3 +1404,25 @@ Why: smaller, modern images by default with zero hand-written <img>, fully optio
 unit + 40 Jest green.** Guard Gate clean (escaped markup, fail-safe converter touching only the WP attachment path,
 advisory probe, no secret; pure cores + thin boundary). Live conversion/probe behaviour is env-gated (needs GD/Imagick).
 Status: Final.
+
+## #83 — make:site client-site platform (spec 049, the agency capstone)
+Date: 2026-06-14
+Context: spec 049 (roadmap capstone) — the leap from "a framework" to "a platform you build client sites on with a
+team + AI agents." One command should generate a correctly-namespaced client site (plugin + theme) + governance.
+Decision: reuse the spec-003/046 multi-file scaffolder pattern. A pure `Corex\Cli\Site\SiteIdentity` derives, from a
+name, the full client identity — namespace `<Name>Site`, plugin slug `<slug>-site`, theme slug `<slug>`, text domain
+`<slug>-site`, REST namespace `<slug>/v1`, CSS prefix `--<slug>-`, option prefix `<slug>_` — **guaranteed distinct
+from Corex** (a name normalising to `corex`/empty is refused). A pure `SiteScaffolder` (render-all-before-write,
+like ApiResourceScaffolder) generates the site **plugin** (provider + Models/Services/Controllers/Api/Blocks/Options),
+the site **theme** (valid block theme — style.css/theme.json/templates/parts, presentation only), and the
+**governance** set (AGENTS.md/CLAUDE.md stating the client-only edit boundary + one-feature-one-branch-one-spec-one-PR
++ never-push-to-develop/main; README/PROGRESS/DECISIONS; a `.gitignore` ignoring local AI/cache `.corex/`/`.ai/`/
+`.claude/local/` while keeping committed project memory; specs/docs scaffold). `make:site` wired into MakeCommand +
+CliServiceProvider (WP-CLI-gated) with --plugin-only/--theme-only/--force/--path. Generated PHP is `php -l`-clean.
+Why: the strategic centerpiece — a team/agency starts a real, correctly-bounded client site in one command, with the
+client/framework separation enforced by the generated AGENTS/CLAUDE + namespacing. **+10 Pest (SiteIdentity 4 +
+SiteScaffolder 6) → 530 unit + 40 Jest green.** Guard Gate clean (pure engine + gated command; generated governance
+accurate; no secret). **US3 starter vertical slice (one working model→service→controller(envelope)→block→option) is
+the documented follow-up** (the empty correctly-namespaced structure already works); the `wp/` repo layout + Azure
+pipeline + update packaging are spec 050, the design-system SCSS depth spec 051.
+Status: Final (US1 plugin+theme + US2 governance + US4 flags/command shipped; US3 starter slice is a follow-up increment).

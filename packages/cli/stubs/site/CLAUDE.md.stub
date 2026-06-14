@@ -1,0 +1,9 @@
+# {{ name }} — Claude Code entry point (a Corex client site)
+
+This file mirrors `AGENTS.md`. Read it first.
+
+You are working on the **{{ name }}** website, a **Corex client site**. **Do not edit Corex
+framework folders** — app code goes in `plugins/{{ plugin_slug }}/` (`{{ namespace }}\`), presentation
+in `themes/{{ theme_slug }}/`. Site identity: `{{ namespace }}\`, `{{ text_domain }}`, `{{ rest_namespace }}`,
+`{{ css_prefix }}`, `{{ option_prefix }}` (all distinct from Corex). One feature = one branch = one spec =
+one PR; run guards before pushing; never push directly to `develop`/`main`. Use `wp corex make:*`.

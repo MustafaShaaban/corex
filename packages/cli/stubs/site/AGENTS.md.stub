@@ -1,0 +1,22 @@
+# {{ name }} — Agent Entry Point (a Corex client site)
+
+This is a **Corex client site**, not the Corex framework. The framework lives in its own
+repo and is updated separately — **do not edit Corex framework folders here.**
+
+## Where code goes
+- **App / business code** → the site plugin `plugins/{{ plugin_slug }}/` (namespace `{{ namespace }}\`).
+- **Presentation / theme code** → the site theme `themes/{{ theme_slug }}/`.
+- Site docs/specs → `docs/` and `specs/`.
+
+The client uses its own identity, distinct from Corex: namespace `{{ namespace }}\`, text domain
+`{{ text_domain }}`, REST namespace `{{ rest_namespace }}`, CSS prefix `{{ css_prefix }}`, option/CPT
+prefix `{{ option_prefix }}`. Import Corex base classes; never use the `Corex\` namespace for app classes.
+
+## Workflow (every non-trivial change)
+1. Pull `develop`. 2. Branch `feature/<work-item>-<slug>`. 3. Create/update `specs/<work-item>-<slug>`.
+4. Implement **only** in the client plugin/theme. 5. Run the guards/checks. 6. Update docs.
+7. Commit. 8. Open a PR. 9. CI + review. 10. Merge to `develop` (staging) → tag/`main` (production).
+
+**One feature = one branch = one spec folder = one PR.** Run the guard skills before presenting/pushing.
+**Never push directly to `develop`/`main`.** Use the `wp corex make:*` generators (they write into this
+client plugin/theme, not the framework). Update docs after any feature.

@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * Plugin Name:       {{ name }} Site
+ * Description:       Application code for the {{ name }} website (a Corex client site).
+ * Version:           0.1.0
+ * Requires at least: 7.0
+ * Requires PHP:      8.3
+ * Author:            {{ name }}
+ * License:           GPL-2.0-or-later
+ * Text Domain:       {{ text_domain }}
+ *
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+defined('ABSPATH') || exit;
+
+// {{ name }} site app code lives here under the {{ namespace }}\ namespace — never edit the
+// Corex framework. Register the service provider with Corex's container on boot.
