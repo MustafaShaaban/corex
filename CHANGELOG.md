@@ -4,6 +4,19 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [Unreleased]
+
+### Fixed
+
+- **Junctioned add-on block assets 403 in the editor (spec 040 gap):** add-ons loaded via Corex's Boot provider list
+  rather than WordPress's `active_plugins` (e.g. `corex-careers`, `corex-kit-portfolio`) emitted malformed block
+  asset URLs (`…/wp-content/plugins/C:/…/addons/…/style-index.css`) on a symlinked/junctioned dev or CI layout,
+  because WordPress only learns a symlinked plugin's real location for plugins it activates itself. A new
+  `Corex\Blocks\PluginRealpathRegistrar` replays `wp_register_plugin_realpath()` for every junctioned mount at boot,
+  so `plugins_url()` resolves correctly for every add-on. Caught by the spec-052 console-error sweep on its first
+  live run; the env-gated Playwright suite was also hardened (WP 7.0 inserter selector, native-validation-aware
+  contact-form assertions, `storageState` auth, deterministic editor-ready waits). DECISIONS #90.
+
 ## [0.26.0] — 2026-06-14
 
 Closeout + design language — reconciling the platform claims with the code (spec 053) and turning the thin DLS

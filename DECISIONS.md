@@ -1558,3 +1558,34 @@ work. The only standing remainder is **environment-gated browser verification** 
 sweep + Data-flow + console-error E2E), which is a CI gate run via wp-env, not new build scope — and cannot run in
 this headless WAMP (no Apache/browser). Reopening with new scope is a fresh user-driven direction, not a continuation.
 Status: Final.
+
+## #90 — Junctioned add-on block assets 403 (spec 040 gap, caught by the spec-052 console sweep)
+Date: 2026-06-15
+Context: with Apache up, the spec-052 Playwright suite was finally executed against the live site. After hardening
+the suite (see below), its **console-error sweep caught a real bug**: the block editor loaded 6× `403 Forbidden`
+on block asset URLs malformed as `…/wp-content/plugins/C:/wamp64/www/corex/addons/corex-careers/build/blocks/jobs/
+style-index.css` — a filesystem path glued onto the plugins URL. Only `corex-careers` + `corex-kit-portfolio`
+were affected; `corex-ui` (same `addons/` location) was fine.
+Root cause (traced with runtime instrumentation, not guessed): the spec-040 `BlockPathResolver` correctly maps a
+block dir back under `WP_PLUGIN_DIR`, but `register_block_type_from_metadata()` then `realpath()`-resolves the
+block.json back to the real `addons/` path and derives the asset URL via `plugin_basename()`, which can only map a
+realpath back under `WP_PLUGIN_DIR` when the symlink/junction is recorded in WordPress's `$wp_plugin_paths` global.
+WordPress populates that **only for plugins it activates itself** (`active_plugins`, via `wp_register_plugin_realpath()`
+in wp-settings). The affected add-ons are **loaded by Corex's Boot provider list, not WP's active_plugins**, so their
+junction was never registered → broken URLs. `corex-ui`/`corex-email`/`corex-captcha` happened to also be WP-active,
+which is why they worked — an inconsistency, not a real difference.
+Decision: add `Corex\Blocks\PluginRealpathRegistrar` (corex-blocks). At boot, before any asset URL is derived, it
+replays `wp_register_plugin_realpath()` for every junctioned mount the `PluginMountMap` knows about (pure
+`pluginFiles()` computes the `<entry>/<entry>.php` candidates for symlinked entries; the WP call is the boundary).
+This teaches WordPress where every Corex-loaded add-on really lives, so `plugins_url()`/`plugin_basename()` resolve
+correctly for all of them — matching the WP-activated ones. A no-op for real-dir plugins and in headless tests.
+Verified live: the 6 malformed URLs are gone, the console sweep is clean, and the registered `corex/jobs` /
+`corex/projects` style src now resolve under `/wp-content/plugins/corex-…/`. Also hardened the env-gated E2E suite
+so it runs reliably (the spec-052 gate, finally executed): WP 7.0 inserter selector ("Block Inserter"); contact-form
+assertions match the native-`required` + JS-schema design; `storageState` global-setup auth (kills the cold-first-
+login flake); deterministic editor-ready waits instead of `networkidle`; 60s timeout headroom.
+Why: a design system / add-on platform whose block CSS/JS 403s in the editor is broken for users on a symlinked dev
+or CI layout — exactly Corex's own monorepo setup. This closes the spec-040 gap for Corex-loaded add-ons. **566 Pest
+(+3) green; the full Playwright suite 6/6 green twice.** Guard Gate clean (wp/clean-code/test). The console sweep
+earned its keep on its first real run.
+Status: Final.
