@@ -1,0 +1,52 @@
+name: E2E
+
+on:
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 3 * * *' # nightly browser smoke
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright E2E + console sweep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Build blocks
+        run: npm run build
+
+      - name: Start WordPress (wp-env)
+        run: npm run env:start
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E smoke + console sweep
+        run: npm run test:e2e
+
+      - name: Stop WordPress
+        if: always()
+        run: npm run env:stop

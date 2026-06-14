@@ -1462,3 +1462,22 @@ feedback-component gap. **+7 Pest (DesignSystemCatalog 3 + Alert/Badge 4) → 54
 (index.js + style-index.css + RTL). Guard Gate clean (token-only, escaped, RTL, drift-tested, no secret). Live visual
 smoke env-gated.
 Status: Final.
+
+## #86 — Visual & E2E verification in CI (spec 052, the final roadmap spec)
+Date: 2026-06-14
+Context: spec 052 (roadmap finale). Every spec since 018 ended "env-gated — needs a browser." This makes browser
+verification a permanent CI gate instead of a perpetual follow-up.
+Decision: a dedicated `.github/workflows/e2e.yml` provisions wp-env (Docker), builds blocks, activates Corex,
+installs Playwright + chromium, and runs `npm run test:e2e` on PRs + nightly (a heavier browser job, separate from
+the fast `ci.yml` unit gate). A new `tests/e2e/console.spec.js` (+ shared `tests/e2e/helpers.js`) is a console-error
+sweep: it attaches console/pageerror listeners and **fails on any console error** (not warning) on the block editor,
+the Corex settings screen, and a front-end page — the assertion that finally surfaces item-20-class block/asset
+errors. A tiny documented allow-list exempts known third-party noise (transient network, favicon); the default is
+zero tolerated errors. The Definition of Done (CONTRIBUTING) now states UI changes are browser-verified via the E2E
+smoke + console sweep, with the local run path (wp-env + `npm run test:e2e`). Creds come from env/wp-env defaults —
+no hard-coded secret.
+Why: turns "no one has looked at the console" into "CI looks every run," and closes the standing browser-unverified
+gap as a durable gate. **Execution is environment-dependent by nature** (needs wp-env + a browser, which is exactly
+the gate); the headless deliverable — a valid workflow + a valid E2E/console spec (node --check clean) + the DoD
+docs — is complete. 544 Pest + 40 Jest still green (no unit change). Guard Gate clean (test-guard, docs-guard).
+Status: Final.
