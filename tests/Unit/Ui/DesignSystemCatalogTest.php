@@ -79,13 +79,13 @@ it('returns the component atoms for the component category', function () {
     expect($blocks)->toContain('corex/alert', 'corex/badge');
 });
 
-it('classifies the modal as deferred until the block exists (054 US3 flips it)', function () {
+it('lists the modal as the one new Corex block (054 US3)', function () {
     $modal = array_values(array_filter(
         $this->catalog->byCategory(DesignSystemCatalog::COMPONENT),
         static fn (array $e): bool => $e['name'] === 'Modal / dialog',
     ));
 
     expect($modal)->toHaveCount(1)
-        ->and($modal[0]['mechanism'])->toBe(DesignSystemCatalog::MECH_DEFERRED)
-        ->and($modal[0]['block'])->toBeNull();
+        ->and($modal[0]['mechanism'])->toBe(DesignSystemCatalog::MECH_COREX_BLOCK)
+        ->and($modal[0]['block'])->toBe('corex/modal');
 });

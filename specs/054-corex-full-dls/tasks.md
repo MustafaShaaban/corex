@@ -73,7 +73,7 @@ block-style/core/deferred entries `block:null`); a gap-analysis doc classifies e
   color/type/spacing/shadow/radius/layout + new motion/focus/z) with its CSS variable, allowed values, usage
   rule; plus grid/layout, icon guidance, motion guidance, focus states, RTL, accessibility guideline pages
   (FR-006, FR-007).
-- [~] T010 [US2] Apply a focus/motion token in one existing block's SCSS as proof of consumption. **DEFERRED to
+- [X] T010 [US2] Apply a focus/motion token in one existing block's SCSS as proof of consumption. **DEFERRED to
   US3: `corex/modal` consumes the focus + z-index tokens (its natural proof) — avoids rebuilding an existing
   block just for a token swap.** (FR-011)
 - [X] T011 [US2] **Guard Gate (US2)**: `wp-guard` (token-only, no hardcoded values) + `docs-guard` (foundations
@@ -92,28 +92,28 @@ their blocks; documented-core components have **no** new block.
 
 ### Tests first (TDD)
 
-- [ ] T012 [P] [US3] Pest `tests/Unit/Ui/ModalRendererTest.php`: renders trigger + `<dialog aria-labelledby>` +
+- [X] T012 [P] [US3] Pest `tests/Unit/Ui/ModalRendererTest.php`: renders trigger + `<dialog aria-labelledby>` +
   close; escapes `title`/`triggerLabel`; token-only (no hardcoded color/size). (contracts/modal-block.md)
-- [ ] T013 [P] [US3] Pest `tests/Unit/Ui/BlockStylesTest.php`: each of card/section/striped-table/button-
+- [X] T013 [P] [US3] Pest `tests/Unit/Ui/BlockStylesTest.php`: each of card/section/striped-table/button-
   secondary/button-ghost/empty-state is registered on its core/corex block with the `corex-…` name.
   (contracts/block-styles.md)
-- [ ] T014 [P] [US3] Jest `addons/corex-ui/src/Blocks/modal/index.test.js`: `registerBlockType(metadata.name)`,
+- [X] T014 [P] [US3] Jest `addons/corex-ui/src/Blocks/modal/index.test.js`: `registerBlockType(metadata.name)`,
   `save()===null`, `edit()` previews via `<ServerSideRender>`.
 
 ### Implementation
 
-- [ ] T015 [US3] Build `corex/modal` in `addons/corex-ui/src/Blocks/modal/` (block.json apiVersion 3, category
+- [X] T015 [US3] Build `corex/modal` in `addons/corex-ui/src/Blocks/modal/` (block.json apiVersion 3, category
   corex, editorScript + viewScript + style, `corex.renderer`) + `ModalRenderer.php` (native `<dialog>`,
   `aria-labelledby`, trigger + close, escaped, token-only incl. `--wp--custom--z--modal`) + `view.js`
   (showModal/close, ESC/backdrop, focus return; degrades without JS). (FR-008, FR-010, D3)
-- [ ] T016 [US3] Add a `BlockStyles` registrar in `addons/corex-ui` (`register_block_style` for card/section/
+- [X] T016 [US3] Add a `BlockStyles` registrar in `addons/corex-ui` (`register_block_style` for card/section/
   striped-table/button-secondary/button-ghost/empty-state) + token-only SCSS, conditionally enqueued. (FR-009,
   D4)
-- [ ] T017 [P] [US3] Add the token-only `.corex-skeleton` loading utility (motion + surface-alt tokens), RTL,
+- [X] T017 [P] [US3] Add the token-only `.corex-skeleton` loading utility (motion + surface-alt tokens), RTL,
   documented. (FR-009)
-- [ ] T018 [US3] Register `corex/modal` in the corex-ui provider/discovery; add it to the catalog (mechanism
+- [X] T018 [US3] Register `corex/modal` in the corex-ui provider/discovery; add it to the catalog (mechanism
   `corex-block`) — drift test (T004) stays green; `npm run build`. (FR-003, FR-008)
-- [ ] T019 [US3] **Guard Gate (US3)**: `wp-guard` (escaped, conditional assets, ARIA, no-secret) + `clean-code` +
+- [X] T019 [US3] **Guard Gate (US3)**: `wp-guard` (escaped, conditional assets, ARIA, no-secret) + `clean-code` +
   `test-guard`. Fix findings. (FR-017)
 
 **Checkpoint**: the component layer is complete to the justified set; core-backed atoms documented, not rebuilt.

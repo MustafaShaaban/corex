@@ -50,6 +50,7 @@ final class DesignSystemCatalog
         'badge'       => 'Badge',
         'breadcrumbs' => 'Breadcrumbs',
         'copyright'   => 'Copyright',
+        'modal'       => 'Modal / dialog',
     ];
 
     /** Component atoms delivered by a mechanism other than a Corex block (gap analysis, research D2). */
@@ -66,7 +67,7 @@ final class DesignSystemCatalog
         ['name' => 'Table / list',  'mechanism' => self::MECH_CORE_BLOCK],
         ['name' => 'Form controls', 'mechanism' => self::MECH_CORE_BLOCK],
         ['name' => 'Toast / notification', 'mechanism' => self::MECH_RUNTIME],
-        ['name' => 'Modal / dialog', 'mechanism' => self::MECH_DEFERRED], // becomes corex/modal in 054 US3
+        // Modal / dialog is now the corex/modal block (054 US3) — see COMPONENT_BLOCKS.
         ['name' => 'Drawer',        'mechanism' => self::MECH_DEFERRED],
         ['name' => 'Popover',       'mechanism' => self::MECH_DEFERRED],
         ['name' => 'Tooltip',       'mechanism' => self::MECH_DEFERRED],
