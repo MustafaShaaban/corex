@@ -76,8 +76,11 @@ when nothing remains). Status is derived from your existing settings — nothing
 ## Captcha
 
 Pick a driver (none / honeypot / reCAPTCHA v3 / Turnstile / hCaptcha). Key-based drivers show a
-**site key** and a write-only **secret**, plus a score threshold and action for reCAPTCHA v3. The
-**Test verification** action (provided by the Corex Captcha add-on) probes the configured provider
-and reports a specific result — `ok`, `missing_keys`, `invalid_keys`, or `network_error` — through
-the standard response envelope. The secret is used only in the outbound probe and never appears in
-a response.
+**site key** and a write-only **secret**, plus a score threshold and action for reCAPTCHA v3. A
+**Test verification** button (added by the Corex Captcha add-on, next to the secret field) probes
+the configured provider and shows a specific, actionable result inline — `ok`, `missing_keys`
+(naming what to add), `invalid_keys`, or `network_error` — through the standard response envelope.
+The secret is used only in the outbound probe and **never** appears in a response or on screen.
+
+Insights similarly has a per-provider **Run check** button; a failed run now surfaces the error
+message inline (it no longer silently keeps the previous result).

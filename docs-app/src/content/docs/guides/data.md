@@ -4,7 +4,24 @@ description: Search, filter, sort, export, and read form submissions — and the
 ---
 
 **Corex → Data** lists every form submission (and any registered custom table, spec 038) in one cap-gated
-screen. Spec 045 makes it a real tool.
+screen. Spec 045 built the query/export/detail backend (REST + `admin-post`); spec **053** (US2) added the
+matching screen controls.
+
+## The screen
+
+The Data screen gives an administrator, over the REST routes below:
+
+- a **search box** (substring match, server-side);
+- a **source switcher** and an accumulated **form filter**;
+- **sortable column headers** (click to sort, click again to flip direction; `aria-sort` reflects it);
+- **pagination** (Previous / Next, "Page X of Y") against the filtered total;
+- an **Export CSV** button that downloads the *current filtered view* (bounded to 5000 rows; a note shows when
+  truncated);
+- a **detail drawer** (open a row → readable label→value fields, ESC to close, `—` for empty values);
+- distinct **loading / error / empty / no-matches** states.
+
+Any search/filter/sort change resets to page 1, and the Export button always reflects the controls currently
+applied, so "export = what you see".
 
 ## Query: search, filter, sort, paginate
 

@@ -1,0 +1,19 @@
+<?php
+
+/**
+ * Example unit test (Pest) — proves the value object carries its data. Replace these with
+ * your own tests. Part of the --starter example; delete it per REMOVE-EXAMPLE.md.
+ *
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+use {{ namespace }}\Models\Example;
+
+it('an example carries its id and title', function () {
+    $example = new Example(7, 'Hello');
+
+    expect($example->id)->toBe(7)
+        ->and($example->title)->toBe('Hello');
+});

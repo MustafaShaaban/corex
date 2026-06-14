@@ -22,20 +22,23 @@ US3 = starter slice (P2) · US4 = flags (P2).
 - [x] T005 [US1] Implement `Corex\Cli\Site\SiteScaffolder` (+ `SiteScaffoldResult`) — pure render-all-before-write (plugin + theme + governance) until T004 green.
 - [x] T006 [US2] The governance stubs name the generated client plugin/theme paths accurately + include specs/docs scaffolding; the site config points the `make:*` generators at the client plugin.
 
+> **Reconciliation (2026-06-14, spec 053 US4).** The audit found this phase's starter slice was never built and
+> T008 over-claimed the wired flags. Corrected below; the starter tail is now tracked by **053 US4** (T027–T033).
+
 ## Phase 4: US3 — starter vertical slice (P2)
 
-- [ ] T007 [US3] Author the `starter/` stubs (model · repository · service · controller using the spec-043 envelope · dynamic block · option · test · "how to remove" README), client-namespaced; `--starter` emits them; default/`--minimal` omits them. Pest asserts the slice generates + `php -l` clean.
+- [ ] T007 [US3] Author the `starter/` stubs (model · repository · service · controller using the spec-043 envelope · dynamic block · option · test · "how to remove" README), client-namespaced; `--starter` emits them; default/`--minimal` omits them. Pest asserts the slice generates + `php -l` clean. **→ NOT DONE; moved to 053 US4 (T027–T030); `packages/cli/stubs/starter/` does not yet exist.**
 
 ## Phase 5: US4 — flags + command (P2)
 
-- [x] T008 [US4] Wire `make:site` into `MakeCommand` + `CliServiceProvider` (WP-CLI-gated) with `--plugin-only`/`--theme-only`/`--minimal`/`--starter`/`--force`; verify `wp corex make:site Acme` live.
+- [~] T008 [US4] Wire `make:site` into `MakeCommand` + `CliServiceProvider` (WP-CLI-gated) with `--plugin-only`/`--theme-only`/`--minimal`/`--starter`/`--force`; verify `wp corex make:site Acme` live. **PARTIAL: the base command + `--plugin-only`/`--theme-only`/`--force` are wired and live-verified; `--minimal` and `--starter` are NOT parsed by `MakeCommand::runSite` — corrected here, completed by 053 US4 (T031).**
 
 ## Phase 6: Polish
 
 - [x] T009 [P] Docs: docs-app `guides/client-site.md` (build a client site + the team/AI workflow + the client/framework boundary). CLI README.
 - [x] T010 Guard Gate (clean-code, wp-guard — generated route/envelope/escaping/no-secret, test-guard incl. generated php -l, docs-guard incl. generated-governance accuracy).
 - [x] T011 Suites green (`composer test`); record counts. Live activation env-gated.
-- [ ] T012 Update `PROGRESS.md` + `DECISIONS.md` #83; NEXT STEP. Commit → PR → CI → merge.
+- [~] T012 Update `PROGRESS.md` + `DECISIONS.md` #83; NEXT STEP. Commit → PR → CI → merge. **PARTIAL: the base scaffold was committed/merged (PR #26); the starter-slice continuity + its merge are completed under 053 US4 (T036–T037).**
 
 ---
 

@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * Plugin Name:       {{ name }} Site
+ * Description:       Application code for the {{ name }} website (a Corex client site, with the --starter example).
+ * Version:           0.1.0
+ * Requires at least: 7.0
+ * Requires PHP:      8.3
+ * Author:            {{ name }}
+ * License:           GPL-2.0-or-later
+ * Text Domain:       {{ text_domain }}
+ *
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+defined('ABSPATH') || exit;
+
+// PSR-4 autoloader for {{ namespace }}\ -> src/ (replace with Composer's autoloader when you add one).
+spl_autoload_register(static function (string $class): void {
+    $prefix = '{{ namespace }}\\';
+    if (strncmp($class, $prefix, strlen($prefix)) !== 0) {
+        return;
+    }
+    $relative = str_replace('\\', '/', substr($class, strlen($prefix)));
+    $file     = __DIR__ . '/src/' . $relative . '.php';
+    if (is_file($file)) {
+        require $file;
+    }
+});
+
+// Boot the site provider, which wires the --starter example (REST + block + options page).
+// When you remove the example (see REMOVE-EXAMPLE.md), keep this boot — it's your site's entry.
+add_action('plugins_loaded', static function (): void {
+    $provider = new {{ namespace }}\{{ namespace }}ServiceProvider();
+    $provider->register();
+    $provider->boot();
+});

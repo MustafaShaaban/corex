@@ -49,7 +49,7 @@
 		return d.innerHTML;
 	}
 
-	function render( id, result, loading ) {
+	function render( id, result, loading, error ) {
 		const el = byProvider[ id ];
 		const provider = providers.find( ( p ) => p.id === id ) || { id: id, label: id };
 		if ( ! el ) {
@@ -73,6 +73,7 @@
 			'"><span class="corex-insight-card__grade">' + escape( grade ) + '</span>' +
 			'<span class="corex-insight-card__num">' + ( score === null ? '—' : escape( score ) ) + '</span></div>' +
 			'</header>' +
+			( error ? '<p class="corex-insight-card__error" role="alert">' + escape( error ) + '</p>' : '' ) +
 			( result ? '<p class="corex-insight-card__summary">' + escape( result.summary ) + '</p>' : '' ) +
 			( metrics.length ? '<ul class="corex-insight-card__metrics">' + metrics.map( metricRow ).join( '' ) + '</ul>' : '' ) +
 			( recs.length
@@ -93,9 +94,14 @@
 
 	function run( id ) {
 		render( id, lastResult( id ), true );
-		// Corex.api always resolves (never throws); an error envelope leaves the last result.
+		// Corex.api always resolves (never throws). A failed run now surfaces the envelope
+		// message inline (role=alert) instead of silently reverting to the last result.
 		api.post( restUrl + '/run', { provider: id }, { nonce } ).then( ( result ) => {
-			const payload = result.envelope.ok ? result.envelope.data : null;
+			if ( ! result.envelope.ok ) {
+				render( id, lastResult( id ), false, result.envelope.message || t( 'The check could not be completed. Try again.' ) );
+				return;
+			}
+			const payload = result.envelope.data;
 			results[ id ] = payload && payload.result ? payload.result : lastResult( id );
 			render( id, results[ id ], false );
 		} );

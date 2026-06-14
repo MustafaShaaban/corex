@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }}\Repositories;
+
+defined('ABSPATH') || exit;
+
+use {{ namespace }}\Models\Example;
+
+/**
+ * The sole data-access layer for Example items. This sample reads from an option so the
+ * example runs without a custom post type — swap in WP_Query / a Corex PostRepository for
+ * real data. Part of the --starter example; delete it per REMOVE-EXAMPLE.md.
+ */
+final class ExampleRepository
+{
+    private const OPTION = '{{ option_prefix }}examples';
+
+    /**
+     * @return list<Example>
+     */
+    public function all(): array
+    {
+        $stored = get_option(self::OPTION, []);
+        $rows   = is_array($stored) ? $stored : [];
+
+        return array_values(array_map(
+            static fn (array $row): Example => new Example(
+                (int) ($row['id'] ?? 0),
+                (string) ($row['title'] ?? ''),
+            ),
+            $rows,
+        ));
+    }
+}

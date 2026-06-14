@@ -1,0 +1,10 @@
+/**
+ * {{ name }} theme styles. Consume Corex design tokens (the theme.json CSS custom properties,
+ * e.g. --wp--preset--color--*) and your own {{ css_prefix }}* tokens — never hardcode a
+ * colour, size, or font. Logical properties only (RTL-correct). wp-scripts emits source maps
+ * in `start` (dev) and minifies in `build` (prod).
+ */
+.{{ theme_slug }}-app {
+	color: var(--wp--preset--color--foreground, inherit);
+	font-family: var(--wp--preset--font-family--body, inherit);
+}

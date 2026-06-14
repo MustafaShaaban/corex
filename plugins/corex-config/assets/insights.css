@@ -9,6 +9,14 @@
 	margin-block-start: var(--wp--preset--spacing--30, 1rem);
 }
 
+.corex-insight-card__error {
+	margin: 0;
+	padding: var(--wp--preset--spacing--20, 0.5rem);
+	border-inline-start: 4px solid #b32d2e;
+	background: #fcf0f1;
+	color: #b32d2e;
+}
+
 .corex-insight-card {
 	display: flex;
 	flex-direction: column;

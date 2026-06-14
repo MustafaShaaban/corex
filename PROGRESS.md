@@ -4,7 +4,47 @@
 > Updated at the end of every working session.
 
 ---
-## ▶ RESUME HERE (2026-06-14) — 🎉 ROADMAP 043–052 COMPLETE — RELEASED v0.25.0
+## ▶ RESUME HERE (2026-06-14, latest) — ⚠️ CORRECTION + spec 053 closeout in progress
+
+**An honest audit (2026-06-14) found the "ROADMAP 043–052 COMPLETE" banner below overstated.** The *backends*
+for 043–052 shipped and are unit-tested, and v0.25.0 is tagged — but several **user-facing tails were never
+built**, and some docs/checkboxes claimed completeness the code does not support:
+- **045 Data screen** — backend (query/search/sort/filter/CSV-export/detail) is done + tested, but the **React
+  admin UI** only paginates + deletes (no search/filter/sort/export button/detail/loading-error-empty states).
+- **044 captcha test** — `CaptchaTestController` exists but **corex-captcha ships no JS**, so the Test button is
+  not wired in the UI. (Insights "Run check" *does* exist in `insights.js`.)
+- **049 make:site** — the `--starter` slice was **never built** (`packages/cli/stubs/starter/` is absent; the
+  generated plugin has only empty folders); `MakeCommand::runSite` does not parse `--starter`/`--minimal`
+  (049 T008 was a stale/false checkbox — now corrected in `specs/049/tasks.md`).
+- **051 DLS** — is a taxonomy catalog + alert/badge, **not a full DLS** (deferred to spec 054).
+- **README.md** — said "bootstrap stage / no framework code yet" (false) — **rewritten** as an honest entry point.
+
+**Remediation (approved 2026-06-14): three forward specs, spec-first.**
+- **`053-platform-roadmap-closeout`** — ✅ **US1–US4 IMPLEMENTED + green** on `feature/053-platform-roadmap-closeout`
+  (full Spec Kit flow; Constitution PASS; Guard Gate wp/clean-code/test/docs clean per story). **551 Pest + 52
+  Jest green** (was 544 + 40).
+  - **US1 docs honesty** — README rewritten (honest entry point); PROGRESS + 045/049 stale checkboxes reconciled
+    (049 T008 was a false `[x]`); §D.5 documentation-in-every-PR rule added; stale-phrase sweep.
+  - **US2 Data admin UI** — `corex-config` Data screen rebuilt over pure `dataClient.js` helpers (+8 Jest):
+    search, source/form filter, sortable headers, pagination, CSV Export button (current view, 5000-row note),
+    detail drawer, loading/error/empty states. Localized `exportUrl`/`exportNonce`; `data.css`.
+  - **US3 test buttons** — `corex-captcha` ships `captcha-admin.js` (+4 Jest): the Test button → `POST
+    /captcha/test`, classified secret-safe message; `insights.js` failed-run now surfaces the error (no silent
+    revert).
+  - **US4 `make:site --starter`** — `packages/cli/stubs/starter/` example slice (model→repo→service→controller-
+    on-envelope→block→option→test + REMOVE-EXAMPLE.md) + starter-theme assets (wp-scripts build, Assets helper);
+    `SiteScaffolder` `starter` option + `MakeCommand` `--starter`/`--minimal` (+7 Pest, php -l over every file).
+  - Docs updated (data/client-site/configuration guides + corex-config/corex-captcha/cli READMEs). DECISIONS #87.
+  - **▶ Env-gated remainder:** executing the spec-052 Playwright console-clean + Data-flow E2E (needs Apache/
+    wp-env + a browser; the suites are ready in `tests/e2e/`). **▶ NEXT: push → PR → CI → merge; then spec 054.**
+- **`054-corex-full-dls`** — full DLS inventory → gap analysis → roadmap → build (after 053).
+- **`055-documentation-productization`** — if docs scope warrants a separate spec.
+
+The "🎉 COMPLETE" entry below is preserved as the historical log of what *was* shipped (the backends + release),
+read it with this correction in mind. DECISIONS #87.
+
+---
+## ▶ (HISTORICAL — see correction above) 2026-06-14 — ROADMAP 043–052 backends shipped — RELEASED v0.25.0
 
 **The entire "platform" roadmap (specs 043–052) is delivered, merged, and released.** All ten built spec-first
 via the full Spec Kit flow (specify→plan→tasks→implement), each TDD + Guard Gate clean + CI-verified merged via its
@@ -27,7 +67,7 @@ own PR (#20–#29), then promoted `develop`→`main` as **Release v0.25.0** (ver
 029–039 (recognised up front and surfaced via docs, not re-spec'd). **Env-gated remainder (now a CI gate, not an
 open excuse):** the spec-052 E2E/console workflow runs nightly + on-demand via wp-env (+ the browser-gated UI tails:
 043/044's test buttons, 045's React Data controls, the 049 starter slice — documented follow-ups).
-**▶ Next:** none mandated — the roadmap is complete. Pick up new work or the documented follow-ups.
+**▶ Next:** *(superseded — see the correction entry at the top of this file; the user-facing tails are tracked by spec 053).*
 
 ---
 ## ▶ RESUME HERE (2026-06-13, latest) — roadmap 043–052: 043+044 MERGED, 045 backend done

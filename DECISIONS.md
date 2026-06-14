@@ -1463,6 +1463,35 @@ feedback-component gap. **+7 Pest (DesignSystemCatalog 3 + Alert/Badge 4) → 54
 smoke env-gated.
 Status: Final.
 
+## #87 — Platform roadmap closeout (spec 053) — honesty + the unfinished tails
+Date: 2026-06-14
+Context: a code-grounded audit found the "ROADMAP 043–052 COMPLETE / v0.25.0" status overstated. Several backends
+shipped + were unit-tested, but their user-facing surfaces were never built, and docs/checkboxes claimed
+completeness the code did not support: the root `README.md` still said "bootstrap stage / no framework code yet";
+049 T008 was a falsely-checked task (it claimed `--starter`/`--minimal` flags `MakeCommand::runSite` never parsed);
+045's React Data UI (search/sort/export button/detail) was unbuilt; corex-captcha shipped no JS for its Test
+controller; 051 DLS was a catalog + alert/badge, not a full DLS.
+Decision: a forward spec **053** (full Spec Kit flow, Constitution PASS) closes the gap in four independently-
+shippable user stories, **adding no new architecture** (every backend already existed): **US1** rewrite README +
+reconcile PROGRESS/045/049 checkboxes + add a **§D.5 documentation-in-every-PR rule** (surface↔change mapping +
+honesty clause; generated reference left to `docs:generate`) + a stale-phrase sweep; **US2** build the Data screen
+controls over pure, unit-tested `dataClient.js` helpers (search/filter/sort/paginate/CSV-export-button/detail
+drawer/loading-error-empty), superseding the minimal DataViews table, with the export linking to the existing
+`corex_data_export` admin-post handler (GET, not the POST the draft contract said — drift fixed); **US3** a vanilla,
+no-build `captcha-admin.js` Test button (secret-safe: it renders only the envelope's ok+message) + an insights
+failed-run now surfaced inline; **US4** the `make:site --starter` example slice (`packages/cli/stubs/starter/`) +
+a standalone starter-theme asset architecture (wp-scripts build, dev maps, minified prod, hashed `*.asset.php`, an
+`Assets` url/path/version helper) behind a `starter` scaffolder option + `--starter`/`--minimal` flags. Decisions
+that shaped it (user, 2026-06-14): contact form = add-on; generated sites get a **standalone** starter theme (not a
+child theme); WordPress core lives in a `wp/` subdirectory; CSV export only (Excel/PDF deferred); AVIF/CDN/Azure
+Blob deferred to a future increment. Non-scope: new DLS atoms → spec **054-corex-full-dls**.
+Why: false "complete" claims are the mechanism by which the gap hid; correcting them (and adding the docs-in-every-PR
+gate) prevents recurrence, and the tails are the highest-value, lowest-risk work since the servers already exist and
+are tested. Built spec-first, TDD, with the Guard Gate (wp/clean-code/test/docs) run per story. **551 Pest + 52 Jest
+green** (was 544 + 40). Browser execution of the spec-052 E2E/console sweep remains the env-gated step (Apache/wp-env
++ a browser); the suites are ready in `tests/e2e/`.
+Status: Final.
+
 ## #86 — Visual & E2E verification in CI (spec 052, the final roadmap spec)
 Date: 2026-06-14
 Context: spec 052 (roadmap finale). Every spec since 018 ended "env-gated — needs a browser." This makes browser
