@@ -68,7 +68,11 @@ export default defineConfig({
 				{
 					label: 'Design System',
 					items: [
+						{ label: 'Overview', slug: 'design-system' },
 						{ label: 'Foundations', slug: 'design-system/foundations' },
+						{ label: 'Components', slug: 'design-system/components' },
+						{ label: 'Patterns', slug: 'design-system/patterns' },
+						{ label: 'Templates', slug: 'design-system/templates' },
 						{ label: 'Gap analysis', slug: 'design-system/gap-analysis' },
 					],
 				},

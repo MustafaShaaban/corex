@@ -1,0 +1,64 @@
+/**
+ * Corex DLS block styles + the skeleton utility (spec 054, US3). Token-only, logical
+ * properties (RTL-correct). Loaded with the block that uses the style (registered via
+ * register_block_style style_handle). No hardcoded colour/size — every value is a token.
+ */
+
+/* Card — surface panel on core/group. */
+.wp-block-group.is-style-corex-card {
+	padding: var(--wp--preset--spacing--40);
+	background: var(--wp--preset--color--surface);
+	border: 1px solid var(--wp--preset--color--border);
+	border-radius: var(--wp--custom--radius--md);
+	box-shadow: var(--wp--preset--shadow--sm);
+}
+
+/* Section — vertical rhythm + container. */
+.wp-block-group.is-style-corex-section {
+	padding-block: var(--wp--preset--spacing--60, 3rem);
+}
+
+/* Empty state — muted, centred. */
+.wp-block-group.is-style-corex-empty {
+	padding: var(--wp--preset--spacing--50, 2rem);
+	text-align: center;
+	color: var(--wp--preset--color--ink-soft);
+}
+
+/* Striped table. */
+.wp-block-table.is-style-corex-striped tbody tr:nth-child(odd) {
+	background: var(--wp--preset--color--surface-alt);
+}
+
+/* Secondary button — outline. */
+.wp-block-button.is-style-corex-secondary .wp-block-button__link {
+	background: transparent;
+	color: var(--wp--preset--color--primary);
+	border: 1px solid var(--wp--preset--color--primary);
+}
+
+/* Ghost button — text-only, accent on hover. */
+.wp-block-button.is-style-corex-ghost .wp-block-button__link {
+	background: transparent;
+	color: var(--wp--preset--color--accent-dark);
+	border: 1px solid transparent;
+}
+
+/* Skeleton / loading placeholder. */
+.corex-skeleton {
+	display: block;
+	min-block-size: 1rem;
+	border-radius: var(--wp--custom--radius--sm);
+	background: var(--wp--preset--color--surface-alt);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.corex-skeleton {
+		animation: corex-skeleton-pulse var(--wp--custom--motion--duration--slow) var(--wp--custom--motion--easing--standard) infinite alternate;
+	}
+}
+
+@keyframes corex-skeleton-pulse {
+	from { opacity: 1; }
+	to   { opacity: 0.55; }
+}

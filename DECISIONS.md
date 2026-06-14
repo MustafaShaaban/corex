@@ -1510,3 +1510,33 @@ gap as a durable gate. **Execution is environment-dependent by nature** (needs w
 the gate); the headless deliverable — a valid workflow + a valid E2E/console spec (node --check clean) + the DoD
 docs — is complete. 544 Pest + 40 Jest still green (no unit change). Guard Gate clean (test-guard, docs-guard).
 Status: Final.
+
+## #88 — Full DLS (spec 054) — native-first: one new block, the rest core/styles/tokens/docs
+Date: 2026-06-14
+Context: spec 051 shipped a thin DLS (a taxonomy catalog + `corex/alert`/`corex/badge`). Spec 054 turns it into a
+full Design Language System. The gap analysis (`research.md` D2) audited every candidate UI element against
+WordPress core and the existing tokens, and that evidence **corrected the scope**: radius + layout tokens already
+existed (the real token gaps were motion/focus/z-index), and **most "components" are core blocks to document or
+Corex block styles, not new blocks.**
+Decision: build native-first across four user stories (full Spec Kit flow, Constitution PASS, TDD, Guard Gate per
+story). **US1** — expand `DesignSystemCatalog` to the full six-category taxonomy with a `mechanism` field, drift-
+checked both ways (a corex-block entry can exist only for a registered `corex/*` block), + publish the gap analysis.
+**US2** — add the only missing token groups to `theme.json` as runtime CSS custom properties — `custom.motion`
+(duration + easing), `custom.focus` (width/color→accent/offset), `custom.z` (base→toast) — + a Foundations doc for
+every group. **US3** — the **only justified new block is `corex/modal`** (native `<dialog>`: focus-trap, ESC,
+`::backdrop`, `aria-labelledby`, degrades without JS — behavior core cannot express); everything else ships as
+`register_block_style()` variants (`corex-card`/`corex-section`/`corex-empty` on `core/group`, `corex-striped` on
+`core/table`, `corex-secondary`/`corex-ghost` on `core/button`) + a token-only `.corex-skeleton` utility; the
+toast is the spec-043 `window.Corex.notices` runtime, not a block. **US4** — 5 section patterns in `PatternLibrary`
+(section-header, content-split on `core/media-text`, stats on `corex/stat`, FAQ on `corex/accordion`, latest-news
+on `corex/posts`) guarded by a pattern-drift test (a pattern may compose only blocks that exist); 3 FSE page
+templates (`page-landing`/`page-contact`/`page-form`) registered in `theme.json` `customTemplates`; and a docs-app
+Design System section (index/components/patterns/templates), each component with when-to-use / when-not-to-use.
+Non-scope: rebuilding core-covered elements (pagination, nav submenus, links, form controls), copying any external
+design system's code/brand/names, and a public marketing site. Deferred (documented in the gap analysis): drawer,
+popover, JS tooltip, stepper, a forms validation-summary.
+Why: a design system's value is a known, navigable, drift-proof vocabulary — not a pile of bespoke blocks that
+duplicate core and rot. "Don't custom-block everything" is the deliberate, evidence-backed outcome; each new block
+must earn itself, and only the modal did. **563 Pest + 55 Jest green; docs build 268 pages.** Guard Gate clean
+(wp/test/docs). Env-gated tail: the spec-052 Playwright modal a11y sweep (suites ready in `tests/e2e/`).
+Status: Final.

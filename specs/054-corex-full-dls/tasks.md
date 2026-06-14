@@ -17,14 +17,14 @@ D2) — no element is built that core already covers.**
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirm baseline green: `vendor/bin/pest`, `npm run test:js`, `cd docs-app && npm run build`. Record
+- [X] T001 Confirm baseline green: `vendor/bin/pest`, `npm run test:js`, `cd docs-app && npm run build`. Record
   counts in the PR. No code change.
-- [ ] T002 [P] Re-read the gap analysis (research.md D2) + the existing `DesignSystemCatalog`, `PatternLibrary`,
+- [X] T002 [P] Re-read the gap analysis (research.md D2) + the existing `DesignSystemCatalog`, `PatternLibrary`,
   and `theme/theme.json` `settings.custom` so every task references real names. No code change.
 
 ## Phase 2: Foundational (blocking prerequisites)
 
-- [ ] T003 Confirm no new infrastructure is needed (no new plugin/route/schema). The corex-ui block-style
+- [X] T003 Confirm no new infrastructure is needed (no new plugin/route/schema). The corex-ui block-style
   registrar (`BlockStyles`) is introduced in US3; the catalog already exists. Minimal.
 
 ---
@@ -73,7 +73,7 @@ block-style/core/deferred entries `block:null`); a gap-analysis doc classifies e
   color/type/spacing/shadow/radius/layout + new motion/focus/z) with its CSS variable, allowed values, usage
   rule; plus grid/layout, icon guidance, motion guidance, focus states, RTL, accessibility guideline pages
   (FR-006, FR-007).
-- [~] T010 [US2] Apply a focus/motion token in one existing block's SCSS as proof of consumption. **DEFERRED to
+- [X] T010 [US2] Apply a focus/motion token in one existing block's SCSS as proof of consumption. **DEFERRED to
   US3: `corex/modal` consumes the focus + z-index tokens (its natural proof) — avoids rebuilding an existing
   block just for a token swap.** (FR-011)
 - [X] T011 [US2] **Guard Gate (US2)**: `wp-guard` (token-only, no hardcoded values) + `docs-guard` (foundations
@@ -92,28 +92,28 @@ their blocks; documented-core components have **no** new block.
 
 ### Tests first (TDD)
 
-- [ ] T012 [P] [US3] Pest `tests/Unit/Ui/ModalRendererTest.php`: renders trigger + `<dialog aria-labelledby>` +
+- [X] T012 [P] [US3] Pest `tests/Unit/Ui/ModalRendererTest.php`: renders trigger + `<dialog aria-labelledby>` +
   close; escapes `title`/`triggerLabel`; token-only (no hardcoded color/size). (contracts/modal-block.md)
-- [ ] T013 [P] [US3] Pest `tests/Unit/Ui/BlockStylesTest.php`: each of card/section/striped-table/button-
+- [X] T013 [P] [US3] Pest `tests/Unit/Ui/BlockStylesTest.php`: each of card/section/striped-table/button-
   secondary/button-ghost/empty-state is registered on its core/corex block with the `corex-…` name.
   (contracts/block-styles.md)
-- [ ] T014 [P] [US3] Jest `addons/corex-ui/src/Blocks/modal/index.test.js`: `registerBlockType(metadata.name)`,
+- [X] T014 [P] [US3] Jest `addons/corex-ui/src/Blocks/modal/index.test.js`: `registerBlockType(metadata.name)`,
   `save()===null`, `edit()` previews via `<ServerSideRender>`.
 
 ### Implementation
 
-- [ ] T015 [US3] Build `corex/modal` in `addons/corex-ui/src/Blocks/modal/` (block.json apiVersion 3, category
+- [X] T015 [US3] Build `corex/modal` in `addons/corex-ui/src/Blocks/modal/` (block.json apiVersion 3, category
   corex, editorScript + viewScript + style, `corex.renderer`) + `ModalRenderer.php` (native `<dialog>`,
   `aria-labelledby`, trigger + close, escaped, token-only incl. `--wp--custom--z--modal`) + `view.js`
   (showModal/close, ESC/backdrop, focus return; degrades without JS). (FR-008, FR-010, D3)
-- [ ] T016 [US3] Add a `BlockStyles` registrar in `addons/corex-ui` (`register_block_style` for card/section/
+- [X] T016 [US3] Add a `BlockStyles` registrar in `addons/corex-ui` (`register_block_style` for card/section/
   striped-table/button-secondary/button-ghost/empty-state) + token-only SCSS, conditionally enqueued. (FR-009,
   D4)
-- [ ] T017 [P] [US3] Add the token-only `.corex-skeleton` loading utility (motion + surface-alt tokens), RTL,
+- [X] T017 [P] [US3] Add the token-only `.corex-skeleton` loading utility (motion + surface-alt tokens), RTL,
   documented. (FR-009)
-- [ ] T018 [US3] Register `corex/modal` in the corex-ui provider/discovery; add it to the catalog (mechanism
+- [X] T018 [US3] Register `corex/modal` in the corex-ui provider/discovery; add it to the catalog (mechanism
   `corex-block`) — drift test (T004) stays green; `npm run build`. (FR-003, FR-008)
-- [ ] T019 [US3] **Guard Gate (US3)**: `wp-guard` (escaped, conditional assets, ARIA, no-secret) + `clean-code` +
+- [X] T019 [US3] **Guard Gate (US3)**: `wp-guard` (escaped, conditional assets, ARIA, no-secret) + `clean-code` +
   `test-guard`. Fix findings. (FR-017)
 
 **Checkpoint**: the component layer is complete to the justified set; core-backed atoms documented, not rebuilt.
@@ -128,20 +128,20 @@ docs-app design-system section builds with no broken links.
 
 ### Tests first (TDD)
 
-- [ ] T020 [P] [US4] Extend `tests/Unit/Ui/PatternLibraryTest.php`: the new patterns (section-header, content-
+- [X] T020 [P] [US4] Extend `tests/Unit/Ui/PatternLibraryTest.php`: the new patterns (section-header, content-
   split, stats, FAQ, posts-news) compose only registered blocks/parts (pattern-accuracy). (FR-012)
 
 ### Implementation
 
-- [ ] T021 [US4] Add the patterns to `addons/corex-ui/src/Patterns/PatternLibrary.php` (section-header, content-
+- [X] T021 [US4] Add the patterns to `addons/corex-ui/src/Patterns/PatternLibrary.php` (section-header, content-
   split on core/media-text, stats on corex/stat, FAQ on corex/accordion, posts-news on corex/posts) — token-only,
   RTL. (FR-012, D6)
-- [ ] T022 [P] [US4] Add the page-type templates to `theme/templates/` (`page-landing.html`, `page-contact.html`,
+- [X] T022 [P] [US4] Add the page-type templates to `theme/templates/` (`page-landing.html`, `page-contact.html`,
   `page-form.html`) — valid FSE, parts/patterns only, no logic. (FR-013)
-- [ ] T023 [US4] Author the docs-app **design-system section** (`docs-app/src/content/docs/design-system/`):
+- [X] T023 [US4] Author the docs-app **design-system section** (`docs-app/src/content/docs/design-system/`):
   index, components/* (a page per component with attributes + when-to-use / when-not-to-use), patterns,
   templates, guidelines; link to the catalog entries; sidebar wiring. (FR-014)
-- [ ] T024 [US4] **Guard Gate (US4)**: `docs-guard` (the section) + `test-guard` (pattern-accuracy) + `wp-guard`
+- [X] T024 [US4] **Guard Gate (US4)**: `docs-guard` (the section) + `test-guard` (pattern-accuracy) + `wp-guard`
   (patterns/templates token-only/RTL). `cd docs-app && npm run build` green, no broken links. (FR-017)
 
 **Checkpoint**: composition + documentation complete; the DLS is navigable end to end.
@@ -150,14 +150,15 @@ docs-app design-system section builds with no broken links.
 
 ## Phase 7: Polish & cross-cutting
 
-- [ ] T025 [P] Update `addons/corex-ui/README.md` (the full DLS overview + the catalog) and the existing
+- [X] T025 [P] Update `addons/corex-ui/README.md` (the full DLS overview + the catalog) and the existing
   `docs-app/.../guides/design-system.md` (link into the new section), per §D.5. `docs-guard` clean.
-- [ ] T026 Reuse the spec-052 Playwright + console sweep for the modal (open/ESC/backdrop/focus-return, RTL,
+- [~] T026 Reuse the spec-052 Playwright + console sweep for the modal (open/ESC/backdrop/focus-return, RTL,
   console-clean) and the new patterns/templates. Execute under wp-env if available; else record env-gated.
-- [ ] T027 Update `PROGRESS.md` (054 entry) + `DECISIONS.md` #88 (full DLS — native-first, the modal-only new
+  **ENV-GATED:** suites ready in `tests/e2e/`; execution needs Apache/wp-env + a browser (not available here).
+- [X] T027 Update `PROGRESS.md` (054 entry) + `DECISIONS.md` #88 (full DLS — native-first, the modal-only new
   block, the token gaps). NEXT STEP.
-- [ ] T028 Full-suite verification: `vendor/bin/pest` + `npm run test:js` + docs build green; record counts.
-  Commit per story → push → PR into `develop` → CI green.
+- [~] T028 Full-suite verification: `vendor/bin/pest` (563) + `npm run test:js` (55, 15 suites) + docs build (268
+  pages) green. Commit per story → push → PR into `develop` → CI green. **(push/PR pending — last step.)**
 
 ---
 

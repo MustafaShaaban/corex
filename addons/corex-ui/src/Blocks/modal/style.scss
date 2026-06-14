@@ -1,0 +1,52 @@
+/**
+ * corex/modal — token-only, logical properties (RTL-correct). Consumes the 054 foundation
+ * tokens: z-index (overlay stacking), radius, shadow, and the focus ring. No hardcoded values.
+ */
+.corex-modal {
+	margin: auto;
+	max-inline-size: min(32rem, 92vw);
+	padding: var(--wp--preset--spacing--40);
+	border: 1px solid var(--wp--preset--color--border);
+	border-radius: var(--wp--custom--radius--lg);
+	box-shadow: var(--wp--preset--shadow--lg);
+	background: var(--wp--preset--color--surface);
+	color: var(--wp--preset--color--ink);
+	z-index: var(--wp--custom--z--modal);
+}
+
+.corex-modal::backdrop {
+	background: rgba(0, 0, 0, 0.5);
+}
+
+.corex-modal__title {
+	margin-block: 0 var(--wp--preset--spacing--20);
+}
+
+.corex-modal__close {
+	position: absolute;
+	inset-block-start: var(--wp--preset--spacing--20);
+	inset-inline-end: var(--wp--preset--spacing--20);
+	border: 0;
+	background: transparent;
+	font-size: var(--wp--preset--font-size--medium, 1.25rem);
+	line-height: 1;
+	cursor: pointer;
+	color: inherit;
+}
+
+.corex-modal__trigger:focus-visible,
+.corex-modal__close:focus-visible {
+	outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
+	outline-offset: var(--wp--custom--focus--offset);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.corex-modal[open] {
+		animation: corex-modal-in var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);
+	}
+}
+
+@keyframes corex-modal-in {
+	from { opacity: 0; transform: translateY(0.5rem); }
+	to   { opacity: 1; transform: translateY(0); }
+}

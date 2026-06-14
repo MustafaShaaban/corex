@@ -14,6 +14,7 @@ use Corex\Blocks\BlockMap;
 use Corex\Blocks\DynamicBlockRegistrar;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
+use Corex\Ui\Blocks\BlockStyles;
 use Corex\Ui\Blocks\PostsProvider;
 use Corex\Ui\Blocks\WpPostsProvider;
 use Corex\Ui\Patterns\PatternLibrary;
@@ -37,12 +38,28 @@ final class UiServiceProvider extends ServiceProvider
             // matters on case-sensitive filesystems (Linux/CI).
             static fn (ContainerInterface $c): UiManifest => new UiManifest($c->make(PatternLibrary::class), __DIR__ . '/Blocks'),
         );
+
+        $this->container->singleton(
+            BlockStyles::class,
+            static fn (): BlockStyles => new BlockStyles(
+                plugins_url('assets/block-styles.css', dirname(__DIR__) . '/corex-ui.php'),
+            ),
+        );
     }
 
     public function boot(): void
     {
         add_action('init', [$this, 'registerBlocks']);
         add_action('init', [$this, 'registerPatterns']);
+        add_action('init', [$this, 'registerBlockStyles']);
+    }
+
+    /**
+     * Register the DLS block styles (card/section/empty/striped/secondary/ghost) — spec 054 US3.
+     */
+    public function registerBlockStyles(): void
+    {
+        $this->container->make(BlockStyles::class)->register();
     }
 
     /**
