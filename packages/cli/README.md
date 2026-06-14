@@ -80,6 +80,30 @@ npm run build        # or: npm run start  (watch mode)
 
 Existing blocks are **skipped** unless `--force` is passed.
 
+### `make:site` — scaffold a client site
+
+```bash
+wp corex make:site Acme                  # lean: plugin + theme + governance
+wp corex make:site Acme --starter        # + a runnable example slice + starter-theme assets
+```
+
+Generates a complete **client site** under `--path` (default: the current directory + the slug):
+a site **plugin** (`acme-site/`, namespace `AcmeSite\`) and **theme** (`acme/`) with the client's own
+prefixes (REST `acme/v1`, CSS `--acme-`, options `acme_` — all distinct from Corex), plus governance
+docs (`AGENTS.md`, `CLAUDE.md`, `README.md`, `PROGRESS.md`, `DECISIONS.md`, `.gitignore`, `specs/`, `docs/`).
+
+| Flag | Effect |
+|---|---|
+| `--starter` | also emit a runnable example (model → repository → service → controller-on-envelope → block → option page → test) + a starter-theme asset setup (`@wordpress/scripts` build, dev source maps, minified prod, hashed `*.asset.php`, an `Assets` url/path/version helper) + a `REMOVE-EXAMPLE.md` guide |
+| `--minimal` | force the lean scaffold (no example) — same as the default |
+| `--plugin-only` / `--theme-only` | generate just one side |
+| `--force` | regenerate (otherwise an existing site is skipped) |
+| `--path=<dir>` | the site root |
+
+A name normalizing to `corex` (or empty) is refused, so a client site can never collide with the framework.
+Edit only the generated client plugin/theme — never the Corex framework. See the
+[client-site guide](../../docs-app/src/content/docs/guides/client-site.md).
+
 ### `reset` — return a Corex site to a clean state
 
 ```bash

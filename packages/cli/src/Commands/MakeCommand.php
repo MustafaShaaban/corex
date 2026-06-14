@@ -184,6 +184,8 @@ final class MakeCommand
             'force'       => (bool) ($assoc['force'] ?? false),
             'plugin_only' => (bool) ($assoc['plugin-only'] ?? false),
             'theme_only'  => (bool) ($assoc['theme-only'] ?? false),
+            // --starter emits the example slice; --minimal forces it off (the default is off too).
+            'starter'     => (bool) ($assoc['starter'] ?? false) && ! (bool) ($assoc['minimal'] ?? false),
         ];
 
         try {

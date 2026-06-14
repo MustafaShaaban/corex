@@ -4,7 +4,94 @@
 > Updated at the end of every working session.
 
 ---
-## ▶ RESUME HERE (2026-06-14) — 🎉 ROADMAP 043–052 COMPLETE — RELEASED v0.25.0
+## ▶ RESUME HERE (2026-06-14, latest) — spec 054 full DLS: US1–US4 ALL SHIPPED, ready to push/PR
+
+**Spec 054 (full DLS) is implemented end-to-end** on `feature/054-dls-components` — all four user stories done +
+green. US1 (catalog + gap analysis) and US2 (foundations tokens + docs) shipped earlier; US3 (`corex/modal` +
+block styles + skeleton) is committed (`97d610f`); **US4 (patterns + templates + docs-app design-system section)
+is complete and committed in this session.**
+
+- **✅ US4 (patterns/templates/docs) DONE.** Added 5 section patterns to `PatternLibrary` — section-header,
+  content-split (on `core/media-text`), stats (on `corex/stat`), FAQ (on `corex/accordion`), latest-news (on
+  `corex/posts`) — token-only/RTL/i18n, with a **pattern-drift test** that fails if any pattern composes a block
+  that does not exist. Added 3 FSE page templates (`page-landing`/`page-contact`/`page-form`, registered in
+  `theme.json` `customTemplates`). Authored the docs-app **Design System section** (index + components +
+  patterns + templates pages, each component with when-to-use / when-not-to-use; sidebar wired). README +
+  design-system guide updated (§D.5).
+- **Verification:** **563 Pest** (+2 PatternLibrary) · **55 Jest (15 suites)** · **docs build 268 pages** (+4),
+  no broken links. **Guard Gate clean:** wp-guard (patterns/templates token-only/escaped/RTL) + test-guard
+  (drift test asserts real output, no mocks) + docs-guard (every block/style/attribute/template verified vs
+  source). DECISIONS #88.
+- **▶ NEXT:** push `feature/054-dls-components` → PR into `develop` → CI green → merge; then the v0.x release
+  batch (054). **Env-gated tail:** the spec-052 Playwright modal sweep (open/ESC/backdrop/focus-return, RTL,
+  console-clean) — suites ready in `tests/e2e/`, needs Apache/wp-env + a browser.
+
+---
+## ▶ RESUME HERE (2026-06-14) — spec 054 full DLS: planned + US1/US2 shipped, US3/US4 done after
+
+**Spec 053 is DONE + MERGED** (PR #30 → develop; see the correction entry below). **Spec 054 (full DLS) is
+planned and its first two stories are implemented** on `feature/054-corex-full-dls`.
+
+- **054 SPEC + PLAN + TASKS + GAP ANALYSIS complete** (full Spec Kit flow; Constitution PASS). The gap analysis
+  (`research.md`) is the evidence base and **corrected the scope**: radius + layout tokens already existed (real
+  gaps = motion/focus/z-index); **most candidate components are WordPress core blocks to document or Corex block
+  styles, not new blocks** — the **only** justified new block is **`corex/modal`**. "Don't custom-block everything"
+  is the deliberate outcome.
+- **✅ US1 (catalog + gap analysis) DONE.** `DesignSystemCatalog` expanded to the full six-category taxonomy with
+  a `mechanism` field; drift-checked both directions; modal = `deferred` until US3. Gap analysis published as a
+  docs-app page. **+3 catalog tests → 554 Pest green.**
+- **✅ US2 (foundations) DONE.** Added the missing theme.json token groups — **motion/focus/z-index** — as
+  runtime CSS custom properties; documented every token group + RTL/a11y/focus/motion/icon guidelines in a new
+  **Foundations** docs page; Design System sidebar wired; **docs-app builds (264 pages).**
+- **▶ NEXT — US3 + US4 (the build tail):** US3 = `corex/modal` (native `<dialog>`, focus-trap/ESC, degrades) +
+  block styles (card/section/striped-table/button-secondary/button-ghost/empty-state) + a `.corex-skeleton`
+  utility + the catalog flip (deferred→corex-block) — needs `npm run build` for corex-ui + the env-gated modal
+  a11y sweep. US4 = patterns (section-header/content-split/stats/FAQ/posts-news) + page templates
+  (landing/contact/form) + the docs-app components/patterns/templates/guidelines pages. Tasks T012–T028 in
+  `specs/054-corex-full-dls/tasks.md`. DECISIONS #88 at US4 close.
+
+---
+## ▶ RESUME HERE (2026-06-14) — ⚠️ CORRECTION + spec 053 closeout (DONE — merged PR #30)
+
+**An honest audit (2026-06-14) found the "ROADMAP 043–052 COMPLETE" banner below overstated.** The *backends*
+for 043–052 shipped and are unit-tested, and v0.25.0 is tagged — but several **user-facing tails were never
+built**, and some docs/checkboxes claimed completeness the code does not support:
+- **045 Data screen** — backend (query/search/sort/filter/CSV-export/detail) is done + tested, but the **React
+  admin UI** only paginates + deletes (no search/filter/sort/export button/detail/loading-error-empty states).
+- **044 captcha test** — `CaptchaTestController` exists but **corex-captcha ships no JS**, so the Test button is
+  not wired in the UI. (Insights "Run check" *does* exist in `insights.js`.)
+- **049 make:site** — the `--starter` slice was **never built** (`packages/cli/stubs/starter/` is absent; the
+  generated plugin has only empty folders); `MakeCommand::runSite` does not parse `--starter`/`--minimal`
+  (049 T008 was a stale/false checkbox — now corrected in `specs/049/tasks.md`).
+- **051 DLS** — is a taxonomy catalog + alert/badge, **not a full DLS** (deferred to spec 054).
+- **README.md** — said "bootstrap stage / no framework code yet" (false) — **rewritten** as an honest entry point.
+
+**Remediation (approved 2026-06-14): three forward specs, spec-first.**
+- **`053-platform-roadmap-closeout`** — ✅ **US1–US4 IMPLEMENTED + green** on `feature/053-platform-roadmap-closeout`
+  (full Spec Kit flow; Constitution PASS; Guard Gate wp/clean-code/test/docs clean per story). **551 Pest + 52
+  Jest green** (was 544 + 40).
+  - **US1 docs honesty** — README rewritten (honest entry point); PROGRESS + 045/049 stale checkboxes reconciled
+    (049 T008 was a false `[x]`); §D.5 documentation-in-every-PR rule added; stale-phrase sweep.
+  - **US2 Data admin UI** — `corex-config` Data screen rebuilt over pure `dataClient.js` helpers (+8 Jest):
+    search, source/form filter, sortable headers, pagination, CSV Export button (current view, 5000-row note),
+    detail drawer, loading/error/empty states. Localized `exportUrl`/`exportNonce`; `data.css`.
+  - **US3 test buttons** — `corex-captcha` ships `captcha-admin.js` (+4 Jest): the Test button → `POST
+    /captcha/test`, classified secret-safe message; `insights.js` failed-run now surfaces the error (no silent
+    revert).
+  - **US4 `make:site --starter`** — `packages/cli/stubs/starter/` example slice (model→repo→service→controller-
+    on-envelope→block→option→test + REMOVE-EXAMPLE.md) + starter-theme assets (wp-scripts build, Assets helper);
+    `SiteScaffolder` `starter` option + `MakeCommand` `--starter`/`--minimal` (+7 Pest, php -l over every file).
+  - Docs updated (data/client-site/configuration guides + corex-config/corex-captcha/cli READMEs). DECISIONS #87.
+  - **▶ Env-gated remainder:** executing the spec-052 Playwright console-clean + Data-flow E2E (needs Apache/
+    wp-env + a browser; the suites are ready in `tests/e2e/`). **▶ NEXT: push → PR → CI → merge; then spec 054.**
+- **`054-corex-full-dls`** — full DLS inventory → gap analysis → roadmap → build (after 053).
+- **`055-documentation-productization`** — if docs scope warrants a separate spec.
+
+The "🎉 COMPLETE" entry below is preserved as the historical log of what *was* shipped (the backends + release),
+read it with this correction in mind. DECISIONS #87.
+
+---
+## ▶ (HISTORICAL — see correction above) 2026-06-14 — ROADMAP 043–052 backends shipped — RELEASED v0.25.0
 
 **The entire "platform" roadmap (specs 043–052) is delivered, merged, and released.** All ten built spec-first
 via the full Spec Kit flow (specify→plan→tasks→implement), each TDD + Guard Gate clean + CI-verified merged via its
@@ -27,7 +114,7 @@ own PR (#20–#29), then promoted `develop`→`main` as **Release v0.25.0** (ver
 029–039 (recognised up front and surfaced via docs, not re-spec'd). **Env-gated remainder (now a CI gate, not an
 open excuse):** the spec-052 E2E/console workflow runs nightly + on-demand via wp-env (+ the browser-gated UI tails:
 043/044's test buttons, 045's React Data controls, the 049 starter slice — documented follow-ups).
-**▶ Next:** none mandated — the roadmap is complete. Pick up new work or the documented follow-ups.
+**▶ Next:** *(superseded — see the correction entry at the top of this file; the user-facing tails are tracked by spec 053).*
 
 ---
 ## ▶ RESUME HERE (2026-06-13, latest) — roadmap 043–052: 043+044 MERGED, 045 backend done

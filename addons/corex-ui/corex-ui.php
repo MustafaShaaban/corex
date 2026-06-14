@@ -3,7 +3,7 @@
  * Plugin Name:       Corex UI
  * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       The Corex UI block library — server-rendered corex/* dynamic blocks and a curated set of token-only, accessible, RTL section patterns under a "Corex" category. Built on the corex-blocks engine; designs compose these building units.
- * Version:           0.25.0
+ * Version:           0.26.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
@@ -24,7 +24,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_UI_VERSION')) {
-    define('COREX_UI_VERSION', '0.25.0');
+    define('COREX_UI_VERSION', '0.26.0');
 }
 if (! defined('COREX_UI_PATH')) {
     define('COREX_UI_PATH', plugin_dir_path(__FILE__));

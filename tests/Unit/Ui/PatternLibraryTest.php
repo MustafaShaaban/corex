@@ -43,3 +43,30 @@ it('gives every pattern a heading and composes the contact form in the contact p
         ->and($byName['corex/features'])->toContain('wp:heading')
         ->and($byName['corex/contact'])->toContain('wp:corex/form');
 });
+
+it('includes the new 054 section patterns', function () {
+    $names = array_column((new PatternLibrary())->patterns(), 'name');
+
+    expect($names)->toContain('corex/section-header', 'corex/content-split', 'corex/stats', 'corex/faq', 'corex/news');
+});
+
+it('composes only real registered corex blocks (no pattern drift)', function () {
+    $blocksDir = dirname(__DIR__, 3) . '/addons/corex-ui/src/Blocks';
+    $real      = [];
+    foreach (glob($blocksDir . '/*/block.json') ?: [] as $file) {
+        $json = json_decode((string) file_get_contents($file), true);
+        if (is_array($json) && isset($json['name'])) {
+            $real[] = (string) $json['name'];
+        }
+    }
+
+    foreach ((new PatternLibrary())->patterns() as $pattern) {
+        preg_match_all('#wp:(corex/[a-z-]+)#', $pattern['content'], $matches);
+        foreach ($matches[1] as $blockName) {
+            if ($blockName === 'corex/form') {
+                continue; // corex-forms block, not a corex-ui block
+            }
+            expect($real)->toContain($blockName);
+        }
+    }
+});

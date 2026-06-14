@@ -1,27 +1,46 @@
 # Corex
 
-A professional, Laravel-inspired WordPress framework. Build any site — corporate,
-e-commerce, multisite, headless, or AI-agent-driven — on one clean, documented foundation.
+A professional, Laravel-inspired framework for building WordPress sites — corporate, e-commerce,
+multisite, headless, or AI-agent-driven — on one clean, documented, spec-first foundation.
 
 - **Target:** WordPress 7.0+, PHP 8.3+, FSE block themes.
 - **Namespace:** `Corex\` · **CLI:** `wp corex` · **CSS prefix:** `--corex-`.
 - **Stack:** Composer (PHP) + npm workspaces (JS), one monorepo.
+- **Status:** Actively developed; latest release **v0.26.0**. The engine, block/forms/config layers, CLI
+  generators, site kits, and the docs app are implemented and unit-tested. Some admin-UI and visual surfaces
+  are verified via the Playwright/wp-env workflow and are noted where browser verification is still pending —
+  see `PROGRESS.md` for the authoritative, module-by-module status.
 
-## Repository layout (COREX-FRAMEWORK.md §4)
+> This README is the public entry point. For where the project stands in detail (including any in-progress
+> tails), `PROGRESS.md` is the source of truth — not this file.
+
+## What's in the box
 
 ```
-theme/                 parent block theme — presentation only (theme.json tokens)
 plugins/
-  corex-core/          MVC engine (Boot, DI container, controllers, services, …)
-  corex-blocks/        block engine (auto-discovery, connectors, conditional assets)
-  corex-config/        settings + .env resolution + security headers
-addons/                optional, installable Composer packages (profile, forms, mail, woo)
+  corex-core/        MVC engine — Boot, PSR-11 container, providers, controllers, services,
+                     repositories, Model + Field driver, QueryBuilder, middleware pipeline,
+                     events, Config + feature flags, the response envelope + window.Corex runtime.
+  corex-blocks/      block engine — auto-discovery, Block-Bindings connectors, conditional assets.
+  corex-config/      settings + .env resolution, the admin control panel, Data screen, Insights.
+  corex-forms/       forms engine — schema + shared validation, secured REST submit, form block.
+addons/              optional, self-disabling packages (never hard dependencies):
+  corex-ui/          server-rendered corex/* blocks + patterns + the Design Language System catalog.
+  corex-captcha/     pluggable captcha (honeypot + remote providers) with a verification endpoint.
+  corex-media/       WebP-on-upload + <picture> helper + image-support probe.
+  corex-email/       Corex Mail — templated, queueable transactional email.
+  corex-newsletter/  double-opt-in subscriber capture.
+  corex-careers/     jobs CPT + application flow.
+  corex-bookings/    booking/call-request flow.
+  corex-kit-company/ corex-kit-portfolio/ corex-kit-woo/   site kits (blueprints + content).
 packages/
-  cli/                 wp corex commands + generator stubs
-  build-tools/         shared build configuration
-docs/                  derived/extra docs (the four COREX-*.md references live at root)
-specs/                 Spec Kit specs (constitution pointer → .specify/memory/)
-tests/                 Pest (Unit, Integration), Jest, Playwright (e2e)
+  cli/               wp corex commands (make:*, make:site, reset, docs:generate, routes:list, …) + stubs.
+  build-tools/       shared @wordpress/scripts build configuration.
+theme/               parent FSE block theme — presentation only (theme.json tokens, templates, parts).
+docs-app/            Astro + Starlight documentation site (guides + generated class reference).
+docs/               bilingual (EN/AR) getting-started, team-workflow, deployment, and cookbook docs.
+specs/              Spec Kit specs (constitution pointer → .specify/memory/).
+tests/              Pest (Unit, Integration), Jest, Playwright (e2e).
 ```
 
 ## Read first (agents and humans)
@@ -34,11 +53,48 @@ tests/                 Pest (Unit, Integration), Jest, Playwright (e2e)
 
 ## Local development
 
+Corex is a WordPress framework: it runs inside a WordPress install. The monorepo is mapped into
+`wp-content/` (junctions/symlinks), with WordPress core in a `wp/` subdirectory — the repo stays the single
+source of truth and core is never committed. Two supported setups:
+
 ```bash
+# 1. Docker (matches CI)
 composer install        # wires the root PSR-4 autoloader (Corex\)
 npm install             # links the npm workspaces
+npm run build           # compiles blocks + admin JS
 npx wp-env start        # Docker WordPress matching CI (see wp-env.json)
+
+# 2. Local WAMP/XAMPP — map the repo into wp/wp-content via junctions/symlinks
+# (see docs/en/00-getting-started/ and DECISIONS.md for the exact mapping procedure)
 ```
 
-> Status: bootstrap stage — tooling, constitution, and the monorepo skeleton are in place.
-> No framework code yet. See `PROGRESS.md`.
+Verify the environment before building: `wp theme list` shows `corex`; `wp plugin list` shows
+`corex-core`, `corex-blocks`, `corex-config`, `corex-forms`; the site boots with no PHP fatals
+(the constitution's Environment Gate).
+
+## Documentation
+
+- **Team guide:** the `docs-app/` site — `cd docs-app && npm run dev` (→ http://localhost:4321), or
+  `npm run build` to produce `dist/`.
+- **Bilingual handbook:** `docs/en/` and `docs/ar/` (getting started, team workflow, deployment, cookbooks).
+- **API reference:** generated from source via `wp corex docs:generate`.
+
+## Building a client site
+
+Corex is the framework; each client site is a separate plugin + theme generated by the CLI — you edit the
+generated client code, never the framework internals:
+
+```bash
+wp corex make:site Acme            # plugin + theme + governance scaffold
+wp corex make:site Acme --starter  # the above + a runnable example slice to learn from and delete
+```
+
+## Contributing
+
+Corex is built **spec-first** (Spec Kit) under a strict constitution, with guard skills as the quality gate
+and a NEXT STEP handoff on every change. See `CONTRIBUTING.md` and `COREX-WORKING-GUIDE.md` before opening a PR
+— including the rule that every feature PR updates its documentation in the same change.
+
+## License
+
+See `LICENSE`.

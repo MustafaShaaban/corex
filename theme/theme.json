@@ -76,6 +76,30 @@
                 "md": "0.5rem",
                 "lg": "1rem",
                 "full": "9999px"
+            },
+            "motion": {
+                "duration": {
+                    "fast": "150ms",
+                    "base": "250ms",
+                    "slow": "400ms"
+                },
+                "easing": {
+                    "standard": "cubic-bezier(0.2, 0, 0, 1)",
+                    "emphasized": "cubic-bezier(0.3, 0, 0, 1)"
+                }
+            },
+            "focus": {
+                "width": "2px",
+                "color": "var(--wp--preset--color--accent)",
+                "offset": "2px"
+            },
+            "z": {
+                "base": "0",
+                "dropdown": "1000",
+                "sticky": "1100",
+                "overlay": "1200",
+                "modal": "1300",
+                "toast": "1400"
             }
         }
     },
@@ -123,5 +147,10 @@
     "templateParts": [
         { "name": "header", "title": "Header", "area": "header" },
         { "name": "footer", "title": "Footer", "area": "footer" }
+    ],
+    "customTemplates": [
+        { "name": "page-landing", "title": "Landing page", "postTypes": ["page"] },
+        { "name": "page-contact", "title": "Contact page", "postTypes": ["page"] },
+        { "name": "page-form", "title": "Form page", "postTypes": ["page"] }
     ]
 }

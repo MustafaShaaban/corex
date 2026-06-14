@@ -1,0 +1,29 @@
+# Remove the example slice
+
+This site was generated with `--starter`, which added one small, runnable example — a
+**model → repository → service → controller (on the Corex response envelope) → block →
+option page → test** — so you can see how a Corex client site is wired end to end. Once
+you've read it, delete it and build your own.
+
+## 1. Delete these files
+
+- `src/Models/Example.php`
+- `src/Repositories/ExampleRepository.php`
+- `src/Services/ExampleService.php`
+- `src/Controllers/ExampleController.php`
+- `src/Blocks/ExampleRenderer.php`
+- `src/Blocks/example/` (block.json, index.js, style.scss)
+- `src/Options/ExampleOptions.php`
+- `tests/ExampleTest.php`
+- `REMOVE-EXAMPLE.md` (this file)
+
+## 2. Unwire it
+
+In `src/{{ namespace }}ServiceProvider.php`, remove the lines in `register()`/`boot()` that
+construct and register the Example controller, options page, and block. Then run
+`npm run build` in the `{{ theme_slug }}` theme to drop the example block's compiled assets.
+
+## 3. Build your own
+
+Write your code in **this plugin** (`{{ namespace }}\…`) and the **`{{ theme_slug }}` theme** —
+never in the Corex framework folders. Generate new pieces with `wp corex make:*`.

@@ -1463,6 +1463,35 @@ feedback-component gap. **+7 Pest (DesignSystemCatalog 3 + Alert/Badge 4) → 54
 smoke env-gated.
 Status: Final.
 
+## #87 — Platform roadmap closeout (spec 053) — honesty + the unfinished tails
+Date: 2026-06-14
+Context: a code-grounded audit found the "ROADMAP 043–052 COMPLETE / v0.25.0" status overstated. Several backends
+shipped + were unit-tested, but their user-facing surfaces were never built, and docs/checkboxes claimed
+completeness the code did not support: the root `README.md` still said "bootstrap stage / no framework code yet";
+049 T008 was a falsely-checked task (it claimed `--starter`/`--minimal` flags `MakeCommand::runSite` never parsed);
+045's React Data UI (search/sort/export button/detail) was unbuilt; corex-captcha shipped no JS for its Test
+controller; 051 DLS was a catalog + alert/badge, not a full DLS.
+Decision: a forward spec **053** (full Spec Kit flow, Constitution PASS) closes the gap in four independently-
+shippable user stories, **adding no new architecture** (every backend already existed): **US1** rewrite README +
+reconcile PROGRESS/045/049 checkboxes + add a **§D.5 documentation-in-every-PR rule** (surface↔change mapping +
+honesty clause; generated reference left to `docs:generate`) + a stale-phrase sweep; **US2** build the Data screen
+controls over pure, unit-tested `dataClient.js` helpers (search/filter/sort/paginate/CSV-export-button/detail
+drawer/loading-error-empty), superseding the minimal DataViews table, with the export linking to the existing
+`corex_data_export` admin-post handler (GET, not the POST the draft contract said — drift fixed); **US3** a vanilla,
+no-build `captcha-admin.js` Test button (secret-safe: it renders only the envelope's ok+message) + an insights
+failed-run now surfaced inline; **US4** the `make:site --starter` example slice (`packages/cli/stubs/starter/`) +
+a standalone starter-theme asset architecture (wp-scripts build, dev maps, minified prod, hashed `*.asset.php`, an
+`Assets` url/path/version helper) behind a `starter` scaffolder option + `--starter`/`--minimal` flags. Decisions
+that shaped it (user, 2026-06-14): contact form = add-on; generated sites get a **standalone** starter theme (not a
+child theme); WordPress core lives in a `wp/` subdirectory; CSV export only (Excel/PDF deferred); AVIF/CDN/Azure
+Blob deferred to a future increment. Non-scope: new DLS atoms → spec **054-corex-full-dls**.
+Why: false "complete" claims are the mechanism by which the gap hid; correcting them (and adding the docs-in-every-PR
+gate) prevents recurrence, and the tails are the highest-value, lowest-risk work since the servers already exist and
+are tested. Built spec-first, TDD, with the Guard Gate (wp/clean-code/test/docs) run per story. **551 Pest + 52 Jest
+green** (was 544 + 40). Browser execution of the spec-052 E2E/console sweep remains the env-gated step (Apache/wp-env
++ a browser); the suites are ready in `tests/e2e/`.
+Status: Final.
+
 ## #86 — Visual & E2E verification in CI (spec 052, the final roadmap spec)
 Date: 2026-06-14
 Context: spec 052 (roadmap finale). Every spec since 018 ended "env-gated — needs a browser." This makes browser
@@ -1480,4 +1509,34 @@ Why: turns "no one has looked at the console" into "CI looks every run," and clo
 gap as a durable gate. **Execution is environment-dependent by nature** (needs wp-env + a browser, which is exactly
 the gate); the headless deliverable — a valid workflow + a valid E2E/console spec (node --check clean) + the DoD
 docs — is complete. 544 Pest + 40 Jest still green (no unit change). Guard Gate clean (test-guard, docs-guard).
+Status: Final.
+
+## #88 — Full DLS (spec 054) — native-first: one new block, the rest core/styles/tokens/docs
+Date: 2026-06-14
+Context: spec 051 shipped a thin DLS (a taxonomy catalog + `corex/alert`/`corex/badge`). Spec 054 turns it into a
+full Design Language System. The gap analysis (`research.md` D2) audited every candidate UI element against
+WordPress core and the existing tokens, and that evidence **corrected the scope**: radius + layout tokens already
+existed (the real token gaps were motion/focus/z-index), and **most "components" are core blocks to document or
+Corex block styles, not new blocks.**
+Decision: build native-first across four user stories (full Spec Kit flow, Constitution PASS, TDD, Guard Gate per
+story). **US1** — expand `DesignSystemCatalog` to the full six-category taxonomy with a `mechanism` field, drift-
+checked both ways (a corex-block entry can exist only for a registered `corex/*` block), + publish the gap analysis.
+**US2** — add the only missing token groups to `theme.json` as runtime CSS custom properties — `custom.motion`
+(duration + easing), `custom.focus` (width/color→accent/offset), `custom.z` (base→toast) — + a Foundations doc for
+every group. **US3** — the **only justified new block is `corex/modal`** (native `<dialog>`: focus-trap, ESC,
+`::backdrop`, `aria-labelledby`, degrades without JS — behavior core cannot express); everything else ships as
+`register_block_style()` variants (`corex-card`/`corex-section`/`corex-empty` on `core/group`, `corex-striped` on
+`core/table`, `corex-secondary`/`corex-ghost` on `core/button`) + a token-only `.corex-skeleton` utility; the
+toast is the spec-043 `window.Corex.notices` runtime, not a block. **US4** — 5 section patterns in `PatternLibrary`
+(section-header, content-split on `core/media-text`, stats on `corex/stat`, FAQ on `corex/accordion`, latest-news
+on `corex/posts`) guarded by a pattern-drift test (a pattern may compose only blocks that exist); 3 FSE page
+templates (`page-landing`/`page-contact`/`page-form`) registered in `theme.json` `customTemplates`; and a docs-app
+Design System section (index/components/patterns/templates), each component with when-to-use / when-not-to-use.
+Non-scope: rebuilding core-covered elements (pagination, nav submenus, links, form controls), copying any external
+design system's code/brand/names, and a public marketing site. Deferred (documented in the gap analysis): drawer,
+popover, JS tooltip, stepper, a forms validation-summary.
+Why: a design system's value is a known, navigable, drift-proof vocabulary — not a pile of bespoke blocks that
+duplicate core and rot. "Don't custom-block everything" is the deliberate, evidence-backed outcome; each new block
+must earn itself, and only the modal did. **563 Pest + 55 Jest green; docs build 268 pages.** Guard Gate clean
+(wp/test/docs). Env-gated tail: the spec-052 Playwright modal a11y sweep (suites ready in `tests/e2e/`).
 Status: Final.

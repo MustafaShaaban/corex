@@ -1,0 +1,48 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }}\Theme;
+
+defined('ABSPATH') || exit;
+
+/**
+ * Asset URL / path / version helper for the {{ name }} theme. `version()` reads the
+ * wp-scripts build manifest (`assets/build/<entry>.asset.php`) so enqueued styles/scripts
+ * cache-bust on every content hash. Use for images, icons, and fonts under `assets/`.
+ *
+ * Example:
+ *   wp_enqueue_style('{{ theme_slug }}-main',
+ *     Assets::url('build/main.css'), [], Assets::version('main'));
+ */
+final class Assets
+{
+    public static function url(string $relative): string
+    {
+        return get_theme_file_uri('assets/' . ltrim($relative, '/'));
+    }
+
+    public static function path(string $relative): string
+    {
+        return get_theme_file_path('assets/' . ltrim($relative, '/'));
+    }
+
+    public static function version(string $entry): string
+    {
+        $manifest = self::path('build/' . ltrim($entry, '/') . '.asset.php');
+
+        if (is_file($manifest)) {
+            $data = require $manifest;
+
+            if (is_array($data) && isset($data['version'])) {
+                return (string) $data['version'];
+            }
+        }
+
+        return '0.1.0';
+    }
+}

@@ -42,7 +42,33 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-**Active plan:** `specs/041-kit-front-page/plan.md` (kit apply never leaves a blank front page — pure
+**Active plan:** `specs/054-corex-full-dls/plan.md` (turn the thin 051 catalog into a full, **native-first** DLS,
+driven by the gap analysis in `research.md`. Evidence findings: radius+layout tokens already exist → the real
+token gaps are **motion/focus/z-index** (US2 adds them + documents all groups); **most candidate "components" are
+WordPress core blocks to document or Corex block styles, not new blocks** — the **only** justified new block is
+**`corex/modal`** (native `<dialog>` focus-trap/ESC, degrades without JS); card/section/table-striped/button-
+variants/empty-state ship as **block styles**, skeleton as a token-only utility, toast = the 043
+`window.Corex.notices` runtime. US1 expands `DesignSystemCatalog` to the full taxonomy (drift-checked, with a
+`mechanism` field so block-style/core/deferred entries aren't mistaken for blocks); US4 adds the justified
+patterns (section-header/content-split/stats/FAQ/posts-news) + page templates (landing/contact/form) + a docs-app
+design-system section (every component with when-to-use/when-not-to-use). Home = corex-ui; token-only/runtime;
+Constitution PASS. Non-scope: rebuilding core-covered elements, copying external DS code/brand/names, the spec-053
+closeout, a public marketing site. Next: `/speckit-tasks`. Superseded prior plan below.
+
+**Active plan (prev — DONE, merged):** `specs/053-platform-roadmap-closeout/plan.md` (close the gap between the "043–052 COMPLETE /
+v0.25.0" claim and the code — no new architecture, consuming surfaces only: **US1** rewrite the stale README +
+reconcile PROGRESS/045+049 `tasks.md` checkboxes + add a feature-PR docs rule; **US2** build the missing Data
+admin React controls (search/source+form filter/sortable headers/pagination/CSV-export button/detail
+drawer/loading+error+empty states) over the existing `corex/v1/data` query+detail routes + `admin_post`
+export; **US3** wire the captcha **Test** button JS in corex-captcha over `POST /captcha/test` — the real gap;
+insights "Run check" already exists, so verify+polish its classified secret-safe message; **US4** add the
+`make:site --starter` slice (`packages/cli/stubs/starter/**` model/repo/service/controller-on-envelope/block/
+option/test/REMOVE-EXAMPLE.md + a standalone starter block theme with `@wordpress/scripts` SCSS/JS, dev-only
+maps, minified prod, manifest cache-busting, url/path/version helper) + wire `--starter`/`--minimal` into
+`SiteScaffolder`/`MakeCommand` (default omits). Constitution Check PASS, no violations. Non-scope: new DLS atoms
+(→054), Excel/PDF export, AVIF/CDN/Azure Blob. Next: `/speckit-tasks`. Superseded prior plan below.
+
+**Active plan (prev):** `specs/041-kit-front-page/plan.md` (kit apply never leaves a blank front page — pure
 `KitPagePlanner::plan()` classifies each declared page create/adopt/skip; `BlueprintActivator` populates
 adopted pages + sets the front page after the loop for a created|adopted home + records `_corex_kit_page`=
 created|adopted; CLI `ResetExecutor` deletes created pages but only empties adopted ones; returns an

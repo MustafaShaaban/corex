@@ -31,6 +31,11 @@ final class PatternLibrary
             ['name' => 'corex/cta', 'title' => __('Call to action', 'corex'), 'content' => $this->cta()],
             ['name' => 'corex/testimonial', 'title' => __('Testimonial', 'corex'), 'content' => $this->testimonial()],
             ['name' => 'corex/contact', 'title' => __('Contact', 'corex'), 'content' => $this->contact()],
+            ['name' => 'corex/section-header', 'title' => __('Section header', 'corex'), 'content' => $this->sectionHeader()],
+            ['name' => 'corex/content-split', 'title' => __('Content split', 'corex'), 'content' => $this->contentSplit()],
+            ['name' => 'corex/stats', 'title' => __('Stats', 'corex'), 'content' => $this->stats()],
+            ['name' => 'corex/faq', 'title' => __('FAQ', 'corex'), 'content' => $this->faq()],
+            ['name' => 'corex/news', 'title' => __('Latest news', 'corex'), 'content' => $this->news()],
         ];
     }
 
@@ -103,6 +108,72 @@ final class PatternLibrary
             . '<section class="wp-block-group alignfull" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
             . '<!-- wp:heading {"textAlign":"center"} --><h2 class="wp-block-heading has-text-align-center">' . esc_html__('Get in touch', 'corex') . '</h2><!-- /wp:heading -->'
             . '<!-- wp:corex/form {"formSlug":"contact"} /-->'
+            . '</section><!-- /wp:group -->';
+    }
+
+    private function sectionHeader(): string
+    {
+        return sprintf(
+            '<!-- wp:group {"tagName":"header","align":"wide","style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|40"}}},"layout":{"type":"constrained"}} -->'
+            . '<header class="wp-block-group alignwide" style="padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--40)">'
+            . '<!-- wp:heading {"textAlign":"center"} --><h2 class="wp-block-heading has-text-align-center">%1$s</h2><!-- /wp:heading -->'
+            . '<!-- wp:paragraph {"align":"center","textColor":"ink-soft"} --><p class="has-text-align-center has-ink-soft-color has-text-color">%2$s</p><!-- /wp:paragraph -->'
+            . '</header><!-- /wp:group -->',
+            esc_html__('A clear section title', 'corex'),
+            esc_html__('A short supporting sentence that sets up the section below.', 'corex')
+        );
+    }
+
+    private function contentSplit(): string
+    {
+        return sprintf(
+            '<!-- wp:group {"tagName":"section","align":"full","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
+            . '<section class="wp-block-group alignfull" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
+            . '<!-- wp:media-text {"mediaType":"image"} --><div class="wp-block-media-text is-stacked-on-mobile">'
+            . '<figure class="wp-block-media-text__media"></figure>'
+            . '<div class="wp-block-media-text__content">'
+            . '<!-- wp:heading {"level":2} --><h2 class="wp-block-heading">%1$s</h2><!-- /wp:heading -->'
+            . '<!-- wp:paragraph --><p>%2$s</p><!-- /wp:paragraph -->'
+            . '</div></div><!-- /wp:media-text --></section><!-- /wp:group -->',
+            esc_html__('Tell your story beside an image', 'corex'),
+            esc_html__('Pair a short narrative with a supporting image — media on one side, content on the other.', 'corex')
+        );
+    }
+
+    private function stats(): string
+    {
+        $stat = static fn (string $value, string $label): string => sprintf(
+            '<!-- wp:column --><div class="wp-block-column">'
+            . '<!-- wp:corex/stat {"value":"%1$s","label":"%2$s"} /-->'
+            . '</div><!-- /wp:column -->',
+            $value,
+            $label
+        );
+
+        return '<!-- wp:group {"tagName":"section","align":"full","backgroundColor":"surface-alt","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
+            . '<section class="wp-block-group alignfull has-surface-alt-background-color has-background" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
+            . '<!-- wp:columns --><div class="wp-block-columns">'
+            . $stat(esc_html__('100+', 'corex'), esc_html__('Projects delivered', 'corex'))
+            . $stat(esc_html__('15', 'corex'), esc_html__('Years of experience', 'corex'))
+            . $stat(esc_html__('98%', 'corex'), esc_html__('Client satisfaction', 'corex'))
+            . '</div><!-- /wp:columns --></section><!-- /wp:group -->';
+    }
+
+    private function faq(): string
+    {
+        return '<!-- wp:group {"tagName":"section","align":"full","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
+            . '<section class="wp-block-group alignfull" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
+            . '<!-- wp:heading {"textAlign":"center"} --><h2 class="wp-block-heading has-text-align-center">' . esc_html__('Frequently asked questions', 'corex') . '</h2><!-- /wp:heading -->'
+            . '<!-- wp:corex/accordion /-->'
+            . '</section><!-- /wp:group -->';
+    }
+
+    private function news(): string
+    {
+        return '<!-- wp:group {"tagName":"section","align":"full","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
+            . '<section class="wp-block-group alignfull" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
+            . '<!-- wp:heading {"textAlign":"center"} --><h2 class="wp-block-heading has-text-align-center">' . esc_html__('Latest news', 'corex') . '</h2><!-- /wp:heading -->'
+            . '<!-- wp:corex/posts {"count":3} /-->'
             . '</section><!-- /wp:group -->';
     }
 }

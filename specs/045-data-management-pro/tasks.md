@@ -24,17 +24,17 @@ US4 = SubmissionStore seam (P2).
 - [x] T006 [US1] Update `SubmissionsSource` + its reader to answer `DataQuery` (substring search, form filter, date sort) — prepared/bounded; Pest on the shaping (reader injected).
 - [ ] T007 [US1] Update `TableDataSource` + `WpTableDataReader` to answer `DataQuery` (prepared `%i`/`%s`/`%d`, bounded); keep existing tests green.
 - [x] T008 [US1] `DataController` accepts query params (sanitised → `DataQuery`); responses already envelope-shaped (043). Pest for the param→query mapping.
-- [ ] T009 [US1] React Data app (`src/admin/index.js`): search box + form filter + sortable headers + pagination via `window.Corex.api`; rebuild.
+- [ ] T009 [US1] React Data app (`src/admin/index.js`): search box + form filter + sortable headers + pagination via `window.Corex.api`; rebuild. **→ backend done; React UI NOT built (the screen only paginates+deletes). Completed by 053 US2 (T013–T014, T017).**
 
 ## Phase 4: US2 — CSV export (P1)
 
 - [x] T010 [US2] `DataExportController` — `GET corex/v1/data/{source}/export`, AdminGuard cap+nonce, streams `CsvWriter` output for the current query, bounded to a documented cap; no secret. Pest for the CSV body + a no-secret assertion.
-- [ ] T011 [US2] Export button in the Data app (downloads the filtered CSV).
+- [ ] T011 [US2] Export button in the Data app (downloads the filtered CSV). **→ backend export route done; button NOT built. Completed by 053 US2 (T015).**
 
 ## Phase 5: US3 — readable detail (P2)
 
 - [x] T012 [US3] `record(int)` returns label→value fields (form labels where known, else key); Pest on the shaping.
-- [ ] T013 [US3] Detail view in the Data app (open a row → label→value fields + form + date); graceful empty values.
+- [ ] T013 [US3] Detail view in the Data app (open a row → label→value fields + form + date); graceful empty values. **→ backend detail route done; UI NOT built. Completed by 053 US2 (T016).**
 
 ## Phase 6: US4 — SubmissionStore seam (P2)
 

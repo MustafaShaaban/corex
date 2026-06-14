@@ -3,8 +3,13 @@ title: The Design Language System
 description: Corex's UI organized into Components, Blocks, Patterns, Templates, and Guidelines.
 ---
 
-Corex has a WordPress-native **Design Language System** — its UI organized into five categories, all token-driven
-and accessible. It lives in **`corex-ui`** (one home, no separate plugin).
+Corex has a WordPress-native **Design Language System** — its UI organized into six categories (Foundations,
+Components, Blocks, Patterns, Templates, Guidelines), all token-driven and accessible. It lives in **`corex-ui`**
+(one home, no separate plugin).
+
+> **The full DLS** — foundations (all token groups incl. motion/focus/z-index), every component with
+> when-to-use / when-not-to-use, patterns, templates, and the evidence-based gap analysis — is in the dedicated
+> [Design System section](../design-system/). This page is the short orientation.
 
 ## The taxonomy
 
