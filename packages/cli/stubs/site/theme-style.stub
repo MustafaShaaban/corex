@@ -1,0 +1,12 @@
+/*
+Theme Name: {{ name }}
+Description: The {{ name }} site theme (a Corex client skin) — presentation only.
+Version: 0.1.0
+Author: {{ name }}
+Requires at least: 7.0
+Tested up to: 7.0
+Requires PHP: 8.3
+Text Domain: {{ text_domain }}
+*/
+
+/* Presentation only. Business logic belongs in the {{ name }} Site plugin, never here. */
