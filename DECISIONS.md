@@ -1540,3 +1540,21 @@ duplicate core and rot. "Don't custom-block everything" is the deliberate, evide
 must earn itself, and only the modal did. **563 Pest + 55 Jest green; docs build 268 pages.** Guard Gate clean
 (wp/test/docs). Env-gated tail: the spec-052 Playwright modal a11y sweep (suites ready in `tests/e2e/`).
 Status: Final.
+
+## #89 — Release v0.26.0 + spec 055 not warranted (project at a completion milestone)
+Date: 2026-06-14
+Context: spec 053 (closeout) and spec 054 (full DLS) were both merged to `develop` (PRs #30, #32) but unreleased.
+After the 053 correction, three forward specs were named: 053 (done), 054 (done), and a conditional
+**055-documentation-productization** — "if docs scope warrants a separate spec."
+Decision: (1) Cut **Release v0.26.0** for the 053+054 batch following the established v0.x rhythm — `wp corex
+version 0.26.0` stamped all 15 framework headers/constants, CHANGELOG `[0.26.0]` + README status updated, committed
+on `develop`, merged `develop`→`main` (no-ff) as "Release v0.26.0", tagged `v0.26.0`, GitHub release published,
+**main CI green**. (2) **Do not open spec 055.** The documentation scope it would have covered was substantially
+absorbed: 053 rewrote the README as an honest entry point + added the documentation-in-every-PR rule (§D.5), and 054
+delivered the docs-app Design System section (foundations + per-component when-to-use/when-not-to-use + patterns +
+templates + gap analysis). A separate productization spec would be inventing scope (YAGNI).
+Why: specs 001–054 are delivered, tested, and released (v0.18.0 → v0.26.0); there is no remaining unbuilt or unspecced
+work. The only standing remainder is **environment-gated browser verification** (the spec-052 Playwright modal a11y
+sweep + Data-flow + console-error E2E), which is a CI gate run via wp-env, not new build scope — and cannot run in
+this headless WAMP (no Apache/browser). Reopening with new scope is a fresh user-driven direction, not a continuation.
+Status: Final.

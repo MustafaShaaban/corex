@@ -4,7 +4,26 @@
 > Updated at the end of every working session.
 
 ---
-## ▶ RESUME HERE (2026-06-14, latest) — spec 054 full DLS: US1–US4 ALL SHIPPED, ready to push/PR
+## ▶ RESUME HERE (2026-06-14, latest) — 🎉 RELEASED v0.26.0; specs 001–054 delivered, no open scope
+
+**Specs 053 (closeout) + 054 (full DLS) are merged and RELEASED as v0.26.0.** Both feature branches merged to
+`develop` (PRs #30, #32); the batch was promoted `develop`→`main` (no-ff) as **Release v0.26.0**, version-stamped
+across all 15 framework headers/constants via `wp corex version 0.26.0`, CHANGELOG `[0.26.0]` + README updated,
+tagged **`v0.26.0`**, **main CI green** (CI 32s + Docs 41s), GitHub release published.
+
+- **Verification before release (DoD gate):** **563 Pest · 55 Jest (15 suites) · docs build 268 pages** — all green.
+- **Project status — at a completion milestone.** Specs **001–054 are delivered, tested, and released**
+  (v0.18.0 → v0.26.0). **Spec 055 (documentation-productization) is NOT warranted** — its docs scope was absorbed by
+  053 (honest README + the §D.5 documentation-in-every-PR rule) and 054 (the docs-app Design System section).
+  DECISIONS #89.
+- **▶ Only standing remainder = environment-gated** (not new build scope): the spec-052 Playwright sweep — modal
+  a11y (open/ESC/backdrop/focus-return, RTL, console-clean) + Data-flow E2E — runs via wp-env in CI (nightly +
+  on-demand); the suites are ready in `tests/e2e/`. It cannot run in this headless WAMP (no Apache/browser).
+- **▶ NEXT:** nothing is unbuilt or unspecced. New work needs a new direction from the user (a new spec via the
+  Spec Kit flow), or run the env-gated E2E once an Apache/browser environment is available.
+
+---
+## ▶ (HISTORICAL) 2026-06-14 — spec 054 full DLS: US1–US4 ALL SHIPPED, ready to push/PR
 
 **Spec 054 (full DLS) is implemented end-to-end** on `feature/054-dls-components` — all four user stories done +
 green. US1 (catalog + gap analysis) and US2 (foundations tokens + docs) shipped earlier; US3 (`corex/modal` +
