@@ -1,0 +1,22 @@
+/**
+ * Corex captcha "Test verification" control (spec 053 US3). wp-admin palette fallbacks
+ * (theme tokens aren't loaded in wp-admin — DECISIONS #71), logical properties (RTL). The
+ * status is carried by the message text first; colour is supplementary (WCAG 2.2 AA).
+ */
+
+.corex-captcha-test {
+	display: flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--20, 0.5rem);
+	margin-block-start: var(--wp--preset--spacing--20, 0.5rem);
+}
+
+.corex-captcha-test__result.is-ok {
+	color: #00640c;
+	font-weight: 600;
+}
+
+.corex-captcha-test__result.is-error {
+	color: #b32d2e;
+	font-weight: 600;
+}

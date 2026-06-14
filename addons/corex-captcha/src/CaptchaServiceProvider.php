@@ -42,5 +42,41 @@ final class CaptchaServiceProvider extends ServiceProvider
     {
         // The "Test verification" REST action for the Corex settings captcha card (spec 044).
         $this->container->make(CaptchaTestController::class)->register();
+
+        // Its admin-side button (spec 053 US3) — enqueued only on the Corex settings screen.
+        add_action('admin_enqueue_scripts', [$this, 'enqueueTestButton']);
+    }
+
+    /**
+     * Enqueue the captcha Test-verification button on the Corex settings screen only
+     * (Principle VI). Vanilla, depends on the spec-043 runtime; the secret never reaches it.
+     */
+    public function enqueueTestButton(string $hook): void
+    {
+        if ($hook !== 'toplevel_page_corex-settings') {
+            return;
+        }
+
+        $base = dirname(__DIR__) . '/corex-captcha.php';
+
+        wp_enqueue_style(
+            'corex-captcha-admin',
+            plugins_url('assets/captcha-admin.css', $base),
+            [],
+            COREX_CAPTCHA_VERSION,
+        );
+
+        wp_enqueue_script(
+            'corex-captcha-admin',
+            plugins_url('assets/captcha-admin.js', $base),
+            ['corex-runtime'],
+            COREX_CAPTCHA_VERSION,
+            true,
+        );
+
+        wp_localize_script('corex-captcha-admin', 'corexCaptcha', [
+            'restUrl' => esc_url_raw(rest_url('corex/v1')),
+            'nonce'   => wp_create_nonce('wp_rest'),
+        ]);
     }
 }

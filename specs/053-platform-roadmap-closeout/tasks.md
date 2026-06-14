@@ -117,25 +117,25 @@ button returns a classified message and never shows a secret.
 
 ### Tests first (TDD)
 
-- [ ] T021 [P] [US3] Jest: captcha button module — Test click POSTs to `/captcha/test` with the nonce, sets a
+- [X] T021 [P] [US3] Jest: captcha button module — Test click POSTs to `/captcha/test` with the nonce, sets a
   busy state, renders each `status` message (`ok/missing_keys/invalid_keys/network_error/not_applicable`), lists
   `missingKeys`, and **reads no secret field** from config. File:
   `addons/corex-captcha/assets/__tests__/captcha-admin.test.js`. (contracts/test-buttons.md, D6/D7)
 
 ### Implementation
 
-- [ ] T022 [US3] Create `addons/corex-captcha/assets/captcha-admin.js`: vanilla over `window.Corex.api`, no
+- [X] T022 [US3] Create `addons/corex-captcha/assets/captcha-admin.js`: vanilla over `window.Corex.api`, no
   build; Test → busy → POST `/captcha/test` → classified, secret-free message in a `role="status"` live region;
   re-enable on completion; i18n via `wp.i18n`. (FR-013..015, FR-017, D6/D7)
-- [ ] T023 [US3] Enqueue the module in `addons/corex-captcha/src/CaptchaServiceProvider.php` on the settings
+- [X] T023 [US3] Enqueue the module in `addons/corex-captcha/src/CaptchaServiceProvider.php` on the settings
   screen only (conditional), localized with `{ restUrl, nonce }`; depend on `corex-runtime`. (FR-013,
   Principle VI/VII)
-- [ ] T024 [US3] Verify + polish the existing insights "Run check" in `plugins/corex-config/assets/insights.js`:
+- [X] T024 [US3] Verify + polish the existing insights "Run check" in `plugins/corex-config/assets/insights.js`:
   confirm it renders the `PsiDiagnostic` classification (`local_url/http_error/quota/invalid_key/
   invalid_response/ok`) with actionable wording + a "recommended, not required" note for a missing optional API
   key; tighten any vague copy. Add a button only if verification finds it absent. (FR-016, D6)
-- [ ] T025 [US3] `npm run build` if needed; verify Jest (T021) green; manual/console check (env-gated). 
-- [ ] T026 [US3] **Guard Gate (US3)**: `clean-code-guard` + `wp-guard` (no-secret, nonce, escaped output,
+- [X] T025 [US3] `npm run build` if needed; verify Jest (T021) green; manual/console check (env-gated). 
+- [X] T026 [US3] **Guard Gate (US3)**: `clean-code-guard` + `wp-guard` (no-secret, nonce, escaped output,
   conditional enqueue) + `test-guard`. Fix findings. (FR-014/FR-025)
 
 **Checkpoint**: Captcha + insights diagnostics usable from the UI, secret-safe.
