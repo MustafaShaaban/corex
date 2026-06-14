@@ -1444,3 +1444,21 @@ the spec-034 self-update — the team/agency distribution loop. **+7 Pest → 53
 clean (pure cores + gated commands; prefix-match avoids false positives; no secret). The live ZIP build + git diff +
 docs serve are env-gated boundaries.
 Status: Final.
+
+## #85 — Design Language System in corex-ui (spec 051)
+Date: 2026-06-14
+Context: spec 051 (roadmap) — give Corex a documented, WordPress-native Design Language System. The block library +
+tokens ship across 027/029/033/035; what was missing is the organizing taxonomy + catalog + a couple component gaps.
+Decision: the DLS lives in **`corex-ui`** (no new `corex-dls` plugin — one home, no duplication). A pure
+`Corex\Ui\DesignSystemCatalog` organizes the UI into five categories (Components/Blocks/Patterns/Templates/
+Guidelines) and is **drift-tested** against the on-disk `corex/*` block.json (it can never list a block that does not
+exist — like the CompanyKitManifest cross-check). The component layer gains two server-rendered, token-only,
+accessible, RTL blocks following the spec-004/027 pattern: `corex/alert` (role=alert + info/success/warning/error
+variant) and `corex/badge` (labelled span). Documented in docs-app `guides/design-system.md` (taxonomy + catalog +
+guidelines: tokens single-source, WCAG 2.2 AA, RTL). The taxonomy borrows the *structure* of public design systems,
+never any system's code/brand.
+Why: turns a flat block list into a coherent, navigable, drift-protected system with one home, and fills the
+feedback-component gap. **+7 Pest (DesignSystemCatalog 3 + Alert/Badge 4) → 544 unit + 40 Jest green.** Blocks built
+(index.js + style-index.css + RTL). Guard Gate clean (token-only, escaped, RTL, drift-tested, no secret). Live visual
+smoke env-gated.
+Status: Final.

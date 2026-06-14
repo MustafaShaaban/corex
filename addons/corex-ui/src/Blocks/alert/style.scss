@@ -1,0 +1,11 @@
+/* Corex Alert — token-only, logical properties (RTL-correct). */
+.corex-alert {
+	padding: var(--wp--preset--spacing--30, 1rem);
+	border-inline-start: 4px solid var(--wp--preset--color--corex-info, #2271b1);
+	border-radius: var(--wp--custom--radius--md, 6px);
+	background: var(--wp--preset--color--surface, #f6f7f7);
+}
+
+.corex-alert--success { border-inline-start-color: var(--wp--preset--color--corex-success, #00a32a); }
+.corex-alert--warning { border-inline-start-color: var(--wp--preset--color--corex-warning, #dba617); }
+.corex-alert--error { border-inline-start-color: var(--wp--preset--color--corex-danger, #d63638); }

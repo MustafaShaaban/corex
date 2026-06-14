@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/badge",
+	"title": "Corex Badge",
+	"category": "corex",
+	"icon": "tag",
+	"description": "A small labelled badge (dynamic).",
+	"textdomain": "corex",
+	"attributes": {
+		"label": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\BadgeRenderer" }
+}

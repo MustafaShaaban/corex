@@ -1,0 +1,18 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/alert",
+	"title": "Corex Alert",
+	"category": "corex",
+	"icon": "info",
+	"description": "An accessible alert message with an info/success/warning/error variant (dynamic).",
+	"textdomain": "corex",
+	"attributes": {
+		"message": { "type": "string", "default": "" },
+		"variant": { "type": "string", "default": "info" }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\AlertRenderer" }
+}

@@ -52,6 +52,7 @@ export default defineConfig({
 						{ label: 'Image optimization', slug: 'guides/media' },
 						{ label: 'Build a client site', slug: 'guides/client-site' },
 						{ label: 'Deploy & distribute', slug: 'guides/deployment' },
+						{ label: 'Design Language System', slug: 'guides/design-system' },
 						{ label: 'Create a block (CLI)', slug: 'guides/blocks' },
 						{ label: 'Write queries', slug: 'guides/queries' },
 						{ label: 'Apply a brand', slug: 'guides/branding' },
