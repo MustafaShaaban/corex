@@ -47,7 +47,7 @@ US4 = SubmissionStore seam (P2).
 - [x] T017 [P] Docs: docs-app queries/data guide — the query/export/detail + the store-seam boundary (post-meta now, custom-table later, out of scope). corex-config README.
 - [x] T018 Guard Gate (clean-code, wp-guard — prepared search/cap+nonce/escaped/no-secret/bounded export, test-guard, docs-guard). Fix findings.
 - [x] T019 Suites green (`composer test` + `npm run test:js`); record counts. Playwright smoke env-gated.
-- [ ] T020 Update `PROGRESS.md` + `DECISIONS.md` #79; NEXT STEP. Commit → PR → CI → merge.
+- [x] T020 Update `PROGRESS.md` + `DECISIONS.md` #79; NEXT STEP. Commit → PR → CI → merge.
 
 ---
 

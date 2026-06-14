@@ -10,6 +10,8 @@ namespace Corex\Cli\Commands;
 
 defined('ABSPATH') || exit;
 
+use Corex\Cli\Generators\ApiResourceScaffolder;
+use Corex\Cli\Generators\ApiResourceScaffoldResult;
 use Corex\Cli\Generators\BlockScaffolder;
 use Corex\Cli\Generators\BlockScaffoldResult;
 use Corex\Cli\Generators\Generator;
@@ -34,6 +36,7 @@ final class MakeCommand
         private readonly array $generators,
         private readonly ?BlockScaffolder $blockScaffolder = null,
         private readonly ?GeneratorContext $context = null,
+        private readonly ?ApiResourceScaffolder $apiScaffolder = null,
     ) {
     }
 
@@ -45,6 +48,12 @@ final class MakeCommand
     {
         if ($type === 'block') {
             $this->runBlock($args[0] ?? '', (bool) ($assoc['force'] ?? false));
+
+            return;
+        }
+
+        if ($type === 'api-resource') {
+            $this->runApiResource($args[0] ?? '', (bool) ($assoc['force'] ?? false));
 
             return;
         }
@@ -107,5 +116,42 @@ final class MakeCommand
 
         WP_CLI::success(sprintf('Block scaffolded: %s', $result->blockDir));
         WP_CLI::log('Run `npm run build` to compile index.js + style.scss.');
+    }
+
+    /**
+     * Scaffold a complete REST resource (controller + routes + request + resource + test),
+     * reporting each created file (spec 046).
+     */
+    private function runApiResource(string $name, bool $force): void
+    {
+        if ($this->apiScaffolder === null || $this->context === null) {
+            WP_CLI::error('API resource scaffolding is unavailable (no scaffolder bound).');
+
+            return;
+        }
+
+        try {
+            $result = $this->apiScaffolder->scaffold($name, $this->context, $force);
+        } catch (Throwable $e) {
+            WP_CLI::error($e->getMessage());
+
+            return;
+        }
+
+        match ($result->status) {
+            ApiResourceScaffoldResult::CREATED => $this->reportCreatedApiResource($result),
+            ApiResourceScaffoldResult::SKIPPED => WP_CLI::warning(sprintf('%s (%s)', $result->message, $result->apiDir)),
+            default                            => WP_CLI::error($result->message ?? 'API resource scaffolding failed.'),
+        };
+    }
+
+    private function reportCreatedApiResource(ApiResourceScaffoldResult $result): void
+    {
+        foreach ($result->paths as $path) {
+            WP_CLI::log(sprintf('  + %s', $path));
+        }
+
+        WP_CLI::success(sprintf('API resource scaffolded: %s', $result->apiDir));
+        WP_CLI::log('Register its Routes class (->register() on rest_api_init) and fill in the service.');
     }
 }

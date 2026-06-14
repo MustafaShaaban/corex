@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * Scaffold test for the {{ name }} resource — replace with real assertions as you build it.
+ *
+ * @package {{ app_namespace }}
+ */
+
+declare(strict_types=1);
+
+use {{ app_namespace }}\{{ resource_class }};
+
+it('shapes a {{ name }} resource into an array of declared fields', function () {
+    expect((new {{ resource_class }}())->toArray(null))->toBeArray();
+});

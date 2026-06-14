@@ -20,6 +20,7 @@ use Corex\Health\HealthModule;
 use Corex\Cli\Docs\ClassDocReader;
 use Corex\Cli\Docs\DocsGenerator;
 use Corex\Cli\Docs\MarkdownDocRenderer;
+use Corex\Cli\Generators\ApiResourceScaffolder;
 use Corex\Cli\Generators\BlockScaffolder;
 use Corex\Cli\Generators\ControllerGenerator;
 use Corex\Cli\Generators\GeneratorContext;
@@ -74,6 +75,15 @@ final class CliServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(
+            ApiResourceScaffolder::class,
+            fn (ContainerInterface $c): ApiResourceScaffolder => new ApiResourceScaffolder(
+                $c->make(StubRenderer::class),
+                $c->make(Naming::class),
+                dirname(__DIR__) . '/stubs',
+            ),
+        );
+
+        $this->container->singleton(
             DocsGenerator::class,
             static fn (): DocsGenerator => new DocsGenerator(new ClassDocReader(), new MarkdownDocRenderer()),
         );
@@ -97,9 +107,10 @@ final class CliServiceProvider extends ServiceProvider
             ],
             $this->container->make(BlockScaffolder::class),
             $this->container->make(GeneratorContext::class),
+            $this->container->make(ApiResourceScaffolder::class),
         );
 
-        foreach (['model', 'repository', 'controller', 'service', 'option-page', 'block'] as $type) {
+        foreach (['model', 'repository', 'controller', 'service', 'option-page', 'block', 'api-resource'] as $type) {
             WP_CLI::add_command(
                 "corex make:{$type}",
                 static function (array $args, array $assoc) use ($command, $type): void {

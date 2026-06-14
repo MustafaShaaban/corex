@@ -1,0 +1,28 @@
+<?php
+
+/**
+ * @package {{ app_namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ app_namespace }};
+
+defined('ABSPATH') || exit;
+
+/**
+ * {{ request_class }} — the request-validation shape for the {{ name }} resource. Declare
+ * the fields + rules; the spec-005 sanitize/validate middleware enforces them.
+ */
+final class {{ request_class }}
+{
+    /**
+     * @return array<string,array<int,string>> field => rules
+     */
+    public function rules(): array
+    {
+        return [
+            // 'title' => ['required', 'max:200'],
+        ];
+    }
+}
