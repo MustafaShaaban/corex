@@ -47,14 +47,25 @@ final class HealthModule
             $brandPath = (string) get_theme_file_path('brand.json');
         }
 
-        return new HealthReport([
+        $probes = [
             new PhpVersionProbe(PHP_VERSION, self::MIN_PHP),
             new WpVersionProbe((string) get_bloginfo('version'), self::MIN_WP),
             new ThemeActiveProbe(function_exists('wp_is_block_theme') && wp_is_block_theme()),
             new BrandPresentProbe($brandPath !== '' && file_exists($brandPath)),
             new UploadsWritableProbe(empty($uploads['error']) && wp_is_writable($uploads['basedir'])),
             new BlockAssetsProbe($this->blockAssets(), function_exists('plugins_url') ? plugins_url() : ''),
-        ]);
+        ];
+
+        // Optional add-ons (e.g. corex-media) contribute their own probes without core depending on
+        // them. Each contributed item must be a HealthProbe; anything else is ignored.
+        if (function_exists('apply_filters')) {
+            $extended = apply_filters('corex_health_probes', $probes);
+            if (is_array($extended)) {
+                $probes = array_values(array_filter($extended, static fn ($p): bool => $p instanceof HealthProbe));
+            }
+        }
+
+        return new HealthReport($probes);
     }
 
     /**

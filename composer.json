@@ -28,6 +28,7 @@
             "Corex\\Bookings\\": "addons/corex-bookings/src/",
             "Corex\\Portfolio\\": "addons/corex-kit-portfolio/src/",
             "Corex\\Woo\\": "addons/corex-kit-woo/src/",
+            "Corex\\Media\\": "addons/corex-media/src/",
             "Corex\\Cli\\": "packages/cli/src/"
         }
     },

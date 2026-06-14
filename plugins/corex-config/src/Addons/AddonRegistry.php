@@ -59,6 +59,15 @@ final class AddonRegistry
                 provides: ['newsletter signup form', 'subscriber storage'],
             ),
             new Addon(
+                'corex-media',
+                'corex-media/corex-media.php',
+                'Corex Media',
+                summary: 'Image optimization — WebP on upload + an optimized <picture> helper.',
+                description: 'Converts uploads to WebP (original preserved) where the server supports it; degrades gracefully.',
+                provides: ['WebP conversion on upload', 'MediaImage <picture> helper', 'image-support health probe'],
+                docsUrl: '/guides/media/',
+            ),
+            new Addon(
                 'corex-careers',
                 'corex-careers/corex-careers.php',
                 'Corex Careers',
