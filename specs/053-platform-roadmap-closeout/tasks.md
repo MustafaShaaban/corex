@@ -73,35 +73,35 @@ console-clean.
 
 ### Tests first (TDD)
 
-- [ ] T010 [P] [US2] Jest: `useSource`/request-building — search sets `search` + resets `page` to 1; header
+- [X] T010 [P] [US2] Jest: `useSource`/request-building — search sets `search` + resets `page` to 1; header
   click sets `sort` + toggles `dir`; pagination sets `page`; assert the params sent to `window.Corex.api.get`.
   (`window.Corex`, `wp.*` mocked.) File: `plugins/corex-config/src/admin/__tests__/dataQuery.test.js`. (contracts/data-screen.md)
-- [ ] T011 [P] [US2] Jest: Export URL builder produces `admin-post.php?action=corex_data_export` with the
+- [X] T011 [P] [US2] Jest: Export URL builder produces `admin-post.php?action=corex_data_export` with the
   current `source/search/form/sort/dir` + `corex_data_export` nonce. Same `__tests__` dir.
-- [ ] T012 [P] [US2] Jest: detail open fetches `GET /data/{source}/{id}` and renders `fields` (label→value,
+- [X] T012 [P] [US2] Jest: detail open fetches `GET /data/{source}/{id}` and renders `fields` (label→value,
   `—` for empty); the three states (loading/error/empty incl. "No matches" vs "No data yet") render.
 
 ### Implementation
 
-- [ ] T013 [US2] Extend `useSource` in `plugins/corex-config/src/admin/index.js`: add
+- [X] T013 [US2] Extend `useSource` in `plugins/corex-config/src/admin/index.js`: add
   `search/form/sort/dir/status/error/detail` state; send the params; track `status: idle|loading|error|ready`;
   reset page on filter change. (FR-005..008, FR-011, D1/D2/D5)
-- [ ] T014 [US2] Add the controls to the screen: a search box, a source/form `<select>` filter, sortable column
+- [X] T014 [US2] Add the controls to the screen: a search box, a source/form `<select>` filter, sortable column
   headers (set `sort`/toggle `dir`, reflect `aria-sort`) for both the DataViews path and the fallback table,
   and pagination wired to `total`. (FR-005..008, FR-012)
-- [ ] T015 [US2] Add the **Export** button: builds the export URL (T011) with the current query + nonce and
+- [X] T015 [US2] Add the **Export** button: builds the export URL (T011) with the current query + nonce and
   triggers a file-download navigation; show a "first N rows exported" note when the backend truncates.
   (FR-009, D3)
-- [ ] T016 [US2] Add the **detail drawer/modal**: opens on row action, fetches `/{id}`, renders label→value
+- [X] T016 [US2] Add the **detail drawer/modal**: opens on row action, fetches `/{id}`, renders label→value
   fields + form + date, focus-trapped + ESC-close + labelled, `—` for empty values. (FR-010, D4)
-- [ ] T017 [US2] Add the loading/error/empty rendering: spinner + `aria-busy` on loading, actionable message +
+- [X] T017 [US2] Add the loading/error/empty rendering: spinner + `aria-busy` on loading, actionable message +
   retry on error, distinct empty states. (FR-011, D5)
-- [ ] T018 [P] [US2] Styling in `plugins/corex-config/assets/data.css` (or `style.scss`): drawer + states +
+- [X] T018 [P] [US2] Styling in `plugins/corex-config/assets/data.css` (or `style.scss`): drawer + states +
   controls, token-only (`theme.json` vars), logical CSS/RTL, WCAG focus states. No raw hex/size. (FR-012,
   Principles V/VI/VIII)
-- [ ] T019 [US2] `npm run build`; ensure the screen enqueues `corex-runtime` (043) as a dependency and loads
+- [X] T019 [US2] `npm run build`; ensure the screen enqueues `corex-runtime` (043) as a dependency and loads
   only on the Data screen (Principle VI). Verify Jest (T010–T012) green.
-- [ ] T020 [US2] **Guard Gate (US2)**: `clean-code-guard` + `wp-guard` (escaping/nonce/no-secret on any touched
+- [X] T020 [US2] **Guard Gate (US2)**: `clean-code-guard` + `wp-guard` (escaping/nonce/no-secret on any touched
   PHP enqueue) + `test-guard` (the Jest suites). Fix findings. (FR-025)
 
 **Checkpoint**: Data screen fully usable; backend untouched (backward compatible).

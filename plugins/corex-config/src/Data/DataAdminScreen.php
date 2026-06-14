@@ -87,10 +87,21 @@ final class DataAdminScreen
             true,
         );
 
+        wp_enqueue_style(
+            'corex-data',
+            plugins_url('assets/data.css', $base . '/corex-config.php'),
+            [],
+            $asset['version'],
+        );
+
         wp_localize_script('corex-data', 'corexData', [
-            'restUrl' => esc_url_raw(rest_url('corex/v1/data')),
-            'nonce'   => wp_create_nonce('wp_rest'),
-            'sources' => array_map(
+            'restUrl'     => esc_url_raw(rest_url('corex/v1/data')),
+            'nonce'       => wp_create_nonce('wp_rest'),
+            // The CSV export streams from the admin-post handler (DataExportController),
+            // which re-checks this nonce + manage_options and bounds the row count.
+            'exportUrl'   => esc_url_raw(admin_url('admin-post.php')),
+            'exportNonce' => wp_create_nonce('corex_data_export'),
+            'sources'     => array_map(
                 static fn (DataSource $s): array => ['key' => $s->key(), 'label' => $s->label()],
                 $this->registry->all(),
             ),

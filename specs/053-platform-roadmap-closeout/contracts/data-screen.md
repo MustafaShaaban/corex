@@ -10,7 +10,7 @@ the export agree on "current view". No route is added or changed.
 | List + query | `GET /wp-json/corex/v1/data/{source}` | `search`, `form`, `sort`, `dir`, `page`, `per_page` | `permission_callback` (cap) + REST nonce |
 | Detail | `GET /wp-json/corex/v1/data/{source}/{id}` | — | cap + nonce |
 | Delete | `DELETE /wp-json/corex/v1/data/{source}/{id}` | — | cap + nonce |
-| Export | `POST /wp-admin/admin-post.php?action=corex_data_export` | `source`, `search`, `form`, `sort`, `dir`, `_wpnonce=corex_data_export` | `manage_options` + nonce |
+| Export | `GET /wp-admin/admin-post.php?action=corex_data_export` (browser navigation/download) | `source`, `search`, `form`, `sort`, `dir`, `_wpnonce=corex_data_export` | `manage_options` + nonce |
 
 ## Request/response shapes (envelope, spec 043)
 
