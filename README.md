@@ -6,7 +6,7 @@ multisite, headless, or AI-agent-driven — on one clean, documented, spec-first
 - **Target:** WordPress 7.0+, PHP 8.3+, FSE block themes.
 - **Namespace:** `Corex\` · **CLI:** `wp corex` · **CSS prefix:** `--corex-`.
 - **Stack:** Composer (PHP) + npm workspaces (JS), one monorepo.
-- **Status:** Actively developed; latest release **v0.25.0**. The engine, block/forms/config layers, CLI
+- **Status:** Actively developed; latest release **v0.26.0**. The engine, block/forms/config layers, CLI
   generators, site kits, and the docs app are implemented and unit-tested. Some admin-UI and visual surfaces
   are verified via the Playwright/wp-env workflow and are noted where browser verification is still pending —
   see `PROGRESS.md` for the authoritative, module-by-module status.

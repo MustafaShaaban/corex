@@ -4,6 +4,44 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.26.0] — 2026-06-14
+
+Closeout + design language — reconciling the platform claims with the code (spec 053) and turning the thin DLS
+catalog into a full, native-first Design Language System (spec 054).
+
+### Added
+
+- **make:site `--starter` slice (053):** `wp corex make:site --starter` scaffolds a runnable example slice
+  (model → repository → service → controller-on-envelope → block → option → test + `REMOVE-EXAMPLE.md`) plus a
+  starter block theme (`@wordpress/scripts` build, `Assets` helper); `--minimal` and the default omit it.
+- **Data admin UI (053):** the `corex-config` Data screen now ships search, source/form filter, sortable headers,
+  pagination, a CSV-export button, a detail drawer, and loading/error/empty states over the existing query/detail
+  routes (built on pure `dataClient.js` helpers).
+- **Captcha Test button (053):** `corex-captcha` ships `captcha-admin.js` wiring the Test button to
+  `POST /captcha/test` with a classified, secret-safe result message; Insights "Run check" surfaces failures.
+- **Foundations tokens (054):** `theme.json` gains the genuinely-missing `custom.motion` (duration + easing),
+  `custom.focus` (width/color/offset), and `custom.z` (z-index scale) groups as runtime CSS custom properties.
+- **`corex/modal` block (054):** the one justified new block — a native `<dialog>` with `aria-labelledby`,
+  focus-trap, ESC/backdrop close and focus return; degrades without JS; token-only (consumes the focus + z tokens).
+- **DLS block styles + skeleton (054):** `register_block_style` entries for card / section / striped-table /
+  button-secondary / button-ghost / empty-state, plus a token-only `.corex-skeleton` loading utility.
+- **Patterns + page templates (054):** section-header, content-split, stats, FAQ, and latest-news patterns
+  (composing only real blocks, drift-tested) + `page-landing` / `page-contact` / `page-form` FSE templates.
+- **Design-system documentation (054):** the `DesignSystemCatalog` expanded to the full six-category taxonomy with
+  a `mechanism` field (drift-checked both directions), a published gap analysis, and a docs-app design-system
+  section (foundations + a page per component with when-to-use / when-not-to-use + patterns + templates).
+
+### Changed
+
+- **Honest README + reconciled status (053):** the README was rewritten as a truthful entry point and stale
+  PROGRESS / 045 / 049 completion checkboxes were corrected; a documentation-in-every-PR rule (§D.5) was added.
+
+### Notes
+
+- 563 Pest + 55 Jest green; docs build 268 pages. Guard Gate clean across both specs. DECISIONS #87–#88. The
+  native-first finding (most candidate "components" are WordPress core blocks or Corex block styles, not new
+  blocks) is the deliberate scope outcome. The modal's visual a11y sweep runs in the spec-052 E2E workflow.
+
 ## [0.25.0] — 2026-06-14
 
 The "platform" release — the leap from a framework to a platform you build client sites on with a team + AI agents
