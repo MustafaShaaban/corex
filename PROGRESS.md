@@ -20,10 +20,23 @@ built**, and some docs/checkboxes claimed completeness the code does not support
 - **README.md** — said "bootstrap stage / no framework code yet" (false) — **rewritten** as an honest entry point.
 
 **Remediation (approved 2026-06-14): three forward specs, spec-first.**
-- **`053-platform-roadmap-closeout`** — fix the false claims + finish the tails (US1 docs honesty ✅ in progress ·
-  US2 Data UI · US3 captcha/insights test buttons · US4 `make:site --starter`/`--minimal`). Full Spec Kit flow
-  done (spec/plan/research/data-model/contracts/quickstart/tasks; Constitution PASS). **▶ NEXT: implement
-  053 US1→US4** on `feature/053-platform-roadmap-closeout`.
+- **`053-platform-roadmap-closeout`** — ✅ **US1–US4 IMPLEMENTED + green** on `feature/053-platform-roadmap-closeout`
+  (full Spec Kit flow; Constitution PASS; Guard Gate wp/clean-code/test/docs clean per story). **551 Pest + 52
+  Jest green** (was 544 + 40).
+  - **US1 docs honesty** — README rewritten (honest entry point); PROGRESS + 045/049 stale checkboxes reconciled
+    (049 T008 was a false `[x]`); §D.5 documentation-in-every-PR rule added; stale-phrase sweep.
+  - **US2 Data admin UI** — `corex-config` Data screen rebuilt over pure `dataClient.js` helpers (+8 Jest):
+    search, source/form filter, sortable headers, pagination, CSV Export button (current view, 5000-row note),
+    detail drawer, loading/error/empty states. Localized `exportUrl`/`exportNonce`; `data.css`.
+  - **US3 test buttons** — `corex-captcha` ships `captcha-admin.js` (+4 Jest): the Test button → `POST
+    /captcha/test`, classified secret-safe message; `insights.js` failed-run now surfaces the error (no silent
+    revert).
+  - **US4 `make:site --starter`** — `packages/cli/stubs/starter/` example slice (model→repo→service→controller-
+    on-envelope→block→option→test + REMOVE-EXAMPLE.md) + starter-theme assets (wp-scripts build, Assets helper);
+    `SiteScaffolder` `starter` option + `MakeCommand` `--starter`/`--minimal` (+7 Pest, php -l over every file).
+  - Docs updated (data/client-site/configuration guides + corex-config/corex-captcha/cli READMEs). DECISIONS #87.
+  - **▶ Env-gated remainder:** executing the spec-052 Playwright console-clean + Data-flow E2E (needs Apache/
+    wp-env + a browser; the suites are ready in `tests/e2e/`). **▶ NEXT: push → PR → CI → merge; then spec 054.**
 - **`054-corex-full-dls`** — full DLS inventory → gap analysis → roadmap → build (after 053).
 - **`055-documentation-productization`** — if docs scope warrants a separate spec.
 

@@ -186,15 +186,15 @@ reserved name refused); `wp corex make:site Acme --starter` runs live (env-gated
 
 ## Phase 7: Polish & cross-cutting
 
-- [ ] T034 [P] Update docs-app guides for the shipped surfaces: `guides/data.md` (search/filter/sort/export/
+- [X] T034 [P] Update docs-app guides for the shipped surfaces: `guides/data.md` (search/filter/sort/export/
   detail), `guides/configuration.md` + `guides/insights.md` (test buttons), `guides/client-site.md` (the
   `--starter` slice + "how to remove"); plus `plugins/corex-config/README.md`, `addons/corex-captcha/README.md`,
   `packages/cli/README.md`. (FR-003 rule applied to this very PR) — `docs-guard` clean.
-- [ ] T035 Reuse the spec-052 Playwright + console sweep (`tests/e2e/`): Data flow + settings/insights buttons
+- [~] T035 Reuse the spec-052 Playwright + console sweep (`tests/e2e/`): Data flow + settings/insights buttons
   console-clean. Execute under wp-env if available; otherwise record exactly what remains env-gated. (SC-007)
-- [ ] T036 Update `PROGRESS.md` (053 entry, truthful) + `DECISIONS.md` (#87 — the closeout + the feature-PR docs
+- [X] T036 Update `PROGRESS.md` (053 entry, truthful) + `DECISIONS.md` (#87 — the closeout + the feature-PR docs
   rule); end with the NEXT STEP block. Stamp no version (release is a separate step).
-- [ ] T037 Full-suite verification: `composer test` + `npm run test:js` green; record counts. Then commit per
+- [X] T037 Full-suite verification: `composer test` + `npm run test:js` green; record counts. Then commit per
   story (Conventional Commits) → push → PR into `develop` → CI green.
 
 ---

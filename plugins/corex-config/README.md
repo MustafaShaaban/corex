@@ -47,8 +47,11 @@ Companion to the setup wizard (which composes a whole kit at once).
 ## Data screen (Corex → Data)
 
 A **Corex → Data** admin screen shows your form **submissions** — and any registered Corex custom-table data
-source — in a `@wordpress/dataviews` table (sortable, paginated, with a delete action). The data is served by
-the cap-gated `corex/v1/data/<source>` REST routes (`manage_options`; deletes require a nonce).
+source — with a search box, a source/form filter, sortable column headers, pagination, a **CSV Export** button
+(the current filtered view, bounded to 5000 rows), a per-record **detail drawer**, and distinct loading / error /
+empty states (spec 053 US2; it supersedes the earlier minimal DataViews table). The data is served by the
+cap-gated `corex/v1/data/<source>` REST routes (`manage_options`; deletes + export require a nonce); the export
+streams from the `corex_data_export` `admin-post` handler.
 
 It is built on a pure `DataSource` abstraction (`key/label/columns/rows/total/delete`): the submissions source is
 the reference implementation (`SubmissionsSource` + the `WpSubmissionsReader` boundary); an add-on registers its
