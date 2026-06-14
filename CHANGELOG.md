@@ -4,6 +4,39 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.25.0] — 2026-06-14
+
+The "platform" release — the leap from a framework to a platform you build client sites on with a team + AI agents
+(roadmap specs 043–052, all merged via PR/CI).
+
+### Added
+
+- **Response contract + frontend runtime (043):** `Corex\Http\ResponseEnvelope` + `EnvelopeResponder` and a
+  buildless `window.Corex` runtime (api/forms/loading/notices); forms + Insights + Data migrated onto it.
+- **Admin control panel (044):** per-domain status cards + an onboarding checklist; captcha config + a Test
+  verification action; specific PageSpeed diagnostics (local-URL detection); rich add-on manifests; authorship.
+- **Data management pro (045):** search / filter / sort / paginate, CSV export, a readable detail view, and a
+  `SubmissionStore` storage seam.
+- **REST resources & headless (046):** `wp corex make:api-resource`, `routes:list`, `api:docs` (OpenAPI), headless
+  docs (nonce / application-password auth).
+- **Asset manager & environments (047):** `AssetManager` url/path/version helpers with per-environment cache-busting
+  (filemtime / manifest hash / version) + `assets:doctor` / `cache:clear`.
+- **Media optimization (048):** an optional `corex-media` add-on — WebP on upload (original preserved) + an
+  optimized `<picture>` helper (lazy / async / LCP / srcset) + an advisory image-support probe.
+- **make:site client-site platform (049):** `wp corex make:site` scaffolds a correctly-namespaced client plugin +
+  theme + governance (AGENTS/CLAUDE, the client-only edit boundary, one-feature-one-PR, AI/cache `.gitignore`).
+- **Team ops & distribution (050):** `compliance:check` (enforces the client/framework boundary), `package:update`
+  (the spec-034 release manifest), `docs:sync` / `docs:serve`, and Azure DevOps deployment docs.
+- **Design Language System (051):** a drift-checked catalog (Components/Blocks/Patterns/Templates/Guidelines) in
+  `corex-ui` + new `corex/alert` + `corex/badge` components.
+- **Visual & E2E in CI (052):** a Playwright E2E workflow + a console-error sweep (the item-20 gate) + the
+  browser-verification Definition of Done.
+
+### Notes
+
+- 544 Pest + 40 Jest green; Guard Gate clean across all ten specs. DECISIONS #77–#86. Browser/live behaviour runs in
+  the new E2E workflow (nightly + on-demand) and locally via wp-env.
+
 ## [0.24.0] — 2026-06-13
 
 Connectivity — making kit activation visible and transparent, from a user-driven deep review that found the

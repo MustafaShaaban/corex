@@ -4,6 +4,32 @@
 > Updated at the end of every working session.
 
 ---
+## ▶ RESUME HERE (2026-06-14) — 🎉 ROADMAP 043–052 COMPLETE — RELEASED v0.25.0
+
+**The entire "platform" roadmap (specs 043–052) is delivered, merged, and released.** All ten built spec-first
+via the full Spec Kit flow (specify→plan→tasks→implement), each TDD + Guard Gate clean + CI-verified merged via its
+own PR (#20–#29), then promoted `develop`→`main` as **Release v0.25.0** (version-stamped, tagged, GitHub release).
+
+| Spec | What shipped | PR |
+|---|---|---|
+| 043 response-runtime-kit | `ResponseEnvelope` + `EnvelopeResponder` + buildless `window.Corex` runtime | #20 |
+| 044 admin-control-panel | status cards + onboarding checklist; captcha + PSI diagnostics; rich add-on manifests; authorship | #21 |
+| 045 data-management-pro | search/filter/sort/paginate + CSV export + detail view + `SubmissionStore` seam | #22 |
+| 046 rest-resources-headless | `make:api-resource` + `routes:list` + `api:docs` (OpenAPI) + headless docs | #23 |
+| 047 asset-manager | `AssetManager` url/path/version + env cache-busting + `assets:doctor`/`cache:clear` | #24 |
+| 048 media-optimization | `corex-media` add-on — WebP on upload + `<picture>` helper + image probe | #25 |
+| 049 make-site | client-site platform — plugin+theme+governance generator (the agency capstone) | #26 |
+| 050 team-ops-distribution | `compliance:check` + `package:update` + `docs:sync`/`serve` + Azure deploy docs | #27 |
+| 051 design-language-system | drift-checked DLS catalog + `corex/alert` + `corex/badge` (corex-ui home) | #28 |
+| 052 visual-e2e-ci | Playwright E2E + console-error sweep workflow + browser-verification DoD | #29 |
+
+**Tests: 544 Pest + 40 Jest green.** DECISIONS #77–#86. ~40% of the original 23-point brief was already shipped in
+029–039 (recognised up front and surfaced via docs, not re-spec'd). **Env-gated remainder (now a CI gate, not an
+open excuse):** the spec-052 E2E/console workflow runs nightly + on-demand via wp-env (+ the browser-gated UI tails:
+043/044's test buttons, 045's React Data controls, the 049 starter slice — documented follow-ups).
+**▶ Next:** none mandated — the roadmap is complete. Pick up new work or the documented follow-ups.
+
+---
 ## ▶ RESUME HERE (2026-06-13, latest) — roadmap 043–052: 043+044 MERGED, 045 backend done
 
 **Specs 043 + 044 are COMPLETE + MERGED to develop** (PRs #20, #21, CI green). See their detailed entries below.
