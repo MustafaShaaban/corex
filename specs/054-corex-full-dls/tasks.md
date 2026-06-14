@@ -38,19 +38,19 @@ block-style/core/deferred entries `block:null`); a gap-analysis doc classifies e
 
 ### Tests first (TDD)
 
-- [ ] T004 [P] [US1] Extend `tests/Unit/Ui/DesignSystemCatalogTest.php`: assert all six categories non-empty;
+- [X] T004 [P] [US1] Extend `tests/Unit/Ui/DesignSystemCatalogTest.php`: assert all six categories non-empty;
   `blockNames()` ⊆ the registered `corex/*` UI blocks **and** every registered corex-ui UI block is catalogued;
   `mechanism` present; block-style/core/runtime/deferred entries carry `block:null`. (contracts/catalog.md)
 
 ### Implementation
 
-- [ ] T005 [US1] Expand `addons/corex-ui/src/DesignSystemCatalog.php`: add the `mechanism` field; enumerate
+- [X] T005 [US1] Expand `addons/corex-ui/src/DesignSystemCatalog.php`: add the `mechanism` field; enumerate
   Foundations (color/type/spacing/shadow/radius/layout/motion/focus/z), Components (atoms incl. the modal +
   block-style entries tagged by mechanism), Blocks (the section blocks), Patterns, Templates, Guidelines; keep
   drift-safe (corex-block entries only for registered blocks). (FR-001, FR-003)
-- [ ] T006 [P] [US1] Publish the gap analysis as `docs-app/src/content/docs/design-system/gap-analysis.md`
+- [X] T006 [P] [US1] Publish the gap analysis as `docs-app/src/content/docs/design-system/gap-analysis.md`
   (the research D2 table: candidate → decision → location → rationale; every candidate classified). (FR-002)
-- [ ] T007 [US1] **Guard Gate (US1)**: `clean-code-guard` + `test-guard` (the catalog test) + `docs-guard` (the
+- [X] T007 [US1] **Guard Gate (US1)**: `clean-code-guard` + `test-guard` (the catalog test) + `docs-guard` (the
   gap-analysis page). Fix findings. (FR-017)
 
 **Checkpoint**: the catalog is the full, drift-checked spine; the build list is evidence-published.
@@ -65,17 +65,18 @@ block-style/core/deferred entries `block:null`); a gap-analysis doc classifies e
 
 ### Implementation
 
-- [ ] T008 [US2] Add `settings.custom.motion` (duration fast/base/slow + easing standard/emphasized),
+- [X] T008 [US2] Add `settings.custom.motion` (duration fast/base/slow + easing standard/emphasized),
   `settings.custom.focus` (width/color→accent/offset), and `settings.custom.z` (base/dropdown/sticky/overlay/
   modal/toast) to `theme/theme.json` — runtime CSS custom properties, no build-time tokens. (FR-005,
   contracts/foundations-tokens.md)
-- [ ] T009 [P] [US2] Author `docs-app/src/content/docs/design-system/foundations.md`: every token group (existing
+- [X] T009 [P] [US2] Author `docs-app/src/content/docs/design-system/foundations.md`: every token group (existing
   color/type/spacing/shadow/radius/layout + new motion/focus/z) with its CSS variable, allowed values, usage
   rule; plus grid/layout, icon guidance, motion guidance, focus states, RTL, accessibility guideline pages
   (FR-006, FR-007).
-- [ ] T010 [US2] Apply a focus/motion token in one existing block's SCSS as proof of consumption (e.g. a token
-  focus ring), rebuild; visually unchanged, now token-driven. (FR-011)
-- [ ] T011 [US2] **Guard Gate (US2)**: `wp-guard` (token-only, no hardcoded values) + `docs-guard` (foundations
+- [~] T010 [US2] Apply a focus/motion token in one existing block's SCSS as proof of consumption. **DEFERRED to
+  US3: `corex/modal` consumes the focus + z-index tokens (its natural proof) — avoids rebuilding an existing
+  block just for a token swap.** (FR-011)
+- [X] T011 [US2] **Guard Gate (US2)**: `wp-guard` (token-only, no hardcoded values) + `docs-guard` (foundations
   pages) + theme.json validity. Fix findings. (FR-017)
 
 **Checkpoint**: foundations whole + documented; components can now consume motion/focus/z.
