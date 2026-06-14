@@ -4,7 +4,30 @@
 > Updated at the end of every working session.
 
 ---
-## ▶ RESUME HERE (2026-06-14, latest) — spec 054 full DLS: planned + US1/US2 shipped, US3/US4 next
+## ▶ RESUME HERE (2026-06-14, latest) — spec 054 full DLS: US1–US4 ALL SHIPPED, ready to push/PR
+
+**Spec 054 (full DLS) is implemented end-to-end** on `feature/054-dls-components` — all four user stories done +
+green. US1 (catalog + gap analysis) and US2 (foundations tokens + docs) shipped earlier; US3 (`corex/modal` +
+block styles + skeleton) is committed (`97d610f`); **US4 (patterns + templates + docs-app design-system section)
+is complete and committed in this session.**
+
+- **✅ US4 (patterns/templates/docs) DONE.** Added 5 section patterns to `PatternLibrary` — section-header,
+  content-split (on `core/media-text`), stats (on `corex/stat`), FAQ (on `corex/accordion`), latest-news (on
+  `corex/posts`) — token-only/RTL/i18n, with a **pattern-drift test** that fails if any pattern composes a block
+  that does not exist. Added 3 FSE page templates (`page-landing`/`page-contact`/`page-form`, registered in
+  `theme.json` `customTemplates`). Authored the docs-app **Design System section** (index + components +
+  patterns + templates pages, each component with when-to-use / when-not-to-use; sidebar wired). README +
+  design-system guide updated (§D.5).
+- **Verification:** **563 Pest** (+2 PatternLibrary) · **55 Jest (15 suites)** · **docs build 268 pages** (+4),
+  no broken links. **Guard Gate clean:** wp-guard (patterns/templates token-only/escaped/RTL) + test-guard
+  (drift test asserts real output, no mocks) + docs-guard (every block/style/attribute/template verified vs
+  source). DECISIONS #88.
+- **▶ NEXT:** push `feature/054-dls-components` → PR into `develop` → CI green → merge; then the v0.x release
+  batch (054). **Env-gated tail:** the spec-052 Playwright modal sweep (open/ESC/backdrop/focus-return, RTL,
+  console-clean) — suites ready in `tests/e2e/`, needs Apache/wp-env + a browser.
+
+---
+## ▶ RESUME HERE (2026-06-14) — spec 054 full DLS: planned + US1/US2 shipped, US3/US4 done after
 
 **Spec 053 is DONE + MERGED** (PR #30 → develop; see the correction entry below). **Spec 054 (full DLS) is
 planned and its first two stories are implemented** on `feature/054-corex-full-dls`.

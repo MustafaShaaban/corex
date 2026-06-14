@@ -147,5 +147,10 @@
     "templateParts": [
         { "name": "header", "title": "Header", "area": "header" },
         { "name": "footer", "title": "Footer", "area": "footer" }
+    ],
+    "customTemplates": [
+        { "name": "page-landing", "title": "Landing page", "postTypes": ["page"] },
+        { "name": "page-contact", "title": "Contact page", "postTypes": ["page"] },
+        { "name": "page-form", "title": "Form page", "postTypes": ["page"] }
     ]
 }

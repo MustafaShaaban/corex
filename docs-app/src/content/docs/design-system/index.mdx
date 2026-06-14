@@ -1,0 +1,32 @@
+---
+title: Design Language System
+description: Corex's WordPress-native design system — foundations, components, patterns, templates, and guidelines, organized as one navigable taxonomy.
+---
+
+Corex ships a **Design Language System (DLS)**: one organized, documented vocabulary for building sites — so a
+developer or designer always knows what exists, how to use it, and when not to. It is **WordPress-native** by
+principle: a custom block exists only where Corex needs reusable server-rendered data, accessibility behavior, or
+a repeated agency pattern core cannot express. Everything else is a documented core block, a Corex block style, a
+design token, or the runtime.
+
+## The taxonomy
+
+| Layer | What it is | Where |
+|---|---|---|
+| [Foundations](./foundations) | Design tokens (color, type, spacing, shadow, radius, layout, motion, focus, z-index) + guidelines (RTL, a11y, focus, motion, icons) | `theme.json` + docs |
+| [Components](./components) | UI atoms — alert, badge, breadcrumbs, modal, card, button, … | corex-ui (blocks + block styles), core blocks, runtime |
+| [Patterns](./patterns) | Composed sections — hero, features, stats, FAQ, CTA, contact, … | corex-ui `PatternLibrary` |
+| [Templates](./templates) | FSE page types — landing, contact, form, plus the defaults | the theme |
+| [Gap analysis](./gap-analysis) | The evidence: every candidate UI element → one decision | docs |
+
+The catalog (`Corex\Ui\DesignSystemCatalog`) enumerates this taxonomy in code and is **drift-checked** against the
+real registered `corex/*` blocks — it can never list a Corex block that does not exist.
+
+## Principles
+
+- **Token-only** — every component consumes `theme.json` CSS custom properties; a rebrand is configuration, not a
+  recompile (`brand.json` overrides at runtime).
+- **RTL-first** — logical CSS properties; Arabic layouts are correct by default.
+- **Accessible (WCAG 2.2 AA)** — state conveyed beyond color, keyboard-operable, visible focus, correct ARIA.
+- **Native-first** — see the [gap analysis](./gap-analysis) for what is a core block, a block style, or a new
+  Corex block, and why.

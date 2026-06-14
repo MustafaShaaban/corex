@@ -24,6 +24,7 @@ are composed of these units. Optional add-on; requires `corex-core` and the `cor
 | `corex/team` | A responsive grid of `members[]` — media-library photo, `name`/`role`/`bio`; nameless skipped |
 | `corex/gallery` | A responsive CSS grid of `images[]` from the media library, alt text + optional captions |
 | `corex/tabs` | Tabbed content from `tabs[]` — a CSS-only accessible widget with **no view JavaScript** |
+| `corex/modal` | An accessible dialog — a trigger + native `<dialog>` (focus-trap, ESC, backdrop), `title`/`triggerLabel`/`content`; degrades without JS (spec 054) |
 
 Each is server-rendered, escaped, and token-styled; its CSS loads only where the block renders
 (declared in `block.json`). The component blocks (`stat`/`testimonial`/`pricing`/`accordion` plus the
@@ -35,13 +36,28 @@ lazy loading), and `tabs` ships **zero front-end JavaScript** (a CSS `:checked` 
 `corex/form` block **selects a form from a dropdown** (the cap-gated `corex/v1/forms` route), not a typed slug.
 (Specs 029, 035.)
 
+## Block styles (spec 054)
+
+Appearance-only variants registered via `register_block_style()` (no new blocks) on core blocks, in one
+token-only stylesheet that loads with the block: **Card** / **Section** / **Empty state** (`core/group`),
+**Striped** (`core/table`), **Secondary** / **Ghost** (`core/button`). Plus a `.corex-skeleton` loading
+utility. See the [gap analysis](../../docs-app/src/content/docs/design-system/gap-analysis.md) for why these are
+styles, not blocks.
+
 ## Section patterns
 
-Under the **Corex** inserter category: **hero, features, call-to-action, testimonial, contact**.
-The contact pattern composes the `corex/form` contact block (spec 007). Every pattern is styled
-only with `theme.json` presets (color slugs + `var:preset` spacing), uses logical CSS (RTL-correct),
-is translation-ready, and is intentionally **neutral** — a client brand restyles it via `brand.json`
-with no markup edits.
+Under the **Corex** inserter category: **hero, features, call-to-action, testimonial, contact**, plus the spec-054
+**section-header, content-split, stats, FAQ, latest-news**. The contact pattern composes the `corex/form` contact
+block (spec 007); stats/FAQ/news compose `corex/stat`/`corex/accordion`/`corex/posts`. Every pattern is styled
+only with `theme.json` presets (color slugs + `var:preset` spacing), uses logical CSS (RTL-correct), is
+translation-ready, and is intentionally **neutral** — a client brand restyles it via `brand.json` with no markup
+edits.
+
+## Design Language System
+
+`Corex\Ui\DesignSystemCatalog` enumerates the full six-category taxonomy (Foundations, Components, Blocks,
+Patterns, Templates, Guidelines) with a `mechanism` per entry, **drift-checked** against the real registered
+`corex/*` blocks. Full documentation: the docs-app [Design System section](../../docs-app/src/content/docs/design-system/).
 
 ## Manifest
 

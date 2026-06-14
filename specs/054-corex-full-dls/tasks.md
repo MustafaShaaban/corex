@@ -17,14 +17,14 @@ D2) — no element is built that core already covers.**
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirm baseline green: `vendor/bin/pest`, `npm run test:js`, `cd docs-app && npm run build`. Record
+- [X] T001 Confirm baseline green: `vendor/bin/pest`, `npm run test:js`, `cd docs-app && npm run build`. Record
   counts in the PR. No code change.
-- [ ] T002 [P] Re-read the gap analysis (research.md D2) + the existing `DesignSystemCatalog`, `PatternLibrary`,
+- [X] T002 [P] Re-read the gap analysis (research.md D2) + the existing `DesignSystemCatalog`, `PatternLibrary`,
   and `theme/theme.json` `settings.custom` so every task references real names. No code change.
 
 ## Phase 2: Foundational (blocking prerequisites)
 
-- [ ] T003 Confirm no new infrastructure is needed (no new plugin/route/schema). The corex-ui block-style
+- [X] T003 Confirm no new infrastructure is needed (no new plugin/route/schema). The corex-ui block-style
   registrar (`BlockStyles`) is introduced in US3; the catalog already exists. Minimal.
 
 ---
@@ -128,20 +128,20 @@ docs-app design-system section builds with no broken links.
 
 ### Tests first (TDD)
 
-- [ ] T020 [P] [US4] Extend `tests/Unit/Ui/PatternLibraryTest.php`: the new patterns (section-header, content-
+- [X] T020 [P] [US4] Extend `tests/Unit/Ui/PatternLibraryTest.php`: the new patterns (section-header, content-
   split, stats, FAQ, posts-news) compose only registered blocks/parts (pattern-accuracy). (FR-012)
 
 ### Implementation
 
-- [ ] T021 [US4] Add the patterns to `addons/corex-ui/src/Patterns/PatternLibrary.php` (section-header, content-
+- [X] T021 [US4] Add the patterns to `addons/corex-ui/src/Patterns/PatternLibrary.php` (section-header, content-
   split on core/media-text, stats on corex/stat, FAQ on corex/accordion, posts-news on corex/posts) — token-only,
   RTL. (FR-012, D6)
-- [ ] T022 [P] [US4] Add the page-type templates to `theme/templates/` (`page-landing.html`, `page-contact.html`,
+- [X] T022 [P] [US4] Add the page-type templates to `theme/templates/` (`page-landing.html`, `page-contact.html`,
   `page-form.html`) — valid FSE, parts/patterns only, no logic. (FR-013)
-- [ ] T023 [US4] Author the docs-app **design-system section** (`docs-app/src/content/docs/design-system/`):
+- [X] T023 [US4] Author the docs-app **design-system section** (`docs-app/src/content/docs/design-system/`):
   index, components/* (a page per component with attributes + when-to-use / when-not-to-use), patterns,
   templates, guidelines; link to the catalog entries; sidebar wiring. (FR-014)
-- [ ] T024 [US4] **Guard Gate (US4)**: `docs-guard` (the section) + `test-guard` (pattern-accuracy) + `wp-guard`
+- [X] T024 [US4] **Guard Gate (US4)**: `docs-guard` (the section) + `test-guard` (pattern-accuracy) + `wp-guard`
   (patterns/templates token-only/RTL). `cd docs-app && npm run build` green, no broken links. (FR-017)
 
 **Checkpoint**: composition + documentation complete; the DLS is navigable end to end.
@@ -150,14 +150,15 @@ docs-app design-system section builds with no broken links.
 
 ## Phase 7: Polish & cross-cutting
 
-- [ ] T025 [P] Update `addons/corex-ui/README.md` (the full DLS overview + the catalog) and the existing
+- [X] T025 [P] Update `addons/corex-ui/README.md` (the full DLS overview + the catalog) and the existing
   `docs-app/.../guides/design-system.md` (link into the new section), per §D.5. `docs-guard` clean.
-- [ ] T026 Reuse the spec-052 Playwright + console sweep for the modal (open/ESC/backdrop/focus-return, RTL,
+- [~] T026 Reuse the spec-052 Playwright + console sweep for the modal (open/ESC/backdrop/focus-return, RTL,
   console-clean) and the new patterns/templates. Execute under wp-env if available; else record env-gated.
-- [ ] T027 Update `PROGRESS.md` (054 entry) + `DECISIONS.md` #88 (full DLS — native-first, the modal-only new
+  **ENV-GATED:** suites ready in `tests/e2e/`; execution needs Apache/wp-env + a browser (not available here).
+- [X] T027 Update `PROGRESS.md` (054 entry) + `DECISIONS.md` #88 (full DLS — native-first, the modal-only new
   block, the token gaps). NEXT STEP.
-- [ ] T028 Full-suite verification: `vendor/bin/pest` + `npm run test:js` + docs build green; record counts.
-  Commit per story → push → PR into `develop` → CI green.
+- [~] T028 Full-suite verification: `vendor/bin/pest` (563) + `npm run test:js` (55, 15 suites) + docs build (268
+  pages) green. Commit per story → push → PR into `develop` → CI green. **(push/PR pending — last step.)**
 
 ---
 
