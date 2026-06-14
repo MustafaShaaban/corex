@@ -4,11 +4,11 @@
  * cap+nonce-gated run endpoint and re-renders that card. No build step — plain DOM, accessible.
  */
 ( function ( wp, data ) {
-	if ( ! wp || ! wp.apiFetch || ! data ) {
+	if ( ! window.Corex || ! window.Corex.api || ! data ) {
 		return;
 	}
 
-	const apiFetch = wp.apiFetch;
+	const api = window.Corex.api;
 	const { restUrl, nonce, providers } = data;
 	const root = document.getElementById( 'corex-insights-app' );
 	if ( ! root ) {
@@ -93,19 +93,12 @@
 
 	function run( id ) {
 		render( id, lastResult( id ), true );
-		apiFetch( {
-			url: restUrl + '/run',
-			method: 'POST',
-			headers: { 'X-WP-Nonce': nonce },
-			data: { provider: id },
-		} )
-			.then( ( res ) => {
-				results[ id ] = res && res.result ? res.result : null;
-				render( id, results[ id ], false );
-			} )
-			.catch( () => {
-				render( id, lastResult( id ), false );
-			} );
+		// Corex.api always resolves (never throws); an error envelope leaves the last result.
+		api.post( restUrl + '/run', { provider: id }, { nonce } ).then( ( result ) => {
+			const payload = result.envelope.ok ? result.envelope.data : null;
+			results[ id ] = payload && payload.result ? payload.result : lastResult( id );
+			render( id, results[ id ], false );
+		} );
 	}
 
 	const results = {};
@@ -113,12 +106,11 @@
 
 	providers.forEach( card );
 
-	apiFetch( { url: restUrl, headers: { 'X-WP-Nonce': nonce } } )
-		.then( ( res ) => {
-			( res && res.results ? res.results : [] ).forEach( ( r ) => {
-				results[ r.provider ] = r;
-				render( r.provider, r, false );
-			} );
-		} )
-		.catch( () => {} );
+	api.get( restUrl, { nonce } ).then( ( result ) => {
+		const payload = result.envelope.ok ? result.envelope.data : null;
+		( payload && payload.results ? payload.results : [] ).forEach( ( r ) => {
+			results[ r.provider ] = r;
+			render( r.provider, r, false );
+		} );
+	} );
 } )( window.wp, window.corexInsights );

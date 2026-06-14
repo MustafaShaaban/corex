@@ -3,11 +3,11 @@
  * Plugin Name:       Corex Kit — WooCommerce
  * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       The WooCommerce store starter kit — a Blueprint and shop composition, gated behind the woocommerce_kit feature flag and WooCommerce's presence. Never a hard dependency: it self-disables when Woo is inactive.
- * Version:           0.24.0
+ * Version:           0.25.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
- * Author:            Mustafa Shaaban + team
+ * Author:            Mustafa Shaaban
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       corex
@@ -23,7 +23,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_KIT_WOO_VERSION')) {
-    define('COREX_KIT_WOO_VERSION', '0.24.0');
+    define('COREX_KIT_WOO_VERSION', '0.25.0');
 }
 
 (static function (): void {

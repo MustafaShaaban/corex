@@ -3,11 +3,11 @@
  * Plugin Name:       Corex Mail
  * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       The Corex transactional email engine — code-defined templates with safe merge variables, a secured send pipeline (header-injection guard + recipient validation), a driver abstraction, and an audit log. Built on the corex-core event seam + data layer.
- * Version:           0.24.0
+ * Version:           0.25.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
- * Author:            Mustafa Shaaban + team
+ * Author:            Mustafa Shaaban
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       corex
@@ -24,7 +24,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_EMAIL_VERSION')) {
-    define('COREX_EMAIL_VERSION', '0.24.0');
+    define('COREX_EMAIL_VERSION', '0.25.0');
 }
 if (! defined('COREX_EMAIL_PATH')) {
     define('COREX_EMAIL_PATH', plugin_dir_path(__FILE__));

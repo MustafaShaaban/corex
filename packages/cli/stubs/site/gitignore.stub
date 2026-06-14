@@ -1,0 +1,22 @@
+# Dependencies / build
+/vendor/
+/node_modules/
+/**/build/
+/**/dist/
+
+# Environment / secrets (never commit)
+.env
+.env.*
+wp-config.php
+
+# Local AI / agent history + cache (private — NOT committed; the project memory is)
+.corex/docs/
+.corex/cache/
+.corex/local-notes/
+.ai/
+.claude/local/
+.codex/local/
+
+# OS / editor
+.DS_Store
+Thumbs.db

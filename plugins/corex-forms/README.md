@@ -148,6 +148,12 @@ nonce  →  form-shaped sanitize  →  throttle  →  FormSubmissionService
 - **Honeypot** — a hidden `corex_hp` field; if filled, the submission is rejected silently (422).
 - **Validation** — on failure, a 422 carries the per-field error keys; nothing is stored or dispatched.
 
+The response follows the framework-wide envelope (`Corex\Http\ResponseEnvelope`, spec 043): a success is
+`{ ok:true, message, data:{ values } }`, a validation failure is `{ ok:false, code:'validation_failed',
+message, errors }`. The success body also mirrors `values` at the top level for one release (backward
+compatibility); new code should read `data.values`. The browser side is handled by the shared
+`window.Corex` runtime — see the corex-core README and the docs-app "frontend runtime" guide.
+
 A fully valid submission dispatches a `FormSubmittedEvent` (slug + validated values) to the
 form's listeners. The default set:
 

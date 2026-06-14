@@ -4,6 +4,132 @@
 > Updated at the end of every working session.
 
 ---
+## ▶ RESUME HERE (2026-06-14) — 🎉 ROADMAP 043–052 COMPLETE — RELEASED v0.25.0
+
+**The entire "platform" roadmap (specs 043–052) is delivered, merged, and released.** All ten built spec-first
+via the full Spec Kit flow (specify→plan→tasks→implement), each TDD + Guard Gate clean + CI-verified merged via its
+own PR (#20–#29), then promoted `develop`→`main` as **Release v0.25.0** (version-stamped, tagged, GitHub release).
+
+| Spec | What shipped | PR |
+|---|---|---|
+| 043 response-runtime-kit | `ResponseEnvelope` + `EnvelopeResponder` + buildless `window.Corex` runtime | #20 |
+| 044 admin-control-panel | status cards + onboarding checklist; captcha + PSI diagnostics; rich add-on manifests; authorship | #21 |
+| 045 data-management-pro | search/filter/sort/paginate + CSV export + detail view + `SubmissionStore` seam | #22 |
+| 046 rest-resources-headless | `make:api-resource` + `routes:list` + `api:docs` (OpenAPI) + headless docs | #23 |
+| 047 asset-manager | `AssetManager` url/path/version + env cache-busting + `assets:doctor`/`cache:clear` | #24 |
+| 048 media-optimization | `corex-media` add-on — WebP on upload + `<picture>` helper + image probe | #25 |
+| 049 make-site | client-site platform — plugin+theme+governance generator (the agency capstone) | #26 |
+| 050 team-ops-distribution | `compliance:check` + `package:update` + `docs:sync`/`serve` + Azure deploy docs | #27 |
+| 051 design-language-system | drift-checked DLS catalog + `corex/alert` + `corex/badge` (corex-ui home) | #28 |
+| 052 visual-e2e-ci | Playwright E2E + console-error sweep workflow + browser-verification DoD | #29 |
+
+**Tests: 544 Pest + 40 Jest green.** DECISIONS #77–#86. ~40% of the original 23-point brief was already shipped in
+029–039 (recognised up front and surfaced via docs, not re-spec'd). **Env-gated remainder (now a CI gate, not an
+open excuse):** the spec-052 E2E/console workflow runs nightly + on-demand via wp-env (+ the browser-gated UI tails:
+043/044's test buttons, 045's React Data controls, the 049 starter slice — documented follow-ups).
+**▶ Next:** none mandated — the roadmap is complete. Pick up new work or the documented follow-ups.
+
+---
+## ▶ RESUME HERE (2026-06-13, latest) — roadmap 043–052: 043+044 MERGED, 045 backend done
+
+**Specs 043 + 044 are COMPLETE + MERGED to develop** (PRs #20, #21, CI green). See their detailed entries below.
+- **043** — `ResponseEnvelope` + `EnvelopeResponder` + buildless `window.Corex` runtime; forms/Insights/Data on it.
+- **044** — admin control panel (status cards + onboarding checklist), captcha + PSI diagnostics, rich add-on
+  manifests, authorship cleanup. 461 Pest + 40 Jest. DECISIONS #77/#78.
+
+**Spec 045 (data-management pro) — BACKEND DONE + TESTED (uncommitted→checkpoint commit on `feature/045-data-management-pro`).**
+9/20 tasks; **477 Pest green** (+12 this spec). Spec→plan→data-model→contract→quickstart→tasks all written.
+- **Foundation:** pure `Corex\Config\Data\DataQuery` (clamped query VO) + `CsvWriter` (RFC-4180, only declared
+  columns → no-secret tested).
+- **US1 (find):** additive `QueryableDataSource` (extends `DataSource` — OCP, nothing broke); `SubmissionsSource`
+  query/count/record + `WpSubmissionsReader` query/count/find (form filter via meta + date sort + paginate);
+  `DataController` query path (`queryFrom`/`queryPayload`) + a GET detail route. Backward-compatible (the existing
+  React app's page/per_page calls still work).
+- **US2 (export):** `DataExportController` — `admin_post` CSV download, cap+nonce, bounded to 5000 rows, only
+  declared columns (no secret); pure `csvFor` tested.
+- **US3 (detail) backend:** `record()` → readable label→value fields + the GET `/data/{source}/{id}` endpoint.
+- **US4 DONE:** `Corex\Forms\Submission\SubmissionStore` seam — `SubmissionRepository` (post-meta) is the default
+  driver; `StoreSubmissionListener` depends on the seam (DIP). Custom-table driver out of scope. + docs guide
+  `guides/data.md`, CSV formula-injection guard. **479 Pest + 40 Jest green.** DECISIONS #79.
+- **▶ 045 BACKEND COMPLETE (US1–US4).** 15/20 tasks. Remaining = **browser-gated** React UI (T009 search/sort/
+  paginate, T011 export button, T013 detail view) + T007 (TableDataSource queryable — deferred, pagination fallback).
+  Backend is backward-compatible (existing React app works). **▶ NEXT:** push → PR → CI → merge 045; then **046–052**.
+  Roadmap: 043+044 merged; 045 backend done (mergeable); `v0.25.0` staged on develop, not cut.
+
+---
+## ▶ RESUME HERE (2026-06-13, later) — roadmap 043–052 + spec 043 PLANNED (ready to implement)
+
+A 23-point strategic brief ("agency/platform" direction) was analysed. **Key finding: ~40% was already shipped**
+(update mechanism=034, design-system/blocks=027/029/033/035, kit value=031/041/042, data table=030/038, settings
+field-types=032, insights graceful states=037, health/license=036) — those are *discoverability/docs* gaps, not new
+builds. The real frontier = the leap from framework → **platform you run an agency on**. Regrouped into **10 specs
+(043–052)**; the user chose **keystone-first** ordering and a standing mandate to proceed autonomously through the
+roadmap, accepting the recommended option at each fork, inside the Spec Kit flow + Guard Gate, until 052 ships.
+
+Roadmap: **043** request/response contract + frontend runtime kit (keystone) · 044 admin control panel &
+integrations · 045 data-pro (search/filter/export + SubmissionStore seam) · 046 REST resources & headless · 047
+AssetManager + env modes · 048 media/WebP · **049 `make:site` client-site platform** (capstone) · 050 team ops &
+distribution · 051 Design Language System · 052 visual/E2E in CI. *(Pre-work, not a spec: bring Apache up + run the
+`tests/e2e/` Playwright smoke to de-asterisk every browser-unverified "done" since 018.)*
+
+- [x] **`specs/043-response-runtime-kit/` — SPEC + PLAN + TASKS COMPLETE (spec-first, full Spec Kit flow).** On
+  `feature/043-response-runtime-kit`. spec.md + checklists/requirements.md (all PASS, **0 `[NEEDS CLARIFICATION]`**
+  — clarify skipped, every fork resolved in Assumptions) · plan.md (**Constitution Check PASS, no violations**) ·
+  research.md (D1–D9) · data-model.md · contracts/{response-envelope,runtime-api}.md · quickstart.md · tasks.md
+  (**28 tasks**, TDD-ordered, by user story US1–US4). Scope: pure `Corex\Http\ResponseEnvelope` value object +
+  `EnvelopeResponder` (corex-core) + buildless `window.Corex` runtime (api/forms/loading/notices + 4 events,
+  no jQuery/no build, `wp.apiFetch`→`fetch` fallback), token-styled CSS, **conditional enqueue** as a `corex-runtime`
+  dependency; migrate forms `view.js` + Insights + Data React app onto it; **additive/backward-compatible** envelope
+  (today's `{ok,message,errors,values}` becomes a conformant superset).
+- [x] **`specs/043` — IMPLEMENTATION COMPLETE (2026-06-13).** All four user stories (US1–US4) done + green;
+  Guard Gate clean (wp-guard + clean-code + docs-guard). **27/28 tasks**; only T027's Playwright smoke is env-gated.
+  Delivered:
+  - **corex-core:** `Corex\Http\ResponseEnvelope` (pure VO) + `EnvelopeResponder` (status map) + `HttpServiceProvider`
+    (registers the `corex-runtime` script/style, wired into `Boot`); `assets/js/corex-runtime.js` (buildless
+    `window.Corex`: api/forms/loading/notices + 4 events, `wp.apiFetch`→`fetch` fallback) + `assets/css/corex-runtime.css`
+    (token-only, admin fallbacks, RTL).
+  - **corex-forms:** `SubmitController::toRest()` emits the envelope (additive — preserves pipeline status, mirrors
+    `values`); `view.js` reduced to a thin bootstrap (rebuilt); `validation.js`/`validation.test.js` **deleted** (the
+    runtime is the single validator). `FormBlockRenderer` enqueues `corex-runtime` on render (conditional, Principle VI).
+  - **Tests:** **426 Pest unit** (+11 Http) + **40 Jest** (+11 runtime, net of the removed validation suite) green.
+  - **Docs:** new docs-app guide `guides/frontend-runtime.md` (+ sidebar entry) + corex-core/corex-forms README
+    sections; fixed a stale `validation.js` reference in `forms.md`. DECISIONS #77.
+  - **US4 (admin parity):** the Insights + Data controllers emit the envelope (additive, statuses preserved);
+    `insights.js` + the Data React app call `window.Corex.api`/`envelope.data` (dead `@wordpress/api-fetch` import
+    removed); `InsightsScreen`/`DataAdminScreen` declare `corex-runtime` as a dependency; both rebuilt.
+  - **MERGED to develop** via **PR #20** (CI green, 25s; branch deleted) — 043 is done end-to-end.
+  - Release batches per the v0.x rhythm (043[+044…] → a tagged `develop`→`main` release). Browser smoke
+    (`tests/e2e/`) remains the standing env-gated follow-up. (The optional agent-context hook is env-blocked.)
+- [~] **`specs/044-admin-control-panel/` — PLANNED + FOUNDATION IMPLEMENTED (2026-06-13).** On
+  `feature/044-admin-control-panel`. Full Spec Kit planning: spec + checklist (all PASS, 0 `[NEEDS CLARIFICATION]`) ·
+  plan (Constitution PASS) · research (D1–D9) · data-model · contracts/{test-actions,domain-status} · quickstart ·
+  tasks (**29 tasks**, US1–US5). Scope: control-panel IA (per-domain status cards + onboarding checklist), captcha
+  config + Test-verification button, Insights/PSI diagnostics (local-URL detection + failure classification), rich
+  add-on manifests, authorship cleanup — all reusing 032/026/037/016/012 + the 043 envelope/runtime, **no new store,
+  no new driver**, every test action AdminGuard-gated + envelope-shaped + **no secret**.
+  - **Foundation + US1 (MVP) + US2-core DONE + green (T001–T011), 11/29 tasks:**
+    - Foundation: pure `Corex\Config\ControlPanel\{DomainStatus,ControlPanelStatus,OnboardingStep,OnboardingChecklist}`.
+    - US1: `ControlPanelView` (cards + checklist, escaped, status by icon+text not color) wired into `AdminDashboard`
+      (autowired — renders the panel from the settings values) + `assets/control-panel.css` (token/admin-fallback, RTL),
+      conditionally enqueued on the settings screen.
+    - US2-core: `SettingsRegistry` captcha section extended (site_key + v3 score_threshold + action; secret stays
+      write-only) + pure `Corex\Config\Captcha\CaptchaDiagnostic` (ok/missing_keys/invalid_keys/network_error/
+      not_applicable — **secret-free by construction**).
+    - **Tests: 19 new Pest (DomainStatus 6 + OnboardingChecklist 4 + ControlPanelView 4 + CaptchaDiagnostic 5) →
+      full suite 445 Pest green.** Guard self-check clean (escaped, no secret in the panel, conditional enqueue).
+  - **US2–US5 DONE (26/29 tasks):** US2 — `Corex\Captcha\CaptchaDiagnostic` (error-code aware, secret-free) +
+    `CaptchaTestController` (REST, cap+nonce, envelope, in the captcha add-on for domain ownership). US3 — pure
+    `SiteUrlReachability` + `PsiDiagnostic` (local_url/http_error/quota/invalid_key/invalid_response/ok, admin-only
+    scrubbed detail) wired into `PerformanceProvider` (the vague message is gone). US4 — `Addon` manifest extended
+    (summary/description/provides/needsKeys/docsUrl + `needsConfiguration()`/`missingKeys()`), populated + rendered
+    on the Add-ons screen. US5 — every framework `Author:` header → `Mustafa Shaaban` (no "team") + CONTRIBUTING note.
+    Docs: configuration.md + insights.md guides updated. **461 Pest + 40 Jest green.** Guard Gate clean. DECISIONS #78.
+  - **▶ 044 essentially COMPLETE (US1–US5 implemented + tested).** Remaining = **browser-gated only**: the captcha
+    **Test verification** button JS (T013) + a dedicated `/insights/test` action+button (T019) — the dashboard PSI run
+    already shows the classified message. **Roadmap: 043 merged; 044 done (US1–US5); 045–052 next.**
+    **▶ NEXT:** commit 044 → PR → CI → merge to develop; then **spec 045** (data-management pro).
+
+---
 ## ▶ RESUME HERE (2026-06-13) — deep review + connectivity specs (040–042), spec-first
 
 Post-v0.23.1 the user reported the framework "feels disconnected" (enabling add-ons/kits seems to do

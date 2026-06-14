@@ -18,11 +18,22 @@ use Corex\Repositories\PostRepository;
  * only layer that touches the data source). Stores a private `corex_submission` post
  * plus the form slug and each validated value as `corex_field_*` meta — queryable by slug.
  */
-final class SubmissionRepository extends PostRepository
+final class SubmissionRepository extends PostRepository implements SubmissionStore
 {
     protected function model(): string
     {
         return Submission::class;
+    }
+
+    /**
+     * The {@see SubmissionStore} seam (spec 045): persist and return the id. The default
+     * post-meta driver.
+     *
+     * @param array<string,mixed> $values
+     */
+    public function save(string $slug, array $values): int
+    {
+        return $this->store($slug, $values)->id();
     }
 
     /**

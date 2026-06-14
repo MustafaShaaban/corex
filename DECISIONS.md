@@ -1264,3 +1264,220 @@ Why: makes activation visible, consensual, and transparent — the fix for "enab
 data." Pure view models + adapter unit-tested; 404→415 total green across 040/041/042. wp-guard clean. Live-verified
 the provisioner resolves to the real adapter and previews read-only. Browser-visual confirmation is env-gated.
 Status: Final.
+
+## #77 — One response envelope + a buildless window.Corex runtime (spec 043)
+Date: 2026-06-13
+Context: spec 043, the keystone of the 043–052 roadmap. Forms, admin actions (Insights/Data), and future
+REST/headless each shaped their own JSON and hand-rolled their own fetch/nonce/error plumbing (the form's
+`view.js`, the vanilla `insights.js`, the Data React app). The brief asked for a unified response contract
+(item 8) + a vanilla frontend kit (item 9).
+Decision: a pure, immutable `Corex\Http\ResponseEnvelope` value object (corex-core) is the one wire shape —
+success `{ ok, message, data }`, error `{ ok, code, message, errors?, details }` — built via `success()`/
+`validation()`/`error()` and never carrying a secret; a thin `EnvelopeResponder` maps it to a WP_REST_Response
+(200/422/403/400). The client half is `corex-runtime`, a **buildless** `window.Corex` (no jQuery, no build step;
+modelled on the existing `insights.js` IIFE) registered by a new `HttpServiceProvider` and **enqueued only where a
+form/screen declares it** (Principle VI) — `Corex.api` (nonce-attaching request that always resolves to a
+normalised-envelope Result, timeout/network/non-JSON → error, never throws — a documented contract, not a swallowed
+error), `Corex.forms.bind` (schema-mirrored validation reusing the spec-020 `data-corex-schema` + the existing DOM
+hooks, server stays authoritative), `Corex.loading` (disable/spinner/`aria-busy`/dedupe/restore), `Corex.notices`,
+and the `corex:request:*`/`corex:form:*` events. The migration is **additive/backward-compatible**: `SubmitController`
+now emits the envelope but preserves its authoritative pipeline status (e.g. 429) and mirrors `values` at the top
+level for one release; the superseded `view.js` is now a thin bootstrap and `validation.js`/`validation.test.js` are
+deleted (the runtime is the single validator source — no duplication). Token-only CSS with wp-admin fallbacks
+(DECISIONS #71 precedent), logical/RTL, WCAG (live-region status + `aria-busy`).
+Why: a uniform contract every later surface (044 admin, 045 data-pro, 046 headless, 049 starter slice) stands on,
+and a reusable client primitive so a new form/request needs one `bind`/`api` call and zero bespoke plumbing.
+Tests: +11 Pest (ResponseEnvelope 7 + EnvelopeResponder 4) → **426 unit green**; +11 Jest (api/forms/loading/events)
+→ **40 JS green** (net of the deleted validation suite). Guard Gate clean: wp-guard (conditional enqueue, nonce,
+escaped/`textContent`, REST mapping), clean-code (removed a speculative `forceFetch` flag), docs-guard (new
+frontend-runtime guide + fixed a stale `validation.js` doc reference).
+**US4 done:** the Insights + Data controllers now emit the envelope (additive, statuses preserved); `insights.js`
+and the Data React app call `window.Corex.api` and read `envelope.data` (the dead `@wordpress/api-fetch` import
+removed); `InsightsScreen` + `DataAdminScreen` declare `corex-runtime` as a script dependency. Both rebuilt; 426
+Pest + 40 Jest still green. Live browser-visual confirmation is environment-gated (Apache down), as for every spec
+since 018.
+Status: Final (043 fully implemented across US1–US4; only the Playwright browser smoke is env-gated).
+
+## #78 — Admin control panel + integration diagnostics (spec 044)
+Date: 2026-06-13
+Context: spec 044 (roadmap item, keystone-built-on-043). The Corex settings felt like a flat form; captcha was
+configured blind; PageSpeed failures showed a vague "could not be read"; add-ons gave no explanation; headers
+credited a non-existent "team". Reuses 032/026/037/016/012 + the 043 envelope/runtime — no new store, no new driver.
+Decision: a control-panel layer of **pure services** over the existing settings. `Corex\Config\ControlPanel\
+{DomainStatus,ControlPanelStatus,OnboardingStep,OnboardingChecklist}` derive a per-domain status (configured/
+needs_setup/error) + an onboarding checklist from the already-stored settings; `ControlPanelView` renders status
+cards (status by icon+text, not color alone — WCAG) + the checklist, wired into the autowired `AdminDashboard`
+with a token/admin-fallback `control-panel.css` (conditional enqueue). Captcha: the `SettingsRegistry` section gains
+a site key + v3 score-threshold/action (secret stays write-only); a **`CaptchaTestController` in the captcha add-on**
+(domain ownership — corex-config gains no captcha dependency) probes the configured provider and answers with the
+spec-043 envelope classified by the pure, **secret-free** `Corex\Captcha\CaptchaDiagnostic` (reads provider
+error-codes to tell invalid-secret from a bad probe token). Insights: pure `SiteUrlReachability` (local/private URL
+detection) + `PsiDiagnostic` (local_url/http_error/quota/invalid_key/invalid_response/ok, admin-only detail scrubbed
+of key/token) now drive `PerformanceProvider` — the generic message is gone. Add-ons: the `Addon` manifest gains
+summary/description/provides/needsKeys/docsUrl (additive defaults) + `needsConfiguration()`/`missingKeys()`, rendered
+on the Add-ons screen. Authorship: every framework header → `Author: Mustafa Shaaban` (no "team"); convention in
+CONTRIBUTING.
+Why: makes the single install feel like a professional control panel and turns blind integration setup into
+confident, diagnosable configuration — reusing the 043 contract for the test actions. **+38 Pest (DomainStatus 6 +
+OnboardingChecklist 4 + ControlPanelView 4 + CaptchaDiagnostic 6 + SiteUrlReachability 4 + PsiDiagnostic 7 +
+AddonManifest 4 + wiring) → 461 unit green.** Guard Gate clean (no secret in any response; escaped; cap+nonce).
+Remaining = the two **browser-gated test buttons** (captcha + a dedicated `/insights/test` action) — the dashboard
+run already shows the classified PSI message; live browser-visual confirmation is env-gated, as for every spec
+since 018.
+Status: Final (US1–US5 implemented + tested; the test-button JS + `/insights/test` endpoint are the env-gated tail).
+
+## #79 — Data-management pro: queryable sources, CSV export, detail, store seam (spec 045)
+Date: 2026-06-13
+Context: spec 045 (roadmap). The Data tab (specs 030/038) was an unfiltered list; the brief asked for search/filter/
+sort/paginate, CSV export, a readable detail view, and a decision on long-term storage (CPT vs custom table).
+Decision: extend the data layer **additively** (OCP — nothing existing changed). A pure `Corex\Config\Data\DataQuery`
+(clamped search/filter/sort/paginate VO) + `CsvWriter` (RFC-4180 + **CSV-formula-injection guard**; only the
+source's declared columns → no secret can leak). A new `QueryableDataSource` **extends** `DataSource`
+(`query`/`count`/`record`) — `SubmissionsSource` implements it (delegating to an extended `SubmissionsReader`:
+`WpSubmissionsReader` adds a form-meta filter + date sort + pagination via WP_Query args, no SQL string-building),
+while `TableDataSource` + the existing `DataController` payload path stay unchanged (non-queryable sources fall back
+to pagination). `DataController` gains a `queryFrom`/`queryPayload` path + a GET `/data/{source}/{id}` **detail**
+route (label→value fields). `DataExportController` is an `admin_post` CSV download — `manage_options` + nonce,
+**bounded** to 5000 rows, only declared columns — with the pure `csvFor` unit-tested. **US4 storage seam:**
+`Corex\Forms\Submission\SubmissionStore` (interface) — the existing `SubmissionRepository` (post + `corex_field_*`
+postmeta) is the **default driver**; `StoreSubmissionListener` now depends on the seam (DIP), so a custom-table
+driver is a swap, not a rewrite (the **custom-table driver is out of scope** — the brief's "when volume demands").
+Why: makes the Data tab a real tool while keeping the change additive + backward-compatible (the existing React app
+still works against the unchanged list shape). **+13 Pest → 479 unit + 40 Jest green.** Guard Gate clean (prepared/
+bounded query, cap+nonce, CSV formula guard, no secret in any response). The React UI (search/sort/export/detail
+controls) is the **browser-gated** follow-up, as for every spec since 018.
+Status: Final (backend US1–US4 implemented + tested; the React UI controls are env-gated).
+
+## #80 — REST resources & headless: make:api-resource + route/docs cores (spec 046, in progress)
+Date: 2026-06-14
+Context: spec 046 (roadmap) — make REST/headless Laravel-like but WP-native, reusing the spec-003 generator engine,
+spec-005 middleware, and the spec-043 envelope.
+Decision: `make:api-resource <Name>` scaffolds a complete secured resource via a pure multi-file
+`ApiResourceScaffolder` (modelled on `BlockScaffolder`, render-all-before-write) + 5 stubs (controller/routes/request/
+resource/test) under the app's `Api/` namespace — the controller thin + envelope-shaped, the routes declaring a
+permission callback, the resource exposing only declared fields. Wired into `MakeCommand`/`CliServiceProvider`
+(WP-CLI-gated). For discovery + docs: pure `Corex\Cli\Routes\{RouteDescriptor,RouteList}` (routes:list body) and a
+pure `Corex\Cli\Docs\ApiDocsGenerator` (descriptors + the envelope schema + nonce/app-password security → OpenAPI 3,
+**no secret**). The runtime route reader (`rest_get_server()`), the `routes:list`/`api:docs` WP-CLI commands, and the
+documented headless surface (US4, nonce/app-password auth; JWT/OAuth out of scope) are the remaining boundary/docs
+work.
+Why: the headline DX — one command yields the correct Corex-shaped, secured, envelope REST resource — plus pure,
+testable discovery/docs cores. **+16 Pest (ApiResourceScaffolder 4 + RouteList 3 + ApiDocsGenerator 5 + …) → 491
+unit green.** Guard self-check clean (generated route carries a permission callback, envelope-shaped, no secret in
+the OpenAPI doc; pure engine + gated command — spec-003 pattern).
+Status: Final (US1 make:api-resource + routes:list + api:docs all wired; US2/US3 cores tested; RoutesReader parses rest_get_server; headless docs written.
+headless docs + merge remaining).
+
+## #81 — Asset manager & environments (spec 047)
+Date: 2026-06-14
+Context: spec 047 (roadmap) — a formal asset/performance layer: url/path/version helpers + per-environment
+cache-busting, so a release never serves stale CSS/JS and local edits are always seen.
+Decision: pure cores in corex-core `Corex\Assets` — `AssetEnvironment` (config → local/staging/production,
+production-safe default; source maps only in local), `BuildManifest` (source → hashed file + hash, malformed/absent
+→ empty), `AssetVersion` (local → filemtime, staging/prod → manifest hash else framework/site version; a missing
+asset or a `../`/`/`/`:` traversal → safe fallback). The `AssetManager` boundary (`url`/`path`/`version`) is plain
+string + native `filemtime` work (so it is unit-tested without WordPress); `AssetsServiceProvider` wires it for
+corex-core (base dir/URL via `plugins_url`, env via `wp_get_environment_type()` fallback, manifest from
+`build/manifest.json`, `COREX_CORE_VERSION` fallback). `assets:doctor` (pure `AssetReport`) + `cache:clear` are
+WP-CLI-gated. Site plugins (spec 049) build their own manager for their own base the same way.
+Why: one helper for correct, junction-safe URLs + deterministic, environment-correct cache-busting — the
+asset/performance primitive the generated sites need. **+19 Pest → 512 unit + 40 Jest green.** Guard Gate clean
+(traversal guard, gated CLI, no secret in the report; pure cores + thin boundary — spec-003/036 pattern). Live
+enqueue/source-map behaviour is env-gated.
+Status: Final.
+
+## #82 — Media & image optimization (spec 048)
+Date: 2026-06-14
+Context: spec 048 (roadmap) — a real media performance plan: WebP on upload + an optimized <picture> helper +
+graceful degradation + an image-support probe. Optional add-on (Principle IX).
+Decision: a new optional add-on `addons/corex-media` (`Corex\Media\`, in Boot's provider list + self-gating). Pure
+cores: `ImageCapability` (gd/imagick/webp/avif value object + static detect()), `ConversionPlan` (jpeg/png +
+webp-capable → convert to a sibling .webp preserving the original; non-image/already-webp/unsupported → skip),
+`PictureRenderer` (escaped <picture>: webp <source> + <img> fallback, lazy/async, fetchpriority=high+eager for the
+LCP image, responsive srcset; no webp → plain <img>; empty alt valid), `MediaImageProbe` (advisory GD/Imagick/WebP/
+AVIF → Site Health/doctor, never critical). Thin boundaries: `WebpConverter` (GD/Imagick, fail-safe — corrupt/
+oversized → original), `MediaImage` helper (attachment → renderer data via WP image funcs; degrades to <img>),
+`MediaServiceProvider` (gated: hooks the converter on `wp_generate_attachment_metadata` only when `canWebp()`, adds
+the probe via a NEW `corex_health_probes` filter added to `HealthModule` so add-ons extend Site Health without core
+depending on them). corex-media added to the AddonRegistry (rich manifest). AVIF generation + CDN out of scope.
+Why: smaller, modern images by default with zero hand-written <img>, fully optional + graceful. **+9 Pest → 520
+unit + 40 Jest green.** Guard Gate clean (escaped markup, fail-safe converter touching only the WP attachment path,
+advisory probe, no secret; pure cores + thin boundary). Live conversion/probe behaviour is env-gated (needs GD/Imagick).
+Status: Final.
+
+## #83 — make:site client-site platform (spec 049, the agency capstone)
+Date: 2026-06-14
+Context: spec 049 (roadmap capstone) — the leap from "a framework" to "a platform you build client sites on with a
+team + AI agents." One command should generate a correctly-namespaced client site (plugin + theme) + governance.
+Decision: reuse the spec-003/046 multi-file scaffolder pattern. A pure `Corex\Cli\Site\SiteIdentity` derives, from a
+name, the full client identity — namespace `<Name>Site`, plugin slug `<slug>-site`, theme slug `<slug>`, text domain
+`<slug>-site`, REST namespace `<slug>/v1`, CSS prefix `--<slug>-`, option prefix `<slug>_` — **guaranteed distinct
+from Corex** (a name normalising to `corex`/empty is refused). A pure `SiteScaffolder` (render-all-before-write,
+like ApiResourceScaffolder) generates the site **plugin** (provider + Models/Services/Controllers/Api/Blocks/Options),
+the site **theme** (valid block theme — style.css/theme.json/templates/parts, presentation only), and the
+**governance** set (AGENTS.md/CLAUDE.md stating the client-only edit boundary + one-feature-one-branch-one-spec-one-PR
++ never-push-to-develop/main; README/PROGRESS/DECISIONS; a `.gitignore` ignoring local AI/cache `.corex/`/`.ai/`/
+`.claude/local/` while keeping committed project memory; specs/docs scaffold). `make:site` wired into MakeCommand +
+CliServiceProvider (WP-CLI-gated) with --plugin-only/--theme-only/--force/--path. Generated PHP is `php -l`-clean.
+Why: the strategic centerpiece — a team/agency starts a real, correctly-bounded client site in one command, with the
+client/framework separation enforced by the generated AGENTS/CLAUDE + namespacing. **+10 Pest (SiteIdentity 4 +
+SiteScaffolder 6) → 530 unit + 40 Jest green.** Guard Gate clean (pure engine + gated command; generated governance
+accurate; no secret). **US3 starter vertical slice (one working model→service→controller(envelope)→block→option) is
+the documented follow-up** (the empty correctly-namespaced structure already works); the `wp/` repo layout + Azure
+pipeline + update packaging are spec 050, the design-system SCSS depth spec 051.
+Status: Final (US1 plugin+theme + US2 governance + US4 flags/command shipped; US3 starter slice is a follow-up increment).
+
+## #84 — Team ops & distribution (spec 050)
+Date: 2026-06-14
+Context: spec 050 (roadmap) — close the distribution loop + enforce the client/framework boundary, on top of the
+shipped spec-034 update mechanism + the spec-049 boundary.
+Decision: two pure cores in `Corex\Cli\Release` — `ReleasePackagePlan` (`includes(path)` = framework src minus
+tests/specs/node_modules/client/secrets; `manifest()` = the spec-034 format) and `ComplianceCheck`
+(`evaluate(changedFiles, forbiddenPrefixes, allowFramework)` → {passed, violations}, matching by **path prefix** not
+substring, with an override) — wrapped by thin WP-CLI-gated commands: `compliance:check` (CI fails a PR that edits a
+Corex framework folder, naming the files; passes client plugin/theme/docs/specs), `package:update` (emits the
+framework-only manifest), `docs:sync`/`docs:serve` (local docs access — `.corex/docs/` is git-ignored by the spec-049
+generated `.gitignore`). Plus `guides/deployment.md` (Azure DevOps per-site repo + App Service + branch policies
+requiring review + a green pipeline + compliance + secrets/uploads/rollback). No secret in any package/manifest/docs.
+Why: the boundary that spec 049 documents is now **enforced** in CI, and the framework can actually be packaged for
+the spec-034 self-update — the team/agency distribution loop. **+7 Pest → 537 unit + 40 Jest green.** Guard Gate
+clean (pure cores + gated commands; prefix-match avoids false positives; no secret). The live ZIP build + git diff +
+docs serve are env-gated boundaries.
+Status: Final.
+
+## #85 — Design Language System in corex-ui (spec 051)
+Date: 2026-06-14
+Context: spec 051 (roadmap) — give Corex a documented, WordPress-native Design Language System. The block library +
+tokens ship across 027/029/033/035; what was missing is the organizing taxonomy + catalog + a couple component gaps.
+Decision: the DLS lives in **`corex-ui`** (no new `corex-dls` plugin — one home, no duplication). A pure
+`Corex\Ui\DesignSystemCatalog` organizes the UI into five categories (Components/Blocks/Patterns/Templates/
+Guidelines) and is **drift-tested** against the on-disk `corex/*` block.json (it can never list a block that does not
+exist — like the CompanyKitManifest cross-check). The component layer gains two server-rendered, token-only,
+accessible, RTL blocks following the spec-004/027 pattern: `corex/alert` (role=alert + info/success/warning/error
+variant) and `corex/badge` (labelled span). Documented in docs-app `guides/design-system.md` (taxonomy + catalog +
+guidelines: tokens single-source, WCAG 2.2 AA, RTL). The taxonomy borrows the *structure* of public design systems,
+never any system's code/brand.
+Why: turns a flat block list into a coherent, navigable, drift-protected system with one home, and fills the
+feedback-component gap. **+7 Pest (DesignSystemCatalog 3 + Alert/Badge 4) → 544 unit + 40 Jest green.** Blocks built
+(index.js + style-index.css + RTL). Guard Gate clean (token-only, escaped, RTL, drift-tested, no secret). Live visual
+smoke env-gated.
+Status: Final.
+
+## #86 — Visual & E2E verification in CI (spec 052, the final roadmap spec)
+Date: 2026-06-14
+Context: spec 052 (roadmap finale). Every spec since 018 ended "env-gated — needs a browser." This makes browser
+verification a permanent CI gate instead of a perpetual follow-up.
+Decision: a dedicated `.github/workflows/e2e.yml` provisions wp-env (Docker), builds blocks, activates Corex,
+installs Playwright + chromium, and runs `npm run test:e2e` on PRs + nightly (a heavier browser job, separate from
+the fast `ci.yml` unit gate). A new `tests/e2e/console.spec.js` (+ shared `tests/e2e/helpers.js`) is a console-error
+sweep: it attaches console/pageerror listeners and **fails on any console error** (not warning) on the block editor,
+the Corex settings screen, and a front-end page — the assertion that finally surfaces item-20-class block/asset
+errors. A tiny documented allow-list exempts known third-party noise (transient network, favicon); the default is
+zero tolerated errors. The Definition of Done (CONTRIBUTING) now states UI changes are browser-verified via the E2E
+smoke + console sweep, with the local run path (wp-env + `npm run test:e2e`). Creds come from env/wp-env defaults —
+no hard-coded secret.
+Why: turns "no one has looked at the console" into "CI looks every run," and closes the standing browser-unverified
+gap as a durable gate. **Execution is environment-dependent by nature** (needs wp-env + a browser, which is exactly
+the gate); the headless deliverable — a valid workflow + a valid E2E/console spec (node --check clean) + the DoD
+docs — is complete. 544 Pest + 40 Jest still green (no unit change). Guard Gate clean (test-guard, docs-guard).
+Status: Final.

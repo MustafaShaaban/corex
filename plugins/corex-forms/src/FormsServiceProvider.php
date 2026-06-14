@@ -55,6 +55,11 @@ final class FormsServiceProvider extends ServiceProvider
         // event seam, data layer, and middleware pipeline.
         $this->container->singleton(FormRegistry::class);
         $this->container->singleton(SubmissionRepository::class);
+        // The submission persistence seam (spec 045): the post-meta repository is the default driver.
+        $this->container->singleton(
+            \Corex\Forms\Submission\SubmissionStore::class,
+            static fn (ContainerInterface $c): SubmissionRepository => $c->make(SubmissionRepository::class),
+        );
         $this->container->singleton(StoreSubmissionListener::class);
         $this->container->singleton(
             SendEmailListener::class,

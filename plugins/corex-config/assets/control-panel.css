@@ -1,0 +1,97 @@
+/**
+ * Corex control panel (spec 044) — domain status cards + onboarding checklist. Token-only
+ * with wp-admin palette fallbacks (theme tokens aren't loaded in wp-admin — DECISIONS #71),
+ * logical properties (RTL-correct), and status conveyed by icon + text, never color alone
+ * (WCAG 2.2 AA).
+ */
+
+.corex-panel {
+	margin-block: var(--wp--preset--spacing--30, 1rem);
+}
+
+.corex-onboarding {
+	padding: var(--wp--preset--spacing--30, 1rem);
+	margin-block-end: var(--wp--preset--spacing--30, 1rem);
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-inline-start: 4px solid #2271b1;
+	border-radius: var(--wp--custom--radius--md, 6px);
+}
+
+.corex-onboarding.is-complete {
+	border-inline-start-color: #00a32a;
+}
+
+.corex-onboarding__list {
+	margin-block-start: var(--wp--preset--spacing--20, 0.5rem);
+	padding-inline-start: var(--wp--preset--spacing--40, 1.5rem);
+	list-style: disc;
+}
+
+.corex-panel__cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+	gap: var(--wp--preset--spacing--30, 1rem);
+}
+
+.corex-card {
+	padding: var(--wp--preset--spacing--30, 1rem);
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: var(--wp--custom--radius--md, 6px);
+	border-inline-start-width: 4px;
+}
+
+.corex-card.is-configured {
+	border-inline-start-color: #00a32a;
+}
+
+.corex-card.is-needs_setup {
+	border-inline-start-color: #dba617;
+}
+
+.corex-card.is-error {
+	border-inline-start-color: #d63638;
+}
+
+.corex-card__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--wp--preset--spacing--20, 0.5rem);
+}
+
+.corex-card__title {
+	margin: 0;
+}
+
+.corex-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	font-size: 0.8em;
+	white-space: nowrap;
+}
+
+.corex-badge .dashicons {
+	font-size: 1.1em;
+	inline-size: 1.1em;
+	block-size: 1.1em;
+}
+
+.corex-badge.is-configured {
+	color: #00a32a;
+}
+
+.corex-badge.is-needs_setup {
+	color: #b26200;
+}
+
+.corex-badge.is-error {
+	color: #d63638;
+}
+
+.corex-card__warning {
+	margin-block-start: var(--wp--preset--spacing--20, 0.5rem);
+	color: #50575e;
+}

@@ -74,6 +74,8 @@ final class AddonsScreen
         echo '<h2>' . esc_html($view->addon->label) . '</h2>';
         echo '<p><strong>' . esc_html__('Status:', 'corex') . '</strong> ' . esc_html($this->statusLabel($view)) . '</p>';
 
+        $this->renderManifest($view->addon);
+
         if ($view->addon->hasFlag()) {
             $flag = $view->flagOn ? __('on', 'corex') : __('off', 'corex');
             echo '<p><strong>' . esc_html__('Feature flag:', 'corex') . '</strong> ' . esc_html($flag) . '</p>';
@@ -93,6 +95,44 @@ final class AddonsScreen
 
         $this->renderToggleForm($view);
         echo '</div>';
+    }
+
+    /**
+     * The rich manifest (spec 044, US4): what the add-on does, what it registers, what it
+     * requires/needs configured, and a docs link — so an admin understands it before toggling.
+     */
+    private function renderManifest(Addon $addon): void
+    {
+        if ($addon->summary !== '') {
+            echo '<p>' . esc_html($addon->summary) . '</p>';
+        }
+        if ($addon->description !== '') {
+            echo '<p class="description">' . esc_html($addon->description) . '</p>';
+        }
+
+        if ($addon->provides !== []) {
+            echo '<p><strong>' . esc_html__('Registers:', 'corex') . '</strong></p><ul class="ul-disc">';
+            foreach ($addon->provides as $item) {
+                echo '<li>' . esc_html($item) . '</li>';
+            }
+            echo '</ul><p class="description">'
+                . esc_html__('Enabling registers the above; disabling removes them.', 'corex') . '</p>';
+        }
+
+        if ($addon->requires !== []) {
+            echo '<p><strong>' . esc_html__('Requires:', 'corex') . '</strong> '
+                . esc_html(implode(', ', $addon->requires)) . '</p>';
+        }
+
+        if ($addon->needsConfiguration()) {
+            echo '<p><strong>' . esc_html__('Needs configuration:', 'corex') . '</strong> '
+                . esc_html(implode(', ', $addon->needsKeys)) . '</p>';
+        }
+
+        if ($addon->docsUrl !== '') {
+            echo '<p><a href="' . esc_url($addon->docsUrl) . '">'
+                . esc_html__('Documentation', 'corex') . '</a></p>';
+        }
     }
 
     private function renderToggleForm(AddonView $view): void

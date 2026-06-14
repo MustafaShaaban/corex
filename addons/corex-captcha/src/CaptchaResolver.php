@@ -29,6 +29,15 @@ final class CaptchaResolver
     {
     }
 
+    /**
+     * The provider siteverify endpoint for a key-driver, or null for none/honeypot/unknown.
+     * Exposed so the "Test verification" action can probe the configured provider.
+     */
+    public static function endpoint(string $driver): ?string
+    {
+        return self::ENDPOINTS[$driver] ?? null;
+    }
+
     public function resolve(): Captcha
     {
         $driver = (string) $this->config->get('captcha.driver', 'none');

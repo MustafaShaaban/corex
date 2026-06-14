@@ -1,0 +1,49 @@
+<?php
+
+/**
+ * @package {{ app_namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ app_namespace }};
+
+defined('ABSPATH') || exit;
+
+use WP_REST_Server;
+
+/**
+ * {{ routes_class }} — registers the {{ name }} resource routes under the app REST
+ * namespace. Reads are public here (published content); a write route MUST carry a
+ * capability check in its permission callback (Principle VII) — never a public callback.
+ */
+final class {{ routes_class }}
+{
+    public function __construct(private readonly {{ controller_class }} $controller)
+    {
+    }
+
+    public function register(): void
+    {
+        register_rest_route('{{ rest_namespace }}', '/{{ route }}', [
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [$this->controller, 'index'],
+                'permission_callback' => [$this, 'canRead'],
+            ],
+        ]);
+
+        register_rest_route('{{ rest_namespace }}', '/{{ route }}/(?P<id>\d+)', [
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [$this->controller, 'show'],
+                'permission_callback' => [$this, 'canRead'],
+            ],
+        ]);
+    }
+
+    public function canRead(): bool
+    {
+        return true; // public read; tighten per your resource (e.g. current_user_can(...)).
+    }
+}

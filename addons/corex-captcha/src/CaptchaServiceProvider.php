@@ -31,5 +31,16 @@ final class CaptchaServiceProvider extends ServiceProvider
             Captcha::class,
             static fn (ContainerInterface $c): Captcha => $c->make(CaptchaResolver::class)->resolve(),
         );
+
+        $this->container->singleton(
+            CaptchaTestController::class,
+            static fn (ContainerInterface $c): CaptchaTestController => new CaptchaTestController($c->make(ConfigInterface::class)),
+        );
+    }
+
+    public function boot(): void
+    {
+        // The "Test verification" REST action for the Corex settings captcha card (spec 044).
+        $this->container->make(CaptchaTestController::class)->register();
     }
 }

@@ -25,4 +25,21 @@ interface SubmissionsReader
     public function total(): int;
 
     public function trash(int $id): bool;
+
+    /**
+     * The records matching a query (search / form filter / sort / pagination), spec 045.
+     *
+     * @return list<array{id:int,date:string,form:string,fields:array<string,mixed>}>
+     */
+    public function query(DataQuery $query): array;
+
+    /** The total records matching a query (for pagination). */
+    public function count(DataQuery $query): int;
+
+    /**
+     * One record by id, or null if absent.
+     *
+     * @return array{id:int,date:string,form:string,fields:array<string,mixed>}|null
+     */
+    public function find(int $id): ?array;
 }

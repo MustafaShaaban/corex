@@ -1,0 +1,29 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+defined('ABSPATH') || exit;
+
+/**
+ * The {{ name }} site service provider — binds the site's services into Corex's container.
+ * App code (Models/Services/Controllers/Api/Blocks/Options) lives under {{ namespace }}\.
+ * REST namespace: {{ rest_namespace }}. Option/CPT prefix: {{ option_prefix }}.
+ */
+final class {{ namespace }}ServiceProvider
+{
+    public function register(): void
+    {
+        // Bind your site's services here.
+    }
+
+    public function boot(): void
+    {
+        // Wire hooks / routes here.
+    }
+}

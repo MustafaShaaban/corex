@@ -3,11 +3,11 @@
  * Plugin Name:       Corex Kit — Company Website
  * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       The Company Website starter kit — a Blueprint that composes the Corex UI blocks/patterns with the theme's universal FSE templates into a neutral, accessible, RTL company site. Composes modules; no business logic.
- * Version:           0.24.0
+ * Version:           0.25.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
- * Author:            Mustafa Shaaban + team
+ * Author:            Mustafa Shaaban
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       corex
@@ -23,7 +23,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_KIT_COMPANY_VERSION')) {
-    define('COREX_KIT_COMPANY_VERSION', '0.24.0');
+    define('COREX_KIT_COMPANY_VERSION', '0.25.0');
 }
 
 (static function (): void {

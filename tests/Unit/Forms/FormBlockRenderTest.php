@@ -31,6 +31,9 @@ function renderContactForm(array $attributes): string
     Functions\when('esc_url')->returnArg();
     Functions\when('sanitize_key')->alias(fn (string $key): string => strtolower($key));
     Functions\when('wp_create_nonce')->justReturn('test-nonce');
+    // The renderer conditionally enqueues the shared runtime (spec 043); no-op them here.
+    Functions\when('wp_enqueue_script')->justReturn(null);
+    Functions\when('wp_enqueue_style')->justReturn(null);
     Functions\when('rest_url')->alias(fn (string $path): string => 'https://example.test/wp-json/' . $path);
     Functions\when('wp_json_encode')->alias(static fn ($data): string => (string) json_encode($data));
 

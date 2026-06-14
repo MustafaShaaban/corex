@@ -49,8 +49,8 @@ the schema.
 
 ## How validation flows
 
-1. **Client** — `view.js` reads the embedded schema and runs the shared rules
-   (`validation.js`) for instant, field-level feedback.
+1. **Client** — the shared [`window.Corex` runtime](/guides/frontend-runtime/) reads the embedded
+   schema and runs the same rules for instant, field-level feedback.
 2. **Submit** — a valid form posts JSON to the secured REST route with the WP nonce.
 3. **Server** — re-validates the **same schema** (authoritative), then dispatches a
    `FormSubmittedEvent` to the form's listeners (store + email).

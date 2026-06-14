@@ -10,6 +10,7 @@ namespace Corex\Config\Insights;
 
 defined('ABSPATH') || exit;
 
+use Corex\Http\ResponseEnvelope;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -98,7 +99,7 @@ final class InsightsController
 
     public function index(WP_REST_Request $request): WP_REST_Response
     {
-        return new WP_REST_Response(['results' => $this->stored()]);
+        return new WP_REST_Response(ResponseEnvelope::success(['results' => $this->stored()])->toArray());
     }
 
     public function run(WP_REST_Request $request): WP_REST_Response
@@ -106,9 +107,12 @@ final class InsightsController
         $payload = $this->result((string) $request->get_param('provider'));
 
         if ($payload === null) {
-            return new WP_REST_Response(['error' => 'unknown_provider'], 404);
+            return new WP_REST_Response(
+                ResponseEnvelope::error('unknown_provider', __('Unknown insight provider.', 'corex'))->toArray(),
+                404,
+            );
         }
 
-        return new WP_REST_Response(['result' => $payload]);
+        return new WP_REST_Response(ResponseEnvelope::success(['result' => $payload])->toArray());
     }
 }

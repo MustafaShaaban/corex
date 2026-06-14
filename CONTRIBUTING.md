@@ -66,3 +66,29 @@ composer test:integration   # boots the real ./wp install (local; needs WordPres
 CI (`.github/workflows/ci.yml`) runs `composer validate`, a PHP lint, and the headless unit
 suite on every push/PR to `main` and `develop`. The integration suite needs a provisioned
 WordPress (wp-env) and is run locally for now.
+
+## Authorship metadata
+
+Framework plugin and theme headers credit a single owner/brand — `Author: Mustafa Shaaban` —
+not a non-existent "team". New `corex-*` plugins and the theme follow the same convention;
+client sites generated from Corex set their own agency/company name (see the site-generator
+docs when available).
+
+## Browser verification (Definition of Done)
+
+A UI change is not done until it is **browser-verified** — "env-gated" is a CI gate, not an open excuse (spec 052):
+
+- The **E2E smoke** (`tests/e2e/`) exercises the three core flows in a real browser: insert a `corex/*` block in
+  the editor, submit the front-end contact form, and apply a kit.
+- The **console-error sweep** (`tests/e2e/console.spec.js`) fails on any console **error** (not warning) on the
+  block editor, the Corex admin, or a front-end page with Corex blocks — catching item-20-class JS/asset
+  regressions. A tiny, documented allow-list (`tests/e2e/helpers.js`) exempts known third-party noise.
+
+These run in CI nightly + on-demand (workflow_dispatch) via `.github/workflows/e2e.yml` — PRs stay gated by the fast unit CI, and you trigger the browser job before a release or to confirm a UI change. It (it provisions wp-env, activates
+Corex, installs Playwright, and runs the suite). To run locally:
+
+```bash
+npm run env:start          # wp-env (Docker)
+npx playwright install     # the browser, once
+npm run test:e2e
+```

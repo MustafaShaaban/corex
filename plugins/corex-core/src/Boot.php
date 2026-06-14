@@ -21,6 +21,8 @@ use Corex\Foundation\Application;
 use Corex\Events\EventServiceProvider;
 use Corex\Foundation\CoreServiceProvider;
 use Corex\Foundation\DataServiceProvider;
+use Corex\Foundation\HttpServiceProvider;
+use Corex\Assets\AssetsServiceProvider;
 use Corex\Email\MailServiceProvider;
 use Corex\Forms\FormsServiceProvider;
 use Corex\Kit\KitServiceProvider;
@@ -61,6 +63,8 @@ final class Boot
         // Core service providers; modules and add-ons contribute their own (US2+).
         self::$app = new Application($debug, providers: [
             CoreServiceProvider::class,
+            HttpServiceProvider::class,
+            AssetsServiceProvider::class,
             ConfigServiceProvider::class,
             EventServiceProvider::class,
             DataServiceProvider::class,
@@ -78,6 +82,7 @@ final class Boot
             BookingsServiceProvider::class,
             PortfolioServiceProvider::class,
             WooServiceProvider::class,
+            \Corex\Media\MediaServiceProvider::class,
             AbilitiesProvider::class,
         ]);
         self::$app->boot();

@@ -35,6 +35,7 @@ use Corex\Config\Insights\Normalizers\PsiNormalizer;
 use Corex\Config\Insights\Providers\PerformanceProvider;
 use Corex\Config\Insights\Providers\ReadinessProvider;
 use Corex\Config\Insights\ReadinessScorer;
+use Corex\Config\Insights\SiteUrlReachability;
 use Corex\Config\Settings\AdminDashboard;
 use Corex\Config\Settings\FieldSections;
 use Corex\Config\Settings\SettingsRegistry;
@@ -99,6 +100,7 @@ final class ConfigServiceProvider extends ServiceProvider
             $registry = new InsightRegistry();
             $registry->register(new PerformanceProvider(
                 new PsiNormalizer(),
+                new SiteUrlReachability(),
                 (string) $config->get('insights.psi.key', ''),
             ));
             $registry->register(new ReadinessProvider(
@@ -129,6 +131,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(DataAdminScreen::class)->register();
         $this->container->make(InsightsScreen::class)->register();
         $this->container->make(OptionPageScreen::class)->register();
+        $this->container->make(\Corex\Config\Data\DataExportController::class)->register(); // CSV export (spec 045)
 
         add_action('rest_api_init', function (): void {
             $this->container->make(DataController::class)->register();

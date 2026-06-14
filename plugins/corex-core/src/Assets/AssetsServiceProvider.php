@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @package Corex
+ */
+
+declare(strict_types=1);
+
+namespace Corex\Assets;
+
+defined('ABSPATH') || exit;
+
+use Corex\Container\ContainerInterface;
+use Corex\Foundation\ServiceProvider;
+use Corex\Support\Config\ConfigInterface;
+
+/**
+ * Binds the corex-core {@see AssetManager} (spec 047) — its base dir/URL, the resolved
+ * environment (Corex config → `wp_get_environment_type()` fallback), the build manifest
+ * (read once, gracefully empty if absent), and the framework version fallback. Site
+ * plugins (spec 049) construct their own manager for their own base the same way.
+ */
+final class AssetsServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->container->singleton(
+            AssetManager::class,
+            function (ContainerInterface $c): AssetManager {
+                $config = $c->make(ConfigInterface::class);
+
+                return new AssetManager(
+                    COREX_CORE_PATH,
+                    plugins_url('', COREX_CORE_FILE),
+                    AssetEnvironment::from($this->environmentValue($config)),
+                    $this->loadManifest(COREX_CORE_PATH . 'build/manifest.json'),
+                    COREX_CORE_VERSION,
+                    new AssetVersion(),
+                );
+            },
+        );
+    }
+
+    private function environmentValue(ConfigInterface $config): string
+    {
+        $value = (string) $config->get('app.env', '');
+
+        if ($value === '' && function_exists('wp_get_environment_type')) {
+            $value = (string) wp_get_environment_type();
+        }
+
+        return $value;
+    }
+
+    private function loadManifest(string $path): BuildManifest
+    {
+        if (! is_file($path)) {
+            return BuildManifest::fromArray([]);
+        }
+
+        return BuildManifest::fromArray(json_decode((string) file_get_contents($path), true));
+    }
+}
