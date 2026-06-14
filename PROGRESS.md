@@ -4,7 +4,31 @@
 > Updated at the end of every working session.
 
 ---
-## ▶ RESUME HERE (2026-06-14, latest) — ⚠️ CORRECTION + spec 053 closeout in progress
+## ▶ RESUME HERE (2026-06-14, latest) — spec 054 full DLS: planned + US1/US2 shipped, US3/US4 next
+
+**Spec 053 is DONE + MERGED** (PR #30 → develop; see the correction entry below). **Spec 054 (full DLS) is
+planned and its first two stories are implemented** on `feature/054-corex-full-dls`.
+
+- **054 SPEC + PLAN + TASKS + GAP ANALYSIS complete** (full Spec Kit flow; Constitution PASS). The gap analysis
+  (`research.md`) is the evidence base and **corrected the scope**: radius + layout tokens already existed (real
+  gaps = motion/focus/z-index); **most candidate components are WordPress core blocks to document or Corex block
+  styles, not new blocks** — the **only** justified new block is **`corex/modal`**. "Don't custom-block everything"
+  is the deliberate outcome.
+- **✅ US1 (catalog + gap analysis) DONE.** `DesignSystemCatalog` expanded to the full six-category taxonomy with
+  a `mechanism` field; drift-checked both directions; modal = `deferred` until US3. Gap analysis published as a
+  docs-app page. **+3 catalog tests → 554 Pest green.**
+- **✅ US2 (foundations) DONE.** Added the missing theme.json token groups — **motion/focus/z-index** — as
+  runtime CSS custom properties; documented every token group + RTL/a11y/focus/motion/icon guidelines in a new
+  **Foundations** docs page; Design System sidebar wired; **docs-app builds (264 pages).**
+- **▶ NEXT — US3 + US4 (the build tail):** US3 = `corex/modal` (native `<dialog>`, focus-trap/ESC, degrades) +
+  block styles (card/section/striped-table/button-secondary/button-ghost/empty-state) + a `.corex-skeleton`
+  utility + the catalog flip (deferred→corex-block) — needs `npm run build` for corex-ui + the env-gated modal
+  a11y sweep. US4 = patterns (section-header/content-split/stats/FAQ/posts-news) + page templates
+  (landing/contact/form) + the docs-app components/patterns/templates/guidelines pages. Tasks T012–T028 in
+  `specs/054-corex-full-dls/tasks.md`. DECISIONS #88 at US4 close.
+
+---
+## ▶ RESUME HERE (2026-06-14) — ⚠️ CORRECTION + spec 053 closeout (DONE — merged PR #30)
 
 **An honest audit (2026-06-14) found the "ROADMAP 043–052 COMPLETE" banner below overstated.** The *backends*
 for 043–052 shipped and are unit-tested, and v0.25.0 is tagged — but several **user-facing tails were never
