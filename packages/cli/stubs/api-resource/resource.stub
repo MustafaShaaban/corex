@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * @package {{ app_namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ app_namespace }};
+
+defined('ABSPATH') || exit;
+
+/**
+ * {{ resource_class }} — shapes a {{ name }} for output: only the declared fields, never a
+ * raw model and never a secret. The shaped array is returned inside the spec-043 envelope.
+ */
+final class {{ resource_class }}
+{
+    /**
+     * @param mixed $item
+     *
+     * @return array<string,mixed>
+     */
+    public function toArray($item): array
+    {
+        return [
+            'id' => is_object($item) && method_exists($item, 'id') ? $item->id() : null,
+            // map the {{ name }}'s declared output fields here.
+        ];
+    }
+}

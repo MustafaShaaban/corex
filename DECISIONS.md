@@ -1347,3 +1347,23 @@ still works against the unchanged list shape). **+13 Pest → 479 unit + 40 Jest
 bounded query, cap+nonce, CSV formula guard, no secret in any response). The React UI (search/sort/export/detail
 controls) is the **browser-gated** follow-up, as for every spec since 018.
 Status: Final (backend US1–US4 implemented + tested; the React UI controls are env-gated).
+
+## #80 — REST resources & headless: make:api-resource + route/docs cores (spec 046, in progress)
+Date: 2026-06-14
+Context: spec 046 (roadmap) — make REST/headless Laravel-like but WP-native, reusing the spec-003 generator engine,
+spec-005 middleware, and the spec-043 envelope.
+Decision: `make:api-resource <Name>` scaffolds a complete secured resource via a pure multi-file
+`ApiResourceScaffolder` (modelled on `BlockScaffolder`, render-all-before-write) + 5 stubs (controller/routes/request/
+resource/test) under the app's `Api/` namespace — the controller thin + envelope-shaped, the routes declaring a
+permission callback, the resource exposing only declared fields. Wired into `MakeCommand`/`CliServiceProvider`
+(WP-CLI-gated). For discovery + docs: pure `Corex\Cli\Routes\{RouteDescriptor,RouteList}` (routes:list body) and a
+pure `Corex\Cli\Docs\ApiDocsGenerator` (descriptors + the envelope schema + nonce/app-password security → OpenAPI 3,
+**no secret**). The runtime route reader (`rest_get_server()`), the `routes:list`/`api:docs` WP-CLI commands, and the
+documented headless surface (US4, nonce/app-password auth; JWT/OAuth out of scope) are the remaining boundary/docs
+work.
+Why: the headline DX — one command yields the correct Corex-shaped, secured, envelope REST resource — plus pure,
+testable discovery/docs cores. **+16 Pest (ApiResourceScaffolder 4 + RouteList 3 + ApiDocsGenerator 5 + …) → 491
+unit green.** Guard self-check clean (generated route carries a permission callback, envelope-shaped, no secret in
+the OpenAPI doc; pure engine + gated command — spec-003 pattern).
+Status: Final (US1 make:api-resource + routes:list + api:docs all wired; US2/US3 cores tested; RoutesReader parses rest_get_server; headless docs written.
+headless docs + merge remaining).

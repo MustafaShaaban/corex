@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * @package {{ app_namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ app_namespace }};
+
+defined('ABSPATH') || exit;
+
+use Corex\Http\ResponseEnvelope;
+use {{ service_fqcn }};
+use WP_REST_Request;
+use WP_REST_Response;
+
+/**
+ * {{ controller_class }} — a thin REST controller (Principle III): it routes, calls the
+ * service, shapes the output through the resource, and answers with the spec-043 envelope.
+ * Security is the declared middleware's job (Principle VII), not the controller's.
+ */
+final class {{ controller_class }}
+{
+    public function __construct(
+        private readonly {{ service }} $service,
+        private readonly {{ resource_class }} $resource,
+    ) {
+    }
+
+    public function index(WP_REST_Request $request): WP_REST_Response
+    {
+        $items = $this->service->all();
+
+        return new WP_REST_Response(
+            ResponseEnvelope::success(['items' => array_map([$this->resource, 'toArray'], $items)])->toArray()
+        );
+    }
+
+    public function show(WP_REST_Request $request): WP_REST_Response
+    {
+        $item = $this->service->find((int) $request->get_param('id'));
+
+        if ($item === null) {
+            return new WP_REST_Response(
+                ResponseEnvelope::error('not_found', __('Not found.', '{{ text_domain }}'))->toArray(),
+                404
+            );
+        }
+
+        return new WP_REST_Response(ResponseEnvelope::success($this->resource->toArray($item))->toArray());
+    }
+}

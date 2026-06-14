@@ -20,7 +20,11 @@ use Corex\Health\HealthModule;
 use Corex\Cli\Docs\ClassDocReader;
 use Corex\Cli\Docs\DocsGenerator;
 use Corex\Cli\Docs\MarkdownDocRenderer;
+use Corex\Cli\Docs\ApiDocsGenerator;
+use Corex\Cli\Generators\ApiResourceScaffolder;
 use Corex\Cli\Generators\BlockScaffolder;
+use Corex\Cli\Routes\RouteList;
+use Corex\Cli\Routes\RoutesReader;
 use Corex\Cli\Generators\ControllerGenerator;
 use Corex\Cli\Generators\GeneratorContext;
 use Corex\Cli\Generators\GeneratorEngine;
@@ -74,6 +78,15 @@ final class CliServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(
+            ApiResourceScaffolder::class,
+            fn (ContainerInterface $c): ApiResourceScaffolder => new ApiResourceScaffolder(
+                $c->make(StubRenderer::class),
+                $c->make(Naming::class),
+                dirname(__DIR__) . '/stubs',
+            ),
+        );
+
+        $this->container->singleton(
             DocsGenerator::class,
             static fn (): DocsGenerator => new DocsGenerator(new ClassDocReader(), new MarkdownDocRenderer()),
         );
@@ -97,9 +110,10 @@ final class CliServiceProvider extends ServiceProvider
             ],
             $this->container->make(BlockScaffolder::class),
             $this->container->make(GeneratorContext::class),
+            $this->container->make(ApiResourceScaffolder::class),
         );
 
-        foreach (['model', 'repository', 'controller', 'service', 'option-page', 'block'] as $type) {
+        foreach (['model', 'repository', 'controller', 'service', 'option-page', 'block', 'api-resource'] as $type) {
             WP_CLI::add_command(
                 "corex make:{$type}",
                 static function (array $args, array $assoc) use ($command, $type): void {
@@ -107,6 +121,28 @@ final class CliServiceProvider extends ServiceProvider
                 },
             );
         }
+
+        // REST discovery + OpenAPI (spec 046): list the Corex/app routes and emit an API doc.
+        $routesReader = new RoutesReader();
+        $namespaces   = array_values(array_unique(['corex', $this->container->make(GeneratorContext::class)->prefix]));
+
+        WP_CLI::add_command(
+            'corex routes:list',
+            static function () use ($routesReader, $namespaces): void {
+                foreach ((new RouteList())->lines($routesReader->read($namespaces)) as $line) {
+                    WP_CLI::log($line);
+                }
+            },
+        );
+
+        WP_CLI::add_command(
+            'corex api:docs',
+            static function () use ($routesReader, $namespaces): void {
+                $version = defined('COREX_CORE_VERSION') ? COREX_CORE_VERSION : '0.0.0';
+                $doc     = (new ApiDocsGenerator())->generate($routesReader->read($namespaces), 'Corex API', $version);
+                WP_CLI::log((string) wp_json_encode($doc, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            },
+        );
 
         $root = dirname(__DIR__, 3);
         $docs = new DocsCommand(
