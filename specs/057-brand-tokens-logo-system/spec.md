@@ -4,7 +4,7 @@
 
 **Created**: 2026-06-19
 
-**Status**: Draft
+**Status**: Clarified
 
 **Input**: User description: "Approve the M2 brand foundation handoff and specify the CoreX brand tokens and logo
 system without implementing the visual redesign."
@@ -23,6 +23,29 @@ theme presets, custom properties, WordPress admin fallbacks, and historical nami
 the approved Latin display, technical, and Arabic roles, while the logo system and mode-specific usage rules are not
 recorded as an implementable contract. Changing isolated values would create drift, duplicate sources, inaccessible
 states, or a CoreX product identity that cannot be rebranded for client sites.
+
+## Clarifications
+
+### Session 2026-06-19
+
+- Q: How should existing token slugs be reconciled? → A: Use compatibility-first retention: retain valid stable
+  slugs, add missing semantic roles, alias legacy references, and deprecate a slug only after at least one minor
+  release with zero remaining first-party consumers.
+- Q: What is the authoritative production logo source? → A: Require an owner-approved vector package with recorded
+  provenance; treat the existing navy/cyan SVG as a legacy migration reference, not as the new geometric Core X
+  source artwork.
+- Q: What is the minimum production font delivery contract? → A: Keep Latin body/interface text on the system
+  stack and ship at most four self-hosted WOFF2 files: Space Grotesk variable 500–700 Latin, JetBrains Mono variable
+  400–600 Latin, and IBM Plex Sans Arabic 400 and 600 Arabic subsets. Use `font-display: swap`; do not preload a
+  font unless measured evidence justifies it.
+- Q: How should CoreX admin screens map semantic roles when theme tokens are unavailable? → A: Define a small
+  `--corex-admin-*` semantic adapter scoped to CoreX admin roots, map it to stable WordPress admin CSS variables where
+  available, centralize documented WordPress palette fallbacks there, and never load the front-end theme token set
+  into wp-admin.
+- Q: How should `brand.json` preserve client override compatibility? → A: Preserve the current merge contract:
+  associative maps merge recursively and lists replace wholesale. Require complete replacement arrays for palette
+  and font presets, add validation and migration guidance, and cover existing override shapes with fixtures rather
+  than silently changing list semantics.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -122,6 +145,8 @@ representative existing surfaces before removing or changing any historical toke
 - Theme tokens are unavailable in wp-admin and the WordPress fallback palette is active.
 - High-contrast or forced-colors modes override authored colors and shadows.
 - A client override replaces a palette list rather than merging individual semantic entries.
+- A client supplies an incomplete palette or font-preset list and would remove required semantic entries under the
+  documented wholesale-list replacement contract.
 - Dark/light switching occurs without client-side JavaScript or before optional assets load.
 - A future edition badge needs neutral naming without introducing entitlement behavior.
 
@@ -165,6 +190,10 @@ must still inventory current token consumers and confirm the production vector a
 before implementation tasks are finalized. A later visual exploration may refine values only by updating the handoff
 and this spec before code changes.
 
+The existing bundled navy/cyan SVG is historical implementation evidence only. Logo implementation remains blocked
+until the owner supplies or explicitly approves a production vector package and its provenance is recorded in the
+handoff or implementation plan.
+
 ## Likely Affected Areas
 
 - FSE theme token definitions, style variations, and global element styles.
@@ -182,33 +211,46 @@ and this spec before code changes.
 
 - **FR-001**: The system MUST retain one canonical runtime design-token source and MUST NOT add a parallel token
   registry, component-local palette, CSS framework variable layer, or build-time token authority.
-- **FR-002**: The token inventory MUST classify every existing and proposed token as retained, added, aliased,
-  migrated, or deprecated before consumers are changed.
+- **FR-002**: The token inventory MUST record each definition source, generated custom-property name, consumer,
+  dark/light mapping, admin/client context, classification, replacement or alias, and compatibility impact. Every
+  existing and proposed token MUST be classified as retained, added, aliased, migrated, or deprecated before
+  consumers are changed. Valid stable slugs MUST be retained; missing semantic roles MAY be added; legacy references
+  MUST receive compatibility aliases before migration; and a slug MUST NOT be removed until it has been deprecated
+  for at least one minor release and has zero first-party consumers.
 - **FR-003**: Token names MUST describe stable semantic roles or reusable scales rather than a single component,
   page, product edition, or transient campaign.
 - **FR-004**: The color contract MUST define semantic parity for dark and light modes across surfaces, text,
   borders, links, controls, statuses, overlays, selection, and focus.
-- **FR-005**: The typography contract MUST define display/heading, body/interface, code/technical, and Arabic roles
-  with explicit fallbacks and only the weights/scripts required by actual usage.
+- **FR-005**: The typography contract MUST keep Latin body/interface text on the system stack and define
+  display/heading, code/technical, and Arabic roles with explicit fallbacks. Production delivery MUST be limited to
+  at most four self-hosted WOFF2 files: Space Grotesk variable 500–700 Latin, JetBrains Mono variable 400–600 Latin,
+  and IBM Plex Sans Arabic 400 and 600 Arabic subsets.
 - **FR-006**: Arabic content MUST use IBM Plex Sans Arabic in the approved roles while mixed-script content and
   technical fragments retain readable bidirectional order.
 - **FR-007**: The spacing, radius, shadow/elevation, border, and focus-ring scales MUST each have documented names,
   purposes, and supported usage boundaries.
 - **FR-008**: Focus-ring tokens MUST produce a visible indicator across every supported surface and mode and MUST
   not depend on color as the sole indication of focus.
-- **FR-009**: The CoreX logo system MUST define symbol, wordmark, lockup, and monochrome/contrast variants with
-  minimum-size, clear-space, background, and accessible-name rules.
+- **FR-009**: The CoreX logo system MUST define symbol, wordmark, lockup, and monochrome/contrast variants from an
+  owner-approved production vector package with recorded source, approval, and usage provenance, plus minimum-size,
+  clear-space, background, and accessible-name rules.
 - **FR-010**: CoreX product logo assets MUST be reusable vectors and MUST NOT be imposed on client-site identity.
+  The existing navy/cyan SVG MUST be treated as a legacy migration reference and MUST NOT be presented as the new
+  geometric Core X source artwork without separate owner approval.
 - **FR-011**: Theme tokens, generated CSS custom properties, style variations, and per-site overrides MUST use a
   documented mapping with no undefined or competing names.
 - **FR-012**: Existing block/front-end consumers MUST be inventoried and aligned without expanding their features
   or redesigning their layouts.
-- **FR-013**: Existing admin product consumers MUST map to the shared semantic roles while retaining documented
-  WordPress admin fallbacks where theme tokens are unavailable.
+- **FR-013**: Existing admin product consumers MUST map through a small `--corex-admin-*` semantic adapter scoped to
+  CoreX admin roots. The adapter MUST use stable WordPress admin CSS variables where available, MUST centralize
+  documented WordPress palette fallbacks, and MUST NOT load the front-end theme token set into wp-admin or become a
+  second client-brand authority.
 - **FR-014**: The implementation MUST preserve logical-property and RTL-first styling and MUST NOT add physical
   direction assumptions.
 - **FR-015**: Client branding MUST remain configurable through the existing runtime override mechanism without a
-  recompile or component-code change.
+  recompile or component-code change. Its current merge contract MUST remain stable: associative maps merge
+  recursively and lists replace wholesale. Palette and font-preset overrides MUST therefore provide complete
+  replacement arrays, and validation MUST reject or clearly report arrays that omit required semantic entries.
 - **FR-016**: Future edition/status token names MAY be neutral and extensible, but this feature MUST NOT implement
   Pro entitlement, licensing, gating, or commercial interface behavior.
 - **FR-017**: Brand and design-system documentation MUST identify token ownership, consumption, overrides, modes,
@@ -221,16 +263,26 @@ and this spec before code changes.
 ## Implementation Notes
 
 - Start implementation planning with a machine-readable inventory of current theme definitions and all CSS/custom-
-  property consumers. Do not begin by replacing palette values.
-- Prefer retaining stable WordPress preset slugs and mapping them to approved semantics. Add or migrate a slug only
-  when the inventory proves the current contract cannot express the required role.
+  property consumers. Record definition source, generated name, consumers, mode/admin/client context,
+  classification, replacement/alias, and compatibility impact. Do not begin by replacing palette values.
+- Retain stable WordPress preset slugs and map them to approved semantics. Add a slug only when the inventory proves
+  the current contract cannot express the required role. Treat currently referenced but undefined legacy names as
+  alias-and-migrate work, not as permission to normalize every consumer in one breaking change.
 - Keep `theme.json` authoritative. Style variations express mode mappings; per-site `brand.json` remains the runtime
   override seam.
-- Treat admin styles as a deliberate adapter: shared semantic intent with WordPress-native fallbacks when theme
-  variables are not present. Do not inject the full front-end theme into wp-admin.
-- Keep logo assets presentation-only and separate from framework/business logic.
-- Use self-hosted fonts where licensing and asset provenance permit. Planning must specify actual weights, formats,
-  subsets, preload decisions, and fallbacks before files are added.
+- Preserve `BrandResolver` merge semantics. Treat palette and font-preset lists as complete replacements, add
+  validation for required semantic entries, and update migration guidance and examples so they do not imply
+  merge-by-slug behavior.
+- Treat admin styles as a deliberate, scoped adapter: define the minimum `--corex-admin-*` semantic roles once on
+  CoreX admin roots, derive them from stable WordPress admin variables where available, and keep literal fallback
+  values only in that adapter. Admin components consume the adapter rather than repeating fallback chains. Do not
+  inject the full front-end theme into wp-admin.
+- Keep logo assets presentation-only and separate from framework/business logic. Do not redraw, trace, or promote
+  the existing SVG as production artwork; planning must reference the owner-approved source package and provenance.
+- Use only self-hosted, provenance-recorded WOFF2 font assets. Keep Latin body/interface text on the system stack;
+  use the approved variable Latin ranges and two Arabic static weights. If an authoritative upstream package cannot
+  provide a specified variable/subset file, planning must document an equal-or-smaller fallback package without
+  exceeding four files or broadening the weight ranges.
 - Use logical properties and semantic mode roles so later M3/M4 work consumes the system without reopening it.
 
 ## Accessibility Requirements
@@ -244,6 +296,10 @@ and this spec before code changes.
 - Provide documented accessible-name and decorative-image handling for each logo usage category.
 - Record contrast evidence and any constrained token pairings rather than claiming that every arbitrary client
   override is automatically accessible.
+- Maintain an evidence matrix for every supported semantic foreground/background, control, status, border, and
+  focus pairing in dark and light modes. Automated checks MUST enforce at least 4.5:1 for normal text and 3:1 for
+  large text and meaningful non-text UI/focus boundaries; manual review MUST cover forced-colors, imagery, gradients,
+  and state recognition beyond color.
 
 ## RTL Requirements
 
@@ -253,6 +309,9 @@ and this spec before code changes.
 - Use bidirectional isolation where embedded technical fragments could reorder surrounding text.
 - Do not create mirrored logo artwork unless the approved mark specifically requires directional meaning; document
   the logo as non-directional by default.
+- Use a repeatable fixture matrix covering Arabic-only, English-only, mixed product names, code/commands, Arabic and
+  Western numerals, punctuation, badges, long translations, and nested direction changes in both modes. Verify
+  shaping/order, keyboard focus order, logical alignment, clipping, and horizontal overflow at default and 200% zoom.
 
 ## Mobile/Responsive Requirements
 
@@ -264,9 +323,11 @@ and this spec before code changes.
 
 ## Performance Requirements
 
-- Font delivery MUST be self-hostable, subset by required scripts where practical, and limited to approved weights
-  and formats.
-- Font loading MUST retain readable fallback text and avoid invisible-text blocking.
+- Font delivery MUST be self-hosted, subset by approved scripts, WOFF2-only, and limited to the four-file maximum
+  and approved weight ranges.
+- Font loading MUST use `font-display: swap`, retain readable fallback text, and avoid invisible-text blocking.
+  Fonts MUST NOT be preloaded by default; a preload requires measured evidence that it improves the target surface
+  without causing unused-preload warnings or delaying more important resources.
 - Logo delivery MUST use optimized reusable vectors without global JavaScript.
 - Token alignment MUST not add a CSS framework, icon font, client-side theming framework, or unconditional asset
   bundle.
@@ -282,11 +343,20 @@ and this spec before code changes.
 - [ ] Dark and light behavior is documented for every semantic color role and representative state.
 - [ ] The RTL font and mixed-script strategy is documented and verified with representative content.
 - [ ] The accessibility baseline includes recorded contrast and focus-visibility checks for both modes.
+- [ ] A dark/light semantic-pair evidence matrix passes the documented 4.5:1 text and 3:1 large-text/non-text
+      thresholds, with forced-colors, imagery/gradient, and non-color state evidence reviewed manually.
 - [ ] The logo system documents supported variants, spacing, size, contrast, client-brand separation, and accessible
       naming.
 - [ ] Existing block and admin surfaces receive token alignment only; no feature or layout redesign is included.
-- [ ] Font and logo assets have documented provenance, bounded delivery requirements, and fallbacks before shipping.
+- [ ] CoreX admin styles consume one scoped `--corex-admin-*` adapter; WordPress palette fallbacks are centralized,
+      and front-end theme tokens are not loaded into wp-admin.
+- [ ] Font assets and the owner-approved production logo package have documented provenance, bounded delivery
+      requirements, and fallbacks before shipping.
+- [ ] Production typography uses no more than four self-hosted WOFF2 files, keeps Latin body/interface text on the
+      system stack, uses `font-display: swap`, and has no unmeasured preload.
 - [ ] Documentation explains token ownership, consumption, override, compatibility, and rollback behavior.
+- [ ] `brand.json` keeps recursive associative-map merging and wholesale list replacement; complete palette/font
+      arrays, invalid-array reporting, compatibility fixtures, and migration guidance are verified.
 - [ ] No product/design code, assets, styling, or runtime behavior is implemented in this spec-creation task.
 
 ## Tests/Checks Required
@@ -295,14 +365,23 @@ and this spec before code changes.
 - Add or update token-contract tests covering required groups, unique slugs, semantic mappings, and absence of
   undefined references.
 - Scan block, theme, and admin styles for raw values and unknown/retired custom-property names, with documented
-  allowances for WordPress admin fallbacks and functional layout constants.
-- Verify per-site override merge behavior and compatibility for retained/migrated token names.
+  allowances only for the centralized WordPress admin adapter and functional layout constants.
+- Verify the admin adapter is scoped to CoreX screens, maps every required semantic role, contains all documented
+  WordPress palette fallbacks, and does not leak into unrelated wp-admin screens.
+- Verify per-site override merge behavior with fixtures for associative-map merging, complete palette/font list
+  replacement, incomplete-list rejection/reporting, retained/migrated token names, and representative existing
+  override shapes.
 - Run existing PHP, JavaScript, build, metadata, and documentation checks.
-- Run automated contrast checks for representative dark/light token pairings and manual review for meaningful
-  non-text graphics and focus states.
-- Verify keyboard focus, forced-colors behavior, zoom, LTR, RTL, Arabic, and mixed-script samples.
-- Verify font fallback/loading and confirm only required assets load.
-- Verify logo SVG structure, accessible-name usage, contrast variants, and rendering at documented minimum sizes.
+- Generate and test the complete supported semantic-pair matrix in dark/light modes: at least 4.5:1 for normal text
+  and 3:1 for large text and meaningful non-text UI/focus boundaries. Manually review forced-colors, imagery,
+  gradients, focus visibility, and state recognition beyond color.
+- Verify the repeatable LTR/RTL fixture matrix for Arabic-only, English-only, mixed product names, code/commands,
+  Arabic and Western numerals, punctuation, badges, long translations, and nested direction changes. Check shaping,
+  order, keyboard focus order, logical alignment, clipping, and horizontal overflow at default and 200% zoom.
+- Verify fallback rendering, family/weight/script coverage, WOFF2 delivery, the four-file maximum,
+  `font-display: swap`, and the absence of unmeasured or unused preloads.
+- Verify the logo package approval/provenance record, SVG structure, accessible-name usage, contrast variants, and
+  rendering at documented minimum sizes; verify the legacy SVG is not silently promoted as new source artwork.
 - Run visual regression or browser checks where the environment supports them; mark unavailable browser evidence as
   environment-gated rather than passing.
 - Run `git diff --check` and the applicable documentation, clean-code, WordPress, and test guards before delivery.
@@ -340,6 +419,10 @@ and this spec before code changes.
 - Preserve a documented mapping of previous token names and values until all consumers and overrides are verified.
 - If a renamed token causes regressions, restore the previous name or compatibility alias first; do not patch each
   component with local values.
+- Keep every deprecation alias through at least one minor release and remove it only after repository scans prove
+  that no first-party consumer remains.
+- Preserve `BrandResolver` list-replacement behavior during rollback. Restore the previous complete palette/font
+  arrays and aliases as one unit; do not introduce merge-by-slug behavior as an emergency patch.
 - Font and logo assets must be removable without breaking content, administration, or runtime boot.
 - No database migration is expected; if planning later discovers one, update and re-review this spec before work.
 
@@ -347,6 +430,7 @@ and this spec before code changes.
 
 - The approved M2 handoff is the product owner's design approval for this engineering-spec stage.
 - The existing theme token source and runtime brand override mechanism remain architectural constraints.
-- Exact production token values, logo vectors, and font files will be finalized during planning from the approved
-  direction and current-consumer inventory, not invented during this spec-creation task.
+- Exact production token values and font files will be finalized during planning from the approved direction and
+  current-consumer inventory. Production logo vectors must come from an owner-approved package with provenance;
+  they are not invented during clarification or planning.
 - Accessibility, RTL, internationalization, and client brandability remain Free/Core capabilities.

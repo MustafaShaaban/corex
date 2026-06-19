@@ -4,6 +4,31 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- Spec 057 clarified; ready for planning
+
+- **Branch/spec:** `spec/057-brand-tokens-logo-system`;
+  `specs/057-brand-tokens-logo-system/spec.md`; PR #54 remains draft.
+- **M0/M2:** M0 remains closed through v0.27.0. The approved M2 handoff remains the design authority, and its
+  implementation constraints now match the clarified spec.
+- **Clarifications:** retain stable token slugs with staged aliases/deprecations; require an owner-approved production
+  vector package and treat the current navy/cyan SVG as migration evidence; limit fonts to four self-hosted WOFF2
+  files with system body text, `font-display: swap`, and evidence-gated preload; use a scoped `--corex-admin-*`
+  adapter with centralized WordPress fallbacks; and preserve `BrandResolver` associative-map merge/list-replacement
+  semantics with complete preset arrays, validation, fixtures, and migration guidance.
+- **Evidence contracts:** planning must produce a machine-readable token/consumer inventory, a complete dark/light
+  contrast and focus-pair matrix with automated thresholds plus manual exceptions, and repeatable LTR/RTL Arabic,
+  Latin, mixed-script, keyboard, overflow, and 200% zoom fixtures.
+- **Implementation:** no product code, runtime behavior, theme style, logo/font asset, test code, Spec 058/059, or
+  later milestone work changed.
+- **Verification:** Spec Kit prerequisites resolved Spec 057; five clarification answers were integrated; the quality
+  checklist remains 16/16 passing; required-topic, placeholder, clarification-count, internal-link, source-claim,
+  and handoff-consistency checks passed; `git diff --check` passed. `docs-guard` found no blocking issue.
+- **Owned files:** `PROGRESS.md`, `ROADMAP.md`, `design/handoffs/brand-foundation.md`, and
+  `specs/057-brand-tokens-logo-system/spec.md`.
+- **NEXT:** run `/speckit-plan` for Spec 057, inventorying current definitions/consumers and recording the external
+  owner-approved logo package as an explicit implementation gate before tasks are generated.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- M2 handoff approved; Spec 057 created
 
 - **Branch:** `spec/057-brand-tokens-logo-system`.

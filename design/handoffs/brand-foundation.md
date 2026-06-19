@@ -101,9 +101,20 @@ hardcoded CoreX product identity.
 - Use reusable SVG logo assets; do not ship a raster set for each size or mode.
 - Do not add a client-side theme framework, global JavaScript, icon font, or build-time token dependency.
 
-## Open implementation questions
+## Clarified implementation contract
 
-The implementation plan must inventory the existing token slugs and consumers before deciding which slugs are
-retained, aliased, migrated, or deprecated. It must also identify the final production logo asset source and the
-minimum font files/weights required. These are implementation-planning decisions within the approved direction,
-not permission to broaden visual scope.
+Spec 057 clarification established these planning constraints:
+
+- retain stable token slugs, add missing semantic roles, alias legacy references, and keep deprecations for at least
+  one minor release until no first-party consumer remains;
+- require an owner-approved production vector package with provenance, treating the existing navy/cyan SVG only as
+  migration evidence;
+- keep Latin body/interface text on the system stack and ship at most four self-hosted WOFF2 files for the approved
+  Space Grotesk, JetBrains Mono, and IBM Plex Sans Arabic roles;
+- use a scoped `--corex-admin-*` adapter with centralized WordPress admin fallbacks rather than loading front-end
+  theme tokens into wp-admin; and
+- preserve associative-map merging and wholesale list replacement in `brand.json`, with complete preset arrays,
+  validation, compatibility fixtures, and migration guidance.
+
+The implementation plan must turn these constraints into an inventory and task sequence without broadening visual
+scope.
