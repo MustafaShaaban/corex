@@ -4,7 +4,7 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-19, latest) -- Spec 055 Stable client readiness complete; review and commit
+## RESUME HERE (2026-06-19, latest) -- Spec 055 Stable client readiness committed and pushed; open PR
 
 Spec 055 is complete through Phase 8 (T001-T055). Corex now has a stable-client readiness gate covering runtime
 add-on safety, release metadata, repo-owned CI/security controls, client-site generation, deployment profiles,
@@ -33,7 +33,11 @@ native-first component coverage, Free/Core vs Pro boundaries, and multi-agent ha
 - **Guard Gate:** `clean-code-guard`, `wp-guard`, `test-guard`, and `docs-guard` were applied to the final whole
   diff. Guard review removed one dead readiness helper and tightened the readiness dependency-bundle PHPDoc before
   the final green PHP/readiness pass; no blocking findings remain.
-- **NEXT:** review the full diff, then stage and commit the spec 055 branch.
+- **Commit/push:** committed as `f91e936 feat(readiness): complete stable client readiness gate`, then pushed branch
+  `feature/055-stable-client-readiness` to `origin`. GitHub CLI PR creation is blocked locally because the stored
+  `gh` token for `MustafaShaaban` is invalid.
+- **NEXT:** open the PR at `https://github.com/MustafaShaaban/corex/pull/new/feature/055-stable-client-readiness`,
+  then verify GitHub branch protection, required checks, secret scanning, and CodeQL/Dependabot results in GitHub.
 
 ---
 ## RESUME HERE (2026-06-19, latest) -- Spec 055 US5 Free/Core vs Pro boundaries complete; start Phase 8
