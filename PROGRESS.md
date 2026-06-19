@@ -14,9 +14,11 @@ cross-artifact analyzed on branch `feature/056-dependency-security-remediation`.
   Cross-artifact analysis found no constitution conflict, critical coverage gap, unresolved placeholder, or
   unmapped implementation task. Specification baseline commit: `04a6c06`; plan/tasks commit: `991ffdd`; local
   worktree isolation commit: `8a8094c`.
-- **Dependabot triage:** PRs #36-#45 are merged. PR #35 (Pest 2.36.1 -> 4.7.3) remains open and blocked. Its required
+- **Dependabot triage (T020-T021):** PRs #36-#45 are merged. PR #35 (Pest 2.36.1 -> 4.7.3) was commented with
+  Spec 056 evidence and closed unmerged. Its required
   CI check reports 600 passing tests / 2239 assertions but exits 1 because 20 tests that intentionally log output
-  are classified as risky. Spec 056 keeps this as a compatibility migration, not a routine auto-merge.
+  are classified as risky. Spec 056 keeps this as a compatibility migration, not a routine auto-merge. Comment:
+  `https://github.com/MustafaShaaban/corex/pull/35#issuecomment-4749962953`.
 - **Root npm audit (T002):** clean install from the merged lockfile succeeded. The audit reports 50 vulnerable
   dependency instances and 15 unique advisories: 1 low, 10 moderate, and 4 high. High findings are transitive
   build/test paths (`minimatch`, `serialize-javascript`); exposure classification and bounded policy entries remain

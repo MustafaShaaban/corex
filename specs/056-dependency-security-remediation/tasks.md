@@ -67,8 +67,8 @@
 
 **Independent Test**: PR #35 is closed unmerged with the CI evidence and Spec 056 migration rationale recorded durably.
 
-- [ ] T020 [US3] Record the Pest 4 compatibility decision, expected-output requirement, and future migration trigger in `DECISIONS.md`
-- [ ] T021 [US3] Comment on and close GitHub PR #35 unmerged with its 20-risky-test evidence and the Spec 056 tracking reference
+- [X] T020 [US3] Record the Pest 4 compatibility decision, expected-output requirement, and future migration trigger in `DECISIONS.md`
+- [X] T021 [US3] Comment on and close GitHub PR #35 unmerged with its 20-risky-test evidence and the Spec 056 tracking reference
 
 **Checkpoint**: The Dependabot queue contains no red major-version PR presented as routine maintenance.
 
