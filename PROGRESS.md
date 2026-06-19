@@ -25,8 +25,9 @@ fast-forwarded to `origin/main` at `0197c27`.
   passes. Full `composer test` passed with **620 tests and 2239 assertions**. `git diff --check` passed. GitHub
   branch protection, required checks, secret scanning, and Docker/wp-env remain environment-gated.
 - **Guard Gate:** `test-guard` and `docs-guard` were applied to the follow-up diff; no blocking findings remain.
-- **NEXT:** commit and push `fix/056-codeql-supported-languages`, then open a PR so the CodeQL PHP failure is removed
-  from the required GitHub gate.
+- **PR:** opened `https://github.com/MustafaShaaban/corex/pull/46`. GitHub checks passed:
+  `Lint + headless tests (PHP 8.3)`, `CodeQL`, and `CodeQL (javascript-typescript)`.
+- **NEXT:** merge PR #46 into `main`, then sync local `main` and continue from the next recommended project item.
 
 ---
 ## RESUME HERE (2026-06-19, latest) -- Spec 055 Stable client readiness committed and pushed; open PR
