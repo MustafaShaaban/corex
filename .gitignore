@@ -69,6 +69,7 @@ yarn-error.log*
 .claude/projects/
 .claude/todos/
 .mcp.local.json
+/.worktrees/
 
 # ───────────────────────── OS / IDE noise ───────────────────────
 .DS_Store

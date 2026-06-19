@@ -102,6 +102,19 @@ native-first component coverage, Free/Core vs Pro boundaries, and multi-agent sa
 such as Docker/wp-env, browser E2E, GitHub branch protection, required checks, and secret scanning are reported as
 environment-gated unless they have been verified in their owning environment.
 
+## Dependency security
+
+Run the exposure-aware dependency gate after changing any Composer/npm manifest, lockfile, or audit policy:
+
+```bash
+npm run verify:dependencies
+```
+
+The gate audits Composer, root npm, and docs-app npm together. New, changed, expired, stale, or unbounded findings
+fail closed. Development-only exceptions live in `.github/dependency-security-policy.json` with exact dependency
+paths, compensating controls, review dates, and upstream removal triggers; high or critical shipped-runtime/CI
+findings cannot be excepted. See `SECURITY.md` for the policy and exit-code contract.
+
 ## Contributing
 
 Corex is built **spec-first** (Spec Kit) under a strict constitution, with guard skills as the quality gate

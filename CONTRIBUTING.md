@@ -67,6 +67,28 @@ CI (`.github/workflows/ci.yml`) runs `composer validate`, a PHP lint, and the he
 suite on every push/PR to `main` and `develop`. The integration suite needs a provisioned
 WordPress (wp-env) and is run locally for now.
 
+## Reviewing dependency changes
+
+Run the repository-owned dependency gate whenever a manifest, lockfile, audit policy, or dependency workflow
+changes:
+
+```bash
+npm run verify:dependencies
+```
+
+Review the raw npm/Composer advisory before changing `.github/dependency-security-policy.json`. Prefer a compatible
+upgrade within the current direct dependency ranges. Never apply `npm audit fix --force` or a suggested downgrade
+without a separate reviewed compatibility migration.
+
+If no compatible fix exists, an exception is allowed only for a demonstrated non-runtime/non-CI exposure. Record
+the exact advisory and dependency path, severity ceiling, exposure evidence, compensating control, owner, review
+date, and upstream trigger. New, incomplete, expired, stale, path-changed, or severity-changed findings must fail
+the gate; high or critical runtime/CI findings cannot be excepted. Registry or advisory-service errors are
+unavailable evidence, not a pass.
+
+The `Dependency Security` workflow runs this check weekly, on demand, and on pull requests that change dependency
+or policy files.
+
 ## Authorship metadata
 
 Framework plugin and theme headers credit a single owner/brand — `Author: Mustafa Shaaban` —

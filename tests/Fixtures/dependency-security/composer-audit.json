@@ -1,0 +1,23 @@
+{
+  "advisories": {
+    "vendor/package": [
+      {
+        "advisoryId": "PKSA-1111-2222-3333",
+        "packageName": "vendor/package",
+        "affectedVersions": "<1.2.3",
+        "title": "Unsafe fixture behavior",
+        "cve": "CVE-2026-1000",
+        "link": "https://github.com/advisories/GHSA-aaaa-bbbb-cccc",
+        "reportedAt": "2026-06-01T00:00:00+00:00",
+        "sources": [
+          {
+            "name": "GitHub",
+            "remoteId": "GHSA-aaaa-bbbb-cccc"
+          }
+        ],
+        "severity": "moderate"
+      }
+    ]
+  },
+  "abandoned": []
+}

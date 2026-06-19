@@ -47,6 +47,7 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-For additional context about technologies to be used, project structure, shell commands, and other important
-information, read the current plan at `specs/056-design-roadmap-inventory/plan.md`.
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+at specs/056-dependency-security-remediation/plan.md
 <!-- SPECKIT END -->

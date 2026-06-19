@@ -8,6 +8,10 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **Exposure-aware dependency security (spec 056):** `npm run verify:dependencies` audits Composer, root npm, and
+  docs-app npm together, validates exact expiring development-tool exceptions, fails closed on unavailable audit
+  evidence, and is enforced by a weekly/on-demand/dependency-change GitHub Actions workflow. High or critical
+  shipped-runtime/CI findings cannot be excepted; forced audit downgrades remain prohibited.
 - **Stable client readiness (spec 055):** `wp corex readiness` now reports add-on runtime gating, release metadata,
   CI/security repo-file controls and environment-gated GitHub settings, `make:site` validation, deployment profiles,
   native-first component coverage, Free/Core vs Pro boundaries, and multi-agent workflow readiness with exact

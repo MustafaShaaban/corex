@@ -4,6 +4,42 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- Spec 056 implementation and local verification complete
+
+- **Authoritative work unit:** branch `feature/056-dependency-security-remediation`, worktree
+  `.worktrees/feature-056-dependency-security-remediation`, spec `specs/056-dependency-security-remediation`.
+  The root worktree's separate `fix/055-dependency-security-remediation` branch and its provisional dependency-file
+  changes were not touched.
+- **Completed tasks:** T001-T026. T016 contains a live-audit-derived policy for all 15 root npm
+  advisories and the one docs advisory. T020-T021 remain evidenced by the closed, unmerged Pest 4 PR #35; PRs
+  #36-#45 are merged and the open Dependabot queue was empty at triage time.
+- **Remaining tasks:** none in Spec 056. Commit/push, PR CI, review, and merge remain delivery steps.
+- **Audit status:** `npm.cmd run verify:dependencies` passed: Composer 0 findings/0 exceptions, docs npm 1 finding/1
+  accepted exception, and root npm 15 findings/15 accepted exceptions. All exceptions are development/build-test
+  paths with bounded metadata; no unresolved high/critical shipped-runtime or CI exposure is accepted.
+- **Checks run:** focused dependency-policy Jest 33/33; full Jest 16 suites and 88/88; JavaScript lint; Node syntax
+  checks; root workspace build; `composer validate --no-check-publish`; Pest 620 tests/2239 assertions; docs-app
+  build (39 pages); policy/package JSON parsing; workflow YAML parsing; live dependency verifier; and
+  `git diff --check`. All passed. The docs build retained two non-blocking pre-existing warnings: missing sitemap
+  `site` configuration and missing docs 404 entry.
+- **WordPress verification:** `wampapache64` and `wampmysqld64` are running. Against the shared local WordPress
+  install, the Corex 0.26.1 theme and required Corex plugins are active, and
+  `wp corex readiness 0.26.1` completed successfully. Its GitHub-settings and deployment-profile categories remain
+  explicitly environment-gated by design.
+- **Checks blocked/environment-gated:** wp-env remains unavailable because Docker Desktop's Linux engine pipe is
+  absent (`//./pipe/dockerDesktopLinuxEngine` not found). Browser automation could not start because installed Node
+  v22.14.0 is below the browser bridge's v22.22.0 minimum. These are recorded under T023 and are not represented as
+  passing.
+- **Guards:** `clean-code-guard`, `test-guard`, and `docs-guard` completed with no remaining blocking findings after
+  enum/path validation and repository lint formatting. `wp-guard` was not applicable because no WordPress runtime
+  file changed.
+- **Owned files:** Spec 056 policy, workflow, verifier, fixtures/tests, Jest/package wiring, security/contributor/README
+  documentation, Spec 056 plan/tasks, CHANGELOG security entry, and this progress entry. No product or design files
+  are owned or changed by this work unit.
+- **NEXT:** require PR #49's dependency-security workflow plus existing required checks to pass before merge.
+  Upgrade Node to v22.22.0+ and start Docker Desktop when browser/wp-env evidence is next required.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- Spec 056 design roadmap integration complete; approve brand inventory next
 
 Spec 056 is complete through T024. The owner-facing roadmap now uses milestones M0-M11, and the separate design roadmap, controlled inventory, and handoff contract prevent external Claude Design exploration from becoming code without an approved engineering spec.
