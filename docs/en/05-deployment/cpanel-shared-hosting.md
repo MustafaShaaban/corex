@@ -16,6 +16,17 @@ tree** (the Corex source **copied**, not symlinked, into `wp-content`) and uploa
 > (Windows) or symlinks (Linux/macOS). Shared hosting cannot do that. So the deploy artifact must already
 > contain `wp-content/themes/corex/` and `wp-content/plugins/*/` as **real folders**.
 
+## Readiness profile
+
+| Field | Value |
+|---|---|
+| Profile | `shared-host` |
+| Package shape | Flat WordPress tree with Corex copied into `wp-content` |
+| Build commands | `composer install --no-dev --optimize-autoloader`; `npm run build`; assemble `dist/` |
+| Dependencies | PHP 8.3 selector, MySQL via host panel, SFTP/FTP access |
+| Secrets | Database credentials, SFTP credentials, WordPress salts |
+| Blocker | Verify PHP extensions, file permissions, and the no-symlink upload shape on the actual host |
+
 ## Topology
 
 ```mermaid

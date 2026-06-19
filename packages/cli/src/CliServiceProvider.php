@@ -13,8 +13,15 @@ defined('ABSPATH') || exit;
 use Corex\Cli\Commands\DocsCommand;
 use Corex\Cli\Commands\DoctorCommand;
 use Corex\Cli\Commands\MakeCommand;
+use Corex\Cli\Commands\ReadinessCommand;
+use Corex\Cli\Commands\ReadinessCommandServices;
 use Corex\Cli\Commands\ResetCommand;
 use Corex\Cli\Commands\VersionCommand;
+use Corex\Cli\Release\CiSecurityReadiness;
+use Corex\Cli\Release\ComponentCoverageReadinessCheck;
+use Corex\Cli\Release\FreeProBoundaryReadinessCheck;
+use Corex\Cli\Release\MetadataConsistencyCheck;
+use Corex\Cli\Release\MultiAgentReadinessCheck;
 use Corex\Cli\Release\VersionPlan;
 use Corex\Health\HealthModule;
 use Corex\Cli\Docs\ClassDocReader;
@@ -25,11 +32,13 @@ use Corex\Assets\AssetReport;
 use Corex\Cli\Docs\ApiDocsGenerator;
 use Corex\Cli\Generators\ApiResourceScaffolder;
 use Corex\Cli\Generators\BlockScaffolder;
-use Corex\Cli\Release\ComplianceCheck;
+use Corex\Cli\Release\ClientBrandingComplianceCheck;
+use Corex\Cli\Release\DeploymentReadinessCheck;
 use Corex\Cli\Release\ReleasePackagePlan;
 use Corex\Cli\Routes\RouteList;
 use Corex\Cli\Routes\RoutesReader;
 use Corex\Cli\Site\SiteScaffolder;
+use Corex\Cli\Site\SiteScaffoldValidator;
 use Corex\Cli\Generators\ControllerGenerator;
 use Corex\Cli\Generators\GeneratorContext;
 use Corex\Cli\Generators\GeneratorEngine;
@@ -98,6 +107,11 @@ final class CliServiceProvider extends ServiceProvider
                 dirname(__DIR__) . '/stubs',
             ),
         );
+        $this->container->singleton(SiteScaffoldValidator::class);
+        $this->container->singleton(DeploymentReadinessCheck::class);
+        $this->container->singleton(ComponentCoverageReadinessCheck::class);
+        $this->container->singleton(FreeProBoundaryReadinessCheck::class);
+        $this->container->singleton(MultiAgentReadinessCheck::class);
 
         $this->container->singleton(
             DocsGenerator::class,
@@ -195,7 +209,7 @@ final class CliServiceProvider extends ServiceProvider
             'corex compliance:check',
             static function (array $args, array $assoc) use ($frameworkPaths): void {
                 $files  = isset($assoc['files']) ? array_filter(array_map('trim', explode(',', (string) $assoc['files']))) : [];
-                $result = (new ComplianceCheck())->evaluate(array_values($files), $frameworkPaths, ! empty($assoc['allow-framework']));
+                $result = (new ClientBrandingComplianceCheck())->evaluate(array_values($files), ! empty($assoc['allow-framework']));
 
                 if ($result['passed']) {
                     WP_CLI::success('Compliance OK — no Corex framework files changed.');
@@ -279,6 +293,25 @@ final class CliServiceProvider extends ServiceProvider
             'corex doctor',
             static function (array $args, array $assoc) use ($doctor): void {
                 $doctor->run($args, $assoc);
+            },
+        );
+
+        $readiness = new ReadinessCommand(ReadinessCommandServices::fromArray([
+            'metadata' => new MetadataConsistencyCheck(),
+            'ciSecurity' => new CiSecurityReadiness(),
+            'root' => $root,
+            'siteScaffolder' => $this->container->make(SiteScaffolder::class),
+            'siteScaffoldValidator' => $this->container->make(SiteScaffoldValidator::class),
+            'deploymentReadiness' => $this->container->make(DeploymentReadinessCheck::class),
+            'componentCoverage' => $this->container->make(ComponentCoverageReadinessCheck::class),
+            'freeProBoundary' => $this->container->make(FreeProBoundaryReadinessCheck::class),
+            'multiAgent' => $this->container->make(MultiAgentReadinessCheck::class),
+        ]));
+
+        WP_CLI::add_command(
+            'corex readiness',
+            static function (array $args, array $assoc) use ($readiness): void {
+                $readiness->run($args, $assoc);
             },
         );
 

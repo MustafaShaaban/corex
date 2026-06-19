@@ -55,6 +55,24 @@ The repo gate runs automatically on every push/PR to `main`/`develop`
 `composer test`. A PR cannot merge until it is green. See [CI/CD](../05-deployment/ci-cd.md) for the deployment
 pipeline (separate from this gate).
 
+## Client-readiness report
+
+Before client-site work or a release, run:
+
+```bash
+wp corex readiness
+```
+
+The report emits one row per readiness category: runtime gating, metadata, CI/security, make:site, deployment,
+component coverage, Free/Core boundaries, and multi-agent safety. `fail` is blocking. `warning` means a repo-owned
+control is incomplete but can be fixed or explicitly accepted. `environment-gated` means the check depends on an
+external environment or GitHub setting, such as branch protection or secret scanning; it must name the exact
+verification target and next action rather than pretending to pass.
+
+The metadata check audits release surfaces such as plugin/theme headers, `COREX_*_VERSION` constants, README,
+CHANGELOG, PROGRESS, and package metadata. Mismatches include path, field, expected value, and actual value.
+Policy exceptions must appear in the report; they are never silently ignored.
+
 ## Definition of Done (per feature)
 
 A change is done when it: follows the constitution · is generated via the CLI where applicable · has green

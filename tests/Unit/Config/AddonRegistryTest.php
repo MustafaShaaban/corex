@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 use Corex\Config\Addons\Addon;
 use Corex\Config\Addons\AddonRegistry;
+use Corex\Foundation\AddonProviderRegistry;
 
 it('lists the known Corex add-ons with their plugin files', function () {
     $slugs = array_map(static fn (Addon $a): string => $a->slug, (new AddonRegistry())->all());
@@ -33,4 +34,17 @@ it('marks the woo kit with its feature flag', function () {
 
 it('returns null for an unknown slug', function () {
     expect((new AddonRegistry())->find('not-an-addon'))->toBeNull();
+});
+
+it('mirrors shared runtime provider metadata', function () {
+    $configRegistry = new AddonRegistry();
+
+    foreach ((new AddonProviderRegistry())->all() as $provider) {
+        $addon = $configRegistry->find($provider->slug);
+
+        expect($addon)->not->toBeNull()
+            ->and($addon->pluginFile)->toBe($provider->pluginFile)
+            ->and($addon->requires)->toBe($provider->dependencies)
+            ->and($addon->flag)->toBe($provider->featureFlag);
+    }
 });

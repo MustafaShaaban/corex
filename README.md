@@ -89,6 +89,19 @@ wp corex make:site Acme            # plugin + theme + governance scaffold
 wp corex make:site Acme --starter  # the above + a runnable example slice to learn from and delete
 ```
 
+## Client readiness
+
+Before starting a real client site, run the Spec 055 readiness report:
+
+```bash
+wp corex readiness 0.26.1
+```
+
+It reports runtime gating, release metadata, CI/security controls, `make:site` validation, deployment profiles,
+native-first component coverage, Free/Core vs Pro boundaries, and multi-agent safety. Local infrastructure checks
+such as Docker/wp-env, browser E2E, GitHub branch protection, required checks, and secret scanning are reported as
+environment-gated unless they have been verified in their owning environment.
+
 ## Contributing
 
 Corex is built **spec-first** (Spec Kit) under a strict constitution, with guard skills as the quality gate

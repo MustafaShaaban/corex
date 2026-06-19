@@ -47,7 +47,8 @@ pass CI. The full loop is in [The Spec Kit loop](./spec-kit.md); the rules each 
 1. Read [Branching & commits](./branching-and-commits.md) and [Quality gates](./quality-gates.md).
 2. Start from the smallest real task in [`PROGRESS.md`](../../../PROGRESS.md) → "Next".
 3. If it touches new behaviour, open a spec first (see [The Spec Kit loop](./spec-kit.md)).
-4. Branch off `develop`, build it test-first, run the guard, open a PR.
+4. Run `git status --short --branch`, branch off `develop`, and claim your spec path, task IDs, and files owned.
+5. Build it test-first, run the guard, record the handoff evidence, and open a PR.
 
 ## See also
 

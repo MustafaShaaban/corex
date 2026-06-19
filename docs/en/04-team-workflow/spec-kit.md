@@ -40,6 +40,9 @@ flowchart LR
   any teammate — or the next agent session — can resume instantly.
 - **Continuity lives in files:** `PROGRESS.md` (status + next) and `DECISIONS.md` (why we chose X) are updated
   every session. Chat is disposable; these files are the project's memory.
+- **Multi-agent work has explicit ownership:** every active work unit records branch, spec path, task IDs, and
+  files owned before edits. Completion requires verification evidence, guard results, and a handoff that releases
+  or transfers owned files.
 
 ## Conflicts win upward
 
@@ -55,6 +58,18 @@ choosing. The source-of-truth order ([`COREX-WORKING-GUIDE.md §A.1`](../../../C
 
 `specs/NNN-name/` — each holds `spec.md`, `plan.md`, `tasks.md`, and supporting artifacts. Browse
 [`specs/`](../../../specs/) to see every module's spec.
+
+## Example handoff
+
+```text
+Branch: feature/055-stable-client-readiness
+Spec: specs/055-stable-client-readiness
+Tasks completed: T021, T022
+Files owned: tests/Unit/Release/AgentWorkUnitTest.php, tests/Unit/Release/MultiAgentReadinessTest.php
+Verification: vendor/bin/pest tests/Unit/Release/AgentWorkUnitTest.php tests/Unit/Release/MultiAgentReadinessTest.php
+Guards: test-guard clean
+Next owner may edit: docs/en/04-team-workflow/spec-kit.md
+```
 
 ## See also
 

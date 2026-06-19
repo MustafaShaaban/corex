@@ -1589,3 +1589,127 @@ or CI layout — exactly Corex's own monorepo setup. This closes the spec-040 ga
 (+3) green; the full Playwright suite 6/6 green twice.** Guard Gate clean (wp/clean-code/test). The console sweep
 earned its keep on its first real run.
 Status: Final.
+
+## #91 -- Stable client readiness becomes spec 055 before client-site work
+Date: 2026-06-18
+Context: v0.26.1 is the verified release baseline at `e30b1fe`. The next project priority is using Corex for two
+real company-identity websites, but the Phase 0 audit and project handoff identified framework-level risks that
+should be handled before client branding begins: add-on runtime gating, metadata consistency, CI/security posture,
+make:site validation, deployment readiness, component coverage, Free/Core vs Pro boundaries, and multi-agent safety.
+Decision: open `specs/055-stable-client-readiness` as the next Spec Kit feature. This is a new user-approved
+readiness/stability spec, not the previously rejected `055-documentation-productization` idea from Decision #89 and
+not the final Corex visual redesign. The spec authorizes planning and later approved implementation phases only.
+Why: starting client websites immediately would risk building on unresolved framework and workflow gaps. Starting the
+visual redesign now would violate the current priority. A focused readiness spec keeps work small, reviewable, and
+reversible while making the client-site phase safer.
+Status: Active.
+
+## #95 -- Spec 055 US3 validates generated client scaffolds and deployment profiles through readiness
+Date: 2026-06-18
+Context: US3 requires Corex to be ready for generated client-site repositories before real client branding starts.
+The risk is twofold: `make:site` could emit an incomplete or framework-coupled scaffold, and deployment guidance
+could remain prose-only without a machine-checkable readiness surface.
+Decision: make US3 readiness executable. `SiteScaffoldValidator` validates generated minimal and starter scaffolds
+for isolated plugin/theme folders, governance files, specs/docs placeholders, namespace and CSS/option prefixes,
+theme token strategy, starter example files, and unresolved placeholders. `wp corex readiness` now creates temporary
+minimal and starter scaffolds and reports their validation as the `make-site` category. Deployment readiness is a
+profile matrix modeled by `DeploymentProfile`/`DeploymentReadinessCheck`; profiles that require live infrastructure
+report `ENVIRONMENT-GATED` with exact profile evidence instead of failing local readiness. Client branding
+compliance wraps the existing release compliance check with Corex-framework forbidden paths.
+Why: generated client-site work should be blocked by executable evidence, not manual inspection. Environment-gated
+profiles keep local readiness honest without pretending Azure, Docker, wp-env, or host-panel checks ran locally.
+Status: Active.
+
+## #96 -- Spec 055 US4 treats company-site UI readiness as a native-first matrix
+Date: 2026-06-19
+Context: US4 asks for the minimum company-identity UI/content needs to be scoped before client-site work, while
+FR-001 and SC-008 explicitly prohibit starting the final Corex visual redesign. The risk is that readiness work
+could turn into custom blocks for every section or client-specific styling inside framework folders.
+Decision: model US4 as a pure component coverage matrix plus readiness check. `ComponentCoverageDefaults` maps the
+first company-site needs to existing Corex blocks, WordPress core block styles, patterns, form fields, admin
+components, utilities, or deferred add-ons. The readiness command now reports `component-coverage` PASS only when
+required needs are present, mechanisms are known, native-first violations are absent, and no visual redesign scope is
+present.
+Why: a matrix gives the first client sites an actionable native/FSE path without adding unnecessary block scope or
+branding. It also keeps the final visual redesign as a later, explicit spec instead of letting it leak into
+readiness work.
+Status: Active.
+
+## #94 -- Spec 055 US2 records multi-agent safety as explicit work-unit evidence
+Date: 2026-06-18
+Context: US2 requires multiple AI agents or humans to coordinate without overwriting each other and without relying on
+chat memory. The spec asks for branch/spec ownership, git status first, no work on `main`, no overlapping edits
+without coordination, guard gates, and final report requirements. The readiness command already inventories the
+`multi-agent` category, but no persistent work-unit store exists in the plan.
+Decision: model multi-agent safety as a pure release value object plus readiness check:
+`Corex\Cli\Release\AgentWorkUnit` records branch, spec path, task IDs, files owned, handoff, verification, guards,
+and status; `MultiAgentReadinessCheck` fails `main`, overlapping owned files, and completed work that lacks required
+evidence. The governance docs define the durable handoff format, while `wp corex readiness` continues to list
+`multi-agent` as a scheduled category until a later task defines a command input/source for real work-unit records.
+Why: this satisfies US2's machine-checkable rule surface without hardcoding one session's transient work into the CLI
+report. It also keeps storage out of scope, matching the plan's "no new persistent storage" constraint.
+Status: Active.
+
+## #92 -- Spec 055 runtime gating is a boot-level provider-resolution concern
+Date: 2026-06-18
+Context: `/speckit-plan` for `specs/055-stable-client-readiness` inspected the current runtime shape and found that
+`plugins/corex-core/src/Boot.php` still passes every first-party provider directly into `Application`, including
+optional add-ons and kits. `plugins/corex-config/src/Addons/AddonManager.php` and `AddonRegistry.php` manage the
+admin Add-ons screen state and dependency toggle decisions, but they do not prevent an optional service provider from
+booting and registering hooks/routes/REST endpoints/blocks/admin menus/assets/migrations/tables/cron jobs.
+Decision: spec 055 implementation should introduce a lower-level provider-resolution/runtime gating contract that
+`Boot` can use before optional add-on providers boot. The admin Add-ons UI may display and mutate activation state,
+but it is not the runtime authority. WooCommerce gating remains both dependency-based and Corex-state-based: the
+existing pure `WooKitGate` pattern is retained, and the provider resolver must prove Woo behavior is absent when
+WooCommerce is unavailable or the kit is inactive.
+Why: the safety requirement is "disabled add-ons register no unsafe behavior." That property must hold before UI
+screens, routes, blocks, assets, or cron callbacks can register. Central provider resolution is more auditable than
+scattering defensive checks across every provider and avoids treating WordPress plugin activation as the only source
+of truth for Corex-loaded junctioned add-ons.
+Status: Active.
+
+## #93 -- Spec 055 foundational readiness report uses the data-model category enum
+Date: 2026-06-18
+Context: The readiness-report contract's prose list names WooCommerce gating separately, while
+`specs/055-stable-client-readiness/data-model.md` defines the `ReadinessFinding.category` enum as
+`runtime-gating`, `metadata`, `ci-security`, `make-site`, `deployment`, `component-coverage`, `free-pro`, and
+`multi-agent`. Foundational task T006 explicitly says to create the skeleton using the fields from `data-model.md`.
+Decision: implement the foundational `ReadinessReport` completeness check against the data-model enum. Woo-specific
+runtime behavior remains a required US1 finding/check, but the separate command/report wiring can decide whether to
+render it as a sub-finding under `runtime-gating` or expand the report taxonomy after the US1 tests define the
+contract.
+Why: the skeleton should not invent a ninth enum value before the runtime-gating tests and command output exist.
+Keeping the pure model aligned with `data-model.md` lets T006/T007 close without prematurely deciding the final CLI
+presentation shape.
+Status: Active.
+
+## #97 -- Spec 055 US5 protects adoption and trust basics in Free/Core
+Date: 2026-06-19
+Context: US5 requires Corex to distinguish the free framework baseline from future commercial scope before client-site
+work starts. The risk is that accessibility, RTL, i18n, spam protection, basic forms, setup, or deployment docs could
+accidentally become paid-only because they are also commercially valuable.
+Decision: model the boundary as a release matrix and readiness check. `FreeProBoundaryItem` supports `free-core`,
+`pro-candidate`, `deferred`, and `out-of-scope` classifications, but rejects any security-critical item classified as
+`pro-candidate`. `FreeProBoundaryDefaults` seeds the FR-017 basics as Free/Core and the FR-018 advanced capabilities
+as Pro candidates. `wp corex readiness` reports `free-pro` PASS only when required Free/Core capabilities are present
+and security-critical basics are not Pro candidates.
+Why: adoption and trust basics are part of the framework contract, not upsell leverage. Pro can exist around advanced
+vertical workflows, automation, and operations tooling, but it must not weaken the baseline needed to ship safe,
+accessible, RTL/i18n-ready client sites.
+Status: Active.
+
+## #98 -- Spec 055 Phase 8 closes repo-owned readiness controls and gates external controls
+Date: 2026-06-19
+Context: US1 readiness identified missing repo-file CI/security controls, while Phase 8 requires final verification
+and durable handoff before client-site work can start. Some controls are owned by files in this repository, while
+others live in GitHub repository settings or target deployment infrastructure.
+Decision: add repo-owned Dependabot and CodeQL configuration now, and keep external controls explicit as
+environment-gated readiness findings. `.github/dependabot.yml` covers GitHub Actions, Composer, root npm, and
+`docs-app` npm dependencies. `.github/workflows/codeql.yml` runs CodeQL for PHP and JavaScript/TypeScript on pushes,
+pull requests, weekly schedule, and manual dispatch. `wp corex readiness` may report repo-file CI/security controls
+as PASS, but branch protection, required checks, secret scanning, Docker/wp-env, Azure, and shared-host verification
+remain environment-gated until verified in those systems.
+Why: repository-owned controls should not stay as avoidable blockers once the implementation knows how to verify
+them. External settings and infrastructure are still real release gates, but recording them as environment-gated keeps
+local readiness honest and prevents agents from claiming they ran checks that require GitHub or Docker state.
+Status: Active.

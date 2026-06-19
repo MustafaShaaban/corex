@@ -18,6 +18,9 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 4. `PROGRESS.md`  5. the code. If code contradicts the constitution, the code is wrong.
 
 ## WHILE working
+- Run `git status --short --branch` before edits; work from the active feature branch, never from `main`.
+- Claim branch, spec path, task IDs, and owned files before changing code. Do not edit files owned by another
+  active agent unless the handoff explicitly transfers them.
 - Follow the constitution exactly. If a request conflicts with it, say so rather than comply.
 - Use the `wp corex make:*` generators (once built) rather than hand-writing boilerplate.
 - Keep controllers thin; logic goes in services; data access in repositories.
@@ -34,6 +37,8 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
   - test code → `test-guard`   ·   docs/README/docstrings → `docs-guard`
 - Write tests (Pest unit, Jest for JS blocks, Playwright E2E). i18n-ready, RTL-verified, WCAG 2.2 AA.
 - Update `PROGRESS.md`; log any non-trivial decision in `DECISIONS.md`.
+- For multi-agent work, final reports and handoffs must name the branch, spec path, completed task IDs,
+  files owned, verification commands/results, guard status, and any files being released for another agent.
 - **End every response with a NEXT STEP block** (format in COREX-WORKING-GUIDE.md §A.3 / constitution).
 
 ## Spec Kit workflow (commands are namespaced `speckit-*`)
@@ -42,69 +47,6 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
-**Active plan:** `specs/054-corex-full-dls/plan.md` (turn the thin 051 catalog into a full, **native-first** DLS,
-driven by the gap analysis in `research.md`. Evidence findings: radius+layout tokens already exist → the real
-token gaps are **motion/focus/z-index** (US2 adds them + documents all groups); **most candidate "components" are
-WordPress core blocks to document or Corex block styles, not new blocks** — the **only** justified new block is
-**`corex/modal`** (native `<dialog>` focus-trap/ESC, degrades without JS); card/section/table-striped/button-
-variants/empty-state ship as **block styles**, skeleton as a token-only utility, toast = the 043
-`window.Corex.notices` runtime. US1 expands `DesignSystemCatalog` to the full taxonomy (drift-checked, with a
-`mechanism` field so block-style/core/deferred entries aren't mistaken for blocks); US4 adds the justified
-patterns (section-header/content-split/stats/FAQ/posts-news) + page templates (landing/contact/form) + a docs-app
-design-system section (every component with when-to-use/when-not-to-use). Home = corex-ui; token-only/runtime;
-Constitution PASS. Non-scope: rebuilding core-covered elements, copying external DS code/brand/names, the spec-053
-closeout, a public marketing site. Next: `/speckit-tasks`. Superseded prior plan below.
-
-**Active plan (prev — DONE, merged):** `specs/053-platform-roadmap-closeout/plan.md` (close the gap between the "043–052 COMPLETE /
-v0.25.0" claim and the code — no new architecture, consuming surfaces only: **US1** rewrite the stale README +
-reconcile PROGRESS/045+049 `tasks.md` checkboxes + add a feature-PR docs rule; **US2** build the missing Data
-admin React controls (search/source+form filter/sortable headers/pagination/CSV-export button/detail
-drawer/loading+error+empty states) over the existing `corex/v1/data` query+detail routes + `admin_post`
-export; **US3** wire the captcha **Test** button JS in corex-captcha over `POST /captcha/test` — the real gap;
-insights "Run check" already exists, so verify+polish its classified secret-safe message; **US4** add the
-`make:site --starter` slice (`packages/cli/stubs/starter/**` model/repo/service/controller-on-envelope/block/
-option/test/REMOVE-EXAMPLE.md + a standalone starter block theme with `@wordpress/scripts` SCSS/JS, dev-only
-maps, minified prod, manifest cache-busting, url/path/version helper) + wire `--starter`/`--minimal` into
-`SiteScaffolder`/`MakeCommand` (default omits). Constitution Check PASS, no violations. Non-scope: new DLS atoms
-(→054), Excel/PDF export, AVIF/CDN/Azure Blob. Next: `/speckit-tasks`. Superseded prior plan below.
-
-**Active plan (prev):** `specs/041-kit-front-page/plan.md` (kit apply never leaves a blank front page — pure
-`KitPagePlanner::plan()` classifies each declared page create/adopt/skip; `BlueprintActivator` populates
-adopted pages + sets the front page after the loop for a created|adopted home + records `_corex_kit_page`=
-created|adopted; CLI `ResetExecutor` deletes created pages but only empties adopted ones; returns an
-`ApplyOutcome` the wizard shows as a summary). Part of the 2026-06-13 connectivity batch with
-`specs/040-block-asset-urls/plan.md` (junction/symlink-safe block asset URLs — normalize block dir under
-`WP_PLUGIN_DIR` at the `DynamicBlockRegistrar` chokepoint + `BlockAssetsProbe` health check) and
-`specs/042-kit-activation/spec.md` (unified prompt-to-apply activation + "what changed" summary + dashboard
-status card; depends on 041). Build order: 040 + 041 → 042. Specs 001–039 delivered + released
-(v0.18.0 → v0.23.1). Earlier:
-**Active plan (prev):** `specs/027-block-library-expansion/plan.md` (four server-rendered `corex/*` component
-blocks — stat/testimonial/pricing/accordion — token-only, RTL, accessible). Before it: `026-addon-manager`
-(dependency-aware add-on screen) and `025-project-reset` (`wp corex reset`, soft + gated full). The P1
-retrospective backfill 018–024 reconciled the "Finish Corex" initiative to specs. Earlier:
-**Active plan (prev):** `specs/018-build-pipeline-blocks/plan.md` (RETROSPECTIVE — @wordpress/scripts build
-pipeline + dynamic block editor registration via ServerSideRender + "Corex" inserter category +
-add-on activation; reconciles items 1–2 of the "Finish Corex" initiative to a spec). Built on spec 004. Earlier:
-**Active plan (prev):** `specs/007-forms-engine/plan.md` (Form schema + headless Validator + shared
-EventDispatcher seam in corex-core + secured REST submit lifecycle reusing the spec-005 middleware
-+ email/store listeners + FSE form block; new plugin corex-forms). Built on specs 001–006. Earlier:
-**Active plan (prev):** `specs/006-theme-tokens/plan.md` (theme.json token source + brand.json deep-merge
-resolver via wp_theme_json_data_theme + style variations; theme is a skin). Built on specs 001–005.
-Earlier:
-**Active plan (prev):** `specs/005-middleware-security/plan.md` (declarative middleware pipeline + nonce/auth/
-throttle/sanitize + SecurityModule; Principle VII; headless-testable). Built on specs 001–004. Earlier:
-**Active plan (prev):** `specs/004-block-engine/plan.md` (corex-blocks: discovery + conditional assets +
-container-resolved render + Block-Bindings connectors; server-rendered, no JS build). Built on
-specs 001–003. Earlier (superseded):
-**Active plan (prev):** `specs/003-cli-generators/plan.md` (wp corex make:* stub generators). Built on
-specs 001 (container/providers/Config) + 002 (Model/Repository/Service/Controller shapes it
-scaffolds). WP-CLI is optional (`class_exists('WP_CLI')` gate); the generator engine (render+write) is
-pure/headless-testable, separate from the WP-CLI command layer. Earlier plans (superseded):
-**Active plan (prev):** `specs/002-data-layer/plan.md` (Model + Field driver + Repository + QueryBuilder).
-For technologies, structure, contracts, and validation, read that plan and its siblings
-(`research.md`, `data-model.md`, `contracts/`, `quickstart.md`). Built on the **complete** corex-core
-foundation (spec 001): `Boot`, custom PSR-11 `Container`, `ServiceProvider` seam, `Config`,
-`HookRegistry`, `ControllerMap`. Tech: PHP 8.3, Pest + Brain Monkey; ACF behind a `FieldDriver`
-(native-meta fallback, never a hard dependency); QueryBuilder builds capped `WP_Query` args, executed
-by a thin `QueryExecutor`.
+For additional context about technologies to be used, project structure, shell commands, and other important
+information, read the current plan at `specs/055-stable-client-readiness/plan.md`.
 <!-- SPECKIT END -->

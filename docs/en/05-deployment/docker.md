@@ -173,6 +173,16 @@ the image, runs as the unprivileged `www-data` user, and contains no Node/dev to
 > from your host (see the [Azure](./azure-app-service.md) / [AWS](./aws-beanstalk.md) recipes and
 > [secrets & backups](./secrets-backups-zero-downtime.md)). Deploy a **release tag**, never a branch.
 
+## Readiness profiles
+
+Spec 055 validates three Docker-backed profiles:
+
+| Profile | Package shape | Commands | Dependencies | Secrets | Blocker |
+|---|---|---|---|---|---|
+| `azure-container` | `prod` image pushed to Azure Container Registry and run by App Service | `docker build --target prod -t corex:prod .`; `az webapp config container set` | Docker, Azure CLI, ACR, Azure MySQL | Azure, registry, DB, Key Vault | Live Azure subscription and repo secrets must be verified |
+| `local-docker` | Docker Compose stack with monorepo bind-mounted into WordPress | `docker compose up -d --build`; `docker compose exec php composer test` | Docker daemon, Docker Compose, bind mounts | Local DB password, WP salts | Docker daemon must be available |
+| `wp-env-stable` / `wp-env-trunk` | `@wordpress/env` browser/test targets | `npm run env:start`; `npm run test:e2e`; `npm run env:stop` | Docker daemon, `@wordpress/env`, WP stable or trunk | Local wp-env credentials, WP salts | Docker/wp-env availability; trunk may fail on upstream regressions |
+
 ## Where to next
 
 - Deploy the image: [Azure](./azure-app-service.md) · [AWS](./aws-beanstalk.md) · [cPanel](./cpanel-shared-hosting.md)

@@ -4,6 +4,290 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- Spec 055 Stable client readiness complete; review and commit
+
+Spec 055 is complete through Phase 8 (T001-T055). Corex now has a stable-client readiness gate covering runtime
+add-on safety, release metadata, repo-owned CI/security controls, client-site generation, deployment profiles,
+native-first component coverage, Free/Core vs Pro boundaries, and multi-agent handoff rules.
+
+- **Repo-owned security controls:** added `.github/dependabot.yml` and `.github/workflows/codeql.yml`. The live
+  readiness report now marks `ci-security` PASS for repo-file controls. GitHub repository settings remain
+  `ENVIRONMENT-GATED` for branch protection, required checks, and secret scanning because those controls must be
+  verified in GitHub settings.
+- **Release docs:** updated `README.md` and `CHANGELOG.md` with the spec 055 readiness command, readiness categories,
+  and release-scope notes. Updated `DECISIONS.md` with the Phase 8 security-control decision.
+- **Readiness command:** `wp --path=wp corex readiness 0.26.1` passes. `runtime-gating`, `metadata`,
+  `ci-security`, `make-site`, `component-coverage`, `free-pro`, and `multi-agent` report PASS. `ci-security`
+  GitHub settings and deployment profiles remain `ENVIRONMENT-GATED`.
+- **Multi-agent readiness wiring:** `ReadinessCommandServices`, `ReadinessCommand`, and `CliServiceProvider` now
+  inject and run `MultiAgentReadinessCheck`; the `multi-agent` category reports PASS with `multi-agent:clean`
+  instead of `NOT-RUN`.
+- **Headless verification:** `composer validate --no-check-publish` passed. PHP lint over `plugins/`, `packages/`,
+  and `addons/` passed. `composer test` passed with **619 tests and 2237 assertions**. `npm.cmd run build` passed.
+  `npm.cmd run test:js` passed after sandbox escalation with **15 suites and 55 tests**. `docs-app` build passed
+  with **270 pages**; the existing sitemap warning remains because `site` is not configured, and the existing
+  `Entry docs -> 404 was not found` warning remains non-blocking.
+- **Environment-gated browser verification:** sandboxed `npm.cmd run env:start` failed with `EPERM` on
+  `C:\Users\pc`. The elevated run reached Docker and failed because `//./pipe/dockerDesktopLinuxEngine` was not
+  present. `npm.cmd run test:e2e` was not run because wp-env could not start locally.
+- **Guard Gate:** `clean-code-guard`, `wp-guard`, `test-guard`, and `docs-guard` were applied to the final whole
+  diff. Guard review removed one dead readiness helper and tightened the readiness dependency-bundle PHPDoc before
+  the final green PHP/readiness pass; no blocking findings remain.
+- **NEXT:** review the full diff, then stage and commit the spec 055 branch.
+
+---
+## RESUME HERE (2026-06-19, latest) -- Spec 055 US5 Free/Core vs Pro boundaries complete; start Phase 8
+
+Spec 055 US5 is complete through T050. Corex now has an explicit Free/Core vs Pro boundary matrix and
+`wp corex readiness` reports the `free-pro` category as PASS instead of `NOT-RUN`.
+
+- **Boundary model:** added `Corex\Cli\Release\FreeProBoundaryItem`, `FreeProBoundaryMatrix`,
+  `FreeProBoundaryDefaults`, and `FreeProBoundaryReadinessCheck`. The default matrix keeps the core framework,
+  basic blocks/DLS, forms/contact form, config/options, media fields, captcha/honeypot, accessibility, RTL, i18n,
+  basic `make:site`, and basic docs/deployment docs in Free/Core.
+- **Trust-baseline guard:** `FreeProBoundaryItem` rejects security-critical capabilities classified as
+  `pro-candidate`. Advanced newsletter, bookings, careers/ATS, WooCommerce kit, advanced email/media/data tooling,
+  white-label admin, starter kits, Azure/DevOps automation, AI-agent governance dashboards, multi-company identity,
+  and client portal dashboard remain Pro candidates.
+- **Readiness command wiring:** `ReadinessCommandServices`, `ReadinessCommand`, and `CliServiceProvider` now inject
+  and run the Free/Core boundary readiness check. `wp --path=wp corex readiness 0.26.1` reports `free-pro` PASS
+  with evidence such as `free-core:accessibility`, `free-core:basic make:site`, and `pro-candidate:bookings`.
+- **Docs:** added `docs/en/06-cookbooks/free-core-vs-pro-boundaries.md`, linked it from the cookbook index, added
+  `docs-app/src/content/docs/guides/free-core-vs-pro.md`, and added the guide to the docs-app sidebar.
+- **Verification:** TDD RED captured for missing `FreeProBoundaryDefaults`, `FreeProBoundaryItem`,
+  `FreeProBoundaryMatrix`, and `FreeProBoundaryReadinessCheck`, then for the readiness command still reporting
+  `free-pro` as `NOT-RUN`. Focused US5 tests passed with **10 tests and 49 assertions**. Full `composer test`
+  passed with **618 tests and 2234 assertions**. `wp --path=wp corex readiness 0.26.1` passed and reports
+  Free/Core boundary PASS. `docs-app` build passed with **270 pages**; the existing sitemap warning remains because
+  `site` is not configured. `git diff --check` passed.
+- **Guard Gate:** `clean-code-guard`, `wp-guard`, `test-guard`, and `docs-guard` were applied to the US5 diff; no
+  blocking findings remain. Existing non-US5 readiness warnings remain for missing Dependabot/CodeQL repo-file
+  controls and environment-gated GitHub/deployment checks.
+- **NEXT:** begin Phase 8 with T051-T055: update release-level README/CHANGELOG/PROGRESS/DECISIONS, decide whether
+  to add Dependabot/CodeQL repo-file controls or keep them documented as blockers, run full headless verification,
+  record browser/wp-env gates, and run the final whole-diff Guard Gate.
+
+---
+## RESUME HERE (2026-06-19, latest) -- Spec 055 US4 native-first component coverage complete; start US5
+
+Spec 055 US4 is complete through T044. Corex now has an explicit native-first company-site component coverage matrix
+and `wp corex readiness` reports the `component-coverage` category as PASS instead of `NOT-RUN`.
+
+- **Component coverage model:** added `Corex\Cli\Release\ComponentCoverageItem`, `ComponentCoverageMatrix`,
+  `ComponentCoverageDefaults`, and `ComponentCoverageReadinessCheck`. The default matrix classifies home, about,
+  services, contact, careers, portfolio, forms, listings, cards, testimonials, CTAs, media, navigation, page
+  templates, admin components, and token utilities by Corex block, WordPress core block style, pattern, form field,
+  admin component, utility, or deferred mechanism.
+- **Native-first scope guard:** tests prove required company-site needs are present, mechanisms are known, media and
+  navigation prefer WordPress core block styles, page templates prefer patterns, new custom block scope is reported
+  when a native mechanism should win, and final Corex visual redesign wording is reported as out of scope.
+- **Readiness command wiring:** `ReadinessCommandServices`, `ReadinessCommand`, and `CliServiceProvider` now inject
+  and run the component coverage readiness check. `wp --path=wp corex readiness 0.26.1` reports
+  `component-coverage` PASS with evidence such as `home:pattern`, `media:wordpress-core-block-style`, and
+  `navigation:wordpress-core-block-style`.
+- **Docs:** added `docs-app/src/content/docs/design-system/client-readiness.md`, linked it from the DLS overview,
+  the design-system guide, and the docs-app sidebar. The page states the matrix is readiness scope only, not the
+  final Corex visual redesign.
+- **Verification:** TDD RED captured for missing `ComponentCoverageDefaults`, `ComponentCoverageMatrix`, and
+  `ComponentCoverageItem`, then for the readiness command still reporting component coverage as `NOT-RUN`. Focused
+  US4 tests passed with **9 tests and 115 assertions**. Full `composer test` passed with **612 tests and 2210
+  assertions**. `wp --path=wp corex readiness 0.26.1` passed and reports component coverage PASS. `docs-app`
+  build passed with **269 pages** after sandbox escalation for the known Node `lstat C:\Users\pc` restriction; the
+  existing sitemap warning remains because `site` is not configured. `git diff --check` passed.
+- **Guard Gate:** `clean-code-guard`, `wp-guard`, `test-guard`, and `docs-guard` were applied to the US4 diff. The
+  guard pass prompted one cleanup so unknown mechanisms are derived from the allowed mechanism list and default
+  rows are a compact data transform; no blocking findings remain.
+- **NEXT:** begin US5 with T045 tests for Free/Core vs Pro boundaries, then implement T046-T049 and run T050 guards.
+
+---
+## RESUME HERE (2026-06-18, latest) -- Spec 055 US3 client-site generation and deployment readiness complete; start US4
+
+Spec 055 US3 is complete through T037. Generated client-site scaffolds are now validated by tests and by
+`wp corex readiness`, client branding edits have an explicit Corex-framework boundary check, and deployment profiles
+are represented as environment-gated readiness evidence.
+
+- **Scaffold validation:** added `Corex\Cli\Site\SiteScaffoldValidator`. It validates minimal and starter
+  `make:site` output for isolated plugin/theme folders, namespace and CSS/option prefixes, governance files,
+  `specs/`, `docs/`, token strategy, starter example files, and unresolved placeholders.
+- **Readiness command wiring:** `wp corex readiness` now generates temporary minimal and starter `Acme` scaffolds,
+  validates them, reports `make-site` as PASS with exact evidence, and removes the temporary directories afterward.
+- **Client boundary:** added `Corex\Cli\Release\ClientBrandingComplianceCheck` and wired
+  `wp corex compliance:check` through it so generated client work can be checked against forbidden Corex framework
+  folders.
+- **Deployment readiness:** added `DeploymentProfile` and `DeploymentReadinessCheck` for minimal, standard, full,
+  Woo, client-site, shared-host, Azure container, local Docker, wp-env stable, and wp-env trunk profiles. Live
+  infrastructure-dependent profiles report `ENVIRONMENT-GATED` instead of blocking local readiness.
+- **Docs:** updated deployment and client-site docs in both `docs/en/05-deployment/*` and `docs-app` with scaffold
+  validation, deployment profile shape, and environment-gated expectations.
+- **Verification:** TDD RED was captured for missing scaffold validator, client branding compliance, deployment
+  profile/readiness classes, and the readiness command still reporting `make-site` as `NOT-RUN`. Focused US3 tests
+  now pass with **11 tests and 112 assertions**. Full `composer test` passed with **606 tests and 2115 assertions**.
+  `wp --path=wp corex readiness 0.26.1` passed and now reports `make-site` PASS plus deployment
+  `ENVIRONMENT-GATED` for shared-host, Azure container, local Docker, wp-env stable, and wp-env trunk. `docs-app`
+  build passed with **268 pages** and the existing sitemap warning because `site` is not configured.
+  `git diff --check` passed.
+- **Guard Gate:** `clean-code-guard`, `wp-guard`, `test-guard`, and `docs-guard` were applied to the US3 diff.
+  Guard-driven refactors removed parameter-heavy constructors and output-argument helpers before the final green
+  run; no blocking findings remain.
+- **NEXT:** begin US4 with T038/T039 tests for component coverage and native-first UI readiness, then implement
+  T040-T043 and wire the readiness report in T044.
+
+---
+## RESUME HERE (2026-06-18, latest) -- Spec 055 US2 multi-agent readiness complete; start US3
+
+Spec 055 US2 is complete through T027. Multi-agent work is now explicit, testable, and documented before client-site
+generation work starts.
+
+- **Agent work unit model:** added `Corex\Cli\Release\AgentWorkUnit` with required branch, spec path, task IDs,
+  owned files, and status. Completed work units report missing handoff, verification, or guard evidence as completion
+  issues.
+- **Multi-agent readiness check:** added `Corex\Cli\Release\MultiAgentReadinessCheck`. It fails work on `main`,
+  reports overlapping file ownership by path and task IDs, and blocks completed work units that lack guard evidence.
+- **CI/security precision:** tightened `CiSecurityReadiness` so repo-file next actions name only controls still
+  missing. After adding CODEOWNERS, readiness now asks for Dependabot and CodeQL only.
+- **Governance:** added `.github/CODEOWNERS` for core plugins, add-ons, CLI, docs, specs, and workflows. Updated
+  `AGENTS.md`, `CLAUDE.md`, `COREX-WORKING-GUIDE.md`, and the team workflow docs with git-status-first,
+  no-main-work, branch/spec/task/file ownership, no-overlap, handoff, verification, guard, and final-report rules.
+- **Verification:** TDD RED captured for missing `AgentWorkUnit`/`MultiAgentReadinessCheck`; CI-readiness regression
+  RED captured before deriving missing-control labels. Focused US2 tests passed with **9 tests and 20 assertions**.
+  `vendor\bin\pest tests\Unit\Release\CiSecurityReadinessTest.php` passed with **3 tests and 17 assertions**.
+  Full `composer test` passed with **597 tests and 2018 assertions**. `docs-app` build passed with **268 pages** and
+  the existing sitemap warning because `site` is not configured. `git diff --check` passed. `wp --path=wp corex
+  readiness 0.26.1` passed and now reports CODEOWNERS present, Dependabot/CodeQL missing, GitHub settings
+  environment-gated, and later categories `not-run`.
+- **Guard Gate:** `clean-code-guard`, `wp-guard`, `test-guard`, and `docs-guard` were applied to the US2 diff; no
+  blocking findings remain.
+- **NEXT:** begin US3 with T028-T030 tests for make:site client scaffold isolation, deployment profiles, and client
+  compliance checks, then implement T031-T036.
+
+---
+## RESUME HERE (2026-06-18, latest) -- Spec 055 US1 MVP readiness gate complete; start US2
+
+Spec 055 US1 is complete through T020. The MVP readiness gate now covers runtime gating, Woo gating,
+metadata consistency, CI/security posture, readiness report output, and US1 docs.
+
+- **Runtime resolver:** added `Corex\Foundation\AddonRuntimeState`, `AddonProviderResolution`, and
+  `AddonProviderResolver`. The resolver includes active/installed providers, excludes inactive, not-installed,
+  dependency-missing, feature-flag-disabled, and external-gate-disabled providers with reasons, and keeps core
+  providers first.
+- **Boot wiring:** `Corex\Boot` now builds its provider list from core providers plus resolver-included optional
+  add-ons using WordPress active plugin state, installed plugin files, feature flags, and the WooCommerce class gate.
+- **Config mirror:** `Corex\Config\Addons\AddonRegistry` now reads slug/plugin/dependency/feature-flag metadata from
+  `Corex\Foundation\AddonProviderRegistry`; the config layer keeps only labels, descriptions, docs links, and admin
+  manifest fields.
+- **Metadata/CI checks:** added `Corex\Cli\Release\MetadataConsistencyCheck` and `CiSecurityReadiness`. Metadata
+  mismatches report path, field, expected value, actual value, and visible policy exceptions. CI/security findings
+  distinguish repo-owned controls from GitHub-settings-only controls and report missing CODEOWNERS, Dependabot, and
+  CodeQL coverage.
+- **Readiness command:** added `wp corex readiness`, registered through `CliServiceProvider`. The command emits rows
+  for runtime-gating, metadata, ci-security, make-site, deployment, component-coverage, free-pro, and multi-agent;
+  later-story categories are explicit `not-run` rows until their tasks implement the checks.
+- **Docs:** updated `docs/en/04-team-workflow/quality-gates.md` and
+  `docs-app/src/content/docs/guides/deployment.md` with the readiness command, metadata check behavior, and
+  `environment-gated` reporting rules.
+- **Verification:** RED captured before implementation for T008/T011/T013/T018. `wp --path=wp corex readiness
+  0.26.1` passed and showed metadata PASS, CI/security WARNING for missing repo-file controls, and GitHub settings
+  ENVIRONMENT-GATED. Full `composer test` passed with **587 tests and 1994 assertions**. `docs-app` build passed
+  with **268 pages** and the existing sitemap warning because `site` is not configured. `clean-code-guard`,
+  `wp-guard`, `test-guard`, and `docs-guard` were applied to the diff; no blocking findings remain.
+- **NEXT:** begin US2 with T021/T022 tests for multi-agent work-unit and readiness rules, then implement T023-T026.
+
+---
+## RESUME HERE (2026-06-18) -- Spec 055 runtime gating green; continue US1 metadata/CI
+
+Spec 055 US1 runtime add-on gating tasks T008, T009, and T012-T015 are complete.
+
+- **Runtime resolver:** added `Corex\Foundation\AddonRuntimeState`, `AddonProviderResolution`, and
+  `AddonProviderResolver`. The resolver includes active/installed providers, excludes inactive, not-installed,
+  dependency-missing, feature-flag-disabled, and external-gate-disabled providers with reasons, and keeps core
+  providers first.
+- **Boot wiring:** `Corex\Boot` now builds its provider list from core providers plus resolver-included optional
+  add-ons using WordPress active plugin state, installed plugin files, feature flags, and the WooCommerce class gate.
+- **Config mirror:** `Corex\Config\Addons\AddonRegistry` now reads slug/plugin/dependency/feature-flag metadata from
+  `Corex\Foundation\AddonProviderRegistry`; the config layer keeps only labels, descriptions, docs links, and admin
+  manifest fields.
+- **Verification:** RED captured for T008/T009 (`AddonProviderResolver` missing) and T013 (`Boot::providersForState`
+  missing). Focused suites passed after implementation. Full `composer test` passed with **578 tests and 1955
+  assertions**. WP-CLI smoke check passed after the Boot change: `corex` theme is active and WordPress recognizes
+  the Corex plugins.
+- **NEXT:** continue US1 with T010/T011 tests for metadata consistency and CI/security readiness, then implement
+  T016/T017.
+
+---
+## RESUME HERE (2026-06-18) -- Spec 055 foundation complete; start US1 tests
+
+Spec 055 setup and foundational tasks T001-T007 are complete on `feature/055-stable-client-readiness`.
+
+- **T001-T003 complete:** branch/feature pointer confirmed; baseline commands recorded; environment gate passed
+  (`wp --path=wp theme list` sees `corex` active and `wp --path=wp plugin list` recognizes the Corex plugins). The
+  earlier JS-test blocker is cleared: `npm.cmd run test:js` passed with 15 suites and 55 tests.
+- **T004-T005 complete:** added `Corex\Foundation\AddonProvider` and `AddonProviderRegistry` plus reusable runtime
+  fixtures in `tests/Unit/Foundation/AddonProviderFixtures.php`.
+- **T006-T007 complete:** added `Corex\Cli\Release\ReadinessFinding`, `ReadinessReport`, and
+  `tests/Unit/Release/ReadinessReportTest.php`.
+- **Focused verification:** `vendor\bin\pest tests\Unit\Foundation\AddonProviderRegistryTest.php` passed
+  (2 tests, 15 assertions); `vendor\bin\pest tests\Unit\Release\ReadinessReportTest.php` passed (3 tests,
+  9 assertions).
+- **Scope guard:** user-story implementation has not started yet. Follow TDD from T008 before touching runtime
+  resolver code.
+- **NEXT:** begin US1 with T008/T009 tests for add-on provider resolution and Woo provider gating, then implement
+  T012-T015 minimally.
+
+---
+## RESUME HERE (2026-06-18, latest) -- Spec 055 planned; tasks pending
+
+Ran `/speckit-plan` for `specs/055-stable-client-readiness` after confirming there was no clarification gap:
+the spec checklist has no `[NEEDS CLARIFICATION]` markers, the requirements are marked complete, and scope is
+explicitly framework readiness before client-site work.
+
+- **Branch:** `feature/055-stable-client-readiness`.
+- **Generated planning artifacts:** `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, and contracts for
+  runtime gating, metadata consistency, make:site validation, readiness reporting, and component/boundary
+  classification.
+- **Key planning decision:** runtime add-on gating must live below the admin Add-ons UI and be applied before
+  optional service providers boot; `Boot.php` currently lists all providers directly, so implementation must add a
+  lower-level provider-resolution contract rather than relying only on `corex-config` toggle screens.
+- **Agent context:** `CLAUDE.md` managed Spec Kit block now points at `specs/055-stable-client-readiness/plan.md`.
+- **Scope guard:** no framework implementation, CI workflow changes, runtime gating code, metadata checker, or
+  make:site validator has been implemented yet.
+- **NEXT:** run `/speckit-tasks` for spec 055, then implement tasks one at a time with tests, guards, PROGRESS, and
+  DECISIONS updates.
+
+---
+## RESUME HERE (2026-06-18, latest) -- Spec 055 stable client readiness created; implementation pending
+
+Created `specs/055-stable-client-readiness/spec.md` and its requirements checklist after explicit user approval to
+continue from the Phase 0 audit recommendation. The scope is framework stability before the first two company-identity
+websites: add-on runtime gating, metadata/version consistency, CI/security hardening, make:site validation,
+deployment readiness, component coverage, staged native-first UI readiness, Free/Core vs Pro boundaries, and
+multi-agent safety.
+
+- **Branch:** `feature/055-stable-client-readiness`.
+- **Current feature metadata:** `.specify/feature.json` now points at `specs/055-stable-client-readiness`.
+- **Decision log:** DECISIONS #91 records why this is a new user-approved readiness spec, not the old rejected
+  documentation-productization spec and not a visual redesign.
+- **Scope guard:** no source code, product feature, CI, metadata, make:site, runtime gating, deployment, or visual
+  redesign implementation has been started yet.
+- **NEXT:** run the Spec Kit planning flow for spec 055 (`/speckit-clarify` only if new ambiguity appears, then
+  `/speckit-plan`, `/speckit-tasks`) before any implementation.
+
+---
+## ▶ RESUME HERE (2026-06-18, latest) — Phase 0 audit confirms v0.26.1 released; no new build scope
+
+Verified the handoff after the v0.26.1 snapshot against Git history, tags, README, CHANGELOG, PROGRESS, and the
+decision log. `main` is at `e30b1fe` (`Release v0.26.1 — junctioned add-on block asset-URL fix (spec 040 gap)`),
+tagged `v0.26.1`, and `origin/main` points at the same commit. README and CHANGELOG both name v0.26.1 as the
+latest release. The previous top entry below is stale: the asset-URL fix is no longer PR-pending.
+
+- **Verification:** 566 Pest passed (1 existing Brain Monkey warning) · 55 Jest passed · docs-app build passed
+  (268 pages; existing sitemap warning because `site` is not configured) · Playwright E2E passed 6/6 against
+  `http://corex.local` when run with the documented local WAMP admin password (`COREX_ADMIN_PASS=123456`).
+- **Dependencies:** `vendor/`, root `node_modules/`, and `docs-app/node_modules/` were already present; no install
+  command was needed.
+- **▶ NEXT:** no product feature work is open. Recommended next step is to decide the next user-directed spec or
+  maintenance task; do not create spec 055 unless new build scope is explicitly approved and justified.
+
+---
 ## ▶ RESUME HERE (2026-06-15, latest) — E2E suite executed; found + fixed a real asset-URL bug (PR pending)
 
 **The env-gated spec-052 Playwright suite was finally run against the live WAMP site (Apache up).** Hardened it to

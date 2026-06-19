@@ -19,6 +19,9 @@ state what to build next — without anyone explaining. Do this, in order:
 4. `PROGRESS.md`  5. the code. If code contradicts the constitution, the code is wrong.
 
 ## WHILE working
+- Run `git status --short --branch` before edits; work from the active feature branch, never from `main`.
+- Claim branch, spec path, task IDs, and owned files before changing code. Do not edit files owned by another
+  active agent unless the handoff explicitly transfers them.
 - Follow the constitution exactly. If a request conflicts with it, say so rather than comply.
 - Use the `wp corex make:*` generators (once built) rather than hand-writing boilerplate.
 - Thin controllers, fat services, repositories own data access. Everything injected via the
@@ -32,6 +35,8 @@ state what to build next — without anyone explaining. Do this, in order:
   clean-code-guard (any prod code) · wp-guard (WP code) · woo-guard (Woo) · test-guard · docs-guard.
 - Tests written (Pest / Jest / Playwright), i18n-ready, RTL-verified, WCAG 2.2 AA for UI.
 - Update `PROGRESS.md`; log non-trivial decisions in `DECISIONS.md`.
+- For multi-agent work, final reports and handoffs must name the branch, spec path, completed task IDs,
+  files owned, verification commands/results, guard status, and any files being released for another agent.
 - **End every response with a NEXT STEP block** (format in COREX-WORKING-GUIDE.md §A.3 / constitution).
 
 ## Spec Kit workflow (commands namespaced `speckit-*`)
