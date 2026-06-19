@@ -4,6 +4,39 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- Spec 056 planned; dependency audits captured; WordPress gate blocked by WAMP service permissions
+
+Spec 056 (`specs/056-dependency-security-remediation`) is specified, clarified, planned, task-generated, and
+cross-artifact analyzed on branch `feature/056-dependency-security-remediation`. Implementation is isolated in
+`.worktrees/feature-056-dependency-security-remediation`.
+
+- **Plan state:** Spec 056 has 15 functional requirements, 6 success criteria, and 26 dependency-ordered tasks.
+  Cross-artifact analysis found no constitution conflict, critical coverage gap, unresolved placeholder, or
+  unmapped implementation task. Specification baseline commit: `04a6c06`; plan/tasks commit: `991ffdd`; local
+  worktree isolation commit: `8a8094c`.
+- **Dependabot triage:** PRs #36-#45 are merged. PR #35 (Pest 2.36.1 -> 4.7.3) remains open and blocked. Its required
+  CI check reports 600 passing tests / 2239 assertions but exits 1 because 20 tests that intentionally log output
+  are classified as risky. Spec 056 keeps this as a compatibility migration, not a routine auto-merge.
+- **Root npm audit (T002):** clean install from the merged lockfile succeeded. The audit reports 50 vulnerable
+  dependency instances and 15 unique advisories: 1 low, 10 moderate, and 4 high. High findings are transitive
+  build/test paths (`minimatch`, `serialize-javascript`); exposure classification and bounded policy entries remain
+  implementation work after the environment gate.
+- **Docs npm audit (T003):** clean install succeeded. The audit reports 4 low vulnerable instances from one
+  `esbuild` advisory through Astro/Vite.
+- **Composer audit (T004):** clean install succeeded and `composer audit --locked --format=json` returned no
+  advisories and no abandoned packages.
+- **Mandatory WordPress gate (T001, BLOCKED):** the local install exists, but `wp --path=wp ...` cannot connect to
+  its expected WAMP database. Windows reports `MySQL80` running on port 3308 and `wampmysqld64` stopped. Starting
+  the registered WAMP service with both `Start-Service` and `sc.exe start wampmysqld64` failed with access denied;
+  launching a second manual daemon was rejected as unsafe. A temporary `DB_HOST` port probe was reverted after
+  the running MySQL80 instance rejected the WAMP root credentials. No production/tooling code has been written,
+  in compliance with the constitution's Environment Gate.
+- **NEXT:** from an Administrator terminal, stop the conflicting `MySQL80` service if appropriate and start the
+  registered `wampmysqld64` service (or start Wampserver as Administrator), then rerun `wp --path=wp theme list`,
+  `wp --path=wp plugin list`, and `wp --path=wp corex readiness 0.26.1`. After the gate passes, resume T005-T008
+  with RED fixture-driven Jest tests and the minimal audit normalizer.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- CodeQL PHP matrix fix merged; triage Dependabot PRs
 
 Spec 055 PR #34 (`Feature/055 stable client readiness`) is merged into `main`, and local `main` was

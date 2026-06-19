@@ -9,9 +9,9 @@
 **Purpose**: Establish current environment and reproducible audit evidence.
 
 - [ ] T001 Confirm `feature/056-dependency-security-remediation`, working-tree state, spec pointer, and WordPress environment gate; record exact evidence in `PROGRESS.md`
-- [ ] T002 [P] Reinstall root dependencies from `package-lock.json` and capture root `npm audit --package-lock-only --json` evidence without changing manifests
-- [ ] T003 [P] Reinstall docs dependencies from `docs-app/package-lock.json` and capture docs `npm audit --package-lock-only --json` evidence without changing manifests
-- [ ] T004 [P] Run `composer audit --locked --format=json`; record findings or exact advisory-service unavailability in `PROGRESS.md`
+- [X] T002 [P] Reinstall root dependencies from `package-lock.json` and capture root `npm audit --package-lock-only --json` evidence without changing manifests
+- [X] T003 [P] Reinstall docs dependencies from `docs-app/package-lock.json` and capture docs `npm audit --package-lock-only --json` evidence without changing manifests
+- [X] T004 [P] Run `composer audit --locked --format=json`; record findings or exact advisory-service unavailability in `PROGRESS.md`
 
 ---
 

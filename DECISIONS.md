@@ -1604,6 +1604,26 @@ visual redesign now would violate the current priority. A focused readiness spec
 reversible while making the client-site phase safer.
 Status: Active.
 
+## #100 -- Dependency security is exposure-aware and fails closed
+Date: 2026-06-19
+Context: After Dependabot PRs #36-#45 merged, raw audits still report 50 root npm dependency instances, 4 docs-app
+instances, and no Composer advisories. The npm findings are primarily transitive development-tool paths, while the
+open Pest 4 update crosses two major versions and fails the required test check because intentional log output is
+now classified as risky.
+Decision: Spec 056 will preserve raw audit visibility and classify each advisory as shipped runtime, CI, local
+development server, build/test transitive, or unreachable. High/critical runtime or CI findings cannot be excepted.
+Development-only exceptions require exact advisory identity, a severity ceiling, exposure evidence, a compensating
+control, an owner, a review date, and an upstream removal trigger. Automated forced downgrades are prohibited. Pest
+4 remains a separate compatibility migration and must preserve unexpected-output detection rather than suppressing
+it globally.
+Why: raw vulnerability counts do not describe reachability, but ignoring development dependencies hides CI and
+local-tool risk. Exact, expiring exceptions make accepted risk reviewable without allowing audit noise to justify
+unsafe dependency downgrades or false-green security claims.
+Alternatives considered: `npm audit fix --force` (rejected: it proposes unrelated breaking downgrades); omitting all
+development dependencies (rejected: CI and local servers are still trust boundaries); merging Pest 4 on assertion
+count alone (rejected: required CI is red and output semantics changed).
+Status: Active.
+
 ## #95 -- Spec 055 US3 validates generated client scaffolds and deployment profiles through readiness
 Date: 2026-06-18
 Context: US3 requires Corex to be ready for generated client-site repositories before real client branding starts.
