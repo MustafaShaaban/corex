@@ -4,16 +4,16 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-19, latest) -- Spec 056 implementation and local verification complete
+## RESUME HERE (2026-06-19, latest) -- Spec 056 dependency security remediation merged
 
-- **Authoritative work unit:** branch `feature/056-dependency-security-remediation`, worktree
-  `.worktrees/feature-056-dependency-security-remediation`, spec `specs/056-dependency-security-remediation`.
+- **Delivery:** PR #49 merged to `main` as `f5ae445`; spec `specs/056-dependency-security-remediation`.
+  The dependency-security, CI, generic CodeQL, and CodeQL JavaScript/TypeScript checks all passed before merge.
   The root worktree's separate `fix/055-dependency-security-remediation` branch and its provisional dependency-file
   changes were not touched.
 - **Completed tasks:** T001-T026. T016 contains a live-audit-derived policy for all 15 root npm
   advisories and the one docs advisory. T020-T021 remain evidenced by the closed, unmerged Pest 4 PR #35; PRs
   #36-#45 are merged and the open Dependabot queue was empty at triage time.
-- **Remaining tasks:** none in Spec 056. Commit/push, PR CI, review, and merge remain delivery steps.
+- **Remaining tasks:** none in Spec 056.
 - **Audit status:** `npm.cmd run verify:dependencies` passed: Composer 0 findings/0 exceptions, docs npm 1 finding/1
   accepted exception, and root npm 15 findings/15 accepted exceptions. All exceptions are development/build-test
   paths with bounded metadata; no unresolved high/critical shipped-runtime or CI exposure is accepted.
@@ -36,7 +36,9 @@
 - **Owned files:** Spec 056 policy, workflow, verifier, fixtures/tests, Jest/package wiring, security/contributor/README
   documentation, Spec 056 plan/tasks, CHANGELOG security entry, and this progress entry. No product or design files
   are owned or changed by this work unit.
-- **NEXT:** require PR #49's dependency-security workflow plus existing required checks to pass before merge.
+- **GitHub settings evidence:** `main` branch protection is enabled; force pushes and deletions are disabled;
+  `Lint + headless tests (PHP 8.3)` is required; Dependabot security updates and secret scanning are enabled.
+- **NEXT:** cut the clean post-readiness release required by roadmap milestone M0 before starting real client work.
   Upgrade Node to v22.22.0+ and start Docker Desktop when browser/wp-env evidence is next required.
 
 ---
