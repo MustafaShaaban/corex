@@ -4,39 +4,41 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-19, latest) -- Spec 056 planned; dependency audits captured; WordPress gate blocked by WAMP service permissions
+## RESUME HERE (2026-06-19, latest) -- Spec 056 implementation and local verification complete
 
-Spec 056 (`specs/056-dependency-security-remediation`) is specified, clarified, planned, task-generated, and
-cross-artifact analyzed on branch `feature/056-dependency-security-remediation`. Implementation is isolated in
-`.worktrees/feature-056-dependency-security-remediation`.
-
-- **Plan state:** Spec 056 has 15 functional requirements, 6 success criteria, and 26 dependency-ordered tasks.
-  Cross-artifact analysis found no constitution conflict, critical coverage gap, unresolved placeholder, or
-  unmapped implementation task. Specification baseline commit: `04a6c06`; plan/tasks commit: `991ffdd`; local
-  worktree isolation commit: `8a8094c`.
-- **Dependabot triage (T020-T021):** PRs #36-#45 are merged. PR #35 (Pest 2.36.1 -> 4.7.3) was commented with
-  Spec 056 evidence and closed unmerged. Its required
-  CI check reports 600 passing tests / 2239 assertions but exits 1 because 20 tests that intentionally log output
-  are classified as risky. Spec 056 keeps this as a compatibility migration, not a routine auto-merge. Comment:
-  `https://github.com/MustafaShaaban/corex/pull/35#issuecomment-4749962953`.
-- **Root npm audit (T002):** clean install from the merged lockfile succeeded. The audit reports 50 vulnerable
-  dependency instances and 15 unique advisories: 1 low, 10 moderate, and 4 high. High findings are transitive
-  build/test paths (`minimatch`, `serialize-javascript`); exposure classification and bounded policy entries remain
-  implementation work after the environment gate.
-- **Docs npm audit (T003):** clean install succeeded. The audit reports 4 low vulnerable instances from one
-  `esbuild` advisory through Astro/Vite.
-- **Composer audit (T004):** clean install succeeded and `composer audit --locked --format=json` returned no
-  advisories and no abandoned packages.
-- **Mandatory WordPress gate (T001, BLOCKED):** the local install exists, but `wp --path=wp ...` cannot connect to
-  its expected WAMP database. Windows reports `MySQL80` running on port 3308 and `wampmysqld64` stopped. Starting
-  the registered WAMP service with both `Start-Service` and `sc.exe start wampmysqld64` failed with access denied;
-  launching a second manual daemon was rejected as unsafe. A temporary `DB_HOST` port probe was reverted after
-  the running MySQL80 instance rejected the WAMP root credentials. No production/tooling code has been written,
-  in compliance with the constitution's Environment Gate.
-- **NEXT:** from an Administrator terminal, stop the conflicting `MySQL80` service if appropriate and start the
-  registered `wampmysqld64` service (or start Wampserver as Administrator), then rerun `wp --path=wp theme list`,
-  `wp --path=wp plugin list`, and `wp --path=wp corex readiness 0.26.1`. After the gate passes, resume T005-T008
-  with RED fixture-driven Jest tests and the minimal audit normalizer.
+- **Authoritative work unit:** branch `feature/056-dependency-security-remediation`, worktree
+  `.worktrees/feature-056-dependency-security-remediation`, spec `specs/056-dependency-security-remediation`.
+  The root worktree's separate `fix/055-dependency-security-remediation` branch and its provisional dependency-file
+  changes were not touched.
+- **Completed tasks:** T001-T026. T016 contains a live-audit-derived policy for all 15 root npm
+  advisories and the one docs advisory. T020-T021 remain evidenced by the closed, unmerged Pest 4 PR #35; PRs
+  #36-#45 are merged and the open Dependabot queue was empty at triage time.
+- **Remaining tasks:** none in Spec 056. Commit/push, PR CI, review, and merge remain delivery steps.
+- **Audit status:** `npm.cmd run verify:dependencies` passed: Composer 0 findings/0 exceptions, docs npm 1 finding/1
+  accepted exception, and root npm 15 findings/15 accepted exceptions. All exceptions are development/build-test
+  paths with bounded metadata; no unresolved high/critical shipped-runtime or CI exposure is accepted.
+- **Checks run:** focused dependency-policy Jest 33/33; full Jest 16 suites and 88/88; JavaScript lint; Node syntax
+  checks; root workspace build; `composer validate --no-check-publish`; Pest 620 tests/2239 assertions; docs-app
+  build (39 pages); policy/package JSON parsing; workflow YAML parsing; live dependency verifier; and
+  `git diff --check`. All passed. The docs build retained two non-blocking pre-existing warnings: missing sitemap
+  `site` configuration and missing docs 404 entry.
+- **WordPress verification:** `wampapache64` and `wampmysqld64` are running. Against the shared local WordPress
+  install, the Corex 0.26.1 theme and required Corex plugins are active, and
+  `wp corex readiness 0.26.1` completed successfully. Its GitHub-settings and deployment-profile categories remain
+  explicitly environment-gated by design.
+- **Checks blocked/environment-gated:** wp-env remains unavailable because Docker Desktop's Linux engine pipe is
+  absent (`//./pipe/dockerDesktopLinuxEngine` not found). Browser automation could not start because installed Node
+  v22.14.0 is below the browser bridge's v22.22.0 minimum. These are recorded under T023 and are not represented as
+  passing.
+- **Guards:** `clean-code-guard`, `test-guard`, and `docs-guard` completed with no remaining blocking findings after
+  enum/path validation and repository lint formatting. `wp-guard` was not applicable because no WordPress runtime
+  file changed.
+- **Owned files:** Spec 056 policy, workflow, verifier, fixtures/tests, Jest/package wiring, security/contributor/README
+  documentation, Spec 056 plan/tasks, CHANGELOG security entry, and this progress entry. No product or design files
+  are owned or changed by this work unit.
+- **NEXT:** open a PR from `feature/056-dependency-security-remediation` and require the dependency-security workflow
+  plus existing required checks to pass before merge. Upgrade Node to v22.22.0+ and start Docker Desktop when
+  browser/wp-env evidence is next required.
 
 ---
 ## RESUME HERE (2026-06-19, latest) -- CodeQL PHP matrix fix merged; triage Dependabot PRs

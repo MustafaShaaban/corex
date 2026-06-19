@@ -8,7 +8,7 @@
 
 **Purpose**: Establish current environment and reproducible audit evidence.
 
-- [ ] T001 Confirm `feature/056-dependency-security-remediation`, working-tree state, spec pointer, and WordPress environment gate; record exact evidence in `PROGRESS.md`
+- [X] T001 Confirm `feature/056-dependency-security-remediation`, working-tree state, spec pointer, and WordPress environment gate; record exact evidence in `PROGRESS.md`
 - [X] T002 [P] Reinstall root dependencies from `package-lock.json` and capture root `npm audit --package-lock-only --json` evidence without changing manifests
 - [X] T003 [P] Reinstall docs dependencies from `docs-app/package-lock.json` and capture docs `npm audit --package-lock-only --json` evidence without changing manifests
 - [X] T004 [P] Run `composer audit --locked --format=json`; record findings or exact advisory-service unavailability in `PROGRESS.md`
@@ -19,10 +19,10 @@
 
 **Purpose**: Define the repository-owned policy contract used by all user stories.
 
-- [ ] T005 [P] Create representative npm audit fixture in `tests/fixtures/dependency-security/npm-audit.json`
-- [ ] T006 [P] Create representative Composer audit fixture in `tests/fixtures/dependency-security/composer-audit.json`
-- [ ] T007 Add RED Jest coverage for normalization, exact advisory identity, and deterministic finding order in `tests/dependency-security-policy.test.js`
-- [ ] T008 Implement audit normalization in `scripts/dependency-security-policy.mjs` and make T007 GREEN
+- [X] T005 [P] Create representative npm audit fixture in `tests/Fixtures/dependency-security/npm-audit.json`
+- [X] T006 [P] Create representative Composer audit fixture in `tests/Fixtures/dependency-security/composer-audit.json`
+- [X] T007 Add RED Jest coverage for normalization, exact advisory identity, and deterministic finding order in `tests/dependency-security-policy.test.js`
+- [X] T008 Implement audit normalization in `scripts/dependency-security-policy.mjs` and make T007 GREEN
 
 **Checkpoint**: Audit payloads have a stable internal shape independent of registry output ordering.
 
@@ -34,11 +34,11 @@
 
 **Independent Test**: Fixture-driven evaluation rejects unknown and forbidden findings, and live verification accounts for all findings from all three lockfiles.
 
-- [ ] T009 [US1] Add RED Jest cases for unknown findings, package/severity mismatch, forbidden high runtime/CI exceptions, and clean audit payloads in `tests/dependency-security-policy.test.js`
-- [ ] T010 [US1] Implement policy evaluation and severity/exposure validation in `scripts/dependency-security-policy.mjs` and make T009 GREEN
-- [ ] T011 [US1] Implement the thin audit runner with exit codes 0/1/2 and `--json` output in `scripts/verify-dependency-security.mjs`
-- [ ] T012 [US1] Add `verify:dependencies` to `package.json` and prove live root, docs-app, and Composer audits are all invoked
-- [ ] T013 [US1] Apply only compatible dependency/lockfile remediations supported by current direct dependency ranges in `package.json`, `package-lock.json`, `docs-app/package.json`, and `docs-app/package-lock.json`
+- [X] T009 [US1] Add RED Jest cases for unknown findings, package/severity mismatch, forbidden high runtime/CI exceptions, and clean audit payloads in `tests/dependency-security-policy.test.js`
+- [X] T010 [US1] Implement policy evaluation and severity/exposure validation in `scripts/dependency-security-policy.mjs` and make T009 GREEN
+- [X] T011 [US1] Implement the thin audit runner with exit codes 0/1/2 and `--json` output in `scripts/verify-dependency-security.mjs`
+- [X] T012 [US1] Add `verify:dependencies` to `package.json` and prove live root, docs-app, and Composer audits are all invoked
+- [X] T013 [US1] Apply only compatible dependency/lockfile remediations supported by current direct dependency ranges in `package.json`, `package-lock.json`, `docs-app/package.json`, and `docs-app/package-lock.json`
 
 **Checkpoint**: Runtime/CI high and critical exposure cannot pass the repository verifier.
 
@@ -50,12 +50,12 @@
 
 **Independent Test**: Missing, expired, stale, or incomplete exception entries fail fixture-driven validation and the live policy contains a matching disposition for every remaining advisory.
 
-- [ ] T014 [US2] Add RED Jest cases for missing fields, expired review dates, stale advisory entries, changed severity, and changed package identity in `tests/dependency-security-policy.test.js`
-- [ ] T015 [US2] Implement exception metadata, expiry, and stale-entry validation in `scripts/dependency-security-policy.mjs` and make T014 GREEN
-- [ ] T016 [US2] Create the fully classified current exception set in `.github/dependency-security-policy.json` from live audit JSON and Spec 056 exposure rules
-- [ ] T017 [P] [US2] Document audit scope, verifier exits, exception requirements, and the no-untrusted-network dev-server control in `SECURITY.md`
-- [ ] T018 [P] [US2] Add maintainer remediation and review commands to `CONTRIBUTING.md`
-- [ ] T019 [US2] Create `.github/workflows/dependency-security.yml` for weekly, manual, and dependency-change verification
+- [X] T014 [US2] Add RED Jest cases for missing fields, expired review dates, stale advisory entries, changed severity, and changed package identity in `tests/dependency-security-policy.test.js`
+- [X] T015 [US2] Implement exception metadata, expiry, and stale-entry validation in `scripts/dependency-security-policy.mjs` and make T014 GREEN
+- [X] T016 [US2] Create the fully classified current exception set in `.github/dependency-security-policy.json` from live audit JSON and Spec 056 exposure rules
+- [X] T017 [P] [US2] Document audit scope, verifier exits, exception requirements, and the no-untrusted-network dev-server control in `SECURITY.md`
+- [X] T018 [P] [US2] Add maintainer remediation and review commands to `CONTRIBUTING.md`
+- [X] T019 [US2] Create `.github/workflows/dependency-security.yml` for weekly, manual, and dependency-change verification
 
 **Checkpoint**: Every remaining advisory is visible and bounded; new or changed advisories fail closed.
 
@@ -78,11 +78,11 @@
 
 **Purpose**: Prove the complete policy, preserve existing behavior, and create a durable handoff.
 
-- [ ] T022 Run focused and full verification: dependency-policy Jest, `npm.cmd run verify:dependencies`, `npm.cmd run test:js`, `npm.cmd run build`, Composer validation, `composer test`, docs-app build, readiness command, and `git diff --check`
-- [ ] T023 Record Docker/wp-env and browser checks as passed or environment-gated with exact evidence in `PROGRESS.md`
-- [ ] T024 Run `clean-code-guard`, `test-guard`, and `docs-guard`; run `wp-guard` only if WordPress runtime files changed; fix every blocking finding
-- [ ] T025 Update `PROGRESS.md` with branch, spec, completed task IDs, owned/released files, audit counts, verification results, guard status, GitHub PR disposition, and the next action
-- [ ] T026 Reconcile all Spec 056 requirements and success criteria against current files, command output, CI state, and GitHub state; leave any unproven task unchecked
+- [X] T022 Run focused and full verification: dependency-policy Jest, `npm.cmd run verify:dependencies`, `npm.cmd run test:js`, `npm.cmd run build`, Composer validation, `composer test`, docs-app build, readiness command, and `git diff --check`
+- [X] T023 Record Docker/wp-env and browser checks as passed or environment-gated with exact evidence in `PROGRESS.md`
+- [X] T024 Run `clean-code-guard`, `test-guard`, and `docs-guard`; run `wp-guard` only if WordPress runtime files changed; fix every blocking finding
+- [X] T025 Update `PROGRESS.md` with branch, spec, completed task IDs, owned/released files, audit counts, verification results, guard status, GitHub PR disposition, and the next action
+- [X] T026 Reconcile all Spec 056 requirements and success criteria against current files, command output, CI state, and GitHub state; leave any unproven task unchecked
 
 ---
 

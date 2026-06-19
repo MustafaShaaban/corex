@@ -73,7 +73,7 @@ scripts/
 `-- verify-dependency-security.mjs
 tests/
 |-- dependency-security-policy.test.js
-`-- fixtures/dependency-security/
+`-- Fixtures/dependency-security/
     |-- npm-audit.json
     `-- composer-audit.json
 package.json

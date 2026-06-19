@@ -13,8 +13,8 @@
 ### Task 1: Establish deterministic policy tests
 
 **Files:**
-- Create: `tests/fixtures/dependency-security/npm-audit.json`
-- Create: `tests/fixtures/dependency-security/composer-audit.json`
+- Create: `tests/Fixtures/dependency-security/npm-audit.json`
+- Create: `tests/Fixtures/dependency-security/composer-audit.json`
 - Create: `tests/dependency-security-policy.test.js`
 
 - [ ] Add fixtures containing one accepted development-only advisory, one forbidden runtime advisory, and one Composer advisory.

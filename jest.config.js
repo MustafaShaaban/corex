@@ -9,5 +9,15 @@ const defaultConfig = require( '@wordpress/scripts/config/jest-unit.config.js' )
 
 module.exports = {
 	...defaultConfig,
-	testPathIgnorePatterns: [ '/node_modules/', '<rootDir>/wp/', '<rootDir>/docs-app/' ],
+	transform: {
+		...defaultConfig.transform,
+		'\\.mjs$': require.resolve(
+			'@wordpress/scripts/config/babel-transform'
+		),
+	},
+	testPathIgnorePatterns: [
+		'/node_modules/',
+		'<rootDir>/wp/',
+		'<rootDir>/docs-app/',
+	],
 };

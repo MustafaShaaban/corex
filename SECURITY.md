@@ -40,3 +40,26 @@ Corex is built security-first (Constitution Principle VII): a declarative middle
 (nonce/capability/throttle/sanitize), escaping at output, prepared queries, and no optional plugin as a
 hard dependency. The self-update flow only fetches from a source **you** configure and installs through
 WordPress's own signed updater — see [`docs/en/05-deployment/updates-and-distribution.md`](docs/en/05-deployment/updates-and-distribution.md).
+
+## Dependency advisories
+
+Corex audits the Composer lockfile, root npm lockfile, and docs-app npm lockfile together:
+
+```bash
+npm run verify:dependencies
+```
+
+The command preserves raw package-manager findings, then validates them against
+`.github/dependency-security-policy.json`. Exit code `0` means every audit ran and every finding is either fixed or
+covered by a current bounded exception. Exit code `1` means the policy rejected a new, changed, expired, stale, or
+forbidden finding. Exit code `2` means an audit service, command, payload, or the policy itself was unavailable; an
+unavailable audit is never reported as clean.
+
+An exception identifies the exact advisory, package, dependency path, severity ceiling, exposure class, reason,
+compensating control, owner, review date, and upstream removal trigger. High or critical findings reachable through
+shipped runtime or CI cannot be excepted. Do not use `npm audit fix --force`: current npm suggestions include
+breaking downgrades unrelated to a supported Corex migration.
+
+Local development servers are not production services. Bind WordPress, webpack, Astro/Vite, and proxy development
+servers to loopback; never expose them to untrusted networks; avoid untrusted sites while affected servers run; and
+stop them after use. Static docs and compiled WordPress assets do not include these development servers.
