@@ -19,7 +19,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 
 | Milestone | Status | Priority | Main dependency |
 |---|---|---|---|
-| M0 - Stabilization, Security, and Release Hygiene | Active and blocking; security remediation complete, release pending | High | Clean post-readiness release; environment-gated wp-env/browser evidence |
+| M0 - Stabilization, Security, and Release Hygiene | Active and blocking; v0.27.0 release candidate in verification | High | Merge, tag, publish, and verify v0.27.0; environment-gated wp-env/browser evidence |
 | M1 - Design Inventory and Design-to-Engineering Pipeline | Repository structure complete; approval intake active | High | Approved Claude Design inventory and handoffs |
 | M2 - CoreX Brand Tokens and Visual Foundation | Waiting for approved design inventory | High | M1 |
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Design needed | High | M1, M2 |
@@ -85,7 +85,8 @@ The current release baseline and exact verification counts belong in `PROGRESS.m
   passed for the merged remediation.
 - **Environment-gated:** run wp-env and browser E2E when Docker and a compatible browser-automation Node runtime are
   available; unavailable checks must remain explicit rather than being reported as passing.
-- **Remaining blocker:** cut and verify a clean post-readiness release before real company website implementation.
+- **Remaining blocker:** merge, tag, publish, and verify the v0.27.0 post-readiness release before real company
+  website implementation.
 
 **Blocked or environment-dependent:** available Docker/wp-env runtime, browser automation, and external deployment
 profiles. These do not reopen completed Spec 056 work, but they remain explicit release/readiness evidence gaps.

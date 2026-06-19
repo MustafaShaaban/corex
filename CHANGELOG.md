@@ -6,6 +6,8 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.27.0] — 2026-06-19
+
 ### Added
 
 - **Exposure-aware dependency security (spec 056):** `npm run verify:dependencies` audits Composer, root npm, and
@@ -29,8 +31,17 @@ All notable changes to Corex are documented here. The format follows
 - **Product boundary matrix:** adoption and trust basics stay Free/Core, while advanced newsletter, bookings,
   careers/ATS, Woo, email/media/data automation, white-label, starter-kit, Azure/DevOps, governance dashboard,
   multi-company identity, and client portal scope are Pro candidates.
-- **Repo-owned security controls:** CODEOWNERS, Dependabot, and CodeQL workflow files are present; GitHub branch
-  protection, required checks, and secret scanning remain environment-gated repository settings.
+- **Repo-owned security controls:** CODEOWNERS, Dependabot, and CodeQL workflow files are present. GitHub branch
+  protection, the required CI context, Dependabot security updates, and secret scanning were verified before this
+  release.
+
+### Notes
+
+- Release verification passed Composer validation, PHP lint across 392 files, 620 Pest tests with 2239 assertions,
+  88 Jest tests across 16 suites, all workspace builds, the 39-page docs build, dependency-policy verification, and
+  local WordPress readiness against the v0.26.1 baseline.
+- Docker/wp-env, browser automation, and external deployment evidence remain explicitly environment-gated. They are
+  not represented as passing release checks.
 
 ## [0.26.1] — 2026-06-15
 

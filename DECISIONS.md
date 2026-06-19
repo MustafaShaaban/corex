@@ -1748,3 +1748,17 @@ Why: a repo-owned security control must be executable. Keeping an unsupported Co
 required-check failure and weakens readiness more than a clearly scoped, passing CodeQL workflow plus explicit PHP
 test/lint coverage.
 Status: Active.
+
+## #101 -- Post-readiness capabilities release as v0.27.0
+Date: 2026-06-19
+Context: v0.26.1 was a patch release for junctioned add-on asset URLs. The accumulated unreleased work now includes
+runtime add-on gating, the `wp corex readiness` command and its client-site/deployment/component/Free-Pro matrices,
+repository security controls, and the fail-closed dependency-audit policy from Specs 055 and 056.
+Decision: release this batch as v0.27.0. Use the existing `wp corex version` contract to align the 15
+plugin/theme/add-on version surfaces, merge the release preparation through required CI and CodeQL checks, then
+create the annotated `v0.27.0` tag and GitHub release from the verified merge commit. Keep Docker/wp-env, browser
+automation, and external deployment evidence explicitly environment-gated when those environments are unavailable.
+Why: the batch adds user-visible framework and release-safety capabilities, so a pre-1.0 minor release communicates
+the scope more accurately than v0.26.2. Tagging only after the protected-branch checks preserves the repository's
+tag-as-release source of truth.
+Status: Final.

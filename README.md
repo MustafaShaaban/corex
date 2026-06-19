@@ -6,7 +6,7 @@ multisite, headless, or AI-agent-driven — on one clean, documented, spec-first
 - **Target:** WordPress 7.0+, PHP 8.3+, FSE block themes.
 - **Namespace:** `Corex\` · **CLI:** `wp corex` · **CSS prefix:** `--corex-`.
 - **Stack:** Composer (PHP) + npm workspaces (JS), one monorepo.
-- **Status:** Actively developed; latest release **v0.26.1**. The engine, block/forms/config layers, CLI
+- **Status:** Actively developed; latest release **v0.27.0**. The engine, block/forms/config layers, CLI
   generators, site kits, and the docs app are implemented and unit-tested. Some admin-UI and visual surfaces
   are verified via the Playwright/wp-env workflow and are noted where browser verification is still pending —
   see `PROGRESS.md` for the authoritative, module-by-module status.
@@ -94,13 +94,14 @@ wp corex make:site Acme --starter  # the above + a runnable example slice to lea
 Before starting a real client site, run the Spec 055 readiness report:
 
 ```bash
-wp corex readiness 0.26.1
+wp corex readiness 0.27.0
 ```
 
 It reports runtime gating, release metadata, CI/security controls, `make:site` validation, deployment profiles,
 native-first component coverage, Free/Core vs Pro boundaries, and multi-agent safety. Local infrastructure checks
-such as Docker/wp-env, browser E2E, GitHub branch protection, required checks, and secret scanning are reported as
-environment-gated unless they have been verified in their owning environment.
+such as Docker/wp-env, browser E2E, and external deployment profiles are reported as environment-gated unless they
+have been verified in their owning environment. GitHub branch protection, the required CI context, Dependabot
+security updates, and secret scanning were verified for the v0.27.0 release cycle.
 
 ## Dependency security
 
