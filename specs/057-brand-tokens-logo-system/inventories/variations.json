@@ -1,0 +1,167 @@
+{
+  "generated_at": "2026-06-19T23:37:51+03:00",
+  "canonical_source": "theme/theme.json",
+  "required_palette_slugs": [
+    "primary",
+    "primary-dark",
+    "accent",
+    "accent-dark",
+    "surface",
+    "surface-alt",
+    "border",
+    "ink",
+    "ink-soft",
+    "success",
+    "warning",
+    "error",
+    "info"
+  ],
+  "required_font_family_slugs": [
+    "heading",
+    "arabic"
+  ],
+  "variations": [
+    {
+      "mode": "dark",
+      "source_path": "theme/styles/dark.json",
+      "replacement_arrays": {
+        "palette": {
+          "declared_slugs": [
+            "primary",
+            "accent",
+            "surface",
+            "ink"
+          ],
+          "missing_required_slugs": [
+            "primary-dark",
+            "accent-dark",
+            "surface-alt",
+            "border",
+            "ink-soft",
+            "success",
+            "warning",
+            "error",
+            "info"
+          ],
+          "complete": false,
+          "mappings": [
+            {
+              "slug": "primary",
+              "value": "#00C2FF"
+            },
+            {
+              "slug": "accent",
+              "value": "#7DD3FC"
+            },
+            {
+              "slug": "surface",
+              "value": "#0B1F3B"
+            },
+            {
+              "slug": "ink",
+              "value": "#F1F5F9"
+            }
+          ]
+        },
+        "font_families": {
+          "declared_slugs": [],
+          "missing_required_slugs": [
+            "heading",
+            "arabic"
+          ],
+          "complete": false,
+          "mappings": []
+        }
+      },
+      "style_references": [
+        "--wp--preset--color--surface",
+        "--wp--preset--color--ink"
+      ],
+      "status": "planned"
+    },
+    {
+      "mode": "editorial",
+      "source_path": "theme/styles/editorial.json",
+      "replacement_arrays": {
+        "palette": {
+          "declared_slugs": [
+            "primary",
+            "primary-dark",
+            "accent",
+            "accent-dark",
+            "surface",
+            "surface-alt",
+            "border",
+            "ink",
+            "ink-soft"
+          ],
+          "missing_required_slugs": [
+            "success",
+            "warning",
+            "error",
+            "info"
+          ],
+          "complete": false,
+          "mappings": [
+            {
+              "slug": "primary",
+              "value": "#1A1A1A"
+            },
+            {
+              "slug": "primary-dark",
+              "value": "#000000"
+            },
+            {
+              "slug": "accent",
+              "value": "#C8553D"
+            },
+            {
+              "slug": "accent-dark",
+              "value": "#A33E2A"
+            },
+            {
+              "slug": "surface",
+              "value": "#FBF8F1"
+            },
+            {
+              "slug": "surface-alt",
+              "value": "#F2ECDF"
+            },
+            {
+              "slug": "border",
+              "value": "#E0D8C8"
+            },
+            {
+              "slug": "ink",
+              "value": "#1A1A1A"
+            },
+            {
+              "slug": "ink-soft",
+              "value": "#5C564C"
+            }
+          ]
+        },
+        "font_families": {
+          "declared_slugs": [
+            "heading"
+          ],
+          "missing_required_slugs": [
+            "arabic"
+          ],
+          "complete": false,
+          "mappings": [
+            {
+              "slug": "heading",
+              "value": "Georgia, 'Times New Roman', serif"
+            }
+          ]
+        }
+      },
+      "style_references": [
+        "--wp--preset--color--surface",
+        "--wp--preset--color--ink"
+      ],
+      "status": "planned"
+    }
+  ]
+}

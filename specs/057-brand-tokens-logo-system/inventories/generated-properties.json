@@ -1,0 +1,377 @@
+{
+  "generated_at": "2026-06-19T23:37:51+03:00",
+  "count": 53,
+  "properties": [
+    {
+      "id": "color.accent",
+      "source_path": "theme/theme.json#settings.color.palette[2]",
+      "generated_property": "--wp--preset--color--accent",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.accent-dark",
+      "source_path": "theme/theme.json#settings.color.palette[3]",
+      "generated_property": "--wp--preset--color--accent-dark",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.border",
+      "source_path": "theme/theme.json#settings.color.palette[6]",
+      "generated_property": "--wp--preset--color--border",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.error",
+      "source_path": "theme/theme.json#settings.color.palette[11]",
+      "generated_property": "--wp--preset--color--error",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.info",
+      "source_path": "theme/theme.json#settings.color.palette[12]",
+      "generated_property": "--wp--preset--color--info",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.ink",
+      "source_path": "theme/theme.json#settings.color.palette[7]",
+      "generated_property": "--wp--preset--color--ink",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.ink-soft",
+      "source_path": "theme/theme.json#settings.color.palette[8]",
+      "generated_property": "--wp--preset--color--ink-soft",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.primary",
+      "source_path": "theme/theme.json#settings.color.palette[0]",
+      "generated_property": "--wp--preset--color--primary",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.primary-dark",
+      "source_path": "theme/theme.json#settings.color.palette[1]",
+      "generated_property": "--wp--preset--color--primary-dark",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.success",
+      "source_path": "theme/theme.json#settings.color.palette[9]",
+      "generated_property": "--wp--preset--color--success",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.surface",
+      "source_path": "theme/theme.json#settings.color.palette[4]",
+      "generated_property": "--wp--preset--color--surface",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.surface-alt",
+      "source_path": "theme/theme.json#settings.color.palette[5]",
+      "generated_property": "--wp--preset--color--surface-alt",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.warning",
+      "source_path": "theme/theme.json#settings.color.palette[10]",
+      "generated_property": "--wp--preset--color--warning",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "focus.color",
+      "source_path": "theme/theme.json#settings.custom.focus.color",
+      "generated_property": "--wp--custom--focus--color",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "focus.offset",
+      "source_path": "theme/theme.json#settings.custom.focus.offset",
+      "generated_property": "--wp--custom--focus--offset",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "focus.width",
+      "source_path": "theme/theme.json#settings.custom.focus.width",
+      "generated_property": "--wp--custom--focus--width",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-family.arabic",
+      "source_path": "theme/theme.json#settings.typography.fontFamilies[1]",
+      "generated_property": "--wp--preset--font-family--arabic",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-family.heading",
+      "source_path": "theme/theme.json#settings.typography.fontFamilies[0]",
+      "generated_property": "--wp--preset--font-family--heading",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-size.2xl",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[5]",
+      "generated_property": "--wp--preset--font-size--2xl",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-size.base",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[2]",
+      "generated_property": "--wp--preset--font-size--base",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-size.hero",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[6]",
+      "generated_property": "--wp--preset--font-size--hero",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-size.lg",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[3]",
+      "generated_property": "--wp--preset--font-size--lg",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-size.sm",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[1]",
+      "generated_property": "--wp--preset--font-size--sm",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-size.xl",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[4]",
+      "generated_property": "--wp--preset--font-size--xl",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-size.xs",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[0]",
+      "generated_property": "--wp--preset--font-size--xs",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "layout.contentSize",
+      "source_path": "theme/theme.json#settings.layout.contentSize",
+      "generated_property": "--wp--style--global--content-size",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "layout.wideSize",
+      "source_path": "theme/theme.json#settings.layout.wideSize",
+      "generated_property": "--wp--style--global--wide-size",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "motion.duration.base",
+      "source_path": "theme/theme.json#settings.custom.motion.duration.base",
+      "generated_property": "--wp--custom--motion--duration--base",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "motion.duration.fast",
+      "source_path": "theme/theme.json#settings.custom.motion.duration.fast",
+      "generated_property": "--wp--custom--motion--duration--fast",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "motion.duration.slow",
+      "source_path": "theme/theme.json#settings.custom.motion.duration.slow",
+      "generated_property": "--wp--custom--motion--duration--slow",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "motion.easing.emphasized",
+      "source_path": "theme/theme.json#settings.custom.motion.easing.emphasized",
+      "generated_property": "--wp--custom--motion--easing--emphasized",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "motion.easing.standard",
+      "source_path": "theme/theme.json#settings.custom.motion.easing.standard",
+      "generated_property": "--wp--custom--motion--easing--standard",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "radius.full",
+      "source_path": "theme/theme.json#settings.custom.radius.full",
+      "generated_property": "--wp--custom--radius--full",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "radius.lg",
+      "source_path": "theme/theme.json#settings.custom.radius.lg",
+      "generated_property": "--wp--custom--radius--lg",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "radius.md",
+      "source_path": "theme/theme.json#settings.custom.radius.md",
+      "generated_property": "--wp--custom--radius--md",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "radius.sm",
+      "source_path": "theme/theme.json#settings.custom.radius.sm",
+      "generated_property": "--wp--custom--radius--sm",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "shadow.lg",
+      "source_path": "theme/theme.json#settings.shadow.presets[2]",
+      "generated_property": "--wp--preset--shadow--lg",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "shadow.md",
+      "source_path": "theme/theme.json#settings.shadow.presets[1]",
+      "generated_property": "--wp--preset--shadow--md",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "shadow.sm",
+      "source_path": "theme/theme.json#settings.shadow.presets[0]",
+      "generated_property": "--wp--preset--shadow--sm",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "spacing.10",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[0]",
+      "generated_property": "--wp--preset--spacing--10",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "spacing.20",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[1]",
+      "generated_property": "--wp--preset--spacing--20",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "spacing.30",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[2]",
+      "generated_property": "--wp--preset--spacing--30",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "spacing.40",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[3]",
+      "generated_property": "--wp--preset--spacing--40",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "spacing.50",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[4]",
+      "generated_property": "--wp--preset--spacing--50",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "spacing.60",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[5]",
+      "generated_property": "--wp--preset--spacing--60",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "spacing.70",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[6]",
+      "generated_property": "--wp--preset--spacing--70",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "spacing.80",
+      "source_path": "theme/theme.json#settings.spacing.spacingSizes[7]",
+      "generated_property": "--wp--preset--spacing--80",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "z.base",
+      "source_path": "theme/theme.json#settings.custom.z.base",
+      "generated_property": "--wp--custom--z--base",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "z.dropdown",
+      "source_path": "theme/theme.json#settings.custom.z.dropdown",
+      "generated_property": "--wp--custom--z--dropdown",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "z.modal",
+      "source_path": "theme/theme.json#settings.custom.z.modal",
+      "generated_property": "--wp--custom--z--modal",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "z.overlay",
+      "source_path": "theme/theme.json#settings.custom.z.overlay",
+      "generated_property": "--wp--custom--z--overlay",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "z.sticky",
+      "source_path": "theme/theme.json#settings.custom.z.sticky",
+      "generated_property": "--wp--custom--z--sticky",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "z.toast",
+      "source_path": "theme/theme.json#settings.custom.z.toast",
+      "generated_property": "--wp--custom--z--toast",
+      "unique": true,
+      "status": "observed"
+    }
+  ]
+}

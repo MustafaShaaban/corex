@@ -4,6 +4,44 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19 23:37 EEST, latest) -- Spec 057 T001-T009 complete
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest incoming commit:** `7b59923`; this inventory/resume update is the next branch commit.
+- **Completed this session:** T001-T009. Added the schema/baseline and seven JSON inventories for canonical
+  definitions, style variations, generated properties, consumers, documentation/brand fixtures, admin fallbacks/
+  aliases, and compatibility classifications.
+- **Design state:** the owner reports the external design package frozen after its final closure pass. Repository
+  handoffs and active engineering specs remain the implementation authority; the freeze does not authorize later
+  milestones or bypass Spec Kit.
+- **Inventory findings:** 53 unique canonical definitions/properties; 203 path/property consumer records; incomplete
+  Dark and Editorial replacement arrays; 11 unique legacy properties across five owner batches; no tracked
+  production `brand.json`; current one-item palette documentation example is incompatible with wholesale list
+  replacement under the approved Spec 057 contract.
+- **Exact next batch:** implement T010-T025 only: foundational contract tests and their expected RED evidence. Do
+  not start T026 or any token/style implementation in that batch.
+- **Blockers:** T047-T049 require approved font files/provenance. T059-T064 require the owner-approved production
+  vector package/provenance. Neither blocks T010-T025.
+- **Verification:** Spec Kit prerequisites resolved Spec 057; `requirements.md` is 16/16; all seven JSON inventories
+  parse; definition IDs/properties are unique; task completion is sequential through T009; documentation claims
+  were checked against theme sources, `BrandResolver`, enqueue owners, and package scripts; `git diff --check` and
+  `docs-guard` passed before commit.
+- **Environment-gated:** this isolated worktree has no `wp/` installation, Docker Desktop's Linux engine is
+  unavailable, and Node v22.14.0 is below the browser-tool runtime requirement. No such check is reported as PASS.
+- **Did not change:** product/runtime code, CSS/token values, theme styles, logo/font assets, release metadata,
+  CHANGELOG, Specs 058/059, or M3-M11 implementation.
+- **Next-agent command:** checkout/pull this branch, then run `/speckit-implement Spec 057 T010-T025 only`; preserve
+  RED evidence in `inventories/baseline.md` and stop before T026.
+
+### Company Website Start Track — June 21–22, 2026
+
+CoreX v0.27.0 is stable enough to begin first company-site planning, content architecture, local setup, brand
+gathering, and implementation preparation. Full company-site launch readiness still depends on M2, minimum M3,
+M4 Company Site Kit v1, and only the M5 blocks required by that kit. CoreX is not yet fully finished or public/
+commercial-launch ready. M6-M11 remain later productization/future/commercial scope unless the first company project
+proves a specific dependency; they do not block all client preparation.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- Spec 057 tasks created; review before implementation
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains draft.

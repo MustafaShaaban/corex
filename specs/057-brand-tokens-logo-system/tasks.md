@@ -25,15 +25,15 @@ is blocked until the owner-approved vector package and provenance manifest exist
 
 **Purpose**: Establish the reviewable baseline before tests or implementation change any token consumer.
 
-- [ ] T001 Run `.specify/scripts/powershell/check-prerequisites.ps1 -Json`, confirm WordPress recognition/readiness for later implementation, and record actual PASS/BLOCKED/ENVIRONMENT-GATED baseline evidence in `specs/057-brand-tokens-logo-system/inventories/baseline.md`
-- [ ] T002 Create the inventory field/schema guide from `data-model.md` in `specs/057-brand-tokens-logo-system/inventories/README.md`
-- [ ] T003 [P] Inventory all definitions and JSON paths in `theme/theme.json` in `specs/057-brand-tokens-logo-system/inventories/definitions.json`
-- [ ] T004 [P] Inventory every palette/font/setting override in `theme/styles/dark.json` and `theme/styles/editorial.json` in `specs/057-brand-tokens-logo-system/inventories/variations.json`
-- [ ] T005 [P] Inventory exact WordPress-generated preset/custom-property names for every definition in `specs/057-brand-tokens-logo-system/inventories/generated-properties.json`
-- [ ] T006 [P] Inventory CSS/SCSS/JSON/PHP/JS consumers under `theme/`, `plugins/`, `addons/`, and `packages/` in `specs/057-brand-tokens-logo-system/inventories/consumers.json`
-- [ ] T007 [P] Inventory documentation examples, current `brand.json` shapes, and existing theme/brand fixtures in `specs/057-brand-tokens-logo-system/inventories/docs-and-brand.json`
-- [ ] T008 [P] Inventory wp-admin fallback literals, repeated fallback chains, scope selectors, enqueue owners, and legacy alias references in `specs/057-brand-tokens-logo-system/inventories/admin-and-aliases.json`
-- [ ] T009 Reconcile T003–T008 into retained/added/aliased/migrated/deprecated classifications, owner batches, compatibility windows, and font/logo blocker states in `specs/057-brand-tokens-logo-system/inventories/classifications.json`
+- [X] T001 Run `.specify/scripts/powershell/check-prerequisites.ps1 -Json`, confirm WordPress recognition/readiness for later implementation, and record actual PASS/BLOCKED/ENVIRONMENT-GATED baseline evidence in `specs/057-brand-tokens-logo-system/inventories/baseline.md`
+- [X] T002 Create the inventory field/schema guide from `data-model.md` in `specs/057-brand-tokens-logo-system/inventories/README.md`
+- [X] T003 [P] Inventory all definitions and JSON paths in `theme/theme.json` in `specs/057-brand-tokens-logo-system/inventories/definitions.json`
+- [X] T004 [P] Inventory every palette/font/setting override in `theme/styles/dark.json` and `theme/styles/editorial.json` in `specs/057-brand-tokens-logo-system/inventories/variations.json`
+- [X] T005 [P] Inventory exact WordPress-generated preset/custom-property names for every definition in `specs/057-brand-tokens-logo-system/inventories/generated-properties.json`
+- [X] T006 [P] Inventory CSS/SCSS/JSON/PHP/JS consumers under `theme/`, `plugins/`, `addons/`, and `packages/` in `specs/057-brand-tokens-logo-system/inventories/consumers.json`
+- [X] T007 [P] Inventory documentation examples, current `brand.json` shapes, and existing theme/brand fixtures in `specs/057-brand-tokens-logo-system/inventories/docs-and-brand.json`
+- [X] T008 [P] Inventory wp-admin fallback literals, repeated fallback chains, scope selectors, enqueue owners, and legacy alias references in `specs/057-brand-tokens-logo-system/inventories/admin-and-aliases.json`
+- [X] T009 Reconcile T003–T008 into retained/added/aliased/migrated/deprecated classifications, owner batches, compatibility windows, and font/logo blocker states in `specs/057-brand-tokens-logo-system/inventories/classifications.json`
 
 **Checkpoint**: The baseline inventory is complete and reviewed. No token value or consumer has changed.
 
