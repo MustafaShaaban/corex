@@ -4,6 +4,24 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- v0.27.0 post-readiness release candidate prepared
+
+- **Branch:** `release/post-readiness`; base commit `0900a97` from `origin/main`.
+- **Version choice:** v0.27.0 because the post-v0.26.1 batch adds runtime gating, client-readiness reporting and
+  matrices, and dependency-security enforcement; this is additive minor-release scope, not a patch-only fix.
+- **Release metadata:** the prepared release baseline is v0.27.0; the tag is pending. The repository version
+  command stamped 15 plugin/theme/add-on headers and `COREX_*_VERSION` constants to 0.27.0. README and CHANGELOG
+  now describe v0.27.0.
+- **Checks passed:** `composer validate --no-check-publish`; PHP lint on 392 files; Pest 620 tests/2239 assertions;
+  Jest 16 suites/88 tests; root workspace build; docs-app build with 39 pages; dependency policy; baseline
+  `wp corex readiness 0.26.1`; and `git diff --check`.
+- **Environment-gated:** Docker Desktop's Linux engine is unavailable, so wp-env did not run. Browser automation
+  requires Node v22.22.0+ but this environment has v22.14.0. External deployment evidence was not available.
+- **M0:** remains active until this release commit is merged, tag `v0.27.0` is pushed, the GitHub release is
+  published, and the resulting release state is verified.
+- **NEXT:** merge the release PR only after required CI/CodeQL checks pass, then tag and publish v0.27.0.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- Milestone roadmap refreshed; M0 release remains blocking
 
 - **Branch:** `docs/milestone-roadmap-refresh`.
