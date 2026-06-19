@@ -24,8 +24,6 @@ jobs:
         include:
           - language: javascript-typescript
             build-mode: none
-          - language: php
-            build-mode: none
     steps:
       - uses: actions/checkout@v4
 
