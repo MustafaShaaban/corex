@@ -48,5 +48,5 @@ Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure, shell commands, and other important
-information, read the current plan at `specs/055-stable-client-readiness/plan.md`.
+information, read the current plan at `specs/056-design-roadmap-inventory/plan.md`.
 <!-- SPECKIT END -->

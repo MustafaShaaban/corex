@@ -1,0 +1,21 @@
+# Corex Design Roadmap
+
+This file tracks design exploration and approval separately from engineering implementation.
+
+## Workflow
+
+1. Explore and review design direction outside the repository.
+2. Record coverage and status in `INVENTORY.md`.
+3. Create a focused handoff in `handoffs/` only when an area is approved and implementation-ready.
+4. Convert the approved handoff into a reviewed engineering spec.
+5. Implement spec by spec; approval here does not authorize code changes.
+
+## Current sequence
+
+1. Complete the design inventory and identify missing states and responsive/RTL behavior.
+2. Approve CoreX brand tokens and visual foundation.
+3. Approve header, mobile navigation, mega-menu, and footer patterns.
+4. Approve the company kit and the first required component batches.
+5. Continue with admin UI, forms/email, portfolio, WooCommerce, docs, and marketing.
+
+The engineering milestone dependencies and Free/Core versus Pro boundaries remain authoritative in the root `ROADMAP.md`.

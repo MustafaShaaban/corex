@@ -4,6 +4,16 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- Spec 056 design roadmap integration complete; approve brand inventory next
+
+Spec 056 is complete through T024. The owner-facing roadmap now uses milestones M0-M11, and the separate design roadmap, controlled inventory, and handoff contract prevent external Claude Design exploration from becoming code without an approved engineering spec.
+
+- **Changed:** planning/specification documentation only; no product or implementation code changed.
+- **Verification:** 12 milestone sections, 11 controlled inventory rows, and all required handoff sections validated; `git diff --check` passed; `docs-guard` found no blocking documentation issues; `CHANGELOG.md` and `DECISIONS.md` remain unchanged.
+- **Current gate:** M0 stabilization remains active before real company website work. Dependabot/security triage and external GitHub/environment verification are still required.
+- **NEXT:** review the external CoreX brand work against `design/INVENTORY.md`, record approval evidence in a focused handoff, then create **Spec 057 - Brand Tokens and Logo System**. Do not invent or implement brand tokens before that approval.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- CodeQL PHP matrix fix merged; triage Dependabot PRs
 
 Spec 055 PR #34 (`Feature/055 stable client readiness`) is merged into `main`, and local `main` was

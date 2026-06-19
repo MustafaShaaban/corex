@@ -1,55 +1,341 @@
-# Corex Roadmap
+# Corex Product and Engineering Roadmap
 
-The agreed module sequence and packaging beyond the released foundation. This is the durable
-"what's next" picture; `PROGRESS.md` holds the immediate next step, `DECISIONS.md` the rationale.
-Order and scope are recommendations — adjust per project need.
+This roadmap is the durable, owner-friendly view of where Corex is, what must happen next, and what is intentionally deferred. It tracks milestones and dependencies rather than repeating completed Spec Kit history.
 
-## Packaging principle
+## 1. Roadmap purpose
 
-- **`plugins/`** — the free **core**: `corex-core` (engine, container, config, data layer, events,
-  security), `corex-blocks` (block engine), `corex-config` (settings/admin). Always present.
-- **`addons/`** — optional **features** (`corex-email`, plus the feature add-ons below). This is the
-  commercial layer (free core + paid add-ons) and the marketplace surface.
-- **`theme/`** — the neutral skin (design tokens + universal FSE templates).
+Corex uses distinct documents for distinct planning needs:
 
-A **feature** is an add-on; a **foundation/seam** lives in core. "Everything is blocks": designs are
-composed of `corex/*` blocks, not hand-written markup.
+- `ROADMAP.md` is the durable product and engineering roadmap: completed foundation, active milestones, dependencies, priorities, and future boundaries.
+- `PROGRESS.md` is the immediate session/resume file: the latest verified state and one recommended next action.
+- `CHANGELOG.md` records actual released and unreleased product changes, not plans.
+- `DECISIONS.md` records important architectural and product decisions and their rationale, not task status.
+- `specs/` contains reviewed implementation contracts. A roadmap milestone is not authorization to implement it.
+- `design/` contains the separate design roadmap, inventory, and approved design-to-engineering handoffs.
 
-## Released
+Approved design work moves from design inventory to a focused handoff, then to an engineering spec. Design exploration is not implementation scope by itself.
 
-- **v0.6.0** — foundation (specs 001–006: core, data layer, CLI generators, block engine,
-  middleware/security, theme tokens).
-- **v0.7.0** — Forms engine (spec 007, `corex-forms`).
-- **v0.8.0 / v0.8.1** — Corex Mail MVP (spec 008, `corex-email`) + a cross-platform autoload hotfix.
+## Roadmap at a glance
 
-## Planned (recommended order)
-
-| Spec | Module | Package | Notes |
+| Milestone | Status | Priority | Main dependency |
 |---|---|---|---|
-| **009** | **Corex UI Block Library** | addon `corex-ui` | Section + dynamic blocks under `corex/*` (hero, section, feature-grid, cta, team, testimonials, stats, logos, faq, pricing, steps, posts, breadcrumbs). Token-only, RTL, WCAG, i18n. Designed via `ui-ux-pro-max`. The foundation every kit/design composes. |
-| **010** | **Company Website Kit** | addon `corex-kit-company` + theme templates | Patterns (compositions of 009 blocks) + universal FSE templates (front-page, page, single, archive, search, 404, index, header/footer parts) + page compositions (Home/About/Services/Team/Contact/Blog) + a neutral style variation + a Blueprint manifest. Neutral/un-branded; composes modules, no business logic. |
-| **011** | **Custom Tables + TableRepository** | core (corex-core data) | Migrations/schema builder + `TableRepository` + casts. Data foundation for subscribers, applications, bookings (many queryable rows, not post-shaped). |
-| **012** | **Captcha drivers + Secure uploads** | addon `corex-captcha` + core upload util | Captcha behind one interface (honeypot/reCAPTCHA/Turnstile/hCaptcha, optional Akismet) + path-safe, MIME/size-validated file uploads. Both anti-spam/security enablers for newsletter + careers. |
-| **013** | **Newsletter / Subscriptions** | addon `corex-newsletter` | Double opt-in, `newsletter_topic` taxonomy, secure confirm/unsubscribe tokens, suppression list, GDPR consent, on-publish trigger (post in topic → email confirmed subscribers via the mail queue). Subscribers in a custom table. |
-| **014** | **Careers** | addon `corex-careers` | Job entity + taxonomies (department/location/type), `corex/jobs` block + single-job template, application form with secure CV upload, application pipeline (new→hired), notifications. Needs 011/012. |
-| **015** | **Call Request** | addon `corex-bookings` | Request-a-call flow (pick a leader, preferred time, contact) → store → notify leader + confirm visitor. Needs forms + mail; calendar integration later. |
-| **016** | **Corex Brand Identity + Admin Branding** | `corex-config` | Define Corex's identity (navy `#0B1F3B` + electric cyan `#00C2FF`, geometric sans, a layered-core SVG mark) and a configurable logo that replaces the WP logo on the admin bar, login, and admin footer. Small + independent — can move earlier. |
-| **017** | **Corex Admin Dashboard / Settings** | `corex-config` (React/DataViews) | Top-level "Corex" menu: dashboard (status/health/modules) + settings (Theme & Brand, Modules, Mail, Forms, Subscribers, Integrations, Tools). Modern WP admin (`@wordpress/components`/DataViews) — first JS build step. |
+| M0 - Stabilization, Security, and Release Hygiene | Active; required before real company websites | High | External GitHub settings and available test environments |
+| M1 - Design Inventory and Design-to-Engineering Pipeline | Active; planning | High | Approved design inventory |
+| M2 - CoreX Brand Tokens and Visual Foundation | Waiting for approved design inventory | High | M1 |
+| M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Design needed | High | M1, M2 |
+| M4 - Full Company Site Kit v1 | Planned | High | M0, M2, M3; selected M5 blocks |
+| M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
+| M6 - CoreX Admin Product Experience | Planned | Medium-high | M2 and stable admin contracts |
+| M7 - Forms and Email Experience | Planned | Medium-high | M2 and existing forms/mail foundations |
+| M8 - Portfolio Kit Completion | Planned | Medium | M2, M3, reusable M5 blocks |
+| M9 - WooCommerce Kit Completion | Waiting for Woo design and stable gating | Medium | M0, M2, M3, WooCommerce gating |
+| M10 - Docs and Marketing Productization | Later; before public/commercial launch | Medium | Stable product surfaces and visual system |
+| M11 - Pro and Commercial Layer | Future | Low until Core/Core kits are stable | Stable Free/Core product |
 
-## Cross-cutting (added inside the specs that need them)
+## 2. Current foundation status
 
-- **Mail queue** (Action Scheduler) → with Newsletter (013): bulk sends must not block a publish.
-- **Mail attachments** → with Careers (014): secure CV attachments reuse the upload util.
-- **Marketplace / distribution** (free core + paid add-ons) → a parallel business track, not a code spec.
+The repository contains substantial implemented foundations. This is a high-level planning summary, not a release certification.
 
-## First real consumer — Blackstone EIT
+| Foundation | Current status |
+|---|---|
+| Core framework | Exists: boot, container, services/repositories, events, security, and support layers are present. Verify release behavior through M0. |
+| Data layer | Exists: models, fields, query/data tooling, and data-management foundations are present. Advanced workflows remain separate scope. |
+| CLI / `make:site` | Exists with scaffold and readiness validation. Verify generated sites in real client use. |
+| Block engine | Exists with discovery and conditional-asset foundations. New visual blocks remain M5 scope. |
+| Forms | Exists as a framework package. Complete visitor/admin states and email presentation in M7. |
+| Config/admin foundation | Exists. Product-level visual consistency and full state coverage remain M6 scope. |
+| Add-ons architecture | Exists with optional add-on packages and dependency metadata. Continue validating packaging and disabled-state safety. |
+| Runtime add-on gating | Implemented under stable-client readiness. Continue regression verification in M0, especially WooCommerce absence/inactive cases. |
+| Company / Portfolio / Woo kits | Foundations exist. They are not yet equivalent to the complete page coverage in M4, M8, and M9. |
+| Design-system / DLS | A substantial token, component, pattern, and documentation foundation exists. Final CoreX identity and approved external design intake remain M1/M2. |
+| Docs | In-repo and published-docs foundations exist. Productization and marketing surfaces remain M10. |
+| Readiness checks | Exist and cover multiple release categories. External/environment-gated evidence still requires M0 verification. |
+| Free/Pro boundary matrix | Exists and protects adoption/security basics in Free/Core. Commercial implementation remains M11. |
+| Tests and release workflow | Broad Pest/Jest/build/readiness coverage exists. Full environment-dependent E2E, repository settings, dependency alerts, and clean release evidence remain M0 work. |
 
-Will use Corex with a **Figma design + full sitemap** from the client's design team (arriving later).
-The kit (010) stays **neutral**; Blackstone's identity is applied via **`brand.json` + a style variation**
-matching the Figma — zero markup edits. Blackstone needs: 009, 010, 013 (newsletter w/ topics), 014
-(careers), 015 (call request).
+The current release baseline and exact verification counts belong in `PROGRESS.md` and `CHANGELOG.md`, not here.
 
-## v1.0.0 definition
+## 3. M0 - Stabilization, Security, and Release Hygiene
 
-"Usable for a real client website end-to-end" = **009 + 010 + 013** (+ 014/015 as the project needs)
-+ **016/017** (Corex identity + control panel).
+**Status:** Active; required before real company websites.
+**Outcome:** A clean, evidence-backed post-readiness release suitable for the first client work.
+
+- Triage and merge Dependabot and security pull requests by risk.
+- Resolve or explicitly disposition vulnerability warnings.
+- Verify GitHub branch protection, required checks, and secret scanning.
+- Verify CodeQL and the complete CI workflow on the default branch.
+- Run the full headless test, lint, build, docs, and readiness suites.
+- Run wp-env and browser E2E where the environment allows; record unavailable checks as environment-gated.
+- Cut a clean post-readiness release before real company website implementation begins.
+
+**Blocked or environment-dependent:** GitHub-owned settings, available Docker/wp-env runtime, and any external deployment profiles.
+
+## 4. M1 - Design Inventory and Design-to-Engineering Pipeline
+
+**Status:** Active; planning.
+**Outcome:** Design exploration stays separate from engineering while approved work becomes implementable in controlled increments.
+
+- Treat Claude Design as the source for design exploration, not as repository implementation authority.
+- Maintain a design inventory covering foundations, navigation, blocks, kits, admin UI, forms/email, docs, marketing, responsive behavior, RTL, accessibility, states, and performance notes.
+- Keep the design roadmap under `design/` separate from this engineering roadmap.
+- Maintain `design/ROADMAP.md`, `design/INVENTORY.md`, and focused documents in `design/handoffs/`.
+- Convert only approved, implementation-ready design areas into handoffs and then engineering specs.
+- Do not implement every design idea immediately or create detailed specs for the entire inventory at once.
+
+## 5. M2 - CoreX Brand Tokens and Visual Foundation
+
+**Status:** Waiting for approved design inventory.
+**Outcome:** One accessible, brandable visual foundation shared by front-end, admin product UI, docs, and marketing.
+
+- New CoreX logo system and usage rules.
+- Final typography system, including Arabic font roles and fallbacks.
+- Final semantic color tokens and brass/gold accent behavior.
+- `theme.json` and runtime token alignment.
+- Admin/product visual base.
+- Dark-first and light-mode behavior.
+- RTL typography and mixed-script rules.
+- Accessibility baseline for color contrast, focus, type scaling, and motion.
+- Design-system documentation update.
+
+Implementation must preserve client brandability: CoreX product identity must not become a hardcoded client-site identity.
+
+## 6. M3 - Header, Mobile Navigation, Mega Menu, and Footer System
+
+**Status:** Design needed; high priority.
+**Outcome:** Reusable template parts that cover company, product, docs, and commerce navigation without requiring a builder.
+
+- Header variants: simple company, corporate with top bar, SaaS/product, docs, WooCommerce, transparent hero, minimal landing, and RTL examples.
+- Mobile navigation: drawer, full-screen menu, nested accordion, and mobile mega-menu accordion.
+- Mega menus: simple dropdown, services, product/features, docs/resources, and WooCommerce categories.
+- Mega-menu item anatomy: optional icon, title, description, badge, link, featured card, and CTA.
+- Sticky and transparent-to-solid behavior.
+- Search overlay, language switcher, CTA slot, account slot, and cart slot.
+- Footer variants: simple, corporate, SaaS, WooCommerce, newsletter, locations, legal, and RTL examples.
+- Reusable FSE template parts and patterns.
+- Defined keyboard, focus, escape, outside-click, mobile, reduced-motion, and RTL behavior.
+
+Do not turn this milestone into a header builder or mega-menu builder.
+
+## 7. M4 - Full Company Site Kit v1
+
+**Status:** High priority after M0, M2, and M3.
+**Outcome:** A neutral, brand-aware company kit that can launch the first real Corex company websites.
+
+Required page coverage:
+
+- Home
+- About
+- Services
+- Single Service
+- Case Studies / Work
+- Single Case Study
+- Industries
+- FAQ
+- Blog / News
+- Single Post
+- Team
+- Testimonials
+- Locations / Branches
+- Contact
+- Privacy Policy
+- Terms
+- Cookie Policy
+- Search Results
+- No Results
+- 404
+- Maintenance
+
+Required kit behavior:
+
+- Preview/apply UX with an explicit summary before mutation.
+- Brand-aware setup fields without embedding a client brand in Corex.
+- Demo content levels: minimal, standard, and full.
+- Safe reset, adopt, skip, and conflict behavior for existing content.
+- SEO starter metadata that remains editable and plugin-compatible.
+- Accessibility, RTL, responsive, content-overflow, and mobile checks.
+
+M4 should reuse approved native blocks and patterns. It must not absorb unrelated Pro workflows.
+
+## 8. M5 - Blocks and Components Expansion
+
+**Status:** High priority; implement in reviewed batches.
+**Outcome:** Fill proven company-site and product-UI gaps without creating a page-builder-sized library.
+
+Front-end block/component candidates:
+
+- Services grid and service detail
+- Process/steps and icon box
+- Logo cloud and trust badges
+- Case study grid and project card
+- Rich tabs with InnerBlocks/full content support
+- Shared slider/carousel system
+- Testimonial, gallery, and logo carousels
+- Featured posts and newsletter signup
+- Contact info cards and map/location section
+- Timeline, video modal, and before/after
+- Pricing comparison
+- Related posts/projects
+
+Admin/product component candidates:
+
+- Add-on card, dependency card, readiness checklist, status card, and metric card
+- Empty state, skeleton, toast, data table, and filter bar
+
+Required rules:
+
+- Do not load slider JavaScript globally.
+- Use no autoplay by default; any enabled autoplay must expose pause and stop on interaction.
+- Respect `prefers-reduced-motion`.
+- Provide keyboard operation, visible focus, usable labels, and announcements where needed.
+- Support RTL direction, arrow semantics, swipe direction, and item order.
+- Provide a server-rendered, usable fallback where possible.
+- Batch work by real kit need; prefer WordPress core blocks, styles, and patterns when they satisfy the requirement.
+
+## 9. M6 - CoreX Admin Product Experience
+
+**Status:** Medium-high priority.
+**Outcome:** A coherent operational surface for setup, configuration, add-ons, data, and readiness.
+
+- Dashboard polish.
+- Add-ons UI.
+- Data UI.
+- Settings UI.
+- Setup wizard.
+- Readiness/status screen.
+- Free and Pro badges.
+- Dependency missing, feature flag off, WooCommerce missing, and Pro required states.
+- Installed/not installed and active/inactive states.
+- Loading, empty, error, success, and permission-denied states.
+- Future-aware license-expired state without implementing licensing early.
+
+Heavy animation and commercial licensing workflows are not part of this milestone.
+
+## 10. M7 - Forms and Email Experience
+
+**Status:** Medium-high priority.
+**Outcome:** Accessible form interactions and consistent branded transactional communication.
+
+- Field anatomy, help text, required/optional treatment, and grouping.
+- Validation states and accessible error summaries.
+- Submit loading, success, and failure states.
+- Captcha failed, honeypot triggered, and file upload rejected states.
+- Admin notification email.
+- User/contact confirmation email.
+- Newsletter confirmation email.
+- Shared branded email tokens with safe light/dark email-client behavior.
+
+Password/reset email styling may be documented for future auth work but does not authorize a full auth/profile system.
+
+## 11. M8 - Portfolio Kit Completion
+
+**Status:** Medium priority.
+**Outcome:** A neutral portfolio kit for studios, agencies, consultants, and independent professionals.
+
+- Home
+- Projects
+- Single Project
+- About
+- Services
+- Process
+- Testimonials
+- Contact
+- Project archive with accessible filters
+- Project categories
+
+Reuse M3 navigation and approved M5 project/case-study components.
+
+## 12. M9 - WooCommerce Kit Completion
+
+**Status:** After WooCommerce design and runtime gating are stable.
+**Outcome:** A complete, performant WooCommerce presentation kit that remains optional.
+
+- Store Home
+- Shop
+- Product Category
+- Single Product
+- Cart
+- Checkout
+- My Account
+- Order Received
+- Support / Contact
+- Shipping Policy
+- Returns Policy
+- Store FAQ
+- Privacy Policy
+- Terms
+- Search / no products
+- 404
+
+The kit must retain dual gating: WooCommerce availability and Corex add-on activation. Advanced WooCommerce internals are not included.
+
+## 13. M10 - Docs and Marketing Productization
+
+**Status:** Later; required before public/commercial launch.
+**Outcome:** Product-quality learning, reference, and launch surfaces aligned with the final visual foundation.
+
+- Docs homepage and article layout.
+- Component and pattern reference pages.
+- Command/reference pages.
+- Search/command palette.
+- GitHub README banner.
+- Open Graph cards.
+- ThemeForest preview.
+- Release cards.
+
+Keep generated API reference separate from curated product documentation.
+
+## 14. M11 - Pro and Commercial Layer
+
+**Status:** Future. Do not build before Core/Core kits are stable.
+**Outcome:** Commercial packaging and advanced vertical capabilities built on a trustworthy Free/Core product.
+
+- Add-on edition metadata and runtime Pro gating.
+- Admin Pro labels.
+- License key screen, validation, update entitlement, and grace behavior.
+- Pro package distribution.
+- White-label admin and client portal.
+- Advanced newsletter and advanced WooCommerce capabilities.
+- Bookings and careers/ATS.
+- Multi-company identity/dashboard.
+
+### Free/Core boundary
+
+Free/Core retains the framework, basic blocks/DLS, forms/contact form, config/options, basic media fields, captcha/honeypot, accessibility, RTL, i18n, basic `make:site`, and basic docs/deployment guidance. Security and accessibility basics must never require Pro.
+
+### Pro/future boundary
+
+Advanced vertical workflows, operational automation, commercial distribution, white-labeling, entitlement, and multi-company/client operations are Pro candidates. Classification does not equal implementation approval.
+
+## 15. Deferred / do not implement now
+
+- Front-office editor workspace.
+- Header builder.
+- Mega menu builder.
+- Full client portal.
+- Full auth/profile system.
+- Full Pro licensing UI.
+- Heavy animation in wp-admin.
+- Advanced WooCommerce custom internals.
+- Building all design ideas at once.
+
+These items require later validation and dedicated specs. They must not leak into M0-M5.
+
+## 16. Spec creation policy
+
+- Keep one master engineering roadmap: this file.
+- Create detailed specs only for the next two or three implementation items.
+- Implement one reviewed spec at a time.
+- Every implementation spec must include goal, scope, out of scope, files likely affected, acceptance criteria, tests/checks, and rollback notes.
+- Design-approved items become focused handoff documents first, then engineering specs.
+- Do not create code directly from design exploration without a reviewed engineering spec.
+- Update roadmap status when priorities or dependencies change; do not rewrite completed spec history into the roadmap.
+
+## 17. Next recommended specs
+
+List only; do not create until explicitly instructed:
+
+1. **Spec 056 - Design Roadmap and Inventory Integration**
+2. **Spec 057 - Brand Tokens and Logo System**
+3. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer Patterns**
+
+The immediate sequence remains M0 stabilization first where it blocks client readiness. Spec 056 can formalize the design intake structure without authorizing product code.
