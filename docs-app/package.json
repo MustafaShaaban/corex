@@ -13,6 +13,6 @@
     "@astrojs/starlight": "^0.40.0",
     "astro": "^6.4.5",
     "corex-framework": "file:..",
-    "sharp": "^0.34.5"
+    "sharp": "^0.35.1"
   }
 }
