@@ -8,8 +8,8 @@ Components, Blocks, Patterns, Templates, Guidelines), all token-driven and acces
 (one home, no separate plugin).
 
 > **The full DLS** — foundations (all token groups incl. motion/focus/z-index), every component with
-> when-to-use / when-not-to-use, patterns, templates, and the evidence-based gap analysis — is in the dedicated
-> [Design System section](../design-system/). This page is the short orientation.
+> when-to-use / when-not-to-use, patterns, templates, the client-readiness matrix, and the evidence-based gap
+> analysis — is in the dedicated [Design System section](../design-system/). This page is the short orientation.
 
 ## The taxonomy
 
@@ -23,6 +23,10 @@ Components, Blocks, Patterns, Templates, Guidelines), all token-driven and acces
 
 The `DesignSystemCatalog` (in `corex-ui`) enumerates these, and a drift test guarantees every listed **Block**
 maps to a real registered `corex/*` block — the catalog can never list something that doesn't exist.
+
+The [client-readiness matrix](../design-system/client-readiness/) maps minimum company-site needs to existing Corex
+or WordPress-native mechanisms. It is the scope guard for the first client sites: native-first, token-only,
+RTL-ready, accessible, and not a final Corex visual redesign.
 
 ## Components
 
@@ -45,3 +49,4 @@ RTL-correct via logical properties — the same rules as the rest of the library
 
 - [Create a block (CLI)](/guides/blocks/) — scaffold your own `corex/*` component with `make:block`.
 - [Apply a brand](/guides/branding/) — the tokens the system consumes.
+- [Client readiness matrix](/design-system/client-readiness/) — classify company-site needs before adding UI scope.

@@ -12,6 +12,17 @@ This recipe gives you **full control**: an Ubuntu VM running nginx + php-fpm + M
 firewall, **atomic release directories** for zero-downtime + instant rollback, and backups. You deploy a
 **release tag**.
 
+## Readiness profile
+
+| Field | Value |
+|---|---|
+| Profile | `standard` or `full` |
+| Package shape | Tagged Corex release in atomic release directories with current symlink |
+| Build commands | `composer validate --no-check-publish`; `composer test`; `npm run build`; optional `npm run test:js` |
+| Dependencies | PHP 8.3 FPM, nginx, MariaDB, WP-CLI, Node 20+ for build hosts |
+| Secrets | Database credentials, mail credentials, optional captcha keys, WordPress salts |
+| Blocker | Live VM provisioning, service health, TLS, and backup restore must be verified on the target VM |
+
 ## Topology
 
 ```mermaid

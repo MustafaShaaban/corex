@@ -26,6 +26,20 @@ The site's identity is **distinct from Corex's**: namespace `AcmeSite\`, text do
 `acme/v1`, CSS prefix `--acme-`, option/CPT prefix `acme_`. Client code imports Corex base classes but never uses
 the `Corex\` namespace for its own classes.
 
+## Validate the scaffold
+
+`wp corex readiness` generates temporary minimal and starter client sites and validates them. The `make-site` row
+passes only when the generated scaffold includes:
+
+- isolated `plugins/acme-site/` and `themes/acme/` folders,
+- client namespace, CSS prefix, and option prefix distinct from Corex,
+- `AGENTS.md`, `CLAUDE.md`, `PROGRESS.md`, `DECISIONS.md`, `specs/`, and `docs/`,
+- a theme token strategy in `themes/acme/theme.json`,
+- starter example files only for `--starter`.
+
+For client repositories, keep `wp corex compliance:check` in CI. It fails client-branding edits under Corex
+framework folders such as `plugins/corex-*`, `addons/corex-*`, `packages/`, or `theme/`.
+
 ### Flags
 
 | Flag | Effect |

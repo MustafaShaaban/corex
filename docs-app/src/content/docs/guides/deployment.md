@@ -22,7 +22,8 @@ Protect `main` and `develop`; require, before merge:
 
 1. a **pull-request review**,
 2. a **green pipeline** (build + the headless tests),
-3. **`wp corex compliance:check`** — fails the PR if it touches Corex framework folders.
+3. **`wp corex compliance:check`** — fails the PR if it touches Corex framework folders,
+4. **`wp corex readiness`** before release or client-site kickoff.
 
 ```bash
 # In CI: fail the build if a client PR edited the Corex framework.
@@ -31,6 +32,40 @@ wp corex compliance:check --files="$(git diff --name-only origin/develop...HEAD 
 
 The check passes client plugin/theme/docs/specs changes and fails (naming them) any change under a Corex framework
 folder. An approved framework change uses `--allow-framework`.
+
+## Readiness reporting
+
+```bash
+wp corex readiness
+```
+
+The readiness report covers runtime add-on gating, release metadata, CI/security, make:site validation, deployment,
+component coverage, Free/Core boundaries, and multi-agent workflow safety. It reports exact evidence and a next
+action for every non-pass row.
+
+Metadata mismatches include the path, field, expected release, and actual value. Explicit policy exceptions, such as
+the npm workspace root version being independent from Corex release tags, remain visible in the report.
+
+`environment-gated` is not a pass. It means the result depends on an external environment or repository setting,
+such as wp-env/browser availability, branch protection, required checks, or secret scanning. Verify those gates in
+their owning environment before release.
+
+## Deployment profiles
+
+Spec 055 records these profiles in the readiness check:
+
+| Profile | Package shape | Commands | Blocker status |
+|---|---|---|---|
+| `minimal` | Corex source, vendor, and built assets | `composer install --no-dev --optimize-autoloader`; `npm run build` | No known blocker |
+| `standard` | Tagged Corex release with core plugins and theme | `composer validate --no-check-publish`; `composer test`; `npm run build` | No known blocker |
+| `full` | First-party Corex runtime with optional add-ons gated by state | `composer test`; `npm run build`; `npm run test:js` | No known blocker |
+| `woo` | Corex plus WooCommerce and Woo kit | `composer test`; `npm run build`; `wp plugin is-installed woocommerce` | No known blocker |
+| `client-site` | Generated client plugin/theme consuming Corex | `wp corex make:site Acme --path=dist/acme`; `wp corex compliance:check` | No known blocker |
+| `shared-host` | Flat WordPress tree copied to shared hosting | `composer install --no-dev --optimize-autoloader`; assemble `dist/` | Verify PHP extensions, permissions, and no-symlink upload shape |
+| `azure-container` | Production Docker image on Azure App Service | `docker build --target prod -t corex:prod .`; `az webapp config container set` | Requires live Azure and repo secret verification |
+| `local-docker` | Docker Compose local stack | `docker compose up -d --build`; `docker compose exec php composer test` | Requires Docker daemon |
+| `wp-env-stable` | wp-env stable smoke/browser target | `npm run env:start`; `npm run test:e2e`; `npm run env:stop` | Requires Docker/wp-env |
+| `wp-env-trunk` | wp-env trunk compatibility target | `npm run env:start -- --update`; `npm run test:e2e`; `npm run env:stop` | Requires Docker/wp-env and may fail on upstream trunk regressions |
 
 ## Packaging a Corex update
 

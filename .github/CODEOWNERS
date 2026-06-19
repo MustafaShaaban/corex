@@ -1,0 +1,33 @@
+# Core maintainers
+* @amElnagdy
+
+# Core framework packages
+/plugins/corex-core/ @amElnagdy
+/plugins/corex-config/ @amElnagdy
+/plugins/corex-blocks/ @amElnagdy
+/plugins/corex-forms/ @amElnagdy
+/packages/cli/ @amElnagdy
+
+# Optional add-ons
+/addons/corex-bookings/ @amElnagdy
+/addons/corex-captcha/ @amElnagdy
+/addons/corex-careers/ @amElnagdy
+/addons/corex-email/ @amElnagdy
+/addons/corex-kit-company/ @amElnagdy
+/addons/corex-kit-portfolio/ @amElnagdy
+/addons/corex-kit-woo/ @amElnagdy
+/addons/corex-media/ @amElnagdy
+/addons/corex-newsletter/ @amElnagdy
+/addons/corex-ui/ @amElnagdy
+
+# Product and contributor docs
+/docs/ @amElnagdy
+/docs-app/ @amElnagdy
+/AGENTS.md @amElnagdy
+/CLAUDE.md @amElnagdy
+/COREX-WORKING-GUIDE.md @amElnagdy
+
+# Spec Kit and automation
+/specs/ @amElnagdy
+/.specify/ @amElnagdy
+/.github/ @amElnagdy

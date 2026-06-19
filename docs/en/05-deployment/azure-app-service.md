@@ -14,6 +14,17 @@ zero-downtime releases. Every deploy ships a **release tag** (per [`COREX-FRAMEW
 
 > Assumes you have an Azure subscription with permission to create resources.
 
+## Readiness profile
+
+| Field | Value |
+|---|---|
+| Profile | `azure-container` |
+| Package shape | Production Docker image deployed to Azure App Service for Containers |
+| Build commands | `docker build --target prod -t corex:prod .`; `az acr build`; `az webapp config container set` |
+| Dependencies | Docker, Azure CLI, Azure Container Registry, Azure Database for MySQL |
+| Secrets | Azure credentials, registry credentials, database credentials, Key Vault secrets |
+| Blocker | Requires live Azure subscription, App Service settings, and repository secret verification |
+
 ## Topology
 
 ```mermaid

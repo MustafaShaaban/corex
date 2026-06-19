@@ -17,6 +17,7 @@ design token, or the runtime.
 | [Components](./components) | UI atoms — alert, badge, breadcrumbs, modal, card, button, … | corex-ui (blocks + block styles), core blocks, runtime |
 | [Patterns](./patterns) | Composed sections — hero, features, stats, FAQ, CTA, contact, … | corex-ui `PatternLibrary` |
 | [Templates](./templates) | FSE page types — landing, contact, form, plus the defaults | the theme |
+| [Client readiness](./client-readiness) | Minimum company-site needs mapped to native Corex/WordPress mechanisms | CLI readiness matrix + docs |
 | [Gap analysis](./gap-analysis) | The evidence: every candidate UI element → one decision | docs |
 
 The catalog (`Corex\Ui\DesignSystemCatalog`) enumerates this taxonomy in code and is **drift-checked** against the
@@ -28,5 +29,5 @@ real registered `corex/*` blocks — it can never list a Corex block that does n
   recompile (`brand.json` overrides at runtime).
 - **RTL-first** — logical CSS properties; Arabic layouts are correct by default.
 - **Accessible (WCAG 2.2 AA)** — state conveyed beyond color, keyboard-operable, visible focus, correct ARIA.
-- **Native-first** — see the [gap analysis](./gap-analysis) for what is a core block, a block style, or a new
-  Corex block, and why.
+- **Native-first** — see the [client-readiness matrix](./client-readiness) and [gap analysis](./gap-analysis) for
+  what is a core block, a block style, a pattern, or a Corex block, and why.

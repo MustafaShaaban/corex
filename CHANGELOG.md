@@ -4,6 +4,30 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [Unreleased]
+
+### Added
+
+- **Stable client readiness (spec 055):** `wp corex readiness` now reports add-on runtime gating, release metadata,
+  CI/security repo-file controls and environment-gated GitHub settings, `make:site` validation, deployment profiles,
+  native-first component coverage, Free/Core vs Pro boundaries, and multi-agent workflow readiness with exact
+  evidence and next actions.
+- **Runtime add-on gating:** optional first-party providers are resolved before boot from shared provider metadata,
+  activation state, dependency state, installed-file checks, feature flags, and external gates. Disabled or missing
+  optional add-ons are excluded before they can register unsafe behavior; Woo remains gated by both Corex state and
+  WooCommerce availability.
+- **Client-site readiness checks:** generated minimal and starter `make:site` scaffolds are validated for isolated
+  client plugin/theme folders, namespace and prefix separation, governance files, specs/docs placeholders, token
+  strategy, and starter example files.
+- **Deployment and component matrices:** deployment profiles distinguish local passable checks from environment-gated
+  shared-host, Azure/container, Docker, and wp-env checks; company-site UI needs are classified by native Corex or
+  WordPress mechanisms without starting the final Corex visual redesign.
+- **Product boundary matrix:** adoption and trust basics stay Free/Core, while advanced newsletter, bookings,
+  careers/ATS, Woo, email/media/data automation, white-label, starter-kit, Azure/DevOps, governance dashboard,
+  multi-company identity, and client portal scope are Pro candidates.
+- **Repo-owned security controls:** CODEOWNERS, Dependabot, and CodeQL workflow files are present; GitHub branch
+  protection, required checks, and secret scanning remain environment-gated repository settings.
+
 ## [0.26.1] — 2026-06-15
 
 ### Fixed

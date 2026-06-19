@@ -42,6 +42,30 @@ git checkout -b feature/029-my-thing develop
 Switched to a new branch 'feature/029-my-thing'
 ```
 
+## Multi-agent ownership
+
+Before editing, run:
+
+```bash
+git status --short --branch
+```
+
+Active work happens on a `feature/NNN-name` branch, never on `main`. When multiple agents or humans are active,
+each work unit must claim its branch, spec path, task IDs, and files owned before making changes. Do not edit a
+file claimed by another active work unit unless the handoff explicitly transfers ownership.
+
+Completed handoffs and PR summaries include:
+
+```text
+Branch: feature/055-stable-client-readiness
+Spec: specs/055-stable-client-readiness
+Tasks: T021, T022
+Files owned: packages/cli/src/Release/AgentWorkUnit.php, tests/Unit/Release/AgentWorkUnitTest.php
+Verification: vendor/bin/pest tests/Unit/Release/AgentWorkUnitTest.php
+Guards: test-guard clean
+Released files: tests/Unit/Release/AgentWorkUnitTest.php
+```
+
 ## Commits — Conventional Commits
 
 Every commit message follows [Conventional Commits](https://www.conventionalcommits.org/): a `type(scope):`

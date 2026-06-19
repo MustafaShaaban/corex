@@ -242,7 +242,23 @@ Write the spec before the code. The spec is the durable artifact.
 7. End with a `NEXT STEP` block.
 8. PR into `develop` → green CI → merge.
 
-### D.4 — Definition of done (per feature)
+### D.3a - Multi-agent work ownership
+
+When more than one agent or human can touch the repo, every work unit starts with status and ownership:
+
+1. Run `git status --short --branch` before editing.
+2. Confirm the work branch is a feature branch, never `main`.
+3. Record the active spec path, task IDs, and files owned for the work unit.
+4. Do not overlap owned files with another active work unit unless a handoff explicitly transfers ownership.
+5. Before marking a work unit complete, attach verification evidence and the relevant guard results.
+6. Handoffs and final reports name branch, spec path, completed task IDs, files owned, verification,
+   guard status, and any files released for another agent.
+
+The release readiness gate models this as an agent work unit: `main` is invalid for active work, overlapping
+file ownership blocks completion, and missing guard evidence keeps a completed task from being accepted.
+
+### D.4 - Definition of done (per feature)
+
 - [ ] Follows the constitution
 - [ ] Generated via CLI where applicable
 - [ ] Unit + E2E tests, green
