@@ -4,6 +4,33 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- Spec 057 planned; generate tasks next
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains draft.
+- **Plan:** `specs/057-brand-tokens-logo-system/plan.md` with Phase 0 research, file-based data model, three contracts,
+  and a runnable validation quickstart. The managed Spec Kit section in `CLAUDE.md` now points to this plan.
+- **Main approach:** inventory definitions and consumers first; keep `theme.json` authoritative; retain/add/alias/
+  migrate/deprecate through compatibility-first batches; complete default/light, dark, and compatible editorial
+  replacement arrays; use a scoped `--corex-admin-*` adapter; preserve `brand.json` list replacement; and migrate
+  block/front-end consumers by owner without layout redesign.
+- **Assets:** fonts are limited to four provenance-recorded self-hosted WOFF2 files with system Latin body text,
+  `font-display: swap`, and no unmeasured preload. Logo integration remains a separately blocked batch until the
+  owner supplies or approves the production vector package and provenance; the legacy navy/cyan SVG is not approval.
+- **Evidence:** the plan requires headless inventory/schema/compatibility/contrast gates, complete contrast and focus
+  matrices, LTR/RTL Arabic/Latin/mixed-script fixtures, forced-colors and 200% zoom review, full tests/guards, and
+  explicit `ENVIRONMENT-GATED` status for unavailable wp-env/browser evidence.
+- **Implementation:** no product code, runtime behavior, CSS/token value, logo/font asset, release metadata,
+  Spec 058/059, or later milestone work changed.
+- **Verification:** `setup-plan.ps1 -Json` and `check-prerequisites.ps1 -Json -PathsOnly` resolved Spec 057; all plan
+  artifacts and internal links exist; placeholder and required-topic scans passed; `git diff --check` passed. The
+  agent-context updater completed after bypassing the broken Windows Store `python3` alias with a process-local YAML
+  parser; no updater script or environment file changed. `docs-guard` found no blocking issue.
+- **Owned files:** `CLAUDE.md`, `PROGRESS.md`, `ROADMAP.md`, and `specs/057-brand-tokens-logo-system/{plan.md,
+  research.md,data-model.md,quickstart.md,contracts/}`.
+- **NEXT:** run `/speckit-tasks` for Spec 057, keeping the logo integration tasks explicitly blocked on the approved
+  vector package while allowing inventory, token, compatibility, admin-adapter, font, and evidence tasks to proceed.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- Spec 057 clarified; ready for planning
 
 - **Branch/spec:** `spec/057-brand-tokens-logo-system`;

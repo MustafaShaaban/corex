@@ -49,5 +49,5 @@ Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at specs/056-dependency-security-remediation/plan.md
+at specs/057-brand-tokens-logo-system/plan.md
 <!-- SPECKIT END -->
