@@ -21,7 +21,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 |---|---|---|---|
 | M0 - Stabilization, Security, and Release Hygiene | Closed in v0.27.0 | Complete | Environment-gated wp-env/browser/deployment evidence remains follow-up verification |
 | M1 - Design Inventory and Design-to-Engineering Pipeline | Repository structure complete; approval intake active | High | Approved Claude Design inventory and handoffs |
-| M2 - CoreX Brand Tokens and Visual Foundation | Waiting for approved design inventory | High | M1 |
+| M2 - CoreX Brand Tokens and Visual Foundation | Handoff approved; Spec 057 created for review | High | Review and plan Spec 057 |
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Design needed | High | M1, M2 |
 | M4 - Full Company Site Kit v1 | Planned | High | M0, M2, M3; selected M5 blocks |
 | M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
@@ -37,11 +37,11 @@ Approved design work moves from design inventory to a focused handoff, then to a
 - **Done:** the core framework foundations, stable-client readiness work, Spec 056 dependency/security remediation,
   CI and CodeQL verification, GitHub branch-protection review, and the repository-side design inventory/handoff
   structure.
-- **Active now:** M1 design approval intake. M0 closed with the verified v0.27.0 post-readiness release.
-- **Next:** approve the CoreX brand foundation in Claude Design and record it as a focused handoff before creating
-  Spec 057.
-- **Blocked:** M2 and M3 cannot enter engineering without approved design handoffs. M4 cannot start until the
-  minimum M2/M3 foundations and selected M5 components are ready.
+- **Active now:** M2 specification review. The approved brand handoff is recorded and Spec 057 exists; M0 remains
+  closed with the verified v0.27.0 post-readiness release.
+- **Next:** review and clarify Spec 057, then create its implementation plan before any product code changes.
+- **Blocked:** M3 cannot enter engineering without an approved navigation handoff and the reviewed M2 token
+  contract. M4 cannot start until the minimum M2/M3 foundations and selected M5 components are ready.
 - **Not authorized:** roadmap presence does not authorize implementation, Pro work, builders, or bulk spec creation.
 
 Before the first real company websites, CoreX requires the M0 release, an approved and implementable M2 visual
@@ -110,7 +110,7 @@ accessibility, RTL, performance constraints, and implementation boundaries.
 
 ## 5. M2 - CoreX Brand Tokens and Visual Foundation
 
-**Status:** Waiting for approved design inventory.
+**Status:** Design handoff approved; Spec 057 created for review and planning.
 **Outcome:** One accessible, brandable visual foundation shared by front-end, admin product UI, docs, and marketing.
 
 - New CoreX logo system and usage rules.
@@ -356,16 +356,16 @@ These items require later validation and dedicated specs. They must not leak int
 - Do not create code directly from design exploration without a reviewed engineering spec.
 - Update roadmap status when priorities or dependencies change; do not rewrite completed spec history into the roadmap.
 
-## 17. Next recommended specs
+## 17. Current and next recommended specs
 
-List only; do not create until explicitly instructed:
+Create and implement one reviewed spec at a time:
 
-1. **Spec 057 - Brand Tokens and Logo System** — create only after the M2 Claude Design handoff is approved.
-2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer Patterns** — create only after the M3 handoff and
+1. **Spec 057 - Brand Tokens and Logo System** — created; review, clarify, and plan before implementation.
+2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer Patterns** — do not create until the M3 handoff and
    M2 token contract are ready.
-3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — create only after M0 closes and the required
+3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — do not create until the required
    M2/M3 contracts identify the first M5 component batch.
 
 Spec number 056 is unavailable: both `056-dependency-security-remediation` and the already-merged
 `056-design-roadmap-inventory` directory exist. Do not reuse or create another 056 spec. The immediate sequence is
-M2 design approval/handoff, then Spec 057. M0 is closed; no spec listed here authorizes product code.
+Spec 057 review, clarification, and planning. M0 is closed; no spec listed here authorizes product code.

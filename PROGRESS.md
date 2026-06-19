@@ -4,6 +4,30 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- M2 handoff approved; Spec 057 created
+
+- **Branch:** `spec/057-brand-tokens-logo-system`.
+- **M0:** remains closed through the verified v0.27.0 release.
+- **Design pipeline:** the existing `056-design-roadmap-inventory` spec already owns the inventory-to-handoff-to-
+  engineering-spec workflow and was not duplicated.
+- **M2 handoff:** `design/handoffs/brand-foundation.md` records the approved dark-first CoreX identity, brass/gold
+  accent, Core X logo direction, Space Grotesk/JetBrains Mono/IBM Plex Sans Arabic roles, dark/light behavior,
+  accessibility, RTL, brandability, WordPress/FSE constraints, exclusions, and approval evidence. The Brand
+  foundation inventory row is now `approved`.
+- **Spec created:** `specs/057-brand-tokens-logo-system/spec.md` with its completed requirements checklist. The spec
+  covers logo integration and token alignment while explicitly excluding M3/M4 work, full admin/forms/docs redesign,
+  new component scope, commercial UI, and heavy motion.
+- **Implementation:** no product, design-asset, style, runtime, add-on, business-logic, release-metadata, or test code
+  changed. Specs 058 and 059 were not created.
+- **Verification:** required-section, placeholder, feature-pointer, inventory-status, and internal-path checks passed;
+  `git diff --check` passed. `docs-guard` verified the token-source, brand-override, admin-fallback, version, and file-
+  path claims against the current repository with no blocking findings.
+- **Owned files:** `.specify/feature.json`, `ROADMAP.md`, `PROGRESS.md`, `design/ROADMAP.md`, `design/INVENTORY.md`,
+  `design/handoffs/brand-foundation.md`, and `specs/057-brand-tokens-logo-system/`.
+- **NEXT:** review and clarify Spec 057, then create its implementation plan and task breakdown before changing
+  product code.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- v0.27.0 released; M0 closed
 
 - **Branch:** `docs/close-m0-v0270`; based on merged release commit `a9abdcb` on `main`.

@@ -4,7 +4,7 @@ Use this inventory to track design coverage. Add rows as Claude Design outputs a
 
 | Area | Screen/component | Status | Priority | Handoff | Notes |
 |---|---|---|---|---|---|
-| Brand foundation | Logo, color, typography, spacing, radius, borders, shadows, icons | needs revision | high | - | Confirm dark/light, accessibility, brandability, and RTL typography. |
+| Brand foundation | Logo, color, typography, spacing, radius, borders, shadows, focus, icons | approved | high | [M2 brand foundation](handoffs/brand-foundation.md) | Approved dark-first CoreX direction with brass/gold accent, Core X logo, dark/light behavior, accessibility, brandability, and RTL typography. |
 | Navigation | Headers, mobile navigation, mega menus, search, language, account/cart | missing | high | - | Define keyboard, responsive, sticky, transparent, and RTL behavior. |
 | Footer | Company, product, WooCommerce, newsletter, locations, legal | missing | high | - | Keep variants composable and content-safe. |
 | Company kit | Full v1 page set and kit setup UX | missing | high | - | First real website dependency. |
