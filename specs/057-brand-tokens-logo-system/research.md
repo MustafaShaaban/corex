@@ -68,11 +68,13 @@ properties, and simple inversion does not cover status, borders, inverse text, o
 
 ## Decision 5: Scoped admin adapter
 
-**Decision**: Define the minimum `--corex-admin-*` semantic aliases on CoreX admin roots, mapping to stable WordPress
-admin variables when available and to centralized WordPress palette fallbacks otherwise.
+**Decision**: Register the minimum `--corex-admin-*` semantic adapter from `corex-core` and enqueue it only as a
+dependency of CoreX-owned admin screen styles, mapping to stable WordPress admin variables when available and to
+centralized WordPress palette fallbacks otherwise.
 
 **Rationale**: Theme Global Styles are not available across wp-admin. Current admin files repeat fallbacks and raw
-values. A scoped adapter centralizes intent without turning it into a second client-brand source.
+values. Registration in `corex-core` lets independently booted add-ons use the adapter without depending on
+`corex-config`; screen-owned enqueueing preserves conditional scope and avoids a second client-brand source.
 
 **Alternatives considered**:
 

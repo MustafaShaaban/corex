@@ -63,7 +63,9 @@ elapsed.
 
 ## Admin adapter contract
 
-- Defined once on a CoreX admin root selector.
+- Registered once by `corex-core` and enqueued only as a dependency of CoreX-owned admin screen styles.
+- Independently booted add-ons consume the shared handle without depending on `corex-config`.
+- Defined on CoreX admin root selectors, not the global admin document.
 - Uses `--corex-admin-*` names for the minimum semantic role set.
 - Maps to stable WordPress admin variables when verified; otherwise uses one centralized documented fallback.
 - Admin component files contain no duplicated palette fallback chains after migration.

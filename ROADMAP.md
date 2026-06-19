@@ -21,7 +21,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 |---|---|---|---|
 | M0 - Stabilization, Security, and Release Hygiene | Closed in v0.27.0 | Complete | Environment-gated wp-env/browser/deployment evidence remains follow-up verification |
 | M1 - Design Inventory and Design-to-Engineering Pipeline | Repository structure complete; approval intake active | High | Approved Claude Design inventory and handoffs |
-| M2 - CoreX Brand Tokens and Visual Foundation | Spec 057 planned; ready for task generation | High | Review plan and generate tasks |
+| M2 - CoreX Brand Tokens and Visual Foundation | Spec 057 tasks created; ready for review | High | Review tasks before implementation |
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Design needed | High | M1, M2 |
 | M4 - Full Company Site Kit v1 | Planned | High | M0, M2, M3; selected M5 blocks |
 | M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
@@ -37,9 +37,10 @@ Approved design work moves from design inventory to a focused handoff, then to a
 - **Done:** the core framework foundations, stable-client readiness work, Spec 056 dependency/security remediation,
   CI and CodeQL verification, GitHub branch-protection review, and the repository-side design inventory/handoff
   structure.
-- **Active now:** M2 task planning. The approved brand handoff, clarified Spec 057, and implementation plan exist;
-  M0 remains closed with the verified v0.27.0 post-readiness release.
-- **Next:** review the Spec 057 plan, then generate and review its task breakdown before product code changes.
+- **Active now:** M2 implementation-readiness review. The approved handoff, clarified Spec 057, plan, and ordered
+  task breakdown exist; M0 remains closed with the verified v0.27.0 post-readiness release.
+- **Next:** review the Spec 057 tasks, then begin T001 inventory/environment baseline only after explicit
+  implementation authorization.
 - **Blocked:** M3 cannot enter engineering without an approved navigation handoff and the reviewed M2 token
   contract. M4 cannot start until the minimum M2/M3 foundations and selected M5 components are ready.
 - **Not authorized:** roadmap presence does not authorize implementation, Pro work, builders, or bulk spec creation.
@@ -110,7 +111,7 @@ accessibility, RTL, performance constraints, and implementation boundaries.
 
 ## 5. M2 - CoreX Brand Tokens and Visual Foundation
 
-**Status:** Design handoff approved; Spec 057 clarified and planned; ready for task generation.
+**Status:** Design handoff approved; Spec 057 clarified, planned, and tasked; ready for implementation review.
 **Outcome:** One accessible, brandable visual foundation shared by front-end, admin product UI, docs, and marketing.
 
 - New CoreX logo system and usage rules.
@@ -360,7 +361,7 @@ These items require later validation and dedicated specs. They must not leak int
 
 Create and implement one reviewed spec at a time:
 
-1. **Spec 057 - Brand Tokens and Logo System** — planned; review the plan and generate tasks before implementation.
+1. **Spec 057 - Brand Tokens and Logo System** — tasked; review tasks before implementation.
 2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer Patterns** — do not create until the M3 handoff and
    M2 token contract are ready.
 3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — do not create until the required
@@ -368,4 +369,4 @@ Create and implement one reviewed spec at a time:
 
 Spec number 056 is unavailable: both `056-dependency-security-remediation` and the already-merged
 `056-design-roadmap-inventory` directory exist. Do not reuse or create another 056 spec. The immediate sequence is
-Spec 057 task generation and review. M0 is closed; no spec listed here authorizes product code.
+Spec 057 task review, then authorized implementation. M0 is closed; no spec listed here authorizes product code.

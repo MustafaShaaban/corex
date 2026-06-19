@@ -4,6 +4,33 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- Spec 057 tasks created; review before implementation
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains draft.
+- **Tasks:** `specs/057-brand-tokens-logo-system/tasks.md` contains 90 sequential tasks: 9 setup/inventory,
+  16 foundational test-contract, 14 US1 canonical-foundation, 16 US2 accessibility/typography/RTL, 10 US3 logo,
+  14 US4 compatibility/admin, and 11 documentation/final-gate tasks. Thirty-six tasks are marked parallel only
+  where ownership does not overlap.
+- **Order:** repository inventory precedes contract tests; RED evidence precedes minimal implementation; canonical
+  tokens precede consumer/admin migration; documentation and full guards close the sequence. US1 is the MVP.
+- **Boundary correction:** the shared `--corex-admin-*` adapter is registered by `corex-core` and conditionally
+  enqueued by each CoreX-owned screen, so independently booted add-ons do not depend on `corex-config` and the
+  adapter does not load globally.
+- **Asset blockers:** font integration tasks T047–T049 stay blocked until approved WOFF2 files/provenance exist.
+  Logo implementation tasks T059–T064 stay blocked until the owner-approved vector package/provenance exists.
+  Inventory, headless contracts, canonical tokens, compatibility, and admin-adapter work can proceed independently.
+- **Implementation:** no task was executed. No product code, runtime behavior, CSS/token value, logo/font asset,
+  release metadata, Spec 058/059, or later milestone work changed.
+- **Verification:** `setup-tasks.ps1 -Json` and `check-prerequisites.ps1 -Json` resolved Spec 057 and its planning
+  artifacts; all 90 IDs are sequential and follow the required checkbox/ID/parallel/story format; story counts are
+  US1 14, US2 16, US3 10, US4 14; required-group and path checks passed; `git diff --check` passed. `docs-guard`
+  found no blocking issue.
+- **Owned files:** `PROGRESS.md`, `ROADMAP.md`, `specs/057-brand-tokens-logo-system/tasks.md`, and the admin-adapter
+  boundary updates in `plan.md`, `research.md`, and `contracts/token-contract.md`.
+- **NEXT:** review `tasks.md`; if approved, run `/speckit-implement` beginning with T001–T009 only. Do not execute
+  blocked font/logo tasks until their provenance gates are satisfied.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- Spec 057 planned; generate tasks next
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains draft.

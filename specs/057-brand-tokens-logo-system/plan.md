@@ -110,13 +110,13 @@ theme/
 └── assets/fonts/                    # future gated WOFF2 files; no files added during planning
 
 plugins/corex-core/
+├── assets/css/corex-admin-tokens.css # planned shared adapter; registered centrally, enqueued only by CoreX screens
 ├── src/Theme/BrandResolver.php      # retain list replacement; validation/reporting boundary if required
 ├── src/Theme/ThemeServiceProvider.php
 ├── config/theme.php
 └── README.md
 
 plugins/corex-config/
-├── assets/admin-tokens.css          # planned scoped --corex-admin-* adapter
 ├── assets/control-panel.css
 ├── assets/data.css
 ├── assets/insights.css
@@ -226,12 +226,13 @@ without a canonical definition or active compatibility alias.
 
 ## Admin Adapter Strategy
 
-Add one stylesheet loaded only on CoreX-owned admin screens. It defines the minimum scoped `--corex-admin-*` roles
-for surface, muted surface, text, muted text, border, accent/action, hover, success, warning, error, info, focus,
-spacing, and radius. Each role maps to a stable WordPress admin CSS variable where one exists and otherwise to a
-single documented WordPress palette fallback. Existing admin styles consume the adapter and stop repeating literal
-fallback chains. The adapter is not a client-brand authority, does not load front-end Global Styles, and must not
-leak to unrelated admin screens.
+Register one shared stylesheet from `corex-core`, then enqueue it only as a dependency of CoreX-owned admin screen
+styles. This lets independently booted add-ons consume the adapter without depending on `corex-config`. It defines
+the minimum scoped `--corex-admin-*` roles for surface, muted surface, text, muted text, border, accent/action, hover,
+success, warning, error, info, focus, spacing, and radius. Each role maps to a stable WordPress admin CSS variable
+where one exists and otherwise to a single documented WordPress palette fallback. Existing admin styles consume the
+adapter and stop repeating literal fallback chains. The adapter is not a client-brand authority, does not load
+front-end Global Styles, and must not leak to unrelated admin screens.
 
 ## Client Override and Rollback Strategy
 
