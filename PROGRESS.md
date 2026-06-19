@@ -4,7 +4,7 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-19, latest) -- Fix CodeQL PHP matrix after merged Spec 055 PR
+## RESUME HERE (2026-06-19, latest) -- CodeQL PHP matrix fix merged; triage Dependabot PRs
 
 Spec 055 PR #34 (`Feature/055 stable client readiness`) is merged into `main`, and local `main` was
 fast-forwarded to `origin/main` at `0197c27`.
@@ -27,7 +27,11 @@ fast-forwarded to `origin/main` at `0197c27`.
 - **Guard Gate:** `test-guard` and `docs-guard` were applied to the follow-up diff; no blocking findings remain.
 - **PR:** opened `https://github.com/MustafaShaaban/corex/pull/46`. GitHub checks passed:
   `Lint + headless tests (PHP 8.3)`, `CodeQL`, and `CodeQL (javascript-typescript)`.
-- **NEXT:** merge PR #46 into `main`, then sync local `main` and continue from the next recommended project item.
+- **Merge:** PR #46 was merged into `main`, and local `main` was fast-forwarded to `origin/main` at `22616c8`.
+- **Open GitHub queue:** `gh pr list --state open` shows 11 Dependabot PRs (#35-#45). The remote push warning reports
+  15 vulnerabilities on the default branch.
+- **NEXT:** triage Dependabot security PRs first, starting with PR #45 (`form-data` 4.0.5 -> 4.0.6), then continue
+  through the remaining dependency PRs by risk and check status.
 
 ---
 ## RESUME HERE (2026-06-19, latest) -- Spec 055 Stable client readiness committed and pushed; open PR
