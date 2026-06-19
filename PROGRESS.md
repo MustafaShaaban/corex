@@ -4,6 +4,21 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- Milestone roadmap refreshed; M0 release remains blocking
+
+- **Branch:** `docs/milestone-roadmap-refresh`.
+- **Changed:** `ROADMAP.md` and this resume entry only; no implementation code or detailed specs were created.
+- **M0:** Spec 056 dependency/security remediation and GitHub verification are complete. M0 remains active and
+  blocking until the clean post-readiness release is cut; Docker/wp-env, browser, and external deployment evidence
+  remain environment-gated.
+- **Design pipeline:** the repository inventory/handoff structure exists. Claude Design remains the exploration
+  source; approved areas must become focused handoffs before engineering specs.
+- **Spec numbering:** 056 is occupied by both existing security and design-inventory directories. The next unused
+  numbers are 057, 058, and 059; no new spec was created.
+- **NEXT:** cut the clean post-readiness release, then approve and record the M2 brand handoff before creating
+  Spec 057 - Brand Tokens and Logo System.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- Spec 056 dependency security remediation merged
 
 - **Delivery:** PR #49 merged to `main` as `f5ae445`; spec `specs/056-dependency-security-remediation`.
