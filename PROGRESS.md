@@ -4,6 +4,25 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- v0.27.0 released; M0 closed
+
+- **Branch:** `docs/close-m0-v0270`; based on merged release commit `a9abdcb` on `main`.
+- **Release:** PR #52 merged, annotated tag `v0.27.0` was pushed, and the GitHub release was published and verified:
+  <https://github.com/MustafaShaaban/corex/releases/tag/v0.27.0>.
+- **Completed:** M0 stabilization, dependency/security remediation, required GitHub settings verification, release
+  verification, version stamping, release notes, tag publication, and release-state verification.
+- **Checks passed:** required PR CI and CodeQL; `composer validate --no-check-publish`; PHP lint; Pest 620
+  tests/2239 assertions; Jest 16 suites/88 tests; root build; docs-app build with 39 pages; dependency policy;
+  baseline `wp corex readiness 0.26.1`; version metadata consistency; and `git diff --check`.
+- **Checks failed:** none among the required non-environment-gated release checks.
+- **Environment-gated:** Docker Desktop's Linux engine was unavailable, so wp-env did not run. Browser automation
+  requires Node v22.22.0+ but this environment has v22.14.0. External deployment evidence was not available.
+  These remain follow-up readiness evidence and are not represented as passing.
+- **M0:** closed by the verified v0.27.0 release. Specs 057-059 remain uncreated; M0 no longer blocks them, but the
+  roadmap's design-handoff dependencies still apply.
+- **NEXT:** approve and record the M2 brand foundation handoff, then create Spec 057 - Brand Tokens and Logo System.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- v0.27.0 post-readiness release candidate prepared
 
 - **Branch:** `release/post-readiness`; base commit `0900a97` from `origin/main`.

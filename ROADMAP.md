@@ -19,7 +19,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 
 | Milestone | Status | Priority | Main dependency |
 |---|---|---|---|
-| M0 - Stabilization, Security, and Release Hygiene | Active and blocking; v0.27.0 release candidate in verification | High | Merge, tag, publish, and verify v0.27.0; environment-gated wp-env/browser evidence |
+| M0 - Stabilization, Security, and Release Hygiene | Closed in v0.27.0 | Complete | Environment-gated wp-env/browser/deployment evidence remains follow-up verification |
 | M1 - Design Inventory and Design-to-Engineering Pipeline | Repository structure complete; approval intake active | High | Approved Claude Design inventory and handoffs |
 | M2 - CoreX Brand Tokens and Visual Foundation | Waiting for approved design inventory | High | M1 |
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Design needed | High | M1, M2 |
@@ -37,11 +37,11 @@ Approved design work moves from design inventory to a focused handoff, then to a
 - **Done:** the core framework foundations, stable-client readiness work, Spec 056 dependency/security remediation,
   CI and CodeQL verification, GitHub branch-protection review, and the repository-side design inventory/handoff
   structure.
-- **Active now:** M0 release hygiene and M1 design approval intake. M0 remains the blocking engineering milestone.
-- **Next:** cut the clean post-readiness release, then approve the CoreX brand foundation in Claude Design and record
-  it as a focused handoff before creating Spec 057.
-- **Blocked:** M2 and M3 cannot enter engineering without approved design handoffs. M4 cannot start until M0 closes
-  and the minimum M2/M3 foundations and selected M5 components are ready.
+- **Active now:** M1 design approval intake. M0 closed with the verified v0.27.0 post-readiness release.
+- **Next:** approve the CoreX brand foundation in Claude Design and record it as a focused handoff before creating
+  Spec 057.
+- **Blocked:** M2 and M3 cannot enter engineering without approved design handoffs. M4 cannot start until the
+  minimum M2/M3 foundations and selected M5 components are ready.
 - **Not authorized:** roadmap presence does not authorize implementation, Pro work, builders, or bulk spec creation.
 
 Before the first real company websites, CoreX requires the M0 release, an approved and implementable M2 visual
@@ -54,26 +54,26 @@ The repository contains substantial implemented foundations. This is a high-leve
 
 | Foundation | Current status |
 |---|---|
-| Core framework | Exists: boot, container, services/repositories, events, security, and support layers are present. Verify release behavior through M0. |
+| Core framework | Exists: boot, container, services/repositories, events, security, and support layers are present. The M0 release baseline is v0.27.0. |
 | Data layer | Exists: models, fields, query/data tooling, and data-management foundations are present. Advanced workflows remain separate scope. |
 | CLI / `make:site` | Exists with scaffold and readiness validation. Verify generated sites in real client use. |
 | Block engine | Exists with discovery and conditional-asset foundations. New visual blocks remain M5 scope. |
 | Forms | Exists as a framework package. Complete visitor/admin states and email presentation in M7. |
 | Config/admin foundation | Exists. Product-level visual consistency and full state coverage remain M6 scope. |
 | Add-ons architecture | Exists with optional add-on packages and dependency metadata. Continue validating packaging and disabled-state safety. |
-| Runtime add-on gating | Implemented under stable-client readiness. Continue regression verification in M0, especially WooCommerce absence/inactive cases. |
+| Runtime add-on gating | Implemented under stable-client readiness and included in v0.27.0. Continue regression verification, especially WooCommerce absence/inactive cases. |
 | Company / Portfolio / Woo kits | Foundations exist. They are not yet equivalent to the complete page coverage in M4, M8, and M9. |
 | Design-system / DLS | A substantial token, component, pattern, and documentation foundation exists. Final CoreX identity and approved external design intake remain M1/M2. |
 | Docs | In-repo and published-docs foundations exist. Productization and marketing surfaces remain M10. |
 | Readiness checks | Exist and cover multiple release categories. Local readiness passed for Spec 056; Docker/wp-env, browser automation, and deployment-profile evidence remain environment-gated. |
 | Free/Pro boundary matrix | Exists and protects adoption/security basics in Free/Core. Commercial implementation remains M11. |
-| Tests and release workflow | Broad Pest/Jest/build/readiness coverage exists. Dependency policy, CI, CodeQL, branch protection, required CI, Dependabot security updates, and secret scanning were verified during Spec 056 delivery. The clean release and environment-dependent E2E evidence remain M0 work. |
+| Tests and release workflow | Broad Pest/Jest/build/readiness coverage exists. Dependency policy, CI, CodeQL, branch protection, required CI, Dependabot security updates, and secret scanning were verified during Spec 056 delivery. The clean v0.27.0 release is published; environment-dependent E2E evidence remains explicit follow-up verification. |
 
 The current release baseline and exact verification counts belong in `PROGRESS.md` and `CHANGELOG.md`, not here.
 
 ## 3. M0 - Stabilization, Security, and Release Hygiene
 
-**Status:** Active; required before real company websites.
+**Status:** Closed in v0.27.0 on 2026-06-19.
 **Outcome:** A clean, evidence-backed post-readiness release suitable for the first client work.
 
 - **Complete:** Dependabot/security triage and Spec 056 exposure-aware dependency remediation.
@@ -83,13 +83,14 @@ The current release baseline and exact verification counts belong in `PROGRESS.m
   were verified after Spec 056 merged.
 - **Complete:** CI, CodeQL, dependency-security validation, full headless tests, builds, docs, and local readiness
   passed for the merged remediation.
+- **Complete:** the v0.27.0 release commit was merged through PR #52, required CI and CodeQL passed, the annotated
+  tag was pushed, and the GitHub release was published and verified against merge commit `a9abdcb`.
 - **Environment-gated:** run wp-env and browser E2E when Docker and a compatible browser-automation Node runtime are
   available; unavailable checks must remain explicit rather than being reported as passing.
-- **Remaining blocker:** merge, tag, publish, and verify the v0.27.0 post-readiness release before real company
-  website implementation.
 
 **Blocked or environment-dependent:** available Docker/wp-env runtime, browser automation, and external deployment
-profiles. These do not reopen completed Spec 056 work, but they remain explicit release/readiness evidence gaps.
+profiles. These do not reopen M0 or completed Spec 056 work, but they remain explicit readiness evidence gaps to
+collect when those environments are available.
 
 ## 4. M1 - Design Inventory and Design-to-Engineering Pipeline
 
@@ -367,4 +368,4 @@ List only; do not create until explicitly instructed:
 
 Spec number 056 is unavailable: both `056-dependency-security-remediation` and the already-merged
 `056-design-roadmap-inventory` directory exist. Do not reuse or create another 056 spec. The immediate sequence is
-M0 release closure, M2 design approval/handoff, then Spec 057. No spec listed here authorizes product code.
+M2 design approval/handoff, then Spec 057. M0 is closed; no spec listed here authorizes product code.
