@@ -4,6 +4,32 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-19, latest) -- Fix CodeQL PHP matrix after merged Spec 055 PR
+
+Spec 055 PR #34 (`Feature/055 stable client readiness`) is merged into `main`, and local `main` was
+fast-forwarded to `origin/main` at `0197c27`.
+
+- **GitHub evidence:** `gh pr list --head feature/055-stable-client-readiness --base main --state all` confirmed
+  PR #34 is `MERGED`. `gh pr checks 34` showed `Lint + headless tests (PHP 8.3)` PASS,
+  `CodeQL (javascript-typescript)` PASS, generic `CodeQL` PASS, and `CodeQL (php)` FAIL.
+- **Root cause:** the failed job log for run `27798745963`, job `82264197504`, reports
+  `Did not recognize the following languages: php` during `github/codeql-action/init@v3`. GitHub's current CodeQL
+  query documentation lists Actions, C/C++, C#, Go, Java/Kotlin, JavaScript/TypeScript, Python, Ruby, Rust, and
+  Swift query sets, but not PHP.
+- **Fix:** branch `fix/056-codeql-supported-languages` removes the unsupported `php` matrix entry from
+  `.github/workflows/codeql.yml`. PHP coverage remains enforced by Composer validation, PHP lint, Pest, and the
+  existing CI workflow.
+- **Verification:** added a regression test in `tests/Unit/Release/CiSecurityReadinessTest.php` proving the
+  CodeQL workflow contains `javascript-typescript` and not `php`. RED failed against the merged workflow. GREEN
+  passed after the workflow fix with **4 tests and 19 assertions**. `wp --path=wp corex readiness 0.26.1` still
+  passes. Full `composer test` passed with **620 tests and 2239 assertions**. `git diff --check` passed. GitHub
+  branch protection, required checks, secret scanning, and Docker/wp-env remain environment-gated.
+- **Guard Gate:** `test-guard` and `docs-guard` were applied to the follow-up diff; no blocking findings remain.
+- **PR:** opened `https://github.com/MustafaShaaban/corex/pull/46`. GitHub checks passed:
+  `Lint + headless tests (PHP 8.3)`, `CodeQL`, and `CodeQL (javascript-typescript)`.
+- **NEXT:** merge PR #46 into `main`, then sync local `main` and continue from the next recommended project item.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- Spec 055 Stable client readiness committed and pushed; open PR
 
 Spec 055 is complete through Phase 8 (T001-T055). Corex now has a stable-client readiness gate covering runtime

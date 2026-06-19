@@ -59,3 +59,11 @@ it('names only the repo-file controls still missing', function () {
         ->and($findings[0]->nextAction)->not->toContain('CODEOWNERS')
         ->and($findings[0]->nextAction)->toContain('Dependabot', 'CodeQL');
 });
+
+it('uses only CodeQL-supported languages in the CodeQL workflow', function () {
+    $workflow = (string) file_get_contents(dirname(__DIR__, 3) . '/.github/workflows/codeql.yml');
+
+    expect($workflow)
+        ->toContain('language: javascript-typescript')
+        ->not->toContain('language: php');
+});

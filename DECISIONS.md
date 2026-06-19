@@ -1705,11 +1705,26 @@ and durable handoff before client-site work can start. Some controls are owned b
 others live in GitHub repository settings or target deployment infrastructure.
 Decision: add repo-owned Dependabot and CodeQL configuration now, and keep external controls explicit as
 environment-gated readiness findings. `.github/dependabot.yml` covers GitHub Actions, Composer, root npm, and
-`docs-app` npm dependencies. `.github/workflows/codeql.yml` runs CodeQL for PHP and JavaScript/TypeScript on pushes,
-pull requests, weekly schedule, and manual dispatch. `wp corex readiness` may report repo-file CI/security controls
-as PASS, but branch protection, required checks, secret scanning, Docker/wp-env, Azure, and shared-host verification
-remain environment-gated until verified in those systems.
+`docs-app` npm dependencies. `.github/workflows/codeql.yml` runs CodeQL for JavaScript/TypeScript on pushes, pull
+requests, weekly schedule, and manual dispatch; PHP remains covered by Composer validation, PHP lint, Pest, and the
+CI workflow because GitHub CodeQL does not recognize `php` as a supported CodeQL analysis language. `wp corex
+readiness` may report repo-file CI/security controls as PASS, but branch protection, required checks, secret
+scanning, Docker/wp-env, Azure, and shared-host verification remain environment-gated until verified in those
+systems.
 Why: repository-owned controls should not stay as avoidable blockers once the implementation knows how to verify
 them. External settings and infrastructure are still real release gates, but recording them as environment-gated keeps
 local readiness honest and prevents agents from claiming they ran checks that require GitHub or Docker state.
+Status: Active.
+
+## #99 -- CodeQL readiness follows GitHub-supported languages only
+Date: 2026-06-19
+Context: After PR #34 merged, GitHub Actions reported `CodeQL (php)` as failed. The job log for run
+`27798745963` failed during `github/codeql-action/init@v3` with `Did not recognize the following languages: php`.
+The JavaScript/TypeScript CodeQL job and the PHP lint/headless test job passed.
+Decision: remove `php` from the CodeQL matrix and keep CodeQL scoped to `javascript-typescript`. Treat PHP static
+coverage as the existing PHP quality gate: Composer validation, PHP lint, Pest, and any future PHP-specific security
+scanner selected by a dedicated spec.
+Why: a repo-owned security control must be executable. Keeping an unsupported CodeQL language creates a permanent
+required-check failure and weakens readiness more than a clearly scoped, passing CodeQL workflow plus explicit PHP
+test/lint coverage.
 Status: Active.
