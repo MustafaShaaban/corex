@@ -51,6 +51,7 @@ export default defineConfig({
 						{ label: 'Assets & cache-busting', slug: 'guides/assets' },
 						{ label: 'Image optimization', slug: 'guides/media' },
 						{ label: 'Build a client site', slug: 'guides/client-site' },
+						{ label: 'Company Site Kit v1', slug: 'guides/company-kit' },
 						{ label: 'Deploy & distribute', slug: 'guides/deployment' },
 						{ label: 'Free/Core vs Pro', slug: 'guides/free-core-vs-pro' },
 						{ label: 'Design Language System', slug: 'guides/design-system' },

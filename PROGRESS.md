@@ -4,7 +4,33 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-20, latest) -- Company-site readiness #6 verified: `wp corex make:site` works; M3 ready, M4 specify'd
+## RESUME HERE (2026-06-21, latest) -- M3 merged; M4 core implemented (full company page set); on PR
+
+- **Branch:** `spec/059-company-site-kit` (rebased onto `main` @ `05982a6` after **PR #56/M3 merged**). Normal root,
+  single worktree, no `.worktrees`. Spec 055 WIP untouched in `stash@{0}`. Owner granted PR-merge permission.
+- **M3 merged:** Spec 058 is on `main`. **M4 core done (Spec 059, US1+US2 + demo levels + SEO):** `CompanyBlueprint`
+  now ships the full v1 content-page set (Home/About/Services/Single Service/Work/Case Study/Industries/FAQ/Blog/Team/
+  Testimonials/Locations/Contact/Privacy/Terms/Cookie/Maintenance), composed from registered `corex/*` patterns + M3
+  header/footer + core blocks; `pages($level)` keeps structure parity across minimal/standard/full; per-page editable
+  SEO starter; reuses the existing provisioning (ApplyPreview + PageDisposition reset/adopt/skip/conflict). System
+  surfaces stay on the universal templates.
+- **Spec Kit:** Spec 059 plan/research/data-model/contract/quickstart/tasks committed; DECISIONS #104; docs-app
+  guides → Company Site Kit v1; ROADMAP M4 + §17 + CHANGELOG updated. Agent-context plan pointer → Spec 059.
+- **Verification:** full `composer test` **683 pass**; `test:js` **103 pass** (token-inventory sync restored after
+  regenerating the M3 navigation-doc reference into `docs-and-brand.json`); `build` pass; **docs-app build 272 pages**;
+  `lint:css` clean. Guards wp/clean-code/test/docs clean. **ENVIRONMENT-GATED:** rendered a11y/RTL + wp-env apply.
+- **Recorded gaps (future specs):** (1) M5 section blocks the kit proved necessary — services/team/case-study/
+  locations grids (pages reuse existing patterns meanwhile); (2) `make:site` standalone client theme does not yet
+  inherit M2 tokens / M3 parts (`specs/059-company-site-kit/make-site-verification.md`).
+- **Order position:** #1-#3 merged; **#4 core done** (US3 brand-setup via existing setup wizard); #5 = the recorded
+  M5 block batch; **#6 verified** earlier (make:site starts an isolated site). Company-site readiness path is
+  **complete enough to start the first real website**.
+- **Exact next step:** merge this M4 PR (CI-green); then implement only the M5 section blocks the kit proved
+  necessary and the make:site visual-foundation inheritance; re-verify `make:site` + apply the company kit end-to-end
+  when Docker/browser runtime is available.
+
+---
+## RESUME HERE (2026-06-20) -- Company-site readiness #6 verified: `wp corex make:site` works; M3 ready, M4 specify'd
 
 - **Branch:** `spec/059-company-site-kit` (stacked over `spec/058`/M3). Normal root, single worktree, no
   `.worktrees`. Spec 055 WIP untouched in `stash@{0}`.
