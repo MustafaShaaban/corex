@@ -124,7 +124,10 @@ final class AdminDashboard
 
         echo '<h1 class="wp-heading-inline">';
         if ($logo !== '') {
-            // height is an HTML attribute (the admin-bar-scale logo size), not an inline style.
+            // Decorative usage (logo-manifest.json): the adjacent "Corex Settings" heading
+            // already names the product, so the mark carries an empty alt to avoid a
+            // duplicate announcement. height is an HTML attribute (the admin-bar-scale logo
+            // size), not an inline style.
             printf('<img src="%s" alt="" height="32" class="corex-brand-logo" /> ', esc_url($logo));
         }
         echo esc_html__('Corex Settings', 'corex') . '</h1>';

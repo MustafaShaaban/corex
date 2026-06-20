@@ -150,12 +150,12 @@ variant/accessibility behavior; client overrides remain independent; rendered ev
 
 ### Implementation for User Story 3
 
-- [ ] T059 [US3] BLOCKED until owner approval: record source, author/owner, rights, approval date, variants, viewBoxes, filenames, and accessible usage in `plugins/corex-config/assets/brand/logo-manifest.json`
-- [ ] T060 [US3] BLOCKED on T059: validate/optimize only the approved symbol, wordmark, lockup, monochrome, and contrast SVGs under `plugins/corex-config/assets/brand/`
-- [ ] T061 [US3] BLOCKED on T060: point the default CoreX product branding to the approved lockup while preserving custom `brand.logo_url` behavior in `plugins/corex-config/src/ConfigServiceProvider.php` and `plugins/corex-config/src/Branding/BrandingService.php`
-- [ ] T062 [US3] BLOCKED on T060: apply documented decorative/named logo behavior without redesigning screens in `plugins/corex-config/src/Settings/AdminDashboard.php` and `plugins/corex-config/src/Branding/AdminBranding.php`
-- [ ] T063 [US3] BLOCKED on T060: retain the old navy/cyan SVG only as documented rollback/migration evidence and verify no unapproved raster, script, external URL, or font-text dependency in `tests/Unit/Config/LogoAssetContractTest.php`
-- [ ] T064 [US3] BLOCKED on T062: run focused Branding/Logo tests and browser minimum-size/contrast/accessibility checks; record PASS/FAIL/ENVIRONMENT-GATED evidence in `specs/057-brand-tokens-logo-system/inventories/logo-evidence.md`
+- [X] T059 [US3] Record source, author/owner, rights, approval date, variants, viewBoxes, filenames, and accessible usage in `plugins/corex-config/assets/brand/logo-manifest.json`
+- [X] T060 [US3] Validate/optimize only the approved symbol, wordmark, lockup, monochrome, and contrast SVGs under `plugins/corex-config/assets/brand/`
+- [X] T061 [US3] Point the default CoreX product branding to the approved lockup while preserving custom `brand.logo_url` behavior in `plugins/corex-config/src/ConfigServiceProvider.php` and `plugins/corex-config/src/Branding/BrandingService.php`
+- [X] T062 [US3] Apply documented decorative/named logo behavior without redesigning screens in `plugins/corex-config/src/Settings/AdminDashboard.php` and `plugins/corex-config/src/Branding/AdminBranding.php`
+- [X] T063 [US3] Retain the old navy/cyan SVG only as documented rollback/migration evidence and verify no unapproved raster, script, external URL, or font-text dependency in `tests/Unit/Config/LogoAssetContractTest.php`
+- [X] T064 [US3] Run focused Branding/Logo tests and browser minimum-size/contrast/accessibility checks; record PASS/FAIL/ENVIRONMENT-GATED evidence in `specs/057-brand-tokens-logo-system/inventories/logo-evidence.md`
 - [x] T065 [US3] Run `clean-code-guard`, `wp-guard`, `test-guard`, and `docs-guard` on the completed US3 diff, record results in `specs/057-brand-tokens-logo-system/inventories/logo-evidence.md`, and keep the story incomplete if T059–T064 remain blocked
 
 **Checkpoint**: This story cannot complete until the owner-approved production vector package and provenance exist.

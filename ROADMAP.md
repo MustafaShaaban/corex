@@ -21,7 +21,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 |---|---|---|---|
 | M0 - Stabilization, Security, and Release Hygiene | Closed in v0.27.0 | Complete | Environment-gated wp-env/browser/deployment evidence remains follow-up verification |
 | M1 - Design Inventory and Design-to-Engineering Pipeline | Current design package frozen; handoff intake active | High | Approved Claude Design inventory and handoffs |
-| M2 - CoreX Brand Tokens and Visual Foundation | Active; font integration complete, logo package gated | High | Approved production logo package/provenance |
+| M2 - CoreX Brand Tokens and Visual Foundation | Active; font + approved logo package integrated (US3 complete); US4 compatibility/admin adapter next | High | US4 compatibility/admin adapter, then final gate |
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Design needed | High | M1, M2 |
 | M4 - Full Company Site Kit v1 | Planned | High | M0, M2, M3; selected M5 blocks |
 | M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
@@ -37,11 +37,12 @@ Approved design work moves from design inventory to a focused handoff, then to a
 - **Done:** the core framework foundations, stable-client readiness work, Spec 056 dependency/security remediation,
   CI and CodeQL verification, GitHub branch-protection review, and the repository-side design inventory/handoff
   structure.
-- **Active now:** M2 implementation. Spec 057 T001-T058 and T065 are complete, including the approved four-file
-  self-hosted font package and WordPress font-face mappings;
-  M0 remains closed with the verified v0.27.0 post-readiness release.
-- **Next:** complete the owner-approved production logo package/provenance gate for T059-T064, then continue the
-  ordered US4 compatibility/admin adapter work. Do not substitute the historical navy/cyan SVG.
+- **Active now:** M2 implementation. Spec 057 T001-T065 are complete, including the approved four-file self-hosted
+  font package, WordPress font-face mappings, and the approved Core X production logo package (symbol/wordmark/
+  lockup/monochrome/contrast SVGs with a provenance manifest); M0 remains closed with the verified v0.27.0 release.
+- **Next:** implement US4 (T066-T079) — compatibility aliases, `BrandOverrideValidator`, and the scoped
+  `--corex-admin-*` adapter — then the final documentation/guard gate (T080-T090). The production logo blocker is
+  resolved; the legacy navy/cyan SVG remains rollback evidence only.
 - **Blocked:** M3 cannot enter engineering without an approved navigation handoff and the reviewed M2 token
   contract. M4 cannot start until the minimum M2/M3 foundations and selected M5 components are ready.
 - **Not authorized:** roadmap presence does not authorize implementation, Pro work, builders, or bulk spec creation.
@@ -124,9 +125,9 @@ accessibility, RTL, performance constraints, and implementation boundaries.
 
 ## 5. M2 - CoreX Brand Tokens and Visual Foundation
 
-**Status:** Active. T001-T058 and T065 are complete. The approved four-file font package and provenance are integrated;
-T059-T064 still require the owner-approved production vector package/provenance. Do not substitute the historical
-navy/cyan SVG or start the ordered US4 implementation around the remaining asset gate.
+**Status:** Active. T001-T065 are complete. The approved four-file font package and the approved Core X production
+logo package (five SVG variants + provenance manifest) are integrated. US4 (T066-T079 compatibility/admin adapter)
+and the final gate (T080-T090) remain. The legacy navy/cyan SVG is retained only as rollback evidence.
 **Outcome:** One accessible, brandable visual foundation shared by front-end, admin product UI, docs, and marketing.
 
 - New CoreX logo system and usage rules.
@@ -376,8 +377,8 @@ These items require later validation and dedicated specs. They must not leak int
 
 Create and implement one reviewed spec at a time:
 
-1. **Spec 057 - Brand Tokens and Logo System** — active; T001-T058 and T065 complete, T059-T064 next after the
-   production logo package/provenance is approved.
+1. **Spec 057 - Brand Tokens and Logo System** — active; T001-T065 complete (font + approved logo package
+   integrated). Next: US4 T066-T079 compatibility/admin adapter, then the final gate T080-T090.
 2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer Patterns** — do not create until the M3 handoff and
    M2 token contract are ready.
 3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — do not create until the required

@@ -68,7 +68,13 @@ it('uses reusable optimized svg assets for every required variant', function () 
         $svg = (string) file_get_contents($path);
         expect($svg)->toContain('<svg')->toContain('viewBox=')
             ->not->toMatch('/<(?:script|image|text)\b/i')
-            ->not->toMatch('/https?:\/\//i');
+            // No external resource dependency. The SVG/xlink namespace literals
+            // (www.w3.org/...) are identifiers, never fetched, so they are allowed;
+            // any other http(s) URL is a forbidden external dependency.
+            ->not->toMatch('#https?://(?!www\.w3\.org/)#i')
+            // No font-text dependency: the wordmark ships as outlined vector paths,
+            // never as live <text> bound to an installed/remote font.
+            ->not->toMatch('/font-family|@font-face|\.woff/i');
     }
 });
 

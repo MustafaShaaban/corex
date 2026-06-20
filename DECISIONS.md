@@ -1762,3 +1762,28 @@ Why: the batch adds user-visible framework and release-safety capabilities, so a
 the scope more accurately than v0.26.2. Tagging only after the protected-branch checks preserves the repository's
 tag-as-release source of truth.
 Status: Final.
+
+## #102 -- Spec 057 production logo package: approved Core X mark + font-outlined wordmark
+Date: 2026-06-20
+Context: Spec 057 T059-T064 were blocked pending an owner-approved production CoreX logo package with provenance.
+The owner approved the design handoff root ("Design project questions answered (3)" /
+design_handoff_corex_brand_system) as the authoritative source and confirmed the locked winner: the "Core X" mark —
+five rounded 12u modules on a 48x48 grid, 3u gutters, 2.5u corner radius, four corners `currentColor`, center module
+brass `#c9a25e`. The handoff documents the wordmark as live Space Grotesk 600 text, not as vector paths, and the
+logo contract forbids `<text>` and font-text dependencies.
+Decision: (1) Extract the symbol/lockup/monochrome/contrast geometry verbatim from the documented mark; the
+monochrome variant is all-`currentColor` single ink and the contrast variant uses the AA-darkened brass `#ad8643`
+documented for light/high-contrast backgrounds. (2) Produce the wordmark/lockup glyphs by *mechanical outline
+extraction* (fontTools) from the already self-hosted, OFL-licensed Space Grotesk variable font instanced at
+wght=600 with -0.035em tracking — not by tracing, redrawing, or reinterpreting. (3) Ship five optimized SVGs under
+`plugins/corex-config/assets/brand/` with a provenance manifest (`logo-manifest.json`: source, owner, rights,
+approval date, viewBoxes, filenames, sha256 checksums, variants, accessible usage). (4) Retain the legacy navy/cyan
+`corex-logo.svg` only as rollback/migration evidence; never ship `.dc.html` prototype runtime files. (5) Refine the
+`LogoAssetContractTest` external-URL assertion (T063 scope) to forbid genuine external-resource URLs while allowing
+the W3C SVG namespace literal, because standalone SVGs require `xmlns="http://www.w3.org/2000/svg"` to render and
+the namespace is an identifier, never a fetched resource.
+Why: faithful, deterministic extraction from the approved system and the licensed font honours "do not invent,
+trace, redraw, or reinterpret the logo" while satisfying the no-`<text>`/no-external-dependency contract and keeping
+the SVGs valid as standalone assets. The generator (`scripts/generate-logo-assets.py`) makes the package
+reproducible.
+Status: Final.

@@ -4,7 +4,41 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-20, latest) -- Workspace unified to single root; Spec 057 logo package still gated
+## RESUME HERE (2026-06-20, latest) -- Spec 057 US3 logo package landed; T059-T064 complete
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and **draft** (not merged, not marked
+  ready). Normal project root `C:/wamp64/www/corex` is the single active checkout.
+- **Owner approval:** the design handoff root "Design project questions answered (3)"
+  (`design_handoff_corex_brand_system/`) was approved as the authoritative logo provenance source. The locked winner
+  "Core X" mark (five rounded 12u modules on a 48x48 grid, 3u gutters, 2.5u radius, four `currentColor` corners,
+  brass `#c9a25e` core) is confirmed against README.md + `Corex Logo System.dc.html`.
+- **Completed this session — T059-T064 (US3 logo):** shipped five optimized SVGs under
+  `plugins/corex-config/assets/brand/` (symbol, wordmark, lockup, monochrome, contrast) with a provenance manifest
+  (`logo-manifest.json`: source, owner, OFL rights, approval date 2026-06-20, viewBoxes, filenames, sha256
+  checksums, variants, accessible usage). Symbol geometry is verbatim from the documented mark; wordmark/lockup
+  glyphs are a mechanical fontTools outline extraction from the self-hosted OFL Space Grotesk variable font at
+  wght=600 / -0.035em (not traced/redrawn). Default product logo URL repointed to the lockup (`ConfigServiceProvider`)
+  while `brand.logo_url` override still wins; admin dashboard/login keep documented decorative/named usage without
+  redesign; legacy navy/cyan `corex-logo.svg` retained only as rollback evidence; logo contract refined to forbid
+  external-resource URLs + font-text while allowing the W3C namespace (DECISIONS #102). Generator:
+  `scripts/generate-logo-assets.py`; svgo config: `scripts/svgo-logo.config.mjs`.
+- **Verification:** focused Pest PASS — `LogoAssetContractTest` 4/4 + `BrandingTest` 7/7 (11 tests, 102 assertions).
+  Full Pest **656 passed / 5 failed**: the three previously-RED logo contracts are now GREEN (653 -> 656); the 5
+  failures are the unrelated US4 contracts (`AdminTokenAdapterTest` ×3, `BrandOverrideCompatibilityTest` ×2). PHP
+  lint PASS on changed files; manifest JSON parses; svgo optimized 5 assets; `git diff --check` PASS.
+- **ENVIRONMENT-GATED (not PASS):** rendered browser minimum-size/contrast/forced-colors logo evidence — Node
+  v22.14.0 < browser-bridge v22.22.0 and Docker/wp-env unavailable. Recorded in `logo-evidence.md`, never as PASS.
+- **Remaining/blocked:** US4 T066-T079 (compatibility aliases, `BrandOverrideValidator`, scoped `--corex-admin-*`
+  adapter) is now the next implementation work; the final-gate T080-T090 follow US4. No production logo blocker
+  remains.
+- **Did not change:** font assets, client brand merge behavior, US1/US2 token values, CHANGELOG, release metadata,
+  Specs 058/059, or later milestones. The Spec 055 dependency changes remain untouched in `stash@{0}`.
+- **Exact next step:** implement US4 (T066-T079) — RED-first: run `AdminTokenAdapterTest`/`BrandOverrideCompatibilityTest`/
+  `TokenCompatibilityTest`, then add `BrandOverrideValidator`, the minimum compatibility aliases, and the scoped
+  `corex-admin-tokens.css` adapter registered (never globally enqueued) on CoreX screens. Keep PR #54 draft.
+
+---
+## RESUME HERE (2026-06-20) -- Workspace unified to single root; Spec 057 logo package still gated
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft. The normal project root
   `C:/wamp64/www/corex` is now the single active checkout on this branch.
