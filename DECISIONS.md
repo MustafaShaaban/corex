@@ -1787,3 +1787,31 @@ trace, redraw, or reinterpret the logo" while satisfying the no-`<text>`/no-exte
 the SVGs valid as standalone assets. The generator (`scripts/generate-logo-assets.py`) makes the package
 reproducible.
 Status: Final.
+
+## #103 -- Spec 058 M3 navigation: native primitives, theme markup, plugin-registered conditional assets
+Date: 2026-06-20
+Context: M3 needed a reusable header/mega-menu/footer system without a builder, honoring constitution Principle I
+(theme is a presentation-only skin), Principle VI (assets load only where rendered), and the no-JS/RTL/WCAG
+Definition of Done. The owner approved authoring the navigation/footer design handoff from ROADMAP §6 + the merged
+M2 tokens (no external design package existed; none was invented — the handoff is structural/behavioral).
+Decision: (1) Lean on WordPress core: the core navigation block provides the mobile-overlay/submenu a11y baseline
+(focus trap, Escape, `aria-expanded`), and mega menus are the native `<details>`/`<summary>` disclosure — so they are
+keyboard-operable and fully usable with **no JavaScript**, and CoreX writes minimal custom a11y. Rejected a
+`role="menubar"`/custom-button-in-`core/html` approach (error-prone ARIA, broken no-JS fallback). (2) Markup lives in
+the **theme**: header/footer parts and the variant patterns under `theme/patterns/*.php` (auto-registered by WP for
+block themes), plus token-only `theme/assets/css/corex-navigation.css` and the buildless
+`theme/assets/js/corex-navigation.js`. (3) Registration lives in a **plugin**: `Corex\Theme\NavigationServiceProvider`
+(corex-core) registers the `corex` pattern category and conditionally attaches the CSS via
+`wp_enqueue_block_style('core/navigation'|'corex/copyright', …)` and the JS via `render_block` only when a navigation
+or `corex-mega` block renders — never globally. The asset files stay in the theme (presentation) but are
+`file_exists`-guarded so the provider is a clean no-op when the CoreX theme is inactive. (4) Three layout-only
+`theme.json` custom tokens (`header.height`, `header.heightCompact`, `nav.breakpoint`); no new brand values. The one
+permitted raw literal is the breakpoint inside the desktop `@media` (CSS `@media` cannot read custom properties),
+marked with the repo's `corex-token-allow:` mechanism. (5) The transparent/sticky header flips
+`data-corex-header-state` on a passive rAF-throttled scroll listener; the visual transition is CSS, gated by
+`prefers-reduced-motion`, so the module is inherently reduced-motion-safe.
+Why: native primitives minimize the riskiest custom a11y code and guarantee a usable no-JS fallback; the
+theme-markup/plugin-registration split keeps the theme disposable (Principle I) while honoring conditional loading
+(Principle VI). Action slots (search/language/account/cart) are structural placeholders only — no optional-plugin or
+commerce dependency (Principle IX); WooCommerce nav/footer deferred to M9.
+Status: Final.

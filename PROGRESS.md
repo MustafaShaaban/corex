@@ -4,7 +4,33 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-20, latest) -- Spec 058/M3 unblocked + started; US1 header MVP landed (PR #56 draft)
+## RESUME HERE (2026-06-20, latest) -- Spec 058/M3 implementation-complete (US1-US4 + docs + gate); PR #56 ready
+
+- **Branch/PR:** `spec/058-header-mobile-navigation` @ tip; **PR #56** to `main` — all four user stories implemented,
+  tested, guard-clean, pushed. Normal root, single worktree, no `.worktrees`. Spec 055 WIP untouched in `stash@{0}`.
+- **M3 done (US1-US4):** six header variant patterns (`corex/header-*`), four native-`<details>` mega menus
+  (`corex/megamenu-*`), six footer variants (`corex/footer-*`); default header/footer parts; buildless behavior JS
+  (`theme/assets/js/corex-navigation.js`: single-open mega, Escape/outside-click + focus return, sticky/transparent
+  scroll state); token-only `corex-navigation.css`; `Corex\Theme\NavigationServiceProvider` (pattern category +
+  conditional CSS via `wp_enqueue_block_style`, JS via `render_block`); 3 layout-only `theme.json` custom tokens.
+  Core navigation block supplies the mobile-overlay a11y; mega menus + footers usable with no JS.
+- **Final gate:** **full `composer test` 678 pass**; **`test:js` 103 pass (18 suites)**; `npm run build` PASS;
+  **docs-app build 271 pages** (new design-system/navigation page; only the pre-existing sitemap `site` warning);
+  `lint:css` clean; Spec 057 token inventories regenerated in-sync. Guards wp/test/clean-code/docs clean across the
+  branch. `verify:dependencies` not re-run — no dependency changes on this branch.
+- **ENVIRONMENT-GATED (not PASS):** rendered browser evidence — keyboard/focus/Escape/outside-click, RTL mirroring,
+  reduced-motion, 200% zoom, 320px width, sticky/transparent contrast — and wp-env (Docker Linux engine absent;
+  Node v22.14.0 < browser-bridge v22.22.0). Recorded honestly per `quickstart.md` §4.
+- **Docs/decisions:** docs-app design-system → "Navigation & footer"; DECISIONS #103 (native primitives + theme
+  markup / plugin-registered conditional assets); ROADMAP M3 + §17 + CHANGELOG `[Unreleased]` updated.
+- **Company-site readiness goal — order position:** items #1-#2 (M2 closed) and **#3 (Spec 058/M3)** done. **Next is
+  item #4: Spec 059/M4 Full Company Site Kit v1**, which reuses these M3 parts.
+- **Exact next step:** mark **PR #56** ready and obtain review/merge; then start **Spec 059/M4** via the Spec Kit
+  flow (the M4 page coverage in ROADMAP §7), reusing M3 nav/footer + M2 tokens. Collect the env-gated browser
+  evidence when Docker + a compatible browser runtime are available.
+
+---
+## RESUME HERE (2026-06-20) -- Spec 058/M3 unblocked + started; US1 header MVP landed (PR #56 draft)
 
 - **Branch/PR:** `spec/058-header-mobile-navigation` (from `main` @ `39b3f87`); **PR #56 (draft)** open to `main`.
   Normal project root, single worktree, no `.worktrees`. Spec 055 WIP untouched in `stash@{0}`.
