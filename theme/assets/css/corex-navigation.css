@@ -1,0 +1,58 @@
+/**
+ * CoreX navigation & footer presentation (Spec 058 / M3).
+ *
+ * Consumes M2 (Spec 057) theme.json tokens only — no raw color/size/font literals
+ * (constitution Principle V). RTL-first via logical properties (Principle VIII).
+ * Loaded conditionally where a CoreX header/footer renders (Principle VI); the
+ * accessible mobile overlay and submenu behavior come from the core navigation block.
+ *
+ * US1 (this section): simple-company header layout, actions, and visible focus.
+ * Mega menu, footer reflow, and sticky/transparent state are added in later stories.
+ */
+
+/* Header shell ----------------------------------------------------------------- */
+
+.corex-header {
+	background-color: var(--wp--preset--color--surface);
+	color: var(--wp--preset--color--ink);
+}
+
+.corex-header__inner {
+	min-block-size: var(--wp--custom--header--height);
+	column-gap: var(--wp--preset--spacing--40);
+	row-gap: var(--wp--preset--spacing--30);
+}
+
+.corex-header__actions {
+	column-gap: var(--wp--preset--spacing--40);
+	row-gap: var(--wp--preset--spacing--30);
+}
+
+/* Keep the brand from shrinking below its logo width; let nav wrap instead. */
+.corex-header .wp-block-site-logo {
+	flex: 0 0 auto;
+}
+
+/* Navigation links use the body font role and inherit header ink. */
+.corex-header__nav {
+	font-family: var(--wp--preset--font-family--body);
+}
+
+/* Visible, non-color-only focus on every interactive header element (WCAG 2.2 AA). */
+.corex-header a:focus-visible,
+.corex-header button:focus-visible,
+.corex-header .wp-block-button__link:focus-visible {
+	outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
+	outline-offset: var(--wp--custom--focus--offset);
+}
+
+/* A focused element must never hide behind a sticky header. */
+.corex-header :target {
+	scroll-margin-block-start: var(--wp--custom--header--height);
+}
+
+/* Never let the header force horizontal page scroll. */
+.corex-header,
+.corex-header__inner {
+	max-inline-size: 100%;
+}

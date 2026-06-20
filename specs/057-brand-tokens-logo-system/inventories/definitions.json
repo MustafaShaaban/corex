@@ -1,7 +1,7 @@
 {
   "generated_at": "source-controlled",
   "canonical_source": "theme/theme.json",
-  "count": 74,
+  "count": 77,
   "definitions": [
     {
       "id": "border.width.strong",
@@ -648,6 +648,34 @@
       "evidence_status": "planned"
     },
     {
+      "id": "header.height",
+      "group": "layout",
+      "source_path": "theme/theme.json#settings.custom.header.height",
+      "generated_property": "--wp--custom--header--height",
+      "semantic_role": "header-height",
+      "default_mapping": "4rem",
+      "dark_mapping": null,
+      "classification": "retained",
+      "replacement_id": null,
+      "introduced_version": null,
+      "remove_after_version": null,
+      "evidence_status": "planned"
+    },
+    {
+      "id": "header.heightCompact",
+      "group": "layout",
+      "source_path": "theme/theme.json#settings.custom.header.heightCompact",
+      "generated_property": "--wp--custom--header--height-compact",
+      "semantic_role": "header-heightCompact",
+      "default_mapping": "3.25rem",
+      "dark_mapping": null,
+      "classification": "retained",
+      "replacement_id": null,
+      "introduced_version": null,
+      "remove_after_version": null,
+      "evidence_status": "planned"
+    },
+    {
       "id": "layout.contentSize",
       "group": "layout",
       "source_path": "theme/theme.json#settings.layout.contentSize",
@@ -738,6 +766,20 @@
       "generated_property": "--wp--custom--motion--easing--standard",
       "semantic_role": "motion-easing-standard",
       "default_mapping": "cubic-bezier(0.2, 0, 0, 1)",
+      "dark_mapping": null,
+      "classification": "retained",
+      "replacement_id": null,
+      "introduced_version": null,
+      "remove_after_version": null,
+      "evidence_status": "planned"
+    },
+    {
+      "id": "nav.breakpoint",
+      "group": "layout",
+      "source_path": "theme/theme.json#settings.custom.nav.breakpoint",
+      "generated_property": "--wp--custom--nav--breakpoint",
+      "semantic_role": "nav-breakpoint",
+      "default_mapping": "782px",
       "dark_mapping": null,
       "classification": "retained",
       "replacement_id": null,

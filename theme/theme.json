@@ -167,6 +167,13 @@
                 "overlay": "1200",
                 "modal": "1300",
                 "toast": "1400"
+            },
+            "header": {
+                "height": "4rem",
+                "heightCompact": "3.25rem"
+            },
+            "nav": {
+                "breakpoint": "782px"
             }
         }
     },

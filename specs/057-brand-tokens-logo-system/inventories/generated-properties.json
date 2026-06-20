@@ -1,6 +1,6 @@
 {
   "generated_at": "source-controlled",
-  "count": 74,
+  "count": 77,
   "properties": [
     {
       "id": "border.width.strong",
@@ -325,6 +325,20 @@
       "status": "observed"
     },
     {
+      "id": "header.height",
+      "source_path": "theme/theme.json#settings.custom.header.height",
+      "generated_property": "--wp--custom--header--height",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "header.heightCompact",
+      "source_path": "theme/theme.json#settings.custom.header.heightCompact",
+      "generated_property": "--wp--custom--header--height-compact",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "layout.contentSize",
       "source_path": "theme/theme.json#settings.layout.contentSize",
       "generated_property": "--wp--style--global--content-size",
@@ -370,6 +384,13 @@
       "id": "motion.easing.standard",
       "source_path": "theme/theme.json#settings.custom.motion.easing.standard",
       "generated_property": "--wp--custom--motion--easing--standard",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "nav.breakpoint",
+      "source_path": "theme/theme.json#settings.custom.nav.breakpoint",
+      "generated_property": "--wp--custom--nav--breakpoint",
       "unique": true,
       "status": "observed"
     },
