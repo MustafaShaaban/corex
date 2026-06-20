@@ -18,19 +18,26 @@
   `quickstart.md`, `tasks.md` (40 tasks). Agent-context plan pointer → Spec 058.
 - **US1 MVP DONE (committed):** `corex/header-simple` pattern + default header part (site-logo + core `wp:navigation`
   overlayMenu + CTA); `Corex\Theme\NavigationServiceProvider` (registers `corex` pattern category; conditionally
-  attaches `corex-navigation` CSS to `core/navigation` via `wp_enqueue_block_style`, Principle VI; wired into Boot);
-  3 layout-only `theme.json` custom tokens (no new brand values); token-driven `corex-navigation.css`. Leans on the
-  core navigation block for the mobile-overlay a11y baseline.
-- **Verification:** Theme Pest **54 pass**; JS `token-inventory` sync **9 pass**; new nav tests green; `php -l` +
-  `theme.json` valid; Spec 057 token inventories regenerated in-sync. Guards **wp/test/clean-code clean**.
+  attaches `corex-navigation` CSS to `core/navigation` + `corex/copyright` via `wp_enqueue_block_style`, Principle VI;
+  wired into Boot); 3 layout-only `theme.json` custom tokens (no new brand values); token-driven `corex-navigation.css`.
+  Leans on the core navigation block for the mobile-overlay a11y baseline.
+- **US3 DONE (committed):** six footer variant patterns (`corex/footer-{simple,corporate,saas,newsletter,locations,
+  legal}`) — each a contentinfo `<footer>` ending in the `corex/copyright` legal row; default footer part renders the
+  simple variant; footer CSS section (column gaps, legal divider/links, reflow, focus). `FooterPatternsTest`.
+- **Verification:** Theme Pest **56 pass**; JS `token-inventory` sync **9 pass**; new nav/footer tests green; `php -l`
+  + `theme.json` valid; Spec 057 token inventories regenerated in-sync. Guards **wp/test/clean-code clean**.
   **ENVIRONMENT-GATED (not PASS):** rendered browser a11y/RTL/reduced-motion/zoom evidence (Docker + browser runtime
-  unavailable). Full `composer test`/`npm test:js`/`build`/docs-app not yet re-run for the whole branch (US1 focused).
-- **Remaining on Spec 058/M3 (next):** US2 mega menu (patterns + `corex-navigation.js` disclosure/accordion +
-  reduced-motion), US3 footer variants (patterns + reflow + contentinfo), US4 header variants + sticky/transparent +
-  action slots, docs-app foundations/patterns pages, full test/build/guard gate, then PROGRESS/ROADMAP/CHANGELOG +
-  mark PR #56 ready. Per tasks.md ordering; same-file sequencing for css/js noted there.
-- **Exact next step:** implement Spec 058 US3 (footer — self-contained, no JS) or US2 (mega menu — needs the behavior
-  JS), continuing `/speckit-implement` per `tasks.md`; keep PR #56 draft until the full gate + docs are done.
+  unavailable). Full `composer test`/`npm test:js`/`build`/docs-app not yet re-run for the whole branch (story-focused).
+- **Remaining on Spec 058/M3 (next):** **US2 mega menu** (4 `corex/megamenu-*` patterns + new buildless
+  `theme/assets/js/corex-navigation.js` disclosure/accordion module with Escape/outside-click/teardown, Jest tests,
+  render-scoped JS enqueue) and **US4** (5 header variant patterns + sticky/transparent header-state in the same JS +
+  action-slot placeholders + CSS), then docs-app foundations/patterns pages, full test/build/guard gate, and
+  PROGRESS/ROADMAP/CHANGELOG before marking **PR #56** ready. Per `tasks.md`; same-file sequencing: `corex-navigation.js`
+  (US2 disclosure → US4 header-state), `corex-navigation.css` already holds header+footer.
+- **Exact next step:** implement Spec 058 **US2** — author `theme/assets/js/corex-navigation.js` (model on the buildless
+  `plugins/corex-core/assets/js/corex-runtime.js` IIFE + `tests/corex-runtime.test.js` jsdom pattern), the four
+  mega-menu patterns, and the render-scoped JS enqueue in `NavigationServiceProvider`; RED→GREEN with Jest + Pest;
+  keep PR #56 draft until the full gate + docs are done.
 
 ---
 ## RESUME HERE (2026-06-20) -- M2 closed (PR #54 merged); Spec 058/M3 blocked on missing nav/footer design handoff
