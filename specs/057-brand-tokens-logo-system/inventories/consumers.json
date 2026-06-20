@@ -19,7 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-  "count": 227,
+  "count": 242,
   "consumers": [
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
@@ -2023,7 +2023,17 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 45: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);",
+      "selector_or_context": "lines 78: border-block-start: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);",
+      "property": "--wp--custom--border--width--thin",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "border.width.thin"
+    },
+    {
+      "path": "theme/assets/css/corex-navigation.css",
+      "selector_or_context": "lines 45, 95: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);",
       "property": "--wp--custom--focus--color",
       "owner": "theme",
       "surface": "front-end",
@@ -2033,7 +2043,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 46: outline-offset: var(--wp--custom--focus--offset);",
+      "selector_or_context": "lines 46, 96: outline-offset: var(--wp--custom--focus--offset);",
       "property": "--wp--custom--focus--offset",
       "owner": "theme",
       "surface": "front-end",
@@ -2043,7 +2053,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 45: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);",
+      "selector_or_context": "lines 45, 95: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);",
       "property": "--wp--custom--focus--width",
       "owner": "theme",
       "surface": "front-end",
@@ -2063,7 +2073,17 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 17: color: var(--wp--preset--color--ink);",
+      "selector_or_context": "lines 78: border-block-start: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);",
+      "property": "--wp--preset--color--border",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "color.border"
+    },
+    {
+      "path": "theme/assets/css/corex-navigation.css",
+      "selector_or_context": "lines 17, 64: color: var(--wp--preset--color--ink);",
       "property": "--wp--preset--color--ink",
       "owner": "theme",
       "surface": "front-end",
@@ -2083,13 +2103,33 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 38: font-family: var(--wp--preset--font-family--body);",
+      "selector_or_context": "lines 63: background-color: var(--wp--preset--color--surface-alt);",
+      "property": "--wp--preset--color--surface-alt",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.surface-alt"
+    },
+    {
+      "path": "theme/assets/css/corex-navigation.css",
+      "selector_or_context": "lines 38, 80: font-family: var(--wp--preset--font-family--body);",
       "property": "--wp--preset--font-family--body",
       "owner": "theme",
       "surface": "front-end",
       "direction_context": "not-applicable",
       "resolution": "valid",
       "target_definition": "font-family.body"
+    },
+    {
+      "path": "theme/assets/css/corex-navigation.css",
+      "selector_or_context": "lines 77, 88: row-gap: var(--wp--preset--spacing--20);",
+      "property": "--wp--preset--spacing--20",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "spacing.20"
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
@@ -2103,13 +2143,123 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 22, 27: column-gap: var(--wp--preset--spacing--40);",
+      "selector_or_context": "lines 22, 27, 76, 79, 87: column-gap: var(--wp--preset--spacing--40); | padding-block-start: var(--wp--preset--spacing--40);",
       "property": "--wp--preset--spacing--40",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.40"
+    },
+    {
+      "path": "theme/assets/css/corex-navigation.css",
+      "selector_or_context": "lines 70, 71: column-gap: var(--wp--preset--spacing--50); | row-gap: var(--wp--preset--spacing--50);",
+      "property": "--wp--preset--spacing--50",
       "owner": "theme",
       "surface": "front-end",
       "direction_context": "not-applicable",
       "resolution": "valid",
+      "target_definition": "spacing.50"
+    },
+    {
+      "path": "theme/patterns/footer-corporate.php",
+      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--corporate\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "property": "--wp--preset--spacing--50",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.50"
+    },
+    {
+      "path": "theme/patterns/footer-corporate.php",
+      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--corporate\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "property": "--wp--preset--spacing--60",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.60"
+    },
+    {
+      "path": "theme/patterns/footer-legal.php",
+      "selector_or_context": "lines 16, 16: <footer class=\"wp-block-group corex-footer corex-footer--legal\" style=\"padding-top:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40)\">",
+      "property": "--wp--preset--spacing--40",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
       "target_definition": "spacing.40"
+    },
+    {
+      "path": "theme/patterns/footer-locations.php",
+      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--locations\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "property": "--wp--preset--spacing--50",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.50"
+    },
+    {
+      "path": "theme/patterns/footer-locations.php",
+      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--locations\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "property": "--wp--preset--spacing--60",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.60"
+    },
+    {
+      "path": "theme/patterns/footer-newsletter.php",
+      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--newsletter\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "property": "--wp--preset--spacing--50",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.50"
+    },
+    {
+      "path": "theme/patterns/footer-newsletter.php",
+      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--newsletter\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "property": "--wp--preset--spacing--60",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.60"
+    },
+    {
+      "path": "theme/patterns/footer-saas.php",
+      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--saas\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "property": "--wp--preset--spacing--50",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.50"
+    },
+    {
+      "path": "theme/patterns/footer-saas.php",
+      "selector_or_context": "lines 16: <footer class=\"wp-block-group corex-footer corex-footer--saas\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "property": "--wp--preset--spacing--60",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.60"
+    },
+    {
+      "path": "theme/patterns/footer-simple.php",
+      "selector_or_context": "lines 16, 16: <footer class=\"wp-block-group corex-footer corex-footer--simple\" style=\"padding-top:var(--wp--preset--spacing--50);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "property": "--wp--preset--spacing--50",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.50"
     },
     {
       "path": "theme/patterns/header-simple.php",

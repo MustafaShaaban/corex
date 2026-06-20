@@ -70,14 +70,18 @@ final class NavigationServiceProvider extends ServiceProvider
             return;
         }
 
-        wp_enqueue_block_style(
-            'core/navigation',
-            [
-                'handle' => self::STYLE_HANDLE,
-                'src'    => get_theme_file_uri(self::STYLE_RELATIVE_PATH),
-                'path'   => $path,
-                'ver'    => COREX_CORE_VERSION,
-            ],
-        );
+        $args = [
+            'handle' => self::STYLE_HANDLE,
+            'src'    => get_theme_file_uri(self::STYLE_RELATIVE_PATH),
+            'path'   => $path,
+            'ver'    => COREX_CORE_VERSION,
+        ];
+
+        // Attach to the blocks every CoreX header/footer reliably contains: the core
+        // navigation block (header) and the corex/copyright block (footer legal row).
+        // The shared handle is registered once and loads only where one of them renders.
+        foreach (['core/navigation', 'corex/copyright'] as $blockName) {
+            wp_enqueue_block_style($blockName, $args);
+        }
     }
 }

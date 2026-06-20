@@ -56,3 +56,47 @@
 .corex-header__inner {
 	max-inline-size: 100%;
 }
+
+/* Footer ----------------------------------------------------------------------- */
+
+.corex-footer {
+	background-color: var(--wp--preset--color--surface-alt);
+	color: var(--wp--preset--color--ink);
+}
+
+/* Columns reflow from multi-column to stacked on small viewports while keeping
+   grouping and reading order (core columns stack natively; this only spaces them). */
+.corex-footer__columns {
+	column-gap: var(--wp--preset--spacing--50);
+	row-gap: var(--wp--preset--spacing--50);
+}
+
+/* The legal/utility row: copyright opposite legal links/social, wrapping on narrow. */
+.corex-footer__legal {
+	column-gap: var(--wp--preset--spacing--40);
+	row-gap: var(--wp--preset--spacing--20);
+	border-block-start: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
+	padding-block-start: var(--wp--preset--spacing--40);
+	font-family: var(--wp--preset--font-family--body);
+}
+
+/* Inline legal links list (no bullets, horizontal, logical spacing). */
+.corex-footer__legal-links {
+	display: flex;
+	flex-wrap: wrap;
+	column-gap: var(--wp--preset--spacing--40);
+	row-gap: var(--wp--preset--spacing--20);
+	margin-block: 0;
+	padding-inline-start: 0;
+	list-style: none;
+}
+
+.corex-footer a:focus-visible {
+	outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
+	outline-offset: var(--wp--custom--focus--offset);
+}
+
+.corex-footer,
+.corex-footer__columns {
+	max-inline-size: 100%;
+}
