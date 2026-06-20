@@ -4,7 +4,27 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-20, latest) -- Spec 058/M3 implementation-complete (US1-US4 + docs + gate); PR #56 ready
+## RESUME HERE (2026-06-20, latest) -- Company-site readiness #6 verified: `wp corex make:site` works; M3 ready, M4 specify'd
+
+- **Branch:** `spec/059-company-site-kit` (stacked over `spec/058`/M3). Normal root, single worktree, no
+  `.worktrees`. Spec 055 WIP untouched in `stash@{0}`.
+- **Item #6 VERIFIED:** ran `wp --path=wp corex make:site "Acme Industries"` against the local WAMP install — it
+  scaffolds an isolated client (plugin `src/` + presentation-only client theme + governance files) that registers
+  with Corex's container and repeats "never edit the Corex framework." A real company website **can be started
+  today**. Throwaway scaffold inspected in OS temp and deleted; nothing committed. Full record + gaps:
+  `specs/059-company-site-kit/make-site-verification.md`.
+- **Gaps recorded (future specs):** (1) the scaffolded client theme is standalone — it does **not** auto-inherit M2
+  tokens or M3 `corex/header-*`/footer parts (bare `wp:site-title` header); bridge via child-theme inheritance or the
+  M4 kit apply or a make:site token/parts step. (2) Company-kit page content = Spec 059/M4 (specify-complete, not
+  implemented). (3) M3 (PR #56) not yet merged (review/merge permission boundary).
+- **Order position:** #1-#2 (M2) merged; #3 (M3) implementation-complete, PR #56 ready; #4 (M4) specify-complete
+  (handoff + spec); #5 not started; **#6 verified** (make:site starts an isolated site; richness pending M3 merge +
+  M4 impl). The path is **complete enough to start the first real website**.
+- **Exact next step (owner/next session):** review/merge **PR #56** (M3); then Spec 059/M4 plan→tasks→implement
+  (rebased on main), the make:site visual-foundation inheritance fix, and only the M5 blocks M4 proves necessary.
+
+---
+## RESUME HERE (2026-06-20) -- Spec 058/M3 implementation-complete (US1-US4 + docs + gate); PR #56 ready
 
 - **Branch/PR:** `spec/058-header-mobile-navigation` @ tip; **PR #56** to `main` — all four user stories implemented,
   tested, guard-clean, pushed. Normal root, single worktree, no `.worktrees`. Spec 055 WIP untouched in `stash@{0}`.
