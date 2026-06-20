@@ -17,13 +17,19 @@
   install stays developer/CLI/deployment. This is the truthful state model the admin screens read from.
 - **Verification:** `AddonStatusResolverTest` matrix **8/8**; Foundation suite **72 pass**; `php -l` clean. Guards
   wp/clean-code/test clean. **ENVIRONMENT-GATED:** rendered admin a11y/RTL/visual + wp-env evidence.
-- **Remaining on Spec 060/M6:** US2 (state-aware Settings sections + captcha/reCAPTCHA states; write-only secrets —
-  consume `AddonStatusResolver`), US3 (scoped admin visual design — cards/tables/topbar/badges via `--corex-admin-*`,
-  dark/light/RTL/responsive, a11y; asset-scoping test = no global/frontend load), US4 (setup/readiness + universal
-  states), then docs + full gate before marking PR #58 ready. Per `tasks.md`.
-- **Exact next step:** implement Spec 060 US2 — read the existing captcha settings + the `corex-config` Settings
-  screen, add `SettingsSectionState` derived from `AddonStatus` + a per-add-on "configured" predicate, RED→GREEN with
-  `SettingsSectionStateTest` + `CaptchaSettingsStateTest` (write-only secret). Keep PR #58 draft.
+- **US2 core DONE (committed):** pure `Corex\Config\Settings\SettingsSectionState` enum (Hidden/Disabled/
+  ConfigurationNeeded/Normal) with `forStatus(AddonStatus, bool $configured)` + `showsUsableFields()` — a section is
+  Hidden when not installed, Normal only when active+configured, ConfigurationNeeded when active+unconfigured, and
+  Disabled for every other (non-usable) state; usable fields show only when Normal. `SettingsSectionStateTest` 5/5;
+  Config suite 60 pass. Captcha already ships a secret-free `CaptchaDiagnostic` (booleans only) to build on.
+- **Remaining on Spec 060/M6:** US2 application wiring (apply `SettingsSectionState` to the `corex-config` Settings
+  screen + the captcha/reCAPTCHA section; enforce write-only secret on render — `CaptchaSettingsStateTest`); US3
+  (scoped admin visual design — cards/tables/topbar/badges via `--corex-admin-*`, dark/light/RTL/responsive, a11y;
+  asset-scoping test = no global/frontend load); the Add-ons screen rendering (US1 application, T004); US4
+  (setup/readiness + universal states); then docs + full gate before marking PR #58 ready. Per `tasks.md`.
+- **Exact next step:** wire US2 — render the captcha/reCAPTCHA settings section from `SettingsSectionState` (captcha
+  "configured" = site key + secret present), enforce the write-only secret on render (empty submit preserves stored),
+  RED→GREEN with `CaptchaSettingsStateTest`; then the Add-ons screen (US1 application). Keep PR #58 draft.
 
 ---
 ## RESUME HERE (2026-06-21) -- M3 merged; M4 core implemented (full company page set); on PR
