@@ -12,15 +12,15 @@
             "palette": [
                 { "slug": "primary", "color": "#0B1F3B", "name": "Primary" },
                 { "slug": "primary-dark", "color": "#06121F", "name": "Primary dark" },
-                { "slug": "accent", "color": "#00C2FF", "name": "Accent" },
-                { "slug": "accent-dark", "color": "#0091BF", "name": "Accent dark" },
+                { "slug": "accent", "color": "#007A9E", "name": "Accent" },
+                { "slug": "accent-dark", "color": "#006080", "name": "Accent dark" },
                 { "slug": "surface", "color": "#FFFFFF", "name": "Surface" },
                 { "slug": "surface-alt", "color": "#F4F7FA", "name": "Surface alt" },
-                { "slug": "border", "color": "#E2E8EF", "name": "Border" },
+                { "slug": "border", "color": "#8795A3", "name": "Border" },
                 { "slug": "ink", "color": "#11181C", "name": "Ink" },
                 { "slug": "ink-soft", "color": "#5A6772", "name": "Ink soft" },
                 { "slug": "success", "color": "#1A7F4B", "name": "Success" },
-                { "slug": "warning", "color": "#B7791F", "name": "Warning" },
+                { "slug": "warning", "color": "#875400", "name": "Warning" },
                 { "slug": "error", "color": "#C1352B", "name": "Error" },
                 { "slug": "info", "color": "#1F6FEB", "name": "Info" },
                 { "slug": "inverse", "color": "#FFFFFF", "name": "Inverse text" },
@@ -36,7 +36,7 @@
                 { "slug": "corex-info", "color": "#1F6FEB", "name": "CoreX info (compatibility)" },
                 { "slug": "corex-primary", "color": "#0B1F3B", "name": "CoreX primary (compatibility)" },
                 { "slug": "corex-success", "color": "#1A7F4B", "name": "CoreX success (compatibility)" },
-                { "slug": "corex-warning", "color": "#B7791F", "name": "CoreX warning (compatibility)" },
+                { "slug": "corex-warning", "color": "#875400", "name": "CoreX warning (compatibility)" },
                 { "slug": "white", "color": "#FFFFFF", "name": "White (compatibility)" }
             ]
         },
@@ -46,12 +46,12 @@
                 {
                     "slug": "heading",
                     "name": "Heading",
-                    "fontFamily": "system-ui, sans-serif"
+                    "fontFamily": "'Space Grotesk', system-ui, sans-serif"
                 },
                 {
                     "slug": "arabic",
                     "name": "Arabic",
-                    "fontFamily": "'Noto Sans Arabic', system-ui, sans-serif"
+                    "fontFamily": "'IBM Plex Sans Arabic', system-ui, sans-serif"
                 },
                 {
                     "slug": "body",
@@ -61,7 +61,7 @@
                 {
                     "slug": "mono",
                     "name": "Technical",
-                    "fontFamily": "ui-monospace, 'Cascadia Code', 'Courier New', monospace"
+                    "fontFamily": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace"
                 }
             ],
             "fontSizes": [

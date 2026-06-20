@@ -11,7 +11,7 @@
                 { "slug": "accent-dark", "color": "#38BDF8", "name": "Accent dark" },
                 { "slug": "surface", "color": "#0B1F3B", "name": "Surface" },
                 { "slug": "surface-alt", "color": "#102A4C", "name": "Surface alt" },
-                { "slug": "border", "color": "#36506C", "name": "Border" },
+                { "slug": "border", "color": "#71869C", "name": "Border" },
                 { "slug": "ink", "color": "#F1F5F9", "name": "Ink" },
                 { "slug": "ink-soft", "color": "#C3CEDA", "name": "Ink soft" },
                 { "slug": "success", "color": "#4ADE80", "name": "Success" },
@@ -37,10 +37,10 @@
         },
         "typography": {
             "fontFamilies": [
-                { "slug": "heading", "name": "Heading", "fontFamily": "system-ui, sans-serif" },
-                { "slug": "arabic", "name": "Arabic", "fontFamily": "'Noto Sans Arabic', system-ui, sans-serif" },
+                { "slug": "heading", "name": "Heading", "fontFamily": "'Space Grotesk', system-ui, sans-serif" },
+                { "slug": "arabic", "name": "Arabic", "fontFamily": "'IBM Plex Sans Arabic', system-ui, sans-serif" },
                 { "slug": "body", "name": "Body", "fontFamily": "system-ui, sans-serif" },
-                { "slug": "mono", "name": "Technical", "fontFamily": "ui-monospace, 'Cascadia Code', 'Courier New', monospace" }
+                { "slug": "mono", "name": "Technical", "fontFamily": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace" }
             ]
         }
     },

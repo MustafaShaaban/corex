@@ -117,18 +117,18 @@ assets exist; browser/manual checks are either executed with evidence or explici
 
 ### Implementation for User Story 2
 
-- [ ] T044 [US2] Finalize only semantic color values that make the complete contrast matrix pass in `theme/theme.json`, `theme/styles/dark.json`, and `theme/styles/editorial.json`
-- [ ] T045 [US2] Align focus-ring mappings for base, raised, status, overlay, and admin contexts in `theme/theme.json` and `tests/Fixtures/Theme/contrast-focus-matrix.json`
-- [ ] T046 [US2] Define system Latin body, Space Grotesk heading, JetBrains Mono technical, and IBM Plex Sans Arabic roles/fallbacks without adding asset files in `theme/theme.json`
+- [x] T044 [US2] Finalize only semantic color values that make the complete contrast matrix pass in `theme/theme.json`, `theme/styles/dark.json`, and `theme/styles/editorial.json`
+- [x] T045 [US2] Align focus-ring mappings for base, raised, status, overlay, and admin contexts in `theme/theme.json` and `tests/Fixtures/Theme/contrast-focus-matrix.json`
+- [x] T046 [US2] Define system Latin body, Space Grotesk heading, JetBrains Mono technical, and IBM Plex Sans Arabic roles/fallbacks without adding asset files in `theme/theme.json`
 - [ ] T047 [US2] BLOCKED until authoritative font files/provenance are approved: create checksummed upstream/license/subset records in `theme/assets/fonts/manifest.json`
 - [ ] T048 [US2] BLOCKED on T047: add no more than four approved WOFF2 files under `theme/assets/fonts/` and map Space Grotesk 500–700, JetBrains Mono 400–600, and IBM Plex Sans Arabic 400/600 with `font-display: swap` in `theme/theme.json`
-- [ ] T049 [US2] Prove no external font CDN, no fifth font file, readable fallbacks, and no preload without a measured evidence record in `tests/Unit/Theme/FontAssetContractTest.php`
-- [ ] T050 [US2] Add or update the rendered fixture page used by browser tests for dark/light, focus, forced-colors, zoom, and LTR/RTL mixed-script coverage in `tests/e2e/fixtures/brand-foundation.html`
-- [ ] T051 [US2] Add Playwright assertions for modes, focus visibility, overflow, bidi ordering, Arabic shaping hooks, reduced motion, forced colors, and 200% zoom in `tests/e2e/brand-foundation.spec.js`
-- [ ] T052 [US2] Run T040–T051 headless checks and record contrast/focus/direction/font evidence in `specs/057-brand-tokens-logo-system/inventories/accessibility-evidence.md`
-- [ ] T053 [US2] Run wp-env/Playwright evidence when available; otherwise record each unavailable browser/wp-env item as `ENVIRONMENT-GATED`, never PASS, in `specs/057-brand-tokens-logo-system/inventories/accessibility-evidence.md`
-- [ ] T054 [US2] Inspect built/network output for font count, fallback/swap behavior, conditional assets, and unused-preload warnings; record PASS/FAIL/ENVIRONMENT-GATED evidence in `specs/057-brand-tokens-logo-system/inventories/font-evidence.md`
-- [ ] T055 [US2] Run `clean-code-guard`, `wp-guard`, `test-guard`, and accessibility/RTL review on the US2 diff, resolve all non-environment blocking findings, and record results in `specs/057-brand-tokens-logo-system/inventories/accessibility-evidence.md`
+- [x] T049 [US2] Prove no external font CDN, no fifth font file, readable fallbacks, and no preload without a measured evidence record in `tests/Unit/Theme/FontAssetContractTest.php`
+- [x] T050 [US2] Add or update the rendered fixture page used by browser tests for dark/light, focus, forced-colors, zoom, and LTR/RTL mixed-script coverage in `tests/e2e/fixtures/brand-foundation.html`
+- [x] T051 [US2] Add Playwright assertions for modes, focus visibility, overflow, bidi ordering, Arabic shaping hooks, reduced motion, forced colors, and 200% zoom in `tests/e2e/brand-foundation.spec.js`
+- [x] T052 [US2] Run T040–T051 headless checks and record contrast/focus/direction/font evidence in `specs/057-brand-tokens-logo-system/inventories/accessibility-evidence.md`
+- [x] T053 [US2] Run wp-env/Playwright evidence when available; otherwise record each unavailable browser/wp-env item as `ENVIRONMENT-GATED`, never PASS, in `specs/057-brand-tokens-logo-system/inventories/accessibility-evidence.md`
+- [x] T054 [US2] Inspect built/network output for font count, fallback/swap behavior, conditional assets, and unused-preload warnings; record PASS/FAIL/ENVIRONMENT-GATED evidence in `specs/057-brand-tokens-logo-system/inventories/font-evidence.md`
+- [x] T055 [US2] Run `clean-code-guard`, `wp-guard`, `test-guard`, and accessibility/RTL review on the US2 diff, resolve all non-environment blocking findings, and record results in `specs/057-brand-tokens-logo-system/inventories/accessibility-evidence.md`
 
 **Checkpoint**: Modes, focus, typography roles, and RTL are independently evidenced. Font integration remains
 honestly blocked if approved assets/provenance are unavailable.

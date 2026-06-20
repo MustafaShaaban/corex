@@ -102,7 +102,7 @@
             },
             {
               "slug": "border",
-              "value": "#36506C"
+              "value": "#71869C"
             },
             {
               "slug": "ink",
@@ -202,11 +202,11 @@
           "mappings": [
             {
               "slug": "heading",
-              "value": "system-ui, sans-serif"
+              "value": "'Space Grotesk', system-ui, sans-serif"
             },
             {
               "slug": "arabic",
-              "value": "'Noto Sans Arabic', system-ui, sans-serif"
+              "value": "'IBM Plex Sans Arabic', system-ui, sans-serif"
             },
             {
               "slug": "body",
@@ -214,7 +214,7 @@
             },
             {
               "slug": "mono",
-              "value": "ui-monospace, 'Cascadia Code', 'Courier New', monospace"
+              "value": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace"
             }
           ]
         }
@@ -389,11 +389,11 @@
           "mappings": [
             {
               "slug": "heading",
-              "value": "Georgia, 'Times New Roman', serif"
+              "value": "'Space Grotesk', Georgia, 'Times New Roman', serif"
             },
             {
               "slug": "arabic",
-              "value": "'Noto Sans Arabic', system-ui, sans-serif"
+              "value": "'IBM Plex Sans Arabic', system-ui, sans-serif"
             },
             {
               "slug": "body",
@@ -401,7 +401,7 @@
             },
             {
               "slug": "mono",
-              "value": "ui-monospace, 'Cascadia Code', 'Courier New', monospace"
+              "value": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace"
             }
           ]
         }

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-mode="light">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>CoreX brand foundation fixture</title>
+	<style>
+		:root { --surface:#fff; --text:#11181c; --muted:#5a6772; --accent:#007a9e; --raised:#fff; }
+		[data-mode="dark"] { --surface:#0b1f3b; --text:#f1f5f9; --muted:#c3ceda; --accent:#7dd3fc; --raised:#102a4c; }
+		* { box-sizing:border-box; }
+		body { margin:0; padding:2rem; color:var(--text); background:var(--surface); font:1rem/1.6 system-ui,sans-serif; }
+		main { max-inline-size:48rem; margin-inline:auto; }
+		.card { padding:1.5rem; background:var(--raised); border:1px solid var(--muted); border-radius:.5rem; }
+		button { padding:.75rem 1rem; color:var(--surface); background:var(--accent); border:0; }
+		button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+		.motion { animation:pulse 400ms ease-in-out infinite alternate; }
+		[dir="rtl"] { font-family:"IBM Plex Sans Arabic",system-ui,sans-serif; text-align:start; }
+		bdi, code { font-family:"JetBrains Mono",ui-monospace,monospace; }
+		@keyframes pulse { to { opacity:.65; } }
+		@media (prefers-reduced-motion:reduce) { .motion { animation:none; } }
+		@media (forced-colors:active) { button:focus-visible { outline:2px solid CanvasText; } }
+	</style>
+</head>
+<body>
+	<main>
+		<h1>CoreX Brand Foundation</h1>
+		<div class="card" data-testid="surface">
+			<p data-testid="latin">Discipline, at every layer.</p>
+			<p lang="ar" dir="rtl" data-testid="arabic">استخدم <bdi>CoreX</bdi> لبناء موقع الشركة</p>
+			<p lang="ar" dir="rtl" data-testid="mixed">شغّل <bdi><code>wp corex readiness</code></bdi> قبل النشر</p>
+			<button type="button" class="motion">Focusable action</button>
+		</div>
+	</main>
+</body>
+</html>

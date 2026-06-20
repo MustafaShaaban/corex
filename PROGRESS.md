@@ -4,6 +4,25 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-20 05:31 EEST, latest) -- Spec 057 US2 evidenced; font assets remain blocked
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest incoming commit:** `6dc59c2`; this US2 checkpoint is the next branch commit.
+- **Completed:** T044-T046 and T049-T055. Contrast/focus matrices pass, approved font roles have readable fallbacks,
+  LTR/RTL and mixed-script fixtures pass, and standalone Chromium passes 4/4 mode/focus/zoom/RTL/reduced-motion/
+  forced-colors scenarios. T047-T048 remain unchecked and BLOCKED on approved font assets/provenance.
+- **Verification:** Composer validation PASS; focused US2 contracts 9 PASS/1 owner-blocked; Jest 17 suites/97 tests
+  PASS; workspace build, CSS lint, focused JS lint, Chromium, readiness, and `git diff --check` PASS. Full Pest:
+  647 pass, nine future-story contracts intentionally RED; not represented as green.
+- **Exact next batch:** T056-T058 only: preserve the logo provenance RED gate and add default/custom/client-separation
+  plus accessible logo-usage fixtures. Do not implement T059 or later logo integration without approved vectors.
+- **Blockers:** T047-T048 need approved WOFF2 files/provenance. T059-T064 need approved production logo vectors/
+  provenance. Docker/wp-env, WordPress-rendered browser evidence, GitHub settings, and deployment remain gated.
+- **Did not change:** font/logo assets, client merge semantics, admin adapter/runtime behavior, CHANGELOG, release
+  metadata, Specs 058/059, or M3-M11 implementation. Root unrelated dirty worktree remains untouched.
+- **Next-agent command:** run `/speckit-implement Spec 057 T056-T058 only`; stop before T059 and keep PR #54 draft.
+
+---
 ## RESUME HERE (2026-06-20 05:14 EEST, latest) -- Spec 057 T040-T043 US2 contracts captured
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.

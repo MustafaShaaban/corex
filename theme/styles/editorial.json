@@ -40,12 +40,12 @@
                 {
                     "slug": "heading",
                     "name": "Heading",
-                    "fontFamily": "Georgia, 'Times New Roman', serif"
+                    "fontFamily": "'Space Grotesk', Georgia, 'Times New Roman', serif"
                 },
                 {
                     "slug": "arabic",
                     "name": "Arabic",
-                    "fontFamily": "'Noto Sans Arabic', system-ui, sans-serif"
+                    "fontFamily": "'IBM Plex Sans Arabic', system-ui, sans-serif"
                 },
                 {
                     "slug": "body",
@@ -55,7 +55,7 @@
                 {
                     "slug": "mono",
                     "name": "Technical",
-                    "fontFamily": "ui-monospace, 'Cascadia Code', 'Courier New', monospace"
+                    "fontFamily": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace"
                 }
             ]
         }
