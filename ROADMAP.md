@@ -21,7 +21,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 |---|---|---|---|
 | M0 - Stabilization, Security, and Release Hygiene | Closed in v0.27.0 | Complete | Environment-gated wp-env/browser/deployment evidence remains follow-up verification |
 | M1 - Design Inventory and Design-to-Engineering Pipeline | Current design package frozen; handoff intake active | High | Approved Claude Design inventory and handoffs |
-| M2 - CoreX Brand Tokens and Visual Foundation | Active; T001-T009 inventory complete | High | T010-T025 foundational contracts |
+| M2 - CoreX Brand Tokens and Visual Foundation | Active; T001-T025 contracts complete | High | T026-T039 US1 canonical foundation |
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Design needed | High | M1, M2 |
 | M4 - Full Company Site Kit v1 | Planned | High | M0, M2, M3; selected M5 blocks |
 | M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
@@ -37,10 +37,10 @@ Approved design work moves from design inventory to a focused handoff, then to a
 - **Done:** the core framework foundations, stable-client readiness work, Spec 056 dependency/security remediation,
   CI and CodeQL verification, GitHub branch-protection review, and the repository-side design inventory/handoff
   structure.
-- **Active now:** M2 implementation. The approved handoff, clarified Spec 057, plan, ordered tasks, and T001-T009
-  inventory baseline exist; M0 remains closed with the verified v0.27.0 post-readiness release.
-- **Next:** implement T010-T025 foundational contract tests and capture expected RED evidence before any token,
-  style, asset, or runtime implementation.
+- **Active now:** M2 implementation. Spec 057 inventory and foundational RED contracts (T001-T025) are complete;
+  M0 remains closed with the verified v0.27.0 post-readiness release.
+- **Next:** implement T026-T039 US1 canonical token/mode foundation and first-party consumer alignment, preserving
+  compatibility and stopping before accessibility/typography/RTL US2.
 - **Blocked:** M3 cannot enter engineering without an approved navigation handoff and the reviewed M2 token
   contract. M4 cannot start until the minimum M2/M3 foundations and selected M5 components are ready.
 - **Not authorized:** roadmap presence does not authorize implementation, Pro work, builders, or bulk spec creation.
@@ -123,7 +123,7 @@ accessibility, RTL, performance constraints, and implementation boundaries.
 
 ## 5. M2 - CoreX Brand Tokens and Visual Foundation
 
-**Status:** Active; Spec 057 T001-T009 inventory complete, with T010-T025 foundational contracts next.
+**Status:** Active; Spec 057 T001-T025 complete, with T026-T039 US1 canonical foundation next.
 **Outcome:** One accessible, brandable visual foundation shared by front-end, admin product UI, docs, and marketing.
 
 - New CoreX logo system and usage rules.
@@ -373,7 +373,7 @@ These items require later validation and dedicated specs. They must not leak int
 
 Create and implement one reviewed spec at a time:
 
-1. **Spec 057 - Brand Tokens and Logo System** — active; T001-T009 complete, T010-T025 next.
+1. **Spec 057 - Brand Tokens and Logo System** — active; T001-T025 complete, T026-T039 next.
 2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer Patterns** — do not create until the M3 handoff and
    M2 token contract are ready.
 3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — do not create until the required

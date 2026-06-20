@@ -49,3 +49,44 @@ framework/runtime code. WordPress recognition must be re-established before a la
 
 No token value, CSS, theme style, PHP/JavaScript runtime, logo/font asset, release metadata, Spec 058/059, or later
 milestone implementation changed. The next authorized batch is T010-T025 after review of this baseline.
+
+## Foundational contract RED evidence — T010-T025
+
+**Captured:** 2026-06-20 04:43 EEST
+
+**Focused command:**
+
+```text
+vendor/bin/pest tests/Unit/Theme/TokenInventoryTest.php tests/Unit/Theme/TokenConsumerContractTest.php tests/Unit/Theme/ModeMappingTest.php tests/Unit/Theme/BrandResolverTest.php tests/Unit/Theme/BrandOverrideCompatibilityTest.php tests/Unit/Theme/TokenCompatibilityTest.php tests/Unit/Config/AdminTokenAdapterTest.php tests/Unit/Theme/FontAssetContractTest.php tests/Unit/Config/LogoAssetContractTest.php tests/Unit/Theme/ContrastMatrixTest.php --compact
+```
+
+**Expected RED result:** 40 tests, 329 assertions, 18 failures, 0 errors, 0 skipped. Exit code 1 is expected until
+the corresponding implementation batches make the contracts green.
+
+The 18 intentional failures cover:
+
+- unresolved legacy custom-property consumers and raw design values outside approved allowances;
+- missing semantic groups, incomplete dark mappings, and incomplete Dark/Editorial replacement arrays;
+- missing complete-list validation/reporting and safe-default behavior;
+- inactive compatibility aliases and placeholder deprecation versions;
+- missing scoped CoreX admin adapter and screen-owned dependencies;
+- missing font provenance manifest/approved typography roles (font assets remain owner-blocked);
+- missing approved logo manifest/variants/accessibility records (logo assets remain owner-blocked); and
+- four failing light contrast/focus pairs plus six missing dark semantic pairs.
+
+The focused failures contain no runtime/test errors. `BrandResolverTest.php` passes independently: 10 tests and 12
+assertions, confirming the established recursive-map/list-replacement behavior remains intact.
+
+**Whole-suite evidence:** 654 tests, 2,560 assertions, the same 18 expected failures, 0 errors, 0 skipped, and no
+failure outside the new Spec 057 contract suites. This is intentionally RED, not a passing full suite.
+
+**Other checks:**
+
+- `composer validate --no-check-publish`: PASS.
+- PHP lint for every changed PHP test/support file: PASS.
+- `npm.cmd run test:js -- --runInBand`: PASS, 16 suites and 88 tests.
+- `npm.cmd run build`: PASS for all workspaces.
+- Docker/wp-env, browser automation, and external deployment: ENVIRONMENT-GATED; not executed and not PASS.
+
+No product/runtime implementation was added in T010-T025. T026 is the next task and must preserve this RED evidence
+before the first `theme/theme.json` change.

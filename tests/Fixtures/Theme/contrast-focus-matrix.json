@@ -1,0 +1,25 @@
+{
+  "pairs": [
+    { "id": "light-body", "mode": "light", "foreground": "ink", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-muted", "mode": "light", "foreground": "ink-soft", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-heading", "mode": "light", "foreground": "primary", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-link", "mode": "light", "foreground": "accent-dark", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-button", "mode": "light", "foreground": "surface", "background": "primary", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-border", "mode": "light", "foreground": "border", "background": "surface", "kind": "non-text", "threshold": 3.0 },
+    { "id": "light-success", "mode": "light", "foreground": "success", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-warning", "mode": "light", "foreground": "warning", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-error", "mode": "light", "foreground": "error", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-info", "mode": "light", "foreground": "info", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "light-focus", "mode": "light", "foreground": "accent", "background": "surface", "kind": "focus", "threshold": 3.0 },
+    { "id": "dark-body", "mode": "dark", "foreground": "ink", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-muted", "mode": "dark", "foreground": "ink-soft", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-heading", "mode": "dark", "foreground": "primary", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-link", "mode": "dark", "foreground": "accent", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-border", "mode": "dark", "foreground": "border", "background": "surface", "kind": "non-text", "threshold": 3.0 },
+    { "id": "dark-success", "mode": "dark", "foreground": "success", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-warning", "mode": "dark", "foreground": "warning", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-error", "mode": "dark", "foreground": "error", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-info", "mode": "dark", "foreground": "info", "background": "surface", "kind": "normal-text", "threshold": 4.5 },
+    { "id": "dark-focus", "mode": "dark", "foreground": "accent", "background": "surface", "kind": "focus", "threshold": 3.0 }
+  ]
+}

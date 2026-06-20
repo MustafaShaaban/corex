@@ -46,22 +46,22 @@ is blocked until the owner-approved vector package and provenance manifest exist
 **⚠️ CRITICAL**: Run each focused test and record its expected RED evidence in
 `specs/057-brand-tokens-logo-system/inventories/baseline.md` before starting Phase 3.
 
-- [ ] T010 [P] Add canonical-authority and duplicate-definition tests for `theme/theme.json` and inventory records in `tests/Unit/Theme/TokenInventoryTest.php`
-- [ ] T011 [P] Add undefined WordPress custom-property reference and unknown-classification tests across repository consumers in `tests/Unit/Theme/TokenConsumerContractTest.php`
-- [ ] T012 Add raw design-value tests with explicit centralized-admin and functional-layout allowances in `tests/Unit/Theme/TokenConsumerContractTest.php`
-- [ ] T013 [P] Add required semantic-group coverage tests for surfaces, text, borders, accent, status, overlay, selection, focus, radius, spacing, shadow/elevation, motion, and z in `tests/Unit/Theme/ModeMappingTest.php`
-- [ ] T014 Add complete default/light, dark, and editorial mapping tests, including complete palette/font replacement lists, in `tests/Unit/Theme/ModeMappingTest.php`
-- [ ] T015 [P] Extend recursive associative-merge and wholesale list-replacement regression tests in `tests/Unit/Theme/BrandResolverTest.php`
-- [ ] T016 [P] Add complete/incomplete palette and font-list, malformed-file, and missing-file fixtures under `tests/Fixtures/Theme/brand/`
-- [ ] T017 Add safe-default/reporting tests for T016 fixtures without merge-by-slug behavior in `tests/Unit/Theme/BrandOverrideCompatibilityTest.php`
-- [ ] T018 [P] Add alias replacement, consumer-count, one-minor-release deprecation-window, and rollback tests in `tests/Unit/Theme/TokenCompatibilityTest.php`
-- [ ] T019 [P] Add shared-handle registration, CoreX-screen-only enqueue, scope-leak, and no-client-authority tests for `--corex-admin-*` in `tests/Unit/Config/AdminTokenAdapterTest.php`
-- [ ] T020 [P] Add maximum-four-WOFF2, no-CDN, role/weight/subset, provenance, `font-display: swap`, fallback, and evidence-gated preload tests in `tests/Unit/Theme/FontAssetContractTest.php`
-- [ ] T021 [P] Add SVG-only, provenance-manifest, optimization, variant, accessible-usage, and owner-approval gate tests in `tests/Unit/Config/LogoAssetContractTest.php`
-- [ ] T022 [P] Add the light/dark semantic contrast and focus-pair fixture schema in `tests/Fixtures/Theme/contrast-focus-matrix.json`
-- [ ] T023 Add 4.5:1 normal-text and 3:1 large-text/non-text/focus threshold tests for T022 in `tests/Unit/Theme/ContrastMatrixTest.php`
-- [ ] T024 [P] Add Arabic-only, English-only, mixed-script, numerals, punctuation, code, badges, long-content, and nested-direction fixture definitions in `tests/Fixtures/Theme/direction-matrix.json`
-- [ ] T025 Run T010–T024 focused tests, confirm intended failures precede implementation, and append exact RED commands/results to `specs/057-brand-tokens-logo-system/inventories/baseline.md`
+- [X] T010 [P] Add canonical-authority and duplicate-definition tests for `theme/theme.json` and inventory records in `tests/Unit/Theme/TokenInventoryTest.php`
+- [X] T011 [P] Add undefined WordPress custom-property reference and unknown-classification tests across repository consumers in `tests/Unit/Theme/TokenConsumerContractTest.php`
+- [X] T012 Add raw design-value tests with explicit centralized-admin and functional-layout allowances in `tests/Unit/Theme/TokenConsumerContractTest.php`
+- [X] T013 [P] Add required semantic-group coverage tests for surfaces, text, borders, accent, status, overlay, selection, focus, radius, spacing, shadow/elevation, motion, and z in `tests/Unit/Theme/ModeMappingTest.php`
+- [X] T014 Add complete default/light, dark, and editorial mapping tests, including complete palette/font replacement lists, in `tests/Unit/Theme/ModeMappingTest.php`
+- [X] T015 [P] Extend recursive associative-merge and wholesale list-replacement regression tests in `tests/Unit/Theme/BrandResolverTest.php`
+- [X] T016 [P] Add complete/incomplete palette and font-list, malformed-file, and missing-file fixtures under `tests/Fixtures/Theme/brand/`
+- [X] T017 Add safe-default/reporting tests for T016 fixtures without merge-by-slug behavior in `tests/Unit/Theme/BrandOverrideCompatibilityTest.php`
+- [X] T018 [P] Add alias replacement, consumer-count, one-minor-release deprecation-window, and rollback tests in `tests/Unit/Theme/TokenCompatibilityTest.php`
+- [X] T019 [P] Add shared-handle registration, CoreX-screen-only enqueue, scope-leak, and no-client-authority tests for `--corex-admin-*` in `tests/Unit/Config/AdminTokenAdapterTest.php`
+- [X] T020 [P] Add maximum-four-WOFF2, no-CDN, role/weight/subset, provenance, `font-display: swap`, fallback, and evidence-gated preload tests in `tests/Unit/Theme/FontAssetContractTest.php`
+- [X] T021 [P] Add SVG-only, provenance-manifest, optimization, variant, accessible-usage, and owner-approval gate tests in `tests/Unit/Config/LogoAssetContractTest.php`
+- [X] T022 [P] Add the light/dark semantic contrast and focus-pair fixture schema in `tests/Fixtures/Theme/contrast-focus-matrix.json`
+- [X] T023 Add 4.5:1 normal-text and 3:1 large-text/non-text/focus threshold tests for T022 in `tests/Unit/Theme/ContrastMatrixTest.php`
+- [X] T024 [P] Add Arabic-only, English-only, mixed-script, numerals, punctuation, code, badges, long-content, and nested-direction fixture definitions in `tests/Fixtures/Theme/direction-matrix.json`
+- [X] T025 Run T010–T024 focused tests, confirm intended failures precede implementation, and append exact RED commands/results to `specs/057-brand-tokens-logo-system/inventories/baseline.md`
 
 **Checkpoint**: Inventory and failing contract tests define the implementation boundary. User-story work may begin.
 

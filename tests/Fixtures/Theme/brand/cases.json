@@ -1,0 +1,50 @@
+{
+  "cases": [
+    {
+      "name": "associative-partial",
+      "shape": "associative-partial",
+      "input_path": "tests/Fixtures/Theme/brand/associative-partial.json",
+      "expected_result": "merge",
+      "required_slugs": [],
+      "compatibility_note": "Nested associative maps merge while preserving sibling defaults."
+    },
+    {
+      "name": "complete-list",
+      "shape": "complete-list",
+      "input_path": "tests/Fixtures/Theme/brand/complete-list.json",
+      "expected_result": "replace",
+      "required_slugs": [
+        "primary", "primary-dark", "accent", "accent-dark", "surface", "surface-alt", "border",
+        "ink", "ink-soft", "success", "warning", "error", "info", "heading", "arabic"
+      ],
+      "compatibility_note": "Complete palette and font lists retain wholesale replacement semantics."
+    },
+    {
+      "name": "incomplete-list",
+      "shape": "incomplete-list",
+      "input_path": "tests/Fixtures/Theme/brand/incomplete-list.json",
+      "expected_result": "report-and-default",
+      "required_slugs": [
+        "primary", "primary-dark", "accent", "accent-dark", "surface", "surface-alt", "border",
+        "ink", "ink-soft", "success", "warning", "error", "info", "heading", "arabic"
+      ],
+      "compatibility_note": "Incomplete replacement arrays are reported and their safe defaults remain intact."
+    },
+    {
+      "name": "malformed",
+      "shape": "malformed",
+      "input_path": "tests/Fixtures/Theme/brand/malformed.json.txt",
+      "expected_result": "ignore-and-default",
+      "required_slugs": [],
+      "compatibility_note": "Malformed input preserves the existing logged-default behavior."
+    },
+    {
+      "name": "missing",
+      "shape": "missing",
+      "input_path": "tests/Fixtures/Theme/brand/missing.json",
+      "expected_result": "ignore-and-default",
+      "required_slugs": [],
+      "compatibility_note": "A missing file continues to leave defaults unchanged."
+    }
+  ]
+}

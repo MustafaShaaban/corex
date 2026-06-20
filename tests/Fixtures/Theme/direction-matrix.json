@@ -1,0 +1,21 @@
+{
+  "modes": ["light", "dark"],
+  "document_directions": ["ltr", "rtl"],
+  "checks": [
+    "shaping", "visual-order", "bidi-isolation", "logical-alignment", "keyboard-focus-order",
+    "clipping", "horizontal-overflow", "zoom-200"
+  ],
+  "fixtures": [
+    { "id": "arabic-prose", "language": "ar", "direction": "rtl", "content": "الانضباط في كل طبقة", "context": "paragraph" },
+    { "id": "arabic-heading", "language": "ar", "direction": "rtl", "content": "منصة CoreX للشركات", "context": "heading" },
+    { "id": "english-prose", "language": "en", "direction": "ltr", "content": "Discipline, at every layer.", "context": "paragraph" },
+    { "id": "english-heading", "language": "en", "direction": "ltr", "content": "CoreX Brand Foundation", "context": "heading" },
+    { "id": "mixed-product-name", "language": "ar", "direction": "rtl", "content": "استخدم CoreX لبناء موقع الشركة", "context": "paragraph", "isolate": "CoreX" },
+    { "id": "mixed-command", "language": "ar", "direction": "rtl", "content": "شغّل wp corex readiness قبل النشر", "context": "code-inline", "isolate": "wp corex readiness" },
+    { "id": "arabic-western-numerals", "language": "ar", "direction": "rtl", "content": "الإصدار 0.27.0 — المرحلة ٢", "context": "technical-label" },
+    { "id": "mixed-punctuation", "language": "ar", "direction": "rtl", "content": "CoreX (الإصدار 0.27.0): جاهز؟", "context": "paragraph", "isolate": "CoreX (0.27.0)" },
+    { "id": "technical-badge", "language": "ar", "direction": "rtl", "content": "الحالة: M2 / ACTIVE", "context": "badge", "isolate": "M2 / ACTIVE" },
+    { "id": "long-translation", "language": "ar", "direction": "rtl", "content": "هذا نص عربي طويل للتحقق من تمدد المحتوى والتفاف الأسطر وعدم حدوث قص أو تمرير أفقي في المساحات الضيقة.", "context": "card" },
+    { "id": "nested-direction", "language": "ar", "direction": "rtl", "content": "ابدأ بالأمر composer test ثم راجع النتيجة", "context": "nested-direction", "isolate": "composer test" }
+  ]
+}

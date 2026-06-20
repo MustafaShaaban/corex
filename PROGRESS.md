@@ -4,6 +4,33 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-20 04:43 EEST, latest) -- Spec 057 T010-T025 RED contracts complete
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest completed-task commit before this batch:** `adeadb8`; this RED-contract checkpoint is the next branch
+  commit.
+- **Completed this session:** T010-T025. Added canonical source/consumer/mode contracts, brand compatibility
+  fixtures/tests, alias rollback contracts, admin adapter contracts, font/logo asset gates, contrast/focus evidence,
+  and the LTR/RTL mixed-script fixture matrix. T001-T025 are now complete.
+- **Expected RED evidence:** focused Spec 057 run: 40 tests, 329 assertions, 18 intentional failures, 0 errors.
+  Full Pest run: 654 tests, 2,560 assertions, the same 18 failures only, 0 errors. These are deliberately failing
+  pre-implementation contracts and must not be reported as a passing suite.
+- **Passing checks:** standalone `BrandResolverTest.php` 10/10 with 12 assertions; Composer validation; PHP lint for
+  changed PHP; Jest 16 suites/88 tests; root workspace build; Spec Kit prerequisites; `git diff --check`;
+  `test-guard` and `docs-guard` found no blocking issue.
+- **Exact next batch:** T026-T039 (US1 canonical foundation). Preserve the current RED evidence, add the deterministic
+  inventory generator test first, then make only US1 token/mode/first-party consumer contracts green. Stop before
+  T040.
+- **Blockers:** font integration T047-T049 still requires approved WOFF2 files/provenance. Logo integration
+  T059-T064 still requires the owner-approved production vector package/provenance. Neither blocks US1.
+- **Environment-gated:** WordPress in this isolated worktree, Docker/wp-env, browser automation, and external
+  deployment evidence remain unavailable and are not PASS.
+- **Did not change:** product/runtime code, theme/CSS/token values, logo/font assets, CHANGELOG, release metadata,
+  Specs 058/059, or M3-M11 implementation.
+- **Next-agent command:** checkout/pull this branch, then run `/speckit-implement Spec 057 T026-T039 only`; stop
+  before T040 and retain the recorded RED baseline.
+
+---
 ## RESUME HERE (2026-06-19 23:37 EEST, latest) -- Spec 057 T001-T009 complete
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.

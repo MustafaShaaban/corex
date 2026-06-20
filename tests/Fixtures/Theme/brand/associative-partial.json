@@ -1,0 +1,9 @@
+{
+  "settings": {
+    "custom": {
+      "radius": {
+        "md": "0.625rem"
+      }
+    }
+  }
+}
