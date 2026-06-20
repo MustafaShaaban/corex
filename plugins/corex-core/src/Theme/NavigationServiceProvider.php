@@ -33,6 +33,10 @@ final class NavigationServiceProvider extends ServiceProvider
 
     private const STYLE_RELATIVE_PATH = 'assets/css/corex-navigation.css';
 
+    private const SCRIPT_HANDLE = 'corex-navigation';
+
+    private const SCRIPT_RELATIVE_PATH = 'assets/js/corex-navigation.js';
+
     public function register(): void
     {
         // No services to bind; presentation-only surface.
@@ -42,6 +46,8 @@ final class NavigationServiceProvider extends ServiceProvider
     {
         add_action('init', [$this, 'registerPatternCategory']);
         add_action('init', [$this, 'registerNavigationStyle']);
+        add_action('init', [$this, 'registerNavigationScript']);
+        add_filter('render_block', [$this, 'maybeEnqueueNavigationScript'], 10, 2);
     }
 
     public function registerPatternCategory(): void
@@ -83,5 +89,52 @@ final class NavigationServiceProvider extends ServiceProvider
         foreach (['core/navigation', 'corex/copyright'] as $blockName) {
             wp_enqueue_block_style($blockName, $args);
         }
+    }
+
+    public function registerNavigationScript(): void
+    {
+        if (! function_exists('wp_register_script')) {
+            return;
+        }
+
+        $path = get_theme_file_path(self::SCRIPT_RELATIVE_PATH);
+
+        if (! is_file($path)) {
+            return;
+        }
+
+        wp_register_script(
+            self::SCRIPT_HANDLE,
+            get_theme_file_uri(self::SCRIPT_RELATIVE_PATH),
+            [],
+            COREX_CORE_VERSION,
+            true,
+        );
+    }
+
+    /**
+     * Enqueue the navigation behavior script only on requests that actually render a
+     * CoreX header navigation or mega-menu (Principle VI), never globally. The markup
+     * stays fully usable without it (core navigation + native <details> fallbacks).
+     *
+     * @param string               $content Rendered block HTML (returned unchanged).
+     * @param array<string, mixed> $block   Parsed block.
+     */
+    public function maybeEnqueueNavigationScript(string $content, array $block): string
+    {
+        if (! function_exists('wp_enqueue_script') || ! wp_script_is(self::SCRIPT_HANDLE, 'registered')) {
+            return $content;
+        }
+
+        $blockName = $block['blockName'] ?? '';
+        $isNavigation = $blockName === 'core/navigation';
+        $isMega = $blockName === 'core/details'
+            && str_contains((string) ($block['attrs']['className'] ?? ''), 'corex-mega');
+
+        if ($isNavigation || $isMega) {
+            wp_enqueue_script(self::SCRIPT_HANDLE);
+        }
+
+        return $content;
     }
 }

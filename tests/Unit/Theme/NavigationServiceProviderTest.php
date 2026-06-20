@@ -61,5 +61,31 @@ it('attaches the navigation stylesheet to core/navigation and never globally enq
     (new NavigationServiceProvider(new Container()))->registerNavigationStyle();
 
     expect($blockStyles)->toHaveKey('core/navigation')
+        ->and($blockStyles)->toHaveKey('corex/copyright')
         ->and($blockStyles['core/navigation']['handle'])->toBe('corex-navigation');
+});
+
+it('enqueues the behavior script only when a navigation or mega block renders', function () {
+    Functions\when('wp_script_is')->justReturn(true);
+    $enqueued = [];
+    Functions\when('wp_enqueue_script')->alias(
+        static function (string $handle) use (&$enqueued): bool {
+            $enqueued[] = $handle;
+
+            return true;
+        },
+    );
+
+    $provider = new NavigationServiceProvider(new Container());
+
+    $provider->maybeEnqueueNavigationScript('x', ['blockName' => 'core/paragraph']);
+    expect($enqueued)->toBe([]);
+
+    $provider->maybeEnqueueNavigationScript('x', ['blockName' => 'core/navigation']);
+    $provider->maybeEnqueueNavigationScript('x', [
+        'blockName' => 'core/details',
+        'attrs' => ['className' => 'corex-mega corex-mega--services'],
+    ]);
+
+    expect($enqueued)->toBe(['corex-navigation', 'corex-navigation']);
 });
