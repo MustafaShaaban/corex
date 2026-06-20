@@ -57,5 +57,15 @@ final class HttpServiceProvider extends ServiceProvider
             [],
             COREX_CORE_VERSION,
         );
+
+        // The scoped CoreX admin token adapter (spec 057 US4). Registered only —
+        // each CoreX admin screen style declares `corex-admin-tokens` as a dependency,
+        // so it loads on CoreX screens and never globally (Principle VI).
+        wp_register_style(
+            'corex-admin-tokens',
+            $assets . '/css/corex-admin-tokens.css',
+            [],
+            COREX_CORE_VERSION,
+        );
     }
 }

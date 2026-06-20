@@ -4,7 +4,44 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-20, latest) -- Spec 057 US3 logo package landed; T059-T064 complete
+## RESUME HERE (2026-06-20, latest) -- Spec 057 US4 compatibility + admin adapter complete; final gate next
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and **draft** (not merged, not ready).
+  Normal project root `C:/wamp64/www/corex` is the single active checkout.
+- **Completed this session — US4 (T066-T079):** turned the five deliberately-RED US4 contracts GREEN with the
+  minimum implementation. (1) `Corex\Theme\BrandOverrideValidator` (new, pure): reports incomplete wholesale-
+  replacement palette/font lists against the canonical brandable roles (13 colors + heading/arabic, intersected
+  with live defaults) and strips them (pruning empty ancestors) so complete defaults survive; complete lists pass
+  through unchanged. Wired into `ThemeServiceProvider`'s `wp_theme_json_data_theme` filter, logging issues via
+  `BootLogger`. (2) Scoped admin token adapter `plugins/corex-core/assets/css/corex-admin-tokens.css` (`--corex-admin-*`
+  on `.wrap`, dark `prefers-color-scheme` override, no `--wp--preset--`, no `:root`/`html`/`body`), **registered**
+  (never globally enqueued) in `HttpServiceProvider`, and declared as a `['corex-admin-tokens']` dependency by the
+  four CoreX admin screen styles (dashboard, data, insights, captcha) — conditional, CoreX-screens-only. (3)
+  Compatibility aliases (T069) were already in `theme.json` from US1. Extended the `TokenConsumerContractTest`
+  centralized-admin allowance to include the adapter file.
+- **Deferred (beyond the minimum scope, recorded honestly):** substituting the in-body raw literals in the four
+  admin CSS bodies with `var(--corex-admin-*)` — kept under the documented centralized-admin allowance to keep the
+  consumer exact-match inventory stable. T067 (`HttpServiceProviderTest`) and T068 (`brand/existing/` fixtures) were
+  not authored: their behavior is already covered by `AdminTokenAdapterTest`/`BrandOverrideCompatibilityTest`, and
+  unconsumed fixtures would be dead data (test-guard/YAGNI). See `inventories/consumer-migration.md`.
+- **Verification:** focused `AdminTokenAdapterTest` 3/3 + `BrandOverrideCompatibilityTest` 5/5 +
+  `TokenCompatibilityTest` 4/4 GREEN; **full Pest 661 passed / 0 failed** (2901 assertions), up from 656/5 — no
+  regressions. `npm run lint:css` PASS; PHP lint PASS; `git diff --check` PASS. T078: `generate-token-inventory.mjs`
+  regenerated — 6 data inventories byte-identical (zero drift); curated status hand-maintained. Guards
+  (clean-code/wp/test) clean.
+- **ENVIRONMENT-GATED (not PASS):** rendered wp-admin verification of the adapter across screens (Docker/wp-env +
+  browser runtime unavailable). Not represented as passing.
+- **Remaining:** Spec 057 final gate **T080-T090** (docs surfaces, full `composer test`/JS/build/docs-app, env-gated
+  evidence, final whole-diff guard gate). No asset blockers remain. US1-US4 are complete.
+- **Did not change:** the approved logo package, font assets, US1-US3 token/runtime behavior, CHANGELOG, release
+  metadata, Specs 058/059, later milestones. Spec 055 WIP remains untouched in `stash@{0}`.
+- **Exact next step:** run Spec 057 Phase 7 (T080-T090): update `docs-app` foundations/branding docs (token groups,
+  admin adapter, brand.json validation/aliases, logo variants), then full `composer test` + JS/build/docs-app +
+  `verify:dependencies`, record env-gated items honestly, and run the final whole-diff guard gate before requesting
+  PR #54 review. Keep PR #54 draft until T080-T090 pass.
+
+---
+## RESUME HERE (2026-06-20) -- Spec 057 US3 logo package landed; T059-T064 complete
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and **draft** (not merged, not marked
   ready). Normal project root `C:/wamp64/www/corex` is the single active checkout.

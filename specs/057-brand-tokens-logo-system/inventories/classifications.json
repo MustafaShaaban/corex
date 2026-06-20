@@ -494,7 +494,7 @@
   },
   "blockers": {
     "fonts": "PASS: approved WOFF2 files and provenance recorded (T047-T049)",
-    "logos": "BLOCKED until owner-approved vector package and provenance are recorded (T059-T064)"
+    "logos": "PASS: owner-approved vector package and provenance recorded (T059-T064)"
   },
   "evidence_status": "implementation-in-progress"
 }

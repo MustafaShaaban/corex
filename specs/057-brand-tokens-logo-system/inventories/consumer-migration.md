@@ -29,3 +29,66 @@ therefore changes token references and formatting only; WordPress retains the ex
   window; first-party front-end consumers use canonical roles.
 - The existing admin `small` alias remains intentionally recorded for the later scoped admin-adapter batch.
 - CSS uses logical properties where direction matters; no physical left/right property was introduced.
+
+---
+
+# Spec 057 US4 Compatibility, Validator, and Admin Adapter Evidence
+
+Captured: 2026-06-20 EEST
+
+## Compatibility aliases (T069)
+
+The eleven versioned legacy aliases (introduced 0.28.0, removable after 0.29.0, all with empty `consumer_paths`)
+were already written into `theme/theme.json` during US1 and remain intact. `TokenCompatibilityTest` is GREEN:
+retained slugs match the inventory, every alias is a defined generated property, and no alias is removal-eligible
+while consumers remain.
+
+## Brand override validator (T070, T071)
+
+`Corex\Theme\BrandOverrideValidator` is a pure class that checks the wholesale-replacement lists
+(`settings.color.palette`, `settings.typography.fontFamilies`) against the canonical brandable roles (13 colors +
+`heading`/`arabic`, intersected with the live defaults). A complete list passes through unchanged; an incomplete
+list is reported and stripped (with empty ancestors pruned) so the complete defaults survive. It is wired into
+`ThemeServiceProvider`'s `wp_theme_json_data_theme` filter, logging each incomplete-list issue via `BootLogger`.
+`BrandResolver` keeps associative recursive merge + wholesale list replacement, and missing/malformed files still
+fall back to defaults with a log entry. `BrandOverrideCompatibilityTest` is GREEN (5/5).
+
+## Scoped admin token adapter (T072–T077)
+
+- `plugins/corex-core/assets/css/corex-admin-tokens.css` defines `--corex-admin-*` semantic tokens scoped to `.wrap`
+  (never `:root`/`html`/`body`), with a `prefers-color-scheme: dark` override. No `--wp--preset--` reference.
+- `HttpServiceProvider::registerAssets()` **registers** the `corex-admin-tokens` handle (empty deps, core version)
+  and never enqueues it.
+- `AdminDashboard`, `DataAdminScreen`, `InsightsScreen`, and `CaptchaServiceProvider` declare `['corex-admin-tokens']`
+  as a dependency of their existing CoreX-screen styles, so the adapter loads only on CoreX screens (conditional,
+  never global). `AdminTokenAdapterTest` is GREEN (3/3).
+- **Deferred (beyond minimum scope):** substituting the in-body raw fallback literals in the four admin CSS files
+  with `var(--corex-admin-*)` is deferred. Those literals remain under the documented centralized-admin allowance
+  (now extended to include the adapter file), keeping the consumer inventory exact-match contract stable. The
+  adapter is in place, so screens can adopt the tokens incrementally without further provider changes.
+
+## Inventory regeneration (T078)
+
+`node scripts/generate-token-inventory.mjs` regenerated all seven inventories. The six data files
+(`definitions`, `variations`, `generated-properties`, `consumers`, `docs-and-brand`, `admin-and-aliases`) are
+byte-identical to the committed versions — zero token/consumer/alias drift from US4. Only the curated status fields
+in `classifications.json` are hand-maintained (the generator seeds stale hardcoded status strings); `logos` was
+updated to PASS to reflect the landed US3 package.
+
+## Verification (T079)
+
+- Focused: `AdminTokenAdapterTest` 3/3, `BrandOverrideCompatibilityTest` 5/5, `TokenCompatibilityTest` 4/4 — GREEN.
+- Full Pest: **661 passed, 0 failed** (2901 assertions) — up from 656/5; the five previously-RED US4 contracts are
+  now GREEN with no regressions.
+- `npm run lint:css` — PASS (adapter reformatted to project tab style, ≤80 cols). PHP lint PASS on changed files.
+- Guards: `clean-code-guard`, `wp-guard`, `test-guard` run clean on the US4 diff (one dead line and CSS lint fixed).
+- ENVIRONMENT-GATED (not PASS): rendered wp-admin verification of the adapter across screens (Docker/wp-env and a
+  compatible browser runtime unavailable). Not represented as passing.
+
+## Not authored (test-guard / YAGNI)
+
+- T067 (`HttpServiceProviderTest`): the registration + conditional-dependency assertions already live in
+  `AdminTokenAdapterTest`, which exercises `HttpServiceProvider::registerAssets()` directly; a separate file would
+  duplicate them.
+- T068 (`tests/Fixtures/Theme/brand/existing/`): no current test consumes these fixtures, so they would be dead
+  data; rollback/default-retention is covered by the green missing/incomplete `BrandOverrideCompatibilityTest` cases.

@@ -75,7 +75,7 @@ final class AdminDashboard
         );
 
         // The control-panel card/checklist styling (spec 044) — only on this screen (Principle VI).
-        wp_enqueue_style('corex-control-panel', plugins_url('assets/control-panel.css', $base), [], '1.0.0');
+        wp_enqueue_style('corex-control-panel', plugins_url('assets/control-panel.css', $base), ['corex-admin-tokens'], '1.0.0');
     }
 
     public function render(): void

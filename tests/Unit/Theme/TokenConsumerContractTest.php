@@ -80,6 +80,9 @@ it('rejects unrecorded raw design values outside approved allowances', function 
             }
 
             $isAdminInventory = in_array($relative, [
+                // The scoped admin token adapter centralizes these literals (spec 057 US4);
+                // the consuming screens below read them through --corex-admin-* tokens.
+                'plugins/corex-core/assets/css/corex-admin-tokens.css',
                 'plugins/corex-config/assets/control-panel.css',
                 'plugins/corex-config/assets/data.css',
                 'plugins/corex-config/assets/insights.css',
