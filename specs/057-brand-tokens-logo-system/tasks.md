@@ -110,10 +110,10 @@ assets exist; browser/manual checks are either executed with evidence or explici
 
 ### Tests for User Story 2
 
-- [ ] T040 [US2] Run `tests/Unit/Theme/ContrastMatrixTest.php` and preserve RED pair evidence before changing semantic color values
-- [ ] T041 [P] [US2] Add reduced-motion, forced-colors, 200% zoom, text-resize, and focus-surface evidence requirements in `tests/Unit/Theme/VisualEvidenceContractTest.php`
-- [ ] T042 [P] [US2] Add direction-matrix schema/bidi-isolation coverage tests for `tests/Fixtures/Theme/direction-matrix.json` in `tests/Unit/Theme/DirectionFixtureTest.php`
-- [ ] T043 [P] [US2] Run `tests/Unit/Theme/FontAssetContractTest.php` and record RED or `BLOCKED` evidence before any font file is added
+- [x] T040 [US2] Run `tests/Unit/Theme/ContrastMatrixTest.php` and preserve RED pair evidence before changing semantic color values
+- [x] T041 [P] [US2] Add reduced-motion, forced-colors, 200% zoom, text-resize, and focus-surface evidence requirements in `tests/Unit/Theme/VisualEvidenceContractTest.php`
+- [x] T042 [P] [US2] Add direction-matrix schema/bidi-isolation coverage tests for `tests/Fixtures/Theme/direction-matrix.json` in `tests/Unit/Theme/DirectionFixtureTest.php`
+- [x] T043 [P] [US2] Run `tests/Unit/Theme/FontAssetContractTest.php` and record RED or `BLOCKED` evidence before any font file is added
 
 ### Implementation for User Story 2
 

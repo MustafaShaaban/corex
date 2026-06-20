@@ -114,3 +114,15 @@ before the first `theme/theme.json` change.
 Guard review found no blocking clean-code, WordPress, test, or documentation issue. The inventory generator performs
 deterministic repository analysis without changing runtime state; the WordPress diff changes theme data and
 front-end token consumption only. Tests assert public inventory/mapping contracts rather than internal calls.
+
+## US2 RED/BLOCKED evidence â€” T040-T043
+
+**Captured:** 2026-06-20 05:14 EEST
+
+- Contrast matrix: RED with five concrete pairs: light link, border, warning, and focus plus dark border.
+- Visual evidence contract: RED because `accessibility-evidence.md` does not exist before T052.
+- Direction fixture schema and mixed-script isolation contract: PASS.
+- Font contract: one PASS (no external CDN/no more than four WOFF2 files), one RED typography-role mapping, and one
+  BLOCKED provenance-manifest assertion. No font file or manifest was added.
+
+These failures are pre-implementation evidence for T044-T054, not passing results.

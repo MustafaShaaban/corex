@@ -4,6 +4,25 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-20 05:14 EEST, latest) -- Spec 057 T040-T043 US2 contracts captured
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest completed-task commit:** `3e153e2`; this RED/BLOCKED checkpoint is the next branch commit.
+- **Completed this session:** T040-T043. Captured five failing contrast pairs, added visual-evidence requirements,
+  validated the LTR/RTL mixed-script fixture schema, and preserved the font provenance/role blockers before changes.
+- **Exact next batch:** T044-T055. Correct only evidenced semantic values/focus mappings, define approved font roles
+  without assets, add accessible rendered/e2e fixtures, and record honest browser/font evidence. Keep T047-T049
+  blocked where approved font files/provenance are required; stop before T056.
+- **Blockers:** approved WOFF2 files/provenance remain absent for T047-T049. Approved logo vectors/provenance remain
+  absent for T059-T064.
+- **Verification:** focused US2 contract run: 3 PASS and 4 expected RED/BLOCKED tests, 285 assertions; `git diff
+  --check` PASS. No result is represented as a green US2 implementation gate.
+- **Did not change:** token values, runtime behavior, CSS, logo/font assets, admin adapter, CHANGELOG, release metadata,
+  Specs 058/059, or later milestone work.
+- **Next-agent command:** run `/speckit-implement Spec 057 T044-T055 only`; keep asset-dependent font tasks blocked
+  without owner-approved files and provenance, and stop before T056.
+
+---
 ## RESUME HERE (2026-06-20 05:07 EEST, latest) -- Spec 057 T026-T039 US1 complete
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
