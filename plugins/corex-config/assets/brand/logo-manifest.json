@@ -1,0 +1,71 @@
+{
+  "name": "CoreX product logo system",
+  "mark": "Core X",
+  "source": "design handoff root 'Design project questions answered (3)' — design_handoff_corex_brand_system/Corex Logo System.dc.html and README.md (the locked-winner 'Core X' mark)",
+  "author_or_owner": "Mustafa Shaaban (CoreX), via the approved CoreX brand & design system handoff",
+  "license_or_rights": "Owned by the CoreX project. Wordmark glyph outlines are extracted from the self-hosted Space Grotesk variable font (SIL Open Font License 1.1; see theme/assets/fonts/licenses).",
+  "approval_date": "2026-06-20",
+  "approved_by": "Repository owner, in-session approval of the design handoff as the authoritative provenance source.",
+  "provenance": {
+    "geometry": "Five rounded 12u modules on a 48x48 grid, 3u gutters, 2.5u corner radius; four corner modules use currentColor, the center module uses CoreX brass #c9a25e — verbatim from the approved Core X locked winner.",
+    "wordmark_extraction": "Glyph outlines for 'Corex' mechanically extracted (not traced or redrawn) from theme/assets/fonts/space-grotesk-latin-500-700.woff2 instanced at wght=600, letter-spacing -0.035em, with the terminal 'x' in brass.",
+    "generator": "scripts/generate-logo-assets.py (deterministic); optimized with scripts/svgo-logo.config.mjs.",
+    "excluded": "The legacy navy/cyan corex-logo.svg is NOT approved production artwork; it is retained only as rollback/migration evidence. No .dc.html prototype runtime files are shipped.",
+    "colors": {
+      "brass": "#c9a25e",
+      "brass_aa_on_light": "#ad8643"
+    }
+  },
+  "assets": [
+    {
+      "variant": "symbol",
+      "path": "plugins/corex-config/assets/brand/corex-symbol.svg",
+      "filename": "corex-symbol.svg",
+      "view_box": "0 0 48 48",
+      "sha256": "0a6d3649419c20b2bb6c9cb160f727c2cf8dd5f39411601e0968e0efab0dd772",
+      "accessible_usage": "decorative",
+      "client_site_default": false,
+      "description": "Bare Core X mark, brass core. Decorative icon (favicon/app-icon source)."
+    },
+    {
+      "variant": "wordmark",
+      "path": "plugins/corex-config/assets/brand/corex-wordmark.svg",
+      "filename": "corex-wordmark.svg",
+      "view_box": "0 0 2600.5 728",
+      "sha256": "078790cccc809f3ecaf304454069a65aa08cb18577dede0e09e7da20bed31e03",
+      "accessible_usage": "named-image",
+      "client_site_default": false,
+      "description": "Wordmark only: 'Core' in currentColor with a brass terminal 'x', Space Grotesk 600 outlines."
+    },
+    {
+      "variant": "lockup",
+      "path": "plugins/corex-config/assets/brand/corex-lockup.svg",
+      "filename": "corex-lockup.svg",
+      "view_box": "0 0 170.02 48",
+      "sha256": "67d0d431846a48db9ef247e86ec8805bd41b6d3d2b5cb172832cc079d79613d6",
+      "accessible_usage": "named-image",
+      "client_site_default": false,
+      "description": "Horizontal lockup (mark | divider | wordmark), full-color brass. The default CoreX product logo."
+    },
+    {
+      "variant": "monochrome",
+      "path": "plugins/corex-config/assets/brand/corex-monochrome.svg",
+      "filename": "corex-monochrome.svg",
+      "view_box": "0 0 170.02 48",
+      "sha256": "2f49d561021fb314178cba92220ee855f2c37d0c6a208025a1d2373ff4b40073",
+      "accessible_usage": "decorative",
+      "client_site_default": false,
+      "description": "Single-ink lockup, every element currentColor. For print, one-color and forced-colors contexts."
+    },
+    {
+      "variant": "contrast",
+      "path": "plugins/corex-config/assets/brand/corex-contrast.svg",
+      "filename": "corex-contrast.svg",
+      "view_box": "0 0 170.02 48",
+      "sha256": "374f93f5bb2e8646c1bfc25d73695b5b90496ce4c560972c13bdab9d9b19b4f5",
+      "accessible_usage": "linked-brand",
+      "client_site_default": false,
+      "description": "Lockup using the AA-darkened brass #ad8643 core for light / high-contrast backgrounds."
+    }
+  ]
+}

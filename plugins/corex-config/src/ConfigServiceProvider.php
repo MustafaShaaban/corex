@@ -63,7 +63,9 @@ final class ConfigServiceProvider extends ServiceProvider
             BrandingService::class,
             static fn (ContainerInterface $c): BrandingService => new BrandingService(
                 $c->make(ConfigInterface::class),
-                plugins_url('assets/corex-logo.svg', dirname(__DIR__) . '/corex-config.php'),
+                // The approved Core X product lockup (see assets/brand/logo-manifest.json).
+                // A per-site `brand.logo_url` override still wins, so client identity is unaffected.
+                plugins_url('assets/brand/corex-lockup.svg', dirname(__DIR__) . '/corex-config.php'),
             ),
         );
 

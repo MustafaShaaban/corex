@@ -1,7 +1,10 @@
+/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+
 /**
  * Corex Accordion — token-only, logical CSS (RTL-correct), conditional asset.
  * Native <details>/<summary>: accessible + keyboard-operable with no JavaScript.
  */
+/* stylelint-enable @stylistic/max-line-length */
 .corex-accordion {
 	display: flex;
 	flex-direction: column;

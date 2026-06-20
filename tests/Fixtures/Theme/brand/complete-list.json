@@ -1,0 +1,35 @@
+{
+  "settings": {
+    "color": {
+      "palette": [
+        { "slug": "primary", "color": "#172033", "name": "Primary" },
+        { "slug": "primary-dark", "color": "#0B1020", "name": "Primary dark" },
+        { "slug": "accent", "color": "#A67C3D", "name": "Accent" },
+        { "slug": "accent-dark", "color": "#725126", "name": "Accent dark" },
+        { "slug": "surface", "color": "#FFFFFF", "name": "Surface" },
+        { "slug": "surface-alt", "color": "#F5F3EE", "name": "Surface alt" },
+        { "slug": "border", "color": "#D8D3C8", "name": "Border" },
+        { "slug": "ink", "color": "#16181D", "name": "Ink" },
+        { "slug": "ink-soft", "color": "#555B66", "name": "Ink soft" },
+        { "slug": "success", "color": "#1A7148", "name": "Success" },
+        { "slug": "warning", "color": "#8B5D13", "name": "Warning" },
+        { "slug": "error", "color": "#B42318", "name": "Error" },
+        { "slug": "info", "color": "#175CD3", "name": "Info" }
+      ]
+    },
+    "typography": {
+      "fontFamilies": [
+        {
+          "slug": "heading",
+          "name": "Heading",
+          "fontFamily": "'Space Grotesk', system-ui, sans-serif"
+        },
+        {
+          "slug": "arabic",
+          "name": "Arabic",
+          "fontFamily": "'IBM Plex Sans Arabic', system-ui, sans-serif"
+        }
+      ]
+    }
+  }
+}

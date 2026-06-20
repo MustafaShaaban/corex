@@ -90,7 +90,7 @@ final class DataAdminScreen
         wp_enqueue_style(
             'corex-data',
             plugins_url('assets/data.css', $base . '/corex-config.php'),
-            [],
+            ['corex-admin-tokens'],
             $asset['version'],
         );
 

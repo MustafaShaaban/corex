@@ -41,6 +41,41 @@ it('replaces a list value wholesale (a redefined palette)', function () {
         ->toBe([['slug' => 'x']]);
 });
 
+it('replaces every list shape wholesale without merging by slug', function (array $defaults, array $override) {
+    $resolver = new BrandResolver(new BootLogger(debug: false));
+
+    expect($resolver->merge(['value' => $defaults], ['value' => $override])['value'])->toBe($override);
+})->with([
+    'empty replacement' => [[['slug' => 'a']], []],
+    'font family replacement' => [
+        [['slug' => 'heading'], ['slug' => 'arabic']],
+        [['slug' => 'heading']],
+    ],
+    'ordered scalar list' => [['one', 'two'], ['replacement']],
+]);
+
+it('recursively merges associative maps while replacing a nested list', function () {
+    $defaults = [
+        'settings' => [
+            'custom' => ['radius' => ['sm' => '4px', 'md' => '8px']],
+            'color' => ['palette' => [['slug' => 'primary'], ['slug' => 'surface']]],
+        ],
+    ];
+    $brand = [
+        'settings' => [
+            'custom' => ['radius' => ['md' => '10px']],
+            'color' => ['palette' => [['slug' => 'primary']]],
+        ],
+    ];
+
+    expect((new BrandResolver(new BootLogger(debug: false)))->merge($defaults, $brand))->toBe([
+        'settings' => [
+            'custom' => ['radius' => ['sm' => '4px', 'md' => '10px']],
+            'color' => ['palette' => [['slug' => 'primary']]],
+        ],
+    ]);
+});
+
 it('reads a missing brand.json as empty', function () {
     expect((new BrandResolver(new BootLogger(debug: false)))->read('/no/such/brand.json'))->toBe([]);
 });

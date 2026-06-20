@@ -4,14 +4,10 @@
  * loaded conditionally (only when the block renders), per Principle VI.
  */
 .corex-form {
-	display: flex;
-	flex-direction: column;
 	gap: var(--wp--preset--spacing--50);
 	text-align: start;
-}
 
-.corex-form {
-	/* Fields flow in a responsive grid so per-field widths give columns or rows. */
+	/* Field widths create columns or rows in this responsive grid. */
 	display: grid;
 	grid-template-columns: repeat(12, 1fr);
 }
@@ -27,22 +23,36 @@
 }
 
 /* Column widths — opt-in per field; default full row. */
-.corex-form__field--half { grid-column: span 6; }
-.corex-form__field--third { grid-column: span 4; }
-.corex-form__field--two-thirds { grid-column: span 8; }
-.corex-form__field--quarter { grid-column: span 3; }
+.corex-form__field--half {
+	grid-column: span 6;
+}
 
-@media (max-width: 600px) {
-	.corex-form__field { grid-column: span 12; }
+.corex-form__field--third {
+	grid-column: span 4;
+}
+
+.corex-form__field--two-thirds {
+	grid-column: span 8;
+}
+
+.corex-form__field--quarter {
+	grid-column: span 3;
+}
+
+@media (max-width: 600px) { /* corex-token-allow: breakpoint */
+
+	.corex-form__field {
+		grid-column: span 12;
+	}
 }
 
 /* Label display modes. */
 .corex-form__label--hidden {
 	position: absolute;
-	width: 1px;
-	height: 1px;
+	width: 1px; /* corex-token-allow: screen-reader-only reset */
+	height: 1px; /* corex-token-allow: screen-reader-only reset */
 	padding: 0;
-	margin: -1px;
+	margin: -1px; /* corex-token-allow: screen-reader-only reset */
 	overflow: hidden;
 	clip: rect(0, 0, 0, 0);
 	white-space: nowrap;
@@ -97,9 +107,9 @@
 	color: var(--wp--preset--color--ink);
 }
 
-/* Field-level validation message, filled by the shared client/server validator. */
+/* Field-level message filled by the shared client/server validator. */
 .corex-form__error {
-	color: var(--wp--preset--color--danger, var(--wp--preset--color--accent));
+	color: var(--wp--preset--color--error);
 	font-size: var(--wp--preset--font-size--sm);
 }
 
@@ -108,9 +118,11 @@
 }
 
 .corex-form__input[aria-invalid="true"] {
-	outline: 2px solid var(--wp--preset--color--danger, var(--wp--preset--color--accent));
-	outline-offset: 1px;
+	outline: var(--wp--custom--focus--width) solid var(--wp--preset--color--error);
+	outline-offset: var(--wp--custom--focus--offset);
 }
+
+/* stylelint-disable @stylistic/max-line-length -- accessibility rationale */
 
 /*
  * Honeypot — present for bots but removed from view and the a11y tree. Off-screen
@@ -118,6 +130,7 @@
  * accessible-hiding plumbing (the same pattern as core's .screen-reader-text),
  * not a design value — hence the literal offset rather than a token.
  */
+/* stylelint-enable @stylistic/max-line-length */
 .corex-form__hp {
 	position: absolute;
 	inset-inline-start: -9999px;

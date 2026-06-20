@@ -4,6 +4,7 @@
  */
 .corex-posts {
 	display: grid;
+
 	/* 16rem is a functional responsive grid track (layout structure), not a design
 	   token — colors/spacing/fonts below all resolve from theme.json. */
 	grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));

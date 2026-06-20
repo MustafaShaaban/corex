@@ -1,0 +1,47 @@
+/*
+ * CoreX admin token adapter (Spec 057 US4).
+ *
+ * One shared, semantic source for the CoreX wp-admin surfaces so each screen
+ * stops repeating raw fallback chains. Registered (never globally enqueued) as
+ * the handle `corex-admin-tokens` and pulled in only as a dependency of
+ * CoreX-owned admin styles, so it loads on CoreX screens and nowhere else
+ * (constitution Principle VI).
+ *
+ * Scoped to the WordPress content wrapper `.wrap` — never :root/html/body — so
+ * the adapter cannot become a client-site or global authority. Values are the
+ * approved brand semantics: the brass action uses the AA-darkened #ad8643 on
+ * the light admin default and the primary #c9a25e under a dark color scheme.
+ */
+.wrap {
+	--corex-admin-surface: #fff;
+	--corex-admin-surface-alt: #f6f7f9;
+	--corex-admin-text: #14151a;
+	--corex-admin-text-muted: #5b616d;
+	--corex-admin-border: #e2e5ea;
+	--corex-admin-action: #ad8643;
+	--corex-admin-action-ink: #fff;
+	--corex-admin-success: #2f8f5b;
+	--corex-admin-warning: #b5781f;
+	--corex-admin-error: #c2433b;
+	--corex-admin-focus: #ad8643;
+	--corex-admin-space-sm: 8px;
+	--corex-admin-space-md: 16px;
+	--corex-admin-radius-md: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+
+	.wrap {
+		--corex-admin-surface: #1c1f26;
+		--corex-admin-surface-alt: #14151a;
+		--corex-admin-text: #f4f5f7;
+		--corex-admin-text-muted: #9aa0ab;
+		--corex-admin-border: #262a32;
+		--corex-admin-action: #c9a25e;
+		--corex-admin-action-ink: #14151a;
+		--corex-admin-success: #5fb787;
+		--corex-admin-warning: #e0a33a;
+		--corex-admin-error: #e0645c;
+		--corex-admin-focus: #c9a25e;
+	}
+}

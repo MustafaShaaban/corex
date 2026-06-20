@@ -1,0 +1,416 @@
+{
+  "generated_at": "source-controlled",
+  "canonical_source": "theme/theme.json",
+  "required_palette_slugs": [
+    "primary",
+    "primary-dark",
+    "accent",
+    "accent-dark",
+    "surface",
+    "surface-alt",
+    "border",
+    "ink",
+    "ink-soft",
+    "success",
+    "warning",
+    "error",
+    "info",
+    "inverse",
+    "overlay",
+    "selection",
+    "selection-text",
+    "surface-raised",
+    "surface-strong",
+    "background",
+    "foreground",
+    "danger",
+    "corex-danger",
+    "corex-info",
+    "corex-primary",
+    "corex-success",
+    "corex-warning",
+    "white"
+  ],
+  "required_font_family_slugs": [
+    "heading",
+    "arabic",
+    "body",
+    "mono"
+  ],
+  "variations": [
+    {
+      "mode": "dark",
+      "source_path": "theme/styles/dark.json",
+      "replacement_arrays": {
+        "palette": {
+          "declared_slugs": [
+            "primary",
+            "primary-dark",
+            "accent",
+            "accent-dark",
+            "surface",
+            "surface-alt",
+            "border",
+            "ink",
+            "ink-soft",
+            "success",
+            "warning",
+            "error",
+            "info",
+            "inverse",
+            "overlay",
+            "selection",
+            "selection-text",
+            "surface-raised",
+            "surface-strong",
+            "background",
+            "foreground",
+            "danger",
+            "corex-danger",
+            "corex-info",
+            "corex-primary",
+            "corex-success",
+            "corex-warning",
+            "white"
+          ],
+          "missing_required_slugs": [],
+          "complete": true,
+          "mappings": [
+            {
+              "slug": "primary",
+              "value": "#00C2FF"
+            },
+            {
+              "slug": "primary-dark",
+              "value": "#7DD3FC"
+            },
+            {
+              "slug": "accent",
+              "value": "#7DD3FC"
+            },
+            {
+              "slug": "accent-dark",
+              "value": "#38BDF8"
+            },
+            {
+              "slug": "surface",
+              "value": "#0B1F3B"
+            },
+            {
+              "slug": "surface-alt",
+              "value": "#102A4C"
+            },
+            {
+              "slug": "border",
+              "value": "#71869C"
+            },
+            {
+              "slug": "ink",
+              "value": "#F1F5F9"
+            },
+            {
+              "slug": "ink-soft",
+              "value": "#C3CEDA"
+            },
+            {
+              "slug": "success",
+              "value": "#4ADE80"
+            },
+            {
+              "slug": "warning",
+              "value": "#FACC15"
+            },
+            {
+              "slug": "error",
+              "value": "#F87171"
+            },
+            {
+              "slug": "info",
+              "value": "#60A5FA"
+            },
+            {
+              "slug": "inverse",
+              "value": "#06121F"
+            },
+            {
+              "slug": "overlay",
+              "value": "rgba(0, 0, 0, 0.78)"
+            },
+            {
+              "slug": "selection",
+              "value": "#075985"
+            },
+            {
+              "slug": "selection-text",
+              "value": "#F0F9FF"
+            },
+            {
+              "slug": "surface-raised",
+              "value": "#102A4C"
+            },
+            {
+              "slug": "surface-strong",
+              "value": "#183B61"
+            },
+            {
+              "slug": "background",
+              "value": "#0B1F3B"
+            },
+            {
+              "slug": "foreground",
+              "value": "#F1F5F9"
+            },
+            {
+              "slug": "danger",
+              "value": "#F87171"
+            },
+            {
+              "slug": "corex-danger",
+              "value": "#F87171"
+            },
+            {
+              "slug": "corex-info",
+              "value": "#60A5FA"
+            },
+            {
+              "slug": "corex-primary",
+              "value": "#00C2FF"
+            },
+            {
+              "slug": "corex-success",
+              "value": "#4ADE80"
+            },
+            {
+              "slug": "corex-warning",
+              "value": "#FACC15"
+            },
+            {
+              "slug": "white",
+              "value": "#06121F"
+            }
+          ]
+        },
+        "font_families": {
+          "declared_slugs": [
+            "heading",
+            "arabic",
+            "body",
+            "mono"
+          ],
+          "missing_required_slugs": [],
+          "complete": true,
+          "mappings": [
+            {
+              "slug": "heading",
+              "value": "'Space Grotesk', system-ui, sans-serif"
+            },
+            {
+              "slug": "arabic",
+              "value": "'IBM Plex Sans Arabic', system-ui, sans-serif"
+            },
+            {
+              "slug": "body",
+              "value": "system-ui, sans-serif"
+            },
+            {
+              "slug": "mono",
+              "value": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace"
+            }
+          ]
+        }
+      },
+      "style_references": [
+        "--wp--preset--color--ink",
+        "--wp--preset--color--surface"
+      ],
+      "status": "planned"
+    },
+    {
+      "mode": "editorial",
+      "source_path": "theme/styles/editorial.json",
+      "replacement_arrays": {
+        "palette": {
+          "declared_slugs": [
+            "primary",
+            "primary-dark",
+            "accent",
+            "accent-dark",
+            "surface",
+            "surface-alt",
+            "border",
+            "ink",
+            "ink-soft",
+            "success",
+            "warning",
+            "error",
+            "info",
+            "inverse",
+            "overlay",
+            "selection",
+            "selection-text",
+            "surface-raised",
+            "surface-strong",
+            "background",
+            "foreground",
+            "danger",
+            "corex-danger",
+            "corex-info",
+            "corex-primary",
+            "corex-success",
+            "corex-warning",
+            "white"
+          ],
+          "missing_required_slugs": [],
+          "complete": true,
+          "mappings": [
+            {
+              "slug": "primary",
+              "value": "#1A1A1A"
+            },
+            {
+              "slug": "primary-dark",
+              "value": "#000000"
+            },
+            {
+              "slug": "accent",
+              "value": "#C8553D"
+            },
+            {
+              "slug": "accent-dark",
+              "value": "#A33E2A"
+            },
+            {
+              "slug": "surface",
+              "value": "#FBF8F1"
+            },
+            {
+              "slug": "surface-alt",
+              "value": "#F2ECDF"
+            },
+            {
+              "slug": "border",
+              "value": "#E0D8C8"
+            },
+            {
+              "slug": "ink",
+              "value": "#1A1A1A"
+            },
+            {
+              "slug": "ink-soft",
+              "value": "#5C564C"
+            },
+            {
+              "slug": "success",
+              "value": "#286C3C"
+            },
+            {
+              "slug": "warning",
+              "value": "#8A5A00"
+            },
+            {
+              "slug": "error",
+              "value": "#A33E2A"
+            },
+            {
+              "slug": "info",
+              "value": "#345D8C"
+            },
+            {
+              "slug": "inverse",
+              "value": "#FFFFFF"
+            },
+            {
+              "slug": "overlay",
+              "value": "rgba(26, 26, 26, 0.72)"
+            },
+            {
+              "slug": "selection",
+              "value": "#F1C9BE"
+            },
+            {
+              "slug": "selection-text",
+              "value": "#1A1A1A"
+            },
+            {
+              "slug": "surface-raised",
+              "value": "#FFFDF8"
+            },
+            {
+              "slug": "surface-strong",
+              "value": "#E8DFCF"
+            },
+            {
+              "slug": "background",
+              "value": "#FBF8F1"
+            },
+            {
+              "slug": "foreground",
+              "value": "#1A1A1A"
+            },
+            {
+              "slug": "danger",
+              "value": "#A33E2A"
+            },
+            {
+              "slug": "corex-danger",
+              "value": "#A33E2A"
+            },
+            {
+              "slug": "corex-info",
+              "value": "#345D8C"
+            },
+            {
+              "slug": "corex-primary",
+              "value": "#1A1A1A"
+            },
+            {
+              "slug": "corex-success",
+              "value": "#286C3C"
+            },
+            {
+              "slug": "corex-warning",
+              "value": "#8A5A00"
+            },
+            {
+              "slug": "white",
+              "value": "#FFFFFF"
+            }
+          ]
+        },
+        "font_families": {
+          "declared_slugs": [
+            "heading",
+            "arabic",
+            "body",
+            "mono"
+          ],
+          "missing_required_slugs": [],
+          "complete": true,
+          "mappings": [
+            {
+              "slug": "heading",
+              "value": "'Space Grotesk', Georgia, 'Times New Roman', serif"
+            },
+            {
+              "slug": "arabic",
+              "value": "'IBM Plex Sans Arabic', system-ui, sans-serif"
+            },
+            {
+              "slug": "body",
+              "value": "system-ui, sans-serif"
+            },
+            {
+              "slug": "mono",
+              "value": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace"
+            }
+          ]
+        }
+      },
+      "style_references": [
+        "--wp--preset--color--ink",
+        "--wp--preset--color--surface"
+      ],
+      "status": "planned"
+    }
+  ]
+}

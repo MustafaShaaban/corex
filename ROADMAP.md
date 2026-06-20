@@ -20,8 +20,8 @@ Approved design work moves from design inventory to a focused handoff, then to a
 | Milestone | Status | Priority | Main dependency |
 |---|---|---|---|
 | M0 - Stabilization, Security, and Release Hygiene | Closed in v0.27.0 | Complete | Environment-gated wp-env/browser/deployment evidence remains follow-up verification |
-| M1 - Design Inventory and Design-to-Engineering Pipeline | Repository structure complete; approval intake active | High | Approved Claude Design inventory and handoffs |
-| M2 - CoreX Brand Tokens and Visual Foundation | Waiting for approved design inventory | High | M1 |
+| M1 - Design Inventory and Design-to-Engineering Pipeline | Current design package frozen; handoff intake active | High | Approved Claude Design inventory and handoffs |
+| M2 - CoreX Brand Tokens and Visual Foundation | Spec 057 implementation-complete (T001-T090); PR #54 ready for review (env-gated browser evidence outstanding) | High | PR #54 review/merge; env-gated wp-env/browser evidence |
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Design needed | High | M1, M2 |
 | M4 - Full Company Site Kit v1 | Planned | High | M0, M2, M3; selected M5 blocks |
 | M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
@@ -37,16 +37,30 @@ Approved design work moves from design inventory to a focused handoff, then to a
 - **Done:** the core framework foundations, stable-client readiness work, Spec 056 dependency/security remediation,
   CI and CodeQL verification, GitHub branch-protection review, and the repository-side design inventory/handoff
   structure.
-- **Active now:** M1 design approval intake. M0 closed with the verified v0.27.0 post-readiness release.
-- **Next:** approve the CoreX brand foundation in Claude Design and record it as a focused handoff before creating
-  Spec 057.
-- **Blocked:** M2 and M3 cannot enter engineering without approved design handoffs. M4 cannot start until the
-  minimum M2/M3 foundations and selected M5 components are ready.
+- **Active now:** M2 — Spec 057 is **implementation-complete (T001-T090)**: canonical tokens, accessible
+  modes/typography/RTL, the four-file font package, the approved Core X logo package, the brand-override validator,
+  the scoped `--corex-admin-*` admin adapter, and the design-system/branding documentation. Full `composer test`
+  661 pass, `test:js` 97 pass, build + docs-app build + `verify:dependencies` PASS. M0 remains closed (v0.27.0).
+- **Next:** PR #54 review (it is ready to mark ready-for-review); collect the env-gated wp-env/browser evidence
+  when Docker + a compatible browser runtime are available. No asset or code blockers remain.
+- **Blocked:** M3 cannot enter engineering without an approved navigation handoff and the reviewed M2 token
+  contract. M4 cannot start until the minimum M2/M3 foundations and selected M5 components are ready.
 - **Not authorized:** roadmap presence does not authorize implementation, Pro work, builders, or bulk spec creation.
 
 Before the first real company websites, CoreX requires the M0 release, an approved and implementable M2 visual
 foundation, reusable M3 navigation/template parts, the complete M4 company-page contract, and only the M5 component
 batches proven necessary by that kit.
+
+## Company Website Start Track — June 21–22, 2026
+
+CoreX v0.27.0 is stable enough to begin first company-site project planning, content architecture, local setup,
+brand gathering, and implementation preparation. Full launch readiness for those sites still depends on completing
+the minimum company-site path: M2 brand tokens and visual foundation; M3 header/mobile navigation/footer/template
+parts; M4 Company Site Kit v1; and selected M5 blocks required by M4.
+
+CoreX is not yet fully finished or public/commercial-launch ready. M6-M11 are later productization, future, and
+commercial scope unless the active company project demonstrates a specific dependency. Their open status does not
+block all first-client preparation or require unrelated scope to move into M2-M5.
 
 ## 2. Current foundation status
 
@@ -94,7 +108,8 @@ collect when those environments are available.
 
 ## 4. M1 - Design Inventory and Design-to-Engineering Pipeline
 
-**Status:** Repository structure complete; design approval intake active.
+**Status:** Repository structure complete; current external design package reported frozen after final closure;
+focused handoff intake remains active.
 **Outcome:** Design exploration stays separate from engineering while approved work becomes implementable in controlled increments.
 
 - Treat Claude Design as the source for design exploration, not as repository implementation authority.
@@ -110,7 +125,11 @@ accessibility, RTL, performance constraints, and implementation boundaries.
 
 ## 5. M2 - CoreX Brand Tokens and Visual Foundation
 
-**Status:** Waiting for approved design inventory.
+**Status:** Spec 057 implementation-complete (T001-T090): canonical tokens, accessible modes/typography/RTL, the
+four-file font package, the approved Core X logo package (five SVG variants + provenance manifest), the brand-
+override validator, the scoped `--corex-admin-*` admin adapter, and the design-system/branding documentation. PR #54
+is ready for review; only environment-gated wp-env/browser evidence remains as explicit follow-up. The legacy
+navy/cyan SVG is retained only as rollback evidence.
 **Outcome:** One accessible, brandable visual foundation shared by front-end, admin product UI, docs, and marketing.
 
 - New CoreX logo system and usage rules.
@@ -356,16 +375,18 @@ These items require later validation and dedicated specs. They must not leak int
 - Do not create code directly from design exploration without a reviewed engineering spec.
 - Update roadmap status when priorities or dependencies change; do not rewrite completed spec history into the roadmap.
 
-## 17. Next recommended specs
+## 17. Current and next recommended specs
 
-List only; do not create until explicitly instructed:
+Create and implement one reviewed spec at a time:
 
-1. **Spec 057 - Brand Tokens and Logo System** — create only after the M2 Claude Design handoff is approved.
-2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer Patterns** — create only after the M3 handoff and
+1. **Spec 057 - Brand Tokens and Logo System** — implementation-complete (T001-T090); PR #54 ready for review.
+   Next: review/merge + env-gated wp-env/browser evidence.
+2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer Patterns** — do not create until the M3 handoff and
    M2 token contract are ready.
-3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — create only after M0 closes and the required
+3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — do not create until the required
    M2/M3 contracts identify the first M5 component batch.
 
 Spec number 056 is unavailable: both `056-dependency-security-remediation` and the already-merged
 `056-design-roadmap-inventory` directory exist. Do not reuse or create another 056 spec. The immediate sequence is
-M2 design approval/handoff, then Spec 057. M0 is closed; no spec listed here authorizes product code.
+Spec 057 foundational contracts, then its authorized implementation batches. M0 is closed; no later spec listed
+here authorizes product code.

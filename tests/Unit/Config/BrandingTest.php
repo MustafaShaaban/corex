@@ -34,10 +34,14 @@ function brandingConfig(array $values): ConfigInterface
     };
 }
 
-it('resolves the logo URL — config override wins over the bundled default', function () {
-    expect((new BrandingService(brandingConfig([]), '/default.svg'))->logoUrl())->toBe('/default.svg')
-        ->and((new BrandingService(brandingConfig(['brand.logo_url' => '/custom.svg']), '/default.svg'))->logoUrl())->toBe('/custom.svg');
-});
+it('keeps product logo resolution separate from client identity', function (array $config, string $expected) {
+    expect((new BrandingService(brandingConfig($config), '/default.svg'))->logoUrl())->toBe($expected);
+})->with([
+    'bundled product default' => [[], '/default.svg'],
+    'explicit product override' => [['brand.logo_url' => '/custom.svg'], '/custom.svg'],
+    'empty product override falls back' => [['brand.logo_url' => ''], '/default.svg'],
+    'client identity is not product branding' => [['site.logo_url' => '/client.svg'], '/default.svg'],
+]);
 
 it('produces login CSS referencing the logo', function () {
     $css = (new BrandingService(brandingConfig([]), '/x.svg'))->loginCss('/x.svg');

@@ -1,7 +1,10 @@
+/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+
 /**
  * Corex Insights cards — token-only, logical CSS (RTL-correct), accessible. Falls back to the
  * WordPress admin palette variables where Corex tokens aren't loaded in wp-admin.
  */
+/* stylelint-enable @stylistic/max-line-length */
 .corex-insights {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));

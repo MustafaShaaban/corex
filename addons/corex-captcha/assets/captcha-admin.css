@@ -1,8 +1,11 @@
+/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+
 /**
  * Corex captcha "Test verification" control (spec 053 US3). wp-admin palette fallbacks
  * (theme tokens aren't loaded in wp-admin — DECISIONS #71), logical properties (RTL). The
  * status is carried by the message text first; colour is supplementary (WCAG 2.2 AA).
  */
+/* stylelint-enable @stylistic/max-line-length */
 
 .corex-captcha-test {
 	display: flex;

@@ -6,9 +6,59 @@
         "color": {
             "palette": [
                 { "slug": "primary", "color": "#00C2FF", "name": "Primary" },
+                { "slug": "primary-dark", "color": "#7DD3FC", "name": "Primary dark" },
                 { "slug": "accent", "color": "#7DD3FC", "name": "Accent" },
+                { "slug": "accent-dark", "color": "#38BDF8", "name": "Accent dark" },
                 { "slug": "surface", "color": "#0B1F3B", "name": "Surface" },
-                { "slug": "ink", "color": "#F1F5F9", "name": "Ink" }
+                { "slug": "surface-alt", "color": "#102A4C", "name": "Surface alt" },
+                { "slug": "border", "color": "#71869C", "name": "Border" },
+                { "slug": "ink", "color": "#F1F5F9", "name": "Ink" },
+                { "slug": "ink-soft", "color": "#C3CEDA", "name": "Ink soft" },
+                { "slug": "success", "color": "#4ADE80", "name": "Success" },
+                { "slug": "warning", "color": "#FACC15", "name": "Warning" },
+                { "slug": "error", "color": "#F87171", "name": "Error" },
+                { "slug": "info", "color": "#60A5FA", "name": "Info" },
+                { "slug": "inverse", "color": "#06121F", "name": "Inverse text" },
+                { "slug": "overlay", "color": "rgba(0, 0, 0, 0.78)", "name": "Overlay" },
+                { "slug": "selection", "color": "#075985", "name": "Selection" },
+                { "slug": "selection-text", "color": "#F0F9FF", "name": "Selection text" },
+                { "slug": "surface-raised", "color": "#102A4C", "name": "Raised surface" },
+                { "slug": "surface-strong", "color": "#183B61", "name": "Strong surface" },
+                { "slug": "background", "color": "#0B1F3B", "name": "Background (compatibility)" },
+                { "slug": "foreground", "color": "#F1F5F9", "name": "Foreground (compatibility)" },
+                { "slug": "danger", "color": "#F87171", "name": "Danger (compatibility)" },
+                { "slug": "corex-danger", "color": "#F87171", "name": "CoreX danger (compatibility)" },
+                { "slug": "corex-info", "color": "#60A5FA", "name": "CoreX info (compatibility)" },
+                { "slug": "corex-primary", "color": "#00C2FF", "name": "CoreX primary (compatibility)" },
+                { "slug": "corex-success", "color": "#4ADE80", "name": "CoreX success (compatibility)" },
+                { "slug": "corex-warning", "color": "#FACC15", "name": "CoreX warning (compatibility)" },
+                { "slug": "white", "color": "#06121F", "name": "White (compatibility)" }
+            ]
+        },
+        "typography": {
+            "fontFamilies": [
+                {
+                    "slug": "heading",
+                    "name": "Heading",
+                    "fontFamily": "'Space Grotesk', system-ui, sans-serif",
+                    "fontFace": [{ "fontFamily": "Space Grotesk", "fontStyle": "normal", "fontWeight": "500 700", "fontDisplay": "swap", "src": ["file:./assets/fonts/space-grotesk-latin-500-700.woff2"] }]
+                },
+                {
+                    "slug": "arabic",
+                    "name": "Arabic",
+                    "fontFamily": "'IBM Plex Sans Arabic', system-ui, sans-serif",
+                    "fontFace": [
+                        { "fontFamily": "IBM Plex Sans Arabic", "fontStyle": "normal", "fontWeight": "400", "fontDisplay": "swap", "src": ["file:./assets/fonts/ibm-plex-sans-arabic-400.woff2"] },
+                        { "fontFamily": "IBM Plex Sans Arabic", "fontStyle": "normal", "fontWeight": "600", "fontDisplay": "swap", "src": ["file:./assets/fonts/ibm-plex-sans-arabic-600.woff2"] }
+                    ]
+                },
+                { "slug": "body", "name": "Body", "fontFamily": "system-ui, sans-serif" },
+                {
+                    "slug": "mono",
+                    "name": "Technical",
+                    "fontFamily": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace",
+                    "fontFace": [{ "fontFamily": "JetBrains Mono", "fontStyle": "normal", "fontWeight": "400 600", "fontDisplay": "swap", "src": ["file:./assets/fonts/jetbrains-mono-latin-400-600.woff2"] }]
+                }
             ]
         }
     },

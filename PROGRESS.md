@@ -4,6 +4,452 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-20, latest) -- PR #54 marked ready-for-review; blocked on review-merge + M3 nav handoff
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system` @ `43453ca`; **PR #54 is now READY for review** (no longer
+  draft). GitHub: `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`, `reviewDecision: ""` (no human review yet);
+  required checks PASS (Lint + headless tests PHP 8.3, CodeQL, CodeQL javascript-typescript). Normal root, single
+  worktree; Spec 055 WIP untouched in `stash@{0}`.
+- **Company-site readiness goal — order position:** item #1 (close M2 / mark PR ready) is **done**. Stopped at the
+  authorized boundaries below; items #3-6 are downstream-blocked.
+- **BLOCKER — item #2 (merge):** the goal forbids an unreviewed merge and no human review exists. Merging Spec 057
+  to `main` is an **owner decision** (review + merge). Do not self-merge. If a release/tag is wanted on M2 closure,
+  the version is **not** decided here (aliases reference 0.28.0, but the release call is the owner's) — stop for
+  owner decision; do not invent a version.
+- **BLOCKER — item #3 (Spec 058 / M3 header-nav-footer):** cannot start. `design/handoffs/` holds only
+  `brand-foundation.md`; `design/INVENTORY.md` lists **Navigation** and **Footer** as **"missing"**, and ROADMAP §17
+  says do not create Spec 058 until the M3 navigation handoff + M2 token contract are ready. Needs an **owner-approved
+  navigation/footer design handoff** (responsive, states, keyboard/focus/escape/outside-click, sticky/transparent,
+  RTL, reduced-motion, performance) recorded in `design/INVENTORY.md` + `design/handoffs/` — like the logo handoff
+  was for Spec 057. Do not invent/trace the design.
+- **Spec 057 status:** implementation-complete (T001-T090). Full `composer test` 661/2901, `test:js` 17/97,
+  `lint:css`, `build`, docs-app 270 pages, `verify:dependencies` all PASS at `43453ca`; browser/wp-env evidence
+  ENVIRONMENT-GATED.
+- **Exact next step (owner):** (a) review + merge PR #54 to `main` (then `git switch main && git pull --ff-only`,
+  record M2 closure, decide any release/version); and (b) approve a navigation/footer design handoff so Spec 058/M3
+  can begin via the Spec Kit flow.
+
+---
+## RESUME HERE (2026-06-20) -- Spec 057 final gate T080-T090 PASS; implementation-complete (PR #54 ready)
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 still **draft** (not merged, not marked ready). Normal
+  project root `C:/wamp64/www/corex` is the single active checkout. **Spec 057 T001-T090 are complete.**
+- **Final gate completed this session (T080-T090):**
+  - **Docs (T080-T084):** `docs-app/.../design-system/foundations.md` now documents semantic color roles + modes
+    (dark/editorial style variations), the four-file self-hosted font package (provenance/swap/no-preload), the
+    scoped `--corex-admin-*` admin adapter, and contrast/focus/forced-colors/RTL evidence pointers.
+    `docs-app/.../guides/branding.md` documents complete-list `brand.json` replacement, the incomplete-list
+    validation behavior, aliases, migration, rollback, and product-vs-client separation (the misleading single-slug
+    example was corrected). `plugins/corex-config/README.md` replaces the stale navy/cyan logo with the approved
+    Core X variant table + usage rules (legacy SVG = rollback evidence). `consumer-migration.md` adds the
+    retained/added/aliased/migrated/deprecated mapping (53/10/11/1/0) and the 0.28.0→0.29.0 deprecation window.
+  - **Generator fix:** `scripts/generate-token-inventory.mjs` now derives the fonts/logos blocker status and
+    `evidence_status` from the actual provenance manifests (idempotent + truthful), fixing a latent hardcoded-stale
+    status that broke the `token-inventory.test.js` sync test.
+- **Verification (T086-T090):**
+  - T086: `check-prerequisites.ps1 -Json` resolved Spec 057 + planning docs; `git diff --check` PASS.
+  - T087: focused Theme/Config Pest 101 passed (953 assertions); **full `composer test` 661 passed** (2901
+    assertions).
+  - T088: `lint:css` PASS; **`test:js` 17 suites / 97 tests PASS** (was 1 failing before the generator fix); `build`
+    PASS; **docs-app build PASS (270 pages**, only the pre-existing non-blocking sitemap `site` warning);
+    `verify:dependencies` PASS (composer 0/0, npm 16/16 accepted dev/build exceptions).
+  - T089 (ENVIRONMENT-GATED, not PASS): Docker/wp-env, Playwright/browser-rendered evidence (modes, focus,
+    forced-colors, 200% zoom, RTL, font-network, logo-render) remain unavailable (Node v22.14.0 < browser-bridge
+    v22.22.0; Docker Linux engine absent). Recorded honestly, never as PASS.
+  - T090 guards: clean-code-guard (generator) clean; docs-guard clean (font files, viewBoxes, added roles, and
+    classification counts all verified against source); wp-guard N/A (no WP runtime change this session); test-guard
+    N/A (no test code changed; the generator's sync test now passes).
+- **Status:** Spec 057 is **implementation-complete** — all non-gated final-gate tasks pass, environment gates are
+  honest, and the font/logo asset stories are complete. Per the Phase 7 checkpoint + T090, **PR #54 is ready to be
+  marked ready for review**; left as draft pending owner confirmation (the browser/wp-env evidence remains an
+  explicit env-gated follow-up, not a blocker).
+- **Did not change:** the approved logo/font assets, US1-US4 runtime/token behavior, CHANGELOG, release metadata,
+  Specs 058/059, later milestones. Spec 055 WIP remains untouched in `stash@{0}`.
+- **Exact next step:** owner decision — mark PR #54 ready for review (all final-gate checks pass) and proceed toward
+  merge/release, or first collect the env-gated wp-env/browser evidence. Do not merge until reviewed.
+
+---
+## RESUME HERE (2026-06-20) -- Spec 057 US4 compatibility + admin adapter complete; final gate next
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and **draft** (not merged, not ready).
+  Normal project root `C:/wamp64/www/corex` is the single active checkout.
+- **Completed this session — US4 (T066-T079):** turned the five deliberately-RED US4 contracts GREEN with the
+  minimum implementation. (1) `Corex\Theme\BrandOverrideValidator` (new, pure): reports incomplete wholesale-
+  replacement palette/font lists against the canonical brandable roles (13 colors + heading/arabic, intersected
+  with live defaults) and strips them (pruning empty ancestors) so complete defaults survive; complete lists pass
+  through unchanged. Wired into `ThemeServiceProvider`'s `wp_theme_json_data_theme` filter, logging issues via
+  `BootLogger`. (2) Scoped admin token adapter `plugins/corex-core/assets/css/corex-admin-tokens.css` (`--corex-admin-*`
+  on `.wrap`, dark `prefers-color-scheme` override, no `--wp--preset--`, no `:root`/`html`/`body`), **registered**
+  (never globally enqueued) in `HttpServiceProvider`, and declared as a `['corex-admin-tokens']` dependency by the
+  four CoreX admin screen styles (dashboard, data, insights, captcha) — conditional, CoreX-screens-only. (3)
+  Compatibility aliases (T069) were already in `theme.json` from US1. Extended the `TokenConsumerContractTest`
+  centralized-admin allowance to include the adapter file.
+- **Deferred (beyond the minimum scope, recorded honestly):** substituting the in-body raw literals in the four
+  admin CSS bodies with `var(--corex-admin-*)` — kept under the documented centralized-admin allowance to keep the
+  consumer exact-match inventory stable. T067 (`HttpServiceProviderTest`) and T068 (`brand/existing/` fixtures) were
+  not authored: their behavior is already covered by `AdminTokenAdapterTest`/`BrandOverrideCompatibilityTest`, and
+  unconsumed fixtures would be dead data (test-guard/YAGNI). See `inventories/consumer-migration.md`.
+- **Verification:** focused `AdminTokenAdapterTest` 3/3 + `BrandOverrideCompatibilityTest` 5/5 +
+  `TokenCompatibilityTest` 4/4 GREEN; **full Pest 661 passed / 0 failed** (2901 assertions), up from 656/5 — no
+  regressions. `npm run lint:css` PASS; PHP lint PASS; `git diff --check` PASS. T078: `generate-token-inventory.mjs`
+  regenerated — 6 data inventories byte-identical (zero drift); curated status hand-maintained. Guards
+  (clean-code/wp/test) clean.
+- **ENVIRONMENT-GATED (not PASS):** rendered wp-admin verification of the adapter across screens (Docker/wp-env +
+  browser runtime unavailable). Not represented as passing.
+- **Remaining:** Spec 057 final gate **T080-T090** (docs surfaces, full `composer test`/JS/build/docs-app, env-gated
+  evidence, final whole-diff guard gate). No asset blockers remain. US1-US4 are complete.
+- **Did not change:** the approved logo package, font assets, US1-US3 token/runtime behavior, CHANGELOG, release
+  metadata, Specs 058/059, later milestones. Spec 055 WIP remains untouched in `stash@{0}`.
+- **Exact next step:** run Spec 057 Phase 7 (T080-T090): update `docs-app` foundations/branding docs (token groups,
+  admin adapter, brand.json validation/aliases, logo variants), then full `composer test` + JS/build/docs-app +
+  `verify:dependencies`, record env-gated items honestly, and run the final whole-diff guard gate before requesting
+  PR #54 review. Keep PR #54 draft until T080-T090 pass.
+
+---
+## RESUME HERE (2026-06-20) -- Spec 057 US3 logo package landed; T059-T064 complete
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and **draft** (not merged, not marked
+  ready). Normal project root `C:/wamp64/www/corex` is the single active checkout.
+- **Owner approval:** the design handoff root "Design project questions answered (3)"
+  (`design_handoff_corex_brand_system/`) was approved as the authoritative logo provenance source. The locked winner
+  "Core X" mark (five rounded 12u modules on a 48x48 grid, 3u gutters, 2.5u radius, four `currentColor` corners,
+  brass `#c9a25e` core) is confirmed against README.md + `Corex Logo System.dc.html`.
+- **Completed this session — T059-T064 (US3 logo):** shipped five optimized SVGs under
+  `plugins/corex-config/assets/brand/` (symbol, wordmark, lockup, monochrome, contrast) with a provenance manifest
+  (`logo-manifest.json`: source, owner, OFL rights, approval date 2026-06-20, viewBoxes, filenames, sha256
+  checksums, variants, accessible usage). Symbol geometry is verbatim from the documented mark; wordmark/lockup
+  glyphs are a mechanical fontTools outline extraction from the self-hosted OFL Space Grotesk variable font at
+  wght=600 / -0.035em (not traced/redrawn). Default product logo URL repointed to the lockup (`ConfigServiceProvider`)
+  while `brand.logo_url` override still wins; admin dashboard/login keep documented decorative/named usage without
+  redesign; legacy navy/cyan `corex-logo.svg` retained only as rollback evidence; logo contract refined to forbid
+  external-resource URLs + font-text while allowing the W3C namespace (DECISIONS #102). Generator:
+  `scripts/generate-logo-assets.py`; svgo config: `scripts/svgo-logo.config.mjs`.
+- **Verification:** focused Pest PASS — `LogoAssetContractTest` 4/4 + `BrandingTest` 7/7 (11 tests, 102 assertions).
+  Full Pest **656 passed / 5 failed**: the three previously-RED logo contracts are now GREEN (653 -> 656); the 5
+  failures are the unrelated US4 contracts (`AdminTokenAdapterTest` ×3, `BrandOverrideCompatibilityTest` ×2). PHP
+  lint PASS on changed files; manifest JSON parses; svgo optimized 5 assets; `git diff --check` PASS.
+- **ENVIRONMENT-GATED (not PASS):** rendered browser minimum-size/contrast/forced-colors logo evidence — Node
+  v22.14.0 < browser-bridge v22.22.0 and Docker/wp-env unavailable. Recorded in `logo-evidence.md`, never as PASS.
+- **Remaining/blocked:** US4 T066-T079 (compatibility aliases, `BrandOverrideValidator`, scoped `--corex-admin-*`
+  adapter) is now the next implementation work; the final-gate T080-T090 follow US4. No production logo blocker
+  remains.
+- **Did not change:** font assets, client brand merge behavior, US1/US2 token values, CHANGELOG, release metadata,
+  Specs 058/059, or later milestones. The Spec 055 dependency changes remain untouched in `stash@{0}`.
+- **Exact next step:** implement US4 (T066-T079) — RED-first: run `AdminTokenAdapterTest`/`BrandOverrideCompatibilityTest`/
+  `TokenCompatibilityTest`, then add `BrandOverrideValidator`, the minimum compatibility aliases, and the scoped
+  `corex-admin-tokens.css` adapter registered (never globally enqueued) on CoreX screens. Keep PR #54 draft.
+
+---
+## RESUME HERE (2026-06-20) -- Workspace unified to single root; Spec 057 logo package still gated
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft. The normal project root
+  `C:/wamp64/www/corex` is now the single active checkout on this branch.
+- **Workspace correction:** the repo was being worked from two places — the normal root sat on an unrelated
+  `fix/055-dependency-security-remediation` branch with uncommitted root + `docs-app` `package.json`/lock changes,
+  while `spec/057` was checked out only inside `.worktrees/post-readiness-release`. This session removed the
+  `.worktrees/post-readiness-release` worktree (confirmed clean and at origin first), preserved the unexpected
+  Spec 055 dependency changes in a named stash
+  (`wip/spec-055-dependency-remediation-before-spec-057-workspace-unification`), then switched the normal root to
+  `spec/057-brand-tokens-logo-system` (`git pull --ff-only`, already up to date at `812dbd3`). No Spec 055 change
+  was committed or deleted; recover it with `git stash list` / `git stash apply`.
+- **Coordination rule added:** COREX-WORKING-GUIDE.md gained canonical **§A.7 — Single Workspace / Agent
+  Coordination Rule** (active-PR-branch source of truth; normal-root-only, no `.worktrees` without approval;
+  pre-flight verify of root/branch/status/log/remote/worktree; stop on wrong branch/checkout/unknown changes;
+  continue-don't-recreate; push only to the open PR branch; mandatory SUMMARY/WORKSPACE/SPEC KIT STATUS/
+  VERIFICATION/BLOCKERS/RECOMMENDED NEXT STEP + NEXT STEP handoff). `AGENTS.md` and `CLAUDE.md` carry a short
+  cross-reference bullet. No existing Spec Kit rule, the constitution, the roadmap, or release discipline was
+  weakened.
+- **Spec 057 state (unchanged this session):** T001-T058 and T065 complete; **T059-T064 remain BLOCKED** on the
+  owner-approved production CoreX SVG logo package with provenance. US4 T066-T079 remains ordered after US3 per the
+  authorized execution order and was not started; final-gate T080-T090 cannot close while the logo story is blocked.
+  No product/runtime/theme/token/logo/font code changed in this session.
+- **Verification:** workspace git state confirmed (single root, correct branch, clean tree, single worktree,
+  `812dbd3` == origin); `git diff --check` PASS on the docs change; `docs-guard` run on the workflow-doc diff. Pest/
+  Jest/build/readiness/browser checks were NOT re-run because this session changed only workflow documentation and
+  the resume entry; the last recorded implementation evidence stands.
+- **Did not change:** logo/font assets, runtime/branding behavior, admin adapter, CHANGELOG, release metadata,
+  Specs 058/059, or later milestones. The Spec 055 dependency changes are preserved in the named stash, untouched.
+- **Exact next step:** supply or approve the production geometric Core X vector package/provenance described in
+  `specs/057-brand-tokens-logo-system/inventories/logo-evidence.md`, then implement T059-T064 only; keep PR #54
+  draft. Do not start US4 ahead of the recorded order without owner direction; do not substitute the historical
+  navy/cyan SVG.
+
+---
+## RESUME HERE (2026-06-20 13:18 EEST) -- Spec 057 font package integrated; logo package remains gated
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest incoming commit:** `617c3fc`; this T047-T048 font integration checkpoint is the next branch commit.
+- **Completed:** owner approval opened the font gate. T047-T048 now integrate exactly four self-hosted WOFF2 files:
+  bounded Space Grotesk 500-700 and JetBrains Mono 400-600 Latin variables plus IBM Plex Sans Arabic 400/600.
+  The provenance manifest pins Google Fonts commit `cf28404eac0c6f9753bef3510bbe271952e4154d`, local OFL records,
+  subset tooling, weights, scripts, checksums, `swap`, and no preload. WordPress 7.0 resolves all base and
+  style-variation faces to local theme URLs.
+- **Verification:** Spec Kit prerequisites and checklist (16/16) PASS; WordPress theme/plugin environment and
+  readiness 0.27.0 PASS; regenerated token inventory PASS; focused Pest 10 tests/157 assertions PASS; PHP lint,
+  JSON parse, Composer validation, Jest 17 suites/97 tests, workspace build, CSS lint, dependency verification,
+  external-CDN/preload scan, and `git diff --check` PASS. Full Pest is intentionally not green: 653 pass and the
+  eight expected future-story contracts remain RED (three logo, three admin adapter, two brand validator).
+- **Remaining/blocked:** T059-T064 require the approved production geometric Core X vector package and provenance.
+  The historical navy/cyan SVG is not approved production artwork. US4 T066-T079 remains ordered after US3.
+- **Environment-gated:** Chromium cannot resolve `corex-spec057.local`, so rendered font-network evidence is not
+  PASS. Docker/wp-env, GitHub-settings, and external deployment evidence also remain gated. The prior standalone
+  Chromium fixture remains verified 4/4.
+- **Did not change:** logo assets, client-brand behavior, admin adapter, CHANGELOG, release metadata, Specs 058/059,
+  or later milestones. The unrelated dirty root worktree remains untouched.
+- **Exact next step:** supply or approve the production geometric Core X vector package/provenance described in
+  `logo-evidence.md`, then implement T059-T064 only; keep PR #54 draft.
+
+---
+## RESUME HERE (2026-06-20 05:39 EEST, latest) -- Spec 057 owner-blocked on font and logo packages
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest incoming commit:** `f05322d`; this logo-contract checkpoint is the next branch commit.
+- **Completed:** T056-T058 and T065. Product default/custom/client-separation regressions pass; accessible logo-usage
+  fixtures pass; the production logo contract remains three expected failures because the manifest/assets are absent.
+- **Remaining/blocked:** T047-T048 require approved WOFF2 files/provenance. T059-T064 require approved production SVG
+  variants/provenance. Per the authorized execution order, US4 T066-T079 follows US3 and is not started around this
+  owner gate. T080-T090 final documentation/gates cannot close Spec 057 while these stories remain incomplete.
+- **Verification:** Branding tests PASS; logo fixture contract PASS; three production logo assertions BLOCKED; PHP
+  lint and `git diff --check` PASS; test/clean-code/wp/docs guards recorded in `logo-evidence.md`.
+- **Environment-gated:** Docker/wp-env, WordPress-rendered browser evidence, GitHub settings, and deployment remain
+  not PASS. Standalone Chromium remains verified 4/4 from the prior checkpoint.
+- **Did not change:** logo/font assets, production branding/runtime behavior, admin adapter, CHANGELOG, release
+  metadata, Specs 058/059, or later milestones. The unrelated dirty root worktree remains untouched.
+- **Exact owner action:** supply/approve the font and production logo packages with provenance described in
+  `font-evidence.md` and `logo-evidence.md`; then resume T047-T048 followed by T059-T064.
+
+---
+## RESUME HERE (2026-06-20 05:31 EEST, latest) -- Spec 057 US2 evidenced; font assets remain blocked
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest incoming commit:** `6dc59c2`; this US2 checkpoint is the next branch commit.
+- **Completed:** T044-T046 and T049-T055. Contrast/focus matrices pass, approved font roles have readable fallbacks,
+  LTR/RTL and mixed-script fixtures pass, and standalone Chromium passes 4/4 mode/focus/zoom/RTL/reduced-motion/
+  forced-colors scenarios. T047-T048 remain unchecked and BLOCKED on approved font assets/provenance.
+- **Verification:** Composer validation PASS; focused US2 contracts 9 PASS/1 owner-blocked; Jest 17 suites/97 tests
+  PASS; workspace build, CSS lint, focused JS lint, Chromium, readiness, and `git diff --check` PASS. Full Pest:
+  647 pass, nine future-story contracts intentionally RED; not represented as green.
+- **Exact next batch:** T056-T058 only: preserve the logo provenance RED gate and add default/custom/client-separation
+  plus accessible logo-usage fixtures. Do not implement T059 or later logo integration without approved vectors.
+- **Blockers:** T047-T048 need approved WOFF2 files/provenance. T059-T064 need approved production logo vectors/
+  provenance. Docker/wp-env, WordPress-rendered browser evidence, GitHub settings, and deployment remain gated.
+- **Did not change:** font/logo assets, client merge semantics, admin adapter/runtime behavior, CHANGELOG, release
+  metadata, Specs 058/059, or M3-M11 implementation. Root unrelated dirty worktree remains untouched.
+- **Next-agent command:** run `/speckit-implement Spec 057 T056-T058 only`; stop before T059 and keep PR #54 draft.
+
+---
+## RESUME HERE (2026-06-20 05:14 EEST, latest) -- Spec 057 T040-T043 US2 contracts captured
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest completed-task commit:** `3e153e2`; this RED/BLOCKED checkpoint is the next branch commit.
+- **Completed this session:** T040-T043. Captured five failing contrast pairs, added visual-evidence requirements,
+  validated the LTR/RTL mixed-script fixture schema, and preserved the font provenance/role blockers before changes.
+- **Exact next batch:** T044-T055. Correct only evidenced semantic values/focus mappings, define approved font roles
+  without assets, add accessible rendered/e2e fixtures, and record honest browser/font evidence. Keep T047-T049
+  blocked where approved font files/provenance are required; stop before T056.
+- **Blockers:** approved WOFF2 files/provenance remain absent for T047-T049. Approved logo vectors/provenance remain
+  absent for T059-T064.
+- **Verification:** focused US2 contract run: 3 PASS and 4 expected RED/BLOCKED tests, 285 assertions; `git diff
+  --check` PASS. No result is represented as a green US2 implementation gate.
+- **Did not change:** token values, runtime behavior, CSS, logo/font assets, admin adapter, CHANGELOG, release metadata,
+  Specs 058/059, or later milestone work.
+- **Next-agent command:** run `/speckit-implement Spec 057 T044-T055 only`; keep asset-dependent font tasks blocked
+  without owner-approved files and provenance, and stop before T056.
+
+---
+## RESUME HERE (2026-06-20 05:07 EEST, latest) -- Spec 057 T026-T039 US1 complete
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest incoming commit:** `168ee14`; this US1 checkpoint is the next branch commit.
+- **Completed this session:** T026-T039. Added deterministic inventory regeneration, established the canonical
+  `theme/theme.json` vocabulary, completed Dark/Editorial replacement arrays, added one-release compatibility
+  aliases, migrated first-party front-end consumers, and preserved conditional block asset registration.
+- **Verification:** focused Pest 14 tests/99 assertions PASS; Jest 17 suites/97 tests PASS; root workspace build PASS;
+  root CSS lint PASS; focused JS lint PASS; local WordPress readiness 0.27.0 PASS with GitHub/deployment profiles
+  still environment-gated; `git diff --check` PASS. Clean-code, WordPress, test, and documentation guards found no
+  blocking issue.
+- **Full-suite status:** Composer validation PASS. Full Pest is intentionally not green: 643 tests pass and 11
+  future-story contracts remain RED for US2 contrast/fonts, US3 logo provenance, and US4 admin/brand validation.
+- **Exact next batch:** T040-T055 (US2 accessible modes, typography roles, and RTL). Start with T040-T043 RED/
+  blocked evidence; do not add font files. T047-T049 remain blocked until approved font files/provenance exist.
+- **Blockers:** font asset integration T047-T049 requires owner-approved WOFF2 files/provenance. Logo integration
+  T059-T064 requires the owner-approved production vector package/provenance. Neither blocks T040-T046 or T050-T055.
+- **Environment-gated:** Docker/wp-env, browser automation, GitHub-settings evidence, and external deployment are
+  not PASS. The local non-Docker WordPress installation and readiness command are available.
+- **Did not change:** logo/font assets, client brand merge behavior, admin adapter/runtime behavior, CHANGELOG,
+  release metadata, Specs 058/059, or M3-M11 implementation. Root unrelated dirty worktree was not touched.
+- **Next-agent command:** checkout/pull this branch, then run `/speckit-implement Spec 057 T040-T055 only`; preserve
+  contrast/font RED evidence, keep T047-T049 blocked without approved assets, and stop before T056.
+
+---
+## RESUME HERE (2026-06-20 04:43 EEST, latest) -- Spec 057 T010-T025 RED contracts complete
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest completed-task commit before this batch:** `adeadb8`; this RED-contract checkpoint is the next branch
+  commit.
+- **Completed this session:** T010-T025. Added canonical source/consumer/mode contracts, brand compatibility
+  fixtures/tests, alias rollback contracts, admin adapter contracts, font/logo asset gates, contrast/focus evidence,
+  and the LTR/RTL mixed-script fixture matrix. T001-T025 are now complete.
+- **Expected RED evidence:** focused Spec 057 run: 40 tests, 329 assertions, 18 intentional failures, 0 errors.
+  Full Pest run: 654 tests, 2,560 assertions, the same 18 failures only, 0 errors. These are deliberately failing
+  pre-implementation contracts and must not be reported as a passing suite.
+- **Passing checks:** standalone `BrandResolverTest.php` 10/10 with 12 assertions; Composer validation; PHP lint for
+  changed PHP; Jest 16 suites/88 tests; root workspace build; Spec Kit prerequisites; `git diff --check`;
+  `test-guard` and `docs-guard` found no blocking issue.
+- **Exact next batch:** T026-T039 (US1 canonical foundation). Preserve the current RED evidence, add the deterministic
+  inventory generator test first, then make only US1 token/mode/first-party consumer contracts green. Stop before
+  T040.
+- **Blockers:** font integration T047-T049 still requires approved WOFF2 files/provenance. Logo integration
+  T059-T064 still requires the owner-approved production vector package/provenance. Neither blocks US1.
+- **Environment-gated:** WordPress in this isolated worktree, Docker/wp-env, browser automation, and external
+  deployment evidence remain unavailable and are not PASS.
+- **Did not change:** product/runtime code, theme/CSS/token values, logo/font assets, CHANGELOG, release metadata,
+  Specs 058/059, or M3-M11 implementation.
+- **Next-agent command:** checkout/pull this branch, then run `/speckit-implement Spec 057 T026-T039 only`; stop
+  before T040 and retain the recorded RED baseline.
+
+---
+## RESUME HERE (2026-06-19 23:37 EEST, latest) -- Spec 057 T001-T009 complete
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest incoming commit:** `7b59923`; this inventory/resume update is the next branch commit.
+- **Completed this session:** T001-T009. Added the schema/baseline and seven JSON inventories for canonical
+  definitions, style variations, generated properties, consumers, documentation/brand fixtures, admin fallbacks/
+  aliases, and compatibility classifications.
+- **Design state:** the owner reports the external design package frozen after its final closure pass. Repository
+  handoffs and active engineering specs remain the implementation authority; the freeze does not authorize later
+  milestones or bypass Spec Kit.
+- **Inventory findings:** 53 unique canonical definitions/properties; 203 path/property consumer records; incomplete
+  Dark and Editorial replacement arrays; 11 unique legacy properties across five owner batches; no tracked
+  production `brand.json`; current one-item palette documentation example is incompatible with wholesale list
+  replacement under the approved Spec 057 contract.
+- **Exact next batch:** implement T010-T025 only: foundational contract tests and their expected RED evidence. Do
+  not start T026 or any token/style implementation in that batch.
+- **Blockers:** T047-T049 require approved font files/provenance. T059-T064 require the owner-approved production
+  vector package/provenance. Neither blocks T010-T025.
+- **Verification:** Spec Kit prerequisites resolved Spec 057; `requirements.md` is 16/16; all seven JSON inventories
+  parse; definition IDs/properties are unique; task completion is sequential through T009; documentation claims
+  were checked against theme sources, `BrandResolver`, enqueue owners, and package scripts; `git diff --check` and
+  `docs-guard` passed before commit.
+- **Environment-gated:** this isolated worktree has no `wp/` installation, Docker Desktop's Linux engine is
+  unavailable, and Node v22.14.0 is below the browser-tool runtime requirement. No such check is reported as PASS.
+- **Did not change:** product/runtime code, CSS/token values, theme styles, logo/font assets, release metadata,
+  CHANGELOG, Specs 058/059, or M3-M11 implementation.
+- **Next-agent command:** checkout/pull this branch, then run `/speckit-implement Spec 057 T010-T025 only`; preserve
+  RED evidence in `inventories/baseline.md` and stop before T026.
+
+### Company Website Start Track — June 21–22, 2026
+
+CoreX v0.27.0 is stable enough to begin first company-site planning, content architecture, local setup, brand
+gathering, and implementation preparation. Full company-site launch readiness still depends on M2, minimum M3,
+M4 Company Site Kit v1, and only the M5 blocks required by that kit. CoreX is not yet fully finished or public/
+commercial-launch ready. M6-M11 remain later productization/future/commercial scope unless the first company project
+proves a specific dependency; they do not block all client preparation.
+
+---
+## RESUME HERE (2026-06-19, latest) -- Spec 057 tasks created; review before implementation
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains draft.
+- **Tasks:** `specs/057-brand-tokens-logo-system/tasks.md` contains 90 sequential tasks: 9 setup/inventory,
+  16 foundational test-contract, 14 US1 canonical-foundation, 16 US2 accessibility/typography/RTL, 10 US3 logo,
+  14 US4 compatibility/admin, and 11 documentation/final-gate tasks. Thirty-six tasks are marked parallel only
+  where ownership does not overlap.
+- **Order:** repository inventory precedes contract tests; RED evidence precedes minimal implementation; canonical
+  tokens precede consumer/admin migration; documentation and full guards close the sequence. US1 is the MVP.
+- **Boundary correction:** the shared `--corex-admin-*` adapter is registered by `corex-core` and conditionally
+  enqueued by each CoreX-owned screen, so independently booted add-ons do not depend on `corex-config` and the
+  adapter does not load globally.
+- **Asset blockers:** font integration tasks T047–T049 stay blocked until approved WOFF2 files/provenance exist.
+  Logo implementation tasks T059–T064 stay blocked until the owner-approved vector package/provenance exists.
+  Inventory, headless contracts, canonical tokens, compatibility, and admin-adapter work can proceed independently.
+- **Implementation:** no task was executed. No product code, runtime behavior, CSS/token value, logo/font asset,
+  release metadata, Spec 058/059, or later milestone work changed.
+- **Verification:** `setup-tasks.ps1 -Json` and `check-prerequisites.ps1 -Json` resolved Spec 057 and its planning
+  artifacts; all 90 IDs are sequential and follow the required checkbox/ID/parallel/story format; story counts are
+  US1 14, US2 16, US3 10, US4 14; required-group and path checks passed; `git diff --check` passed. `docs-guard`
+  found no blocking issue.
+- **Owned files:** `PROGRESS.md`, `ROADMAP.md`, `specs/057-brand-tokens-logo-system/tasks.md`, and the admin-adapter
+  boundary updates in `plan.md`, `research.md`, and `contracts/token-contract.md`.
+- **NEXT:** review `tasks.md`; if approved, run `/speckit-implement` beginning with T001–T009 only. Do not execute
+  blocked font/logo tasks until their provenance gates are satisfied.
+
+---
+## RESUME HERE (2026-06-19, latest) -- Spec 057 planned; generate tasks next
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains draft.
+- **Plan:** `specs/057-brand-tokens-logo-system/plan.md` with Phase 0 research, file-based data model, three contracts,
+  and a runnable validation quickstart. The managed Spec Kit section in `CLAUDE.md` now points to this plan.
+- **Main approach:** inventory definitions and consumers first; keep `theme.json` authoritative; retain/add/alias/
+  migrate/deprecate through compatibility-first batches; complete default/light, dark, and compatible editorial
+  replacement arrays; use a scoped `--corex-admin-*` adapter; preserve `brand.json` list replacement; and migrate
+  block/front-end consumers by owner without layout redesign.
+- **Assets:** fonts are limited to four provenance-recorded self-hosted WOFF2 files with system Latin body text,
+  `font-display: swap`, and no unmeasured preload. Logo integration remains a separately blocked batch until the
+  owner supplies or approves the production vector package and provenance; the legacy navy/cyan SVG is not approval.
+- **Evidence:** the plan requires headless inventory/schema/compatibility/contrast gates, complete contrast and focus
+  matrices, LTR/RTL Arabic/Latin/mixed-script fixtures, forced-colors and 200% zoom review, full tests/guards, and
+  explicit `ENVIRONMENT-GATED` status for unavailable wp-env/browser evidence.
+- **Implementation:** no product code, runtime behavior, CSS/token value, logo/font asset, release metadata,
+  Spec 058/059, or later milestone work changed.
+- **Verification:** `setup-plan.ps1 -Json` and `check-prerequisites.ps1 -Json -PathsOnly` resolved Spec 057; all plan
+  artifacts and internal links exist; placeholder and required-topic scans passed; `git diff --check` passed. The
+  agent-context updater completed after bypassing the broken Windows Store `python3` alias with a process-local YAML
+  parser; no updater script or environment file changed. `docs-guard` found no blocking issue.
+- **Owned files:** `CLAUDE.md`, `PROGRESS.md`, `ROADMAP.md`, and `specs/057-brand-tokens-logo-system/{plan.md,
+  research.md,data-model.md,quickstart.md,contracts/}`.
+- **NEXT:** run `/speckit-tasks` for Spec 057, keeping the logo integration tasks explicitly blocked on the approved
+  vector package while allowing inventory, token, compatibility, admin-adapter, font, and evidence tasks to proceed.
+
+---
+## RESUME HERE (2026-06-19, latest) -- Spec 057 clarified; ready for planning
+
+- **Branch/spec:** `spec/057-brand-tokens-logo-system`;
+  `specs/057-brand-tokens-logo-system/spec.md`; PR #54 remains draft.
+- **M0/M2:** M0 remains closed through v0.27.0. The approved M2 handoff remains the design authority, and its
+  implementation constraints now match the clarified spec.
+- **Clarifications:** retain stable token slugs with staged aliases/deprecations; require an owner-approved production
+  vector package and treat the current navy/cyan SVG as migration evidence; limit fonts to four self-hosted WOFF2
+  files with system body text, `font-display: swap`, and evidence-gated preload; use a scoped `--corex-admin-*`
+  adapter with centralized WordPress fallbacks; and preserve `BrandResolver` associative-map merge/list-replacement
+  semantics with complete preset arrays, validation, fixtures, and migration guidance.
+- **Evidence contracts:** planning must produce a machine-readable token/consumer inventory, a complete dark/light
+  contrast and focus-pair matrix with automated thresholds plus manual exceptions, and repeatable LTR/RTL Arabic,
+  Latin, mixed-script, keyboard, overflow, and 200% zoom fixtures.
+- **Implementation:** no product code, runtime behavior, theme style, logo/font asset, test code, Spec 058/059, or
+  later milestone work changed.
+- **Verification:** Spec Kit prerequisites resolved Spec 057; five clarification answers were integrated; the quality
+  checklist remains 16/16 passing; required-topic, placeholder, clarification-count, internal-link, source-claim,
+  and handoff-consistency checks passed; `git diff --check` passed. `docs-guard` found no blocking issue.
+- **Owned files:** `PROGRESS.md`, `ROADMAP.md`, `design/handoffs/brand-foundation.md`, and
+  `specs/057-brand-tokens-logo-system/spec.md`.
+- **NEXT:** run `/speckit-plan` for Spec 057, inventorying current definitions/consumers and recording the external
+  owner-approved logo package as an explicit implementation gate before tasks are generated.
+
+---
+## RESUME HERE (2026-06-19, latest) -- M2 handoff approved; Spec 057 created
+
+- **Branch:** `spec/057-brand-tokens-logo-system`.
+- **M0:** remains closed through the verified v0.27.0 release.
+- **Design pipeline:** the existing `056-design-roadmap-inventory` spec already owns the inventory-to-handoff-to-
+  engineering-spec workflow and was not duplicated.
+- **M2 handoff:** `design/handoffs/brand-foundation.md` records the approved dark-first CoreX identity, brass/gold
+  accent, Core X logo direction, Space Grotesk/JetBrains Mono/IBM Plex Sans Arabic roles, dark/light behavior,
+  accessibility, RTL, brandability, WordPress/FSE constraints, exclusions, and approval evidence. The Brand
+  foundation inventory row is now `approved`.
+- **Spec created:** `specs/057-brand-tokens-logo-system/spec.md` with its completed requirements checklist. The spec
+  covers logo integration and token alignment while explicitly excluding M3/M4 work, full admin/forms/docs redesign,
+  new component scope, commercial UI, and heavy motion.
+- **Implementation:** no product, design-asset, style, runtime, add-on, business-logic, release-metadata, or test code
+  changed. Specs 058 and 059 were not created.
+- **Verification:** required-section, placeholder, feature-pointer, inventory-status, and internal-path checks passed;
+  `git diff --check` passed. `docs-guard` verified the token-source, brand-override, admin-fallback, version, and file-
+  path claims against the current repository with no blocking findings.
+- **Owned files:** `.specify/feature.json`, `ROADMAP.md`, `PROGRESS.md`, `design/ROADMAP.md`, `design/INVENTORY.md`,
+  `design/handoffs/brand-foundation.md`, and `specs/057-brand-tokens-logo-system/`.
+- **NEXT:** review and clarify Spec 057, then create its implementation plan and task breakdown before changing
+  product code.
+
+---
 ## RESUME HERE (2026-06-19, latest) -- v0.27.0 released; M0 closed
 
 - **Branch:** `docs/close-m0-v0270`; based on merged release commit `a9abdcb` on `main`.

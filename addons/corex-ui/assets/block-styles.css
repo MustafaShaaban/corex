@@ -1,26 +1,29 @@
+/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+
 /**
  * Corex DLS block styles + the skeleton utility (spec 054, US3). Token-only, logical
  * properties (RTL-correct). Loaded with the block that uses the style (registered via
  * register_block_style style_handle). No hardcoded colour/size — every value is a token.
  */
+/* stylelint-enable @stylistic/max-line-length */
 
 /* Card — surface panel on core/group. */
 .wp-block-group.is-style-corex-card {
 	padding: var(--wp--preset--spacing--40);
 	background: var(--wp--preset--color--surface);
-	border: 1px solid var(--wp--preset--color--border);
+	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
 	border-radius: var(--wp--custom--radius--md);
 	box-shadow: var(--wp--preset--shadow--sm);
 }
 
 /* Section — vertical rhythm + container. */
 .wp-block-group.is-style-corex-section {
-	padding-block: var(--wp--preset--spacing--60, 3rem);
+	padding-block: var(--wp--preset--spacing--60);
 }
 
 /* Empty state — muted, centred. */
 .wp-block-group.is-style-corex-empty {
-	padding: var(--wp--preset--spacing--50, 2rem);
+	padding: var(--wp--preset--spacing--50);
 	text-align: center;
 	color: var(--wp--preset--color--ink-soft);
 }
@@ -34,14 +37,14 @@
 .wp-block-button.is-style-corex-secondary .wp-block-button__link {
 	background: transparent;
 	color: var(--wp--preset--color--primary);
-	border: 1px solid var(--wp--preset--color--primary);
+	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--primary);
 }
 
 /* Ghost button — text-only, accent on hover. */
 .wp-block-button.is-style-corex-ghost .wp-block-button__link {
 	background: transparent;
 	color: var(--wp--preset--color--accent-dark);
-	border: 1px solid transparent;
+	border: var(--wp--custom--border--width--thin) solid transparent;
 }
 
 /* Skeleton / loading placeholder. */
@@ -53,12 +56,19 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+
 	.corex-skeleton {
 		animation: corex-skeleton-pulse var(--wp--custom--motion--duration--slow) var(--wp--custom--motion--easing--standard) infinite alternate;
 	}
 }
 
 @keyframes corex-skeleton-pulse {
-	from { opacity: 1; }
-	to   { opacity: 0.55; }
+
+	from {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0.55;
+	}
 }

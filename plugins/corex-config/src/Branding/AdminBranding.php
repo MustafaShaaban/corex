@@ -30,6 +30,9 @@ final class AdminBranding
 
     public function loginLogo(): void
     {
+        // The login mark is the approved Core X product lockup (logo-manifest.json),
+        // rendered as the WordPress login slot background. WordPress keeps the site
+        // name as the link's accessible text, so the mark itself stays decorative.
         $css = $this->branding->loginCss(esc_url($this->branding->logoUrl()));
 
         printf('<style>%s</style>', $css);

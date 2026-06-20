@@ -19,6 +19,11 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 
 ## WHILE working
 - Run `git status --short --branch` before edits; work from the active feature branch, never from `main`.
+- **Single workspace (COREX-WORKING-GUIDE.md §A.7):** work only from the normal project root checkout — no
+  `.worktrees` without explicit owner approval. Before editing, verify root/branch/status/log/remote/worktree, and
+  **stop and report** if you are on the wrong branch, in the wrong checkout, or see uncommitted changes you did not
+  create. The active PR branch is the working source of truth — continue from its latest pushed commit; never
+  recreate completed work. Push only to that branch while its PR is open.
 - Claim branch, spec path, task IDs, and owned files before changing code. Do not edit files owned by another
   active agent unless the handoff explicitly transfers them.
 - Follow the constitution exactly. If a request conflicts with it, say so rather than comply.
@@ -49,5 +54,5 @@ Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at specs/056-dependency-security-remediation/plan.md
+at specs/057-brand-tokens-logo-system/plan.md
 <!-- SPECKIT END -->

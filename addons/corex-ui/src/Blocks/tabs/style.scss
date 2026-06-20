@@ -1,3 +1,5 @@
+/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+
 /**
  * Corex Tabs — token-only, logical CSS (RTL-correct), NO view JavaScript.
  *
@@ -6,17 +8,19 @@
  * via the `:checked` sibling rule. Labels are reordered above the panels with flex `order`.
  * The `.is-editing` class (editor only) opts out of the hiding so all panels stay visible to edit.
  */
+/* stylelint-enable @stylistic/max-line-length */
 .corex-tabs {
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--wp--preset--spacing--10);
 
 	&__radio {
-		/* Visually hidden but kept in the tab order + focusable (accessible toggle). */
+
+		/* Visually hidden, but focusable and retained in the tab order. */
 		position: absolute;
-		inline-size: 1px;
-		block-size: 1px;
-		margin: -1px;
+		inline-size: 1px; /* corex-token-allow: screen-reader-only reset */
+		block-size: 1px; /* corex-token-allow: screen-reader-only reset */
+		margin: -1px; /* corex-token-allow: screen-reader-only reset */
 		padding: 0;
 		overflow: hidden;
 		clip-path: inset(50%);
@@ -42,8 +46,9 @@
 	}
 }
 
-/* Front-end interactivity (skipped while editing, where every panel must stay visible). */
+/* Front-end interactivity; every panel remains visible while editing. */
 .corex-tabs:not(.is-editing) {
+
 	.corex-tabs__panel {
 		display: none;
 	}
@@ -58,9 +63,8 @@
 	}
 
 	.corex-tabs__radio:focus-visible + .corex-tabs__label {
-		/* 0.125rem is a focus-ring thickness (a11y affordance), not a design size. */
-		outline: 0.125rem solid var(--wp--preset--color--primary);
-		outline-offset: 0.125rem;
+		outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
+		outline-offset: var(--wp--custom--focus--offset);
 	}
 }
 
@@ -72,6 +76,7 @@
 		margin-block-end: var(--wp--preset--spacing--30);
 	}
 
+	/* stylelint-disable-next-line no-descending-specificity -- editor override */
 	.corex-tabs__label {
 		display: inline-block;
 		font-weight: 600;

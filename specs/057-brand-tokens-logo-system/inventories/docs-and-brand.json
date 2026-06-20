@@ -1,0 +1,298 @@
+{
+  "generated_at": "source-controlled",
+  "actual_brand_json_files": [],
+  "runtime_contract": {
+    "resolver": "plugins/corex-core/src/Theme/BrandResolver.php",
+    "provider": "plugins/corex-core/src/Theme/ThemeServiceProvider.php",
+    "associative_maps": "recursive-merge",
+    "lists": "replace-wholesale",
+    "missing_file": "defaults-intact",
+    "malformed_file": "logged-and-defaults-intact"
+  },
+  "documentation_references": [
+    {
+      "path": "addons/corex-email/README.md",
+      "lines": [
+        63
+      ],
+      "topics": [
+        "brand.json",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "addons/corex-kit-company/README.md",
+      "lines": [
+        19,
+        20
+      ],
+      "topics": [
+        "brand.json",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "addons/corex-ui/README.md",
+      "lines": [
+        52,
+        53
+      ],
+      "topics": [
+        "brand.json",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/architecture/overview.md",
+      "lines": [
+        35
+      ],
+      "topics": [
+        "brand.json",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/design-system/client-readiness.md",
+      "lines": [
+        14,
+        39
+      ],
+      "topics": [
+        "brand.json",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/design-system/components.md",
+      "lines": [
+        50,
+        55
+      ],
+      "topics": [
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/design-system/foundations.md",
+      "lines": [
+        7,
+        14,
+        15,
+        16,
+        17,
+        18,
+        20,
+        21,
+        22,
+        28,
+        29,
+        32,
+        33,
+        35,
+        43,
+        97
+      ],
+      "topics": [
+        "brand.json",
+        "generated-properties",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/design-system/gap-analysis.md",
+      "lines": [
+        22,
+        34
+      ],
+      "topics": [
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/design-system/templates.md",
+      "lines": [
+        25
+      ],
+      "topics": [
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/faq.md",
+      "lines": [
+        29
+      ],
+      "topics": [
+        "brand.json",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/getting-started/first-run.md",
+      "lines": [
+        41
+      ],
+      "topics": [
+        "brand.json",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/guides/branding.md",
+      "lines": [
+        3,
+        11,
+        12,
+        15,
+        17,
+        30,
+        57,
+        71,
+        86,
+        87,
+        88
+      ],
+      "topics": [
+        "brand.json",
+        "generated-properties",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/guides/cli.md",
+      "lines": [
+        60
+      ],
+      "topics": [
+        "brand.json"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/guides/client-site.md",
+      "lines": [
+        20,
+        37
+      ],
+      "topics": [
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/guides/design-system.md",
+      "lines": [
+        43
+      ],
+      "topics": [
+        "brand.json",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/guides/frontend-runtime.md",
+      "lines": [
+        99
+      ],
+      "topics": [
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/guides/mail.md",
+      "lines": [
+        30
+      ],
+      "topics": [
+        "brand.json",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/guides/updates.md",
+      "lines": [
+        12,
+        69,
+        74,
+        78,
+        83
+      ],
+      "topics": [
+        "brand.json"
+      ]
+    },
+    {
+      "path": "packages/cli/README.md",
+      "lines": [
+        141
+      ],
+      "topics": [
+        "brand.json"
+      ]
+    },
+    {
+      "path": "plugins/corex-core/README.md",
+      "lines": [
+        333,
+        363,
+        364,
+        368,
+        370,
+        375,
+        380,
+        458,
+        464
+      ],
+      "topics": [
+        "brand.json",
+        "generated-properties",
+        "theme-authority"
+      ]
+    },
+    {
+      "path": "plugins/corex-forms/README.md",
+      "lines": [
+        175
+      ],
+      "topics": [
+        "theme-authority"
+      ]
+    }
+  ],
+  "examples": [
+    {
+      "path": "docs-app/src/content/docs/guides/branding.md",
+      "lines": [
+        22,
+        30
+      ],
+      "shape": "incomplete-list",
+      "expected_result_under_spec_057": "report-and-default",
+      "status": "migration-required",
+      "note": "The documented one-item palette replaces the full list under current resolver semantics."
+    }
+  ],
+  "fixtures": [
+    {
+      "path": "tests/Unit/Theme/BrandResolverTest.php",
+      "coverage": [
+        "empty override",
+        "recursive associative merge",
+        "unknown associative key",
+        "list replacement",
+        "missing file",
+        "malformed file"
+      ],
+      "status": "existing"
+    },
+    {
+      "path": "tests/Fixtures/Theme/brand/",
+      "coverage": [
+        "complete-list",
+        "incomplete-list",
+        "malformed",
+        "missing"
+      ],
+      "status": "implemented-T016"
+    }
+  ]
+}

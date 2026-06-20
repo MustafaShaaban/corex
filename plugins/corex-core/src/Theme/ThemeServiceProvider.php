@@ -30,6 +30,11 @@ final class ThemeServiceProvider extends ServiceProvider
             BrandResolver::class,
             static fn (ContainerInterface $c): BrandResolver => new BrandResolver($c->make(BootLogger::class)),
         );
+
+        $this->container->singleton(
+            BrandOverrideValidator::class,
+            static fn (ContainerInterface $c): BrandOverrideValidator => new BrandOverrideValidator(),
+        );
     }
 
     public function boot(): void
@@ -38,10 +43,12 @@ final class ThemeServiceProvider extends ServiceProvider
         $configured = (string) $config->get('theme.brand_path', '');
 
         $resolver = $this->container->make(BrandResolver::class);
+        $validator = $this->container->make(BrandOverrideValidator::class);
+        $logger = $this->container->make(BootLogger::class);
 
         add_filter(
             'wp_theme_json_data_theme',
-            static function (WP_Theme_JSON_Data $themeJson) use ($resolver, $configured): WP_Theme_JSON_Data {
+            static function (WP_Theme_JSON_Data $themeJson) use ($resolver, $validator, $logger, $configured): WP_Theme_JSON_Data {
                 // Default to the active theme root; honor child→parent fallback.
                 $path = $configured !== '' ? $configured : get_theme_file_path('brand.json');
 
@@ -50,7 +57,19 @@ final class ThemeServiceProvider extends ServiceProvider
                     return $themeJson;
                 }
 
-                return $themeJson->update_with($resolver->merge($themeJson->get_data(), $brand));
+                // Drop any incomplete wholesale-replacement list so its complete
+                // defaults survive; a complete brand.json passes through untouched.
+                $defaults = $themeJson->get_data();
+                $result = $validator->validate($defaults, $brand);
+
+                foreach ($result['issues'] as $issue) {
+                    $logger->warning(sprintf(
+                        'brand.json: incomplete %s replacement list ignored; defaults retained.',
+                        $issue['path'],
+                    ));
+                }
+
+                return $themeJson->update_with($resolver->merge($defaults, $result['overrides']));
             }
         );
     }

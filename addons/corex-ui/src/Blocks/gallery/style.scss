@@ -3,7 +3,11 @@
  */
 .corex-gallery {
 	display: grid;
+
+	/* stylelint-disable @stylistic/max-line-length -- track rationale */
+
 	/* 14rem is a functional responsive grid track (layout structure), not a design size. */
+	/* stylelint-enable @stylistic/max-line-length */
 	grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
 	gap: var(--wp--preset--spacing--30);
 

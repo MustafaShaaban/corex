@@ -12,9 +12,9 @@ This file tracks design exploration and approval separately from engineering imp
 
 ## Current sequence
 
-1. Complete the design inventory and identify missing states and responsive/RTL behavior.
-2. Approve CoreX brand tokens and visual foundation.
-3. Approve header, mobile navigation, mega-menu, and footer patterns.
+1. Maintain the design inventory and identify missing states and responsive/RTL behavior.
+2. Use the approved [M2 brand foundation handoff](handoffs/brand-foundation.md) for Spec 057 planning and review.
+3. Approve header, mobile navigation, mega-menu, and footer patterns only after the M2 token contract is reviewed.
 4. Approve the company kit and the first required component batches.
 5. Continue with admin UI, forms/email, portfolio, WooCommerce, docs, and marketing.
 

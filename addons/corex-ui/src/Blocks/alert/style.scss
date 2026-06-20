@@ -1,11 +1,19 @@
 /* Corex Alert — token-only, logical properties (RTL-correct). */
 .corex-alert {
-	padding: var(--wp--preset--spacing--30, 1rem);
-	border-inline-start: 4px solid var(--wp--preset--color--corex-info, #2271b1);
-	border-radius: var(--wp--custom--radius--md, 6px);
-	background: var(--wp--preset--color--surface, #f6f7f7);
+	padding: var(--wp--preset--spacing--30);
+	border-inline-start: var(--wp--custom--border--width--strong) solid var(--wp--preset--color--info);
+	border-radius: var(--wp--custom--radius--md);
+	background: var(--wp--preset--color--surface);
 }
 
-.corex-alert--success { border-inline-start-color: var(--wp--preset--color--corex-success, #00a32a); }
-.corex-alert--warning { border-inline-start-color: var(--wp--preset--color--corex-warning, #dba617); }
-.corex-alert--error { border-inline-start-color: var(--wp--preset--color--corex-danger, #d63638); }
+.corex-alert--success {
+	border-inline-start-color: var(--wp--preset--color--success);
+}
+
+.corex-alert--warning {
+	border-inline-start-color: var(--wp--preset--color--warning);
+}
+
+.corex-alert--error {
+	border-inline-start-color: var(--wp--preset--color--error);
+}

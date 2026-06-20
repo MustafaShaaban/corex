@@ -62,7 +62,7 @@ final class CaptchaServiceProvider extends ServiceProvider
         wp_enqueue_style(
             'corex-captcha-admin',
             plugins_url('assets/captcha-admin.css', $base),
-            [],
+            ['corex-admin-tokens'],
             COREX_CAPTCHA_VERSION,
         );
 

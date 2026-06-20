@@ -1,0 +1,18 @@
+{
+  "settings": {
+    "color": {
+      "palette": [
+        { "slug": "primary", "color": "#172033", "name": "Primary" }
+      ]
+    },
+    "typography": {
+      "fontFamilies": [
+        {
+          "slug": "heading",
+          "name": "Heading",
+          "fontFamily": "'Space Grotesk', system-ui, sans-serif"
+        }
+      ]
+    }
+  }
+}

@@ -1,3 +1,5 @@
+/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+
 /**
  * Corex → Data screen (spec 053 US2) — toolbar, sortable table, pagination, detail drawer,
  * and the loading/error/empty states. Token-only with wp-admin palette fallbacks (theme
@@ -5,6 +7,7 @@
  * visible focus states (WCAG 2.2 AA). No raw colour/size outside the documented admin
  * fallbacks.
  */
+/* stylelint-enable @stylistic/max-line-length */
 
 .corex-data__toolbar {
 	display: flex;
@@ -68,11 +71,13 @@
 	color: #646970;
 }
 
+/* stylelint-disable @stylistic/max-line-length -- existing drawer documentation */
 .corex-data__error {
 	margin-block: var(--wp--preset--spacing--30, 1rem);
 }
 
 /* Detail drawer — slides in from the inline-end edge (RTL-correct via logical inset). */
+/* stylelint-enable @stylistic/max-line-length */
 .corex-data__drawer-overlay {
 	position: fixed;
 	inset: 0;

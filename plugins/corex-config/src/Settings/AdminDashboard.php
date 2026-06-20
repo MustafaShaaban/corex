@@ -75,7 +75,7 @@ final class AdminDashboard
         );
 
         // The control-panel card/checklist styling (spec 044) — only on this screen (Principle VI).
-        wp_enqueue_style('corex-control-panel', plugins_url('assets/control-panel.css', $base), [], '1.0.0');
+        wp_enqueue_style('corex-control-panel', plugins_url('assets/control-panel.css', $base), ['corex-admin-tokens'], '1.0.0');
     }
 
     public function render(): void
@@ -124,7 +124,10 @@ final class AdminDashboard
 
         echo '<h1 class="wp-heading-inline">';
         if ($logo !== '') {
-            // height is an HTML attribute (the admin-bar-scale logo size), not an inline style.
+            // Decorative usage (logo-manifest.json): the adjacent "Corex Settings" heading
+            // already names the product, so the mark carries an empty alt to avoid a
+            // duplicate announcement. height is an HTML attribute (the admin-bar-scale logo
+            // size), not an inline style.
             printf('<img src="%s" alt="" height="32" class="corex-brand-logo" /> ', esc_url($logo));
         }
         echo esc_html__('Corex Settings', 'corex') . '</h1>';

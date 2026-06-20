@@ -131,6 +131,42 @@ Alternatives considered: Tailwind (rejected: build-time tokens), Bootstrap (reje
 Status: Final.
 ```
 
+### A.7 — Single Workspace / Agent Coordination Rule
+
+So that Claude, Codex, Cursor, Gemini, and any future agent all work from the same source of truth and never
+recreate or overwrite each other's work. This **extends, never replaces**, the source-of-truth hierarchy (§A.1),
+the Spec Kit flow (§D.2), and the multi-agent ownership rules (§D.3a).
+
+- **The active PR branch is the working source of truth.** While a feature PR is open, its branch is where all
+  work continues. Read `PROGRESS.md` for the latest pushed state and continue from the **latest commit on that
+  branch** — never restart completed work or branch off elsewhere.
+- **One checkout: the normal project root.** Work from the normal project root checkout only. Do **not** create or
+  work inside hidden/separate `git worktree` directories (e.g. `.worktrees/…`) by default — using one requires the
+  owner's **explicit** approval for that session. If a session finds itself in a non-root or worktree path, it
+  **stops**, reports that it is not the normal root, and names the correct root path before editing.
+- **Verify before editing (pre-flight).** Before changing any file, run and read:
+  ```bash
+  git rev-parse --show-toplevel   # confirm the normal project root
+  git branch --show-current       # confirm the active branch
+  git status --short              # confirm a known, clean-or-expected tree
+  git log --oneline -5            # confirm the latest pushed commit
+  git remote -v                   # confirm origin
+  git worktree list               # confirm a single, expected worktree
+  git fetch origin                # see remote state
+  ```
+- **Stop conditions.** Stop and report, making **no edits**, if any of these is true: you are on the **wrong
+  branch**; you are in the **wrong checkout** (not the normal root, or an unapproved worktree); or the tree has
+  **uncommitted changes you did not create** and cannot account for. Do not stash, discard, commit, or overwrite
+  unknown changes without owner direction.
+- **Continue, don't recreate.** Resume from the latest pushed commit on the active branch. Tasks already complete
+  (per `PROGRESS.md` and the spec's `tasks.md`) are not redone.
+- **Push discipline.** Commit and push only to the active PR branch while its PR is open. Never push to `main`;
+  never merge or mark a PR ready while blockers remain.
+- **End-of-session handoff (mandatory).** Every session ends with a handoff containing, in order: **SUMMARY**,
+  **WORKSPACE**, **SPEC KIT STATUS**, **VERIFICATION**, **BLOCKERS / DECISIONS NEEDED**, **RECOMMENDED NEXT STEP**,
+  and the **NEXT STEP** block (§A.3, unchanged and still mandatory as the final element). This makes the workspace
+  state and the resume point explicit for the next human or agent.
+
 ---
 
 ## Part B — Quality Gates (the guard skills)
