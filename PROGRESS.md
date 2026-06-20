@@ -4,7 +4,29 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-21, latest) -- M3 merged; M4 core implemented (full company page set); on PR
+## RESUME HERE (2026-06-21, latest) -- M6 started: Spec 060 specced/planned + US1 truthful add-on state model (PR #58 draft)
+
+- **Branch/PR:** `spec/060-corex-admin-product-experience` (from `main` @ `83a89cf`); **PR #58 (draft)**. Normal root,
+  single worktree, no `.worktrees`. Spec 055 WIP untouched in `stash@{0}`. (M4 PR #57 merged earlier.)
+- **M6 design:** owner-supplied approved admin design package recorded as `design/handoffs/admin-experience.md`;
+  `design/INVENTORY.md` "Admin product UI" → approved. Spec Kit complete: spec (US1-US4, 15 FRs), plan (Constitution
+  PASS), research, data-model, contract, quickstart, tasks (19). Agent-context pointer → Spec 060.
+- **US1 DONE (committed):** pure `Corex\Foundation\AddonStatus` enum (not_installed/inactive/feature_off/active/
+  dependency_missing/woocommerce_missing/pro_required + isUsable/isInstalled/canToggle) + `AddonStatusResolver`
+  (headless, no WP/DB), ordered to agree with the boot-time `AddonProviderResolver`. Only installed states toggle;
+  install stays developer/CLI/deployment. This is the truthful state model the admin screens read from.
+- **Verification:** `AddonStatusResolverTest` matrix **8/8**; Foundation suite **72 pass**; `php -l` clean. Guards
+  wp/clean-code/test clean. **ENVIRONMENT-GATED:** rendered admin a11y/RTL/visual + wp-env evidence.
+- **Remaining on Spec 060/M6:** US2 (state-aware Settings sections + captcha/reCAPTCHA states; write-only secrets —
+  consume `AddonStatusResolver`), US3 (scoped admin visual design — cards/tables/topbar/badges via `--corex-admin-*`,
+  dark/light/RTL/responsive, a11y; asset-scoping test = no global/frontend load), US4 (setup/readiness + universal
+  states), then docs + full gate before marking PR #58 ready. Per `tasks.md`.
+- **Exact next step:** implement Spec 060 US2 — read the existing captcha settings + the `corex-config` Settings
+  screen, add `SettingsSectionState` derived from `AddonStatus` + a per-add-on "configured" predicate, RED→GREEN with
+  `SettingsSectionStateTest` + `CaptchaSettingsStateTest` (write-only secret). Keep PR #58 draft.
+
+---
+## RESUME HERE (2026-06-21) -- M3 merged; M4 core implemented (full company page set); on PR
 
 - **Branch:** `spec/059-company-site-kit` (rebased onto `main` @ `05982a6` after **PR #56/M3 merged**). Normal root,
   single worktree, no `.worktrees`. Spec 055 WIP untouched in `stash@{0}`. Owner granted PR-merge permission.
