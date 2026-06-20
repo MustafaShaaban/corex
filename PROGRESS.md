@@ -4,6 +4,31 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-20 13:18 EEST, latest) -- Spec 057 font package integrated; logo package remains gated
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest incoming commit:** `617c3fc`; this T047-T048 font integration checkpoint is the next branch commit.
+- **Completed:** owner approval opened the font gate. T047-T048 now integrate exactly four self-hosted WOFF2 files:
+  bounded Space Grotesk 500-700 and JetBrains Mono 400-600 Latin variables plus IBM Plex Sans Arabic 400/600.
+  The provenance manifest pins Google Fonts commit `cf28404eac0c6f9753bef3510bbe271952e4154d`, local OFL records,
+  subset tooling, weights, scripts, checksums, `swap`, and no preload. WordPress 7.0 resolves all base and
+  style-variation faces to local theme URLs.
+- **Verification:** Spec Kit prerequisites and checklist (16/16) PASS; WordPress theme/plugin environment and
+  readiness 0.27.0 PASS; regenerated token inventory PASS; focused Pest 10 tests/157 assertions PASS; PHP lint,
+  JSON parse, Composer validation, Jest 17 suites/97 tests, workspace build, CSS lint, dependency verification,
+  external-CDN/preload scan, and `git diff --check` PASS. Full Pest is intentionally not green: 653 pass and the
+  eight expected future-story contracts remain RED (three logo, three admin adapter, two brand validator).
+- **Remaining/blocked:** T059-T064 require the approved production geometric Core X vector package and provenance.
+  The historical navy/cyan SVG is not approved production artwork. US4 T066-T079 remains ordered after US3.
+- **Environment-gated:** Chromium cannot resolve `corex-spec057.local`, so rendered font-network evidence is not
+  PASS. Docker/wp-env, GitHub-settings, and external deployment evidence also remain gated. The prior standalone
+  Chromium fixture remains verified 4/4.
+- **Did not change:** logo assets, client-brand behavior, admin adapter, CHANGELOG, release metadata, Specs 058/059,
+  or later milestones. The unrelated dirty root worktree remains untouched.
+- **Exact next step:** supply or approve the production geometric Core X vector package/provenance described in
+  `logo-evidence.md`, then implement T059-T064 only; keep PR #54 draft.
+
+---
 ## RESUME HERE (2026-06-20 05:39 EEST, latest) -- Spec 057 owner-blocked on font and logo packages
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.

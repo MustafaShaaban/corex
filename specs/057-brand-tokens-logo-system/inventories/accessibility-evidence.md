@@ -32,8 +32,8 @@ separate US4 responsibility and is not represented as implemented here.
 
 - System Latin body, Space Grotesk heading, JetBrains Mono technical, and IBM Plex Sans Arabic fallback roles: PASS
   at the token-contract level.
-- Approved self-hosted WOFF2 files and provenance manifest: BLOCKED on owner-approved assets.
-- No asset file, checksum, license claim, or preload was invented.
+- Four approved self-hosted WOFF2 files and their pinned provenance/checksum manifest: PASS.
+- No preload was added; local OFL records and generated-file checksums are verified by the font contract.
 
 ## Guard and verification gate
 
@@ -45,5 +45,5 @@ separate US4 responsibility and is not represented as implemented here.
   command output.
 - Accessibility/RTL review: PASS for the headless contract and standalone Chromium fixture; WordPress-rendered
   browser evidence remains explicitly environment-gated.
-- Full Pest is not green: 647 tests pass and nine future-story contracts remain RED (one blocked font manifest,
-  three blocked logo contracts, three US4 admin-adapter contracts, and two US4 brand-validator contracts).
+- Full Pest is not green: 653 tests pass and eight future-story contracts remain RED (three blocked logo contracts,
+  three US4 admin-adapter contracts, and two US4 brand-validator contracts). The font contracts are green.

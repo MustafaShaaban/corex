@@ -1,0 +1,58 @@
+{
+  "source": "Google Fonts repository",
+  "source_commit": "cf28404eac0c6f9753bef3510bbe271952e4154d",
+  "license": "SIL Open Font License 1.1",
+  "approval_date": "2026-06-20",
+  "approval_basis": "Owner approved the Spec 057 asset integration in the active implementation thread.",
+  "subset_tool": "fonttools 4.63.0 with Brotli 1.2.0",
+  "fonts": [
+    {
+      "family": "Space Grotesk",
+      "role": "display-heading",
+      "path": "theme/assets/fonts/space-grotesk-latin-500-700.woff2",
+      "weights": "500 700",
+      "script_subset": "Latin U+0000-024F,U+1E00-1EFF",
+      "upstream_source": "https://github.com/google/fonts/blob/cf28404eac0c6f9753bef3510bbe271952e4154d/ofl/spacegrotesk/SpaceGrotesk%5Bwght%5D.ttf",
+      "license_source": "theme/assets/fonts/licenses/space-grotesk-OFL.txt",
+      "checksum": "sha256:c0955a80b5e390fb2b2114db858eba79d1c56d7e75574490e99c97e9af298a95",
+      "font_display": "swap",
+      "preload": false
+    },
+    {
+      "family": "JetBrains Mono",
+      "role": "code-technical",
+      "path": "theme/assets/fonts/jetbrains-mono-latin-400-600.woff2",
+      "weights": "400 600",
+      "script_subset": "Latin U+0000-024F,U+1E00-1EFF",
+      "upstream_source": "https://github.com/google/fonts/blob/cf28404eac0c6f9753bef3510bbe271952e4154d/ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf",
+      "license_source": "theme/assets/fonts/licenses/jetbrains-mono-OFL.txt",
+      "checksum": "sha256:a3f5d6c2c434f3056d3708b1c14e841ad2d93546693fcfb8fda60edd4177c4bd",
+      "font_display": "swap",
+      "preload": false
+    },
+    {
+      "family": "IBM Plex Sans Arabic",
+      "role": "arabic",
+      "path": "theme/assets/fonts/ibm-plex-sans-arabic-400.woff2",
+      "weights": "400",
+      "script_subset": "Arabic plus Basic Latin",
+      "upstream_source": "https://github.com/google/fonts/blob/cf28404eac0c6f9753bef3510bbe271952e4154d/ofl/ibmplexsansarabic/IBMPlexSansArabic-Regular.ttf",
+      "license_source": "theme/assets/fonts/licenses/ibm-plex-sans-arabic-OFL.txt",
+      "checksum": "sha256:ff5e3fbf8651ee90ad15f99825ab4d86cb635876ccf6c7bac777349fef8ec267",
+      "font_display": "swap",
+      "preload": false
+    },
+    {
+      "family": "IBM Plex Sans Arabic",
+      "role": "arabic",
+      "path": "theme/assets/fonts/ibm-plex-sans-arabic-600.woff2",
+      "weights": "600",
+      "script_subset": "Arabic plus Basic Latin",
+      "upstream_source": "https://github.com/google/fonts/blob/cf28404eac0c6f9753bef3510bbe271952e4154d/ofl/ibmplexsansarabic/IBMPlexSansArabic-SemiBold.ttf",
+      "license_source": "theme/assets/fonts/licenses/ibm-plex-sans-arabic-OFL.txt",
+      "checksum": "sha256:a164519f2a950765dca2694f2459f24c9189493bbfb2a3ce48be824cd4dfcf89",
+      "font_display": "swap",
+      "preload": false
+    }
+  ]
+}

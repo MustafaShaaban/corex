@@ -40,12 +40,17 @@
                 {
                     "slug": "heading",
                     "name": "Heading",
-                    "fontFamily": "'Space Grotesk', Georgia, 'Times New Roman', serif"
+                    "fontFamily": "'Space Grotesk', Georgia, 'Times New Roman', serif",
+                    "fontFace": [{ "fontFamily": "Space Grotesk", "fontStyle": "normal", "fontWeight": "500 700", "fontDisplay": "swap", "src": ["file:./assets/fonts/space-grotesk-latin-500-700.woff2"] }]
                 },
                 {
                     "slug": "arabic",
                     "name": "Arabic",
-                    "fontFamily": "'IBM Plex Sans Arabic', system-ui, sans-serif"
+                    "fontFamily": "'IBM Plex Sans Arabic', system-ui, sans-serif",
+                    "fontFace": [
+                        { "fontFamily": "IBM Plex Sans Arabic", "fontStyle": "normal", "fontWeight": "400", "fontDisplay": "swap", "src": ["file:./assets/fonts/ibm-plex-sans-arabic-400.woff2"] },
+                        { "fontFamily": "IBM Plex Sans Arabic", "fontStyle": "normal", "fontWeight": "600", "fontDisplay": "swap", "src": ["file:./assets/fonts/ibm-plex-sans-arabic-600.woff2"] }
+                    ]
                 },
                 {
                     "slug": "body",
@@ -55,7 +60,8 @@
                 {
                     "slug": "mono",
                     "name": "Technical",
-                    "fontFamily": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace"
+                    "fontFamily": "'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace",
+                    "fontFace": [{ "fontFamily": "JetBrains Mono", "fontStyle": "normal", "fontWeight": "400 600", "fontDisplay": "swap", "src": ["file:./assets/fonts/jetbrains-mono-latin-400-600.woff2"] }]
                 }
             ]
         }

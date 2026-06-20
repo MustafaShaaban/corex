@@ -50,10 +50,35 @@ it('records provenance roles subsets weights and swap behavior for every font fi
             ->and($record['path'])->toEndWith('.woff2')
             ->and($record['font_display'])->toBe('swap');
 
+        $fontPath = ThemeContract::root() . '/' . $record['path'];
+        $licensePath = ThemeContract::root() . '/' . $record['license_source'];
+        expect($fontPath)->toBeFile()
+            ->and($licensePath)->toBeFile()
+            ->and($record['checksum'])->toBe('sha256:' . hash_file('sha256', $fontPath));
+
         if ($record['preload']) {
             expect($record['evidence_id'] ?? null)->not->toBeNull();
         }
     }
+});
+
+it('maps every approved file through WordPress font faces without preload', function () {
+    $families = ThemeContract::json('theme/theme.json')['settings']['typography']['fontFamilies'];
+    $sources = [];
+
+    foreach ($families as $family) {
+        foreach ($family['fontFace'] ?? [] as $face) {
+            expect($face['fontDisplay'] ?? null)->toBe('swap');
+            array_push($sources, ...($face['src'] ?? []));
+        }
+    }
+
+    expect($sources)->toEqualCanonicalizing([
+        'file:./assets/fonts/space-grotesk-latin-500-700.woff2',
+        'file:./assets/fonts/jetbrains-mono-latin-400-600.woff2',
+        'file:./assets/fonts/ibm-plex-sans-arabic-400.woff2',
+        'file:./assets/fonts/ibm-plex-sans-arabic-600.woff2',
+    ]);
 });
 
 it('defines the approved typography roles with readable fallbacks', function () {

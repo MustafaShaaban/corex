@@ -2023,7 +2023,7 @@
     },
     {
       "path": "theme/styles/dark.json",
-      "selector_or_context": "lines 50: \"text\": \"var(--wp--preset--color--ink)\"",
+      "selector_or_context": "lines 68: \"text\": \"var(--wp--preset--color--ink)\"",
       "property": "--wp--preset--color--ink",
       "owner": "theme",
       "surface": "front-end",
@@ -2033,7 +2033,7 @@
     },
     {
       "path": "theme/styles/dark.json",
-      "selector_or_context": "lines 49: \"background\": \"var(--wp--preset--color--surface)\",",
+      "selector_or_context": "lines 67: \"background\": \"var(--wp--preset--color--surface)\",",
       "property": "--wp--preset--color--surface",
       "owner": "theme",
       "surface": "front-end",
@@ -2043,7 +2043,7 @@
     },
     {
       "path": "theme/styles/editorial.json",
-      "selector_or_context": "lines 66: \"text\": \"var(--wp--preset--color--ink)\"",
+      "selector_or_context": "lines 72: \"text\": \"var(--wp--preset--color--ink)\"",
       "property": "--wp--preset--color--ink",
       "owner": "theme",
       "surface": "front-end",
@@ -2053,7 +2053,7 @@
     },
     {
       "path": "theme/styles/editorial.json",
-      "selector_or_context": "lines 65: \"background\": \"var(--wp--preset--color--surface)\",",
+      "selector_or_context": "lines 71: \"background\": \"var(--wp--preset--color--surface)\",",
       "property": "--wp--preset--color--surface",
       "owner": "theme",
       "surface": "front-end",
@@ -2063,7 +2063,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 169: \"border\": { \"radius\": \"var(--wp--custom--radius--md)\" },",
+      "selector_or_context": "lines 203: \"border\": { \"radius\": \"var(--wp--custom--radius--md)\" },",
       "property": "--wp--custom--radius--md",
       "owner": "theme",
       "surface": "front-end",
@@ -2073,7 +2073,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 126: \"color\": \"var(--wp--preset--color--accent)\",",
+      "selector_or_context": "lines 160: \"color\": \"var(--wp--preset--color--accent)\",",
       "property": "--wp--preset--color--accent",
       "owner": "theme",
       "surface": "front-end",
@@ -2083,7 +2083,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 161: \"color\": { \"text\": \"var(--wp--preset--color--accent-dark)\" },",
+      "selector_or_context": "lines 195: \"color\": { \"text\": \"var(--wp--preset--color--accent-dark)\" },",
       "property": "--wp--preset--color--accent-dark",
       "owner": "theme",
       "surface": "front-end",
@@ -2093,7 +2093,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 146: \"text\": \"var(--wp--preset--color--ink)\"",
+      "selector_or_context": "lines 180: \"text\": \"var(--wp--preset--color--ink)\"",
       "property": "--wp--preset--color--ink",
       "owner": "theme",
       "surface": "front-end",
@@ -2103,7 +2103,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 167: \"text\": \"var(--wp--preset--color--inverse)\"",
+      "selector_or_context": "lines 201: \"text\": \"var(--wp--preset--color--inverse)\"",
       "property": "--wp--preset--color--inverse",
       "owner": "theme",
       "surface": "front-end",
@@ -2113,7 +2113,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 153, 162, 166: \"color\": { \"text\": \"var(--wp--preset--color--primary)\" }, | \":hover\": { \"color\": { \"text\": \"var(--wp--preset--color--primary)\" } } | \"background\": \"var(--wp--preset--color--primary)\",",
+      "selector_or_context": "lines 187, 196, 200: \"color\": { \"text\": \"var(--wp--preset--color--primary)\" }, | \":hover\": { \"color\": { \"text\": \"var(--wp--preset--color--primary)\" } } | \"background\": \"var(--wp--preset--color--primary)\",",
       "property": "--wp--preset--color--primary",
       "owner": "theme",
       "surface": "front-end",
@@ -2123,7 +2123,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 179: \"color\": { \"background\": \"var(--wp--preset--color--primary-dark)\" }",
+      "selector_or_context": "lines 213: \"color\": { \"background\": \"var(--wp--preset--color--primary-dark)\" }",
       "property": "--wp--preset--color--primary-dark",
       "owner": "theme",
       "surface": "front-end",
@@ -2133,7 +2133,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 145: \"background\": \"var(--wp--preset--color--surface)\",",
+      "selector_or_context": "lines 179: \"background\": \"var(--wp--preset--color--surface)\",",
       "property": "--wp--preset--color--surface",
       "owner": "theme",
       "surface": "front-end",
@@ -2143,7 +2143,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 141: \"fontFamily\": \"var(--wp--preset--font-family--body)\",",
+      "selector_or_context": "lines 175: \"fontFamily\": \"var(--wp--preset--font-family--body)\",",
       "property": "--wp--preset--font-family--body",
       "owner": "theme",
       "surface": "front-end",
@@ -2153,7 +2153,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 155: \"fontFamily\": \"var(--wp--preset--font-family--heading)\",",
+      "selector_or_context": "lines 189: \"fontFamily\": \"var(--wp--preset--font-family--heading)\",",
       "property": "--wp--preset--font-family--heading",
       "owner": "theme",
       "surface": "front-end",
@@ -2163,7 +2163,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 172, 173: \"top\": \"var(--wp--preset--spacing--30)\", | \"bottom\": \"var(--wp--preset--spacing--30)\",",
+      "selector_or_context": "lines 206, 207: \"top\": \"var(--wp--preset--spacing--30)\", | \"bottom\": \"var(--wp--preset--spacing--30)\",",
       "property": "--wp--preset--spacing--30",
       "owner": "theme",
       "surface": "front-end",
@@ -2173,7 +2173,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 149: \"blockGap\": \"var(--wp--preset--spacing--40)\"",
+      "selector_or_context": "lines 183: \"blockGap\": \"var(--wp--preset--spacing--40)\"",
       "property": "--wp--preset--spacing--40",
       "owner": "theme",
       "surface": "front-end",
@@ -2183,7 +2183,7 @@
     },
     {
       "path": "theme/theme.json",
-      "selector_or_context": "lines 174, 175: \"left\": \"var(--wp--preset--spacing--50)\", | \"right\": \"var(--wp--preset--spacing--50)\"",
+      "selector_or_context": "lines 208, 209: \"left\": \"var(--wp--preset--spacing--50)\", | \"right\": \"var(--wp--preset--spacing--50)\"",
       "property": "--wp--preset--spacing--50",
       "owner": "theme",
       "surface": "front-end",
