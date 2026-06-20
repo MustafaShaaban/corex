@@ -4,7 +4,33 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-20, latest) -- PR #54 marked ready-for-review; blocked on review-merge + M3 nav handoff
+## RESUME HERE (2026-06-20, latest) -- M2 closed (PR #54 merged); Spec 058/M3 blocked on missing nav/footer design handoff
+
+- **Branch/PR:** PR #54 (`spec/057-brand-tokens-logo-system` → `main`) is **MERGED** as merge commit `f9994f8`;
+  `main` fast-forwarded `cee2c7a..f9994f8`. This closure-recording work is on docs branch `docs/close-m2-spec057`
+  (normal project root `C:/wamp64/www/corex`, single worktree, no `.worktrees`). Spec 055 WIP untouched in
+  `stash@{0}`.
+- **M2 closed:** Spec 057 (T001-T090) is merged. `ROADMAP.md` M2 row/section and §17 now record closure; this entry
+  records it in PROGRESS. Remaining M2 follow-up is **env-gated** wp-env/browser evidence (Docker Linux engine
+  absent; Node v22.14.0 < browser-bridge v22.22.0) — recorded honestly, never as PASS.
+- **Release/version:** **owner decision, not made here.** Version is still `0.27.0`; CHANGELOG `[Unreleased]` now
+  carries a factual entry for the merged Spec 057 brand token/logo system. No tag, no version bump, no release was
+  cut. Per the goal, do not invent a version — stop for the owner if a release on M2 closure is wanted.
+- **Company-site readiness goal — order position:** items #1 (close M2) and #2 (merge + record closure) are **done**
+  (merge performed by owner; closure recorded here, pending review of this docs PR). **Item #3 (Spec 058/M3) is
+  BLOCKED.**
+- **BLOCKER — item #3 (Spec 058 / M3 header-nav-mega-footer):** cannot start. `design/handoffs/` holds only
+  `brand-foundation.md`; `design/INVENTORY.md` lists **Navigation** and **Footer** as **`missing`** (high priority,
+  no approval link). ROADMAP §17 forbids creating Spec 058 until the M3 navigation/footer handoff exists. The goal
+  forbids inventing the design/scope. Needs an **owner-approved navigation/footer design handoff** (responsive,
+  states, keyboard/focus/escape/outside-click, sticky/transparent, RTL, reduced-motion, performance) recorded in
+  `design/INVENTORY.md` + `design/handoffs/` — exactly as the brand handoff enabled Spec 057. Items #4-#6
+  (Spec 059/M4, M5 blocks, first `wp corex make:site`) are downstream of #3 and therefore also blocked.
+- **Exact next step (owner):** (a) review/merge this `docs/close-m2-spec057` PR; (b) decide any M2 release/version;
+  and (c) approve and record a navigation/footer design handoff so Spec 058/M3 can begin via the Spec Kit flow.
+
+---
+## RESUME HERE (2026-06-20) -- PR #54 marked ready-for-review; blocked on review-merge + M3 nav handoff
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system` @ `43453ca`; **PR #54 is now READY for review** (no longer
   draft). GitHub: `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`, `reviewDecision: ""` (no human review yet);

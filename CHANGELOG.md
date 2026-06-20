@@ -6,6 +6,17 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **CoreX brand tokens and logo system (spec 057, milestone M2):** canonical `theme.json` color/typography token
+  vocabulary with accessible dark/editorial style variations and RTL/mixed-script typography; a four-file self-hosted
+  font package (Space Grotesk, JetBrains Mono, IBM Plex Sans Arabic) with provenance, `font-display: swap`, and no
+  unmeasured preload; the approved Core X logo package (five SVG variants + provenance manifest); a `brand.json`
+  brand-override validator that enforces complete wholesale list replacement with one-release compatibility aliases;
+  a scoped `--corex-admin-*` admin token adapter loaded only on CoreX admin screens; and updated design-system and
+  branding documentation. Client brandability is preserved — CoreX product identity does not become a hardcoded
+  client-site identity. Merged via PR #54.
+
 ## [0.27.0] — 2026-06-19
 
 ### Added
