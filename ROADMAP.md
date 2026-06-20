@@ -23,7 +23,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 | M1 - Design Inventory and Design-to-Engineering Pipeline | Current design package frozen; handoff intake active | High | Approved Claude Design inventory and handoffs |
 | M2 - CoreX Brand Tokens and Visual Foundation | Closed: Spec 057 (T001-T090) merged via PR #54 (`f9994f8`); env-gated wp-env/browser evidence remains follow-up | Complete | Done; remaining follow-up is env-gated wp-env/browser evidence and an owner release/version decision |
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Spec 058 implemented (US1-US4) on PR #56; env-gated browser evidence outstanding | High | M1, M2 (met) |
-| M4 - Full Company Site Kit v1 | Planned | High | M0, M2, M3; selected M5 blocks |
+| M4 - Full Company Site Kit v1 | Spec 059 core implemented (full v1 page coverage + demo levels + SEO) on PR; M5 section blocks + make:site token inheritance are recorded gaps | High | M0, M2, M3 (met); selected M5 blocks |
 | M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
 | M6 - CoreX Admin Product Experience | Planned | Medium-high | M2 and stable admin contracts |
 | M7 - Forms and Email Experience | Planned | Medium-high | M2 and existing forms/mail foundations |
@@ -389,8 +389,10 @@ Create and implement one reviewed spec at a time:
 2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer System** — implemented (US1-US4) on PR #56; design
    handoff approved/recorded (`design/handoffs/navigation-footer.md`). Next: review/merge + env-gated browser
    evidence.
-3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — do not create until the required
-   M2/M3 contracts identify the first M5 component batch.
+3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — core implemented: `CompanyBlueprint` provides
+   the full v1 page set + demo levels + SEO starter, reusing the existing provisioning. Remaining: the M5 section
+   blocks the kit proved necessary (services/team/case-study/locations grids) and the `make:site` visual-foundation
+   inheritance.
 
 Spec number 056 is unavailable: both `056-dependency-security-remediation` and the already-merged
 `056-design-roadmap-inventory` directory exist. Do not reuse or create another 056 spec. The immediate sequence is

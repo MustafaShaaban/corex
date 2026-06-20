@@ -110,6 +110,18 @@
       ]
     },
     {
+      "path": "docs-app/src/content/docs/design-system/navigation.md",
+      "lines": [
+        45,
+        46,
+        47
+      ],
+      "topics": [
+        "generated-properties",
+        "theme-authority"
+      ]
+    },
+    {
       "path": "docs-app/src/content/docs/design-system/templates.md",
       "lines": [
         25

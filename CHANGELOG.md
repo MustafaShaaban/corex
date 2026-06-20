@@ -8,6 +8,15 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **Company Site Kit v1 page coverage (spec 059, milestone M4):** the `corex-kit-company` `CompanyBlueprint` now
+  provides the full v1 content-page set (Home, About, Services, Single Service, Work, Case Study, Industries, FAQ,
+  Blog, Team, Testimonials, Locations, Contact, Privacy/Terms/Cookie, Maintenance), composed only from registered
+  `corex/*` patterns + the M3 header/footer + core blocks (token-only, RTL, accessible). System surfaces stay on the
+  universal templates. Demo content levels (`minimal`/`standard`/`full`) keep the same structure with varying depth;
+  each page carries editable, plugin-compatible SEO starter metadata. Applied through the existing preview/apply
+  provisioning with safe `reset`/`adopt`/`skip`/`conflict` handling. Section blocks with no dedicated pattern yet
+  (services/team/case-study/locations grids) are the recorded M5 batch. Docs: guides → Company Site Kit v1.
+
 - **Header, mobile navigation, mega menu, and footer system (spec 058, milestone M3):** reusable FSE template parts
   and block patterns — six header variants (`corex/header-*`), four mega menus (`corex/megamenu-*`, native
   `<details>` disclosures), and six footer variants (`corex/footer-*`) — built only from WordPress core blocks and

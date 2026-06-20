@@ -1788,6 +1788,28 @@ the SVGs valid as standalone assets. The generator (`scripts/generate-logo-asset
 reproducible.
 Status: Final.
 
+## #104 -- Spec 059 M4 company kit: extend the blueprint, reuse provisioning, defer section blocks to M5
+Date: 2026-06-21
+Context: M4 needed full company-site page coverage with safe apply, demo levels, and SEO, without a page builder or a
+broad new block library. A kit foundation already exists: `corex-kit-company`'s `CompanyBlueprint` (a pure manifest)
+and `corex-core`'s provisioning (`KitProvisioner`, `ApplyPreview`, `ApplyOutcome`, `PageDisposition` =
+reset/adopt/skip/conflict).
+Decision: (1) **Extend, don't rebuild** — expand `CompanyBlueprint::pages()` to the full v1 content-page set and
+reuse the existing provisioning for preview/apply/conflict; M4 adds no new apply engine. (2) Pages compose only the
+**registered** `corex/*` patterns + the M3 header/footer + core blocks, token-only and i18n; system surfaces
+(404/search/single/archive) stay owned by the universal FSE templates rather than duplicated as pages. (3) **Demo
+levels** are one structure with leveled content depth (`pages($level)`; same page set/section order across
+minimal/standard/full) — not three divergent copies — so the FR-005 parity holds (avoids the wrong-abstraction/
+triple-maintenance trap). (4) **SEO starter** is per-page editable title/description applied as plugin-compatible
+defaults — no SEO engine, no plugin dependency (Principle IX). (5) Pages whose dedicated section block does not exist
+yet (services/team/case-study/locations grids) **reuse an existing pattern now and record the gap** as the M5 batch
+rather than building new blocks in M4 (YAGNI; M5 scope).
+Why: reusing the tested provisioning honours DRY and avoids regressions; a single leveled structure guarantees the
+parity requirement; deferring section blocks keeps M4 bounded and lets the kit's real needs drive the M5 batch. A
+separate recorded gap remains: `make:site` scaffolds a standalone client theme that does not yet inherit M2 tokens /
+M3 parts (`specs/059-company-site-kit/make-site-verification.md`).
+Status: Final.
+
 ## #103 -- Spec 058 M3 navigation: native primitives, theme markup, plugin-registered conditional assets
 Date: 2026-06-20
 Context: M3 needed a reusable header/mega-menu/footer system without a builder, honoring constitution Principle I

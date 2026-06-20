@@ -19,6 +19,7 @@ beforeEach(function () {
     // Blueprint::pages() composes translatable page content.
     Functions\when('__')->returnArg();
     Functions\when('esc_html__')->returnArg();
+    Functions\when('esc_html')->returnArg();
 });
 
 function wizardWithKits(): SetupWizard
