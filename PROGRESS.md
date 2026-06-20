@@ -4,7 +4,46 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-20, latest) -- Spec 057 US4 compatibility + admin adapter complete; final gate next
+## RESUME HERE (2026-06-20, latest) -- Spec 057 final gate T080-T090 PASS; implementation-complete (PR #54 ready)
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 still **draft** (not merged, not marked ready). Normal
+  project root `C:/wamp64/www/corex` is the single active checkout. **Spec 057 T001-T090 are complete.**
+- **Final gate completed this session (T080-T090):**
+  - **Docs (T080-T084):** `docs-app/.../design-system/foundations.md` now documents semantic color roles + modes
+    (dark/editorial style variations), the four-file self-hosted font package (provenance/swap/no-preload), the
+    scoped `--corex-admin-*` admin adapter, and contrast/focus/forced-colors/RTL evidence pointers.
+    `docs-app/.../guides/branding.md` documents complete-list `brand.json` replacement, the incomplete-list
+    validation behavior, aliases, migration, rollback, and product-vs-client separation (the misleading single-slug
+    example was corrected). `plugins/corex-config/README.md` replaces the stale navy/cyan logo with the approved
+    Core X variant table + usage rules (legacy SVG = rollback evidence). `consumer-migration.md` adds the
+    retained/added/aliased/migrated/deprecated mapping (53/10/11/1/0) and the 0.28.0→0.29.0 deprecation window.
+  - **Generator fix:** `scripts/generate-token-inventory.mjs` now derives the fonts/logos blocker status and
+    `evidence_status` from the actual provenance manifests (idempotent + truthful), fixing a latent hardcoded-stale
+    status that broke the `token-inventory.test.js` sync test.
+- **Verification (T086-T090):**
+  - T086: `check-prerequisites.ps1 -Json` resolved Spec 057 + planning docs; `git diff --check` PASS.
+  - T087: focused Theme/Config Pest 101 passed (953 assertions); **full `composer test` 661 passed** (2901
+    assertions).
+  - T088: `lint:css` PASS; **`test:js` 17 suites / 97 tests PASS** (was 1 failing before the generator fix); `build`
+    PASS; **docs-app build PASS (270 pages**, only the pre-existing non-blocking sitemap `site` warning);
+    `verify:dependencies` PASS (composer 0/0, npm 16/16 accepted dev/build exceptions).
+  - T089 (ENVIRONMENT-GATED, not PASS): Docker/wp-env, Playwright/browser-rendered evidence (modes, focus,
+    forced-colors, 200% zoom, RTL, font-network, logo-render) remain unavailable (Node v22.14.0 < browser-bridge
+    v22.22.0; Docker Linux engine absent). Recorded honestly, never as PASS.
+  - T090 guards: clean-code-guard (generator) clean; docs-guard clean (font files, viewBoxes, added roles, and
+    classification counts all verified against source); wp-guard N/A (no WP runtime change this session); test-guard
+    N/A (no test code changed; the generator's sync test now passes).
+- **Status:** Spec 057 is **implementation-complete** — all non-gated final-gate tasks pass, environment gates are
+  honest, and the font/logo asset stories are complete. Per the Phase 7 checkpoint + T090, **PR #54 is ready to be
+  marked ready for review**; left as draft pending owner confirmation (the browser/wp-env evidence remains an
+  explicit env-gated follow-up, not a blocker).
+- **Did not change:** the approved logo/font assets, US1-US4 runtime/token behavior, CHANGELOG, release metadata,
+  Specs 058/059, later milestones. Spec 055 WIP remains untouched in `stash@{0}`.
+- **Exact next step:** owner decision — mark PR #54 ready for review (all final-gate checks pass) and proceed toward
+  merge/release, or first collect the env-gated wp-env/browser evidence. Do not merge until reviewed.
+
+---
+## RESUME HERE (2026-06-20) -- Spec 057 US4 compatibility + admin adapter complete; final gate next
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and **draft** (not merged, not ready).
   Normal project root `C:/wamp64/www/corex` is the single active checkout.

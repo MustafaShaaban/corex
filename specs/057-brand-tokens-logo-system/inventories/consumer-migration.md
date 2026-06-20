@@ -92,3 +92,29 @@ updated to PASS to reflect the landed US3 package.
   duplicate them.
 - T068 (`tests/Fixtures/Theme/brand/existing/`): no current test consumes these fixtures, so they would be dead
   data; rollback/default-retention is covered by the green missing/incomplete `BrandOverrideCompatibilityTest` cases.
+
+---
+
+# Spec 057 Token Classification Mapping (T084)
+
+Source of truth: `inventories/classifications.json` (regenerated from `theme/theme.json` and the live consumer scan).
+
+| Classification | Count | Meaning |
+|---|---|---|
+| retained | 53 | Stable definitions/properties kept unchanged (no slug renamed). |
+| added | 10 | New semantic roles introduced this spec (surface-raised/strong, inverse, overlay, selection/selection-text, focus/mode roles). |
+| aliased | 11 | Legacy generated properties kept as compatibility aliases mapping to a canonical definition. |
+| migrated | 1 | First-party consumer moved to a canonical property (`plugins/corex-config/assets/data.css`: `--wp--preset--font-size--small`). |
+| deprecated | 0 | None removed in this spec. |
+
+**Deprecation window:** active compatibility aliases remain for **at least one minor release** (introduced `0.28.0`,
+removable after `0.29.0`) **and** until their first-party consumer count is zero — only then is an alias marked
+removal-eligible. All 11 current aliases have empty `consumer_paths` and status `active` (not yet removal-eligible).
+
+**Compatibility windows:**
+
+- *Client brand lists* — palette/font arrays replace **wholesale**; a complete array is required (incomplete arrays
+  are reported and the defaults retained, see the US4 evidence above).
+- *Aliases* — one minor release minimum.
+- *Rollback* — restore the complete theme/style arrays and the active aliases together; removing `brand.json`
+  restores defaults cleanly.

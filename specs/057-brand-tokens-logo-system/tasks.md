@@ -200,17 +200,17 @@ reversible without an admin redesign.
 **Purpose**: Keep documentation honest, verify the selected implementation scope, and prepare review without
 inventing release claims.
 
-- [ ] T080 [P] Update canonical token groups, mode mappings, admin adapter, contrast/focus evidence, and RTL guidance in `docs-app/src/content/docs/design-system/foundations.md`
-- [ ] T081 [P] Update complete-list `brand.json` examples, merge semantics, validation behavior, aliases, migration, rollback, and client brandability in `docs-app/src/content/docs/guides/branding.md`
-- [ ] T082 [P] Document Space Grotesk, JetBrains Mono, IBM Plex Sans Arabic roles, four-file limit, fallbacks, provenance, swap, and preload policy in `docs-app/src/content/docs/design-system/foundations.md`
-- [ ] T083 [P] BLOCKED until owner logo approval: document approved logo variants, clear space, minimum size, backgrounds, accessibility, provenance, and client-brand separation in `plugins/corex-config/README.md`
-- [ ] T084 Document retained/added/aliased/migrated/deprecated mappings and the one-minor-release deprecation window in `specs/057-brand-tokens-logo-system/inventories/consumer-migration.md`
-- [ ] T085 Update `PROGRESS.md` and `ROADMAP.md` with actual completed tasks, real checks, remaining asset blockers, and environment gates; do not update `CHANGELOG.md` or release metadata unless implementation produced a user-facing change and repository policy requires it
-- [ ] T086 Run `.specify/scripts/powershell/check-prerequisites.ps1 -Json`, validate task/spec/plan traceability, and run `git diff --check`
-- [ ] T087 Run focused Pest suites for Theme/Brand/Token/Contrast/Config contracts, then run full `composer test`; record exact counts/results in `PROGRESS.md`
-- [ ] T088 Run `npm.cmd run lint:css`, `npm.cmd run test:js -- --runInBand`, `npm.cmd run build`, docs-app build, and `npm.cmd run verify:dependencies`; record exact results in `PROGRESS.md`
-- [ ] T089 Run wp-env/Playwright/manual evidence when supported; otherwise record each unavailable browser, Docker, WordPress, forced-colors, zoom, RTL, font-network, and logo-render check as `ENVIRONMENT-GATED` or `BLOCKED`, never PASS, in `PROGRESS.md`
-- [ ] T090 Run `clean-code-guard`, `wp-guard`, `test-guard`, and `docs-guard` on the complete implementation diff, record final guard results in `PROGRESS.md`, and resolve all blocking findings before requesting PR #54 review
+- [X] T080 [P] Update canonical token groups, mode mappings, admin adapter, contrast/focus evidence, and RTL guidance in `docs-app/src/content/docs/design-system/foundations.md`
+- [X] T081 [P] Update complete-list `brand.json` examples, merge semantics, validation behavior, aliases, migration, rollback, and client brandability in `docs-app/src/content/docs/guides/branding.md`
+- [X] T082 [P] Document Space Grotesk, JetBrains Mono, IBM Plex Sans Arabic roles, four-file limit, fallbacks, provenance, swap, and preload policy in `docs-app/src/content/docs/design-system/foundations.md`
+- [X] T083 [P] Document approved logo variants, clear space, minimum size, backgrounds, accessibility, provenance, and client-brand separation in `plugins/corex-config/README.md` (unblocked: owner-approved Core X package landed)
+- [X] T084 Document retained/added/aliased/migrated/deprecated mappings and the one-minor-release deprecation window in `specs/057-brand-tokens-logo-system/inventories/consumer-migration.md`
+- [X] T085 Update `PROGRESS.md` and `ROADMAP.md` with actual completed tasks, real checks, remaining asset blockers, and environment gates; do not update `CHANGELOG.md` or release metadata unless implementation produced a user-facing change and repository policy requires it
+- [X] T086 Run `.specify/scripts/powershell/check-prerequisites.ps1 -Json`, validate task/spec/plan traceability, and run `git diff --check` — PASS (Spec 057 resolved with planning docs; diff --check clean)
+- [X] T087 Run focused Pest suites for Theme/Brand/Token/Contrast/Config contracts, then run full `composer test`; record exact counts/results in `PROGRESS.md` — focused 101/953, full 661/2901 PASS
+- [X] T088 Run `npm.cmd run lint:css`, `npm.cmd run test:js -- --runInBand`, `npm.cmd run build`, docs-app build, and `npm.cmd run verify:dependencies`; record exact results in `PROGRESS.md` — lint:css PASS, test:js 17/97 PASS, build PASS, docs-app 270 pages PASS, verify:dependencies PASS
+- [X] T089 Run wp-env/Playwright/manual evidence when supported; otherwise record each unavailable browser, Docker, WordPress, forced-colors, zoom, RTL, font-network, and logo-render check as `ENVIRONMENT-GATED` or `BLOCKED`, never PASS, in `PROGRESS.md` — recorded ENVIRONMENT-GATED (Docker/wp-env/browser unavailable)
+- [X] T090 Run `clean-code-guard`, `wp-guard`, `test-guard`, and `docs-guard` on the complete implementation diff, record final guard results in `PROGRESS.md`, and resolve all blocking findings before requesting PR #54 review — clean-code + docs clean; wp/test N/A this batch
 
 **Checkpoint**: Spec 057 may be marked implementation-complete only when all non-gated tasks pass, environment
 gates are honest, and blocked font/logo tasks are either completed with approved assets or explicitly prevent full

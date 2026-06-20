@@ -38,12 +38,54 @@ a recompile (spec 006). This is the single source of truth for the look of a Cor
 Never write a raw hex, px size, font, radius, shadow, or duration in a component — add a token if one is missing
 (constitution Principle V).
 
+## Semantic color roles, modes, and compatibility
+
+The 13 color slugs above are the **canonical brandable roles**. `theme.json` also defines **added semantic roles**
+(surface-raised, surface-strong, inverse, overlay, selection, selection-text) for elevation, overlays, and text
+selection, plus a set of **one-minor-release compatibility aliases** (e.g. `background`, `foreground`, `danger`,
+the `corex-*` legacy names) kept so existing consumers keep resolving during migration. The complete
+retained / added / aliased / migrated classification and the deprecation window live in
+`specs/057-brand-tokens-logo-system/inventories/classifications.json` and `consumer-migration.md`.
+
+**Modes** are WordPress **style variations**, not new tokens: the default is the dark-first base, with `theme/styles/dark.json`
+and `theme/styles/editorial.json` replacing the palette/font arrays only. Each mode ships a **complete** replacement
+list so every semantic role stays defined; the theme remains a logic-free skin.
+
+## Typography & self-hosted fonts
+
+Four roles map to three self-hosted, OFL-licensed families — **no external font CDN**:
+
+| Role | Family | Self-hosted file | Weights |
+|---|---|---|---|
+| Display / heading | Space Grotesk | `space-grotesk-latin-500-700.woff2` | 500–700 |
+| Body | system UI stack | *(none — `system-ui` fallback)* | — |
+| Technical / code | JetBrains Mono | `jetbrains-mono-latin-400-600.woff2` | 400–600 |
+| Arabic (RTL) | IBM Plex Sans Arabic | `ibm-plex-sans-arabic-400.woff2`, `…-600.woff2` | 400, 600 |
+
+The package is capped at **four WOFF2 files**; each declares `font-display: swap`, **no `preload`** (no measured
+need), and a `system-ui` fallback so text is readable before the face loads. Provenance — upstream Google Fonts
+commit, OFL license files, subset tooling, weights, scripts, and sha256 checksums — is recorded in
+`theme/assets/fonts/manifest.json`.
+
+## Admin token adapter
+
+CoreX wp-admin screens read a scoped semantic adapter, `--corex-admin-*` (surface, text, border, action, success,
+warning, error, focus, space, radius), defined in `plugins/corex-core/assets/css/corex-admin-tokens.css`. It is
+**scoped to `.wrap`** (never `:root`/`html`/`body`), carries a `prefers-color-scheme: dark` override, and is
+**registered but never globally enqueued** (handle `corex-admin-tokens`): only CoreX-owned admin styles declare it
+as a dependency, so it loads on CoreX screens and nowhere else. It is the CoreX product chrome, never a client-site
+or global token authority.
+
 ## Guidelines
 
 - **RTL** — style with **logical properties** (`margin-inline-start`, `inset-inline-end`, …) so Arabic layouts
   are correct by default; `postcss-rtlcss` handles edge cases only (Principle VIII).
 - **Accessibility (WCAG 2.2 AA)** — convey state by more than color (icon + text); every interactive element is
-  keyboard-operable with a visible focus ring (the focus token); meet contrast against the surface tokens.
+  keyboard-operable with a visible focus ring (the focus token); meet contrast against the surface tokens. The
+  semantic color and focus pairs are checked against a contrast matrix (4.5:1 normal text, 3:1 large/non-text/focus)
+  and a forced-colors / 200%-zoom / reduced-motion review; the matrices and results live in
+  `specs/057-brand-tokens-logo-system/inventories/accessibility-evidence.md`. WordPress-rendered browser evidence is
+  environment-gated where Docker/wp-env or a compatible browser runtime is unavailable.
 - **Focus states** — use the focus token consistently; never remove an outline without an equivalent visible
   indicator.
 - **Motion** — use the motion tokens; respect `prefers-reduced-motion` (drop non-essential animation).

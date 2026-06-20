@@ -2,17 +2,38 @@
 
 Corex's product identity + (forthcoming) settings/dashboard. Part of the free core.
 
-## Brand identity
+## Brand identity — the Core X logo package
 
-Corex ships a scalable **SVG logo** (`assets/corex-logo.svg`) — navy `#0B1F3B` + cyan `#00C2FF`, a
-layered-core mark with a "Corex" wordmark.
+Corex ships the approved **Core X** product mark as a package of optimized SVGs under `assets/brand/`, with a
+provenance manifest (`assets/brand/logo-manifest.json`: source, owner, OFL rights, approval date, viewBoxes,
+filenames, sha256 checksums). The mark is five rounded 12u modules on a 48×48 grid (3u gutters, 2.5u corner
+radius); four corners use `currentColor` and the center module is CoreX brass `#c9a25e`.
+
+| Variant | File | viewBox | Use |
+|---|---|---|---|
+| Symbol | `corex-symbol.svg` | `0 0 48 48` | Bare mark / favicon / app-icon source (decorative) |
+| Wordmark | `corex-wordmark.svg` | `0 0 2600.5 728` | "Corex" type, brass terminal `x` (named image) |
+| Lockup | `corex-lockup.svg` | `0 0 170.02 48` | Mark + wordmark — the default product logo (named image) |
+| Monochrome | `corex-monochrome.svg` | `0 0 170.02 48` | Single-ink (`currentColor`) for print / forced-colors |
+| Contrast | `corex-contrast.svg` | `0 0 170.02 48` | AA-darkened brass `#ad8643` for light / high-contrast |
+
+**Usage rules:** keep at least one module of clear space on every side; minimum size 16px (favicon) / 24px in-app;
+never recolor, rotate, stretch, or add effects to the mark. On a light background use the contrast variant (AA
+brass); the wordmark glyphs are outlined vector paths (no live font dependency) so the mark renders without the
+Space Grotesk webfont. The legacy navy/cyan `assets/corex-logo.svg` is **retained only as rollback/migration
+evidence**, not approved production artwork.
+
+**Accessibility & client separation:** the bare symbol is decorative (empty `alt`) when adjacent text already
+names the product; the wordmark/lockup are named images (`alt="CoreX"`); a linked brand mark gets an accessible
+name (e.g. "CoreX home"). This is the CoreX **product** identity — it is never imposed on a client site. A per-site
+`brand.logo_url` override always wins, so client sites keep their own identity.
 
 ## Admin branding
 
 `AdminBranding` applies the Corex **product** brand in wp-admin (kept separate from any client site's
 look — client sites stay neutral):
 
-- the **login page** logo (the Corex SVG),
+- the **login page** logo (the Core X lockup, via `brand.logo_url` → the bundled lockup),
 - the login link → the site home (or `brand.login_url`),
 - the **admin footer** → "Powered by Corex" (or `brand.footer_text`).
 

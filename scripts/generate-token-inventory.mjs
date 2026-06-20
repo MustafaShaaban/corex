@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const GENERATED_AT = 'source-controlled';
@@ -572,7 +572,19 @@ const collectAdmin = ( root, consumers ) => {
 	};
 };
 
-const collectClassifications = ( definitions, consumers ) => {
+const collectClassifications = ( definitions, consumers, root ) => {
+	// Asset blocker status is derived from the provenance manifests so the
+	// inventory reflects reality (and stays idempotent) rather than a hardcoded
+	// "planned" string.
+	const fontsReady = existsSync(
+		path.join( root, 'theme/assets/fonts/manifest.json' )
+	);
+	const logosReady = existsSync(
+		path.join(
+			root,
+			'plugins/corex-config/assets/brand/logo-manifest.json'
+		)
+	);
 	const byClassification = ( classification ) =>
 		definitions.filter(
 			( item ) => item.classification === classification
@@ -678,10 +690,15 @@ const collectClassifications = ( definitions, consumers ) => {
 				'restore complete theme/style arrays and active aliases together',
 		},
 		blockers: {
-			fonts: 'BLOCKED until approved WOFF2 files and provenance are recorded (T047-T049)',
-			logos: 'BLOCKED until owner-approved vector package and provenance are recorded (T059-T064)',
+			fonts: fontsReady
+				? 'PASS: approved WOFF2 files and provenance recorded (T047-T049)'
+				: 'BLOCKED until approved WOFF2 files and provenance are recorded (T047-T049)',
+			logos: logosReady
+				? 'PASS: owner-approved vector package and provenance recorded (T059-T064)'
+				: 'BLOCKED until owner-approved vector package and provenance are recorded (T059-T064)',
 		},
-		evidence_status: 'planned',
+		evidence_status:
+			fontsReady && logosReady ? 'implementation-in-progress' : 'planned',
 	};
 };
 
@@ -791,7 +808,8 @@ export function buildInventory( root ) {
 		'admin-and-aliases.json': collectAdmin( root, consumers ),
 		'classifications.json': collectClassifications(
 			definitions,
-			consumers
+			consumers,
+			root
 		),
 	};
 }

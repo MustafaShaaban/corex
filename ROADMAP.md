@@ -21,7 +21,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 |---|---|---|---|
 | M0 - Stabilization, Security, and Release Hygiene | Closed in v0.27.0 | Complete | Environment-gated wp-env/browser/deployment evidence remains follow-up verification |
 | M1 - Design Inventory and Design-to-Engineering Pipeline | Current design package frozen; handoff intake active | High | Approved Claude Design inventory and handoffs |
-| M2 - CoreX Brand Tokens and Visual Foundation | Active; US1-US4 complete (tokens, fonts, logo package, compatibility validator + scoped admin adapter); final gate T080-T090 next | High | Spec 057 final documentation/guard gate |
+| M2 - CoreX Brand Tokens and Visual Foundation | Spec 057 implementation-complete (T001-T090); PR #54 ready for review (env-gated browser evidence outstanding) | High | PR #54 review/merge; env-gated wp-env/browser evidence |
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Design needed | High | M1, M2 |
 | M4 - Full Company Site Kit v1 | Planned | High | M0, M2, M3; selected M5 blocks |
 | M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
@@ -37,12 +37,12 @@ Approved design work moves from design inventory to a focused handoff, then to a
 - **Done:** the core framework foundations, stable-client readiness work, Spec 056 dependency/security remediation,
   CI and CodeQL verification, GitHub branch-protection review, and the repository-side design inventory/handoff
   structure.
-- **Active now:** M2 implementation. Spec 057 US1-US4 are complete (T001-T079): canonical tokens, accessible
+- **Active now:** M2 — Spec 057 is **implementation-complete (T001-T090)**: canonical tokens, accessible
   modes/typography/RTL, the four-file font package, the approved Core X logo package, the brand-override validator,
-  and the scoped `--corex-admin-*` admin adapter; M0 remains closed with the verified v0.27.0 release.
-- **Next:** Spec 057 final gate (T080-T090) — design-system/branding documentation, full test/build/docs-app
-  verification, honest environment-gated evidence, and the final whole-diff guard gate before PR #54 review. No
-  asset blockers remain.
+  the scoped `--corex-admin-*` admin adapter, and the design-system/branding documentation. Full `composer test`
+  661 pass, `test:js` 97 pass, build + docs-app build + `verify:dependencies` PASS. M0 remains closed (v0.27.0).
+- **Next:** PR #54 review (it is ready to mark ready-for-review); collect the env-gated wp-env/browser evidence
+  when Docker + a compatible browser runtime are available. No asset or code blockers remain.
 - **Blocked:** M3 cannot enter engineering without an approved navigation handoff and the reviewed M2 token
   contract. M4 cannot start until the minimum M2/M3 foundations and selected M5 components are ready.
 - **Not authorized:** roadmap presence does not authorize implementation, Pro work, builders, or bulk spec creation.
@@ -125,10 +125,11 @@ accessibility, RTL, performance constraints, and implementation boundaries.
 
 ## 5. M2 - CoreX Brand Tokens and Visual Foundation
 
-**Status:** Active. T001-T079 are complete (US1-US4): canonical tokens, accessible modes/typography/RTL, the
+**Status:** Spec 057 implementation-complete (T001-T090): canonical tokens, accessible modes/typography/RTL, the
 four-file font package, the approved Core X logo package (five SVG variants + provenance manifest), the brand-
-override validator, and the scoped `--corex-admin-*` admin adapter. Only the final documentation/guard gate
-(T080-T090) remains. The legacy navy/cyan SVG is retained only as rollback evidence.
+override validator, the scoped `--corex-admin-*` admin adapter, and the design-system/branding documentation. PR #54
+is ready for review; only environment-gated wp-env/browser evidence remains as explicit follow-up. The legacy
+navy/cyan SVG is retained only as rollback evidence.
 **Outcome:** One accessible, brandable visual foundation shared by front-end, admin product UI, docs, and marketing.
 
 - New CoreX logo system and usage rules.
@@ -378,8 +379,8 @@ These items require later validation and dedicated specs. They must not leak int
 
 Create and implement one reviewed spec at a time:
 
-1. **Spec 057 - Brand Tokens and Logo System** — active; T001-T079 complete (US1-US4: tokens, fonts, logo package,
-   compatibility validator + scoped admin adapter). Next: final gate T080-T090.
+1. **Spec 057 - Brand Tokens and Logo System** — implementation-complete (T001-T090); PR #54 ready for review.
+   Next: review/merge + env-gated wp-env/browser evidence.
 2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer Patterns** — do not create until the M3 handoff and
    M2 token contract are ready.
 3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — do not create until the required
