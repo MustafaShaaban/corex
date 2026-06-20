@@ -4,7 +4,33 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-20, latest) -- Spec 057 final gate T080-T090 PASS; implementation-complete (PR #54 ready)
+## RESUME HERE (2026-06-20, latest) -- PR #54 marked ready-for-review; blocked on review-merge + M3 nav handoff
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system` @ `43453ca`; **PR #54 is now READY for review** (no longer
+  draft). GitHub: `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`, `reviewDecision: ""` (no human review yet);
+  required checks PASS (Lint + headless tests PHP 8.3, CodeQL, CodeQL javascript-typescript). Normal root, single
+  worktree; Spec 055 WIP untouched in `stash@{0}`.
+- **Company-site readiness goal — order position:** item #1 (close M2 / mark PR ready) is **done**. Stopped at the
+  authorized boundaries below; items #3-6 are downstream-blocked.
+- **BLOCKER — item #2 (merge):** the goal forbids an unreviewed merge and no human review exists. Merging Spec 057
+  to `main` is an **owner decision** (review + merge). Do not self-merge. If a release/tag is wanted on M2 closure,
+  the version is **not** decided here (aliases reference 0.28.0, but the release call is the owner's) — stop for
+  owner decision; do not invent a version.
+- **BLOCKER — item #3 (Spec 058 / M3 header-nav-footer):** cannot start. `design/handoffs/` holds only
+  `brand-foundation.md`; `design/INVENTORY.md` lists **Navigation** and **Footer** as **"missing"**, and ROADMAP §17
+  says do not create Spec 058 until the M3 navigation handoff + M2 token contract are ready. Needs an **owner-approved
+  navigation/footer design handoff** (responsive, states, keyboard/focus/escape/outside-click, sticky/transparent,
+  RTL, reduced-motion, performance) recorded in `design/INVENTORY.md` + `design/handoffs/` — like the logo handoff
+  was for Spec 057. Do not invent/trace the design.
+- **Spec 057 status:** implementation-complete (T001-T090). Full `composer test` 661/2901, `test:js` 17/97,
+  `lint:css`, `build`, docs-app 270 pages, `verify:dependencies` all PASS at `43453ca`; browser/wp-env evidence
+  ENVIRONMENT-GATED.
+- **Exact next step (owner):** (a) review + merge PR #54 to `main` (then `git switch main && git pull --ff-only`,
+  record M2 closure, decide any release/version); and (b) approve a navigation/footer design handoff so Spec 058/M3
+  can begin via the Spec Kit flow.
+
+---
+## RESUME HERE (2026-06-20) -- Spec 057 final gate T080-T090 PASS; implementation-complete (PR #54 ready)
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 still **draft** (not merged, not marked ready). Normal
   project root `C:/wamp64/www/corex` is the single active checkout. **Spec 057 T001-T090 are complete.**
