@@ -89,10 +89,10 @@ it( 'leaves clicks inside an open panel alone', () => {
 
 it( 'toggles the transparent header state on scroll', async () => {
 	document.body.innerHTML =
-		'<header data-corex-header="transparent">x</header>';
+		'<header class="corex-header corex-header--transparent">x</header>';
 	load();
 
-	const header = document.querySelector( '[data-corex-header]' );
+	const header = document.querySelector( '.corex-header--transparent' );
 	expect( header.getAttribute( 'data-corex-header-state' ) ).toBe( 'top' );
 
 	Object.defineProperty( window, 'scrollY', { value: 200, configurable: true, writable: true } );

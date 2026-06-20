@@ -57,6 +57,45 @@
 	max-inline-size: 100%;
 }
 
+/* Header variants & states ------------------------------------------- */
+
+/* Corporate top utility bar: subtle surface, small type. */
+.corex-header__topbar {
+	background-color: var(--wp--preset--color--surface-strong);
+	color: var(--wp--preset--color--ink-soft);
+	padding-block: var(--wp--preset--spacing--20);
+}
+
+/* Transparent header overlays a hero and sticks; the script flips the state on
+   scroll so it resolves to a solid, readable background. */
+.corex-header--transparent {
+	position: sticky;
+	inset-block-start: 0;
+	z-index: var(--wp--custom--z--sticky);
+	background-color: transparent;
+}
+
+.corex-header--transparent[data-corex-header-state="scrolled"] {
+	background-color: var(--wp--preset--color--surface);
+	box-shadow: var(--wp--preset--shadow--sm);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+	.corex-header--transparent {
+		transition:
+			background-color var(--wp--custom--motion--duration--base)
+			var(--wp--custom--motion--easing--standard);
+	}
+}
+
+/* Action slots (search, language) align within the actions row. */
+.corex-header__search,
+.corex-header__lang {
+	display: flex;
+	align-items: center;
+}
+
 /* Mega menu (native <details>) --------------------------------------- */
 
 /* The summary is the trigger: hide the marker, keep it focusable. */

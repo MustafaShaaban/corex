@@ -10,8 +10,8 @@
  *     open panel and returns focus to its summary. On narrow viewports the same markup
  *     is an accordion (no hover dependency).
  *
- *   - Transparent/sticky header state: a `[data-corex-header="transparent"]` element
- *     gets `data-corex-header-state="top|scrolled"` toggled on a passive, rAF-throttled
+ *   - Transparent/sticky header state: a `.corex-header--transparent` element gets
+ *     `data-corex-header-state="top|scrolled"` toggled on a passive, rAF-throttled
  *     scroll listener so CSS can resolve a transparent header to a solid, readable one.
  *     The JS only flips state; the visual transition (and its reduced-motion gating)
  *     lives in CSS, so the module is inherently reduced-motion-safe.
@@ -85,7 +85,7 @@
 
 	function initHeaderState( root ) {
 		var header = root.querySelector
-			? root.querySelector( '[data-corex-header="transparent"]' )
+			? root.querySelector( '.corex-header--transparent' )
 			: null;
 		if ( ! header ) {
 			return;
