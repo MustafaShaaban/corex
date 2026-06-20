@@ -29,4 +29,3 @@ therefore changes token references and formatting only; WordPress retains the ex
   window; first-party front-end consumers use canonical roles.
 - The existing admin `small` alias remains intentionally recorded for the later scoped admin-adapter batch.
 - CSS uses logical properties where direction matters; no physical left/right property was introduced.
-
