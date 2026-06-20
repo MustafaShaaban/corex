@@ -8,6 +8,17 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **Header, mobile navigation, mega menu, and footer system (spec 058, milestone M3):** reusable FSE template parts
+  and block patterns — six header variants (`corex/header-*`), four mega menus (`corex/megamenu-*`, native
+  `<details>` disclosures), and six footer variants (`corex/footer-*`) — built only from WordPress core blocks and
+  the M2 brand tokens, registered under a new **CoreX** pattern category. The core navigation block supplies the
+  accessible mobile overlay; a small buildless behavior script adds single-open mega menus, Escape/outside-click
+  close with focus return, and a transparent→solid sticky-header state. Keyboard/focus/Escape/outside-click,
+  WCAG 2.2 AA focus, RTL (logical properties), `prefers-reduced-motion` gating, and a no-JS fallback throughout.
+  Assets load only where a CoreX header/footer renders (Principle VI); three layout-only `theme.json` custom tokens
+  added, no new brand values. No builder, commerce logic, kit pages, or Pro scope. Docs: design-system → Navigation
+  & footer.
+
 - **CoreX brand tokens and logo system (spec 057, milestone M2):** canonical `theme.json` color/typography token
   vocabulary with accessible dark/editorial style variations and RTL/mixed-script typography; a four-file self-hosted
   font package (Space Grotesk, JetBrains Mono, IBM Plex Sans Arabic) with provenance, `font-display: swap`, and no

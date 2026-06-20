@@ -4,7 +4,69 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-20, latest) -- M2 closed (PR #54 merged); Spec 058/M3 blocked on missing nav/footer design handoff
+## RESUME HERE (2026-06-20, latest) -- Spec 058/M3 implementation-complete (US1-US4 + docs + gate); PR #56 ready
+
+- **Branch/PR:** `spec/058-header-mobile-navigation` @ tip; **PR #56** to `main` — all four user stories implemented,
+  tested, guard-clean, pushed. Normal root, single worktree, no `.worktrees`. Spec 055 WIP untouched in `stash@{0}`.
+- **M3 done (US1-US4):** six header variant patterns (`corex/header-*`), four native-`<details>` mega menus
+  (`corex/megamenu-*`), six footer variants (`corex/footer-*`); default header/footer parts; buildless behavior JS
+  (`theme/assets/js/corex-navigation.js`: single-open mega, Escape/outside-click + focus return, sticky/transparent
+  scroll state); token-only `corex-navigation.css`; `Corex\Theme\NavigationServiceProvider` (pattern category +
+  conditional CSS via `wp_enqueue_block_style`, JS via `render_block`); 3 layout-only `theme.json` custom tokens.
+  Core navigation block supplies the mobile-overlay a11y; mega menus + footers usable with no JS.
+- **Final gate:** **full `composer test` 678 pass**; **`test:js` 103 pass (18 suites)**; `npm run build` PASS;
+  **docs-app build 271 pages** (new design-system/navigation page; only the pre-existing sitemap `site` warning);
+  `lint:css` clean; Spec 057 token inventories regenerated in-sync. Guards wp/test/clean-code/docs clean across the
+  branch. `verify:dependencies` not re-run — no dependency changes on this branch.
+- **ENVIRONMENT-GATED (not PASS):** rendered browser evidence — keyboard/focus/Escape/outside-click, RTL mirroring,
+  reduced-motion, 200% zoom, 320px width, sticky/transparent contrast — and wp-env (Docker Linux engine absent;
+  Node v22.14.0 < browser-bridge v22.22.0). Recorded honestly per `quickstart.md` §4.
+- **Docs/decisions:** docs-app design-system → "Navigation & footer"; DECISIONS #103 (native primitives + theme
+  markup / plugin-registered conditional assets); ROADMAP M3 + §17 + CHANGELOG `[Unreleased]` updated.
+- **Company-site readiness goal — order position:** items #1-#2 (M2 closed) and **#3 (Spec 058/M3)** done. **Next is
+  item #4: Spec 059/M4 Full Company Site Kit v1**, which reuses these M3 parts.
+- **Exact next step:** mark **PR #56** ready and obtain review/merge; then start **Spec 059/M4** via the Spec Kit
+  flow (the M4 page coverage in ROADMAP §7), reusing M3 nav/footer + M2 tokens. Collect the env-gated browser
+  evidence when Docker + a compatible browser runtime are available.
+
+---
+## RESUME HERE (2026-06-20) -- Spec 058/M3 unblocked + started; US1 header MVP landed (PR #56 draft)
+
+- **Branch/PR:** `spec/058-header-mobile-navigation` (from `main` @ `39b3f87`); **PR #56 (draft)** open to `main`.
+  Normal project root, single worktree, no `.worktrees`. Spec 055 WIP untouched in `stash@{0}`.
+- **M3 unblocked (owner-approved):** the owner approved authoring the navigation/footer design handoff from the
+  ROADMAP §6 scope + merged M2 tokens (no external design package exists; none invented — the handoff is
+  structural/behavioral). Recorded in `design/handoffs/navigation-footer.md`; `design/INVENTORY.md` + `design/ROADMAP.md`
+  now mark Navigation + Footer **approved**. Owner also directed me to handle all GitHub operations (merges included).
+- **GitHub done:** M2-closure PR #55 merged to `main` (`39b3f87`); M2 is closed/recorded (ROADMAP/PROGRESS/CHANGELOG).
+- **Spec Kit complete (committed on branch):** `spec.md` (US1-US4, 21 FRs), `plan.md` (Constitution Check PASS),
+  `research.md`, `data-model.md`, `contracts/{pattern-registration,token-consumption,interaction-behavior}.md`,
+  `quickstart.md`, `tasks.md` (40 tasks). Agent-context plan pointer → Spec 058.
+- **US1 MVP DONE (committed):** `corex/header-simple` pattern + default header part (site-logo + core `wp:navigation`
+  overlayMenu + CTA); `Corex\Theme\NavigationServiceProvider` (registers `corex` pattern category; conditionally
+  attaches `corex-navigation` CSS to `core/navigation` + `corex/copyright` via `wp_enqueue_block_style`, Principle VI;
+  wired into Boot); 3 layout-only `theme.json` custom tokens (no new brand values); token-driven `corex-navigation.css`.
+  Leans on the core navigation block for the mobile-overlay a11y baseline.
+- **US3 DONE (committed):** six footer variant patterns (`corex/footer-{simple,corporate,saas,newsletter,locations,
+  legal}`) — each a contentinfo `<footer>` ending in the `corex/copyright` legal row; default footer part renders the
+  simple variant; footer CSS section (column gaps, legal divider/links, reflow, focus). `FooterPatternsTest`.
+- **Verification:** Theme Pest **56 pass**; JS `token-inventory` sync **9 pass**; new nav/footer tests green; `php -l`
+  + `theme.json` valid; Spec 057 token inventories regenerated in-sync. Guards **wp/test/clean-code clean**.
+  **ENVIRONMENT-GATED (not PASS):** rendered browser a11y/RTL/reduced-motion/zoom evidence (Docker + browser runtime
+  unavailable). Full `composer test`/`npm test:js`/`build`/docs-app not yet re-run for the whole branch (story-focused).
+- **Remaining on Spec 058/M3 (next):** **US2 mega menu** (4 `corex/megamenu-*` patterns + new buildless
+  `theme/assets/js/corex-navigation.js` disclosure/accordion module with Escape/outside-click/teardown, Jest tests,
+  render-scoped JS enqueue) and **US4** (5 header variant patterns + sticky/transparent header-state in the same JS +
+  action-slot placeholders + CSS), then docs-app foundations/patterns pages, full test/build/guard gate, and
+  PROGRESS/ROADMAP/CHANGELOG before marking **PR #56** ready. Per `tasks.md`; same-file sequencing: `corex-navigation.js`
+  (US2 disclosure → US4 header-state), `corex-navigation.css` already holds header+footer.
+- **Exact next step:** implement Spec 058 **US2** — author `theme/assets/js/corex-navigation.js` (model on the buildless
+  `plugins/corex-core/assets/js/corex-runtime.js` IIFE + `tests/corex-runtime.test.js` jsdom pattern), the four
+  mega-menu patterns, and the render-scoped JS enqueue in `NavigationServiceProvider`; RED→GREEN with Jest + Pest;
+  keep PR #56 draft until the full gate + docs are done.
+
+---
+## RESUME HERE (2026-06-20) -- M2 closed (PR #54 merged); Spec 058/M3 blocked on missing nav/footer design handoff
 
 - **Branch/PR:** PR #54 (`spec/057-brand-tokens-logo-system` → `main`) is **MERGED** as merge commit `f9994f8`;
   `main` fast-forwarded `cee2c7a..f9994f8`. This closure-recording work is on docs branch `docs/close-m2-spec057`

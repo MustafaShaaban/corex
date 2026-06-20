@@ -22,7 +22,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 | M0 - Stabilization, Security, and Release Hygiene | Closed in v0.27.0 | Complete | Environment-gated wp-env/browser/deployment evidence remains follow-up verification |
 | M1 - Design Inventory and Design-to-Engineering Pipeline | Current design package frozen; handoff intake active | High | Approved Claude Design inventory and handoffs |
 | M2 - CoreX Brand Tokens and Visual Foundation | Closed: Spec 057 (T001-T090) merged via PR #54 (`f9994f8`); env-gated wp-env/browser evidence remains follow-up | Complete | Done; remaining follow-up is env-gated wp-env/browser evidence and an owner release/version decision |
-| M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Design needed | High | M1, M2 |
+| M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Spec 058 implemented (US1-US4) on PR #56; env-gated browser evidence outstanding | High | M1, M2 (met) |
 | M4 - Full Company Site Kit v1 | Planned | High | M0, M2, M3; selected M5 blocks |
 | M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
 | M6 - CoreX Admin Product Experience | Planned | Medium-high | M2 and stable admin contracts |
@@ -147,7 +147,11 @@ Implementation must preserve client brandability: CoreX product identity must no
 
 ## 6. M3 - Header, Mobile Navigation, Mega Menu, and Footer System
 
-**Status:** Design needed; high priority.
+**Status:** Spec 058 implemented (US1-US4) on PR #56 (draft → ready): six header variants, four `<details>`-based
+mega menus, six footer variants, the buildless behavior script (single-open/Escape/outside-click/sticky-transparent),
+keyboard/focus/RTL/reduced-motion/no-JS, and conditional asset loading. Full `composer test`/`test:js`/`build`/
+docs-app build pass; rendered browser/RTL/reduced-motion + wp-env evidence remains ENVIRONMENT-GATED. WooCommerce
+navigation/footer deferred to M9.
 **Outcome:** Reusable template parts that cover company, product, docs, and commerce navigation without requiring a builder.
 
 - Header variants: simple company, corporate with top bar, SaaS/product, docs, WooCommerce, transparent hero, minimal landing, and RTL examples.
@@ -382,11 +386,9 @@ Create and implement one reviewed spec at a time:
 
 1. **Spec 057 - Brand Tokens and Logo System** — done: merged via PR #54 (`f9994f8`), M2 closed.
    Remaining follow-up is env-gated wp-env/browser evidence and an owner release/version decision.
-2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer Patterns** — **blocked, not yet creatable.** The M3
-   navigation/footer design handoff does not exist (`design/INVENTORY.md` lists Navigation and Footer as `missing`;
-   `design/handoffs/` holds only `brand-foundation.md`). Per this section, do not create Spec 058 until an
-   owner-approved navigation/footer handoff (responsive, states, keyboard/focus/escape/outside-click,
-   sticky/transparent, RTL, reduced-motion, performance) is recorded — like the brand handoff was for Spec 057.
+2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer System** — implemented (US1-US4) on PR #56; design
+   handoff approved/recorded (`design/handoffs/navigation-footer.md`). Next: review/merge + env-gated browser
+   evidence.
 3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — do not create until the required
    M2/M3 contracts identify the first M5 component batch.
 

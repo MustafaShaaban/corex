@@ -26,6 +26,7 @@ use Corex\Foundation\HttpServiceProvider;
 use Corex\Assets\AssetsServiceProvider;
 use Corex\Forms\FormsServiceProvider;
 use Corex\Security\SecurityModule;
+use Corex\Theme\NavigationServiceProvider;
 use Corex\Theme\ThemeServiceProvider;
 use RuntimeException;
 
@@ -50,6 +51,7 @@ final class Boot
         BlocksServiceProvider::class,
         SecurityModule::class,
         ThemeServiceProvider::class,
+        NavigationServiceProvider::class,
         FormsServiceProvider::class,
         AbilitiesProvider::class,
     ];

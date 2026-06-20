@@ -73,6 +73,7 @@ export default defineConfig({
 						{ label: 'Foundations', slug: 'design-system/foundations' },
 						{ label: 'Components', slug: 'design-system/components' },
 						{ label: 'Patterns', slug: 'design-system/patterns' },
+						{ label: 'Navigation & footer', slug: 'design-system/navigation' },
 						{ label: 'Templates', slug: 'design-system/templates' },
 						{ label: 'Client readiness', slug: 'design-system/client-readiness' },
 						{ label: 'Gap analysis', slug: 'design-system/gap-analysis' },

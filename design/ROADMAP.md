@@ -14,7 +14,9 @@ This file tracks design exploration and approval separately from engineering imp
 
 1. Maintain the design inventory and identify missing states and responsive/RTL behavior.
 2. Use the approved [M2 brand foundation handoff](handoffs/brand-foundation.md) for Spec 057 planning and review.
-3. Approve header, mobile navigation, mega-menu, and footer patterns only after the M2 token contract is reviewed.
+3. Header, mobile navigation, mega-menu, and footer patterns are approved (see
+   [M3 navigation and footer handoff](handoffs/navigation-footer.md)) now that the M2 token contract is reviewed and
+   merged (PR #54). This handoff is the input to Spec 058.
 4. Approve the company kit and the first required component batches.
 5. Continue with admin UI, forms/email, portfolio, WooCommerce, docs, and marketing.
 

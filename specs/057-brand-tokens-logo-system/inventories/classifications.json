@@ -2,9 +2,9 @@
   "generated_at": "source-controlled",
   "authority": "theme/theme.json",
   "summary": {
-    "definitions": 74,
-    "consumer_records": 217,
-    "retained": 53,
+    "definitions": 77,
+    "consumer_records": 260,
+    "retained": 56,
     "added": 10,
     "aliased": 11,
     "migration_batches": 1,
@@ -162,6 +162,18 @@
       "status": "retained-pending-contract-tests"
     },
     {
+      "id": "header.height",
+      "generated_property": "--wp--custom--header--height",
+      "source_path": "theme/theme.json#settings.custom.header.height",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "header.heightCompact",
+      "generated_property": "--wp--custom--header--height-compact",
+      "source_path": "theme/theme.json#settings.custom.header.heightCompact",
+      "status": "retained-pending-contract-tests"
+    },
+    {
       "id": "layout.contentSize",
       "generated_property": "--wp--style--global--content-size",
       "source_path": "theme/theme.json#settings.layout.contentSize",
@@ -201,6 +213,12 @@
       "id": "motion.easing.standard",
       "generated_property": "--wp--custom--motion--easing--standard",
       "source_path": "theme/theme.json#settings.custom.motion.easing.standard",
+      "status": "retained-pending-contract-tests"
+    },
+    {
+      "id": "nav.breakpoint",
+      "generated_property": "--wp--custom--nav--breakpoint",
+      "source_path": "theme/theme.json#settings.custom.nav.breakpoint",
       "status": "retained-pending-contract-tests"
     },
     {
