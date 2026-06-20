@@ -13,7 +13,26 @@
                 { "slug": "surface-alt", "color": "#F2ECDF", "name": "Surface alt" },
                 { "slug": "border", "color": "#E0D8C8", "name": "Border" },
                 { "slug": "ink", "color": "#1A1A1A", "name": "Ink" },
-                { "slug": "ink-soft", "color": "#5C564C", "name": "Ink soft" }
+                { "slug": "ink-soft", "color": "#5C564C", "name": "Ink soft" },
+                { "slug": "success", "color": "#286C3C", "name": "Success" },
+                { "slug": "warning", "color": "#8A5A00", "name": "Warning" },
+                { "slug": "error", "color": "#A33E2A", "name": "Error" },
+                { "slug": "info", "color": "#345D8C", "name": "Info" },
+                { "slug": "inverse", "color": "#FFFFFF", "name": "Inverse text" },
+                { "slug": "overlay", "color": "rgba(26, 26, 26, 0.72)", "name": "Overlay" },
+                { "slug": "selection", "color": "#F1C9BE", "name": "Selection" },
+                { "slug": "selection-text", "color": "#1A1A1A", "name": "Selection text" },
+                { "slug": "surface-raised", "color": "#FFFDF8", "name": "Raised surface" },
+                { "slug": "surface-strong", "color": "#E8DFCF", "name": "Strong surface" },
+                { "slug": "background", "color": "#FBF8F1", "name": "Background (compatibility)" },
+                { "slug": "foreground", "color": "#1A1A1A", "name": "Foreground (compatibility)" },
+                { "slug": "danger", "color": "#A33E2A", "name": "Danger (compatibility)" },
+                { "slug": "corex-danger", "color": "#A33E2A", "name": "CoreX danger (compatibility)" },
+                { "slug": "corex-info", "color": "#345D8C", "name": "CoreX info (compatibility)" },
+                { "slug": "corex-primary", "color": "#1A1A1A", "name": "CoreX primary (compatibility)" },
+                { "slug": "corex-success", "color": "#286C3C", "name": "CoreX success (compatibility)" },
+                { "slug": "corex-warning", "color": "#8A5A00", "name": "CoreX warning (compatibility)" },
+                { "slug": "white", "color": "#FFFFFF", "name": "White (compatibility)" }
             ]
         },
         "typography": {
@@ -22,6 +41,21 @@
                     "slug": "heading",
                     "name": "Heading",
                     "fontFamily": "Georgia, 'Times New Roman', serif"
+                },
+                {
+                    "slug": "arabic",
+                    "name": "Arabic",
+                    "fontFamily": "'Noto Sans Arabic', system-ui, sans-serif"
+                },
+                {
+                    "slug": "body",
+                    "name": "Body",
+                    "fontFamily": "system-ui, sans-serif"
+                },
+                {
+                    "slug": "mono",
+                    "name": "Technical",
+                    "fontFamily": "ui-monospace, 'Cascadia Code', 'Courier New', monospace"
                 }
             ]
         }

@@ -17,8 +17,12 @@ it('retains every inventoried stable token slug during migration', function () {
     $retained = ThemeContract::json(
         'specs/057-brand-tokens-logo-system/inventories/classifications.json',
     )['retained'];
+    $retainedDefinitions = array_values(array_filter(
+        $definitions,
+        static fn (array $definition): bool => $definition['classification'] === 'retained',
+    ));
 
-    expect(array_column($retained, 'id'))->toEqualCanonicalizing(array_column($definitions, 'id'));
+    expect(array_column($retained, 'id'))->toEqualCanonicalizing(array_column($retainedDefinitions, 'id'));
 });
 
 it('keeps every planned legacy alias functional for the compatibility window', function () {

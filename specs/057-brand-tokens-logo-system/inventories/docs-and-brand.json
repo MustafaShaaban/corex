@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-19T23:37:51+03:00",
+  "generated_at": "source-controlled",
   "actual_brand_json_files": [],
   "runtime_contract": {
     "resolver": "plugins/corex-core/src/Theme/BrandResolver.php",
@@ -289,7 +289,7 @@
         "malformed",
         "missing"
       ],
-      "status": "planned-T016"
+      "status": "implemented-T016"
     }
   ]
 }

@@ -77,23 +77,23 @@ definition or active alias; root build succeeds; component layout/behavior remai
 
 ### Tests for User Story 1
 
-- [ ] T026 [US1] Run `tests/Unit/Theme/TokenInventoryTest.php`, `TokenConsumerContractTest.php`, and `ModeMappingTest.php` and preserve the RED evidence from Phase 2 before editing `theme/theme.json`
-- [ ] T027 [P] [US1] Add deterministic inventory regeneration/drift tests for `scripts/generate-token-inventory.mjs` in `tests/token-inventory.test.js`
+- [x] T026 [US1] Run `tests/Unit/Theme/TokenInventoryTest.php`, `TokenConsumerContractTest.php`, and `ModeMappingTest.php` and preserve the RED evidence from Phase 2 before editing `theme/theme.json`
+- [x] T027 [P] [US1] Add deterministic inventory regeneration/drift tests for `scripts/generate-token-inventory.mjs` in `tests/token-inventory.test.js`
 
 ### Implementation for User Story 1
 
-- [ ] T028 [US1] Implement deterministic definition/variation/generated-name/consumer scanning in `scripts/generate-token-inventory.mjs` and regenerate `specs/057-brand-tokens-logo-system/inventories/definitions.json`, `variations.json`, `generated-properties.json`, `consumers.json`, `docs-and-brand.json`, `admin-and-aliases.json`, and `classifications.json`
-- [ ] T029 [US1] Add only approved missing semantic roles and compatibility aliases while retaining stable slugs in `theme/theme.json`
-- [ ] T030 [US1] Complete default/light semantic mappings, element mappings, border/focus/radius/spacing/shadow/motion/z roles, and WordPress-generated property coverage in `theme/theme.json`
-- [ ] T031 [US1] Replace the partial palette/font lists with a complete dark-first mapping in `theme/styles/dark.json`
-- [ ] T032 [US1] Preserve editorial compatibility and complete required replacement arrays in `theme/styles/editorial.json`
-- [ ] T033 [P] [US1] Migrate undefined or semantically incorrect references in `plugins/corex-blocks/src/blocks/entity-field/style.scss`, `plugins/corex-forms/src/Block/blocks/corex-form/style.scss`, and `plugins/corex-core/assets/css/corex-runtime.css`
-- [ ] T034 [P] [US1] Migrate canonical references without layout changes in `addons/corex-ui/assets/block-styles.css` and `addons/corex-ui/src/Blocks/accordion/style.scss`, `alert/style.scss`, `badge/style.scss`, `breadcrumbs/style.scss`, `copyright/style.scss`, `cta/style.scss`, `gallery/style.scss`, `hero/style.scss`, `modal/style.scss`, `posts/style.scss`, `pricing/style.scss`, `stat/style.scss`, `tabs/style.scss`, `team/style.scss`, and `testimonial/style.scss`
-- [ ] T035 [P] [US1] Migrate canonical references without layout changes in `addons/corex-careers/blocks/jobs/style.scss` and `addons/corex-kit-portfolio/src/Blocks/projects/style.scss`
-- [ ] T036 [US1] Regenerate `specs/057-brand-tokens-logo-system/inventories/definitions.json`, `generated-properties.json`, `consumers.json`, and `classifications.json` and prove zero undefined production references, duplicate authorities, or unknown classifications
-- [ ] T037 [US1] Verify every migrated block keeps its existing `block.json`/registered conditional asset behavior and record evidence in `specs/057-brand-tokens-logo-system/inventories/consumer-migration.md`
-- [ ] T038 [US1] Run focused Pest token/mode/consumer tests, `npm.cmd run test:js -- --runInBand`, `npm.cmd run build`, and `npm.cmd run lint:css`; record exact GREEN results in `specs/057-brand-tokens-logo-system/inventories/baseline.md`
-- [ ] T039 [US1] Run `clean-code-guard`, `wp-guard`, and `test-guard` on the US1 diff, resolve all blocking findings, and record guard outcomes in `specs/057-brand-tokens-logo-system/inventories/baseline.md`
+- [x] T028 [US1] Implement deterministic definition/variation/generated-name/consumer scanning in `scripts/generate-token-inventory.mjs` and regenerate `specs/057-brand-tokens-logo-system/inventories/definitions.json`, `variations.json`, `generated-properties.json`, `consumers.json`, `docs-and-brand.json`, `admin-and-aliases.json`, and `classifications.json`
+- [x] T029 [US1] Add only approved missing semantic roles and compatibility aliases while retaining stable slugs in `theme/theme.json`
+- [x] T030 [US1] Complete default/light semantic mappings, element mappings, border/focus/radius/spacing/shadow/motion/z roles, and WordPress-generated property coverage in `theme/theme.json`
+- [x] T031 [US1] Replace the partial palette/font lists with a complete dark-first mapping in `theme/styles/dark.json`
+- [x] T032 [US1] Preserve editorial compatibility and complete required replacement arrays in `theme/styles/editorial.json`
+- [x] T033 [P] [US1] Migrate undefined or semantically incorrect references in `plugins/corex-blocks/src/blocks/entity-field/style.scss`, `plugins/corex-forms/src/Block/blocks/corex-form/style.scss`, and `plugins/corex-core/assets/css/corex-runtime.css`
+- [x] T034 [P] [US1] Migrate canonical references without layout changes in `addons/corex-ui/assets/block-styles.css` and `addons/corex-ui/src/Blocks/accordion/style.scss`, `alert/style.scss`, `badge/style.scss`, `breadcrumbs/style.scss`, `copyright/style.scss`, `cta/style.scss`, `gallery/style.scss`, `hero/style.scss`, `modal/style.scss`, `posts/style.scss`, `pricing/style.scss`, `stat/style.scss`, `tabs/style.scss`, `team/style.scss`, and `testimonial/style.scss`
+- [x] T035 [P] [US1] Migrate canonical references without layout changes in `addons/corex-careers/blocks/jobs/style.scss` and `addons/corex-kit-portfolio/src/Blocks/projects/style.scss`
+- [x] T036 [US1] Regenerate `specs/057-brand-tokens-logo-system/inventories/definitions.json`, `generated-properties.json`, `consumers.json`, and `classifications.json` and prove zero undefined production references, duplicate authorities, or unknown classifications
+- [x] T037 [US1] Verify every migrated block keeps its existing `block.json`/registered conditional asset behavior and record evidence in `specs/057-brand-tokens-logo-system/inventories/consumer-migration.md`
+- [x] T038 [US1] Run focused Pest token/mode/consumer tests, `npm.cmd run test:js -- --runInBand`, `npm.cmd run build`, and `npm.cmd run lint:css`; record exact GREEN results in `specs/057-brand-tokens-logo-system/inventories/baseline.md`
+- [x] T039 [US1] Run `clean-code-guard`, `wp-guard`, and `test-guard` on the US1 diff, resolve all blocking findings, and record guard outcomes in `specs/057-brand-tokens-logo-system/inventories/baseline.md`
 
 **Checkpoint**: The canonical token foundation is independently testable. Font/logo/admin/brand compatibility work
 is not required for this MVP checkpoint.

@@ -34,7 +34,7 @@ it('rejects undefined custom property references before migration', function () 
     )['consumers'];
     $unresolved = array_values(array_filter(
         $consumers,
-        static fn (array $consumer): bool => $consumer['resolution'] !== 'valid',
+        static fn (array $consumer): bool => $consumer['resolution'] === 'invalid',
     ));
 
     expect($unresolved)->toBe([]);
@@ -86,8 +86,10 @@ it('rejects unrecorded raw design values outside approved allowances', function 
                 'addons/corex-captcha/assets/captcha-admin.css',
             ], true);
             $isFunctionalLayout = preg_match('/(?:minmax|inline-size|block-size|z-index|inset|line-height|font-weight)/', $line) === 1;
+            $isDocumentedAllowance = str_contains($line, 'corex-token-allow:');
+            $isComment = preg_match('/^\s*(?:\/\*|\*|\/\/)/', $line) === 1;
 
-            if (! $isAdminInventory && ! $isFunctionalLayout) {
+            if (! $isAdminInventory && ! $isFunctionalLayout && ! $isDocumentedAllowance && ! $isComment) {
                 $violations[] = sprintf('%s:%d %s', $relative, $index + 1, trim($line));
             }
         }

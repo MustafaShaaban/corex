@@ -1,9 +1,12 @@
+/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+
 /**
  * Corex runtime — loading + status surfaces (spec 043). Token-only with admin-palette
  * fallbacks (the runtime also renders in wp-admin, where Corex theme tokens are not
  * loaded — same approach as the Insights cards). Logical properties → RTL-correct by
  * default. The spinner borrows currentColor, so it never hardcodes a brand colour.
  */
+/* stylelint-enable @stylistic/max-line-length */
 
 .corex-is-loading {
 	position: relative;
@@ -13,36 +16,38 @@
 	display: inline-block;
 	inline-size: 1em;
 	block-size: 1em;
-	margin-inline-start: var(--wp--preset--spacing--20, 0.5rem);
-	border: 2px solid currentColor;
+	margin-inline-start: var(--wp--preset--spacing--20);
+	border: var(--wp--custom--focus--width) solid currentcolor;
 	border-block-start-color: transparent;
 	border-radius: 50%;
 	vertical-align: middle;
-	animation: corex-spin 0.6s linear infinite;
+	animation: corex-spin var(--wp--custom--motion--duration--slow) linear infinite;
 }
 
 @keyframes corex-spin {
+
 	to {
 		transform: rotate(360deg);
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
+
 	.corex-spinner {
-		animation-duration: 1.6s;
+		animation-duration: calc(var(--wp--custom--motion--duration--slow) * 4);
 	}
 }
 
 .corex-form__status {
-	margin-block-start: var(--wp--preset--spacing--20, 0.5rem);
+	margin-block-start: var(--wp--preset--spacing--20);
 }
 
 .corex-form__status.is-error {
-	color: var(--wp--preset--color--corex-danger, #d63638);
+	color: var(--wp--preset--color--error);
 }
 
 .corex-form__status.is-success {
-	color: var(--wp--preset--color--corex-success, #00a32a);
+	color: var(--wp--preset--color--success);
 }
 
 .corex-form__overlay {
@@ -51,6 +56,6 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: var(--wp--preset--color--background, rgba(255, 255, 255, 0.7));
+	background: var(--wp--preset--color--surface);
 	opacity: 0.7;
 }

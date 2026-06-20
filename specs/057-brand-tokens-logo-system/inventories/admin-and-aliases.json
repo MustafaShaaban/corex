@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-19T23:37:51+03:00",
+  "generated_at": "source-controlled",
   "admin_files": [
     "plugins/corex-config/assets/control-panel.css",
     "plugins/corex-config/assets/data.css",
@@ -35,231 +35,231 @@
   "fallback_chains": [
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 9,
+      "line": 12,
       "property": "--wp--preset--spacing--30",
       "fallback": "1rem",
       "context": "margin-block: var(--wp--preset--spacing--30, 1rem);"
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 13,
+      "line": 16,
       "property": "--wp--preset--spacing--30",
       "fallback": "1rem",
       "context": "padding: var(--wp--preset--spacing--30, 1rem);"
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 14,
+      "line": 17,
       "property": "--wp--preset--spacing--30",
       "fallback": "1rem",
       "context": "margin-block-end: var(--wp--preset--spacing--30, 1rem);"
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 18,
+      "line": 21,
       "property": "--wp--custom--radius--md",
       "fallback": "6px",
       "context": "border-radius: var(--wp--custom--radius--md, 6px);"
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 26,
+      "line": 29,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.5rem",
       "context": "margin-block-start: var(--wp--preset--spacing--20, 0.5rem);"
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 27,
+      "line": 30,
       "property": "--wp--preset--spacing--40",
       "fallback": "1.5rem",
       "context": "padding-inline-start: var(--wp--preset--spacing--40, 1.5rem);"
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 34,
+      "line": 37,
       "property": "--wp--preset--spacing--30",
       "fallback": "1rem",
       "context": "gap: var(--wp--preset--spacing--30, 1rem);"
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 38,
+      "line": 41,
       "property": "--wp--preset--spacing--30",
       "fallback": "1rem",
       "context": "padding: var(--wp--preset--spacing--30, 1rem);"
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 41,
+      "line": 44,
       "property": "--wp--custom--radius--md",
       "fallback": "6px",
       "context": "border-radius: var(--wp--custom--radius--md, 6px);"
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 61,
+      "line": 64,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.5rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.5rem);"
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 95,
+      "line": 98,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.5rem",
       "context": "margin-block-start: var(--wp--preset--spacing--20, 0.5rem);"
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 13,
+      "line": 16,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.5rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.5rem);"
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 14,
+      "line": 17,
       "property": "--wp--preset--spacing--30",
       "fallback": "1rem",
       "context": "margin-block: var(--wp--preset--spacing--30, 1rem);"
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 28,
+      "line": 31,
       "property": "--wp--preset--font-size--small",
       "fallback": "0.8125rem",
       "context": "font-size: var(--wp--preset--font-size--small, 0.8125rem);"
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 52,
+      "line": 55,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.5rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.5rem);"
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 58,
+      "line": 61,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.5rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.5rem);"
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 59,
+      "line": 62,
       "property": "--wp--preset--spacing--30",
       "fallback": "1rem",
       "context": "margin-block-start: var(--wp--preset--spacing--30, 1rem);"
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 67,
+      "line": 70,
       "property": "--wp--preset--spacing--30",
       "fallback": "1rem",
       "context": "padding-block: var(--wp--preset--spacing--30, 1rem);"
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 72,
+      "line": 76,
       "property": "--wp--preset--spacing--30",
       "fallback": "1rem",
       "context": "margin-block: var(--wp--preset--spacing--30, 1rem);"
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 90,
+      "line": 95,
       "property": "--wp--preset--spacing--40",
       "fallback": "1.5rem",
       "context": "padding: var(--wp--preset--spacing--40, 1.5rem);"
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 98,
+      "line": 103,
       "property": "--wp--preset--spacing--30",
       "fallback": "1rem",
       "context": "margin-block-end: var(--wp--preset--spacing--30, 1rem);"
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 106,
+      "line": 111,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.5rem",
       "context": "padding-block: var(--wp--preset--spacing--20, 0.5rem);"
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 8,
+      "line": 11,
       "property": "--wp--preset--spacing--40",
       "fallback": "1.25rem",
       "context": "gap: var(--wp--preset--spacing--40, 1.25rem);"
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 9,
+      "line": 12,
       "property": "--wp--preset--spacing--30",
       "fallback": "1rem",
       "context": "margin-block-start: var(--wp--preset--spacing--30, 1rem);"
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 14,
+      "line": 17,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.5rem",
       "context": "padding: var(--wp--preset--spacing--20, 0.5rem);"
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 23,
+      "line": 26,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.75rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.75rem);"
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 24,
+      "line": 27,
       "property": "--wp--preset--spacing--40",
       "fallback": "1.25rem",
       "context": "padding: var(--wp--preset--spacing--40, 1.25rem);"
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 27,
+      "line": 30,
       "property": "--wp--custom--radius--md",
       "fallback": "8px",
       "context": "border-radius: var(--wp--custom--radius--md, 8px);"
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 47,
+      "line": 50,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.75rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.75rem);"
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 88,
+      "line": 91,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.75rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.75rem);"
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 103,
+      "line": 106,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.75rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.75rem);"
     },
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
-      "line": 10,
+      "line": 13,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.5rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.5rem);"
     },
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
-      "line": 11,
+      "line": 14,
       "property": "--wp--preset--spacing--20",
       "fallback": "0.5rem",
       "context": "margin-block-start: var(--wp--preset--spacing--20, 0.5rem);"
@@ -268,7 +268,7 @@
   "raw_values": [
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 9,
+      "line": 12,
       "value": "1rem",
       "context": "margin-block: var(--wp--preset--spacing--30, 1rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -276,7 +276,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 13,
+      "line": 16,
       "value": "1rem",
       "context": "padding: var(--wp--preset--spacing--30, 1rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -284,7 +284,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 14,
+      "line": 17,
       "value": "1rem",
       "context": "margin-block-end: var(--wp--preset--spacing--30, 1rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -292,7 +292,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 15,
+      "line": 18,
       "value": "#fff",
       "context": "background: #fff;",
       "classification": "admin-fallback-migration-candidate",
@@ -300,7 +300,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 16,
+      "line": 19,
       "value": "1px",
       "context": "border: 1px solid #dcdcde;",
       "classification": "admin-fallback-migration-candidate",
@@ -308,7 +308,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 16,
+      "line": 19,
       "value": "#dcdcde",
       "context": "border: 1px solid #dcdcde;",
       "classification": "admin-fallback-migration-candidate",
@@ -316,7 +316,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 17,
+      "line": 20,
       "value": "4px",
       "context": "border-inline-start: 4px solid #2271b1;",
       "classification": "admin-fallback-migration-candidate",
@@ -324,7 +324,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 17,
+      "line": 20,
       "value": "#2271b1",
       "context": "border-inline-start: 4px solid #2271b1;",
       "classification": "admin-fallback-migration-candidate",
@@ -332,7 +332,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 18,
+      "line": 21,
       "value": "6px",
       "context": "border-radius: var(--wp--custom--radius--md, 6px);",
       "classification": "admin-fallback-migration-candidate",
@@ -340,7 +340,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 22,
+      "line": 25,
       "value": "#00a32a",
       "context": "border-inline-start-color: #00a32a;",
       "classification": "admin-fallback-migration-candidate",
@@ -348,7 +348,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 26,
+      "line": 29,
       "value": "0.5rem",
       "context": "margin-block-start: var(--wp--preset--spacing--20, 0.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -356,7 +356,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 27,
+      "line": 30,
       "value": "1.5rem",
       "context": "padding-inline-start: var(--wp--preset--spacing--40, 1.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -364,7 +364,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 33,
+      "line": 36,
       "value": "18rem",
       "context": "grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));",
       "classification": "functional-layout-allowance",
@@ -372,7 +372,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 34,
+      "line": 37,
       "value": "1rem",
       "context": "gap: var(--wp--preset--spacing--30, 1rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -380,7 +380,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 38,
+      "line": 41,
       "value": "1rem",
       "context": "padding: var(--wp--preset--spacing--30, 1rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -388,7 +388,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 39,
+      "line": 42,
       "value": "#fff",
       "context": "background: #fff;",
       "classification": "admin-fallback-migration-candidate",
@@ -396,7 +396,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 40,
+      "line": 43,
       "value": "1px",
       "context": "border: 1px solid #dcdcde;",
       "classification": "admin-fallback-migration-candidate",
@@ -404,7 +404,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 40,
+      "line": 43,
       "value": "#dcdcde",
       "context": "border: 1px solid #dcdcde;",
       "classification": "admin-fallback-migration-candidate",
@@ -412,7 +412,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 41,
+      "line": 44,
       "value": "6px",
       "context": "border-radius: var(--wp--custom--radius--md, 6px);",
       "classification": "admin-fallback-migration-candidate",
@@ -420,7 +420,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 42,
+      "line": 45,
       "value": "4px",
       "context": "border-inline-start-width: 4px;",
       "classification": "admin-fallback-migration-candidate",
@@ -428,7 +428,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 46,
+      "line": 49,
       "value": "#00a32a",
       "context": "border-inline-start-color: #00a32a;",
       "classification": "admin-fallback-migration-candidate",
@@ -436,7 +436,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 50,
+      "line": 53,
       "value": "#dba617",
       "context": "border-inline-start-color: #dba617;",
       "classification": "admin-fallback-migration-candidate",
@@ -444,7 +444,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 54,
+      "line": 57,
       "value": "#d63638",
       "context": "border-inline-start-color: #d63638;",
       "classification": "admin-fallback-migration-candidate",
@@ -452,7 +452,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 61,
+      "line": 64,
       "value": "0.5rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -460,7 +460,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 71,
+      "line": 74,
       "value": "0.25rem",
       "context": "gap: 0.25rem;",
       "classification": "admin-fallback-migration-candidate",
@@ -468,7 +468,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 72,
+      "line": 75,
       "value": "0.8em",
       "context": "font-size: 0.8em;",
       "classification": "admin-fallback-migration-candidate",
@@ -476,7 +476,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 77,
+      "line": 80,
       "value": "1.1em",
       "context": "font-size: 1.1em;",
       "classification": "admin-fallback-migration-candidate",
@@ -484,7 +484,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 78,
+      "line": 81,
       "value": "1.1em",
       "context": "inline-size: 1.1em;",
       "classification": "functional-layout-allowance",
@@ -492,7 +492,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 79,
+      "line": 82,
       "value": "1.1em",
       "context": "block-size: 1.1em;",
       "classification": "functional-layout-allowance",
@@ -500,7 +500,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 83,
+      "line": 86,
       "value": "#00a32a",
       "context": "color: #00a32a;",
       "classification": "admin-fallback-migration-candidate",
@@ -508,7 +508,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 87,
+      "line": 90,
       "value": "#b26200",
       "context": "color: #b26200;",
       "classification": "admin-fallback-migration-candidate",
@@ -516,7 +516,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 91,
+      "line": 94,
       "value": "#d63638",
       "context": "color: #d63638;",
       "classification": "admin-fallback-migration-candidate",
@@ -524,7 +524,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 95,
+      "line": 98,
       "value": "0.5rem",
       "context": "margin-block-start: var(--wp--preset--spacing--20, 0.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -532,7 +532,7 @@
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",
-      "line": 96,
+      "line": 99,
       "value": "#50575e",
       "context": "color: #50575e;",
       "classification": "admin-fallback-migration-candidate",
@@ -540,7 +540,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 13,
+      "line": 16,
       "value": "0.5rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -548,7 +548,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 14,
+      "line": 17,
       "value": "1rem",
       "context": "margin-block: var(--wp--preset--spacing--30, 1rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -556,7 +556,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 18,
+      "line": 21,
       "value": "16rem",
       "context": "min-inline-size: 16rem;",
       "classification": "functional-layout-allowance",
@@ -564,7 +564,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 27,
+      "line": 30,
       "value": "#646970",
       "context": "color: #646970;",
       "classification": "admin-fallback-migration-candidate",
@@ -572,7 +572,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 28,
+      "line": 31,
       "value": "0.8125rem",
       "context": "font-size: var(--wp--preset--font-size--small, 0.8125rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -580,7 +580,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 34,
+      "line": 37,
       "value": "0.25rem",
       "context": "gap: 0.25rem;",
       "classification": "admin-fallback-migration-candidate",
@@ -588,7 +588,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 46,
+      "line": 49,
       "value": "2px",
       "context": "outline: 2px solid #2271b1;",
       "classification": "admin-fallback-migration-candidate",
@@ -596,7 +596,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 46,
+      "line": 49,
       "value": "#2271b1",
       "context": "outline: 2px solid #2271b1;",
       "classification": "admin-fallback-migration-candidate",
@@ -604,7 +604,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 47,
+      "line": 50,
       "value": "2px",
       "context": "outline-offset: 2px;",
       "classification": "admin-fallback-migration-candidate",
@@ -612,7 +612,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 52,
+      "line": 55,
       "value": "0.5rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -620,7 +620,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 58,
+      "line": 61,
       "value": "0.5rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -628,7 +628,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 59,
+      "line": 62,
       "value": "1rem",
       "context": "margin-block-start: var(--wp--preset--spacing--30, 1rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -636,7 +636,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 66,
+      "line": 69,
       "value": "0.5rem",
       "context": "gap: 0.5rem;",
       "classification": "admin-fallback-migration-candidate",
@@ -644,7 +644,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 67,
+      "line": 70,
       "value": "1rem",
       "context": "padding-block: var(--wp--preset--spacing--30, 1rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -652,7 +652,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 68,
+      "line": 71,
       "value": "#646970",
       "context": "color: #646970;",
       "classification": "admin-fallback-migration-candidate",
@@ -660,7 +660,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 72,
+      "line": 76,
       "value": "1rem",
       "context": "margin-block: var(--wp--preset--spacing--30, 1rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -668,7 +668,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 79,
+      "line": 84,
       "value": "rgba(0, 0, 0, 0.4)",
       "context": "background: rgba(0, 0, 0, 0.4);",
       "classification": "admin-fallback-migration-candidate",
@@ -676,7 +676,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 87,
+      "line": 92,
       "value": "28rem",
       "context": "inline-size: min(28rem, 100%);",
       "classification": "functional-layout-allowance",
@@ -684,7 +684,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 88,
+      "line": 93,
       "value": "#fff",
       "context": "background: #fff;",
       "classification": "admin-fallback-migration-candidate",
@@ -692,7 +692,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 89,
+      "line": 94,
       "value": "8px",
       "context": "box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);",
       "classification": "admin-fallback-migration-candidate",
@@ -700,7 +700,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 89,
+      "line": 94,
       "value": "rgba(0, 0, 0, 0.15)",
       "context": "box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);",
       "classification": "admin-fallback-migration-candidate",
@@ -708,7 +708,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 90,
+      "line": 95,
       "value": "1.5rem",
       "context": "padding: var(--wp--preset--spacing--40, 1.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -716,7 +716,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 98,
+      "line": 103,
       "value": "1rem",
       "context": "margin-block-end: var(--wp--preset--spacing--30, 1rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -724,7 +724,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 106,
+      "line": 111,
       "value": "0.5rem",
       "context": "padding-block: var(--wp--preset--spacing--20, 0.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -732,16 +732,8 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 107,
+      "line": 112,
       "value": "1px",
-      "context": "border-block-end: 1px solid #dcdcde;",
-      "classification": "admin-fallback-migration-candidate",
-      "target": "scoped --corex-admin-* adapter or documented allowance"
-    },
-    {
-      "path": "plugins/corex-config/assets/data.css",
-      "line": 107,
-      "value": "#dcdcde",
       "context": "border-block-end: 1px solid #dcdcde;",
       "classification": "admin-fallback-migration-candidate",
       "target": "scoped --corex-admin-* adapter or documented allowance"
@@ -749,6 +741,14 @@
     {
       "path": "plugins/corex-config/assets/data.css",
       "line": 112,
+      "value": "#dcdcde",
+      "context": "border-block-end: 1px solid #dcdcde;",
+      "classification": "admin-fallback-migration-candidate",
+      "target": "scoped --corex-admin-* adapter or documented allowance"
+    },
+    {
+      "path": "plugins/corex-config/assets/data.css",
+      "line": 117,
       "value": "#1d2327",
       "context": "color: #1d2327;",
       "classification": "admin-fallback-migration-candidate",
@@ -756,7 +756,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 117,
+      "line": 122,
       "value": "0.25rem",
       "context": "margin-block-start: 0.25rem;",
       "classification": "admin-fallback-migration-candidate",
@@ -764,7 +764,7 @@
     },
     {
       "path": "plugins/corex-config/assets/data.css",
-      "line": 118,
+      "line": 123,
       "value": "#3c434a",
       "context": "color: #3c434a;",
       "classification": "admin-fallback-migration-candidate",
@@ -772,7 +772,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 7,
+      "line": 10,
       "value": "22rem",
       "context": "grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));",
       "classification": "functional-layout-allowance",
@@ -780,7 +780,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 8,
+      "line": 11,
       "value": "1.25rem",
       "context": "gap: var(--wp--preset--spacing--40, 1.25rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -788,7 +788,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 9,
+      "line": 12,
       "value": "1rem",
       "context": "margin-block-start: var(--wp--preset--spacing--30, 1rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -796,7 +796,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 14,
+      "line": 17,
       "value": "0.5rem",
       "context": "padding: var(--wp--preset--spacing--20, 0.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -804,7 +804,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 15,
+      "line": 18,
       "value": "4px",
       "context": "border-inline-start: 4px solid #b32d2e;",
       "classification": "admin-fallback-migration-candidate",
@@ -812,7 +812,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 15,
+      "line": 18,
       "value": "#b32d2e",
       "context": "border-inline-start: 4px solid #b32d2e;",
       "classification": "admin-fallback-migration-candidate",
@@ -820,7 +820,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 16,
+      "line": 19,
       "value": "#fcf0f1",
       "context": "background: #fcf0f1;",
       "classification": "admin-fallback-migration-candidate",
@@ -828,7 +828,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 17,
+      "line": 20,
       "value": "#b32d2e",
       "context": "color: #b32d2e;",
       "classification": "admin-fallback-migration-candidate",
@@ -836,7 +836,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 23,
+      "line": 26,
       "value": "0.75rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.75rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -844,7 +844,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 24,
+      "line": 27,
       "value": "1.25rem",
       "context": "padding: var(--wp--preset--spacing--40, 1.25rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -852,7 +852,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 25,
+      "line": 28,
       "value": "#fff",
       "context": "background: #fff;",
       "classification": "admin-fallback-migration-candidate",
@@ -860,7 +860,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 26,
+      "line": 29,
       "value": "1px",
       "context": "border: 1px solid #dcdcde;",
       "classification": "admin-fallback-migration-candidate",
@@ -868,7 +868,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 26,
+      "line": 29,
       "value": "#dcdcde",
       "context": "border: 1px solid #dcdcde;",
       "classification": "admin-fallback-migration-candidate",
@@ -876,7 +876,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 27,
+      "line": 30,
       "value": "8px",
       "context": "border-radius: var(--wp--custom--radius--md, 8px);",
       "classification": "admin-fallback-migration-candidate",
@@ -884,7 +884,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 28,
+      "line": 31,
       "value": "4px",
       "context": "border-inline-start-width: 4px;",
       "classification": "admin-fallback-migration-candidate",
@@ -892,7 +892,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 32,
+      "line": 35,
       "value": "#00a32a",
       "context": "border-inline-start-color: #00a32a;",
       "classification": "admin-fallback-migration-candidate",
@@ -900,7 +900,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 36,
+      "line": 39,
       "value": "#dba617",
       "context": "border-inline-start-color: #dba617;",
       "classification": "admin-fallback-migration-candidate",
@@ -908,7 +908,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 40,
+      "line": 43,
       "value": "#d63638",
       "context": "border-inline-start-color: #d63638;",
       "classification": "admin-fallback-migration-candidate",
@@ -916,7 +916,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 47,
+      "line": 50,
       "value": "0.75rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.75rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -924,7 +924,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 52,
+      "line": 55,
       "value": "1.25rem",
       "context": "font-size: 1.25rem;",
       "classification": "admin-fallback-migration-candidate",
@@ -932,7 +932,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 59,
+      "line": 62,
       "value": "3.5rem",
       "context": "min-inline-size: 3.5rem;",
       "classification": "functional-layout-allowance",
@@ -940,7 +940,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 64,
+      "line": 67,
       "value": "1.75rem",
       "context": "font-size: 1.75rem;",
       "classification": "admin-fallback-migration-candidate",
@@ -948,7 +948,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 69,
+      "line": 72,
       "value": "0.75rem",
       "context": "font-size: 0.75rem;",
       "classification": "admin-fallback-migration-candidate",
@@ -956,7 +956,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 70,
+      "line": 73,
       "value": "#50575e",
       "context": "color: #50575e;",
       "classification": "admin-fallback-migration-candidate",
@@ -964,7 +964,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 75,
+      "line": 78,
       "value": "#50575e",
       "context": "color: #50575e;",
       "classification": "admin-fallback-migration-candidate",
@@ -972,7 +972,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 88,
+      "line": 91,
       "value": "0.75rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.75rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -980,7 +980,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 89,
+      "line": 92,
       "value": "0.25rem",
       "context": "padding-block: 0.25rem;",
       "classification": "admin-fallback-migration-candidate",
@@ -988,7 +988,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 90,
+      "line": 93,
       "value": "1px",
       "context": "border-block-end: 1px solid #f0f0f1;",
       "classification": "admin-fallback-migration-candidate",
@@ -996,7 +996,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 90,
+      "line": 93,
       "value": "#f0f0f1",
       "context": "border-block-end: 1px solid #f0f0f1;",
       "classification": "admin-fallback-migration-candidate",
@@ -1004,7 +1004,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 94,
+      "line": 97,
       "value": "1.1rem",
       "context": "padding-inline-start: 1.1rem;",
       "classification": "admin-fallback-migration-candidate",
@@ -1012,7 +1012,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 96,
+      "line": 99,
       "value": "#50575e",
       "context": "color: #50575e;",
       "classification": "admin-fallback-migration-candidate",
@@ -1020,7 +1020,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 103,
+      "line": 106,
       "value": "0.75rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.75rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -1028,7 +1028,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 108,
+      "line": 111,
       "value": "0.8rem",
       "context": "font-size: 0.8rem;",
       "classification": "admin-fallback-migration-candidate",
@@ -1036,7 +1036,7 @@
     },
     {
       "path": "plugins/corex-config/assets/insights.css",
-      "line": 109,
+      "line": 112,
       "value": "#787c82",
       "context": "color: #787c82;",
       "classification": "admin-fallback-migration-candidate",
@@ -1044,7 +1044,7 @@
     },
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
-      "line": 10,
+      "line": 13,
       "value": "0.5rem",
       "context": "gap: var(--wp--preset--spacing--20, 0.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -1052,7 +1052,7 @@
     },
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
-      "line": 11,
+      "line": 14,
       "value": "0.5rem",
       "context": "margin-block-start: var(--wp--preset--spacing--20, 0.5rem);",
       "classification": "admin-fallback-migration-candidate",
@@ -1060,7 +1060,7 @@
     },
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
-      "line": 15,
+      "line": 18,
       "value": "#00640c",
       "context": "color: #00640c;",
       "classification": "admin-fallback-migration-candidate",
@@ -1068,7 +1068,7 @@
     },
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
-      "line": 20,
+      "line": 23,
       "value": "#b32d2e",
       "context": "color: #b32d2e;",
       "classification": "admin-fallback-migration-candidate",
@@ -1077,102 +1077,11 @@
   ],
   "legacy_references": [
     {
-      "legacy_property": "--wp--preset--color--corex-danger",
-      "target_definition": "color.error",
-      "resolution": "alias-required",
-      "path": "addons/corex-ui/src/Blocks/alert/style.scss",
-      "context": "lines 11: .corex-alert--error { border-inline-start-color: var(--wp--preset--color--corex-danger, #d63638); }"
-    },
-    {
-      "legacy_property": "--wp--preset--color--corex-info",
-      "target_definition": "color.info",
-      "resolution": "alias-required",
-      "path": "addons/corex-ui/src/Blocks/alert/style.scss",
-      "context": "lines 4: border-inline-start: 4px solid var(--wp--preset--color--corex-info, #2271b1);"
-    },
-    {
-      "legacy_property": "--wp--preset--color--corex-success",
-      "target_definition": "color.success",
-      "resolution": "alias-required",
-      "path": "addons/corex-ui/src/Blocks/alert/style.scss",
-      "context": "lines 9: .corex-alert--success { border-inline-start-color: var(--wp--preset--color--corex-success, #00a32a); }"
-    },
-    {
-      "legacy_property": "--wp--preset--color--corex-warning",
-      "target_definition": "color.warning",
-      "resolution": "alias-required",
-      "path": "addons/corex-ui/src/Blocks/alert/style.scss",
-      "context": "lines 10: .corex-alert--warning { border-inline-start-color: var(--wp--preset--color--corex-warning, #dba617); }"
-    },
-    {
-      "legacy_property": "--wp--preset--color--corex-primary",
-      "target_definition": "color.primary",
-      "resolution": "alias-required",
-      "path": "addons/corex-ui/src/Blocks/badge/style.scss",
-      "context": "lines 7: background: var(--wp--preset--color--corex-primary, #2271b1);"
-    },
-    {
-      "legacy_property": "--wp--preset--color--white",
-      "target_definition": "color.inverse",
-      "resolution": "migration-required",
-      "path": "addons/corex-ui/src/Blocks/badge/style.scss",
-      "context": "lines 8: color: var(--wp--preset--color--white, #fff);"
-    },
-    {
-      "legacy_property": "--wp--preset--font-size--medium",
-      "target_definition": "font-size.base",
-      "resolution": "migration-required",
-      "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "context": "lines 31: font-size: var(--wp--preset--font-size--medium, 1.25rem);"
-    },
-    {
-      "legacy_property": "--wp--preset--color--foreground",
-      "target_definition": "color.ink",
-      "resolution": "migration-required",
-      "path": "plugins/corex-blocks/src/blocks/entity-field/style.scss",
-      "context": "lines 13: color: var(--wp--preset--color--foreground);"
-    },
-    {
-      "legacy_property": "--wp--preset--font-size--medium",
-      "target_definition": "font-size.base",
-      "resolution": "migration-required",
-      "path": "plugins/corex-blocks/src/blocks/entity-field/style.scss",
-      "context": "lines 14: font-size: var(--wp--preset--font-size--medium);"
-    },
-    {
       "legacy_property": "--wp--preset--font-size--small",
       "target_definition": "font-size.sm",
-      "resolution": "migration-required",
+      "resolution": "alias-required",
       "path": "plugins/corex-config/assets/data.css",
-      "context": "lines 28: font-size: var(--wp--preset--font-size--small, 0.8125rem);"
-    },
-    {
-      "legacy_property": "--wp--preset--color--background",
-      "target_definition": "color.surface",
-      "resolution": "migration-required",
-      "path": "plugins/corex-core/assets/css/corex-runtime.css",
-      "context": "lines 54: background: var(--wp--preset--color--background, rgba(255, 255, 255, 0.7));"
-    },
-    {
-      "legacy_property": "--wp--preset--color--corex-danger",
-      "target_definition": "color.error",
-      "resolution": "alias-required",
-      "path": "plugins/corex-core/assets/css/corex-runtime.css",
-      "context": "lines 41: color: var(--wp--preset--color--corex-danger, #d63638);"
-    },
-    {
-      "legacy_property": "--wp--preset--color--corex-success",
-      "target_definition": "color.success",
-      "resolution": "alias-required",
-      "path": "plugins/corex-core/assets/css/corex-runtime.css",
-      "context": "lines 45: color: var(--wp--preset--color--corex-success, #00a32a);"
-    },
-    {
-      "legacy_property": "--wp--preset--color--danger",
-      "target_definition": "color.error",
-      "resolution": "alias-required",
-      "path": "plugins/corex-forms/src/Block/blocks/corex-form/style.scss",
-      "context": "lines 102, 111: color: var(--wp--preset--color--danger, var(--wp--preset--color--accent)); | outline: 2px solid var(--wp--preset--color--danger, var(--wp--preset--color--accent));"
+      "context": "lines 31: font-size: var(--wp--preset--font-size--small, 0.8125rem);"
     }
   ],
   "adapter_status": "planned; corex-core registers shared handle, screen owners enqueue as dependency, never global or client-brand authority"

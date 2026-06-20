@@ -1,9 +1,12 @@
+/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+
 /**
  * Corex control panel (spec 044) — domain status cards + onboarding checklist. Token-only
  * with wp-admin palette fallbacks (theme tokens aren't loaded in wp-admin — DECISIONS #71),
  * logical properties (RTL-correct), and status conveyed by icon + text, never color alone
  * (WCAG 2.2 AA).
  */
+/* stylelint-enable @stylistic/max-line-length */
 
 .corex-panel {
 	margin-block: var(--wp--preset--spacing--30, 1rem);

@@ -1,10 +1,10 @@
 /* Corex Badge — token-only, logical properties. */
 .corex-badge {
 	display: inline-block;
-	padding-block: var(--wp--preset--spacing--10, 0.15rem);
-	padding-inline: var(--wp--preset--spacing--20, 0.5rem);
-	border-radius: var(--wp--custom--radius--sm, 4px);
-	background: var(--wp--preset--color--corex-primary, #2271b1);
-	color: var(--wp--preset--color--white, #fff);
-	font-size: 0.8em;
+	padding-block: var(--wp--preset--spacing--10);
+	padding-inline: var(--wp--preset--spacing--20);
+	border-radius: var(--wp--custom--radius--sm);
+	background: var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--inverse);
+	font-size: var(--wp--preset--font-size--xs);
 }

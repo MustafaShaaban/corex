@@ -14,10 +14,10 @@ it('covers every required semantic role group', function () {
     $classifications = ThemeContract::json(
         'specs/057-brand-tokens-logo-system/inventories/classifications.json',
     );
-    $ids = array_merge(
-        array_column($classifications['retained'], 'id'),
-        array_column($classifications['added'], 'id'),
-    );
+    $definitions = ThemeContract::json(
+        'specs/057-brand-tokens-logo-system/inventories/definitions.json',
+    )['definitions'];
+    $roles = array_column($definitions, 'semantic_role');
     $requiredRoles = [
         'surface', 'text', 'border', 'accent', 'status', 'overlay', 'selection', 'focus',
         'radius', 'spacing', 'shadow', 'motion', 'z',
@@ -25,8 +25,8 @@ it('covers every required semantic role group', function () {
     $missing = array_values(array_filter(
         $requiredRoles,
         static fn (string $role): bool => ! array_filter(
-            $ids,
-            static fn (string $id): bool => str_contains($id, $role),
+            $roles,
+            static fn (string $semanticRole): bool => str_contains($semanticRole, $role),
         ),
     ));
 

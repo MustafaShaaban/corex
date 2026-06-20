@@ -4,6 +4,31 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-20 05:07 EEST, latest) -- Spec 057 T026-T039 US1 complete
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest incoming commit:** `168ee14`; this US1 checkpoint is the next branch commit.
+- **Completed this session:** T026-T039. Added deterministic inventory regeneration, established the canonical
+  `theme/theme.json` vocabulary, completed Dark/Editorial replacement arrays, added one-release compatibility
+  aliases, migrated first-party front-end consumers, and preserved conditional block asset registration.
+- **Verification:** focused Pest 14 tests/99 assertions PASS; Jest 17 suites/97 tests PASS; root workspace build PASS;
+  root CSS lint PASS; focused JS lint PASS; local WordPress readiness 0.27.0 PASS with GitHub/deployment profiles
+  still environment-gated; `git diff --check` PASS. Clean-code, WordPress, test, and documentation guards found no
+  blocking issue.
+- **Full-suite status:** Composer validation PASS. Full Pest is intentionally not green: 643 tests pass and 11
+  future-story contracts remain RED for US2 contrast/fonts, US3 logo provenance, and US4 admin/brand validation.
+- **Exact next batch:** T040-T055 (US2 accessible modes, typography roles, and RTL). Start with T040-T043 RED/
+  blocked evidence; do not add font files. T047-T049 remain blocked until approved font files/provenance exist.
+- **Blockers:** font asset integration T047-T049 requires owner-approved WOFF2 files/provenance. Logo integration
+  T059-T064 requires the owner-approved production vector package/provenance. Neither blocks T040-T046 or T050-T055.
+- **Environment-gated:** Docker/wp-env, browser automation, GitHub-settings evidence, and external deployment are
+  not PASS. The local non-Docker WordPress installation and readiness command are available.
+- **Did not change:** logo/font assets, client brand merge behavior, admin adapter/runtime behavior, CHANGELOG,
+  release metadata, Specs 058/059, or M3-M11 implementation. Root unrelated dirty worktree was not touched.
+- **Next-agent command:** checkout/pull this branch, then run `/speckit-implement Spec 057 T040-T055 only`; preserve
+  contrast/font RED evidence, keep T047-T049 blocked without approved assets, and stop before T056.
+
+---
 ## RESUME HERE (2026-06-20 04:43 EEST, latest) -- Spec 057 T010-T025 RED contracts complete
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.

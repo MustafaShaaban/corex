@@ -90,3 +90,27 @@ failure outside the new Spec 057 contract suites. This is intentionally RED, not
 
 No product/runtime implementation was added in T010-T025. T026 is the next task and must preserve this RED evidence
 before the first `theme/theme.json` change.
+
+## US1 canonical foundation GREEN evidence â€” T026-T039
+
+**Captured:** 2026-06-20 05:07 EEST
+
+- Deterministic inventory generator: PASS; 9 Jest assertions cover generated property names, byte stability, and
+  committed-artifact drift.
+- Focused token/mode/consumer/compatibility Pest run: PASS; 14 tests and 99 assertions.
+- Full Jest run: PASS; 17 suites and 97 tests.
+- Full Pest/Composer test run: expected future-story RED; 643 tests pass and 11 contracts fail. The remaining
+  failures are limited to US2 contrast/font work, US3 owner-blocked logo provenance, and US4 admin-adapter/brand
+  validation. This is not represented as a passing full suite.
+- Root workspace build: PASS for Blocks, Forms, UI, Careers, Portfolio, and Config workspaces.
+- Root `npm.cmd run lint:css`: PASS. `.stylelintignore` excludes dependencies, generated build/dist output, and the
+  ignored local WordPress installation; all tracked source CSS/SCSS remains in scope.
+- Conditional block asset behavior: PASS by unchanged `block.json`/registration inspection and successful builds;
+  see `consumer-migration.md`.
+- WordPress recognition/readiness: PASS in the isolated local installation; `wp --path=wp corex readiness 0.27.0`
+  exited 0. GitHub-settings and deployment profiles remain `ENVIRONMENT-GATED` in its output.
+- Docker/wp-env, browser automation, and external deployment evidence: ENVIRONMENT-GATED; not represented as PASS.
+
+Guard review found no blocking clean-code, WordPress, test, or documentation issue. The inventory generator performs
+deterministic repository analysis without changing runtime state; the WordPress diff changes theme data and
+front-end token consumption only. Tests assert public inventory/mapping contracts rather than internal calls.

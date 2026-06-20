@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-06-19T23:37:51+03:00",
+  "generated_at": "source-controlled",
   "authority": "theme/theme.json",
   "summary": {
-    "definitions": 53,
-    "consumer_records": 203,
+    "definitions": 74,
+    "consumer_records": 217,
     "retained": 53,
-    "added": 7,
+    "added": 10,
     "aliased": 11,
-    "migration_batches": 5,
+    "migration_batches": 1,
     "deprecated": 0
   },
   "retained": [
@@ -332,144 +332,136 @@
   ],
   "added": [
     {
-      "id": "font-family.body",
-      "rationale": "Approved Spec 057 semantic gap; exact value waits for contract tests and accessibility evidence",
-      "status": "planned"
-    },
-    {
-      "id": "font-family.mono",
-      "rationale": "Approved Spec 057 semantic gap; exact value waits for contract tests and accessibility evidence",
-      "status": "planned"
-    },
-    {
-      "id": "color.inverse",
-      "rationale": "Approved Spec 057 semantic gap; exact value waits for contract tests and accessibility evidence",
-      "status": "planned"
-    },
-    {
-      "id": "color.surface-raised",
-      "rationale": "Approved Spec 057 semantic gap; exact value waits for contract tests and accessibility evidence",
-      "status": "planned"
-    },
-    {
-      "id": "color.surface-strong",
-      "rationale": "Approved Spec 057 semantic gap; exact value waits for contract tests and accessibility evidence",
-      "status": "planned"
+      "id": "border.width.strong",
+      "rationale": "Approved Spec 057 semantic gap; exact value is governed by contract and accessibility evidence",
+      "status": "implemented"
     },
     {
       "id": "border.width.thin",
-      "rationale": "Approved Spec 057 semantic gap; exact value waits for contract tests and accessibility evidence",
-      "status": "planned"
+      "rationale": "Approved Spec 057 semantic gap; exact value is governed by contract and accessibility evidence",
+      "status": "implemented"
     },
     {
-      "id": "border.width.strong",
-      "rationale": "Approved Spec 057 semantic gap; exact value waits for contract tests and accessibility evidence",
-      "status": "planned"
+      "id": "color.inverse",
+      "rationale": "Approved Spec 057 semantic gap; exact value is governed by contract and accessibility evidence",
+      "status": "implemented"
+    },
+    {
+      "id": "color.overlay",
+      "rationale": "Approved Spec 057 semantic gap; exact value is governed by contract and accessibility evidence",
+      "status": "implemented"
+    },
+    {
+      "id": "color.selection",
+      "rationale": "Approved Spec 057 semantic gap; exact value is governed by contract and accessibility evidence",
+      "status": "implemented"
+    },
+    {
+      "id": "color.selection-text",
+      "rationale": "Approved Spec 057 semantic gap; exact value is governed by contract and accessibility evidence",
+      "status": "implemented"
+    },
+    {
+      "id": "color.surface-raised",
+      "rationale": "Approved Spec 057 semantic gap; exact value is governed by contract and accessibility evidence",
+      "status": "implemented"
+    },
+    {
+      "id": "color.surface-strong",
+      "rationale": "Approved Spec 057 semantic gap; exact value is governed by contract and accessibility evidence",
+      "status": "implemented"
+    },
+    {
+      "id": "font-family.body",
+      "rationale": "Approved Spec 057 semantic gap; exact value is governed by contract and accessibility evidence",
+      "status": "implemented"
+    },
+    {
+      "id": "font-family.mono",
+      "rationale": "Approved Spec 057 semantic gap; exact value is governed by contract and accessibility evidence",
+      "status": "implemented"
     }
   ],
   "aliased": [
     {
       "legacy_property": "--wp--preset--color--background",
       "target_definition": "color.surface",
-      "consumer_paths": [
-        "plugins/corex-core/assets/css/corex-runtime.css"
-      ],
-      "introduced_version": "implementation-release-TBD",
-      "remove_after_version": "at least one minor release later",
-      "status": "planned"
+      "consumer_paths": [],
+      "introduced_version": "0.28.0",
+      "remove_after_version": "0.29.0",
+      "status": "active"
     },
     {
       "legacy_property": "--wp--preset--color--corex-danger",
       "target_definition": "color.error",
-      "consumer_paths": [
-        "addons/corex-ui/src/Blocks/alert/style.scss",
-        "plugins/corex-core/assets/css/corex-runtime.css"
-      ],
-      "introduced_version": "implementation-release-TBD",
-      "remove_after_version": "at least one minor release later",
-      "status": "planned"
+      "consumer_paths": [],
+      "introduced_version": "0.28.0",
+      "remove_after_version": "0.29.0",
+      "status": "active"
     },
     {
       "legacy_property": "--wp--preset--color--corex-info",
       "target_definition": "color.info",
-      "consumer_paths": [
-        "addons/corex-ui/src/Blocks/alert/style.scss"
-      ],
-      "introduced_version": "implementation-release-TBD",
-      "remove_after_version": "at least one minor release later",
-      "status": "planned"
+      "consumer_paths": [],
+      "introduced_version": "0.28.0",
+      "remove_after_version": "0.29.0",
+      "status": "active"
     },
     {
       "legacy_property": "--wp--preset--color--corex-primary",
       "target_definition": "color.primary",
-      "consumer_paths": [
-        "addons/corex-ui/src/Blocks/badge/style.scss"
-      ],
-      "introduced_version": "implementation-release-TBD",
-      "remove_after_version": "at least one minor release later",
-      "status": "planned"
+      "consumer_paths": [],
+      "introduced_version": "0.28.0",
+      "remove_after_version": "0.29.0",
+      "status": "active"
     },
     {
       "legacy_property": "--wp--preset--color--corex-success",
       "target_definition": "color.success",
-      "consumer_paths": [
-        "addons/corex-ui/src/Blocks/alert/style.scss",
-        "plugins/corex-core/assets/css/corex-runtime.css"
-      ],
-      "introduced_version": "implementation-release-TBD",
-      "remove_after_version": "at least one minor release later",
-      "status": "planned"
+      "consumer_paths": [],
+      "introduced_version": "0.28.0",
+      "remove_after_version": "0.29.0",
+      "status": "active"
     },
     {
       "legacy_property": "--wp--preset--color--corex-warning",
       "target_definition": "color.warning",
-      "consumer_paths": [
-        "addons/corex-ui/src/Blocks/alert/style.scss"
-      ],
-      "introduced_version": "implementation-release-TBD",
-      "remove_after_version": "at least one minor release later",
-      "status": "planned"
+      "consumer_paths": [],
+      "introduced_version": "0.28.0",
+      "remove_after_version": "0.29.0",
+      "status": "active"
     },
     {
       "legacy_property": "--wp--preset--color--danger",
       "target_definition": "color.error",
-      "consumer_paths": [
-        "plugins/corex-forms/src/Block/blocks/corex-form/style.scss"
-      ],
-      "introduced_version": "implementation-release-TBD",
-      "remove_after_version": "at least one minor release later",
-      "status": "planned"
+      "consumer_paths": [],
+      "introduced_version": "0.28.0",
+      "remove_after_version": "0.29.0",
+      "status": "active"
     },
     {
       "legacy_property": "--wp--preset--color--foreground",
       "target_definition": "color.ink",
-      "consumer_paths": [
-        "plugins/corex-blocks/src/blocks/entity-field/style.scss"
-      ],
-      "introduced_version": "implementation-release-TBD",
-      "remove_after_version": "at least one minor release later",
-      "status": "planned"
+      "consumer_paths": [],
+      "introduced_version": "0.28.0",
+      "remove_after_version": "0.29.0",
+      "status": "active"
     },
     {
       "legacy_property": "--wp--preset--color--white",
       "target_definition": "color.inverse",
-      "consumer_paths": [
-        "addons/corex-ui/src/Blocks/badge/style.scss"
-      ],
-      "introduced_version": "implementation-release-TBD",
-      "remove_after_version": "at least one minor release later",
-      "status": "planned"
+      "consumer_paths": [],
+      "introduced_version": "0.28.0",
+      "remove_after_version": "0.29.0",
+      "status": "active"
     },
     {
       "legacy_property": "--wp--preset--font-size--medium",
       "target_definition": "font-size.base",
-      "consumer_paths": [
-        "addons/corex-ui/src/Blocks/modal/style.scss",
-        "plugins/corex-blocks/src/blocks/entity-field/style.scss"
-      ],
-      "introduced_version": "implementation-release-TBD",
-      "remove_after_version": "at least one minor release later",
-      "status": "planned"
+      "consumer_paths": [],
+      "introduced_version": "0.28.0",
+      "remove_after_version": "0.29.0",
+      "status": "active"
     },
     {
       "legacy_property": "--wp--preset--font-size--small",
@@ -477,39 +469,12 @@
       "consumer_paths": [
         "plugins/corex-config/assets/data.css"
       ],
-      "introduced_version": "implementation-release-TBD",
-      "remove_after_version": "at least one minor release later",
-      "status": "planned"
+      "introduced_version": "0.28.0",
+      "remove_after_version": "0.29.0",
+      "status": "active"
     }
   ],
   "migrated": [
-    {
-      "owner": "ui-addon",
-      "paths": [
-        "addons/corex-ui/src/Blocks/alert/style.scss",
-        "addons/corex-ui/src/Blocks/badge/style.scss",
-        "addons/corex-ui/src/Blocks/modal/style.scss"
-      ],
-      "properties": [
-        "--wp--preset--color--corex-danger",
-        "--wp--preset--color--corex-info",
-        "--wp--preset--color--corex-success",
-        "--wp--preset--color--corex-warning",
-        "--wp--preset--color--corex-primary",
-        "--wp--preset--color--white",
-        "--wp--preset--font-size--medium"
-      ]
-    },
-    {
-      "owner": "blocks-plugin",
-      "paths": [
-        "plugins/corex-blocks/src/blocks/entity-field/style.scss"
-      ],
-      "properties": [
-        "--wp--preset--color--foreground",
-        "--wp--preset--font-size--medium"
-      ]
-    },
     {
       "owner": "config-plugin",
       "paths": [
@@ -518,30 +483,10 @@
       "properties": [
         "--wp--preset--font-size--small"
       ]
-    },
-    {
-      "owner": "core-plugin",
-      "paths": [
-        "plugins/corex-core/assets/css/corex-runtime.css"
-      ],
-      "properties": [
-        "--wp--preset--color--background",
-        "--wp--preset--color--corex-danger",
-        "--wp--preset--color--corex-success"
-      ]
-    },
-    {
-      "owner": "forms-plugin",
-      "paths": [
-        "plugins/corex-forms/src/Block/blocks/corex-form/style.scss"
-      ],
-      "properties": [
-        "--wp--preset--color--danger"
-      ]
     }
   ],
   "deprecated": [],
-  "deprecation_policy": "No legacy alias is currently defined by the canonical authority. Planned aliases remain functional for at least one minor release and until first-party consumer count is zero.",
+  "deprecation_policy": "Active compatibility aliases remain for at least one minor release and until first-party consumer count is zero.",
   "compatibility_windows": {
     "client_brand_lists": "replace wholesale; complete palette/font arrays required",
     "aliases": "one minor release minimum",

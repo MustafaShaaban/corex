@@ -22,7 +22,22 @@
                 { "slug": "success", "color": "#1A7F4B", "name": "Success" },
                 { "slug": "warning", "color": "#B7791F", "name": "Warning" },
                 { "slug": "error", "color": "#C1352B", "name": "Error" },
-                { "slug": "info", "color": "#1F6FEB", "name": "Info" }
+                { "slug": "info", "color": "#1F6FEB", "name": "Info" },
+                { "slug": "inverse", "color": "#FFFFFF", "name": "Inverse text" },
+                { "slug": "overlay", "color": "rgba(6, 18, 31, 0.72)", "name": "Overlay" },
+                { "slug": "selection", "color": "#BFEFFF", "name": "Selection" },
+                { "slug": "selection-text", "color": "#06121F", "name": "Selection text" },
+                { "slug": "surface-raised", "color": "#FFFFFF", "name": "Raised surface" },
+                { "slug": "surface-strong", "color": "#E8EEF5", "name": "Strong surface" },
+                { "slug": "background", "color": "#FFFFFF", "name": "Background (compatibility)" },
+                { "slug": "foreground", "color": "#11181C", "name": "Foreground (compatibility)" },
+                { "slug": "danger", "color": "#C1352B", "name": "Danger (compatibility)" },
+                { "slug": "corex-danger", "color": "#C1352B", "name": "CoreX danger (compatibility)" },
+                { "slug": "corex-info", "color": "#1F6FEB", "name": "CoreX info (compatibility)" },
+                { "slug": "corex-primary", "color": "#0B1F3B", "name": "CoreX primary (compatibility)" },
+                { "slug": "corex-success", "color": "#1A7F4B", "name": "CoreX success (compatibility)" },
+                { "slug": "corex-warning", "color": "#B7791F", "name": "CoreX warning (compatibility)" },
+                { "slug": "white", "color": "#FFFFFF", "name": "White (compatibility)" }
             ]
         },
         "typography": {
@@ -37,6 +52,16 @@
                     "slug": "arabic",
                     "name": "Arabic",
                     "fontFamily": "'Noto Sans Arabic', system-ui, sans-serif"
+                },
+                {
+                    "slug": "body",
+                    "name": "Body",
+                    "fontFamily": "system-ui, sans-serif"
+                },
+                {
+                    "slug": "mono",
+                    "name": "Technical",
+                    "fontFamily": "ui-monospace, 'Cascadia Code', 'Courier New', monospace"
                 }
             ],
             "fontSizes": [
@@ -46,7 +71,9 @@
                 { "slug": "lg", "size": "clamp(1.25rem, 2vw, 1.5rem)", "name": "Large" },
                 { "slug": "xl", "size": "clamp(1.5rem, 3vw, 2rem)", "name": "Extra large" },
                 { "slug": "2xl", "size": "clamp(2rem, 4vw, 2.75rem)", "name": "2X large" },
-                { "slug": "hero", "size": "clamp(2.5rem, 6vw, 4rem)", "name": "Hero" }
+                { "slug": "hero", "size": "clamp(2.5rem, 6vw, 4rem)", "name": "Hero" },
+                { "slug": "small", "size": "clamp(0.875rem, 1vw, 1rem)", "name": "Small (compatibility)" },
+                { "slug": "medium", "size": "clamp(1rem, 1.2vw, 1.125rem)", "name": "Medium (compatibility)" }
             ]
         },
         "spacing": {
@@ -77,6 +104,12 @@
                 "lg": "1rem",
                 "full": "9999px"
             },
+            "border": {
+                "width": {
+                    "thin": "1px",
+                    "strong": "4px"
+                }
+            },
             "motion": {
                 "duration": {
                     "fast": "150ms",
@@ -105,7 +138,7 @@
     },
     "styles": {
         "typography": {
-            "fontFamily": "var(--wp--preset--font-family--heading)",
+            "fontFamily": "var(--wp--preset--font-family--body)",
             "lineHeight": "1.6"
         },
         "color": {
@@ -118,7 +151,11 @@
         "elements": {
             "heading": {
                 "color": { "text": "var(--wp--preset--color--primary)" },
-                "typography": { "fontWeight": "700", "lineHeight": "1.2" }
+                "typography": {
+                    "fontFamily": "var(--wp--preset--font-family--heading)",
+                    "fontWeight": "700",
+                    "lineHeight": "1.2"
+                }
             },
             "link": {
                 "color": { "text": "var(--wp--preset--color--accent-dark)" },
@@ -127,7 +164,7 @@
             "button": {
                 "color": {
                     "background": "var(--wp--preset--color--primary)",
-                    "text": "var(--wp--preset--color--surface)"
+                    "text": "var(--wp--preset--color--inverse)"
                 },
                 "border": { "radius": "var(--wp--custom--radius--md)" },
                 "spacing": {

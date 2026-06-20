@@ -2,11 +2,14 @@
  * Corex Projects — token-only, logical CSS (RTL-correct), conditional asset.
  * Compiled by @wordpress/scripts; loaded only when the block renders.
  */
+/* stylelint-disable @stylistic/max-line-length -- track rationale */
 .corex-projects {
 	display: grid;
+
 	/* Functional responsive grid track (layout), not a token — colours/spacing/fonts
 	   below all resolve from theme.json. */
 	grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+	/* stylelint-enable @stylistic/max-line-length */
 	gap: var(--wp--preset--spacing--50);
 }
 

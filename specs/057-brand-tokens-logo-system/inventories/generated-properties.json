@@ -1,7 +1,21 @@
 {
-  "generated_at": "2026-06-19T23:37:51+03:00",
-  "count": 53,
+  "generated_at": "source-controlled",
+  "count": 74,
   "properties": [
+    {
+      "id": "border.width.strong",
+      "source_path": "theme/theme.json#settings.custom.border.width.strong",
+      "generated_property": "--wp--custom--border--width--strong",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "border.width.thin",
+      "source_path": "theme/theme.json#settings.custom.border.width.thin",
+      "generated_property": "--wp--custom--border--width--thin",
+      "unique": true,
+      "status": "observed"
+    },
     {
       "id": "color.accent",
       "source_path": "theme/theme.json#settings.color.palette[2]",
@@ -17,6 +31,13 @@
       "status": "observed"
     },
     {
+      "id": "color.background",
+      "source_path": "theme/theme.json#settings.color.palette[19]",
+      "generated_property": "--wp--preset--color--background",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "color.border",
       "source_path": "theme/theme.json#settings.color.palette[6]",
       "generated_property": "--wp--preset--color--border",
@@ -24,9 +45,58 @@
       "status": "observed"
     },
     {
+      "id": "color.corex-danger",
+      "source_path": "theme/theme.json#settings.color.palette[22]",
+      "generated_property": "--wp--preset--color--corex-danger",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.corex-info",
+      "source_path": "theme/theme.json#settings.color.palette[23]",
+      "generated_property": "--wp--preset--color--corex-info",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.corex-primary",
+      "source_path": "theme/theme.json#settings.color.palette[24]",
+      "generated_property": "--wp--preset--color--corex-primary",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.corex-success",
+      "source_path": "theme/theme.json#settings.color.palette[25]",
+      "generated_property": "--wp--preset--color--corex-success",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.corex-warning",
+      "source_path": "theme/theme.json#settings.color.palette[26]",
+      "generated_property": "--wp--preset--color--corex-warning",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.danger",
+      "source_path": "theme/theme.json#settings.color.palette[21]",
+      "generated_property": "--wp--preset--color--danger",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "color.error",
       "source_path": "theme/theme.json#settings.color.palette[11]",
       "generated_property": "--wp--preset--color--error",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.foreground",
+      "source_path": "theme/theme.json#settings.color.palette[20]",
+      "generated_property": "--wp--preset--color--foreground",
       "unique": true,
       "status": "observed"
     },
@@ -52,6 +122,20 @@
       "status": "observed"
     },
     {
+      "id": "color.inverse",
+      "source_path": "theme/theme.json#settings.color.palette[13]",
+      "generated_property": "--wp--preset--color--inverse",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.overlay",
+      "source_path": "theme/theme.json#settings.color.palette[14]",
+      "generated_property": "--wp--preset--color--overlay",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "color.primary",
       "source_path": "theme/theme.json#settings.color.palette[0]",
       "generated_property": "--wp--preset--color--primary",
@@ -62,6 +146,20 @@
       "id": "color.primary-dark",
       "source_path": "theme/theme.json#settings.color.palette[1]",
       "generated_property": "--wp--preset--color--primary-dark",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.selection",
+      "source_path": "theme/theme.json#settings.color.palette[15]",
+      "generated_property": "--wp--preset--color--selection",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.selection-text",
+      "source_path": "theme/theme.json#settings.color.palette[16]",
+      "generated_property": "--wp--preset--color--selection-text",
       "unique": true,
       "status": "observed"
     },
@@ -87,9 +185,30 @@
       "status": "observed"
     },
     {
+      "id": "color.surface-raised",
+      "source_path": "theme/theme.json#settings.color.palette[17]",
+      "generated_property": "--wp--preset--color--surface-raised",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.surface-strong",
+      "source_path": "theme/theme.json#settings.color.palette[18]",
+      "generated_property": "--wp--preset--color--surface-strong",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "color.warning",
       "source_path": "theme/theme.json#settings.color.palette[10]",
       "generated_property": "--wp--preset--color--warning",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "color.white",
+      "source_path": "theme/theme.json#settings.color.palette[27]",
+      "generated_property": "--wp--preset--color--white",
       "unique": true,
       "status": "observed"
     },
@@ -122,9 +241,23 @@
       "status": "observed"
     },
     {
+      "id": "font-family.body",
+      "source_path": "theme/theme.json#settings.typography.fontFamilies[2]",
+      "generated_property": "--wp--preset--font-family--body",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "font-family.heading",
       "source_path": "theme/theme.json#settings.typography.fontFamilies[0]",
       "generated_property": "--wp--preset--font-family--heading",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-family.mono",
+      "source_path": "theme/theme.json#settings.typography.fontFamilies[3]",
+      "generated_property": "--wp--preset--font-family--mono",
       "unique": true,
       "status": "observed"
     },
@@ -157,9 +290,23 @@
       "status": "observed"
     },
     {
+      "id": "font-size.medium",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[8]",
+      "generated_property": "--wp--preset--font-size--medium",
+      "unique": true,
+      "status": "observed"
+    },
+    {
       "id": "font-size.sm",
       "source_path": "theme/theme.json#settings.typography.fontSizes[1]",
       "generated_property": "--wp--preset--font-size--sm",
+      "unique": true,
+      "status": "observed"
+    },
+    {
+      "id": "font-size.small",
+      "source_path": "theme/theme.json#settings.typography.fontSizes[7]",
+      "generated_property": "--wp--preset--font-size--small",
       "unique": true,
       "status": "observed"
     },
