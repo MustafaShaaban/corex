@@ -4,6 +4,25 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-20 05:39 EEST, latest) -- Spec 057 owner-blocked on font and logo packages
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
+- **Latest incoming commit:** `f05322d`; this logo-contract checkpoint is the next branch commit.
+- **Completed:** T056-T058 and T065. Product default/custom/client-separation regressions pass; accessible logo-usage
+  fixtures pass; the production logo contract remains three expected failures because the manifest/assets are absent.
+- **Remaining/blocked:** T047-T048 require approved WOFF2 files/provenance. T059-T064 require approved production SVG
+  variants/provenance. Per the authorized execution order, US4 T066-T079 follows US3 and is not started around this
+  owner gate. T080-T090 final documentation/gates cannot close Spec 057 while these stories remain incomplete.
+- **Verification:** Branding tests PASS; logo fixture contract PASS; three production logo assertions BLOCKED; PHP
+  lint and `git diff --check` PASS; test/clean-code/wp/docs guards recorded in `logo-evidence.md`.
+- **Environment-gated:** Docker/wp-env, WordPress-rendered browser evidence, GitHub settings, and deployment remain
+  not PASS. Standalone Chromium remains verified 4/4 from the prior checkpoint.
+- **Did not change:** logo/font assets, production branding/runtime behavior, admin adapter, CHANGELOG, release
+  metadata, Specs 058/059, or later milestones. The unrelated dirty root worktree remains untouched.
+- **Exact owner action:** supply/approve the font and production logo packages with provenance described in
+  `font-evidence.md` and `logo-evidence.md`; then resume T047-T048 followed by T059-T064.
+
+---
 ## RESUME HERE (2026-06-20 05:31 EEST, latest) -- Spec 057 US2 evidenced; font assets remain blocked
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.

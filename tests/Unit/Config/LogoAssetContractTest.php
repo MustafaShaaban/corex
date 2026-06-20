@@ -10,6 +10,28 @@ declare(strict_types=1);
 
 use Corex\Tests\Support\ThemeContract;
 
+it('defines accessible logo usage and size fixtures independently of assets', function () {
+    $fixtures = ThemeContract::json('tests/Fixtures/Branding/logo-usage.json')['scenarios'];
+
+    expect(array_column($fixtures, 'usage'))->toEqualCanonicalizing([
+        'decorative', 'named-image', 'linked-brand',
+    ]);
+
+    foreach ($fixtures as $fixture) {
+        expect($fixture)->toHaveKeys([
+            'id', 'usage', 'variant', 'minimum_inline_size_px', 'background', 'accessible_name',
+        ])
+            ->and($fixture['minimum_inline_size_px'])->toBeGreaterThanOrEqual(16)
+            ->and($fixture['background'])->toBeIn(['light', 'dark']);
+
+        if ($fixture['usage'] === 'decorative') {
+            expect($fixture['accessible_name'])->toBe('');
+        } else {
+            expect($fixture['accessible_name'])->not->toBe('');
+        }
+    }
+});
+
 it('requires an owner approved provenance manifest before logo integration', function () {
     $path = ThemeContract::root() . '/plugins/corex-config/assets/brand/logo-manifest.json';
     expect($path)->toBeFile();

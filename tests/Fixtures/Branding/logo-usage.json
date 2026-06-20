@@ -1,0 +1,28 @@
+{
+  "scenarios": [
+    {
+      "id": "decorative-symbol",
+      "usage": "decorative",
+      "variant": "symbol",
+      "minimum_inline_size_px": 16,
+      "background": "light",
+      "accessible_name": ""
+    },
+    {
+      "id": "named-product-lockup",
+      "usage": "named-image",
+      "variant": "lockup",
+      "minimum_inline_size_px": 96,
+      "background": "light",
+      "accessible_name": "CoreX"
+    },
+    {
+      "id": "linked-product-contrast-lockup",
+      "usage": "linked-brand",
+      "variant": "contrast",
+      "minimum_inline_size_px": 96,
+      "background": "dark",
+      "accessible_name": "CoreX home"
+    }
+  ]
+}

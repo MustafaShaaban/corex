@@ -21,7 +21,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 |---|---|---|---|
 | M0 - Stabilization, Security, and Release Hygiene | Closed in v0.27.0 | Complete | Environment-gated wp-env/browser/deployment evidence remains follow-up verification |
 | M1 - Design Inventory and Design-to-Engineering Pipeline | Current design package frozen; handoff intake active | High | Approved Claude Design inventory and handoffs |
-| M2 - CoreX Brand Tokens and Visual Foundation | Active; T001-T055 complete except owner-blocked font assets T047-T048 | High | T056-T058 logo contracts, then approved assets required |
+| M2 - CoreX Brand Tokens and Visual Foundation | Owner-blocked after T058/contract guards | High | Approved font and production logo packages/provenance |
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Design needed | High | M1, M2 |
 | M4 - Full Company Site Kit v1 | Planned | High | M0, M2, M3; selected M5 blocks |
 | M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
@@ -124,8 +124,9 @@ accessibility, RTL, performance constraints, and implementation boundaries.
 
 ## 5. M2 - CoreX Brand Tokens and Visual Foundation
 
-**Status:** Active; Spec 057 T001-T055 is complete except owner-blocked font asset tasks T047-T048. T056-T058 logo
-contracts are next; production integration remains blocked on approved vectors/provenance.
+**Status:** Owner-blocked. All currently authorized contract work through T058 plus the US3 blocked-state guard is
+complete. T047-T048 await approved fonts/provenance; T059-T064 await approved vectors/provenance. Do not bypass these
+inputs or start the ordered US4 implementation around the asset gate.
 **Outcome:** One accessible, brandable visual foundation shared by front-end, admin product UI, docs, and marketing.
 
 - New CoreX logo system and usage rules.

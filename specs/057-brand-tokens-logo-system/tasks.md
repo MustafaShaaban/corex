@@ -144,9 +144,9 @@ variant/accessibility behavior; client overrides remain independent; rendered ev
 
 ### Tests for User Story 3
 
-- [ ] T056 [US3] Run `tests/Unit/Config/LogoAssetContractTest.php` and record `BLOCKED` while the owner-approved vector package/provenance is absent
-- [ ] T057 [P] [US3] Add default/custom/client-separation regression cases for `BrandingService` in `tests/Unit/Config/BrandingTest.php`
-- [ ] T058 [P] [US3] Add decorative, named-image, linked-brand, minimum-size, and contrast-variant fixture expectations in `tests/Fixtures/Branding/logo-usage.json`
+- [x] T056 [US3] Run `tests/Unit/Config/LogoAssetContractTest.php` and record `BLOCKED` while the owner-approved vector package/provenance is absent
+- [x] T057 [P] [US3] Add default/custom/client-separation regression cases for `BrandingService` in `tests/Unit/Config/BrandingTest.php`
+- [x] T058 [P] [US3] Add decorative, named-image, linked-brand, minimum-size, and contrast-variant fixture expectations in `tests/Fixtures/Branding/logo-usage.json`
 
 ### Implementation for User Story 3
 
@@ -156,7 +156,7 @@ variant/accessibility behavior; client overrides remain independent; rendered ev
 - [ ] T062 [US3] BLOCKED on T060: apply documented decorative/named logo behavior without redesigning screens in `plugins/corex-config/src/Settings/AdminDashboard.php` and `plugins/corex-config/src/Branding/AdminBranding.php`
 - [ ] T063 [US3] BLOCKED on T060: retain the old navy/cyan SVG only as documented rollback/migration evidence and verify no unapproved raster, script, external URL, or font-text dependency in `tests/Unit/Config/LogoAssetContractTest.php`
 - [ ] T064 [US3] BLOCKED on T062: run focused Branding/Logo tests and browser minimum-size/contrast/accessibility checks; record PASS/FAIL/ENVIRONMENT-GATED evidence in `specs/057-brand-tokens-logo-system/inventories/logo-evidence.md`
-- [ ] T065 [US3] Run `clean-code-guard`, `wp-guard`, `test-guard`, and `docs-guard` on the completed US3 diff, record results in `specs/057-brand-tokens-logo-system/inventories/logo-evidence.md`, and keep the story incomplete if T059–T064 remain blocked
+- [x] T065 [US3] Run `clean-code-guard`, `wp-guard`, `test-guard`, and `docs-guard` on the completed US3 diff, record results in `specs/057-brand-tokens-logo-system/inventories/logo-evidence.md`, and keep the story incomplete if T059–T064 remain blocked
 
 **Checkpoint**: This story cannot complete until the owner-approved production vector package and provenance exist.
 
