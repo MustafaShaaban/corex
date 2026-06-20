@@ -4,7 +4,42 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-20 13:18 EEST, latest) -- Spec 057 font package integrated; logo package remains gated
+## RESUME HERE (2026-06-20, latest) -- Workspace unified to single root; Spec 057 logo package still gated
+
+- **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft. The normal project root
+  `C:/wamp64/www/corex` is now the single active checkout on this branch.
+- **Workspace correction:** the repo was being worked from two places — the normal root sat on an unrelated
+  `fix/055-dependency-security-remediation` branch with uncommitted root + `docs-app` `package.json`/lock changes,
+  while `spec/057` was checked out only inside `.worktrees/post-readiness-release`. This session removed the
+  `.worktrees/post-readiness-release` worktree (confirmed clean and at origin first), preserved the unexpected
+  Spec 055 dependency changes in a named stash
+  (`wip/spec-055-dependency-remediation-before-spec-057-workspace-unification`), then switched the normal root to
+  `spec/057-brand-tokens-logo-system` (`git pull --ff-only`, already up to date at `812dbd3`). No Spec 055 change
+  was committed or deleted; recover it with `git stash list` / `git stash apply`.
+- **Coordination rule added:** COREX-WORKING-GUIDE.md gained canonical **§A.7 — Single Workspace / Agent
+  Coordination Rule** (active-PR-branch source of truth; normal-root-only, no `.worktrees` without approval;
+  pre-flight verify of root/branch/status/log/remote/worktree; stop on wrong branch/checkout/unknown changes;
+  continue-don't-recreate; push only to the open PR branch; mandatory SUMMARY/WORKSPACE/SPEC KIT STATUS/
+  VERIFICATION/BLOCKERS/RECOMMENDED NEXT STEP + NEXT STEP handoff). `AGENTS.md` and `CLAUDE.md` carry a short
+  cross-reference bullet. No existing Spec Kit rule, the constitution, the roadmap, or release discipline was
+  weakened.
+- **Spec 057 state (unchanged this session):** T001-T058 and T065 complete; **T059-T064 remain BLOCKED** on the
+  owner-approved production CoreX SVG logo package with provenance. US4 T066-T079 remains ordered after US3 per the
+  authorized execution order and was not started; final-gate T080-T090 cannot close while the logo story is blocked.
+  No product/runtime/theme/token/logo/font code changed in this session.
+- **Verification:** workspace git state confirmed (single root, correct branch, clean tree, single worktree,
+  `812dbd3` == origin); `git diff --check` PASS on the docs change; `docs-guard` run on the workflow-doc diff. Pest/
+  Jest/build/readiness/browser checks were NOT re-run because this session changed only workflow documentation and
+  the resume entry; the last recorded implementation evidence stands.
+- **Did not change:** logo/font assets, runtime/branding behavior, admin adapter, CHANGELOG, release metadata,
+  Specs 058/059, or later milestones. The Spec 055 dependency changes are preserved in the named stash, untouched.
+- **Exact next step:** supply or approve the production geometric Core X vector package/provenance described in
+  `specs/057-brand-tokens-logo-system/inventories/logo-evidence.md`, then implement T059-T064 only; keep PR #54
+  draft. Do not start US4 ahead of the recorded order without owner direction; do not substitute the historical
+  navy/cyan SVG.
+
+---
+## RESUME HERE (2026-06-20 13:18 EEST) -- Spec 057 font package integrated; logo package remains gated
 
 - **Branch/PR:** `spec/057-brand-tokens-logo-system`; PR #54 remains open and draft.
 - **Latest incoming commit:** `617c3fc`; this T047-T048 font integration checkpoint is the next branch commit.

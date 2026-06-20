@@ -20,6 +20,11 @@ state what to build next — without anyone explaining. Do this, in order:
 
 ## WHILE working
 - Run `git status --short --branch` before edits; work from the active feature branch, never from `main`.
+- **Single workspace (COREX-WORKING-GUIDE.md §A.7):** work only from the normal project root checkout — no
+  `.worktrees` without explicit owner approval. Before editing, verify root/branch/status/log/remote/worktree, and
+  **stop and report** if you are on the wrong branch, in the wrong checkout, or see uncommitted changes you did not
+  create. The active PR branch is the working source of truth — continue from its latest pushed commit; never
+  recreate completed work. Push only to that branch while its PR is open.
 - Claim branch, spec path, task IDs, and owned files before changing code. Do not edit files owned by another
   active agent unless the handoff explicitly transfers them.
 - Follow the constitution exactly. If a request conflicts with it, say so rather than comply.
