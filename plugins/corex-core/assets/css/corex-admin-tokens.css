@@ -97,7 +97,7 @@ body.login.corex-login {
 	--corex-admin-control-height: 2.5rem;
 	--corex-admin-content-max: 92rem;
 	--corex-admin-measure: 68ch;
-	--corex-admin-page-min-height: 28rem;
+	--corex-admin-page-min-height: calc(100vh - 7rem);
 	--corex-admin-login-inline-size: min(24rem, calc(100% - 2rem));
 	--corex-admin-login-logo-height: 4.5rem;
 	--corex-admin-disabled-opacity: 0.58;

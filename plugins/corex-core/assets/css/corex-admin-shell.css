@@ -5,9 +5,11 @@
 
 .corex-admin {
 	box-sizing: border-box;
-	max-inline-size: var(--corex-admin-content-max);
+	/* Fill the available wp-admin content area (after the WP sidebar/topbar) rather than
+	   sitting as a narrow centered panel. The shell is the full CoreX product surface. */
+	max-inline-size: none;
 	margin-block-start: var(--corex-admin-space-lg);
-	margin-inline-end: var(--corex-admin-space-lg);
+	margin-inline: 0 var(--corex-admin-space-lg);
 	color: var(--corex-admin-text);
 	font-family: var(--corex-admin-font-body);
 }
