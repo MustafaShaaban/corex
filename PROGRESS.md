@@ -26,15 +26,24 @@
   the save loop (`AdminDashboard::maybeSave`, via `AdminGuard` cap+nonce) preserves the stored secret on an empty
   submit. `SettingsSecretTest` 3/3; existing SettingsForm/Settings tests updated to the corrected behavior; **full
   Pest 699 pass**.
-- **Remaining on Spec 060/M6:** US2 screen wiring (surface `SettingsSectionState` per section on the `corex-config`
-  Settings screen — section badge/notice + the captcha section showing not-installed/disabled/config-needed/normal,
-  driven by `AddonStatusResolver` + captcha "configured" = site key + secret present); US1 Add-ons screen rendering
-  (states + enable/disable for installed only, no install action); US3 scoped admin visual design (cards/tables/
-  topbar/badges via `--corex-admin-*`, dark/light/RTL/responsive, a11y; asset-scoping test = no global/frontend
-  load); US4 setup/readiness + universal states; then docs + full gate before marking PR #58 ready. Per `tasks.md`.
-- **Exact next step:** wire US2 screen — inject `AddonStatusResolver` + the captcha "configured" predicate into the
-  Settings screen and render each section's `SettingsSectionState` (header badge + a disabled/not-installed/config-
-  needed notice for the captcha section), RED→GREEN; then the Add-ons screen (US1 application). Keep PR #58 draft.
+- **US1 Add-ons view bridge DONE (committed):** `AddonView::status(): AddonStatus` maps the existing per-add-on view
+  (installed/active/flagOn + additive dependencyMissing/wooMissing/proRequired) to the canonical 7-state enum;
+  `AddonManager::views()` sets `dependencyMissing` from its existing `missingDependencies()`. The Add-ons screen now
+  has one truthful state per add-on and `canToggle()` restricts enable/disable to installed add-ons.
+  `AddonViewStatusTest` 8/8; Config 71 pass.
+- **M6 model layer COMPLETE (the goal's truthful-state core, sections 3-6):** `AddonStatus`+`AddonStatusResolver`
+  (US1), `AddonView::status()` (US1 screen bridge), `SettingsSectionState` (US2), write-only secrets (US2). All pure
+  + unit-tested; full Pest 699+ green.
+- **Remaining on Spec 060/M6 = the visual/rendering layer:** (a) render the truthful state as visible **badges** on
+  the Add-ons screen (use `AddonView::status()` + `canToggle()`; hide the enable action for not_installed/pro_required;
+  name missing dependency / WooCommerce) and the per-section state notice on the Settings screen (use
+  `SettingsSectionState`; captcha "configured" = site key + secret present via `Addon::missingKeys`); (b) US3 scoped
+  admin visual design (cards/tables/topbar/badges via `--corex-admin-*`, dark/light/RTL/responsive, a11y;
+  asset-scoping test = no global/frontend load); (c) US4 setup/readiness + universal states; (d) docs + full gate
+  before marking PR #58 ready. Per `tasks.md`.
+- **Exact next step:** render the Add-ons screen state badges from `AddonView::status()` (RED→GREEN on the screen's
+  pure render method: badge per state, enable action only when `canToggle()`, no install action), then the Settings
+  per-section notice from `SettingsSectionState`, then the scoped admin CSS (US3). Keep PR #58 draft.
 
 ---
 ## RESUME HERE (2026-06-21) -- M3 merged; M4 core implemented (full company page set); on PR
