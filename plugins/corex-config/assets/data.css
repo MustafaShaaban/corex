@@ -50,6 +50,15 @@
 	text-align: start;
 }
 
+.corex-admin .corex-data__table thead th {
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
 .corex-admin .corex-data__table.striped > tbody > :nth-child(odd) {
 	background: var(--corex-admin-surface);
 }
@@ -77,6 +86,12 @@
 .corex-admin .corex-data__pagination {
 	justify-content: flex-end;
 	margin-block-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-data__page-of {
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
 }
 
 .corex-admin .corex-data__loading,

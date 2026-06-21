@@ -22,8 +22,24 @@ body.login.corex-login::before {
 	pointer-events: none;
 }
 
+body.login.corex-login::after {
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	background-image:
+		linear-gradient(var(--corex-admin-border) 1px, transparent 1px),
+		linear-gradient(90deg, var(--corex-admin-border) 1px, transparent 1px);
+	background-size: 48px 48px;
+	opacity: 0.4;
+	-webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 28%, #000 18%, transparent 72%);
+	mask-image: radial-gradient(ellipse 60% 55% at 50% 28%, #000 18%, transparent 72%);
+	content: "";
+	pointer-events: none;
+}
+
 body.login.corex-login #login {
 	position: relative;
+	z-index: 1;
 	inline-size: var(--corex-admin-login-inline-size);
 	padding-block-start: var(--corex-admin-space-2xl);
 }
@@ -77,6 +93,14 @@ body.login.corex-login .button-primary {
 	background: var(--corex-admin-action);
 	border-color: var(--corex-admin-action);
 	border-radius: var(--corex-admin-radius-sm);
+}
+
+body.login.corex-login input[type="checkbox"] {
+	accent-color: var(--corex-admin-action);
+}
+
+body.login.corex-login .wp-hide-pw .dashicons {
+	color: var(--corex-admin-text-muted);
 }
 
 body.login.corex-login a {

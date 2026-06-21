@@ -6,6 +6,18 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Render-verified CoreX admin visual fidelity (spec 060, milestone M6):** every CoreX admin surface was rendered
+  (headless Chrome, authenticated, dark + light) and compared against the approved design captures, exposing defects
+  the earlier source-only pass missed. Form inputs no longer render with WordPress's white field background and
+  buttons no longer render in WordPress blue — controls (inputs, selects with a single RTL-aware chevron, textareas,
+  primary/secondary and Gutenberg buttons) are now styled with specificity that wins over core wp-admin CSS, with a
+  brass focus ring and dark input wells. Card and section headings take an explicit CoreX text colour (a contrast/WCAG
+  fix on dark surfaces). The `--corex-admin-*` adapter (dark + light) was realigned to the approved tokens, the Data
+  table gained monospace uppercase headers and themed pagination, and the login screen gained an ambient grid backdrop
+  with a brass checkbox and a muted reveal control. Truthful-state, security, and markup contracts are unchanged.
+
 ### Added
 
 - **CoreX Admin Product Experience (spec 060, milestone M6):** the shared CoreX wp-admin now presents a truthful

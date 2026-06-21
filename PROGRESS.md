@@ -4,6 +4,25 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-21, render-verified) -- corrective M6 admin visuals verified by real rendering
+
+- **Branch:** `fix/060-admin-design-implementation` (PR #59 → `main`). Single root checkout; no work on `main`.
+- **What changed since the review snapshot below:** the admin surfaces were actually rendered (Chrome + Playwright,
+  authenticated, dark + light, WP live at `http://corex.local`) and compared against the approved `.dc.html` design
+  captures. This exposed and fixed three systemic defects the source-only pass missed — white form inputs + WP-blue
+  buttons (zero-specificity `:where(...)` overridden by WP core), near-invisible headings (no explicit colour on dark),
+  and a drifted `--corex-admin-*` palette. Fixes: specificity-correct control styling (inputs/select chevron/buttons/
+  Gutenberg buttons + brass focus ring), explicit `.corex-admin h1-h6` colour, dark+light tokens realigned to the
+  approved package, mono data-table heads + themed pagination, login ambient grid/checkbox/reveal polish. See
+  DECISIONS #107 and `visual-evidence.md` (now real, not ENVIRONMENT-GATED).
+- **Verification (this pass):** Composer 744 tests / 3367 assertions PASS; JS 18 suites / 103 tests PASS; CSS lint,
+  root build, JS lint, dependency/security policy PASS; token inventory regenerated so the consumer contract passes;
+  every CoreX admin surface rendered dark + light and the native login logged-out.
+- **Exact next step:** review and merge PR #59. Optional follow-up polish (not blocking): Add-ons summary bar + per
+  add-on logo glyphs, and the Data explorer's left model/schema rail, to reach 1:1 with the richest design captures.
+
+---
+
 ## RESUME HERE (2026-06-21, review) -- corrective M6 admin visual implementation complete
 
 - **Branch:** `fix/060-admin-design-implementation`, from `main` @ `b31056f` (PR #58 merge). Normal root checkout,

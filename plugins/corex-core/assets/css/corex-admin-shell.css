@@ -67,6 +67,16 @@
 	padding: var(--corex-admin-space-xl);
 }
 
+.corex-admin h1,
+.corex-admin h2,
+.corex-admin h3,
+.corex-admin h4,
+.corex-admin h5,
+.corex-admin h6 {
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+}
+
 .corex-admin :where(a) {
 	color: var(--corex-admin-link);
 }
@@ -81,26 +91,103 @@
 	box-shadow: none;
 }
 
-.corex-admin :where(.button, button.button) {
+.corex-admin .button,
+.corex-admin .button-secondary,
+.corex-admin button.button,
+.corex-admin input.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--corex-admin-space-xs);
 	min-block-size: var(--corex-admin-control-height);
 	padding-block: var(--corex-admin-space-sm);
 	padding-inline: var(--corex-admin-space-md);
 	color: var(--corex-admin-text);
 	background: var(--corex-admin-surface-raised);
-	border-color: var(--corex-admin-border-strong);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-sm);
+	font-family: var(--corex-admin-font-body);
+	font-weight: 600;
+	line-height: var(--corex-admin-line-tight);
+	text-decoration: none;
+	transition: background var(--corex-admin-motion-fast) ease, border-color var(--corex-admin-motion-fast) ease, color var(--corex-admin-motion-fast) ease;
 }
 
-.corex-admin :where(.button-primary, button.button-primary) {
+.corex-admin .button:hover,
+.corex-admin .button-secondary:hover,
+.corex-admin button.button:hover,
+.corex-admin input.button:hover {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+	border-color: var(--corex-admin-border-strong);
+}
+
+.corex-admin .button-primary,
+.corex-admin button.button-primary,
+.corex-admin input.button-primary {
 	color: var(--corex-admin-action-ink);
 	background: var(--corex-admin-action);
 	border-color: var(--corex-admin-action);
 }
 
-.corex-admin :where(.button-primary, button.button-primary):hover {
+.corex-admin .button-primary:hover,
+.corex-admin .button-primary:focus,
+.corex-admin button.button-primary:hover,
+.corex-admin input.button-primary:hover {
 	color: var(--corex-admin-action-ink);
 	background: var(--corex-admin-action-hover);
 	border-color: var(--corex-admin-action-hover);
+}
+
+.corex-admin .button-link {
+	min-block-size: 0;
+	padding: 0;
+	color: var(--corex-admin-link);
+	background: transparent;
+	border: 0;
+}
+
+.corex-admin .button-link.corex-danger,
+.corex-admin .corex-data__delete {
+	color: var(--corex-admin-error);
+}
+
+/* Gutenberg @wordpress/components buttons used by the Data screen. */
+.corex-admin .components-button.is-primary {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .components-button.is-primary:hover:not(:disabled) {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action-hover);
+	border-color: var(--corex-admin-action-hover);
+}
+
+.corex-admin .components-button.is-secondary {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	box-shadow: inset 0 0 0 var(--corex-admin-border-width) var(--corex-admin-border);
+}
+
+.corex-admin .components-button.is-secondary:hover:not(:disabled) {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+	box-shadow: inset 0 0 0 var(--corex-admin-border-width) var(--corex-admin-border-strong);
+}
+
+.corex-admin .components-button.is-link {
+	color: var(--corex-admin-link);
+}
+
+.corex-admin .components-button.is-link:hover:not(:disabled) {
+	color: var(--corex-admin-link-hover);
+}
+
+.corex-admin .components-button.is-destructive,
+.corex-admin .components-button.is-link.is-destructive {
+	color: var(--corex-admin-error);
 }
 
 .corex-admin :where(button, input, select, textarea):disabled,
@@ -109,12 +196,64 @@
 	cursor: not-allowed;
 }
 
-.corex-admin :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+.corex-admin input[type="text"],
+.corex-admin input[type="search"],
+.corex-admin input[type="email"],
+.corex-admin input[type="url"],
+.corex-admin input[type="password"],
+.corex-admin input[type="number"],
+.corex-admin input[type="tel"],
+.corex-admin input[type="date"],
+.corex-admin select,
+.corex-admin textarea {
 	min-block-size: var(--corex-admin-control-height);
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-md);
 	color: var(--corex-admin-text);
 	background: var(--corex-admin-surface);
-	border-color: var(--corex-admin-border-strong);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-sm);
+	box-shadow: none;
+}
+
+.corex-admin select {
+	appearance: none;
+	padding-inline-end: var(--corex-admin-space-xl);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239aa0ab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right var(--corex-admin-space-sm) center;
+	background-size: 14px;
+}
+
+[dir="rtl"] .corex-admin select {
+	background-position: left var(--corex-admin-space-sm) center;
+}
+
+.corex-admin input[type="text"]::placeholder,
+.corex-admin input[type="search"]::placeholder,
+.corex-admin input[type="email"]::placeholder,
+.corex-admin input[type="url"]::placeholder,
+.corex-admin input[type="password"]::placeholder,
+.corex-admin textarea::placeholder {
+	color: var(--corex-admin-text-subtle);
+}
+
+.corex-admin input[type="text"]:focus,
+.corex-admin input[type="search"]:focus,
+.corex-admin input[type="email"]:focus,
+.corex-admin input[type="url"]:focus,
+.corex-admin input[type="password"]:focus,
+.corex-admin input[type="number"]:focus,
+.corex-admin select:focus,
+.corex-admin textarea:focus {
+	border-color: var(--corex-admin-action);
+	outline: none;
+	box-shadow: 0 0 0 3px var(--corex-admin-action-subtle);
+}
+
+.corex-admin input[type="checkbox"],
+.corex-admin input[type="radio"] {
+	accent-color: var(--corex-admin-action);
 }
 
 .corex-admin :where(.card, .corex-surface) {

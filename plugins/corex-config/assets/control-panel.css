@@ -27,8 +27,7 @@
 	margin-block-start: var(--corex-admin-space-lg);
 }
 
-.corex-admin .corex-stat-card,
-.corex-admin .corex-card {
+.corex-admin .corex-stat-card {
 	padding: var(--corex-admin-space-lg);
 	background: var(--corex-admin-surface);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
@@ -73,7 +72,11 @@
 }
 
 .corex-admin .corex-card {
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+	border-radius: var(--corex-admin-radius-md);
 }
 
 .corex-admin .corex-card.is-configured {
