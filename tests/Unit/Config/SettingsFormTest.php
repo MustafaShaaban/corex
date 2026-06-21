@@ -18,6 +18,7 @@ beforeEach(function () {
     Functions\when('esc_html')->returnArg();
     Functions\when('esc_url')->returnArg();
     Functions\when('esc_html__')->returnArg();
+    Functions\when('esc_attr__')->returnArg();
 });
 
 function formHtml(callable $value): string
@@ -44,11 +45,12 @@ it('renders the captcha driver as a select of its options with the current value
         ->toContain('<option value="honeypot">');
 });
 
-it('renders a plain input for text/email/password fields', function () {
+it('renders text/email as plain inputs and password as a write-only secret control', function () {
     $html = formHtml(fn (string $k): string => '');
 
     expect($html)->toContain('id="mail_from_name" name="mail_from_name" type="text"')
-        ->toContain('type="password"');
+        ->toContain('type="password"')
+        ->toContain('corex-secret-state'); // write-only: a set/not-set hint, never the value
 });
 
 it('includes the nonce and a save button', function () {

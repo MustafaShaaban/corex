@@ -139,12 +139,44 @@ final class AdminDashboard
             return;
         }
 
+        $secretKeys = $this->secretKeys();
+
         foreach ($this->registry->keys() as $key) {
             $name = str_replace('.', '_', $key);
 
-            if (isset($_POST[$name])) {
-                $this->store->save($key, sanitize_text_field(wp_unslash($_POST[$name])));
+            if (! isset($_POST[$name])) {
+                continue;
+            }
+
+            $value = sanitize_text_field(wp_unslash($_POST[$name]));
+
+            // Write-only secrets render empty, so an empty submit means "keep the saved
+            // value" — never overwrite a stored secret with a blank (spec 060 / M6 US2).
+            if ($value === '' && in_array($key, $secretKeys, true)) {
+                continue;
+            }
+
+            $this->store->save($key, $value);
+        }
+    }
+
+    /**
+     * Password-typed (write-only secret) keys, derived from the registry field types.
+     *
+     * @return list<string>
+     */
+    private function secretKeys(): array
+    {
+        $keys = [];
+
+        foreach ($this->registry->sections() as $section) {
+            foreach ($section['fields'] as $key => $field) {
+                if (($field['type'] ?? '') === 'password') {
+                    $keys[] = $key;
+                }
             }
         }
+
+        return $keys;
     }
 }

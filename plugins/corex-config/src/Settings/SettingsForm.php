@@ -62,8 +62,27 @@ final class SettingsForm
             'media'    => $this->media($name, $value),
             'select'   => $this->select($name, $field['options'] ?? [], $value),
             'checkbox' => $this->checkbox($name, $value),
+            'password' => $this->secret($name, $value !== ''),
             default    => $this->input($name, $field['type'], $value),
         };
+    }
+
+    /**
+     * A write-only secret control (spec 060 / M6 US2): the stored secret is never
+     * rendered back — the input is always empty and only a set/not-set hint is shown,
+     * so the value cannot leak via the page source. An empty submit preserves the
+     * stored secret (see the settings save loop).
+     */
+    private function secret(string $name, bool $isSet): string
+    {
+        return sprintf(
+            '<input id="%1$s" name="%1$s" type="password" value="" autocomplete="new-password"'
+            . ' class="regular-text" placeholder="%2$s" />'
+            . ' <span class="corex-secret-state">%3$s</span>',
+            esc_attr($name),
+            $isSet ? esc_attr__('Leave blank to keep the saved value', 'corex') : esc_attr__('Not set', 'corex'),
+            $isSet ? esc_html__('Saved', 'corex') : esc_html__('Not set', 'corex'),
+        );
     }
 
     private function input(string $name, string $type, string $value): string

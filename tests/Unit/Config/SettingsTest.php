@@ -23,6 +23,7 @@ it('renders the settings form with current values and a nonce', function () {
     Functions\when('esc_html')->returnArg();
     Functions\when('esc_attr')->returnArg();
     Functions\when('esc_html__')->returnArg();
+    Functions\when('esc_attr__')->returnArg();
 
     $form = new SettingsForm(new SettingsRegistry());
 
