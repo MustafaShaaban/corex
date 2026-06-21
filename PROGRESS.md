@@ -35,16 +35,20 @@
     (1200×900 PNG; the theme previously had none) — editorial light hero, CoreX mark + brass-x wordmark, nav
     (Product/Solutions/Docs/Pricing), Sign in / Get started, "Discipline, at every layer.", and the Architecture/
     Blocks/Add-ons feature cards. Real raster file, not embedded/base64.
-  - **Remaining phases (need truthful-state care — flagged for owner):** (3) Data explorer left model/schema rail +
-    insight cards — our Data screen has one real source (form submissions); a multi-model rail/schema/sparkline would
-    invent backing, so it must show the one real source active + truthful empty/disabled rows; (4) Overview event-bus/
-    records panels — the capture's live event bus + records table are demo data we do not have, so only truthful
-    panels apply; (5) Settings tabs — the capture's tab names (Architecture/Data sources/Design tokens) are demo; the
-    truthful move is to tab the real sections (Brand/Mail/Forms/Captcha/Insights), not invent those tabs; (6) Setup
-    Wizard + Insights rhythm alignment (safe); these inherit the shell + control fixes already. All must keep
-    truthful state and use real asset files (no `data:`).
-- **Exact next step:** confirm scope for Phases 3–6 with the owner (how far to push the Data/Overview/Settings
-  captures without inventing backing data), then implement. Do not merge PR #59 yet.
+  - **Phase 3 DONE — Data explorer (owner-approved "Option 1: truthful structure"):** rebuilt the Data React app
+    (`plugins/corex-config/src/admin/index.js`, rebuilt to `build/admin/index.js`) into the capture's explorer layout
+    — left `SOURCES / MODELS` rail (only real registered sources; active source shows its real row count) + a
+    `SCHEMA — {source}` panel derived from the source's real columns (honest empty state when none); metric cards for
+    real Total rows + Fields plus an honest "trend not available" card (no fabricated 14-day sparkline); and a data
+    panel with the model title, a QueryBuilder marker, the real search/form-filter/Export controls, the mono-uppercase
+    table, and themed pagination. No invented models/fields/records; all states truthful.
+  - **Remaining phases:** (4) Overview records/event panels — the capture's live event bus + records table are demo
+    data we don't have, so only truthful panels (apply the explorer/card rhythm to real Site-status data + the setup
+    card); (5) Settings tabs — the capture's tab names (Architecture/Data sources/Design tokens) are demo, so the
+    truthful move is to tab the real sections (Brand/Mail/Forms/Captcha/Insights); (6) Setup Wizard + Insights rhythm
+    (largely inherit the shell + control fixes). Keep truthful state; real asset files only (no `data:`).
+- **Exact next step:** Phase 5 (Settings tabs over the real sections) or Phase 4 (Overview truthful panels). Do not
+  merge PR #59 yet.
 
 ---
 
