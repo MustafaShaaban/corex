@@ -224,12 +224,30 @@
 }
 
 .corex-admin .corex-data__search {
-	min-inline-size: min(100%, 16rem);
+	flex: 1 1 12rem;
+	min-inline-size: 11rem;
+	max-inline-size: 26rem;
 }
 
-.corex-admin .corex-data__export {
-	margin-inline-start: auto;
+/* Every toolbar control shares one height so search, the source filter, Reset,
+   Export, and New record read as one consistent control row. */
+.corex-admin .corex-data__toolbar .corex-data__search,
+.corex-admin .corex-data__toolbar .corex-data__form,
+.corex-admin .corex-data__toolbar .button {
+	block-size: var(--corex-admin-control-height);
+	min-block-size: var(--corex-admin-control-height);
+	padding-block: 0;
+	line-height: normal;
+	border-radius: var(--corex-admin-radius-sm);
 }
+
+/* Readable native dropdown options in both schemes (the popup follows
+   color-scheme; option colours are explicit so a highlight stays readable). */
+.corex-admin .corex-data__form option {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+}
+
 
 .corex-admin .corex-data__export-note {
 	flex-basis: 100%;
