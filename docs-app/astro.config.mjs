@@ -75,6 +75,7 @@ export default defineConfig({
 						{ label: 'Components', slug: 'design-system/components' },
 						{ label: 'Patterns', slug: 'design-system/patterns' },
 						{ label: 'Navigation & footer', slug: 'design-system/navigation' },
+						{ label: 'Admin experience', slug: 'design-system/admin-experience' },
 						{ label: 'Templates', slug: 'design-system/templates' },
 						{ label: 'Client readiness', slug: 'design-system/client-readiness' },
 						{ label: 'Gap analysis', slug: 'design-system/gap-analysis' },

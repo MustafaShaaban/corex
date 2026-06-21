@@ -4,7 +4,28 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-21, latest) -- M6 started: Spec 060 specced/planned + US1 truthful add-on state model (PR #58 draft)
+## RESUME HERE (2026-06-21, latest) -- M6 truthful-state core complete; PR #58 ready; docs + gate done
+
+- **Branch/PR:** `spec/060-corex-admin-product-experience`; **PR #58** to `main`. Normal root, single worktree, no
+  `.worktrees`. Spec 055 stash untouched. From `main` @ `83a89cf`.
+- **M6 truthful-state core COMPLETE (committed):** `AddonStatus`+`AddonStatusResolver` (7 states), `AddonView::status()`
+  + `tone()`, **Add-ons screen renders accessible 7-state badges** (manage installed only, no marketplace),
+  `SettingsSectionState` + the Settings screen reflecting it (captcha/reCAPTCHA worked example), **write-only secrets**
+  (captcha secret + API keys never rendered; empty submit preserves), and scoped Add-ons CSS via `--corex-admin-*`
+  (asset-scoping test: no global/frontend load). docs-app → Admin experience page; DECISIONS #105; ROADMAP/CHANGELOG.
+- **Verification:** AddonStatusResolver 8/8, AddonStatusTone 5/5, AddonViewStatus 8/8, SettingsSectionState 5/5,
+  SettingsSecret 3/3, SettingsFormSectionState 4/4, AdminAssetScoping 3/3; **full Pest 719, test:js 103, lint:css
+  clean, docs-app 273 pages**, token inventories in-sync. Guards wp/clean-code/test/docs clean. **ENVIRONMENT-GATED:**
+  rendered admin browser/RTL/visual + wp-env evidence (Docker + browser runtime unavailable).
+- **Residual (minor follow-up, not blocking the truthful-state product):** Setup-Wizard cosmetic styling and broader
+  US4 universal-state polish (loading/empty/error/success — permission-denied already via `AdminGuard`); the readiness
+  screen already gates env-checks honestly via the existing Insights/readiness system. Dashboard/Settings/Data/
+  Insights retain their existing scoped styling.
+- **Exact next step:** (owner/next session) the residual Setup-Wizard scoped styling + US4 universal-state polish, and
+  collect env-gated admin browser evidence when Docker/a browser runtime is available.
+
+---
+## RESUME HERE (2026-06-21) -- M6 started: Spec 060 specced/planned + US1 truthful add-on state model (PR #58 draft)
 
 - **Branch/PR:** `spec/060-corex-admin-product-experience` (from `main` @ `83a89cf`); **PR #58 (draft)**. Normal root,
   single worktree, no `.worktrees`. Spec 055 WIP untouched in `stash@{0}`. (M4 PR #57 merged earlier.)

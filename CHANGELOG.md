@@ -8,6 +8,17 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **CoreX Admin Product Experience (spec 060, milestone M6):** the shared CoreX wp-admin now presents a truthful
+  add-on/settings state model. `AddonStatus` + `AddonStatusResolver` resolve every add-on to one of seven honest
+  states (not installed / inactive / feature off / dependency missing / WooCommerce missing / Pro required / active);
+  the Add-ons screen renders each as an accessible labelled badge and offers enable/disable for installed add-ons
+  only (no marketplace/install-from-admin). Settings sections reflect the same model — not-installed sections are
+  hidden behind a notice, inactive sections are disabled, active-but-unconfigured sections prompt for configuration —
+  with reCAPTCHA as the worked example, and **secret fields (captcha secret, API keys) are now write-only** (never
+  rendered back; an empty submit preserves the stored secret). The admin styling consumes only the scoped
+  `--corex-admin-*` adapter and loads only on CoreX admin screens — no global wp-admin restyle, no public-frontend
+  branding. Docs: design-system → Admin experience.
+
 - **Company Site Kit v1 page coverage (spec 059, milestone M4):** the `corex-kit-company` `CompanyBlueprint` now
   provides the full v1 content-page set (Home, About, Services, Single Service, Work, Case Study, Industries, FAQ,
   Blog, Team, Testimonials, Locations, Contact, Privacy/Terms/Cookie, Maintenance), composed only from registered
