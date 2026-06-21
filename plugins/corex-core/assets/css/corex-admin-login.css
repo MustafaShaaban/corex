@@ -113,6 +113,63 @@ body.login.corex-login :where(a, button, input):focus-visible {
 	box-shadow: none;
 }
 
+/* Sign-in subheading + SSO slot (Login capture), above the native form via the
+   login_message filter. The SSO control is an honest disabled "not configured"
+   button — never a fake provider. */
+body.login.corex-login .corex-login__subtitle {
+	margin-block: calc(-1 * var(--corex-admin-space-md)) var(--corex-admin-space-lg);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-md);
+	text-align: center;
+}
+
+body.login.corex-login .corex-login__sso {
+	position: relative;
+	z-index: 1;
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+body.login.corex-login .corex-login__sso-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--corex-admin-space-xs);
+	inline-size: 100%;
+	min-block-size: var(--corex-admin-control-height);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	font-weight: 600;
+}
+
+body.login.corex-login .corex-login__sso-btn[disabled] {
+	opacity: var(--corex-admin-disabled-opacity);
+	cursor: not-allowed;
+}
+
+body.login.corex-login .corex-login__sso-btn .dashicons {
+	color: var(--corex-admin-action);
+}
+
+body.login.corex-login .corex-login__divider {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	margin-block-start: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+body.login.corex-login .corex-login__divider::before,
+body.login.corex-login .corex-login__divider::after {
+	flex: 1;
+	block-size: 1px;
+	background: var(--corex-admin-border);
+	content: "";
+}
+
 @media (prefers-reduced-motion: reduce) {
 
 	body.login.corex-login *,

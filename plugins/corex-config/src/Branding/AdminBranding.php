@@ -28,6 +28,35 @@ final class AdminBranding
         add_filter('login_headerurl', [$this, 'loginUrl']);
         add_filter('admin_footer_text', [$this, 'footerText']);
         add_filter('corex_admin_appearance', [$this, 'appearance']);
+        add_filter('login_message', [$this, 'loginMessage']);
+    }
+
+    /**
+     * Adds the CoreX sign-in subheading and — when the SSO slot setting is on — a designed
+     * single-sign-on slot above the native login form (design: Login capture). No SSO provider
+     * is implemented, so the slot is an honest, disabled "not configured yet" control; it never
+     * fakes an OAuth flow. Only on the sign-in action — lost-password/reset stay untouched.
+     */
+    public function loginMessage(string $message): string
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only screen selection, not a state change.
+        $action = isset($_REQUEST['action']) ? sanitize_key(wp_unslash($_REQUEST['action'])) : 'login';
+
+        if (! in_array($action, ['', 'login'], true)) {
+            return $message;
+        }
+
+        $html = '<p class="corex-login__subtitle">' . esc_html__('Sign in to your workspace', 'corex') . '</p>';
+
+        if ($this->branding->loginSsoEnabled()) {
+            $html .= '<div class="corex-login__sso">'
+                . '<button type="button" class="button corex-login__sso-btn" disabled aria-disabled="true">'
+                . '<span class="dashicons dashicons-admin-network" aria-hidden="true"></span>'
+                . esc_html__('SSO is not configured yet.', 'corex') . '</button>'
+                . '<div class="corex-login__divider"><span>' . esc_html__('or', 'corex') . '</span></div></div>';
+        }
+
+        return $html . $message;
     }
 
     /**
