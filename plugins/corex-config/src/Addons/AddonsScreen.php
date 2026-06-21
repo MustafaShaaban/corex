@@ -33,21 +33,43 @@ final class AddonsScreen
     ) {
     }
 
+    private string $hook = '';
+
     public function register(): void
     {
         add_action('admin_menu', [$this, 'menu']);
         add_action('admin_init', [$this, 'maybeToggle']);
+        add_action('admin_enqueue_scripts', [$this, 'maybeEnqueue']);
     }
 
     public function menu(): void
     {
-        add_submenu_page(
+        $this->hook = (string) add_submenu_page(
             'corex-settings',
             __('Corex Add-ons', 'corex'),
             __('Add-ons', 'corex'),
             'manage_options',
             'corex-addons',
             [$this, 'render'],
+        );
+    }
+
+    /**
+     * The Add-ons screen styling — only on this screen (Principle VI), declaring the
+     * scoped --corex-admin-* adapter as a dependency so it never restyles wp-admin
+     * globally and never loads on the public frontend.
+     */
+    public function maybeEnqueue(string $hook): void
+    {
+        if ($hook !== $this->hook || $this->hook === '') {
+            return;
+        }
+
+        wp_enqueue_style(
+            'corex-addons',
+            plugins_url('assets/addons.css', COREX_CONFIG_FILE),
+            ['corex-admin-tokens'],
+            '1.0.0',
         );
     }
 

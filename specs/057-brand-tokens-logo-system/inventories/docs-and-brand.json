@@ -191,6 +191,15 @@
       ]
     },
     {
+      "path": "docs-app/src/content/docs/guides/company-kit.md",
+      "lines": [
+        36
+      ],
+      "topics": [
+        "brand.json"
+      ]
+    },
+    {
       "path": "docs-app/src/content/docs/guides/design-system.md",
       "lines": [
         43

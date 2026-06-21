@@ -379,9 +379,16 @@ const collectConsumers = ( root, definitions ) => {
 
 		for ( const [ property, group ] of grouped ) {
 			const definition = canonical.get( property );
-			const target = definition?.replacement_id || definition?.id || null;
+			const isAdminToken = property.startsWith( '--corex-admin-' );
+			const target = isAdminToken
+				? 'scoped --corex-admin-* adapter'
+				: definition?.replacement_id || definition?.id || null;
 			const snippets = group.snippets.join( ' | ' );
-			const resolution = consumerResolution( definition );
+			// The scoped --corex-admin-* adapter is the documented admin-token allowance
+			// (spec 057 US4); consuming it from a CoreX admin screen is permitted.
+			const resolution = isAdminToken
+				? 'raw-allowance'
+				: consumerResolution( definition );
 			consumers.push( {
 				path: file,
 				selector_or_context: `lines ${ group.lines.join(

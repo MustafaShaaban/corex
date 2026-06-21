@@ -1,0 +1,42 @@
+/**
+ * CoreX Add-ons screen styling (Spec 060 / M6 US3).
+ *
+ * Scoped to CoreX admin markup (the .corex-* classes); consumes only the scoped
+ * admin adapter roles. Enqueued only on the Add-ons screen (Principle VI) — it
+ * never restyles generic wp-admin and never loads on the public frontend.
+ *
+ * RTL-first via logical properties. Status meaning is carried by the badge
+ * label text, not the tone colour alone (WCAG 2.2 AA).
+ */
+
+.corex-badge {
+	display: inline-block;
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-md);
+	border: 1px solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	background: var(--corex-admin-surface-alt);
+	color: var(--corex-admin-text);
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.corex-badge--success {
+	color: var(--corex-admin-success);
+	border-color: var(--corex-admin-success);
+}
+
+.corex-badge--warning {
+	color: var(--corex-admin-warning);
+	border-color: var(--corex-admin-warning);
+}
+
+.corex-badge--danger {
+	color: var(--corex-admin-error);
+	border-color: var(--corex-admin-error);
+}
+
+.corex-badge--neutral {
+	color: var(--corex-admin-text-muted);
+	border-color: var(--corex-admin-border);
+}

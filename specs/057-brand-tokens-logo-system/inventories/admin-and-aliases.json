@@ -1077,6 +1077,76 @@
   ],
   "legacy_references": [
     {
+      "legacy_property": "--corex-admin-border",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/addons.css",
+      "context": "lines 16, 41: border: 1px solid var(--corex-admin-border); | border-color: var(--corex-admin-border);"
+    },
+    {
+      "legacy_property": "--corex-admin-error",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/addons.css",
+      "context": "lines 35, 36: color: var(--corex-admin-error); | border-color: var(--corex-admin-error);"
+    },
+    {
+      "legacy_property": "--corex-admin-radius-md",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/addons.css",
+      "context": "lines 17: border-radius: var(--corex-admin-radius-md);"
+    },
+    {
+      "legacy_property": "--corex-admin-space-md",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/addons.css",
+      "context": "lines 15: padding-inline: var(--corex-admin-space-md);"
+    },
+    {
+      "legacy_property": "--corex-admin-space-sm",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/addons.css",
+      "context": "lines 14: padding-block: var(--corex-admin-space-sm);"
+    },
+    {
+      "legacy_property": "--corex-admin-success",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/addons.css",
+      "context": "lines 25, 26: color: var(--corex-admin-success); | border-color: var(--corex-admin-success);"
+    },
+    {
+      "legacy_property": "--corex-admin-surface-alt",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/addons.css",
+      "context": "lines 18: background: var(--corex-admin-surface-alt);"
+    },
+    {
+      "legacy_property": "--corex-admin-text",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/addons.css",
+      "context": "lines 19: color: var(--corex-admin-text);"
+    },
+    {
+      "legacy_property": "--corex-admin-text-muted",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/addons.css",
+      "context": "lines 40: color: var(--corex-admin-text-muted);"
+    },
+    {
+      "legacy_property": "--corex-admin-warning",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/addons.css",
+      "context": "lines 30, 31: color: var(--corex-admin-warning); | border-color: var(--corex-admin-warning);"
+    },
+    {
       "legacy_property": "--wp--preset--font-size--small",
       "target_definition": "font-size.sm",
       "resolution": "alias-required",
