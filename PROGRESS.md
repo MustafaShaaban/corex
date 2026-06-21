@@ -4,6 +4,39 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-21, capture-fidelity 20-blocker pass started) -- B1/B18/B19 done; 16 blockers remain
+
+- **Branch/PR:** `fix/060-admin-design-implementation` → PR #59 (do **not** merge). Single root checkout; no `main`.
+- **Scope:** the owner's 20-blocker capture-fidelity brief (`C:\Users\pc\Desktop\promp.md`) — finish the *current*
+  CoreX admin screens against the approved `.dc.html` captures (truthful data only; no fake records/sources/SSO/Pro).
+- **Render harness REBUILT + re-usable:** `tests/e2e/render-admin.mjs` logs in via an injected admin session cookie
+  (`wp eval wp_generate_auth_cookie` → `tests/e2e/.auth/admin.json`, gitignored) and screenshots every CoreX admin
+  surface dark+light at any viewport (`COREX_W/COREX_H`). corex.local is live (HTTP 200); Playwright 1.61 + chromium
+  present. Captures live at `F:/Work/Design project questions answered (3)/*.dc.html` (Dashboard, Add-ons & Data,
+  Login & Settings, Options Round 2, Addon Logos, Theme Screenshot). Throwaway output dirs are gitignored.
+- **DONE this pass (committed, render+test+guard verified):**
+  - **B1 full-width shell** (`f6bd8e1`): removed the `--corex-admin-content-max` cap on `.corex-admin` (was a centered
+    panel leaving dead canvas on wide monitors) → fills the available content area; shell min-height grown to
+    `calc(100vh - 7rem)` so short screens don't leave a gray void. Verified dark+light at 1440 and 1920.
+  - **B18 asset guard** (`3d20860`): `tests/Unit/Assets/NoDataUriAssetTest.php` scans shipped plugins/addons/theme
+    CSS/JS/PHP for `data:` image URIs (none) + an anti-vacuous-scan companion test. test-guard clean.
+  - **B19 theme screenshot:** confirmed `theme/screenshot.png` is a real 1200×900 PNG (verification only, no change).
+- **REMAINING blockers (each = read screen code + matching capture, implement, re-render dark+light, test, guard,
+  commit):** B2–B7 Data explorer (rail-driven source switching incl. schema/cards/table/filters; correct schema
+  panel; visible functional filters; bulk actions w/ checkboxes+nonce; Add/Edit/View w/ polished accessible drawer;
+  designed table) — files `plugins/corex-config/src/Data/*` + `src/admin/index.js` (React, rebuild to `build/admin/`)
+  + `assets/data.css`. B8–B9 Add-ons toggles + card hierarchy (`src/Addons/AddonsScreen.php` + `assets/addons.css`).
+  B10–B12 Settings tabs (Brand→Mail→Forms→Captcha→Insights) + Brand logo/footer current-value preview + appearance
+  mode System/Light/Dark (note: `corex-admin-tokens.css` already has a `[data-corex-theme="light"]` hook to wire to a
+  persisted setting) — `src/Settings/*`. B13–B14 Login SSO slot (setting-gated, no fake provider) + visual fidelity
+  (`corex-admin-login.css` + login render filter). B15 Overview, B16 Insights, B17 Setup polish. B20 docs/evidence +
+  visual-evidence.md update + final report. Keep all states truthful; real asset files only.
+- **Exact next step:** B8–B9 (Add-ons toggles) OR B10 (Settings tabs) — both contained, high-impact, capture-clear.
+  Read the matching `.dc.html`, implement, re-render via `node tests/e2e/render-admin.mjs <out> --screens=<name>`,
+  run focused Pest + guard, commit to PR #59. Do not merge.
+
+---
+
 ## RESUME HERE (2026-06-21, render-verified) -- corrective M6 admin visuals verified by real rendering
 
 - **Branch:** `fix/060-admin-design-implementation` (PR #59 → `main`). Single root checkout; no work on `main`.
