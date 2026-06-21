@@ -96,9 +96,45 @@ final class AdminDashboard
         // The cards/checklist are already escaped by ControlPanelView.
         echo $this->panel->render($this->settingValues());
 
-        // The form HTML is built with per-value escaping in SettingsForm.
-        echo $this->form->render(fn (string $key): string => $this->store->get($key), $nonce)
-            . '</div>';
+        // The form HTML is built with per-value escaping in SettingsForm. The per-section
+        // state makes each section reflect its add-on's runtime state (spec 060 / M6 US2).
+        echo $this->form->render(
+            fn (string $key): string => $this->store->get($key),
+            $nonce,
+            fn (string $sectionKey): ?SettingsSectionState => $this->sectionState($sectionKey),
+        ) . '</div>';
+    }
+
+    /**
+     * The runtime state of a settings section so the form can reflect it (spec 060 / M6 US2).
+     * Captcha: not installed → hidden; installed-inactive → disabled; active but the site
+     * key/secret are not both set → configuration needed; active + configured → normal.
+     * Other sections have no add-on gating (null = normal).
+     */
+    private function sectionState(string $sectionKey): ?SettingsSectionState
+    {
+        if ($sectionKey !== 'captcha') {
+            return null;
+        }
+
+        if (! file_exists(WP_PLUGIN_DIR . '/corex-captcha/corex-captcha.php')) {
+            return SettingsSectionState::Hidden;
+        }
+
+        $active = in_array(
+            'corex-captcha/corex-captcha.php',
+            array_map('strval', (array) get_option('active_plugins', [])),
+            true,
+        );
+
+        if (! $active) {
+            return SettingsSectionState::Disabled;
+        }
+
+        $configured = trim((string) $this->store->get('captcha.site_key')) !== ''
+            && trim((string) $this->store->get('captcha.secret')) !== '';
+
+        return $configured ? SettingsSectionState::Normal : SettingsSectionState::ConfigurationNeeded;
     }
 
     /**
