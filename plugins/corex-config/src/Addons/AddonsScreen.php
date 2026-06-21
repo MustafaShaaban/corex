@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Config\Addons;
 
+use Corex\Foundation\AddonStatus;
 use Corex\Provisioning\KitProvisioner;
 use Corex\Security\Admin\AdminGuard;
 
@@ -70,9 +71,13 @@ final class AddonsScreen
 
     private function renderRow(AddonView $view): void
     {
+        $status = $view->status();
+
         echo '<div class="card">';
         echo '<h2>' . esc_html($view->addon->label) . '</h2>';
-        echo '<p><strong>' . esc_html__('Status:', 'corex') . '</strong> ' . esc_html($this->statusLabel($view)) . '</p>';
+        echo '<p><strong>' . esc_html__('Status:', 'corex') . '</strong> '
+            . '<span class="corex-badge corex-badge--' . esc_attr($status->tone()) . '">'
+            . esc_html($this->statusLabel($status)) . '</span></p>';
 
         $this->renderManifest($view->addon);
 
@@ -243,13 +248,17 @@ final class AddonsScreen
         return new AddonState($activeSlugs, $enabledFlags);
     }
 
-    private function statusLabel(AddonView $view): string
+    private function statusLabel(AddonStatus $status): string
     {
-        if (! $view->installed) {
-            return __('Not installed', 'corex');
-        }
-
-        return $view->active ? __('Active', 'corex') : __('Inactive', 'corex');
+        return match ($status) {
+            AddonStatus::NotInstalled       => __('Not installed', 'corex'),
+            AddonStatus::Inactive           => __('Inactive', 'corex'),
+            AddonStatus::FeatureOff         => __('Feature off', 'corex'),
+            AddonStatus::DependencyMissing  => __('Dependency missing', 'corex'),
+            AddonStatus::WoocommerceMissing => __('WooCommerce missing', 'corex'),
+            AddonStatus::ProRequired        => __('Pro required', 'corex'),
+            AddonStatus::Active             => __('Active', 'corex'),
+        };
     }
 
     private function notice(string $message, string $type): void

@@ -43,4 +43,18 @@ enum AddonStatus: string
     {
         return $this->isInstalled();
     }
+
+    /**
+     * A semantic badge tone for the admin, mapped to the --corex-admin-* roles. Status
+     * meaning is conveyed by the label (text), never by the tone alone (WCAG 2.2 AA).
+     */
+    public function tone(): string
+    {
+        return match ($this) {
+            self::Active => 'success',
+            self::Inactive, self::FeatureOff => 'warning',
+            self::DependencyMissing, self::WoocommerceMissing => 'danger',
+            self::NotInstalled, self::ProRequired => 'neutral',
+        };
+    }
 }
