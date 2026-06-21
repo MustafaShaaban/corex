@@ -1,8 +1,87 @@
-/** CoreX Add-ons cards and truthful states; scoped to the CoreX shell. */
+/** CoreX Add-ons summary, cards, and logos; scoped to the CoreX shell. */
+
+.corex-admin .corex-addons__summary {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.6fr);
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-addons__summary-card {
+	padding: var(--corex-admin-space-md) var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-addons__summary-label {
+	margin: 0;
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-addons__summary-value {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-xl);
+	font-weight: 700;
+}
+
+.corex-admin .corex-addons__summary-total {
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 500;
+}
+
+.corex-admin .corex-addons__summary-muted {
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-body);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 500;
+}
+
+.corex-admin .corex-addons__philosophy {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-md) var(--corex-admin-space-lg);
+	background: linear-gradient(150deg, var(--corex-admin-action-subtle), var(--corex-admin-surface-raised) 70%);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-action-subtle);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-addons__philosophy-title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-addons__philosophy-text {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-addons__philosophy-tag {
+	flex: none;
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-action);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-action-subtle);
+	border-radius: var(--corex-admin-radius-pill);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
 
 .corex-admin .corex-addons__grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: var(--corex-admin-space-lg);
 }
 
@@ -15,14 +94,54 @@
 .corex-admin .corex-addon-card__header {
 	display: flex;
 	align-items: flex-start;
-	justify-content: space-between;
 	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-addon-card__logo {
+	flex: none;
+	inline-size: 3rem;
+	block-size: 3rem;
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-addon-card__heading {
+	flex: 1;
+	min-inline-size: 0;
+}
+
+.corex-admin .corex-addon-card__title-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-addon-card__slug {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
 }
 
 .corex-admin .corex-addon-card__header h2,
 .corex-admin .corex-addon-card__status,
 .corex-admin .corex-addon-card p {
 	margin: 0;
+}
+
+.corex-admin .corex-addon-card__header h2 {
+	font-size: var(--corex-admin-font-md);
+}
+
+@media (max-width: 1200px) {
+
+	.corex-admin .corex-addons__summary {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.corex-admin .corex-addons__grid {
+		grid-template-columns: 1fr;
+	}
 }
 
 .corex-admin .corex-addon-card .description {

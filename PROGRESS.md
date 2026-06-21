@@ -18,8 +18,20 @@
 - **Verification (this pass):** Composer 744 tests / 3367 assertions PASS; JS 18 suites / 103 tests PASS; CSS lint,
   root build, JS lint, dependency/security policy PASS; token inventory regenerated so the consumer contract passes;
   every CoreX admin surface rendered dark + light and the native login logged-out.
-- **Exact next step:** review and merge PR #59. Optional follow-up polish (not blocking): Add-ons summary bar + per
-  add-on logo glyphs, and the Data explorer's left model/schema rail, to reach 1:1 with the richest design captures.
+- **Capture-fidelity pass (in progress, do not merge yet):** refining PR #59 to match the approved `.dc.html`
+  captures specifically (not just generic CoreX styling), current screens only — no invented/new screens.
+  - **Phase 1 DONE — Add-on logo system + Add-ons screen:** generated the frozen "Direction A — Module Tile" logos
+    as real committed SVGs (`scripts/generate-addon-logos.mjs` → `plugins/corex-config/assets/addon-logos/*.svg`,
+    active + muted-disabled per add-on/kit/core/pro + `fallback` + `assets/brand/corex-mark.svg`); the Add-ons screen
+    now renders each card's logo tile, a slug meta line, and a truthful summary bar (Active n/total · Updates "not
+    tracked" · Site kits · "Add-ons self-disable" philosophy card) in a 2-col grid. Replaced the one `data:` chevron
+    with a real file (`plugins/corex-core/assets/icons/chevron-down.svg`). No `data:`/base64 design assets remain.
+  - **Remaining phases (not started):** (2) shared in-content shell — left `COREX FRAMEWORK` rail with SVG nav icons +
+    active/hover states + topbar breadcrumb/title/search/action; (3) Data explorer left model/schema rail + insight
+    cards; (4) Overview records/event/setup panels per Dashboard capture; (5) Settings tabs (General/Architecture/
+    Data sources/Design tokens/Advanced); (6) Setup Wizard + Insights rhythm alignment; (7) theme `screenshot.png`
+    from `Corex Theme Screenshot.dc.html`. All must keep truthful state and use real asset files (no `data:`).
+- **Exact next step:** continue the capture-fidelity pass at Phase 2 (shared shell). Do not merge PR #59 yet.
 
 ---
 

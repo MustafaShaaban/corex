@@ -91,9 +91,13 @@ final class AddonsScreen
             __('CoreX Add-ons', 'corex'),
             __('Manage installed add-ons only. Dependencies and runtime gates remain enforced.', 'corex'),
         );
-        echo '<div class="corex-addons__grid">';
 
         $views = $this->manager->views($state, [$this, 'isInstalled']);
+
+        $this->renderSummary($views);
+
+        echo '<div class="corex-addons__grid">';
+
         if ($views === []) {
             echo $this->page->state(
                 'empty',
@@ -109,16 +113,84 @@ final class AddonsScreen
         echo '</div>' . $this->page->close();
     }
 
+    /**
+     * The truthful summary bar above the add-on grid (design: Add-ons & Data capture): how many
+     * add-ons are active, how many are site kits, and the add-on philosophy. No update-checker
+     * exists, so the Updates cell is shown by the design but reads "not tracked" — never a faked count.
+     *
+     * @param list<AddonView> $views
+     */
+    private function renderSummary(array $views): void
+    {
+        $total  = count($views);
+        $active = 0;
+        $kits   = 0;
+        foreach ($views as $view) {
+            if ($view->active) {
+                $active++;
+            }
+            if (str_starts_with($view->addon->slug, 'corex-kit-')) {
+                $kits++;
+            }
+        }
+
+        echo '<div class="corex-addons__summary">';
+        $this->renderSummaryStat(__('Active', 'corex'), (string) $active . ' <span class="corex-addons__summary-total">/ ' . (int) $total . '</span>');
+        $this->renderSummaryStat(__('Updates', 'corex'), '<span class="corex-addons__summary-muted">' . esc_html__('not tracked', 'corex') . '</span>');
+        $this->renderSummaryStat(__('Site kits', 'corex'), (string) $kits);
+        echo '<div class="corex-addons__philosophy"><div><p class="corex-addons__philosophy-title">'
+            . esc_html__('Add-ons self-disable', 'corex') . '</p><p class="corex-addons__philosophy-text">'
+            . esc_html__('Never a hard dependency — toggle freely.', 'corex') . '</p></div>'
+            . '<span class="corex-addons__philosophy-tag">' . esc_html__('safe', 'corex') . '</span></div>';
+        echo '</div>';
+    }
+
+    private function renderSummaryStat(string $label, string $valueHtml): void
+    {
+        echo '<div class="corex-addons__summary-card"><p class="corex-addons__summary-label">'
+            . esc_html($label) . '</p><p class="corex-addons__summary-value">'
+            . wp_kses_post($valueHtml) . '</p></div>';
+    }
+
+    /**
+     * The add-on's Module-Tile logo (design: Addon Logos — Final). Inactive/blocked/uninstalled
+     * add-ons use the muted "disabled" master; unknown slugs fall back to the Core mark.
+     */
+    private function logoUrl(AddonView $view): string
+    {
+        $muted = ! $view->installed || $view->isBlocked() || in_array($view->status(), [
+            AddonStatus::NotInstalled,
+            AddonStatus::DependencyMissing,
+            AddonStatus::WoocommerceMissing,
+            AddonStatus::ProRequired,
+        ], true);
+
+        $suffix = $muted ? '--disabled' : '';
+        $dir    = plugin_dir_path(COREX_CONFIG_FILE) . 'assets/addon-logos/';
+        $file   = $view->addon->slug . $suffix . '.svg';
+
+        if (! file_exists($dir . $file)) {
+            $file = 'fallback' . $suffix . '.svg';
+        }
+
+        return plugins_url('assets/addon-logos/' . $file, COREX_CONFIG_FILE);
+    }
+
     private function renderRow(AddonView $view): void
     {
         $status = $view->status();
 
         echo '<section class="corex-addon-card corex-surface">';
-        echo '<header class="corex-addon-card__header"><h2>' . esc_html($view->addon->label) . '</h2>';
-        echo '<p class="corex-addon-card__status"><span class="screen-reader-text">'
-            . esc_html__('Status:', 'corex') . '</span> '
+        echo '<header class="corex-addon-card__header">';
+        echo '<img class="corex-addon-card__logo" src="' . esc_url($this->logoUrl($view))
+            . '" width="48" height="48" alt="" aria-hidden="true" />';
+        echo '<div class="corex-addon-card__heading"><div class="corex-addon-card__title-row">'
+            . '<h2>' . esc_html($view->addon->label) . '</h2>'
+            . '<span class="screen-reader-text">' . esc_html__('Status:', 'corex') . '</span>'
             . '<span class="corex-badge corex-badge--' . esc_attr($status->tone()) . '">'
-            . esc_html($this->statusLabel($status)) . '</span></p></header>';
+            . esc_html($this->statusLabel($status)) . '</span></div>'
+            . '<p class="corex-addon-card__slug">' . esc_html($view->addon->slug) . '</p></div>';
+        echo '</header>';
 
         $this->renderManifest($view->addon);
 
