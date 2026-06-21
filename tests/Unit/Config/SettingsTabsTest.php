@@ -78,6 +78,29 @@ it('renders the current admin footer text value', function () {
     expect($html)->toContain('value="Built with CoreX"');
 });
 
+it('adds official reference links with safe external attributes for external key fields', function () {
+    $html = settingsForm()->render(static fn (string $key): string => '', '<nonce>');
+
+    expect($html)
+        ->toContain('https://developers.google.com/speed/docs/insights/v5/get-started')
+        ->toContain('https://developers.cloudflare.com/fundamentals/api/get-started/create-token/')
+        ->toContain('https://developers.cloudflare.com/fundamentals/setup/find-account-and-zone-ids/')
+        ->toContain('target="_blank"')
+        ->toContain('rel="noopener noreferrer"')
+        ->toContain('Get a PageSpeed Insights API key');
+});
+
+it('keeps secret key fields write-only even with reference links', function () {
+    // A saved secret value must never be rendered back into the field.
+    $html = settingsForm()->render(
+        static fn (string $key): string => $key === 'insights.psi.key' ? 'super-secret-key' : '',
+        '<nonce>',
+    );
+
+    expect($html)->not->toContain('super-secret-key')
+        ->and($html)->toContain('autocomplete="new-password"');
+});
+
 it('offers the appearance setting (System/Light/Dark) and the SSO-slot setting on the Brand tab', function () {
     $html = settingsForm()->render(static fn (string $key): string => '', '<nonce>');
 

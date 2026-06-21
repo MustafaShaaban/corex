@@ -122,21 +122,44 @@ final class SettingsForm
         $html    .= '<table class="form-table">';
 
         foreach ($section['fields'] as $key => $field) {
-            $name  = str_replace('.', '_', $key);
-            $help  = isset($field['help']) && $field['help'] !== ''
-                ? '<p class="corex-field-help" id="' . esc_attr($name) . '-help">' . esc_html($field['help']) . '</p>'
-                : '';
+            $name = str_replace('.', '_', $key);
 
             $html .= sprintf(
                 '<tr><th><label for="%s">%s</label></th><td>%s%s</td></tr>',
                 esc_attr($name),
                 esc_html($field['label']),
                 $this->control($name, $field, (string) $value($key), $disabled),
-                $help,
+                $this->help($name, $field),
             );
         }
 
         return $html . '</table></section>';
+    }
+
+    /**
+     * The field's helper copy and, for external key/token fields, an official reference link
+     * that opens in a new tab with safe rel attributes. Concise help, not a docs block — and it
+     * never reveals a saved secret (it only points to where the key comes from).
+     *
+     * @param array{help?:string,help_url?:string,help_link?:string} $field
+     */
+    private function help(string $name, array $field): string
+    {
+        $text = isset($field['help']) ? esc_html($field['help']) : '';
+
+        if (isset($field['help_url']) && $field['help_url'] !== '') {
+            $linkText = esc_html($field['help_link'] ?? __('Reference', 'corex'));
+            $text    .= ' <a class="corex-field-help__link" href="' . esc_url($field['help_url'])
+                . '" target="_blank" rel="noopener noreferrer">' . $linkText
+                . ' <span aria-hidden="true">&#8599;</span><span class="screen-reader-text">'
+                . esc_html__('(opens in a new tab)', 'corex') . '</span></a>';
+        }
+
+        if (trim($text) === '') {
+            return '';
+        }
+
+        return '<p class="corex-field-help" id="' . esc_attr($name) . '-help">' . $text . '</p>';
     }
 
     private function sectionNotice(?SettingsSectionState $state): string

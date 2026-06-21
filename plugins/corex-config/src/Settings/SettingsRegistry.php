@@ -84,9 +84,27 @@ final class SettingsRegistry implements FieldSections
             'insights' => [
                 'title'  => 'Insights',
                 'fields' => [
-                    'insights.psi.key'              => ['label' => 'PageSpeed Insights API key', 'type' => 'password'],
-                    'insights.cloudflare.token'     => ['label' => 'Cloudflare API token', 'type' => 'password'],
-                    'insights.cloudflare.account_id' => ['label' => 'Cloudflare account ID', 'type' => 'text'],
+                    'insights.psi.key' => [
+                        'label'     => 'PageSpeed Insights API key',
+                        'type'      => 'password',
+                        'help'      => 'Used for performance checks.',
+                        'help_url'  => 'https://developers.google.com/speed/docs/insights/v5/get-started',
+                        'help_link' => 'Get a PageSpeed Insights API key',
+                    ],
+                    'insights.cloudflare.token' => [
+                        'label'     => 'Cloudflare API token',
+                        'type'      => 'password',
+                        'help'      => 'Used for the security/readiness scan.',
+                        'help_url'  => 'https://developers.cloudflare.com/fundamentals/api/get-started/create-token/',
+                        'help_link' => 'Create a Cloudflare API token',
+                    ],
+                    'insights.cloudflare.account_id' => [
+                        'label'     => 'Cloudflare account ID',
+                        'type'      => 'text',
+                        'help'      => 'Found in the Cloudflare dashboard under your account home / API section.',
+                        'help_url'  => 'https://developers.cloudflare.com/fundamentals/setup/find-account-and-zone-ids/',
+                        'help_link' => 'Find your Cloudflare account ID',
+                    ],
                 ],
             ],
         ];

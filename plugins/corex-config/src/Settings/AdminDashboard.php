@@ -80,13 +80,14 @@ final class AdminDashboard
             return;
         }
 
-        $base = dirname(__DIR__, 2) . '/corex-config.php';
+        $dir  = dirname(__DIR__, 2);
+        $base = $dir . '/corex-config.php';
 
         wp_enqueue_style(
             'corex-control-panel',
             plugins_url('assets/control-panel.css', $base),
             ['corex-admin-shell'],
-            '1.1.0',
+            $this->assetVersion($dir . '/assets/control-panel.css'),
         );
 
         if ($hook !== $this->settingsHook) {
@@ -98,9 +99,20 @@ final class AdminDashboard
             'corex-settings',
             plugins_url('assets/settings.js', $base),
             ['media-views'],
-            '1.1.0',
+            $this->assetVersion($dir . '/assets/settings.js'),
             true,
         );
+    }
+
+    /**
+     * Cache-busting filemtime version for a source asset (busts on every edit, any environment;
+     * falls back to the plugin version), so the owner always sees the latest admin CSS/JS.
+     */
+    private function assetVersion(string $path): string
+    {
+        $mtime = is_file($path) ? filemtime($path) : false;
+
+        return $mtime !== false ? (string) $mtime : (defined('COREX_CONFIG_VERSION') ? COREX_CONFIG_VERSION : '1.0.0');
     }
 
     public function render(): void

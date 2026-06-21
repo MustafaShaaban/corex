@@ -245,6 +245,15 @@
 	font-size: var(--corex-admin-font-sm);
 }
 
+.corex-admin .corex-field-help__link {
+	color: var(--corex-admin-link);
+	white-space: nowrap;
+}
+
+.corex-admin .corex-field-help__link:hover {
+	color: var(--corex-admin-link-hover);
+}
+
 .corex-admin .corex-settings__save {
 	display: flex;
 	justify-content: flex-end;
