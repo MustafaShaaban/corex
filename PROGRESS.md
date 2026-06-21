@@ -39,18 +39,21 @@
   inactive/feature off/dependency missing/WooCommerce missing/Pro required/active — meaning by label, not color
   alone. Enable/disable already gated to installed add-ons; no install/marketplace action. `AddonStatusToneTest` 5/5;
   **full Pest 712 pass**.
-- **Remaining on Spec 060/M6 = the visual CSS + remaining screens:** (a) **US3 scoped admin CSS** — add
-  `plugins/corex-config/assets/addons.css` (and Settings/dashboard styling) consuming only `--corex-admin-*`
-  (`.corex-badge--{success,warning,danger,neutral}` cards/tables/topbar), enqueue conditionally on each CoreX screen
-  declaring `corex-admin-tokens` dep (mirror `AdminDashboard::maybeEnqueue` hook-gated pattern), regenerate the token
-  inventory (the new `var(--corex-admin-*)` refs must be recorded in `consumers.json`), and add an
-  `AdminAssetScopingTest` (registered, not global, not on frontend); dark/light/RTL/responsive + a11y; (b) Settings
-  per-section notice from `SettingsSectionState` (captcha "configured" = site key + secret present via
-  `Addon::missingKeys`); (c) US4 setup/readiness + universal states; (d) docs + full gate, then mark PR #58 ready.
-- **Exact next step:** US3 — create `assets/addons.css` (badge styles via `--corex-admin-*` only, no raw literals),
-  enqueue on the `corex-addons` screen hook (`['corex-admin-tokens']` dep) via an `admin_enqueue_scripts` handler in
-  `AddonsScreen` storing the submenu hook, regenerate token inventory + add `AdminAssetScopingTest`. Keep PR #58
-  draft.
+- **US3 Add-ons scoped CSS DONE (committed):** `plugins/corex-config/assets/addons.css` styles the
+  `.corex-badge--{success,warning,danger,neutral}` tones using only the scoped `--corex-admin-*` adapter (RTL-first,
+  meaning by label not colour); `AddonsScreen` enqueues it conditionally on the `corex-addons` hook declaring
+  `['corex-admin-tokens']` (Principle VI — no global wp-admin restyle, no frontend load). The token-inventory
+  generator now classifies scoped `--corex-admin-*` consumer refs as the documented `raw-allowance`. `AdminAssetScopingTest`
+  3/3; token inventories regenerated in-sync; **full Pest 715, test:js 103, lint:css clean.**
+- **Remaining on Spec 060/M6:** (a) US2 **Settings screen per-section notice** — surface `SettingsSectionState` on the
+  Settings screen (captcha section shows not-installed/disabled/configuration-needed/normal; captcha "configured" =
+  site key + secret present via the captcha `Addon::needsKeys`/`missingKeys`); (b) US4 setup/readiness honest
+  env-gating + universal states (loading/empty/error/success/permission-denied); (c) docs-app admin-experience page;
+  (d) full gate + mark **PR #58** ready.
+- **Exact next step:** wire the Settings screen — compute the captcha section's `SettingsSectionState` (from the
+  captcha add-on `AddonView::status()` + `missingKeys` over the settings values) and render a section notice
+  (not-installed/disabled/configuration-needed) above the captcha fields, RED→GREEN; then US4, docs, gate. Keep PR
+  #58 draft.
 
 ---
 ## RESUME HERE (2026-06-21) -- M3 merged; M4 core implemented (full company page set); on PR
