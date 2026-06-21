@@ -19,13 +19,15 @@ import {
 	useRef,
 } from '@wordpress/element';
 import { Button, Spinner } from '@wordpress/components';
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import {
 	buildListUrl,
 	buildExportUrl,
 	toggleSort,
 	mergeForms,
 	viewState,
+	toggleSelection,
+	allRowsSelected,
 } from './dataClient.js';
 
 const config = window.corexData || {
@@ -129,6 +131,40 @@ function useSource() {
 			} )
 			.then( load );
 
+	// Row selection for bulk actions. Selection is cleared whenever the visible rows change
+	// (source/search/filter/page), so a stale id can never be acted on.
+	const [ selected, setSelected ] = useState( [] );
+	useEffect( () => setSelected( [] ), [ sourceKey, search, form, page ] );
+
+	const toggleSelect = ( id ) =>
+		setSelected( ( prev ) => toggleSelection( prev, id ) );
+
+	const toggleSelectAll = () =>
+		setSelected( ( prev ) =>
+			allRowsSelected( prev, rows ) ? [] : rows.map( ( r ) => r.id )
+		);
+
+	// Bulk delete = the per-row delete (already cap-gated server-side) applied to each
+	// selected id; deletion is the only bulk action the backend truthfully supports.
+	const removeMany = ( ids ) =>
+		Promise.all(
+			ids.map( ( id ) =>
+				window.Corex.api.delete(
+					`${ config.restUrl }/${ sourceKey }/${ id }`,
+					{ nonce: config.nonce }
+				)
+			)
+		).then( () => {
+			setSelected( [] );
+			load();
+		} );
+
+	const resetFilters = () => {
+		setSearch( '' );
+		setForm( '' );
+		setPage( 1 );
+	};
+
 	return {
 		sourceKey,
 		setSourceKey: resetTo( setSourceKey ),
@@ -150,6 +186,12 @@ function useSource() {
 		query,
 		retry: load,
 		remove,
+		selected,
+		toggleSelect,
+		toggleSelectAll,
+		removeMany,
+		resetFilters,
+		hasFilters: Boolean( search || form ),
 	};
 }
 
@@ -338,6 +380,16 @@ function PanelHead( { s } ) {
 					</select>
 				) }
 
+				{ s.hasFilters && (
+					<button
+						type="button"
+						className="button corex-data__reset"
+						onClick={ s.resetFilters }
+					>
+						{ __( 'Reset', 'corex' ) }
+					</button>
+				) }
+
 				<a
 					className="button corex-data__export"
 					href={ s.total > 0 ? exportHref : undefined }
@@ -346,6 +398,21 @@ function PanelHead( { s } ) {
 				>
 					{ __( 'Export CSV', 'corex' ) }
 				</a>
+
+				{ /* Current CoreX sources (form submissions) are captured from the
+				     front end and are read-only — New stays visible but honestly disabled. */ }
+				<button
+					type="button"
+					className="button corex-data__new"
+					disabled
+					aria-disabled="true"
+					title={ __(
+						'Form submissions are captured from frontend forms and cannot be created manually yet.',
+						'corex'
+					) }
+				>
+					{ __( 'New record', 'corex' ) }
+				</button>
 			</div>
 			{ /* DataExportController::MAX_ROWS — the server bounds the export to 5000 rows. */ }
 			{ s.total > 5000 && (
@@ -356,6 +423,48 @@ function PanelHead( { s } ) {
 					) }
 				</span>
 			) }
+		</div>
+	);
+}
+
+/*
+ * The bulk-action toolbar (design: explorer). Appears once rows are selected. Delete is the
+ * only action the backend truthfully supports in bulk; it confirms before the destructive call.
+ */
+function BulkBar( { s } ) {
+	if ( s.selected.length === 0 ) {
+		return null;
+	}
+	const onDelete = () => {
+		// eslint-disable-next-line no-alert -- intentional confirm before a destructive bulk delete.
+		const ok = window.confirm(
+			__( 'Delete the selected records? This cannot be undone.', 'corex' )
+		);
+		if ( ok ) {
+			s.removeMany( s.selected );
+		}
+	};
+	return (
+		<div
+			className="corex-data__bulkbar"
+			role="region"
+			aria-label={ __( 'Bulk actions', 'corex' ) }
+		>
+			<span className="corex-data__bulk-count">
+				{ sprintf(
+					/* translators: %d: number of selected records. */
+					_n(
+						'%d record selected',
+						'%d records selected',
+						s.selected.length,
+						'corex'
+					),
+					s.selected.length
+				) }
+			</span>
+			<Button isDestructive variant="secondary" onClick={ onDelete }>
+				{ __( 'Delete selected', 'corex' ) }
+			</Button>
 		</div>
 	);
 }
@@ -384,39 +493,72 @@ function SortableHeader( { column, s } ) {
 }
 
 function Table( { s, onOpen } ) {
+	const allSelected = allRowsSelected( s.selected, s.rows );
 	return (
-		<table className="widefat striped corex-data__table">
+		<table className="widefat corex-data__table">
 			<thead>
 				<tr>
+					<th className="corex-data__check">
+						<input
+							type="checkbox"
+							checked={ allSelected }
+							onChange={ s.toggleSelectAll }
+							aria-label={ __( 'Select all records', 'corex' ) }
+						/>
+					</th>
 					{ s.columns.map( ( c ) => (
 						<SortableHeader key={ c.id } column={ c } s={ s } />
 					) ) }
-					<th>{ __( 'Actions', 'corex' ) }</th>
+					<th className="corex-data__actions-head">
+						{ __( 'Actions', 'corex' ) }
+					</th>
 				</tr>
 			</thead>
 			<tbody>
-				{ s.rows.map( ( row ) => (
-					<tr key={ row.id }>
-						{ s.columns.map( ( c ) => (
-							<td key={ c.id }>{ row[ c.id ] || '—' }</td>
-						) ) }
-						<td className="corex-data__row-actions">
-							<Button
-								variant="link"
-								onClick={ () => onOpen( row.id ) }
-							>
-								{ __( 'View', 'corex' ) }
-							</Button>
-							<Button
-								isDestructive
-								variant="link"
-								onClick={ () => s.remove( row.id ) }
-							>
-								{ __( 'Delete', 'corex' ) }
-							</Button>
-						</td>
-					</tr>
-				) ) }
+				{ s.rows.map( ( row ) => {
+					const isSelected = s.selected.includes( row.id );
+					return (
+						<tr
+							key={ row.id }
+							className={ isSelected ? 'is-selected' : undefined }
+						>
+							<td className="corex-data__check">
+								<input
+									type="checkbox"
+									checked={ isSelected }
+									onChange={ () => s.toggleSelect( row.id ) }
+									aria-label={ sprintf(
+										/* translators: %s: record id. */
+										__( 'Select record %s', 'corex' ),
+										String( row.id )
+									) }
+								/>
+							</td>
+							{ s.columns.map( ( c ) => (
+								<td key={ c.id }>{ row[ c.id ] || '—' }</td>
+							) ) }
+							<td className="corex-data__row-actions">
+								<Button
+									variant="secondary"
+									size="small"
+									onClick={ ( e ) =>
+										onOpen( row.id, e.currentTarget )
+									}
+								>
+									{ __( 'View', 'corex' ) }
+								</Button>
+								<Button
+									isDestructive
+									variant="tertiary"
+									size="small"
+									onClick={ () => s.remove( row.id ) }
+								>
+									{ __( 'Delete', 'corex' ) }
+								</Button>
+							</td>
+						</tr>
+					);
+				} ) }
 			</tbody>
 		</table>
 	);
@@ -457,10 +599,11 @@ function Pagination( { s } ) {
 	);
 }
 
-function DetailDrawer( { sourceKey, id, onClose } ) {
+function DetailDrawer( { sourceKey, id, sourceLabel, onClose, onDelete } ) {
 	const [ fields, setFields ] = useState( null );
 	const [ failed, setFailed ] = useState( false );
 	const closeRef = useRef( null );
+	const drawerRef = useRef( null );
 
 	useEffect( () => {
 		window.Corex.api
@@ -477,16 +620,54 @@ function DetailDrawer( { sourceKey, id, onClose } ) {
 			.catch( () => setFailed( true ) );
 	}, [ sourceKey, id ] );
 
+	// Move focus into the drawer on open; Escape closes; Tab is trapped inside the dialog so
+	// focus cannot escape to the page behind the modal overlay.
 	useEffect( () => {
 		closeRef.current?.focus();
-		const onKey = ( e ) => e.key === 'Escape' && onClose();
+		const onKey = ( e ) => {
+			if ( e.key === 'Escape' ) {
+				onClose();
+				return;
+			}
+			if ( e.key !== 'Tab' || ! drawerRef.current ) {
+				return;
+			}
+			const focusable = drawerRef.current.querySelectorAll(
+				'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])'
+			);
+			if ( focusable.length === 0 ) {
+				return;
+			}
+			const first = focusable[ 0 ];
+			const last = focusable[ focusable.length - 1 ];
+			const active = drawerRef.current.ownerDocument.activeElement;
+			if ( e.shiftKey && active === first ) {
+				e.preventDefault();
+				last.focus();
+			} else if ( ! e.shiftKey && active === last ) {
+				e.preventDefault();
+				first.focus();
+			}
+		};
 		document.addEventListener( 'keydown', onKey );
 		return () => document.removeEventListener( 'keydown', onKey );
 	}, [ onClose ] );
 
+	const onDeleteClick = () => {
+		// eslint-disable-next-line no-alert -- intentional confirm before a destructive delete.
+		const ok = window.confirm(
+			__( 'Delete this record? This cannot be undone.', 'corex' )
+		);
+		if ( ok ) {
+			onDelete( id );
+			onClose();
+		}
+	};
+
 	return (
 		<div className="corex-data__drawer-overlay" onClick={ onClose }>
 			<aside
+				ref={ drawerRef }
 				className="corex-data__drawer"
 				role="dialog"
 				aria-modal="true"
@@ -494,37 +675,84 @@ function DetailDrawer( { sourceKey, id, onClose } ) {
 				onClick={ ( e ) => e.stopPropagation() }
 			>
 				<div className="corex-data__drawer-head">
-					<h2>{ __( 'Record detail', 'corex' ) }</h2>
+					<div>
+						<h2>{ __( 'Record detail', 'corex' ) }</h2>
+						<p className="corex-data__drawer-meta">
+							<span>{ sourceLabel }</span>
+							<span className="corex-data__drawer-id">
+								{ sprintf(
+									/* translators: %s: record id. */
+									__( 'ID %s', 'corex' ),
+									String( id )
+								) }
+							</span>
+						</p>
+					</div>
 					<Button
 						ref={ closeRef }
 						variant="tertiary"
+						label={ __( 'Close', 'corex' ) }
+						showTooltip
+						icon="no-alt"
 						onClick={ onClose }
-					>
+						className="corex-data__drawer-close"
+					/>
+				</div>
+
+				<div className="corex-data__drawer-body">
+					{ failed && (
+						<p>
+							{ __(
+								'That record could not be loaded.',
+								'corex'
+							) }
+						</p>
+					) }
+					{ ! failed && fields === null && (
+						<p className="corex-data__loading" role="status">
+							<Spinner /> { __( 'Loading…', 'corex' ) }
+						</p>
+					) }
+					{ fields && (
+						<dl className="corex-data__fields">
+							{ fields.map( ( f, i ) => (
+								<div key={ i } className="corex-data__field">
+									<dt>{ f.label }</dt>
+									<dd>
+										{ f.value === '' || f.value === null
+											? '—'
+											: f.value }
+									</dd>
+								</div>
+							) ) }
+						</dl>
+					) }
+				</div>
+
+				<div className="corex-data__drawer-foot">
+					<Button variant="secondary" onClick={ onClose }>
 						{ __( 'Close', 'corex' ) }
 					</Button>
+					<Button
+						variant="secondary"
+						disabled
+						aria-disabled="true"
+						label={ __(
+							'Form submissions are read-only and cannot be edited yet.',
+							'corex'
+						) }
+						showTooltip
+					>
+						{ __( 'Edit', 'corex' ) }
+					</Button>
+					<Button
+						isDestructive
+						variant="secondary"
+						onClick={ onDeleteClick }
+					>
+						{ __( 'Delete', 'corex' ) }
+					</Button>
 				</div>
-				{ failed && (
-					<p>{ __( 'That record could not be loaded.', 'corex' ) }</p>
-				) }
-				{ ! failed && fields === null && (
-					<p className="corex-data__loading" role="status">
-						<Spinner /> { __( 'Loading…', 'corex' ) }
-					</p>
-				) }
-				{ fields && (
-					<dl className="corex-data__fields">
-						{ fields.map( ( f, i ) => (
-							<div key={ i } className="corex-data__field">
-								<dt>{ f.label }</dt>
-								<dd>
-									{ f.value === '' || f.value === null
-										? '—'
-										: f.value }
-								</dd>
-							</div>
-						) ) }
-					</dl>
-				) }
 			</aside>
 		</div>
 	);
@@ -532,7 +760,14 @@ function DetailDrawer( { sourceKey, id, onClose } ) {
 
 function App() {
 	const s = useSource();
-	const [ openId, setOpenId ] = useState( null );
+	const [ open, setOpen ] = useState( null );
+
+	// Closing returns focus to the row control that opened the drawer.
+	const closeDrawer = () => {
+		const trigger = open?.trigger;
+		setOpen( null );
+		trigger?.focus?.();
+	};
 
 	const hasQuery = Boolean( s.search || s.form );
 	const state = viewState( {
@@ -553,6 +788,8 @@ function App() {
 
 				<div className="corex-data__panel">
 					<PanelHead s={ s } />
+
+					<BulkBar s={ s } />
 
 					<div className="corex-data__panel-body">
 						{ state === 'loading' && (
@@ -593,7 +830,12 @@ function App() {
 						) }
 
 						{ state === 'ready' && (
-							<Table s={ s } onOpen={ setOpenId } />
+							<Table
+								s={ s }
+								onOpen={ ( id, trigger ) =>
+									setOpen( { id, trigger } )
+								}
+							/>
 						) }
 					</div>
 
@@ -601,11 +843,13 @@ function App() {
 				</div>
 			</div>
 
-			{ openId !== null && (
+			{ open !== null && (
 				<DetailDrawer
 					sourceKey={ s.sourceKey }
-					id={ openId }
-					onClose={ () => setOpenId( null ) }
+					id={ open.id }
+					sourceLabel={ activeLabel( s.sourceKey ) }
+					onDelete={ s.remove }
+					onClose={ closeDrawer }
 				/>
 			) }
 		</div>
