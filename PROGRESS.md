@@ -32,18 +32,25 @@
   has one truthful state per add-on and `canToggle()` restricts enable/disable to installed add-ons.
   `AddonViewStatusTest` 8/8; Config 71 pass.
 - **M6 model layer COMPLETE (the goal's truthful-state core, sections 3-6):** `AddonStatus`+`AddonStatusResolver`
-  (US1), `AddonView::status()` (US1 screen bridge), `SettingsSectionState` (US2), write-only secrets (US2). All pure
-  + unit-tested; full Pest 699+ green.
-- **Remaining on Spec 060/M6 = the visual/rendering layer:** (a) render the truthful state as visible **badges** on
-  the Add-ons screen (use `AddonView::status()` + `canToggle()`; hide the enable action for not_installed/pro_required;
-  name missing dependency / WooCommerce) and the per-section state notice on the Settings screen (use
-  `SettingsSectionState`; captcha "configured" = site key + secret present via `Addon::missingKeys`); (b) US3 scoped
-  admin visual design (cards/tables/topbar/badges via `--corex-admin-*`, dark/light/RTL/responsive, a11y;
-  asset-scoping test = no global/frontend load); (c) US4 setup/readiness + universal states; (d) docs + full gate
-  before marking PR #58 ready. Per `tasks.md`.
-- **Exact next step:** render the Add-ons screen state badges from `AddonView::status()` (RED→GREEN on the screen's
-  pure render method: badge per state, enable action only when `canToggle()`, no install action), then the Settings
-  per-section notice from `SettingsSectionState`, then the scoped admin CSS (US3). Keep PR #58 draft.
+  (US1), `AddonView::status()` (US1 screen bridge), `AddonStatus::tone()` (semantic badge tone), `SettingsSectionState`
+  (US2), write-only secrets (US2). All pure + unit-tested.
+- **US1 Add-ons screen rendering DONE (committed):** `AddonsScreen` now renders the truthful **7-state badge**
+  (`<span class="corex-badge corex-badge--{tone}">{label}</span>` from `AddonView::status()`), covering not installed/
+  inactive/feature off/dependency missing/WooCommerce missing/Pro required/active — meaning by label, not color
+  alone. Enable/disable already gated to installed add-ons; no install/marketplace action. `AddonStatusToneTest` 5/5;
+  **full Pest 712 pass**.
+- **Remaining on Spec 060/M6 = the visual CSS + remaining screens:** (a) **US3 scoped admin CSS** — add
+  `plugins/corex-config/assets/addons.css` (and Settings/dashboard styling) consuming only `--corex-admin-*`
+  (`.corex-badge--{success,warning,danger,neutral}` cards/tables/topbar), enqueue conditionally on each CoreX screen
+  declaring `corex-admin-tokens` dep (mirror `AdminDashboard::maybeEnqueue` hook-gated pattern), regenerate the token
+  inventory (the new `var(--corex-admin-*)` refs must be recorded in `consumers.json`), and add an
+  `AdminAssetScopingTest` (registered, not global, not on frontend); dark/light/RTL/responsive + a11y; (b) Settings
+  per-section notice from `SettingsSectionState` (captcha "configured" = site key + secret present via
+  `Addon::missingKeys`); (c) US4 setup/readiness + universal states; (d) docs + full gate, then mark PR #58 ready.
+- **Exact next step:** US3 — create `assets/addons.css` (badge styles via `--corex-admin-*` only, no raw literals),
+  enqueue on the `corex-addons` screen hook (`['corex-admin-tokens']` dep) via an `admin_enqueue_scripts` handler in
+  `AddonsScreen` storing the submenu hook, regenerate token inventory + add `AdminAssetScopingTest`. Keep PR #58
+  draft.
 
 ---
 ## RESUME HERE (2026-06-21) -- M3 merged; M4 core implemented (full company page set); on PR
