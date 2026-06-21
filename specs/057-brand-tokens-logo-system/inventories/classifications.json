@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 435,
+    "consumer_records": 439,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -562,7 +562,8 @@
       "owner": "core-plugin",
       "paths": [
         "plugins/corex-core/assets/css/corex-admin-login.css",
-        "plugins/corex-core/assets/css/corex-admin-shell.css"
+        "plugins/corex-core/assets/css/corex-admin-shell.css",
+        "plugins/corex-core/src/Admin/AdminPage.php"
       ],
       "properties": [
         "--corex-admin-action",
@@ -585,6 +586,7 @@
         "--corex-admin-font-display",
         "--corex-admin-font-md",
         "--corex-admin-font-mono",
+        "--corex-admin-font-sm",
         "--corex-admin-font-xs",
         "--corex-admin-info",
         "--corex-admin-letter-wide",
@@ -605,7 +607,9 @@
         "--corex-admin-radius-sm",
         "--corex-admin-shadow-lg",
         "--corex-admin-shadow-sm",
+        "--corex-admin-shell",
         "--corex-admin-space-2xl",
+        "--corex-admin-space-2xs",
         "--corex-admin-space-lg",
         "--corex-admin-space-md",
         "--corex-admin-space-sm",

@@ -26,12 +26,16 @@
     now renders each card's logo tile, a slug meta line, and a truthful summary bar (Active n/total · Updates "not
     tracked" · Site kits · "Add-ons self-disable" philosophy card) in a 2-col grid. Replaced the one `data:` chevron
     with a real file (`plugins/corex-core/assets/icons/chevron-down.svg`). No `data:`/base64 design assets remain.
-  - **Remaining phases (not started):** (2) shared in-content shell — left `COREX FRAMEWORK` rail with SVG nav icons +
-    active/hover states + topbar breadcrumb/title/search/action; (3) Data explorer left model/schema rail + insight
-    cards; (4) Overview records/event/setup panels per Dashboard capture; (5) Settings tabs (General/Architecture/
-    Data sources/Design tokens/Advanced); (6) Setup Wizard + Insights rhythm alignment; (7) theme `screenshot.png`
-    from `Corex Theme Screenshot.dc.html`. All must keep truthful state and use real asset files (no `data:`).
-- **Exact next step:** continue the capture-fidelity pass at Phase 2 (shared shell). Do not merge PR #59 yet.
+  - **Phase 2 DONE — shared in-content shell:** `AdminPage::open()` now renders the framed CoreX window from the
+    captures: a left `COREX FRAMEWORK` rail (inline five-square brand mark + Overview/Add-ons/Data/Settings, each with
+    a real masked SVG nav icon in `plugins/corex-core/assets/icons/nav-*.svg`, brass active state + muted hover) and a
+    topbar with the mono "Corex / {section}" breadcrumb + strong title. Frame moved from `__main` to `__shell` (grid);
+    rail collapses on narrow. Verified dark + light, active state per screen. `AdminPageTest` stubs updated.
+  - **Remaining phases (not started):** (3) Data explorer left model/schema rail + insight cards; (4) Overview
+    records/event/setup panels per Dashboard capture; (5) Settings tabs (General/Architecture/Data sources/Design
+    tokens/Advanced); (6) Setup Wizard + Insights rhythm alignment; (7) theme `screenshot.png` from
+    `Corex Theme Screenshot.dc.html`. All must keep truthful state and use real asset files (no `data:`).
+- **Exact next step:** continue the capture-fidelity pass at Phase 3 (Data explorer rail). Do not merge PR #59 yet.
 
 ---
 

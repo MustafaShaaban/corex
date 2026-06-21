@@ -14,8 +14,11 @@ use Corex\Admin\AdminPage;
 beforeEach(function () {
     Functions\when('__')->returnArg();
     Functions\when('esc_attr')->returnArg();
+    Functions\when('esc_attr__')->returnArg();
     Functions\when('esc_html')->returnArg();
     Functions\when('esc_html__')->returnArg();
+    Functions\when('esc_url')->returnArg();
+    Functions\when('admin_url')->returnArg();
 });
 
 it('renders the branded shell with a labelled main region and page header', function () {

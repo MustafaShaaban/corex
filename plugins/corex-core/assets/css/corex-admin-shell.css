@@ -18,13 +18,116 @@
 	box-sizing: inherit;
 }
 
-.corex-admin__main {
+.corex-admin__shell {
+	display: grid;
+	grid-template-columns: 15rem minmax(0, 1fr);
 	min-block-size: var(--corex-admin-page-min-height);
 	background: var(--corex-admin-canvas);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-lg);
 	box-shadow: var(--corex-admin-shadow-lg);
 	overflow: clip;
+}
+
+.corex-admin__main {
+	min-inline-size: 0;
+}
+
+.corex-admin__rail {
+	padding-block: var(--corex-admin-space-md);
+	padding-inline: var(--corex-admin-space-sm);
+	background: var(--corex-admin-shell);
+	border-inline-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin__brand {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	padding-block: var(--corex-admin-space-xs) var(--corex-admin-space-md);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-weight: 700;
+	letter-spacing: -0.01em;
+}
+
+.corex-admin__brand svg {
+	inline-size: 1.4rem;
+	block-size: 1.4rem;
+}
+
+.corex-admin__rail-group {
+	margin: var(--corex-admin-space-2xs) var(--corex-admin-space-sm) var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin__nav {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.corex-admin__nav-item {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	border: var(--corex-admin-border-width) solid transparent;
+	border-radius: var(--corex-admin-radius-sm);
+	font-size: var(--corex-admin-font-sm);
+	text-decoration: none;
+}
+
+.corex-admin__nav-item:hover {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+}
+
+.corex-admin__nav-item.is-active {
+	color: var(--corex-admin-action);
+	background: var(--corex-admin-action-subtle);
+	border-color: var(--corex-admin-action-subtle);
+	font-weight: 600;
+}
+
+.corex-admin__nav-icon {
+	flex: none;
+	inline-size: 1rem;
+	block-size: 1rem;
+	background: currentcolor;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+	mask-position: center;
+	-webkit-mask-size: contain;
+	mask-size: contain;
+}
+
+.corex-admin__nav-icon--overview {
+	-webkit-mask-image: url(../icons/nav-overview.svg);
+	mask-image: url(../icons/nav-overview.svg);
+}
+
+.corex-admin__nav-icon--addons {
+	-webkit-mask-image: url(../icons/nav-addons.svg);
+	mask-image: url(../icons/nav-addons.svg);
+}
+
+.corex-admin__nav-icon--data {
+	-webkit-mask-image: url(../icons/nav-data.svg);
+	mask-image: url(../icons/nav-data.svg);
+}
+
+.corex-admin__nav-icon--settings {
+	-webkit-mask-image: url(../icons/nav-settings.svg);
+	mask-image: url(../icons/nav-settings.svg);
 }
 
 .corex-admin__header {
@@ -47,12 +150,16 @@
 	letter-spacing: var(--corex-admin-letter-wide);
 }
 
+.corex-admin__header .corex-admin__eyebrow {
+	color: var(--corex-admin-text-subtle);
+}
+
 .corex-admin__header h1 {
 	margin: 0;
 	color: var(--corex-admin-text);
 	font-family: var(--corex-admin-font-display);
 	font-size: var(--corex-admin-font-2xl);
-	font-weight: 600;
+	font-weight: 700;
 	line-height: var(--corex-admin-line-tight);
 }
 
@@ -398,9 +505,20 @@
 		margin-inline: 0;
 	}
 
-	.corex-admin__main {
+	.corex-admin__shell {
+		grid-template-columns: 1fr;
 		border-inline: 0;
 		border-radius: 0;
+	}
+
+	.corex-admin__rail {
+		border-inline-end: 0;
+		border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	}
+
+	.corex-admin__nav {
+		flex-direction: row;
+		flex-wrap: wrap;
 	}
 
 	.corex-admin__header,
