@@ -530,6 +530,43 @@ body.corex-admin-screen .corex-admin__shell {
 	margin-block-start: auto;
 }
 
+.corex-admin .corex-wizard__review {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+	max-inline-size: var(--corex-admin-measure);
+}
+
+.corex-admin .corex-wizard__review h2 {
+	margin: 0;
+}
+
+.corex-admin .corex-wizard__review-line {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-wizard__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-sm);
+	margin-block-start: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-wizard__actions form {
+	margin: 0;
+}
+
+.corex-admin .corex-wizard__steps .is-done {
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-wizard__steps .is-done span {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-success);
+	border-color: var(--corex-admin-success);
+}
+
 @keyframes corex-admin-spin {
 
 	to {

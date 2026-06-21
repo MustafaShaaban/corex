@@ -554,6 +554,18 @@ function BulkBar( { s } ) {
 			<Button isDestructive variant="secondary" onClick={ onDelete }>
 				{ __( 'Delete selected', 'corex' ) }
 			</Button>
+			<Button
+				variant="secondary"
+				disabled
+				aria-disabled="true"
+				label={ __(
+					'Export uses the current filter — use Export CSV. Selected-row export is not supported.',
+					'corex'
+				) }
+				showTooltip
+			>
+				{ __( 'Export selected', 'corex' ) }
+			</Button>
 		</div>
 	);
 }
