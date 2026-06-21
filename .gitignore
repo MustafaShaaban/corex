@@ -84,3 +84,7 @@ desktop.ini
 
 # Playwright E2E saved auth state (storageState)
 tests/e2e/.auth/
+
+# Spec 060 render-verify throwaway output
+tests/e2e/baseline/
+tests/e2e/render-out/
