@@ -90,6 +90,30 @@ it('adds official reference links with safe external attributes for external key
         ->toContain('Get a PageSpeed Insights API key');
 });
 
+it('adds captcha reference links + helper copy with safe external attributes', function () {
+    $html = settingsForm()->render(static fn (string $key): string => '', '<nonce>');
+
+    expect($html)
+        ->toContain( 'https://www.google.com/recaptcha/admin/create' )
+        ->toContain( 'https://developers.google.com/recaptcha/docs/v3#interpreting_the_score' )
+        ->toContain( 'https://developers.google.com/recaptcha/docs/v3#actions' )
+        ->toContain( 'Create reCAPTCHA keys' )
+        // practical helper copy for the v3 fields
+        ->toContain( '0.5 is a common starting point' )
+        ->toContain( 'contact_form or login' )
+        ->toContain( 'target="_blank"' )
+        ->toContain( 'rel="noopener noreferrer"' );
+});
+
+it('keeps the captcha secret field write-only even with a reference link', function () {
+    $html = settingsForm()->render(
+        static fn (string $key): string => $key === 'captcha.secret' ? 'captcha-secret-value' : '',
+        '<nonce>',
+    );
+
+    expect($html)->not->toContain('captcha-secret-value');
+});
+
 it('keeps secret key fields write-only even with reference links', function () {
     // A saved secret value must never be rendered back into the field.
     $html = settingsForm()->render(

@@ -72,10 +72,26 @@ it('adds only the CoreX login class and conditionally enqueues the login visual 
         'body.login.corex-login{--corex-admin-login-logo:url("/x.svg")}',
     );
 
+    // The CoreX login is dark-first: with no saved appearance ('system') it carries an explicit
+    // dark theme class so the real logged-out page shows the approved dark design by default.
     expect($branding->loginBodyClass(['login-action-login']))
-        ->toBe(['login-action-login', 'corex-login']);
+        ->toBe(['login-action-login', 'corex-login', 'corex-appearance-dark']);
     $branding->enqueueLoginAssets();
 });
+
+it('resolves the login appearance dark-first: light opts into light, system/dark stay dark', function (string $saved, string $expected) {
+    $branding = new AdminBranding(
+        new BrandingService(brandingConfig(['brand.admin_appearance' => $saved]), '/x.svg'),
+    );
+
+    expect($branding->loginAppearance())->toBe($expected)
+        ->and($branding->loginBodyClass([]))->toContain('corex-appearance-' . $expected);
+})->with([
+    ['light', 'light'],
+    ['dark', 'dark'],
+    ['system', 'dark'],
+    ['', 'dark'],
+]);
 
 it('does not hook authentication or replace native login actions', function () {
     $source = (string) file_get_contents(

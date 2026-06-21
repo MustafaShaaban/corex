@@ -2,6 +2,33 @@
 
 **Branch:** `fix/060-admin-design-implementation`
 
+## Owner-review correction pass 3 (2026-06-22)
+
+**1 — Real wp-login.php now shows the approved (dark) CoreX design by default.** Delivery was
+confirmed correct (the site's `corex-core` plugin is a symlink to the repo — same inode; the real
+login loads `corex-admin-tokens`/`corex-admin-login` at filemtime versions with the `corex-login`
+body class). The remaining gap was that the login rendered *light* by default (appearance=system
++ a light OS), while the approved design is dark — so it read as "not the CoreX design". The login
+is now treated as a **dark-first brand surface**: appearance `light` opts into the light design;
+`dark`/`system`/unset show the canonical dark login. A pristine incognito browser (no scheme
+emulation, default settings) now loads the dark design.
+- Proof (real, pristine logged-out wp-login.php): `tests/e2e/clip/real-login-default.png`
+  (default → dark, body class `corex-appearance-dark`, page bg `rgb(22,24,29)`),
+  `tests/e2e/clip/real-login-light.png` (appearance=Light → light, bg `rgb(246,247,249)`). Shows
+  the mark + brass wordmark, "Sign in to your workspace", SSO slot + "or" divider, styled card,
+  styled fields, password reveal, brass Log In, Remember Me, and footer links.
+
+**2 — Captcha settings reference links.** The Captcha tab fields now carry concise helper copy +
+official references: Captcha driver (provider/None helper); Site key + Secret key →
+`google.com/recaptcha/admin/create` ("Create reCAPTCHA keys"); v3 score threshold → the v3 score
+docs (with "0.5 is a common starting point — adjust after reviewing traffic"); v3 action → the v3
+action docs (with "contact_form or login"). All links `target="_blank"` + `rel="noopener
+noreferrer"`; the Secret key stays write-only (no saved value rendered).
+- Proof: `tests/e2e/clip/captcha-links.png`.
+
+---
+
+
 ## Owner-review correction pass 2 (2026-06-22)
 
 | # | Blocker | Root cause + fix | Proof |

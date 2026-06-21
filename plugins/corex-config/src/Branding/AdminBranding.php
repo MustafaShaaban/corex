@@ -83,13 +83,22 @@ final class AdminBranding
     public function loginBodyClass(array $classes): array
     {
         $classes[] = 'corex-login';
-
-        $appearance = $this->branding->adminAppearance();
-        if ($appearance === 'light' || $appearance === 'dark') {
-            $classes[] = 'corex-appearance-' . $appearance;
-        }
+        $classes[] = 'corex-appearance-' . $this->loginAppearance();
 
         return array_values(array_unique($classes));
+    }
+
+    /**
+     * The login screen's resolved appearance. The CoreX login is a dark-first brand surface (the
+     * approved design is dark), so it always carries an explicit theme: the saved 'light' setting
+     * opts into the light design, and everything else ('dark' or 'system'/unset) shows the
+     * canonical dark login. This is what makes the saved appearance control the logged-out page
+     * while the approved (dark) design is the visible default — distinct from the admin workspace,
+     * where 'system' follows the OS scheme.
+     */
+    public function loginAppearance(): string
+    {
+        return $this->branding->adminAppearance() === 'light' ? 'light' : 'dark';
     }
 
     public function loginUrl(string $url): string
