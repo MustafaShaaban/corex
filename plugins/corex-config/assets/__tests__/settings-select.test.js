@@ -40,6 +40,33 @@ describe( 'settings select enhancement', () => {
 		expect( document.getElementById( 'd' ).style.display ).toBe( 'none' );
 	} );
 
+	it( 'toggles driver-aware rows live when the controlling select changes', () => {
+		document.body.innerHTML =
+			'<form class="corex-settings-form">' +
+			'<label for="captcha_driver">Driver</label>' +
+			'<select id="captcha_driver"><option value="none">None</option>' +
+			'<option value="recaptcha">reCAPTCHA</option></select>' +
+			'<table><tr id="notice" data-corex-show-for="captcha.driver" data-corex-show-values="none"><td>off</td></tr>' +
+			'<tr id="keys" data-corex-show-for="captcha.driver" data-corex-show-values="recaptcha"><td><input id="k"/></td></tr>' +
+			'</table></form>';
+
+		loadSettings();
+
+		// driver=none on load: notice visible, keys hidden
+		expect( document.getElementById( 'notice' ).hidden ).toBe( false );
+		expect( document.getElementById( 'keys' ).hidden ).toBe( true );
+
+		// switch to reCAPTCHA via the enhanced select (no save) -> keys show, notice hides
+		const wrap = document.querySelector( '.corex-select--enhanced' );
+		wrap.querySelector( '.corex-select__button' ).click();
+		wrap.querySelectorAll( '[role="option"]' )[ 1 ].dispatchEvent(
+			new window.MouseEvent( 'mousedown', { bubbles: true } )
+		);
+
+		expect( document.getElementById( 'keys' ).hidden ).toBe( false );
+		expect( document.getElementById( 'notice' ).hidden ).toBe( true );
+	} );
+
 	it( 'opens on click and writes the chosen value back to the native select', () => {
 		document.body.innerHTML =
 			'<form class="corex-settings-form">' +
