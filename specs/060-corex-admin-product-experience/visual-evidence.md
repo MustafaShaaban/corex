@@ -2,6 +2,25 @@
 
 **Branch:** `fix/060-admin-design-implementation`
 
+## Owner-review correction pass 2 (2026-06-22)
+
+| # | Blocker | Root cause + fix | Proof |
+|---|---|---|---|
+| 1 | Real wp-login.php unchanged | The CoreX login hooks/classes/CSS **were** applied (curl confirms `corex-login` body class + `corex-admin-login`/`corex-admin-tokens` loaded + subtitle + SSO slot), but those core styles were versioned by the static `COREX_CORE_VERSION` (0.27.0) — on a production-env WAMP the browser served the **cached old CSS**. Now filemtime-versioned (busts every edit). Login also follows the saved appearance option logged-out. | `tests/e2e/login-dark/login-light.png` (appearance=Dark on a light OS → dark login), `tests/e2e/login-light/login-dark.png` (Light on a dark OS → light login); `?ver=<mtime>` on the real login. |
+| 2 | Spacing fixed only on Overview | The full-bleed body class only matched Overview because the hook list used `corex_page_*`, but WordPress derives the submenu screen id from the "COREX FRAMEWORK" menu title → real id is `corex-framework_page_*`. `supports()` now matches by the slug after `_page_`. | Live: `corex-admin-screen` body class on all of Overview/Settings/Add-ons/Data/Insights/Setup; full-bleed at 1920 in `tests/e2e/fix2/`. |
+| 3 | Dark dropdown unreadable | Native `<select>` option popups are OS-rendered/unreliable in dark mode → replaced both CoreX selects with an accessible in-DOM ARIA listbox (React for the Data filter; progressive enhancement for the Settings/Captcha selects, native kept hidden for submission + no-JS). | `tests/e2e/clip/dark-select-open.png` (Data filter), `tests/e2e/clip/captcha-select-open.png` (Settings appearance) — open dropdowns fully readable. |
+| 4 | Key fields need reference links | Added concise helper copy + official reference links (PSI / Cloudflare token / Cloudflare account ID) opening in a new tab with `rel="noopener noreferrer"`; secrets stay write-only. | `tests/e2e/clip/settings-links.png`. |
+
+Cache-bust note: hand-authored CoreX admin source CSS/JS (core shell/tokens/login + the
+control-panel/settings assets) are now versioned by filemtime so the owner always sees the
+latest on the real site, independent of the release-pinned framework version.
+
+Render output is gitignored — recreate via `node tests/e2e/render-admin.mjs` (set the
+`corex_brand_admin_appearance` option to dark/light for the login-appearance proof).
+
+---
+
+
 ## Correction pass (2026-06-21) — screenshot-driven fixes
 
 Rendered with `node tests/e2e/render-admin.mjs` (dark+light) against the live site; clips captured for
