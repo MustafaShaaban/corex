@@ -2,6 +2,34 @@
 
 **Branch:** `fix/060-admin-design-implementation`
 
+## Capture-fidelity 20-blocker pass (2026-06-21)
+
+Re-runnable harness: `node tests/e2e/render-admin.mjs <out> [--screens=…] [COREX_W/H]` — authenticates
+with an injected administrator session cookie (`tests/e2e/.auth/admin.json`, minted via
+`wp eval wp_generate_auth_cookie`), renders every CoreX admin surface in dark + light against the live
+site (`http://corex.local`), and is compared to the approved `.dc.html` captures on
+`F:/Work/Design project questions answered (3)/`. Throwaway PNG output is gitignored.
+
+| Surface / behaviour | Status | Evidence |
+|---|---|---|
+| Full-width shell | VERIFIED | Surface fills the wp-admin content area (rendered 1440 + 1920); no centered panel / dead canvas |
+| Add-ons toggles | VERIFIED | `role="switch"` + `aria-checked` reflecting real state, On/Off label, keyboard, disabled+reason for non-actionable (live-DOM checked) |
+| Settings tabs | VERIFIED | Brand → Mail → Forms → Captcha → Insights; click + arrow/Home/End keyboard; one panel at a time (live-DOM) |
+| Brand tab | VERIFIED | Admin-logo framed preview / "No logo set" placeholder, footer value, appearance select, SSO checkbox, Save bar |
+| Appearance System/Light/Dark | VERIFIED | Pinning `data-corex-theme="light"` on an OS-dark page forces the light surface (computed bg confirmed) |
+| Login | VERIFIED | "Sign in to your workspace" subheading; SSO slot rendered disabled "not configured yet" only when the setting is on (rendered both states) |
+| Data explorer | VERIFIED | Rail-driven source/schema/metrics/table; checkboxes + select-all + bulk bar ("20 records selected" / Delete selected); New & Edit disabled+honest; drawer footer (Close/Edit-disabled/Delete) + source/ID meta + Escape-close + focus return (live-DOM) |
+| Overview | VERIFIED | Real stat cards + integration cards + all-set state + designed "Recent activity" honest empty panel |
+| Insights | VERIFIED (pre-existing) | Grade badges, readiness rows, recommendations, Run check + timestamp, honest environment-gated/error states |
+| Setup Wizard | VERIFIED (gated) | Truthfully gated behind the corex-kit-company add-on; when active it inherits the full-width shell, step badges, and brass buttons (rendered by temporarily activating the kit, then restoring) |
+
+Truthful state preserved throughout: installed-only add-ons; write-only secrets; no fake records/sources/
+SSO providers/Pro/marketplace; real asset files only (no `data:`/base64, guarded by a test). RTL/200%/full
+keyboard remain part of the manual acceptance pass.
+
+---
+
+
 **Runtime DOM evidence:** WordPress 7.0 at `http://corex.local` returned HTTP 200 for the native login and
 lost-password actions. Both retained their native WordPress forms and carried the `corex-login` body class; the login
 response loaded `corex-admin-tokens` and `corex-admin-login`. The native check-email message action also loaded both

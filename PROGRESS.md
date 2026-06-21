@@ -4,6 +4,26 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-21, capture-fidelity pass COMPLETE) -- all 20 blockers done; PR #59 ready for review (not merged)
+
+- **Branch/PR:** `fix/060-admin-design-implementation` → PR #59. **Do not merge** (owner review/merge).
+- **All 20 blockers complete, render + test + guard verified:** B1 full-width shell · B2-B7 Data explorer
+  (rail-driven; bulk checkboxes/select-all/Delete-selected; New/Edit honestly disabled; polished accessible
+  drawer w/ focus-trap+Escape+return-focus; reset filter; designed table) · B8-B9 accessible add-on toggles +
+  card hierarchy · B10-B12 Settings tabs (Brand→Mail→Forms→Captcha→Insights) + Brand logo/footer values +
+  appearance System/Light/Dark + SSO setting · B13-B14 login SSO slot (gated, honest disabled) + subheading ·
+  B15 Overview activity empty panel · B16 Insights (already compliant) · B17 Setup Wizard shell-inherit fix
+  (gated behind corex-kit-company) · B18 data:-URI asset guard · B19 theme screenshot 1200×900 · B20 docs +
+  visual-evidence + this matrix. Commits: f6bd8e1, 3d20860, 4904665, 05e5aaf, 9f1ed5a, cd2d915, c137c3e (+docs).
+- **Verification at tip:** Pest 769, Jest 105, lint:css/js clean, build OK, token inventory in sync,
+  verify:dependencies PASS, `git diff --check` clean. Render harness `tests/e2e/render-admin.mjs` (dark+light).
+  New tests: AddonToggle, SettingsTabs, AdminAppearance, LoginSso, NoDataUriAsset, dataClient selection helpers.
+- **Truthful-state preserved:** installed-only add-ons; write-only secrets; no fake records/sources/SSO/Pro/
+  marketplace; real asset files only. Setup Wizard truthfully gated; missing/new screen designs deferred.
+- **Exact next step:** owner review + merge PR #59; rerun the manual RTL/200%/full-keyboard acceptance pass.
+
+---
+
 ## RESUME HERE (2026-06-21, capture-fidelity pass) -- B1,B8-B14,B18,B19 done; B2-B7,B15-B17,B20 remain
 
 - **Branch/PR:** `fix/060-admin-design-implementation` → PR #59 (do **not** merge). Tip `9f1ed5a`.
