@@ -90,3 +90,7 @@ tests/e2e/baseline/
 tests/e2e/render-out/
 tests/e2e/after-*/
 tests/e2e/wide/
+tests/e2e/clip/
+tests/e2e/cur/
+tests/e2e/final/
+tests/e2e/fix*/
