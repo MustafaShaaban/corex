@@ -25,8 +25,27 @@ final class SettingsRegistry implements FieldSections
             'brand' => [
                 'title'  => 'Brand',
                 'fields' => [
-                    'brand.logo_url'    => ['label' => 'Admin logo', 'type' => 'media'],
-                    'brand.footer_text' => ['label' => 'Admin footer text', 'type' => 'text'],
+                    'brand.logo_url'    => [
+                        'label' => 'Admin logo',
+                        'type'  => 'media',
+                        'help'  => 'Used on the CoreX admin shell and the WordPress login screen.',
+                    ],
+                    'brand.footer_text' => [
+                        'label' => 'Admin footer text',
+                        'type'  => 'text',
+                        'help'  => 'Replaces the wp-admin footer text. Leave blank for "Powered by Corex".',
+                    ],
+                    'brand.admin_appearance' => [
+                        'label'   => 'CoreX admin appearance',
+                        'type'    => 'select',
+                        'options' => ['system' => 'System', 'light' => 'Light', 'dark' => 'Dark'],
+                        'help'    => 'System follows your operating-system colour scheme.',
+                    ],
+                    'brand.login_sso_enabled' => [
+                        'label' => 'Enable SSO login section',
+                        'type'  => 'checkbox',
+                        'help'  => 'Reserves a single sign-on slot on the login screen. No provider is configured yet.',
+                    ],
                 ],
             ],
             'mail' => [

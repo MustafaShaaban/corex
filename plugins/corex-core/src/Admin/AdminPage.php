@@ -21,8 +21,16 @@ final class AdminPage
             ? ''
             : '<p class="corex-admin__description">' . esc_html($description) . '</p>';
 
+        // Appearance (System/Light/Dark) is a CoreX setting surfaced through a filter so this
+        // presentation class stays decoupled from the config layer. 'system' adds no attribute
+        // and falls back to prefers-color-scheme; light/dark pin the theme explicitly.
+        $appearance = (string) apply_filters('corex_admin_appearance', 'system');
+        $themeAttr = in_array($appearance, ['light', 'dark'], true)
+            ? ' data-corex-theme="' . esc_attr($appearance) . '"'
+            : '';
+
         return sprintf(
-            '<div class="wrap corex-admin corex-admin--%1$s"><div class="corex-admin__shell">%2$s'
+            '<div class="wrap corex-admin corex-admin--%1$s"' . $themeAttr . '><div class="corex-admin__shell">%2$s'
             . '<main class="corex-admin__main" aria-labelledby="corex-page-title">'
             . '<header class="corex-admin__header"><div class="corex-admin__heading">'
             . '<p class="corex-admin__eyebrow">%3$s</p><h1 id="corex-page-title">%4$s</h1>%5$s'

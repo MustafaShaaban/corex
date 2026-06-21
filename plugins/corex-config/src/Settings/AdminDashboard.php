@@ -86,7 +86,7 @@ final class AdminDashboard
             'corex-control-panel',
             plugins_url('assets/control-panel.css', $base),
             ['corex-admin-shell'],
-            '1.0.0',
+            '1.1.0',
         );
 
         if ($hook !== $this->settingsHook) {
@@ -98,7 +98,7 @@ final class AdminDashboard
             'corex-settings',
             plugins_url('assets/settings.js', $base),
             ['media-views'],
-            '1.0.0',
+            '1.1.0',
             true,
         );
     }
@@ -141,6 +141,7 @@ final class AdminDashboard
             fn (string $key): string => $this->store->get($key),
             $nonce,
             fn (string $sectionKey): ?SettingsSectionState => $this->sectionState($sectionKey),
+            $this->activeTab(),
         );
         echo $this->page->close();
     }
@@ -189,38 +190,51 @@ final class AdminDashboard
             return;
         }
 
-        $secretKeys = $this->secretKeys();
-
-        foreach ($this->registry->keys() as $key) {
-            $name = str_replace('.', '_', $key);
-
-            if (! isset($_POST[$name])) {
-                continue;
+        foreach ($this->registry->sections() as $section) {
+            foreach ($section['fields'] as $key => $field) {
+                $this->saveField((string) $key, (string) ($field['type'] ?? 'text'));
             }
-
-            $value = sanitize_text_field(wp_unslash($_POST[$name]));
-
-            if ($value === '' && in_array($key, $secretKeys, true)) {
-                continue;
-            }
-
-            $this->store->save($key, $value);
         }
     }
 
-    /** @return list<string> */
-    private function secretKeys(): array
+    /**
+     * Persists one field by type. A checkbox absent from the post is an explicit "off" (so a
+     * toggle can be turned off); an empty write-only secret is left untouched (never cleared
+     * by re-saving the form); everything else is sanitized text.
+     */
+    private function saveField(string $key, string $type): void
     {
-        $keys = [];
+        $name = str_replace('.', '_', $key);
 
-        foreach ($this->registry->sections() as $section) {
-            foreach ($section['fields'] as $key => $field) {
-                if (($field['type'] ?? '') === 'password') {
-                    $keys[] = $key;
-                }
-            }
+        if ($type === 'checkbox') {
+            $this->store->save($key, isset($_POST[$name]) ? '1' : '0');
+
+            return;
         }
 
-        return $keys;
+        if (! isset($_POST[$name])) {
+            return;
+        }
+
+        $value = sanitize_text_field(wp_unslash($_POST[$name]));
+
+        if ($value === '' && $type === 'password') {
+            return;
+        }
+
+        $this->store->save($key, $value);
+    }
+
+    /**
+     * The settings tab to show first: the one just saved (so the selection survives a save) or
+     * a requested tab, validated against the real section keys. Read-only display preference,
+     * so a sanitized key is sufficient (no state change).
+     */
+    private function activeTab(): string
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only tab selection, not a state change.
+        $requested = isset($_REQUEST['corex_tab']) ? sanitize_key(wp_unslash($_REQUEST['corex_tab'])) : '';
+
+        return in_array($requested, array_keys($this->registry->sections()), true) ? $requested : '';
     }
 }

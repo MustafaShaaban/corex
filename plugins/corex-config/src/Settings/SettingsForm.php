@@ -32,50 +32,111 @@ final class SettingsForm
      * @param callable(string):string                       $value        current value for a field key
      * @param (callable(string):?SettingsSectionState)|null $sectionState per-section runtime state by section key
      */
-    public function render(callable $value, string $nonceField, ?callable $sectionState = null): string
+    /**
+     * @param callable(string):string                       $value        current value for a field key
+     * @param (callable(string):?SettingsSectionState)|null $sectionState per-section runtime state by section key
+     * @param string                                        $activeKey    the section to show first (a tab key)
+     */
+    public function render(callable $value, string $nonceField, ?callable $sectionState = null, string $activeKey = ''): string
     {
-        $html = '<form method="post" action="" class="corex-settings-form">' . $nonceField;
+        $sections = $this->registry->sections();
+        $keys     = array_keys($sections);
 
-        foreach ($this->registry->sections() as $sectionKey => $section) {
-            $state = $sectionState !== null ? $sectionState((string) $sectionKey) : null;
-            $stateClass = $state === null ? 'normal' : str_replace('_', '-', $state->value);
+        if ($activeKey === '' || ! in_array($activeKey, $keys, true)) {
+            $activeKey = (string) ($keys[0] ?? '');
+        }
 
-            $html .= sprintf(
-                '<section id="corex-settings-section-%1$s" class="corex-settings-section corex-settings-section--%2$s"><h2>%3$s</h2>',
-                esc_attr((string) $sectionKey),
-                esc_attr($stateClass),
-                esc_html($section['title']),
-            );
-            $html .= $this->sectionNotice($state);
+        $html  = '<form method="post" action="" class="corex-settings-form">' . $nonceField;
+        $html .= '<input type="hidden" name="corex_tab" value="' . esc_attr($activeKey)
+            . '" class="corex-settings__active-tab" />';
+        $html .= $this->tablist($sections, $activeKey);
 
-            // A not-installed add-on shows only the notice — never its fields.
-            if ($state === SettingsSectionState::Hidden) {
-                $html .= '</section>';
-
-                continue;
-            }
-
-            $disabled = $state === SettingsSectionState::Disabled;
-            $html    .= '<table class="form-table">';
-
-            foreach ($section['fields'] as $key => $field) {
-                $name = str_replace('.', '_', $key);
-
-                $html .= sprintf(
-                    '<tr><th><label for="%s">%s</label></th><td>%s</td></tr>',
-                    esc_attr($name),
-                    esc_html($field['label']),
-                    $this->control($name, $field, (string) $value($key), $disabled),
-                );
-            }
-
-            $html .= '</table></section>';
+        foreach ($sections as $sectionKey => $section) {
+            $html .= $this->panel((string) $sectionKey, $section, $value, $sectionState, $activeKey);
         }
 
         return $html . sprintf(
-            '<p><button type="submit" class="button button-primary">%s</button></p></form>',
+            '<div class="corex-settings__save"><button type="submit" class="button button-primary">%s</button></div></form>',
             esc_html__('Save settings', 'corex')
         );
+    }
+
+    /**
+     * The accessible tablist (one tab per real settings section, in registry order). Buttons
+     * carry the ARIA tab semantics; a small enqueued script shows one panel at a time and wires
+     * arrow-key navigation. Without JS every panel stays visible (a stacked, usable fallback).
+     *
+     * @param array<string,array{title:string,fields:array<string,mixed>}> $sections
+     */
+    private function tablist(array $sections, string $activeKey): string
+    {
+        $html = '<div class="corex-settings-tabs" role="tablist" aria-label="'
+            . esc_attr__('CoreX settings sections', 'corex') . '">';
+
+        foreach ($sections as $sectionKey => $section) {
+            $isActive = (string) $sectionKey === $activeKey;
+            $html    .= sprintf(
+                '<button type="button" class="corex-settings-tab%5$s" role="tab" id="corex-tab-%1$s"'
+                . ' aria-controls="corex-settings-section-%1$s" aria-selected="%2$s" tabindex="%3$s"'
+                . ' data-corex-tab="%1$s">%4$s</button>',
+                esc_attr((string) $sectionKey),
+                $isActive ? 'true' : 'false',
+                $isActive ? '0' : '-1',
+                esc_html($section['title']),
+                $isActive ? ' is-active' : '',
+            );
+        }
+
+        return $html . '</div>';
+    }
+
+    /**
+     * One section rendered as an ARIA tabpanel.
+     *
+     * @param array{title:string,fields:array<string,array{label:string,type:string,options?:array<string,string>,help?:string}>} $section
+     * @param callable(string):string                       $value
+     * @param (callable(string):?SettingsSectionState)|null $sectionState
+     */
+    private function panel(string $sectionKey, array $section, callable $value, ?callable $sectionState, string $activeKey): string
+    {
+        $state      = $sectionState !== null ? $sectionState($sectionKey) : null;
+        $stateClass = $state === null ? 'normal' : str_replace('_', '-', $state->value);
+        $isActive   = $sectionKey === $activeKey;
+
+        $html = sprintf(
+            '<section id="corex-settings-section-%1$s" class="corex-settings-section corex-settings-section--%2$s%5$s"'
+            . ' role="tabpanel" aria-labelledby="corex-tab-%1$s"><h2>%3$s</h2>%4$s',
+            esc_attr($sectionKey),
+            esc_attr($stateClass),
+            esc_html($section['title']),
+            $this->sectionNotice($state),
+            $isActive ? ' is-active' : '',
+        );
+
+        // A not-installed add-on shows only the notice — never its fields.
+        if ($state === SettingsSectionState::Hidden) {
+            return $html . '</section>';
+        }
+
+        $disabled = $state === SettingsSectionState::Disabled;
+        $html    .= '<table class="form-table">';
+
+        foreach ($section['fields'] as $key => $field) {
+            $name  = str_replace('.', '_', $key);
+            $help  = isset($field['help']) && $field['help'] !== ''
+                ? '<p class="corex-field-help" id="' . esc_attr($name) . '-help">' . esc_html($field['help']) . '</p>'
+                : '';
+
+            $html .= sprintf(
+                '<tr><th><label for="%s">%s</label></th><td>%s%s</td></tr>',
+                esc_attr($name),
+                esc_html($field['label']),
+                $this->control($name, $field, (string) $value($key), $disabled),
+                $help,
+            );
+        }
+
+        return $html . '</table></section>';
     }
 
     private function sectionNotice(?SettingsSectionState $state): string
@@ -152,23 +213,35 @@ final class SettingsForm
         );
     }
 
+    /**
+     * The admin-logo control (design: Settings Brand tab): a framed preview that shows the
+     * current saved logo as a thumbnail, or a designed empty placeholder when none is set, so
+     * the admin can always tell whether the setting has a value. Select/Change + Remove drive
+     * the preview live via the enqueued media script; the URL field keeps it editable without
+     * JS. No base64 — a normal attachment URL.
+     */
     private function media(string $name, string $value, bool $disabled = false): string
     {
-        $preview = $value === ''
-            ? '<img class="corex-media-preview" src="" alt="" style="display:none" />'
-            : sprintf('<img class="corex-media-preview" src="%s" alt="" />', esc_url($value));
+        $hasValue = $value !== '';
 
         return sprintf(
-            '<input id="%1$s" name="%1$s" type="url" value="%2$s" class="regular-text"%6$s />'
-            . ' <button type="button" class="button corex-media-select" data-target="%1$s"%6$s>%3$s</button>'
-            . ' <button type="button" class="button corex-media-remove" data-target="%1$s"%6$s>%4$s</button>'
-            . '<br />%5$s',
+            '<div class="corex-media">'
+            . '<div class="corex-media__frame">'
+            . '<img class="corex-media-preview" src="%2$s" alt=""%7$s />'
+            . '<span class="corex-media__placeholder"%8$s>%3$s</span></div>'
+            . '<div class="corex-media__controls">'
+            . '<button type="button" class="button corex-media-select" data-target="%1$s"%6$s>%4$s</button>'
+            . '<button type="button" class="button corex-media-remove" data-target="%1$s"%6$s>%5$s</button>'
+            . '<input id="%1$s" name="%1$s" type="url" value="%9$s" class="corex-media__url regular-text"%6$s /></div></div>',
             esc_attr($name),
-            esc_attr($value),
-            esc_html__('Select image', 'corex'),
+            $hasValue ? esc_url($value) : '',
+            esc_html__('No logo set', 'corex'),
+            $hasValue ? esc_html__('Change image', 'corex') : esc_html__('Select image', 'corex'),
             esc_html__('Remove', 'corex'),
-            $preview,
             $this->disabledAttr($disabled),
+            $hasValue ? '' : ' hidden',
+            $hasValue ? ' hidden' : '',
+            esc_attr($value),
         );
     }
 

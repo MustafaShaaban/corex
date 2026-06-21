@@ -114,10 +114,12 @@ body.login.corex-login {
 	--corex-admin-font-display: "CoreX Arabic", "CoreX Space Grotesk", sans-serif;
 }
 
+/* System appearance: follow the OS scheme — only when no explicit Light/Dark is
+   pinned ([data-corex-theme] on admin, .corex-appearance-* on login). */
 @media (prefers-color-scheme: light) {
 
-	.corex-admin,
-	body.login.corex-login {
+	.corex-admin:not([data-corex-theme]),
+	body.login.corex-login:not(.corex-appearance-light):not(.corex-appearance-dark) {
 		color-scheme: light;
 		--corex-admin-shell: #eceef1;
 		--corex-admin-canvas: #f6f7f9;
@@ -153,7 +155,8 @@ body.login.corex-login {
 	}
 }
 
-.corex-admin[data-corex-theme="light"] {
+.corex-admin[data-corex-theme="light"],
+body.login.corex-login.corex-appearance-light {
 	color-scheme: light;
 	--corex-admin-shell: #eceef1;
 	--corex-admin-canvas: #f6f7f9;

@@ -27,6 +27,16 @@ final class AdminBranding
         add_filter('login_body_class', [$this, 'loginBodyClass']);
         add_filter('login_headerurl', [$this, 'loginUrl']);
         add_filter('admin_footer_text', [$this, 'footerText']);
+        add_filter('corex_admin_appearance', [$this, 'appearance']);
+    }
+
+    /**
+     * Resolves the CoreX admin appearance (System/Light/Dark) for the shell filter in
+     * {@see \Corex\Admin\AdminPage}.
+     */
+    public function appearance(): string
+    {
+        return $this->branding->adminAppearance();
     }
 
     public function enqueueLoginAssets(): void
@@ -44,6 +54,11 @@ final class AdminBranding
     public function loginBodyClass(array $classes): array
     {
         $classes[] = 'corex-login';
+
+        $appearance = $this->branding->adminAppearance();
+        if ($appearance === 'light' || $appearance === 'dark') {
+            $classes[] = 'corex-appearance-' . $appearance;
+        }
 
         return array_values(array_unique($classes));
     }
