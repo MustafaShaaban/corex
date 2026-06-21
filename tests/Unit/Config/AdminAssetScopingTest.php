@@ -3,10 +3,11 @@
 /**
  * Spec 060 / M6 US3 — the CoreX Add-ons styling is scoped, token-only, and never global.
  *
- * It consumes only the scoped --corex-admin-* adapter (no --wp--preset--, no
+ * It consumes only the scoped --corex-admin-* adapter (no --wp--preset--, no global
  * :root/html/body), and the screen enqueues it only on the CoreX Add-ons screen hook
  * declaring the adapter as a dependency — so it never restyles wp-admin globally and
- * never loads on the public frontend.
+ * never loads on the public frontend. The one allowed body-prefixed selector is the
+ * documented full-bleed scope `body.corex-admin-screen` (CoreX-owned screens only).
  *
  * @package Corex\Tests\Unit\Config
  */
@@ -32,7 +33,7 @@ it('ships the add-ons stylesheet consuming only the scoped admin adapter', funct
 
     expect($css)->toContain('--corex-admin-')
         ->and($css)->not->toContain('--wp--preset--')
-        ->and($css)->not->toMatch('/(?:^|,)\s*(?::root|html|body)\b/m');
+        ->and($css)->not->toMatch('/(?:^|,)\s*(?::root\b|html\b|body\b(?!\.corex-admin-screen))/m');
 });
 
 it('styles the truthful state badge tones from admin success/warning/error roles', function () {
@@ -73,6 +74,6 @@ it('keeps every CoreX admin stylesheet scoped and on the admin adapter', functio
         expect($css)->toContain('.corex-admin')
             ->and($css)->toContain('var(--corex-admin-')
             ->and($css)->not->toContain('--wp--preset--')
-            ->and($css)->not->toMatch('/(?:^|,)\s*(?::root|html|body)\b/m');
+            ->and($css)->not->toMatch('/(?:^|,)\s*(?::root\b|html\b|body\b(?!\.corex-admin-screen))/m');
     }
 });

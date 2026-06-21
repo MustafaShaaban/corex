@@ -28,6 +28,23 @@ final class CorexAdminAssets
     public function register(): void
     {
         add_action('admin_enqueue_scripts', [$this, 'enqueue']);
+        add_filter('admin_body_class', [$this, 'bodyClass']);
+    }
+
+    /**
+     * Tags CoreX-owned admin screens with a body class so the shell stylesheet can make the
+     * surface full-bleed (remove wp-admin's outer padding/margins) on those pages only — never
+     * on unrelated wp-admin pages or the front end.
+     */
+    public function bodyClass(string $classes): string
+    {
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+
+        if ($screen !== null && $this->supports($screen->id)) {
+            $classes .= ' corex-admin-screen';
+        }
+
+        return $classes;
     }
 
     public function supports(string $hook): bool

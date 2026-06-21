@@ -15,6 +15,23 @@
 	font-family: var(--corex-admin-font-body);
 }
 
+/* Full-bleed CoreX surface, CoreX screens only (via the body class): strip the
+   wp-admin outer padding/margins so the shell reaches the content-area edges.
+   Scoped to body.corex-admin-screen — nothing else is touched. */
+/* stylelint-disable selector-id-pattern */
+body.corex-admin-screen #wpcontent {
+	padding-inline-start: 0;
+}
+
+body.corex-admin-screen #wpbody-content {
+	padding-block-end: 0;
+}
+/* stylelint-enable selector-id-pattern */
+
+body.corex-admin-screen .corex-admin {
+	margin: 0;
+}
+
 .corex-admin *,
 .corex-admin *::before,
 .corex-admin *::after {
@@ -30,6 +47,13 @@
 	border-radius: var(--corex-admin-radius-lg);
 	box-shadow: var(--corex-admin-shadow-lg);
 	overflow: clip;
+}
+
+body.corex-admin-screen .corex-admin__shell {
+	min-block-size: calc(100vh - 32px);
+	border-inline: 0;
+	border-block-start: 0;
+	border-radius: 0;
 }
 
 .corex-admin__main {
@@ -128,9 +152,20 @@
 	mask-image: url(../icons/nav-data.svg);
 }
 
-.corex-admin__nav-icon--settings {
+.corex-admin__nav-icon--settings,
+.corex-admin__nav-icon--option-page {
 	-webkit-mask-image: url(../icons/nav-settings.svg);
 	mask-image: url(../icons/nav-settings.svg);
+}
+
+.corex-admin__nav-icon--insights {
+	-webkit-mask-image: url(../icons/nav-insights.svg);
+	mask-image: url(../icons/nav-insights.svg);
+}
+
+.corex-admin__nav-icon--setup {
+	-webkit-mask-image: url(../icons/nav-setup.svg);
+	mask-image: url(../icons/nav-setup.svg);
 }
 
 .corex-admin__header {

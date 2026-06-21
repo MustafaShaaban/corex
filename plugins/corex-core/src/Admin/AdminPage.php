@@ -56,23 +56,15 @@ final class AdminPage
      */
     private function rail(string $active): string
     {
-        $items = [
-            ['overview', 'corex-settings', __('Overview', 'corex')],
-            ['addons', 'corex-addons', __('Add-ons', 'corex')],
-            ['data', 'corex-data', __('Data', 'corex')],
-            ['settings', 'corex-settings-config', __('Settings', 'corex')],
-        ];
-
         $nav = '';
-        foreach ($items as [$key, $slug, $label]) {
-            $isActive = $key === $active;
+        foreach ($this->railItems($active) as [$slug, $icon, $label, $isActive]) {
             $nav .= sprintf(
                 '<a class="corex-admin__nav-item%1$s" href="%2$s"%3$s>'
                 . '<span class="corex-admin__nav-icon corex-admin__nav-icon--%4$s" aria-hidden="true"></span>%5$s</a>',
                 $isActive ? ' is-active' : '',
                 esc_url(admin_url('admin.php?page=' . $slug)),
                 $isActive ? ' aria-current="page"' : '',
-                esc_attr($key),
+                esc_attr($icon),
                 esc_html($label),
             );
         }
@@ -82,6 +74,57 @@ final class AdminPage
             . '<p class="corex-admin__rail-group">' . esc_html__('COREX FRAMEWORK', 'corex') . '</p>'
             . '<nav class="corex-admin__nav" aria-label="' . esc_attr__('CoreX framework', 'corex') . '">'
             . $nav . '</nav></aside>';
+    }
+
+    /**
+     * The rail entries, built from the live CoreX submenu (`$submenu['corex-settings']`) so the
+     * inner rail can never disagree with the WordPress submenu — every registered CoreX page
+     * (including Insights and the gated Setup Wizard, and any declarative option page) appears,
+     * in the same order, with its matching icon. Falls back to the known core pages when no admin
+     * menu context exists (e.g. unit tests).
+     *
+     * @return list<array{0:string,1:string,2:string,3:bool}> [slug, icon, label, isActive]
+     */
+    private function railItems(string $active): array
+    {
+        // slug => [icon mask, section key matching open()'s $active]
+        $meta = [
+            'corex-settings'        => ['overview', 'overview'],
+            'corex-settings-config' => ['settings', 'settings'],
+            'corex-addons'          => ['addons', 'addons'],
+            'corex-data'            => ['data', 'data'],
+            'corex-insights'        => ['insights', 'insights'],
+            'corex-setup'           => ['setup', 'setup'],
+        ];
+
+        $items = [];
+        global $submenu;
+
+        if (isset($submenu['corex-settings']) && is_array($submenu['corex-settings'])) {
+            foreach ($submenu['corex-settings'] as $entry) {
+                $slug  = (string) ($entry[2] ?? '');
+                $label = wp_strip_all_tags((string) ($entry[0] ?? ''));
+                [$icon, $section] = $meta[$slug] ?? ['option-page', 'option-page'];
+                $items[] = [$slug, $icon, $label, $section === $active];
+            }
+
+            return $items;
+        }
+
+        $labels = [
+            'corex-settings'        => __('Overview', 'corex'),
+            'corex-settings-config' => __('Settings', 'corex'),
+            'corex-addons'          => __('Add-ons', 'corex'),
+            'corex-data'            => __('Data', 'corex'),
+            'corex-insights'        => __('Insights', 'corex'),
+            'corex-setup'           => __('Setup Wizard', 'corex'),
+        ];
+
+        foreach ($meta as $slug => [$icon, $section]) {
+            $items[] = [$slug, $icon, $labels[$slug], $section === $active];
+        }
+
+        return $items;
     }
 
     /**
