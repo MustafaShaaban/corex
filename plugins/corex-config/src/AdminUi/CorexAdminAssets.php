@@ -15,15 +15,15 @@ defined('ABSPATH') || exit;
  */
 final class CorexAdminAssets
 {
-    /** @var list<string> */
-    private const HOOKS = [
-        'toplevel_page_corex-settings',
-        'corex_page_corex-addons',
-        'corex_page_corex-data',
-        'corex_page_corex-settings-config',
-        'corex_page_corex-setup',
-        'corex_page_corex-insights',
-    ];
+    /**
+     * Matches every CoreX-owned admin screen by hook/screen-id, regardless of the menu-title
+     * prefix WordPress derives (the toplevel `toplevel_page_corex-settings` Overview, and each
+     * submenu — `corex_page_*` or `corex-framework_page_*` depending on how WP sanitises the
+     * "COREX FRAMEWORK" menu title — plus any declarative `corex-page-*` option page). Keyed on
+     * the page slug after `_page_`, so the same check works for both the enqueue hook and the
+     * `get_current_screen()` id (which disagree for the submenu pages).
+     */
+    private const SCREEN_PATTERN = '#(?:^toplevel_page_corex-settings$|_page_corex-(?:settings-config|addons|data|insights|setup|page-))#';
 
     public function register(): void
     {
@@ -40,8 +40,8 @@ final class CorexAdminAssets
     {
         $screen = function_exists('get_current_screen') ? get_current_screen() : null;
 
-        if ($screen !== null && $this->supports($screen->id)) {
-            $classes .= ' corex-admin-screen';
+        if ($screen !== null && $this->supports((string) $screen->id)) {
+            $classes = trim($classes . ' corex-admin-screen');
         }
 
         return $classes;
@@ -49,9 +49,7 @@ final class CorexAdminAssets
 
     public function supports(string $hook): bool
     {
-        return in_array($hook, self::HOOKS, true)
-            || str_starts_with($hook, 'corex_page_corex-page-')
-            || str_starts_with($hook, 'toplevel_page_corex-page-');
+        return preg_match(self::SCREEN_PATTERN, $hook) === 1;
     }
 
     public function enqueue(string $hook): void

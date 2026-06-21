@@ -15,7 +15,17 @@ it('recognizes every current CoreX admin screen and rejects unrelated admin hook
     $assets = new CorexAdminAssets();
 
     foreach ([
+        // The toplevel Overview.
         'toplevel_page_corex-settings',
+        // Submenu pages: WordPress derives the prefix from the "COREX FRAMEWORK" menu title,
+        // so the real get_current_screen() id is `corex-framework_page_*` (not `corex_page_*`).
+        // Both forms must be recognised so the body class lands on every CoreX screen.
+        'corex-framework_page_corex-settings-config',
+        'corex-framework_page_corex-addons',
+        'corex-framework_page_corex-data',
+        'corex-framework_page_corex-insights',
+        'corex-framework_page_corex-setup',
+        'corex-framework_page_corex-page-example',
         'corex_page_corex-addons',
         'corex_page_corex-data',
         'corex_page_corex-settings-config',
@@ -26,7 +36,16 @@ it('recognizes every current CoreX admin screen and rejects unrelated admin hook
         expect($assets->supports($hook))->toBeTrue($hook);
     }
 
-    foreach (['dashboard', 'plugins.php', 'settings_page_general', '', 'corex-settings'] as $hook) {
+    foreach ([
+        'dashboard',
+        'plugins.php',
+        'settings_page_general',
+        '',
+        'corex-settings',
+        // A non-CoreX page that merely contains "corex" must not match.
+        'toplevel_page_corexextra',
+        'corex_page_other-data',
+    ] as $hook) {
         expect($assets->supports($hook))->toBeFalse($hook);
     }
 });

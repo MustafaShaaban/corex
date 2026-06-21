@@ -47,7 +47,7 @@ final class HttpServiceProvider extends ServiceProvider
             'corex-runtime',
             $assets . '/js/corex-runtime.js',
             ['wp-i18n'],
-            COREX_CORE_VERSION,
+            $this->assetVersion('js/corex-runtime.js'),
             true,
         );
         wp_set_script_translations('corex-runtime', 'corex');
@@ -56,7 +56,7 @@ final class HttpServiceProvider extends ServiceProvider
             'corex-runtime',
             $assets . '/css/corex-runtime.css',
             [],
-            COREX_CORE_VERSION,
+            $this->assetVersion('css/corex-runtime.css'),
         );
 
         // The scoped CoreX admin token adapter (spec 057 US4). Registered only —
@@ -66,21 +66,35 @@ final class HttpServiceProvider extends ServiceProvider
             'corex-admin-tokens',
             $assets . '/css/corex-admin-tokens.css',
             [],
-            COREX_CORE_VERSION,
+            $this->assetVersion('css/corex-admin-tokens.css'),
         );
 
         wp_register_style(
             'corex-admin-shell',
             $assets . '/css/corex-admin-shell.css',
             ['corex-admin-tokens'],
-            COREX_CORE_VERSION,
+            $this->assetVersion('css/corex-admin-shell.css'),
         );
 
         wp_register_style(
             'corex-admin-login',
             $assets . '/css/corex-admin-login.css',
             ['corex-admin-tokens'],
-            COREX_CORE_VERSION,
+            $this->assetVersion('css/corex-admin-login.css'),
         );
+    }
+
+    /**
+     * Cache-busting version for a corex-core source asset: its filemtime, so any edit busts the
+     * browser cache even between releases (these are hand-authored source CSS/JS, not built/
+     * hashed bundles, and the framework version only changes on a release). Falls back to the
+     * framework version when the file is unreadable. See DECISIONS — login/shell cache-bust.
+     */
+    private function assetVersion(string $relativePath): string
+    {
+        $path  = dirname(COREX_CORE_FILE) . '/assets/' . ltrim($relativePath, '/');
+        $mtime = is_file($path) ? filemtime($path) : false;
+
+        return $mtime !== false ? (string) $mtime : COREX_CORE_VERSION;
     }
 }
