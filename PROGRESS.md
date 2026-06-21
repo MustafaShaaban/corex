@@ -31,11 +31,20 @@
     a real masked SVG nav icon in `plugins/corex-core/assets/icons/nav-*.svg`, brass active state + muted hover) and a
     topbar with the mono "Corex / {section}" breadcrumb + strong title. Frame moved from `__main` to `__shell` (grid);
     rail collapses on narrow. Verified dark + light, active state per screen. `AdminPageTest` stubs updated.
-  - **Remaining phases (not started):** (3) Data explorer left model/schema rail + insight cards; (4) Overview
-    records/event/setup panels per Dashboard capture; (5) Settings tabs (General/Architecture/Data sources/Design
-    tokens/Advanced); (6) Setup Wizard + Insights rhythm alignment; (7) theme `screenshot.png` from
-    `Corex Theme Screenshot.dc.html`. All must keep truthful state and use real asset files (no `data:`).
-- **Exact next step:** continue the capture-fidelity pass at Phase 3 (Data explorer rail). Do not merge PR #59 yet.
+  - **Phase 7 DONE — theme screenshot:** rendered `Corex Theme Screenshot.dc.html` to a real `theme/screenshot.png`
+    (1200×900 PNG; the theme previously had none) — editorial light hero, CoreX mark + brass-x wordmark, nav
+    (Product/Solutions/Docs/Pricing), Sign in / Get started, "Discipline, at every layer.", and the Architecture/
+    Blocks/Add-ons feature cards. Real raster file, not embedded/base64.
+  - **Remaining phases (need truthful-state care — flagged for owner):** (3) Data explorer left model/schema rail +
+    insight cards — our Data screen has one real source (form submissions); a multi-model rail/schema/sparkline would
+    invent backing, so it must show the one real source active + truthful empty/disabled rows; (4) Overview event-bus/
+    records panels — the capture's live event bus + records table are demo data we do not have, so only truthful
+    panels apply; (5) Settings tabs — the capture's tab names (Architecture/Data sources/Design tokens) are demo; the
+    truthful move is to tab the real sections (Brand/Mail/Forms/Captcha/Insights), not invent those tabs; (6) Setup
+    Wizard + Insights rhythm alignment (safe); these inherit the shell + control fixes already. All must keep
+    truthful state and use real asset files (no `data:`).
+- **Exact next step:** confirm scope for Phases 3–6 with the owner (how far to push the Data/Overview/Settings
+  captures without inventing backing data), then implement. Do not merge PR #59 yet.
 
 ---
 
