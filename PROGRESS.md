@@ -4,6 +4,35 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-21, capture-fidelity pass) -- B1,B8-B14,B18,B19 done; B2-B7,B15-B17,B20 remain
+
+- **Branch/PR:** `fix/060-admin-design-implementation` → PR #59 (do **not** merge). Tip `9f1ed5a`.
+- **Harness:** `node tests/e2e/render-admin.mjs <out> [--screens=..] [COREX_W/H]` (injected admin cookie in
+  `tests/e2e/.auth/admin.json`; mint via `wp eval wp_generate_auth_cookie`). Captures: `F:/Work/Design project
+  questions answered (3)/*.dc.html`. Full Pest 769, Jest 103, lint:css/js clean at the tip.
+- **DONE (committed, render+test+guard verified):** B1 full-width shell (`f6bd8e1`); B18 data:-URI asset guard +
+  B19 theme screenshot 1200×900 (`3d20860`); B8-B9 accessible add-on toggles + card hierarchy (`4904665`); B10-B12
+  Settings tabs (Brand→Mail→Forms→Captcha→Insights) + Brand logo-preview/footer values + appearance System/Light/
+  Dark (data-corex-theme on shell via `corex_admin_appearance` filter; login body class; media query scoped to
+  System) + SSO setting (`05e5aaf`); B13-B14 login SSO slot (gated, honest disabled "not configured", no fake
+  provider) + sign-in subheading (`9f1ed5a`). New tests: AddonToggleTest, SettingsTabsTest, AdminAppearanceTest,
+  LoginSsoTest, NoDataUriAssetTest. NOTE: after any CSS token change run `node scripts/generate-token-inventory.mjs`
+  (consumer-contract test) — already done through `9f1ed5a`.
+- **REMAINING in order:** (4) **B2-B7 Data** — `plugins/corex-config/src/Data/*` + React app
+  `plugins/corex-config/src/admin/index.js` (rebuild to `build/admin/index.js` via `npm run build`) + `assets/
+  data.css`: rail must drive active source/schema/cards/table/filters/actions/URL (not the select box); schema from
+  real source fields; visible functional filters + search + reset + export + QueryBuilder marker; row checkboxes +
+  select-all + bulk toolbar (truthful actions only, nonce+confirm); visible New/Edit/View (disabled+honest where
+  unsupported — form submissions are read-only); polished accessible View drawer (focus trap, Esc, return focus,
+  metadata, footer actions); designed table (mono headers, action column, hover/focus, pagination, empty/loading).
+  (5) **B15-B17** Overview real-metric panels + truthful empty states; Insights score/readiness rows; Setup Wizard
+  polish or truthful gating. (6) **B20** docs + visual-evidence.md + final report + full check matrix.
+- **Exact next step:** B2-B7 Data. Read `Corex Admin - Add-ons & Data.dc.html` (Data tab — rail/schema/cards/table
+  already captured in this session's notes), inspect `Data/DataController.php` + `src/admin/index.js`, implement,
+  `npm run build`, re-render `--screens=data`, test/guard, commit. Do not merge.
+
+---
+
 ## RESUME HERE (2026-06-21, capture-fidelity 20-blocker pass started) -- B1/B18/B19 done; 16 blockers remain
 
 - **Branch/PR:** `fix/060-admin-design-implementation` → PR #59 (do **not** merge). Single root checkout; no `main`.
