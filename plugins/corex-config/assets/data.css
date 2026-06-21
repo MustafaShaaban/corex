@@ -1,125 +1,168 @@
-/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+/** CoreX Data table, tools, and universal states; scoped to the CoreX shell. */
 
-/**
- * Corex → Data screen (spec 053 US2) — toolbar, sortable table, pagination, detail drawer,
- * and the loading/error/empty states. Token-only with wp-admin palette fallbacks (theme
- * tokens aren't loaded in wp-admin — DECISIONS #71), logical properties (RTL-correct), and
- * visible focus states (WCAG 2.2 AA). No raw colour/size outside the documented admin
- * fallbacks.
- */
-/* stylelint-enable @stylistic/max-line-length */
-
-.corex-data__toolbar {
+.corex-admin .corex-data__toolbar {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: var(--wp--preset--spacing--20, 0.5rem);
-	margin-block: var(--wp--preset--spacing--30, 1rem);
+	gap: var(--corex-admin-space-sm);
+	margin-block-end: var(--corex-admin-space-lg);
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
 }
 
-.corex-data__search {
-	min-inline-size: 16rem;
+.corex-admin .corex-data__search {
+	min-inline-size: min(100%, 18rem);
 }
 
-.corex-data__export {
+.corex-admin .corex-data__export {
 	margin-inline-start: auto;
 }
 
-.corex-data__export-note {
+.corex-admin .corex-data__export-note {
 	flex-basis: 100%;
-	color: #646970;
-	font-size: var(--wp--preset--font-size--small, 0.8125rem);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
 }
 
-.corex-data__sort {
+.corex-admin .corex-data__table {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border-color: var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	border-collapse: separate;
+	border-spacing: 0;
+	overflow: clip;
+}
+
+.corex-admin .corex-data__table thead,
+.corex-admin .corex-data__table tfoot {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+}
+
+.corex-admin .corex-data__table th,
+.corex-admin .corex-data__table td {
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	color: inherit;
+	border-color: var(--corex-admin-border);
+	text-align: start;
+}
+
+.corex-admin .corex-data__table.striped > tbody > :nth-child(odd) {
+	background: var(--corex-admin-surface);
+}
+
+.corex-admin .corex-data__sort {
 	display: inline-flex;
 	align-items: center;
-	gap: 0.25rem;
-	background: none;
-	border: 0;
+	gap: var(--corex-admin-space-2xs);
 	padding: 0;
-	margin: 0;
+	color: inherit;
 	font: inherit;
 	font-weight: 600;
+	background: transparent;
+	border: 0;
 	cursor: pointer;
-	color: inherit;
 }
 
-.corex-data__sort:focus-visible {
-	outline: 2px solid #2271b1;
-	outline-offset: 2px;
-}
-
-.corex-data__row-actions {
-	display: flex;
-	gap: var(--wp--preset--spacing--20, 0.5rem);
-}
-
-.corex-data__pagination {
+.corex-admin .corex-data__row-actions,
+.corex-admin .corex-data__pagination {
 	display: flex;
 	align-items: center;
-	gap: var(--wp--preset--spacing--20, 0.5rem);
-	margin-block-start: var(--wp--preset--spacing--30, 1rem);
+	gap: var(--corex-admin-space-sm);
 }
 
-.corex-data__loading,
-.corex-data__empty {
+.corex-admin .corex-data__pagination {
+	justify-content: flex-end;
+	margin-block-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-data__loading,
+.corex-admin .corex-data__empty,
+.corex-admin .corex-data__error {
+	margin: 0;
+	padding: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text-muted);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-data__loading {
 	display: flex;
 	align-items: center;
-	gap: 0.5rem;
-	padding-block: var(--wp--preset--spacing--30, 1rem);
-	color: #646970;
+	gap: var(--corex-admin-space-sm);
 }
 
-/* stylelint-disable @stylistic/max-line-length -- existing drawer documentation */
-.corex-data__error {
-	margin-block: var(--wp--preset--spacing--30, 1rem);
+.corex-admin .corex-data__error {
+	border-inline-start-color: var(--corex-admin-error);
 }
 
-/* Detail drawer — slides in from the inline-end edge (RTL-correct via logical inset). */
-/* stylelint-enable @stylistic/max-line-length */
-.corex-data__drawer-overlay {
+.corex-admin .corex-data__drawer-overlay {
 	position: fixed;
 	inset: 0;
-	background: rgba(0, 0, 0, 0.4);
 	z-index: 100000;
+	background: var(--corex-admin-overlay);
 }
 
-.corex-data__drawer {
+.corex-admin .corex-data__drawer {
 	position: fixed;
 	inset-block: 0;
 	inset-inline-end: 0;
-	inline-size: min(28rem, 100%);
-	background: #fff;
-	box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
-	padding: var(--wp--preset--spacing--40, 1.5rem);
+	inline-size: min(32rem, 100%);
+	padding: var(--corex-admin-space-xl);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border-inline-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	box-shadow: var(--corex-admin-shadow-lg);
 	overflow-y: auto;
 }
 
-.corex-data__drawer-head {
+.corex-admin .corex-data__drawer-head {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-block-end: var(--wp--preset--spacing--30, 1rem);
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-lg);
 }
 
-.corex-data__fields {
+.corex-admin .corex-data__drawer-head h2,
+.corex-admin .corex-data__fields {
 	margin: 0;
 }
 
-.corex-data__field {
-	padding-block: var(--wp--preset--spacing--20, 0.5rem);
-	border-block-end: 1px solid #dcdcde;
+.corex-admin .corex-data__field {
+	padding-block: var(--corex-admin-space-sm);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
 }
 
-.corex-data__field dt {
+.corex-admin .corex-data__field dt {
+	color: var(--corex-admin-text);
 	font-weight: 600;
-	color: #1d2327;
 }
 
-.corex-data__field dd {
-	margin: 0;
-	margin-block-start: 0.25rem;
-	color: #3c434a;
+.corex-admin .corex-data__field dd {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-muted);
 	overflow-wrap: anywhere;
+}
+
+@media (max-width: 782px) {
+
+	.corex-admin .corex-data__toolbar > * {
+		inline-size: 100%;
+	}
+
+	.corex-admin .corex-data__export {
+		margin-inline-start: 0;
+		text-align: center;
+	}
+
+	.corex-admin .corex-data__table {
+		display: block;
+		overflow-x: auto;
+	}
 }

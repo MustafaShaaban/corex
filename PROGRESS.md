@@ -4,6 +4,26 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-21, review) -- corrective M6 admin visual implementation complete
+
+- **Branch:** `fix/060-admin-design-implementation`, from `main` @ `b31056f` (PR #58 merge). Normal root checkout,
+  single worktree, clean start; no work on `main`.
+- **Spec/tasks:** `specs/060-corex-admin-product-experience/`; T001-T026 complete; T027 completes with the PR handoff.
+- **Owned files:** Spec 060 artifacts; CoreX admin/login renderers and assets in `plugins/corex-core`,
+  `plugins/corex-config`, `addons/corex-kit-company`, and `addons/corex-captcha`; matching PHP/JS tests; M6 docs/status
+  surfaces. No frontend/company-site files are in scope.
+- **Delivered:** additive CoreX login branding; shared allow-listed admin shell; distinct Overview and Settings;
+  complete Add-ons, Data, Settings, Setup Wizard, Readiness/Insights, captcha, and option-page visual treatment;
+  dark/light mappings; RTL/logical layout; responsive/focus/reduced-motion behavior; universal states; preserved
+  installed-only add-on truth and write-only secrets, including empty-secret preservation on declarative pages.
+- **Verification:** Composer 744 tests / 3367 assertions PASS; JS 18 suites / 103 tests PASS; root build, CSS lint,
+  docs-app build (273 pages), token inventory, dependency/security policy, PHP syntax, WP 7.0 boot, login/lost-
+  password/message DOM, and diff checks PASS. Rendered browser screenshots/RTL/light/dark/narrow checks are
+  `ENVIRONMENT-GATED` in `visual-evidence.md` because no compatible browser runtime was available.
+- **Exact next step:** review and merge the corrective PR; rerun the recorded browser matrix when a compatible
+  browser runtime is available.
+
+---
 ## RESUME HERE (2026-06-21, latest) -- M6 truthful-state core complete; PR #58 ready; docs + gate done
 
 - **Branch/PR:** `spec/060-corex-admin-product-experience`; **PR #58** to `main`. Normal root, single worktree, no

@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Kit;
 
+use Corex\Admin\AdminPage;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -25,6 +26,7 @@ final class SetupWizardScreen
         private readonly SetupWizard $wizard,
         private readonly BlueprintActivator $activator,
         private readonly AdminGuard $guard,
+        private readonly AdminPage $page,
     ) {
     }
 
@@ -43,22 +45,42 @@ final class SetupWizardScreen
             'manage_options',
             'corex-setup',
             [$this, 'render'],
+            50,
         );
     }
 
     public function render(): void
     {
         if (! $this->guard->authorized()) {
+            echo $this->page->permissionDenied('setup');
+
             return;
         }
 
-        echo '<div class="wrap"><h1>' . esc_html__('Corex Setup Wizard', 'corex') . '</h1>';
-        echo '<p>' . esc_html__('Choose a starter kit to enable its modules and feature flags and seed a demo home page.', 'corex') . '</p>';
+        echo $this->page->open(
+            'setup',
+            __('CoreX Setup Wizard', 'corex'),
+            __('Choose a starter kit, review its modules, then apply the plan.', 'corex'),
+        );
+        echo '<ol class="corex-wizard__steps" aria-label="' . esc_attr__('Setup progress', 'corex') . '">'
+            . '<li class="is-current"><span>1</span>' . esc_html__('Choose', 'corex') . '</li>'
+            . '<li><span>2</span>' . esc_html__('Review', 'corex') . '</li>'
+            . '<li><span>3</span>' . esc_html__('Apply', 'corex') . '</li></ol>';
+        echo '<div class="corex-wizard__kits">';
 
-        foreach ($this->wizard->kits() as $kit) {
+        $kits = $this->wizard->kits();
+        if ($kits === []) {
+            echo $this->page->state(
+                'empty',
+                __('No starter kits available', 'corex'),
+                __('Install and activate a CoreX kit package to continue.', 'corex'),
+            );
+        }
+
+        foreach ($kits as $kit) {
             $modules = implode(', ', array_map('sanitize_text_field', array_merge($kit['required'], $kit['recommended'])));
 
-            echo '<form method="post" class="card">';
+            echo '<form method="post" class="corex-wizard__kit corex-surface">';
             echo wp_nonce_field('corex_setup', 'corex_setup_nonce', true, false);
             echo '<input type="hidden" name="corex_kit" value="' . esc_attr($kit['name']) . '" />';
             echo '<h2>' . esc_html(ucfirst($kit['name'])) . '</h2>';
@@ -73,7 +95,7 @@ final class SetupWizardScreen
             echo '</form>';
         }
 
-        echo '</div>';
+        echo '</div>' . $this->page->close();
     }
 
     public function maybeApply(): void

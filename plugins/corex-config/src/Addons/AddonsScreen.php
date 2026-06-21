@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Config\Addons;
 
+use Corex\Admin\AdminPage;
 use Corex\Foundation\AddonStatus;
 use Corex\Provisioning\KitProvisioner;
 use Corex\Security\Admin\AdminGuard;
@@ -30,6 +31,7 @@ final class AddonsScreen
         private readonly AdminGuard $guard,
         private readonly KitProvisioner $provisioner,
         private readonly PendingKits $pending,
+        private readonly AdminPage $page,
     ) {
     }
 
@@ -51,6 +53,7 @@ final class AddonsScreen
             'manage_options',
             'corex-addons',
             [$this, 'render'],
+            20,
         );
     }
 
@@ -68,7 +71,7 @@ final class AddonsScreen
         wp_enqueue_style(
             'corex-addons',
             plugins_url('assets/addons.css', COREX_CONFIG_FILE),
-            ['corex-admin-tokens'],
+            ['corex-admin-shell'],
             '1.0.0',
         );
     }
@@ -76,30 +79,46 @@ final class AddonsScreen
     public function render(): void
     {
         if (! $this->guard->authorized()) {
+            echo $this->page->permissionDenied('addons');
+
             return;
         }
 
         $state = $this->state();
 
-        echo '<div class="wrap"><h1>' . esc_html__('Corex Add-ons', 'corex') . '</h1>';
-        echo '<p>' . esc_html__('Enable or disable each Corex add-on. Dependencies are enforced.', 'corex') . '</p>';
+        echo $this->page->open(
+            'addons',
+            __('CoreX Add-ons', 'corex'),
+            __('Manage installed add-ons only. Dependencies and runtime gates remain enforced.', 'corex'),
+        );
+        echo '<div class="corex-addons__grid">';
 
-        foreach ($this->manager->views($state, [$this, 'isInstalled']) as $view) {
+        $views = $this->manager->views($state, [$this, 'isInstalled']);
+        if ($views === []) {
+            echo $this->page->state(
+                'empty',
+                __('No add-ons registered', 'corex'),
+                __('Installed CoreX add-on packages will appear here.', 'corex'),
+            );
+        }
+
+        foreach ($views as $view) {
             $this->renderRow($view);
         }
 
-        echo '</div>';
+        echo '</div>' . $this->page->close();
     }
 
     private function renderRow(AddonView $view): void
     {
         $status = $view->status();
 
-        echo '<div class="card">';
-        echo '<h2>' . esc_html($view->addon->label) . '</h2>';
-        echo '<p><strong>' . esc_html__('Status:', 'corex') . '</strong> '
+        echo '<section class="corex-addon-card corex-surface">';
+        echo '<header class="corex-addon-card__header"><h2>' . esc_html($view->addon->label) . '</h2>';
+        echo '<p class="corex-addon-card__status"><span class="screen-reader-text">'
+            . esc_html__('Status:', 'corex') . '</span> '
             . '<span class="corex-badge corex-badge--' . esc_attr($status->tone()) . '">'
-            . esc_html($this->statusLabel($status)) . '</span></p>';
+            . esc_html($this->statusLabel($status)) . '</span></p></header>';
 
         $this->renderManifest($view->addon);
 
@@ -109,19 +128,20 @@ final class AddonsScreen
         }
 
         if (! $view->installed) {
-            echo '</div>';
+            echo '</section>';
 
             return;
         }
 
         if ($view->isBlocked()) {
-            echo '<p><em>' . esc_html((string) $view->blockedReason) . '</em></p></div>';
+            echo '<p class="corex-addon-card__gate"><strong>' . esc_html__('Unavailable:', 'corex') . '</strong> '
+                . esc_html((string) $view->blockedReason) . '</p></section>';
 
             return;
         }
 
         $this->renderToggleForm($view);
-        echo '</div>';
+        echo '</section>';
     }
 
     /**

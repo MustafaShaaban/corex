@@ -52,6 +52,27 @@ it('enqueues the add-ons style only on its screen, depending on the scoped adapt
     // Conditional on the stored screen hook (Principle VI) — not a global admin enqueue.
     expect($source)->toContain("wp_enqueue_style(")
         ->and($source)->toContain("'corex-addons'")
-        ->and($source)->toContain("['corex-admin-tokens']")
+        ->and($source)->toContain("['corex-admin-shell']")
         ->and($source)->toContain('$hook !== $this->hook');
+});
+
+it('keeps every CoreX admin stylesheet scoped and on the admin adapter', function () {
+    $root = ThemeContract::root();
+    $files = [
+        'plugins/corex-core/assets/css/corex-admin-shell.css',
+        'plugins/corex-config/assets/control-panel.css',
+        'plugins/corex-config/assets/addons.css',
+        'plugins/corex-config/assets/data.css',
+        'plugins/corex-config/assets/insights.css',
+        'addons/corex-captcha/assets/captcha-admin.css',
+    ];
+
+    foreach ($files as $file) {
+        $css = (string) file_get_contents($root . '/' . $file);
+
+        expect($css)->toContain('.corex-admin')
+            ->and($css)->toContain('var(--corex-admin-')
+            ->and($css)->not->toContain('--wp--preset--')
+            ->and($css)->not->toMatch('/(?:^|,)\s*(?::root|html|body)\b/m');
+    }
 });

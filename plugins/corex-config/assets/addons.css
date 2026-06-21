@@ -1,42 +1,84 @@
-/**
- * CoreX Add-ons screen styling (Spec 060 / M6 US3).
- *
- * Scoped to CoreX admin markup (the .corex-* classes); consumes only the scoped
- * admin adapter roles. Enqueued only on the Add-ons screen (Principle VI) — it
- * never restyles generic wp-admin and never loads on the public frontend.
- *
- * RTL-first via logical properties. Status meaning is carried by the badge
- * label text, not the tone colour alone (WCAG 2.2 AA).
- */
+/** CoreX Add-ons cards and truthful states; scoped to the CoreX shell. */
 
-.corex-badge {
-	display: inline-block;
-	padding-block: var(--corex-admin-space-sm);
-	padding-inline: var(--corex-admin-space-md);
-	border: 1px solid var(--corex-admin-border);
-	border-radius: var(--corex-admin-radius-md);
-	background: var(--corex-admin-surface-alt);
-	color: var(--corex-admin-text);
-	font-weight: 600;
-	line-height: 1.4;
+.corex-admin .corex-addons__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+	gap: var(--corex-admin-space-lg);
 }
 
-.corex-badge--success {
+.corex-admin .corex-addon-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-addon-card__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-addon-card__header h2,
+.corex-admin .corex-addon-card__status,
+.corex-admin .corex-addon-card p {
+	margin: 0;
+}
+
+.corex-admin .corex-addon-card .description {
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-addon-card ul {
+	margin-block: 0;
+	padding-inline-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-addon-card form {
+	margin-block-start: auto;
+	padding-block-start: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-addon-card__gate {
+	padding: var(--corex-admin-space-sm);
+	background: var(--corex-admin-warning-soft);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-badge {
+	display: inline-flex;
+	align-items: center;
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-sm);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-pill);
+	background: var(--corex-admin-surface-alt);
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.corex-admin .corex-badge--success {
 	color: var(--corex-admin-success);
+	background: var(--corex-admin-success-soft);
 	border-color: var(--corex-admin-success);
 }
 
-.corex-badge--warning {
+.corex-admin .corex-badge--warning {
 	color: var(--corex-admin-warning);
+	background: var(--corex-admin-warning-soft);
 	border-color: var(--corex-admin-warning);
 }
 
-.corex-badge--danger {
+.corex-admin .corex-badge--danger {
 	color: var(--corex-admin-error);
+	background: var(--corex-admin-error-soft);
 	border-color: var(--corex-admin-error);
 }
 
-.corex-badge--neutral {
+.corex-admin .corex-badge--neutral {
 	color: var(--corex-admin-text-muted);
-	border-color: var(--corex-admin-border);
 }

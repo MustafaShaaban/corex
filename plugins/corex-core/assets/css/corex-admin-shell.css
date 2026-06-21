@@ -1,0 +1,287 @@
+/**
+ * Shared CoreX wp-admin product shell. Registered globally, enqueued only for
+ * allow-listed CoreX screen hooks, and rooted in .corex-admin.
+ */
+
+.corex-admin {
+	box-sizing: border-box;
+	max-inline-size: var(--corex-admin-content-max);
+	margin-block-start: var(--corex-admin-space-lg);
+	margin-inline-end: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-body);
+}
+
+.corex-admin *,
+.corex-admin *::before,
+.corex-admin *::after {
+	box-sizing: inherit;
+}
+
+.corex-admin__main {
+	min-block-size: var(--corex-admin-page-min-height);
+	background: var(--corex-admin-canvas);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-lg);
+	box-shadow: var(--corex-admin-shadow-lg);
+	overflow: clip;
+}
+
+.corex-admin__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-lg);
+	padding-block: var(--corex-admin-space-xl);
+	padding-inline: var(--corex-admin-space-xl);
+	background: var(--corex-admin-surface-raised);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin__eyebrow {
+	margin: 0 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-action);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+.corex-admin__header h1 {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-2xl);
+	font-weight: 600;
+	line-height: var(--corex-admin-line-tight);
+}
+
+.corex-admin__description {
+	max-inline-size: var(--corex-admin-measure);
+	margin: var(--corex-admin-space-sm) 0 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin__content {
+	padding: var(--corex-admin-space-xl);
+}
+
+.corex-admin :where(a) {
+	color: var(--corex-admin-link);
+}
+
+.corex-admin :where(a:hover) {
+	color: var(--corex-admin-link-hover);
+}
+
+.corex-admin :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+	box-shadow: none;
+}
+
+.corex-admin :where(.button, button.button) {
+	min-block-size: var(--corex-admin-control-height);
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border-color: var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin :where(.button-primary, button.button-primary) {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin :where(.button-primary, button.button-primary):hover {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action-hover);
+	border-color: var(--corex-admin-action-hover);
+}
+
+.corex-admin :where(button, input, select, textarea):disabled,
+.corex-admin [aria-disabled="true"] {
+	opacity: var(--corex-admin-disabled-opacity);
+	cursor: not-allowed;
+}
+
+.corex-admin :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+	min-block-size: var(--corex-admin-control-height);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border-color: var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin :where(.card, .corex-surface) {
+	max-inline-size: none;
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: var(--corex-admin-shadow-sm);
+}
+
+.corex-admin .corex-state {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-state .dashicons {
+	color: var(--corex-admin-info);
+}
+
+.corex-admin .corex-state h2,
+.corex-admin .corex-state p {
+	margin: 0;
+}
+
+.corex-admin .corex-state p {
+	margin-block-start: var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-state--success {
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-state--success .dashicons {
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-state--warning {
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-state--warning .dashicons {
+	color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-state--error,
+.corex-admin .corex-state--permission-denied {
+	border-inline-start-color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-state--error .dashicons,
+.corex-admin .corex-state--permission-denied .dashicons {
+	color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-state--loading .dashicons {
+	animation: corex-admin-spin var(--corex-admin-motion-slow) linear infinite;
+}
+
+.corex-admin .corex-wizard__steps {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: var(--corex-admin-space-sm);
+	margin: 0 0 var(--corex-admin-space-xl);
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-wizard__steps li {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	padding: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-sm);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-wizard__steps li span {
+	display: inline-grid;
+	place-items: center;
+	inline-size: var(--corex-admin-control-height);
+	block-size: var(--corex-admin-control-height);
+	color: var(--corex-admin-text);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-pill);
+}
+
+.corex-admin .corex-wizard__steps .is-current {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-warning-soft);
+}
+
+.corex-admin .corex-wizard__steps .is-current span {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-wizard__kits {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+	gap: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-wizard__kit {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-wizard__kit h2,
+.corex-admin .corex-wizard__kit p {
+	margin: 0;
+}
+
+.corex-admin .corex-wizard__kit .button {
+	align-self: flex-start;
+	margin-block-start: auto;
+}
+
+@keyframes corex-admin-spin {
+
+	to {
+		transform: rotate(1turn);
+	}
+}
+
+@media (max-width: 782px) {
+
+	.corex-admin {
+		margin-inline: 0;
+	}
+
+	.corex-admin__main {
+		border-inline: 0;
+		border-radius: 0;
+	}
+
+	.corex-admin__header,
+	.corex-admin__content {
+		padding: var(--corex-admin-space-lg);
+	}
+
+	.corex-admin .corex-wizard__steps {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-admin *,
+	.corex-admin *::before,
+	.corex-admin *::after {
+		scroll-behavior: auto;
+		transition-duration: 0.01ms;
+		animation-duration: 0.01ms;
+		animation-iteration-count: 1;
+	}
+}

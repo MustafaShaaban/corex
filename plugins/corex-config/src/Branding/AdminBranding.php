@@ -23,19 +23,29 @@ final class AdminBranding
 
     public function register(): void
     {
-        add_action('login_head', [$this, 'loginLogo']);
+        add_action('login_enqueue_scripts', [$this, 'enqueueLoginAssets'], 20);
+        add_filter('login_body_class', [$this, 'loginBodyClass']);
         add_filter('login_headerurl', [$this, 'loginUrl']);
         add_filter('admin_footer_text', [$this, 'footerText']);
     }
 
-    public function loginLogo(): void
+    public function enqueueLoginAssets(): void
     {
-        // The login mark is the approved Core X product lockup (logo-manifest.json),
-        // rendered as the WordPress login slot background. WordPress keeps the site
-        // name as the link's accessible text, so the mark itself stays decorative.
-        $css = $this->branding->loginCss(esc_url($this->branding->logoUrl()));
+        wp_enqueue_style('corex-admin-login');
+        wp_add_inline_style(
+            'corex-admin-login',
+            $this->branding->loginCss(esc_url($this->branding->logoUrl())),
+        );
+    }
 
-        printf('<style>%s</style>', $css);
+    /** @param list<string> $classes
+     *  @return list<string>
+     */
+    public function loginBodyClass(array $classes): array
+    {
+        $classes[] = 'corex-login';
+
+        return array_values(array_unique($classes));
     }
 
     public function loginUrl(string $url): string

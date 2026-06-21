@@ -25,7 +25,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Spec 058 implemented (US1-US4) on PR #56; env-gated browser evidence outstanding | High | M1, M2 (met) |
 | M4 - Full Company Site Kit v1 | Spec 059 core implemented (full v1 page coverage + demo levels + SEO) on PR; M5 section blocks + make:site token inheritance are recorded gaps | High | M0, M2, M3 (met); selected M5 blocks |
 | M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
-| M6 - CoreX Admin Product Experience | Spec 060 truthful-state core implemented on PR #58 (add-on states + state-aware settings + captcha + write-only secrets + scoped Add-ons styling); Setup-Wizard cosmetic + US4 universal-state polish residual | Medium-high | M2 (met) and stable admin contracts |
+| M6 - CoreX Admin Product Experience | PR #58 delivered the truthful-state foundation; the corrective Spec 060 admin-design PR applies the complete approved visual system from login through every current CoreX admin surface | Medium-high | M2 (met) and stable admin contracts |
 | M7 - Forms and Email Experience | Planned | Medium-high | M2 and existing forms/mail foundations |
 | M8 - Portfolio Kit Completion | Planned | Medium | M2, M3, reusable M5 blocks |
 | M9 - WooCommerce Kit Completion | Waiting for Woo design and stable gating | Medium | M0, M2, M3, WooCommerce gating |
@@ -243,12 +243,13 @@ Required rules:
 
 ## 9. M6 - CoreX Admin Product Experience
 
-**Status:** Spec 060 truthful-state core implemented on PR #58: the seven-state add-on model
-(`AddonStatus`/`AddonStatusResolver`), the Add-ons screen rendering it as accessible badges (manage installed only,
-no marketplace), state-aware settings sections with the captcha/reCAPTCHA worked example, write-only secrets, and
-scoped Add-ons styling via the `--corex-admin-*` adapter (no global wp-admin restyle, no frontend impact). Dashboard/
-Settings/Data/Insights(readiness) retain their existing scoped styling. Residual follow-up: Setup-Wizard cosmetic
-styling and broader US4 universal-state polish; rendered admin browser/RTL evidence remains ENVIRONMENT-GATED.
+**Status:** PR #58 delivered the truthful-state foundation: the seven-state add-on model, state-aware settings,
+captcha/reCAPTCHA handling, write-only secrets, and the first scoped Add-ons badge styles. The corrective Spec 060
+admin-design implementation applies the complete approved visual layer: additive native WordPress login branding;
+the `COREX FRAMEWORK` Overview/Add-ons/Data/Settings/Setup/Insights grouping; shared headers, stat/add-on/settings/
+data/readiness cards, universal states, and guided setup progress; dark-first + complete light mode; RTL, responsive,
+focus, disabled, and reduced-motion behavior. Assets are allow-listed to CoreX screens and login only, with no
+generic wp-admin or public-frontend restyle. Rendered browser/RTL evidence remains ENVIRONMENT-GATED where recorded.
 **Outcome:** A coherent operational surface for setup, configuration, add-ons, data, and readiness.
 
 - Dashboard polish.

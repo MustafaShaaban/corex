@@ -33,10 +33,8 @@ final class BrandingService
 
     public function loginCss(string $logoUrl): string
     {
-        // The fixed login-logo box height is the WordPress login slot's functional size,
-        // not a site design token.
         return sprintf(
-            '#login h1 a{background-image:url("%s");background-size:contain;background-position:center;width:100%%;height:64px}',
+            'body.login.corex-login{--corex-admin-login-logo:url("%s")}',
             $logoUrl
         );
     }

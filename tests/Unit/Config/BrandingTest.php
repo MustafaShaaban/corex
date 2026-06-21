@@ -8,6 +8,8 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Functions;
+use Corex\Config\Branding\AdminBranding;
 use Corex\Config\Branding\BrandingService;
 use Corex\Support\Config\ConfigInterface;
 
@@ -43,10 +45,46 @@ it('keeps product logo resolution separate from client identity', function (arra
     'client identity is not product branding' => [['site.logo_url' => '/client.svg'], '/default.svg'],
 ]);
 
-it('produces login CSS referencing the logo', function () {
+it('produces a login-scoped logo variable without replacing WordPress form markup', function () {
     $css = (new BrandingService(brandingConfig([]), '/x.svg'))->loginCss('/x.svg');
 
-    expect($css)->toContain('#login h1 a')->toContain('/x.svg')->toContain('background-size:contain');
+    expect($css)->toContain('body.login.corex-login')
+        ->toContain('--corex-admin-login-logo')
+        ->toContain('/x.svg')
+        ->not->toContain('<form')
+        ->not->toContain('action=');
+});
+
+it('ships a login stylesheet scoped to the CoreX login body class and admin tokens', function () {
+    $css = (string) file_get_contents(dirname(__DIR__, 3) . '/plugins/corex-core/assets/css/corex-admin-login.css');
+
+    expect($css)->toContain('body.login.corex-login')
+        ->and($css)->toContain('var(--corex-admin-')
+        ->and($css)->not->toMatch('/(?:^|,)\s*(?::root|html|body(?!\.login\.corex-login))\b/m');
+});
+
+it('adds only the CoreX login class and conditionally enqueues the login visual layer', function () {
+    $branding = new AdminBranding(new BrandingService(brandingConfig([]), '/x.svg'));
+    Functions\when('esc_url')->returnArg();
+    Functions\expect('wp_enqueue_style')->once()->with('corex-admin-login');
+    Functions\expect('wp_add_inline_style')->once()->with(
+        'corex-admin-login',
+        'body.login.corex-login{--corex-admin-login-logo:url("/x.svg")}',
+    );
+
+    expect($branding->loginBodyClass(['login-action-login']))
+        ->toBe(['login-action-login', 'corex-login']);
+    $branding->enqueueLoginAssets();
+});
+
+it('does not hook authentication or replace native login actions', function () {
+    $source = (string) file_get_contents(
+        dirname(__DIR__, 3) . '/plugins/corex-config/src/Branding/AdminBranding.php',
+    );
+
+    expect($source)->not->toContain("add_filter('authenticate'")
+        ->and($source)->not->toContain("add_action('login_form_")
+        ->and($source)->not->toContain('<form');
 });
 
 it('exposes the configured footer text and login URL', function () {

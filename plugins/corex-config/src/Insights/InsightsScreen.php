@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Config\Insights;
 
+use Corex\Admin\AdminPage;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -25,6 +26,7 @@ final class InsightsScreen
     public function __construct(
         private readonly InsightRegistry $registry,
         private readonly AdminGuard $guard,
+        private readonly AdminPage $page,
     ) {
     }
 
@@ -38,23 +40,28 @@ final class InsightsScreen
     {
         $this->hook = (string) add_submenu_page(
             'corex-settings',
-            __('Corex Insights', 'corex'),
+            __('CoreX Insights', 'corex'),
             __('Insights', 'corex'),
             'manage_options',
             'corex-insights',
             [$this, 'render'],
+            60,
         );
     }
 
     public function render(): void
     {
         if (! $this->guard->authorized()) {
+            echo $this->page->permissionDenied('insights');
+
             return;
         }
 
-        echo '<div class="wrap"><h1>' . esc_html__('Site Insights', 'corex') . '</h1>'
-            . '<p>' . esc_html__('Performance and agent-readiness checks for your site. Run a check to refresh a card.', 'corex') . '</p>'
-            . '<div id="corex-insights-app" class="corex-insights"></div></div>';
+        echo $this->page->open(
+            'insights',
+            __('Readiness & Insights', 'corex'),
+            __('Run performance and release-readiness checks. Environment-gated results remain explicitly gated.', 'corex'),
+        ) . '<div id="corex-insights-app" class="corex-insights"></div>' . $this->page->close();
     }
 
     public function maybeEnqueue(string $hook): void
@@ -65,7 +72,7 @@ final class InsightsScreen
 
         $base = dirname(__DIR__, 2) . '/corex-config.php';
 
-        wp_enqueue_style('corex-insights', plugins_url('assets/insights.css', $base), ['corex-admin-tokens'], '1.0.0');
+        wp_enqueue_style('corex-insights', plugins_url('assets/insights.css', $base), ['corex-admin-shell'], '1.0.0');
         // Depends on the shared runtime (spec 043): the script talks to the envelope through
         // window.Corex.api, and corex-runtime brings wp-i18n.
         wp_enqueue_script('corex-insights', plugins_url('assets/insights.js', $base), ['corex-runtime'], '1.0.0', true);

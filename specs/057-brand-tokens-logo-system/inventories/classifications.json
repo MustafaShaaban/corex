@@ -3,11 +3,11 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 270,
+    "consumer_records": 418,
     "retained": 56,
     "added": 10,
     "aliased": 11,
-    "migration_batches": 1,
+    "migration_batches": 3,
     "deprecated": 0
   },
   "retained": [
@@ -484,9 +484,7 @@
     {
       "legacy_property": "--wp--preset--font-size--small",
       "target_definition": "font-size.sm",
-      "consumer_paths": [
-        "plugins/corex-config/assets/data.css"
-      ],
+      "consumer_paths": [],
       "introduced_version": "0.28.0",
       "remove_after_version": "0.29.0",
       "status": "active"
@@ -494,23 +492,126 @@
   ],
   "migrated": [
     {
+      "owner": "other-addon",
+      "paths": [
+        "addons/corex-captcha/assets/captcha-admin.css"
+      ],
+      "properties": [
+        "--corex-admin-error",
+        "--corex-admin-error-soft",
+        "--corex-admin-radius-sm",
+        "--corex-admin-space-2xs",
+        "--corex-admin-space-sm",
+        "--corex-admin-success",
+        "--corex-admin-success-soft",
+        "--corex-admin-surface-alt",
+        "--corex-admin-text-muted"
+      ]
+    },
+    {
       "owner": "config-plugin",
       "paths": [
         "plugins/corex-config/assets/addons.css",
-        "plugins/corex-config/assets/data.css"
+        "plugins/corex-config/assets/control-panel.css",
+        "plugins/corex-config/assets/data.css",
+        "plugins/corex-config/assets/insights.css"
       ],
       "properties": [
         "--corex-admin-border",
+        "--corex-admin-border-width",
         "--corex-admin-error",
+        "--corex-admin-error-soft",
+        "--corex-admin-font-display",
+        "--corex-admin-font-mono",
+        "--corex-admin-font-xl",
+        "--corex-admin-font-xs",
+        "--corex-admin-info",
+        "--corex-admin-info-soft",
+        "--corex-admin-letter-wide",
+        "--corex-admin-overlay",
         "--corex-admin-radius-md",
+        "--corex-admin-radius-pill",
+        "--corex-admin-radius-sm",
+        "--corex-admin-shadow-lg",
+        "--corex-admin-shadow-sm",
+        "--corex-admin-space-2xs",
+        "--corex-admin-space-lg",
         "--corex-admin-space-md",
         "--corex-admin-space-sm",
+        "--corex-admin-space-xl",
+        "--corex-admin-space-xs",
+        "--corex-admin-state-border",
         "--corex-admin-success",
+        "--corex-admin-success-soft",
+        "--corex-admin-surface",
         "--corex-admin-surface-alt",
+        "--corex-admin-surface-raised",
         "--corex-admin-text",
         "--corex-admin-text-muted",
         "--corex-admin-warning",
-        "--wp--preset--font-size--small"
+        "--corex-admin-warning-soft"
+      ]
+    },
+    {
+      "owner": "core-plugin",
+      "paths": [
+        "plugins/corex-core/assets/css/corex-admin-login.css",
+        "plugins/corex-core/assets/css/corex-admin-shell.css"
+      ],
+      "properties": [
+        "--corex-admin-action",
+        "--corex-admin-action-hover",
+        "--corex-admin-action-ink",
+        "--corex-admin-border",
+        "--corex-admin-border-strong",
+        "--corex-admin-border-width",
+        "--corex-admin-canvas",
+        "--corex-admin-content-max",
+        "--corex-admin-control-height",
+        "--corex-admin-disabled-opacity",
+        "--corex-admin-error",
+        "--corex-admin-focus",
+        "--corex-admin-focus-offset",
+        "--corex-admin-focus-width",
+        "--corex-admin-font-2xl",
+        "--corex-admin-font-body",
+        "--corex-admin-font-display",
+        "--corex-admin-font-md",
+        "--corex-admin-font-mono",
+        "--corex-admin-font-xs",
+        "--corex-admin-info",
+        "--corex-admin-letter-wide",
+        "--corex-admin-line-tight",
+        "--corex-admin-link",
+        "--corex-admin-link-hover",
+        "--corex-admin-login-backdrop",
+        "--corex-admin-login-inline-size",
+        "--corex-admin-login-logo",
+        "--corex-admin-login-logo-height",
+        "--corex-admin-measure",
+        "--corex-admin-motion-slow",
+        "--corex-admin-page-min-height",
+        "--corex-admin-radius-lg",
+        "--corex-admin-radius-md",
+        "--corex-admin-radius-pill",
+        "--corex-admin-radius-sm",
+        "--corex-admin-shadow-lg",
+        "--corex-admin-shadow-sm",
+        "--corex-admin-space-2xl",
+        "--corex-admin-space-lg",
+        "--corex-admin-space-md",
+        "--corex-admin-space-sm",
+        "--corex-admin-space-xl",
+        "--corex-admin-space-xs",
+        "--corex-admin-state-border",
+        "--corex-admin-success",
+        "--corex-admin-surface",
+        "--corex-admin-surface-alt",
+        "--corex-admin-surface-raised",
+        "--corex-admin-text",
+        "--corex-admin-text-muted",
+        "--corex-admin-warning",
+        "--corex-admin-warning-soft"
       ]
     }
   ],

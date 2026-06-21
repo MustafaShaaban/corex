@@ -53,7 +53,7 @@ final class CaptchaServiceProvider extends ServiceProvider
      */
     public function enqueueTestButton(string $hook): void
     {
-        if ($hook !== 'toplevel_page_corex-settings') {
+        if ($hook !== 'corex_page_corex-settings-config') {
             return;
         }
 
@@ -62,7 +62,7 @@ final class CaptchaServiceProvider extends ServiceProvider
         wp_enqueue_style(
             'corex-captcha-admin',
             plugins_url('assets/captcha-admin.css', $base),
-            ['corex-admin-tokens'],
+            ['corex-admin-shell'],
             COREX_CAPTCHA_VERSION,
         );
 

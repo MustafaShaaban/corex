@@ -34,16 +34,24 @@ final class SettingsForm
      */
     public function render(callable $value, string $nonceField, ?callable $sectionState = null): string
     {
-        $html = '<form method="post" action="">' . $nonceField;
+        $html = '<form method="post" action="" class="corex-settings-form">' . $nonceField;
 
         foreach ($this->registry->sections() as $sectionKey => $section) {
             $state = $sectionState !== null ? $sectionState((string) $sectionKey) : null;
+            $stateClass = $state === null ? 'normal' : str_replace('_', '-', $state->value);
 
-            $html .= sprintf('<h2>%s</h2>', esc_html($section['title']));
+            $html .= sprintf(
+                '<section id="corex-settings-section-%1$s" class="corex-settings-section corex-settings-section--%2$s"><h2>%3$s</h2>',
+                esc_attr((string) $sectionKey),
+                esc_attr($stateClass),
+                esc_html($section['title']),
+            );
             $html .= $this->sectionNotice($state);
 
             // A not-installed add-on shows only the notice — never its fields.
             if ($state === SettingsSectionState::Hidden) {
+                $html .= '</section>';
+
                 continue;
             }
 
@@ -61,7 +69,7 @@ final class SettingsForm
                 );
             }
 
-            $html .= '</table>';
+            $html .= '</table></section>';
         }
 
         return $html . sprintf(
@@ -82,7 +90,17 @@ final class SettingsForm
             default => '',
         };
 
-        return $message === '' ? '' : sprintf('<p class="corex-section-notice">%s</p>', $message);
+        if ($message === '' || $state === null) {
+            return '';
+        }
+
+        $modifier = str_replace('_', '-', $state->value);
+
+        return sprintf(
+            '<p class="corex-section-notice corex-section-notice--%1$s" role="status">%2$s</p>',
+            esc_attr($modifier),
+            $message,
+        );
     }
 
     /**

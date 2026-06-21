@@ -33,7 +33,7 @@ it('shows the onboarding checklist with a setup link when a domain needs setup',
     $html = $this->view->render(['mail.from.address' => '']);
 
     expect($html)->toContain('corex-onboarding')
-        ->and($html)->toContain('#corex-domain-mail')
+        ->and($html)->toContain('admin.php?page=corex-settings-config#corex-settings-section-mail')
         ->and($html)->toContain('How to set this up')
         ->and($html)->not->toContain('is-complete');
 });

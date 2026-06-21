@@ -64,13 +64,14 @@ it('scopes admin roles to CoreX screens and never makes them client brand author
         expect($css)->toContain($property . ':');
     }
 
-    expect($css)->not->toMatch('/(?:^|,)\s*(?::root|html|body)\b/m')
+    expect($css)->not->toMatch('/(?:^|,)\s*(?::root|html|body(?!\.login\.corex-login))\b/m')
         ->not->toContain('--wp--preset--');
 });
 
 it('loads the adapter only through CoreX owned admin screen styles', function () {
     $owners = [
         'plugins/corex-config/src/Settings/AdminDashboard.php' => 'corex-control-panel',
+        'plugins/corex-config/src/Addons/AddonsScreen.php' => 'corex-addons',
         'plugins/corex-config/src/Data/DataAdminScreen.php' => 'corex-data',
         'plugins/corex-config/src/Insights/InsightsScreen.php' => 'corex-insights',
         'addons/corex-captcha/src/CaptchaServiceProvider.php' => 'corex-captcha-admin',
@@ -80,10 +81,16 @@ it('loads the adapter only through CoreX owned admin screen styles', function ()
     foreach ($owners as $relative => $handle) {
         $source = (string) file_get_contents(ThemeContract::root() . '/' . $relative);
 
-        if (! str_contains($source, "'{$handle}'") || ! str_contains($source, "['corex-admin-tokens']")) {
+        if (! str_contains($source, "'{$handle}'") || ! str_contains($source, "['corex-admin-shell']")) {
             $missing[] = $relative;
         }
     }
 
     expect($missing)->toBe([]);
+
+    $provider = (string) file_get_contents(
+        ThemeContract::root() . '/plugins/corex-core/src/Foundation/HttpServiceProvider.php',
+    );
+    expect($provider)->toContain("'corex-admin-shell'")
+        ->and($provider)->toContain("['corex-admin-tokens']");
 });

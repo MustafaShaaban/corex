@@ -1,47 +1,172 @@
-/*
- * CoreX admin token adapter (Spec 057 US4).
- *
- * One shared, semantic source for the CoreX wp-admin surfaces so each screen
- * stops repeating raw fallback chains. Registered (never globally enqueued) as
- * the handle `corex-admin-tokens` and pulled in only as a dependency of
- * CoreX-owned admin styles, so it loads on CoreX screens and nowhere else
- * (constitution Principle VI).
- *
- * Scoped to the WordPress content wrapper `.wrap` — never :root/html/body — so
- * the adapter cannot become a client-site or global authority. Values are the
- * approved brand semantics: the brass action uses the AA-darkened #ad8643 on
- * the light admin default and the primary #c9a25e under a dark color scheme.
+/**
+ * CoreX admin token adapter. It is registered, never globally enqueued, and is
+ * consumed only by the scoped CoreX admin shell and login branding styles.
  */
-.wrap {
-	--corex-admin-surface: #fff;
-	--corex-admin-surface-alt: #f6f7f9;
-	--corex-admin-text: #14151a;
-	--corex-admin-text-muted: #5b616d;
-	--corex-admin-border: #e2e5ea;
-	--corex-admin-action: #ad8643;
-	--corex-admin-action-ink: #fff;
-	--corex-admin-success: #2f8f5b;
-	--corex-admin-warning: #b5781f;
-	--corex-admin-error: #c2433b;
-	--corex-admin-focus: #ad8643;
-	--corex-admin-space-sm: 8px;
-	--corex-admin-space-md: 16px;
-	--corex-admin-radius-md: 10px;
+
+@font-face {
+	font-family: "CoreX Space Grotesk";
+	font-style: normal;
+	font-weight: 500 700;
+	font-display: swap;
+	src: url(../fonts/space-grotesk-latin-500-700.woff2) format("woff2");
 }
 
-@media (prefers-color-scheme: dark) {
+@font-face {
+	font-family: "CoreX JetBrains Mono";
+	font-style: normal;
+	font-weight: 400 600;
+	font-display: swap;
+	src: url(../fonts/jetbrains-mono-latin-400-600.woff2) format("woff2");
+}
 
-	.wrap {
-		--corex-admin-surface: #1c1f26;
-		--corex-admin-surface-alt: #14151a;
-		--corex-admin-text: #f4f5f7;
-		--corex-admin-text-muted: #9aa0ab;
-		--corex-admin-border: #262a32;
-		--corex-admin-action: #c9a25e;
-		--corex-admin-action-ink: #14151a;
-		--corex-admin-success: #5fb787;
-		--corex-admin-warning: #e0a33a;
-		--corex-admin-error: #e0645c;
-		--corex-admin-focus: #c9a25e;
+@font-face {
+	font-family: "CoreX Arabic";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url(../fonts/ibm-plex-sans-arabic-400.woff2) format("woff2");
+}
+
+@font-face {
+	font-family: "CoreX Arabic";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url(../fonts/ibm-plex-sans-arabic-600.woff2) format("woff2");
+}
+
+.corex-admin,
+body.login.corex-login {
+	color-scheme: dark;
+	--corex-admin-canvas: #0f1116;
+	--corex-admin-surface: #161920;
+	--corex-admin-surface-alt: #1c2028;
+	--corex-admin-surface-raised: #20252e;
+	--corex-admin-text: #f4f5f7;
+	--corex-admin-text-muted: #aeb5c0;
+	--corex-admin-border: #343b47;
+	--corex-admin-border-strong: #515b69;
+	--corex-admin-action: #c9a25e;
+	--corex-admin-action-hover: #ddb978;
+	--corex-admin-action-ink: #14151a;
+	--corex-admin-link: #e2c188;
+	--corex-admin-link-hover: #f0d4a4;
+	--corex-admin-success: #68c391;
+	--corex-admin-warning: #efb64f;
+	--corex-admin-error: #f07b73;
+	--corex-admin-info: #70b7dc;
+	--corex-admin-focus: #f0c97d;
+	--corex-admin-success-soft: #173426;
+	--corex-admin-warning-soft: #3a2c12;
+	--corex-admin-error-soft: #3d1f20;
+	--corex-admin-info-soft: #172f3c;
+	--corex-admin-overlay: rgb(7 9 12 / 72%);
+	--corex-admin-login-backdrop: radial-gradient(circle at 20% 0%, rgb(201 162 94 / 18%), transparent 34%);
+	--corex-admin-font-display: "CoreX Space Grotesk", "Segoe UI", sans-serif;
+	--corex-admin-font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+	--corex-admin-font-mono: "CoreX JetBrains Mono", ui-monospace, monospace;
+	--corex-admin-font-arabic: "CoreX Arabic", "Segoe UI", sans-serif;
+	--corex-admin-font-xs: 0.75rem;
+	--corex-admin-font-sm: 0.875rem;
+	--corex-admin-font-md: 1rem;
+	--corex-admin-font-lg: 1.25rem;
+	--corex-admin-font-xl: 1.5rem;
+	--corex-admin-font-2xl: clamp(1.75rem, 3vw, 2.5rem);
+	--corex-admin-line-tight: 1.2;
+	--corex-admin-line-normal: 1.6;
+	--corex-admin-letter-wide: 0.12em;
+	--corex-admin-space-2xs: 0.25rem;
+	--corex-admin-space-xs: 0.5rem;
+	--corex-admin-space-sm: 0.75rem;
+	--corex-admin-space-md: 1rem;
+	--corex-admin-space-lg: 1.5rem;
+	--corex-admin-space-xl: 2rem;
+	--corex-admin-space-2xl: 3rem;
+	--corex-admin-radius-sm: 0.375rem;
+	--corex-admin-radius-md: 0.625rem;
+	--corex-admin-radius-lg: 1rem;
+	--corex-admin-radius-pill: 999px;
+	--corex-admin-border-width: 1px;
+	--corex-admin-state-border: 4px;
+	--corex-admin-focus-width: 3px;
+	--corex-admin-focus-offset: 2px;
+	--corex-admin-control-height: 2.5rem;
+	--corex-admin-content-max: 92rem;
+	--corex-admin-measure: 68ch;
+	--corex-admin-page-min-height: 28rem;
+	--corex-admin-login-inline-size: min(24rem, calc(100% - 2rem));
+	--corex-admin-login-logo-height: 4.5rem;
+	--corex-admin-disabled-opacity: 0.58;
+	--corex-admin-shadow-sm: 0 1px 2px rgb(0 0 0 / 20%);
+	--corex-admin-shadow-md: 0 8px 24px rgb(0 0 0 / 24%);
+	--corex-admin-shadow-lg: 0 18px 48px rgb(0 0 0 / 28%);
+	--corex-admin-motion-fast: 140ms;
+	--corex-admin-motion-slow: 900ms;
+}
+
+[dir="rtl"] .corex-admin,
+[dir="rtl"] body.login.corex-login {
+	--corex-admin-font-body: "CoreX Arabic", system-ui, sans-serif;
+	--corex-admin-font-display: "CoreX Arabic", "CoreX Space Grotesk", sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+
+	.corex-admin,
+	body.login.corex-login {
+		color-scheme: light;
+		--corex-admin-canvas: #f4f5f7;
+		--corex-admin-surface: #fff;
+		--corex-admin-surface-alt: #f0f2f5;
+		--corex-admin-surface-raised: #fff;
+		--corex-admin-text: #17191f;
+		--corex-admin-text-muted: #555e6a;
+		--corex-admin-border: #d7dce3;
+		--corex-admin-border-strong: #8a95a3;
+		--corex-admin-action: #8b6427;
+		--corex-admin-action-hover: #704e19;
+		--corex-admin-action-ink: #fff;
+		--corex-admin-link: #76521d;
+		--corex-admin-link-hover: #573a10;
+		--corex-admin-success: #247648;
+		--corex-admin-warning: #8a5b13;
+		--corex-admin-error: #b23530;
+		--corex-admin-info: #176b96;
+		--corex-admin-focus: #8b6427;
+		--corex-admin-success-soft: #e9f6ee;
+		--corex-admin-warning-soft: #fff5df;
+		--corex-admin-error-soft: #fff0ef;
+		--corex-admin-info-soft: #e9f5fb;
+		--corex-admin-overlay: rgb(15 17 22 / 54%);
+		--corex-admin-login-backdrop: radial-gradient(circle at 20% 0%, rgb(139 100 39 / 15%), transparent 34%);
+		--corex-admin-shadow-sm: 0 1px 2px rgb(11 31 59 / 8%);
+		--corex-admin-shadow-md: 0 8px 24px rgb(11 31 59 / 10%);
+		--corex-admin-shadow-lg: 0 18px 48px rgb(11 31 59 / 14%);
 	}
+}
+
+.corex-admin[data-corex-theme="light"] {
+	color-scheme: light;
+	--corex-admin-canvas: #f4f5f7;
+	--corex-admin-surface: #fff;
+	--corex-admin-surface-alt: #f0f2f5;
+	--corex-admin-surface-raised: #fff;
+	--corex-admin-text: #17191f;
+	--corex-admin-text-muted: #555e6a;
+	--corex-admin-border: #d7dce3;
+	--corex-admin-border-strong: #8a95a3;
+	--corex-admin-action: #8b6427;
+	--corex-admin-action-hover: #704e19;
+	--corex-admin-action-ink: #fff;
+	--corex-admin-link: #76521d;
+	--corex-admin-link-hover: #573a10;
+	--corex-admin-success: #247648;
+	--corex-admin-warning: #8a5b13;
+	--corex-admin-error: #b23530;
+	--corex-admin-info: #176b96;
+	--corex-admin-focus: #8b6427;
+	--corex-admin-success-soft: #e9f6ee;
+	--corex-admin-warning-soft: #fff5df;
+	--corex-admin-error-soft: #fff0ef;
+	--corex-admin-info-soft: #e9f5fb;
 }

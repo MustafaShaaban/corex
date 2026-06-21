@@ -1,100 +1,192 @@
-/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+/** CoreX Overview and Settings components; scoped to the CoreX shell. */
 
-/**
- * Corex control panel (spec 044) — domain status cards + onboarding checklist. Token-only
- * with wp-admin palette fallbacks (theme tokens aren't loaded in wp-admin — DECISIONS #71),
- * logical properties (RTL-correct), and status conveyed by icon + text, never color alone
- * (WCAG 2.2 AA).
- */
-/* stylelint-enable @stylistic/max-line-length */
-
-.corex-panel {
-	margin-block: var(--wp--preset--spacing--30, 1rem);
+.corex-admin .corex-site-status,
+.corex-admin .corex-onboarding,
+.corex-admin .corex-settings-section {
+	margin-block-end: var(--corex-admin-space-lg);
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: var(--corex-admin-shadow-sm);
 }
 
-.corex-onboarding {
-	padding: var(--wp--preset--spacing--30, 1rem);
-	margin-block-end: var(--wp--preset--spacing--30, 1rem);
-	background: #fff;
-	border: 1px solid #dcdcde;
-	border-inline-start: 4px solid #2271b1;
-	border-radius: var(--wp--custom--radius--md, 6px);
+.corex-admin .corex-site-status__head h2,
+.corex-admin .corex-onboarding h2,
+.corex-admin .corex-settings-section h2 {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
 }
 
-.corex-onboarding.is-complete {
-	border-inline-start-color: #00a32a;
-}
-
-.corex-onboarding__list {
-	margin-block-start: var(--wp--preset--spacing--20, 0.5rem);
-	padding-inline-start: var(--wp--preset--spacing--40, 1.5rem);
-	list-style: disc;
-}
-
-.corex-panel__cards {
+.corex-admin .corex-stat-grid,
+.corex-admin .corex-panel__cards {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
-	gap: var(--wp--preset--spacing--30, 1rem);
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+	gap: var(--corex-admin-space-md);
+	margin-block-start: var(--corex-admin-space-lg);
 }
 
-.corex-card {
-	padding: var(--wp--preset--spacing--30, 1rem);
-	background: #fff;
-	border: 1px solid #dcdcde;
-	border-radius: var(--wp--custom--radius--md, 6px);
-	border-inline-start-width: 4px;
+.corex-admin .corex-stat-card,
+.corex-admin .corex-card {
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
 }
 
-.corex-card.is-configured {
-	border-inline-start-color: #00a32a;
+.corex-admin .corex-stat-card__label {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
 }
 
-.corex-card.is-needs_setup {
-	border-inline-start-color: #dba617;
+.corex-admin .corex-stat-card__value {
+	margin: var(--corex-admin-space-xs) 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-xl);
+	font-weight: 600;
 }
 
-.corex-card.is-error {
-	border-inline-start-color: #d63638;
+.corex-admin .corex-stat-card__detail,
+.corex-admin .corex-card__warning {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
 }
 
-.corex-card__head {
+.corex-admin .corex-onboarding {
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+}
+
+.corex-admin .corex-onboarding.is-complete {
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-onboarding__list {
+	margin-block: var(--corex-admin-space-sm) 0;
+	padding-inline-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-card {
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+}
+
+.corex-admin .corex-card.is-configured {
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-card.is-needs_setup {
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-card.is-error {
+	border-inline-start-color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-card__head {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: var(--wp--preset--spacing--20, 0.5rem);
+	gap: var(--corex-admin-space-sm);
 }
 
-.corex-card__title {
+.corex-admin .corex-card__title {
 	margin: 0;
 }
 
-.corex-badge {
+.corex-admin .corex-badge {
 	display: inline-flex;
 	align-items: center;
-	gap: 0.25rem;
-	font-size: 0.8em;
-	white-space: nowrap;
+	gap: var(--corex-admin-space-2xs);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
 }
 
-.corex-badge .dashicons {
-	font-size: 1.1em;
-	inline-size: 1.1em;
-	block-size: 1.1em;
+.corex-admin .corex-badge.is-configured {
+	color: var(--corex-admin-success);
 }
 
-.corex-badge.is-configured {
-	color: #00a32a;
+.corex-admin .corex-badge.is-needs_setup {
+	color: var(--corex-admin-warning);
 }
 
-.corex-badge.is-needs_setup {
-	color: #b26200;
+.corex-admin .corex-badge.is-error {
+	color: var(--corex-admin-error);
 }
 
-.corex-badge.is-error {
-	color: #d63638;
+.corex-admin .corex-settings-form {
+	display: grid;
+	gap: var(--corex-admin-space-lg);
 }
 
-.corex-card__warning {
-	margin-block-start: var(--wp--preset--spacing--20, 0.5rem);
-	color: #50575e;
+.corex-admin .corex-settings-section {
+	margin: 0;
+}
+
+.corex-admin .corex-settings-section .form-table {
+	margin-block-start: var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-settings-section .form-table th,
+.corex-admin .corex-settings-section .form-table td {
+	padding-block: var(--corex-admin-space-md);
+	padding-inline: var(--corex-admin-space-sm);
+	color: inherit;
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-section-notice {
+	margin-block: var(--corex-admin-space-md) 0;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-info-soft);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-section-notice--disabled,
+.corex-admin .corex-section-notice--configuration-needed {
+	background: var(--corex-admin-warning-soft);
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-section-notice--hidden {
+	background: var(--corex-admin-error-soft);
+	border-inline-start-color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-secret-state {
+	display: inline-block;
+	margin-inline-start: var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-media-preview {
+	display: block;
+	max-inline-size: 12rem;
+	block-size: auto;
+	margin-block-start: var(--corex-admin-space-sm);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+@media (max-width: 782px) {
+
+	.corex-admin .corex-settings-section .form-table th,
+	.corex-admin .corex-settings-section .form-table td {
+		display: block;
+		inline-size: 100%;
+		padding-inline: 0;
+	}
+
+	.corex-admin .corex-settings-section .regular-text {
+		inline-size: 100%;
+	}
 }

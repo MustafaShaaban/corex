@@ -97,7 +97,13 @@ final class ControlPanelStatus
             $status = DomainStatus::CONFIGURED;
         }
 
-        return new DomainStatus($domain, $label, $status, $missing, '#corex-domain-' . $domain);
+        return new DomainStatus(
+            $domain,
+            $label,
+            $status,
+            $missing,
+            'admin.php?page=corex-settings-config#corex-settings-section-' . $domain,
+        );
     }
 
     private function isEmpty(array $values, string $key): bool

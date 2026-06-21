@@ -11,6 +11,7 @@ namespace Corex\Config;
 defined('ABSPATH') || exit;
 
 use Corex\Config\Addons\AddonsScreen;
+use Corex\Config\AdminUi\CorexAdminAssets;
 use Corex\Config\Addons\KitActivationNotice;
 use Corex\Config\Branding\AdminBranding;
 use Corex\Config\Branding\BrandingService;
@@ -70,6 +71,7 @@ final class ConfigServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(AdminBranding::class);
+        $this->container->singleton(CorexAdminAssets::class);
         $this->container->singleton(AdminDashboard::class);
         $this->container->singleton(AddonsScreen::class);
 
@@ -127,6 +129,7 @@ final class ConfigServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->container->make(AdminBranding::class)->register();
+        $this->container->make(CorexAdminAssets::class)->register();
         $this->container->make(AdminDashboard::class)->register();
         $this->container->make(AddonsScreen::class)->register();
         $this->container->make(KitActivationNotice::class)->register();

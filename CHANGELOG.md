@@ -19,6 +19,14 @@ All notable changes to Corex are documented here. The format follows
   `--corex-admin-*` adapter and loads only on CoreX admin screens — no global wp-admin restyle, no public-frontend
   branding. Docs: design-system → Admin experience.
 
+- **Corrective full CoreX admin visual implementation (spec 060, milestone M6):** PR #58 is recorded as the
+  truthful-state foundation, not the completed visual rollout. The corrective implementation applies the approved
+  design across native WordPress login, Overview, Add-ons, Data, Settings, Setup Wizard, and Readiness/Insights. It
+  adds the `COREX FRAMEWORK` grouping, shared page shell/headers, stat and add-on cards, settings sections, data
+  tooling/states, readiness cards, setup progress, and visible permission-denied/empty/error/success/warning/
+  disabled states. The layer is dark-first with a complete light mapping, responsive, RTL-first, keyboard/focus
+  visible, reduced-motion aware, and allow-listed to CoreX admin/login assets only.
+
 - **Company Site Kit v1 page coverage (spec 059, milestone M4):** the `corex-kit-company` `CompanyBlueprint` now
   provides the full v1 content-page set (Home, About, Services, Single Service, Work, Case Study, Industries, FAQ,
   Blog, Team, Testimonials, Locations, Contact, Privacy/Terms/Cookie, Maintenance), composed only from registered

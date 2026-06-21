@@ -34,6 +34,7 @@ final class HttpServiceProvider extends ServiceProvider
     {
         add_action('wp_enqueue_scripts', [$this, 'registerAssets']);
         add_action('admin_enqueue_scripts', [$this, 'registerAssets']);
+        add_action('login_enqueue_scripts', [$this, 'registerAssets'], 5);
     }
 
     public function registerAssets(): void
@@ -65,6 +66,20 @@ final class HttpServiceProvider extends ServiceProvider
             'corex-admin-tokens',
             $assets . '/css/corex-admin-tokens.css',
             [],
+            COREX_CORE_VERSION,
+        );
+
+        wp_register_style(
+            'corex-admin-shell',
+            $assets . '/css/corex-admin-shell.css',
+            ['corex-admin-tokens'],
+            COREX_CORE_VERSION,
+        );
+
+        wp_register_style(
+            'corex-admin-login',
+            $assets . '/css/corex-admin-login.css',
+            ['corex-admin-tokens'],
             COREX_CORE_VERSION,
         );
     }

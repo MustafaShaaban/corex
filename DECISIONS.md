@@ -1864,3 +1864,25 @@ theme-markup/plugin-registration split keeps the theme disposable (Principle I) 
 (Principle VI). Action slots (search/language/account/cart) are structural placeholders only — no optional-plugin or
 commerce dependency (Principle IX); WooCommerce nav/footer deferred to M9.
 Status: Final.
+
+## #106 -- Corrective Spec 060 admin design uses one allow-listed shell and native login markup
+Date: 2026-06-21
+Context: PR #58 implemented the truthful-state/security foundation, but only the Add-ons badges consumed the M6
+visual adapter consistently. Dashboard, Data, Insights, captcha, and control-panel CSS retained legacy WordPress/raw
+values; Setup had no scoped design asset; login replaced only the logo; permission-denied callbacks rendered blank.
+Decision: (1) Keep every existing state/service/action contract and add one registered-but-never-global
+`corex-admin-shell` depending on `corex-admin-tokens`; `CorexAdminAssets` enqueues it only for an explicit allow-list
+of current CoreX hooks. Screen styles depend on the shell and every selector is rooted in `.corex-admin`. (2) Use
+`AdminPage` for the shared labelled main region, `COREX FRAMEWORK` header identity, universal states, and visible
+permission denial. Split the former combined page into Overview and Settings while retaining the `corex-settings`
+parent slug. (3) Keep WordPress login forms/messages/actions native; add only `body.login.corex-login`, the token
+adapter, a login stylesheet, and a safe logo custom property. (4) Make dark the default semantic mapping, provide a
+complete light mapping, copy the approved self-hosted M2 fonts into corex-core so plugins stay theme-independent,
+and use logical CSS, responsive reflow, visible focus, text-labelled states, and reduced-motion handling. (5) Treat
+browser screenshots/contrast/RTL/zoom as ENVIRONMENT-GATED when no compatible browser exists; runtime DOM evidence
+does not substitute for rendered visual evidence.
+Why: one scoped shell prevents drift without restyling generic wp-admin or the public frontend; native login markup
+preserves WordPress authentication behavior; the shared renderer makes required states consistent; theme-independent
+font assets preserve Principle II. The truthful-state model, installed-only add-on controls, no-marketplace rule,
+and write-only secret behavior remain unchanged.
+Status: Final.
