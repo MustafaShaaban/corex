@@ -21,6 +21,11 @@ if (! defined('ABSPATH')) {
     define('ABSPATH', dirname(__DIR__) . '/');
 }
 
+// Standard WordPress time constant, used by pure services (e.g. the Data trend window).
+if (! defined('DAY_IN_SECONDS')) {
+    define('DAY_IN_SECONDS', 86400);
+}
+
 // Minimal WP_Post stub so boundary code that type-checks `instanceof \WP_Post` (e.g. the kit page
 // adopt path, spec 041) stays WP-idiomatic yet runnable headlessly. Only the fields the suite reads.
 if (! class_exists('WP_Post')) {

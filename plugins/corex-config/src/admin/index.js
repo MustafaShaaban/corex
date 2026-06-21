@@ -53,6 +53,8 @@ function useSource() {
 	const [ columns, setColumns ] = useState( [] );
 	const [ total, setTotal ] = useState( 0 );
 	const [ knownForms, setKnownForms ] = useState( [] );
+	const [ schema, setSchema ] = useState( [] );
+	const [ trend, setTrend ] = useState( [] );
 	const [ status, setStatus ] = useState( 'idle' );
 	const [ error, setError ] = useState( '' );
 
@@ -96,6 +98,8 @@ function useSource() {
 				setColumns( payload.columns );
 				setTotal( payload.total );
 				setKnownForms( ( prev ) => mergeForms( prev, next ) );
+				setSchema( payload.schema || [] );
+				setTrend( payload.trend || [] );
 				setStatus( 'ready' );
 			} )
 			.catch( () => {
@@ -181,6 +185,8 @@ function useSource() {
 		columns,
 		total,
 		knownForms,
+		schema,
+		trend,
 		status,
 		error,
 		query,
@@ -259,6 +265,14 @@ function SourcesRail( { s } ) {
  * real columns; the mono token on the right is the real field key. No invented fields.
  */
 function SchemaPanel( { s } ) {
+	// Prefer the source's real derived field schema (name + meaningful type); fall back to the
+	// table columns for sources that don't expose one.
+	const fields =
+		s.schema && s.schema.length > 0
+			? s.schema
+			: s.columns.map( ( c ) => ( { name: c.label, type: c.id } ) );
+	const derived = Boolean( s.schema && s.schema.length > 0 );
+
 	return (
 		<div className="corex-data__schema">
 			<p className="corex-data__rail-kicker">
@@ -270,7 +284,7 @@ function SchemaPanel( { s } ) {
 					activeLabel( s.sourceKey )
 				) }
 			</p>
-			{ s.columns.length === 0 ? (
+			{ fields.length === 0 ? (
 				<p className="corex-data__rail-empty">
 					{ __(
 						'Schema metadata is not available for this source yet.',
@@ -278,18 +292,28 @@ function SchemaPanel( { s } ) {
 					) }
 				</p>
 			) : (
-				<ul className="corex-data__schema-list">
-					{ s.columns.map( ( c ) => (
-						<li key={ c.id } className="corex-data__schema-field">
-							<span className="corex-data__schema-name">
-								{ c.label }
-							</span>
-							<span className="corex-data__schema-type">
-								{ c.id }
-							</span>
-						</li>
-					) ) }
-				</ul>
+				<>
+					<ul className="corex-data__schema-list">
+						{ fields.map( ( f, i ) => (
+							<li key={ i } className="corex-data__schema-field">
+								<span className="corex-data__schema-name">
+									{ f.name }
+								</span>
+								<span className="corex-data__schema-type">
+									{ f.type }
+								</span>
+							</li>
+						) ) }
+					</ul>
+					{ derived && (
+						<p className="corex-data__schema-note">
+							{ __(
+								'Derived from captured submissions.',
+								'corex'
+							) }
+						</p>
+					) }
+				</>
 			) }
 		</div>
 	);
@@ -300,20 +324,85 @@ function SchemaPanel( { s } ) {
  * 14-day trend chart has no backing source yet, so its card shows an honest empty state
  * rather than a fabricated sparkline.
  */
+/*
+ * The 14-day records chart (design: capture). Bars are real per-day counts from the active
+ * source's timestamps; a day with no records is a real zero (a minimal stub bar). Sources
+ * with no trend capability show a designed empty state instead of a fabricated chart.
+ */
+function TrendChart( { trend } ) {
+	if ( ! trend || trend.length === 0 ) {
+		return (
+			<p className="corex-data__metric-empty">
+				{ __(
+					'Trend data is not available for this source yet.',
+					'corex'
+				) }
+			</p>
+		);
+	}
+
+	const max = trend.reduce( ( m, d ) => Math.max( m, d.count ), 0 );
+	const total = trend.reduce( ( sum, d ) => sum + d.count, 0 );
+
+	return (
+		<div
+			className="corex-data__chart"
+			role="img"
+			aria-label={ sprintf(
+				/* translators: %d: number of records in the last 14 days. */
+				_n(
+					'%d record in the last 14 days',
+					'%d records in the last 14 days',
+					total,
+					'corex'
+				),
+				total
+			) }
+		>
+			{ trend.map( ( d ) => (
+				<span
+					key={ d.date }
+					className="corex-data__chart-bar"
+					style={ {
+						height:
+							max > 0
+								? Math.max(
+										4,
+										Math.round( ( d.count / max ) * 100 )
+								  ) + '%'
+								: '2px',
+					} }
+					title={ `${ d.date }: ${ d.count }` }
+				/>
+			) ) }
+		</div>
+	);
+}
+
 function Metrics( { s } ) {
 	const ready = s.status === 'ready' || s.status === 'idle';
+	const fieldCount =
+		s.schema && s.schema.length > 0 ? s.schema.length : s.columns.length;
+	const total = ( s.trend || [] ).reduce( ( sum, d ) => sum + d.count, 0 );
+
 	return (
 		<div className="corex-data__metrics">
 			<div className="corex-data__metric corex-data__metric--chart">
-				<p className="corex-data__metric-label">
-					{ __( 'Records / 14 days', 'corex' ) }
-				</p>
-				<p className="corex-data__metric-empty">
-					{ __(
-						'Trend data is not available for this source yet.',
-						'corex'
+				<div className="corex-data__chart-head">
+					<p className="corex-data__metric-label">
+						{ __( 'Records / 14 days', 'corex' ) }
+					</p>
+					{ s.trend && s.trend.length > 0 && (
+						<span className="corex-data__chart-total">
+							{ sprintf(
+								/* translators: %d: total records in the window. */
+								__( '%d total', 'corex' ),
+								total
+							) }
+						</span>
 					) }
-				</p>
+				</div>
+				<TrendChart trend={ s.trend } />
 			</div>
 			<div className="corex-data__metric">
 				<p className="corex-data__metric-label">
@@ -328,7 +417,7 @@ function Metrics( { s } ) {
 					{ __( 'Fields', 'corex' ) }
 				</p>
 				<p className="corex-data__metric-value">
-					{ s.columns.length || '—' }
+					{ fieldCount || '—' }
 				</p>
 			</div>
 		</div>

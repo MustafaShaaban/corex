@@ -173,6 +173,47 @@
 	line-height: var(--corex-admin-line-normal);
 }
 
+.corex-admin .corex-data__schema-note {
+	margin: var(--corex-admin-space-sm) 0 0;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-xs);
+	font-style: italic;
+}
+
+/* The 14-day records bar chart — real per-day counts; zero days = stub bars. */
+.corex-admin .corex-data__chart-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-data__chart-total {
+	color: var(--corex-admin-success);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-data__chart {
+	display: flex;
+	align-items: flex-end;
+	gap: var(--corex-admin-space-2xs);
+	block-size: 4rem;
+	margin-block-start: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-data__chart-bar {
+	flex: 1;
+	min-block-size: 2px;
+	background: var(--corex-admin-action);
+	border-radius: var(--corex-admin-radius-sm) var(--corex-admin-radius-sm) 0 0;
+	opacity: 0.85;
+}
+
+.corex-admin .corex-data__chart-bar:hover {
+	opacity: 1;
+}
+
 .corex-admin .corex-data__panel {
 	background: var(--corex-admin-surface-raised);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);

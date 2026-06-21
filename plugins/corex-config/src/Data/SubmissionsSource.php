@@ -15,7 +15,7 @@ defined('ABSPATH') || exit;
  * record into id/date/form/summary; the WP_Query + meta access lives in the injected reader
  * so this shaping is unit-tested headlessly (spec 030).
  */
-final class SubmissionsSource implements QueryableDataSource
+final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSource, TrendableDataSource
 {
     public function __construct(private readonly SubmissionsReader $reader)
     {
@@ -107,6 +107,68 @@ final class SubmissionsSource implements QueryableDataSource
     public function delete(int $id): bool
     {
         return $this->reader->trash($id);
+    }
+
+    /**
+     * The real field schema: the fixed record id / submitted date / form columns plus the
+     * actual submitted payload keys discovered across recent submissions, each given a
+     * meaningful type (id/datetime/form/email/textarea/tel/text). No invented fields — when
+     * no submissions exist only the three fixed fields are returned.
+     *
+     * @return list<array{name:string,type:string}>
+     */
+    public function schema(): array
+    {
+        $schema = [
+            ['name' => __('Record ID', 'corex'), 'type' => 'id'],
+            ['name' => __('Submitted', 'corex'), 'type' => 'datetime'],
+            ['name' => __('Form', 'corex'), 'type' => 'form'],
+        ];
+
+        foreach ($this->reader->fieldKeys(50) as $key) {
+            $schema[] = [
+                'name' => ucwords(str_replace(['_', '-'], ' ', $key)),
+                'type' => $this->inferType($key),
+            ];
+        }
+
+        return $schema;
+    }
+
+    /**
+     * A meaningful field type inferred from the submitted key name.
+     */
+    private function inferType(string $key): string
+    {
+        $key = strtolower($key);
+
+        return match (true) {
+            str_contains($key, 'email')                                                          => 'email',
+            str_contains($key, 'message') || str_contains($key, 'comment') || str_contains($key, 'body') => 'textarea',
+            str_contains($key, 'phone') || str_contains($key, 'tel')                              => 'tel',
+            str_contains($key, 'url') || str_contains($key, 'website')                            => 'url',
+            default                                                                              => 'text',
+        };
+    }
+
+    /**
+     * Real per-day submission counts for the last $days days, oldest first, every day present
+     * (missing days are a truthful zero — never fabricated).
+     *
+     * @return list<array{date:string,count:int}>
+     */
+    public function trend(int $days): array
+    {
+        $days   = max($days, 1);
+        $counts = $this->reader->dailyCounts($days);
+        $out    = [];
+
+        for ($offset = $days - 1; $offset >= 0; $offset--) {
+            $date  = gmdate('Y-m-d', time() - $offset * DAY_IN_SECONDS);
+            $out[] = ['date' => $date, 'count' => $counts[$date] ?? 0];
+        }
+
+        return $out;
     }
 
     /**
