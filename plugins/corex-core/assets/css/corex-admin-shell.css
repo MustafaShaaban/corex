@@ -401,6 +401,83 @@ body.corex-admin-screen .corex-admin__shell {
 	accent-color: var(--corex-admin-action);
 }
 
+/* Accessible custom select (ARIA combobox/listbox): an in-DOM dropdown, always
+   readable in dark/light, replacing the OS-rendered native popup. Shared by the
+   Data filter (React) and the Settings selects (enhanced from a native one). */
+.corex-admin .corex-select {
+	position: relative;
+	display: inline-block;
+	min-inline-size: 11rem;
+}
+
+.corex-admin .corex-select__button {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	inline-size: 100%;
+	min-block-size: var(--corex-admin-control-height);
+	padding-block: 0;
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+
+.corex-admin .corex-select__button:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-admin .corex-select__chevron {
+	flex: none;
+	inline-size: 0.875rem;
+	block-size: 0.875rem;
+	background: currentcolor;
+	opacity: 0.7;
+	-webkit-mask: url(../icons/chevron-down.svg) no-repeat center / contain;
+	mask: url(../icons/chevron-down.svg) no-repeat center / contain;
+}
+
+.corex-admin .corex-select__list {
+	position: absolute;
+	z-index: 20;
+	inset-block-start: calc(100% + var(--corex-admin-space-2xs));
+	inset-inline: 0;
+	max-block-size: 16rem;
+	margin: 0;
+	padding: var(--corex-admin-space-2xs);
+	overflow-y: auto;
+	list-style: none;
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+	box-shadow: var(--corex-admin-shadow-md);
+}
+
+.corex-admin .corex-select__option {
+	padding-block: var(--corex-admin-space-xs);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	border-radius: var(--corex-admin-radius-sm);
+	font-size: var(--corex-admin-font-sm);
+	cursor: pointer;
+}
+
+.corex-admin .corex-select__option.is-active {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+}
+
+.corex-admin .corex-select__option.is-selected {
+	color: var(--corex-admin-action);
+	font-weight: 600;
+}
+
 .corex-admin :where(.card, .corex-surface) {
 	max-inline-size: none;
 	padding: var(--corex-admin-space-lg);

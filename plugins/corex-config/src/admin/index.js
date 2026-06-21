@@ -428,6 +428,113 @@ function Metrics( { s } ) {
  * The data panel header: the active model, a QueryBuilder marker, and the real
  * search / form filter / export controls (design: capture topbar of the table card).
  */
+/*
+ * An accessible custom select (ARIA combobox + listbox) rendered fully in-DOM, so the open
+ * dropdown is readable in dark and light mode on every browser (native <select> option popups
+ * are OS-rendered and unreliable in dark mode). Full keyboard support; real value via onChange.
+ */
+function CorexSelect( { className, ariaLabel, value, onChange, options } ) {
+	const [ open, setOpen ] = useState( false );
+	const [ active, setActive ] = useState( 0 );
+	const rootRef = useRef( null );
+	const selected = options.find( ( o ) => o.value === value ) || options[ 0 ];
+
+	useEffect( () => {
+		if ( ! open ) {
+			return undefined;
+		}
+		const onDocClick = ( e ) => {
+			if ( rootRef.current && ! rootRef.current.contains( e.target ) ) {
+				setOpen( false );
+			}
+		};
+		document.addEventListener( 'mousedown', onDocClick );
+		return () => document.removeEventListener( 'mousedown', onDocClick );
+	}, [ open ] );
+
+	const choose = ( index ) => {
+		onChange( options[ index ].value );
+		setOpen( false );
+	};
+
+	const onKeyDown = ( e ) => {
+		if ( e.key === 'Escape' ) {
+			setOpen( false );
+			return;
+		}
+		if (
+			! open &&
+			( e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ' )
+		) {
+			e.preventDefault();
+			setActive( options.findIndex( ( o ) => o.value === value ) );
+			setOpen( true );
+			return;
+		}
+		if ( ! open ) {
+			return;
+		}
+		if ( e.key === 'ArrowDown' ) {
+			e.preventDefault();
+			setActive( ( i ) => Math.min( i + 1, options.length - 1 ) );
+		} else if ( e.key === 'ArrowUp' ) {
+			e.preventDefault();
+			setActive( ( i ) => Math.max( i - 1, 0 ) );
+		} else if ( e.key === 'Home' ) {
+			e.preventDefault();
+			setActive( 0 );
+		} else if ( e.key === 'End' ) {
+			e.preventDefault();
+			setActive( options.length - 1 );
+		} else if ( e.key === 'Enter' || e.key === ' ' ) {
+			e.preventDefault();
+			choose( active );
+		}
+	};
+
+	return (
+		<div className={ `corex-select ${ className || '' }` } ref={ rootRef }>
+			<button
+				type="button"
+				className="corex-select__button"
+				aria-haspopup="listbox"
+				aria-expanded={ open }
+				aria-label={ ariaLabel }
+				onClick={ () => setOpen( ( o ) => ! o ) }
+				onKeyDown={ onKeyDown }
+			>
+				<span className="corex-select__value">{ selected.label }</span>
+				<span className="corex-select__chevron" aria-hidden="true" />
+			</button>
+			{ open && (
+				<ul
+					className="corex-select__list"
+					role="listbox"
+					aria-label={ ariaLabel }
+				>
+					{ options.map( ( o, i ) => (
+						<li
+							key={ o.value }
+							role="option"
+							aria-selected={ o.value === value }
+							className={ `corex-select__option${
+								i === active ? ' is-active' : ''
+							}${ o.value === value ? ' is-selected' : '' }` }
+							onMouseEnter={ () => setActive( i ) }
+							onMouseDown={ ( e ) => {
+								e.preventDefault();
+								choose( i );
+							} }
+						>
+							{ o.label }
+						</li>
+					) ) }
+				</ul>
+			) }
+		</div>
+	);
+}
+
 function PanelHead( { s } ) {
 	const exportHref = buildExportUrl(
 		config.exportUrl,
@@ -454,19 +561,19 @@ function PanelHead( { s } ) {
 				/>
 
 				{ s.knownForms.length > 0 && (
-					<select
+					<CorexSelect
 						className="corex-data__form"
-						aria-label={ __( 'Filter by form', 'corex' ) }
+						ariaLabel={ __( 'Filter by form', 'corex' ) }
 						value={ s.form }
-						onChange={ ( e ) => s.setForm( e.target.value ) }
-					>
-						<option value="">{ __( 'All forms', 'corex' ) }</option>
-						{ s.knownForms.map( ( f ) => (
-							<option key={ f } value={ f }>
-								{ f }
-							</option>
-						) ) }
-					</select>
+						onChange={ s.setForm }
+						options={ [
+							{ value: '', label: __( 'All forms', 'corex' ) },
+							...s.knownForms.map( ( f ) => ( {
+								value: f,
+								label: f,
+							} ) ),
+						] }
+					/>
 				) }
 
 				{ s.hasFilters && (
