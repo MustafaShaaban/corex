@@ -119,7 +119,22 @@ final class AdminDashboard
 
         $this->status->render();
         echo $this->panel->render($this->settingValues());
+        echo $this->renderActivity();
         echo $this->page->close();
+    }
+
+    /**
+     * The recent-activity panel (design: Dashboard capture's event bus). CoreX has no framework
+     * event log backing this yet, so it renders a designed, honest empty state rather than a
+     * fabricated activity feed — the space is reserved truthfully for when an event bus exists.
+     */
+    private function renderActivity(): string
+    {
+        return '<section class="corex-surface corex-activity" aria-labelledby="corex-activity-title">'
+            . '<p class="corex-activity__kicker">' . esc_html__('FRAMEWORK EVENTS', 'corex') . '</p>'
+            . '<h2 id="corex-activity-title">' . esc_html__('Recent activity', 'corex') . '</h2>'
+            . '<p class="corex-activity__empty">'
+            . esc_html__('No recent framework events available yet.', 'corex') . '</p></section>';
     }
 
     public function renderSettings(): void

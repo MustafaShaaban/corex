@@ -122,6 +122,36 @@
 	color: var(--corex-admin-error);
 }
 
+/* Recent-activity panel (Overview): honest designed empty state, no fake feed.
+   CoreX has no event-bus backing yet, so the space is reserved truthfully. */
+.corex-admin .corex-activity {
+	margin-block-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-activity__kicker {
+	margin: 0 0 var(--corex-admin-space-2xs);
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-activity h2 {
+	margin: 0;
+	font-size: var(--corex-admin-font-lg);
+}
+
+.corex-admin .corex-activity__empty {
+	margin: var(--corex-admin-space-md) 0 0;
+	padding: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text-muted);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) dashed var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-md);
+	text-align: center;
+}
+
 .corex-admin .corex-settings-form {
 	display: grid;
 	gap: var(--corex-admin-space-lg);

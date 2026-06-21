@@ -30,15 +30,18 @@ final class SetupWizardScreen
     ) {
     }
 
+    private string $hook = '';
+
     public function register(): void
     {
         add_action('admin_menu', [$this, 'menu']);
         add_action('admin_init', [$this, 'maybeApply']);
+        add_action('admin_enqueue_scripts', [$this, 'maybeEnqueue']);
     }
 
     public function menu(): void
     {
-        add_submenu_page(
+        $this->hook = (string) add_submenu_page(
             'corex-settings',
             __('Corex Setup', 'corex'),
             __('Setup Wizard', 'corex'),
@@ -47,6 +50,18 @@ final class SetupWizardScreen
             [$this, 'render'],
             50,
         );
+    }
+
+    /**
+     * Load the shared CoreX admin shell on the setup screen so the wizard inherits the
+     * full-width frame, card rhythm, brass buttons, step badges, and light/dark appearance
+     * (the kit owns its screen's assets — it does not rely on another plugin's allow-list).
+     */
+    public function maybeEnqueue(string $hook): void
+    {
+        if ($hook === $this->hook && $this->hook !== '') {
+            wp_enqueue_style('corex-admin-shell');
+        }
     }
 
     public function render(): void
