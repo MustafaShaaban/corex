@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 477,
+    "consumer_records": 483,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -602,7 +602,6 @@
         "--corex-admin-line-tight",
         "--corex-admin-link",
         "--corex-admin-link-hover",
-        "--corex-admin-login-backdrop",
         "--corex-admin-login-inline-size",
         "--corex-admin-login-logo",
         "--corex-admin-login-logo-height",

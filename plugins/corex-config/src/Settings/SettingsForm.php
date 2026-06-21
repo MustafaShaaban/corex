@@ -120,20 +120,76 @@ final class SettingsForm
 
         $disabled = $state === SettingsSectionState::Disabled;
         $html    .= '<table class="form-table">';
+        $html    .= $this->driverNotice($sectionKey, $section, $value);
 
         foreach ($section['fields'] as $key => $field) {
             $name = str_replace('.', '_', $key);
 
             $html .= sprintf(
-                '<tr><th><label for="%s">%s</label></th><td>%s%s</td></tr>',
+                '<tr%5$s><th><label for="%1$s">%2$s</label></th><td>%3$s%4$s</td></tr>',
                 esc_attr($name),
                 esc_html($field['label']),
                 $this->control($name, $field, (string) $value($key), $disabled),
                 $this->help($name, $field),
+                $this->showForAttrs($field, $value),
             );
         }
 
         return $html . '</table></section>';
+    }
+
+    /**
+     * Driver-aware visibility (spec 060): a field may declare `show_for` (a controlling field key
+     * + the values that reveal it). The row is hidden server-side when the current value does not
+     * match (so a reload matches the saved driver) and carries data-attributes so the settings
+     * script can toggle it live as the controlling select changes. Fields without `show_for`
+     * always show.
+     *
+     * @param array{show_for?:array{key:string,values:list<string>}} $field
+     * @param callable(string):string                                 $value
+     */
+    private function showForAttrs(array $field, callable $value): string
+    {
+        if (! isset($field['show_for']['key'], $field['show_for']['values'])) {
+            return '';
+        }
+
+        $key     = (string) $field['show_for']['key'];
+        $values  = $field['show_for']['values'];
+        $current = (string) $value($key);
+        $hidden  = in_array($current, $values, true) ? '' : ' hidden';
+
+        return sprintf(
+            ' class="corex-settings-row" data-corex-show-for="%s" data-corex-show-values="%s"%s',
+            esc_attr($key),
+            esc_attr(implode(' ', $values)),
+            $hidden,
+        );
+    }
+
+    /**
+     * The "captcha disabled" notice shown only when the driver is None — provider fields are
+     * hidden, so this explains the section is intentionally off. Toggled live by the same
+     * data-attributes the script reads.
+     *
+     * @param array{fields:array<string,mixed>} $section
+     * @param callable(string):string           $value
+     */
+    private function driverNotice(string $sectionKey, array $section, callable $value): string
+    {
+        if ($sectionKey !== 'captcha' || ! isset($section['fields']['captcha.driver'])) {
+            return '';
+        }
+
+        $hidden = (string) $value('captcha.driver') === 'none' ? '' : ' hidden';
+
+        return sprintf(
+            '<tr class="corex-settings-row corex-driver-notice" data-corex-show-for="captcha.driver"'
+            . ' data-corex-show-values="none"%1$s><td colspan="2">'
+            . '<p class="corex-driver-notice__msg" role="status">%2$s</p></td></tr>',
+            $hidden,
+            esc_html__('Captcha is disabled — no provider selected.', 'corex'),
+        );
     }
 
     /**

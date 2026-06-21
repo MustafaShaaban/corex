@@ -51,8 +51,8 @@ final class AdminBranding
         if ($this->branding->loginSsoEnabled()) {
             $html .= '<div class="corex-login__sso">'
                 . '<button type="button" class="button corex-login__sso-btn" disabled aria-disabled="true">'
-                . '<span class="dashicons dashicons-admin-network" aria-hidden="true"></span>'
-                . esc_html__('SSO is not configured yet.', 'corex') . '</button>'
+                . $this->keyIcon()
+                . '<span>' . esc_html__('SSO is not configured yet.', 'corex') . '</span></button>'
                 . '<div class="corex-login__divider"><span>' . esc_html__('or', 'corex') . '</span></div></div>';
         }
 
@@ -71,6 +71,7 @@ final class AdminBranding
     public function enqueueLoginAssets(): void
     {
         wp_enqueue_style('corex-admin-login');
+        wp_enqueue_script('corex-admin-login');
         wp_add_inline_style(
             'corex-admin-login',
             $this->branding->loginCss(esc_url($this->branding->logoUrl())),
@@ -104,6 +105,18 @@ final class AdminBranding
     public function loginUrl(string $url): string
     {
         return $this->branding->configuredLoginUrl() ?: home_url('/');
+    }
+
+    /**
+     * The inline SSO key glyph (CoreX icon system), brass-stroked and aria-hidden. Inline so it
+     * inherits the brass action token in dark and light; matches the approved login capture.
+     */
+    private function keyIcon(): string
+    {
+        return '<svg class="corex-login__sso-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"'
+            . ' stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"'
+            . ' aria-hidden="true" focusable="false"><circle cx="8" cy="12" r="4"/>'
+            . '<path d="M11.5 12H21M17 12v3.5M20 12v2.5"/></svg>';
     }
 
     public function footerText(string $text): string

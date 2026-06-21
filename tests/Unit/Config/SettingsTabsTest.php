@@ -90,6 +90,37 @@ it('adds official reference links with safe external attributes for external key
         ->toContain('Get a PageSpeed Insights API key');
 });
 
+it('hides captcha provider fields + a disabled notice when the driver is None', function () {
+    $html = settingsForm()->render(
+        static fn (string $key): string => $key === 'captcha.driver' ? 'none' : '',
+        '<nonce>',
+    );
+
+    expect($html)
+        // provider rows carry the conditional attributes and are hidden server-side
+        ->toContain('data-corex-show-for="captcha.driver"')
+        ->toContain('data-corex-show-values="recaptcha turnstile hcaptcha" hidden')
+        ->toContain('data-corex-show-values="recaptcha" hidden')
+        // the disabled notice (show-values="none") is shown — no trailing hidden
+        ->toContain('Captcha is disabled — no provider selected.')
+        ->toContain('data-corex-show-values="none">')
+        ->not->toContain('data-corex-show-values="none" hidden');
+});
+
+it('shows reCAPTCHA fields + links and hides the disabled notice when driver is reCAPTCHA', function () {
+    $html = settingsForm()->render(
+        static fn (string $key): string => $key === 'captcha.driver' ? 'recaptcha' : '',
+        '<nonce>',
+    );
+
+    expect($html)
+        ->toContain('https://www.google.com/recaptcha/admin/create')
+        // the v3 score/action rows (show-values="recaptcha") are NOT hidden
+        ->not->toContain('data-corex-show-values="recaptcha" hidden')
+        // the disabled notice IS hidden
+        ->toContain('data-corex-show-values="none" hidden');
+});
+
 it('adds captcha reference links + helper copy with safe external attributes', function () {
     $html = settingsForm()->render(static fn (string $key): string => '', '<nonce>');
 

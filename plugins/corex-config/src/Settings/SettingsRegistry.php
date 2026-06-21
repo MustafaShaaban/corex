@@ -82,6 +82,7 @@ final class SettingsRegistry implements FieldSections
                         'help'      => 'The public key for your provider.',
                         'help_url'  => 'https://www.google.com/recaptcha/admin/create',
                         'help_link' => 'Create reCAPTCHA keys',
+                        'show_for'  => ['key' => 'captcha.driver', 'values' => ['recaptcha', 'turnstile', 'hcaptcha']],
                     ],
                     'captcha.secret' => [
                         'label'     => 'Secret key',
@@ -89,6 +90,7 @@ final class SettingsRegistry implements FieldSections
                         'help'      => 'The private key, paired with the site key.',
                         'help_url'  => 'https://www.google.com/recaptcha/admin/create',
                         'help_link' => 'Create reCAPTCHA keys',
+                        'show_for'  => ['key' => 'captcha.driver', 'values' => ['recaptcha', 'turnstile', 'hcaptcha']],
                     ],
                     'captcha.score_threshold' => [
                         'label'     => 'reCAPTCHA v3 score threshold',
@@ -96,6 +98,7 @@ final class SettingsRegistry implements FieldSections
                         'help'      => '0.0–1.0. 0.5 is a common starting point — adjust after reviewing traffic.',
                         'help_url'  => 'https://developers.google.com/recaptcha/docs/v3#interpreting_the_score',
                         'help_link' => 'reCAPTCHA v3 score docs',
+                        'show_for'  => ['key' => 'captcha.driver', 'values' => ['recaptcha']],
                     ],
                     'captcha.action' => [
                         'label'     => 'reCAPTCHA v3 action',
@@ -103,6 +106,7 @@ final class SettingsRegistry implements FieldSections
                         'help'      => 'A label for the protected action, e.g. contact_form or login.',
                         'help_url'  => 'https://developers.google.com/recaptcha/docs/v3#actions',
                         'help_link' => 'reCAPTCHA v3 action docs',
+                        'show_for'  => ['key' => 'captcha.driver', 'values' => ['recaptcha']],
                     ],
                 ],
             ],

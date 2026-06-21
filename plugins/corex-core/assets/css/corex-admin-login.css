@@ -1,7 +1,7 @@
 /**
- * Additive CoreX product branding for native WordPress authentication screens.
- * WordPress owns all form markup, messages, navigation, and authentication
- * behavior.
+ * Additive CoreX product branding for native WordPress authentication screens
+ * (design: the approved "Corex Admin Login & Settings" capture). WordPress owns
+ * all form markup, messages, navigation, and auth — this is presentation only.
  */
 
 /* WordPress login markup owns these IDs and selector order. */
@@ -14,14 +14,23 @@ body.login.corex-login {
 	font-family: var(--corex-admin-font-body);
 }
 
+/* Ambient brass glow behind the card (animated pulse). */
 body.login.corex-login::before {
 	position: fixed;
-	inset: 0;
-	background: var(--corex-admin-login-backdrop);
+	inset-block-start: 30%;
+	inset-inline-start: 50%;
+	z-index: 0;
+	inline-size: 32rem;
+	block-size: 32rem;
+	background: radial-gradient(circle, rgb(201 162 94 / 16%), transparent 68%);
+	filter: blur(20px);
+	transform: translate(-50%, -50%);
+	animation: corex-login-glow 7s ease-in-out infinite;
 	content: "";
 	pointer-events: none;
 }
 
+/* Ambient grid, masked to a soft ellipse and slowly drifting. */
 body.login.corex-login::after {
 	position: fixed;
 	inset: 0;
@@ -30,9 +39,10 @@ body.login.corex-login::after {
 		linear-gradient(var(--corex-admin-border) 1px, transparent 1px),
 		linear-gradient(90deg, var(--corex-admin-border) 1px, transparent 1px);
 	background-size: 48px 48px;
-	opacity: 0.4;
-	-webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 28%, #000 18%, transparent 72%);
-	mask-image: radial-gradient(ellipse 60% 55% at 50% 28%, #000 18%, transparent 72%);
+	opacity: 0.5;
+	-webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 40%, #000 20%, transparent 72%);
+	mask-image: radial-gradient(ellipse 60% 60% at 50% 40%, #000 20%, transparent 72%);
+	animation: corex-login-grid 24s linear infinite;
 	content: "";
 	pointer-events: none;
 }
@@ -41,70 +51,173 @@ body.login.corex-login #login {
 	position: relative;
 	z-index: 1;
 	inline-size: var(--corex-admin-login-inline-size);
-	padding-block-start: var(--corex-admin-space-2xl);
+	padding-block: var(--corex-admin-space-2xl);
+	animation: corex-login-in var(--corex-admin-motion-slow) cubic-bezier(0.2, 0, 0, 1) both;
 }
 
+/* Brand logo (header reveal). */
 body.login.corex-login #login h1 a {
 	inline-size: 100%;
 	block-size: var(--corex-admin-login-logo-height);
-	margin-block-end: var(--corex-admin-space-lg);
+	margin-block-end: var(--corex-admin-space-md);
 	background-image: var(--corex-admin-login-logo);
 	background-position: center;
 	background-size: contain;
+	animation: corex-login-rise var(--corex-admin-motion-slow) cubic-bezier(0.2, 0, 0, 1) both;
 }
 
+/* The form card. */
 body.login.corex-login #loginform,
 body.login.corex-login #lostpasswordform,
 body.login.corex-login #resetpassform,
 body.login.corex-login .message,
 body.login.corex-login .notice,
 body.login.corex-login #login_error {
+	padding: var(--corex-admin-space-xl);
 	color: var(--corex-admin-text);
 	background: var(--corex-admin-surface-raised);
-	border-color: var(--corex-admin-border);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-lg);
 	box-shadow: var(--corex-admin-shadow-lg);
 }
 
+body.login.corex-login #loginform {
+	animation: corex-login-rise var(--corex-admin-motion-slow) cubic-bezier(0.2, 0, 0, 1) 80ms both;
+}
+
 body.login.corex-login #login_error {
-	border-inline-start-color: var(--corex-admin-error);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-error);
 }
 
 body.login.corex-login .message {
-	border-inline-start-color: var(--corex-admin-info);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
 }
 
 body.login.corex-login label,
 body.login.corex-login .forgetmenot label {
 	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
 }
 
+/* Inputs + their inline leading icons. The username input is wrapped by
+   corex-login.js into .corex-login__field; the password input already lives in
+   WordPress's .wp-pwd. Both wrappers carry a masked leading icon (theme-aware
+   via currentcolor) and pad the input so icon/text/reveal never overlap. */
 body.login.corex-login input[type="text"],
 body.login.corex-login input[type="password"],
 body.login.corex-login input[type="email"] {
+	min-block-size: var(--corex-admin-control-height);
 	color: var(--corex-admin-text);
 	background: var(--corex-admin-surface);
-	border-color: var(--corex-admin-border-strong);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
 	border-radius: var(--corex-admin-radius-sm);
+	transition: border-color var(--corex-admin-motion-fast) ease, box-shadow var(--corex-admin-motion-fast) ease;
 }
 
-body.login.corex-login .button-primary {
-	color: var(--corex-admin-action-ink);
-	background: var(--corex-admin-action);
+body.login.corex-login input[type="text"]:focus,
+body.login.corex-login input[type="password"]:focus,
+body.login.corex-login input[type="email"]:focus {
 	border-color: var(--corex-admin-action);
-	border-radius: var(--corex-admin-radius-sm);
+	box-shadow: 0 0 0 3px var(--corex-admin-action-subtle);
 }
 
-body.login.corex-login input[type="checkbox"] {
-	accent-color: var(--corex-admin-action);
+body.login.corex-login .corex-login__field,
+body.login.corex-login .wp-pwd {
+	position: relative;
+	color: var(--corex-admin-text-subtle);
+}
+
+body.login.corex-login .corex-login__field::before,
+body.login.corex-login .wp-pwd::before {
+	position: absolute;
+	inset-block: 0;
+	inset-inline-start: 0.85rem;
+	z-index: 1;
+	inline-size: 1rem;
+	background: currentcolor;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+	mask-position: center;
+	-webkit-mask-size: contain;
+	mask-size: contain;
+	content: "";
+	pointer-events: none;
+}
+
+body.login.corex-login .corex-login__field::before {
+	-webkit-mask-image: url(../icons/login-user.svg);
+	mask-image: url(../icons/login-user.svg);
+}
+
+body.login.corex-login .wp-pwd::before {
+	-webkit-mask-image: url(../icons/login-lock.svg);
+	mask-image: url(../icons/login-lock.svg);
+}
+
+body.login.corex-login .corex-login__field input,
+body.login.corex-login .wp-pwd input {
+	padding-inline-start: 2.5rem;
+}
+
+/* WordPress puts the reveal toggle inside .wp-pwd on the right — leave room. */
+body.login.corex-login .wp-pwd input {
+	padding-inline-end: 2.75rem;
+}
+
+body.login.corex-login .wp-hide-pw {
+	color: var(--corex-admin-text-muted);
 }
 
 body.login.corex-login .wp-hide-pw .dashicons {
 	color: var(--corex-admin-text-muted);
 }
 
+/* Remember-me row + the brass custom checkbox. */
+body.login.corex-login .forgetmenot {
+	margin-block-end: var(--corex-admin-space-md);
+}
+
+body.login.corex-login input[type="checkbox"] {
+	inline-size: 1.1rem;
+	block-size: 1.1rem;
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+	background: var(--corex-admin-surface);
+	accent-color: var(--corex-admin-action);
+}
+
+body.login.corex-login input[type="checkbox"]:checked {
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+/* Primary "Log in" button (hover lift). */
+body.login.corex-login .button-primary {
+	inline-size: 100%;
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+	border-radius: var(--corex-admin-radius-sm);
+	font-weight: 600;
+	transition: background var(--corex-admin-motion-fast) ease, transform var(--corex-admin-motion-fast) ease, box-shadow var(--corex-admin-motion-fast) ease;
+}
+
+body.login.corex-login .button-primary:hover,
+body.login.corex-login .button-primary:focus {
+	background: var(--corex-admin-action-hover);
+	border-color: var(--corex-admin-action-hover);
+	transform: translateY(-1px);
+	box-shadow: 0 10px 26px var(--corex-admin-action-subtle);
+}
+
 body.login.corex-login a {
 	color: var(--corex-admin-link);
+}
+
+body.login.corex-login #nav,
+body.login.corex-login #backtoblog {
+	text-align: center;
 }
 
 body.login.corex-login :where(a, button, input):focus-visible {
@@ -115,25 +228,27 @@ body.login.corex-login :where(a, button, input):focus-visible {
 
 /* Sign-in subheading + SSO slot (Login capture), above the native form via the
    login_message filter. The SSO control is an honest disabled "not configured"
-   button — never a fake provider. */
+   button — never a fake provider. Staggered entrance: header reveals first. */
 body.login.corex-login .corex-login__subtitle {
-	margin-block: calc(-1 * var(--corex-admin-space-md)) var(--corex-admin-space-lg);
+	margin-block: calc(-1 * var(--corex-admin-space-xs)) var(--corex-admin-space-lg);
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-md);
 	text-align: center;
+	animation: corex-login-rise var(--corex-admin-motion-slow) cubic-bezier(0.2, 0, 0, 1) 40ms both;
 }
 
 body.login.corex-login .corex-login__sso {
 	position: relative;
 	z-index: 1;
 	margin-block-end: var(--corex-admin-space-lg);
+	animation: corex-login-rise var(--corex-admin-motion-slow) cubic-bezier(0.2, 0, 0, 1) 120ms both;
 }
 
 body.login.corex-login .corex-login__sso-btn {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: var(--corex-admin-space-xs);
+	gap: var(--corex-admin-space-sm);
 	inline-size: 100%;
 	min-block-size: var(--corex-admin-control-height);
 	color: var(--corex-admin-text);
@@ -148,7 +263,8 @@ body.login.corex-login .corex-login__sso-btn[disabled] {
 	cursor: not-allowed;
 }
 
-body.login.corex-login .corex-login__sso-btn .dashicons {
+body.login.corex-login .corex-login__sso-icon {
+	flex: none;
 	color: var(--corex-admin-action);
 }
 
@@ -170,14 +286,61 @@ body.login.corex-login .corex-login__divider::after {
 	content: "";
 }
 
+@keyframes corex-login-in {
+
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes corex-login-rise {
+
+	from {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes corex-login-glow {
+
+	0%,
+	100% {
+		opacity: 0.7;
+		transform: translate(-50%, -50%) scale(1);
+	}
+
+	50% {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1.08);
+	}
+}
+
+@keyframes corex-login-grid {
+
+	to {
+		background-position: 48px 48px;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 
+	/* Accessibility override — !important so it wins over the higher-specificity
+	   per-element animation rules (e.g. #login) above. */
 	body.login.corex-login *,
 	body.login.corex-login *::before,
 	body.login.corex-login *::after {
-		transition-duration: 0.01ms;
-		animation-duration: 0.01ms;
-		animation-iteration-count: 1;
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
 	}
 }
 

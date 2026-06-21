@@ -2,6 +2,35 @@
 
 **Branch:** `fix/060-admin-design-implementation`
 
+## Owner-review correction pass 4 (2026-06-22)
+
+**1–3 — Login matches the approved design, with icons + motion.** Rebuilt `corex-admin-login.css`
+to the approved capture: wider 25rem column, generous card padding, header/SSO/divider rhythm,
+custom brass checkbox, brass Log-in button with hover lift, polished dark + light.
+- **Icons** (CoreX SVG system, masked + theme-aware, never emoji): leading **user** icon inside
+  the username field (wrapped by a tiny presentation-only `corex-login.js`), leading **lock** icon
+  inside the password field, the WordPress **reveal** toggle kept on the right (padding tuned so
+  none overlap), and an inline brass **key** SVG centered in the SSO box.
+- **Motion**: entrance fade/rise (logo → subtitle → SSO → card staggered), drifting ambient grid,
+  pulsing brass glow, input-focus + button-hover transitions — all collapsed under
+  `prefers-reduced-motion: reduce` (verified: `#login` animation-duration → `1e-05s`).
+- Proof (real, pristine logged-out wp-login.php): `tests/e2e/clip/login-final-dark.png`,
+  `tests/e2e/clip/login-final-light.png`.
+
+**4 — Captcha settings are driver-aware.** Each provider field declares `show_for` (controlling
+key + revealing driver values); `SettingsForm` hides non-matching rows server-side (so a reload
+matches the saved driver) and tags them with data-attributes so `settings.js` toggles them live —
+before save — as the driver changes. Driver=None shows a "Captcha is disabled — no provider
+selected" notice and hides every provider field/link; reCAPTCHA shows Site key + Secret key + v3
+score + v3 action with the official Google references; Turnstile/hCaptcha show only the keys (no v3
+score/action). Secrets stay write-only. The captcha section is no longer "configuration needed"
+when the driver is None/Honeypot.
+- Proof: `tests/e2e/clip/captcha-none.png`, `tests/e2e/clip/captcha-recaptcha.png`,
+  `tests/e2e/clip/captcha-turnstile.png` (different visible fields per driver).
+
+---
+
+
 ## Owner-review correction pass 3 (2026-06-22)
 
 **1 — Real wp-login.php now shows the approved (dark) CoreX design by default.** Delivery was

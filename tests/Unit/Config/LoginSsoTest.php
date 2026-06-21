@@ -42,6 +42,9 @@ it('reserves a disabled, honest SSO slot on sign-in when the setting is on', fun
         ->toContain('corex-login__sso')
         ->toContain('SSO is not configured yet.')
         ->toContain('disabled')
+        // the key glyph is an inline CoreX SVG (icon system), not an emoji or a dashicon
+        ->toContain('<svg class="corex-login__sso-icon"')
+        ->not->toContain('dashicons-admin-network')
         // the native form is preserved, appended after the slot
         ->toContain('<form id="loginform">');
 });

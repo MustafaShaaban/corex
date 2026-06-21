@@ -174,7 +174,8 @@
 	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
 }
 
-.corex-admin .corex-section-notice {
+.corex-admin .corex-section-notice,
+.corex-admin .corex-driver-notice__msg {
 	margin-block: var(--corex-admin-space-md) 0;
 	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
 	color: var(--corex-admin-text);

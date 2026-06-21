@@ -314,7 +314,37 @@
 			.forEach( enhanceSelect );
 	}
 
+	// Driver-aware fields: a row with data-corex-show-for is visible only when the controlling
+	// field's current value is one of data-corex-show-values. Re-evaluated whenever a control
+	// changes (the enhanced select dispatches a native change event), so the Captcha provider
+	// fields/links appear and disappear immediately — before save — matching the chosen driver.
+	function applyConditionalRows() {
+		document
+			.querySelectorAll( '[data-corex-show-for]' )
+			.forEach( function ( row ) {
+				const key = row.getAttribute( 'data-corex-show-for' );
+				const allowed = (
+					row.getAttribute( 'data-corex-show-values' ) || ''
+				).split( ' ' );
+				const control = document.getElementById(
+					key.replace( /\./g, '_' )
+				);
+				const current = control ? control.value : '';
+				row.hidden = allowed.indexOf( current ) === -1;
+			} );
+	}
+
+	function initConditionalRows() {
+		const form = document.querySelector( '.corex-settings-form' );
+		if ( ! form ) {
+			return;
+		}
+		applyConditionalRows();
+		form.addEventListener( 'change', applyConditionalRows );
+	}
+
 	initMedia();
 	initTabs();
 	initSelects();
+	initConditionalRows();
 } )();

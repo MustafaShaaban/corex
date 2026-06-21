@@ -67,6 +67,7 @@ it('adds only the CoreX login class and conditionally enqueues the login visual 
     $branding = new AdminBranding(new BrandingService(brandingConfig([]), '/x.svg'));
     Functions\when('esc_url')->returnArg();
     Functions\expect('wp_enqueue_style')->once()->with('corex-admin-login');
+    Functions\expect('wp_enqueue_script')->once()->with('corex-admin-login');
     Functions\expect('wp_add_inline_style')->once()->with(
         'corex-admin-login',
         'body.login.corex-login{--corex-admin-login-logo:url("/x.svg")}',
@@ -92,6 +93,28 @@ it('resolves the login appearance dark-first: light opts into light, system/dark
     ['system', 'dark'],
     ['', 'dark'],
 ]);
+
+it('ships the login design layer: inline field icons, motion, and reduced-motion respect', function () {
+    $css = (string) file_get_contents(
+        dirname(__DIR__, 3) . '/plugins/corex-core/assets/css/corex-admin-login.css',
+    );
+
+    expect($css)
+        // leading field icons via the CoreX icon system (masked, theme-aware)
+        ->toContain('login-user.svg')
+        ->toContain('login-lock.svg')
+        ->toContain('.corex-login__field')
+        // login motion + explicit reduced-motion guard
+        ->toContain('@keyframes corex-login-')
+        ->toContain('animation: corex-login-')
+        ->toContain('prefers-reduced-motion: reduce')
+        // no raster/base64 artwork
+        ->not->toContain('data:image');
+
+    $user = dirname(__DIR__, 3) . '/plugins/corex-core/assets/icons/login-user.svg';
+    $lock = dirname(__DIR__, 3) . '/plugins/corex-core/assets/icons/login-lock.svg';
+    expect($user)->toBeFile()->and($lock)->toBeFile();
+});
 
 it('does not hook authentication or replace native login actions', function () {
     $source = (string) file_get_contents(

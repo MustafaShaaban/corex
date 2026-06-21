@@ -193,6 +193,13 @@ final class AdminDashboard
             return SettingsSectionState::Disabled;
         }
 
+        // None/Honeypot (or an unset driver) need no keys, so they are never "configuration
+        // needed" — the section is in its normal, intentionally-off/keyless state.
+        $driver = trim((string) $this->store->get('captcha.driver'));
+        if ($driver === '' || $driver === 'none' || $driver === 'honeypot') {
+            return SettingsSectionState::Normal;
+        }
+
         $configured = trim((string) $this->store->get('captcha.site_key')) !== ''
             && trim((string) $this->store->get('captcha.secret')) !== '';
 

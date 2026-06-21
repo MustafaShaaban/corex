@@ -82,6 +82,16 @@ final class HttpServiceProvider extends ServiceProvider
             ['corex-admin-tokens'],
             $this->assetVersion('css/corex-admin-login.css'),
         );
+
+        // Presentation-only login enhancement (wraps the username field for its leading icon);
+        // WordPress still owns all authentication behaviour.
+        wp_register_script(
+            'corex-admin-login',
+            $assets . '/js/corex-login.js',
+            [],
+            $this->assetVersion('js/corex-login.js'),
+            true,
+        );
     }
 
     /**
