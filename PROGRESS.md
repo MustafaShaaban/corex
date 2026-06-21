@@ -18,18 +18,23 @@
 - **Verification:** `AddonStatusResolverTest` matrix **8/8**; Foundation suite **72 pass**; `php -l` clean. Guards
   wp/clean-code/test clean. **ENVIRONMENT-GATED:** rendered admin a11y/RTL/visual + wp-env evidence.
 - **US2 core DONE (committed):** pure `Corex\Config\Settings\SettingsSectionState` enum (Hidden/Disabled/
-  ConfigurationNeeded/Normal) with `forStatus(AddonStatus, bool $configured)` + `showsUsableFields()` — a section is
-  Hidden when not installed, Normal only when active+configured, ConfigurationNeeded when active+unconfigured, and
-  Disabled for every other (non-usable) state; usable fields show only when Normal. `SettingsSectionStateTest` 5/5;
-  Config suite 60 pass. Captcha already ships a secret-free `CaptchaDiagnostic` (booleans only) to build on.
-- **Remaining on Spec 060/M6:** US2 application wiring (apply `SettingsSectionState` to the `corex-config` Settings
-  screen + the captcha/reCAPTCHA section; enforce write-only secret on render — `CaptchaSettingsStateTest`); US3
-  (scoped admin visual design — cards/tables/topbar/badges via `--corex-admin-*`, dark/light/RTL/responsive, a11y;
-  asset-scoping test = no global/frontend load); the Add-ons screen rendering (US1 application, T004); US4
-  (setup/readiness + universal states); then docs + full gate before marking PR #58 ready. Per `tasks.md`.
-- **Exact next step:** wire US2 — render the captcha/reCAPTCHA settings section from `SettingsSectionState` (captcha
-  "configured" = site key + secret present), enforce the write-only secret on render (empty submit preserves stored),
-  RED→GREEN with `CaptchaSettingsStateTest`; then the Add-ons screen (US1 application). Keep PR #58 draft.
+  ConfigurationNeeded/Normal) with `forStatus(AddonStatus, bool $configured)` + `showsUsableFields()`.
+  `SettingsSectionStateTest` 5/5.
+- **US2 write-only secrets DONE (committed):** fixed a real leak — `SettingsForm` rendered password fields
+  (`captcha.secret`, `insights.*` keys) into `value="..."`. Now password fields are a write-only control (empty
+  value + "Saved/Not set" hint, `autocomplete=new-password`); `SettingsRegistry::secretKeys()` identifies them and
+  the save loop (`AdminDashboard::maybeSave`, via `AdminGuard` cap+nonce) preserves the stored secret on an empty
+  submit. `SettingsSecretTest` 3/3; existing SettingsForm/Settings tests updated to the corrected behavior; **full
+  Pest 699 pass**.
+- **Remaining on Spec 060/M6:** US2 screen wiring (surface `SettingsSectionState` per section on the `corex-config`
+  Settings screen — section badge/notice + the captcha section showing not-installed/disabled/config-needed/normal,
+  driven by `AddonStatusResolver` + captcha "configured" = site key + secret present); US1 Add-ons screen rendering
+  (states + enable/disable for installed only, no install action); US3 scoped admin visual design (cards/tables/
+  topbar/badges via `--corex-admin-*`, dark/light/RTL/responsive, a11y; asset-scoping test = no global/frontend
+  load); US4 setup/readiness + universal states; then docs + full gate before marking PR #58 ready. Per `tasks.md`.
+- **Exact next step:** wire US2 screen — inject `AddonStatusResolver` + the captcha "configured" predicate into the
+  Settings screen and render each section's `SettingsSectionState` (header badge + a disabled/not-installed/config-
+  needed notice for the captcha section), RED→GREEN; then the Add-ons screen (US1 application). Keep PR #58 draft.
 
 ---
 ## RESUME HERE (2026-06-21) -- M3 merged; M4 core implemented (full company page set); on PR
