@@ -2,6 +2,28 @@
 
 **Branch:** `fix/060-admin-design-implementation`
 
+## Correction pass (2026-06-21) — screenshot-driven fixes
+
+Rendered with `node tests/e2e/render-admin.mjs` (dark+light) against the live site; clips captured for
+specific controls. All proven by live DOM where behaviour matters.
+
+| # | Fix | Proof |
+|---|---|---|
+| 1 | Full-bleed surface | Body class `corex-admin-screen` strips wp-admin outer padding/margins (CoreX screens only); shell border-radius-0, fills to content-area edges. No outer gaps at 1440 and 1920. |
+| 2 | Inner rail = 6 pages | Rail built from live `$submenu['corex-settings']`; shows Overview/Settings/Add-ons/Data/Insights/Setup Wizard with real icons; matches the WP submenu. |
+| 3 | Toolbar/select | All toolbar controls normalised to one height (select was 64px → 40px); explicit option colours keep the dropdown readable; New record stays on the row, intentionally disabled. |
+| 4 | Real 14-day chart | `TrendableDataSource` → `SubmissionsSource::trend()` from a prepared grouped `$wpdb` query; live DOM: 14 bars, 42 total, zero-filled days. No fabricated values. |
+| 5 | Rail is the source control | The rail drives the active source; the select is only the form filter (one real source — rendered intentionally). |
+| 6 | Real schema | `SchemaAwareDataSource` → live DOM schema = Record ID(id)/Submitted(datetime)/Form(form)/Name(text)/Email(email)/Message(textarea) + "Derived from captured submissions" note. |
+| 7 | Bulk + actions | Select-all + bulk Delete-selected (confirm+nonce); Export-selected disabled with honest reason; New/Edit disabled truthfully; focus-trapped drawer with metadata/footer/Escape/return-focus. |
+| 8 | Login follows appearance | Proven: appearance=Dark on a **light** OS → login bg `rgb(22,24,29)`; appearance=Light on a **dark** OS → light. Uses the saved option logged-out, not OS/auth alone. |
+| 9 | Setup Wizard works | Real Choose → Review → Apply → Applied flow; stepper tracks the step; apply runs the BlueprintActivator (cap+nonce) then PRG to a truthful applied summary. Rendered all three steps. |
+| 10 | Settings | Appearance changes shell + login (scoped, nothing else); logo preview shows the saved image / placeholder when empty; footer current-value renders and updates the admin footer (verified). |
+| 11 | Add-ons toggles | Accessible `role="switch"` + aria-checked, keyboard, On/Off label at 12px (readable), disabled+reason for non-actionable. |
+
+---
+
+
 ## Capture-fidelity 20-blocker pass (2026-06-21)
 
 Re-runnable harness: `node tests/e2e/render-admin.mjs <out> [--screens=…] [COREX_W/H]` — authenticates
