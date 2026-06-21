@@ -1788,6 +1788,33 @@ the SVGs valid as standalone assets. The generator (`scripts/generate-logo-asset
 reproducible.
 Status: Final.
 
+## #105 -- Spec 060 M6 admin: pure display-state resolver, reuse the existing model/screens, write-only secrets
+Date: 2026-06-21
+Context: M6 needed a truthful CoreX admin (add-on/settings/captcha states) + a calm scoped visual layer, without
+restyling wp-admin or touching the public frontend. The runtime facts already exist (`Foundation\AddonProvider` +
+`AddonRuntimeState` + the boot `AddonProviderResolver`), and the admin already has an Add-ons screen
+(`Config\Addons\AddonManager`/`AddonView`), a settings screen (`SettingsForm`/`SettingsRegistry`), and the scoped
+`--corex-admin-*` adapter (spec 057 US4).
+Decision: (1) Add a **pure display-state resolver** — `Foundation\AddonStatus` (7 states + `isUsable`/`isInstalled`/
+`canToggle`/`tone`) and `AddonStatusResolver` — ordered to agree with boot gating (`pro_required` first, then the
+boot order). Bridge the existing `AddonView::status()` to it (additive `dependencyMissing`/`wooMissing`/`proRequired`
+inputs, default false) so the Add-ons screen shows one honest state and toggles only installed add-ons; **no
+marketplace/install-from-admin** (install is developer/CLI/deployment). (2) `Config\Settings\SettingsSectionState`
+derives each settings section's display from the add-on state + a "configured" predicate; `SettingsForm` renders a
+notice and disables inputs for non-active sections; the captcha section is wired so reCAPTCHA never appears active
+when captcha is absent/inactive and prompts when keys are missing. (3) **Write-only secrets** — password-typed
+fields (captcha secret, API keys) never render their stored value (empty input + "Saved/Not set" hint) and an empty
+submit preserves the stored secret; saves stay on the shared `AdminGuard` (cap+nonce). (4) The visual layer consumes
+**only** the scoped `--corex-admin-*` adapter and loads only on CoreX screens (Principle VI); the token-inventory
+generator classifies `--corex-admin-*` consumer refs as the documented `raw-allowance`. Reuse the existing
+screens/adapter — extend, don't rebuild.
+Why: a pure typed resolver is unit-testable and keeps admin display in agreement with boot gating; reusing the model/
+screens avoids duplication; write-only secrets close a real leak (passwords were rendered into `value="..."`); the
+scoped adapter guarantees no global wp-admin restyle and no frontend impact. Residual (tracked): Setup-Wizard
+cosmetic styling and broader US4 universal-state polish — the readiness screen already gates env-checks honestly via
+the existing Insights/readiness system.
+Status: Final.
+
 ## #104 -- Spec 059 M4 company kit: extend the blueprint, reuse provisioning, defer section blocks to M5
 Date: 2026-06-21
 Context: M4 needed full company-site page coverage with safe apply, demo levels, and SEO, without a page builder or a

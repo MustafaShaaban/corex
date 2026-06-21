@@ -4,7 +4,80 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-21, latest) -- M3 merged; M4 core implemented (full company page set); on PR
+## RESUME HERE (2026-06-21, latest) -- M6 truthful-state core complete; PR #58 ready; docs + gate done
+
+- **Branch/PR:** `spec/060-corex-admin-product-experience`; **PR #58** to `main`. Normal root, single worktree, no
+  `.worktrees`. Spec 055 stash untouched. From `main` @ `83a89cf`.
+- **M6 truthful-state core COMPLETE (committed):** `AddonStatus`+`AddonStatusResolver` (7 states), `AddonView::status()`
+  + `tone()`, **Add-ons screen renders accessible 7-state badges** (manage installed only, no marketplace),
+  `SettingsSectionState` + the Settings screen reflecting it (captcha/reCAPTCHA worked example), **write-only secrets**
+  (captcha secret + API keys never rendered; empty submit preserves), and scoped Add-ons CSS via `--corex-admin-*`
+  (asset-scoping test: no global/frontend load). docs-app → Admin experience page; DECISIONS #105; ROADMAP/CHANGELOG.
+- **Verification:** AddonStatusResolver 8/8, AddonStatusTone 5/5, AddonViewStatus 8/8, SettingsSectionState 5/5,
+  SettingsSecret 3/3, SettingsFormSectionState 4/4, AdminAssetScoping 3/3; **full Pest 719, test:js 103, lint:css
+  clean, docs-app 273 pages**, token inventories in-sync. Guards wp/clean-code/test/docs clean. **ENVIRONMENT-GATED:**
+  rendered admin browser/RTL/visual + wp-env evidence (Docker + browser runtime unavailable).
+- **Residual (minor follow-up, not blocking the truthful-state product):** Setup-Wizard cosmetic styling and broader
+  US4 universal-state polish (loading/empty/error/success — permission-denied already via `AdminGuard`); the readiness
+  screen already gates env-checks honestly via the existing Insights/readiness system. Dashboard/Settings/Data/
+  Insights retain their existing scoped styling.
+- **Exact next step:** (owner/next session) the residual Setup-Wizard scoped styling + US4 universal-state polish, and
+  collect env-gated admin browser evidence when Docker/a browser runtime is available.
+
+---
+## RESUME HERE (2026-06-21) -- M6 started: Spec 060 specced/planned + US1 truthful add-on state model (PR #58 draft)
+
+- **Branch/PR:** `spec/060-corex-admin-product-experience` (from `main` @ `83a89cf`); **PR #58 (draft)**. Normal root,
+  single worktree, no `.worktrees`. Spec 055 WIP untouched in `stash@{0}`. (M4 PR #57 merged earlier.)
+- **M6 design:** owner-supplied approved admin design package recorded as `design/handoffs/admin-experience.md`;
+  `design/INVENTORY.md` "Admin product UI" → approved. Spec Kit complete: spec (US1-US4, 15 FRs), plan (Constitution
+  PASS), research, data-model, contract, quickstart, tasks (19). Agent-context pointer → Spec 060.
+- **US1 DONE (committed):** pure `Corex\Foundation\AddonStatus` enum (not_installed/inactive/feature_off/active/
+  dependency_missing/woocommerce_missing/pro_required + isUsable/isInstalled/canToggle) + `AddonStatusResolver`
+  (headless, no WP/DB), ordered to agree with the boot-time `AddonProviderResolver`. Only installed states toggle;
+  install stays developer/CLI/deployment. This is the truthful state model the admin screens read from.
+- **Verification:** `AddonStatusResolverTest` matrix **8/8**; Foundation suite **72 pass**; `php -l` clean. Guards
+  wp/clean-code/test clean. **ENVIRONMENT-GATED:** rendered admin a11y/RTL/visual + wp-env evidence.
+- **US2 core DONE (committed):** pure `Corex\Config\Settings\SettingsSectionState` enum (Hidden/Disabled/
+  ConfigurationNeeded/Normal) with `forStatus(AddonStatus, bool $configured)` + `showsUsableFields()`.
+  `SettingsSectionStateTest` 5/5.
+- **US2 write-only secrets DONE (committed):** fixed a real leak — `SettingsForm` rendered password fields
+  (`captcha.secret`, `insights.*` keys) into `value="..."`. Now password fields are a write-only control (empty
+  value + "Saved/Not set" hint, `autocomplete=new-password`); `SettingsRegistry::secretKeys()` identifies them and
+  the save loop (`AdminDashboard::maybeSave`, via `AdminGuard` cap+nonce) preserves the stored secret on an empty
+  submit. `SettingsSecretTest` 3/3; existing SettingsForm/Settings tests updated to the corrected behavior; **full
+  Pest 699 pass**.
+- **US1 Add-ons view bridge DONE (committed):** `AddonView::status(): AddonStatus` maps the existing per-add-on view
+  (installed/active/flagOn + additive dependencyMissing/wooMissing/proRequired) to the canonical 7-state enum;
+  `AddonManager::views()` sets `dependencyMissing` from its existing `missingDependencies()`. The Add-ons screen now
+  has one truthful state per add-on and `canToggle()` restricts enable/disable to installed add-ons.
+  `AddonViewStatusTest` 8/8; Config 71 pass.
+- **M6 model layer COMPLETE (the goal's truthful-state core, sections 3-6):** `AddonStatus`+`AddonStatusResolver`
+  (US1), `AddonView::status()` (US1 screen bridge), `AddonStatus::tone()` (semantic badge tone), `SettingsSectionState`
+  (US2), write-only secrets (US2). All pure + unit-tested.
+- **US1 Add-ons screen rendering DONE (committed):** `AddonsScreen` now renders the truthful **7-state badge**
+  (`<span class="corex-badge corex-badge--{tone}">{label}</span>` from `AddonView::status()`), covering not installed/
+  inactive/feature off/dependency missing/WooCommerce missing/Pro required/active — meaning by label, not color
+  alone. Enable/disable already gated to installed add-ons; no install/marketplace action. `AddonStatusToneTest` 5/5;
+  **full Pest 712 pass**.
+- **US3 Add-ons scoped CSS DONE (committed):** `plugins/corex-config/assets/addons.css` styles the
+  `.corex-badge--{success,warning,danger,neutral}` tones using only the scoped `--corex-admin-*` adapter (RTL-first,
+  meaning by label not colour); `AddonsScreen` enqueues it conditionally on the `corex-addons` hook declaring
+  `['corex-admin-tokens']` (Principle VI — no global wp-admin restyle, no frontend load). The token-inventory
+  generator now classifies scoped `--corex-admin-*` consumer refs as the documented `raw-allowance`. `AdminAssetScopingTest`
+  3/3; token inventories regenerated in-sync; **full Pest 715, test:js 103, lint:css clean.**
+- **Remaining on Spec 060/M6:** (a) US2 **Settings screen per-section notice** — surface `SettingsSectionState` on the
+  Settings screen (captcha section shows not-installed/disabled/configuration-needed/normal; captcha "configured" =
+  site key + secret present via the captcha `Addon::needsKeys`/`missingKeys`); (b) US4 setup/readiness honest
+  env-gating + universal states (loading/empty/error/success/permission-denied); (c) docs-app admin-experience page;
+  (d) full gate + mark **PR #58** ready.
+- **Exact next step:** wire the Settings screen — compute the captcha section's `SettingsSectionState` (from the
+  captcha add-on `AddonView::status()` + `missingKeys` over the settings values) and render a section notice
+  (not-installed/disabled/configuration-needed) above the captcha fields, RED→GREEN; then US4, docs, gate. Keep PR
+  #58 draft.
+
+---
+## RESUME HERE (2026-06-21) -- M3 merged; M4 core implemented (full company page set); on PR
 
 - **Branch:** `spec/059-company-site-kit` (rebased onto `main` @ `05982a6` after **PR #56/M3 merged**). Normal root,
   single worktree, no `.worktrees`. Spec 055 WIP untouched in `stash@{0}`. Owner granted PR-merge permission.

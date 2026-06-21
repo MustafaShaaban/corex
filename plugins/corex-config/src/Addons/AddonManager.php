@@ -90,6 +90,9 @@ final class AddonManager
                 active: $isActive,
                 flagOn: $addon->hasFlag() && $state->flagOn((string) $addon->flag),
                 blockedReason: $this->blockedReason($addon->slug, $isActive, $state),
+                // An active add-on whose own required dependencies are inactive is in the
+                // truthful "dependency missing" state (spec 060 / M6 US1).
+                dependencyMissing: $isActive && $this->missingDependencies($addon->slug, $state) !== [],
             );
         }
 

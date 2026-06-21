@@ -19,7 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-  "count": 260,
+  "count": 270,
   "consumers": [
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
@@ -1730,6 +1730,106 @@
       "direction_context": "logical",
       "resolution": "valid",
       "target_definition": "spacing.30"
+    },
+    {
+      "path": "plugins/corex-config/assets/addons.css",
+      "selector_or_context": "lines 16, 41: border: 1px solid var(--corex-admin-border); | border-color: var(--corex-admin-border);",
+      "property": "--corex-admin-border",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/addons.css",
+      "selector_or_context": "lines 35, 36: color: var(--corex-admin-error); | border-color: var(--corex-admin-error);",
+      "property": "--corex-admin-error",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/addons.css",
+      "selector_or_context": "lines 17: border-radius: var(--corex-admin-radius-md);",
+      "property": "--corex-admin-radius-md",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/addons.css",
+      "selector_or_context": "lines 15: padding-inline: var(--corex-admin-space-md);",
+      "property": "--corex-admin-space-md",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/addons.css",
+      "selector_or_context": "lines 14: padding-block: var(--corex-admin-space-sm);",
+      "property": "--corex-admin-space-sm",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "logical",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/addons.css",
+      "selector_or_context": "lines 25, 26: color: var(--corex-admin-success); | border-color: var(--corex-admin-success);",
+      "property": "--corex-admin-success",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/addons.css",
+      "selector_or_context": "lines 18: background: var(--corex-admin-surface-alt);",
+      "property": "--corex-admin-surface-alt",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/addons.css",
+      "selector_or_context": "lines 19: color: var(--corex-admin-text);",
+      "property": "--corex-admin-text",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/addons.css",
+      "selector_or_context": "lines 40: color: var(--corex-admin-text-muted);",
+      "property": "--corex-admin-text-muted",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/assets/addons.css",
+      "selector_or_context": "lines 30, 31: color: var(--corex-admin-warning); | border-color: var(--corex-admin-warning);",
+      "property": "--corex-admin-warning",
+      "owner": "config-plugin",
+      "surface": "admin",
+      "direction_context": "not-applicable",
+      "resolution": "raw-allowance",
+      "target_definition": "scoped --corex-admin-* adapter"
     },
     {
       "path": "plugins/corex-config/assets/control-panel.css",

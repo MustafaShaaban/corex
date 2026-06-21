@@ -88,4 +88,26 @@ final class SettingsRegistry implements FieldSections
 
         return $keys;
     }
+
+    /**
+     * The write-only secret keys (password-typed fields): captcha secret, API tokens.
+     * The settings save loop preserves the stored value when one of these is submitted
+     * empty, so a write-only field is never cleared by re-saving the form (spec 060 / M6).
+     *
+     * @return list<string>
+     */
+    public function secretKeys(): array
+    {
+        $keys = [];
+
+        foreach ($this->sections() as $section) {
+            foreach ($section['fields'] as $key => $field) {
+                if (($field['type'] ?? '') === 'password') {
+                    $keys[] = $key;
+                }
+            }
+        }
+
+        return $keys;
+    }
 }

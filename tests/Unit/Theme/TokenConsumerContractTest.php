@@ -86,6 +86,7 @@ it('rejects unrecorded raw design values outside approved allowances', function 
                 'plugins/corex-config/assets/control-panel.css',
                 'plugins/corex-config/assets/data.css',
                 'plugins/corex-config/assets/insights.css',
+                'plugins/corex-config/assets/addons.css',
                 'addons/corex-captcha/assets/captcha-admin.css',
             ], true);
             $isFunctionalLayout = preg_match('/(?:minmax|inline-size|block-size|z-index|inset|line-height|font-weight)/', $line) === 1;

@@ -19,6 +19,7 @@ This file tracks design exploration and approval separately from engineering imp
    merged (PR #54). This handoff is the input to Spec 058.
 4. The company kit is approved (see [M4 company site kit handoff](handoffs/company-kit.md)); the first required
    component batches (M5) are selected only as M4 proves them necessary.
-5. Continue with admin UI, forms/email, portfolio, WooCommerce, docs, and marketing.
+5. Admin UI is approved (see [M6 admin experience handoff](handoffs/admin-experience.md)); continue with forms/email,
+   portfolio, WooCommerce, docs, and marketing.
 
 The engineering milestone dependencies and Free/Core versus Pro boundaries remain authoritative in the root `ROADMAP.md`.
