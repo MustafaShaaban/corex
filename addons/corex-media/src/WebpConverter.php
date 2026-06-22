@@ -20,7 +20,10 @@ use Throwable;
  */
 final class WebpConverter
 {
-    private const QUALITY = 82;
+    /** Output quality (1-100). Defaults to the Media settings default; injected from settings at boot. */
+    public function __construct(private readonly int $quality = MediaSettings::DEFAULT_QUALITY)
+    {
+    }
 
     public function convert(ConversionPlan $plan, string $mime): bool
     {
@@ -81,7 +84,7 @@ final class WebpConverter
             return false;
         }
 
-        $ok = imagewebp($image, $output, self::QUALITY);
+        $ok = imagewebp($image, $output, $this->quality);
         imagedestroy($image);
 
         return $ok;
@@ -91,7 +94,7 @@ final class WebpConverter
     {
         $image = new \Imagick($source);
         $image->setImageFormat('webp');
-        $image->setImageCompressionQuality(self::QUALITY);
+        $image->setImageCompressionQuality($this->quality);
         $ok = $image->writeImage($output);
         $image->clear();
 

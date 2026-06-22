@@ -165,7 +165,7 @@ final class AdminDashboard
             __('Configure framework services. Secret values remain write-only.', 'corex'),
         );
         echo $this->form->render(
-            fn (string $key): string => $this->store->get($key),
+            fn (string $key): string => $this->settingDisplay($key),
             $nonce,
             fn (string $sectionKey): ?SettingsSectionState => $this->sectionState($sectionKey),
             $this->activeTab(),
@@ -173,8 +173,26 @@ final class AdminDashboard
         echo $this->page->close();
     }
 
+    /**
+     * The value shown for a settings key. Most keys read the store; the Media "Server support" row is a
+     * live read-out provided by the corex-media add-on through a filter (so this screen never hard-depends
+     * on the optional add-on — Principle IX).
+     */
+    private function settingDisplay(string $key): string
+    {
+        if ($key === 'media.webp.support') {
+            return (string) apply_filters('corex_media_support_summary', '');
+        }
+
+        return (string) $this->store->get($key);
+    }
+
     private function sectionState(string $sectionKey): ?SettingsSectionState
     {
+        if ($sectionKey === 'media') {
+            return $this->addonSectionState('corex-media/corex-media.php');
+        }
+
         if ($sectionKey !== 'captcha') {
             return null;
         }
@@ -204,6 +222,26 @@ final class AdminDashboard
             && trim((string) $this->store->get('captcha.secret')) !== '';
 
         return $configured ? SettingsSectionState::Normal : SettingsSectionState::ConfigurationNeeded;
+    }
+
+    /**
+     * State for a section backed by an optional add-on: Hidden when its plugin file is absent,
+     * Disabled when installed-but-inactive, otherwise Normal. Keeps an add-on's settings from
+     * appearing usable before it is installed/active (mirrors the captcha pattern).
+     */
+    private function addonSectionState(string $pluginFile): SettingsSectionState
+    {
+        if (! file_exists(WP_PLUGIN_DIR . '/' . $pluginFile)) {
+            return SettingsSectionState::Hidden;
+        }
+
+        $active = in_array(
+            $pluginFile,
+            array_map('strval', (array) get_option('active_plugins', [])),
+            true,
+        );
+
+        return $active ? SettingsSectionState::Normal : SettingsSectionState::Disabled;
     }
 
     /** @return array<string,mixed> */

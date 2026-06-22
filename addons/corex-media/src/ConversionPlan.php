@@ -18,8 +18,6 @@ defined('ABSPATH') || exit;
  */
 final class ConversionPlan
 {
-    private const CONVERTIBLE = ['image/jpeg', 'image/png'];
-
     private function __construct(
         public readonly bool $convert,
         public readonly string $format,
@@ -32,12 +30,18 @@ final class ConversionPlan
         return new self(false, '', '');
     }
 
-    public static function for(string $path, string $mime, ImageCapability $capability): self
+    /**
+     * Plan one image. Honours {@see MediaSettings} (conversion on/off, per-format toggles) when given;
+     * with none it uses the defaults (both formats on) so existing callers keep working.
+     */
+    public static function for(string $path, string $mime, ImageCapability $capability, ?MediaSettings $settings = null): self
     {
-        if (! $capability->canWebp()) {
+        $settings ??= MediaSettings::defaults();
+
+        if (! $capability->canWebp() || ! $settings->enabled) {
             return self::none();
         }
-        if (! in_array(strtolower($mime), self::CONVERTIBLE, true)) {
+        if (! in_array(strtolower($mime), $settings->convertibleMimes(), true)) {
             return self::none();
         }
         if (str_ends_with(strtolower($path), '.webp')) {
