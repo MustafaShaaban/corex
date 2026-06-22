@@ -6,6 +6,35 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.29.0] — 2026-06-23
+
+### Added
+
+- **Team-safe company-site readiness (spec 061):** CoreX is now safe for a team (and AI agents) to build real
+  client sites on.
+  - **Role Gate** — every session classifies into one of four modes (CoreX Framework / Client Site / Deployment /
+    Docs-Planning) that decide *where* it may edit, documented in root `AGENTS.md` / `CLAUDE.md` /
+    `COREX-WORKING-GUIDE.md` §G, the team-workflow docs, copy/paste start prompts, and the generated client stubs.
+    Rule hierarchy: Role Gate (where) → Spec Kit (what) → Guard Gate (safe to ship) → UI/UX ProMax (UI good
+    enough). A standard SUMMARY/…/NEXT STEP handoff format is required of every response.
+  - **Team source layout** — framework source stays in `plugins/`/`addons/`/`packages/`/`theme/`/root `specs/`/
+    `docs/`/`docs-app/`; client source lives in `sites/<client>/` (`<client>-site` + `<client>-theme` +
+    governance + specs/docs). `wp/wp-content/` and `dist/` are runtime/build output, never edited as source.
+  - **Shared-host `dist` builder** — `npm run build:dist [-- --client=acme] [--dry-run]` assembles a flat,
+    deployable WordPress tree in `dist/` from repo source (de-symlinked), excluding dev/runtime/secret paths, with
+    a `corex-release.json` manifest; `npm run verify:dist` checks it. `dist/` is git-ignored, never committed.
+  - **Azure Pipelines** (`azure-pipelines.yml`) — builds `dist/` + publishes the artifact, then an approval-gated,
+    parameterised SFTP deploy stage (secrets only, production runtime files protected). GitHub Actions stays the
+    PR/quality gate. Deployment docs + checklists under `docs/en/05-deployment/`.
+  - **CoreX Media settings + regeneration** — a Media settings panel (enable WebP, quality, JPEG/PNG toggles, a
+    live GD/Imagick/WebP/uploads-writable read-out; originals always preserved) with filter seams + sanitization;
+    `wp corex media regenerate-webp [--dry-run] [--limit] [--attachment]` backfills WebP siblings (never deletes
+    originals); a `corex_media_optimize_image` delivery seam blocks can opt into for `<picture>` output.
+  - **`make:site` flat client layout** — generates `<slug>-site/` + `<slug>-theme/` directly under the output dir
+    (so `--path=sites/acme` → `sites/acme/acme-site` + `acme-theme`), with header/footer/front-page override
+    scaffolding (brand-via-tokens vs structure-in-client-theme) and, in `--starter`, a project-local image
+    pipeline (`assets/src/images/` → built `.webp` via `npm run images`). Older nested sites keep working.
+
 ## [0.28.0] — 2026-06-22
 
 ### Added
