@@ -62,15 +62,26 @@ it('emits the starter-theme asset architecture with --starter', function () {
 
     foreach ([
         '/package.json',
-        '/assets/src/main.scss',
-        '/assets/src/main.js',
-        '/inc/Assets.php',
+        '/functions.php',
+        '/assets/src/scss/main.scss',
+        '/assets/src/js/main.js',
         '/parts/footer.html',
     ] as $file) {
         expect(is_file($theme . $file))->toBeTrue("missing {$file}");
     }
 
-    expect(json_decode((string) file_get_contents($theme . '/package.json'), true))->toBeArray();
+    $pkg = json_decode((string) file_get_contents($theme . '/package.json'), true);
+    expect($pkg)->toBeArray()
+        // spec 062: styles/scripts/images/build pipeline
+        ->and($pkg['scripts'])->toHaveKeys(['styles', 'scripts', 'images', 'build'])
+        ->and($pkg['devDependencies'])->toHaveKey('sass');
+
+    // functions.php enqueues compiled assets through the CoreX helpers — not hardcoded paths.
+    $functions = (string) file_get_contents($theme . '/functions.php');
+    expect($functions)->toContain('Corex\\Assets\\Style::enqueue')
+        ->toContain('Corex\\Assets\\Script::enqueue')
+        ->toContain("'css/main.css'")
+        ->not->toContain('get_stylesheet_directory_uri() . \'/assets/css');
 });
 
 it('generates only valid PHP across the starter slice', function () {

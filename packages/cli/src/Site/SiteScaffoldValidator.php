@@ -41,8 +41,9 @@ final class SiteScaffoldValidator
         '%plugin%/tests/ExampleTest.php',
         '%plugin%/REMOVE-EXAMPLE.md',
         '%theme%/package.json',
-        '%theme%/assets/src/main.scss',
-        '%theme%/inc/Assets.php',
+        '%theme%/functions.php',
+        '%theme%/assets/src/scss/main.scss',
+        '%theme%/assets/src/js/main.js',
     ];
 
     public function validate(string $siteDir, string $mode = 'minimal'): ReadinessFinding

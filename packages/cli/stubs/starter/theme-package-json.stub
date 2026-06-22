@@ -4,12 +4,15 @@
 	"private": true,
 	"description": "Frontend assets for the {{ name }} theme (Corex client site).",
 	"scripts": {
-		"build": "npm run images && wp-scripts build assets/src/main.js --output-path=assets/build",
-		"start": "wp-scripts start assets/src/main.js --output-path=assets/build",
-		"images": "node scripts/optimize-images.mjs"
+		"styles": "sass assets/src/scss/main.scss assets/css/main.css --style=compressed --no-source-map",
+		"scripts": "wp-scripts build assets/src/js/main.js --output-path=assets/js",
+		"images": "node scripts/optimize-images.mjs",
+		"build": "npm run styles && npm run scripts && npm run images",
+		"start": "wp-scripts start assets/src/js/main.js --output-path=assets/js"
 	},
 	"devDependencies": {
 		"@wordpress/scripts": "^27.0.0",
+		"sass": "^1.77.0",
 		"sharp": "^0.33.0"
 	}
 }

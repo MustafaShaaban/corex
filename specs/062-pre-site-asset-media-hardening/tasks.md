@@ -15,10 +15,12 @@
 - [x] T002e `Corex\Assets\Image` facade — `tag()` `<img>` + `picture()` `<picture>` (source-controlled `.webp` sibling).
 - [x] T002f Tests: AssetRegistry, ScriptOptions, Style scss-guard + url/version, Script attrs/.asset.php, Image/Picture.
 
-### T003 — Generated client SCSS/JS/image pipeline (FR-062-02)
-- [x] T003a `make:site --starter`: `assets/src/{scss,js}/` sources + `styles`/`scripts`/`images`/`build` npm scripts.
-- [x] T003b Generated example enqueues via the CoreX asset helpers (no hardcoded paths); governance docs say so.
-- [x] T003c Generator tests for the new files/scripts.
+### T003 — Generated client SCSS/JS/image pipeline (FR-062-02) — PR B
+- [x] T003a `make:site --starter`: `assets/src/{scss,js,images}/` sources → `assets/{css,js,images}/` output +
+  `styles`(sass)/`scripts`(wp-scripts)/`images`/`build` npm scripts + `sass` devDep.
+- [x] T003b Generated `functions.php` enqueues the compiled output via the CoreX asset helpers (no hardcoded paths);
+  README stub documents it. (Replaced the old per-theme `inc/Assets.php` — the framework helpers are the one way.)
+- [x] T003c Generator tests updated (Scaffolder/Starter/Validation): new files/scripts + helper usage asserted.
 
 ### T004 — Asset docs (FR-062-06, asset half)
 - [x] T004a docs-app + handbook: `Corex\Assets\*` vs `Corex\Media\*`; SCSS source-only; helpers are the approved path.
