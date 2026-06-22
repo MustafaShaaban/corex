@@ -51,12 +51,28 @@ final class MediaImage
 
         return $this->renderer->render([
             'src'    => $src,
-            'webp'   => $this->webpSibling($src),
+            'webp'   => $this->gatedWebp($attachmentId, $src),
             'alt'    => (string) get_post_meta($attachmentId, '_wp_attachment_image_alt', true),
             'srcset' => (string) wp_get_attachment_image_srcset($attachmentId, $size),
             'sizes'  => (string) wp_get_attachment_image_sizes($attachmentId, $size),
             'lcp'    => $lcp,
         ]);
+    }
+
+    /**
+     * The WebP URL only when the activation gate (spec 062) allows it. When a CoreX `_corex_webp` record
+     * exists it is authoritative: a derivative that failed the gate (`active_for_delivery` false) is never
+     * served. With no record (e.g. a pre-gate or hand-made sibling) it falls back to the on-disk check.
+     */
+    private function gatedWebp(int $attachmentId, string $url): string
+    {
+        $meta = get_post_meta($attachmentId, WebpMeta::META_KEY, true);
+
+        if (is_array($meta) && array_key_exists('active_for_delivery', $meta)) {
+            return empty($meta['active_for_delivery']) ? '' : $this->webpSibling($url);
+        }
+
+        return $this->webpSibling($url);
     }
 
     /**

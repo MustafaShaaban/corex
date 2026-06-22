@@ -156,6 +156,11 @@ final class SettingsRegistry implements FieldSections
                         'type'  => 'text',
                         'help'  => '1–100. 82 is a good balance of size and quality.',
                     ],
+                    'media.webp.min_saving' => [
+                        'label' => 'Minimum size saving (%)',
+                        'type'  => 'text',
+                        'help'  => 'A WebP is only served when it is at least this much smaller than the original. Default 5.',
+                    ],
                     'media.webp.convert_jpeg' => [
                         'label' => 'Convert JPEG uploads',
                         'type'  => 'checkbox',

@@ -25,6 +25,20 @@ installed and disabled until it's active. **Originals are always preserved** —
 Filter seams (for code-level control): `corex_media_webp_enabled`, `corex_media_webp_quality`,
 `corex_media_convert_jpeg`, `corex_media_convert_png`, `corex_media_convertible_mimes`.
 
+## The WebP activation gate
+
+A `.webp` is **not served just because it exists**. After conversion, CoreX measures the derivative and serves it
+only when it passes a gate; otherwise the original is delivered. The default gate:
+
+- the derivative exists and is a valid image;
+- its dimensions match the original;
+- it is smaller than the original by at least the **minimum saving threshold** (default **5%**, set under
+  Settings → Media or via the `corex_media_min_saving` filter).
+
+The result is tracked per attachment (`_corex_webp` meta): original/generated paths + bytes, saving %, dimensions,
+quality, source hash, generated-at, and `active_for_delivery` + `inactive_reason`. So a WebP that came out *larger*
+(common for already-optimized PNGs) is generated but quietly **not served** — you always get the smaller file.
+
 ## Regenerating existing uploads
 
 To backfill WebP siblings for images uploaded before conversion was on:
@@ -38,6 +52,23 @@ wp corex media regenerate-webp --attachment=123     # a single attachment
 It **never deletes or overwrites originals**, skips attachments that already have a `.webp` sibling, skips
 unsupported types, respects the current settings, and reports convert/skipped/converted/failed counts. Run it on
 **local/staging first** and **back up** before large runs.
+
+## Resetting / cleaning up
+
+To remove CoreX-generated WebP derivatives safely:
+
+```bash
+wp corex media reset-webp --dry-run --all     # preview
+wp corex media reset-webp --all                # all tracked derivatives
+wp corex media reset-webp --attachment=123     # a single attachment
+```
+
+It deletes **only** files tracked in a `_corex_webp` record — never originals, never manually-uploaded WebP, never
+any untracked file — clears the record afterwards, and reports scanned/deleted/skipped/failed counts. Deleting a
+WordPress attachment also removes just its tracked CoreX derivative automatically.
+
+> Generated WebP files are **not** separate Media Library attachments — the library shows one original per upload.
+> WebP status/actions surface through Settings → Media (a full attachment-detail UI is future).
 
 ## The picture helper
 

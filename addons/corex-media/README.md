@@ -10,10 +10,17 @@ panel, a regeneration command, and an optimized `<picture>` helper.
   writable). The section is hidden/disabled until the add-on is installed/active; originals are always kept (not a
   setting). Filter seams: `corex_media_webp_enabled`, `corex_media_webp_quality`, `corex_media_convert_jpeg`,
   `corex_media_convert_png`, `corex_media_convertible_mimes`.
+- **Activation gate (spec 062)** — a WebP is **not served just because it exists**. After conversion the derivative
+  is measured and served only if it passes a gate (present + valid, dimensions match, smaller than the original by
+  the minimum-saving threshold — default 5%, configurable); otherwise the original is delivered. Tracked per
+  attachment in `_corex_webp` meta (paths/bytes/saving/dimensions/quality/source-hash/generated-at +
+  `active_for_delivery` + `inactive_reason`).
 - **Regeneration** — `wp corex media regenerate-webp [--dry-run] [--limit=<n>] [--attachment=<id>]` backfills WebP
-  siblings for existing uploads. It never deletes/overwrites originals, skips attachments that already have a
-  sibling, respects the current settings, and reports convert/skipped/converted/failed counts. Run on
-  local/staging first and back up before large runs; use `--dry-run` to preview and `--limit` to batch.
+  siblings for existing uploads (also tracked + gated). It never deletes/overwrites originals, skips attachments
+  that already have a sibling, respects the current settings, and reports convert/skipped/converted/failed counts.
+- **Reset/cleanup** — `wp corex media reset-webp [--dry-run] [--all] [--attachment=<id>] [--limit=<n>]` deletes only
+  tracked CoreX-generated derivatives (never originals, manually-uploaded WebP, or untracked files), clears the
+  meta, and reports scanned/deleted/skipped/failed. Deleting an attachment removes only its tracked derivative.
 - **`MediaImage` helper** — `$media->render($attachmentId, 'large', $isLcp)` emits an accessible `<picture>`:
   a WebP `<source>` + an `<img>` fallback, real `alt`, `loading="lazy"` + `decoding="async"`, and
   `fetchpriority="high"` + eager for the LCP/hero image; responsive `srcset`/`sizes`. No WebP → plain `<img>`.
