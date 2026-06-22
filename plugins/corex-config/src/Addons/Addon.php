@@ -36,6 +36,7 @@ final class Addon
         public readonly array $provides = [],
         public readonly array $needsKeys = [],
         public readonly string $docsUrl = '',
+        public readonly ?AddonTier $tier = null,
     ) {
     }
 

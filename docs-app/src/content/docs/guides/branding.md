@@ -81,6 +81,34 @@ Arabic (RTL) layouts are correct by default. The block build also emits an autom
 `*-rtl.css` per stylesheet.
 
 
+## Fonts
+
+CoreX targets WordPress 7+, which ships **Appearance → Fonts** (the Font Library). There are three sources of
+fonts; use each for what it's good at:
+
+| Source | Use it for | Production brand identity? |
+|---|---|---|
+| **CoreX bundled/theme fonts** | The framework's self-hosted default typefaces, registered in `theme.json`. | Reproducible defaults. |
+| **Client brand fonts** (generated client theme) | The client's final, approved typefaces — source-controlled in the **client theme** and registered through its `theme.json` / a style variation. | **Yes — this is the production path.** |
+| **WordPress 7 Appearance → Fonts** | Temporary testing, prototyping, and editor-managed additions. Optional admin/editor tooling. | Not on its own — see below. |
+
+Guidance:
+
+- WordPress 7's Font Library is **optional** — CoreX does not require it. It's convenient for trying a face in
+  the editor before committing.
+- For production, **source-control the approved fonts in the client theme** and register them in `theme.json`
+  (or a style variation), so the brand identity is reproducible across local/staging/production and survives
+  migration. Don't rely on a manually uploaded font for the production brand unless its deployment/migration is
+  documented.
+- **Licensing:** only commit or upload fonts the project is licensed to use.
+
+For example, on the Acme site you might trial a heading face via Appearance → Fonts while designing, then, once
+approved, drop the licensed font files into `themes/acme/assets/fonts/` and register them in
+`themes/acme/theme.json` so every environment renders identically.
+
+> A future, optional curated CoreX font collection via the WP Font Library APIs is on the backlog; it is not
+> required for this workflow.
+
 ## The design system (spec 033)
 
 `theme.json` ships a real token system: an expanded palette (surface/border/ink-soft + state colours), a
