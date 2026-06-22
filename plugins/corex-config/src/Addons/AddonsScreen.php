@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Addons;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\Docs\DocsUrl;
 use Corex\Foundation\AddonStatus;
 use Corex\Provisioning\KitProvisioner;
 use Corex\Security\Admin\AdminGuard;
@@ -32,6 +33,7 @@ final class AddonsScreen
         private readonly KitProvisioner $provisioner,
         private readonly PendingKits $pending,
         private readonly AdminPage $page,
+        private readonly DocsUrl $docs,
     ) {
     }
 
@@ -95,6 +97,7 @@ final class AddonsScreen
         $views = $this->manager->views($state, [$this, 'isInstalled']);
 
         $this->renderSummary($views);
+        $this->renderGuidance();
 
         echo '<div class="corex-addons__grid">';
 
@@ -153,6 +156,24 @@ final class AddonsScreen
     }
 
     /**
+     * A short, honest orientation note above the grid: which plugins are the always-on framework
+     * foundation (not toggleable add-ons, so they never appear as cards) and the reassurance that
+     * a site does not need every add-on enabled to start. This is the admin-side mirror of the
+     * "Required / recommended / optional add-ons" docs guidance.
+     */
+    private function renderGuidance(): void
+    {
+        echo '<div class="corex-addons__guidance corex-surface">'
+            . '<p class="corex-addons__guidance-title">' . esc_html__('Where to start', 'corex') . '</p>'
+            . '<p class="corex-addons__guidance-text">'
+            . esc_html__(
+                'The framework foundation — corex-core, corex-blocks, corex-config, corex-forms — is always active and is not listed here. You do not need to enable every add-on to start a site: enable Corex UI and the Company Kit for a typical company site, and add the rest only as a real need appears.',
+                'corex',
+            )
+            . '</p></div>';
+    }
+
+    /**
      * The add-on's Module-Tile logo (design: Addon Logos — Final). Inactive/blocked/uninstalled
      * add-ons use the muted "disabled" master; unknown slugs fall back to the Core mark.
      */
@@ -196,7 +217,9 @@ final class AddonsScreen
             . '<h2>' . esc_html($view->addon->label) . '</h2>'
             . '<span class="screen-reader-text">' . esc_html__('Status:', 'corex') . '</span>'
             . '<span class="corex-badge corex-badge--' . esc_attr($status->tone()) . '">'
-            . esc_html($this->statusLabel($status)) . '</span></div>'
+            . esc_html($this->statusLabel($status)) . '</span>'
+            . $this->tierBadge($view->addon)
+            . '</div>'
             . '<p class="corex-addon-card__slug">' . esc_html($view->addon->slug) . '</p></div>';
         echo '<div class="corex-addon-card__action">' . $this->toggleControl($view, $state) . '</div>';
         echo '</header>';
@@ -239,12 +262,32 @@ final class AddonsScreen
                 . ' ' . esc_html(implode(', ', $addon->requires)) . '</span>';
         }
         if ($addon->docsUrl !== '') {
-            $links .= '<a class="corex-addon-card__doc" href="' . esc_url($addon->docsUrl) . '">'
-                . esc_html__('Documentation', 'corex') . '</a>';
+            // Resolve the relative docs path to an absolute URL so the link never points at the
+            // active (client) WordPress domain; open in a new tab with safe rel attributes.
+            $links .= '<a class="corex-addon-card__doc" href="' . esc_url($this->docs->resolve($addon->docsUrl)) . '"'
+                . ' target="_blank" rel="noopener noreferrer">'
+                . esc_html__('Documentation', 'corex')
+                . ' <span aria-hidden="true">&#8599;</span>'
+                . '<span class="screen-reader-text">' . esc_html__('(opens in a new tab)', 'corex') . '</span></a>';
         }
         if ($links !== '') {
             echo '<div class="corex-addon-card__links">' . $links . '</div>';
         }
+    }
+
+    /**
+     * The advisory tier badge (Recommended / Optional / Site kit / Requires WooCommerce) that
+     * tells a developer how the add-on relates to building a normal company site. Add-ons with
+     * no tier (none currently) render nothing.
+     */
+    private function tierBadge(Addon $addon): string
+    {
+        if ($addon->tier === null) {
+            return '';
+        }
+
+        return '<span class="corex-badge corex-badge--tier corex-badge--tier-' . esc_attr($addon->tier->value) . '">'
+            . esc_html($addon->tier->label()) . '</span>';
     }
 
     /**

@@ -50,6 +50,34 @@ the npm workspace root version being independent from Corex release tags, remain
 such as wp-env/browser availability, branch protection, required checks, or secret scanning. Verify those gates in
 their owning environment before release.
 
+## Deploying the first client site
+
+:::caution
+The local `./wp` directory is a **dev runtime**, not a deployment artifact. It contains git-ignored WordPress
+core, **symlinks/junctions** that map the monorepo into `wp-content`, and dev-only files. **Do not upload `wp/`
+as-is** — the symlinks will not survive most hosts and you'd ship tests, caches, and local state.
+:::
+
+Deploy a **built, flat WordPress tree** instead:
+
+1. Assemble a clean tree in `dist/`: WordPress core + a real (non-symlinked) `wp-content` containing the CoreX
+   framework theme/plugins/add-ons you actually use **and** the generated client theme/plugin as real folders.
+2. Include production vendor + built assets (`composer install --no-dev --optimize-autoloader`; `npm run build`).
+3. **Exclude** dev-only files: `node_modules`, tests, caches, `.env`, SQL dumps, and local agent state
+   (`.corex/`, `PROGRESS.md`-style working files are repo-only).
+4. Migrate the **database** separately (export local → import to the target), run a site-URL search-replace
+   (`wp search-replace http://acme.local https://acme.example`), and sync **uploads**
+   (`wp-content/uploads/`).
+5. Provide the target's own `wp-config.php` (its DB creds and salts) — never ship local config.
+6. Keep a **rollback**: snapshot the previous release + a DB export before swapping.
+
+On **cPanel / shared hosting**, the uploaded tree must be this built `dist/` artifact (real folders), **not** the
+local symlinked/junctioned `wp/`. The `shared-host` profile below records the no-symlink upload shape.
+
+> A first-class `wp corex package:site` command (assemble a client-site `dist/` in one step) is on the backlog;
+> until then, assemble `dist/` from the steps above. The framework-only `package:update` command is documented
+> under [Packaging a Corex update](#packaging-a-corex-update).
+
 ## Deployment profiles
 
 Spec 055 records these profiles in the readiness check:

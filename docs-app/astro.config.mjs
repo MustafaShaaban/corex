@@ -34,6 +34,7 @@ export default defineConfig({
 					label: 'Getting Started',
 					items: [
 						{ label: 'Overview', slug: 'getting-started/overview' },
+						{ label: 'Start your first company site', slug: 'getting-started/company-site' },
 						{ label: 'WAMP / Apache + WP-CLI', slug: 'getting-started/wamp-apache' },
 						{ label: 'wp-env / Docker', slug: 'getting-started/wp-env-docker' },
 						{ label: 'Wiring the monorepo', slug: 'getting-started/monorepo-wiring' },
@@ -52,6 +53,7 @@ export default defineConfig({
 						{ label: 'Image optimization', slug: 'guides/media' },
 						{ label: 'Build a client site', slug: 'guides/client-site' },
 						{ label: 'Company Site Kit v1', slug: 'guides/company-kit' },
+						{ label: 'Using AI agents safely', slug: 'guides/ai-agents' },
 						{ label: 'Deploy & distribute', slug: 'guides/deployment' },
 						{ label: 'Free/Core vs Pro', slug: 'guides/free-core-vs-pro' },
 						{ label: 'Design Language System', slug: 'guides/design-system' },

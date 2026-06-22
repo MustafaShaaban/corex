@@ -10,6 +10,24 @@ agency operations can become Pro candidates.
 `wp corex readiness` enforces the policy through the `free-pro` row. It passes only when all required Free/Core
 capabilities are present and no security-critical capability is classified as `pro-candidate`.
 
+## Add-on tiers
+
+When you start a company site, you do **not** need to enable everything. CoreX groups its packages by how they
+relate to a normal company site — the same tiers the **Corex → Add-ons** screen badges each card with:
+
+| Tier | Packages | When to enable |
+|---|---|---|
+| **Required foundation** (always active, not toggleable add-ons) | `corex-core`, `corex-blocks`, `corex-config`, `corex-forms` | Always — these are the framework runtime. They do not appear on the Add-ons screen. |
+| **Recommended for company sites** | `corex-ui`, `corex-kit-company`, `corex-media` | For a typical company site: the block library, the starter company blueprint, and image optimization. |
+| **Optional by need** | `corex-email`, `corex-newsletter`, `corex-captcha`, `corex-careers`, `corex-bookings` | Only when the site actually needs that capability. |
+| **Requires WooCommerce** | `corex-kit-woo` | Only on a store, with WooCommerce active. It self-disables otherwise. |
+| **Site kit** | `corex-kit-portfolio` (and `corex-kit-company` above) | A starter blueprint for a specific site type. |
+
+Add-ons are never a hard dependency: each self-disables cleanly if its requirements are absent, so enabling or
+disabling one is always safe. Kits depend on `corex-ui` (the Add-ons screen shows this and blocks a disable that
+would break a dependent). Start with the recommended set, then add optional add-ons one at a time as a real need
+appears.
+
 ## Free/Core baseline
 
 These capabilities are required in Free/Core:

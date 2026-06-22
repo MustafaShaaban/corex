@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 use Corex\Config\Addons\Addon;
 use Corex\Config\Addons\AddonRegistry;
+use Corex\Config\Addons\AddonTier;
 use Corex\Foundation\AddonProviderRegistry;
 
 it('lists the known Corex add-ons with their plugin files', function () {
@@ -34,6 +35,28 @@ it('marks the woo kit with its feature flag', function () {
 
 it('returns null for an unknown slug', function () {
     expect((new AddonRegistry())->find('not-an-addon'))->toBeNull();
+});
+
+it('classifies add-ons into company-site tiers (recommended / optional / kit / woo)', function () {
+    $registry = new AddonRegistry();
+
+    expect($registry->find('corex-ui')?->tier)->toBe(AddonTier::Recommended)
+        ->and($registry->find('corex-media')?->tier)->toBe(AddonTier::Recommended)
+        ->and($registry->find('corex-kit-company')?->tier)->toBe(AddonTier::Recommended)
+        ->and($registry->find('corex-captcha')?->tier)->toBe(AddonTier::Optional)
+        ->and($registry->find('corex-newsletter')?->tier)->toBe(AddonTier::Optional)
+        ->and($registry->find('corex-kit-portfolio')?->tier)->toBe(AddonTier::SiteKit)
+        ->and($registry->find('corex-kit-woo')?->tier)->toBe(AddonTier::RequiresWooCommerce);
+});
+
+it('does not list the always-on framework foundation as toggleable add-ons', function () {
+    $slugs = array_map(static fn (Addon $a): string => $a->slug, (new AddonRegistry())->all());
+
+    expect($slugs)
+        ->not->toContain('corex-core')
+        ->not->toContain('corex-blocks')
+        ->not->toContain('corex-config')
+        ->not->toContain('corex-forms');
 });
 
 it('mirrors shared runtime provider metadata', function () {

@@ -37,6 +37,7 @@ final class AddonRegistry
                 description: 'Server-rendered, token-styled component blocks the site kits compose with.',
                 provides: ['corex/* component blocks (hero, CTA, team, gallery, tabs, stat, testimonial, pricing, accordion)'],
                 docsUrl: '/guides/blocks/',
+                tier: AddonTier::Recommended,
             ),
             $this->addon(
                 'corex-email',
@@ -45,6 +46,7 @@ final class AddonRegistry
                 description: 'A Mailer service and email templates; queues via Action Scheduler when available.',
                 provides: ['Mailer service', 'email templates'],
                 docsUrl: '/guides/mail/',
+                tier: AddonTier::Optional,
             ),
             $this->addon(
                 'corex-captcha',
@@ -53,12 +55,14 @@ final class AddonRegistry
                 description: 'Pluggable captcha drivers; configured under Settings -> Captcha, with a Test verification action.',
                 provides: ['captcha drivers (honeypot, reCAPTCHA, Turnstile, hCaptcha)', 'POST corex/v1/captcha/test'],
                 docsUrl: '/guides/configuration/',
+                tier: AddonTier::Optional,
             ),
             $this->addon(
                 'corex-newsletter',
                 'Corex Newsletter',
                 summary: 'Newsletter signup and subscriber storage.',
                 provides: ['newsletter signup form', 'subscriber storage'],
+                tier: AddonTier::Optional,
             ),
             $this->addon(
                 'corex-media',
@@ -67,18 +71,21 @@ final class AddonRegistry
                 description: 'Converts uploads to WebP (original preserved) where the server supports it; degrades gracefully.',
                 provides: ['WebP conversion on upload', 'MediaImage picture helper', 'image-support health probe'],
                 docsUrl: '/guides/media/',
+                tier: AddonTier::Recommended,
             ),
             $this->addon(
                 'corex-careers',
                 'Corex Careers',
                 summary: 'Job listings.',
                 provides: ['jobs block', 'job listings'],
+                tier: AddonTier::Optional,
             ),
             $this->addon(
                 'corex-bookings',
                 'Corex Bookings',
                 summary: 'Booking and appointment requests.',
                 provides: ['booking request form', 'booking storage'],
+                tier: AddonTier::Optional,
             ),
             $this->addon(
                 'corex-kit-company',
@@ -86,12 +93,15 @@ final class AddonRegistry
                 summary: 'A ready company website.',
                 description: 'Composes the UI blocks into company pages, patterns, and a front page.',
                 provides: ['company pages + patterns', 'front-page setup'],
+                docsUrl: '/guides/company-kit/',
+                tier: AddonTier::Recommended,
             ),
             $this->addon(
                 'corex-kit-portfolio',
                 'Portfolio Kit',
                 summary: 'A portfolio website.',
                 provides: ['corex_project content type', 'projects block', 'portfolio templates'],
+                tier: AddonTier::SiteKit,
             ),
             $this->addon(
                 'corex-kit-woo',
@@ -99,6 +109,7 @@ final class AddonRegistry
                 summary: 'A WooCommerce storefront kit.',
                 description: 'Self-disables unless WooCommerce is active and the WooCommerce kit flag is on.',
                 provides: ['storefront templates (reuses Woo blocks)'],
+                tier: AddonTier::RequiresWooCommerce,
             ),
         ];
     }
@@ -126,6 +137,7 @@ final class AddonRegistry
         array $provides = [],
         array $needsKeys = [],
         string $docsUrl = '',
+        ?AddonTier $tier = null,
     ): Addon {
         $provider = $this->provider($slug);
 
@@ -140,6 +152,7 @@ final class AddonRegistry
             provides: $provides,
             needsKeys: $needsKeys,
             docsUrl: $docsUrl,
+            tier: $tier,
         );
     }
 

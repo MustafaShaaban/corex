@@ -44,6 +44,42 @@ metadata (title/description) that common SEO plugins can read and override; Core
 scaffolded client theme to automatically inherit the M2 tokens and M3 nav/footer is a tracked follow-up
 (`specs/059-company-site-kit/make-site-verification.md`).
 
+## What each layer owns
+
+It is easy to confuse CoreX UI, the Company Kit, the parent theme, and the generated client site. Each owns a
+distinct thing:
+
+| Layer | Provides | Does **not** |
+|---|---|---|
+| **CoreX UI** (`corex-ui`) | Reusable server-rendered blocks, section patterns, and block styles. | Create pages; own the final site header/footer; lock in brand or layout. |
+| **Company Kit** (`corex-kit-company`) | A starter company blueprint — creates/adopts starter pages and a front page composed from CoreX UI patterns. | Replace your final design; it is a starting point you adopt and edit. |
+| **CoreX parent theme** | Default FSE templates and template parts (header/footer) — safe defaults. | Hold one client's bespoke structure. |
+| **Generated client site** (`make:site`) | The client's final brand, custom header/footer structure, page layouts, assets, and content. | — this is where client-specific work belongs. |
+
+### Header and footer customization
+
+- The default CoreX header/footer are **safe starting points**.
+- **Brand restyling** (colours, fonts, spacing) is usually a tokens/style-variation change — **no framework
+  template edits are needed**.
+- **Structural changes** (a different header layout, extra footer regions) belong in the **generated client
+  theme's** template parts — e.g. `themes/acme/parts/header.html` and `themes/acme/parts/footer.html` — which
+  override the parent theme's parts.
+- **Do not edit CoreX framework internals for one client.** No framework template edits are needed for normal
+  brand restyling; client theme template-part overrides are expected when the approved client design changes
+  structure.
+
+## Common company-site pages
+
+The kit's page coverage maps to what a typical company site needs:
+
+- **Core pages:** Home, About, Contact.
+- **System templates** (served by the theme, not duplicated as pages): 404 / Page not found, Search results,
+  the Page template, the Single post template, and the Archive template when a blog/news section is enabled.
+- **Legal placeholder pages:** Privacy Policy, Terms, and Cookie Policy. These are **placeholders only** —
+  CoreX does not provide final legal text or legal advice. Replace the placeholder content with copy reviewed by
+  a qualified professional before launch, and prefer WordPress's native Privacy Policy tooling where it fits.
+  Footer legal links are added only when the corresponding pages exist. Apply/reset stays idempotent and safe.
+
 ## Out of scope
 
 No page builder; no Portfolio (M8) or WooCommerce (M9) kit; no broad M5 block library (only the gaps this kit

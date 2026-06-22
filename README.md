@@ -53,6 +53,28 @@ tests/              Pest (Unit, Integration), Jest, Playwright (e2e).
    `COREX-EMAIL-ADDON.md` is the Corex Mail spec; `COREX-SPECKIT-START.md` the build order.
    `CLAUDE.md` / `AGENTS.md` orient any coding agent.
 
+## Start here: your first company site
+
+New to Corex and building a real site? Follow this path (the full walkthrough is the docs-app guide
+**Start your first company site**, source: `docs-app/src/content/docs/getting-started/company-site.md`):
+
+1. **Install Corex locally** — pick one stack: WAMP/XAMPP **or** Docker/wp-env (Docker is optional).
+2. **Use a named local URL + database** for the site (e.g. `acme.local` / DB `acme`) — `corex` is only the
+   default dev example, not a required name.
+3. **Verify Corex boots** — `wp --path=wp corex doctor`.
+4. **Required foundation** (always active, not toggleable): `corex-core`, `corex-blocks`, `corex-config`,
+   `corex-forms`.
+5. **Optional add-ons** — enable by need; recommended for a company site: `corex-ui`, `corex-kit-company`,
+   `corex-media`. You don't need them all.
+6. **Generate the site** — `wp corex make:site Acme` (a client plugin + theme with its own namespace).
+7. **Apply the Company Site Kit** where appropriate.
+8. **Customize the generated client theme** — brand via tokens; structural header/footer changes via client
+   theme template-part overrides. **Never edit Corex framework internals for one client.**
+9. **Build & deploy** a flat `dist/` artifact — never the local symlinked `wp/`.
+
+> **Privacy:** keep real client names out of the Corex framework repo/docs — use a neutral placeholder
+> (this project uses **Acme**). The real name belongs only in the generated client site.
+
 ## Local development
 
 Corex is a WordPress framework: it runs inside a WordPress install. The monorepo is mapped into
@@ -76,8 +98,15 @@ Verify the environment before building: `wp theme list` shows `corex`; `wp plugi
 
 ## Documentation
 
-- **Team guide:** the `docs-app/` site — `cd docs-app && npm run dev` (→ http://localhost:4321), or
-  `npm run build` to produce `dist/`.
+The docs-app is **optional** — a searchable team docs site, not required to run Corex or to start a site. Read
+the docs whichever way suits you:
+
+- **No docs app:** read `README.md`, `docs/en/**`, and the docs-app Markdown sources in the repo / on GitHub.
+- **Team guide (dev server):** `cd docs-app && npm install && npm run dev` (→ http://localhost:4321).
+- **Static WAMP vhost:** `cd docs-app && npm run build`, then point an Apache vhost `docs.corex.local` at
+  `docs-app/dist`. Tell the admin where docs live via the `docs.base_url` config key (or the
+  `corex_docs_base_url` filter) so Add-ons → Documentation links target your docs site; with none configured
+  they open the docs source on GitHub.
 - **Bilingual handbook:** `docs/en/` and `docs/ar/` (getting started, team workflow, deployment, cookbooks).
 - **API reference:** generated from source via `wp corex docs:generate`.
 

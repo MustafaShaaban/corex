@@ -22,6 +22,7 @@ use Corex\Config\Addons\AddonsScreen;
 use Corex\Config\Addons\AddonState;
 use Corex\Config\Addons\AddonView;
 use Corex\Config\Addons\PendingKits;
+use Corex\Config\Docs\DocsUrl;
 use Corex\Provisioning\KitProvisioner;
 use Corex\Security\Admin\AdminGuard;
 
@@ -47,6 +48,7 @@ function toggleMarkup(AddonView $view, AddonState $state): string
         Mockery::mock(KitProvisioner::class),
         $bare(PendingKits::class),
         new AdminPage(),
+        $bare(DocsUrl::class),
     );
 
     $method = new ReflectionMethod($screen, 'toggleControl');
