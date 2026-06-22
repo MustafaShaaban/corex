@@ -6,6 +6,29 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **CoreX admin design implementation landed (spec 060, milestone M6 — merged via PR #59):** the approved CoreX admin
+  design is now applied end to end and render-verified (Playwright, dark + light) against the design captures:
+  - **Real `wp-login.php`** carries the CoreX login design for logged-out users — branded mark/wordmark, ambient
+    grid + glow, a separate SSO slot (truthfully disabled, "SSO is not configured yet.") above the form card with an
+    "or" divider, leading user/lock field icons with the password reveal kept on the right, a brass sign-in button,
+    and entrance/focus motion that respects `prefers-reduced-motion`. The login is dark-first; the saved CoreX
+    appearance (System/Light/Dark) controls it for logged-out users. WordPress still owns all authentication.
+  - **Every CoreX admin screen** (Overview, Settings, Add-ons, Data, Insights, Setup Wizard, and declarative option
+    pages) uses the shared, full-bleed shell — the dark product surface fills the wp-admin content area with the
+    six-item `COREX FRAMEWORK` rail; scoped to CoreX screens only, no global wp-admin restyle.
+  - **Data explorer:** the Sources/Models rail drives the active source, a real per-day 14-day records chart (from
+    submission timestamps, zero-filled), a derived field schema, search/source-filter/reset/export, row selection
+    with a bulk delete (nonce-confirmed), an accessible record drawer (focus trap, Escape, focus return), and a
+    designed table. Provider-/value-aware controls use an accessible custom listbox readable in dark mode.
+  - **Settings tabs** (Brand → Mail → Forms → Captcha → Insights) with a live admin appearance setting, admin-logo
+    preview, footer-text value, and an SSO-slot toggle. Asset CSS/JS is filemtime-versioned so edits bust the cache.
+  - **Captcha settings are provider-specific** and reactive to the selected driver — **None** (disabled notice),
+    **Honeypot** (no-key spam-trap, no keys shown), **reCAPTCHA** (site/secret keys + v3 score/action + Google
+    references), **hCaptcha** (keys + hCaptcha references), and **Cloudflare Turnstile** (keys + Cloudflare
+    references); each driver shows only its own fields, descriptions, and official links. Secrets stay write-only.
+
 ### Fixed
 
 - **Render-verified CoreX admin visual fidelity (spec 060, milestone M6):** every CoreX admin surface was rendered

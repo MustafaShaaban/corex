@@ -7,9 +7,11 @@ multisite, headless, or AI-agent-driven — on one clean, documented, spec-first
 - **Namespace:** `Corex\` · **CLI:** `wp corex` · **CSS prefix:** `--corex-`.
 - **Stack:** Composer (PHP) + npm workspaces (JS), one monorepo.
 - **Status:** Actively developed; latest release **v0.27.0**. The engine, block/forms/config layers, CLI
-  generators, site kits, and the docs app are implemented and unit-tested. Some admin-UI and visual surfaces
-  are verified via the Playwright/wp-env workflow and are noted where browser verification is still pending —
-  see `PROGRESS.md` for the authoritative, module-by-module status.
+  generators, site kits, and the docs app are implemented and unit-tested. The **CoreX admin design (spec 060,
+  milestone M6) has landed** (merged via PR #59) and is render-verified dark + light: the real `wp-login.php`
+  carries the CoreX login design, every CoreX admin screen uses the full-bleed designed shell, and Captcha settings
+  are provider-specific (None, Honeypot, reCAPTCHA, hCaptcha, Cloudflare Turnstile). See `PROGRESS.md` for the
+  authoritative, module-by-module status.
 
 > This README is the public entry point. For where the project stands in detail (including any in-progress
 > tails), `PROGRESS.md` is the source of truth — not this file.

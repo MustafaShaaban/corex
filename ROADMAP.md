@@ -25,7 +25,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 | M3 - Header, Mobile Navigation, Mega Menu, and Footer System | Spec 058 implemented (US1-US4) on PR #56; env-gated browser evidence outstanding | High | M1, M2 (met) |
 | M4 - Full Company Site Kit v1 | Spec 059 core implemented (full v1 page coverage + demo levels + SEO) on PR; M5 section blocks + make:site token inheritance are recorded gaps | High | M0, M2, M3 (met); selected M5 blocks |
 | M5 - Blocks and Components Expansion | Planned in batches | High | M1 and approved component handoffs |
-| M6 - CoreX Admin Product Experience | PR #58 delivered the truthful-state foundation; the corrective Spec 060 admin-design PR applies the complete approved visual system from login through every current CoreX admin surface | Medium-high | M2 (met) and stable admin contracts |
+| M6 - CoreX Admin Product Experience | **Landed (merged via PR #59).** PR #58 delivered the truthful-state foundation; the Spec 060 admin-design implementation applied the complete approved visual system — real `wp-login.php` design, the full-bleed shell across every CoreX screen, the Data explorer, real Settings tabs, and provider-specific Captcha — render-verified dark + light | Medium-high | M2 (met) and stable admin contracts |
 | M7 - Forms and Email Experience | Planned | Medium-high | M2 and existing forms/mail foundations |
 | M8 - Portfolio Kit Completion | Planned | Medium | M2, M3, reusable M5 blocks |
 | M9 - WooCommerce Kit Completion | Waiting for Woo design and stable gating | Medium | M0, M2, M3, WooCommerce gating |
@@ -73,7 +73,7 @@ The repository contains substantial implemented foundations. This is a high-leve
 | CLI / `make:site` | Exists with scaffold and readiness validation. Verify generated sites in real client use. |
 | Block engine | Exists with discovery and conditional-asset foundations. New visual blocks remain M5 scope. |
 | Forms | Exists as a framework package. Complete visitor/admin states and email presentation in M7. |
-| Config/admin foundation | Exists. Product-level visual consistency and full state coverage remain M6 scope. |
+| Config/admin foundation | Exists, with the M6 admin design landed (merged via PR #59): the full-bleed CoreX shell across every admin screen, the CoreX `wp-login.php` design, the Data explorer, real Settings tabs, and provider-specific Captcha — render-verified dark + light. Remaining: the manual RTL/200%/keyboard acceptance sweep (backlog). |
 | Add-ons architecture | Exists with optional add-on packages and dependency metadata. Continue validating packaging and disabled-state safety. |
 | Runtime add-on gating | Implemented under stable-client readiness and included in v0.27.0. Continue regression verification, especially WooCommerce absence/inactive cases. |
 | Company / Portfolio / Woo kits | Foundations exist. They are not yet equivalent to the complete page coverage in M4, M8, and M9. |
@@ -243,14 +243,19 @@ Required rules:
 
 ## 9. M6 - CoreX Admin Product Experience
 
-**Status:** PR #58 delivered the truthful-state foundation: the seven-state add-on model, state-aware settings,
-captcha/reCAPTCHA handling, write-only secrets, and the first scoped Add-ons badge styles. The corrective Spec 060
-admin-design implementation applies the complete approved visual layer: additive native WordPress login branding;
-the `COREX FRAMEWORK` Overview/Add-ons/Data/Settings/Setup/Insights grouping; shared headers, stat/add-on/settings/
-data/readiness cards, universal states, and guided setup progress; dark-first + complete light mode; RTL, responsive,
-focus, disabled, and reduced-motion behavior. Assets are allow-listed to CoreX screens and login only, with no
-generic wp-admin or public-frontend restyle. Rendered browser/RTL evidence remains ENVIRONMENT-GATED where recorded.
-**Outcome:** A coherent operational surface for setup, configuration, add-ons, data, and readiness.
+**Status:** **Landed (merged via PR #59).** PR #58 delivered the truthful-state foundation (the seven-state add-on
+model, state-aware settings, captcha/reCAPTCHA handling, write-only secrets, scoped Add-ons badges); the Spec 060
+admin-design implementation then applied the complete approved visual layer and is render-verified (Playwright,
+dark + light). The real `wp-login.php` carries the CoreX login design (branded mark, ambient grid + glow, a separate
+disabled SSO slot + "or" divider, leading field icons, brass button, reduced-motion-aware entrance; dark-first, and
+the saved appearance controls it logged-out). Every CoreX admin screen — Overview, Settings, Add-ons, Data,
+Insights, Setup Wizard, and declarative option pages — uses the full-bleed `COREX FRAMEWORK` shell. The Data screen
+is a truthful explorer (rail-driven source, real 14-day chart, derived schema, bulk delete, accessible drawer);
+Settings uses real tabs with a live appearance setting; **Captcha settings are provider-specific** (None, Honeypot,
+reCAPTCHA, hCaptcha, Cloudflare Turnstile — each showing only its own fields/links). Dark-first + complete light
+mode, RTL, focus/disabled/reduced-motion, allow-listed to CoreX screens/login only — no global wp-admin or public
+restyle; secrets write-only. **Outcome:** A coherent operational surface for setup, configuration, add-ons, data,
+and readiness. Remaining manual acceptance (RTL mirroring, 200% zoom, full-keyboard sweep) is backlog.
 
 - Dashboard polish.
 - Add-ons UI.

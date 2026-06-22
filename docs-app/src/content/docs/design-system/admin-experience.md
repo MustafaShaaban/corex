@@ -8,17 +8,24 @@ WordPress admin chrome and authentication behavior while giving every current Co
 state contract. It never styles the public frontend.
 
 PR #58 delivered the truthful-state foundation: add-on state resolution, state-aware settings, captcha gating,
-write-only secrets, and initial Add-ons badge CSS. The corrective Spec 060 implementation applies the approved visual
-design across the complete current admin journey rather than treating M6 as badge-level styling.
+write-only secrets, and initial Add-ons badge CSS. The Spec 060 admin-design implementation then applied the approved
+visual design across the complete current admin journey — and has **landed (merged via PR #59)**, render-verified in
+dark and light. The real `wp-login.php` carries the CoreX login design (branded mark, ambient grid + glow, a separate
+disabled SSO slot with an "or" divider, leading user/lock field icons, brass button, reduced-motion-aware motion;
+dark-first, with the saved CoreX appearance controlling it for logged-out users), and every CoreX admin screen uses
+the full-bleed CoreX shell scoped to CoreX screens only.
 
 ## Current surfaces
 
 - Native WordPress login, lost-password, reset-password, message, and error markup with additive CoreX branding.
 - `COREX FRAMEWORK` Overview with live site stat cards and onboarding/domain status cards.
 - Add-ons as truthful cards with labelled states and enable/disable controls for installed add-ons only.
-- Data with search, source/form filters, sorting, CSV export, pagination, detail drawer, and explicit loading/empty/
-  filtered-empty/error states.
-- Settings as state-aware sections, including captcha controls and write-only secret indicators.
+- Data as a truthful explorer: a Sources/Models rail that drives the active source, a real 14-day records chart from
+  submission timestamps, a derived field schema, search/source-filter/reset/CSV export, row selection with a
+  nonce-confirmed bulk delete, an accessible record drawer (focus trap, Escape, focus return), pagination, and
+  explicit loading/empty/filtered-empty/error states.
+- Settings as real tabs (Brand → Mail → Forms → Captcha → Insights) over state-aware sections, with a live admin
+  appearance setting (System/Light/Dark), an admin-logo preview, an SSO-slot toggle, and write-only secret indicators.
 - Setup Wizard with guided progress, kit cards, empty state, and apply success notice.
 - Readiness & Insights with performance/readiness cards, loading/error/result states, and honest environment gating.
 - Declarative CoreX option pages registered by applications.
@@ -43,8 +50,11 @@ The admin manages installed add-ons only. Package installation remains developer
 ## Settings and secrets
 
 Settings sections derive from `Corex\Config\Settings\SettingsSectionState`: not installed, disabled, configuration
-needed, or normal. Captcha is the worked example. Its provider fields never appear usable while the add-on is absent
-or inactive.
+needed, or normal. Captcha is the worked example, and its fields are **provider-specific and driver-reactive**: each
+driver shows only its own fields, descriptions, and official references — **None** (disabled notice), **Honeypot**
+(a no-key spam-trap, no keys shown), **reCAPTCHA** (site/secret keys + v3 score/action + Google links), **hCaptcha**
+(keys + hCaptcha links), and **Cloudflare Turnstile** (keys + Cloudflare links). Provider fields never appear usable
+while the add-on is absent or inactive.
 
 Password-typed settings, including captcha and Insights credentials, are write-only. A saved value is represented by
 a “Saved” indicator; the input value remains empty. Submitting an empty secret preserves the stored value. Saves use
@@ -65,8 +75,10 @@ keeps text contrast at the WCAG 2.2 AA target, and disables non-essential motion
 ## Verification boundary
 
 Headless PHP/JS contracts verify asset scoping, native-login preservation, screen shell coverage, text-labelled
-states, add-on truth, write-only secrets, and empty-secret preservation. See the Spec 060 visual-evidence record for
-the rendered browser matrix; unavailable browser checks are marked `ENVIRONMENT-GATED`, never passed by inference.
+states, add-on truth, write-only secrets, driver-aware captcha visibility, and empty-secret preservation. The Spec
+060 visual-evidence record holds the rendered browser matrix — every CoreX surface was rendered dark and light
+(authenticated; the login logged-out) and compared against the approved captures. The remaining manual sweep (RTL
+mirroring, 200% zoom, full-keyboard) is tracked as backlog.
 
 ## Out of scope
 
