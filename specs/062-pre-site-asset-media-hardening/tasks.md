@@ -42,8 +42,13 @@
 - [x] T013 Media-half docs (WebP gate, not-a-duplicate-attachment, reset/regenerate/delete) — media guide + README.
 
 ## PR D — Dist client-asset verification (FR-062-05)
-- [ ] T012 Dist client-asset verification (compiled CSS/JS/images + manifest + forbidden absent) in
-  `verify-shared-host-dist`; Azure asset build before packaging; tests.
+- [x] T012 `verifyClientAssets` in `verify-shared-host-dist`: a theme shipping `assets/src/scss` (or
+  `assets/src/js`) must also ship compiled `assets/css/*.css` (or `assets/js/*.js`) — so a deploy can't package a
+  half-built client theme. Tests added; deploy docs note "build client theme assets before build:dist" (the Azure
+  build stage is the place for it).
+
+## Release
+- [x] T020 v0.30.0 after PR A–D merge and the release gate passes.
 
 ## Release
 - [ ] T020 v0.30.0 after PR A + PR B merge and the release gate passes.

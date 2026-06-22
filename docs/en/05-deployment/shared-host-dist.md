@@ -58,8 +58,15 @@ It builds from **repo source**, never from the symlinked `wp/wp-content/`.
 npm run verify:dist
 ```
 
-`scripts/verify-shared-host-dist.mjs` asserts the required folders exist, no forbidden path slipped in, and
-`corex-release.json` is valid JSON. The build entry runs this automatically and exits non-zero on failure.
+`scripts/verify-shared-host-dist.mjs` asserts the required folders exist, no forbidden path slipped in,
+`corex-release.json` is valid JSON, and — **client-asset completeness** — that any theme shipping
+`assets/src/scss` (or `assets/src/js`) also ships the compiled `assets/css/*.css` (or `assets/js/*.js`). The build
+entry runs this automatically and exits non-zero on failure, so a deploy can never package a half-built client
+theme.
+
+> **Build client theme assets first.** Before `npm run build:dist`, build each client theme that has an asset
+> pipeline: `cd sites/<client>/<client>-theme && npm ci && npm run build`. In CI, run this as a step before the
+> `build:dist` step (the Azure pipeline's build stage is the place for it).
 
 ## First deploy checklist
 
