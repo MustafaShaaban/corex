@@ -100,6 +100,11 @@ body.login.corex-login {
 	--corex-admin-page-min-height: calc(100vh - 7rem);
 	--corex-admin-login-inline-size: min(25rem, calc(100% - 2rem));
 	--corex-admin-login-logo-height: 3rem;
+
+	/* Login surfaces (capture): card at the page background (--cx-bg, recedes
+	   behind border+shadow), inputs/SSO one step up (--cx-raised). */
+	--corex-admin-login-card: var(--corex-admin-surface);
+	--corex-admin-login-field: var(--corex-admin-surface-raised);
 	--corex-admin-disabled-opacity: 0.58;
 	--corex-admin-shadow-sm: 0 1px 2px rgb(0 0 0 / 20%);
 	--corex-admin-shadow-md: 0 8px 24px rgb(0 0 0 / 24%);
@@ -163,6 +168,10 @@ body.login.corex-login.corex-appearance-light {
 	--corex-admin-surface: #f6f7f9;
 	--corex-admin-surface-alt: #f3f4f6;
 	--corex-admin-surface-raised: #fff;
+
+	/* Light: white card, inputs one step down for contrast (inverse of dark). */
+	--corex-admin-login-card: #fff;
+	--corex-admin-login-field: #f6f7f9;
 	--corex-admin-text: #14151a;
 	--corex-admin-text-muted: #5b616d;
 	--corex-admin-text-subtle: #8b9099;

@@ -2,6 +2,37 @@
 
 **Branch:** `fix/060-admin-design-implementation`
 
+## Owner-review correction pass 5 (2026-06-22)
+
+**1 — Login dark palette now matches the capture exactly.** The `--corex-admin-*` dark tokens
+already equalled the approved `--cx-*` values; the mismatch was assignment. Added explicit
+`--corex-admin-login-card` / `--corex-admin-login-field` tokens so the **card sits at the page
+background `#16181d`** (recedes behind border+shadow) and the **SSO/inputs sit one step up
+`#1c1f26`** — the inverse of my earlier rendering. Light keeps a white card with `#f6f7f9`
+inputs. Verified by computed colours: page/card `rgb(22,24,29)`, inputs/SSO `rgb(28,31,38)`.
+
+**2 — Hierarchy: SSO is clearly outside the form card.** Logo+heading → a separate raised SSO
+block → the "or" divider → the (receding) form card, with a real gap (≈24px) between the divider
+and the card. The SSO button's WP `button` class was dropped (it was being reset to a transparent
+background) so it shows the `#1c1f26` raised surface; it stays truthfully disabled.
+
+**3 — Field icons are vertically centred.** The username/password icon wrapper now equals the
+input height (the input's WP bottom-margin is zeroed; spacing moved to the wrapper), so the masked
+user/lock icons sit on the input's centre. The reveal toggle stays on the right with reserved
+padding (no overlap). Correct in dark + light.
+- Proof: `tests/e2e/clip/login-fix2-dark.png`, `tests/e2e/clip/login-fix2-light.png`.
+
+**4 — Captcha settings are provider-specific.** Each provider field now carries per-driver help
+variants, so a driver shows only its own description + official reference: reCAPTCHA → Google
+(keys + v3 score/action), hCaptcha → hCaptcha docs (keys only), Cloudflare Turnstile → Cloudflare
+docs (keys only), Honeypot → a "hidden spam-trap, no keys" notice, None → "Captcha is disabled".
+Turnstile no longer shows reCAPTCHA links. Server-rendered to match the saved driver and toggled
+live before save. Secrets stay write-only.
+- Proof: `tests/e2e/clip/cap-{none,honeypot,recaptcha,hcaptcha,turnstile}.png`.
+
+---
+
+
 ## Owner-review correction pass 4 (2026-06-22)
 
 **1–3 — Login matches the approved design, with icons + motion.** Rebuilt `corex-admin-login.css`

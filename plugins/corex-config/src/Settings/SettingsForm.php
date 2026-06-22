@@ -130,7 +130,7 @@ final class SettingsForm
                 esc_attr($name),
                 esc_html($field['label']),
                 $this->control($name, $field, (string) $value($key), $disabled),
-                $this->help($name, $field),
+                $this->help($name, $field, $value),
                 $this->showForAttrs($field, $value),
             );
         }
@@ -181,25 +181,84 @@ final class SettingsForm
             return '';
         }
 
-        $hidden = (string) $value('captcha.driver') === 'none' ? '' : ' hidden';
+        $current = (string) $value('captcha.driver');
+        $notices = [
+            'none'     => esc_html__('Captcha is disabled — no provider selected.', 'corex'),
+            'honeypot' => esc_html__('Honeypot adds a hidden spam-trap field that bots fill in — no provider keys are required.', 'corex'),
+        ];
 
-        return sprintf(
-            '<tr class="corex-settings-row corex-driver-notice" data-corex-show-for="captcha.driver"'
-            . ' data-corex-show-values="none"%1$s><td colspan="2">'
-            . '<p class="corex-driver-notice__msg" role="status">%2$s</p></td></tr>',
-            $hidden,
-            esc_html__('Captcha is disabled — no provider selected.', 'corex'),
-        );
+        $out = '';
+        foreach ($notices as $driver => $message) {
+            $out .= sprintf(
+                '<tr class="corex-settings-row corex-driver-notice" data-corex-show-for="captcha.driver"'
+                . ' data-corex-show-values="%1$s"%2$s><td colspan="2">'
+                . '<p class="corex-driver-notice__msg" role="status">%3$s</p></td></tr>',
+                esc_attr($driver),
+                $driver === $current ? '' : ' hidden',
+                $message,
+            );
+        }
+
+        return $out;
     }
 
     /**
-     * The field's helper copy and, for external key/token fields, an official reference link
-     * that opens in a new tab with safe rel attributes. Concise help, not a docs block — and it
-     * never reveals a saved secret (it only points to where the key comes from).
+     * The field's helper copy + an official reference link (new tab, safe rel). When a field
+     * declares `help_variants` (per controlling-driver value), one help line is rendered per
+     * variant — each shown only for its driver — so each provider gets only its own description
+     * and official reference (e.g. Turnstile never shows reCAPTCHA links). Concise, never a docs
+     * block, and never reveals a saved secret.
+     *
+     * @param array{help?:string,help_url?:string,help_link?:string,help_variants?:array<string,array<string,string>>,show_for?:array{key:string}} $field
+     * @param callable(string):string                                                                                                             $value
+     */
+    private function help(string $name, array $field, callable $value): string
+    {
+        if (isset($field['help_variants'], $field['show_for']['key'])) {
+            return $this->helpVariants((string) $field['show_for']['key'], $field['help_variants'], $value);
+        }
+
+        $text = $this->helpText($field);
+
+        if (trim($text) === '') {
+            return '';
+        }
+
+        return '<p class="corex-field-help" id="' . esc_attr($name) . '-help">' . $text . '</p>';
+    }
+
+    /**
+     * One help line per driver variant, each shown only for its driver value (hidden server-side
+     * when it isn't the current driver, and toggled live by the settings script).
+     *
+     * @param array<string,array<string,string>> $variants
+     * @param callable(string):string            $value
+     */
+    private function helpVariants(string $key, array $variants, callable $value): string
+    {
+        $current = (string) $value($key);
+        $out     = '';
+
+        foreach ($variants as $driver => $variant) {
+            $driver = (string) $driver;
+            $out   .= sprintf(
+                '<p class="corex-field-help" data-corex-show-for="%1$s" data-corex-show-values="%2$s"%3$s>%4$s</p>',
+                esc_attr($key),
+                esc_attr($driver),
+                $driver === $current ? '' : ' hidden',
+                $this->helpText($variant),
+            );
+        }
+
+        return $out;
+    }
+
+    /**
+     * Helper text + optional reference link as an escaped fragment.
      *
      * @param array{help?:string,help_url?:string,help_link?:string} $field
      */
-    private function help(string $name, array $field): string
+    private function helpText(array $field): string
     {
         $text = isset($field['help']) ? esc_html($field['help']) : '';
 
@@ -211,11 +270,7 @@ final class SettingsForm
                 . esc_html__('(opens in a new tab)', 'corex') . '</span></a>';
         }
 
-        if (trim($text) === '') {
-            return '';
-        }
-
-        return '<p class="corex-field-help" id="' . esc_attr($name) . '-help">' . $text . '</p>';
+        return $text;
     }
 
     private function sectionNotice(?SettingsSectionState $state): string

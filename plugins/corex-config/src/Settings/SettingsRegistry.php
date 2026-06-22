@@ -77,20 +77,48 @@ final class SettingsRegistry implements FieldSections
                         'help' => 'Choose a provider, Honeypot (no keys), or None to disable.',
                     ],
                     'captcha.site_key' => [
-                        'label'     => 'Site key',
-                        'type'      => 'text',
-                        'help'      => 'The public key for your provider.',
-                        'help_url'  => 'https://www.google.com/recaptcha/admin/create',
-                        'help_link' => 'Create reCAPTCHA keys',
-                        'show_for'  => ['key' => 'captcha.driver', 'values' => ['recaptcha', 'turnstile', 'hcaptcha']],
+                        'label'         => 'Site key',
+                        'type'          => 'text',
+                        'show_for'      => ['key' => 'captcha.driver', 'values' => ['recaptcha', 'turnstile', 'hcaptcha']],
+                        'help_variants' => [
+                            'recaptcha' => [
+                                'help'      => 'The public reCAPTCHA site key.',
+                                'help_url'  => 'https://www.google.com/recaptcha/admin/create',
+                                'help_link' => 'Create reCAPTCHA keys',
+                            ],
+                            'turnstile' => [
+                                'help'      => 'The public Cloudflare Turnstile site key.',
+                                'help_url'  => 'https://developers.cloudflare.com/turnstile/get-started/',
+                                'help_link' => 'Get Turnstile keys',
+                            ],
+                            'hcaptcha' => [
+                                'help'      => 'The public hCaptcha site key.',
+                                'help_url'  => 'https://docs.hcaptcha.com/#add-the-hcaptcha-widget-to-your-webpage',
+                                'help_link' => 'hCaptcha site key docs',
+                            ],
+                        ],
                     ],
                     'captcha.secret' => [
-                        'label'     => 'Secret key',
-                        'type'      => 'password',
-                        'help'      => 'The private key, paired with the site key.',
-                        'help_url'  => 'https://www.google.com/recaptcha/admin/create',
-                        'help_link' => 'Create reCAPTCHA keys',
-                        'show_for'  => ['key' => 'captcha.driver', 'values' => ['recaptcha', 'turnstile', 'hcaptcha']],
+                        'label'         => 'Secret key',
+                        'type'          => 'password',
+                        'show_for'      => ['key' => 'captcha.driver', 'values' => ['recaptcha', 'turnstile', 'hcaptcha']],
+                        'help_variants' => [
+                            'recaptcha' => [
+                                'help'      => 'The private reCAPTCHA secret key.',
+                                'help_url'  => 'https://www.google.com/recaptcha/admin/create',
+                                'help_link' => 'Create reCAPTCHA keys',
+                            ],
+                            'turnstile' => [
+                                'help'      => 'The private Cloudflare Turnstile secret key.',
+                                'help_url'  => 'https://developers.cloudflare.com/turnstile/get-started/',
+                                'help_link' => 'Get Turnstile keys',
+                            ],
+                            'hcaptcha' => [
+                                'help'      => 'The private hCaptcha secret key.',
+                                'help_url'  => 'https://docs.hcaptcha.com/#integration-testing-test-keys',
+                                'help_link' => 'hCaptcha secret key docs',
+                            ],
+                        ],
                     ],
                     'captcha.score_threshold' => [
                         'label'     => 'reCAPTCHA v3 score threshold',

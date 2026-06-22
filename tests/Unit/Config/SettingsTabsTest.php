@@ -107,6 +107,35 @@ it('hides captcha provider fields + a disabled notice when the driver is None', 
         ->not->toContain('data-corex-show-values="none" hidden');
 });
 
+it('shows only the active driver provider references (Turnstile -> Cloudflare, not Google)', function () {
+    $html = settingsForm()->render(
+        static fn (string $key): string => $key === 'captcha.driver' ? 'turnstile' : '',
+        '<nonce>',
+    );
+
+    expect($html)
+        // the Turnstile help variant is visible and points to Cloudflare
+        ->toContain('data-corex-show-values="turnstile">')
+        ->toContain('https://developers.cloudflare.com/turnstile/get-started/')
+        // the reCAPTCHA + hCaptcha variants are present but hidden (no wrong links shown)
+        ->toContain('data-corex-show-values="recaptcha" hidden')
+        ->toContain('https://docs.hcaptcha.com')
+        ->toContain('https://www.google.com/recaptcha/admin/create');
+});
+
+it('explains Honeypot, hides key fields, and shows no provider links', function () {
+    $html = settingsForm()->render(
+        static fn (string $key): string => $key === 'captcha.driver' ? 'honeypot' : '',
+        '<nonce>',
+    );
+
+    expect($html)
+        ->toContain('Honeypot adds a hidden spam-trap field')
+        ->toContain('data-corex-show-values="honeypot">')
+        // the key-field rows (and their links) are hidden for honeypot
+        ->toContain('data-corex-show-values="recaptcha turnstile hcaptcha" hidden');
+});
+
 it('shows reCAPTCHA fields + links and hides the disabled notice when driver is reCAPTCHA', function () {
     $html = settingsForm()->render(
         static fn (string $key): string => $key === 'captcha.driver' ? 'recaptcha' : '',

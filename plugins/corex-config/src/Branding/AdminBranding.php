@@ -50,7 +50,7 @@ final class AdminBranding
 
         if ($this->branding->loginSsoEnabled()) {
             $html .= '<div class="corex-login__sso">'
-                . '<button type="button" class="button corex-login__sso-btn" disabled aria-disabled="true">'
+                . '<button type="button" class="corex-login__sso-btn" disabled aria-disabled="true">'
                 . $this->keyIcon()
                 . '<span>' . esc_html__('SSO is not configured yet.', 'corex') . '</span></button>'
                 . '<div class="corex-login__divider"><span>' . esc_html__('or', 'corex') . '</span></div></div>';

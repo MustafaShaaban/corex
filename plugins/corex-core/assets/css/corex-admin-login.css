@@ -75,7 +75,7 @@ body.login.corex-login .notice,
 body.login.corex-login #login_error {
 	padding: var(--corex-admin-space-xl);
 	color: var(--corex-admin-text);
-	background: var(--corex-admin-surface-raised);
+	background: var(--corex-admin-login-card);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-lg);
 	box-shadow: var(--corex-admin-shadow-lg);
@@ -99,16 +99,14 @@ body.login.corex-login .forgetmenot label {
 	font-size: var(--corex-admin-font-sm);
 }
 
-/* Inputs + their inline leading icons. The username input is wrapped by
-   corex-login.js into .corex-login__field; the password input already lives in
-   WordPress's .wp-pwd. Both wrappers carry a masked leading icon (theme-aware
-   via currentcolor) and pad the input so icon/text/reveal never overlap. */
+/* Inputs + leading icons (username wrapped by corex-login.js). */
 body.login.corex-login input[type="text"],
 body.login.corex-login input[type="password"],
 body.login.corex-login input[type="email"] {
 	min-block-size: var(--corex-admin-control-height);
+	margin-block-end: 0;
 	color: var(--corex-admin-text);
-	background: var(--corex-admin-surface);
+	background: var(--corex-admin-login-field);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
 	border-radius: var(--corex-admin-radius-sm);
 	transition: border-color var(--corex-admin-motion-fast) ease, box-shadow var(--corex-admin-motion-fast) ease;
@@ -121,9 +119,11 @@ body.login.corex-login input[type="email"]:focus {
 	box-shadow: 0 0 0 3px var(--corex-admin-action-subtle);
 }
 
+/* Icon wrapper = input height, so the icon centres on the input. */
 body.login.corex-login .corex-login__field,
 body.login.corex-login .wp-pwd {
 	position: relative;
+	margin-block-end: var(--corex-admin-space-md);
 	color: var(--corex-admin-text-subtle);
 }
 
@@ -133,14 +133,17 @@ body.login.corex-login .wp-pwd::before {
 	inset-block: 0;
 	inset-inline-start: 0.85rem;
 	z-index: 1;
+	display: flex;
+	align-items: center;
 	inline-size: 1rem;
+	block-size: var(--corex-admin-control-height);
 	background: currentcolor;
 	-webkit-mask-repeat: no-repeat;
 	mask-repeat: no-repeat;
 	-webkit-mask-position: center;
 	mask-position: center;
-	-webkit-mask-size: contain;
-	mask-size: contain;
+	-webkit-mask-size: 1rem 1rem;
+	mask-size: 1rem 1rem;
 	content: "";
 	pointer-events: none;
 }
@@ -244,7 +247,9 @@ body.login.corex-login .corex-login__sso {
 	animation: corex-login-rise var(--corex-admin-motion-slow) cubic-bezier(0.2, 0, 0, 1) 120ms both;
 }
 
-body.login.corex-login .corex-login__sso-btn {
+/* SSO block sits above (outside) the form card. */
+body.login.corex-login .corex-login__sso-btn,
+body.login.corex-login .corex-login__sso-btn[disabled] {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -252,7 +257,7 @@ body.login.corex-login .corex-login__sso-btn {
 	inline-size: 100%;
 	min-block-size: var(--corex-admin-control-height);
 	color: var(--corex-admin-text);
-	background: var(--corex-admin-surface-raised);
+	background: var(--corex-admin-login-field);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-sm);
 	font-weight: 600;
