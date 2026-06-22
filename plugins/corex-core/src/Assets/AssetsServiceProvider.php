@@ -39,6 +39,19 @@ final class AssetsServiceProvider extends ServiceProvider
                 );
             },
         );
+
+        // The base registry the asset facades (Style/Script/Image/Picture) resolve (spec 062). The
+        // framework registers itself as `corex` (the default); themes/plugins/client sites register
+        // their own base the same way so the facades pick the correct URL/version per asset.
+        $this->container->singleton(
+            AssetRegistry::class,
+            static function (ContainerInterface $c): AssetRegistry {
+                $registry = new AssetRegistry();
+                $registry->register('corex', $c->make(AssetManager::class), true);
+
+                return $registry;
+            },
+        );
     }
 
     private function environmentValue(ConfigInterface $config): string
