@@ -1,0 +1,64 @@
+#!/usr/bin/env node
+/**
+ * {{ name }} theme — image optimization (Corex client site, spec 061).
+ *
+ * Drop source images in `assets/src/images/`; this writes an optimized copy and a `.webp` sibling to
+ * `assets/images/` (predictable names: hero.jpg + hero.webp). Reference them with a <picture> or the
+ * CoreX `corex_media_optimize_image` filter. This is for THEME/build-time assets — separate from the
+ * Media Library upload conversion (Corex Media add-on).
+ *
+ * Run: `npm run images` (also runs as part of `npm run build`).
+ *
+ * Reproducible + project-local: uses `sharp` from this theme's devDependencies — no global tools.
+ */
+
+import { existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { join, extname, basename } from 'node:path';
+
+const SRC = 'assets/src/images';
+const OUT = 'assets/images';
+const QUALITY = 82;
+const RASTER = new Set( [ '.jpg', '.jpeg', '.png' ] );
+
+async function main() {
+	if ( ! existsSync( SRC ) ) {
+		console.log( `No ${ SRC }/ directory — nothing to optimize.` );
+		return;
+	}
+
+	let sharp;
+	try {
+		( { default: sharp } = await import( 'sharp' ) );
+	} catch {
+		console.error( 'sharp is not installed. Run `npm install` in this theme, then `npm run images`.' );
+		process.exit( 1 );
+	}
+
+	mkdirSync( OUT, { recursive: true } );
+	const files = readdirSync( SRC ).filter( ( f ) => RASTER.has( extname( f ).toLowerCase() ) );
+
+	if ( files.length === 0 ) {
+		console.log( `No images in ${ SRC }/ — nothing to do.` );
+		return;
+	}
+
+	let count = 0;
+	for ( const file of files ) {
+		const input = join( SRC, file );
+		const stem = basename( file, extname( file ) );
+		const ext = extname( file ).toLowerCase();
+
+		// Optimized copy in the original format (kept) + a .webp sibling.
+		await sharp( input ).toFile( join( OUT, file ) );
+		await sharp( input ).webp( { quality: QUALITY } ).toFile( join( OUT, `${ stem }.webp` ) );
+		console.log( `optimized ${ file } -> ${ file } + ${ stem }.webp` );
+		count++;
+	}
+
+	console.log( `Done: ${ count } image(s) -> ${ OUT }/.` );
+}
+
+main().catch( ( err ) => {
+	console.error( err );
+	process.exit( 1 );
+} );

@@ -27,9 +27,10 @@ sites/acme/
   specs/  docs/
 ```
 
-> The generator currently writes a `plugins/` + `themes/` layout under its output dir; the move to the
-> `sites/<client>/<client>-site` + `<client>-theme` layout above is tracked as spec 061 / PR C with a
-> backward-compatibility note. Until that ships, place client source under `sites/<client>/` and adjust paths.
+> Run it with `--path=sites/acme` so the client plugin/theme land directly under `sites/acme/` as `acme-site/`
+> and `acme-theme/` (the flat layout above). **Backward compatibility:** sites generated before this layout used a
+> nested `plugins/` + `themes/` structure; those keep working as-is — only newly generated sites use the flat
+> layout, and the shared-host `dist` builder packages either shape.
 
 ## 2. Work in Client Site Mode
 

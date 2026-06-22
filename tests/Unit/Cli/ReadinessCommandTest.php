@@ -107,8 +107,8 @@ it('runs make-site and deployment readiness checks after US3 wiring', function (
     }
 
     expect($byCategory['make-site'][0]['status'])->toBe('PASS')
-        ->and($byCategory['make-site'][0]['evidence'])->toContain('minimal:plugins/acme-site/acme-site.php')
-        ->and($byCategory['make-site'][0]['evidence'])->toContain('starter:plugins/acme-site/src/Controllers/ExampleController.php')
+        ->and($byCategory['make-site'][0]['evidence'])->toContain('minimal:acme-site/acme-site.php')
+        ->and($byCategory['make-site'][0]['evidence'])->toContain('starter:acme-site/src/Controllers/ExampleController.php')
         ->and($byCategory['deployment'][0]['status'])->toBe('ENVIRONMENT-GATED')
         ->and($byCategory['deployment'][0]['evidence'])->toContain('profile:azure-container');
 });

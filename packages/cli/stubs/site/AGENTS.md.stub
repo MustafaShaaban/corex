@@ -20,8 +20,8 @@ End every working response with the SUMMARY / WORKSPACE / MODE / SPEC KIT STATUS
 RECOMMENDED NEXT STEP + the `--- NEXT STEP ---` block (the team's standard handoff format).
 
 ## Where code goes
-- **App / business code** → the site plugin `plugins/{{ plugin_slug }}/` (namespace `{{ namespace }}\`).
-- **Presentation / theme code** → the site theme `themes/{{ theme_slug }}/`.
+- **App / business code** → the site plugin `{{ plugin_slug }}/` (namespace `{{ namespace }}\`).
+- **Presentation / theme code** → the site theme `{{ theme_slug }}/`.
 - Site docs/specs → `docs/` and `specs/`.
 
 The client uses its own identity, distinct from Corex: namespace `{{ namespace }}\`, text domain

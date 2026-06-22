@@ -1,13 +1,15 @@
 {
-	"name": "{{ theme_slug }}-theme",
+	"name": "{{ theme_slug }}",
 	"version": "0.1.0",
 	"private": true,
 	"description": "Frontend assets for the {{ name }} theme (Corex client site).",
 	"scripts": {
-		"build": "wp-scripts build assets/src/main.js --output-path=assets/build",
-		"start": "wp-scripts start assets/src/main.js --output-path=assets/build"
+		"build": "npm run images && wp-scripts build assets/src/main.js --output-path=assets/build",
+		"start": "wp-scripts start assets/src/main.js --output-path=assets/build",
+		"images": "node scripts/optimize-images.mjs"
 	},
 	"devDependencies": {
-		"@wordpress/scripts": "^27.0.0"
+		"@wordpress/scripts": "^27.0.0",
+		"sharp": "^0.33.0"
 	}
 }

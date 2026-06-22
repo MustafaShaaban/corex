@@ -55,8 +55,10 @@ final class SiteScaffolder
             'option_prefix'  => $id->optionPrefix,
         ];
 
-        $pluginDir = $outputDir . '/plugins/' . $id->pluginSlug;
-        $themeDir  = $outputDir . '/themes/' . $id->themeSlug;
+        // spec 061: the client plugin + theme sit directly under the site root (sites/<client>/<slug>-site,
+        // <slug>-theme) — not nested under plugins/themes — so the layout reads as one client unit.
+        $pluginDir = $outputDir . '/' . $id->pluginSlug;
+        $themeDir  = $outputDir . '/' . $id->themeSlug;
 
         /** @var array<string,string> $stubFiles path => stub name */
         $stubFiles = [];
@@ -83,8 +85,13 @@ final class SiteScaffolder
         if (! $pluginOnly) {
             $stubFiles[$themeDir . '/style.css'] = 'site/theme-style';
             $stubFiles[$themeDir . '/theme.json'] = 'site/theme-json';
-            $literals[$themeDir . '/templates/index.html'] = "<!-- wp:template-part {\"slug\":\"header\"} /-->\n<!-- wp:post-content /-->";
-            $literals[$themeDir . '/parts/header.html']    = "<!-- wp:site-title /-->";
+            $literals[$themeDir . '/templates/index.html'] = "<!-- wp:template-part {\"slug\":\"header\",\"tagName\":\"header\"} /-->\n<!-- wp:post-content /-->\n<!-- wp:template-part {\"slug\":\"footer\",\"tagName\":\"footer\"} /-->";
+            // Structural header/footer override points (spec 061). Brand-only changes (colours, fonts,
+            // spacing) belong in theme.json / a style variation — NOT here, and never in the CoreX parent
+            // theme. Edit these parts when the approved client design changes header/footer structure.
+            $literals[$themeDir . '/parts/header.html'] = "<!-- Client header — override CoreX's default header structure here. Brand-only changes: use theme.json/tokens, not markup edits. -->\n<!-- wp:site-title /-->";
+            $literals[$themeDir . '/parts/footer.html'] = "<!-- Client footer — override structure here; brand via tokens. -->\n<!-- wp:paragraph {\"align\":\"center\"} -->\n<p class=\"has-text-align-center\"></p>\n<!-- /wp:paragraph -->";
+            $literals[$themeDir . '/templates/front-page.html'] = "<!-- Client front page — compose CoreX UI patterns + core blocks here; this layout is yours to own. -->\n<!-- wp:template-part {\"slug\":\"header\",\"tagName\":\"header\"} /-->\n<!-- wp:post-content /-->\n<!-- wp:template-part {\"slug\":\"footer\",\"tagName\":\"footer\"} /-->";
         }
 
         // --starter (spec 053 US4): the runnable example slice + the starter-theme assets.
@@ -106,11 +113,14 @@ final class SiteScaffolder
         }
 
         if ($starter && ! $pluginOnly) {
-            $stubFiles[$themeDir . '/package.json']         = 'starter/theme-package-json';
-            $stubFiles[$themeDir . '/assets/src/main.scss'] = 'starter/theme-scss';
-            $stubFiles[$themeDir . '/assets/src/main.js']   = 'starter/theme-js';
-            $stubFiles[$themeDir . '/inc/Assets.php']       = 'starter/theme-assets-helper';
-            $literals[$themeDir . '/parts/footer.html']     = "<!-- wp:paragraph {\"align\":\"center\"} -->\n<p class=\"has-text-align-center\"></p>\n<!-- /wp:paragraph -->";
+            $stubFiles[$themeDir . '/package.json']               = 'starter/theme-package-json';
+            $stubFiles[$themeDir . '/assets/src/main.scss']       = 'starter/theme-scss';
+            $stubFiles[$themeDir . '/assets/src/main.js']         = 'starter/theme-js';
+            $stubFiles[$themeDir . '/inc/Assets.php']             = 'starter/theme-assets-helper';
+            // Image-optimization pipeline (spec 061): drop source images in assets/src/images/, run
+            // `npm run images` (wired into build) to emit optimized JPEG/PNG + .webp into assets/images/.
+            $stubFiles[$themeDir . '/scripts/optimize-images.mjs'] = 'starter/theme-optimize-images';
+            $literals[$themeDir . '/assets/src/images/.gitkeep']   = "# Source images for `npm run images`. Built output (with .webp) goes to ../images/.\n";
         }
 
         $marker = $themeOnly ? $themeDir . '/style.css' : $pluginDir . '/' . $id->pluginSlug . '.php';
