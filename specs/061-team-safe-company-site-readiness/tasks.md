@@ -55,12 +55,19 @@ Status key: `[x]` done in PR A (this branch) · `[ ]` deferred to a follow-up PR
   `git diff --check`).
 - [x] T010c Open PR A.
 
-## PR B — Media/WebP (deferred; FR-061-09/10/11)
-- [ ] T020 CoreX Media settings UI (enable/quality/JPEG/PNG/preserve-originals + server-support probe + sanitization +
-  cap/nonce + filter seams + tests).
-- [ ] T021 `wp corex media regenerate-webp` (dry-run/batch/limit, never deletes originals, counts, tests).
-- [ ] T022 Frontend WebP delivery: CoreX UI image blocks use the `<picture>` helper; helper `<picture>`/`<img>`
-  fallback tests; no global filter by default.
+## PR B — Media/WebP (FR-061-09/10/11)
+- [x] T020 CoreX Media settings UI — Media section (enable/quality/JPEG/PNG) + live server-support read-out (`info`
+  field via the `corex_media_support_summary` filter; section hidden/disabled until installed/active) + filter
+  seams + sanitization (quality clamp, flag coercion); save via the existing guarded (cap+nonce) path; "originals
+  always preserved" is not a setting. Tests: MediaSettings, info-field render, tab order.
+- [x] T021 `wp corex media regenerate-webp [--dry-run] [--limit] [--attachment]` — pure `WebpRegenerator` planner
+  (convert/skip-exists/skip-unsupported + counts) + `MediaCommand` WP-CLI boundary; never deletes/overwrites
+  originals; respects settings; batched query (no unbounded `-1`). Tests: WebpRegenerator.
+- [x] T022 Frontend WebP delivery: `MediaImage::pictureForUrl` + the `corex_media_optimize_image` opt-in filter seam
+  (no hard dependency); `<picture>` when a sibling exists, `<img>` fallback otherwise; no global WP image filter.
+  Tests: pictureForUrl with/without sibling (existing PictureRenderer tests retained).
+  - [ ] T022b Retrofit the built-in CoreX UI image blocks (hero/gallery/team) to use the seam — deferred: needs
+    PictureRenderer to preserve each block's class/loading attributes first (else block CSS/markup regresses).
 
 ## PR C — Generator restructure (deferred; FR-061-12/13)
 - [ ] T030 `make:site` emits `sites/<client>/<client>-site/` + `<client>-theme/` (SiteIdentity + SiteScaffolder +

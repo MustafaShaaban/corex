@@ -308,8 +308,18 @@ final class SettingsForm
             'select'   => $this->select($name, $field['options'] ?? [], $value, $disabled),
             'checkbox' => $this->checkbox($name, $value, $disabled),
             'password' => $this->secret($name, $value !== '', $disabled),
+            'info'     => $this->info($value),
             default    => $this->input($name, $field['type'], $value, $disabled),
         };
+    }
+
+    /**
+     * A read-only informational control — no input, never submitted (so it is skipped on save).
+     * Used for live status read-outs such as the Media add-on's server-support summary.
+     */
+    private function info(string $value): string
+    {
+        return '<p class="corex-field-info" role="status">' . esc_html($value) . '</p>';
     }
 
     private function disabledAttr(bool $disabled): string

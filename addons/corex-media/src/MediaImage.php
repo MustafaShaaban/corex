@@ -22,6 +22,25 @@ final class MediaImage
     {
     }
 
+    /**
+     * Optimized markup for a raw image URL (spec 061): a `<picture>` with a WebP `<source>` when a
+     * sibling exists on disk, else a plain `<img>`. The seam CoreX UI blocks (which hold URLs, not
+     * attachment IDs) can opt into via the `corex_media_optimize_image` filter — no hard dependency.
+     */
+    public function pictureForUrl(string $url, string $alt = '', bool $lcp = false): string
+    {
+        if ($url === '') {
+            return '';
+        }
+
+        return $this->renderer->render([
+            'src'  => $url,
+            'webp' => $this->webpSibling($url),
+            'alt'  => $alt,
+            'lcp'  => $lcp,
+        ]);
+    }
+
     public function render(int $attachmentId, string $size = 'large', bool $lcp = false): string
     {
         $src = wp_get_attachment_image_url($attachmentId, $size);

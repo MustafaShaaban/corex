@@ -246,6 +246,18 @@
 	font-size: var(--corex-admin-font-sm);
 }
 
+/* Read-only informational control (e.g. the Media server-support read-out). */
+.corex-admin .corex-field-info {
+	margin: 0;
+	padding: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-sm);
+}
+
 .corex-admin .corex-field-help__link {
 	color: var(--corex-admin-link);
 	white-space: nowrap;

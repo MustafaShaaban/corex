@@ -138,6 +138,34 @@ final class SettingsRegistry implements FieldSections
                     ],
                 ],
             ],
+            'media' => [
+                'title'  => 'Media',
+                'fields' => [
+                    'media.webp.support' => [
+                        'label' => 'Server support',
+                        'type'  => 'info',
+                        'help'  => 'Live image-support on this server. Also reported under Tools → Site Health.',
+                    ],
+                    'media.webp.enabled' => [
+                        'label' => 'Convert uploads to WebP',
+                        'type'  => 'checkbox',
+                        'help'  => 'On upload, write a WebP sibling next to the original. Originals are always kept.',
+                    ],
+                    'media.webp.quality' => [
+                        'label' => 'WebP quality',
+                        'type'  => 'text',
+                        'help'  => '1–100. 82 is a good balance of size and quality.',
+                    ],
+                    'media.webp.convert_jpeg' => [
+                        'label' => 'Convert JPEG uploads',
+                        'type'  => 'checkbox',
+                    ],
+                    'media.webp.convert_png' => [
+                        'label' => 'Convert PNG uploads',
+                        'type'  => 'checkbox',
+                    ],
+                ],
+            ],
             'insights' => [
                 'title'  => 'Insights',
                 'fields' => [

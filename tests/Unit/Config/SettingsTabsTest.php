@@ -34,7 +34,7 @@ it('renders the real sections as ARIA tabs in the fixed order', function () {
 
     preg_match_all('/data-corex-tab="([a-z]+)"/', $html, $matches);
 
-    expect($matches[1])->toBe(['brand', 'mail', 'forms', 'captcha', 'insights'])
+    expect($matches[1])->toBe(['brand', 'mail', 'forms', 'captcha', 'media', 'insights'])
         ->and($html)->toContain('role="tablist"')
         ->toContain('role="tab"')
         ->toContain('role="tabpanel"')
@@ -88,6 +88,24 @@ it('adds official reference links with safe external attributes for external key
         ->toContain('target="_blank"')
         ->toContain('rel="noopener noreferrer"')
         ->toContain('Get a PageSpeed Insights API key');
+});
+
+it('renders the Media server-support row as a read-only info control (never an input)', function () {
+    $html = settingsForm()->render(
+        static fn (string $key): string => $key === 'media.webp.support'
+            ? 'GD: yes · Imagick: no · WebP encode: yes · Uploads writable: yes'
+            : '',
+        '<nonce>',
+    );
+
+    expect($html)
+        ->toContain('corex-field-info')
+        ->toContain('WebP encode: yes')
+        // the support read-out is not an input, so it carries no name and is never submitted
+        ->not->toContain('name="media_webp_support"')
+        // the real toggles + quality fields are present
+        ->toContain('name="media_webp_enabled"')
+        ->toContain('name="media_webp_quality"');
 });
 
 it('hides captcha provider fields + a disabled notice when the driver is None', function () {
