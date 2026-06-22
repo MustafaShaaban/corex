@@ -18,6 +18,44 @@ state what to build next — without anyone explaining. Do this, in order:
 1. `specs/constitution.md`  2. `COREX-FRAMEWORK.md`  3. the active module spec
 4. `PROGRESS.md`  5. the code. If code contradicts the constitution, the code is wrong.
 
+## Role Gate — classify the session BEFORE editing (spec 061)
+> Role Gate decides **where** you work · Spec Kit decides **what** to build · Guard Gate decides **whether**
+> it is safe to ship · UI/UX ProMax decides **whether** visible UI is good enough.
+
+Pick exactly one mode and stay inside it (full detail: COREX-WORKING-GUIDE.md §F; prompts:
+`docs/en/04-team-workflow/ai-agent-start-prompts.md`):
+
+1. **CoreX Framework Mode** — edits `plugins/`, `addons/`, `packages/`, root `theme/`, root `specs/`, root `docs/`,
+   `docs-app/`, `ROADMAP.md`, root `PROGRESS.md`, CoreX admin/login/docs UI, release/versioning. Follow the root
+   agent files + `specs/constitution.md` + `COREX-WORKING-GUIDE.md` + `COREX-FRAMEWORK.md`. **Must not** edit
+   `sites/<client>/` unless explicitly authorized.
+2. **Client Site Mode** — edits `sites/<client>/` only (client plugin/theme, pages, blocks, templates, content,
+   branding). Follow the root files for global safety + `sites/<client>/{AGENTS,CLAUDE,PROGRESS,DECISIONS}.md` +
+   `sites/<client>/specs/`. **Must not** continue the CoreX roadmap or edit `plugins/`, `addons/`, `packages/`,
+   root `theme/`, root `specs/`, `ROADMAP.md`, or root `PROGRESS.md` unless explicitly authorized.
+3. **Deployment Mode** — edits the `dist` builder, `azure-pipelines.yml`, deploy scripts, release artifacts,
+   runtime-file protection, rollback. **Must not** make client-design or framework-product changes beyond packaging.
+4. **Docs/Planning Mode** — edits docs, specs, roadmap, decisions, prompts, handoffs. **Must not** ship runtime code
+   unless explicitly authorized.
+
+Never edit as source: `wp/wp-content/` and `dist/` (runtime/build output). `dist/` is generated and git-ignored.
+
+## Required response/handoff format (spec 061)
+End every working response with:
+```text
+SUMMARY            - What was done.
+WORKSPACE          - Branch: / Repo root: / Git status: / Files changed:
+MODE               - Framework / Client Site / Deployment / Docs-Planning
+SPEC KIT STATUS    - Spec path: / Task IDs: / Completed: / Remaining:
+VERIFICATION       - Commands run: / Results: / Guards run:
+BLOCKERS / DECISIONS NEEDED
+RECOMMENDED NEXT STEP
+---
+NEXT STEP
+- Just completed: / Recommended next: / Why: / Alternatives: / Blockers/decisions needed from you:
+---
+```
+
 ## WHILE working
 - Run `git status --short --branch` before edits; work from the active feature branch, never from `main`.
 - **Single workspace (COREX-WORKING-GUIDE.md §A.7):** work only from the normal project root checkout — no

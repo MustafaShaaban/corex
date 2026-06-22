@@ -3,6 +3,22 @@
 This is a **Corex client site**, not the Corex framework. The framework lives in its own
 repo and is updated separately — **do not edit Corex framework folders here.**
 
+## Role Gate — you are in CLIENT SITE MODE
+> Role Gate decides **where** you work · Spec Kit decides **what** · Guard Gate decides **whether it ships** ·
+> UI/UX ProMax decides **whether visible UI is good enough**.
+
+- Edit **only** this client source (this plugin + theme + this site's `docs/`/`specs/`).
+- **Do not** edit Corex framework internals (`plugins/`, `addons/`, `packages/`, the Corex parent `theme/`, root
+  `specs/`, `ROADMAP.md`, root `PROGRESS.md`).
+- **Do not** edit `wp/wp-content/` or `dist/` as source (runtime/build output; `dist/` is generated, never committed).
+- Keep this site's specs in `specs/`, progress in `PROGRESS.md`, decisions in `DECISIONS.md`.
+- Follow **Spec Kit**, the **Guard Gate**, and **UI/UX ProMax** for all UI work.
+- For a **framework** bug or a reusable block/component, **stop** and open a CoreX Framework Mode task in the
+  framework repo — never patch CoreX internals for one client.
+
+End every working response with the SUMMARY / WORKSPACE / MODE / SPEC KIT STATUS / VERIFICATION / BLOCKERS /
+RECOMMENDED NEXT STEP + the `--- NEXT STEP ---` block (the team's standard handoff format).
+
 ## Where code goes
 - **App / business code** → the site plugin `plugins/{{ plugin_slug }}/` (namespace `{{ namespace }}\`).
 - **Presentation / theme code** → the site theme `themes/{{ theme_slug }}/`.

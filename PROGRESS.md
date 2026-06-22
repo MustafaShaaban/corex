@@ -4,6 +4,31 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-22, spec 061 PR A) -- team-safe readiness foundation + dist builder; branch spec/061-…; PR open
+
+- **Branch/PR:** `spec/061-team-safe-company-site-readiness` (off `main` @ v0.28.0). PR A open — not merged.
+- **Spec:** `specs/061-team-safe-company-site-readiness/` (spec.md, plan.md, tasks.md, acceptance-evidence.md). The
+  21-phase goal is split into PR A (this) + deferred PR B/C/D task groups (reasons in spec.md / DECISIONS #109).
+- **Implemented in PR A (tested):**
+  - **Role Gate** (4 modes) + rule hierarchy + required handoff format → root `AGENTS.md`, `CLAUDE.md`,
+    `COREX-WORKING-GUIDE.md` §G; team-workflow docs (`agent-roles.md`, `ai-agent-start-prompts.md`,
+    `client-site-workflow.md`); docs-app `guides/team-roles.md` + nav; README "Team-safe architecture".
+  - **make:site governance stubs** carry Client Site Mode + edit boundary + handoff (stub test extended).
+  - **Shared-host dist builder**: `scripts/build-shared-host-dist.mjs` (+ `.sh` wrapper, `npm run build:dist`),
+    `verify-shared-host-dist.mjs` (+ `.sh`, `npm run verify:dist`); excludes `wp-config.php`/`wp-content` symlink/
+    dev/runtime; `corex-release.json` manifest; dry-run. Jest `tests/build-shared-host-dist.test.js` (5 tests).
+  - **Azure pipeline** `azure-pipelines.yml` (build dist + artifact + approval-gated placeholder SFTP deploy,
+    runtime-file protection, secrets only) + deploy docs (`docs/en/05-deployment/shared-host-dist.md`,
+    `azure-pipelines.md`). `dist/` already git-ignored.
+- **M6 acceptance (Phase 16):** automated dark sweep PASS (login/admin/add-ons — see acceptance-evidence.md);
+  **RTL / 200% zoom / full-keyboard / light-mode / reduced-motion remain ENVIRONMENT-GATED** (not claimed passed).
+- **Deferred (spec 061 task groups, not built — DECISIONS #109):** PR B = Media/WebP settings UI + regenerate CLI +
+  frontend delivery; PR C = `make:site` `sites/<client>/` restructure + header/footer override scaffolding +
+  generated-client image pipeline; PR D = WP Font Library collection. PR #60 (Astro 7) still held.
+- **Exact next step:** validate + open PR A; then PR B (Media/WebP), PR C (generator), and release **v0.29.0** after
+  the runtime/generator/deployment milestone (A–C) merges.
+
+---
 ## RESUME HERE (2026-06-22, v0.28.0 RELEASE) -- PR #62 merged to main; cutting v0.28.0
 
 - **Release:** v0.28.0 (2026-06-22) on branch `release/v0.28.0` → PR → main → tag. Stamps 0.27.0→0.28.0 across

@@ -1,0 +1,122 @@
+# CoreX deployment pipeline (spec 061, FR-061-07).
+#
+# Split of responsibilities:
+#   GitHub Actions = PR / code-quality gates (lint, tests, CodeQL, dependency advisories).
+#   Azure Pipelines (this file) = build the deployable dist/ artifact + deploy it to hosting.
+#
+# Triggers on release tags (v*). Manual runs are supported from the Azure DevOps UI.
+#
+# SECURITY: no real credentials, hostnames, usernames, passwords, or keys live here. Configure them as Azure
+# *secret* pipeline variables / a service connection (see docs/en/05-deployment/azure-pipelines.md). The deploy
+# stage is gated by a manual approval environment and a parameter, and it MUST NOT overwrite production runtime
+# files (wp-config.php, .htaccess, uploads/, cache/, upgrade/, debug.log).
+
+trigger:
+  tags:
+    include:
+      - 'v*'
+
+pr: none   # PRs are gated by GitHub Actions, not this pipeline.
+
+parameters:
+  - name: deploy
+    displayName: 'Deploy the built artifact over SFTP after building?'
+    type: boolean
+    default: false
+  - name: client
+    displayName: 'Client slug to include (e.g. acme), or blank for framework-only'
+    type: string
+    default: ''
+
+variables:
+  PHP_VERSION: '8.3'
+  NODE_VERSION: '20.x'
+
+stages:
+  - stage: build
+    displayName: 'Build dist artifact'
+    jobs:
+      - job: build_dist
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+
+          - task: UseNode@1
+            inputs:
+              version: '$(NODE_VERSION)'
+            displayName: 'Install Node $(NODE_VERSION)'
+
+          - script: |
+              sudo update-alternatives --set php /usr/bin/php$(PHP_VERSION) || true
+              php -v
+            displayName: 'Select PHP $(PHP_VERSION)'
+
+          - script: composer install --no-dev --optimize-autoloader --no-interaction
+            displayName: 'Composer install (production)'
+
+          - script: npm ci
+            displayName: 'npm ci'
+
+          - script: npm run build
+            displayName: 'Build block/admin assets'
+
+          - script: |
+              if [ -n "${{ parameters.client }}" ]; then
+                npm run build:dist -- --client=${{ parameters.client }}
+              else
+                npm run build:dist
+              fi
+            displayName: 'Assemble flat dist/ (build:dist)'
+
+          - script: npm run verify:dist
+            displayName: 'Verify dist/ (folders present, forbidden paths absent, manifest valid)'
+
+          - publish: '$(System.DefaultWorkingDirectory)/dist'
+            artifact: corex-dist
+            displayName: 'Publish dist/ as a pipeline artifact'
+
+  - stage: deploy
+    displayName: 'Deploy to shared hosting (SFTP)'
+    dependsOn: build
+    # Only runs when explicitly requested AND on a tag build. Wire the environment below to a manual approval
+    # check in Azure DevOps so a human approves every production deploy.
+    condition: and(succeeded(), eq('${{ parameters.deploy }}', true))
+    jobs:
+      - deployment: sftp_deploy
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'corex-production'   # add a manual-approval check to this environment in Azure DevOps
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: corex-dist
+
+                # Placeholder SFTP deploy. Replace with your org's approved SFTP task/service connection.
+                # Required Azure SECRET variables (never commit these): SFTP_HOST, SFTP_USER, SFTP_PASSWORD or
+                # SFTP_PRIVATE_KEY, SFTP_REMOTE_PATH. Use lftp's mirror with --exclude to PROTECT runtime files.
+                - script: |
+                    set -euo pipefail
+                    echo "Deploying corex-dist to $SFTP_HOST:$SFTP_REMOTE_PATH (runtime files protected)"
+                    # Example with lftp (install in your agent or use a Marketplace SFTP task):
+                    # lftp -u "$SFTP_USER","$SFTP_PASSWORD" "sftp://$SFTP_HOST" -e "
+                    #   set sftp:auto-confirm yes;
+                    #   mirror -R --delete --verbose \
+                    #     --exclude wp-config.php \
+                    #     --exclude .htaccess \
+                    #     --exclude wp-content/uploads/ \
+                    #     --exclude wp-content/cache/ \
+                    #     --exclude wp-content/upgrade/ \
+                    #     --exclude wp-content/debug.log \
+                    #     '$(Pipeline.Workspace)/corex-dist' '$SFTP_REMOTE_PATH';
+                    #   bye"
+                    echo "Placeholder stage — wire the real SFTP task/service connection per the deploy docs."
+                  displayName: 'SFTP upload (placeholder — protects runtime files)'
+                  env:
+                    SFTP_HOST: $(SFTP_HOST)
+                    SFTP_USER: $(SFTP_USER)
+                    SFTP_PASSWORD: $(SFTP_PASSWORD)
+                    SFTP_REMOTE_PATH: $(SFTP_REMOTE_PATH)
