@@ -4,7 +4,26 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-23, v0.29.0 RELEASE) -- spec 061 milestone complete (PR A+B+C merged); cutting v0.29.0
+## RESUME HERE (2026-06-23, v0.30.0 RELEASE) -- spec 062 Priority 1 complete (PR #68/69/70/71); cutting v0.30.0
+
+- **Release:** v0.30.0 — stamps 0.29.0→0.30.0 across the 14 plugin/addon files + `theme/style.css`; CHANGELOG
+  `[0.30.0]` captures spec 062 (pre-site asset & media hardening).
+- **Spec 062 Priority 1 — DONE (merged):** PR #68 asset helpers (`Corex\Assets\Style/Script/Image/Picture` +
+  AssetRegistry + registerBase; SCSS-source-only guard); PR #69 generated client SCSS/JS/image pipeline
+  (`assets/src/{scss,js,images}` → `assets/{css,js,images}`, styles/scripts/images/build, helper-based
+  functions.php); PR #70 WebP activation gate (WebpGate/WebpMeta, `_corex_webp` meta, min-saving threshold,
+  gated delivery) + `wp corex media reset-webp` (tracked-only cleanup); PR #71 dist client-asset verification
+  (`verify:dist` flags a half-built client theme).
+- **The first company site can now start:** `wp corex make:site Acme --path=sites/acme --starter`, then build the
+  theme (`cd sites/acme/acme-theme && npm install && npm run build`) and enqueue via `Corex\Assets\*`.
+- **Deferred (Priority 2, not blockers — spec 062/061 backlog):** retrofit CoreX UI image blocks to the
+  `corex_media_optimize_image` seam; manual M6 RTL/200%/keyboard sweep; Arabic team-workflow docs mirror; PR #60
+  Astro 7; curated WP Font Library collection.
+- **Exact next step:** after the v0.30.0 tag/release — **start the first real company website** (Client Site Mode),
+  then continue the CoreX roadmap (Priority 3) in CoreX Framework Mode.
+
+---
+## RESUME HERE (2026-06-23, v0.29.0 RELEASE) -- spec 061 milestone complete (PR #64/65/66 merged); released v0.29.0
 
 - **Release:** v0.29.0 (2026-06-23) — stamps 0.28.0→0.29.0 across the 14 plugin/addon files + `theme/style.css`;
   CHANGELOG `[0.29.0]` captures the spec 061 team-safe readiness milestone.

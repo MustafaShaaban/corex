@@ -6,6 +6,33 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.30.0] — 2026-06-23
+
+### Added
+
+- **Pre-site asset & media hardening (spec 062):** the minimum-safe asset + media foundation for building a real
+  company website.
+  - **First-class asset helpers** — `Corex\Assets\Style` / `Script` / `Image` / `Picture` (facades over the
+    `AssetManager`/`BuildManifest`, with an `AssetRegistry` for named theme/plugin/client bases). They resolve
+    URL + cache-busting version (manifest-hashed when present), support deps/in_footer/defer|async/module/version
+    and a sibling wp-scripts `*.asset.php`, render source-controlled `<img>`/`<picture>`, and **refuse a `.scss`**
+    passed to an enqueue helper (SCSS is source only — the compiled CSS is enqueued).
+  - **Generated client SCSS/JS/image pipeline** — `make:site --starter` now scaffolds
+    `assets/src/{scss,js,images}/` → `assets/{css,js,images}/` with `styles`/`scripts`/`images`/`build` npm scripts
+    (project-local `sass` + wp-scripts) and a `functions.php` that enqueues the compiled output through the CoreX
+    asset helpers — never hardcoded paths.
+  - **WebP activation gate** — a WebP is no longer served just because it exists: after conversion the derivative
+    is measured and served only if it is present + valid, dimensions match, and it is smaller than the original by
+    at least a configurable threshold (default 5%). The result is tracked per attachment (`_corex_webp` meta), and
+    a WebP that came out larger is generated but quietly not served.
+  - **WebP reset/cleanup** — `wp corex media reset-webp [--dry-run] [--all] [--attachment=<id>] [--limit=<n>]`
+    deletes only tracked CoreX-generated derivatives (never originals, manually-uploaded WebP, or untracked files),
+    clears the meta, and reports counts; deleting an attachment removes only its tracked derivative.
+  - **Dist client-asset verification** — `verify:dist` flags a half-built client theme (SCSS/JS source present but
+    no compiled `assets/css`/`assets/js`), so a deploy can't package an unbuilt theme.
+  - Docs draw the line: `Corex\Assets\*` is for source-controlled theme/plugin/client assets, `Corex\Media\*` is
+    for Media Library uploads.
+
 ## [0.29.0] — 2026-06-23
 
 ### Added
