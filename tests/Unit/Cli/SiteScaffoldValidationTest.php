@@ -25,8 +25,8 @@ it('validates minimal client scaffolds for isolation, identity, governance, spec
     expect($finding->category)->toBe('make-site')
         ->and($finding->status)->toBe(ReadinessFinding::STATUS_PASS)
         ->and($finding->evidence)->toContain(
-            'plugins/acme-site/acme-site.php',
-            'themes/acme/theme.json',
+            'acme-site/acme-site.php',
+            'acme-theme/theme.json',
             'AGENTS.md',
             'CLAUDE.md',
             'PROGRESS.md',
@@ -36,7 +36,7 @@ it('validates minimal client scaffolds for isolation, identity, governance, spec
             'namespace:AcmeSite\\',
             'css-prefix:--acme-',
             'option-prefix:acme_',
-            'token-strategy:themes/acme/theme.json',
+            'token-strategy:acme-theme/theme.json',
         );
 });
 
@@ -51,13 +51,13 @@ it('validates starter scaffolds for the removable example slice and theme asset 
 
     expect($finding->status)->toBe(ReadinessFinding::STATUS_PASS)
         ->and($finding->evidence)->toContain(
-            'starter:plugins/acme-site/src/Controllers/ExampleController.php',
-            'starter:plugins/acme-site/src/Blocks/example/block.json',
-            'starter:plugins/acme-site/tests/ExampleTest.php',
-            'starter:plugins/acme-site/REMOVE-EXAMPLE.md',
-            'starter:themes/acme/package.json',
-            'starter:themes/acme/assets/src/main.scss',
-            'starter:themes/acme/inc/Assets.php',
+            'starter:acme-site/src/Controllers/ExampleController.php',
+            'starter:acme-site/src/Blocks/example/block.json',
+            'starter:acme-site/tests/ExampleTest.php',
+            'starter:acme-site/REMOVE-EXAMPLE.md',
+            'starter:acme-theme/package.json',
+            'starter:acme-theme/assets/src/main.scss',
+            'starter:acme-theme/inc/Assets.php',
         );
 });
 
@@ -68,7 +68,7 @@ it('fails validation when required scaffold files are missing or placeholders re
     (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs'))
         ->scaffold('Acme', $base);
     unlink($base . '/AGENTS.md');
-    file_put_contents($base . '/themes/acme/theme.json', '{{ unresolved }}');
+    file_put_contents($base . '/acme-theme/theme.json', '{{ unresolved }}');
 
     $finding = (new SiteScaffoldValidator())->validate($base, 'minimal');
 
@@ -76,7 +76,7 @@ it('fails validation when required scaffold files are missing or placeholders re
         ->and($finding->blocking)->toBeTrue()
         ->and($finding->evidence)->toContain(
             'missing:AGENTS.md',
-            'unresolved-placeholder:themes/acme/theme.json',
+            'unresolved-placeholder:acme-theme/theme.json',
         );
 });
 

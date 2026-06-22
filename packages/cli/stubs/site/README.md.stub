@@ -2,8 +2,8 @@
 
 The {{ name }} website — a **Corex client site**.
 
-- **App code:** `plugins/{{ plugin_slug }}/` (`{{ namespace }}\`)
-- **Theme:** `themes/{{ theme_slug }}/`
+- **App code:** `{{ plugin_slug }}/` (`{{ namespace }}\`)
+- **Theme:** `{{ theme_slug }}/`
 - **Specs / docs:** `specs/`, `docs/`
 - **Workflow + agent rules:** [AGENTS.md](./AGENTS.md)
 

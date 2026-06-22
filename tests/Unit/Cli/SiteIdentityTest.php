@@ -16,7 +16,7 @@ it('derives the full identity from a site name, distinct from Corex', function (
 
     expect($id->namespace)->toBe('AcmeSite')
         ->and($id->pluginSlug)->toBe('acme-site')
-        ->and($id->themeSlug)->toBe('acme')
+        ->and($id->themeSlug)->toBe('acme-theme')
         ->and($id->textDomain)->toBe('acme-site')
         ->and($id->restNamespace)->toBe('acme/v1')
         ->and($id->cssPrefix)->toBe('--acme-')
@@ -28,7 +28,7 @@ it('handles a multi-word name', function () {
 
     expect($id->namespace)->toBe('AcmeCorpSite')
         ->and($id->pluginSlug)->toBe('acme-corp-site')
-        ->and($id->themeSlug)->toBe('acme-corp')
+        ->and($id->themeSlug)->toBe('acme-corp-theme')
         ->and($id->restNamespace)->toBe('acme-corp/v1');
 });
 

@@ -36,27 +36,28 @@ final class SiteScaffoldValidator
      * @var list<string>
      */
     private const STARTER_FILES = [
-        'plugins/%plugin%/src/Controllers/ExampleController.php',
-        'plugins/%plugin%/src/Blocks/example/block.json',
-        'plugins/%plugin%/tests/ExampleTest.php',
-        'plugins/%plugin%/REMOVE-EXAMPLE.md',
-        'themes/%theme%/package.json',
-        'themes/%theme%/assets/src/main.scss',
-        'themes/%theme%/inc/Assets.php',
+        '%plugin%/src/Controllers/ExampleController.php',
+        '%plugin%/src/Blocks/example/block.json',
+        '%plugin%/tests/ExampleTest.php',
+        '%plugin%/REMOVE-EXAMPLE.md',
+        '%theme%/package.json',
+        '%theme%/assets/src/main.scss',
+        '%theme%/inc/Assets.php',
     ];
 
     public function validate(string $siteDir, string $mode = 'minimal'): ReadinessFinding
     {
         $siteDir = rtrim($siteDir, '/\\');
-        $plugin = $this->firstDirectory($siteDir . '/plugins');
-        $theme = $this->firstDirectory($siteDir . '/themes');
+        // spec 061: the client plugin/theme sit directly under the site root as <slug>-site / <slug>-theme.
+        $plugin = $this->firstDirectoryWithSuffix($siteDir, '-site');
+        $theme = $this->firstDirectoryWithSuffix($siteDir, '-theme');
         $issues = [];
         $evidence = [];
 
         if ($plugin === null) {
-            $issues[] = 'missing:plugins/<client>-site';
+            $issues[] = 'missing:<client>-site';
         } else {
-            $pluginFile = sprintf('plugins/%s/%s.php', $plugin, $plugin);
+            $pluginFile = sprintf('%s/%s.php', $plugin, $plugin);
             $check = $this->requiredFileChecks($siteDir, [$pluginFile]);
             $issues = [...$issues, ...$check['issues']];
             $evidence = [...$evidence, ...$check['evidence']];
@@ -68,14 +69,16 @@ final class SiteScaffoldValidator
         }
 
         if ($theme === null) {
-            $issues[] = 'missing:themes/<client>';
+            $issues[] = 'missing:<client>-theme';
         } else {
-            $themeJson = sprintf('themes/%s/theme.json', $theme);
+            $themeJson = sprintf('%s/theme.json', $theme);
             $check = $this->requiredFileChecks($siteDir, [$themeJson]);
             $issues = [...$issues, ...$check['issues']];
             $evidence = [...$evidence, ...$check['evidence']];
-            $evidence[] = sprintf('css-prefix:--%s-', $theme);
-            $evidence[] = sprintf('option-prefix:%s_', str_replace('-', '_', $theme));
+            // The client's CSS/option prefixes derive from the base slug (the theme dir without -theme).
+            $base = (string) preg_replace('/-theme$/', '', $theme);
+            $evidence[] = sprintf('css-prefix:--%s-', $base);
+            $evidence[] = sprintf('option-prefix:%s_', str_replace('-', '_', $base));
             $evidence[] = 'token-strategy:' . $themeJson;
         }
 
@@ -147,7 +150,8 @@ final class SiteScaffoldValidator
         ];
     }
 
-    private function firstDirectory(string $directory): ?string
+    /** The first sub-directory of $directory whose name ends in $suffix (e.g. -site / -theme). */
+    private function firstDirectoryWithSuffix(string $directory, string $suffix): ?string
     {
         if (! is_dir($directory)) {
             return null;
@@ -155,7 +159,9 @@ final class SiteScaffoldValidator
 
         $entries = array_values(array_filter(
             scandir($directory) ?: [],
-            static fn (string $entry): bool => $entry !== '.' && $entry !== '..' && is_dir($directory . '/' . $entry),
+            static fn (string $entry): bool => $entry !== '.' && $entry !== '..'
+                && is_dir($directory . '/' . $entry)
+                && str_ends_with($entry, $suffix),
         ));
 
         sort($entries);
@@ -165,7 +171,7 @@ final class SiteScaffoldValidator
 
     private function namespaceFromProvider(string $siteDir, string $plugin): ?string
     {
-        $provider = glob($siteDir . '/plugins/' . $plugin . '/src/*ServiceProvider.php') ?: [];
+        $provider = glob($siteDir . '/' . $plugin . '/src/*ServiceProvider.php') ?: [];
 
         if ($provider === []) {
             return null;

@@ -46,7 +46,7 @@ final class SiteIdentity
             $studly,
             $studly . 'Site',
             $slug . '-site',
-            $slug,
+            $slug . '-theme',
             $slug . '-site',
             $slug . '/v1',
             '--' . $slug . '-',

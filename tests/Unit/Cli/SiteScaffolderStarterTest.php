@@ -35,7 +35,7 @@ it('emits the full example slice with --starter', function () {
     expect(starterScaffolder()->scaffold('Acme', $base, ['starter' => true])->status)
         ->toBe(SiteScaffoldResult::CREATED);
 
-    $plugin = $base . '/plugins/acme-site';
+    $plugin = $base . '/acme-site';
 
     foreach ([
         '/src/Models/Example.php',
@@ -58,7 +58,7 @@ it('emits the starter-theme asset architecture with --starter', function () {
     $base = starterBase();
     starterScaffolder()->scaffold('Acme', $base, ['starter' => true]);
 
-    $theme = $base . '/themes/acme';
+    $theme = $base . '/acme-theme';
 
     foreach ([
         '/package.json',
@@ -98,7 +98,7 @@ it('uses the spec-043 response envelope in the generated controller', function (
     $base = starterBase();
     starterScaffolder()->scaffold('Acme', $base, ['starter' => true]);
 
-    $controller = (string) file_get_contents($base . '/plugins/acme-site/src/Controllers/ExampleController.php');
+    $controller = (string) file_get_contents($base . '/acme-site/src/Controllers/ExampleController.php');
 
     expect($controller)->toContain('Corex\\Http\\ResponseEnvelope')
         ->and($controller)->toContain('AcmeSite\\Controllers');
@@ -109,9 +109,9 @@ it('omits the slice by default and with --minimal', function () {
         $base = starterBase();
         starterScaffolder()->scaffold('Acme', $base, $options);
 
-        expect(is_file($base . '/plugins/acme-site/src/Controllers/ExampleController.php'))->toBeFalse()
-            ->and(is_file($base . '/plugins/acme-site/REMOVE-EXAMPLE.md'))->toBeFalse()
-            ->and(is_dir($base . '/themes/acme/assets'))->toBeFalse();
+        expect(is_file($base . '/acme-site/src/Controllers/ExampleController.php'))->toBeFalse()
+            ->and(is_file($base . '/acme-site/REMOVE-EXAMPLE.md'))->toBeFalse()
+            ->and(is_dir($base . '/acme-theme/assets'))->toBeFalse();
     }
 });
 
@@ -119,7 +119,7 @@ it('names the slice files in the removal guide', function () {
     $base = starterBase();
     starterScaffolder()->scaffold('Acme', $base, ['starter' => true]);
 
-    $guide = (string) file_get_contents($base . '/plugins/acme-site/REMOVE-EXAMPLE.md');
+    $guide = (string) file_get_contents($base . '/acme-site/REMOVE-EXAMPLE.md');
 
     expect($guide)->toContain('src/Models/Example.php')
         ->and($guide)->toContain('src/Controllers/ExampleController.php')

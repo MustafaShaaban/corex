@@ -184,7 +184,20 @@ final class AdminDashboard
             return (string) apply_filters('corex_media_support_summary', '');
         }
 
-        return (string) $this->store->get($key);
+        $stored = (string) $this->store->get($key);
+
+        // Reflect the Media defaults (conversion on; quality 82) before the first save, so the form
+        // matches runtime (corex-media defaults these on when the option is unset). After any save the
+        // stored value wins, including an explicit "off". Mirrors MediaSettings::defaults().
+        if ($stored === '') {
+            return match ($key) {
+                'media.webp.enabled', 'media.webp.convert_jpeg', 'media.webp.convert_png' => '1',
+                'media.webp.quality' => '82',
+                default => '',
+            };
+        }
+
+        return $stored;
     }
 
     private function sectionState(string $sectionKey): ?SettingsSectionState

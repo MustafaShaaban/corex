@@ -30,29 +30,63 @@ function siteScaffolder(): SiteScaffolder
     return new SiteScaffolder(new StubRenderer(), siteStubsDir());
 }
 
-it('scaffolds the plugin, theme, and governance set with the client identity', function () {
+it('scaffolds the plugin, theme, and governance set under the flat sites/<client> layout', function () {
     $base   = tempSiteBase();
     $result = siteScaffolder()->scaffold('Acme', $base);
 
     expect($result->status)->toBe(SiteScaffoldResult::CREATED)
-        ->and(is_file($base . '/plugins/acme-site/acme-site.php'))->toBeTrue()
-        ->and(is_file($base . '/plugins/acme-site/src/AcmeSiteServiceProvider.php'))->toBeTrue()
-        ->and(is_file($base . '/themes/acme/style.css'))->toBeTrue()
-        ->and(is_file($base . '/themes/acme/theme.json'))->toBeTrue()
+        // spec 061: client plugin/theme sit directly under the site root (no plugins/ or themes/ nesting)
+        ->and(is_file($base . '/acme-site/acme-site.php'))->toBeTrue()
+        ->and(is_file($base . '/acme-site/src/AcmeSiteServiceProvider.php'))->toBeTrue()
+        ->and(is_file($base . '/acme-theme/style.css'))->toBeTrue()
+        ->and(is_file($base . '/acme-theme/theme.json'))->toBeTrue()
+        ->and(is_dir($base . '/plugins'))->toBeFalse()
+        ->and(is_dir($base . '/themes'))->toBeFalse()
         ->and(is_file($base . '/AGENTS.md'))->toBeTrue()
         ->and(is_file($base . '/.gitignore'))->toBeTrue();
+});
+
+it('scaffolds header/footer/front-page override points with ownership guidance', function () {
+    $base = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $base);
+
+    $header = (string) file_get_contents($base . '/acme-theme/parts/header.html');
+    $footer = (string) file_get_contents($base . '/acme-theme/parts/footer.html');
+    $front  = (string) file_get_contents($base . '/acme-theme/templates/front-page.html');
+
+    expect(is_file($base . '/acme-theme/parts/header.html'))->toBeTrue()
+        ->and(is_file($base . '/acme-theme/parts/footer.html'))->toBeTrue()
+        ->and(is_file($base . '/acme-theme/templates/front-page.html'))->toBeTrue()
+        // the override points explain brand-via-tokens vs structure-in-client-theme
+        ->and($header)->toContain('override')
+        ->and($header)->toContain('theme.json')
+        ->and($footer)->toContain('override')
+        ->and($front)->toContain('front page');
+});
+
+it('scaffolds the client image-optimization pipeline in --starter mode', function () {
+    $base = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $base, ['starter' => true]);
+
+    $pkg = (string) file_get_contents($base . '/acme-theme/package.json');
+
+    expect(is_file($base . '/acme-theme/scripts/optimize-images.mjs'))->toBeTrue()
+        ->and(is_file($base . '/acme-theme/assets/src/images/.gitkeep'))->toBeTrue()
+        ->and($pkg)->toContain('"images"')
+        ->and($pkg)->toContain('npm run images')
+        ->and($pkg)->toContain('sharp');
 });
 
 it('generates valid PHP and a valid theme.json', function () {
     $base = tempSiteBase();
     siteScaffolder()->scaffold('Acme', $base);
 
-    foreach (['/plugins/acme-site/acme-site.php', '/plugins/acme-site/src/AcmeSiteServiceProvider.php'] as $php) {
+    foreach (['/acme-site/acme-site.php', '/acme-site/src/AcmeSiteServiceProvider.php'] as $php) {
         exec('php -l ' . escapeshellarg($base . $php) . ' 2>&1', $out, $exit);
         expect($exit)->toBe(0);
     }
 
-    expect(json_decode((string) file_get_contents($base . '/themes/acme/theme.json'), true))->toBeArray();
+    expect(json_decode((string) file_get_contents($base . '/acme-theme/theme.json'), true))->toBeArray();
 });
 
 it('writes governance stating the client-only edit boundary + one-feature-one-PR', function () {
@@ -62,7 +96,7 @@ it('writes governance stating the client-only edit boundary + one-feature-one-PR
     $agents = (string) file_get_contents($base . '/AGENTS.md');
 
     expect($agents)->toContain('do not edit Corex framework folders')
-        ->and($agents)->toContain('plugins/acme-site/')
+        ->and($agents)->toContain('acme-site/')
         ->and($agents)->toContain('One feature = one branch = one spec folder = one PR')
         ->and($agents)->toContain('AcmeSite\\')
         // spec 061: the generated stub carries the Role Gate + handoff guidance for Client Site Mode.
@@ -95,12 +129,12 @@ it('honours --plugin-only and --theme-only', function () {
     $pluginOnly = tempSiteBase();
     siteScaffolder()->scaffold('Acme', $pluginOnly, ['plugin_only' => true]);
 
-    expect(is_file($pluginOnly . '/plugins/acme-site/acme-site.php'))->toBeTrue()
-        ->and(is_dir($pluginOnly . '/themes/acme'))->toBeFalse();
+    expect(is_file($pluginOnly . '/acme-site/acme-site.php'))->toBeTrue()
+        ->and(is_dir($pluginOnly . '/acme-theme'))->toBeFalse();
 
     $themeOnly = tempSiteBase();
     siteScaffolder()->scaffold('Acme', $themeOnly, ['theme_only' => true]);
 
-    expect(is_file($themeOnly . '/themes/acme/style.css'))->toBeTrue()
-        ->and(is_dir($themeOnly . '/plugins/acme-site'))->toBeFalse();
+    expect(is_file($themeOnly . '/acme-theme/style.css'))->toBeTrue()
+        ->and(is_dir($themeOnly . '/acme-site'))->toBeFalse();
 });
