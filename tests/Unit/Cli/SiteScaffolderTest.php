@@ -64,7 +64,12 @@ it('writes governance stating the client-only edit boundary + one-feature-one-PR
     expect($agents)->toContain('do not edit Corex framework folders')
         ->and($agents)->toContain('plugins/acme-site/')
         ->and($agents)->toContain('One feature = one branch = one spec folder = one PR')
-        ->and($agents)->toContain('AcmeSite\\');
+        ->and($agents)->toContain('AcmeSite\\')
+        // spec 061: the generated stub carries the Role Gate + handoff guidance for Client Site Mode.
+        ->and($agents)->toContain('CLIENT SITE MODE')
+        ->and($agents)->toContain('do not edit')
+        ->and($agents)->toContain('dist/')
+        ->and($agents)->toContain('NEXT STEP');
 });
 
 it('ignores local AI/cache folders in the generated .gitignore', function () {

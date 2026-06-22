@@ -74,9 +74,22 @@ Deploy a **built, flat WordPress tree** instead:
 On **cPanel / shared hosting**, the uploaded tree must be this built `dist/` artifact (real folders), **not** the
 local symlinked/junctioned `wp/`. The `shared-host` profile below records the no-symlink upload shape.
 
-> A first-class `wp corex package:site` command (assemble a client-site `dist/` in one step) is on the backlog;
-> until then, assemble `dist/` from the steps above. The framework-only `package:update` command is documented
-> under [Packaging a Corex update](#packaging-a-corex-update).
+### `build:dist` + Azure (spec 061)
+
+There is now a first-class builder for the flat artifact:
+
+```bash
+npm run build:dist -- --client=acme   # assemble dist/ from repo source (de-symlinked, dev files stripped)
+npm run verify:dist                   # required folders present, forbidden paths absent, manifest valid JSON
+```
+
+It writes `dist/` (git-ignored, never committed) with a `corex-release.json` manifest. CI split: **GitHub Actions**
+runs PR/code-quality gates; **Azure Pipelines** (`azure-pipelines.yml`) builds `dist/` and deploys it over SFTP from
+release tags, with credentials in Azure secrets and production runtime files protected. Full guides:
+`docs/en/05-deployment/shared-host-dist.md` and `docs/en/05-deployment/azure-pipelines.md`.
+
+> A WordPress-aware `wp corex package:site` wrapper (calling the same builder) is on the backlog; the framework-only
+> `package:update` command is documented under [Packaging a Corex update](#packaging-a-corex-update).
 
 ## Deployment profiles
 

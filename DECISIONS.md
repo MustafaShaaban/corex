@@ -1945,3 +1945,37 @@ is held: its "Validate dependency advisories" check fails (changed dependency in
 it is not blindly merged — it needs a dedicated branch to run docs-app install/build, handle Astro 7 breaking
 changes, and refresh the dependency inventory.
 Status: Final.
+
+## #109 -- Team-safe company-site architecture: Role Gate, sites/<client>/ layout, dist builder, Azure split
+Date: 2026-06-22
+Context: CoreX v0.28.0 is feature-complete enough to build the first real company site, but the *team workflow*
+wasn't locked: an agent/dev couldn't reliably tell whether they were editing the framework or a client site, where
+client source belongs, or how a deployable artifact is produced/shipped. Spec 061 (the owner-approved final
+pre-company-site goal) addresses this; it is split into PR-sized groups because some runtime (Media/WebP, the
+`make:site` restructure, the client image pipeline) changes tested code and deserves its own review.
+Decision: (1) **Role Gate** — every session classifies into one of four modes (CoreX Framework / Client Site /
+Deployment / Docs-Planning), each with explicit allowed/forbidden edit areas, documented in root `AGENTS.md`,
+`CLAUDE.md`, `COREX-WORKING-GUIDE.md` §G, the team-workflow docs, and the generated client stubs. Rule hierarchy:
+Role Gate (where) → Spec Kit (what) → Guard Gate (safe to ship) → UI/UX ProMax (UI good enough). (2) **Source
+layout** — repo root is the source of truth; framework source stays in `plugins/`/`addons/`/`packages/`/`theme/`/
+root `specs/`/`docs/`/`docs-app/`; **client source lives in `sites/<client>/`** (`<client>-site` + `<client>-theme`
++ governance + specs/docs). `wp/wp-content/` and `dist/` are runtime/build output, never edited as source. (3)
+**`dist/` is a generated, git-ignored artifact** assembled from repo source by `scripts/build-shared-host-dist.mjs`
+(`npm run build:dist`, verified by `npm run verify:dist`); the server receives only its contents; it is never
+committed. (4) **Deployment split** — GitHub Actions = PR/code-quality gates; Azure Pipelines (`azure-pipelines.yml`)
+= build dist + SFTP deploy from release tags, credentials in Azure secrets, production runtime files
+(wp-config.php/.htaccess/uploads/cache/upgrade/debug.log) protected; the SFTP step ships as a safe, approval-gated
+placeholder (no real credentials). (5) Standard copy/paste AI start prompts per mode + a required SUMMARY/…/NEXT
+STEP handoff format.
+Why: separating framework and client work by *location* + *mode* prevents the most common multi-developer/agent
+mistake (patching framework internals for one client) without new tooling; a single source-built `dist/` keeps the
+symlinked dev `wp/` out of production; the Azure split keeps PR gates and deploy concerns separate.
+Implemented in PR A: the role gate + prompts + layout docs + handoff format + make:site governance stubs + the
+shared-host dist builder/verifier + tests + the Azure pipeline + deployment docs.
+Deferred (spec 061 task groups, real features not built in PR A, each its own follow-up PR): CoreX Media settings
+UI + `wp corex media regenerate-webp` CLI + frontend WebP-delivery hardening (PR B); the `make:site`
+`sites/<client>/<client>-site|-theme` restructure + header/footer override scaffolding + generated-client image
+pipeline (PR C, needs a back-compat/migration note for the tested generator); the optional WP Font Library curated
+collection (PR D). M6 RTL/200%/keyboard acceptance remains environment-gated (recorded in the spec evidence). PR
+#60 (Astro 7) stays held. Release: v0.29.0 after the runtime/generator/deployment milestone (PR A–C) merges.
+Status: PR A final; B/C/D open as task groups.

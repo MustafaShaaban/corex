@@ -120,6 +120,23 @@ wp corex make:site Acme            # plugin + theme + governance scaffold
 wp corex make:site Acme --starter  # the above + a runnable example slice to learn from and delete
 ```
 
+### Team-safe architecture (Role Gate)
+
+CoreX separates framework work from client work so a team (and AI agents) never collide. Classify every session
+into one mode before editing — **CoreX Framework / Client Site / Deployment / Docs-Planning**
+([agent roles](docs/en/04-team-workflow/agent-roles.md), [start prompts](docs/en/04-team-workflow/ai-agent-start-prompts.md)):
+
+- **Repo root = source of truth.** Framework source: `plugins/`, `addons/`, `packages/`, `theme/`, `specs/`,
+  `docs/`, `docs-app/`. Client source: `sites/<client>/` (`<client>-site` + `<client>-theme` + governance + specs).
+- **`dist/` is generated, never committed** — the server receives only its contents. `wp/wp-content/` and `dist/`
+  are never edited as source.
+- **Build & deploy:** `npm run build:dist -- --client=acme` → flat artifact in `dist/`; `npm run verify:dist`.
+  GitHub Actions runs PR gates; Azure Pipelines (`azure-pipelines.yml`) builds + deploys. See
+  [shared-host dist](docs/en/05-deployment/shared-host-dist.md) and [Azure Pipelines](docs/en/05-deployment/azure-pipelines.md).
+
+The rule hierarchy: **Role Gate** (where) → **Spec Kit** (what) → **Guard Gate** (safe to ship) → **UI/UX ProMax**
+(UI good enough).
+
 ## Client readiness
 
 Before starting a real client site, run the Spec 055 readiness report:

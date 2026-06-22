@@ -24,6 +24,8 @@
         "test:js": "wp-scripts test-unit-js",
         "test:e2e": "playwright test --config=tests/e2e/playwright.config.js",
         "verify:dependencies": "node scripts/verify-dependency-security.mjs",
+        "build:dist": "node scripts/build-shared-host-dist.mjs",
+        "verify:dist": "node scripts/verify-shared-host-dist.mjs",
         "format": "wp-scripts format",
         "env:start": "wp-env start",
         "env:stop": "wp-env stop"

@@ -17,6 +17,21 @@ PHP 8.3+, FSE block themes. Built spec-first with Spec Kit.
 1. `specs/constitution.md`  2. `COREX-FRAMEWORK.md`  3. the active module spec
 4. `PROGRESS.md`  5. the code. If code contradicts the constitution, the code is wrong.
 
+## Role Gate — classify the session BEFORE editing (spec 061)
+> Role Gate decides **where** you work · Spec Kit decides **what** · Guard Gate decides **whether it is safe to
+> ship** · UI/UX ProMax decides **whether visible UI is good enough**.
+
+Pick one mode and stay in it (full detail: COREX-WORKING-GUIDE.md §F; copy/paste prompts:
+`docs/en/04-team-workflow/ai-agent-start-prompts.md`):
+1. **CoreX Framework Mode** — `plugins/`, `addons/`, `packages/`, root `theme/`/`specs/`/`docs/`, `docs-app/`,
+   `ROADMAP.md`, root `PROGRESS.md`, framework UI, release. Must not edit `sites/<client>/` unless authorized.
+2. **Client Site Mode** — `sites/<client>/` only. Must not continue the CoreX roadmap or edit framework dirs.
+3. **Deployment Mode** — `dist` builder, `azure-pipelines.yml`, deploy/rollback. Packaging changes only.
+4. **Docs/Planning Mode** — docs/specs/roadmap/decisions/prompts. No runtime code unless authorized.
+
+Never edit as source: `wp/wp-content/` and `dist/` (runtime/build output; `dist/` is generated + git-ignored).
+End every response with the required SUMMARY/…/NEXT STEP handoff format (see AGENTS.md / COREX-WORKING-GUIDE.md §F).
+
 ## WHILE working
 - Run `git status --short --branch` before edits; work from the active feature branch, never from `main`.
 - **Single workspace (COREX-WORKING-GUIDE.md §A.7):** work only from the normal project root checkout — no

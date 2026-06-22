@@ -54,6 +54,7 @@ export default defineConfig({
 						{ label: 'Build a client site', slug: 'guides/client-site' },
 						{ label: 'Company Site Kit v1', slug: 'guides/company-kit' },
 						{ label: 'Using AI agents safely', slug: 'guides/ai-agents' },
+						{ label: 'Team roles & agent modes', slug: 'guides/team-roles' },
 						{ label: 'Deploy & distribute', slug: 'guides/deployment' },
 						{ label: 'Free/Core vs Pro', slug: 'guides/free-core-vs-pro' },
 						{ label: 'Design Language System', slug: 'guides/design-system' },
