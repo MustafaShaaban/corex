@@ -1908,3 +1908,40 @@ Why: the design package is visual, so it can only be verified visually; specific
 admin chrome adopt the CoreX surface. No truthful-state, security, or markup contract changed — only the visual layer
 and the token values. Regenerated the Spec 057 token inventories so the consumer contract still passes.
 Status: Final.
+
+## #108 -- Company-site readiness/onboarding: docs URL resolver, add-on tiers, onboarding docs
+Date: 2026-06-22
+Context: A readiness/onboarding pass so a new developer can start a real company site without getting lost.
+Two real runtime gaps surfaced: (a) the Add-ons screen rendered each add-on's relative docs path
+(`/guides/media/`) straight into an `href`, so the browser resolved it against the *active client* WordPress
+domain — never where the framework docs live; (b) neither the screen nor the docs told a developer which
+packages are the required foundation vs recommended vs optional, so "what do I enable?" was guesswork. The rest
+of the pass is documentation.
+Decision: (1) Add `Corex\Config\Docs\DocsUrl` — one resolver that turns a relative docs path into an absolute
+URL: the `docs.base_url` config key (filterable via `corex_docs_base_url`), else the framework's canonical
+GitHub docs source. `AddonsScreen` resolves docs links through it and opens them in a new tab with
+`rel="noopener noreferrer"`, so a docs link can never point at the client site. (2) Add `AddonTier`
+(recommended / optional / site_kit / requires_woocommerce) + an `Addon.tier` field; the registry classifies
+each add-on, and the screen renders an advisory tier badge beside the truthful status badge plus a "Where to
+start" note (the always-on foundation — corex-core/blocks/config/forms — and "you don't need every add-on").
+The tier is advisory only — the `AddonStatus` truthful-state model still governs what is installed/active.
+(3) Documentation: a new end-to-end `getting-started/company-site.md`, an `guides/ai-agents.md` (framework vs
+client-site boundary), named-local-site + safe-reset (WAMP), add-on tiers table, "what each layer owns" +
+header/footer ownership (Company Kit), fonts (branding), don't-ship-`wp/`-deploy-`dist/` (deployment), README
+"Start here" + docs-app-is-optional. A neutral **Acme** placeholder is used throughout; no real client name
+enters the framework repo/docs.
+Why: a relative admin docs link resolving against the client domain is a real defect; the tiers turn add-on
+choice from guesswork into guidance without weakening truthful state. All additive — no existing contract
+changed; the foundation plugins are deliberately not listed as toggleable add-ons.
+Deferred to backlog (documented now, not built in this pass — they are real features, not docs): a CoreX Media
+settings UI (WebP enable/quality/MIME, regenerate action, Site-Health probe surfacing) + frontend delivery
+filter mode; a client-theme image-optimization pipeline (`src/images/` → built WebP, `npm run images`); a
+`wp corex package:site` command to assemble a client-site `dist/`; `make:site` client-theme template-part
+override scaffolding for header/footer; an optional curated CoreX font collection via the WP Font Library APIs.
+Release: v0.27.0 predates the entire M6 admin design (now on main, 91 commits unreleased) plus this readiness
+runtime. A **v0.28.0** release is warranted once this PR merges, cut via the repo's existing develop-based
+git-flow-lite release flow — not unilaterally from this docs branch. Dependabot PR #60 (Astro 6→7, semver-major)
+is held: its "Validate dependency advisories" check fails (changed dependency inventory needs human review), so
+it is not blindly merged — it needs a dedicated branch to run docs-app install/build, handle Astro 7 breaking
+changes, and refresh the dependency inventory.
+Status: Final.

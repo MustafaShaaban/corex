@@ -4,6 +4,32 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-22, company-site readiness/onboarding) -- branch docs/company-site-readiness-onboarding; PR open
+
+- **Branch/PR:** `docs/company-site-readiness-onboarding` (off `main`), tip `188866a` + this docs commit. PR
+  open — not merged. Working tree clean.
+- **Runtime (tested):** `Corex\Config\Docs\DocsUrl` resolver so Add-ons "Documentation" links are absolute
+  (`docs.base_url` config / `corex_docs_base_url` filter, else GitHub source) — never resolve against the client
+  domain; live-verified (0 relative doc links, GitHub fallback). `AddonTier` + advisory tier badges
+  (recommended/optional/site-kit/requires-woo) + a "Where to start" foundation note on the Add-ons screen.
+  Tests: DocsUrlTest, AddonsDocsLinkTest, AddonRegistry tiers. Pest 797, Jest 110, lint:css clean, docs-app
+  build OK (275 pages), token inventory synced.
+- **Docs:** new `getting-started/company-site.md` (end-to-end onboarding) + `guides/ai-agents.md`; named-local-
+  site/safe-reset (WAMP), add-on tiers (free-core-vs-pro), what-each-layer-owns + header/footer + legal pages
+  (company-kit), fonts (branding), deploy-`dist/`-not-`wp/` (deployment), README "Start here" + docs-app
+  optional. Neutral **Acme** placeholder throughout; no real client name in the framework repo. DECISIONS #108.
+- **Repo hygiene:** deleted two merged+gone-remote local branches (docs/057-post-codeql-merge-progress,
+  fix/056-codeql-supported-languages). **PR #60 (Astro 6→7) HELD** — semver-major; "Validate dependency
+  advisories" check fails (changed dep inventory needs human review). Not blindly merged.
+- **Backlog (documented, not built — DECISIONS #108):** CoreX Media settings UI + delivery filter; client-theme
+  image pipeline (`npm run images`); `wp corex package:site`; `make:site` header/footer override scaffolding;
+  curated WP Font Library collection.
+- **Release decision:** v0.27.0 predates all of M6 (91 commits unreleased on main) + this readiness runtime →
+  **v0.28.0 warranted** after this PR merges, via the repo's develop-based release flow (not from this branch).
+- **Exact next step:** review + merge this PR; then run the manual RTL/200%/full-keyboard M6 acceptance sweep
+  and cut **v0.28.0**. To start the first real company site, follow `getting-started/company-site.md`.
+
+---
 ## RESUME HERE (2026-06-22, spec 060 M6 MERGED) -- PR #59 merged to main (cc76316); docs updated
 
 - **Merge:** `fix/060-admin-design-implementation` → `main` via PR #59, merge commit `cc76316` (2026-06-22).
