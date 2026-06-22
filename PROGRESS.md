@@ -4,7 +4,24 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-22, spec 061 PR A) -- team-safe readiness foundation + dist builder; branch spec/061-…; PR open
+## RESUME HERE (2026-06-23, v0.29.0 RELEASE) -- spec 061 milestone complete (PR A+B+C merged); cutting v0.29.0
+
+- **Release:** v0.29.0 (2026-06-23) — stamps 0.28.0→0.29.0 across the 14 plugin/addon files + `theme/style.css`;
+  CHANGELOG `[0.29.0]` captures the spec 061 team-safe readiness milestone.
+- **Spec 061 merged (PR #64 A, #65 B, #66 C):** Role Gate (4 modes) + start prompts + `sites/<client>/` layout +
+  handoff format + make:site governance stubs; shared-host `dist` builder (`npm run build:dist`/`verify:dist`) +
+  Azure pipeline + deploy docs; CoreX Media settings UI + `wp corex media regenerate-webp` CLI +
+  `corex_media_optimize_image` delivery seam; `make:site` flat `<slug>-site`/`<slug>-theme` layout + header/footer/
+  front-page override scaffolding + `--starter` image pipeline (sharp). M6 RTL/200%/keyboard still env-gated.
+- **Deferred backlog (DECISIONS #108/#109):** T022b (retrofit CoreX UI image blocks to the delivery seam — needs
+  PictureRenderer class/loading preservation); PR D WP Font Library curated collection; T004d Arabic team-workflow
+  docs mirror; PR #60 Astro 7 (held). None block the release.
+- **Exact next step:** after the v0.29.0 tag/release — start the first real company site
+  (`wp corex make:site Acme --path=sites/acme`, follow `docs-app/.../getting-started/company-site.md`), run the
+  manual M6 RTL/200%/keyboard sweep, and handle the deferred backlog as separate specs/PRs.
+
+---
+## RESUME HERE (2026-06-22, spec 061 PR A) -- team-safe readiness foundation + dist builder; merged via PR #64
 
 - **Branch/PR:** `spec/061-team-safe-company-site-readiness` (off `main` @ v0.28.0). PR A open — not merged.
 - **Spec:** `specs/061-team-safe-company-site-readiness/` (spec.md, plan.md, tasks.md, acceptance-evidence.md). The
