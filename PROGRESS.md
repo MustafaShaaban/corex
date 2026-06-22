@@ -4,7 +4,30 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-22, company-site readiness/onboarding) -- branch docs/company-site-readiness-onboarding; PR open
+## RESUME HERE (2026-06-22, v0.28.0 RELEASE) -- PR #62 merged to main; cutting v0.28.0
+
+- **Release:** v0.28.0 (2026-06-22) on branch `release/v0.28.0` → PR → main → tag. Stamps 0.27.0→0.28.0 across
+  the 14 plugin/addon main files + `theme/style.css`; CHANGELOG `[0.28.0]` captures everything unreleased since
+  v0.27.0 (specs 057/M2, 058/M3, 059/M4, 060/M6) **plus** the company-site readiness pass.
+- **Merged before the release:** PR #62 (company-site readiness) → main commit `a361e35` (docs URL resolver,
+  add-on tier badges + "Where to start", onboarding/AI-agent/WAMP-named-site/fonts/deploy docs).
+- **Post-merge acceptance sweep (live, dark):** login carries `corex-login` + dark `#16181d` + SSO/user icon;
+  Add-ons shows the `corex-admin-screen` shell, 10 cards, 10 tier badges, the guidance note, and **0 relative
+  doc links** (absolute GitHub URLs); Settings/Overview carry the shell. **RTL mirroring, 200% zoom, and the
+  full-keyboard/focus sweep remain environment-gated** (manual acceptance).
+- **Release gate (all green):** composer validate, PHP lint, Pest 797, Jest 110, docs-app build (275 pages),
+  verify:dependencies PASS, token inventory synced, version consistency (no stray 0.27.0), `git diff --check`.
+- **PR #60 (Astro 6→7) HELD:** semver-major; its "Validate dependency advisories" check fails (changed dep
+  inventory needs human review). Not blindly merged; does not block the v0.28.0 readiness release. Handoff:
+  validate on a dedicated branch (docs-app install/build, Astro 7 breaking changes, refresh dep inventory).
+- **Backlog (DECISIONS #108, not built):** Media settings UI; client image pipeline (`npm run images`);
+  `wp corex package:site`; `make:site` header/footer override scaffolding; curated WP Font Library collection.
+- **Exact next step:** after the v0.28.0 tag/release, run the manual RTL/200%/keyboard M6 acceptance sweep, then
+  handle PR #60 on a dedicated branch. To start the first real company site, follow
+  `docs-app/src/content/docs/getting-started/company-site.md` (`wp corex make:site Acme`).
+
+---
+## RESUME HERE (2026-06-22, company-site readiness/onboarding) -- branch docs/company-site-readiness-onboarding; merged via PR #62
 
 - **Branch/PR:** `docs/company-site-readiness-onboarding` (off `main`), tip `188866a` + this docs commit. PR
   open — not merged. Working tree clean.

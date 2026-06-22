@@ -141,6 +141,16 @@
       ]
     },
     {
+      "path": "docs-app/src/content/docs/getting-started/company-site.md",
+      "lines": [
+        119,
+        130
+      ],
+      "topics": [
+        "theme-authority"
+      ]
+    },
+    {
       "path": "docs-app/src/content/docs/getting-started/first-run.md",
       "lines": [
         41

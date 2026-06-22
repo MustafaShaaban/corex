@@ -6,6 +6,8 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.28.0] — 2026-06-22
+
 ### Added
 
 - **CoreX admin design implementation landed (spec 060, milestone M6 — merged via PR #59):** the approved CoreX admin
@@ -42,6 +44,17 @@ All notable changes to Corex are documented here. The format follows
   with a brass checkbox and a muted reveal control. Truthful-state, security, and markup contracts are unchanged.
 
 ### Added
+
+- **Company-site readiness & onboarding:** a central docs URL resolver (`Corex\Config\Docs\DocsUrl`) so the
+  Add-ons screen's "Documentation" links resolve to an absolute URL — the `docs.base_url` config key (filterable
+  via `corex_docs_base_url`), else the framework's canonical GitHub docs source — and never resolve against the
+  active client WordPress domain. Add-on **tier badges** (Recommended / Optional / Site kit / Requires
+  WooCommerce) plus a "Where to start" note (the always-on foundation: corex-core/blocks/config/forms) make
+  add-on choice clear without weakening the truthful state model. New onboarding docs: an end-to-end *Start your
+  first company site* guide and a *Using AI agents safely* guide, named-local-site (WAMP) + safe-reset, add-on
+  tiers, what-each-layer-owns (CoreX UI vs Company Kit vs parent theme vs generated client theme) + header/footer
+  ownership, the WordPress 7 Font Library strategy, a flat-`dist/` deployment warning (never ship the symlinked
+  `wp/`), a "Start here" README map, and docs-app-is-optional guidance. Neutral *Acme* placeholders throughout.
 
 - **CoreX Admin Product Experience (spec 060, milestone M6):** the shared CoreX wp-admin now presents a truthful
   add-on/settings state model. `AddonStatus` + `AddonStatusResolver` resolve every add-on to one of seven honest
