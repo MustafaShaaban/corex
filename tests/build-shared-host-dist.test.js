@@ -94,6 +94,27 @@ it( 'verifier rejects a tree with a forbidden path or a missing manifest', () =>
 	rmSync( root, { recursive: true, force: true } );
 } );
 
+it( 'fails verification when a client theme ships SCSS/JS source but no compiled output', () => {
+	const root = mkdtempSync( join( tmpdir(), 'corex-dist-assets-' ) );
+	const dist = join( root, 'dist' );
+	const theme = join( dist, 'wp-content', 'themes', 'acme-theme' );
+	mkdirSync( join( theme, 'assets', 'src', 'scss' ), { recursive: true } );
+	writeFileSync( join( theme, 'assets', 'src', 'scss', 'main.scss' ), 'body{}' );
+	mkdirSync( join( dist, 'wp-content', 'plugins' ), { recursive: true } );
+	writeFileSync( join( dist, 'corex-release.json' ), '{"plugins":[],"themes":["acme-theme"]}' );
+
+	// SCSS source but no compiled assets/css → flagged
+	let errs = mod.verifyClientAssets( dist );
+	expect( errs.join( ' ' ) ).toMatch( /acme-theme.*SCSS source present but no compiled/ );
+
+	// add the compiled CSS → passes
+	mkdirSync( join( theme, 'assets', 'css' ), { recursive: true } );
+	writeFileSync( join( theme, 'assets', 'css', 'main.css' ), 'body{}' );
+	expect( mod.verifyClientAssets( dist ) ).toEqual( [] );
+
+	rmSync( root, { recursive: true, force: true } );
+} );
+
 it( 'dry-run plans without writing dist/', () => {
 	const root = makeRepo();
 	const distDir = join( root, 'dist' );

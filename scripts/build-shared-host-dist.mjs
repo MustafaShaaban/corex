@@ -210,7 +210,49 @@ export function verifyDist(distDir) {
 			errors.push('corex-release.json is not valid JSON');
 		}
 	}
+
+	// Client-asset completeness (spec 062): a theme that ships SCSS/JS sources must also ship the COMPILED
+	// output — otherwise the deploy would serve a half-built client theme. Catches "packaged without building".
+	errors.push(...verifyClientAssets(distDir));
+
 	return { ok: errors.length === 0, errors };
+}
+
+/**
+ * For each theme under wp-content/themes, when it carries `assets/src/scss` (or `assets/src/js`) it must also
+ * carry compiled `assets/css/*.css` (or `assets/js/*.js`). Themes with no asset sources are unaffected.
+ *
+ * @returns {string[]}
+ */
+export function verifyClientAssets(distDir) {
+	const errors = [];
+	const themesDir = join(distDir, 'wp-content', 'themes');
+
+	if (!existsSync(themesDir)) {
+		return errors;
+	}
+
+	for (const theme of readdirSync(themesDir)) {
+		const themeDir = join(themesDir, theme);
+		if (!statSync(themeDir).isDirectory()) continue;
+
+		const checks = [
+			{ src: join('assets', 'src', 'scss'), out: join('assets', 'css'), ext: '.css', kind: 'SCSS' },
+			{ src: join('assets', 'src', 'js'), out: join('assets', 'js'), ext: '.js', kind: 'JS' },
+		];
+
+		for (const { src, out, ext, kind } of checks) {
+			if (!existsSync(join(themeDir, src))) continue;
+			const outDir = join(themeDir, out);
+			const built = existsSync(outDir)
+				&& readdirSync(outDir).some((f) => f.toLowerCase().endsWith(ext));
+			if (!built) {
+				errors.push(`client theme "${theme}": ${kind} source present but no compiled ${out}/*${ext} (run the theme's npm run build before packaging)`);
+			}
+		}
+	}
+
+	return errors;
 }
 
 function* walk(dir) {
