@@ -1,113 +1,103 @@
-/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+/** CoreX Insights and readiness cards; scoped to the CoreX shell. */
 
-/**
- * Corex Insights cards — token-only, logical CSS (RTL-correct), accessible. Falls back to the
- * WordPress admin palette variables where Corex tokens aren't loaded in wp-admin.
- */
-/* stylelint-enable @stylistic/max-line-length */
-.corex-insights {
+.corex-admin .corex-insights {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-	gap: var(--wp--preset--spacing--40, 1.25rem);
-	margin-block-start: var(--wp--preset--spacing--30, 1rem);
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+	gap: var(--corex-admin-space-lg);
 }
 
-.corex-insight-card__error {
-	margin: 0;
-	padding: var(--wp--preset--spacing--20, 0.5rem);
-	border-inline-start: 4px solid #b32d2e;
-	background: #fcf0f1;
-	color: #b32d2e;
-}
-
-.corex-insight-card {
+.corex-admin .corex-insight-card {
 	display: flex;
 	flex-direction: column;
-	gap: var(--wp--preset--spacing--20, 0.75rem);
-	padding: var(--wp--preset--spacing--40, 1.25rem);
-	background: #fff;
-	border: 1px solid #dcdcde;
-	border-radius: var(--wp--custom--radius--md, 8px);
-	border-inline-start-width: 4px;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: var(--corex-admin-shadow-sm);
 }
 
-.corex-insight-card.is-good {
-	border-inline-start-color: #00a32a;
+.corex-admin .corex-insight-card.is-good {
+	border-inline-start-color: var(--corex-admin-success);
 }
 
-.corex-insight-card.is-recommended {
-	border-inline-start-color: #dba617;
+.corex-admin .corex-insight-card.is-recommended {
+	border-inline-start-color: var(--corex-admin-warning);
 }
 
-.corex-insight-card.is-critical {
-	border-inline-start-color: #d63638;
+.corex-admin .corex-insight-card.is-critical {
+	border-inline-start-color: var(--corex-admin-error);
 }
 
-.corex-insight-card__head {
+.corex-admin .corex-insight-card__head,
+.corex-admin .corex-insight-card__foot,
+.corex-admin .corex-insight-card__metric {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: var(--wp--preset--spacing--20, 0.75rem);
+	gap: var(--corex-admin-space-sm);
 }
 
-.corex-insight-card__head h2 {
+.corex-admin .corex-insight-card__head h2,
+.corex-admin .corex-insight-card__summary,
+.corex-admin .corex-insight-card__metrics,
+.corex-admin .corex-insight-card__recs {
 	margin: 0;
-	font-size: 1.25rem;
 }
 
-.corex-insight-card__score {
+.corex-admin .corex-insight-card__score {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	min-inline-size: 3.5rem;
-	line-height: 1.1;
+	min-inline-size: 4rem;
+	padding: var(--corex-admin-space-xs);
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-sm);
 }
 
-.corex-insight-card__grade {
-	font-size: 1.75rem;
+.corex-admin .corex-insight-card__grade {
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-xl);
 	font-weight: 700;
 }
 
-.corex-insight-card__num {
-	font-size: 0.75rem;
-	color: #50575e;
+.corex-admin .corex-insight-card__num,
+.corex-admin .corex-insight-card__time {
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
 }
 
-.corex-insight-card__summary {
-	margin: 0;
-	color: #50575e;
+.corex-admin .corex-insight-card__summary,
+.corex-admin .corex-insight-card__recs {
+	color: var(--corex-admin-text-muted);
 }
 
-.corex-insight-card__metrics,
-.corex-insight-card__recs {
-	margin: 0;
-	padding-inline-start: 0;
+.corex-admin .corex-insight-card__metrics {
+	padding: 0;
 	list-style: none;
 }
 
-.corex-insight-card__metric {
-	display: flex;
-	justify-content: space-between;
-	gap: var(--wp--preset--spacing--20, 0.75rem);
-	padding-block: 0.25rem;
-	border-block-end: 1px solid #f0f0f1;
+.corex-admin .corex-insight-card__recs {
+	padding-inline-start: var(--corex-admin-space-lg);
 }
 
-.corex-insight-card__recs {
-	padding-inline-start: 1.1rem;
-	list-style: disc;
-	color: #50575e;
+.corex-admin .corex-insight-card__metric {
+	padding-block: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
 }
 
-.corex-insight-card__foot {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--wp--preset--spacing--20, 0.75rem);
+.corex-admin .corex-insight-card__error {
+	margin: 0;
+	padding: var(--corex-admin-space-sm);
+	color: var(--corex-admin-error);
+	background: var(--corex-admin-error-soft);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-error);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-insight-card__foot {
 	margin-block-start: auto;
-}
-
-.corex-insight-card__time {
-	font-size: 0.8rem;
-	color: #787c82;
 }

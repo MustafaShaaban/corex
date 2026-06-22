@@ -60,6 +60,29 @@ function stubReader(array $records, int $total = 0): SubmissionsReader
 
             return null;
         }
+
+        public function fieldKeys(int $sample): array
+        {
+            $keys = [];
+            foreach ($this->records as $record) {
+                foreach (array_keys($record['fields']) as $key) {
+                    $keys[$key] = true;
+                }
+            }
+
+            return array_keys($keys);
+        }
+
+        public function dailyCounts(int $days): array
+        {
+            $counts = [];
+            foreach ($this->records as $record) {
+                $day = substr((string) $record['date'], 0, 10);
+                $counts[$day] = ($counts[$day] ?? 0) + 1;
+            }
+
+            return $counts;
+        }
     };
 }
 
@@ -117,4 +140,43 @@ it('renders a single record as readable label -> value fields', function () {
 
 it('returns null for an unknown record', function () {
     expect((new SubmissionsSource(stubReader([])))->record(999))->toBeNull();
+});
+
+it('derives a real field schema with meaningful types from captured submissions', function () {
+    $source = new SubmissionsSource(stubReader([
+        ['id' => 1, 'date' => '2026-06-20', 'form' => 'contact', 'fields' => [
+            'name' => 'Sam', 'email' => 's@x.com', 'message' => 'Hi', 'phone' => '123',
+        ]],
+    ], 1));
+
+    $schema = $source->schema();
+
+    // The three fixed fields first, then derived payload fields with inferred types.
+    expect(array_column($schema, 'type'))->toBe(['id', 'datetime', 'form', 'text', 'email', 'textarea', 'tel'])
+        ->and($schema[3])->toBe(['name' => 'Name', 'type' => 'text'])
+        ->and($schema[4]['type'])->toBe('email')
+        ->and($schema[5]['type'])->toBe('textarea');
+});
+
+it('returns only the fixed fields when there are no submissions', function () {
+    $schema = (new SubmissionsSource(stubReader([])))->schema();
+
+    expect(array_column($schema, 'type'))->toBe(['id', 'datetime', 'form']);
+});
+
+it('builds a zero-filled 14-day trend, oldest first, from real timestamps', function () {
+    $today = gmdate('Y-m-d');
+    $source = new SubmissionsSource(stubReader([
+        ['id' => 1, 'date' => $today . ' 09:00', 'form' => 'contact', 'fields' => []],
+        ['id' => 2, 'date' => $today . ' 10:00', 'form' => 'contact', 'fields' => []],
+    ], 2));
+
+    $trend = $source->trend(14);
+
+    expect($trend)->toHaveCount(14)
+        ->and($trend[13]['date'])->toBe($today)
+        ->and($trend[13]['count'])->toBe(2)
+        ->and($trend[0]['count'])->toBe(0)
+        // strictly ascending dates
+        ->and($trend[0]['date'] < $trend[13]['date'])->toBeTrue();
 });

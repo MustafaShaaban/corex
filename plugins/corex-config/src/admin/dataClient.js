@@ -89,6 +89,32 @@ export function mergeForms( known, rows ) {
 }
 
 /**
+ * Toggle one row id in the bulk-selection list (add when absent, remove when present).
+ * Order of the remaining ids is preserved.
+ *
+ * @param {Array<number|string>} selected current selection
+ * @param {number|string}        id       the toggled row id
+ * @return {Array<number|string>} the next selection
+ */
+export function toggleSelection( selected, id ) {
+	return selected.includes( id )
+		? selected.filter( ( current ) => current !== id )
+		: [ ...selected, id ];
+}
+
+/**
+ * Whether every currently-visible row is selected (and there is at least one row) — the
+ * "select all" checkbox checked state.
+ *
+ * @param {Array<number|string>} selected selected ids
+ * @param {Object[]}             rows     the visible rows
+ * @return {boolean} true when all visible rows are selected
+ */
+export function allRowsSelected( selected, rows ) {
+	return rows.length > 0 && selected.length === rows.length;
+}
+
+/**
  * Which of the five render states the screen is in. Loading and error win first; an empty
  * result splits into "empty source" vs "no matches under a query" so the two are visibly
  * distinct (spec 053 FR-011).

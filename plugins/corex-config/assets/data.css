@@ -1,125 +1,529 @@
-/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+/** CoreX Data explorer, table, and states; scoped to the CoreX shell. */
 
-/**
- * Corex → Data screen (spec 053 US2) — toolbar, sortable table, pagination, detail drawer,
- * and the loading/error/empty states. Token-only with wp-admin palette fallbacks (theme
- * tokens aren't loaded in wp-admin — DECISIONS #71), logical properties (RTL-correct), and
- * visible focus states (WCAG 2.2 AA). No raw colour/size outside the documented admin
- * fallbacks.
- */
-/* stylelint-enable @stylistic/max-line-length */
+.corex-admin .corex-data--explorer {
+	display: grid;
+	grid-template-columns: 15rem minmax(0, 1fr);
+	gap: var(--corex-admin-space-xl);
+	align-items: start;
+}
 
-.corex-data__toolbar {
+.corex-admin .corex-data__rail {
 	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--wp--preset--spacing--20, 0.5rem);
-	margin-block: var(--wp--preset--spacing--30, 1rem);
+	flex-direction: column;
+	gap: var(--corex-admin-space-lg);
 }
 
-.corex-data__search {
-	min-inline-size: 16rem;
+.corex-admin .corex-data__rail-kicker {
+	margin: 0 0 var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
 }
 
-.corex-data__export {
-	margin-inline-start: auto;
-}
-
-.corex-data__export-note {
-	flex-basis: 100%;
-	color: #646970;
-	font-size: var(--wp--preset--font-size--small, 0.8125rem);
-}
-
-.corex-data__sort {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.25rem;
-	background: none;
-	border: 0;
-	padding: 0;
+.corex-admin .corex-data__rail-empty {
 	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+}
+
+.corex-admin .corex-data__sources {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.corex-admin .corex-data__source-row {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	inline-size: 100%;
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	background: transparent;
+	border: 0;
+	border-radius: var(--corex-admin-radius-sm);
 	font: inherit;
-	font-weight: 600;
+	text-align: start;
 	cursor: pointer;
-	color: inherit;
 }
 
-.corex-data__sort:focus-visible {
-	outline: 2px solid #2271b1;
-	outline-offset: 2px;
+.corex-admin .corex-data__source-row:hover {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
 }
 
-.corex-data__row-actions {
-	display: flex;
-	gap: var(--wp--preset--spacing--20, 0.5rem);
+.corex-admin .corex-data__source-row.is-active {
+	color: var(--corex-admin-action);
+	background: var(--corex-admin-action-subtle);
+	font-weight: 600;
 }
 
-.corex-data__pagination {
-	display: flex;
-	align-items: center;
-	gap: var(--wp--preset--spacing--20, 0.5rem);
-	margin-block-start: var(--wp--preset--spacing--30, 1rem);
+.corex-admin .corex-data__source-dot {
+	flex: none;
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	border-radius: 2px;
+	background: var(--corex-admin-action);
 }
 
-.corex-data__loading,
-.corex-data__empty {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	padding-block: var(--wp--preset--spacing--30, 1rem);
-	color: #646970;
+.corex-admin .corex-data__source-dot.is-c1 {
+	background: var(--corex-admin-success);
 }
 
-/* stylelint-disable @stylistic/max-line-length -- existing drawer documentation */
-.corex-data__error {
-	margin-block: var(--wp--preset--spacing--30, 1rem);
+.corex-admin .corex-data__source-dot.is-c2 {
+	background: var(--corex-admin-info);
 }
 
-/* Detail drawer — slides in from the inline-end edge (RTL-correct via logical inset). */
-/* stylelint-enable @stylistic/max-line-length */
-.corex-data__drawer-overlay {
-	position: fixed;
-	inset: 0;
-	background: rgba(0, 0, 0, 0.4);
-	z-index: 100000;
+.corex-admin .corex-data__source-dot.is-c3 {
+	background: var(--corex-admin-warning);
 }
 
-.corex-data__drawer {
-	position: fixed;
-	inset-block: 0;
-	inset-inline-end: 0;
-	inline-size: min(28rem, 100%);
-	background: #fff;
-	box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
-	padding: var(--wp--preset--spacing--40, 1.5rem);
-	overflow-y: auto;
+.corex-admin .corex-data__source-label {
+	flex: 1;
+	min-inline-size: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
-.corex-data__drawer-head {
+.corex-admin .corex-data__source-count {
+	flex: none;
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-data__schema {
+	padding-block-start: var(--corex-admin-space-lg);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-data__schema-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-data__schema-field {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-block-end: var(--wp--preset--spacing--30, 1rem);
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	font-size: var(--corex-admin-font-sm);
 }
 
-.corex-data__fields {
+.corex-admin .corex-data__schema-name {
+	color: var(--corex-admin-text-muted);
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.corex-admin .corex-data__schema-type {
+	flex: none;
+	color: var(--corex-admin-action);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-data__metrics {
+	display: grid;
+	grid-template-columns: 1.5fr 1fr 1fr;
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-data__metric {
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-data__metric-label {
 	margin: 0;
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
 }
 
-.corex-data__field {
-	padding-block: var(--wp--preset--spacing--20, 0.5rem);
-	border-block-end: 1px solid #dcdcde;
+.corex-admin .corex-data__metric-value {
+	margin: var(--corex-admin-space-xs) 0 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-xl);
+	font-weight: 700;
 }
 
-.corex-data__field dt {
+.corex-admin .corex-data__metric-empty {
+	display: flex;
+	align-items: center;
+	min-block-size: 4rem;
+	margin: var(--corex-admin-space-xs) 0 0;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+}
+
+.corex-admin .corex-data__schema-note {
+	margin: var(--corex-admin-space-sm) 0 0;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-xs);
+	font-style: italic;
+}
+
+/* The 14-day records bar chart — real per-day counts; zero days = stub bars. */
+.corex-admin .corex-data__chart-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-data__chart-total {
+	color: var(--corex-admin-success);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-data__chart {
+	display: flex;
+	align-items: flex-end;
+	gap: var(--corex-admin-space-2xs);
+	block-size: 4rem;
+	margin-block-start: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-data__chart-bar {
+	flex: 1;
+	min-block-size: 2px;
+	background: var(--corex-admin-action);
+	border-radius: var(--corex-admin-radius-sm) var(--corex-admin-radius-sm) 0 0;
+	opacity: 0.85;
+}
+
+.corex-admin .corex-data__chart-bar:hover {
+	opacity: 1;
+}
+
+.corex-admin .corex-data__panel {
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	overflow: clip;
+}
+
+.corex-admin .corex-data__panel-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-md) var(--corex-admin-space-lg);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-data__panel-title {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-data__panel-title h2 {
+	margin: 0;
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin .corex-data__qb {
+	color: var(--corex-admin-text-subtle);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-pill);
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-sm);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-data__panel-body {
+	padding: var(--corex-admin-space-md) var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-data__toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-data__search {
+	flex: 1 1 12rem;
+	min-inline-size: 11rem;
+	max-inline-size: 26rem;
+}
+
+/* Every toolbar control shares one height so search, the source filter, Reset,
+   Export, and New record read as one consistent control row. */
+.corex-admin .corex-data__toolbar .corex-data__search,
+.corex-admin .corex-data__toolbar .corex-data__form,
+.corex-admin .corex-data__toolbar .button {
+	block-size: var(--corex-admin-control-height);
+	min-block-size: var(--corex-admin-control-height);
+	padding-block: 0;
+	line-height: normal;
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+/* Readable native dropdown options in both schemes (the popup follows
+   color-scheme; option colours are explicit so a highlight stays readable). */
+.corex-admin .corex-data__form option {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+}
+
+
+.corex-admin .corex-data__export-note {
+	flex-basis: 100%;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-data__table {
+	inline-size: 100%;
+	margin: 0;
+	color: var(--corex-admin-text);
+	background: transparent;
+	border: 0;
+	border-collapse: separate;
+	border-spacing: 0;
+}
+
+.corex-admin .corex-data__table thead,
+.corex-admin .corex-data__table tfoot {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+}
+
+.corex-admin .corex-data__table th,
+.corex-admin .corex-data__table td {
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	color: inherit;
+	border-color: var(--corex-admin-border);
+	text-align: start;
+}
+
+.corex-admin .corex-data__table thead th {
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
 	font-weight: 600;
-	color: #1d2327;
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+	border-block-start: 0;
 }
 
-.corex-data__field dd {
+.corex-admin .corex-data__table.striped > tbody > :nth-child(odd) {
+	background: var(--corex-admin-surface);
+}
+
+.corex-admin .corex-data__sort {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-2xs);
+	padding: 0;
+	color: inherit;
+	font: inherit;
+	font-weight: 600;
+	background: transparent;
+	border: 0;
+	cursor: pointer;
+}
+
+.corex-admin .corex-data__row-actions,
+.corex-admin .corex-data__pagination {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-data__pagination {
+	justify-content: flex-end;
+	padding: var(--corex-admin-space-md) var(--corex-admin-space-lg);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-data__page-of {
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-data__loading,
+.corex-admin .corex-data__empty,
+.corex-admin .corex-data__error {
 	margin: 0;
-	margin-block-start: 0.25rem;
-	color: #3c434a;
+	padding: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text-muted);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-data__loading {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-data__error {
+	border-inline-start-color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-data__drawer-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	background: var(--corex-admin-overlay);
+}
+
+.corex-admin .corex-data__drawer {
+	position: fixed;
+	inset-block: 0;
+	inset-inline-end: 0;
+	display: flex;
+	flex-direction: column;
+	inline-size: min(32rem, 100%);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border-inline-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	box-shadow: var(--corex-admin-shadow-lg);
+}
+
+.corex-admin .corex-data__drawer-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-lg) var(--corex-admin-space-xl);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-data__drawer-body {
+	flex: 1;
+	padding: var(--corex-admin-space-lg) var(--corex-admin-space-xl);
+	overflow-y: auto;
+}
+
+.corex-admin .corex-data__drawer-foot {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--corex-admin-space-sm);
+	padding: var(--corex-admin-space-md) var(--corex-admin-space-xl);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-data__drawer-meta {
+	display: flex;
+	gap: var(--corex-admin-space-sm);
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-data__drawer-id {
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-data__drawer-head h2,
+.corex-admin .corex-data__fields {
+	margin: 0;
+}
+
+/* Bulk-action toolbar above the table (design: explorer). */
+.corex-admin .corex-data__bulkbar {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-md);
+	margin: var(--corex-admin-space-md) var(--corex-admin-space-lg) 0;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	background: var(--corex-admin-action-subtle);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-action-subtle);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-data__bulk-count {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-data__check {
+	inline-size: 2.5rem;
+	text-align: center;
+}
+
+.corex-admin .corex-data__table tbody tr:hover {
+	background: var(--corex-admin-surface-alt);
+}
+
+.corex-admin .corex-data__table tbody tr:focus-within {
+	outline: var(--corex-admin-border-width) solid var(--corex-admin-action-subtle);
+	outline-offset: -1px;
+}
+
+.corex-admin .corex-data__table tbody tr.is-selected {
+	background: var(--corex-admin-action-subtle);
+}
+
+.corex-admin .corex-data__field {
+	padding-block: var(--corex-admin-space-sm);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-data__field dt {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-data__field dd {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-muted);
 	overflow-wrap: anywhere;
+}
+
+@media (max-width: 960px) {
+
+	.corex-admin .corex-data--explorer {
+		grid-template-columns: 1fr;
+	}
+
+	.corex-admin .corex-data__metrics {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 782px) {
+
+	.corex-admin .corex-data__toolbar > * {
+		inline-size: 100%;
+	}
+
+	.corex-admin .corex-data__export {
+		margin-inline-start: 0;
+		text-align: center;
+	}
+
+	.corex-admin .corex-data__panel-body {
+		overflow-x: auto;
+	}
 }

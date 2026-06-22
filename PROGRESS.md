@@ -4,6 +4,156 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-21, capture-fidelity pass COMPLETE) -- all 20 blockers done; PR #59 ready for review (not merged)
+
+- **Branch/PR:** `fix/060-admin-design-implementation` → PR #59. **Do not merge** (owner review/merge).
+- **All 20 blockers complete, render + test + guard verified:** B1 full-width shell · B2-B7 Data explorer
+  (rail-driven; bulk checkboxes/select-all/Delete-selected; New/Edit honestly disabled; polished accessible
+  drawer w/ focus-trap+Escape+return-focus; reset filter; designed table) · B8-B9 accessible add-on toggles +
+  card hierarchy · B10-B12 Settings tabs (Brand→Mail→Forms→Captcha→Insights) + Brand logo/footer values +
+  appearance System/Light/Dark + SSO setting · B13-B14 login SSO slot (gated, honest disabled) + subheading ·
+  B15 Overview activity empty panel · B16 Insights (already compliant) · B17 Setup Wizard shell-inherit fix
+  (gated behind corex-kit-company) · B18 data:-URI asset guard · B19 theme screenshot 1200×900 · B20 docs +
+  visual-evidence + this matrix. Commits: f6bd8e1, 3d20860, 4904665, 05e5aaf, 9f1ed5a, cd2d915, c137c3e (+docs).
+- **Verification at tip:** Pest 769, Jest 105, lint:css/js clean, build OK, token inventory in sync,
+  verify:dependencies PASS, `git diff --check` clean. Render harness `tests/e2e/render-admin.mjs` (dark+light).
+  New tests: AddonToggle, SettingsTabs, AdminAppearance, LoginSso, NoDataUriAsset, dataClient selection helpers.
+- **Truthful-state preserved:** installed-only add-ons; write-only secrets; no fake records/sources/SSO/Pro/
+  marketplace; real asset files only. Setup Wizard truthfully gated; missing/new screen designs deferred.
+- **Exact next step:** owner review + merge PR #59; rerun the manual RTL/200%/full-keyboard acceptance pass.
+
+---
+
+## RESUME HERE (2026-06-21, capture-fidelity pass) -- B1,B8-B14,B18,B19 done; B2-B7,B15-B17,B20 remain
+
+- **Branch/PR:** `fix/060-admin-design-implementation` → PR #59 (do **not** merge). Tip `9f1ed5a`.
+- **Harness:** `node tests/e2e/render-admin.mjs <out> [--screens=..] [COREX_W/H]` (injected admin cookie in
+  `tests/e2e/.auth/admin.json`; mint via `wp eval wp_generate_auth_cookie`). Captures: `F:/Work/Design project
+  questions answered (3)/*.dc.html`. Full Pest 769, Jest 103, lint:css/js clean at the tip.
+- **DONE (committed, render+test+guard verified):** B1 full-width shell (`f6bd8e1`); B18 data:-URI asset guard +
+  B19 theme screenshot 1200×900 (`3d20860`); B8-B9 accessible add-on toggles + card hierarchy (`4904665`); B10-B12
+  Settings tabs (Brand→Mail→Forms→Captcha→Insights) + Brand logo-preview/footer values + appearance System/Light/
+  Dark (data-corex-theme on shell via `corex_admin_appearance` filter; login body class; media query scoped to
+  System) + SSO setting (`05e5aaf`); B13-B14 login SSO slot (gated, honest disabled "not configured", no fake
+  provider) + sign-in subheading (`9f1ed5a`). New tests: AddonToggleTest, SettingsTabsTest, AdminAppearanceTest,
+  LoginSsoTest, NoDataUriAssetTest. NOTE: after any CSS token change run `node scripts/generate-token-inventory.mjs`
+  (consumer-contract test) — already done through `9f1ed5a`.
+- **REMAINING in order:** (4) **B2-B7 Data** — `plugins/corex-config/src/Data/*` + React app
+  `plugins/corex-config/src/admin/index.js` (rebuild to `build/admin/index.js` via `npm run build`) + `assets/
+  data.css`: rail must drive active source/schema/cards/table/filters/actions/URL (not the select box); schema from
+  real source fields; visible functional filters + search + reset + export + QueryBuilder marker; row checkboxes +
+  select-all + bulk toolbar (truthful actions only, nonce+confirm); visible New/Edit/View (disabled+honest where
+  unsupported — form submissions are read-only); polished accessible View drawer (focus trap, Esc, return focus,
+  metadata, footer actions); designed table (mono headers, action column, hover/focus, pagination, empty/loading).
+  (5) **B15-B17** Overview real-metric panels + truthful empty states; Insights score/readiness rows; Setup Wizard
+  polish or truthful gating. (6) **B20** docs + visual-evidence.md + final report + full check matrix.
+- **Exact next step:** B2-B7 Data. Read `Corex Admin - Add-ons & Data.dc.html` (Data tab — rail/schema/cards/table
+  already captured in this session's notes), inspect `Data/DataController.php` + `src/admin/index.js`, implement,
+  `npm run build`, re-render `--screens=data`, test/guard, commit. Do not merge.
+
+---
+
+## RESUME HERE (2026-06-21, capture-fidelity 20-blocker pass started) -- B1/B18/B19 done; 16 blockers remain
+
+- **Branch/PR:** `fix/060-admin-design-implementation` → PR #59 (do **not** merge). Single root checkout; no `main`.
+- **Scope:** the owner's 20-blocker capture-fidelity brief (`C:\Users\pc\Desktop\promp.md`) — finish the *current*
+  CoreX admin screens against the approved `.dc.html` captures (truthful data only; no fake records/sources/SSO/Pro).
+- **Render harness REBUILT + re-usable:** `tests/e2e/render-admin.mjs` logs in via an injected admin session cookie
+  (`wp eval wp_generate_auth_cookie` → `tests/e2e/.auth/admin.json`, gitignored) and screenshots every CoreX admin
+  surface dark+light at any viewport (`COREX_W/COREX_H`). corex.local is live (HTTP 200); Playwright 1.61 + chromium
+  present. Captures live at `F:/Work/Design project questions answered (3)/*.dc.html` (Dashboard, Add-ons & Data,
+  Login & Settings, Options Round 2, Addon Logos, Theme Screenshot). Throwaway output dirs are gitignored.
+- **DONE this pass (committed, render+test+guard verified):**
+  - **B1 full-width shell** (`f6bd8e1`): removed the `--corex-admin-content-max` cap on `.corex-admin` (was a centered
+    panel leaving dead canvas on wide monitors) → fills the available content area; shell min-height grown to
+    `calc(100vh - 7rem)` so short screens don't leave a gray void. Verified dark+light at 1440 and 1920.
+  - **B18 asset guard** (`3d20860`): `tests/Unit/Assets/NoDataUriAssetTest.php` scans shipped plugins/addons/theme
+    CSS/JS/PHP for `data:` image URIs (none) + an anti-vacuous-scan companion test. test-guard clean.
+  - **B19 theme screenshot:** confirmed `theme/screenshot.png` is a real 1200×900 PNG (verification only, no change).
+- **REMAINING blockers (each = read screen code + matching capture, implement, re-render dark+light, test, guard,
+  commit):** B2–B7 Data explorer (rail-driven source switching incl. schema/cards/table/filters; correct schema
+  panel; visible functional filters; bulk actions w/ checkboxes+nonce; Add/Edit/View w/ polished accessible drawer;
+  designed table) — files `plugins/corex-config/src/Data/*` + `src/admin/index.js` (React, rebuild to `build/admin/`)
+  + `assets/data.css`. B8–B9 Add-ons toggles + card hierarchy (`src/Addons/AddonsScreen.php` + `assets/addons.css`).
+  B10–B12 Settings tabs (Brand→Mail→Forms→Captcha→Insights) + Brand logo/footer current-value preview + appearance
+  mode System/Light/Dark (note: `corex-admin-tokens.css` already has a `[data-corex-theme="light"]` hook to wire to a
+  persisted setting) — `src/Settings/*`. B13–B14 Login SSO slot (setting-gated, no fake provider) + visual fidelity
+  (`corex-admin-login.css` + login render filter). B15 Overview, B16 Insights, B17 Setup polish. B20 docs/evidence +
+  visual-evidence.md update + final report. Keep all states truthful; real asset files only.
+- **Exact next step:** B8–B9 (Add-ons toggles) OR B10 (Settings tabs) — both contained, high-impact, capture-clear.
+  Read the matching `.dc.html`, implement, re-render via `node tests/e2e/render-admin.mjs <out> --screens=<name>`,
+  run focused Pest + guard, commit to PR #59. Do not merge.
+
+---
+
+## RESUME HERE (2026-06-21, render-verified) -- corrective M6 admin visuals verified by real rendering
+
+- **Branch:** `fix/060-admin-design-implementation` (PR #59 → `main`). Single root checkout; no work on `main`.
+- **What changed since the review snapshot below:** the admin surfaces were actually rendered (Chrome + Playwright,
+  authenticated, dark + light, WP live at `http://corex.local`) and compared against the approved `.dc.html` design
+  captures. This exposed and fixed three systemic defects the source-only pass missed — white form inputs + WP-blue
+  buttons (zero-specificity `:where(...)` overridden by WP core), near-invisible headings (no explicit colour on dark),
+  and a drifted `--corex-admin-*` palette. Fixes: specificity-correct control styling (inputs/select chevron/buttons/
+  Gutenberg buttons + brass focus ring), explicit `.corex-admin h1-h6` colour, dark+light tokens realigned to the
+  approved package, mono data-table heads + themed pagination, login ambient grid/checkbox/reveal polish. See
+  DECISIONS #107 and `visual-evidence.md` (now real, not ENVIRONMENT-GATED).
+- **Verification (this pass):** Composer 744 tests / 3367 assertions PASS; JS 18 suites / 103 tests PASS; CSS lint,
+  root build, JS lint, dependency/security policy PASS; token inventory regenerated so the consumer contract passes;
+  every CoreX admin surface rendered dark + light and the native login logged-out.
+- **Capture-fidelity pass (in progress, do not merge yet):** refining PR #59 to match the approved `.dc.html`
+  captures specifically (not just generic CoreX styling), current screens only — no invented/new screens.
+  - **Phase 1 DONE — Add-on logo system + Add-ons screen:** generated the frozen "Direction A — Module Tile" logos
+    as real committed SVGs (`scripts/generate-addon-logos.mjs` → `plugins/corex-config/assets/addon-logos/*.svg`,
+    active + muted-disabled per add-on/kit/core/pro + `fallback` + `assets/brand/corex-mark.svg`); the Add-ons screen
+    now renders each card's logo tile, a slug meta line, and a truthful summary bar (Active n/total · Updates "not
+    tracked" · Site kits · "Add-ons self-disable" philosophy card) in a 2-col grid. Replaced the one `data:` chevron
+    with a real file (`plugins/corex-core/assets/icons/chevron-down.svg`). No `data:`/base64 design assets remain.
+  - **Phase 2 DONE — shared in-content shell:** `AdminPage::open()` now renders the framed CoreX window from the
+    captures: a left `COREX FRAMEWORK` rail (inline five-square brand mark + Overview/Add-ons/Data/Settings, each with
+    a real masked SVG nav icon in `plugins/corex-core/assets/icons/nav-*.svg`, brass active state + muted hover) and a
+    topbar with the mono "Corex / {section}" breadcrumb + strong title. Frame moved from `__main` to `__shell` (grid);
+    rail collapses on narrow. Verified dark + light, active state per screen. `AdminPageTest` stubs updated.
+  - **Phase 7 DONE — theme screenshot:** rendered `Corex Theme Screenshot.dc.html` to a real `theme/screenshot.png`
+    (1200×900 PNG; the theme previously had none) — editorial light hero, CoreX mark + brass-x wordmark, nav
+    (Product/Solutions/Docs/Pricing), Sign in / Get started, "Discipline, at every layer.", and the Architecture/
+    Blocks/Add-ons feature cards. Real raster file, not embedded/base64.
+  - **Phase 3 DONE — Data explorer (owner-approved "Option 1: truthful structure"):** rebuilt the Data React app
+    (`plugins/corex-config/src/admin/index.js`, rebuilt to `build/admin/index.js`) into the capture's explorer layout
+    — left `SOURCES / MODELS` rail (only real registered sources; active source shows its real row count) + a
+    `SCHEMA — {source}` panel derived from the source's real columns (honest empty state when none); metric cards for
+    real Total rows + Fields plus an honest "trend not available" card (no fabricated 14-day sparkline); and a data
+    panel with the model title, a QueryBuilder marker, the real search/form-filter/Export controls, the mono-uppercase
+    table, and themed pagination. No invented models/fields/records; all states truthful.
+  - **Remaining phases:** (4) Overview records/event panels — the capture's live event bus + records table are demo
+    data we don't have, so only truthful panels (apply the explorer/card rhythm to real Site-status data + the setup
+    card); (5) Settings tabs — the capture's tab names (Architecture/Data sources/Design tokens) are demo, so the
+    truthful move is to tab the real sections (Brand/Mail/Forms/Captcha/Insights); (6) Setup Wizard + Insights rhythm
+    (largely inherit the shell + control fixes). Keep truthful state; real asset files only (no `data:`).
+- **Exact next step:** Phase 5 (Settings tabs over the real sections) or Phase 4 (Overview truthful panels). Do not
+  merge PR #59 yet.
+
+---
+
+## RESUME HERE (2026-06-21, review) -- corrective M6 admin visual implementation complete
+
+- **Branch:** `fix/060-admin-design-implementation`, from `main` @ `b31056f` (PR #58 merge). Normal root checkout,
+  single worktree, clean start; no work on `main`.
+- **Spec/tasks:** `specs/060-corex-admin-product-experience/`; T001-T026 complete; T027 completes with the PR handoff.
+- **Owned files:** Spec 060 artifacts; CoreX admin/login renderers and assets in `plugins/corex-core`,
+  `plugins/corex-config`, `addons/corex-kit-company`, and `addons/corex-captcha`; matching PHP/JS tests; M6 docs/status
+  surfaces. No frontend/company-site files are in scope.
+- **Delivered:** additive CoreX login branding; shared allow-listed admin shell; distinct Overview and Settings;
+  complete Add-ons, Data, Settings, Setup Wizard, Readiness/Insights, captcha, and option-page visual treatment;
+  dark/light mappings; RTL/logical layout; responsive/focus/reduced-motion behavior; universal states; preserved
+  installed-only add-on truth and write-only secrets, including empty-secret preservation on declarative pages.
+- **Verification:** Composer 744 tests / 3367 assertions PASS; JS 18 suites / 103 tests PASS; root build, CSS lint,
+  docs-app build (273 pages), token inventory, dependency/security policy, PHP syntax, WP 7.0 boot, login/lost-
+  password/message DOM, and diff checks PASS. Rendered browser screenshots/RTL/light/dark/narrow checks are
+  `ENVIRONMENT-GATED` in `visual-evidence.md` because no compatible browser runtime was available.
+- **Exact next step:** review and merge the corrective PR; rerun the recorded browser matrix when a compatible
+  browser runtime is available.
+
+---
 ## RESUME HERE (2026-06-21, latest) -- M6 truthful-state core complete; PR #58 ready; docs + gate done
 
 - **Branch/PR:** `spec/060-corex-admin-product-experience`; **PR #58** to `main`. Normal root, single worktree, no

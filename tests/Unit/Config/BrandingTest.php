@@ -8,6 +8,8 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Functions;
+use Corex\Config\Branding\AdminBranding;
 use Corex\Config\Branding\BrandingService;
 use Corex\Support\Config\ConfigInterface;
 
@@ -43,10 +45,85 @@ it('keeps product logo resolution separate from client identity', function (arra
     'client identity is not product branding' => [['site.logo_url' => '/client.svg'], '/default.svg'],
 ]);
 
-it('produces login CSS referencing the logo', function () {
+it('produces a login-scoped logo variable without replacing WordPress form markup', function () {
     $css = (new BrandingService(brandingConfig([]), '/x.svg'))->loginCss('/x.svg');
 
-    expect($css)->toContain('#login h1 a')->toContain('/x.svg')->toContain('background-size:contain');
+    expect($css)->toContain('body.login.corex-login')
+        ->toContain('--corex-admin-login-logo')
+        ->toContain('/x.svg')
+        ->not->toContain('<form')
+        ->not->toContain('action=');
+});
+
+it('ships a login stylesheet scoped to the CoreX login body class and admin tokens', function () {
+    $css = (string) file_get_contents(dirname(__DIR__, 3) . '/plugins/corex-core/assets/css/corex-admin-login.css');
+
+    expect($css)->toContain('body.login.corex-login')
+        ->and($css)->toContain('var(--corex-admin-')
+        ->and($css)->not->toMatch('/(?:^|,)\s*(?::root|html|body(?!\.login\.corex-login))\b/m');
+});
+
+it('adds only the CoreX login class and conditionally enqueues the login visual layer', function () {
+    $branding = new AdminBranding(new BrandingService(brandingConfig([]), '/x.svg'));
+    Functions\when('esc_url')->returnArg();
+    Functions\expect('wp_enqueue_style')->once()->with('corex-admin-login');
+    Functions\expect('wp_enqueue_script')->once()->with('corex-admin-login');
+    Functions\expect('wp_add_inline_style')->once()->with(
+        'corex-admin-login',
+        'body.login.corex-login{--corex-admin-login-logo:url("/x.svg")}',
+    );
+
+    // The CoreX login is dark-first: with no saved appearance ('system') it carries an explicit
+    // dark theme class so the real logged-out page shows the approved dark design by default.
+    expect($branding->loginBodyClass(['login-action-login']))
+        ->toBe(['login-action-login', 'corex-login', 'corex-appearance-dark']);
+    $branding->enqueueLoginAssets();
+});
+
+it('resolves the login appearance dark-first: light opts into light, system/dark stay dark', function (string $saved, string $expected) {
+    $branding = new AdminBranding(
+        new BrandingService(brandingConfig(['brand.admin_appearance' => $saved]), '/x.svg'),
+    );
+
+    expect($branding->loginAppearance())->toBe($expected)
+        ->and($branding->loginBodyClass([]))->toContain('corex-appearance-' . $expected);
+})->with([
+    ['light', 'light'],
+    ['dark', 'dark'],
+    ['system', 'dark'],
+    ['', 'dark'],
+]);
+
+it('ships the login design layer: inline field icons, motion, and reduced-motion respect', function () {
+    $css = (string) file_get_contents(
+        dirname(__DIR__, 3) . '/plugins/corex-core/assets/css/corex-admin-login.css',
+    );
+
+    expect($css)
+        // leading field icons via the CoreX icon system (masked, theme-aware)
+        ->toContain('login-user.svg')
+        ->toContain('login-lock.svg')
+        ->toContain('.corex-login__field')
+        // login motion + explicit reduced-motion guard
+        ->toContain('@keyframes corex-login-')
+        ->toContain('animation: corex-login-')
+        ->toContain('prefers-reduced-motion: reduce')
+        // no raster/base64 artwork
+        ->not->toContain('data:image');
+
+    $user = dirname(__DIR__, 3) . '/plugins/corex-core/assets/icons/login-user.svg';
+    $lock = dirname(__DIR__, 3) . '/plugins/corex-core/assets/icons/login-lock.svg';
+    expect($user)->toBeFile()->and($lock)->toBeFile();
+});
+
+it('does not hook authentication or replace native login actions', function () {
+    $source = (string) file_get_contents(
+        dirname(__DIR__, 3) . '/plugins/corex-config/src/Branding/AdminBranding.php',
+    );
+
+    expect($source)->not->toContain("add_filter('authenticate'")
+        ->and($source)->not->toContain("add_action('login_form_")
+        ->and($source)->not->toContain('<form');
 });
 
 it('exposes the configured footer text and login URL', function () {

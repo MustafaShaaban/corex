@@ -52,7 +52,10 @@ it('disables the fields of an inactive section', function () {
 it('prompts for configuration when active but unconfigured', function () {
     $html = formWithCaptchaState(SettingsSectionState::ConfigurationNeeded);
 
-    expect($html)->toContain('corex-section-notice')
+    expect($html)->toContain('corex-settings-section')
+        ->and($html)->toContain('id="corex-settings-section-captcha"')
+        ->and($html)->toContain('corex-section-notice--configuration-needed')
+        ->and($html)->toContain('role="status"')
         ->and($html)->toContain('name="captcha_site_key"'); // fields present to configure
 });
 

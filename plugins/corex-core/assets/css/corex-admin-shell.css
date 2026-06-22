@@ -1,0 +1,696 @@
+/**
+ * Shared CoreX wp-admin product shell. Registered globally, enqueued only for
+ * allow-listed CoreX screen hooks, and rooted in .corex-admin.
+ */
+
+.corex-admin {
+	box-sizing: border-box;
+
+	/* Fill the available wp-admin content area rather than sitting as a narrow
+	   centered panel — the shell is the full CoreX product surface. */
+	max-inline-size: none;
+	margin-block-start: var(--corex-admin-space-lg);
+	margin-inline: 0 var(--corex-admin-space-lg);
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-body);
+}
+
+/* Full-bleed CoreX surface, CoreX screens only (via the body class): strip the
+   wp-admin outer padding/margins so the shell reaches the content-area edges.
+   Scoped to body.corex-admin-screen — nothing else is touched. */
+/* stylelint-disable selector-id-pattern */
+body.corex-admin-screen #wpcontent {
+	padding-inline-start: 0;
+}
+
+body.corex-admin-screen #wpbody-content {
+	padding-block-end: 0;
+}
+/* stylelint-enable selector-id-pattern */
+
+body.corex-admin-screen .corex-admin {
+	margin: 0;
+}
+
+.corex-admin *,
+.corex-admin *::before,
+.corex-admin *::after {
+	box-sizing: inherit;
+}
+
+.corex-admin__shell {
+	display: grid;
+	grid-template-columns: 15rem minmax(0, 1fr);
+	min-block-size: var(--corex-admin-page-min-height);
+	background: var(--corex-admin-canvas);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-lg);
+	box-shadow: var(--corex-admin-shadow-lg);
+	overflow: clip;
+}
+
+body.corex-admin-screen .corex-admin__shell {
+	min-block-size: calc(100vh - 32px);
+	border-inline: 0;
+	border-block-start: 0;
+	border-radius: 0;
+}
+
+.corex-admin__main {
+	min-inline-size: 0;
+}
+
+.corex-admin__rail {
+	padding-block: var(--corex-admin-space-md);
+	padding-inline: var(--corex-admin-space-sm);
+	background: var(--corex-admin-shell);
+	border-inline-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin__brand {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	padding-block: var(--corex-admin-space-xs) var(--corex-admin-space-md);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-weight: 700;
+	letter-spacing: -0.01em;
+}
+
+.corex-admin__brand svg {
+	inline-size: 1.4rem;
+	block-size: 1.4rem;
+}
+
+.corex-admin__rail-group {
+	margin: var(--corex-admin-space-2xs) var(--corex-admin-space-sm) var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin__nav {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.corex-admin__nav-item {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	border: var(--corex-admin-border-width) solid transparent;
+	border-radius: var(--corex-admin-radius-sm);
+	font-size: var(--corex-admin-font-sm);
+	text-decoration: none;
+}
+
+.corex-admin__nav-item:hover {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+}
+
+.corex-admin__nav-item.is-active {
+	color: var(--corex-admin-action);
+	background: var(--corex-admin-action-subtle);
+	border-color: var(--corex-admin-action-subtle);
+	font-weight: 600;
+}
+
+.corex-admin__nav-icon {
+	flex: none;
+	inline-size: 1rem;
+	block-size: 1rem;
+	background: currentcolor;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+	mask-position: center;
+	-webkit-mask-size: contain;
+	mask-size: contain;
+}
+
+.corex-admin__nav-icon--overview {
+	-webkit-mask-image: url(../icons/nav-overview.svg);
+	mask-image: url(../icons/nav-overview.svg);
+}
+
+.corex-admin__nav-icon--addons {
+	-webkit-mask-image: url(../icons/nav-addons.svg);
+	mask-image: url(../icons/nav-addons.svg);
+}
+
+.corex-admin__nav-icon--data {
+	-webkit-mask-image: url(../icons/nav-data.svg);
+	mask-image: url(../icons/nav-data.svg);
+}
+
+.corex-admin__nav-icon--settings,
+.corex-admin__nav-icon--option-page {
+	-webkit-mask-image: url(../icons/nav-settings.svg);
+	mask-image: url(../icons/nav-settings.svg);
+}
+
+.corex-admin__nav-icon--insights {
+	-webkit-mask-image: url(../icons/nav-insights.svg);
+	mask-image: url(../icons/nav-insights.svg);
+}
+
+.corex-admin__nav-icon--setup {
+	-webkit-mask-image: url(../icons/nav-setup.svg);
+	mask-image: url(../icons/nav-setup.svg);
+}
+
+.corex-admin__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-lg);
+	padding-block: var(--corex-admin-space-xl);
+	padding-inline: var(--corex-admin-space-xl);
+	background: var(--corex-admin-surface-raised);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin__eyebrow {
+	margin: 0 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-action);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+.corex-admin__header .corex-admin__eyebrow {
+	color: var(--corex-admin-text-subtle);
+}
+
+.corex-admin__header h1 {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-2xl);
+	font-weight: 700;
+	line-height: var(--corex-admin-line-tight);
+}
+
+.corex-admin__description {
+	max-inline-size: var(--corex-admin-measure);
+	margin: var(--corex-admin-space-sm) 0 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin__content {
+	padding: var(--corex-admin-space-xl);
+}
+
+.corex-admin h1,
+.corex-admin h2,
+.corex-admin h3,
+.corex-admin h4,
+.corex-admin h5,
+.corex-admin h6 {
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+}
+
+.corex-admin :where(a) {
+	color: var(--corex-admin-link);
+}
+
+.corex-admin :where(a:hover) {
+	color: var(--corex-admin-link-hover);
+}
+
+.corex-admin :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+	box-shadow: none;
+}
+
+.corex-admin .button,
+.corex-admin .button-secondary,
+.corex-admin button.button,
+.corex-admin input.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--corex-admin-space-xs);
+	min-block-size: var(--corex-admin-control-height);
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	font-family: var(--corex-admin-font-body);
+	font-weight: 600;
+	line-height: var(--corex-admin-line-tight);
+	text-decoration: none;
+	transition: background var(--corex-admin-motion-fast) ease, border-color var(--corex-admin-motion-fast) ease, color var(--corex-admin-motion-fast) ease;
+}
+
+.corex-admin .button:hover,
+.corex-admin .button-secondary:hover,
+.corex-admin button.button:hover,
+.corex-admin input.button:hover {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+	border-color: var(--corex-admin-border-strong);
+}
+
+.corex-admin .button-primary,
+.corex-admin button.button-primary,
+.corex-admin input.button-primary {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .button-primary:hover,
+.corex-admin .button-primary:focus,
+.corex-admin button.button-primary:hover,
+.corex-admin input.button-primary:hover {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action-hover);
+	border-color: var(--corex-admin-action-hover);
+}
+
+.corex-admin .button-link {
+	min-block-size: 0;
+	padding: 0;
+	color: var(--corex-admin-link);
+	background: transparent;
+	border: 0;
+}
+
+.corex-admin .button-link.corex-danger,
+.corex-admin .corex-data__delete {
+	color: var(--corex-admin-error);
+}
+
+/* Gutenberg @wordpress/components buttons used by the Data screen. */
+.corex-admin .components-button.is-primary {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .components-button.is-primary:hover:not(:disabled) {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action-hover);
+	border-color: var(--corex-admin-action-hover);
+}
+
+.corex-admin .components-button.is-secondary {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	box-shadow: inset 0 0 0 var(--corex-admin-border-width) var(--corex-admin-border);
+}
+
+.corex-admin .components-button.is-secondary:hover:not(:disabled) {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+	box-shadow: inset 0 0 0 var(--corex-admin-border-width) var(--corex-admin-border-strong);
+}
+
+.corex-admin .components-button.is-link {
+	color: var(--corex-admin-link);
+}
+
+.corex-admin .components-button.is-link:hover:not(:disabled) {
+	color: var(--corex-admin-link-hover);
+}
+
+.corex-admin .components-button.is-destructive,
+.corex-admin .components-button.is-link.is-destructive {
+	color: var(--corex-admin-error);
+}
+
+.corex-admin :where(button, input, select, textarea):disabled,
+.corex-admin [aria-disabled="true"] {
+	opacity: var(--corex-admin-disabled-opacity);
+	cursor: not-allowed;
+}
+
+.corex-admin input[type="text"],
+.corex-admin input[type="search"],
+.corex-admin input[type="email"],
+.corex-admin input[type="url"],
+.corex-admin input[type="password"],
+.corex-admin input[type="number"],
+.corex-admin input[type="tel"],
+.corex-admin input[type="date"],
+.corex-admin select,
+.corex-admin textarea {
+	min-block-size: var(--corex-admin-control-height);
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	box-shadow: none;
+}
+
+.corex-admin select {
+	appearance: none;
+	padding-inline-end: var(--corex-admin-space-xl);
+	background-image: url(../icons/chevron-down.svg);
+	background-repeat: no-repeat;
+	background-position: right var(--corex-admin-space-sm) center;
+	background-size: 14px;
+}
+
+[dir="rtl"] .corex-admin select {
+	background-position: left var(--corex-admin-space-sm) center;
+}
+
+.corex-admin input[type="text"]::placeholder,
+.corex-admin input[type="search"]::placeholder,
+.corex-admin input[type="email"]::placeholder,
+.corex-admin input[type="url"]::placeholder,
+.corex-admin input[type="password"]::placeholder,
+.corex-admin textarea::placeholder {
+	color: var(--corex-admin-text-subtle);
+}
+
+.corex-admin input[type="text"]:focus,
+.corex-admin input[type="search"]:focus,
+.corex-admin input[type="email"]:focus,
+.corex-admin input[type="url"]:focus,
+.corex-admin input[type="password"]:focus,
+.corex-admin input[type="number"]:focus,
+.corex-admin select:focus,
+.corex-admin textarea:focus {
+	border-color: var(--corex-admin-action);
+	outline: none;
+	box-shadow: 0 0 0 3px var(--corex-admin-action-subtle);
+}
+
+.corex-admin input[type="checkbox"],
+.corex-admin input[type="radio"] {
+	accent-color: var(--corex-admin-action);
+}
+
+/* Accessible custom select (ARIA combobox/listbox): an in-DOM dropdown, always
+   readable in dark/light, replacing the OS-rendered native popup. Shared by the
+   Data filter (React) and the Settings selects (enhanced from a native one). */
+.corex-admin .corex-select {
+	position: relative;
+	display: inline-block;
+	min-inline-size: 11rem;
+}
+
+.corex-admin .corex-select__button {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	inline-size: 100%;
+	min-block-size: var(--corex-admin-control-height);
+	padding-block: 0;
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+
+.corex-admin .corex-select__button:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-admin .corex-select__chevron {
+	flex: none;
+	inline-size: 0.875rem;
+	block-size: 0.875rem;
+	background: currentcolor;
+	opacity: 0.7;
+	-webkit-mask: url(../icons/chevron-down.svg) no-repeat center / contain;
+	mask: url(../icons/chevron-down.svg) no-repeat center / contain;
+}
+
+.corex-admin .corex-select__list {
+	position: absolute;
+	z-index: 20;
+	inset-block-start: calc(100% + var(--corex-admin-space-2xs));
+	inset-inline: 0;
+	max-block-size: 16rem;
+	margin: 0;
+	padding: var(--corex-admin-space-2xs);
+	overflow-y: auto;
+	list-style: none;
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+	box-shadow: var(--corex-admin-shadow-md);
+}
+
+.corex-admin .corex-select__option {
+	padding-block: var(--corex-admin-space-xs);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	border-radius: var(--corex-admin-radius-sm);
+	font-size: var(--corex-admin-font-sm);
+	cursor: pointer;
+}
+
+.corex-admin .corex-select__option.is-active {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+}
+
+.corex-admin .corex-select__option.is-selected {
+	color: var(--corex-admin-action);
+	font-weight: 600;
+}
+
+.corex-admin :where(.card, .corex-surface) {
+	max-inline-size: none;
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: var(--corex-admin-shadow-sm);
+}
+
+.corex-admin .corex-state {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-state .dashicons {
+	color: var(--corex-admin-info);
+}
+
+.corex-admin .corex-state h2,
+.corex-admin .corex-state p {
+	margin: 0;
+}
+
+.corex-admin .corex-state p {
+	margin-block-start: var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-state--success {
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-state--success .dashicons {
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-state--warning {
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-state--warning .dashicons {
+	color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-state--error,
+.corex-admin .corex-state--permission-denied {
+	border-inline-start-color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-state--error .dashicons,
+.corex-admin .corex-state--permission-denied .dashicons {
+	color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-state--loading .dashicons {
+	animation: corex-admin-spin var(--corex-admin-motion-slow) linear infinite;
+}
+
+.corex-admin .corex-wizard__steps {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: var(--corex-admin-space-sm);
+	margin: 0 0 var(--corex-admin-space-xl);
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-wizard__steps li {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	padding: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-sm);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-wizard__steps li span {
+	display: inline-grid;
+	place-items: center;
+	inline-size: var(--corex-admin-control-height);
+	block-size: var(--corex-admin-control-height);
+	color: var(--corex-admin-text);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-pill);
+}
+
+.corex-admin .corex-wizard__steps .is-current {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-warning-soft);
+}
+
+.corex-admin .corex-wizard__steps .is-current span {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-wizard__kits {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+	gap: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-wizard__kit {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-wizard__kit h2,
+.corex-admin .corex-wizard__kit p {
+	margin: 0;
+}
+
+.corex-admin .corex-wizard__kit .button {
+	align-self: flex-start;
+	margin-block-start: auto;
+}
+
+.corex-admin .corex-wizard__review {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+	max-inline-size: var(--corex-admin-measure);
+}
+
+.corex-admin .corex-wizard__review h2 {
+	margin: 0;
+}
+
+.corex-admin .corex-wizard__review-line {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-wizard__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-sm);
+	margin-block-start: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-wizard__actions form {
+	margin: 0;
+}
+
+.corex-admin .corex-wizard__steps .is-done {
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-wizard__steps .is-done span {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-success);
+	border-color: var(--corex-admin-success);
+}
+
+@keyframes corex-admin-spin {
+
+	to {
+		transform: rotate(1turn);
+	}
+}
+
+@media (max-width: 782px) {
+
+	.corex-admin {
+		margin-inline: 0;
+	}
+
+	.corex-admin__shell {
+		grid-template-columns: 1fr;
+		border-inline: 0;
+		border-radius: 0;
+	}
+
+	.corex-admin__rail {
+		border-inline-end: 0;
+		border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	}
+
+	.corex-admin__nav {
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+
+	.corex-admin__header,
+	.corex-admin__content {
+		padding: var(--corex-admin-space-lg);
+	}
+
+	.corex-admin .corex-wizard__steps {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-admin *,
+	.corex-admin *::before,
+	.corex-admin *::after {
+		scroll-behavior: auto;
+		transition-duration: 0.01ms;
+		animation-duration: 0.01ms;
+		animation-iteration-count: 1;
+	}
+}

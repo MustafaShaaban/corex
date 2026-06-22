@@ -111,6 +111,63 @@ final class WpSubmissionsReader implements SubmissionsReader
     }
 
     /**
+     * @return list<string>
+     */
+    public function fieldKeys(int $sample): array
+    {
+        $query = new WP_Query([
+            'post_type'      => 'corex_submission',
+            'post_status'    => 'private',
+            'posts_per_page' => min(max($sample, 1), 100),
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+        ]);
+
+        $keys = [];
+        foreach ($query->posts as $id) {
+            foreach (array_keys(get_post_meta((int) $id)) as $metaKey) {
+                if (str_starts_with((string) $metaKey, 'corex_field_')) {
+                    $keys[substr((string) $metaKey, strlen('corex_field_'))] = true;
+                }
+            }
+        }
+
+        return array_keys($keys);
+    }
+
+    /**
+     * @return array<string,int>
+     */
+    public function dailyCounts(int $days): array
+    {
+        global $wpdb;
+
+        $since = gmdate('Y-m-d 00:00:00', time() - (max($days, 1) - 1) * DAY_IN_SECONDS);
+
+        /** @var list<array{d:string,c:string}> $rows */
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT DATE(post_date) AS d, COUNT(*) AS c FROM {$wpdb->posts}"
+                . ' WHERE post_type = %s AND post_status = %s AND post_date >= %s'
+                . ' GROUP BY DATE(post_date)',
+                'corex_submission',
+                'private',
+                $since,
+            ),
+            ARRAY_A,
+        ) ?: [];
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(string) $row['d']] = (int) $row['c'];
+        }
+
+        return $counts;
+    }
+
+    /**
      * Build the WP_Query args for a DataQuery: a `form` filter via the slug meta, a date
      * sort, and pagination. The free-text search uses WP_Query's `s` (post fields); meta
      * value search is a documented limitation of the post-meta driver (a custom-table

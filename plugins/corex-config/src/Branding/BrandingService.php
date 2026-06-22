@@ -33,10 +33,8 @@ final class BrandingService
 
     public function loginCss(string $logoUrl): string
     {
-        // The fixed login-logo box height is the WordPress login slot's functional size,
-        // not a site design token.
         return sprintf(
-            '#login h1 a{background-image:url("%s");background-size:contain;background-position:center;width:100%%;height:64px}',
+            'body.login.corex-login{--corex-admin-login-logo:url("%s")}',
             $logoUrl
         );
     }
@@ -49,5 +47,27 @@ final class BrandingService
     public function configuredLoginUrl(): string
     {
         return (string) $this->config->get('brand.login_url', '');
+    }
+
+    /**
+     * The chosen CoreX admin appearance: 'system' (default — follows the OS scheme),
+     * 'light', or 'dark'. Any unrecognized stored value resolves back to 'system'.
+     */
+    public function adminAppearance(): string
+    {
+        $mode = (string) $this->config->get('brand.admin_appearance', 'system');
+
+        return in_array($mode, ['system', 'light', 'dark'], true) ? $mode : 'system';
+    }
+
+    /**
+     * Whether the login screen reserves its single-sign-on slot. No SSO provider is
+     * implemented — the slot only renders an honest "not configured" control when on.
+     */
+    public function loginSsoEnabled(): bool
+    {
+        $value = (string) $this->config->get('brand.login_sso_enabled', '');
+
+        return $value !== '' && $value !== '0';
     }
 }

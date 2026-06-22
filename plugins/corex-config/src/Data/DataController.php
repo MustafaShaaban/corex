@@ -100,18 +100,39 @@ final class DataController
         }
 
         if ($source instanceof QueryableDataSource) {
-            return [
+            return $this->withInsights($source, [
                 'columns' => $source->columns(),
                 'rows'    => $source->query($query),
                 'total'   => $source->count($query),
-            ];
+            ]);
         }
 
-        return [
+        return $this->withInsights($source, [
             'columns' => $source->columns(),
             'rows'    => $source->rows($query->page, $query->perPage),
             'total'   => $source->total(),
-        ];
+        ]);
+    }
+
+    /**
+     * Attach the optional real field schema + 14-day trend when the source supports them, so
+     * the schema panel and activity chart reflect truthful, source-derived data.
+     *
+     * @param array{columns:list<array{id:string,label:string}>,rows:list<array<string,scalar>>,total:int} $payload
+     *
+     * @return array<string,mixed>
+     */
+    private function withInsights(DataSource $source, array $payload): array
+    {
+        if ($source instanceof SchemaAwareDataSource) {
+            $payload['schema'] = $source->schema();
+        }
+
+        if ($source instanceof TrendableDataSource) {
+            $payload['trend'] = $source->trend(14);
+        }
+
+        return $payload;
     }
 
     /**

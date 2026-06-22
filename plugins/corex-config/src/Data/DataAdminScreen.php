@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Config\Data;
 
+use Corex\Admin\AdminPage;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -25,6 +26,7 @@ final class DataAdminScreen
     public function __construct(
         private readonly DataRegistry $registry,
         private readonly AdminGuard $guard,
+        private readonly AdminPage $page,
     ) {
     }
 
@@ -43,17 +45,23 @@ final class DataAdminScreen
             'manage_options',
             'corex-data',
             [$this, 'render'],
+            30,
         );
     }
 
     public function render(): void
     {
         if (! $this->guard->authorized()) {
+            echo $this->page->permissionDenied('data');
+
             return;
         }
 
-        echo '<div class="wrap"><h1>' . esc_html__('Corex Data', 'corex') . '</h1>'
-            . '<div id="corex-data-app"></div></div>';
+        echo $this->page->open(
+            'data',
+            __('CoreX Data', 'corex'),
+            __('Search, filter, inspect, and export records from registered CoreX data sources.', 'corex'),
+        ) . '<div id="corex-data-app"></div>' . $this->page->close();
     }
 
     public function maybeEnqueue(string $hook): void
@@ -90,7 +98,7 @@ final class DataAdminScreen
         wp_enqueue_style(
             'corex-data',
             plugins_url('assets/data.css', $base . '/corex-config.php'),
-            ['corex-admin-tokens'],
+            ['corex-admin-shell'],
             $asset['version'],
         );
 

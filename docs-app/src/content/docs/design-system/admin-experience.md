@@ -1,64 +1,74 @@
 ---
 title: Admin experience
-description: The shared CoreX wp-admin product experience — truthful add-on states, state-aware settings, write-only secrets, and a calm scoped visual layer.
+description: The complete scoped CoreX login and wp-admin product experience, built on truthful runtime state.
 ---
 
-The CoreX admin (milestone M6) is the shared product surface both company sites see inside wp-admin. It is styled
-through the scoped `--corex-admin-*` adapter — never a global wp-admin reskin and never applied to the public
-frontend — and, above all, it is **truthful**: every screen reflects the real runtime state of each add-on and
-setting.
+The CoreX admin is a dark-first product surface inside WordPress, with a complete light mapping. It preserves
+WordPress admin chrome and authentication behavior while giving every current CoreX-owned screen one visual and
+state contract. It never styles the public frontend.
+
+PR #58 delivered the truthful-state foundation: add-on state resolution, state-aware settings, captcha gating,
+write-only secrets, and initial Add-ons badge CSS. The corrective Spec 060 implementation applies the approved visual
+design across the complete current admin journey rather than treating M6 as badge-level styling.
+
+## Current surfaces
+
+- Native WordPress login, lost-password, reset-password, message, and error markup with additive CoreX branding.
+- `COREX FRAMEWORK` Overview with live site stat cards and onboarding/domain status cards.
+- Add-ons as truthful cards with labelled states and enable/disable controls for installed add-ons only.
+- Data with search, source/form filters, sorting, CSV export, pagination, detail drawer, and explicit loading/empty/
+  filtered-empty/error states.
+- Settings as state-aware sections, including captcha controls and write-only secret indicators.
+- Setup Wizard with guided progress, kit cards, empty state, and apply success notice.
+- Readiness & Insights with performance/readiness cards, loading/error/result states, and honest environment gating.
+- Declarative CoreX option pages registered by applications.
 
 ## Truthful add-on states
 
-`Corex\Foundation\AddonStatus` resolves every add-on to exactly one state, via the pure `AddonStatusResolver`
-(ordered to agree with boot-time gating):
+`Corex\Foundation\AddonStatus` resolves every add-on to exactly one state through the pure `AddonStatusResolver`:
 
 | State | Meaning |
 |---|---|
-| `not_installed` | the package/plugin is absent |
-| `inactive` | installed but the WordPress plugin is not active |
-| `feature_off` | active but the CoreX feature flag is off |
-| `dependency_missing` | active but a required CoreX add-on is unmet |
-| `woocommerce_missing` | gated on WooCommerce, which is absent |
-| `pro_required` | a future/commercial add-on, shown disabled (no licensing) |
-| `active` | active and fully satisfied — the only usable state |
+| `not_installed` | The package/plugin is absent; no admin enable or install action. |
+| `inactive` | Installed, but the WordPress plugin is not active. |
+| `feature_off` | Active, but the CoreX feature flag is off. |
+| `dependency_missing` | A required CoreX add-on is unmet. |
+| `woocommerce_missing` | WooCommerce is required and unavailable. |
+| `pro_required` | Static disabled future/commercial indicator; no licensing or purchase flow. |
+| `active` | Active and fully satisfied; the only usable state. |
 
-The **Add-ons** screen renders each add-on's state as a labelled badge (`AddonStatus::tone()` → success/warning/
-danger/neutral; meaning is carried by the label text, never colour alone). Enable/disable is offered only for
-installed add-ons (`AddonStatus::canToggle()`); a not-installed add-on shows "Not installed" with no enable control.
-**Installing packages is developer/CLI/deployment work** — the admin manages only installed add-ons (enable, disable,
-status, dependency explanation, settings access). There is no marketplace or install-from-admin.
+Status meaning is always written as text and reinforced with icon/tone. Color never carries the meaning alone.
+The admin manages installed add-ons only. Package installation remains developer/CLI/deployment work.
 
-## State-aware settings
+## Settings and secrets
 
-Settings sections reflect the same model through `Corex\Config\Settings\SettingsSectionState`:
+Settings sections derive from `Corex\Config\Settings\SettingsSectionState`: not installed, disabled, configuration
+needed, or normal. Captcha is the worked example. Its provider fields never appear usable while the add-on is absent
+or inactive.
 
-- **not installed** → the section is hidden behind an "add-on not installed" notice (no fields).
-- **inactive / feature off** → a disabled notice and disabled inputs (no usable fields).
-- **active but unconfigured** → a "configuration needed" prompt with the enterable fields.
-- **active + configured** → normal settings.
+Password-typed settings, including captcha and Insights credentials, are write-only. A saved value is represented by
+a “Saved” indicator; the input value remains empty. Submitting an empty secret preserves the stored value. Saves use
+the shared `AdminGuard` capability and nonce path.
 
-### Captcha / reCAPTCHA
+## Visual and accessibility contract
 
-The captcha section is the worked example: when `corex-captcha` is not installed the reCAPTCHA settings never appear
-active; when inactive the fields are disabled; when active but the site key and secret are not both set it shows
-"configuration needed"; when active and configured it shows the provider settings and the test action.
+The registered `corex-admin-tokens` adapter supplies only `--corex-admin-*` roles. A shared shell and each
+screen-specific stylesheet are conditionally enqueued through an explicit CoreX screen allow-list. Selectors are
+rooted in `.corex-admin`; login uses the separate `body.login.corex-login` root. Unrelated wp-admin pages and public
+frontend pages do not receive these assets.
 
-## Write-only secrets
+The component layer includes page headers, stat cards, add-on cards, settings sections, data tables/toolbars, notices,
+badges, helper text, setup progress, readiness checks, and loading/empty/error/success/warning/disabled/
+permission-denied states. It uses logical CSS properties for RTL, collapses at narrow admin widths, has visible focus,
+keeps text contrast at the WCAG 2.2 AA target, and disables non-essential motion under `prefers-reduced-motion`.
 
-Secret (password-typed) settings — the captcha secret and the Insights API keys — are **write-only**. The stored
-value is never rendered back into the form (the input is empty with a "Saved / Not set" hint), and submitting the
-field empty preserves the stored secret. Saves go through the shared `AdminGuard` (capability + nonce).
+## Verification boundary
 
-## Scoped, accessible visual layer
-
-CoreX admin styling consumes only the scoped `--corex-admin-*` adapter and is enqueued **only on CoreX admin
-screens** (Principle VI) — it never restyles generic wp-admin and never loads on the public frontend. The layer is
-RTL-first (logical properties), dark and light, and meets WCAG 2.2 AA (landmarks, visible focus, status meaning not
-by colour alone).
+Headless PHP/JS contracts verify asset scoping, native-login preservation, screen shell coverage, text-labelled
+states, add-on truth, write-only secrets, and empty-secret preservation. See the Spec 060 visual-evidence record for
+the rendered browser matrix; unavailable browser checks are marked `ENVIRONMENT-GATED`, never passed by inference.
 
 ## Out of scope
 
-No public-frontend design, no plugin marketplace/download/install UI, no Pro licensing/entitlement/distribution, no
-client portal, no editor workspace, and no CPT/form/add-on/model/table/resource generators. See
-`specs/060-corex-admin-product-experience/` for the full spec and contracts.
+Public company-site design, marketplace/download/install UI, Pro licensing or entitlement, client portal, editor
+workspace, and generators remain outside M6.

@@ -10,8 +10,10 @@ namespace Corex\Config\Options;
 
 defined('ABSPATH') || exit;
 
-use Corex\Config\Settings\SettingsForm;
+use Corex\Admin\AdminPage;
+use Corex\Config\Settings\SettingsFormFactory;
 use Corex\Config\Settings\SettingsStore;
+use Corex\Security\Admin\AdminGuard;
 
 /**
  * Renders + persists every registered {@see OptionPage}. For each page it adds the admin menu (top
@@ -25,6 +27,9 @@ final class OptionPageScreen
     public function __construct(
         private readonly OptionPageRegistry $registry,
         private readonly SettingsStore $store,
+        private readonly AdminGuard $guard,
+        private readonly AdminPage $page,
+        private readonly SettingsFormFactory $forms,
     ) {
     }
 
@@ -52,16 +57,21 @@ final class OptionPageScreen
 
     public function render(OptionPage $page): void
     {
-        if (! current_user_can($page->capability())) {
+        if (! $this->guard->authorized($page->capability())) {
+            echo $this->page->permissionDenied('option-page');
+
             return;
         }
 
         $nonce = wp_nonce_field('corex_optionpage_' . $page->slug(), 'corex_optionpage_nonce', true, false)
             . sprintf('<input type="hidden" name="corex_optionpage" value="%s" />', esc_attr($page->slug()));
 
-        echo '<div class="wrap"><h1>' . esc_html($page->title()) . '</h1>'
-            . (new SettingsForm($page))->render(fn (string $key): string => $this->store->get($key), $nonce)
-            . '</div>'; // SettingsForm escapes every field per type.
+        echo $this->page->open(
+            'option-page',
+            $page->title(),
+            __('Configure this CoreX application surface.', 'corex'),
+        ) . $this->forms->make($page)->render(fn (string $key): string => $this->store->get($key), $nonce)
+            . $this->page->close();
     }
 
     public function maybeSave(): void
@@ -73,11 +83,15 @@ final class OptionPageScreen
         $slug = sanitize_key(wp_unslash($_POST['corex_optionpage']));
         $page = $this->registry->find($slug);
 
-        if ($page === null || ! current_user_can($page->capability())) {
+        if ($page === null) {
             return;
         }
 
-        if (! check_admin_referer('corex_optionpage_' . $slug, 'corex_optionpage_nonce')) {
+        if (! $this->guard->verifiedPost(
+            'corex_optionpage_nonce',
+            'corex_optionpage_' . $slug,
+            $page->capability(),
+        )) {
             return;
         }
 
@@ -93,7 +107,13 @@ final class OptionPageScreen
                     continue;
                 }
 
-                $this->store->save($key, $this->sanitize($field['type'], wp_unslash($_POST[$name])));
+                $sanitized = $this->sanitize($field['type'], wp_unslash($_POST[$name]));
+
+                if ($field['type'] === 'password' && $sanitized === '') {
+                    continue;
+                }
+
+                $this->store->save($key, $sanitized);
             }
         }
 

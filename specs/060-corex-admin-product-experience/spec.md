@@ -1,10 +1,11 @@
 # Feature Specification: CoreX Admin Product Experience
 
-**Feature Branch**: `spec/060-corex-admin-product-experience`
+**Feature Branch**: `spec/060-corex-admin-product-experience` (foundation),
+`fix/060-admin-design-implementation` (corrective visual implementation)
 
 **Created**: 2026-06-21
 
-**Status**: Draft
+**Status**: Implemented; corrective visual implementation ready for review
 
 **Input**: Milestone M6 (ROADMAP §9). Design input: [M6 admin experience handoff](../../design/handoffs/admin-experience.md) (approved 2026-06-21, from the owner-supplied admin design package). Built on M2 tokens (Spec 057) via the scoped `--corex-admin-*` adapter and the existing `AddonRuntimeState`.
 
@@ -20,6 +21,11 @@ touch public company-site frontends.
 
 This is not a marketplace and not a Pro store: the admin manages only **installed** add-ons (enable/disable/status/
 dependency explanation/settings access). Installing packages is developer/CLI/deployment work.
+
+PR #58 delivered the truthful-state foundation. It did not complete the visual contract in US3/US4: most existing
+CoreX screens retained legacy/plain wp-admin presentation and the login surface received only a logo replacement.
+The corrective branch applies the approved visual system from login through every current CoreX-owned admin screen;
+this completes the existing M6 scope and is not minor cosmetic polish.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -105,6 +111,9 @@ not load on non-CoreX admin pages or the frontend.
 3. **Given** an RTL locale, **When** a CoreX screen renders, **Then** the layout mirrors via logical properties.
 4. **Given** `prefers-reduced-motion: reduce`, **When** a CoreX screen renders, **Then** no non-essential animation
    plays.
+5. **Given** WordPress renders login, lost-password, reset-password, or login-error states, **When** CoreX branding
+   is active, **Then** the approved CoreX login layer is applied without replacing WordPress forms, messages,
+   navigation, accessible names, or authentication behavior.
 
 ### User Story 4 - Setup, readiness, and universal states (Priority: P3)
 
@@ -162,8 +171,9 @@ universal state on a data screen and confirm it renders.
 
 **Visual design + scoping (P2/P3)**
 
-- **FR-009**: CoreX admin screens MUST apply the M2 brand via the scoped `--corex-admin-*` adapter and the approved
-  design components (cards, tables, topbar, status badges), in dark and light modes.
+- **FR-009**: The WordPress login surface and all current CoreX admin screens MUST apply the M2 brand via the scoped
+  `--corex-admin-*` adapter and the approved design components (shell, cards, tables, topbar, status badges), in
+  dark and light modes. Login styling MUST remain additive and preserve native WordPress authentication flows.
 - **FR-010**: The admin adapter and CoreX admin assets MUST load only on CoreX admin screens (Principle VI) and MUST
   NOT globally restyle wp-admin or apply to the public frontend.
 - **FR-011**: All CoreX admin UI MUST meet WCAG 2.2 AA (landmarks, heading order, visible focus, names, status not by
@@ -190,8 +200,9 @@ universal state on a data screen and confirm it renders.
 - **Runtime state snapshot**: installed/active/flag/external-gate facts (existing `AddonRuntimeState`).
 - **Add-on display state**: the single resolved state enum (FR-001).
 - **Settings section state**: the per-section display state derived from the add-on display state (FR-006).
-- **Admin screen**: a CoreX-owned wp-admin screen (Dashboard/Add-ons/Data/Settings/Setup/Readiness) styled via the
-  adapter.
+- **Admin screen**: a CoreX-owned wp-admin screen (Dashboard/Add-ons/Data/Settings/Setup/Readiness/Insights and any
+  registered CoreX option page) styled via the adapter. The WordPress login surface is a separately scoped CoreX
+  product-branding surface.
 
 ## Success Criteria *(mandatory)*
 

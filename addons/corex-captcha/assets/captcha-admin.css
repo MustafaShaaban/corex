@@ -1,25 +1,28 @@
-/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+/** CoreX captcha diagnostic control; scoped to the CoreX settings shell. */
 
-/**
- * Corex captcha "Test verification" control (spec 053 US3). wp-admin palette fallbacks
- * (theme tokens aren't loaded in wp-admin — DECISIONS #71), logical properties (RTL). The
- * status is carried by the message text first; colour is supplementary (WCAG 2.2 AA).
- */
-/* stylelint-enable @stylistic/max-line-length */
-
-.corex-captcha-test {
+.corex-admin .corex-captcha-test {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	gap: var(--wp--preset--spacing--20, 0.5rem);
-	margin-block-start: var(--wp--preset--spacing--20, 0.5rem);
+	gap: var(--corex-admin-space-sm);
+	margin-block-start: var(--corex-admin-space-sm);
 }
 
-.corex-captcha-test__result.is-ok {
-	color: #00640c;
+.corex-admin .corex-captcha-test__result {
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-sm);
 	font-weight: 600;
 }
 
-.corex-captcha-test__result.is-error {
-	color: #b32d2e;
-	font-weight: 600;
+.corex-admin .corex-captcha-test__result.is-ok {
+	color: var(--corex-admin-success);
+	background: var(--corex-admin-success-soft);
+}
+
+.corex-admin .corex-captcha-test__result.is-error {
+	color: var(--corex-admin-error);
+	background: var(--corex-admin-error-soft);
 }

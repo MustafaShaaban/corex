@@ -12,6 +12,8 @@ import {
 	toggleSort,
 	mergeForms,
 	viewState,
+	toggleSelection,
+	allRowsSelected,
 } from '../dataClient.js';
 
 describe( 'buildListUrl', () => {
@@ -88,6 +90,22 @@ describe( 'mergeForms', () => {
 		expect( a ).toEqual( [ 'contact', 'quote' ] );
 		const b = mergeForms( a, [ { form: 'contact' }, { form: 'newsletter' } ] );
 		expect( b ).toEqual( [ 'contact', 'quote', 'newsletter' ] );
+	} );
+} );
+
+describe( 'toggleSelection', () => {
+	it( 'adds an unselected id and removes a selected one, preserving order', () => {
+		expect( toggleSelection( [], 5 ) ).toEqual( [ 5 ] );
+		expect( toggleSelection( [ 1, 2, 3 ], 2 ) ).toEqual( [ 1, 3 ] );
+		expect( toggleSelection( [ 1, 3 ], 4 ) ).toEqual( [ 1, 3, 4 ] );
+	} );
+} );
+
+describe( 'allRowsSelected', () => {
+	it( 'is true only when every visible row is selected and rows exist', () => {
+		expect( allRowsSelected( [ 1, 2 ], [ { id: 1 }, { id: 2 } ] ) ).toBe( true );
+		expect( allRowsSelected( [ 1 ], [ { id: 1 }, { id: 2 } ] ) ).toBe( false );
+		expect( allRowsSelected( [], [] ) ).toBe( false );
 	} );
 } );
 

@@ -42,4 +42,20 @@ interface SubmissionsReader
      * @return array{id:int,date:string,form:string,fields:array<string,mixed>}|null
      */
     public function find(int $id): ?array;
+
+    /**
+     * The distinct submitted field keys seen across a sample of recent submissions — the
+     * basis for the derived schema. Order is first-seen.
+     *
+     * @return list<string>
+     */
+    public function fieldKeys(int $sample): array;
+
+    /**
+     * Real submission counts keyed by `Y-m-d` for the last $days days (sparse — only days
+     * that have submissions appear; the caller zero-fills the rest).
+     *
+     * @return array<string,int>
+     */
+    public function dailyCounts(int $days): array;
 }

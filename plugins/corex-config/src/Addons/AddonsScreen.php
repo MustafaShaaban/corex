@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Config\Addons;
 
+use Corex\Admin\AdminPage;
 use Corex\Foundation\AddonStatus;
 use Corex\Provisioning\KitProvisioner;
 use Corex\Security\Admin\AdminGuard;
@@ -30,6 +31,7 @@ final class AddonsScreen
         private readonly AdminGuard $guard,
         private readonly KitProvisioner $provisioner,
         private readonly PendingKits $pending,
+        private readonly AdminPage $page,
     ) {
     }
 
@@ -51,6 +53,7 @@ final class AddonsScreen
             'manage_options',
             'corex-addons',
             [$this, 'render'],
+            20,
         );
     }
 
@@ -68,111 +71,256 @@ final class AddonsScreen
         wp_enqueue_style(
             'corex-addons',
             plugins_url('assets/addons.css', COREX_CONFIG_FILE),
-            ['corex-admin-tokens'],
-            '1.0.0',
+            ['corex-admin-shell'],
+            '1.1.0',
         );
     }
 
     public function render(): void
     {
         if (! $this->guard->authorized()) {
+            echo $this->page->permissionDenied('addons');
+
             return;
         }
 
         $state = $this->state();
 
-        echo '<div class="wrap"><h1>' . esc_html__('Corex Add-ons', 'corex') . '</h1>';
-        echo '<p>' . esc_html__('Enable or disable each Corex add-on. Dependencies are enforced.', 'corex') . '</p>';
+        echo $this->page->open(
+            'addons',
+            __('CoreX Add-ons', 'corex'),
+            __('Manage installed add-ons only. Dependencies and runtime gates remain enforced.', 'corex'),
+        );
 
-        foreach ($this->manager->views($state, [$this, 'isInstalled']) as $view) {
-            $this->renderRow($view);
+        $views = $this->manager->views($state, [$this, 'isInstalled']);
+
+        $this->renderSummary($views);
+
+        echo '<div class="corex-addons__grid">';
+
+        if ($views === []) {
+            echo $this->page->state(
+                'empty',
+                __('No add-ons registered', 'corex'),
+                __('Installed CoreX add-on packages will appear here.', 'corex'),
+            );
         }
 
-        echo '</div>';
-    }
-
-    private function renderRow(AddonView $view): void
-    {
-        $status = $view->status();
-
-        echo '<div class="card">';
-        echo '<h2>' . esc_html($view->addon->label) . '</h2>';
-        echo '<p><strong>' . esc_html__('Status:', 'corex') . '</strong> '
-            . '<span class="corex-badge corex-badge--' . esc_attr($status->tone()) . '">'
-            . esc_html($this->statusLabel($status)) . '</span></p>';
-
-        $this->renderManifest($view->addon);
-
-        if ($view->addon->hasFlag()) {
-            $flag = $view->flagOn ? __('on', 'corex') : __('off', 'corex');
-            echo '<p><strong>' . esc_html__('Feature flag:', 'corex') . '</strong> ' . esc_html($flag) . '</p>';
+        foreach ($views as $view) {
+            $this->renderRow($view, $state);
         }
 
-        if (! $view->installed) {
-            echo '</div>';
-
-            return;
-        }
-
-        if ($view->isBlocked()) {
-            echo '<p><em>' . esc_html((string) $view->blockedReason) . '</em></p></div>';
-
-            return;
-        }
-
-        $this->renderToggleForm($view);
-        echo '</div>';
+        echo '</div>' . $this->page->close();
     }
 
     /**
-     * The rich manifest (spec 044, US4): what the add-on does, what it registers, what it
-     * requires/needs configured, and a docs link — so an admin understands it before toggling.
+     * The truthful summary bar above the add-on grid (design: Add-ons & Data capture): how many
+     * add-ons are active, how many are site kits, and the add-on philosophy. No update-checker
+     * exists, so the Updates cell is shown by the design but reads "not tracked" — never a faked count.
+     *
+     * @param list<AddonView> $views
      */
-    private function renderManifest(Addon $addon): void
+    private function renderSummary(array $views): void
     {
-        if ($addon->summary !== '') {
-            echo '<p>' . esc_html($addon->summary) . '</p>';
-        }
-        if ($addon->description !== '') {
-            echo '<p class="description">' . esc_html($addon->description) . '</p>';
+        $total  = count($views);
+        $active = 0;
+        $kits   = 0;
+        foreach ($views as $view) {
+            if ($view->active) {
+                $active++;
+            }
+            if (str_starts_with($view->addon->slug, 'corex-kit-')) {
+                $kits++;
+            }
         }
 
+        echo '<div class="corex-addons__summary">';
+        $this->renderSummaryStat(__('Active', 'corex'), (string) $active . ' <span class="corex-addons__summary-total">/ ' . (int) $total . '</span>');
+        $this->renderSummaryStat(__('Updates', 'corex'), '<span class="corex-addons__summary-muted">' . esc_html__('not tracked', 'corex') . '</span>');
+        $this->renderSummaryStat(__('Site kits', 'corex'), (string) $kits);
+        echo '<div class="corex-addons__philosophy"><div><p class="corex-addons__philosophy-title">'
+            . esc_html__('Add-ons self-disable', 'corex') . '</p><p class="corex-addons__philosophy-text">'
+            . esc_html__('Never a hard dependency — toggle freely.', 'corex') . '</p></div>'
+            . '<span class="corex-addons__philosophy-tag">' . esc_html__('safe', 'corex') . '</span></div>';
+        echo '</div>';
+    }
+
+    private function renderSummaryStat(string $label, string $valueHtml): void
+    {
+        echo '<div class="corex-addons__summary-card"><p class="corex-addons__summary-label">'
+            . esc_html($label) . '</p><p class="corex-addons__summary-value">'
+            . wp_kses_post($valueHtml) . '</p></div>';
+    }
+
+    /**
+     * The add-on's Module-Tile logo (design: Addon Logos — Final). Inactive/blocked/uninstalled
+     * add-ons use the muted "disabled" master; unknown slugs fall back to the Core mark.
+     */
+    private function logoUrl(AddonView $view): string
+    {
+        $muted = ! $view->installed || $view->isBlocked() || in_array($view->status(), [
+            AddonStatus::NotInstalled,
+            AddonStatus::DependencyMissing,
+            AddonStatus::WoocommerceMissing,
+            AddonStatus::ProRequired,
+        ], true);
+
+        $suffix = $muted ? '--disabled' : '';
+        $dir    = plugin_dir_path(COREX_CONFIG_FILE) . 'assets/addon-logos/';
+        $file   = $view->addon->slug . $suffix . '.svg';
+
+        if (! file_exists($dir . $file)) {
+            $file = 'fallback' . $suffix . '.svg';
+        }
+
+        return plugins_url('assets/addon-logos/' . $file, COREX_CONFIG_FILE);
+    }
+
+    /**
+     * One add-on card (design: Add-ons & Data capture): a logo tile, the title + truthful
+     * status badge, slug metadata, a short description, a cleanly-styled registers/requires
+     * area, secondary doc links, and a designed accessible toggle in the action zone. When the
+     * add-on cannot be toggled, the toggle is shown disabled with one honest reason line —
+     * never a pasted warning strip.
+     */
+    private function renderRow(AddonView $view, AddonState $state): void
+    {
+        $status = $view->status();
+
+        echo '<section class="corex-addon-card corex-surface">';
+        echo '<header class="corex-addon-card__header">';
+        echo '<span class="corex-addon-card__logo-tile"><img class="corex-addon-card__logo" src="'
+            . esc_url($this->logoUrl($view))
+            . '" width="48" height="48" alt="" aria-hidden="true" /></span>';
+        echo '<div class="corex-addon-card__heading"><div class="corex-addon-card__title-row">'
+            . '<h2>' . esc_html($view->addon->label) . '</h2>'
+            . '<span class="screen-reader-text">' . esc_html__('Status:', 'corex') . '</span>'
+            . '<span class="corex-badge corex-badge--' . esc_attr($status->tone()) . '">'
+            . esc_html($this->statusLabel($status)) . '</span></div>'
+            . '<p class="corex-addon-card__slug">' . esc_html($view->addon->slug) . '</p></div>';
+        echo '<div class="corex-addon-card__action">' . $this->toggleControl($view, $state) . '</div>';
+        echo '</header>';
+
+        $text = $view->addon->summary !== '' ? $view->addon->summary : $view->addon->description;
+        if ($text !== '') {
+            echo '<p class="corex-addon-card__desc">' . esc_html($text) . '</p>';
+        }
+
+        $this->renderMeta($view->addon);
+
+        $reason = $this->unavailableReason($view, $state);
+        if ($reason !== '') {
+            echo '<p class="corex-addon-card__reason">'
+                . '<span class="dashicons dashicons-info-outline" aria-hidden="true"></span>'
+                . esc_html($reason) . '</p>';
+        }
+
+        echo '</section>';
+    }
+
+    /**
+     * The cleanly-styled meta area: what the add-on registers (as chips), its dependencies, and
+     * a documentation link — the information an admin needs before toggling, without clutter.
+     */
+    private function renderMeta(Addon $addon): void
+    {
         if ($addon->provides !== []) {
-            echo '<p><strong>' . esc_html__('Registers:', 'corex') . '</strong></p><ul class="ul-disc">';
+            echo '<div class="corex-addon-card__registers"><p class="corex-addon-card__meta-label">'
+                . esc_html__('Registers', 'corex') . '</p><ul class="corex-addon-card__chips">';
             foreach ($addon->provides as $item) {
                 echo '<li>' . esc_html($item) . '</li>';
             }
-            echo '</ul><p class="description">'
-                . esc_html__('Enabling registers the above; disabling removes them.', 'corex') . '</p>';
+            echo '</ul></div>';
         }
 
+        $links = '';
         if ($addon->requires !== []) {
-            echo '<p><strong>' . esc_html__('Requires:', 'corex') . '</strong> '
-                . esc_html(implode(', ', $addon->requires)) . '</p>';
+            $links .= '<span class="corex-addon-card__requires">' . esc_html__('Requires:', 'corex')
+                . ' ' . esc_html(implode(', ', $addon->requires)) . '</span>';
         }
-
-        if ($addon->needsConfiguration()) {
-            echo '<p><strong>' . esc_html__('Needs configuration:', 'corex') . '</strong> '
-                . esc_html(implode(', ', $addon->needsKeys)) . '</p>';
-        }
-
         if ($addon->docsUrl !== '') {
-            echo '<p><a href="' . esc_url($addon->docsUrl) . '">'
-                . esc_html__('Documentation', 'corex') . '</a></p>';
+            $links .= '<a class="corex-addon-card__doc" href="' . esc_url($addon->docsUrl) . '">'
+                . esc_html__('Documentation', 'corex') . '</a>';
+        }
+        if ($links !== '') {
+            echo '<div class="corex-addon-card__links">' . $links . '</div>';
         }
     }
 
-    private function renderToggleForm(AddonView $view): void
+    /**
+     * The action zone control. When the add-on is installed and the toggle would not break a
+     * dependency, it is an accessible switch (`role="switch"` + `aria-checked`) that POSTs the
+     * enable/disable through the existing guarded handler — no JS, keyboard-operable, with a
+     * visible On/Off state (never colour alone). Otherwise it is a non-actionable disabled
+     * switch shown for design parity; {@see unavailableReason()} renders the visible reason.
+     */
+    private function toggleControl(AddonView $view, AddonState $state): string
     {
-        $action = $view->active ? 'disable' : 'enable';
-        $label  = $view->active ? __('Disable', 'corex') : __('Enable', 'corex');
+        $slug = $view->addon->slug;
+        $canDisable = $view->installed && $view->active && $this->manager->canDisable($slug, $state);
+        $canEnable  = $view->installed && ! $view->active && $this->manager->canEnable($slug, $state);
 
-        echo '<form method="post">';
-        echo wp_nonce_field('corex_addons', 'corex_addons_nonce', true, false);
-        echo '<input type="hidden" name="corex_addon" value="' . esc_attr($view->addon->slug) . '" />';
-        echo '<input type="hidden" name="corex_addon_action" value="' . esc_attr($action) . '" />';
-        echo '<button type="submit" class="button button-primary">' . esc_html($label) . '</button>';
-        echo '</form>';
+        if (! $canDisable && ! $canEnable) {
+            return $this->disabledToggle($view->active, $view->addon->label);
+        }
+
+        $action = $view->active ? 'disable' : 'enable';
+        /* translators: %s: add-on name */
+        $label = $view->active
+            ? sprintf(__('Disable %s', 'corex'), $view->addon->label)
+            : sprintf(__('Enable %s', 'corex'), $view->addon->label);
+
+        return '<form method="post" class="corex-addon-card__toggle-form">'
+            . wp_nonce_field('corex_addons', 'corex_addons_nonce', true, false)
+            . '<input type="hidden" name="corex_addon" value="' . esc_attr($slug) . '" />'
+            . '<input type="hidden" name="corex_addon_action" value="' . esc_attr($action) . '" />'
+            . '<button type="submit" class="corex-toggle" role="switch" aria-checked="'
+            . ($view->active ? 'true' : 'false') . '" aria-label="' . esc_attr($label) . '">'
+            . $this->toggleInner($view->active)
+            . '</button></form>';
+    }
+
+    private function disabledToggle(bool $on, string $label): string
+    {
+        /* translators: %s: add-on name */
+        $aria = $on
+            ? sprintf(__('%s is enabled', 'corex'), $label)
+            : sprintf(__('%s is disabled', 'corex'), $label);
+
+        return '<span class="corex-toggle corex-toggle--disabled" role="switch" aria-checked="'
+            . ($on ? 'true' : 'false') . '" aria-disabled="true" aria-label="' . esc_attr($aria) . '">'
+            . $this->toggleInner($on) . '</span>';
+    }
+
+    private function toggleInner(bool $on): string
+    {
+        return '<span class="corex-toggle__track" aria-hidden="true"><span class="corex-toggle__knob"></span></span>'
+            . '<span class="corex-toggle__state">'
+            . ($on ? esc_html__('On', 'corex') : esc_html__('Off', 'corex')) . '</span>';
+    }
+
+    /**
+     * One honest line explaining why a non-actionable add-on cannot be toggled — empty when the
+     * add-on is freely togglable. Never fabricates a reason.
+     */
+    private function unavailableReason(AddonView $view, AddonState $state): string
+    {
+        if (! $view->installed) {
+            return __('Not installed — add the plugin package to enable it.', 'corex');
+        }
+
+        if ($view->isBlocked()) {
+            return (string) $view->blockedReason;
+        }
+
+        if (! $view->active && ! $this->manager->canEnable($view->addon->slug, $state)) {
+            $missing = implode(', ', $this->manager->missingDependencies($view->addon->slug, $state));
+
+            /* translators: %s: dependency list */
+            return sprintf(__('Enable its dependency first: %s', 'corex'), $missing);
+        }
+
+        return '';
     }
 
     public function maybeToggle(): void

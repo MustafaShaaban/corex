@@ -1864,3 +1864,47 @@ theme-markup/plugin-registration split keeps the theme disposable (Principle I) 
 (Principle VI). Action slots (search/language/account/cart) are structural placeholders only — no optional-plugin or
 commerce dependency (Principle IX); WooCommerce nav/footer deferred to M9.
 Status: Final.
+
+## #106 -- Corrective Spec 060 admin design uses one allow-listed shell and native login markup
+Date: 2026-06-21
+Context: PR #58 implemented the truthful-state/security foundation, but only the Add-ons badges consumed the M6
+visual adapter consistently. Dashboard, Data, Insights, captcha, and control-panel CSS retained legacy WordPress/raw
+values; Setup had no scoped design asset; login replaced only the logo; permission-denied callbacks rendered blank.
+Decision: (1) Keep every existing state/service/action contract and add one registered-but-never-global
+`corex-admin-shell` depending on `corex-admin-tokens`; `CorexAdminAssets` enqueues it only for an explicit allow-list
+of current CoreX hooks. Screen styles depend on the shell and every selector is rooted in `.corex-admin`. (2) Use
+`AdminPage` for the shared labelled main region, `COREX FRAMEWORK` header identity, universal states, and visible
+permission denial. Split the former combined page into Overview and Settings while retaining the `corex-settings`
+parent slug. (3) Keep WordPress login forms/messages/actions native; add only `body.login.corex-login`, the token
+adapter, a login stylesheet, and a safe logo custom property. (4) Make dark the default semantic mapping, provide a
+complete light mapping, copy the approved self-hosted M2 fonts into corex-core so plugins stay theme-independent,
+and use logical CSS, responsive reflow, visible focus, text-labelled states, and reduced-motion handling. (5) Treat
+browser screenshots/contrast/RTL/zoom as ENVIRONMENT-GATED when no compatible browser exists; runtime DOM evidence
+does not substitute for rendered visual evidence.
+Why: one scoped shell prevents drift without restyling generic wp-admin or the public frontend; native login markup
+preserves WordPress authentication behavior; the shared renderer makes required states consistent; theme-independent
+font assets preserve Principle II. The truthful-state model, installed-only add-on controls, no-marketplace rule,
+and write-only secret behavior remain unchanged.
+Status: Final.
+
+## #107 -- Spec 060 admin visuals verified by real rendering; systemic control/heading/palette fixes
+Date: 2026-06-21
+Context: #106 #5 deferred rendered visual evidence as ENVIRONMENT-GATED. A browser runtime is in fact available
+(Chrome + Playwright; WP live at `http://corex.local`). Rendering every CoreX admin surface authenticated, in dark
+and light, exposed three systemic defects the prior source-only pass missed: (a) form inputs rendered white and
+buttons rendered WP-blue because the shell styled controls through `:where(...)` (zero specificity), which WP core
+admin CSS overrode; (b) card/section headings without an explicit colour inherited WP's dark heading colour and were
+near-invisible on dark surfaces (also a WCAG contrast failure); (c) the `--corex-admin-*` palette (borders, raised
+surfaces, semantic colours) had drifted lighter/bluer than the approved package.
+Decision: (1) Style CoreX admin controls with specificity that beats WP core — `.corex-admin` + element/class
+selectors for inputs, selects (single custom RTL-aware chevron), textareas, `.button`/`.button-primary`/secondary,
+and Gutenberg `.components-button` variants — with a brass focus ring and dark input wells. (2) Set an explicit
+heading colour for all `.corex-admin h1-h6`. (3) Realign the dark and light token adapter to the approved tokens
+(border `#262a32`, raised `#1c1f26`, semantic success/warn/danger/info, plus new `--corex-admin-text-subtle`,
+`--corex-admin-border-soft`, `--corex-admin-action-subtle`, `--corex-admin-shell`), keeping light-mode link/focus
+darker for AA. (4) Verify by rendering each surface and comparing against the approved `.dc.html` design captures;
+record real evidence in `visual-evidence.md`, superseding the ENVIRONMENT-GATED matrix.
+Why: the design package is visual, so it can only be verified visually; specificity (not intent) is what makes WP
+admin chrome adopt the CoreX surface. No truthful-state, security, or markup contract changed — only the visual layer
+and the token values. Regenerated the Spec 057 token inventories so the consumer contract still passes.
+Status: Final.

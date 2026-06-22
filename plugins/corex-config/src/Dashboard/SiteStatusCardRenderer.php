@@ -39,25 +39,48 @@ final class SiteStatusCardRenderer
             $this->frontPageStatus(),
         );
 
-        echo '<div class="card"><h2>' . esc_html__('Site status', 'corex') . '</h2>';
+        echo '<section class="corex-site-status"><div class="corex-site-status__head">'
+            . '<p class="corex-admin__eyebrow">' . esc_html__('LIVE FRAMEWORK STATE', 'corex') . '</p>'
+            . '<h2>' . esc_html__('Site status', 'corex') . '</h2></div>';
 
         if ($model['isEmptyState']) {
-            echo '<p>' . esc_html__('No starter kit applied yet.', 'corex') . ' '
+            echo '<div class="corex-state corex-state--empty" role="status"><div><h3>'
+                . esc_html__('No starter kit applied yet', 'corex') . '</h3><p>'
                 . '<a href="' . esc_url(admin_url('admin.php?page=corex-addons')) . '">'
-                . esc_html__('Enable a kit to build your site.', 'corex') . '</a></p></div>';
+                . esc_html__('Enable a kit to build your site.', 'corex') . '</a></p></div></div></section>';
 
             return;
         }
 
-        echo '<p><strong>' . esc_html__('Applied kits:', 'corex') . '</strong> '
-            . esc_html($model['appliedKits'] === [] ? __('none', 'corex') : implode(', ', $model['appliedKits'])) . '</p>';
+        echo '<div class="corex-stat-grid">';
+        $this->renderStat(
+            __('Applied kits', 'corex'),
+            (string) count($model['appliedKits']),
+            $model['appliedKits'] === [] ? __('None applied', 'corex') : implode(', ', $model['appliedKits']),
+        );
+        $this->renderStat(
+            __('Form submissions', 'corex'),
+            (string) $model['submissionCount'],
+            __('Open CoreX Data', 'corex'),
+            $model['submissionsUrl'],
+        );
+        $this->renderStat(
+            __('Front page', 'corex'),
+            $this->frontPageLabel($model['frontPage']),
+            __('Current WordPress reading setting', 'corex'),
+        );
+        echo '</div></section>';
+    }
 
-        echo '<p><strong>' . esc_html__('Form submissions:', 'corex') . '</strong> '
-            . '<a href="' . esc_url($model['submissionsUrl']) . '">'
-            . esc_html((string) $model['submissionCount']) . '</a></p>';
+    private function renderStat(string $label, string $value, string $detail, string $url = ''): void
+    {
+        $valueHtml = $url === ''
+            ? esc_html($value)
+            : '<a href="' . esc_url($url) . '">' . esc_html($value) . '</a>';
 
-        echo '<p><strong>' . esc_html__('Front page:', 'corex') . '</strong> '
-            . esc_html($this->frontPageLabel($model['frontPage'])) . '</p></div>';
+        echo '<article class="corex-stat-card"><p class="corex-stat-card__label">' . esc_html($label) . '</p>'
+            . '<p class="corex-stat-card__value">' . wp_kses_post($valueHtml) . '</p>'
+            . '<p class="corex-stat-card__detail">' . esc_html($detail) . '</p></article>';
     }
 
     /**

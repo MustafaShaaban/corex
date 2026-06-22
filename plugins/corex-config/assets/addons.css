@@ -1,42 +1,327 @@
-/**
- * CoreX Add-ons screen styling (Spec 060 / M6 US3).
- *
- * Scoped to CoreX admin markup (the .corex-* classes); consumes only the scoped
- * admin adapter roles. Enqueued only on the Add-ons screen (Principle VI) — it
- * never restyles generic wp-admin and never loads on the public frontend.
- *
- * RTL-first via logical properties. Status meaning is carried by the badge
- * label text, not the tone colour alone (WCAG 2.2 AA).
- */
+/** CoreX Add-ons summary, cards, and logos; scoped to the CoreX shell. */
 
-.corex-badge {
-	display: inline-block;
-	padding-block: var(--corex-admin-space-sm);
-	padding-inline: var(--corex-admin-space-md);
-	border: 1px solid var(--corex-admin-border);
-	border-radius: var(--corex-admin-radius-md);
-	background: var(--corex-admin-surface-alt);
-	color: var(--corex-admin-text);
-	font-weight: 600;
-	line-height: 1.4;
+.corex-admin .corex-addons__summary {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.6fr);
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-lg);
 }
 
-.corex-badge--success {
+.corex-admin .corex-addons__summary-card {
+	padding: var(--corex-admin-space-md) var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-addons__summary-label {
+	margin: 0;
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-addons__summary-value {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-xl);
+	font-weight: 700;
+}
+
+.corex-admin .corex-addons__summary-total {
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 500;
+}
+
+.corex-admin .corex-addons__summary-muted {
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-body);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 500;
+}
+
+.corex-admin .corex-addons__philosophy {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-md) var(--corex-admin-space-lg);
+	background: linear-gradient(150deg, var(--corex-admin-action-subtle), var(--corex-admin-surface-raised) 70%);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-action-subtle);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-addons__philosophy-title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-addons__philosophy-text {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-addons__philosophy-tag {
+	flex: none;
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-action);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-action-subtle);
+	border-radius: var(--corex-admin-radius-pill);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-addons__grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-addon-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-addon-card__header {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-addon-card__logo-tile {
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	inline-size: 3rem;
+	block-size: 3rem;
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-addon-card__logo {
+	inline-size: 2.25rem;
+	block-size: 2.25rem;
+}
+
+.corex-admin .corex-addon-card__heading {
+	flex: 1;
+	min-inline-size: 0;
+}
+
+.corex-admin .corex-addon-card__title-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-addon-card__slug {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-addon-card__action {
+	flex: none;
+}
+
+.corex-admin .corex-addon-card__header h2,
+.corex-admin .corex-addon-card__status,
+.corex-admin .corex-addon-card p {
+	margin: 0;
+}
+
+.corex-admin .corex-addon-card__header h2 {
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin .corex-addon-card__desc {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+}
+
+.corex-admin .corex-addon-card__meta-label {
+	margin: 0 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-addon-card__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-addon-card__chips li {
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	background: var(--corex-admin-surface-alt);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-addon-card__links {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-md);
+	margin-block-start: var(--corex-admin-space-2xs);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-addon-card__requires {
+	color: var(--corex-admin-text-subtle);
+}
+
+.corex-admin .corex-addon-card__reason {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	margin-block-start: auto;
+	padding-block-start: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-addon-card__reason .dashicons {
+	flex: none;
+	color: var(--corex-admin-text-subtle);
+}
+
+/* Accessible enable/disable switch (design: Add-ons capture). State shows by
+   knob position AND an On/Off label — never colour alone. Actionable variant is
+   a submit button (server toggle, no JS); disabled variant is a span. */
+.corex-admin .corex-addon-card__toggle-form {
+	margin: 0;
+}
+
+.corex-admin .corex-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	min-block-size: 0;
+	padding: 0;
+	background: none;
+	border: 0;
+	color: var(--corex-admin-text-muted);
+	cursor: pointer;
+}
+
+.corex-admin .corex-toggle__track {
+	position: relative;
+	flex: none;
+	inline-size: 2.625rem;
+	block-size: 1.5rem;
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-pill);
+	transition: background var(--corex-admin-motion-fast) ease, border-color var(--corex-admin-motion-fast) ease;
+}
+
+.corex-admin .corex-toggle__knob {
+	position: absolute;
+	inset-block-start: 50%;
+	inset-inline-start: 0.1875rem;
+	inline-size: 1.125rem;
+	block-size: 1.125rem;
+	background: var(--corex-admin-text-muted);
+	border-radius: var(--corex-admin-radius-pill);
+	transform: translateY(-50%);
+	transition: inset-inline-start var(--corex-admin-motion-fast) ease, background var(--corex-admin-motion-fast) ease;
+}
+
+.corex-admin .corex-toggle__state {
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-toggle[aria-checked="true"] .corex-toggle__track {
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-toggle[aria-checked="true"] .corex-toggle__knob {
+	inset-inline-start: calc(100% - 1.3125rem);
+	background: var(--corex-admin-action-ink);
+}
+
+.corex-admin .corex-toggle[aria-checked="true"] {
+	color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-toggle--disabled {
+	cursor: not-allowed;
+	opacity: var(--corex-admin-disabled-opacity);
+}
+
+@media (max-width: 1200px) {
+
+	.corex-admin .corex-addons__summary {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.corex-admin .corex-addons__grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.corex-admin .corex-badge {
+	display: inline-flex;
+	align-items: center;
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-sm);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-pill);
+	background: var(--corex-admin-surface-alt);
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.corex-admin .corex-badge--success {
 	color: var(--corex-admin-success);
+	background: var(--corex-admin-success-soft);
 	border-color: var(--corex-admin-success);
 }
 
-.corex-badge--warning {
+.corex-admin .corex-badge--warning {
 	color: var(--corex-admin-warning);
+	background: var(--corex-admin-warning-soft);
 	border-color: var(--corex-admin-warning);
 }
 
-.corex-badge--danger {
+.corex-admin .corex-badge--danger {
 	color: var(--corex-admin-error);
+	background: var(--corex-admin-error-soft);
 	border-color: var(--corex-admin-error);
 }
 
-.corex-badge--neutral {
+.corex-admin .corex-badge--neutral {
 	color: var(--corex-admin-text-muted);
-	border-color: var(--corex-admin-border);
 }

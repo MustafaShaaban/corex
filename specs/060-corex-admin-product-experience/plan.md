@@ -1,6 +1,8 @@
 # Implementation Plan: CoreX Admin Product Experience
 
-**Branch**: `spec/060-corex-admin-product-experience` | **Date**: 2026-06-21 | **Spec**: [spec.md](./spec.md)
+**Branch**: `spec/060-corex-admin-product-experience` (foundation),
+`fix/060-admin-design-implementation` (corrective visual implementation) | **Date**: 2026-06-21 |
+**Spec**: [spec.md](./spec.md)
 
 **Input**: spec.md; design input [M6 admin experience handoff](../../design/handoffs/admin-experience.md); built on M2 tokens (Spec 057), the scoped `--corex-admin-*` adapter, and the existing `Corex\Foundation\Addon*` runtime model.
 
@@ -31,6 +33,22 @@ ENVIRONMENT-GATED.
 hard dependency (Principle IX); no global wp-admin restyle; no public-frontend impact.
 **Scale/Scope**: 6 screens (Dashboard/Add-ons/Data/Settings/Setup/Readiness), 7 add-on states, captcha worked
 example, universal states.
+
+## Corrective implementation architecture
+
+PR #58 is the state/security foundation. The corrective branch completes the visual contract using one
+registered-but-never-global CoreX admin shell stylesheet in `corex-core`, plus existing screen-specific styles for
+Data, Insights, Add-ons, control-panel/settings, and captcha. Every selector is rooted in `.corex-admin`; login uses
+the separate `body.login.corex-login` root. All declarations consume `--corex-admin-*` roles from the adapter.
+
+`CorexAdminAssets` owns the allow-list of current CoreX screen hooks and conditionally enqueues the shared shell;
+individual screens continue to own their scripts and screen-specific styles. `AdminPage` centralizes the accessible
+shell, page header, notices, and permission-denied state so six screens do not drift. Existing state services,
+actions, REST routes, and `AdminGuard` remain unchanged. Login remains native WordPress markup/behavior: CoreX adds
+only a body class, conditionally enqueued adapter/login stylesheet, safe logo variable, header URL, and footer text.
+
+Current owned surfaces found in the repository: WordPress login; Dashboard/Overview + settings; Add-ons; Data;
+Insights (including readiness); Setup Wizard; captcha controls within Settings; declarative CoreX option pages.
 
 ## Constitution Check
 
