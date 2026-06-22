@@ -70,7 +70,15 @@ final class MediaCommand
 
             $output = (string) preg_replace('/\.(jpe?g|png)$/i', '', $action['path']) . '.webp';
             $ok = $converter->convert(ConversionPlan::for($action['path'], $action['mime'], $this->capability, $this->settings), $action['mime']);
-            $ok && is_file($output) ? $converted++ : $failed++;
+
+            if ($ok && is_file($output)) {
+                // Track + gate the backfilled derivative the same way an upload does (spec 062).
+                $meta = WebpMeta::measure($action['path'], $output, $this->settings->quality, $this->settings->minSaving);
+                update_post_meta($action['id'], WebpMeta::META_KEY, $meta->toArray());
+                $converted++;
+            } else {
+                $failed++;
+            }
         }
 
         $this->success(sprintf(

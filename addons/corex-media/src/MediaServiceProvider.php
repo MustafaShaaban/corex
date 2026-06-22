@@ -59,10 +59,16 @@ final class MediaServiceProvider extends ServiceProvider
             return $html !== '' ? $html : $fallback;
         }, 10, 2);
 
-        // The regeneration command: backfill WebP siblings for existing uploads (spec 061).
+        // CLI: backfill (regenerate-webp) + safe cleanup (reset-webp) for existing uploads (spec 061/062).
         if (defined('WP_CLI') && WP_CLI) {
             \WP_CLI::add_command('corex media regenerate-webp', new MediaCommand($capability, $settings));
+            \WP_CLI::add_command('corex media reset-webp', new WebpResetCommand());
         }
+
+        // Clean up tracked derivatives when an attachment is deleted (never touch untracked files).
+        add_action('delete_attachment', static function ($attachmentId): void {
+            (new WebpResetCommand())->forgetAttachment((int) $attachmentId);
+        });
 
         if (! $capability->canWebp() || ! $settings->enabled) {
             return; // graceful: nothing to do when the server can't, or the operator turned it off
@@ -71,12 +77,16 @@ final class MediaServiceProvider extends ServiceProvider
         $converter = new WebpConverter($settings->quality);
 
         add_filter('wp_generate_attachment_metadata', static function ($metadata, $attachmentId) use ($converter, $capability, $settings) {
-            $file = (string) get_attached_file((int) $attachmentId);
-            $mime = (string) get_post_mime_type((int) $attachmentId);
+            $id   = (int) $attachmentId;
+            $file = (string) get_attached_file($id);
+            $mime = (string) get_post_mime_type($id);
             $plan = ConversionPlan::for($file, $mime, $capability, $settings);
 
-            if ($plan->convert) {
-                $converter->convert($plan, $mime);
+            if ($plan->convert && $converter->convert($plan, $mime)) {
+                // Measure the derivative + apply the activation gate (spec 062), and track the result so
+                // delivery can decide whether to serve it and reset-webp knows it is CoreX-generated.
+                $meta = WebpMeta::measure($file, $plan->outputPath, $settings->quality, $settings->minSaving);
+                update_post_meta($id, WebpMeta::META_KEY, $meta->toArray());
             }
 
             return $metadata; // unchanged — the WebP is a sibling; WP's own sizes are untouched

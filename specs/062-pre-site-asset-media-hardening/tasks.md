@@ -30,15 +30,20 @@
 - [x] T005a composer validate, PHP lint, Pest, Jest, build, docs-app build, build:dist+verify, git diff --check.
 - [x] T005b Open + merge PR A.
 
-## PR B — WebP gate + reset CLI + dist verification + media docs
+## PR C — WebP gate + reset CLI + media docs
 
-- [ ] T010 `WebpGate` (pure: exists/readable/valid/dimensions/transparency/saving≥threshold → active + reason) +
-  `WebpMeta` per-derivative record; wire into `ConversionPlan`/delivery; threshold + seams; tests.
-- [ ] T011 `wp corex media reset-webp [--dry-run] [--all] [--attachment] [--limit]` — tracked-only deletion, counts,
-  attachment-delete hook; tests.
+- [x] T010 `WebpGate` (pure: present/valid + dimensions + saving≥threshold → active_for_delivery + inactive_reason)
+  + `WebpMeta` per-derivative record (measured + persisted as `_corex_webp` attachment meta); wired into the upload
+  + regenerate conversion and into delivery (`MediaImage` serves WebP only when active); `media.webp.min_saving`
+  setting + `corex_media_min_saving` filter. Tests: WebpGate, WebpMeta round-trip.
+- [x] T011 `wp corex media reset-webp [--dry-run] [--all] [--attachment] [--limit]` — tracked-only deletion (never
+  originals/manual/untracked), clears meta, counts; `delete_attachment` removes only the tracked derivative. Tests:
+  WebpResetCommand::target safety.
+- [x] T013 Media-half docs (WebP gate, not-a-duplicate-attachment, reset/regenerate/delete) — media guide + README.
+
+## PR D — Dist client-asset verification (FR-062-05)
 - [ ] T012 Dist client-asset verification (compiled CSS/JS/images + manifest + forbidden absent) in
   `verify-shared-host-dist`; Azure asset build before packaging; tests.
-- [ ] T013 Media-half docs (WebP gate, not-a-duplicate-attachment, reset/regenerate/delete) + CHANGELOG.
 
 ## Release
 - [ ] T020 v0.30.0 after PR A + PR B merge and the release gate passes.

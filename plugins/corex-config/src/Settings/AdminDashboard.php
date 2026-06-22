@@ -193,6 +193,7 @@ final class AdminDashboard
             return match ($key) {
                 'media.webp.enabled', 'media.webp.convert_jpeg', 'media.webp.convert_png' => '1',
                 'media.webp.quality' => '82',
+                'media.webp.min_saving' => '5',
                 default => '',
             };
         }

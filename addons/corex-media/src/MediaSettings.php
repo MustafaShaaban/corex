@@ -27,17 +27,21 @@ final class MediaSettings
 {
     public const DEFAULT_QUALITY = 82;
 
+    /** Default minimum size saving (percent) for a WebP to be served (spec 062 activation gate). */
+    public const DEFAULT_MIN_SAVING = 5.0;
+
     public function __construct(
         public readonly bool $enabled,
         public readonly int $quality,
         public readonly bool $convertJpeg,
         public readonly bool $convertPng,
+        public readonly float $minSaving = self::DEFAULT_MIN_SAVING,
     ) {
     }
 
     public static function defaults(): self
     {
-        return new self(true, self::DEFAULT_QUALITY, true, true);
+        return new self(true, self::DEFAULT_QUALITY, true, true, self::DEFAULT_MIN_SAVING);
     }
 
     public static function fromConfig(ConfigInterface $config): self
@@ -54,7 +58,18 @@ final class MediaSettings
         $png = self::flag($config->get('media.webp.convert_png', true), true);
         $png = (bool) apply_filters('corex_media_convert_png', $png);
 
-        return new self($enabled, $quality, $jpeg, $png);
+        $minSaving = self::clampSaving($config->get('media.webp.min_saving', self::DEFAULT_MIN_SAVING));
+        $minSaving = self::clampSaving(apply_filters('corex_media_min_saving', $minSaving));
+
+        return new self($enabled, $quality, $jpeg, $png, $minSaving);
+    }
+
+    /** Clamp a min-saving threshold to a sane 0-100 percent. */
+    private static function clampSaving(mixed $value): float
+    {
+        $float = is_numeric($value) ? (float) $value : self::DEFAULT_MIN_SAVING;
+
+        return max(0.0, min(100.0, $float));
     }
 
     /**
