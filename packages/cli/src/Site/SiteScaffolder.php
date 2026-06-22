@@ -113,14 +113,18 @@ final class SiteScaffolder
         }
 
         if ($starter && ! $pluginOnly) {
-            $stubFiles[$themeDir . '/package.json']               = 'starter/theme-package-json';
-            $stubFiles[$themeDir . '/assets/src/main.scss']       = 'starter/theme-scss';
-            $stubFiles[$themeDir . '/assets/src/main.js']         = 'starter/theme-js';
-            $stubFiles[$themeDir . '/inc/Assets.php']             = 'starter/theme-assets-helper';
-            // Image-optimization pipeline (spec 061): drop source images in assets/src/images/, run
-            // `npm run images` (wired into build) to emit optimized JPEG/PNG + .webp into assets/images/.
+            // SCSS/JS/image pipeline (spec 062): sources in assets/src/{scss,js,images}/ build to
+            // assets/{css,js,images}/ via `npm run build`; functions.php enqueues the COMPILED output
+            // through the CoreX asset helpers (Corex\Assets\*) — never hardcoded paths.
+            $stubFiles[$themeDir . '/package.json']                = 'starter/theme-package-json';
+            $stubFiles[$themeDir . '/functions.php']               = 'starter/theme-functions';
+            $stubFiles[$themeDir . '/assets/src/scss/main.scss']   = 'starter/theme-scss';
+            $stubFiles[$themeDir . '/assets/src/js/main.js']       = 'starter/theme-js';
             $stubFiles[$themeDir . '/scripts/optimize-images.mjs'] = 'starter/theme-optimize-images';
-            $literals[$themeDir . '/assets/src/images/.gitkeep']   = "# Source images for `npm run images`. Built output (with .webp) goes to ../images/.\n";
+            $literals[$themeDir . '/assets/src/images/.gitkeep']   = "# Source images for `npm run images`. Built output (with .webp) goes to ../../images/.\n";
+            $literals[$themeDir . '/assets/css/.gitkeep']          = "# Built CSS — `npm run styles`. Do not edit by hand.\n";
+            $literals[$themeDir . '/assets/js/.gitkeep']           = "# Built JS — `npm run scripts`. Do not edit by hand.\n";
+            $literals[$themeDir . '/assets/images/.gitkeep']       = "# Optimized images — `npm run images`. Do not edit by hand.\n";
         }
 
         $marker = $themeOnly ? $themeDir . '/style.css' : $pluginDir . '/' . $id->pluginSlug . '.php';

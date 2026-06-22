@@ -56,8 +56,9 @@ it('validates starter scaffolds for the removable example slice and theme asset 
             'starter:acme-site/tests/ExampleTest.php',
             'starter:acme-site/REMOVE-EXAMPLE.md',
             'starter:acme-theme/package.json',
-            'starter:acme-theme/assets/src/main.scss',
-            'starter:acme-theme/inc/Assets.php',
+            'starter:acme-theme/functions.php',
+            'starter:acme-theme/assets/src/scss/main.scss',
+            'starter:acme-theme/assets/src/js/main.js',
         );
 });
 
