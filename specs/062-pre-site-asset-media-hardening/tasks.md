@@ -56,4 +56,8 @@
 ## Priority 2 (started after the first-site foundation; not blockers)
 - [x] Retrofit CoreX UI image blocks (Hero/Gallery/Team) to the `corex_media_optimize_image` seam — DONE:
   PictureRenderer preserves class+loading; `picture { display: contents }` keeps the wrapper layout-transparent.
-- [ ] Manual M6 RTL / 200% / full-keyboard sweep · Arabic team-workflow docs mirror · PR #60 Astro 7 · WP Font Library.
+- [~] M6 acceptance sweep — **automated RTL + 200%-zoom verified PASS** (no horizontal overflow on login + Add-ons;
+  RTL mirrors correctly); full-keyboard + light-mode remain manual (recorded in spec 061 acceptance-evidence.md).
+- [x] Arabic team-workflow docs mirror — regenerated (`docs/ar/**` placeholders, PR #75).
+- [x] PR #60 Astro 7 — validated: **blocked upstream** (no Starlight release peers Astro 7); held with a PR handoff.
+- [ ] Curated WP Font Library collection — remaining Priority 2 (a larger additive feature).
