@@ -22,13 +22,24 @@ overview:{ adminShell:true }
 The following require a manual/assistive-tech pass and a browser matrix this environment cannot fully drive; they
 are **environment-gated**, not verified:
 
-- **RTL mirroring** (Arabic/logical-property layout across admin + login).
-- **200% zoom** reflow (no clipping/overlap at 200%).
-- **Full keyboard navigation + visible focus** across every interactive control.
-- **Light-mode** login/admin sweep, and **reduced-motion** behavior end-to-end.
+- **Full keyboard navigation + visible focus** across every interactive control — programmatic focus and a 25-Tab
+  sweep across the full wp-admin chrome did not reliably isolate the CoreX content's `:focus-visible` ring, so this
+  stays a **manual** sweep (the CSS does define `:focus-visible` rings — verified in source: login + shell
+  stylesheets use `:where(a,button,input):focus-visible { outline … }`, and the RTL login render below shows a
+  visible brass focus ring on the focused field).
+- **Light-mode** login/admin sweep, and **reduced-motion** behavior end-to-end (reduced-motion was verified earlier
+  via `#login` animation-duration collapsing to `1e-05s`; the full light-mode pass remains manual).
 
-Recommended: run these manually on a real browser/WP before the first production client launch, and record results
-here.
+### Automated portions now verified (Priority 2, 2026-06-23)
+
+| Check | Method | Result |
+|---|---|---|
+| **RTL mirroring — login** | `wp-login.php` rendered with `dir="rtl"` (dark) | **PASS** — `document` horizontal overflow = 0; layout mirrors correctly (SSO key icon + field icons move to the inline-end, reveal toggle to the inline-start, "←/?" punctuation mirrored). Proof: `tests/e2e/clip/m6-rtl-login.png`. |
+| **RTL mirroring — admin (Add-ons)** | Add-ons screen with `dir="rtl"` | **PASS** — horizontal overflow = 0 (logical CSS). |
+| **200% zoom — admin (Add-ons)** | `body { zoom: 2 }` on the Add-ons screen | **PASS** — content reflows within the viewport, no horizontal overflow. |
+
+Recommended: run the remaining manual items (full keyboard sweep with a screen reader, light-mode pass) on a real
+browser/WP before the first production client launch, and record results here.
 
 ## Shared-host dist builder verification (Phase 13 / FR-061-06)
 
