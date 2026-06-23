@@ -115,12 +115,14 @@ it('emits a <picture> for a URL with a WebP sibling, and a plain <img> without o
     $plain = $media->pictureForUrl('http://acme.local/uploads/hero.jpg', 'Hero');
     expect($plain)->toContain('<img ')->not->toContain('<picture>');
 
-    // create the sibling → <picture> with a WebP source
+    // create the sibling → <picture> with a WebP source; the caller's class/loading are preserved on the img
     file_put_contents($dir . '/hero.webp', 'x');
-    $picture = $media->pictureForUrl('http://acme.local/uploads/hero.jpg', 'Hero');
+    $picture = $media->pictureForUrl('http://acme.local/uploads/hero.jpg', 'Hero', ['class' => 'corex-hero__bg', 'loading' => 'lazy']);
     expect($picture)->toContain('<picture>')
         ->toContain('type="image/webp"')
-        ->toContain('http://acme.local/uploads/hero.webp');
+        ->toContain('http://acme.local/uploads/hero.webp')
+        ->toContain('class="corex-hero__bg"')
+        ->toContain('loading="lazy"');
 
     @unlink($dir . '/hero.webp');
     @rmdir($dir);

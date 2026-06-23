@@ -26,19 +26,29 @@ final class MediaImage
      * Optimized markup for a raw image URL (spec 061): a `<picture>` with a WebP `<source>` when a
      * sibling exists on disk, else a plain `<img>`. The seam CoreX UI blocks (which hold URLs, not
      * attachment IDs) can opt into via the `corex_media_optimize_image` filter — no hard dependency.
+     * `$opts` may carry `class`, `loading`, and `lcp` so a block keeps its markup when it opts in.
+     *
+     * @param array{class?:string,loading?:string,lcp?:bool} $opts
      */
-    public function pictureForUrl(string $url, string $alt = '', bool $lcp = false): string
+    public function pictureForUrl(string $url, string $alt = '', array $opts = []): string
     {
         if ($url === '') {
             return '';
         }
 
-        return $this->renderer->render([
-            'src'  => $url,
-            'webp' => $this->webpSibling($url),
-            'alt'  => $alt,
-            'lcp'  => $lcp,
-        ]);
+        $image = [
+            'src'   => $url,
+            'webp'  => $this->webpSibling($url),
+            'alt'   => $alt,
+            'class' => (string) ($opts['class'] ?? ''),
+            'lcp'   => ! empty($opts['lcp']),
+        ];
+
+        if (isset($opts['loading'])) {
+            $image['loading'] = (string) $opts['loading'];
+        }
+
+        return $this->renderer->render($image);
     }
 
     public function render(int $attachmentId, string $size = 'large', bool $lcp = false): string

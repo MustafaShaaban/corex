@@ -6,6 +6,14 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **CoreX UI image blocks opt into optimized WebP delivery (spec 062 Priority 2):** the Hero, Gallery, and Team
+  block renderers now pass their image through the `corex_media_optimize_image` seam, so when Corex Media is active
+  and a *gated* WebP sibling exists they emit a `<picture>` (and the original `<img>` otherwise) — with **no hard
+  dependency** on the add-on. `PictureRenderer` preserves the block's `class` + `loading`, and each block's styles
+  set `picture { display: contents }` so the optional wrapper never changes layout.
+
 ## [0.30.0] — 2026-06-23
 
 ### Added

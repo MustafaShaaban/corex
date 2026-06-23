@@ -47,6 +47,26 @@ it('renders a hero with a heading + gated CTA + background image, empty title ->
         ->and((new HeroRenderer())->render(['ctaText' => 'x'], '', $block))->toBe('');
 });
 
+it('opts hero/gallery/team images into the corex_media_optimize_image delivery seam (class preserved)', function () use ($block) {
+    // Simulate Corex Media active: the filter wraps the <img> (and must receive the block's class/url).
+    Functions\when('apply_filters')->alias(function (string $hook, $value, array $args = []) {
+        if ($hook !== 'corex_media_optimize_image') {
+            return $value;
+        }
+
+        return sprintf('<picture data-class="%s" data-url="%s">%s</picture>', $args['class'] ?? '', $args['url'] ?? '', $value);
+    });
+
+    $hero = (new HeroRenderer())->render(['title' => 'T', 'ctaText' => 'C', 'image' => ['url' => 'https://cdn/bg.jpg', 'alt' => 'a']], '', $block);
+    $gallery = (new GalleryRenderer())->render(['images' => [['url' => 'https://cdn/1.jpg', 'alt' => 'o']]], '', $block);
+    $team = (new TeamRenderer())->render(['members' => [['name' => 'A', 'image' => ['url' => 'https://cdn/a.jpg', 'alt' => 'a']]]], '', $block);
+
+    expect($hero)->toContain('<picture data-class="corex-hero__bg" data-url="https://cdn/bg.jpg">')
+        ->toContain('<img class="corex-hero__bg"');
+    expect($gallery)->toContain('<picture data-class="corex-gallery__img" data-url="https://cdn/1.jpg">');
+    expect($team)->toContain('<picture data-class="corex-team__photo" data-url="https://cdn/a.jpg">');
+});
+
 it('omits the hero CTA unless both text and url are set', function () use ($block) {
     expect((new HeroRenderer())->render(['title' => 'T', 'ctaText' => 'Go'], '', $block))
         ->not->toContain('corex-hero__cta');

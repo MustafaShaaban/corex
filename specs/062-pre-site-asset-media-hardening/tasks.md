@@ -53,6 +53,7 @@
 ## Release
 - [ ] T020 v0.30.0 after PR A + PR B merge and the release gate passes.
 
-## Deferred (Priority 2 — not blockers; tracked in spec 061 backlog / ROADMAP)
-- [ ] Retrofit CoreX UI image blocks to the media delivery seam (needs PictureRenderer class/loading preservation).
+## Priority 2 (started after the first-site foundation; not blockers)
+- [x] Retrofit CoreX UI image blocks (Hero/Gallery/Team) to the `corex_media_optimize_image` seam — DONE:
+  PictureRenderer preserves class+loading; `picture { display: contents }` keeps the wrapper layout-transparent.
 - [ ] Manual M6 RTL / 200% / full-keyboard sweep · Arabic team-workflow docs mirror · PR #60 Astro 7 · WP Font Library.
