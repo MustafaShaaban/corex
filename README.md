@@ -142,7 +142,7 @@ The rule hierarchy: **Role Gate** (where) → **Spec Kit** (what) → **Guard Ga
 Before starting a real client site, run the Spec 055 readiness report:
 
 ```bash
-wp corex readiness 0.27.0
+wp corex readiness 0.30.0
 ```
 
 It reports runtime gating, release metadata, CI/security controls, `make:site` validation, deployment profiles,
