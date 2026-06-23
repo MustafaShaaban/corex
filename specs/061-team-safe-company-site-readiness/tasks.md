@@ -23,7 +23,9 @@ Status key: `[x]` done in PR A (this branch) · `[ ]` deferred to a follow-up PR
 - [x] T004a Verify `dist/` is git-ignored (already: `/dist/`, `**/dist/`).
 - [x] T004b README "Start here"/architecture note: repo = source, `dist/` = generated, `sites/<client>/` = client.
 - [x] T004c docs-app team-workflow pages + nav (agent roles, start prompts, client-site workflow).
-- [ ] T004d Arabic (`docs/ar/**`) mirror — backlog (translation note added; EN is canonical for this area).
+- [x] T004d Arabic (`docs/ar/**`) mirror — regenerated via `scripts/make-ar-mirror.py` (Priority 2): AR
+  placeholder pages now exist for the team-workflow + deployment docs (EN front-matter + "translation pending" +
+  back-link). Real Arabic translation of the prose remains a separate human task (the placeholder says so).
 
 ### T005 — make:site governance stubs (FR-061-05)
 - [x] T005a Update `site/AGENTS.md` + `site/CLAUDE.md` stubs with Client Site Mode role gate + handoff format +
