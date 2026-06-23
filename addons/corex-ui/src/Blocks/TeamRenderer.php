@@ -82,10 +82,18 @@ final class TeamRenderer implements BlockRenderer
 
         $alt = is_array($image) ? (string) ($image['alt'] ?? '') : '';
 
-        return sprintf(
+        $img = sprintf(
             '<img class="corex-team__photo" src="%s" alt="%s" loading="lazy" decoding="async" />',
             esc_url($url),
             esc_attr($alt)
         );
+
+        // Optimized <picture> delivery when Corex Media is active (no hard dependency; class preserved).
+        return (string) apply_filters('corex_media_optimize_image', $img, [
+            'url'     => $url,
+            'alt'     => $alt,
+            'class'   => 'corex-team__photo',
+            'loading' => 'lazy',
+        ]);
     }
 }

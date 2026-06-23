@@ -4,7 +4,24 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-23, v0.30.0 RELEASE) -- spec 062 Priority 1 complete (PR #68/69/70/71); cutting v0.30.0
+## RESUME HERE (2026-06-23, Priority 2 started) -- block image retrofit done; repo cleaned; branch priority2/block-image-delivery
+
+- **Branch/PR:** `priority2/block-image-delivery` (off `main` @ v0.30.0). PR open — not merged. Working tree clean.
+- **Priority 2 item DONE — CoreX UI image-block retrofit:** Hero/Gallery/Team renderers opt into the
+  `corex_media_optimize_image` seam (no hard dependency on corex-media); `PictureRenderer` preserves the block's
+  `class` + `loading`; each block's SCSS sets `picture { display: contents }` so the optional `<picture>` wrapper is
+  layout-transparent. Tests: PictureRenderer class/loading, pictureForUrl opts, block opt-in (ComponentBlocksV2Test).
+  Pest 819, Jest 116, lint:css clean, token inventory synced. (build/ is git-ignored → CI rebuilds.)
+- **Repo cleanup:** deleted 9 merged/obsolete local branches (only `develop` + `main` remain);
+  `COREX-FINAL-PRE-SITE-GOAL.md` git-ignored (owner handoff, never committed).
+- **Docs updated:** media guide (blocks now opt in), CHANGELOG [Unreleased], spec 061/062 tasks (T022b done).
+- **Remaining Priority 2 (not blockers):** manual M6 RTL/200%/keyboard sweep; Arabic team-workflow docs mirror;
+  PR #60 Astro 7 validation; curated WP Font Library collection.
+- **Exact next step:** merge this PR; then continue Priority 2 (Astro 7 / Arabic docs / Font Library) or start the
+  first real company site (Client Site Mode). A v0.30.x/v0.31.0 release groups Priority-2 runtime once more lands.
+
+---
+## RESUME HERE (2026-06-23, v0.30.0 RELEASE) -- spec 062 Priority 1 complete (PR #68/69/70/71); released v0.30.0
 
 - **Release:** v0.30.0 — stamps 0.29.0→0.30.0 across the 14 plugin/addon files + `theme/style.css`; CHANGELOG
   `[0.30.0]` captures spec 062 (pre-site asset & media hardening).

@@ -53,8 +53,17 @@ final class MediaServiceProvider extends ServiceProvider
         // fallback markup unchanged when there is no WebP sibling.
         $mediaImage = $this->container->make(MediaImage::class);
         add_filter('corex_media_optimize_image', static function ($fallback, array $args = []) use ($mediaImage) {
-            $url  = (string) ($args['url'] ?? '');
-            $html = $url === '' ? '' : $mediaImage->pictureForUrl($url, (string) ($args['alt'] ?? ''), ! empty($args['lcp']));
+            $url = (string) ($args['url'] ?? '');
+            if ($url === '') {
+                return $fallback;
+            }
+
+            $opts = ['class' => (string) ($args['class'] ?? ''), 'lcp' => ! empty($args['lcp'])];
+            if (isset($args['loading'])) {
+                $opts['loading'] = (string) $args['loading'];
+            }
+
+            $html = $mediaImage->pictureForUrl($url, (string) ($args['alt'] ?? ''), $opts);
 
             return $html !== '' ? $html : $fallback;
         }, 10, 2);

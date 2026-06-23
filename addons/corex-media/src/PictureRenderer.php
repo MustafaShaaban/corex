@@ -50,11 +50,16 @@ final class PictureRenderer
     {
         $isLcp  = ! empty($image['lcp']);
         $srcset = (string) ($image['srcset'] ?? '');
+        $class  = (string) ($image['class'] ?? '');
 
-        $attrs = sprintf('src="%s" alt="%s" decoding="async"', esc_url($src), esc_attr((string) ($image['alt'] ?? '')));
+        // Preserve the caller's class (e.g. a block's BEM class) so wrapping in <picture> never
+        // regresses its CSS (image-block retrofit).
+        $attrs = $class !== '' ? sprintf('class="%s" ', esc_attr($class)) : '';
+        $attrs .= sprintf('src="%s" alt="%s" decoding="async"', esc_url($src), esc_attr((string) ($image['alt'] ?? '')));
 
-        // LCP/hero image loads eagerly with high priority; everything else is lazy.
-        $attrs .= $isLcp ? ' fetchpriority="high"' : ' loading="lazy"';
+        // LCP/hero image loads eagerly with high priority; everything else honours an explicit
+        // `loading` (default lazy).
+        $attrs .= $isLcp ? ' fetchpriority="high"' : sprintf(' loading="%s"', esc_attr((string) ($image['loading'] ?? 'lazy')));
 
         if ($srcset !== '') {
             $attrs .= sprintf(

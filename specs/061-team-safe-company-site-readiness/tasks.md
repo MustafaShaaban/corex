@@ -66,8 +66,9 @@ Status key: `[x]` done in PR A (this branch) · `[ ]` deferred to a follow-up PR
 - [x] T022 Frontend WebP delivery: `MediaImage::pictureForUrl` + the `corex_media_optimize_image` opt-in filter seam
   (no hard dependency); `<picture>` when a sibling exists, `<img>` fallback otherwise; no global WP image filter.
   Tests: pictureForUrl with/without sibling (existing PictureRenderer tests retained).
-  - [ ] T022b Retrofit the built-in CoreX UI image blocks (hero/gallery/team) to use the seam — deferred: needs
-    PictureRenderer to preserve each block's class/loading attributes first (else block CSS/markup regresses).
+  - [x] T022b Retrofit the built-in CoreX UI image blocks (hero/gallery/team) to the `corex_media_optimize_image`
+    seam — DONE (Priority 2): PictureRenderer now preserves class+loading, the blocks opt in, and their styles set
+    `picture { display: contents }` so the optional wrapper never changes layout. Tests added.
 
 ## PR C — Generator restructure (FR-061-12/13)
 - [x] T030 `make:site` emits the flat `<slug>-site/` + `<slug>-theme/` under the output dir (e.g.
@@ -80,8 +81,9 @@ Status key: `[x]` done in PR A (this branch) · `[ ]` deferred to a follow-up PR
 - [x] T032 Generated-client image pipeline (`--starter`): `assets/src/images/` → built `assets/images/` (incl.
   `.webp`) via a project-local `scripts/optimize-images.mjs` (sharp) wired into `npm run images` + `build` + tests.
 - [x] T020b (folded in) Reflect the Media defaults (on; quality 82) in the unsaved settings form.
-- [ ] T022b Retrofit the built-in CoreX UI image blocks to the `corex_media_optimize_image` seam — still deferred
-  (needs PictureRenderer to preserve per-block class/loading first).
+- [x] T022b Retrofit the built-in CoreX UI image blocks to the `corex_media_optimize_image` seam — DONE
+  (Priority 2): PictureRenderer preserves class+loading; Hero/Gallery/Team opt in; `picture { display: contents }`
+  keeps the wrapper layout-transparent. Tests added.
 
 ## PR D — Font Library (deferred; FR-061-14)
 - [ ] T040 Optional curated CoreX WP Font Library collection, or a precise backlog spec if not pursued.

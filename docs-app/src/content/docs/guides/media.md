@@ -89,9 +89,10 @@ $img = sprintf( '<img src="%s" alt="%s" loading="lazy" />', esc_url( $url ), esc
 echo apply_filters( 'corex_media_optimize_image', $img, [ 'url' => $url, 'alt' => $alt ] );
 ```
 
-When Corex Media is active and a WebP sibling exists, the filter returns the `<picture>`; otherwise it returns your
-fallback `<img>` unchanged. (Retrofitting the built-in CoreX UI image blocks to use this seam — preserving each
-block's classes/loading — is a tracked follow-up.)
+When Corex Media is active and a gated WebP sibling exists, the filter returns the `<picture>`; otherwise it returns
+your fallback `<img>` unchanged. Pass `class` (and optionally `loading`/`lcp`) in the args so the wrapped `<img>`
+keeps its markup. The built-in CoreX UI image blocks (Hero, Gallery, Team) already opt in through this seam — and
+their styles set `picture { display: contents }` so the optional wrapper never changes layout.
 
 ## Diagnostics
 

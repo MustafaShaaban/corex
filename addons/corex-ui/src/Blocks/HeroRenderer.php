@@ -82,11 +82,20 @@ final class HeroRenderer implements BlockRenderer
 
         $alt = is_array($image) ? (string) ($image['alt'] ?? '') : '';
 
-        return sprintf(
+        $img = sprintf(
             '<img class="corex-hero__bg" src="%s" alt="%s" loading="lazy" decoding="async" />',
             esc_url($url),
             esc_attr($alt)
         );
+
+        // Opt into optimized <picture> delivery when Corex Media is active (no hard dependency):
+        // it returns this <img> unchanged when there is no gated WebP sibling, and preserves the class.
+        return (string) apply_filters('corex_media_optimize_image', $img, [
+            'url'     => $url,
+            'alt'     => $alt,
+            'class'   => 'corex-hero__bg',
+            'loading' => 'lazy',
+        ]);
     }
 
     private function headingLevel(mixed $level): int

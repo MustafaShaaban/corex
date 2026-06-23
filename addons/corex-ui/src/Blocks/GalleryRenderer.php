@@ -54,12 +54,20 @@ final class GalleryRenderer implements BlockRenderer
         $alt     = (string) ($image['alt'] ?? '');
         $caption = trim((string) ($image['caption'] ?? ''));
 
-        $html = '<figure class="corex-gallery__item">';
-        $html .= sprintf(
+        $img = sprintf(
             '<img class="corex-gallery__img" src="%s" alt="%s" loading="lazy" decoding="async" />',
             esc_url($url),
             esc_attr($alt)
         );
+
+        $html = '<figure class="corex-gallery__item">';
+        // Optimized <picture> delivery when Corex Media is active (no hard dependency; class preserved).
+        $html .= (string) apply_filters('corex_media_optimize_image', $img, [
+            'url'     => $url,
+            'alt'     => $alt,
+            'class'   => 'corex-gallery__img',
+            'loading' => 'lazy',
+        ]);
 
         if ($caption !== '') {
             $html .= sprintf('<figcaption class="corex-gallery__caption">%s</figcaption>', wp_kses_post($caption));

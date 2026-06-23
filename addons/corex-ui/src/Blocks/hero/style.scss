@@ -7,6 +7,12 @@
 	overflow: hidden;
 	padding-block: var(--wp--preset--spacing--80);
 	padding-inline: var(--wp--preset--spacing--50);
+
+	// <picture> wrapper (Corex Media) must not change layout —
+	// the inner <img> keeps its class and behaves as the direct child it replaced.
+	picture {
+		display: contents;
+	}
 	background-color: var(--wp--preset--color--surface-alt);
 	border-radius: var(--wp--custom--radius--lg);
 	text-align: center;

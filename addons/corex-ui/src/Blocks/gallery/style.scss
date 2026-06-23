@@ -4,6 +4,11 @@
 .corex-gallery {
 	display: grid;
 
+	// <picture> wrapper (Corex Media) stays layout-transparent.
+	picture {
+		display: contents;
+	}
+
 	/* stylelint-disable @stylistic/max-line-length -- track rationale */
 
 	/* 14rem is a functional responsive grid track (layout structure), not a design size. */
