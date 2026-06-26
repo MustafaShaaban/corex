@@ -4,7 +4,26 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-06-23, Priority 2 started) -- block image retrofit done; repo cleaned; branch priority2/block-image-delivery
+## RESUME HERE (2026-06-26, v0.31.0 RELEASE) -- Priority 2 COMPLETE; cutting v0.31.0
+
+- **Release:** v0.31.0 — stamps 0.30.0→0.31.0; CHANGELOG `[0.31.0]` captures the spec 062 Priority-2 work.
+- **Priority 2 — ALL items resolved:**
+  - **Block-image delivery retrofit** (PR #73): Hero/Gallery/Team opt into `corex_media_optimize_image`;
+    PictureRenderer preserves class+loading; `picture { display: contents }` keeps the wrapper layout-transparent.
+  - **PR #60 Astro 7** (held): validated — **blocked upstream** (no Starlight release peers Astro 7); PR handoff posted.
+  - **Arabic docs mirror** (PR #75): `docs/ar/**` placeholders regenerated for the new team-workflow/deployment docs.
+  - **M6 acceptance** (PR #76): automated **RTL + 200%-zoom PASS** recorded (no horizontal overflow; correct
+    mirroring); full-keyboard + light-mode remain MANUAL (CSS defines `:focus-visible` rings).
+  - **Curated WP Font Library collection** (PR #77): `Corex\Assets\FontCollection` registers the OFL brand
+    typefaces in Appearance → Fonts via `wp_register_font_collection`.
+- **Repo:** clean; only `develop` + `main` local branches; `COREX-FINAL-PRE-SITE-GOAL.md` git-ignored.
+- **Remaining (manual / Priority 3):** the manual full-keyboard + light-mode M6 sweep (with assistive tech); the
+  wider CoreX roadmap (more design/blocks/site kits — Priority 3).
+- **Exact next step:** after the v0.31.0 tag/release — **start the first real company website** (Client Site Mode):
+  `wp corex make:site Acme --path=sites/acme --starter`; or begin Priority 3 (roadmap) in CoreX Framework Mode.
+
+---
+## RESUME HERE (2026-06-23, Priority 2 started) -- block image retrofit done; repo cleaned (merged via PR #73)
 
 - **Branch/PR:** `priority2/block-image-delivery` (off `main` @ v0.30.0). PR open — not merged. Working tree clean.
 - **Priority 2 item DONE — CoreX UI image-block retrofit:** Hero/Gallery/Team renderers opt into the
