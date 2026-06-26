@@ -60,4 +60,7 @@
   RTL mirrors correctly); full-keyboard + light-mode remain manual (recorded in spec 061 acceptance-evidence.md).
 - [x] Arabic team-workflow docs mirror — regenerated (`docs/ar/**` placeholders, PR #75).
 - [x] PR #60 Astro 7 — validated: **blocked upstream** (no Starlight release peers Astro 7); held with a PR handoff.
-- [ ] Curated WP Font Library collection — remaining Priority 2 (a larger additive feature).
+- [x] Curated WP Font Library collection — DONE: `Corex\Assets\FontCollection` registers the CoreX brand
+  typefaces (Space Grotesk / JetBrains Mono / IBM Plex Sans Arabic — OFL, self-hosted) via
+  `wp_register_font_collection` on `init`, so editors can install them from Appearance → Fonts. Pure definition +
+  test; guarded for older runtimes; production path stays source-controlled client-theme fonts.

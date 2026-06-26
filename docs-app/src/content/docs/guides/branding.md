@@ -106,8 +106,13 @@ For example, on the Acme site you might trial a heading face via Appearance → 
 approved, drop the licensed font files into `themes/acme/assets/fonts/` and register them in
 `themes/acme/theme.json` so every environment renders identically.
 
-> A future, optional curated CoreX font collection via the WP Font Library APIs is on the backlog; it is not
-> required for this workflow.
+### The curated CoreX Font Library collection
+
+CoreX registers its brand typefaces — **Space Grotesk**, **JetBrains Mono**, and **IBM Plex Sans Arabic** (all
+OFL, self-hosted) — as a **CoreX** collection in **Appearance → Fonts**, so an editor can install them from the
+WordPress 7 Font Library in one click (`wp_register_font_collection`). This is optional editor tooling; the
+production path for a client's brand fonts is still source-controlled fonts registered in the client theme's
+`theme.json` (above). The framework serves the woff2 from `corex-core/assets/fonts/`.
 
 ## The design system (spec 033)
 

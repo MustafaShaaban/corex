@@ -6,6 +6,14 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Curated CoreX font collection for the WordPress 7 Font Library (spec 062 Priority 2):**
+  `Corex\Assets\FontCollection` registers the framework's self-hosted brand typefaces — Space Grotesk, JetBrains
+  Mono, and IBM Plex Sans Arabic (all OFL) — as a **CoreX** collection in Appearance → Fonts, installable in one
+  click via `wp_register_font_collection`. Optional editor tooling; the production path for client brand fonts
+  stays source-controlled fonts in the client theme's `theme.json`.
+
 ### Changed
 
 - **CoreX UI image blocks opt into optimized WebP delivery (spec 062 Priority 2):** the Hero, Gallery, and Team
