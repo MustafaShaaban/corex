@@ -54,6 +54,15 @@ final class AssetsServiceProvider extends ServiceProvider
         );
     }
 
+    public function boot(): void
+    {
+        // Register the curated CoreX font collection for the WP 7 Font Library (spec 062, Priority 2),
+        // pointing at the framework's self-hosted brand woff2. Optional editor tooling — guarded inside.
+        add_action('init', static function (): void {
+            (new FontCollection(plugins_url('assets/fonts', COREX_CORE_FILE)))->register();
+        });
+    }
+
     private function environmentValue(ConfigInterface $config): string
     {
         $value = (string) $config->get('app.env', '');
