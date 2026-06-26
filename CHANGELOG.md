@@ -6,6 +6,8 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.31.0] — 2026-06-26
+
 ### Added
 
 - **Curated CoreX font collection for the WordPress 7 Font Library (spec 062 Priority 2):**
