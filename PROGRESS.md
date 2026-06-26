@@ -4,6 +4,31 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-06-26, PRE-SITE READINESS CLOSED) -- v0.31.0 shipped; first company site can start
+
+- **Status:** **v0.31.0 / pre-site readiness is CLOSED.** Tag `v0.31.0` is pushed and the GitHub Release
+  `v0.31.0 — Priority 2: image delivery + Font Library` is published and shows as **Latest** (2026-06-26),
+  with notes matching `CHANGELOG.md [0.31.0]`. `main` @ `a322acc`.
+- **First real company site can now start — in Client Site Mode.** The asset/media foundation (spec 062),
+  team-safe readiness + `sites/<client>/` layout (spec 061), and Company Site Kit are all in place.
+  - **Recommended command:** `wp corex make:site Acme --path=sites/acme --starter`
+  - This scaffolds a **client plugin + client theme** (`sites/acme/acme-site/` + `sites/acme/acme-theme/`) —
+    **not** a WordPress install; the throwaway WordPress in `./wp` (dev runtime only, never deployed) loads it.
+    Deploy via the generated **`dist` artifact** (`npm run build:dist` / `verify:dist`), never `./wp` directly.
+  - Real sites use a **custom** local URL / DB name / DB prefix / title — `corex` is only the default dev
+    example, not a required database name.
+- **Docs closeout (this session, branch `docs/pre-site-readiness-closeout`):** fixed docs-vs-code drift where
+  the getting-started/company-site + client-site guides still described the pre-v0.29 `plugins/acme-site/` +
+  `themes/acme/` layout and a pre-v0.30 `inc/Assets.php` starter helper. They now match the scaffolder
+  (`sites/<client>/<slug>-site` + `<slug>-theme`; `assets/src/{scss,js,images}` + `functions.php` via
+  `Corex\Assets\*`). README readiness example bumped to `0.31.0`.
+- **Remaining = Priority 3 / manual acceptance — NOT a blocker:** the manual full-keyboard + light-mode M6
+  sweep (with assistive tech); the wider CoreX roadmap (more design/blocks/site kits); PR #60 Astro 6→7
+  (**held — blocked upstream**: no `@astrojs/starlight` release peers Astro 7 yet).
+- **Exact next step:** start the first real company website (Client Site Mode):
+  `wp corex make:site Acme --path=sites/acme --starter`.
+
+---
 ## RESUME HERE (2026-06-26, v0.31.0 RELEASE) -- Priority 2 COMPLETE; cutting v0.31.0
 
 - **Release:** v0.31.0 — stamps 0.30.0→0.31.0; CHANGELOG `[0.31.0]` captures the spec 062 Priority-2 work.

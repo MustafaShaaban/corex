@@ -103,8 +103,8 @@ Guidance:
 - **Licensing:** only commit or upload fonts the project is licensed to use.
 
 For example, on the Acme site you might trial a heading face via Appearance → Fonts while designing, then, once
-approved, drop the licensed font files into `themes/acme/assets/fonts/` and register them in
-`themes/acme/theme.json` so every environment renders identically.
+approved, drop the licensed font files into `sites/acme/acme-theme/assets/fonts/` and register them in
+`sites/acme/acme-theme/theme.json` so every environment renders identically.
 
 ### The curated CoreX Font Library collection
 

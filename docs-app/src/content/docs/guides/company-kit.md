@@ -62,8 +62,8 @@ distinct thing:
 - **Brand restyling** (colours, fonts, spacing) is usually a tokens/style-variation change — **no framework
   template edits are needed**.
 - **Structural changes** (a different header layout, extra footer regions) belong in the **generated client
-  theme's** template parts — e.g. `themes/acme/parts/header.html` and `themes/acme/parts/footer.html` — which
-  override the parent theme's parts.
+  theme's** template parts — e.g. `sites/acme/acme-theme/parts/header.html` and
+  `sites/acme/acme-theme/parts/footer.html` — which override the parent theme's parts.
 - **Do not edit CoreX framework internals for one client.** No framework template edits are needed for normal
   brand restyling; client theme template-part overrides are expected when the approved client design changes
   structure.

@@ -26,8 +26,10 @@ CoreX has three distinct layers. Keeping them straight prevents most early mista
    single client.
 2. **The local WordPress install** — a throwaway WordPress in `./wp` (git-ignored) that *runs* the framework
    so you can see it. Its URL/DB/title are just local dev values.
-3. **The generated client site** — a **site plugin + site theme** created by `wp corex make:site`, with its
-   own namespace and prefixes. **This is where your client's brand, structure, pages, and content live.**
+3. **The generated client site** — a **site plugin + site theme** created by `wp corex make:site` under
+   `sites/<client>/` (e.g. `sites/acme/acme-site` + `sites/acme/acme-theme`), with its own namespace and
+   prefixes. It is **not** a WordPress install — it is the client plugin + theme that the local WordPress in
+   `./wp` loads. **This is where your client's brand, structure, pages, and content live.**
 
 ## The path
 
@@ -101,11 +103,14 @@ Everything else is an **add-on** you enable by need — see the full tiering in
 ### 6. Generate the company site
 
 ```bash
-wp corex make:site Acme
+wp corex make:site Acme --path=sites/acme --starter
 ```
 
-This scaffolds `plugins/acme-site/` (app code, `AcmeSite\` namespace) and `themes/acme/` (presentation), plus
-team/agent governance files. Details: [Build a client site](/guides/client-site/).
+This scaffolds a **client plugin + client theme** under `sites/acme/` — `sites/acme/acme-site/` (app code,
+`AcmeSite\` namespace) and `sites/acme/acme-theme/` (presentation) — plus team/agent governance files. It does
+**not** install WordPress: the throwaway WordPress in `./wp` loads this plugin + theme. `--path` is the site
+root (default: the current directory + the slug) and `--starter` adds a runnable example slice + the
+starter-theme SCSS/JS/image build. Details: [Build a client site](/guides/client-site/).
 
 ### 7. Apply the Company Site Kit (where appropriate)
 
@@ -119,7 +124,7 @@ This is the rule that keeps your work upgrade-safe:
 - **Brand restyling** (colours, fonts, spacing) → client `theme.json` tokens / a style variation. **No
   framework edits needed.**
 - **Structural header/footer or layout changes** → override the template parts in the **client theme**
-  (`themes/acme/parts/`, `themes/acme/templates/`).
+  (`sites/acme/acme-theme/parts/`, `sites/acme/acme-theme/templates/`).
 - **Do not edit CoreX framework internals for one client.** See
   [CoreX UI, Company Kit & client ownership](/guides/company-kit/#what-each-layer-owns) for exactly which
   layer owns what, and where client header/footer overrides belong.
@@ -135,8 +140,9 @@ licensed to use. See [Typography & fonts](/guides/branding/#fonts).
 ### 10. Build, package, and deploy
 
 The local `./wp` is a **dev runtime** — it contains symlinks/junctions and dev artifacts and is **not** a
-deployment artifact. Build a clean WordPress tree and deploy that. See
-[Deploy & distribute](/guides/deployment/).
+deployment artifact, so never deploy `./wp` directly. Instead build the generated **`dist` artifact**
+(`npm run build:dist`, verified with `verify:dist`) — a clean WordPress tree with real files instead of
+symlinks — and deploy that. See [Deploy & distribute](/guides/deployment/).
 
 ## Optional: the documentation site
 
