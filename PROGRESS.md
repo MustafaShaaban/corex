@@ -20,8 +20,24 @@
   baseline (matrix) · B7 Blog + Blog Pro basics · B8 Submissions/Forms/Email/Insights/Setup completion + Portfolio
   scope + verify. One reviewed batch at a time; spec-first, guard-gated, tested, render-verified where the harness is
   available.
-- **Exact next step:** implement B1 (real Operations Mode: stored mode, nonce+cap, production confirmation, badges,
-  minimal audit log) — then B3/B4 and the rest. Do not stop early; do not only polish CSS; do not fake features.
+- **Done this session (PR #95, render-verified dark+light):** **B1** real Operations Mode switching
+  (`Config\Operations\*` — stored mode, nonce+cap, production/maintenance confirmation, Overview+Ops badges,
+  MaintenanceGuard that never locks out an admin, audit log); **B2** docs correction (company-site paused; ROADMAP
+  §17 + DECISIONS #112); **B3** real submission retention (`Config\Retention\*` — window + real dry-run preview +
+  confirmed trash-not-delete prune); **B6** Access & Abilities baseline (`Config\Access\*` — real role×capability
+  matrix + current-user perms + requirements, read-only so no lockout). Full Pest **889**, lint:css clean, token
+  contract green, guards clean.
+- **Remaining batches (real work, not deferred — on PR #95):** **B4** Data Models completion (record detail routing,
+  schema summary, CSV/JSON export, real CSV import dry-run + rejected-rows, truthful migration overview; apply gated
+  where no write adapter exists, with the exact reason); **B5** finish the global fidelity/interaction sweep across
+  forms/email/data-models/insights/setup (the shared shell already gives Overview/Operations/Submissions/Access a
+  consistent, white-space-free layout — verify + tune the rest); **B7** Blog (archive/single/components/social/
+  states/metadata + Blog Pro basics + readiness where real); **B8** Submissions/Forms/Email detail completion +
+  Insights + Setup Wizard usefulness + Portfolio next-scope + full verification. Only Woo / advanced AAM /
+  commercial-Pro stay deferred.
+- **Exact next step:** **B4 Data Models** — record detail view + CSV/JSON export + real CSV-import dry-run
+  (`Config\DataModels\*`), reusing the real `DataRegistry`; then B7 Blog and B8. Do not fake; gate unsafe applies
+  with the exact reason.
 
 ---
 ## RESUME HERE (2026-07-02, Spec 064 ADMIN FIDELITY) -- Overview rebuilt to the approved grid; rail fixed; render-verified
