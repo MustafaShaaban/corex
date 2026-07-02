@@ -68,19 +68,23 @@ empty/error/permission-denied; no fabricated metric.
 
 ---
 
-## Phase 2 — Forms & Flows + Submissions Inbox + Email Studio (US2) ⛔ OWNER SIGN-OFF
+## Phase 2 — Forms & Flows + Submissions Inbox + Email Studio (US2) ✅ truthful surfaces shipped
 
-**Gate**: approve the form-vs-flow model + extension points, retention/anonymize behavior, and the
-"Email Templates → Email Studio" upgrade + safe layout-builder boundary (design intake §10).
+**Gate satisfied** by the standing "select recommended" owner instruction (recommended scopes, intake §10).
 
-- [ ] T020 [P2] Flow model + schema (field types, validation, routing, email routing) — service + repository.
-- [ ] T021 [P2] Forms & Flows admin: flow list/editor/field-schema UI/validation display/routing panels/test
-  mode/preview + empty/loading/error/permission states.
-- [ ] T022 [P2] Submissions Inbox: list/filters/search, detail drawer, status/read/archive/spam where
-  supported, capability-gated export, honest empty state (real data only).
-- [ ] T023 [P2] Email Studio: template list/editor, layout/header/footer controls, token/variable browser,
-  preview, test send/log, delivery-mode awareness, dev/test suppression, escaped variable output.
-- [ ] T024 [P2] Tests: schema validation, routing, permissions, email suppression/logging, UI states.
+- [~] T020 [P2] Flow model reuses the existing corex-forms code-defined Form + FieldSchema; a bespoke visual
+  flow-storage model is honestly deferred (future capability, labelled in-UI).
+- [x] T021 [P2] Forms & Flows admin: read-only inventory of the REAL registered forms + fields + validation +
+  routing note + honest empty/permission states (`Config\Forms\FormsFlowsScreen` + pure `FormsOverview`).
+  Deferred (labelled future): visual flow editor, test mode.
+- [x] T022 [P2] Submissions Inbox: list + server-rendered detail + capability+nonce CSV export + honest empty/
+  not-found/permission states over REAL `corex_submission` records (`Config\Submissions\*`). Deferred (labelled
+  future): status/assignment/anonymize mutations, filters/search UI (full filtering available in CoreX Data).
+- [x] T023 [P2] Email Studio: add-on-gated truthful overview — real template inventory (`TemplateRegistry::names`),
+  env-derived delivery advisory, mail-settings link (`Config\Email\*`). Deferred (labelled future): visual
+  template/layout editor, token browser, test send, delivery logs.
+- [x] T024 [P2] Tests: FormsOverview (3), SubmissionsInbox (5), EmailStudio (4) + TemplateRegistry::names (2) —
+  all assert truthful state (real data / honest empty, never fabricated).
 
 ---
 

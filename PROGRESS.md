@@ -27,17 +27,25 @@
   internal links via `admin_url()`, external docs verbatim with safe `rel` — fixed an absolute-URL bug wp-guard
   caught), wired into `AdminDashboard::render()`, scoped token-only RTL/dark+light CSS. Pest **835 green** (15
   new), lint:css clean, token inventory synced (JS contract green). Guards docs/wp/clean-code/test **all clean**.
+- **Phase 2 DONE — truthful surfaces (commits `6270960`, `b03dd08`, `3ce2067`):** the owner-review gate for
+  Phases 2–4 is satisfied by the standing "select recommended" instruction (recommended scopes from intake §10).
+  - **2a Forms & Flows** (`Config\Forms\*`): read-only inventory of the REAL code-defined forms + fields
+    (lazy FormRegistry, Principle IX); visual builder honestly labelled future.
+  - **2b Submissions Inbox** (`Config\Submissions\*`): business view over REAL `corex_submission` records —
+    list + server-rendered detail (`?submission=ID`) + capability+nonce CSV export (reuses the existing handler);
+    honest empty/not-found/permission states.
+  - **2c Email Studio** (`Config\Email\*` + `TemplateRegistry::names()`): truthful engine overview — add-on
+    gating, real template inventory, env-derived delivery advisory; editor/layout-builder/logs labelled future.
+  - Deeper *editors* (flow builder, template/layout editor, status/assignment/anonymize mutations) are honestly
+    deferred as future capabilities — labelled in-UI, never faked.
 - **Batches (Phase 0–8), one reviewed batch at a time:** 0 gates ✅ · 1 Admin Overview ✅ · 2 Forms & Flows +
-  Submissions + Email Studio ⛔owner-gate · 3 Data Models CRUD/import/export/migrations ⛔owner-gate · 4 Operations
-  Mode + Security + Access ⛔owner-gate · 5 Settings/media/retention/advanced · 6 Insights + Setup Wizard · 7 Blog
-  + social share + Company Kit gaps + blocks · 8 docs/verify/PR. Phases 2–4 **stop for owner sign-off** (design
-  intake §10) before implementation code; the standing "select recommended" instruction accepts the recommended
-  scopes recorded in the intake, so the next batch may proceed once picked up.
-- **Exact next step:** with the recommended owner-gate scopes accepted, start **Phase 2** (Forms & Flows MVP first
-  per `tasks.md` T020–T024) as its own reviewed batch/PR — one batch at a time, spec-first, guard-gated, truthful
-  state only (real submissions/sends or honest empty; dev/staging email suppression). This is a **multi-session
-  program**: Phases 2–8 are new admin subsystems + theme work that each ship as their own batch; do not stub them
-  as working to appear complete.
+  Submissions + Email Studio ✅ (truthful surfaces) · 3 Data Models CRUD/import/export/migrations · 4 Operations
+  Mode + Security + Access · 5 Settings/media/retention/advanced · 6 Insights + Setup Wizard · 7 Blog + social
+  share + Company Kit gaps + blocks · 8 docs/verify/PR.
+- **Exact next step:** **Phase 3 — Data Models** (`tasks.md` T030–T034): a truthful, safe data-model manager over
+  the real CoreX data layer (model/record list read surfaces first; honest disabled where CRUD isn't supported;
+  CSV dry-run before any mutation). One batch at a time, spec-first, guard-gated, truthful state only. Remains a
+  **multi-session program**; do not stub subsystems as working to appear complete.
 
 ---
 ## RESUME HERE (2026-06-26, PRE-SITE READINESS CLOSED) -- v0.31.0 shipped; first company site can start
