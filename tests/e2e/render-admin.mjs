@@ -38,6 +38,7 @@ const SCREENS = [
 	{ name: 'data', url: '/wp-admin/admin.php?page=corex-data' },
 	{ name: 'data-models', url: '/wp-admin/admin.php?page=corex-data-models' },
 	{ name: 'operations-security', url: '/wp-admin/admin.php?page=corex-operations-security' },
+	{ name: 'access', url: '/wp-admin/admin.php?page=corex-access' },
 	{ name: 'settings', url: '/wp-admin/admin.php?page=corex-settings-config' },
 	{ name: 'insights', url: '/wp-admin/admin.php?page=corex-insights' },
 	{ name: 'setup', url: '/wp-admin/admin.php?page=corex-setup' },

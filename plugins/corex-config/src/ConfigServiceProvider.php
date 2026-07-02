@@ -196,6 +196,9 @@ final class ConfigServiceProvider extends ServiceProvider
         // Operations & Security overview (spec 063): real environment + real WordPress hardening checks.
         $this->container->singleton(OperationsSecurityScreen::class);
 
+        // Access & Abilities baseline (spec 065): read-only role × capability matrix.
+        $this->container->singleton(\Corex\Config\Access\AccessScreen::class);
+
         // Email Studio (spec 063): a truthful overview of the transactional-email engine. Gated on the
         // optional corex-email add-on; TemplateRegistry is resolved lazily via the container so
         // corex-config never hard-depends on the add-on (Principle IX).
@@ -222,6 +225,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Retention\RetentionController::class)->register();
         $this->container->make(DataModelsScreen::class)->register();
         $this->container->make(OperationsSecurityScreen::class)->register();
+        $this->container->make(\Corex\Config\Access\AccessScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();
         $this->container->make(\Corex\Config\Operations\MaintenanceGuard::class)->register();
         $this->container->make(EmailStudioScreen::class)->register();

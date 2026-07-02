@@ -47,6 +47,7 @@ it('gives every CoreX screen a distinct rail icon and a correct active state (sp
     'email studio' => ['email', 'mail'],
     'data models' => ['data-models', 'data'],
     'operations & security' => ['operations-security', 'security'],
+    'access & abilities' => ['access', 'access'],
 ]);
 
 it('marks exactly the active screen as current in the rail', function () {
