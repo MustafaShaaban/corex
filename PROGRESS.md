@@ -38,14 +38,24 @@
     gating, real template inventory, env-derived delivery advisory; editor/layout-builder/logs labelled future.
   - Deeper *editors* (flow builder, template/layout editor, status/assignment/anonymize mutations) are honestly
     deferred as future capabilities — labelled in-UI, never faked.
-- **Batches (Phase 0–8), one reviewed batch at a time:** 0 gates ✅ · 1 Admin Overview ✅ · 2 Forms & Flows +
-  Submissions + Email Studio ✅ (truthful surfaces) · 3 Data Models CRUD/import/export/migrations · 4 Operations
-  Mode + Security + Access · 5 Settings/media/retention/advanced · 6 Insights + Setup Wizard · 7 Blog + social
-  share + Company Kit gaps + blocks · 8 docs/verify/PR.
-- **Exact next step:** **Phase 3 — Data Models** (`tasks.md` T030–T034): a truthful, safe data-model manager over
-  the real CoreX data layer (model/record list read surfaces first; honest disabled where CRUD isn't supported;
-  CSV dry-run before any mutation). One batch at a time, spec-first, guard-gated, truthful state only. Remains a
-  **multi-session program**; do not stub subsystems as working to appear complete.
+- **Phase 3 DONE (commit `78d0690`):** Data Models catalog (`Config\DataModels\*`) — truthful schema catalog over
+  the real `DataRegistry` sources (columns + record counts) + per-model capability+nonce CSV export + link to the
+  Data explorer. Import (CSV dry-run) and a pending-migrations view are **honestly deferred** — the data layer has
+  no generic write path or migration-history tracker, so nothing performs an unverified change (no fake dry-run,
+  no fake pending list).
+- **Phase 4 DONE (commit `1e2ff93`):** Operations & Security overview (`Config\Security\*`) — real environment
+  display + real WordPress hardening checks (HTTPS, DISALLOW_FILE_EDIT, debug-display hidden, no default "admin").
+  Operations-mode switching, login protection (custom login URL / rate limiting, always reversible), and a
+  capability/role matrix are **honestly deferred** (labelled "Coming later"; never renames WP core, never claims a
+  mode changed). No dangerous mutation ships.
+- **Batches (Phase 0–8):** 0 ✅ · 1 ✅ · 2 ✅ · 3 ✅ · 4 ✅ (truthful read surfaces + honest deferrals) · 5
+  Settings/media/retention/advanced · 6 Insights + Setup Wizard · 7 Blog + social share + Company Kit gaps + blocks
+  · 8 docs/verify/PR. **CoreX admin now has 6 new truthful screens** (Forms & Flows, Submissions, Email Studio,
+  Data Models, Operations & Security) alongside the Phase-1 Overview summary — all real data or honest empty/gated.
+- **Exact next step:** **Phase 5 — Settings/media/retention/advanced** (`tasks.md` T050–T053): verify + polish the
+  provider-specific captcha (already provider-specific from M6) and complete Media/WebP + add data-retention +
+  advanced settings with honest disabled states; then Phase 6/7. One batch at a time, spec-first, guard-gated,
+  truthful state only. **Multi-session program** — do not stub subsystems as working to appear complete.
 
 ---
 ## RESUME HERE (2026-06-26, PRE-SITE READINESS CLOSED) -- v0.31.0 shipped; first company site can start

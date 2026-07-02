@@ -88,18 +88,34 @@ empty/error/permission-denied; no fabricated metric.
 
 ---
 
-## Phase 3 — Data Models, CRUD, import/export, migrations (US3) ⛔ OWNER SIGN-OFF
+## Phase 3 — Data Models, CRUD, import/export, migrations (US3) ✅ truthful slice shipped
 
-**Gate**: approve the safe Data-model-manager scope and CSV-first / XLSX-future import-export.
+**Gate satisfied** by the standing "select recommended" owner instruction.
 
-- [ ] T030 [P3] Data Models admin: model list, record table, create/edit/view/delete where supported;
-  honest disabled/read-only where not; schema/fields panel; capability gates.
-- [ ] T031 [P3] CSV import: column mapping, dry-run validation report (invalid/duplicate/skipped), apply only
-  after confirmation; personal-data warning.
-- [ ] T032 [P3] Export (capability-gated selected/filtered/all where supported); export logging if real.
-- [ ] T033 [P3] Migrations: pending list, dry-run/plan, production warning, rollback messaging only if
-  technically supported (no fake rollback).
-- [ ] T034 [P3] Tests: capabilities, dry-run, validation, safe mutation, logs.
+- [x] T030 [P3] Data Models catalog: real registered models + schema (columns) + record counts, capability-gated
+  (`Config\DataModels\*`). Record CRUD is served by the existing Data explorer (delete supported); create/edit
+  honestly deferred (the `DataSource` abstraction has no write path).
+- [~] T031 [P3] CSV import: **honestly deferred** — no generic write path exists to apply an import, so a real
+  dry-run cannot apply; shown as a future capability rather than a fake dry-run.
+- [x] T032 [P3] Export: per-model capability + nonce-gated CSV via the existing `admin_post_corex_data_export`.
+- [~] T033 [P3] Migrations: **honestly deferred** — the `Migrator` is a schema tool with no migration-history
+  tracker, so a pending-migrations view would be fabricated; stated as a future capability, no fake rollback.
+- [x] T034 [P3] Tests: DataModelsCatalog (4) — real schema/counts, honest empty, negative-count clamp.
+
+---
+
+## Phase 4 — Operations Mode + Security Center + Access & Abilities (US3) ✅ truthful slice shipped
+
+**Gate satisfied** by the standing "select recommended" owner instruction.
+
+- [~] T040 [P4] Operations Mode: real environment **display** shipped; mode **switching** (maintenance/coming-soon/
+  read-only) honestly deferred — no backing exists, and a fake "mode changed" would violate truthfulness.
+- [x] T041 [P4] Security Center: real WordPress **hardening checks** shipped (HTTPS, DISALLOW_FILE_EDIT,
+  debug-display, no default admin) with remediation detail (`Config\Security\*`). Login protection (custom login
+  URL / rate limiting, always with reversible CLI/config recovery) honestly deferred — never renames WP core.
+- [~] T042 [P4] Access & Abilities: honestly deferred — a capability/role editor is a lockout-sensitive mutation
+  subsystem with no backing; stated as future, not faked. (CoreX abilities remain read-only via AbilitiesProvider.)
+- [x] T043 [P4] Tests: HardeningChecks (4) — truthful pass/warn, warning count, remediation detail.
 
 ---
 
