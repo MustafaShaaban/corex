@@ -71,14 +71,20 @@
   docs/wp/clean-code/test clean per batch. `build/` is git-ignored (CI rebuilds).
 - **Phase 6 (Insights + Setup Wizard):** both already exist and gate honestly (Insights providers + readiness
   scorer; Setup Wizard gated behind `corex-kit-company`). Truthful **polish only** — not re-built.
-- **PR #86 MERGED to `main`** (`698f888`) — Phases 0–7 landed (6 admin screens + Overview summary + social-share
-  block). **PR #87 open** (`feat/063-newsletter-signup`): the **Newsletter Signup** block — a real double opt-in
-  form wired to the existing `corex/v1/newsletter/subscribe` route (add-on-gated, honeypot, no fabricated success).
-  Pest **869** + Jest **125** green; guards clean.
-- **Exact next step:** merge PR #87; continue the remaining Phase-7 blocks (services grid / process-steps / case
-  study / gallery / featured-posts / contact-map — many already in `addons/corex-ui`) as further backed slices, and
-  **Phase 8** docs-app/`docs/` for the new screens + blocks + full pre-merge matrix. **Multi-session program**;
-  never stub as working — build only what is backed, gate/defer the rest honestly.
+- **Spec 063 landed on `main` across 4 PRs (all merged):** #86 (Phases 0–7: 6 admin screens + Overview summary +
+  social-share block), #87 (Newsletter Signup block — real double opt-in via `corex/v1/newsletter/subscribe`), #88
+  (4 company section patterns: services-grid / process-steps / logo-cloud / contact-info). Main tip after #88:
+  `835aade`.
+- **Phase 8 docs (branch `docs/063-new-surfaces`):** new docs-app page
+  `design-system/design-gap-surfaces.md` (+ sidebar entry) documenting all Spec 063 admin screens, blocks, and
+  patterns truthfully; docs-guard clean; docs-app build OK (page generated).
+- **Verification (cumulative):** Pest **872**, Jest **125** green; `lint:css` clean; token consumer-contract green;
+  `composer validate` valid; docs-app build OK. Guards docs/wp/clean-code/test clean per batch. `build/` git-ignored.
+- **Exact next step:** merge the Phase 8 docs PR; the remaining Phase-7 gaps (icon box, case-study/project-card,
+  before/after, timeline, video-modal) are optional follow-up patterns/blocks driven by a real company-site need.
+  The Spec 063 implementation-ready program is substantially complete — every future-only area (Blog Pro, Portfolio,
+  WooCommerce, Pro/commercial, Auth, advanced AAM, mode-switching, login-guard, capability editor, retention
+  pruner, data import/migrations) is honestly gated/deferred in-UI and recorded, never faked.
 
 ---
 ## RESUME HERE (2026-06-26, PRE-SITE READINESS CLOSED) -- v0.31.0 shipped; first company site can start

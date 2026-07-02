@@ -79,6 +79,7 @@ export default defineConfig({
 						{ label: 'Patterns', slug: 'design-system/patterns' },
 						{ label: 'Navigation & footer', slug: 'design-system/navigation' },
 						{ label: 'Admin experience', slug: 'design-system/admin-experience' },
+						{ label: 'Design gap surfaces (Spec 063)', slug: 'design-system/design-gap-surfaces' },
 						{ label: 'Templates', slug: 'design-system/templates' },
 						{ label: 'Client readiness', slug: 'design-system/client-readiness' },
 						{ label: 'Gap analysis', slug: 'design-system/gap-analysis' },
