@@ -13,20 +13,31 @@
   needs-another-pass / future-only. Spec 063 closes the **implementation-ready** gaps in priority order under one
   hard invariant: **every surface shows its real state — no fake data/integrations/Pro/marketplace/licensing, no
   dead entry points.** DECISIONS #110.
-- **Phase 0 DONE (this session):** design intake `design/handoffs/063-new-design-gap-implementation.md` (path,
-  files, seven-state bands, engineering scope); `design/INVENTORY.md` updated to the seven-state model; Spec Kit
-  artifacts `specs/063-new-design-gap-implementation/{spec.md,plan.md,tasks.md,checklists/requirements.md}`
+- **PR:** **#86** open (`spec/063-new-design-gap-implementation` → `main`). Phase 0 + Phase 1 shipped.
+- **Phase 0 DONE (committed `26ba5d3`):** design intake `design/handoffs/063-new-design-gap-implementation.md`
+  (path, files, seven-state bands, engineering scope); `design/INVENTORY.md` updated to the seven-state model;
+  Spec Kit artifacts `specs/063-new-design-gap-implementation/{spec.md,plan.md,tasks.md,checklists/requirements.md}`
   (Constitution Check PASS); ROADMAP §17 + DECISIONS #110 recorded. Confirmed: **no active marketplace/Pro/
   ThemeForest/license wording to neutralize** — the M6 truthful-state pass already framed all such references as
   future/deferred.
-- **Batches (Phase 0–8), one reviewed batch at a time:** 0 gates (done) · 1 Admin Overview truthful states (in
-  progress) · 2 Forms & Flows + Submissions + Email Studio ⛔owner-gate · 3 Data Models CRUD/import/export/
-  migrations ⛔owner-gate · 4 Operations Mode + Security + Access ⛔owner-gate · 5 Settings/media/retention/advanced
-  · 6 Insights + Setup Wizard · 7 Blog + social share + Company Kit gaps + blocks · 8 docs/verify/PR. Phases 2–4
-  **stop for owner sign-off** (design intake §10) before implementation code.
-- **Exact next step:** finish Phase 1 (truthful Overview summary: `plugins/corex-config/src/Overview/*` — pure
-  `OverviewSummary` + `EnvironmentMode` view models + `OverviewRenderer`, wired into `AdminDashboard::render()`,
-  scoped CSS, Pest + render-harness), then obtain owner sign-off for the Phase 2–4 owner-gated bands.
+- **Phase 1 DONE (committed `00f9e3c`):** truthful Overview "At a glance" summary — `Overview/EnvironmentMode`
+  (pure env badge; unknown/empty → WP production default, never an invented mode), `Overview/OverviewSummary`
+  (pure truthful rows: env, add-on active/total, submissions honest-not-available-vs-fabricated-zero, media
+  honest-inactive, readiness pointer with no invented score, docs link), `Overview/OverviewRenderer` (boundary;
+  internal links via `admin_url()`, external docs verbatim with safe `rel` — fixed an absolute-URL bug wp-guard
+  caught), wired into `AdminDashboard::render()`, scoped token-only RTL/dark+light CSS. Pest **835 green** (15
+  new), lint:css clean, token inventory synced (JS contract green). Guards docs/wp/clean-code/test **all clean**.
+- **Batches (Phase 0–8), one reviewed batch at a time:** 0 gates ✅ · 1 Admin Overview ✅ · 2 Forms & Flows +
+  Submissions + Email Studio ⛔owner-gate · 3 Data Models CRUD/import/export/migrations ⛔owner-gate · 4 Operations
+  Mode + Security + Access ⛔owner-gate · 5 Settings/media/retention/advanced · 6 Insights + Setup Wizard · 7 Blog
+  + social share + Company Kit gaps + blocks · 8 docs/verify/PR. Phases 2–4 **stop for owner sign-off** (design
+  intake §10) before implementation code; the standing "select recommended" instruction accepts the recommended
+  scopes recorded in the intake, so the next batch may proceed once picked up.
+- **Exact next step:** with the recommended owner-gate scopes accepted, start **Phase 2** (Forms & Flows MVP first
+  per `tasks.md` T020–T024) as its own reviewed batch/PR — one batch at a time, spec-first, guard-gated, truthful
+  state only (real submissions/sends or honest empty; dev/staging email suppression). This is a **multi-session
+  program**: Phases 2–8 are new admin subsystems + theme work that each ship as their own batch; do not stub them
+  as working to appear complete.
 
 ---
 ## RESUME HERE (2026-06-26, PRE-SITE READINESS CLOSED) -- v0.31.0 shipped; first company site can start
