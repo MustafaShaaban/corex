@@ -23,6 +23,8 @@ use Corex\Config\Data\SubmissionsSource;
 use Corex\Config\Data\TableDataSource;
 use Corex\Config\Data\WpSubmissionsReader;
 use Corex\Config\Data\WpTableDataReader;
+use Corex\Config\Forms\FormsFlowsScreen;
+use Corex\Config\Forms\FormsOverview;
 use Corex\Config\Options\OptionPageRegistry;
 use Corex\Config\Options\OptionPageScreen;
 use Corex\Database\Schema\ManagedTables;
@@ -74,6 +76,19 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(CorexAdminAssets::class);
         $this->container->singleton(AdminDashboard::class);
         $this->container->singleton(AddonsScreen::class);
+
+        // Forms & Flows admin screen (spec 063): a read-only inventory of the real code-defined forms.
+        // The FormRegistry is resolved lazily inside the screen so corex-config never hard-depends on
+        // corex-forms (Principle IX); the container is passed for that lazy resolution.
+        $this->container->singleton(
+            FormsFlowsScreen::class,
+            static fn (ContainerInterface $c): FormsFlowsScreen => new FormsFlowsScreen(
+                $c->make(\Corex\Security\Admin\AdminGuard::class),
+                $c->make(\Corex\Admin\AdminPage::class),
+                new FormsOverview(),
+                $c,
+            ),
+        );
 
         // The submissions reader, shared by the Data source and the dashboard "Site status" card (spec 042).
         $this->container->singleton(SubmissionsReader::class, static fn (): WpSubmissionsReader => new WpSubmissionsReader());
@@ -132,6 +147,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(CorexAdminAssets::class)->register();
         $this->container->make(AdminDashboard::class)->register();
         $this->container->make(AddonsScreen::class)->register();
+        $this->container->make(FormsFlowsScreen::class)->register();
         $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();
         $this->container->make(InsightsScreen::class)->register();

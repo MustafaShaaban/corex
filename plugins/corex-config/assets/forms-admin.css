@@ -1,0 +1,111 @@
+/* CoreX Forms & Flows admin screen (spec 063, Phase 2). Truthful,
+   read-only inventory of the code-defined forms. Tokens + logical
+   properties only; scoped to this screen (Principle VI). */
+.corex-admin .corex-forms-admin__note {
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-forms-admin__note-title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-weight: 600;
+}
+
+.corex-admin .corex-forms-admin__note-text {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-forms-admin__summary {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-forms-admin__summary-card {
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-forms-admin__summary-label {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	text-transform: uppercase;
+	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+.corex-admin .corex-forms-admin__summary-value {
+	margin: var(--corex-admin-space-xs) 0 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-lg);
+	font-weight: 600;
+}
+
+.corex-admin .corex-forms-admin__list {
+	display: grid;
+	gap: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-forms-admin__card-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--corex-admin-space-sm);
+	margin-block-end: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-forms-admin__card-head h2 {
+	margin: 0;
+}
+
+.corex-admin .corex-forms-admin__slug,
+.corex-admin .corex-forms-admin__type {
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-forms-admin__count {
+	margin-inline-start: auto;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-forms-admin__fields {
+	inline-size: 100%;
+	border-collapse: collapse;
+}
+
+.corex-admin .corex-forms-admin__fields th,
+.corex-admin .corex-forms-admin__fields td {
+	padding: var(--corex-admin-space-sm);
+	text-align: start;
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-forms-admin__fields th {
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	text-transform: uppercase;
+	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+.corex-admin .corex-forms-admin__req {
+	color: var(--corex-admin-warning);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+}
+
+.corex-admin .corex-forms-admin__opt {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+}
