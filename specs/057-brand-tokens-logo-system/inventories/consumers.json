@@ -19,7 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-  "count": 590,
+  "count": 604,
   "consumers": [
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
@@ -1808,6 +1808,146 @@
       "owner": "blocks-plugin",
       "surface": "front-end",
       "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.30"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 30, 38: border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border); | border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--accent);",
+      "property": "--wp--custom--border--width--thin",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "border.width.thin"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 31, 39: border-radius: var(--wp--custom--radius--md);",
+      "property": "--wp--custom--radius--md",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "radius.md"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 37, 38: background: var(--wp--preset--color--accent); | border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--accent);",
+      "property": "--wp--preset--color--accent",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.accent"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 30: border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);",
+      "property": "--wp--preset--color--border",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.border"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 69: color: var(--wp--preset--color--danger);",
+      "property": "--wp--preset--color--danger",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "alias-required",
+      "target_definition": "color.error"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 28: color: var(--wp--preset--color--ink);",
+      "property": "--wp--preset--color--ink",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.ink"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 48: color: var(--wp--preset--color--ink-soft);",
+      "property": "--wp--preset--color--ink-soft",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.ink-soft"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 36: color: var(--wp--preset--color--inverse);",
+      "property": "--wp--preset--color--inverse",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.inverse"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 65: color: var(--wp--preset--color--success);",
+      "property": "--wp--preset--color--success",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.success"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 29: background: var(--wp--preset--color--surface);",
+      "property": "--wp--preset--color--surface",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "color.surface"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 49, 62: font-size: var(--wp--preset--font-size--sm);",
+      "property": "--wp--preset--font-size--sm",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "font-size.sm"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 45: gap: var(--wp--preset--spacing--10);",
+      "property": "--wp--preset--spacing--10",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "spacing.10"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 14, 20, 27, 35, 47, 61: margin-block-end: var(--wp--preset--spacing--20); | gap: var(--wp--preset--spacing--20); | padding: var(--wp--preset--spacing--20);",
+      "property": "--wp--preset--spacing--20",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.20"
+    },
+    {
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "selector_or_context": "lines 35: padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);",
+      "property": "--wp--preset--spacing--30",
+      "owner": "blocks-plugin",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
       "resolution": "valid",
       "target_definition": "spacing.30"
     },

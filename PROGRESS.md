@@ -71,10 +71,14 @@
   docs/wp/clean-code/test clean per batch. `build/` is git-ignored (CI rebuilds).
 - **Phase 6 (Insights + Setup Wizard):** both already exist and gate honestly (Insights providers + readiness
   scorer; Setup Wizard gated behind `corex-kit-company`). Truthful **polish only** — not re-built.
-- **Exact next step:** **Phase 8** — extend docs-app / `docs/` with the six new admin screens + the social-share
-  block, refresh visual evidence/screenshots, and run the full pre-merge verification matrix; then either merge PR
-  #86 (Phases 0–7 are self-contained) or continue the remaining Phase-7 block batch. **Multi-session program**;
-  never stub as working.
+- **PR #86 MERGED to `main`** (`698f888`) — Phases 0–7 landed (6 admin screens + Overview summary + social-share
+  block). **PR #87 open** (`feat/063-newsletter-signup`): the **Newsletter Signup** block — a real double opt-in
+  form wired to the existing `corex/v1/newsletter/subscribe` route (add-on-gated, honeypot, no fabricated success).
+  Pest **869** + Jest **125** green; guards clean.
+- **Exact next step:** merge PR #87; continue the remaining Phase-7 blocks (services grid / process-steps / case
+  study / gallery / featured-posts / contact-map — many already in `addons/corex-ui`) as further backed slices, and
+  **Phase 8** docs-app/`docs/` for the new screens + blocks + full pre-merge matrix. **Multi-session program**;
+  never stub as working — build only what is backed, gate/defer the rest honestly.
 
 ---
 ## RESUME HERE (2026-06-26, PRE-SITE READINESS CLOSED) -- v0.31.0 shipped; first company site can start
