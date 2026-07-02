@@ -2046,3 +2046,26 @@ empty activity, and per-screen rail icons/active state match the approved design
 OverviewModel + rail tests; updated visual contract), lint:css clean, token contract green; guards wp/clean-code/
 test clean. RTL/200%/keyboard remain the environment-gated manual acceptance items.
 Status: Final on branch `spec/064-admin-design-fidelity`.
+
+## #112 -- Spec 065: admin product completion required; company-site recommendations paused
+Date: 2026-07-02
+Context: After v0.32.1, owner review of the admin found it not product-complete: Spec 063 shipped truthful
+read-only/overview surfaces and Spec 064 corrected only part of the Overview fidelity, but many areas were left as
+"future"/placeholder. The owner corrected the direction: finish the CoreX admin/dashboard/product properly, and
+**stop recommending starting a company site** as the next step (a stable company-site base remains at v0.31.0
+separately).
+Decision: (1) Spec 065 (`specs/065-admin-product-completion/`) is the required completion milestone. Every admin
+surface must show real data/state or an honest empty/error/unavailable state — no safe feature may remain a vague
+future card. (2) **Only** these may remain deferred: WooCommerce kit/screens; advanced AAM / full capability-editor
+/ complex role mutation; commercial/Pro/marketplace/licensing. (3) Everything else is finished now or implemented as
+far as safely possible, including real Operations Mode switching, real retention behavior (with dry-run before any
+deletion), Data Models record detail + import dry-run + migration overview, a safe login-protection foundation, and
+a safe Access & Abilities baseline (visibility matrix). (4) **Blog is required**; Portfolio is lower-priority but
+stays planned (after Blog) — Portfolio is NOT in the Woo/AAM/Pro deferral class. (5) All docs (ROADMAP/PROGRESS/
+DECISIONS) remove company-site next-step recommendations and record this milestone framing.
+Why: the owner is the product authority; the admin must be genuinely usable and faithful before company-site work is
+recommended. The truthfulness invariant (no fake data/features) is unchanged — completion means real behavior or an
+honest state, never a fabricated one.
+Status: In progress on branch `spec/065-admin-product-completion`. B1 (real Operations Mode switching: stored mode +
+nonce/cap + production confirmation + Overview/Operations badges + maintenance guard that never locks out an admin +
+audit log) is done and render-verified.
