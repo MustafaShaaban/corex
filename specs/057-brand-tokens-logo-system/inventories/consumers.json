@@ -19,7 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-  "count": 609,
+  "count": 614,
   "consumers": [
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
@@ -5890,6 +5890,56 @@
       "direction_context": "logical",
       "resolution": "valid",
       "target_definition": "spacing.30"
+    },
+    {
+      "path": "theme/patterns/section-contact-info.php",
+      "selector_or_context": "lines 39: <div class=\"wp-block-column corex-contact__card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "property": "--wp--custom--border--width--thin",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "ltr-only",
+      "resolution": "valid",
+      "target_definition": "border.width.thin"
+    },
+    {
+      "path": "theme/patterns/section-contact-info.php",
+      "selector_or_context": "lines 39: <div class=\"wp-block-column corex-contact__card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "property": "--wp--custom--radius--md",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "ltr-only",
+      "resolution": "valid",
+      "target_definition": "radius.md"
+    },
+    {
+      "path": "theme/patterns/section-contact-info.php",
+      "selector_or_context": "lines 39, 39, 39, 39: <div class=\"wp-block-column corex-contact__card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
+      "property": "--wp--preset--spacing--40",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "ltr-only",
+      "resolution": "valid",
+      "target_definition": "spacing.40"
+    },
+    {
+      "path": "theme/patterns/section-contact-info.php",
+      "selector_or_context": "lines 15, 15: <section class=\"wp-block-group corex-contact\" style=\"padding-top:var(--wp--preset--spacing--70);padding-bottom:var(--wp--preset--spacing--70)\">",
+      "property": "--wp--preset--spacing--70",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.70"
+    },
+    {
+      "path": "theme/patterns/section-logo-cloud.php",
+      "selector_or_context": "lines 15, 15: <section class=\"wp-block-group corex-logo-cloud\" style=\"padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60)\">",
+      "property": "--wp--preset--spacing--60",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.60"
     },
     {
       "path": "theme/patterns/section-process-steps.php",

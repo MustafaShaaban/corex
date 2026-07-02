@@ -17,7 +17,7 @@ use Corex\Tests\Support\ThemeContract;
 /** @return array<int, string> */
 function corexSectionPatterns(): array
 {
-    return ['services-grid', 'process-steps'];
+    return ['services-grid', 'process-steps', 'logo-cloud', 'contact-info'];
 }
 
 it('ships every company section pattern', function () {
