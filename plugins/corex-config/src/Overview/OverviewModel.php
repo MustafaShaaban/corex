@@ -8,9 +8,6 @@ declare(strict_types=1);
 
 namespace Corex\Config\Overview;
 
-use Corex\Config\ControlPanel\DomainStatus;
-use Corex\Config\Dashboard\SiteStatusCard;
-
 defined('ABSPATH') || exit;
 
 /**
@@ -191,21 +188,5 @@ final class OverviewModel
         }
 
         return $out;
-    }
-
-    /**
-     * Whether a front-page status counts as "set" (a real static page, not the blog index or a blank page).
-     */
-    public static function frontPageIsSet(string $frontPageStatus): bool
-    {
-        return $frontPageStatus === SiteStatusCard::FRONT_COREX_PAGE;
-    }
-
-    /**
-     * Whether a control-panel domain resolved to configured (used to fold DomainStatus into simple booleans).
-     */
-    public static function domainConfigured(DomainStatus $domain): bool
-    {
-        return $domain->isConfigured();
     }
 }
