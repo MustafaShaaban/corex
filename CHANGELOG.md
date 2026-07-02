@@ -6,6 +6,34 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.32.1] — 2026-07-02
+
+Spec 064 — Admin design fidelity. A corrective pass after an owner review of the v0.32.0 admin: the Overview was
+visually unfaithful to the approved design, confusing, and full of unintended white space. No new features; the
+truthfulness invariant is unchanged (real state or honest empty/gated — no fakes).
+
+### Fixed
+
+- **Overview rebuilt to the approved readiness grid** (`Corex Admin Overview.dc.html`): a single
+  `Corex\Config\Overview\OverviewRenderer` + pure `OverviewModel` now render a dense two-column dashboard — stat
+  tiles (posts/pages/submissions/add-ons), a Launch-readiness checklist (N of M) from real brand/kit/front-page/
+  mail/captcha/hardening signals, an Analytics & Security panel with honest connected/not-connected chips, a real
+  Data-sources summary, a Forms summary, and an honest empty Recent-activity state. This replaces the previously
+  stacked site-status + control-panel + activity panels, **removes a duplicated submission read-out, and fixes the
+  unintended white space** with a dense grid layout. Verified dark + light against a live install.
+- **Admin rail navigation:** every registered CoreX screen (including the Spec-063 Forms, Submissions, Email Studio,
+  Data Models, and Operations & Security screens) now has a distinct icon and a correct active state — no generic
+  option-page fallback and no dead entry point.
+- Fixed a double-encoded `&amp;` in two Overview `esc_html__()` strings ("Analytics & security", "Forms & Flows").
+
+### Changed
+
+- Extracted `Corex\Config\Security\HardeningFacts` so the Operations & Security screen and the Overview compute the
+  WordPress hardening signal one way (DRY).
+- Removed the superseded Overview panel renderers (`SiteStatusCardRenderer`, `SiteStatusCard`, `ControlPanelView`,
+  `OnboardingChecklist`, `OnboardingStep`) and the pure `OverviewSummary`, now that the single `OverviewRenderer`
+  produces the whole dashboard. The `tests/e2e/render-admin.mjs` harness now covers all six new admin screens.
+
 ## [0.32.0] — 2026-07-02
 
 Spec 063 — New Design Gap Implementation. Closes the implementation-ready gaps from the "Corex Final Design
