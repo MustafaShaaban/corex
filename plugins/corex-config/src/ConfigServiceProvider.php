@@ -88,7 +88,8 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Config\Overview\OverviewRenderer::class,
             static fn (ContainerInterface $c): \Corex\Config\Overview\OverviewRenderer => new \Corex\Config\Overview\OverviewRenderer(
                 new \Corex\Config\Overview\OverviewModel(),
-                new \Corex\Config\Overview\EnvironmentMode(),
+                $c->make(\Corex\Config\Operations\OperationsMode::class),
+                $c->make(\Corex\Config\Operations\OperationsModeStore::class),
                 $c->make(\Corex\Config\ControlPanel\ControlPanelStatus::class),
                 $c->make(\Corex\Config\Security\HardeningChecks::class),
                 $c->make(\Corex\Config\Data\SubmissionsReader::class),
@@ -96,6 +97,15 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Config\Addons\AddonRegistry::class),
                 $c,
             ),
+        );
+
+        // Operations Mode (spec 065): the real, persisted operating mode + its audit store, shared so
+        // the Overview badge, the Operations & Security screen, and the maintenance guard agree.
+        $this->container->singleton(\Corex\Config\Operations\OperationsMode::class);
+        $this->container->singleton(
+            \Corex\Config\Operations\OperationsModeStore::class,
+            static fn (ContainerInterface $c): \Corex\Config\Operations\OperationsModeStore =>
+                new \Corex\Config\Operations\OperationsModeStore($c->make(\Corex\Config\Operations\OperationsMode::class)),
         );
 
         $this->container->singleton(AdminDashboard::class);
@@ -199,6 +209,8 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(SubmissionsInboxScreen::class)->register();
         $this->container->make(DataModelsScreen::class)->register();
         $this->container->make(OperationsSecurityScreen::class)->register();
+        $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();
+        $this->container->make(\Corex\Config\Operations\MaintenanceGuard::class)->register();
         $this->container->make(EmailStudioScreen::class)->register();
         $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();

@@ -4,6 +4,26 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-02, Spec 065 ADMIN PRODUCT COMPLETION) -- required scope; company-site paused
+
+- **Branch:** `spec/065-admin-product-completion` (off `main` @ v0.32.1 `669cd1c`). CoreX Framework Mode.
+- **Direction (owner correction):** finish the CoreX **admin/dashboard/product** properly. **Company-site
+  recommendations are PAUSED** — do not recommend starting a company site as the next step; a stable company-site
+  base remains available at **v0.31.0** separately. Milestones: Spec 063 = truthful surfaces (not product-complete);
+  Spec 064 = partial Overview fidelity; **Spec 065 = the required completion pass** (`specs/065-admin-product-completion/`).
+- **Only these may remain deferred:** WooCommerce kit/screens · advanced AAM / full capability-editor / complex role
+  mutation · commercial/Pro/marketplace/licensing. **Everything else is finished now or implemented as far as safely
+  possible** (real data/state or honest empty/error/unavailable — never a vague future card). **Blog is required;
+  Portfolio is lower-priority but still planned** (after Blog).
+- **Batches:** B1 real Operations Mode switching · B2 docs correction · B3 real retention (dry-run prune) · B4 Data
+  Models completion (detail/export/import-dry-run/migration overview) · B5 global fidelity + interactions · B6 Access
+  baseline (matrix) · B7 Blog + Blog Pro basics · B8 Submissions/Forms/Email/Insights/Setup completion + Portfolio
+  scope + verify. One reviewed batch at a time; spec-first, guard-gated, tested, render-verified where the harness is
+  available.
+- **Exact next step:** implement B1 (real Operations Mode: stored mode, nonce+cap, production confirmation, badges,
+  minimal audit log) — then B3/B4 and the rest. Do not stop early; do not only polish CSS; do not fake features.
+
+---
 ## RESUME HERE (2026-07-02, Spec 064 ADMIN FIDELITY) -- Overview rebuilt to the approved grid; rail fixed; render-verified
 
 - **Branch:** `spec/064-admin-design-fidelity` (off `main` @ v0.32.0 `eabbc20`). CoreX Framework Mode. Not merged.
@@ -45,8 +65,8 @@
 - **Honestly deferred (not built, recorded):** operations-mode switching, login guard, capability editor, data
   import/migrations, retention pruner, Blog Pro, Portfolio, WooCommerce, Pro/commercial, Auth, advanced AAM.
 - **Exact next step:** optional follow-up company blocks/patterns (icon box, case-study/project card, timeline,
-  video-modal) — **kit-driven**, build only when a real company site needs them; or start the first real company
-  site in Client Site Mode (`wp corex make:site Acme --path=sites/acme --starter`).
+  video-modal). **(Superseded by Spec 065 — company-site next-step recommendations are paused; the current goal is
+  admin/dashboard/product completion.)**
 
 ---
 ## RESUME HERE (2026-07-02, Spec 063 NEW-DESIGN-GAP program started) -- intake + spec done; Phase 1 in progress

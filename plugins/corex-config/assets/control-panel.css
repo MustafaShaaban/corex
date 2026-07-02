@@ -692,3 +692,8 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+/* Operations Mode: maintenance tone on the Overview env badge (spec 065). */
+.corex-admin .corex-overview__env.is-danger {
+	border-inline-start-color: var(--corex-admin-error);
+}
