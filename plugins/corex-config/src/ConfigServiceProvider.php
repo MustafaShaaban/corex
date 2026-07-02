@@ -30,6 +30,7 @@ use Corex\Config\Email\EmailStudioScreen;
 use Corex\Config\Forms\FormsFlowsScreen;
 use Corex\Config\Forms\FormsOverview;
 use Corex\Config\Overview\EnvironmentMode;
+use Corex\Config\Security\OperationsSecurityScreen;
 use Corex\Config\Options\OptionPageRegistry;
 use Corex\Config\Options\OptionPageScreen;
 use Corex\Config\Submissions\SubmissionsInboxScreen;
@@ -153,6 +154,9 @@ final class ConfigServiceProvider extends ServiceProvider
         // Data Models catalog (spec 063): a truthful schema catalog over the real DataRegistry sources.
         $this->container->singleton(DataModelsScreen::class);
 
+        // Operations & Security overview (spec 063): real environment + real WordPress hardening checks.
+        $this->container->singleton(OperationsSecurityScreen::class);
+
         // Email Studio (spec 063): a truthful overview of the transactional-email engine. Gated on the
         // optional corex-email add-on; TemplateRegistry is resolved lazily via the container so
         // corex-config never hard-depends on the add-on (Principle IX).
@@ -177,6 +181,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(FormsFlowsScreen::class)->register();
         $this->container->make(SubmissionsInboxScreen::class)->register();
         $this->container->make(DataModelsScreen::class)->register();
+        $this->container->make(OperationsSecurityScreen::class)->register();
         $this->container->make(EmailStudioScreen::class)->register();
         $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();
