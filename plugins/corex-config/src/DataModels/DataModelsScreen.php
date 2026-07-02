@@ -10,17 +10,20 @@ namespace Corex\Config\DataModels;
 
 use Corex\Admin\AdminPage;
 use Corex\Config\Data\DataRegistry;
+use Corex\Database\Schema\ManagedTables;
+use Corex\Database\Schema\Migrator;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
 
 /**
- * The Data Models catalog admin screen (spec 063, Phase 3): a truthful schema catalog of the REAL
- * registered CoreX data models (the {@see DataRegistry} sources) — each model's fields and live record
- * count — with a capability + nonce-gated CSV export per model (reusing the existing export handler)
- * and a link to the Data explorer for record management. Import and migration tooling do NOT exist in
- * the data layer (no write path, no migration-history tracker), so they are shown as honest future
- * capabilities — never a fake dry-run or a fake pending-migrations list. No fabricated models or counts.
+ * The Data Models catalog admin screen (spec 063 Phase 3 + spec 065): a truthful schema catalog of the
+ * REAL registered CoreX data models (the {@see DataRegistry} sources) — each model's fields and live
+ * record count — with a capability + nonce-gated CSV export per model, a link to the Data explorer for
+ * record management, a REAL CSV import dry-run (validation preview only — see {@see DataImportValidator})
+ * and a truthful migration overview built from the real {@see ManagedTables} + {@see Migrator}. No
+ * fabricated models, counts, dry-runs, or migrations: committing an import needs a per-model write
+ * adapter the read-only sources do not expose, and that limit is stated honestly, not hidden.
  */
 final class DataModelsScreen
 {
@@ -31,6 +34,8 @@ final class DataModelsScreen
         private readonly AdminPage $page,
         private readonly DataModelsCatalog $catalog,
         private readonly DataRegistry $registry,
+        private readonly ManagedTables $tables,
+        private readonly Migrator $migrator,
     ) {
     }
 
@@ -94,14 +99,79 @@ final class DataModelsScreen
             return;
         }
 
+        echo $this->statusNotice();
         echo $this->summaryBar($catalog);
+        echo $this->importPreviewCard();
         echo '<div class="corex-data-models__list">';
         foreach ($catalog['models'] as $model) {
             echo $this->modelCard($model);
         }
         echo '</div>';
-        echo $this->deferralNote();
+        echo $this->migrationOverview();
         echo $this->page->close();
+    }
+
+    /** PRG status notice after an import dry-run (read-only query args). */
+    private function statusNotice(): string
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only status after a PRG redirect.
+        $status = isset($_GET['corex_status']) ? sanitize_key(wp_unslash($_GET['corex_status'])) : '';
+        if ($status === '' || ! str_starts_with($status, 'import-')) {
+            return '';
+        }
+
+        [$tone, $message] = match ($status) {
+            'import-preview'  => ['success', __('Dry-run complete. Review the validation preview below — nothing was imported.', 'corex')],
+            'import-nofile'   => ['warning', __('Choose a CSV file to validate.', 'corex')],
+            'import-empty'    => ['warning', __('That file had no readable header row.', 'corex')],
+            'import-badmodel' => ['error', __('Unknown data model.', 'corex')],
+            default           => ['', ''],
+        };
+
+        return $message === '' ? '' : $this->page->state($tone, __('CSV import (dry-run)', 'corex'), $message);
+    }
+
+    /**
+     * The most recent CSV import dry-run preview for this user (a short-lived transient), or nothing.
+     * A real validation result — accepted/rejected counts + reasons — that wrote no data.
+     */
+    private function importPreviewCard(): string
+    {
+        $preview = get_transient(DataModelsImportController::transientKey(get_current_user_id()));
+        if (! is_array($preview) || ! isset($preview['totalRows'])) {
+            return '';
+        }
+
+        $unknown = ! empty($preview['unknown'])
+            ? '<p class="corex-data-models__import-warn">' . sprintf(
+                /* translators: %s: comma-separated list of unrecognised column names */
+                esc_html__('Unrecognised columns (ignored on import): %s', 'corex'),
+                esc_html(implode(', ', (array) $preview['unknown'])),
+            ) . '</p>'
+            : '';
+
+        $rejected = '';
+        foreach ((array) ($preview['rejected'] ?? []) as $row) {
+            $rejected .= '<li><code>' . esc_html__('line', 'corex') . ' ' . (int) $row['line'] . '</code> — '
+                . esc_html((string) $row['reason']) . '</li>';
+        }
+        $rejectedBlock = $rejected !== ''
+            ? '<details class="corex-data-models__import-rejected"><summary>'
+                . esc_html__('Rejected rows', 'corex') . '</summary><ul>' . $rejected . '</ul></details>'
+            : '';
+
+        return '<section class="corex-surface corex-data-models__import-preview">'
+            . '<header class="corex-data-models__card-head"><h2>' . esc_html__('Import dry-run result', 'corex') . '</h2>'
+            . '<code class="corex-data-models__key">' . esc_html((string) ($preview['model'] ?? '')) . '</code></header>'
+            . '<p>' . sprintf(
+                /* translators: 1: accepted row count, 2: total row count */
+                esc_html__('%1$d of %2$d rows would import; the rest were rejected.', 'corex'),
+                (int) $preview['accepted'],
+                (int) $preview['totalRows'],
+            ) . '</p>' . $unknown . $rejectedBlock
+            . '<p class="corex-data-models__note-text">'
+            . esc_html__('This is a validation preview only — no records were written. Committing an import needs a per-model write adapter, which these read-only sources do not yet expose.', 'corex')
+            . '</p></section>';
     }
 
     /**
@@ -148,7 +218,7 @@ final class DataModelsScreen
             . '<tbody>%7$s</tbody></table>'
             . '<p class="corex-data-models__actions">'
             . '<a class="button" href="%8$s">%9$s</a> '
-            . '<a href="%10$s">%11$s</a></p></section>',
+            . '<a href="%10$s">%11$s</a></p>%12$s</section>',
             esc_attr($model['key']),
             esc_html($model['label']),
             esc_html($model['key']),
@@ -164,23 +234,51 @@ final class DataModelsScreen
             esc_html__('Export CSV', 'corex'),
             esc_url($explorer),
             esc_html__('Manage records', 'corex'),
+            $this->importForm($model['key']),
         );
     }
 
-    /**
-     * Honest deferral: the data layer has no generic write path and no migration-history tracker, so a
-     * CSV import (with dry-run) and a pending-migrations view are future capabilities — stated, not faked.
-     */
-    private function deferralNote(): string
+    /** The per-model CSV import dry-run form (capability + nonce-gated; validates, never writes). */
+    private function importForm(string $modelKey): string
     {
-        return '<div class="corex-data-models__note corex-surface">'
-            . '<p class="corex-data-models__note-title">' . esc_html__('Import & migrations', 'corex') . '</p>'
-            . '<p class="corex-data-models__note-text">'
-            . esc_html__(
-                'Records are created by the apps and add-ons that own each model; export and record management are available now. A guided CSV import (with a dry-run validation step) and a pending-migrations view are planned future capabilities — they are not enabled yet, so nothing here performs an unverified data change.',
-                'corex',
-            )
-            . '</p></div>';
+        return '<form class="corex-data-models__import" method="post" enctype="multipart/form-data" action="'
+            . esc_url(admin_url('admin-post.php')) . '">'
+            . '<input type="hidden" name="action" value="' . esc_attr(DataModelsImportController::ACTION) . '" />'
+            . '<input type="hidden" name="corex_model" value="' . esc_attr($modelKey) . '" />'
+            . wp_nonce_field(DataModelsImportController::ACTION, DataModelsImportController::NONCE, true, false)
+            . '<label class="corex-data-models__import-label">' . esc_html__('Validate a CSV (dry-run)', 'corex')
+            . ' <input type="file" name="corex_import" accept=".csv,text/csv" /></label>'
+            . '<button type="submit" class="button">' . esc_html__('Run dry-run', 'corex') . '</button></form>';
+    }
+
+    /**
+     * A truthful migration overview from the real managed-table registry: each CoreX-managed table and
+     * whether it exists in the database, or an honest empty state. No fabricated pending migrations.
+     */
+    private function migrationOverview(): string
+    {
+        $tables = $this->tables->all();
+
+        if ($tables === []) {
+            return '<section class="corex-surface corex-data-models__note">'
+                . '<p class="corex-data-models__note-title">' . esc_html__('Migrations', 'corex') . '</p>'
+                . '<p class="corex-data-models__note-text">'
+                . esc_html__('No CoreX-managed database tables are registered on this site — the data models above are backed by WordPress post types. Managed tables and their schema state appear here when an app registers them.', 'corex')
+                . '</p></section>';
+        }
+
+        $rows = '';
+        foreach ($tables as $table) {
+            $name    = $table->name;
+            $exists  = $name !== '' && $this->migrator->exists($name);
+            $state   = $exists ? __('Installed', 'corex') : __('Pending', 'corex');
+            $rows   .= '<li class="corex-data-models__migration is-' . ($exists ? 'ok' : 'pending') . '">'
+                . '<code>' . esc_html($name) . '</code><span>' . esc_html($state) . '</span></li>';
+        }
+
+        return '<section class="corex-surface corex-data-models__note">'
+            . '<p class="corex-data-models__note-title">' . esc_html__('Migrations', 'corex') . '</p>'
+            . '<ul class="corex-data-models__migrations">' . $rows . '</ul></section>';
     }
 
     /**

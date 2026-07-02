@@ -191,6 +191,9 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(SubmissionsInboxScreen::class);
 
         // Data Models catalog (spec 063): a truthful schema catalog over the real DataRegistry sources.
+        // Spec 065 adds a real CSV import dry-run (validation only) + a truthful migration overview.
+        $this->container->singleton(\Corex\Config\DataModels\DataImportValidator::class);
+        $this->container->singleton(\Corex\Config\DataModels\DataModelsImportController::class);
         $this->container->singleton(DataModelsScreen::class);
 
         // Operations & Security overview (spec 063): real environment + real WordPress hardening checks.
@@ -224,6 +227,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(SubmissionsInboxScreen::class)->register();
         $this->container->make(\Corex\Config\Retention\RetentionController::class)->register();
         $this->container->make(DataModelsScreen::class)->register();
+        $this->container->make(\Corex\Config\DataModels\DataModelsImportController::class)->register();
         $this->container->make(OperationsSecurityScreen::class)->register();
         $this->container->make(\Corex\Config\Access\AccessScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();
