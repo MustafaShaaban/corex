@@ -817,6 +817,132 @@
       "context": "lines 189: background: var(--corex-admin-warning-soft);"
     },
     {
+      "legacy_property": "--corex-admin-border",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 14: border: var(--corex-admin-border-width) solid var(--corex-admin-border);"
+    },
+    {
+      "legacy_property": "--corex-admin-border-soft",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 74: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+    },
+    {
+      "legacy_property": "--corex-admin-border-width",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 14, 74: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+    },
+    {
+      "legacy_property": "--corex-admin-font-display",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 30, 88: font-family: var(--corex-admin-font-display);"
+    },
+    {
+      "legacy_property": "--corex-admin-font-lg",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 31: font-size: var(--corex-admin-font-lg);"
+    },
+    {
+      "legacy_property": "--corex-admin-font-mono",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 21, 53, 79: font-family: var(--corex-admin-font-mono);"
+    },
+    {
+      "legacy_property": "--corex-admin-font-sm",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 61, 95: font-size: var(--corex-admin-font-sm);"
+    },
+    {
+      "legacy_property": "--corex-admin-font-xs",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 22, 54, 80: font-size: var(--corex-admin-font-xs);"
+    },
+    {
+      "legacy_property": "--corex-admin-letter-wide",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 24, 82: letter-spacing: var(--corex-admin-letter-wide);"
+    },
+    {
+      "legacy_property": "--corex-admin-radius-md",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 15: border-radius: var(--corex-admin-radius-md);"
+    },
+    {
+      "legacy_property": "--corex-admin-space-2xs",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 86: margin: 0 0 var(--corex-admin-space-2xs);"
+    },
+    {
+      "legacy_property": "--corex-admin-space-lg",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 8, 37: margin-block-end: var(--corex-admin-space-lg); | gap: var(--corex-admin-space-lg);"
+    },
+    {
+      "legacy_property": "--corex-admin-space-md",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 7, 12, 45, 67: gap: var(--corex-admin-space-md); | padding: var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md);"
+    },
+    {
+      "legacy_property": "--corex-admin-space-sm",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 44, 72: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm);"
+    },
+    {
+      "legacy_property": "--corex-admin-space-xs",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 28: margin: var(--corex-admin-space-xs) 0 0;"
+    },
+    {
+      "legacy_property": "--corex-admin-surface",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 13: background: var(--corex-admin-surface);"
+    },
+    {
+      "legacy_property": "--corex-admin-text",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 29, 87: color: var(--corex-admin-text);"
+    },
+    {
+      "legacy_property": "--corex-admin-text-muted",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/data-models.css",
+      "context": "lines 20, 55, 60, 78, 94: color: var(--corex-admin-text-muted);"
+    },
+    {
       "legacy_property": "--corex-admin-action",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
