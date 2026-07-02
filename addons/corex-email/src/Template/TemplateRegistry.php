@@ -30,4 +30,15 @@ final class TemplateRegistry
     {
         return $this->templates[$name] ?? null;
     }
+
+    /**
+     * The names of every registered template, in registration order. Lets the admin surface a
+     * truthful inventory of the real templates without instantiating a send context (spec 063).
+     *
+     * @return list<string>
+     */
+    public function names(): array
+    {
+        return array_keys($this->templates);
+    }
 }
