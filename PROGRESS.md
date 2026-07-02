@@ -52,10 +52,20 @@
   Settings/media/retention/advanced · 6 Insights + Setup Wizard · 7 Blog + social share + Company Kit gaps + blocks
   · 8 docs/verify/PR. **CoreX admin now has 6 new truthful screens** (Forms & Flows, Submissions, Email Studio,
   Data Models, Operations & Security) alongside the Phase-1 Overview summary — all real data or honest empty/gated.
-- **Exact next step:** **Phase 5 — Settings/media/retention/advanced** (`tasks.md` T050–T053): verify + polish the
-  provider-specific captcha (already provider-specific from M6) and complete Media/WebP + add data-retention +
-  advanced settings with honest disabled states; then Phase 6/7. One batch at a time, spec-first, guard-gated,
-  truthful state only. **Multi-session program** — do not stub subsystems as working to appear complete.
+- **Phase 5 assessed — mostly pre-satisfied (no new commit needed):** provider-specific captcha (None/Honeypot/
+  reCAPTCHA/hCaptcha/Turnstile) already ships in M6 (`SettingsForm` renders only the selected driver; secrets
+  write-only); Media/WebP settings + section-state model ship in Spec 061/062. **Data retention honestly deferred:**
+  a truthful retention setting must actually prune, and scheduled auto-deletion of real submission data is a
+  high-risk mutation needing its own careful design (opt-in default-off, trash-not-delete, real age source) — a
+  do-nothing setting or a rushed auto-deleter would violate truthfulness/safety.
+- **Verification note:** the whole Spec 063 diff so far is **PHP/CSS/Markdown only — no JS/blocks changed**, so
+  `lint:js`/`build` (JS-only) are unaffected and CI-covered. Applicable gates green: Pest **858**, `lint:css` clean,
+  token-inventory JS contract green, `composer validate` valid, PHP lint clean; guards docs/wp/clean-code/test clean.
+- **Exact next step:** **Phase 6/7** — Insights + Setup Wizard already exist (truthful polish only), so the highest-
+  value *new* real work is **Phase 7 Blog social sharing** (a privacy-friendly, accessible, RTL, reduced-motion
+  share component — the design marks it frozen) and the prioritized company/blog blocks. These are front-end/FSE +
+  block work (block.json + render + JS + SCSS + Jest/Pest) — a larger, self-contained domain. Then Phase 8
+  docs/docs-app/screenshots + full verification consolidation. **Multi-session program**; never stub as working.
 
 ---
 ## RESUME HERE (2026-06-26, PRE-SITE READINESS CLOSED) -- v0.31.0 shipped; first company site can start

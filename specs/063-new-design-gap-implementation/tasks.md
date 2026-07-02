@@ -135,14 +135,19 @@ empty/error/permission-denied; no fabricated metric.
 
 ---
 
-## Phase 5 — Settings, media, retention, advanced (FR-050..051)
+## Phase 5 — Settings, media, retention, advanced (FR-050..051) — mostly pre-satisfied
 
-- [ ] T050 [P5] Apply the new settings design/taxonomy; complete Media/WebP settings UX.
-- [ ] T051 [P5] Data retention settings (if supported); advanced/developer settings with warnings + safe
-  disabled/locked-by-config states.
-- [ ] T052 [P5] Provider-specific captcha (None/Honeypot/reCAPTCHA/hCaptcha/Turnstile) — only the selected
-  provider's fields/links; no mixing; secrets write-only.
-- [ ] T053 [P5] Tests: settings persistence, provider switching, secret write-only, UI state.
+- [x] T050 [P5] Settings taxonomy + Media/WebP settings UX already shipped (Spec 061/062 — CoreX Media settings
+  section, WebP enable/quality/threshold, `media reset-webp`/`regenerate-webp`). Section state model
+  (Hidden/Disabled/ConfigurationNeeded/Normal) already reflects add-on state honestly.
+- [~] T051 [P5] Data retention: **honestly deferred.** A retention setting is only truthful if it actually prunes;
+  scheduled auto-deletion of real submission data is a high-risk mutation that needs its own careful design
+  (opt-in default-off, reversible/trash-not-delete, per-run safety, a real age source on the reader) — shipping a
+  do-nothing setting or a rushed auto-deleter would violate truthfulness/safety. Advanced/locked-by-config states
+  already exist via `SettingsSectionState`.
+- [x] T052 [P5] Provider-specific captcha (None/Honeypot/reCAPTCHA/hCaptcha/Turnstile) — already shipped in M6:
+  `SettingsForm` renders only the selected driver's fields; `CaptchaDiagnostic` is per-driver; secrets write-only.
+- [x] T053 [P5] Tests: existing SettingsForm/SettingsSectionState/SettingsSecret/captcha Pest coverage (M6) stands.
 
 ---
 
