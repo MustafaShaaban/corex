@@ -130,7 +130,7 @@ final class FormsFlowsScreen
             . $this->summaryStat(__('Forms', 'corex'), (string) $summary['count'])
             . $this->summaryStat(__('Fields', 'corex'), (string) $summary['fieldTotal'])
             . $this->summaryStat(__('Submissions', 'corex'), '<a href="'
-                . esc_url(admin_url('admin.php?page=corex-data')) . '">' . esc_html__('View submissions', 'corex') . '</a>')
+                . esc_url(admin_url('admin.php?page=corex-submissions')) . '">' . esc_html__('Open Submissions Inbox', 'corex') . '</a>')
             . '</div>';
     }
 

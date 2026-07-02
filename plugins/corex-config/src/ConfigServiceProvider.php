@@ -27,6 +27,7 @@ use Corex\Config\Forms\FormsFlowsScreen;
 use Corex\Config\Forms\FormsOverview;
 use Corex\Config\Options\OptionPageRegistry;
 use Corex\Config\Options\OptionPageScreen;
+use Corex\Config\Submissions\SubmissionsInboxScreen;
 use Corex\Database\Schema\ManagedTables;
 use Corex\Database\Schema\Migrator;
 use Corex\Config\Insights\InsightRegistry;
@@ -139,6 +140,10 @@ final class ConfigServiceProvider extends ServiceProvider
         // screen that renders + saves each one with the shared SettingsForm/Store (spec 039).
         $this->container->singleton(OptionPageRegistry::class);
         $this->container->singleton(OptionPageScreen::class);
+
+        // Submissions Inbox (spec 063): a business-friendly view over the real corex_submission
+        // records, reusing the shared SubmissionsReader.
+        $this->container->singleton(SubmissionsInboxScreen::class);
     }
 
     public function boot(): void
@@ -148,6 +153,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(AdminDashboard::class)->register();
         $this->container->make(AddonsScreen::class)->register();
         $this->container->make(FormsFlowsScreen::class)->register();
+        $this->container->make(SubmissionsInboxScreen::class)->register();
         $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();
         $this->container->make(InsightsScreen::class)->register();
