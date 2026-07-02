@@ -4,6 +4,31 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-02, Spec 063 NEW-DESIGN-GAP program started) -- intake + spec done; Phase 1 in progress
+
+- **Branch:** `spec/063-new-design-gap-implementation` (off `main` @ `c041ab6`). Normal root, single worktree, no
+  `.worktrees`. CoreX Framework Mode. Do not work from `main`.
+- **What this is:** a new owner-supplied design package (`F:\Work\CoreX.zip` — the "Corex Final Design Gap-Closure"
+  pass) audits the whole product and, per its own truthfulness rule, tags each area frozen / owner-review /
+  needs-another-pass / future-only. Spec 063 closes the **implementation-ready** gaps in priority order under one
+  hard invariant: **every surface shows its real state — no fake data/integrations/Pro/marketplace/licensing, no
+  dead entry points.** DECISIONS #110.
+- **Phase 0 DONE (this session):** design intake `design/handoffs/063-new-design-gap-implementation.md` (path,
+  files, seven-state bands, engineering scope); `design/INVENTORY.md` updated to the seven-state model; Spec Kit
+  artifacts `specs/063-new-design-gap-implementation/{spec.md,plan.md,tasks.md,checklists/requirements.md}`
+  (Constitution Check PASS); ROADMAP §17 + DECISIONS #110 recorded. Confirmed: **no active marketplace/Pro/
+  ThemeForest/license wording to neutralize** — the M6 truthful-state pass already framed all such references as
+  future/deferred.
+- **Batches (Phase 0–8), one reviewed batch at a time:** 0 gates (done) · 1 Admin Overview truthful states (in
+  progress) · 2 Forms & Flows + Submissions + Email Studio ⛔owner-gate · 3 Data Models CRUD/import/export/
+  migrations ⛔owner-gate · 4 Operations Mode + Security + Access ⛔owner-gate · 5 Settings/media/retention/advanced
+  · 6 Insights + Setup Wizard · 7 Blog + social share + Company Kit gaps + blocks · 8 docs/verify/PR. Phases 2–4
+  **stop for owner sign-off** (design intake §10) before implementation code.
+- **Exact next step:** finish Phase 1 (truthful Overview summary: `plugins/corex-config/src/Overview/*` — pure
+  `OverviewSummary` + `EnvironmentMode` view models + `OverviewRenderer`, wired into `AdminDashboard::render()`,
+  scoped CSS, Pest + render-harness), then obtain owner sign-off for the Phase 2–4 owner-gated bands.
+
+---
 ## RESUME HERE (2026-06-26, PRE-SITE READINESS CLOSED) -- v0.31.0 shipped; first company site can start
 
 - **Status:** **v0.31.0 / pre-site readiness is CLOSED.** Tag `v0.31.0` is pushed and the GitHub Release
