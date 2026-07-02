@@ -6,6 +6,57 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.32.0] — 2026-07-02
+
+Spec 063 — New Design Gap Implementation. Closes the implementation-ready gaps from the "Corex Final Design
+Gap-Closure" design package under one invariant: **every surface communicates its real state — no fabricated data,
+integrations, Pro/marketplace/licensing behavior, and no dead entry points.** Where a design feature has no backing
+in the framework it is surfaced as an honest, labelled future capability, never a fake.
+
+### Added
+
+- **Truthful CoreX Overview summary:** an "At a glance" strip built only from real signals — environment/mode badge
+  (`wp_get_environment_type()`), add-on active/total, form submissions (honest "not available" when the source is
+  off, never a fabricated zero), media delivery, a readiness pointer, and a documentation link
+  (`Corex\Config\Overview\*`).
+- **Forms & Flows admin screen** (`corex-forms`): a read-only inventory of the real code-defined forms
+  (`FormRegistry`) and their fields/validation; the visual builder is labelled a future capability
+  (`Corex\Config\Forms\*`).
+- **Submissions Inbox** (`corex-submissions`): a business-friendly view over the real `corex_submission` records —
+  list + a server-rendered detail view (`?submission=ID`) + a capability + nonce-gated CSV export; honest
+  empty/not-found/permission states (`Corex\Config\Submissions\*`).
+- **Data Models catalog** (`corex-data-models`): a schema catalog over the real `DataRegistry` sources (fields +
+  record counts) + per-model CSV export. CSV import (with dry-run) and a pending-migrations view are honestly
+  deferred — the data layer has no generic write path or migration-history tracker (`Corex\Config\DataModels\*`).
+- **Operations & Security overview** (`corex-operations-security`): the real environment plus real WordPress
+  hardening checks (HTTPS, `DISALLOW_FILE_EDIT`, debug-display hidden, no default "admin"). Operations-mode
+  switching, login protection, and a capability editor are labelled future — CoreX never renames WordPress core
+  files (`Corex\Config\Security\*`).
+- **Email Studio** (`corex-email-studio`): a truthful overview of the transactional-email engine — gated on the
+  optional CoreX Email add-on, the real registered templates (`TemplateRegistry::names()`, added), and an
+  environment-derived delivery advisory (`Corex\Config\Email\*`).
+- **`corex/social-share` block:** a privacy-friendly, permalink-aware Blog share bar. Links work without JavaScript;
+  copy-link (Clipboard API) and native-share (Web Share API) are progressive enhancement. No share counts, no
+  third-party scripts; accessible, RTL, reduced-motion aware.
+- **`corex/newsletter-signup` block:** a double opt-in signup form wired to the real
+  `corex/v1/newsletter/subscribe` REST route (CoreX Newsletter add-on). Gated on the add-on, required consent + an
+  accessible honeypot, and the endpoint's truthful "check your email to confirm" outcome — no fabricated success.
+- **Company section patterns:** `corex/section-services-grid`, `corex/section-process-steps`,
+  `corex/section-logo-cloud`, and `corex/section-contact-info` — native FSE patterns (core blocks + `theme.json`
+  tokens), neutral placeholder content, RTL-correct, auto-registered under the CoreX pattern category.
+- **Docs:** a new docs-app page *Design gap surfaces (Spec 063)* documenting every new admin screen, block, and
+  pattern; the design intake at `design/handoffs/063-new-design-gap-implementation.md`; and Spec 063 in
+  `specs/063-new-design-gap-implementation/`.
+
+### Notes
+
+- All new admin screens are gated by the shared `AdminGuard` (capability + nonce for any write), load assets only on
+  their own hook (Principle VI), convey status by text + tone (never colour alone), and support RTL, dark, and light.
+- Optional add-ons (Media, Captcha, Email, Newsletter) are detected behind a seam and degrade to an honest
+  "unavailable" state when inactive (Principle IX). Secrets remain write-only. WooCommerce stays dual-gated.
+- Future-only areas (Blog Pro, Portfolio, WooCommerce, Pro/commercial, Auth, advanced AAM) remain deferred, not
+  built.
+
 ## [0.31.0] — 2026-06-26
 
 ### Added

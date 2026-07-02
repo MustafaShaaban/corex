@@ -3,7 +3,7 @@
  * Plugin Name:       Corex Forms
  * Plugin URI:        https://github.com/bseit/corex
  * Description:       The Corex forms engine — code-defined form schemas, a headless validator, a secured submit lifecycle, and an FSE form block. Built on the corex-core event seam + security middleware.
- * Version:           0.31.0
+ * Version:           0.32.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
@@ -24,7 +24,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_FORMS_VERSION')) {
-    define('COREX_FORMS_VERSION', '0.31.0');
+    define('COREX_FORMS_VERSION', '0.32.0');
 }
 if (! defined('COREX_FORMS_FILE')) {
     define('COREX_FORMS_FILE', __FILE__);

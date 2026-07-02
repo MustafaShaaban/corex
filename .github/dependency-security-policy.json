@@ -240,6 +240,21 @@
       "upstreamTrigger": "Remove when the supported Astro/Vite line resolves esbuild 0.28.1 or newer.",
       "range": ">=0.27.3 <0.28.1",
       "url": "https://github.com/advisories/GHSA-g7r4-m6w7-qqqr"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-22p9-wv53-3rq4",
+      "package": "linkify-it",
+      "paths": ["node_modules/linkify-it"],
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "reason": "linkify-it is a transitive dependency of the repository Markdown linter (@wordpress/scripts → markdownlint-cli → markdown-it → linkify-it). Its quadratic match loop is reachable only when linting repository-controlled Markdown, and the package is not bundled into or shipped to any WordPress site.",
+      "control": "Lint only reviewed repository Markdown files; pull-request CI uses a read-only token, processes no untrusted input, and receives no production secrets.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-12-31",
+      "upstreamTrigger": "Remove when @wordpress/scripts resolves a linkify-it release that fixes GHSA-22p9-wv53-3rq4 without a semver-major downgrade.",
+      "range": "<=5.0.0",
+      "url": "https://github.com/advisories/GHSA-22p9-wv53-3rq4"
     }
   ]
 }

@@ -3,7 +3,7 @@
  * Plugin Name:       Corex Newsletter
  * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       The Corex newsletter — topic-based subscriptions with double opt-in, secure unsubscribe/suppression, GDPR consent, and an on-publish trigger that emails confirmed subscribers. Built on Custom Tables, Mail, Captcha, and the event seam.
- * Version:           0.31.0
+ * Version:           0.32.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
@@ -22,7 +22,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_NEWSLETTER_VERSION')) {
-    define('COREX_NEWSLETTER_VERSION', '0.31.0');
+    define('COREX_NEWSLETTER_VERSION', '0.32.0');
 }
 
 (static function (): void {
