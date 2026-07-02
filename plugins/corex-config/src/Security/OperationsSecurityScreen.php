@@ -151,25 +151,13 @@ final class OperationsSecurityScreen
     }
 
     /**
-     * The REAL, locally-verified hardening facts. All read constants/functions — no network, no writes.
+     * The REAL, locally-verified hardening facts, gathered by the shared {@see HardeningFacts} boundary
+     * so the Overview readiness panel and this screen never compute the same signal two ways.
      *
      * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool}
      */
     private function facts(): array
     {
-        // WordPress displays PHP errors to the page when WP_DEBUG is on AND WP_DEBUG_DISPLAY is not
-        // explicitly false (its default when undefined is to display). Mirror that exactly.
-        $debugOn        = defined('WP_DEBUG') && WP_DEBUG === true;
-        $displaySet     = defined('WP_DEBUG_DISPLAY');
-        $displayEnabled = $debugOn && (! $displaySet || WP_DEBUG_DISPLAY !== false);
-
-        return [
-            'ssl'                => is_ssl()
-                || (function_exists('force_ssl_admin') && force_ssl_admin())
-                || str_starts_with((string) home_url(), 'https://'),
-            'fileEditDisabled'   => defined('DISALLOW_FILE_EDIT') && DISALLOW_FILE_EDIT === true,
-            'debugDisplayOff'    => ! $displayEnabled,
-            'defaultAdminAbsent' => username_exists('admin') === null,
-        ];
+        return HardeningFacts::gather();
     }
 }

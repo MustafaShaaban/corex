@@ -80,6 +80,22 @@ license flows.
 
 ## Visual verification status
 
-Rendered browser evidence (dark/light/RTL/200%/keyboard) is **environment-gated** and recorded honestly — it is
-captured with the repo's `tests/e2e/render-admin.mjs` harness only when a live WP + browser runtime is available.
-Headless PHP/JS contracts (below) verify structure, truthful state, escaping, and token usage.
+**Performed (2026-07-02).** The Overview was rendered against the live WordPress install (`http://corex.local`,
+authenticated as an administrator) in **dark and light** via `tests/e2e/render-admin.mjs`, and compared against the
+approved `Corex Admin Overview.dc.html`. Confirmed:
+
+- The approved **dense two-column readiness grid** (env badge → stat tiles → Launch readiness + [Forms & Flows /
+  Data sources] → Analytics & security + Recent activity). **No unintended white space; no sparse stacked panels;
+  no duplicated submission read-out.**
+- **All real data:** environment badge (`PRODUCTION`, real `wp_get_environment_type()`), stat tiles (Posts 1 /
+  Pages 18 / Submissions 43 / Add-ons 8 of 10), Launch readiness `5 of 6` from real signals, Forms & Flows `1`
+  (read-only), Data sources (Form submissions 43), Analytics & security (Insights connected, Captcha configured,
+  email from-address set, Login protection "4 checks to review"), and an **honest empty** Recent activity (no fake
+  event bus).
+- **Rail:** every screen carries a distinct icon (Forms, Submissions, Data Models, Operations & Security, Email
+  Studio, …) and Overview is the active entry — no generic option-page fallback, no dead entry point.
+- **Dark/light parity:** identical structure; correct scoped `--corex-admin-*` tokens, contrast, and brass accent
+  in both.
+
+RTL, 200% zoom, and the full-keyboard sweep remain the environment-gated manual acceptance items (unchanged from
+M6). Headless PHP/JS contracts additionally verify structure, truthful state, escaping, and token usage.

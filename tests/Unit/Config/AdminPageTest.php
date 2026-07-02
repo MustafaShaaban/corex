@@ -32,6 +32,31 @@ it('renders the branded shell with a labelled main region and page header', func
         ->and($html)->toContain('Manage framework records.');
 });
 
+it('gives every CoreX screen a distinct rail icon and a correct active state (spec 064)', function (string $section, string $iconClass) {
+    $html = (new AdminPage())->open($section, 'Title', '');
+
+    expect($html)->toContain('corex-admin__nav-icon--' . $iconClass)
+        // The active screen carries the active class + aria-current on its own rail entry.
+        ->and($html)->toContain('is-active')
+        ->and($html)->toContain('aria-current="page"')
+        // No real CoreX screen falls back to the generic option-page icon in the rail.
+        ->and($html)->not->toContain('corex-admin__nav-icon--option-page');
+})->with([
+    'forms' => ['forms', 'forms'],
+    'submissions' => ['submissions', 'submissions'],
+    'email studio' => ['email', 'mail'],
+    'data models' => ['data-models', 'data'],
+    'operations & security' => ['operations-security', 'security'],
+]);
+
+it('marks exactly the active screen as current in the rail', function () {
+    $html = (new AdminPage())->open('submissions', 'Submissions', '');
+
+    // The submissions entry is active; other entries are not aria-current.
+    expect(substr_count($html, 'aria-current="page"'))->toBe(1)
+        ->and($html)->toContain('page=corex-submissions');
+});
+
 it('renders text-labelled universal states with appropriate live roles', function (string $tone, string $role) {
     $html = (new AdminPage())->state($tone, 'State title', 'State explanation.');
 

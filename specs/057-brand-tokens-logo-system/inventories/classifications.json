@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 614,
+    "consumer_records": 616,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -544,6 +544,7 @@
         "--corex-admin-disabled-opacity",
         "--corex-admin-error",
         "--corex-admin-error-soft",
+        "--corex-admin-font-2xl",
         "--corex-admin-font-body",
         "--corex-admin-font-display",
         "--corex-admin-font-lg",

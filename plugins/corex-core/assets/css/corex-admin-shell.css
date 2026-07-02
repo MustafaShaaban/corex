@@ -168,6 +168,26 @@ body.corex-admin-screen .corex-admin__shell {
 	mask-image: url(../icons/nav-setup.svg);
 }
 
+.corex-admin__nav-icon--forms {
+	-webkit-mask-image: url(../icons/nav-forms.svg);
+	mask-image: url(../icons/nav-forms.svg);
+}
+
+.corex-admin__nav-icon--submissions {
+	-webkit-mask-image: url(../icons/nav-submissions.svg);
+	mask-image: url(../icons/nav-submissions.svg);
+}
+
+.corex-admin__nav-icon--security {
+	-webkit-mask-image: url(../icons/nav-security.svg);
+	mask-image: url(../icons/nav-security.svg);
+}
+
+.corex-admin__nav-icon--mail {
+	-webkit-mask-image: url(../icons/nav-mail.svg);
+	mask-image: url(../icons/nav-mail.svg);
+}
+
 .corex-admin__header {
 	display: flex;
 	align-items: flex-start;

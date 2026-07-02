@@ -9,8 +9,6 @@ declare(strict_types=1);
 namespace Corex\Config\Settings;
 
 use Corex\Admin\AdminPage;
-use Corex\Config\ControlPanel\ControlPanelView;
-use Corex\Config\Dashboard\SiteStatusCardRenderer;
 use Corex\Config\Overview\OverviewRenderer;
 use Corex\Security\Admin\AdminGuard;
 
@@ -30,8 +28,6 @@ final class AdminDashboard
         private readonly SettingsStore $store,
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
-        private readonly SiteStatusCardRenderer $status,
-        private readonly ControlPanelView $panel,
         private readonly OverviewRenderer $overview,
     ) {
     }
@@ -131,25 +127,11 @@ final class AdminDashboard
             __('Framework health, onboarding progress, and the current operational state.', 'corex'),
         );
 
-        echo $this->overview->render();
-        $this->status->render();
-        echo $this->panel->render($this->settingValues());
-        echo $this->renderActivity();
+        // The Overview is one cohesive readiness dashboard (spec 064) — a single OverviewRenderer
+        // produces the whole grid from real state, replacing the previously stacked site-status +
+        // control-panel + activity panels (which duplicated read-outs and left white space).
+        echo $this->overview->render($this->settingValues());
         echo $this->page->close();
-    }
-
-    /**
-     * The recent-activity panel (design: Dashboard capture's event bus). CoreX has no framework
-     * event log backing this yet, so it renders a designed, honest empty state rather than a
-     * fabricated activity feed — the space is reserved truthfully for when an event bus exists.
-     */
-    private function renderActivity(): string
-    {
-        return '<section class="corex-surface corex-activity" aria-labelledby="corex-activity-title">'
-            . '<p class="corex-activity__kicker">' . esc_html__('FRAMEWORK EVENTS', 'corex') . '</p>'
-            . '<h2 id="corex-activity-title">' . esc_html__('Recent activity', 'corex') . '</h2>'
-            . '<p class="corex-activity__empty">'
-            . esc_html__('No recent framework events available yet.', 'corex') . '</p></section>';
     }
 
     public function renderSettings(): void

@@ -40,13 +40,16 @@ it('exposes Overview and Settings as distinct CoreX menu destinations', function
         ->and($source)->toContain('CoreX Settings');
 });
 
-it('renders the Overview stat-card and Setup progress component contracts', function () {
+it('renders the Overview readiness grid and Setup progress component contracts', function () {
     $root = ThemeContract::root();
-    $status = (string) file_get_contents($root . '/plugins/corex-config/src/Dashboard/SiteStatusCardRenderer.php');
+    // Spec 064: the Overview is one cohesive readiness dashboard produced by OverviewRenderer.
+    $overview = (string) file_get_contents($root . '/plugins/corex-config/src/Overview/OverviewRenderer.php');
     $setup = (string) file_get_contents($root . '/addons/corex-kit-company/src/SetupWizardScreen.php');
 
-    expect($status)->toContain('corex-stat-card')
-        ->and($status)->toContain('corex-site-status')
+    expect($overview)->toContain('corex-overview__grid')
+        ->and($overview)->toContain('corex-overview__tiles')
+        ->and($overview)->toContain('Launch readiness')
+        ->and($overview)->toContain('Analytics & security')
         ->and($setup)->toContain('corex-wizard__steps')
         ->and($setup)->toContain('corex-wizard__kits');
 });
