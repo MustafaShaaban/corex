@@ -1,0 +1,20 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/newsletter-signup",
+	"title": "Newsletter Signup",
+	"category": "corex",
+	"icon": "email",
+	"description": "A double opt-in newsletter signup form (dynamic, server-rendered; wired to the real subscribe endpoint).",
+	"textdomain": "corex",
+	"attributes": {
+		"heading": { "type": "string", "default": "" },
+		"buttonLabel": { "type": "string", "default": "" },
+		"consentText": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false, "align": ["wide", "full"] },
+	"editorScript": "file:./index.js",
+	"viewScript": "file:./view.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Blocks\\NewsletterSignupRenderer" }
+}

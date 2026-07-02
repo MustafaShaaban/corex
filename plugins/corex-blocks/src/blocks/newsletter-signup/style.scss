@@ -1,0 +1,72 @@
+/**
+ * Newsletter Signup block — front-end + editor styling.
+ *
+ * Consumes theme.json design tokens (CSS custom properties) and logical
+ * properties (RTL-correct by default). No hardcoded colors/sizes/fonts.
+ * Compiled by @wordpress/scripts to style-index.css and loaded conditionally
+ * (only when the block renders), per constitution Principle VI. The honeypot
+ * field is visually hidden but reachable to bots.
+ */
+
+.corex-newsletter-signup {
+
+	&__heading {
+		margin-block-end: var(--wp--preset--spacing--20);
+	}
+
+	&__row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--wp--preset--spacing--20);
+		align-items: stretch;
+	}
+
+	&__email {
+		flex: 1 1 auto;
+		min-inline-size: 0;
+		padding: var(--wp--preset--spacing--20);
+		color: var(--wp--preset--color--ink);
+		background: var(--wp--preset--color--surface);
+		border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
+		border-radius: var(--wp--custom--radius--md);
+	}
+
+	&__submit {
+		padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
+		color: var(--wp--preset--color--inverse);
+		background: var(--wp--preset--color--accent);
+		border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--accent);
+		border-radius: var(--wp--custom--radius--md);
+		cursor: pointer;
+	}
+
+	&__consent {
+		display: flex;
+		gap: var(--wp--preset--spacing--10);
+		align-items: flex-start;
+		margin-block-start: var(--wp--preset--spacing--20);
+		color: var(--wp--preset--color--ink-soft);
+		font-size: var(--wp--preset--font-size--sm);
+	}
+
+	// Honeypot: off-screen like core's .screen-reader-text so humans never
+	// see it but bots still fill it (rejected server-side). Same accessible
+	// hiding as the forms block; the raw offset is the standard technique.
+	&__hp {
+		position: absolute;
+		inset-inline-start: -9999px; /* corex-token-allow: honeypot off-screen */
+	}
+
+	&__status {
+		margin-block-start: var(--wp--preset--spacing--20);
+		font-size: var(--wp--preset--font-size--sm);
+
+		&[data-state="success"] {
+			color: var(--wp--preset--color--success);
+		}
+
+		&[data-state="error"] {
+			color: var(--wp--preset--color--danger);
+		}
+	}
+}

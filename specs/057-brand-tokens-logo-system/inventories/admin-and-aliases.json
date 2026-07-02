@@ -292,6 +292,13 @@
       "context": "lines 14: color: var(--corex-admin-text-muted);"
     },
     {
+      "legacy_property": "--wp--preset--color--danger",
+      "target_definition": "color.error",
+      "resolution": "alias-required",
+      "path": "plugins/corex-blocks/src/blocks/newsletter-signup/style.scss",
+      "context": "lines 69: color: var(--wp--preset--color--danger);"
+    },
+    {
       "legacy_property": "--corex-admin-action",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
