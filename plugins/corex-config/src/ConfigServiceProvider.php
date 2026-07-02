@@ -174,6 +174,18 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(OptionPageRegistry::class);
         $this->container->singleton(OptionPageScreen::class);
 
+        // Submission retention (spec 065): real, safe pruning with a dry-run preview.
+        $this->container->singleton(\Corex\Config\Retention\RetentionSettings::class);
+        $this->container->singleton(
+            \Corex\Config\Retention\SubmissionRetention::class,
+            static fn (ContainerInterface $c): \Corex\Config\Retention\SubmissionRetention =>
+                new \Corex\Config\Retention\SubmissionRetention(
+                    $c->make(\Corex\Config\Retention\RetentionSettings::class),
+                    $c->make(SubmissionsReader::class),
+                ),
+        );
+        $this->container->singleton(\Corex\Config\Retention\RetentionController::class);
+
         // Submissions Inbox (spec 063): a business-friendly view over the real corex_submission
         // records, reusing the shared SubmissionsReader.
         $this->container->singleton(SubmissionsInboxScreen::class);
@@ -207,6 +219,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(AddonsScreen::class)->register();
         $this->container->make(FormsFlowsScreen::class)->register();
         $this->container->make(SubmissionsInboxScreen::class)->register();
+        $this->container->make(\Corex\Config\Retention\RetentionController::class)->register();
         $this->container->make(DataModelsScreen::class)->register();
         $this->container->make(OperationsSecurityScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();

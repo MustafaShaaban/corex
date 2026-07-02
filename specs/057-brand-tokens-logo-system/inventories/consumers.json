@@ -4243,7 +4243,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 62: font-size: var(--corex-admin-font-sm);",
+      "selector_or_context": "lines 62, 104: font-size: var(--corex-admin-font-sm);",
       "property": "--corex-admin-font-sm",
       "owner": "config-plugin",
       "surface": "admin",
@@ -4253,7 +4253,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 22, 54, 75: font-size: var(--corex-admin-font-xs);",
+      "selector_or_context": "lines 22, 54, 75, 123: font-size: var(--corex-admin-font-xs);",
       "property": "--corex-admin-font-xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -4283,7 +4283,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 8: margin-block-end: var(--corex-admin-space-lg);",
+      "selector_or_context": "lines 8, 86: margin-block-end: var(--corex-admin-space-lg); | margin-block-start: var(--corex-admin-space-lg);",
       "property": "--corex-admin-space-lg",
       "owner": "config-plugin",
       "surface": "admin",
@@ -4293,7 +4293,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 7, 12, 60, 69: gap: var(--corex-admin-space-md); | padding: var(--corex-admin-space-md); | margin-block-start: var(--corex-admin-space-md);",
+      "selector_or_context": "lines 7, 12, 60, 69, 95: gap: var(--corex-admin-space-md); | padding: var(--corex-admin-space-md); | margin-block-start: var(--corex-admin-space-md);",
       "property": "--corex-admin-space-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -4303,11 +4303,11 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 45, 67: padding: var(--corex-admin-space-sm); | gap: var(--corex-admin-space-sm);",
+      "selector_or_context": "lines 45, 67, 94, 112, 113: padding: var(--corex-admin-space-sm); | gap: var(--corex-admin-space-sm); | margin-block-end: var(--corex-admin-space-sm);",
       "property": "--corex-admin-space-sm",
       "owner": "config-plugin",
       "surface": "admin",
-      "direction_context": "not-applicable",
+      "direction_context": "logical",
       "resolution": "raw-allowance",
       "target_definition": "scoped --corex-admin-* adapter"
     },
@@ -4343,7 +4343,7 @@
     },
     {
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "selector_or_context": "lines 20, 52, 61, 76, 81: color: var(--corex-admin-text-muted);",
+      "selector_or_context": "lines 20, 52, 61, 76, 81, 103, 122: color: var(--corex-admin-text-muted);",
       "property": "--corex-admin-text-muted",
       "owner": "config-plugin",
       "surface": "admin",

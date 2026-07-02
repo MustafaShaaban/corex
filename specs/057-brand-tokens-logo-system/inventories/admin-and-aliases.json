@@ -1847,14 +1847,14 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "context": "lines 62: font-size: var(--corex-admin-font-sm);"
+      "context": "lines 62, 104: font-size: var(--corex-admin-font-sm);"
     },
     {
       "legacy_property": "--corex-admin-font-xs",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "context": "lines 22, 54, 75: font-size: var(--corex-admin-font-xs);"
+      "context": "lines 22, 54, 75, 123: font-size: var(--corex-admin-font-xs);"
     },
     {
       "legacy_property": "--corex-admin-letter-wide",
@@ -1875,21 +1875,21 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "context": "lines 8: margin-block-end: var(--corex-admin-space-lg);"
+      "context": "lines 8, 86: margin-block-end: var(--corex-admin-space-lg); | margin-block-start: var(--corex-admin-space-lg);"
     },
     {
       "legacy_property": "--corex-admin-space-md",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "context": "lines 7, 12, 60, 69: gap: var(--corex-admin-space-md); | padding: var(--corex-admin-space-md); | margin-block-start: var(--corex-admin-space-md);"
+      "context": "lines 7, 12, 60, 69, 95: gap: var(--corex-admin-space-md); | padding: var(--corex-admin-space-md); | margin-block-start: var(--corex-admin-space-md);"
     },
     {
       "legacy_property": "--corex-admin-space-sm",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "context": "lines 45, 67: padding: var(--corex-admin-space-sm); | gap: var(--corex-admin-space-sm);"
+      "context": "lines 45, 67, 94, 112, 113: padding: var(--corex-admin-space-sm); | gap: var(--corex-admin-space-sm); | margin-block-end: var(--corex-admin-space-sm);"
     },
     {
       "legacy_property": "--corex-admin-space-xs",
@@ -1917,7 +1917,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/submissions-admin.css",
-      "context": "lines 20, 52, 61, 76, 81: color: var(--corex-admin-text-muted);"
+      "context": "lines 20, 52, 61, 76, 81, 103, 122: color: var(--corex-admin-text-muted);"
     },
     {
       "legacy_property": "--corex-admin-action",
