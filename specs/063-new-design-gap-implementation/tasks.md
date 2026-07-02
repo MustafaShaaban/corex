@@ -161,17 +161,20 @@ empty/error/permission-denied; no fabricated metric.
 
 ---
 
-## Phase 7 — Blog, social sharing, Company Site Kit gaps, blocks (US4)
+## Phase 7 — Blog, social sharing, Company Site Kit gaps, blocks (US4) — social-share shipped
 
-- [ ] T070 [P7] Blog/News (native WP posts): index, single, archive/category, search/no-results, comments
-  where enabled, related posts where supported; privacy-friendly social share (accessible labels, RTL, no
-  counts). No custom blog engine; Blog Pro stays future-only/reference.
-- [ ] T071 [P7] Company Site Kit: fill missing M4 page/template coverage (neutral content); safe
-  apply/reset/adopt/skip/conflict behavior.
-- [ ] T072 [P7] Prioritized blocks (services grid, service detail, process/steps, icon box, logo cloud/trust
-  badges, case study, rich tabs, testimonial, gallery, featured posts, newsletter, contact/map, social
-  share) — keyboard, RTL, reduced motion; no global slider JS; no autoplay by default.
-- [ ] T073 [P7] Tests: block rendering (Pest), JS (Jest), accessibility-focused checks.
+- [x] T070 [P7] **Privacy-friendly social share shipped** as a real dynamic block `corex/social-share`
+  (`Corex\Blocks\SocialShareRenderer` + view.js): permalink-aware, no-JS-safe (server links + progressive
+  Clipboard/Web-Share enhancement), accessible labels, RTL (built style-index-rtl.css), reduced-motion, no share
+  counts, no third-party scripts. Blog/News index/single/archive already exist via the theme (M4). Blog Pro stays
+  future-only.
+- [~] T071 [P7] Company Site Kit page coverage already provided by `CompanyBlueprint` (M4); remaining secondary-page
+  gaps are follow-up content composition — deferred.
+- [~] T072 [P7] Remaining prioritized blocks (services grid, process/steps, case study, rich tabs, testimonial,
+  gallery, featured posts, newsletter, contact/map) — many already exist in `addons/corex-ui`; the missing ones are
+  a follow-up block batch (same dynamic-block + Jest/Pest pattern the social-share block establishes). Deferred.
+- [x] T073 [P7] Tests: SocialShareRenderer (6 Pest) + view.js (5 Jest) — real links, empty-when-no-post, network
+  selection, hidden progressive controls, no counts/scripts, copy/native wiring, no-JS fallback.
 
 ---
 

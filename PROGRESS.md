@@ -58,14 +58,23 @@
   a truthful retention setting must actually prune, and scheduled auto-deletion of real submission data is a
   high-risk mutation needing its own careful design (opt-in default-off, trash-not-delete, real age source) — a
   do-nothing setting or a rushed auto-deleter would violate truthfulness/safety.
-- **Verification note:** the whole Spec 063 diff so far is **PHP/CSS/Markdown only — no JS/blocks changed**, so
-  `lint:js`/`build` (JS-only) are unaffected and CI-covered. Applicable gates green: Pest **858**, `lint:css` clean,
-  token-inventory JS contract green, `composer validate` valid, PHP lint clean; guards docs/wp/clean-code/test clean.
-- **Exact next step:** **Phase 6/7** — Insights + Setup Wizard already exist (truthful polish only), so the highest-
-  value *new* real work is **Phase 7 Blog social sharing** (a privacy-friendly, accessible, RTL, reduced-motion
-  share component — the design marks it frozen) and the prioritized company/blog blocks. These are front-end/FSE +
-  block work (block.json + render + JS + SCSS + Jest/Pest) — a larger, self-contained domain. Then Phase 8
-  docs/docs-app/screenshots + full verification consolidation. **Multi-session program**; never stub as working.
+- **Phase 7 DONE (social-share, commit `6d383ec`):** the frozen Blog social-sharing component shipped as a real
+  dynamic block `corex/social-share` (`Corex\Blocks\SocialShareRenderer` + `view.js`) — permalink-aware, **no-JS-safe**
+  (server share links + progressive Clipboard/Web-Share enhancement), accessible, RTL (built `style-index-rtl.css`),
+  reduced-motion, **no share counts, no third-party scripts**. 6 Pest + 5 Jest. Remaining Phase-7 blocks +
+  company-kit secondary pages are a follow-up batch (same dynamic-block pattern; many blocks already in
+  `addons/corex-ui`).
+- **Verification (final):** Pest **864** green (30 new unit tests across Phases 1/2/3/4/7); `test:js` green (incl. 5
+  new social-share Jest tests); `lint:css` clean; new block JS lint-clean (only the shared `@wordpress`
+  import-resolver artifacts, identical to the committed `entity-field` block); token-inventory JS contract green;
+  `composer validate` valid; PHP lint clean; `npm run build` (corex-blocks) compiles the new block. Guards
+  docs/wp/clean-code/test clean per batch. `build/` is git-ignored (CI rebuilds).
+- **Phase 6 (Insights + Setup Wizard):** both already exist and gate honestly (Insights providers + readiness
+  scorer; Setup Wizard gated behind `corex-kit-company`). Truthful **polish only** — not re-built.
+- **Exact next step:** **Phase 8** — extend docs-app / `docs/` with the six new admin screens + the social-share
+  block, refresh visual evidence/screenshots, and run the full pre-merge verification matrix; then either merge PR
+  #86 (Phases 0–7 are self-contained) or continue the remaining Phase-7 block batch. **Multi-session program**;
+  never stub as working.
 
 ---
 ## RESUME HERE (2026-06-26, PRE-SITE READINESS CLOSED) -- v0.31.0 shipped; first company site can start
