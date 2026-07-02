@@ -2013,3 +2013,36 @@ No active marketplace/Pro/ThemeForest/license/purchase wording exists to neutral
 already framed all such references as future/deferred (ROADMAP M10/M11, the free-core/paid-add-on *strategy*).
 Status: Phase 0 (intake + spec + gates) final on branch `spec/063-new-design-gap-implementation`; Phase 1 (Admin
 Overview truthful states) in progress; Phases 2–8 open (2–4 gated on owner sign-off).
+
+## #111 -- Spec 064: Overview rebuilt to the approved readiness grid; rail fidelity; superseded panels
+Date: 2026-07-02
+Context: Owner review of the v0.32.0 admin found the Overview/Dashboard incomplete, visually unfaithful to the
+approved design, confusing, and full of unintended white space. Audit (`design/audits/064-admin-dashboard-fidelity-
+audit.md`) confirmed: the Overview rendered as sparse stacked full-width panels (Phase-1 summary strip + site-status
+card + control-panel domain cards + activity) with duplicated submission read-outs, not the approved dense
+two-column readiness grid in `Corex Admin Overview.dc.html`; and `AdminPage::railItems` mapped icons/active-state
+only for the original six slugs, so the five new Spec-063 screens fell to the generic option-page icon with no
+active highlight. The stale `Corex Admin Dashboard.dc.html` (event bus, repo stats, "healthy" cards) is superseded
+by the truthful Overview.
+Decision: (1) Rebuild the Overview as one cohesive readiness grid produced by a single `OverviewRenderer`, composing
+a pure `OverviewModel` from REAL facts only — stat tiles (posts/pages/submissions/add-ons), a Launch-readiness
+checklist (N of M) from real brand/kit/front-page/mail/captcha/hardening signals, an Analytics & Security panel with
+honest connected/not-connected chips, a real Data-sources summary, a Forms summary, and an honest empty
+Recent-activity state. No fabricated counts/scores/activity. Reuses the existing real providers (ControlPanelStatus,
+HardeningChecks, DataRegistry, AddonRegistry, wp_count_posts, SubmissionsReader, lazy FormRegistry/KitProvisioner).
+New dense grid CSS fixes white space/alignment/shell width. (2) Extract `HardeningFacts` so Operations & Security
+and the Overview compute the hardening signal one way (DRY). (3) Fix `railItems` to map every registered CoreX
+screen to a distinct icon (four new nav SVGs: forms/submissions/security/mail) and its correct active section — no
+option-page fallback, no dead entry point. (4) Removed the now-superseded pure `OverviewSummary` (+ test) and fixed
+a double-encoded `&amp;` in `esc_html__()` strings. (5) `SiteStatusCardRenderer` + `ControlPanelView` are no longer
+used by the Overview; they are kept this pass (still tested) and slated for a follow-up cleanup rather than deleted
+mid-change.
+Why: the owner's complaint was fidelity + confusion + white space; the truthful direction (real Overview) wins over
+the stale/fake dashboard concept, and the fix must not introduce any fake feature. All Spec-063 deferrals (mode
+switching, login guard, capability editor, import/migrations, retention, Blog Pro, Portfolio, Woo, Pro, Auth) remain
+deferred and honestly labelled.
+Verification: rendered dark + light against the live `corex.local` install — the dense grid, all-real data, honest
+empty activity, and per-screen rail icons/active state match the approved design; no white space. Pest 873 (new
+OverviewModel + rail tests; updated visual contract), lint:css clean, token contract green; guards wp/clean-code/
+test clean. RTL/200%/keyboard remain the environment-gated manual acceptance items.
+Status: Final on branch `spec/064-admin-design-fidelity`.

@@ -4,6 +4,31 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-02, Spec 064 ADMIN FIDELITY) -- Overview rebuilt to the approved grid; rail fixed; render-verified
+
+- **Branch:** `spec/064-admin-design-fidelity` (off `main` @ v0.32.0 `eabbc20`). CoreX Framework Mode. Not merged.
+- **Why:** owner review found the v0.32.0 Overview visually unfaithful, confusing, and full of white space. Audit at
+  `design/audits/064-admin-dashboard-fidelity-audit.md`; spec `specs/064-admin-design-fidelity/`; DECISIONS #111.
+- **Fixed (all truthful — no fake features):**
+  - **Overview rebuilt** to the approved dense two-column **readiness grid** (`Corex Admin Overview.dc.html`): a
+    single `Config\Overview\OverviewRenderer` + pure `OverviewModel` compose stat tiles (posts/pages/submissions/
+    add-ons), a Launch-readiness checklist (N of M) from real signals, an Analytics & Security panel (honest
+    connected/not-connected), a real Data-sources summary, a Forms summary, and an **honest empty** Recent activity.
+    Replaced the stacked site-status + control-panel + activity panels; **removed the duplicated submission read-out
+    and fixed the white space** with new dense grid CSS.
+  - **Rail nav** (`AdminPage::railItems`): the 5 new screens now map to **distinct icons** (4 new nav SVGs) + correct
+    active state — no generic option-page fallback, no dead entry point.
+  - Extracted `HardeningFacts` (DRY); removed superseded `OverviewSummary`; fixed a double-encoded `&amp;`.
+- **Verified:** rendered **dark + light** against live `corex.local` (harness `tests/e2e/render-admin.mjs`, now
+  covering all six new screens) — the grid, all-real data, honest empty activity, and per-screen rail icons/active
+  match the approved design; **no white space**. Pest **873**, lint:css clean, token contract green; guards clean.
+- **Superseded (kept, follow-up cleanup):** `SiteStatusCardRenderer` + `ControlPanelView` no longer used by Overview.
+- **Deferred (unchanged, honest):** operations-mode switching, login guard, capability editor, import/migrations,
+  retention pruner, Blog Pro, Portfolio, Woo, Pro/commercial, Auth — labelled in-UI, not faked.
+- **Exact next step:** open the Spec 064 PR; RTL/200%/keyboard remain env-gated manual acceptance. Then optionally a
+  small follow-up to delete the superseded `SiteStatusCardRenderer`/`ControlPanelView` + tests.
+
+---
 ## RESUME HERE (2026-07-02, v0.32.0 RELEASED) -- Spec 063 New Design Gap Implementation shipped
 
 - **Status:** **v0.32.0 is released.** Tag `v0.32.0` pushed; GitHub release "v0.32.0 — Spec 063 New Design Gap

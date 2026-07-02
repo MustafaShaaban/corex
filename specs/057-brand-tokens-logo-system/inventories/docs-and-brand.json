@@ -74,6 +74,15 @@
       ]
     },
     {
+      "path": "docs-app/src/content/docs/design-system/design-gap-surfaces.md",
+      "lines": [
+        43
+      ],
+      "topics": [
+        "theme-authority"
+      ]
+    },
+    {
       "path": "docs-app/src/content/docs/design-system/foundations.md",
       "lines": [
         7,

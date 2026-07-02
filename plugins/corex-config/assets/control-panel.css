@@ -425,3 +425,270 @@
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-sm);
 }
+
+/* ==========================================================================
+   Overview readiness dashboard (spec 064) — the single cohesive grid that
+   replaces the previously stacked panels. Dense, aligned, no dead canvas.
+   Tokens + logical properties only; status by class + text, never colour.
+   ========================================================================== */
+.corex-admin .corex-overview {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-overview__env {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	margin-block-end: 0;
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-overview__env.is-success {
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-overview__env.is-warning {
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-overview__env.is-info {
+	border-inline-start-color: var(--corex-admin-info);
+}
+
+.corex-admin .corex-overview__env-badge {
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: var(--corex-admin-letter-wide);
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-overview__env-detail {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-overview__tiles {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-overview__tile {
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-overview__tile-label {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	text-transform: uppercase;
+	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+.corex-admin .corex-overview__tile-value {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-xl);
+	font-weight: 600;
+}
+
+.corex-admin .corex-overview__tile-detail {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-overview__grid {
+	display: grid;
+	gap: var(--corex-admin-space-md);
+	align-items: start;
+}
+
+.corex-admin .corex-overview__grid--primary {
+	grid-template-columns: 1.15fr 1fr;
+}
+
+.corex-admin .corex-overview__grid--secondary {
+	grid-template-columns: 1fr 1.15fr;
+}
+
+.corex-admin .corex-overview__col {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-overview__card {
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: var(--corex-admin-shadow-sm);
+	margin-block-end: 0;
+}
+
+.corex-admin .corex-overview__card--compact {
+	padding: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-overview__card-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	margin-block-end: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-overview__card-head h2 {
+	margin: 0;
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-lg);
+}
+
+.corex-admin .corex-overview__count,
+.corex-admin .corex-overview__pill {
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	color: var(--corex-admin-text-muted);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-pill);
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-overview__link {
+	font-size: var(--corex-admin-font-sm);
+	white-space: nowrap;
+}
+
+.corex-admin .corex-overview__checks,
+.corex-admin .corex-overview__sources,
+.corex-admin .corex-overview__integrations {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-overview__check {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-overview__check:last-child {
+	border-block-end: 0;
+}
+
+.corex-admin .corex-overview__check-mark {
+	inline-size: 1.25rem;
+	block-size: 1.25rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--corex-admin-radius-pill);
+	font-size: var(--corex-admin-font-xs);
+	color: var(--corex-admin-text-muted);
+	background: var(--corex-admin-surface-alt);
+}
+
+.corex-admin .corex-overview__check.is-success .corex-overview__check-mark {
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-overview__check.is-warning .corex-overview__check-mark {
+	color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-overview__check-note {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	text-align: end;
+}
+
+.corex-admin .corex-overview__big {
+	margin: 0;
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-2xl);
+	font-weight: 600;
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-overview__muted {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-overview__sources li,
+.corex-admin .corex-overview__integration {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-overview__sources li:last-child,
+.corex-admin .corex-overview__integration:last-child {
+	border-block-end: 0;
+}
+
+.corex-admin .corex-overview__src-name {
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-overview__src-count {
+	font-family: var(--corex-admin-font-display);
+	font-weight: 600;
+}
+
+.corex-admin .corex-overview__integration-note {
+	font-size: var(--corex-admin-font-sm);
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-overview__integration.is-success .corex-overview__integration-note {
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-overview__integration.is-warning .corex-overview__integration-note {
+	color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-overview__empty {
+	padding: var(--corex-admin-space-lg);
+	text-align: center;
+	border: var(--corex-admin-border-width) dashed var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-overview__empty p {
+	margin: 0;
+}
+
+@media (max-width: 60rem) {
+
+	.corex-admin .corex-overview__grid--primary,
+	.corex-admin .corex-overview__grid--secondary {
+		grid-template-columns: 1fr;
+	}
+}

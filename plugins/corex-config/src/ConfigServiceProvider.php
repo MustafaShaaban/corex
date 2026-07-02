@@ -81,6 +81,23 @@ final class ConfigServiceProvider extends ServiceProvider
 
         $this->container->singleton(AdminBranding::class);
         $this->container->singleton(CorexAdminAssets::class);
+
+        // The Overview dashboard renderer (spec 064): the single cohesive readiness grid built from real
+        // state. Optional forms/provisioning deps resolve lazily via the container (Principle IX).
+        $this->container->singleton(
+            \Corex\Config\Overview\OverviewRenderer::class,
+            static fn (ContainerInterface $c): \Corex\Config\Overview\OverviewRenderer => new \Corex\Config\Overview\OverviewRenderer(
+                new \Corex\Config\Overview\OverviewModel(),
+                new \Corex\Config\Overview\EnvironmentMode(),
+                $c->make(\Corex\Config\ControlPanel\ControlPanelStatus::class),
+                $c->make(\Corex\Config\Security\HardeningChecks::class),
+                $c->make(\Corex\Config\Data\SubmissionsReader::class),
+                $c->make(\Corex\Config\Data\DataRegistry::class),
+                $c->make(\Corex\Config\Addons\AddonRegistry::class),
+                $c,
+            ),
+        );
+
         $this->container->singleton(AdminDashboard::class);
         $this->container->singleton(AddonsScreen::class);
 

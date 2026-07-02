@@ -87,14 +87,21 @@ final class AdminPage
      */
     private function railItems(string $active): array
     {
-        // slug => [icon mask, section key matching open()'s $active]
+        // slug => [icon mask, section key matching open()'s $active]. Every registered CoreX screen
+        // (including the Spec 063 screens) has a distinct icon and a correct active section — no generic
+        // option-page fallback for a real screen, and no dead entry point (spec 064).
         $meta = [
-            'corex-settings'        => ['overview', 'overview'],
-            'corex-settings-config' => ['settings', 'settings'],
-            'corex-addons'          => ['addons', 'addons'],
-            'corex-data'            => ['data', 'data'],
-            'corex-insights'        => ['insights', 'insights'],
-            'corex-setup'           => ['setup', 'setup'],
+            'corex-settings'            => ['overview', 'overview'],
+            'corex-addons'              => ['addons', 'addons'],
+            'corex-forms'               => ['forms', 'forms'],
+            'corex-submissions'         => ['submissions', 'submissions'],
+            'corex-email-studio'        => ['mail', 'email'],
+            'corex-data'                => ['data', 'data'],
+            'corex-data-models'         => ['data', 'data-models'],
+            'corex-operations-security' => ['security', 'operations-security'],
+            'corex-insights'            => ['insights', 'insights'],
+            'corex-setup'               => ['setup', 'setup'],
+            'corex-settings-config'     => ['settings', 'settings'],
         ];
 
         $items = [];
@@ -112,12 +119,17 @@ final class AdminPage
         }
 
         $labels = [
-            'corex-settings'        => __('Overview', 'corex'),
-            'corex-settings-config' => __('Settings', 'corex'),
-            'corex-addons'          => __('Add-ons', 'corex'),
-            'corex-data'            => __('Data', 'corex'),
-            'corex-insights'        => __('Insights', 'corex'),
-            'corex-setup'           => __('Setup Wizard', 'corex'),
+            'corex-settings'            => __('Overview', 'corex'),
+            'corex-addons'              => __('Add-ons', 'corex'),
+            'corex-forms'               => __('Forms & Flows', 'corex'),
+            'corex-submissions'         => __('Submissions', 'corex'),
+            'corex-email-studio'        => __('Email Studio', 'corex'),
+            'corex-data'                => __('Data', 'corex'),
+            'corex-data-models'         => __('Data Models', 'corex'),
+            'corex-operations-security' => __('Operations & Security', 'corex'),
+            'corex-insights'            => __('Insights', 'corex'),
+            'corex-setup'               => __('Setup Wizard', 'corex'),
+            'corex-settings-config'     => __('Settings', 'corex'),
         ];
 
         foreach ($meta as $slug => [$icon, $section]) {
