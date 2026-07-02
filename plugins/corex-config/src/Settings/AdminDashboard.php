@@ -11,6 +11,7 @@ namespace Corex\Config\Settings;
 use Corex\Admin\AdminPage;
 use Corex\Config\ControlPanel\ControlPanelView;
 use Corex\Config\Dashboard\SiteStatusCardRenderer;
+use Corex\Config\Overview\OverviewRenderer;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -31,6 +32,7 @@ final class AdminDashboard
         private readonly AdminPage $page,
         private readonly SiteStatusCardRenderer $status,
         private readonly ControlPanelView $panel,
+        private readonly OverviewRenderer $overview,
     ) {
     }
 
@@ -129,6 +131,7 @@ final class AdminDashboard
             __('Framework health, onboarding progress, and the current operational state.', 'corex'),
         );
 
+        echo $this->overview->render();
         $this->status->render();
         echo $this->panel->render($this->settingValues());
         echo $this->renderActivity();

@@ -1979,3 +1979,37 @@ pipeline (PR C, needs a back-compat/migration note for the tested generator); th
 collection (PR D). M6 RTL/200%/keyboard acceptance remains environment-gated (recorded in the spec evidence). PR
 #60 (Astro 7) stays held. Release: v0.29.0 after the runtime/generator/deployment milestone (PR A–C) merges.
 Status: PR A final; B/C/D open as task groups.
+
+## #110 -- Spec 063 new-design-gap program: truthful, batched implementation of the Gap-Closure package
+Date: 2026-07-02
+Context: The owner supplied a new design package (`F:\Work\CoreX.zip` — the "Corex Final Design Gap-Closure"
+pass) auditing the whole CoreX product and, per its own truthfulness rule, tagging each area frozen /
+owner-review / needs-another-pass / future-only. It asks to *finish the implementation-ready gaps and apply the
+approved design language consistently*, explicitly forbidding fake data/charts/records/integrations/Pro/
+marketplace/licensing, a full page/form/nav builder, a custom blog engine, a full AAM clone, and a full
+auth/portal. This spans several roadmap areas (M6 polish + M7 Forms/Email + new admin subsystems), so it needs a
+single governed program rather than ad-hoc builds.
+Decision: (1) Record the design intake at `design/handoffs/063-new-design-gap-implementation.md` (path, files,
+seven-state bands, exact engineering scope) and update `design/INVENTORY.md` to the package's seven-state model —
+**frozen means brand + core visual system + approved admin foundation only**; every other area carries its real
+state. (2) Create Spec 063 with **one parent goal** — finish the implementation-ready design gaps truthfully —
+split into independently shippable batches (Phase 0–8): truthfulness/gates; Admin Overview truthful states; Forms
+& Flows + Submissions Inbox + Email Studio; Data Models CRUD + import/export + migrations; Operations Mode +
+Security Center + Access & Abilities (AAM-lite); Settings/media/retention/advanced; Insights + Setup Wizard; Blog
++ social sharing + Company Site Kit gaps + core blocks; docs/verification. (3) Hard invariant across all batches:
+every card/metric/badge/integration shows its real state (real data or an honest empty/not-configured/gated
+state); **no dead entry points** — an unbuilt or out-of-batch area is hidden or honestly gated, never stubbed as
+working. (4) Owner-review bands (Operations Mode 8-mode model + real behavior changes; Security Center scope
+beyond "hide wp-admin" + reversible CLI/config recovery; Access & Abilities CoreX-native, not full AAM;
+Forms-vs-Flow model + extension points + retention/anonymize; Email Templates → Email Studio upgrade + safe
+layout-builder boundary; safe Data-model-manager scope; Company Site Kit page coverage) **stop for owner sign-off
+before implementation code**. (5) Program subsumes and sequences M7; it does not authorize Pro/commercial,
+marketplace, WooCommerce internals, builders, a custom blog engine, an AAM clone, or an auth/portal.
+Why: a batched, spec-first, truthful program lets the large gap list ship safely one reviewed slice at a time
+without violating the package's own core rule (no fake data / no dead entry points) or the constitution
+(spec-before-code, one reviewed spec at a time, Guard Gate, DoD). No existing truthful-state, security, or markup
+contract changes; batches reuse the frozen M2 tokens and the merged M6 admin shell/login.
+No active marketplace/Pro/ThemeForest/license/purchase wording exists to neutralize: the M6 truthful-state pass
+already framed all such references as future/deferred (ROADMAP M10/M11, the free-core/paid-add-on *strategy*).
+Status: Phase 0 (intake + spec + gates) final on branch `spec/063-new-design-gap-implementation`; Phase 1 (Admin
+Overview truthful states) in progress; Phases 2–8 open (2–4 gated on owner sign-off).

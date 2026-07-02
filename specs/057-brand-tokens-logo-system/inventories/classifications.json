@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 487,
+    "consumer_records": 590,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -513,8 +513,13 @@
       "paths": [
         "plugins/corex-config/assets/addons.css",
         "plugins/corex-config/assets/control-panel.css",
+        "plugins/corex-config/assets/data-models.css",
         "plugins/corex-config/assets/data.css",
-        "plugins/corex-config/assets/insights.css"
+        "plugins/corex-config/assets/email-studio.css",
+        "plugins/corex-config/assets/forms-admin.css",
+        "plugins/corex-config/assets/insights.css",
+        "plugins/corex-config/assets/operations-security.css",
+        "plugins/corex-config/assets/submissions-admin.css"
       ],
       "properties": [
         "--corex-admin-action",

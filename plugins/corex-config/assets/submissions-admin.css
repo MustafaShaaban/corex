@@ -1,0 +1,82 @@
+/* CoreX Submissions Inbox (spec 063, Phase 2). Business-friendly view of
+   the real stored submissions. Tokens + logical properties only; scoped
+   to this screen (Principle VI). */
+.corex-admin .corex-submissions__summary {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-submissions__summary-card {
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-submissions__summary-label {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	text-transform: uppercase;
+	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+.corex-admin .corex-submissions__summary-value {
+	margin: var(--corex-admin-space-xs) 0 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-lg);
+	font-weight: 600;
+}
+
+.corex-admin .corex-submissions__table,
+.corex-admin .corex-submissions__fields {
+	inline-size: 100%;
+	border-collapse: collapse;
+}
+
+.corex-admin .corex-submissions__table th,
+.corex-admin .corex-submissions__table td,
+.corex-admin .corex-submissions__fields th,
+.corex-admin .corex-submissions__fields td {
+	padding: var(--corex-admin-space-sm);
+	text-align: start;
+	vertical-align: top;
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-submissions__table th {
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	text-transform: uppercase;
+	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+.corex-admin .corex-submissions__note {
+	margin-block-start: var(--corex-admin-space-md);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-submissions__detail-head {
+	display: flex;
+	gap: var(--corex-admin-space-sm);
+	align-items: baseline;
+	margin-block-end: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-submissions__form,
+.corex-admin .corex-submissions__date {
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-submissions__fields th[scope="row"] {
+	inline-size: 12rem;
+	color: var(--corex-admin-text-muted);
+}

@@ -1,0 +1,70 @@
+/**
+ * Social Share block — front-end + editor styling.
+ *
+ * Consumes theme.json design tokens (CSS custom properties) and logical
+ * properties (RTL-correct by default). No hardcoded colors/sizes/fonts.
+ * Compiled by @wordpress/scripts to style-index.css and loaded conditionally
+ * (only when the block renders), per constitution Principle VI. Icon-only
+ * controls stay accessible (core `.screen-reader-text`); motion respects
+ * prefers-reduced-motion.
+ */
+
+.corex-social-share {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wp--preset--spacing--20);
+	text-align: start;
+
+	&__label {
+		color: var(--wp--preset--color--ink-soft);
+		font-size: var(--wp--preset--font-size--sm);
+		font-weight: 600;
+	}
+
+	&__link,
+	&__copy,
+	&__native {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--wp--preset--spacing--10);
+		padding: var(--wp--preset--spacing--10) var(--wp--preset--spacing--20);
+		color: var(--wp--preset--color--ink);
+		background: var(--wp--preset--color--surface-alt);
+		border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
+		border-radius: var(--wp--custom--radius--md);
+		cursor: pointer;
+		text-decoration: none;
+		transition-property: color, background-color, border-color;
+		transition-duration: var(--wp--custom--motion--duration--fast);
+		transition-timing-function: var(--wp--custom--motion--easing--standard);
+	}
+
+	&__link:hover,
+	&__link:focus-visible,
+	&__copy:hover,
+	&__copy:focus-visible,
+	&__native:hover,
+	&__native:focus-visible {
+		color: var(--wp--preset--color--accent);
+		border-color: var(--wp--preset--color--accent);
+	}
+
+	&__icon {
+		flex: none;
+	}
+
+	&__copy.is-copied {
+		color: var(--wp--preset--color--success);
+		border-color: var(--wp--preset--color--success);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-social-share__link,
+	.corex-social-share__copy,
+	.corex-social-share__native {
+		transition: none;
+	}
+}

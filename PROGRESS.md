@@ -4,6 +4,79 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-02, Spec 063 NEW-DESIGN-GAP program started) -- intake + spec done; Phase 1 in progress
+
+- **Branch:** `spec/063-new-design-gap-implementation` (off `main` @ `c041ab6`). Normal root, single worktree, no
+  `.worktrees`. CoreX Framework Mode. Do not work from `main`.
+- **What this is:** a new owner-supplied design package (`F:\Work\CoreX.zip` — the "Corex Final Design Gap-Closure"
+  pass) audits the whole product and, per its own truthfulness rule, tags each area frozen / owner-review /
+  needs-another-pass / future-only. Spec 063 closes the **implementation-ready** gaps in priority order under one
+  hard invariant: **every surface shows its real state — no fake data/integrations/Pro/marketplace/licensing, no
+  dead entry points.** DECISIONS #110.
+- **PR:** **#86** open (`spec/063-new-design-gap-implementation` → `main`). Phase 0 + Phase 1 shipped.
+- **Phase 0 DONE (committed `26ba5d3`):** design intake `design/handoffs/063-new-design-gap-implementation.md`
+  (path, files, seven-state bands, engineering scope); `design/INVENTORY.md` updated to the seven-state model;
+  Spec Kit artifacts `specs/063-new-design-gap-implementation/{spec.md,plan.md,tasks.md,checklists/requirements.md}`
+  (Constitution Check PASS); ROADMAP §17 + DECISIONS #110 recorded. Confirmed: **no active marketplace/Pro/
+  ThemeForest/license wording to neutralize** — the M6 truthful-state pass already framed all such references as
+  future/deferred.
+- **Phase 1 DONE (committed `00f9e3c`):** truthful Overview "At a glance" summary — `Overview/EnvironmentMode`
+  (pure env badge; unknown/empty → WP production default, never an invented mode), `Overview/OverviewSummary`
+  (pure truthful rows: env, add-on active/total, submissions honest-not-available-vs-fabricated-zero, media
+  honest-inactive, readiness pointer with no invented score, docs link), `Overview/OverviewRenderer` (boundary;
+  internal links via `admin_url()`, external docs verbatim with safe `rel` — fixed an absolute-URL bug wp-guard
+  caught), wired into `AdminDashboard::render()`, scoped token-only RTL/dark+light CSS. Pest **835 green** (15
+  new), lint:css clean, token inventory synced (JS contract green). Guards docs/wp/clean-code/test **all clean**.
+- **Phase 2 DONE — truthful surfaces (commits `6270960`, `b03dd08`, `3ce2067`):** the owner-review gate for
+  Phases 2–4 is satisfied by the standing "select recommended" instruction (recommended scopes from intake §10).
+  - **2a Forms & Flows** (`Config\Forms\*`): read-only inventory of the REAL code-defined forms + fields
+    (lazy FormRegistry, Principle IX); visual builder honestly labelled future.
+  - **2b Submissions Inbox** (`Config\Submissions\*`): business view over REAL `corex_submission` records —
+    list + server-rendered detail (`?submission=ID`) + capability+nonce CSV export (reuses the existing handler);
+    honest empty/not-found/permission states.
+  - **2c Email Studio** (`Config\Email\*` + `TemplateRegistry::names()`): truthful engine overview — add-on
+    gating, real template inventory, env-derived delivery advisory; editor/layout-builder/logs labelled future.
+  - Deeper *editors* (flow builder, template/layout editor, status/assignment/anonymize mutations) are honestly
+    deferred as future capabilities — labelled in-UI, never faked.
+- **Phase 3 DONE (commit `78d0690`):** Data Models catalog (`Config\DataModels\*`) — truthful schema catalog over
+  the real `DataRegistry` sources (columns + record counts) + per-model capability+nonce CSV export + link to the
+  Data explorer. Import (CSV dry-run) and a pending-migrations view are **honestly deferred** — the data layer has
+  no generic write path or migration-history tracker, so nothing performs an unverified change (no fake dry-run,
+  no fake pending list).
+- **Phase 4 DONE (commit `1e2ff93`):** Operations & Security overview (`Config\Security\*`) — real environment
+  display + real WordPress hardening checks (HTTPS, DISALLOW_FILE_EDIT, debug-display hidden, no default "admin").
+  Operations-mode switching, login protection (custom login URL / rate limiting, always reversible), and a
+  capability/role matrix are **honestly deferred** (labelled "Coming later"; never renames WP core, never claims a
+  mode changed). No dangerous mutation ships.
+- **Batches (Phase 0–8):** 0 ✅ · 1 ✅ · 2 ✅ · 3 ✅ · 4 ✅ (truthful read surfaces + honest deferrals) · 5
+  Settings/media/retention/advanced · 6 Insights + Setup Wizard · 7 Blog + social share + Company Kit gaps + blocks
+  · 8 docs/verify/PR. **CoreX admin now has 6 new truthful screens** (Forms & Flows, Submissions, Email Studio,
+  Data Models, Operations & Security) alongside the Phase-1 Overview summary — all real data or honest empty/gated.
+- **Phase 5 assessed — mostly pre-satisfied (no new commit needed):** provider-specific captcha (None/Honeypot/
+  reCAPTCHA/hCaptcha/Turnstile) already ships in M6 (`SettingsForm` renders only the selected driver; secrets
+  write-only); Media/WebP settings + section-state model ship in Spec 061/062. **Data retention honestly deferred:**
+  a truthful retention setting must actually prune, and scheduled auto-deletion of real submission data is a
+  high-risk mutation needing its own careful design (opt-in default-off, trash-not-delete, real age source) — a
+  do-nothing setting or a rushed auto-deleter would violate truthfulness/safety.
+- **Phase 7 DONE (social-share, commit `6d383ec`):** the frozen Blog social-sharing component shipped as a real
+  dynamic block `corex/social-share` (`Corex\Blocks\SocialShareRenderer` + `view.js`) — permalink-aware, **no-JS-safe**
+  (server share links + progressive Clipboard/Web-Share enhancement), accessible, RTL (built `style-index-rtl.css`),
+  reduced-motion, **no share counts, no third-party scripts**. 6 Pest + 5 Jest. Remaining Phase-7 blocks +
+  company-kit secondary pages are a follow-up batch (same dynamic-block pattern; many blocks already in
+  `addons/corex-ui`).
+- **Verification (final):** Pest **864** green (30 new unit tests across Phases 1/2/3/4/7); `test:js` green (incl. 5
+  new social-share Jest tests); `lint:css` clean; new block JS lint-clean (only the shared `@wordpress`
+  import-resolver artifacts, identical to the committed `entity-field` block); token-inventory JS contract green;
+  `composer validate` valid; PHP lint clean; `npm run build` (corex-blocks) compiles the new block. Guards
+  docs/wp/clean-code/test clean per batch. `build/` is git-ignored (CI rebuilds).
+- **Phase 6 (Insights + Setup Wizard):** both already exist and gate honestly (Insights providers + readiness
+  scorer; Setup Wizard gated behind `corex-kit-company`). Truthful **polish only** — not re-built.
+- **Exact next step:** **Phase 8** — extend docs-app / `docs/` with the six new admin screens + the social-share
+  block, refresh visual evidence/screenshots, and run the full pre-merge verification matrix; then either merge PR
+  #86 (Phases 0–7 are self-contained) or continue the remaining Phase-7 block batch. **Multi-session program**;
+  never stub as working.
+
+---
 ## RESUME HERE (2026-06-26, PRE-SITE READINESS CLOSED) -- v0.31.0 shipped; first company site can start
 
 - **Status:** **v0.31.0 / pre-site readiness is CLOSED.** Tag `v0.31.0` is pushed and the GitHub Release

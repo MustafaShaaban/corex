@@ -406,6 +406,18 @@ Create and implement one reviewed spec at a time:
    the full v1 page set + demo levels + SEO starter, reusing the existing provisioning. Remaining: the M5 section
    blocks the kit proved necessary (services/team/case-study/locations grids) and the `make:site` visual-foundation
    inheritance.
+4. **Spec 063 - New Design Gap Implementation** — active. Closes the *implementation-ready* CoreX design gaps from
+   the new "Corex Final Design Gap-Closure" package (`design/handoffs/063-new-design-gap-implementation.md`) in
+   priority order, under one hard invariant: **every surface communicates its real state — no fabricated data,
+   integrations, or Pro/marketplace/licensing behavior, and no dead entry points.** One parent goal split into
+   independently shippable batches (Phase 0–8): truthfulness/gates; Admin Overview truthful states; Forms & Flows +
+   Submissions Inbox + Email Studio; Data Models CRUD + import/export + migrations; Operations Mode + Security
+   Center + Access & Abilities (AAM-lite); Settings/media/retention/advanced; Insights + Setup Wizard; Blog +
+   social sharing + Company Site Kit gaps + core blocks. This program **subsumes and sequences M7** (Forms/Email)
+   and polishes M6; it does **not** authorize Pro/commercial, marketplace, WooCommerce internals, a full page/form
+   builder, a custom blog engine, a full AAM clone, or a full auth/portal. Batches whose owner decision is
+   unresolved (Operations Mode model, Security Center scope, Access & Abilities scope, Forms-vs-Flow model, Email
+   Studio boundary, Data-model-manager scope, Company Site Kit coverage) stop for owner sign-off before code.
 
 Spec number 056 is unavailable: both `056-dependency-security-remediation` and the already-merged
 `056-design-roadmap-inventory` directory exist. Do not reuse or create another 056 spec. The immediate sequence is

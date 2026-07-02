@@ -143,8 +143,8 @@
     {
       "path": "docs-app/src/content/docs/getting-started/company-site.md",
       "lines": [
-        119,
-        130
+        124,
+        135
       ],
       "topics": [
         "theme-authority"
@@ -198,8 +198,8 @@
     {
       "path": "docs-app/src/content/docs/guides/client-site.md",
       "lines": [
-        20,
-        37
+        22,
+        39
       ],
       "topics": [
         "theme-authority"

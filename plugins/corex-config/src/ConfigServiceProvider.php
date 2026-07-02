@@ -23,8 +23,17 @@ use Corex\Config\Data\SubmissionsSource;
 use Corex\Config\Data\TableDataSource;
 use Corex\Config\Data\WpSubmissionsReader;
 use Corex\Config\Data\WpTableDataReader;
+use Corex\Config\DataModels\DataModelsCatalog;
+use Corex\Config\DataModels\DataModelsScreen;
+use Corex\Config\Email\EmailStudio;
+use Corex\Config\Email\EmailStudioScreen;
+use Corex\Config\Forms\FormsFlowsScreen;
+use Corex\Config\Forms\FormsOverview;
+use Corex\Config\Overview\EnvironmentMode;
+use Corex\Config\Security\OperationsSecurityScreen;
 use Corex\Config\Options\OptionPageRegistry;
 use Corex\Config\Options\OptionPageScreen;
+use Corex\Config\Submissions\SubmissionsInboxScreen;
 use Corex\Database\Schema\ManagedTables;
 use Corex\Database\Schema\Migrator;
 use Corex\Config\Insights\InsightRegistry;
@@ -75,6 +84,19 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(AdminDashboard::class);
         $this->container->singleton(AddonsScreen::class);
 
+        // Forms & Flows admin screen (spec 063): a read-only inventory of the real code-defined forms.
+        // The FormRegistry is resolved lazily inside the screen so corex-config never hard-depends on
+        // corex-forms (Principle IX); the container is passed for that lazy resolution.
+        $this->container->singleton(
+            FormsFlowsScreen::class,
+            static fn (ContainerInterface $c): FormsFlowsScreen => new FormsFlowsScreen(
+                $c->make(\Corex\Security\Admin\AdminGuard::class),
+                $c->make(\Corex\Admin\AdminPage::class),
+                new FormsOverview(),
+                $c,
+            ),
+        );
+
         // The submissions reader, shared by the Data source and the dashboard "Site status" card (spec 042).
         $this->container->singleton(SubmissionsReader::class, static fn (): WpSubmissionsReader => new WpSubmissionsReader());
 
@@ -124,6 +146,30 @@ final class ConfigServiceProvider extends ServiceProvider
         // screen that renders + saves each one with the shared SettingsForm/Store (spec 039).
         $this->container->singleton(OptionPageRegistry::class);
         $this->container->singleton(OptionPageScreen::class);
+
+        // Submissions Inbox (spec 063): a business-friendly view over the real corex_submission
+        // records, reusing the shared SubmissionsReader.
+        $this->container->singleton(SubmissionsInboxScreen::class);
+
+        // Data Models catalog (spec 063): a truthful schema catalog over the real DataRegistry sources.
+        $this->container->singleton(DataModelsScreen::class);
+
+        // Operations & Security overview (spec 063): real environment + real WordPress hardening checks.
+        $this->container->singleton(OperationsSecurityScreen::class);
+
+        // Email Studio (spec 063): a truthful overview of the transactional-email engine. Gated on the
+        // optional corex-email add-on; TemplateRegistry is resolved lazily via the container so
+        // corex-config never hard-depends on the add-on (Principle IX).
+        $this->container->singleton(
+            EmailStudioScreen::class,
+            static fn (ContainerInterface $c): EmailStudioScreen => new EmailStudioScreen(
+                $c->make(\Corex\Security\Admin\AdminGuard::class),
+                $c->make(\Corex\Admin\AdminPage::class),
+                new EmailStudio(),
+                new EnvironmentMode(),
+                $c,
+            ),
+        );
     }
 
     public function boot(): void
@@ -132,6 +178,11 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(CorexAdminAssets::class)->register();
         $this->container->make(AdminDashboard::class)->register();
         $this->container->make(AddonsScreen::class)->register();
+        $this->container->make(FormsFlowsScreen::class)->register();
+        $this->container->make(SubmissionsInboxScreen::class)->register();
+        $this->container->make(DataModelsScreen::class)->register();
+        $this->container->make(OperationsSecurityScreen::class)->register();
+        $this->container->make(EmailStudioScreen::class)->register();
         $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();
         $this->container->make(InsightsScreen::class)->register();

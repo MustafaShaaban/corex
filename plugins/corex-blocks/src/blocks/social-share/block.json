@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/social-share",
+	"title": "Social Share",
+	"category": "corex",
+	"icon": "share",
+	"description": "A privacy-friendly share bar for the current post (dynamic, server-rendered; no tracking, no counts).",
+	"textdomain": "corex",
+	"attributes": {
+		"networks": {
+			"type": "array",
+			"items": { "type": "string" },
+			"default": ["x", "facebook", "linkedin", "whatsapp", "email"]
+		}
+	},
+	"supports": { "html": false, "align": ["left", "center", "right"] },
+	"editorScript": "file:./index.js",
+	"viewScript": "file:./view.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Blocks\\SocialShareRenderer" }
+}
