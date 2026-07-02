@@ -4,6 +4,26 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-02, v0.32.0 RELEASED) -- Spec 063 New Design Gap Implementation shipped
+
+- **Status:** **v0.32.0 is released.** Tag `v0.32.0` pushed; GitHub release "v0.32.0 — Spec 063 New Design Gap
+  Implementation" is published and shows as **Latest**. `main` @ `a06b91c`; version 0.32.0 stamped across the 14
+  plugin/addon files + `theme/style.css`. `develop` synced to the release; only `develop` + `main` remain locally.
+- **Shipped in v0.32.0 (Spec 063, merged via PRs #86/#87/#88/#89, released via #90):** the truthful CoreX Overview
+  summary; six admin screens (Forms & Flows `corex-forms`, Submissions Inbox `corex-submissions`, Data Models
+  `corex-data-models`, Operations & Security `corex-operations-security`, Email Studio `corex-email-studio`); the
+  `corex/social-share` + `corex/newsletter-signup` blocks; four company section patterns (`corex/section-*`); and a
+  docs-app page. **One invariant held: real state or honest gated/deferred — zero fabrication, no dead entry points.**
+- **Release gate (all green):** composer validate, **composer test 872**, Jest 125, lint:css, token contract,
+  `verify:dependencies` PASS (added a bounded, justified npm-root exception for the pre-existing linkify-it advisory
+  GHSA-22p9-wv53-3rq4 — build/test-transitive, not shipped to sites), dependency-policy test 33, all workspaces build.
+- **Honestly deferred (not built, recorded):** operations-mode switching, login guard, capability editor, data
+  import/migrations, retention pruner, Blog Pro, Portfolio, WooCommerce, Pro/commercial, Auth, advanced AAM.
+- **Exact next step:** optional follow-up company blocks/patterns (icon box, case-study/project card, timeline,
+  video-modal) — **kit-driven**, build only when a real company site needs them; or start the first real company
+  site in Client Site Mode (`wp corex make:site Acme --path=sites/acme --starter`).
+
+---
 ## RESUME HERE (2026-07-02, Spec 063 NEW-DESIGN-GAP program started) -- intake + spec done; Phase 1 in progress
 
 - **Branch:** `spec/063-new-design-gap-implementation` (off `main` @ `c041ab6`). Normal root, single worktree, no
