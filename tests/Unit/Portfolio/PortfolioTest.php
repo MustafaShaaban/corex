@@ -99,3 +99,44 @@ it('declares only templates/parts that exist and patterns the UI library provide
         expect($patterns)->toContain($pattern);
     }
 });
+
+/**
+ * @param array{client?:string,role?:string,year?:string,url?:string} $meta
+ */
+function renderProjectMeta(array $meta): string
+{
+    Functions\when('__')->returnArg();
+    Functions\when('esc_html__')->returnArg();
+    Functions\when('esc_html')->returnArg();
+    Functions\when('esc_url')->returnArg();
+
+    $full = array_merge(['client' => '', 'role' => '', 'year' => '', 'url' => ''], $meta);
+
+    return (new \Corex\Portfolio\Blocks\ProjectMetaRenderer(
+        new class implements \Corex\Portfolio\Blocks\ProjectMetaProvider {
+            public function metaFor(int $postId): array
+            {
+                return ['client' => '', 'role' => '', 'year' => '', 'url' => ''];
+            }
+        }
+    ))->markup($full);
+}
+
+it('shows only the project meta fields that have a value', function () {
+    $html = renderProjectMeta(['client' => 'Acme Co', 'year' => '2025']);
+
+    expect($html)->toContain('<dt>Client</dt><dd>Acme Co</dd>')
+        ->toContain('<dt>Year</dt><dd>2025</dd>')
+        ->not->toContain('<dt>Role</dt>'); // role was empty → omitted, no fabricated value
+});
+
+it('renders a visit-project link only when a URL is set', function () {
+    expect(renderProjectMeta(['url' => 'https://acme.test/case']))
+        ->toContain('href="https://acme.test/case"')
+        ->toContain('Visit project')
+        ->and(renderProjectMeta(['client' => 'Acme Co']))->not->toContain('corex-project-meta__link');
+});
+
+it('renders nothing when a project has no meta at all (honest empty)', function () {
+    expect(renderProjectMeta([]))->toBe('');
+});
