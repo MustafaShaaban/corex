@@ -714,3 +714,8 @@ body.corex-admin-screen .corex-admin__shell {
 		animation-iteration-count: 1;
 	}
 }
+
+.corex-admin__nav-icon--access {
+	-webkit-mask-image: url(../icons/nav-access.svg);
+	mask-image: url(../icons/nav-access.svg);
+}

@@ -88,7 +88,8 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Config\Overview\OverviewRenderer::class,
             static fn (ContainerInterface $c): \Corex\Config\Overview\OverviewRenderer => new \Corex\Config\Overview\OverviewRenderer(
                 new \Corex\Config\Overview\OverviewModel(),
-                new \Corex\Config\Overview\EnvironmentMode(),
+                $c->make(\Corex\Config\Operations\OperationsMode::class),
+                $c->make(\Corex\Config\Operations\OperationsModeStore::class),
                 $c->make(\Corex\Config\ControlPanel\ControlPanelStatus::class),
                 $c->make(\Corex\Config\Security\HardeningChecks::class),
                 $c->make(\Corex\Config\Data\SubmissionsReader::class),
@@ -96,6 +97,15 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Config\Addons\AddonRegistry::class),
                 $c,
             ),
+        );
+
+        // Operations Mode (spec 065): the real, persisted operating mode + its audit store, shared so
+        // the Overview badge, the Operations & Security screen, and the maintenance guard agree.
+        $this->container->singleton(\Corex\Config\Operations\OperationsMode::class);
+        $this->container->singleton(
+            \Corex\Config\Operations\OperationsModeStore::class,
+            static fn (ContainerInterface $c): \Corex\Config\Operations\OperationsModeStore =>
+                new \Corex\Config\Operations\OperationsModeStore($c->make(\Corex\Config\Operations\OperationsMode::class)),
         );
 
         $this->container->singleton(AdminDashboard::class);
@@ -164,15 +174,33 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(OptionPageRegistry::class);
         $this->container->singleton(OptionPageScreen::class);
 
+        // Submission retention (spec 065): real, safe pruning with a dry-run preview.
+        $this->container->singleton(\Corex\Config\Retention\RetentionSettings::class);
+        $this->container->singleton(
+            \Corex\Config\Retention\SubmissionRetention::class,
+            static fn (ContainerInterface $c): \Corex\Config\Retention\SubmissionRetention =>
+                new \Corex\Config\Retention\SubmissionRetention(
+                    $c->make(\Corex\Config\Retention\RetentionSettings::class),
+                    $c->make(SubmissionsReader::class),
+                ),
+        );
+        $this->container->singleton(\Corex\Config\Retention\RetentionController::class);
+
         // Submissions Inbox (spec 063): a business-friendly view over the real corex_submission
         // records, reusing the shared SubmissionsReader.
         $this->container->singleton(SubmissionsInboxScreen::class);
 
         // Data Models catalog (spec 063): a truthful schema catalog over the real DataRegistry sources.
+        // Spec 065 adds a real CSV import dry-run (validation only) + a truthful migration overview.
+        $this->container->singleton(\Corex\Config\DataModels\DataImportValidator::class);
+        $this->container->singleton(\Corex\Config\DataModels\DataModelsImportController::class);
         $this->container->singleton(DataModelsScreen::class);
 
         // Operations & Security overview (spec 063): real environment + real WordPress hardening checks.
         $this->container->singleton(OperationsSecurityScreen::class);
+
+        // Access & Abilities baseline (spec 065): read-only role × capability matrix.
+        $this->container->singleton(\Corex\Config\Access\AccessScreen::class);
 
         // Email Studio (spec 063): a truthful overview of the transactional-email engine. Gated on the
         // optional corex-email add-on; TemplateRegistry is resolved lazily via the container so
@@ -197,8 +225,13 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(AddonsScreen::class)->register();
         $this->container->make(FormsFlowsScreen::class)->register();
         $this->container->make(SubmissionsInboxScreen::class)->register();
+        $this->container->make(\Corex\Config\Retention\RetentionController::class)->register();
         $this->container->make(DataModelsScreen::class)->register();
+        $this->container->make(\Corex\Config\DataModels\DataModelsImportController::class)->register();
         $this->container->make(OperationsSecurityScreen::class)->register();
+        $this->container->make(\Corex\Config\Access\AccessScreen::class)->register();
+        $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();
+        $this->container->make(\Corex\Config\Operations\MaintenanceGuard::class)->register();
         $this->container->make(EmailStudioScreen::class)->register();
         $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();

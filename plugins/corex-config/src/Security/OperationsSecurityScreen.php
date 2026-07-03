@@ -9,7 +9,9 @@ declare(strict_types=1);
 namespace Corex\Config\Security;
 
 use Corex\Admin\AdminPage;
-use Corex\Config\Overview\EnvironmentMode;
+use Corex\Config\Operations\OperationsMode;
+use Corex\Config\Operations\OperationsModeController;
+use Corex\Config\Operations\OperationsModeStore;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -30,7 +32,8 @@ final class OperationsSecurityScreen
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly HardeningChecks $checks,
-        private readonly EnvironmentMode $mode,
+        private readonly OperationsMode $modes,
+        private readonly OperationsModeStore $store,
     ) {
     }
 
@@ -81,25 +84,114 @@ final class OperationsSecurityScreen
         echo $this->page->open(
             'operations-security',
             __('CoreX Operations & Security', 'corex'),
-            __('The real operating environment and WordPress hardening status for this site.', 'corex'),
+            __('The operating mode, WordPress hardening status, and security posture for this site.', 'corex'),
         );
 
-        echo $this->environmentCard();
+        echo $this->statusNotice();
+        echo $this->modeCard();
         echo $this->checksCard($checks, $warnings);
+        echo $this->auditCard();
         echo $this->deferralNote();
         echo $this->page->close();
     }
 
-    private function environmentCard(): string
+    /** A PRG success/error notice after a mode change (read-only query args; no state change here). */
+    private function statusNotice(): string
     {
-        $env = $this->mode->resolve(
-            function_exists('wp_get_environment_type') ? (string) wp_get_environment_type() : 'production',
-        );
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only status display after a PRG redirect.
+        $status = isset($_GET['corex_status']) ? sanitize_key(wp_unslash($_GET['corex_status'])) : '';
+        if ($status === '') {
+            return '';
+        }
+
+        [$tone, $message] = match ($status) {
+            'saved'   => ['success', __('Operations mode updated.', 'corex')],
+            'confirm' => ['warning', __('That mode needs confirmation — tick the confirmation box and try again.', 'corex')],
+            'invalid' => ['error', __('That is not a valid operations mode.', 'corex')],
+            default   => ['', ''],
+        };
+
+        return $message === '' ? '' : $this->page->state($tone, __('Operations mode', 'corex'), $message);
+    }
+
+    /**
+     * The real operations-mode control: current mode + a capability + nonce-gated selector with a
+     * confirmation box for production/maintenance, plus the mode-specific warnings. Persisted by
+     * {@see OperationsModeStore}; applied by {@see OperationsModeController}. Never a fake switch.
+     */
+    private function modeCard(): string
+    {
+        $current  = $this->store->current();
+        $env      = $this->modes->describe($current);
+        $declared = $this->store->isDeclared();
+
+        $options = '';
+        foreach ($this->modes->all() as $mode) {
+            $meta = $this->modes->describe($mode);
+            $options .= sprintf(
+                '<option value="%1$s"%2$s>%3$s</option>',
+                esc_attr($mode),
+                selected($mode, $current, false),
+                esc_html($meta['label']),
+            );
+        }
+
+        $warnings = '';
+        foreach ($this->modes->warnings($current) as $warning) {
+            $warnings .= '<li>' . esc_html($warning) . '</li>';
+        }
+
+        $inherited = $declared ? '' :
+            '<p class="corex-opsec__detail">' . esc_html__('Inherited from the WordPress environment type — declare a mode to override it.', 'corex') . '</p>';
 
         return '<section class="corex-surface corex-opsec__env is-' . esc_attr($env['tone']) . '">'
-            . '<p class="corex-admin__eyebrow">' . esc_html__('ENVIRONMENT', 'corex') . '</p>'
+            . '<p class="corex-admin__eyebrow">' . esc_html__('OPERATIONS MODE', 'corex') . '</p>'
             . '<h2>' . esc_html($env['label']) . '</h2>'
-            . '<p class="corex-opsec__detail">' . esc_html($env['detail']) . '</p></section>';
+            . '<p class="corex-opsec__detail">' . esc_html($env['detail']) . '</p>' . $inherited
+            . '<ul class="corex-opsec__warnings">' . $warnings . '</ul>'
+            . '<form class="corex-opsec__mode-form" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">'
+            . '<input type="hidden" name="action" value="' . esc_attr(OperationsModeController::ACTION) . '" />'
+            . wp_nonce_field(OperationsModeController::ACTION, OperationsModeController::NONCE, true, false)
+            . '<label class="corex-opsec__mode-label" for="corex-mode-select">' . esc_html__('Change mode', 'corex') . '</label>'
+            . '<select id="corex-mode-select" name="corex_mode">' . $options . '</select>'
+            . '<label class="corex-opsec__mode-confirm"><input type="checkbox" name="corex_confirm" value="1" /> '
+            . esc_html__('I understand production and maintenance affect real visitors.', 'corex') . '</label>'
+            . '<button type="submit" class="button button-primary">' . esc_html__('Apply mode', 'corex') . '</button>'
+            . '</form></section>';
+    }
+
+    /**
+     * The mode-change audit log (spec 065): the real recent history from {@see OperationsModeStore},
+     * or an honest empty state. No fabricated activity.
+     */
+    private function auditCard(): string
+    {
+        $history = $this->store->history(8);
+
+        if ($history === []) {
+            return '<section class="corex-surface corex-opsec__audit">'
+                . '<header class="corex-opsec__checks-head"><h2>' . esc_html__('Mode change history', 'corex') . '</h2></header>'
+                . '<p class="corex-opsec__detail">' . esc_html__('No operations-mode changes recorded yet.', 'corex')
+                . '</p></section>';
+        }
+
+        $rows = '';
+        foreach ($history as $entry) {
+            $user = $entry['user'] > 0 ? get_userdata($entry['user']) : false;
+            $who  = $user ? $user->display_name : __('system', 'corex');
+            $when = $entry['time'] > 0
+                ? wp_date((string) get_option('date_format') . ' ' . (string) get_option('time_format'), $entry['time'])
+                : '';
+
+            $rows .= '<li class="corex-opsec__audit-row">'
+                . '<span class="corex-opsec__audit-change"><code>' . esc_html($entry['from']) . '</code> &rarr; <code>'
+                . esc_html($entry['to']) . '</code></span>'
+                . '<span class="corex-opsec__audit-meta">' . esc_html($who) . ' · ' . esc_html($when) . '</span></li>';
+        }
+
+        return '<section class="corex-surface corex-opsec__audit">'
+            . '<header class="corex-opsec__checks-head"><h2>' . esc_html__('Mode change history', 'corex') . '</h2></header>'
+            . '<ul class="corex-opsec__audit-list">' . $rows . '</ul></section>';
     }
 
     /**
@@ -134,17 +226,18 @@ final class OperationsSecurityScreen
     }
 
     /**
-     * Honest deferral: an operations-mode switch, a login-protection guard (custom login URL / rate
-     * limiting), and a capability/role editor are future capabilities — stated, never faked. Naming them
-     * here avoids a dead entry point while making clear nothing changes site behaviour yet.
+     * Honest deferral for the remaining security sub-features: a custom login URL + failed-login rate
+     * limiting (always with a reversible CLI/config recovery path) are the safe login-protection
+     * foundation still to land; the CoreX capability/role matrix arrives as the Access & Abilities
+     * baseline. Stated, never faked; this screen never renames WordPress core files.
      */
     private function deferralNote(): string
     {
         return '<div class="corex-opsec__note corex-surface">'
-            . '<p class="corex-opsec__note-title">' . esc_html__('Coming later', 'corex') . '</p>'
+            . '<p class="corex-opsec__note-title">' . esc_html__('Login protection', 'corex') . '</p>'
             . '<p class="corex-opsec__note-text">'
             . esc_html__(
-                'Switching operations mode (maintenance / coming-soon / read-only), login protection (a custom login URL and failed-login rate limiting, always with a reversible CLI/config recovery path), and a CoreX capability/role matrix are planned future capabilities. They are not enabled yet — this screen only reports real state and never renames WordPress core files or changes site behaviour.',
+                'A custom login URL and failed-login rate limiting — always with a reversible CLI/config recovery path so you cannot be locked out — are the safe login-protection foundation still to land. CoreX never renames WordPress core files.',
                 'corex',
             )
             . '</p></div>';

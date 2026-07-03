@@ -395,6 +395,16 @@ These items require later validation and dedicated specs. They must not leak int
 
 ## 17. Current and next recommended specs
 
+> **Active direction (2026-07-02, owner correction): Spec 065 — Admin Product Completion.**
+> **Company-site recommendations are PAUSED** — the roadmap must not recommend starting a company site as the next
+> step until the owner accepts the admin/dashboard/product experience. A stable company-site base remains available
+> at **v0.31.0** separately. Milestones: Spec 063 = truthful surfaces (not product-complete); Spec 064 = partial
+> Overview fidelity; **Spec 065 = the required completion pass** (`specs/065-admin-product-completion/`). Only
+> **WooCommerce kit/screens**, **advanced AAM / full capability-editor / complex role mutation**, and
+> **commercial/Pro/marketplace/licensing** may remain deferred. **Blog is required.** Portfolio is lower-priority
+> but still planned (after Blog). Every admin surface must show real data/state or an honest empty/error/unavailable
+> state — no vague "future" placeholder for a safe feature.
+
 Create and implement one reviewed spec at a time:
 
 1. **Spec 057 - Brand Tokens and Logo System** — done: merged via PR #54 (`f9994f8`), M2 closed.

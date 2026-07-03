@@ -12,6 +12,8 @@ use Corex\Config\Addons\AddonRegistry;
 use Corex\Config\ControlPanel\ControlPanelStatus;
 use Corex\Config\Data\DataRegistry;
 use Corex\Config\Data\SubmissionsReader;
+use Corex\Config\Operations\OperationsMode;
+use Corex\Config\Operations\OperationsModeStore;
 use Corex\Config\Security\HardeningChecks;
 use Corex\Config\Security\HardeningFacts;
 use Corex\Container\ContainerInterface;
@@ -34,7 +36,8 @@ final class OverviewRenderer
 {
     public function __construct(
         private readonly OverviewModel $model,
-        private readonly EnvironmentMode $mode,
+        private readonly OperationsMode $mode,
+        private readonly OperationsModeStore $modeStore,
         private readonly ControlPanelStatus $control,
         private readonly HardeningChecks $hardening,
         private readonly SubmissionsReader $submissions,
@@ -49,9 +52,8 @@ final class OverviewRenderer
      */
     public function render(array $settingValues): string
     {
-        $env  = $this->mode->resolve(
-            function_exists('wp_get_environment_type') ? (string) wp_get_environment_type() : 'production',
-        );
+        // The badge shows the real declared operations mode (defaults to the WP environment type).
+        $env  = $this->mode->describe($this->modeStore->current());
         $data = $this->model->build($this->facts($settingValues));
 
         return '<div class="corex-overview">'

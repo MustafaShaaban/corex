@@ -80,3 +80,45 @@
 	inline-size: 12rem;
 	color: var(--corex-admin-text-muted);
 }
+
+/* Data retention panel (spec 065): window + dry-run preview + prune. */
+.corex-admin .corex-submissions__retain {
+	margin-block-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-submissions__retain-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	margin-block-end: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-submissions__retain-head h2 {
+	margin: 0;
+}
+
+.corex-admin .corex-submissions__retain-status {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-submissions__retain-form,
+.corex-admin .corex-submissions__retain-prune {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	margin-block-end: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-submissions__retain-form input[type="number"] {
+	inline-size: 7rem;
+}
+
+.corex-admin .corex-submissions__retain-note {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+}

@@ -34,6 +34,8 @@ final class SubmissionsInboxScreen
         private readonly AdminPage $page,
         private readonly SubmissionsInbox $inbox,
         private readonly SubmissionsReader $reader,
+        private readonly \Corex\Config\Retention\SubmissionRetention $retention,
+        private readonly \Corex\Config\Retention\RetentionController $retentionController,
     ) {
     }
 
@@ -109,8 +111,10 @@ final class SubmissionsInboxScreen
             'recentDays' => self::RECENT_DAYS,
         ]);
 
+        echo $this->retentionNotice();
         echo $this->summaryBar($summary);
         echo $this->renderList();
+        echo $this->retentionPanel();
         echo $this->page->close();
     }
 
@@ -203,6 +207,82 @@ final class SubmissionsInboxScreen
         }
 
         echo '</tbody></table></section>' . $this->page->close();
+    }
+
+    /**
+     * The retention panel (spec 065): the real submission retention window + a dry-run preview of how
+     * many stored submissions are older than it, a capability + nonce-gated save form, and a
+     * confirmed "prune now" action. Nothing is deleted without the preview + the confirmation box.
+     */
+    private function retentionPanel(): string
+    {
+        $days    = $this->retention->days();
+        $preview = $this->retention->preview();
+        $save    = \Corex\Config\Retention\RetentionController::SAVE_ACTION;
+        $prune   = \Corex\Config\Retention\RetentionController::PRUNE_ACTION;
+        $nonceName = \Corex\Config\Retention\RetentionController::NONCE;
+
+        $status = $preview['enabled']
+            ? sprintf(
+                /* translators: 1: retention window in days, 2: number of submissions older than it */
+                esc_html__('Keeping submissions for %1$d days. %2$d are older than the window.', 'corex'),
+                (int) $days,
+                (int) $preview['count'],
+            )
+            : esc_html__('Retention is off — submissions are kept indefinitely.', 'corex');
+
+        $pruneButton = $preview['willPrune']
+            ? '<form class="corex-submissions__retain-prune" method="post" action="'
+                . esc_url(admin_url('admin-post.php')) . '">'
+                . '<input type="hidden" name="action" value="' . esc_attr($prune) . '" />'
+                . wp_nonce_field($prune, $nonceName, true, false)
+                . '<label><input type="checkbox" name="corex_confirm" value="1" /> '
+                . esc_html__('Confirm: move the submissions above to trash.', 'corex') . '</label> '
+                . '<button type="submit" class="button">' . esc_html__('Prune now', 'corex') . '</button></form>'
+            : '';
+
+        return '<section class="corex-surface corex-submissions__retain">'
+            . '<header class="corex-submissions__retain-head"><h2>' . esc_html__('Data retention', 'corex') . '</h2>'
+            . '<span class="corex-submissions__retain-status">' . $status . '</span></header>'
+            . '<form class="corex-submissions__retain-form" method="post" action="'
+            . esc_url(admin_url('admin-post.php')) . '">'
+            . '<input type="hidden" name="action" value="' . esc_attr($save) . '" />'
+            . wp_nonce_field($save, $nonceName, true, false)
+            . '<label for="corex-retention-days">' . esc_html__('Keep submissions for (days, 0 = forever)', 'corex') . '</label>'
+            . '<input id="corex-retention-days" type="number" name="corex_retention_days" min="0" max="'
+            . esc_attr((string) \Corex\Config\Retention\RetentionSettings::MAX_DAYS) . '" value="' . esc_attr((string) $days) . '" />'
+            . '<button type="submit" class="button button-primary">' . esc_html__('Save', 'corex') . '</button>'
+            . '</form>'
+            . $pruneButton
+            . '<p class="corex-submissions__retain-note">'
+            . esc_html__('Pruning moves old submissions to trash (recoverable) after you confirm — never deletes without a preview.', 'corex')
+            . '</p></section>';
+    }
+
+    /** PRG status notice after a retention save/prune (read-only query args). */
+    private function retentionNotice(): string
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only status after a PRG redirect.
+        $status = isset($_GET['corex_status']) ? sanitize_key(wp_unslash($_GET['corex_status'])) : '';
+        if (! str_starts_with($status, 'retention-')) {
+            return '';
+        }
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display value.
+        $count = isset($_GET['corex_count']) ? absint(wp_unslash($_GET['corex_count'])) : 0;
+
+        [$tone, $message] = match ($status) {
+            'retention-saved'   => ['success', __('Retention window saved.', 'corex')],
+            'retention-confirm' => ['warning', __('Tick the confirmation box to prune.', 'corex')],
+            'retention-pruned'  => ['success', sprintf(
+                /* translators: %d: number of submissions moved to trash */
+                _n('%d submission moved to trash.', '%d submissions moved to trash.', $count, 'corex'),
+                $count,
+            )],
+            default => ['', ''],
+        };
+
+        return $message === '' ? '' : $this->page->state($tone, __('Data retention', 'corex'), $message);
     }
 
     /** Read-only display id from the query string; a bare read needs no nonce (WP convention). */

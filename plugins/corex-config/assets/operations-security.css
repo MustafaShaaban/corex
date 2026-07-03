@@ -101,3 +101,73 @@
 	font-family: var(--corex-admin-font-display);
 	font-weight: 600;
 }
+
+/* Operations Mode control (spec 065): capability + nonce-gated switch. */
+.corex-admin .corex-opsec__env.is-danger {
+	border-inline-start-color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-opsec__warnings {
+	margin-block: var(--corex-admin-space-sm) 0;
+	padding-inline-start: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-opsec__mode-form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	margin-block-start: var(--corex-admin-space-md);
+	padding-block-start: var(--corex-admin-space-md);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-opsec__mode-label {
+	font-weight: 600;
+}
+
+.corex-admin .corex-opsec__mode-confirm {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-2xs);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-opsec__audit-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-opsec__audit-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-opsec__audit-row:last-child {
+	border-block-end: 0;
+}
+
+.corex-admin .corex-opsec__audit-change code {
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-opsec__audit-meta {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
