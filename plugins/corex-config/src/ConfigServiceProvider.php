@@ -13,6 +13,21 @@ defined('ABSPATH') || exit;
 use Corex\Config\Addons\AddonsScreen;
 use Corex\Config\AdminUi\CorexAdminAssets;
 use Corex\Config\Addons\KitActivationNotice;
+use Corex\Config\Activity\ActivityTable;
+use Corex\Config\Activity\ActivityController;
+use Corex\Config\Activity\WpActivityRepository;
+use Corex\Config\Access\AbilityCompatibility;
+use Corex\Config\Access\AccessRequestRepository;
+use Corex\Config\Access\AccessService;
+use Corex\Config\Access\AccessTables;
+use Corex\Config\Access\RoleAbilityRepository;
+use Corex\Config\Access\WpAccessUserDirectory;
+use Corex\Config\Jobs\ActionSchedulerJobDispatcher;
+use Corex\Config\Jobs\CronJobDispatcher;
+use Corex\Config\Jobs\JobController;
+use Corex\Config\Jobs\JobRunner;
+use Corex\Config\Jobs\JobTable;
+use Corex\Config\Jobs\WpJobRepository;
 use Corex\Config\Branding\AdminBranding;
 use Corex\Config\Branding\BrandingService;
 use Corex\Config\Data\DataAdminScreen;
@@ -52,6 +67,17 @@ use Corex\Config\Settings\SettingsRegistry;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Activity\ActivityRepository;
+use Corex\Activity\ActivityService;
+use Corex\Access\AccessPolicy;
+use Corex\Access\AccessRequestStore;
+use Corex\Access\AccessUserDirectory;
+use Corex\Access\CorexAbilityCatalog;
+use Corex\Access\RoleAbilityStore;
+use Corex\Jobs\JobDispatcher;
+use Corex\Jobs\JobHandlerRegistry;
+use Corex\Jobs\JobRepository;
+use Corex\Jobs\JobService;
 
 /**
  * The corex-config provider: Corex's product branding (and, later, the settings UI).
@@ -59,6 +85,9 @@ use Corex\Support\Config\ConfigInterface;
  */
 final class ConfigServiceProvider extends ServiceProvider
 {
+    private const FOUNDATION_SCHEMA_OPTION  = 'corex_product_foundation_schema_version';
+    private const FOUNDATION_SCHEMA_VERSION = '1';
+
     public function register(): void
     {
         // The built-in settings screen autowires SettingsForm, which depends on the FieldSections
@@ -81,6 +110,90 @@ final class ConfigServiceProvider extends ServiceProvider
 
         $this->container->singleton(AdminBranding::class);
         $this->container->singleton(CorexAdminAssets::class);
+
+        // The shared append-only activity stream (spec 068) is the authoritative audit source for
+        // every CoreX product area. Persistence remains behind the core repository contract.
+        $this->container->singleton(ActivityTable::class);
+        $this->container->singleton(ActivityController::class);
+        $this->container->singleton(WpActivityRepository::class);
+        $this->container->singleton(
+            ActivityRepository::class,
+            static fn (ContainerInterface $c): ActivityRepository => $c->make(WpActivityRepository::class),
+        );
+        $this->container->singleton(
+            ActivityService::class,
+            static fn (ContainerInterface $c): ActivityService => new ActivityService(
+                $c->make(ActivityRepository::class),
+            ),
+        );
+
+        $this->container->singleton(
+            CorexAbilityCatalog::class,
+            static fn (): CorexAbilityCatalog => CorexAbilityCatalog::defaults(),
+        );
+        $this->container->singleton(
+            AccessPolicy::class,
+            static fn (ContainerInterface $c): AccessPolicy => new AccessPolicy(
+                $c->make(CorexAbilityCatalog::class),
+            ),
+        );
+        $this->container->singleton(AccessTables::class);
+        $this->container->singleton(RoleAbilityRepository::class);
+        $this->container->singleton(
+            RoleAbilityStore::class,
+            static fn (ContainerInterface $c): RoleAbilityStore => $c->make(RoleAbilityRepository::class),
+        );
+        $this->container->singleton(AccessRequestRepository::class);
+        $this->container->singleton(
+            AccessRequestStore::class,
+            static fn (ContainerInterface $c): AccessRequestStore => $c->make(AccessRequestRepository::class),
+        );
+        $this->container->singleton(WpAccessUserDirectory::class);
+        $this->container->singleton(
+            AccessUserDirectory::class,
+            static fn (ContainerInterface $c): AccessUserDirectory => $c->make(WpAccessUserDirectory::class),
+        );
+        $this->container->singleton(
+            AccessService::class,
+            static fn (ContainerInterface $c): AccessService => new AccessService(
+                $c->make(CorexAbilityCatalog::class),
+                $c->make(AccessPolicy::class),
+                $c->make(RoleAbilityStore::class),
+                $c->make(AccessRequestStore::class),
+                $c->make(AccessUserDirectory::class),
+                $c->make(ActivityService::class),
+            ),
+        );
+        $this->container->singleton(AbilityCompatibility::class);
+
+        $this->container->singleton(JobTable::class);
+        $this->container->singleton(WpJobRepository::class);
+        $this->container->singleton(
+            JobRepository::class,
+            static fn (ContainerInterface $c): JobRepository => $c->make(WpJobRepository::class),
+        );
+        $this->container->singleton(ActionSchedulerJobDispatcher::class);
+        $this->container->singleton(CronJobDispatcher::class);
+        $this->container->singleton(
+            JobDispatcher::class,
+            static function (ContainerInterface $c): JobDispatcher {
+                $actionScheduler = $c->make(ActionSchedulerJobDispatcher::class);
+
+                return $actionScheduler->available()
+                    ? $actionScheduler
+                    : $c->make(CronJobDispatcher::class);
+            },
+        );
+        $this->container->singleton(JobHandlerRegistry::class);
+        $this->container->singleton(
+            JobService::class,
+            static fn (ContainerInterface $c): JobService => new JobService(
+                $c->make(JobRepository::class),
+                $c->make(JobDispatcher::class),
+            ),
+        );
+        $this->container->singleton(JobRunner::class);
+        $this->container->singleton(JobController::class);
 
         // The Overview dashboard renderer (spec 064): the single cohesive readiness grid built from real
         // state. Optional forms/provisioning deps resolve lazily via the container (Principle IX).
@@ -227,6 +340,23 @@ final class ConfigServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $activityTable = $this->container->make(ActivityTable::class);
+        $this->container->make(ManagedTables::class)->register($activityTable->managed());
+
+        $accessTables = $this->container->make(AccessTables::class);
+        foreach ($accessTables->managed() as $managedTable) {
+            $this->container->make(ManagedTables::class)->register($managedTable);
+        }
+        $jobTable = $this->container->make(JobTable::class);
+        $this->container->make(ManagedTables::class)->register($jobTable->managed());
+        $this->installFoundationSchema([
+            $activityTable->schema(),
+            ...$accessTables->schemas(),
+            $jobTable->schema(),
+        ]);
+        $this->container->make(AbilityCompatibility::class)->register();
+        $this->container->make(JobRunner::class)->register();
+
         $this->container->make(AdminBranding::class)->register();
         $this->container->make(CorexAdminAssets::class)->register();
         $this->container->make(AdminDashboard::class)->register();
@@ -251,8 +381,37 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Data\DataExportController::class)->register(); // CSV export (spec 045)
 
         add_action('rest_api_init', function (): void {
+            $this->container->make(ActivityController::class)->register();
+            $this->container->make(JobController::class)->register();
             $this->container->make(DataController::class)->register();
             $this->container->make(InsightsController::class)->register();
         });
+    }
+
+    /** @param list<\Corex\Database\Schema\Table> $schemas */
+    private function installFoundationSchema(array $schemas): void
+    {
+        $installedVersion = get_option(self::FOUNDATION_SCHEMA_OPTION, '');
+
+        if ($installedVersion === self::FOUNDATION_SCHEMA_VERSION) {
+            return;
+        }
+
+        if (! is_file(ABSPATH . 'wp-admin/includes/upgrade.php')) {
+            return;
+        }
+
+        $migrator = $this->container->make(Migrator::class);
+        foreach ($schemas as $schema) {
+            $migrator->create($schema);
+        }
+
+        foreach ($schemas as $schema) {
+            if (! $migrator->exists($schema->name)) {
+                return;
+            }
+        }
+
+        update_option(self::FOUNDATION_SCHEMA_OPTION, self::FOUNDATION_SCHEMA_VERSION, false);
     }
 }

@@ -10,12 +10,16 @@ namespace Corex\Config\Data;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
+use Corex\Data\DataField;
+use Corex\Data\DataSourceCapabilities;
+
 /**
  * The reference DataSource: stored form submissions (`corex_submission` posts). Shapes each
  * record into id/date/form/summary; the WP_Query + meta access lives in the injected reader
  * so this shaping is unit-tested headlessly (spec 030).
  */
-final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSource, TrendableDataSource
+final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSource, TrendableDataSource, CapabilityAwareDataSource, FieldAwareDataSource
 {
     public function __construct(private readonly SubmissionsReader $reader)
     {
@@ -107,6 +111,70 @@ final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSou
     public function delete(int $id): bool
     {
         return $this->reader->trash($id);
+    }
+
+    public function capabilities(): DataSourceCapabilities
+    {
+        return new DataSourceCapabilities(
+            sourceKey: $this->key(),
+            read: true,
+            query: true,
+            schema: true,
+            detail: true,
+            create: false,
+            update: false,
+            delete: true,
+            bulkUpdate: false,
+            bulkDelete: false,
+            importDryRun: false,
+            importCommit: false,
+            exportCsv: true,
+            exportXlsx: false,
+            migrations: false,
+            rollback: false,
+            maxPageSize: 100,
+            permissionMap: [
+                DataSourceCapabilities::READ       => CorexAbility::MANAGE_SUBMISSIONS,
+                DataSourceCapabilities::QUERY      => CorexAbility::MANAGE_SUBMISSIONS,
+                DataSourceCapabilities::SCHEMA     => CorexAbility::MANAGE_SUBMISSIONS,
+                DataSourceCapabilities::DETAIL     => CorexAbility::MANAGE_SUBMISSIONS,
+                DataSourceCapabilities::DELETE     => CorexAbility::MANAGE_SUBMISSIONS,
+                DataSourceCapabilities::EXPORT_CSV => CorexAbility::MANAGE_SUBMISSIONS,
+            ],
+        );
+    }
+
+    public function fields(): array
+    {
+        return array_map(
+            static fn (array $field): DataField => new DataField(
+                key: strtolower(str_replace(' ', '-', $field['name'])),
+                label: $field['name'],
+                type: in_array($field['type'], [
+                    DataField::TYPE_ID,
+                    DataField::TYPE_TEXT,
+                    DataField::TYPE_TEXTAREA,
+                    DataField::TYPE_EMAIL,
+                    DataField::TYPE_TEL,
+                    DataField::TYPE_URL,
+                    DataField::TYPE_DATETIME,
+                    DataField::TYPE_FORM,
+                ], true) ? $field['type'] : DataField::TYPE_TEXT,
+                required: false,
+                nullable: true,
+                readOnly: true,
+                filterOperators: ['equals', 'contains'],
+                sortable: in_array($field['type'], [DataField::TYPE_ID, DataField::TYPE_DATETIME, DataField::TYPE_FORM], true),
+                personalDataClass: match ($field['type']) {
+                    DataField::TYPE_EMAIL, DataField::TYPE_TEL => DataField::PERSONAL_CONTACT,
+                    DataField::TYPE_TEXTAREA                   => DataField::PERSONAL_CONTENT,
+                    default                                    => DataField::PERSONAL_NONE,
+                },
+                validation: [],
+                importAliases: [],
+            ),
+            $this->schema(),
+        );
     }
 
     /**

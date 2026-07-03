@@ -25,46 +25,46 @@
 
 ### Activity and Results
 
-- [ ] T011 [P] Add failing ActivityEvent value-object tests in `tests/Unit/Activity/ActivityEventTest.php`
-- [ ] T012 [P] Add failing activity repository/service tests in `tests/Unit/Activity/ActivityServiceTest.php`
-- [ ] T013 Implement activity value objects and contracts in `plugins/corex-core/src/Activity/ActivityEvent.php`, `ActivityRepository.php`, and `ActivityService.php`
-- [ ] T014 Add managed activity table definition in `plugins/corex-config/src/Activity/ActivityTable.php`
-- [ ] T015 Implement activity repository and retention-safe queries in `plugins/corex-config/src/Activity/WpActivityRepository.php`
-- [ ] T016 Bind activity services and migration in `plugins/corex-config/src/ConfigServiceProvider.php`
-- [ ] T017 Add shared OperationResult and Confirmation value objects with tests in `plugins/corex-core/src/Operations/OperationResult.php`, `Confirmation.php`, and `tests/Unit/Operations/OperationResultTest.php`
-- [ ] T018 Add activity REST query contract tests in `tests/Integration/Activity/ActivityControllerTest.php`
-- [ ] T019 Implement thin activity REST controller/routes in `plugins/corex-config/src/Activity/ActivityController.php`
+- [x] T011 [P] Add failing ActivityEvent value-object tests in `tests/Unit/Activity/ActivityEventTest.php`
+- [x] T012 [P] Add failing activity repository/service tests in `tests/Unit/Activity/ActivityServiceTest.php`
+- [x] T013 Implement activity value objects and contracts in `plugins/corex-core/src/Activity/ActivityEvent.php`, `ActivityRepository.php`, and `ActivityService.php`
+- [x] T014 Add managed activity table definition in `plugins/corex-config/src/Activity/ActivityTable.php`
+- [x] T015 Implement activity repository and retention-safe queries in `plugins/corex-config/src/Activity/WpActivityRepository.php`
+- [x] T016 Bind activity services and migration in `plugins/corex-config/src/ConfigServiceProvider.php`
+- [x] T017 Add shared OperationResult and Confirmation value objects with tests in `plugins/corex-core/src/Operations/OperationResult.php`, `Confirmation.php`, and `tests/Unit/Operations/OperationResultTest.php`
+- [x] T018 Add activity REST query contract tests in `tests/Integration/Activity/ActivityControllerTest.php`
+- [x] T019 Implement thin activity REST controller/routes in `plugins/corex-config/src/Activity/ActivityController.php`
 
 ### Abilities and Access Policy
 
-- [ ] T020 [P] Add failing ability-catalog/group tests in `tests/Unit/Access/CorexAbilityCatalogTest.php`
-- [ ] T021 [P] Add failing self/last-admin lockout tests in `tests/Unit/Access/AccessPolicyTest.php`
-- [ ] T022 Implement grouped ability definitions in `plugins/corex-core/src/Access/CorexAbility.php` and `CorexAbilityCatalog.php`
-- [ ] T023 Implement access policy and preview result in `plugins/corex-core/src/Access/AccessPolicy.php` and `AccessChangePreview.php`
-- [ ] T024 Add role-grant/access-request managed tables in `plugins/corex-config/src/Access/AccessTables.php`
-- [ ] T025 Implement grant/request repositories in `plugins/corex-config/src/Access/RoleAbilityRepository.php` and `AccessRequestRepository.php`
-- [ ] T026 Implement AccessService grant/revoke/request/decision orchestration in `plugins/corex-config/src/Access/AccessService.php`
-- [ ] T027 Bind ability/access services and compatibility mapping in `plugins/corex-config/src/ConfigServiceProvider.php`
+- [x] T020 [P] Add failing ability-catalog/group tests in `tests/Unit/Access/CorexAbilityCatalogTest.php`
+- [x] T021 [P] Add failing self/last-admin lockout tests in `tests/Unit/Access/AccessPolicyTest.php`
+- [x] T022 Implement grouped ability definitions in `plugins/corex-core/src/Access/CorexAbility.php` and `CorexAbilityCatalog.php`
+- [x] T023 Implement access policy and preview result in `plugins/corex-core/src/Access/AccessPolicy.php` and `AccessChangePreview.php`
+- [x] T024 Add role-grant/access-request managed tables in `plugins/corex-config/src/Access/AccessTables.php`
+- [x] T025 Implement grant/request repositories in `plugins/corex-config/src/Access/RoleAbilityRepository.php` and `AccessRequestRepository.php`
+- [x] T026 Implement AccessService grant/revoke/request/decision orchestration in `plugins/corex-config/src/Access/AccessService.php`
+- [x] T027 Bind ability/access services and compatibility mapping in `plugins/corex-config/src/ConfigServiceProvider.php`
 
 ### Bounded Jobs
 
-- [ ] T028 [P] Add failing bounded-job state/idempotency tests in `tests/Unit/Jobs/BoundedJobTest.php`
-- [ ] T029 Implement job value/contracts in `plugins/corex-core/src/Jobs/BoundedJob.php`, `JobRepository.php`, and `JobHandler.php`
-- [ ] T030 Add managed job table and repository in `plugins/corex-config/src/Jobs/JobTable.php` and `WpJobRepository.php`
-- [ ] T031 Implement optional Action Scheduler and WP-Cron/CLI dispatchers in `plugins/corex-config/src/Jobs/ActionSchedulerJobDispatcher.php` and `CronJobDispatcher.php`
-- [ ] T032 Add job status/cancel/retry REST tests in `tests/Integration/Jobs/JobControllerTest.php`
-- [ ] T033 Implement job REST controller and service bindings in `plugins/corex-config/src/Jobs/JobController.php` and `ConfigServiceProvider.php`
+- [x] T028 [P] Add failing bounded-job state/idempotency tests in `tests/Unit/Jobs/BoundedJobTest.php`
+- [x] T029 Implement job value/contracts in `plugins/corex-core/src/Jobs/BoundedJob.php`, `JobRepository.php`, and `JobHandler.php`
+- [x] T030 Add managed job table and repository in `plugins/corex-config/src/Jobs/JobTable.php` and `WpJobRepository.php`
+- [x] T031 Implement optional Action Scheduler and WP-Cron/CLI dispatchers in `plugins/corex-config/src/Jobs/ActionSchedulerJobDispatcher.php` and `CronJobDispatcher.php`
+- [x] T032 Add job status/cancel/retry REST tests in `tests/Integration/Jobs/JobControllerTest.php`
+- [x] T033 Implement job REST controller and service bindings in `plugins/corex-config/src/Jobs/JobController.php` and `ConfigServiceProvider.php`
 
 ### Data Capability and Mail Result Contracts
 
-- [ ] T034 [P] Add failing granular source-capability tests in `tests/Unit/Data/DataSourceCapabilitiesTest.php`
-- [ ] T035 Implement data capability/schema/write adapter contracts in `plugins/corex-core/src/Data/DataSourceCapabilities.php`, `DataField.php`, and `DataWriteAdapter.php`
-- [ ] T036 Extend admin DataSource adapters without breaking existing readers in `plugins/corex-config/src/Data/DataSource.php` and `DataRegistry.php`
-- [ ] T037 Add failing result-bearing mail contract tests in `tests/Unit/Mail/MailResultContractTest.php`
-- [ ] T038 Extend `plugins/corex-core/src/Mail/Mailer.php` and `MailRequest.php` with attempt/result contracts while preserving compatibility
-- [ ] T039 Adapt existing CoreX Mail and fallback listeners in `addons/corex-email/src/RequestMailer.php`, `QueuedMailer.php`, and `plugins/corex-forms/src/Listeners/SendEmailListener.php`
-- [ ] T040 Register shared foundations and verify migration idempotency in `tests/Integration/Foundation/ProductFoundationTest.php`
-- [ ] T041 Run focused PHP suites plus `clean-code-guard`, `wp-guard`, and `test-guard`; record Phase 2 evidence in `specs/068-admin-product-functional-completion/evidence.md`
+- [x] T034 [P] Add failing granular source-capability tests in `tests/Unit/Data/DataSourceCapabilitiesTest.php`
+- [x] T035 Implement data capability/schema/write adapter contracts in `plugins/corex-core/src/Data/DataSourceCapabilities.php`, `DataField.php`, and `DataWriteAdapter.php`
+- [x] T036 Extend admin DataSource adapters without breaking existing readers in `plugins/corex-config/src/Data/DataSource.php` and `DataRegistry.php`
+- [x] T037 Add failing result-bearing mail contract tests in `tests/Unit/Mail/MailResultContractTest.php`
+- [x] T038 Extend `plugins/corex-core/src/Mail/Mailer.php` and `MailRequest.php` with attempt/result contracts while preserving compatibility
+- [x] T039 Adapt existing CoreX Mail and fallback listeners in `addons/corex-email/src/RequestMailer.php`, `QueuedMailer.php`, and `plugins/corex-forms/src/Listeners/SendEmailListener.php`
+- [x] T040 Register shared foundations and verify migration idempotency in `tests/Integration/Foundation/ProductFoundationTest.php`
+- [x] T041 Run focused PHP suites plus `clean-code-guard`, `wp-guard`, and `test-guard`; record Phase 2 evidence in `specs/068-admin-product-functional-completion/evidence.md`
 
 **Checkpoint**: Activity, abilities, jobs, source capabilities, operation results, and mail outcomes are real shared contracts.
 

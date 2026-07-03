@@ -10,14 +10,21 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Functions;
 use Corex\Email\Queue\ActionSchedulerDispatcher;
 use Corex\Email\Queue\MailQueueDispatcher;
 use Corex\Email\Queue\MailQueueGate;
 use Corex\Email\Queue\QueuedMailer;
 use Corex\Mail\Mailer;
+use Corex\Mail\AttemptingMailer;
 use Corex\Mail\MailRequest;
+use Corex\Mail\MailResult;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\FeatureFlags;
+
+beforeEach(function () {
+    Functions\when('__')->returnArg();
+});
 
 function queueFlags(bool $on): FeatureFlags
 {
@@ -103,6 +110,45 @@ it('sends inline when the gate says do not queue', function () {
 
     expect($inner->sent)->toBe(1);
     expect($dispatcher->enqueued)->toBe(0);
+});
+
+it('returns a queued attempt result when dispatch is deferred', function () {
+    $inner      = spyMailer();
+    $dispatcher = spyDispatcher(available: true);
+    $request    = new MailRequest(['a@b.test']);
+
+    $result = (new QueuedMailer($inner, new MailQueueGate(queueFlags(true)), $dispatcher))->attempt($request);
+
+    expect($result->state)->toBe(MailResult::STATE_QUEUED)
+        ->and($result->requestId)->toBe($request->requestId)
+        ->and($dispatcher->enqueued)->toBe(1);
+});
+
+it('preserves an immediate result from a result-bearing inner mailer', function () {
+    $inner = new class implements AttemptingMailer {
+        public function send(MailRequest $request): void
+        {
+            $this->attempt($request);
+        }
+
+        public function attempt(MailRequest $request): MailResult
+        {
+            return new MailResult(
+                attemptId: 'f6773ddc-2d63-40cc-b408-35c0a81c084b',
+                requestId: $request->requestId,
+                state: MailResult::STATE_SENT,
+                provider: 'test',
+                message: 'Sent.',
+                occurredAt: new DateTimeImmutable('2026-07-03T10:00:00+00:00'),
+                retryable: false,
+            );
+        }
+    };
+    $request = new MailRequest(['a@b.test']);
+
+    $result = (new QueuedMailer($inner, new MailQueueGate(queueFlags(false)), spyDispatcher(true)))->attempt($request);
+
+    expect($result->state)->toBe(MailResult::STATE_SENT);
 });
 
 it('round-trips a MailRequest through the queue payload', function () {

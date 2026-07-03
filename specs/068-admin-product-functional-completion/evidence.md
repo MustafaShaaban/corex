@@ -65,7 +65,7 @@ This is expected failure evidence and remains a completion blocker until T223 re
 | Phase | Focused tests | Runtime/E2E | Visual matrix | Guards | Docs | Status |
 |---|---|---|---|---|---|---|
 | 1 | 9/9 Jest tests pass; focused JS lint passes | N/A | N/A | Clean-code, test, and docs guards pass | Complete | Complete |
-| 2 | Pending | Pending | N/A | Pending | Pending | Pending |
+| 2 | Full unit 997/997 (4,309 assertions); full integration 43/43 (137 assertions); final focused unit 67/67 and integration 11/11 | `BOOT_OK`; ACF-aware driver resolution; four managed schemas exist and migrate twice without error; activity/job REST round trips pass | N/A (shared contracts only) | Clean-code, WP, and test guards pass; all changed/new PHP syntax passes; Composer valid; `git diff --check` clean | Tasks/evidence/PROGRESS synchronized | Complete |
 | 3 | Pending | Pending | Pending | Pending | Pending | Pending |
 | 4 | Pending | Pending | Pending | Pending | Pending | Pending |
 | 5 | Pending | Pending | Pending | Pending | Pending | Pending |
@@ -76,6 +76,24 @@ This is expected failure evidence and remains a completion blocker until T223 re
 | 10 | Pending | Pending | Pending | Pending | Pending | Pending |
 | 11 | Pending | Pending | Pending | Pending | Pending | Pending |
 | 12 | Pending | Pending | Pending | Pending | Pending | Pending |
+
+### Phase 2 shared-foundation evidence
+
+- Activity: immutable secret-rejecting events, append-only indexed repository, bounded retention, capability-gated
+  collection/detail REST, and a unified managed data source.
+- Access: ten approved ability groups, explicit/inherited/denied/locked states, self/last-admin policy, role grants,
+  access-request decisions, administrator compatibility mapping, and bounded user discovery.
+- Jobs: database-enforced active idempotency, immutable state transitions, Action Scheduler/WP-Cron fallback,
+  one-step runner, and nonce + ability-gated status/cancel/retry REST.
+- Data: granular source capabilities, typed/privacy-aware fields, optional write adapter, conservative legacy-source
+  inference, and explicit table/submission descriptors.
+- Mail: legacy `Mailer::send()` compatibility plus correlation-aware result contracts for queued, captured, sent,
+  failed, rejected, and legacy-accepted attempts; fallback `wp_mail()` now returns its real outcome to the listener.
+- Safety/performance: all variable SQL uses placeholders or WordPress CRUD helpers; migrations are version-gated;
+  runtime role effects are request-cached; large role lookups are paged; mutation routes require ability + nonce.
+- Debugging evidence: the only initial full-integration failure was a stale test assumption that ACF was absent;
+  runtime inspection confirmed ACF 6.8.4 active and `FieldResolver` correctly selected `AcfFieldDriver`. The test now
+  asserts the available provider in both optional-dependency states.
 
 ## Requirement Evidence
 

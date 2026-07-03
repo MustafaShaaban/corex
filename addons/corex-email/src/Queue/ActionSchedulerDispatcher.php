@@ -60,6 +60,8 @@ final class ActionSchedulerDispatcher implements MailQueueDispatcher
             'subject'      => $request->subject,
             'body'         => $request->body,
             'replyTo'      => $request->replyTo,
+            'requestId'    => $request->requestId,
+            'parentAttemptId' => $request->parentAttemptId,
         ];
     }
 
@@ -75,6 +77,8 @@ final class ActionSchedulerDispatcher implements MailQueueDispatcher
             subject: isset($payload['subject']) ? (string) $payload['subject'] : null,
             body: isset($payload['body']) ? (string) $payload['body'] : null,
             replyTo: isset($payload['replyTo']) ? (string) $payload['replyTo'] : null,
+            requestId: isset($payload['requestId']) ? (string) $payload['requestId'] : null,
+            parentAttemptId: isset($payload['parentAttemptId']) ? (string) $payload['parentAttemptId'] : null,
         );
     }
 }

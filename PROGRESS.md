@@ -4,10 +4,10 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-03, Spec 068 PRODUCT FUNCTIONAL COMPLETION) -- planning complete; implementation next
+## RESUME HERE (2026-07-03, Spec 068 PRODUCT FUNCTIONAL COMPLETION) -- Phases 1–2 complete; Email Studio next
 
-- **Branch:** `fix/067-admin-shell-and-completion` at `3ce717b`, tracking the same origin branch. **PR #98.** CoreX
-  Framework Mode; normal root; no worktrees. The previously unknown
+- **Branch:** `fix/067-admin-shell-and-completion` at planning checkpoint `706db79`, tracking the same origin branch.
+  **PR #98.** CoreX Framework Mode; normal root; no worktrees. The previously unknown
   `plugins/corex-config/src/Insights/InsightWidgets.php` was explicitly adopted by the owner as prior in-progress
   work and is owned by Spec 068.
 - **Owner directive:** approved current design is required functionality. Required controls may not remain fake,
@@ -23,8 +23,13 @@
 - **Existing compatible work retained:** Spec 067 shell/links, Data Models tab structure, Email Studio navigation,
   real Access denied/audit path, and their prior verification remain useful foundations but are not proof of the
   new functional requirements.
-- **Current task:** finish Phase 1 governance, starting T004–T010: durable docs, executable completion audit,
-  evidence ledger, docs guard, and planning commit. Then Phase 2 shared Activity/Abilities/Jobs/Data/Mail contracts.
+- **Completed:** Phase 1 T001–T010 and Phase 2 T011–T041. Shared Activity, operation confirmation/results, grouped
+  abilities and lockout policy, role grants/access requests, bounded jobs, granular data-source contracts, and
+  result-bearing mail attempts are implemented with managed persistence, container bindings, and REST seams.
+- **Verification:** full unit suite 997/997 (4,309 assertions); full integration suite 43/43 (137 assertions); final
+  focused regression 67/67 unit + 11/11 integration; direct WP-CLI `BOOT_OK`; repeat migrations clean; Composer,
+  PHP syntax, `git diff --check`, clean-code, WP, and test guards clean. ACF 6.8.4 is active and correctly selected.
+- **Current task:** Phase 3 Functional Email Studio, starting T042–T063 with repository tests before persistence.
 - **Completion rule:** no task or screen is complete without direct tests, runtime evidence, applicable rendered
   states, guards, docs, and requirement traceability in `specs/068-admin-product-functional-completion/evidence.md`.
 

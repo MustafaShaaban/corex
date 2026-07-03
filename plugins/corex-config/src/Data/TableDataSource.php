@@ -11,6 +11,9 @@ namespace Corex\Config\Data;
 defined('ABSPATH') || exit;
 
 use Corex\Database\Schema\ManagedTable;
+use Corex\Access\CorexAbility;
+use Corex\Data\DataField;
+use Corex\Data\DataSourceCapabilities;
 
 /**
  * A DataSource over a Corex-managed custom table (spec 038): it exposes the table's declared
@@ -18,7 +21,7 @@ use Corex\Database\Schema\ManagedTable;
  * ones defaulted to ''), so a managed table appears in Corex → Data like any other source with
  * no new UI. The `$wpdb` access lives in the injected reader, so this shaping is unit-tested.
  */
-final class TableDataSource implements DataSource
+final class TableDataSource implements DataSource, CapabilityAwareDataSource, FieldAwareDataSource
 {
     public function __construct(
         private readonly ManagedTable $table,
@@ -33,7 +36,7 @@ final class TableDataSource implements DataSource
 
     public function label(): string
     {
-        return $this->table->label;
+        return $this->table->displayLabel();
     }
 
     /**
@@ -41,7 +44,7 @@ final class TableDataSource implements DataSource
      */
     public function columns(): array
     {
-        return $this->table->columns;
+        return $this->table->displayColumns();
     }
 
     /**
@@ -73,5 +76,53 @@ final class TableDataSource implements DataSource
     public function delete(int $id): bool
     {
         return $this->reader->delete($this->table->name, $id);
+    }
+
+    public function capabilities(): DataSourceCapabilities
+    {
+        return new DataSourceCapabilities(
+            sourceKey: $this->key(),
+            read: true,
+            query: false,
+            schema: true,
+            detail: false,
+            create: false,
+            update: false,
+            delete: true,
+            bulkUpdate: false,
+            bulkDelete: false,
+            importDryRun: false,
+            importCommit: false,
+            exportCsv: true,
+            exportXlsx: false,
+            migrations: false,
+            rollback: false,
+            maxPageSize: 100,
+            permissionMap: [
+                DataSourceCapabilities::READ       => CorexAbility::MANAGE_DATA,
+                DataSourceCapabilities::DELETE     => CorexAbility::MANAGE_DATA,
+                DataSourceCapabilities::EXPORT_CSV => CorexAbility::MANAGE_DATA,
+            ],
+        );
+    }
+
+    public function fields(): array
+    {
+        return array_map(
+            static fn (array $column): DataField => new DataField(
+                key: $column['id'],
+                label: $column['label'],
+                type: DataField::TYPE_TEXT,
+                required: false,
+                nullable: true,
+                readOnly: true,
+                filterOperators: ['equals'],
+                sortable: true,
+                personalDataClass: DataField::PERSONAL_NONE,
+                validation: [],
+                importAliases: [],
+            ),
+            $this->table->displayColumns(),
+        );
     }
 }
