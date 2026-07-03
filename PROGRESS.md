@@ -20,24 +20,32 @@
   baseline (matrix) · B7 Blog + Blog Pro basics · B8 Submissions/Forms/Email/Insights/Setup completion + Portfolio
   scope + verify. One reviewed batch at a time; spec-first, guard-gated, tested, render-verified where the harness is
   available.
-- **Done this session (PR #95, render-verified dark+light):** **B1** real Operations Mode switching
-  (`Config\Operations\*` — stored mode, nonce+cap, production/maintenance confirmation, Overview+Ops badges,
-  MaintenanceGuard that never locks out an admin, audit log); **B2** docs correction (company-site paused; ROADMAP
-  §17 + DECISIONS #112); **B3** real submission retention (`Config\Retention\*` — window + real dry-run preview +
-  confirmed trash-not-delete prune); **B6** Access & Abilities baseline (`Config\Access\*` — real role×capability
-  matrix + current-user perms + requirements, read-only so no lockout). Full Pest **889**, lint:css clean, token
-  contract green, guards clean.
-- **Remaining batches (real work, not deferred — on PR #95):** **B4** Data Models completion (record detail routing,
-  schema summary, CSV/JSON export, real CSV import dry-run + rejected-rows, truthful migration overview; apply gated
-  where no write adapter exists, with the exact reason); **B5** finish the global fidelity/interaction sweep across
-  forms/email/data-models/insights/setup (the shared shell already gives Overview/Operations/Submissions/Access a
-  consistent, white-space-free layout — verify + tune the rest); **B7** Blog (archive/single/components/social/
-  states/metadata + Blog Pro basics + readiness where real); **B8** Submissions/Forms/Email detail completion +
-  Insights + Setup Wizard usefulness + Portfolio next-scope + full verification. Only Woo / advanced AAM /
-  commercial-Pro stay deferred.
-- **Exact next step:** **B4 Data Models** — record detail view + CSV/JSON export + real CSV-import dry-run
-  (`Config\DataModels\*`), reusing the real `DataRegistry`; then B7 Blog and B8. Do not fake; gate unsafe applies
-  with the exact reason.
+- **Done this session (PR #95, render-verified dark+light):**
+  - **B1** real Operations Mode switching (`Config\Operations\*` — stored mode, nonce+cap, production/maintenance
+    confirmation, Overview+Ops badges, MaintenanceGuard that never locks out an admin, audit log).
+  - **B2** docs correction (company-site paused; ROADMAP §17 + DECISIONS #112).
+  - **B3** real submission retention (`Config\Retention\*` — window + real dry-run preview + confirmed
+    trash-not-delete prune).
+  - **B4** Data Models completion (`Config\DataModels\*` — real CSV import dry-run + rejected-rows report + truthful
+    migration overview; the vague "future" note is gone; commit gated with the exact reason — no write adapter).
+  - **B5** global fidelity — VERIFIED: the shared shell gives all ten admin screens a consistent, white-space-free,
+    product-clear layout (render-verified dark+light).
+  - **B6** Access & Abilities baseline (`Config\Access\*` — real role×capability matrix + current-user perms +
+    requirements, read-only so no lockout).
+  - **B7** Blog — designed `single`/`archive`/`index` templates (category + author/date meta + featured image +
+    content + tags + real corex/social-share + corex/newsletter-signup CTA + more-from-blog; archive card grid +
+    no-results + pagination). Front-end render-verified.
+  - Full **Pest 894**, **Jest 125**, lint:css clean, token contract green, `composer validate` valid,
+    `verify:dependencies` PASS, guards wp/clean-code/test clean.
+- **B8 remaining (small, on PR #95):** Portfolio next-scope is now **defined** in the spec (planned after Blog —
+  archive card grid + single project meta + project card + filters + a `section-selected-work` pattern; templates
+  `archive-project.html`/`single-project.html` + `corex/projects` already exist). Optional polish: Email template
+  detail/preview and a Setup-Wizard readiness checklist (both surfaces are already truthful + product-clear).
+- **Honestly deferred (specific reason on-screen, not a vague future):** visual Forms/Flow builder; visual Email
+  template editor; operations-mode/import *commit* write path. **Only Woo / advanced AAM / commercial-Pro are out of
+  scope.**
+- **Exact next step:** review/merge PR #95; then (lower priority than the admin) implement Portfolio to the scoped
+  fidelity, and the optional Email/Setup polish. Company-site work stays paused until the owner accepts the admin.
 
 ---
 ## RESUME HERE (2026-07-02, Spec 064 ADMIN FIDELITY) -- Overview rebuilt to the approved grid; rail fixed; render-verified

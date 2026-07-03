@@ -2066,6 +2066,8 @@ DECISIONS) remove company-site next-step recommendations and record this milesto
 Why: the owner is the product authority; the admin must be genuinely usable and faithful before company-site work is
 recommended. The truthfulness invariant (no fake data/features) is unchanged — completion means real behavior or an
 honest state, never a fabricated one.
-Status: In progress on branch `spec/065-admin-product-completion`. B1 (real Operations Mode switching: stored mode +
-nonce/cap + production confirmation + Overview/Operations badges + maintenance guard that never locks out an admin +
-audit log) is done and render-verified.
+Status: On branch `spec/065-admin-product-completion` (PR #95). Delivered + render-verified: B1 Operations Mode, B3
+retention (dry-run prune), B4 Data Models CSV import dry-run + truthful migration overview, B6 Access baseline, B7
+Blog (single/archive/index). B5 global fidelity verified across all ten admin screens. Portfolio next-scope is
+defined (planned after Blog). Honestly deferred with an on-screen reason: visual Forms/Email builders + the
+operations-mode/import commit write path. Full Pest 894, Jest 125, guards clean.

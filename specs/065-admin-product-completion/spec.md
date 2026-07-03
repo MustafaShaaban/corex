@@ -132,3 +132,40 @@ full capability mutation editor may wait.
 - Deferred by owner: WooCommerce kit/screens; advanced AAM / full capability-editor / complex role mutation;
   commercial/Pro/marketplace/licensing. A specifically unsafe subfeature may be disabled with a stated reason + safe
   foundation, never a vague future card.
+
+## Portfolio — next scope (planned, after Blog)
+
+Portfolio is **not** in the Woo/AAM/Pro deferral class — it stays on the roadmap, sequenced after Blog. The
+foundation already exists (the `corex-kit-portfolio` add-on: a `project` post type, the `corex/projects` block, and
+`archive-project.html` / `single-project.html` templates). The exact next scope to bring Portfolio to the same
+fidelity as Blog:
+
+- **Archive (`archive-project.html`)** — a project-card grid (featured image + title + project type/terms + short
+  excerpt + link), a real no-results empty state, and pagination — mirroring the Blog archive card pattern.
+- **Single (`single-project.html`)** — hero/featured image + title + project meta (client/role/date via the
+  project taxonomy or post meta the add-on already stores) + content + gallery + a "More projects" recent grid +
+  social share; honest empty where a field is unset.
+- **Project card** — a reusable pattern shared by the archive and any "selected work" section on a company site.
+- **Filters/categories** — filter by the project taxonomy, with an honest empty state.
+- **Company-site pattern usage** — a `section-selected-work` pattern that a company site can drop in, reusing the
+  project-card pattern.
+
+No fabricated projects, counts, or metrics — real records or an honest empty state, exactly as Blog. This scope is
+recorded so Portfolio is never dropped; it is simply lower priority than Blog.
+
+## Implementation status (this milestone)
+
+- **B1 Operations Mode** — done (real switching + audit + maintenance guard).
+- **B2 Docs correction** — done (company-site paused; milestones reframed).
+- **B3 Retention** — done (real window + dry-run + confirmed trash prune).
+- **B4 Data Models** — done (real CSV import dry-run + truthful migration overview; export + record management were
+  already present).
+- **B5 Global fidelity** — done/verified (the shared shell gives every admin screen consistent, white-space-free
+  layout; all ten screens render-verified dark + light).
+- **B6 Access baseline** — done (real role × capability matrix, read-only).
+- **B7 Blog** — done (designed single/archive/index with social share + newsletter + cards + metadata + empty
+  states + more-from-blog).
+- **Honestly deferred (with a specific reason, not a vague future):** a visual Forms/Flow builder, a visual Email
+  template editor, and an operations-mode/import *commit* write path — each requires a backend seam that does not
+  exist yet and is stated on its screen. Portfolio is planned (scope above). Only WooCommerce, advanced AAM / full
+  capability-editor, and commercial/Pro/marketplace/licensing remain out of scope.
