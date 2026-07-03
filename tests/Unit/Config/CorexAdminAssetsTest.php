@@ -58,3 +58,31 @@ it('enqueues the shared shell only for a CoreX screen', function () {
 
     $assets->enqueue('plugins.php');
 });
+
+it('tags a CoreX screen body and mirrors a pinned appearance for the canvas paint (spec 067)', function () {
+    $assets = new CorexAdminAssets();
+
+    Functions\when('get_current_screen')->justReturn((object) ['id' => 'corex-framework_page_corex-access']);
+    Functions\when('apply_filters')->alias(
+        static fn (string $hook, $default) => $hook === 'corex_admin_appearance' ? 'light' : $default,
+    );
+
+    expect($assets->bodyClass('wp-admin'))->toBe('wp-admin corex-admin-screen corex-appearance-light');
+});
+
+it('adds no appearance class when the appearance follows the system', function () {
+    $assets = new CorexAdminAssets();
+
+    Functions\when('get_current_screen')->justReturn((object) ['id' => 'corex_page_corex-access']);
+    Functions\when('apply_filters')->alias(static fn (string $hook, $default) => $default);
+
+    expect($assets->bodyClass('wp-admin'))->toBe('wp-admin corex-admin-screen');
+});
+
+it('never tags non-CoreX admin screens', function () {
+    $assets = new CorexAdminAssets();
+
+    Functions\when('get_current_screen')->justReturn((object) ['id' => 'dashboard']);
+
+    expect($assets->bodyClass('wp-admin'))->toBe('wp-admin');
+});

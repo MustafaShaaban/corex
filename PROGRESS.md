@@ -4,7 +4,7 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-03, Spec 067 ADMIN SHELL + COMPLETION CORRECTION) -- A–E done; F–K remain
+## RESUME HERE (2026-07-03, Spec 067 ADMIN SHELL + COMPLETION CORRECTION) -- A–F done; G–K remain
 
 - **Branch:** `fix/067-admin-shell-and-completion` (off `main` @ v0.33.0). **PR #98.** CoreX Framework Mode.
 - **Owner correction:** the admin still renders as a centered card with white space + wp-admin chrome leaking,
@@ -29,11 +29,28 @@
 - **Verification for E:** WordPress 7.0 boot/theme/plugins gate PASS; Pest **912** / **4015 assertions**; Jest
   **125**; CSS lint; token inventory; Composer validation; dependency policy; root build; docs-app build; PHP lint;
   `git diff --check`; clean-code/wp/test/docs guards all clean. Generated screenshots were inspected then removed.
-- **REMAINING (F–K — NOT faked):** Access tabs (Overview/Role matrix/Audit log/Access denied) · Insights state
-  widgets · Setup Wizard scenarios+steps · Operations dropdown option-state polish + Security Center · Forms & Flows
-  tabs · Settings/Media/Retention parity. Each stays real or honestly gated where no safe mutation exists yet.
-- **Exact next step:** build **F (Access & Abilities tabs)** next, spec/audit-first, guard-gated, tested, and
-  render-verified in dark/light/mobile. Do not invent audit entries or access-request behavior.
+- **F — Access & Abilities tabs (Overview/Role matrix/Audit log/Access denied): DONE + render-verified**
+  (DECISIONS #114). Overview = real role cards (count_users, CORE/CUSTOM, granted/total) + risk/locked-labelled
+  capability groups + conflict notice only when a role-manager plugin is really active. Matrix = design legend +
+  real matrix + no-lockout note. Audit log = REAL denied events only via new `AccessAuditLog` ⇐
+  `corex_admin_access_denied` (30-day window, 100 cap, honest empty). Access denied = the REAL designed 403: new
+  `AccessDeniedGate` on core's `admin_page_access_denied` for corex-* pages; `AdminPage::permissionDenied()` renders
+  the same designed surface; the tab is a labelled preview. E2E-proved with a live editor user (HTTP 403 + real
+  audit entry). Also fixed shared-shell defects found while verifying: body-level canvas paint never applied
+  (tokens now on `body.corex-admin-screen` + `corex-appearance-*` pinning; `#wpwrap` painted — light band gone) and
+  phone-width sideways panning from the matrix table (mobile `minmax(0,1fr)` track + `contain: layout` scroller).
+- **Verification for F:** Pest **929** / **4061 assertions** (all green); lint:css clean; `git diff --check` clean;
+  consumers inventory synced (697); wp/clean-code/test guards run clean (wp-guard: added cache_users() priming;
+  clean-code-guard: split the deniedSurface boolean-flag into deniedSurface()/deniedPreview()). All four tabs
+  rendered dark+light (inspected); Overview/matrix/denied at 375px — no horizontal pan (probe scrollWidth 375).
+  Render harness now covers the access tab routes. A local `corex_editor_test` (editor) user remains on the dev
+  site as the source of the real denied audit entry.
+- **REMAINING (G–K — NOT faked):** Insights state widgets · Setup Wizard scenarios+steps · Operations dropdown
+  option-state polish + Security Center · Forms & Flows tabs · Settings/Media/Retention parity. Each stays real or
+  honestly gated where no safe mutation exists yet.
+- **Exact next step:** build **G (Insights state widgets)** next, spec/audit-first, guard-gated, tested, and
+  render-verified in dark/light/mobile. Real provider status or honest disconnected/setup-required/planned per
+  widget — no fake metrics or scores.
 
 ---
 ## RESUME HERE (2026-07-02, Spec 065 ADMIN PRODUCT COMPLETION) -- required scope; company-site paused

@@ -90,13 +90,39 @@ Legend: ✅ done+verified · 🔶 in progress · ⛔ remaining (scoped) · 🔒 
   screenshots captured for each. Templates/Variables/Preview also verified at 375px with no page overflow; mobile
   template-row overlap was found and fixed, and the variables table now uses a contained horizontal scroller.
 
-### F. Access & Abilities — ⛔ REMAINING (single matrix exists; tabs missing)
-- **Now:** one page (role×capability matrix + current-user perms + requirements + read-only note) (v0.33.0).
+### F. Access & Abilities — ✅ DONE + RENDER-VERIFIED (this branch)
+- **Now:** the four designed tabs, all real or honestly gated.
 - **Design:** `Corex Access & Abilities.dc.html` — tabs **Overview · Role matrix · Audit log · Access
   denied**.
 - **Required:** promote to tabs; **Audit log** = real change log if any exists, else honest empty; **Access
   denied** = the designed denied state; keep read-only (no full AAM, no lockout). "Request access" action
   only if it has a real behaviour, else disabled with reason.
+- **Delivered:** **Overview** = real role summary cards (count_users per role, CORE/CUSTOM origin,
+  granted/total tracked abilities), the tracked capability groups with risk + locked-by-code labels, a
+  permissions-plugin conflict notice shown ONLY when a known role-manager plugin is really active, plus the
+  existing requirement/your-permissions cards and the read-only statement. **Role matrix** = design legend
+  (Allowed/Not granted/Locked-by-code) over the real matrix + no-lockout note. **Audit log** = REAL events
+  only: a new `AccessAuditLog` (30-day window, 100-entry cap, autoload-off option) subscribes to a new
+  `corex_admin_access_denied` action; honest empty state names exactly what is recorded and why grant/revoke
+  entries cannot exist (CoreX never mutates roles). **Access denied** = the designed surface is now the REAL
+  denial: `AccessDeniedGate` hooks WordPress's `admin_page_access_denied` so a capability-refused user on any
+  `corex-*` page gets the designed content at a true HTTP 403 and the attempt is logged; the shared
+  `AdminPage::permissionDenied()` renders the same designed surface in-shell (defense-in-depth) and the tab
+  embeds it as a labelled preview. "Request access" is visibly disabled with the exact reason (no workflow
+  exists); "Back to Dashboard" replaces the design's "Back to Overview" because a refused user cannot open
+  the CoreX Overview either — the truthful target.
+- **Also fixed while verifying (shared shell):** the body-level canvas paint referenced `--corex-admin-*`
+  tokens that only existed on the descendant `.corex-admin` scope, so it silently never applied — a light
+  band leaked below the shell on pages shorter than the wp-admin menu. Tokens now also bind to
+  `body.corex-admin-screen` (with `corex-appearance-*` mirroring for pinned themes, like the login), and
+  `#wpwrap` is painted. On phones the collapsed matrix table leaked min-content width into the document
+  scroll area (page panned sideways at 375px) — fixed via mobile `minmax(0, 1fr)` shell track +
+  `contain: layout` on the matrix scroller.
+- **Evidence:** all four tabs rendered dark + light at 1440px (screenshots inspected); Overview/matrix/denied
+  verified at 375px with no horizontal pan (probe: scrollWidth 375, scrollX locked at 0). REAL denied path
+  E2E-verified: a live editor-role user requesting `corex-access` received HTTP **403** with the designed
+  content, and the audit tab then showed that real entry ("corex_editor_test tried to open Access &
+  Abilities · DENIED"). Pest 929 / 4061 assertions; lint:css clean; token contracts green.
 
 ### G. Insights — ⛔ REMAINING (single page exists; state previews + widgets missing)
 - **Design:** `Corex Insights.dc.html` — state tabs **Live/mixed · Connected · Disconnected · Empty ·

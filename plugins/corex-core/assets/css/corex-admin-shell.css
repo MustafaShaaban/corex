@@ -19,6 +19,13 @@
    padding/margins, hide the wp-admin footer, and paint residual area the shell
    colour so no wp-admin canvas leaks. */
 /* stylelint-disable selector-id-pattern */
+
+/* On pages shorter than the wp-admin menu, #wpwrap is the residual canvas
+   below the shell — paint it too or a light band leaks (spec 067 F). */
+body.corex-admin-screen #wpwrap {
+	background: var(--corex-admin-shell);
+}
+
 body.corex-admin-screen #wpcontent {
 	padding: 0;
 	background: var(--corex-admin-shell);
@@ -708,8 +715,10 @@ body.corex-admin-screen .corex-admin__shell {
 		margin-inline: 0;
 	}
 
+	/* minmax(0, …) so wide content (tables) scrolls inside its own
+	   scroller instead of blowing the track out past the viewport. */
 	.corex-admin__shell {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 		border-inline: 0;
 		border-radius: 0;
 	}
@@ -795,4 +804,86 @@ body.corex-admin-screen .corex-admin__shell {
 .corex-admin__nav-icon--blog {
 	-webkit-mask-image: url(../icons/nav-blog.svg);
 	mask-image: url(../icons/nav-blog.svg);
+}
+
+/* Shared access-denied surface (AdminPage::deniedSurface, design: Access &
+   Abilities → Access denied). Rendered for real on any refused CoreX screen;
+   the Access screen embeds it as a labelled preview. Tokens + logical
+   properties only. */
+.corex-admin .corex-denied {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--corex-admin-space-md);
+	padding-block: var(--corex-admin-space-2xl);
+	padding-inline: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-lg);
+	text-align: center;
+}
+
+.corex-admin .corex-denied__preview {
+	margin: 0;
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-denied__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: 3.5rem;
+	block-size: 3.5rem;
+	border-radius: var(--corex-admin-radius-lg);
+	background: var(--corex-admin-error-soft);
+	color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-denied__icon svg {
+	inline-size: 1.75rem;
+	block-size: 1.75rem;
+}
+
+.corex-admin .corex-denied__title {
+	margin: 0;
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-lg);
+	font-weight: 700;
+}
+
+.corex-admin .corex-denied__text {
+	margin: 0;
+	max-inline-size: 52ch;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+}
+
+.corex-admin .corex-denied__text code {
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-denied__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-denied__reason,
+.corex-admin .corex-denied__meta {
+	margin: 0;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-denied__meta {
+	font-family: var(--corex-admin-font-mono);
+	letter-spacing: var(--corex-admin-letter-wide);
 }

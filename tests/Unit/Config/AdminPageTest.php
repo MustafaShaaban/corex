@@ -18,7 +18,7 @@ beforeEach(function () {
     Functions\when('esc_html')->returnArg();
     Functions\when('esc_html__')->returnArg();
     Functions\when('esc_url')->returnArg();
-    Functions\when('admin_url')->returnArg();
+    Functions\when('admin_url')->alias(static fn (string $path = ''): string => 'http://example.test/wp-admin/' . $path);
 });
 
 it('renders the branded shell with a labelled main region and page header', function () {
@@ -74,11 +74,33 @@ it('renders text-labelled universal states with appropriate live roles', functio
     'permission denied' => ['permission-denied', 'alert'],
 ]);
 
-it('renders permission denied as a complete visible CoreX screen', function () {
+it('renders permission denied as the designed denied surface and publishes the audit event (spec 067)', function () {
     $html = (new AdminPage())->permissionDenied('settings');
 
     expect($html)->toContain('corex-admin--settings')
-        ->and($html)->toContain('Permission denied')
-        ->and($html)->toContain('corex-state--permission-denied')
+        ->and($html)->toContain('Access denied')
+        ->and($html)->toContain('corex-denied')
+        ->and($html)->toContain('manage_options')
+        ->and($html)->toContain('Back to Dashboard')
+        ->and($html)->toContain('Request access')
+        ->and($html)->toContain('disabled')
         ->and($html)->toContain('</main></div>');
+
+    // The denial is published so the access audit log records it.
+    expect(did_action('corex_admin_access_denied'))->toBe(1);
+});
+
+it('renders the denied surface as a labelled preview without publishing the audit event', function () {
+    $html = (new AdminPage())->deniedPreview();
+
+    expect($html)->toContain('corex-denied--preview')
+        ->and($html)->toContain('Preview')
+        ->and(did_action('corex_admin_access_denied'))->toBe(0);
+});
+
+it('appends the crumb suffix to the breadcrumb kicker', function () {
+    $html = (new AdminPage())->open('access', 'CoreX Access & Abilities', '', 'Role matrix');
+
+    // esc_html is shimmed as a pass-through here, so the raw ampersand is expected.
+    expect($html)->toContain('Corex / Access & Abilities / Role matrix');
 });

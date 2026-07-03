@@ -15,11 +15,14 @@ defined('ABSPATH') || exit;
  */
 final class AdminPage
 {
-    public function open(string $section, string $title, string $description = ''): string
+    public function open(string $section, string $title, string $description = '', string $crumbSuffix = ''): string
     {
         $descriptionHtml = $description === ''
             ? ''
             : '<p class="corex-admin__description">' . esc_html($description) . '</p>';
+
+        $breadcrumb = $this->breadcrumb($section)
+            . ($crumbSuffix === '' ? '' : ' / ' . $crumbSuffix);
 
         // Appearance (System/Light/Dark) is a CoreX setting surfaced through a filter so this
         // presentation class stays decoupled from the config layer. 'system' adds no attribute
@@ -37,7 +40,7 @@ final class AdminPage
             . '</div></header><div class="corex-admin__content">',
             esc_attr($section),
             $this->rail($section),
-            esc_html($this->breadcrumb($section)),
+            esc_html($breadcrumb),
             esc_html($title),
             $descriptionHtml,
         );
@@ -152,6 +155,13 @@ final class AdminPage
             'overview' => __('Overview', 'corex'),
             'addons' => __('Add-ons', 'corex'),
             'data' => __('Data', 'corex'),
+            'data-models' => __('Data Models', 'corex'),
+            'forms' => __('Forms & Flows', 'corex'),
+            'submissions' => __('Submissions', 'corex'),
+            'email' => __('Email Studio', 'corex'),
+            'operations-security' => __('Operations & Security', 'corex'),
+            'access' => __('Access & Abilities', 'corex'),
+            'blog-pro' => __('Blog Pro', 'corex'),
             'settings' => __('Settings', 'corex'),
             'insights' => __('Insights', 'corex'),
             'setup' => __('Setup', 'corex'),
@@ -224,14 +234,68 @@ final class AdminPage
 
     public function permissionDenied(string $section): string
     {
+        /**
+         * A CoreX screen refused the current user (in-page defense-in-depth; the menu-level
+         * capability gate normally refuses first). The access audit log records this event.
+         *
+         * @param string $section The refused screen's section key.
+         */
+        do_action('corex_admin_access_denied', $section);
+
         return $this->open(
             $section,
-            __('Permission denied', 'corex'),
+            __('Access denied', 'corex'),
             __('This CoreX screen requires site-administration access.', 'corex'),
-        ) . $this->state(
-            'permission-denied',
-            __('Permission denied', 'corex'),
-            __('Ask a site administrator for the manage_options capability.', 'corex'),
-        ) . $this->close();
+        ) . $this->deniedSurface() . $this->close();
+    }
+
+    /**
+     * The designed denied surface framed as an explicit preview — what the Access screen's
+     * "Access denied" tab embeds for administrators. Never fires the audit event: the viewer
+     * has access; nothing was denied.
+     */
+    public function deniedPreview(): string
+    {
+        return '<section class="corex-denied corex-denied--preview">'
+            . '<p class="corex-denied__preview">'
+            . esc_html__('Preview — this is the state a user without access sees.', 'corex') . '</p>'
+            . $this->deniedBody()
+            . '</section>';
+    }
+
+    /**
+     * The designed access-denied surface (design: "Corex Access & Abilities" → Access denied):
+     * lock mark, the missing capability named precisely, a real way back, and an honestly-disabled
+     * "Request access" (no request workflow exists yet — inventing one would fake behaviour).
+     * Rendered for real by {@see permissionDenied()}.
+     */
+    public function deniedSurface(): string
+    {
+        return '<section class="corex-denied">' . $this->deniedBody() . '</section>';
+    }
+
+    private function deniedBody(): string
+    {
+        return '<span class="corex-denied__icon" aria-hidden="true">'
+            . '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
+            . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
+            . '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>'
+            . '<h2 class="corex-denied__title">' . esc_html__('You don’t have access to this area', 'corex') . '</h2>'
+            . '<p class="corex-denied__text">'
+            . sprintf(
+                /* translators: %s: the required WordPress capability. */
+                esc_html__('Your role doesn’t include the %s capability CoreX requires. Ask a site administrator to grant it through a roles plugin if you need this screen.', 'corex'),
+                '<code>manage_options</code>',
+            )
+            . '</p><div class="corex-denied__actions">'
+            . '<a class="button button-primary" href="' . esc_url(admin_url()) . '">'
+            . esc_html__('Back to Dashboard', 'corex') . '</a>'
+            . '<button type="button" class="button" disabled aria-disabled="true" '
+            . 'aria-describedby="corex-denied-request-reason">' . esc_html__('Request access', 'corex') . '</button>'
+            . '</div><p class="corex-denied__reason" id="corex-denied-request-reason">'
+            . esc_html__('“Request access” is disabled: no request workflow exists yet — contact an administrator directly.', 'corex')
+            . '</p><p class="corex-denied__meta">'
+            . esc_html__('Denied attempts are recorded in the access audit log.', 'corex')
+            . '</p>';
     }
 }

@@ -199,7 +199,10 @@ final class ConfigServiceProvider extends ServiceProvider
         // Operations & Security overview (spec 063): real environment + real WordPress hardening checks.
         $this->container->singleton(OperationsSecurityScreen::class);
 
-        // Access & Abilities baseline (spec 065): read-only role × capability matrix.
+        // Access & Abilities (spec 065 baseline → spec 067 tabs): read-only role × capability surface,
+        // a real denied-attempt audit log, and the menu-level designed HTTP 403 for CoreX pages.
+        $this->container->singleton(\Corex\Config\Access\AccessAuditLog::class);
+        $this->container->singleton(\Corex\Config\Access\AccessDeniedGate::class);
         $this->container->singleton(\Corex\Config\Access\AccessScreen::class);
 
         // Blog Pro reference surface (spec 067): visible, honestly-gated future add-on — real editorial/
@@ -234,6 +237,8 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(DataModelsScreen::class)->register();
         $this->container->make(\Corex\Config\DataModels\DataModelsImportController::class)->register();
         $this->container->make(OperationsSecurityScreen::class)->register();
+        $this->container->make(\Corex\Config\Access\AccessAuditLog::class)->register();
+        $this->container->make(\Corex\Config\Access\AccessDeniedGate::class)->register();
         $this->container->make(\Corex\Config\Access\AccessScreen::class)->register();
         $this->container->make(\Corex\Config\Blog\BlogProScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();

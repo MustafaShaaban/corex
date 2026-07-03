@@ -2089,3 +2089,30 @@ stacked template rows and a contained variables-table scroller at narrow widths.
 Why: this completes the approved product surface without creating unsafe writes or false success. The existing
 engine seams support trustworthy inspection; they do not yet support trustworthy mutation feedback.
 Status: Final on `fix/067-admin-shell-and-completion`; dark/light routes and 375px critical views render-verified.
+
+## #114 -- Spec 067 Access & Abilities: real denied path via the WP menu gate; audit log records only real events
+Date: 2026-07-03
+Context: The audit (item F) requires the designed Access tabs (Overview / Role matrix / Audit log / Access denied)
+without inventing corex_* capabilities, audit history, or request-access behavior. WordPress refuses a user who
+lacks a page's registered capability BEFORE the page callback runs, so an in-page denied render alone could never
+be the real denied experience, and no access events existed to audit.
+Decision: (1) Make the designed denied state the REAL one: a new `AccessDeniedGate` hooks core's
+`admin_page_access_denied` for `corex-*` pages only, publishes a new `corex_admin_access_denied` action, and
+wp_dies with the designed content at a true HTTP 403; the shared `AdminPage::permissionDenied()` renders the same
+designed surface in-shell as defense-in-depth and fires the same action; the Access screen's "Access denied" tab
+embeds it as a labelled preview that never fires the event. (2) A new `AccessAuditLog` (autoload-off option,
+30-day window, 100-entry cap) records ONLY those real denied events; the tab states honestly that grant/revoke
+entries cannot exist because CoreX never mutates roles. (3) "Request access" ships visibly disabled with the exact
+reason (no workflow exists); the back action targets the WP Dashboard, not the CoreX Overview, because a refused
+user cannot open the Overview either. (4) The tracked abilities remain the real WordPress capabilities CoreX
+checks; role cards use real count_users() data; the permissions-plugin conflict notice appears only when a known
+role-manager plugin is really active.
+Why: the design's "HTTP 403 - logged to access audit" promise can only be kept at the menu gate; everything else
+would be a simulated denial. Recording only real events preserves the truthfulness invariant while giving the
+audit tab a live data source from day one.
+Also fixed while verifying: the body-level shell canvas paint never applied (tokens lived only on the descendant
+`.corex-admin` scope), leaking a light band below short pages -- tokens now bind to `body.corex-admin-screen` with
+`corex-appearance-*` pinning like the login; and the matrix table leaked min-content width into the document
+scroll area on phones -- contained via a mobile `minmax(0, 1fr)` shell track + `contain: layout` on the scroller.
+Status: Final on `fix/067-admin-shell-and-completion`; all four tabs render-verified dark/light + 375px; real
+403 + audit entry E2E-verified with a live editor-role user.

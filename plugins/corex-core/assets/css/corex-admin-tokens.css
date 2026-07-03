@@ -36,7 +36,8 @@
 }
 
 .corex-admin,
-body.login.corex-login {
+body.login.corex-login,
+body.corex-admin-screen {
 	color-scheme: dark;
 	--corex-admin-shell: #0d0e11;
 	--corex-admin-canvas: #16181d;
@@ -119,12 +120,14 @@ body.login.corex-login {
 	--corex-admin-font-display: "CoreX Arabic", "CoreX Space Grotesk", sans-serif;
 }
 
-/* System appearance: follow the OS scheme — only when no explicit Light/Dark is
-   pinned ([data-corex-theme] on admin, .corex-appearance-* on login). */
+/* System appearance: follow the OS scheme — only when no explicit Light/Dark
+   is pinned ([data-corex-theme] on admin, .corex-appearance-* on login and on
+   the full-bleed admin body, whose tokens paint the residual canvas). */
 @media (prefers-color-scheme: light) {
 
 	.corex-admin:not([data-corex-theme]),
-	body.login.corex-login:not(.corex-appearance-light):not(.corex-appearance-dark) {
+	body.login.corex-login:not(.corex-appearance-light):not(.corex-appearance-dark),
+	body.corex-admin-screen:not(.corex-appearance-light):not(.corex-appearance-dark) {
 		color-scheme: light;
 		--corex-admin-shell: #eceef1;
 		--corex-admin-canvas: #f6f7f9;
@@ -161,7 +164,8 @@ body.login.corex-login {
 }
 
 .corex-admin[data-corex-theme="light"],
-body.login.corex-login.corex-appearance-light {
+body.login.corex-login.corex-appearance-light,
+body.corex-admin-screen.corex-appearance-light {
 	color-scheme: light;
 	--corex-admin-shell: #eceef1;
 	--corex-admin-canvas: #f6f7f9;

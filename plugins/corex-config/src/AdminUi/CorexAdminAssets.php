@@ -39,7 +39,9 @@ final class CorexAdminAssets
     /**
      * Tags CoreX-owned admin screens with a body class so the shell stylesheet can make the
      * surface full-bleed (remove wp-admin's outer padding/margins) on those pages only — never
-     * on unrelated wp-admin pages or the front end.
+     * on unrelated wp-admin pages or the front end. A pinned Light/Dark appearance is mirrored
+     * as `corex-appearance-*` (like the login) so the body-level token paint of the residual
+     * canvas matches the shell instead of following the OS scheme (spec 067 F).
      */
     public function bodyClass(string $classes): string
     {
@@ -47,6 +49,11 @@ final class CorexAdminAssets
 
         if ($screen !== null && $this->supports((string) $screen->id)) {
             $classes = trim($classes . ' corex-admin-screen');
+
+            $appearance = (string) apply_filters('corex_admin_appearance', 'system');
+            if (in_array($appearance, ['light', 'dark'], true)) {
+                $classes .= ' corex-appearance-' . $appearance;
+            }
         }
 
         return $classes;
