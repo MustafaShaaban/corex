@@ -6,6 +6,43 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.33.0] — 2026-07-03
+
+Spec 065 — Admin product completion. The required completion pass after Spec 063 (truthful surfaces) and Spec 064
+(partial Overview fidelity): every admin surface now shows real data/state or an honest empty/error/unavailable
+state — no safe feature left as a vague "future" placeholder. Company-site recommendations are paused; only
+WooCommerce, advanced AAM / full capability-editor, and commercial/Pro/marketplace/licensing remain deferred. The
+truthfulness invariant is unchanged — real behaviour or an honest state, never a fabricated one.
+
+### Added
+
+- **Operations Mode** — real, safe operating-mode switching (development / staging / production / maintenance),
+  persisted, capability + nonce gated, with confirmation for production and maintenance, an Overview + Operations
+  badge, a mode-change audit log, and mode-specific warnings. Maintenance mode shows an accessible 503 to anonymous
+  visitors but **never locks out a signed-in administrator** and renames no WordPress core files
+  (`Corex\Config\Operations\*`).
+- **Submission retention** — a real retention window with a **real dry-run preview** of how many submissions are
+  older than it, and a capability + nonce + confirmation-gated prune that moves records to trash (recoverable) —
+  never a do-nothing setting, never a deletion without a preview (`Corex\Config\Retention\*`).
+- **Data Models — CSV import dry-run + migration overview** — a real CSV import dry-run that validates an uploaded
+  file against a model's columns and reports accepted/rejected rows + unknown columns while writing nothing, and a
+  truthful migration overview from the real managed-table registry. Committing an import is gated with the exact
+  reason (the read-only data sources expose no write adapter) (`Corex\Config\DataModels\DataImportValidator`,
+  `DataModelsImportController`).
+- **Access & Abilities baseline** — a new read-only screen with a real role × capability matrix (real WordPress
+  roles × the capabilities CoreX actually checks), the current user's permissions, and the `manage_options`
+  requirement per CoreX area. Advanced AAM / a full capability editor remains deferred (`Corex\Config\Access\*`).
+- **Blog** — a designed reading experience across `single`, `archive`, and `index`: category + author/date meta,
+  featured image, content, tags, a real `corex/social-share` bar, a `corex/newsletter-signup` CTA, and a "More from
+  the blog" grid; the archive/home use a post-card grid with a real no-results empty state and pagination.
+
+### Changed
+
+- The Overview environment badge now reflects the declared operations mode (falling back to the WordPress
+  environment type when undeclared).
+- Docs corrected: ROADMAP §17 + PROGRESS + DECISIONS #112 reframe the Spec 063/064/065 milestones and remove all
+  company-site next-step recommendations. Portfolio's exact next scope is recorded (planned after Blog).
+
 ## [0.32.1] — 2026-07-02
 
 Spec 064 — Admin design fidelity. A corrective pass after an owner review of the v0.32.0 admin: the Overview was
