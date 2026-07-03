@@ -4,6 +4,30 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-03, Spec 067 ADMIN SHELL + COMPLETION CORRECTION) -- foundation fixed; C–K remain
+
+- **Branch:** `fix/067-admin-shell-and-completion` (off `main` @ v0.33.0). **PR #98.** CoreX Framework Mode.
+- **Owner correction:** the admin still renders as a centered card with white space + wp-admin chrome leaking,
+  default links appear, and many designed surfaces/tabs are missing. Design authority = the extracted `F:\Work\
+  CoreX.zip` `*.dc.html` files. Audit: `design/audits/065-owner-critical-admin-completion-audit.md` (full A–K map).
+- **DONE + render-verified (Email Studio + Operations & Security, dark):**
+  - **A — full-bleed shell on ALL CoreX screens.** Root cause: `CorexAdminAssets::SCREEN_PATTERN` matched only a
+    hardcoded subset → Forms/Submissions/Operations/Email Studio/Access never got the `corex-admin-screen` body
+    class → the shell kept its card border/radius/shadow + margins + wp-admin footer/padding. Broadened to
+    `_page_corex-<slug>`; zeroed wp-admin content padding; hid `#wpfooter`; painted residual canvas the shell colour.
+  - **B — no default blue/purple links; tokenized focus/hover.** Replaced zero-specificity `:where(a)` with
+    real-specificity brass content-link rules (visited handled, underline only on hover/focus, reduced-motion safe).
+  - Confirmed the operations-mode `<select>` is already tokenized (appearance:none + RTL chevron + focus).
+- **REMAINING (C–K — real multi-tab build-out, scoped in the audit; NOT faked):** Blog Pro admin surface
+  (Analytics/Editorial/Comments/Authors, gated, no fake analytics) · Data Models tabs (Models/Records/Import/Export/
+  Migrations) · Email Studio subpages (Overview/Templates/Layouts/Partials/Variables + template detail Edit/Preview/
+  Plain-text/Test-send/Routing/Delivery-logs) · Access tabs (Overview/Role-matrix/Audit-log/Access-denied) · Insights
+  state widgets · Setup Wizard scenarios+steps · Operations dropdown option-state polish + Security Center · Forms &
+  Flows tabs · Settings/Media/Retention parity. Each is honestly gated where no safe mutation exists yet.
+- **Exact next step:** build C (Blog Pro gated surface, the "completely missing" item) first, then D/E/F/G/H/J/K
+  batch by batch — spec-first, guard-gated, tested, render-verified per tab. Do not fake analytics/logs/records.
+
+---
 ## RESUME HERE (2026-07-02, Spec 065 ADMIN PRODUCT COMPLETION) -- required scope; company-site paused
 
 - **Branch:** `spec/065-admin-product-completion` (off `main` @ v0.32.1 `669cd1c`). CoreX Framework Mode.
