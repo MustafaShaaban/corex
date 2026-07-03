@@ -1,0 +1,44 @@
+/**
+ * Corex Project Meta — token-only, logical CSS (RTL-correct).
+ * Compiled by @wordpress/scripts; loads only where the block renders.
+ */
+.corex-project-meta {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--30);
+}
+
+/* stylelint-disable @stylistic/max-line-length -- functional grid track */
+.corex-project-meta__list {
+	display: grid;
+
+	/* Functional responsive track (layout), not a design token. */
+	grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+	gap: var(--wp--preset--spacing--30);
+	margin: 0;
+}
+/* stylelint-enable @stylistic/max-line-length */
+
+.corex-project-meta__row {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--20);
+}
+
+.corex-project-meta__row dt {
+	font-size: var(--wp--preset--font-size--small);
+	text-transform: uppercase;
+	color: var(--wp--preset--color--ink-soft);
+}
+
+.corex-project-meta__row dd {
+	margin: 0;
+	font-weight: 600;
+	color: var(--wp--preset--color--ink);
+}
+
+.corex-project-meta__link {
+	align-self: flex-start;
+	font-weight: 600;
+	color: var(--wp--preset--color--primary);
+}

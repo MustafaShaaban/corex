@@ -14,7 +14,9 @@ use Corex\Blocks\BlockMap;
 use Corex\Blocks\DynamicBlockRegistrar;
 use Corex\Foundation\ServiceProvider;
 use Corex\Kit\BlueprintRegistry;
+use Corex\Portfolio\Blocks\ProjectMetaProvider;
 use Corex\Portfolio\Blocks\ProjectsProvider;
+use Corex\Portfolio\Blocks\WpProjectMetaProvider;
 use Corex\Portfolio\Blocks\WpProjectsProvider;
 
 /**
@@ -28,6 +30,7 @@ final class PortfolioServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->container->singleton(ProjectsProvider::class, WpProjectsProvider::class);
+        $this->container->singleton(ProjectMetaProvider::class, WpProjectMetaProvider::class);
     }
 
     public function boot(): void
@@ -71,6 +74,34 @@ final class PortfolioServiceProvider extends ServiceProvider
             'hierarchical'      => true,
             'show_admin_column' => true,
         ]);
+
+        $this->registerProjectMeta();
+    }
+
+    /**
+     * The structured project fields (client, role, year, external URL) shown by the corex/project-meta
+     * block. Registered on the CPT with REST exposure so they can be edited and read; each is a single
+     * sanitised string, and only editors (edit_posts) may write. A project may leave any field empty —
+     * the block simply omits it (honest empty), never fabricating a value.
+     */
+    private function registerProjectMeta(): void
+    {
+        $strings = [
+            WpProjectMetaProvider::CLIENT => 'sanitize_text_field',
+            WpProjectMetaProvider::ROLE   => 'sanitize_text_field',
+            WpProjectMetaProvider::YEAR   => 'sanitize_text_field',
+            WpProjectMetaProvider::URL    => 'esc_url_raw',
+        ];
+
+        foreach ($strings as $key => $sanitizer) {
+            register_post_meta(WpProjectsProvider::POST_TYPE, $key, [
+                'type'              => 'string',
+                'single'            => true,
+                'show_in_rest'      => true,
+                'sanitize_callback' => $sanitizer,
+                'auth_callback'     => static fn (): bool => current_user_can('edit_posts'),
+            ]);
+        }
     }
 
     /**

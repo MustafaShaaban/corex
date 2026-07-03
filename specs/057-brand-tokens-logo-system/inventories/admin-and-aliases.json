@@ -324,6 +324,13 @@
       "context": "lines 14: color: var(--corex-admin-text-muted);"
     },
     {
+      "legacy_property": "--wp--preset--font-size--small",
+      "target_definition": "font-size.sm",
+      "resolution": "alias-required",
+      "path": "addons/corex-kit-portfolio/src/Blocks/project-meta/style.scss",
+      "context": "lines 29: font-size: var(--wp--preset--font-size--small);"
+    },
+    {
       "legacy_property": "--wp--preset--color--danger",
       "target_definition": "color.error",
       "resolution": "alias-required",

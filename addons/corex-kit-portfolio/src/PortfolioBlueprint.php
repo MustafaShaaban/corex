@@ -45,7 +45,7 @@ final class PortfolioBlueprint extends Blueprint
      */
     public function templates(): array
     {
-        return ['archive-project', 'single-project', 'front-page', 'page', 'index'];
+        return ['archive-corex_project', 'single-corex_project', 'front-page', 'page', 'index'];
     }
 
     /**

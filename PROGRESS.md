@@ -37,10 +37,14 @@
     no-results + pagination). Front-end render-verified.
   - Full **Pest 894**, **Jest 125**, lint:css clean, token contract green, `composer validate` valid,
     `verify:dependencies` PASS, guards wp/clean-code/test clean.
-- **B8 remaining (small, on PR #95):** Portfolio next-scope is now **defined** in the spec (planned after Blog —
-  archive card grid + single project meta + project card + filters + a `section-selected-work` pattern; templates
-  `archive-project.html`/`single-project.html` + `corex/projects` already exist). Optional polish: Email template
-  detail/preview and a Setup-Wizard readiness checklist (both surfaces are already truthful + product-clear).
+- **Portfolio — DONE** (spec 066, PR #97): brought to Blog-level fidelity — real project meta
+  (`corex_project_client/role/year/url`) + a server-rendered `corex/project-meta` block (populated fields only,
+  honest empty), `single-corex_project` (project type + featured image + meta block + content + social share +
+  more-projects) and `archive-corex_project` (card grid + no-results + pagination) — **renamed from
+  single-project/archive-project so the FSE hierarchy actually applies them to the CPT** (fixed a pre-existing bug)
+  — plus reusable `corex/project-card` + `corex/section-selected-work` patterns. Front-end render-verified light+dark.
+- **B8 optional polish (not blocking):** Email template detail/preview and a Setup-Wizard readiness checklist (both
+  surfaces are already truthful + product-clear).
 - **Honestly deferred (specific reason on-screen, not a vague future):** visual Forms/Flow builder; visual Email
   template editor; operations-mode/import *commit* write path. **Only Woo / advanced AAM / commercial-Pro are out of
   scope.**

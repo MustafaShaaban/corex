@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 636,
+    "consumer_records": 643,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -486,7 +486,9 @@
     {
       "legacy_property": "--wp--preset--font-size--small",
       "target_definition": "font-size.sm",
-      "consumer_paths": [],
+      "consumer_paths": [
+        "addons/corex-kit-portfolio/src/Blocks/project-meta/style.scss"
+      ],
       "introduced_version": "0.28.0",
       "remove_after_version": "0.29.0",
       "status": "active"
@@ -496,7 +498,8 @@
     {
       "owner": "other-addon",
       "paths": [
-        "addons/corex-captcha/assets/captcha-admin.css"
+        "addons/corex-captcha/assets/captcha-admin.css",
+        "addons/corex-kit-portfolio/src/Blocks/project-meta/style.scss"
       ],
       "properties": [
         "--corex-admin-error",
@@ -507,7 +510,8 @@
         "--corex-admin-success",
         "--corex-admin-success-soft",
         "--corex-admin-surface-alt",
-        "--corex-admin-text-muted"
+        "--corex-admin-text-muted",
+        "--wp--preset--font-size--small"
       ]
     },
     {
