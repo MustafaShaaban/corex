@@ -2116,3 +2116,26 @@ Also fixed while verifying: the body-level shell canvas paint never applied (tok
 scroll area on phones -- contained via a mobile `minmax(0, 1fr)` shell track + `contain: layout` on the scroller.
 Status: Final on `fix/067-admin-shell-and-completion`; all four tabs render-verified dark/light + 375px; real
 403 + audit entry E2E-verified with a live editor-role user.
+
+## #115 -- Spec 068: approved current design is required functionality
+Date: 2026-07-03
+Context: Owner review rejected the presentation-only completion boundary used by Specs 063, 065, and the early
+Spec 067 audit. Multiple approved screens still exposed sample analytics, read-only inventories, planned/future
+copy, disabled actions, or tabs without a persistence/service contract. The owner explicitly defined the design as
+the functional contract and directed CoreX work to continue until every approved current control and workflow is
+real, secure, tested, and visually verified. The owner also authorized selecting the recommended safe routine choice
+without stopping for repeated approvals.
+Decision: (1) Adopt `specs/068-admin-product-functional-completion/` as the authoritative completion contract while
+continuing on the active PR #98 branch. It supersedes older deferral decisions only where they conflict; completed
+compatible work remains. (2) Required current behavior may not be replaced by an honest disabled/read-only/future
+surface. Only a genuinely absent optional dependency may gate a control, and it must provide a real resolution path.
+(3) Deliver vertical slices over shared activity, ability, bounded-job, data-write, result, and mail contracts so
+screens do not grow incompatible one-off backends. (4) Preserve WordPress-native posts/comments/users/roles/media
+and keep the theme presentation-only. (5) Maintain direct FR/SC-to-task/test/runtime/render evidence; broad green
+tests or screenshots alone do not prove completion. (6) Do not start or recommend a client/company-site project
+until the Spec 068 completion audit passes.
+Why: the product cannot claim completion while its designed actions are demonstrations. A single evidence-backed
+contract prevents scope from shrinking around the current code, while vertical slices keep the mandated breadth
+reviewable, reversible, and constitution-compliant.
+Status: Final. Spec/plan/tasks approved by standing owner direction; implementation active on
+`fix/067-admin-shell-and-completion`.

@@ -1,0 +1,356 @@
+# Tasks: CoreX Product Functional Completion
+
+**Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [contracts/](contracts/), [quickstart.md](quickstart.md)
+
+**Tests**: Required. Every production task follows a failing focused Pest/Jest/Playwright test, then affected-suite verification, relevant guard, docs, and rendered evidence.
+
+**Ownership**: CoreX Framework Mode; branch `fix/067-admin-shell-and-completion`; normal root only. The current work unit owns `specs/068-admin-product-functional-completion/`, adopted `plugins/corex-config/src/Insights/InsightWidgets.php`, and only files named by the active task.
+
+## Phase 1: Governance and Executable Baseline
+
+- [x] T001 Record the owner-approved functional-completion contract in `specs/068-admin-product-functional-completion/spec.md`
+- [x] T002 Create the technical plan and design artifacts in `specs/068-admin-product-functional-completion/plan.md`, `research.md`, `data-model.md`, `contracts/`, and `quickstart.md`
+- [x] T003 Update the managed Spec Kit pointer in `CLAUDE.md` to `specs/068-admin-product-functional-completion/plan.md`
+- [x] T004 Add Decision #115 superseding presentation-only deferrals in `DECISIONS.md`
+- [x] T005 Update the active resume block and Spec 068 task IDs in `PROGRESS.md`
+- [x] T006 Update current direction and prohibited deferrals in `ROADMAP.md` and `design/INVENTORY.md`
+- [x] T007 [P] Create the requirement/copy/control audit script in `scripts/audit-product-completion.mjs`
+- [x] T008 [P] Add audit-script tests in `tests/product-completion-audit.test.js`
+- [x] T009 Create the requirement evidence ledger in `specs/068-admin-product-functional-completion/evidence.md`
+- [x] T010 Run `docs-guard`, `git diff --check`, and the audit script on the planning diff; record results in `specs/068-admin-product-functional-completion/evidence.md`
+
+**Checkpoint**: Spec 068 is durable, guard-clean, and has an executable completion ledger.
+
+## Phase 2: Shared Product Foundations
+
+### Activity and Results
+
+- [ ] T011 [P] Add failing ActivityEvent value-object tests in `tests/Unit/Activity/ActivityEventTest.php`
+- [ ] T012 [P] Add failing activity repository/service tests in `tests/Unit/Activity/ActivityServiceTest.php`
+- [ ] T013 Implement activity value objects and contracts in `plugins/corex-core/src/Activity/ActivityEvent.php`, `ActivityRepository.php`, and `ActivityService.php`
+- [ ] T014 Add managed activity table definition in `plugins/corex-config/src/Activity/ActivityTable.php`
+- [ ] T015 Implement activity repository and retention-safe queries in `plugins/corex-config/src/Activity/WpActivityRepository.php`
+- [ ] T016 Bind activity services and migration in `plugins/corex-config/src/ConfigServiceProvider.php`
+- [ ] T017 Add shared OperationResult and Confirmation value objects with tests in `plugins/corex-core/src/Operations/OperationResult.php`, `Confirmation.php`, and `tests/Unit/Operations/OperationResultTest.php`
+- [ ] T018 Add activity REST query contract tests in `tests/Integration/Activity/ActivityControllerTest.php`
+- [ ] T019 Implement thin activity REST controller/routes in `plugins/corex-config/src/Activity/ActivityController.php`
+
+### Abilities and Access Policy
+
+- [ ] T020 [P] Add failing ability-catalog/group tests in `tests/Unit/Access/CorexAbilityCatalogTest.php`
+- [ ] T021 [P] Add failing self/last-admin lockout tests in `tests/Unit/Access/AccessPolicyTest.php`
+- [ ] T022 Implement grouped ability definitions in `plugins/corex-core/src/Access/CorexAbility.php` and `CorexAbilityCatalog.php`
+- [ ] T023 Implement access policy and preview result in `plugins/corex-core/src/Access/AccessPolicy.php` and `AccessChangePreview.php`
+- [ ] T024 Add role-grant/access-request managed tables in `plugins/corex-config/src/Access/AccessTables.php`
+- [ ] T025 Implement grant/request repositories in `plugins/corex-config/src/Access/RoleAbilityRepository.php` and `AccessRequestRepository.php`
+- [ ] T026 Implement AccessService grant/revoke/request/decision orchestration in `plugins/corex-config/src/Access/AccessService.php`
+- [ ] T027 Bind ability/access services and compatibility mapping in `plugins/corex-config/src/ConfigServiceProvider.php`
+
+### Bounded Jobs
+
+- [ ] T028 [P] Add failing bounded-job state/idempotency tests in `tests/Unit/Jobs/BoundedJobTest.php`
+- [ ] T029 Implement job value/contracts in `plugins/corex-core/src/Jobs/BoundedJob.php`, `JobRepository.php`, and `JobHandler.php`
+- [ ] T030 Add managed job table and repository in `plugins/corex-config/src/Jobs/JobTable.php` and `WpJobRepository.php`
+- [ ] T031 Implement optional Action Scheduler and WP-Cron/CLI dispatchers in `plugins/corex-config/src/Jobs/ActionSchedulerJobDispatcher.php` and `CronJobDispatcher.php`
+- [ ] T032 Add job status/cancel/retry REST tests in `tests/Integration/Jobs/JobControllerTest.php`
+- [ ] T033 Implement job REST controller and service bindings in `plugins/corex-config/src/Jobs/JobController.php` and `ConfigServiceProvider.php`
+
+### Data Capability and Mail Result Contracts
+
+- [ ] T034 [P] Add failing granular source-capability tests in `tests/Unit/Data/DataSourceCapabilitiesTest.php`
+- [ ] T035 Implement data capability/schema/write adapter contracts in `plugins/corex-core/src/Data/DataSourceCapabilities.php`, `DataField.php`, and `DataWriteAdapter.php`
+- [ ] T036 Extend admin DataSource adapters without breaking existing readers in `plugins/corex-config/src/Data/DataSource.php` and `DataRegistry.php`
+- [ ] T037 Add failing result-bearing mail contract tests in `tests/Unit/Mail/MailResultContractTest.php`
+- [ ] T038 Extend `plugins/corex-core/src/Mail/Mailer.php` and `MailRequest.php` with attempt/result contracts while preserving compatibility
+- [ ] T039 Adapt existing CoreX Mail and fallback listeners in `addons/corex-email/src/RequestMailer.php`, `QueuedMailer.php`, and `plugins/corex-forms/src/Listeners/SendEmailListener.php`
+- [ ] T040 Register shared foundations and verify migration idempotency in `tests/Integration/Foundation/ProductFoundationTest.php`
+- [ ] T041 Run focused PHP suites plus `clean-code-guard`, `wp-guard`, and `test-guard`; record Phase 2 evidence in `specs/068-admin-product-functional-completion/evidence.md`
+
+**Checkpoint**: Activity, abilities, jobs, source capabilities, operation results, and mail outcomes are real shared contracts.
+
+## Phase 3: User Story 7 — Functional Email Studio (P1)
+
+**Independent Test**: Persist a template/layout/partial/route, preview desktop/mobile/RTL, capture a Development test, block unsafe Production, and inspect/resend the logged attempt.
+
+- [ ] T042 [P] [US7] Add template/layout/partial/version repository tests in `tests/Unit/Email/EmailStudioRepositoryTest.php`
+- [ ] T043 [P] [US7] Add variable validation and unsafe-content tests in `tests/Unit/Email/EmailTemplateEditorTest.php`
+- [ ] T044 [US7] Implement template/version models and repository in `addons/corex-email/src/Studio/EmailTemplate.php`, `EmailTemplateVersion.php`, and `EmailTemplateRepository.php`
+- [ ] T045 [US7] Implement transactional/minimal/newsletter layouts, dependency-gated Woo layout, partial models, and repositories in `addons/corex-email/src/Studio/EmailLayoutRepository.php` and `EmailPartialRepository.php`
+- [ ] T046 [US7] Implement safe template editing/rendering service in `addons/corex-email/src/Studio/EmailTemplateService.php`
+- [ ] T047 [P] [US7] Add development capture/provider-policy tests in `tests/Unit/Email/DeliveryPolicyTest.php`
+- [ ] T048 [US7] Implement Development capture store/driver in `addons/corex-email/src/Capture/CapturedEmailRepository.php` and `CaptureMailDriver.php`
+- [ ] T049 [US7] Implement Production provider policy and typed attempts in `addons/corex-email/src/Delivery/DeliveryPolicy.php` and `EmailAttemptRepository.php`
+- [ ] T050 [P] [US7] Add routing/test/resend/health service tests in `tests/Unit/Email/EmailStudioServiceTest.php`
+- [ ] T051 [US7] Implement email route repository/service in `addons/corex-email/src/Routing/EmailRouteRepository.php` and `EmailRouteService.php`
+- [ ] T052 [US7] Implement test-send, resend, and health services in `addons/corex-email/src/Studio/EmailStudioService.php`
+- [ ] T053 [P] [US7] Add Email Studio REST contract tests in `tests/Integration/Email/EmailStudioControllerTest.php`
+- [ ] T054 [US7] Implement Email Studio REST controllers/routes in `addons/corex-email/src/Studio/EmailStudioController.php` and `MailServiceProvider.php`
+- [ ] T055 [P] [US7] Add Email Studio client state tests in `plugins/corex-config/src/email/__tests__/emailStudio.test.js`
+- [ ] T056 [US7] Replace read-only `plugins/corex-config/src/Email/EmailStudioScreen.php` with the functional Studio shell/client in `plugins/corex-config/src/email/index.js`
+- [ ] T057 [US7] Implement template, layout, partial, routing, preview, plain-text, test, logs, health, and resend components in `plugins/corex-config/src/email/components/`
+- [ ] T058 [US7] Complete token-only responsive Studio styles in `plugins/corex-config/assets/email-studio.scss`
+- [ ] T059 [US7] Connect Forms and Access notification callers to EmailRouteService in `plugins/corex-forms/src/Listeners/SendEmailListener.php` and `plugins/corex-config/src/Access/AccessService.php`
+- [ ] T060 [US7] Add Development capture and Production-provider integration coverage in `tests/Integration/Mail/EmailStudioLifecycleTest.php`
+- [ ] T061 [US7] Add Playwright Email Studio workflow and dark/light/RTL/mobile evidence in `tests/e2e/email-studio.spec.js`
+- [ ] T062 [US7] Update `addons/corex-email/README.md`, `plugins/corex-config/README.md`, and `docs-app/src/content/docs/guides/email-studio.mdx`
+- [ ] T063 [US7] Run Email-focused suites/build and clean-code/wp/test/docs guards; record Phase 3 results in `specs/068-admin-product-functional-completion/evidence.md`
+
+**Checkpoint**: Email Studio has no code-defined-only editor, disabled test send, planned routing, or placeholder partial state.
+
+## Phase 4: User Story 2 — Forms and Flows Builder (P1)
+
+**Independent Test**: Create, configure, publish, render, submit, route, email/capture, and timeline a versioned flow; repeat in test mode.
+
+- [ ] T064 [P] [US2] Add flow lifecycle/version tests in `tests/Unit/Forms/FlowTest.php`
+- [ ] T065 [P] [US2] Add field-type/validation registry tests in `tests/Unit/Forms/FlowRegistryTest.php`
+- [ ] T066 [P] [US2] Add ordered routing/fallback tests in `tests/Unit/Forms/RoutingServiceTest.php`
+- [ ] T067 [US2] Implement Flow and FlowVersion aggregates in `plugins/corex-forms/src/Flow/Flow.php` and `FlowVersion.php`
+- [ ] T068 [US2] Implement flow repository/version persistence in `plugins/corex-forms/src/Flow/FlowRepository.php`
+- [ ] T069 [US2] Expand FieldSchema for all required field types/settings in `plugins/corex-forms/src/Schema/FieldSchema.php` and `FieldTypeRegistry.php`
+- [ ] T070 [US2] Add URL/length/pattern/custom validation in `plugins/corex-forms/src/Validation/Rules/` and `RuleRegistry.php`
+- [ ] T071 [US2] Implement routing conditions/targets/service in `plugins/corex-forms/src/Routing/`
+- [ ] T072 [US2] Implement flow-action/email-variable/success registries in `plugins/corex-forms/src/Flow/FlowActionRegistry.php`, `EmailVariableRegistry.php`, and `Success/SuccessStateRegistry.php`
+- [ ] T073 [P] [US2] Add publish validation and optimistic-conflict tests in `tests/Unit/Forms/FlowServiceTest.php`
+- [ ] T074 [US2] Implement draft/publish/unpublish/close/expire/preview service in `plugins/corex-forms/src/Flow/FlowService.php`
+- [ ] T075 [P] [US2] Add flow REST contract tests in `tests/Integration/Forms/FlowControllerTest.php`
+- [ ] T076 [US2] Implement flow REST controller/routes with declarative middleware in `plugins/corex-forms/src/Flow/FlowController.php` and `FormsServiceProvider.php`
+- [ ] T077 [P] [US2] Add builder reducer/validation tests in `plugins/corex-config/src/forms/__tests__/flowEditor.test.js`
+- [ ] T078 [US2] Replace read-only `FormsFlowsScreen.php` with a functional builder shell in `plugins/corex-config/src/Forms/FormsFlowsScreen.php`
+- [ ] T079 [US2] Implement flow list/search/filter/lifecycle UI in `plugins/corex-config/src/forms/FlowList.js`
+- [ ] T080 [US2] Implement field add/edit/reorder/remove and settings UI in `plugins/corex-config/src/forms/FlowEditor.js`
+- [ ] T081 [US2] Implement validation, routing, emails, success, pipeline, preview, and test tabs in `plugins/corex-config/src/forms/tabs/`
+- [ ] T082 [US2] Complete builder styles and all UI states in `plugins/corex-config/assets/forms-admin.scss`
+- [ ] T083 [P] [US2] Add full submission-pipeline stage tests in `tests/Unit/Forms/FormSubmissionPipelineTest.php`
+- [ ] T084 [US2] Refactor submission orchestration into typed pipeline stages in `plugins/corex-forms/src/Submission/FormSubmissionPipeline.php`
+- [ ] T085 [US2] Persist flow version, consent, UTM, spam, routing, email, and test metadata in `plugins/corex-forms/src/Submission/SubmissionRepository.php`
+- [ ] T086 [US2] Implement Flow, Form, Success Message, Subscribe, Survey, and CTA+Flow dynamic blocks under `plugins/corex-forms/src/Block/blocks/`
+- [ ] T087 [P] [US2] Add block editor/render tests in `plugins/corex-forms/src/Block/blocks/__tests__/flowBlocks.test.js` and `tests/Unit/Forms/FlowBlocksTest.php`
+- [ ] T088 [US2] Add live flow-to-inbox integration test in `tests/Integration/Forms/FlowLifecycleTest.php`
+- [ ] T089 [US2] Add visitor/admin Playwright workflow and visual matrix in `tests/e2e/forms-flow.spec.js`
+- [ ] T090 [US2] Update `plugins/corex-forms/README.md` and `docs-app/src/content/docs/guides/forms-flows.mdx`
+- [ ] T091 [US2] Run Forms suites/build and clean-code/wp/test/docs guards; record Phase 4 results in `specs/068-admin-product-functional-completion/evidence.md`
+
+**Checkpoint**: Visual flow creation and the complete visitor pipeline work without a planned/code-first note.
+
+## Phase 5: User Story 3 — Submissions Inbox (P1)
+
+**Independent Test**: Filter, select, mark read, assign, change status, note, email, export, and retain accessible real/test submissions with a complete timeline.
+
+- [ ] T092 [P] [US3] Add Inbox query/filter/permission tests in `tests/Unit/Submissions/SubmissionQueryServiceTest.php`
+- [ ] T093 [P] [US3] Add status/assignment/note/timeline tests in `tests/Unit/Submissions/SubmissionWorkflowServiceTest.php`
+- [ ] T094 [US3] Extend submission reader/repository query and detail projections in `plugins/corex-config/src/Data/WpSubmissionsReader.php`
+- [ ] T095 [US3] Implement status/read/assignment/note services in `plugins/corex-config/src/Submissions/SubmissionWorkflowService.php`
+- [ ] T096 [US3] Implement submission timeline repository in `plugins/corex-config/src/Submissions/SubmissionTimelineRepository.php`
+- [ ] T097 [P] [US3] Add bulk-preview/apply tests in `tests/Unit/Submissions/SubmissionBulkServiceTest.php`
+- [ ] T098 [US3] Implement bounded bulk actions in `plugins/corex-config/src/Submissions/SubmissionBulkService.php`
+- [ ] T099 [P] [US3] Add export-scope/personal-data/audit tests in `tests/Unit/Submissions/SubmissionExportServiceTest.php`
+- [ ] T100 [US3] Implement selected/filter/all export jobs/history in `plugins/corex-config/src/Submissions/SubmissionExportService.php`
+- [ ] T101 [US3] Integrate reply/resend/log actions through Email Studio in `plugins/corex-config/src/Submissions/SubmissionEmailService.php`
+- [ ] T102 [P] [US3] Add Inbox REST contract tests in `tests/Integration/Submissions/SubmissionsControllerTest.php`
+- [ ] T103 [US3] Implement Inbox REST controller/routes in `plugins/corex-config/src/Submissions/SubmissionsController.php`
+- [ ] T104 [P] [US3] Add Inbox client/filter/selection/drawer tests in `plugins/corex-config/src/submissions/__tests__/inbox.test.js`
+- [ ] T105 [US3] Replace basic `plugins/corex-config/src/Submissions/SubmissionsInboxScreen.php` with the functional Inbox client shell
+- [ ] T106 [US3] Implement Inbox table, filters, bulk toolbar, detail drawer, notes, timeline, email, and export modal in `plugins/corex-config/src/submissions/`
+- [ ] T107 [US3] Complete responsive Inbox styles in `plugins/corex-config/assets/submissions-admin.scss`
+- [ ] T108 [US3] Extend retention service for test exclusion and archive/trash/anonymize previews in `plugins/corex-config/src/Retention/SubmissionRetention.php`
+- [ ] T109 [US3] Add Inbox E2E and personal-data export evidence in `tests/e2e/submissions-inbox.spec.js`
+- [ ] T110 [US3] Update Submissions docs in `plugins/corex-config/README.md` and `docs-app/src/content/docs/guides/submissions.mdx`
+- [ ] T111 [US3] Run Submissions suites/build and clean-code/wp/test/docs guards; record Phase 5 results in `specs/068-admin-product-functional-completion/evidence.md`
+
+## Phase 6: User Story 4 — Data Explorer and Data Models (P1)
+
+**Independent Test**: Query a source; preview/apply writes; dry-run/commit CSV; export CSV/XLSX; snapshot/apply/rollback migration; verify permissions and audit.
+
+- [ ] T112 [P] [US4] Add source capability/action visibility tests in `tests/Unit/Data/DataSourceCapabilitiesTest.php`
+- [ ] T113 [P] [US4] Add real query/filter/sort/page tests in `tests/Unit/Data/DataQueryServiceTest.php`
+- [ ] T114 [US4] Implement source capability projection and permission service in `plugins/corex-config/src/Data/DataSourceService.php`
+- [ ] T115 [US4] Extend table/submission adapters for query/schema/detail in `plugins/corex-config/src/Data/TableDataSource.php` and `SubmissionsSource.php`
+- [ ] T116 [P] [US4] Add mutation preview/create/update/delete/bulk tests in `tests/Unit/Data/DataMutationServiceTest.php`
+- [ ] T117 [US4] Implement write-adapter mutation service in `plugins/corex-config/src/Data/DataMutationService.php`
+- [ ] T118 [P] [US4] Add CSV mapping/dry-run/report/commit tests in `tests/Unit/DataModels/DataImportServiceTest.php`
+- [ ] T119 [US4] Replace validation-only import with job-backed commit in `plugins/corex-config/src/DataModels/DataImportService.php`
+- [ ] T120 [US4] Implement downloadable rejected-row report and formula-safe CSV handling in `plugins/corex-config/src/DataModels/ImportReportWriter.php`
+- [ ] T121 [P] [US4] Add CSV/XLSX export/history tests in `tests/Unit/DataModels/DataExportServiceTest.php`
+- [ ] T122 [US4] Implement column-scoped export jobs/history in `plugins/corex-config/src/DataModels/DataExportService.php`
+- [ ] T123 [P] [US4] Add migration snapshot/transaction/rollback/history tests in `tests/Unit/DataModels/MigrationServiceTest.php`
+- [ ] T124 [US4] Implement migration registry/run repository/service in `plugins/corex-config/src/DataModels/MigrationService.php`
+- [ ] T125 [P] [US4] Add Data/Data Models REST contract tests in `tests/Integration/Data/DataManagementControllerTest.php`
+- [ ] T126 [US4] Extend DataController and add mutation/import/export/migration controllers in `plugins/corex-config/src/Data/` and `DataModels/`
+- [ ] T127 [P] [US4] Expand Data client tests in `plugins/corex-config/src/admin/__tests__/dataClient.test.js`
+- [ ] T128 [US4] Implement working query controls, capability actions, preview modals, and export history in `plugins/corex-config/src/admin/index.js`
+- [ ] T129 [US4] Replace read-only Data Models tabs with functional records/import/export/migrations UI in `plugins/corex-config/src/data-models/`
+- [ ] T130 [US4] Add Data management Playwright and visual evidence in `tests/e2e/data-management.spec.js`
+- [ ] T131 [US4] Update Data docs and adapter extension guide in `plugins/corex-config/README.md` and `docs-app/src/content/docs/guides/data-management.mdx`
+- [ ] T132 [US4] Run Data suites/build and clean-code/wp/test/docs guards; record Phase 6 results in `specs/068-admin-product-functional-completion/evidence.md`
+
+## Phase 7: User Story 5 — Operations, Security, and Access (P1)
+
+**Independent Test**: Enforce Production readiness, Maintenance safety, login limits/custom route/recovery, editable CoreX abilities, access request/grant/notification, conflict mode, and no-lockout invariants.
+
+- [ ] T133 [P] [US5] Add readiness block/override and typed-PRODUCTION tests in `tests/Unit/Operations/ProductionLaunchServiceTest.php`
+- [ ] T134 [US5] Implement shared readiness snapshot and Production transition service in `plugins/corex-config/src/Operations/ProductionLaunchService.php`
+- [ ] T135 [US5] Extend MaintenanceGuard visitor/admin/recovery behavior tests in `tests/Integration/Operations/MaintenanceModeTest.php`
+- [ ] T136 [P] [US5] Add login policy/rate-limit/proxy tests in `tests/Unit/Security/LoginProtectionServiceTest.php`
+- [ ] T137 [US5] Implement login policy, attempts, lockouts, and retention repositories in `plugins/corex-config/src/Security/LoginProtection/`
+- [ ] T138 [US5] Implement custom login route/default-endpoint guard without moving core files in `plugins/corex-config/src/Security/LoginProtection/LoginRouteGuard.php`
+- [ ] T139 [P] [US5] Add recovery constant/command tests in `tests/Integration/Security/LoginRecoveryTest.php`
+- [ ] T140 [US5] Implement `wp corex security reset-login` in `packages/cli/src/Commands/SecurityResetLoginCommand.php`
+- [ ] T141 [US5] Register recovery command and `COREX_LOGIN_UNGUARD` bypass in `packages/cli/src/CliServiceProvider.php` and login guard
+- [ ] T142 [US5] Expand hardening checks in `plugins/corex-config/src/Security/HardeningChecks.php` with focused tests
+- [ ] T143 [P] [US5] Add access matrix/grant/request/decision REST tests in `tests/Integration/Access/AccessControllerTest.php`
+- [ ] T144 [US5] Implement AccessController routes over AccessService in `plugins/corex-config/src/Access/AccessController.php`
+- [ ] T145 [US5] Replace read-only AccessMatrix projection with editable CoreX ability states in `plugins/corex-config/src/Access/AccessMatrix.php`
+- [ ] T146 [US5] Implement external role-plugin detection/coexistence in `plugins/corex-config/src/Access/RolePluginCompatibility.php`
+- [ ] T147 [P] [US5] Add Access UI state/client tests in `plugins/corex-config/src/access/__tests__/access.test.js`
+- [ ] T148 [US5] Implement editable matrix, request queue, grant modal, audit, and real denied/request UI in `plugins/corex-config/src/access/`
+- [ ] T149 [US5] Replace the disabled request-access control in `plugins/corex-core/src/Admin/AdminPage.php` with the real workflow
+- [ ] T150 [P] [US5] Add Operations/Security UI client tests in `plugins/corex-config/src/security/__tests__/securityCenter.test.js`
+- [ ] T151 [US5] Implement launch checklist, typed modal, login policy, activity, lockouts, and recovery UI in `plugins/corex-config/src/security/`
+- [ ] T152 [US5] Update operations/access/login styles in `plugins/corex-config/assets/operations-security.scss` and `access.scss`
+- [ ] T153 [US5] Add live lockout/recovery/access-request Playwright tests in `tests/e2e/security-access.spec.js`
+- [ ] T154 [US5] Document recovery and access workflows in `docs/en/03-operations/security.md`, `packages/cli/README.md`, and docs-app guides
+- [ ] T155 [US5] Run Security/Access suites/build and clean-code/wp/test/docs guards; record Phase 7 results in `specs/068-admin-product-functional-completion/evidence.md`
+
+## Phase 8: User Story 6 — Blog Pro and Native Blog (P1)
+
+**Independent Test**: Move native post through editorial/schedule/publish, collect real analytics, moderate comments, manage authors/sharing/settings, and render complete front end.
+
+- [ ] T156 [P] [US6] Add first-party counter/privacy/aggregation tests in `tests/Unit/Blog/BlogAnalyticsServiceTest.php`
+- [ ] T157 [US6] Implement reading-event managed table/repository in `plugins/corex-config/src/Blog/ReadingEventRepository.php`
+- [ ] T158 [US6] Implement consent-aware event collection and aggregate service in `plugins/corex-config/src/Blog/BlogAnalyticsService.php`
+- [ ] T159 [P] [US6] Add editorial transition/native-status tests in `tests/Unit/Blog/EditorialWorkflowServiceTest.php`
+- [ ] T160 [US6] Implement editorial metadata/notes/assignment/due-date service in `plugins/corex-config/src/Blog/EditorialWorkflowService.php`
+- [ ] T161 [P] [US6] Add native comment moderation tests in `tests/Integration/Blog/CommentModerationTest.php`
+- [ ] T162 [US6] Implement comment moderation and author projections in `plugins/corex-config/src/Blog/CommentModerationService.php` and `AuthorAnalyticsService.php`
+- [ ] T163 [US6] Implement social settings/share-click logging in `plugins/corex-config/src/Blog/SocialSharingService.php`
+- [ ] T164 [P] [US6] Add Blog REST contract tests in `tests/Integration/Blog/BlogProControllerTest.php`
+- [ ] T165 [US6] Implement Blog analytics/editorial/comments/authors/settings controllers in `plugins/corex-config/src/Blog/BlogProController.php`
+- [ ] T166 [P] [US6] Add Blog Pro client/chart/workflow tests in `plugins/corex-config/src/blog/__tests__/blogPro.test.js`
+- [ ] T167 [US6] Replace future/sample `BlogProScreen.php` and `BlogProModel.php` with functional tabs/client in `plugins/corex-config/src/blog/`
+- [ ] T168 [US6] Complete Blog Pro token-only responsive styles in `plugins/corex-config/assets/blog-pro.scss`
+- [ ] T169 [US6] Complete native blog index/single/archive/comment/share/newsletter templates in `theme/templates/`, `theme/parts/`, and `theme/patterns/`
+- [ ] T170 [US6] Add blog analytics/editorial/comment/front-end Playwright tests in `tests/e2e/blog-pro.spec.js`
+- [ ] T171 [US6] Update Blog docs in `plugins/corex-config/README.md` and `docs-app/src/content/docs/guides/blog-pro.mdx`
+- [ ] T172 [US6] Run Blog suites/build and clean-code/wp/test/docs guards; record Phase 8 results in `specs/068-admin-product-functional-completion/evidence.md`
+
+## Phase 9: User Story 1 — Command Center and Add-ons (P1)
+
+**Independent Test**: Open every route and verify real Overview cards/readiness/summaries/activity, safe add-on controls, correct rail/breadcrumb, and no fake counts.
+
+- [ ] T173 [P] [US1] Add unified Overview projection/activity/readiness tests in `tests/Unit/Overview/OverviewCommandCenterTest.php`
+- [ ] T174 [US1] Replace planned/read-only Overview summaries in `plugins/corex-config/src/Overview/OverviewModel.php` and `OverviewRenderer.php`
+- [ ] T175 [US1] Project real Forms, Data, integrations, login, add-ons, and activity state through injected services in `plugins/corex-config/src/Overview/OverviewRenderer.php`
+- [ ] T176 [P] [US1] Add add-on installed/update/dependency/site-kit count tests in `tests/Unit/Addons/AddonCatalogServiceTest.php`
+- [ ] T177 [US1] Implement real add-on catalog/update/dependency projections plus missing-package installation guidance in `plugins/corex-config/src/Addons/AddonCatalogService.php`
+- [ ] T178 [US1] Complete safe enable/disable previews and dependency protection in `plugins/corex-config/src/Addons/AddonManager.php`
+- [ ] T179 [US1] Complete card metadata/logos/docs/update states in `plugins/corex-config/src/Addons/AddonsScreen.php`
+- [ ] T180 [P] [US1] Add rail/breadcrumb/all-route tests in `tests/Unit/Admin/AdminNavigationTest.php`
+- [ ] T181 [US1] Ensure all registered subpages map correct rail/breadcrumb in `plugins/corex-core/src/Admin/AdminPage.php`
+- [ ] T182 [US1] Add Overview/Add-ons route and visual matrix in `tests/e2e/admin-command-center.spec.js`
+- [ ] T183 [US1] Update Overview/Add-ons docs in `plugins/corex-config/README.md` and docs-app guides
+- [ ] T184 [US1] Run command-center suites/build and clean-code/wp/test/docs guards; record Phase 9 results in `specs/068-admin-product-functional-completion/evidence.md`
+
+## Phase 10: User Story 8 — Insights, Setup Wizard, and Settings (P2)
+
+**Independent Test**: Run real insight states/history/retry; complete/skip/resume/apply/rollback nine setup steps; save/discard every settings domain and run bounded media/retention/diagnostic actions.
+
+- [ ] T185 [P] [US8] Add adopted InsightWidgets real-state tests in `tests/Unit/Insights/InsightWidgetsTest.php`
+- [ ] T186 [US8] Refactor adopted `plugins/corex-config/src/Insights/InsightWidgets.php` to remove Planned state and use real providers/local checks
+- [ ] T187 [P] [US8] Add provider run/history/retry/recommendation tests in `tests/Unit/Insights/InsightRunServiceTest.php`
+- [ ] T188 [US8] Implement insight run/history/recommendation service in `plugins/corex-config/src/Insights/InsightRunService.php`
+- [ ] T189 [US8] Extend InsightsController and provider state contracts in `plugins/corex-config/src/Insights/InsightsController.php`
+- [ ] T190 [P] [US8] Add Insights client tests in `plugins/corex-config/src/insights/__tests__/insightsClient.test.js`
+- [ ] T191 [US8] Implement all widget states/run/retry/setup/history UI in `plugins/corex-config/src/insights/`
+- [ ] T192 [P] [US8] Add nine-step progress/conflict/backup/rollback tests in `tests/Unit/Kit/SetupWizardCompletionTest.php`
+- [ ] T193 [US8] Implement setup progress/plan/backup/rollback services in `addons/corex-kit-company/src/Setup/`
+- [ ] T194 [US8] Extend brand/kit/demo/conflict/launch data in `addons/corex-kit-company/src/SetupWizard.php`
+- [ ] T195 [P] [US8] Add Setup REST/controller tests in `tests/Integration/Kit/SetupWizardControllerTest.php`
+- [ ] T196 [US8] Implement nine-step wizard UI in `addons/corex-kit-company/src/setup/`
+- [ ] T197 [P] [US8] Add settings validation/unsaved/discard/role/secret tests in `tests/Unit/Settings/SettingsWorkflowTest.php`
+- [ ] T198 [US8] Complete General, Appearance, Operations/Security, Email/Captcha, Media, Retention, Advanced, Architecture, Data Sources, and Design Tokens sections with validation/revisions in `plugins/corex-config/src/Settings/`
+- [ ] T199 [P] [US8] Add media regenerate job tests in `tests/Unit/Media/MediaRegenerationJobTest.php`
+- [ ] T200 [US8] Implement media regeneration admin action and job in `addons/corex-media/src/MediaRegenerationJob.php`
+- [ ] T201 [US8] Implement `wp corex media regenerate` and jobs commands in `packages/cli/src/Commands/`
+- [ ] T202 [US8] Extend retention to email/activity/consent/export logs in `plugins/corex-config/src/Retention/`
+- [ ] T203 [US8] Implement diagnostics/reset/danger previews in `plugins/corex-config/src/Settings/AdvancedSettingsService.php`
+- [ ] T204 [US8] Add Insights/Setup/Settings Playwright and visual matrix in `tests/e2e/setup-settings-insights.spec.js`
+- [ ] T205 [US8] Update setup/settings/insights/media/retention docs in `addons/corex-kit-company/README.md`, `plugins/corex-config/README.md`, `addons/corex-media/README.md`, and `docs-app/src/content/docs/guides/`
+- [ ] T206 [US8] Run Phase 10 suites/build and clean-code/wp/test/docs guards; record results in `specs/068-admin-product-functional-completion/evidence.md`
+
+## Phase 11: User Story 9 — Components, Theme, Account, and Docs (P2)
+
+**Independent Test**: Render all approved pages/components/states; operate navigation/search/drawers/menus by keyboard/RTL/reduced-motion; complete approved account and Docs workflows.
+
+- [ ] T207 [P] [US9] Reconcile approved component inventory against registered blocks in `tests/Unit/Ui/ApprovedComponentInventoryTest.php`
+- [ ] T208 [US9] Implement missing rich tabs/accordions/sliders/forms/admin/core UI components under `addons/corex-ui/src/Blocks/`
+- [ ] T209 [P] [US9] Add component editor/visitor interaction tests under `addons/corex-ui/src/Blocks/**/index.test.js`
+- [ ] T210 [US9] Complete header/topbar/sticky/search/drawer/mega-menu behavior in `theme/parts/`, `theme/patterns/`, and conditional block assets
+- [ ] T211 [P] [US9] Extend navigation keyboard/ARIA/RTL/reduced-motion tests in `tests/corex-navigation.test.js`
+- [ ] T212 [US9] Complete approved home/about/services/contact/landing/portfolio/search/404/maintenance/loading/comments/newsletter/footer templates in `theme/templates/` and `theme/patterns/`
+- [ ] T213 [P] [US9] Add theme-template/state inventory tests in `tests/Unit/Theme/ThemePageCoverageTest.php`
+- [ ] T214 [US9] Scaffold and register the optional Profile add-on bootstrap/provider/autoload/catalog entry and implement front-office account services in `addons/corex-profile/`, `composer.json`, and `plugins/corex-config/src/Addons/AddonRegistry.php` without theme business logic
+- [ ] T215 [P] [US9] Add login/register/recovery/profile/notifications/session tests in `tests/Integration/Profile/ProfileLifecycleTest.php`
+- [ ] T216 [US9] Implement approved account blocks/templates in `addons/corex-profile/src/Block/` and `theme/templates/`
+- [ ] T217 [US9] Implement Docs sidebar/search/command palette/version/copy/previous-next/on-page navigation in `docs-app/src/`
+- [ ] T218 [P] [US9] Add Docs interaction tests in `docs-app/src/__tests__/docs-navigation.test.ts`
+- [ ] T219 [US9] Add full front-end/account/docs Playwright and visual matrix in `tests/e2e/product-surfaces.spec.js`
+- [ ] T220 [US9] Update component/theme/profile/docs guides in `addons/corex-ui/README.md`, `theme/README.md`, `addons/corex-profile/README.md`, `docs-app/src/content/docs/guides/`, and root `README.md`
+- [ ] T221 [US9] Run UI/theme/profile/docs suites/build and clean-code/wp/test/docs guards; record Phase 11 results in `specs/068-admin-product-functional-completion/evidence.md`
+
+## Phase 12: User Story 10 — Final Trust and Completion Audit (P1)
+
+**Independent Test**: Map every FR/SC to direct proof; execute all mutation safety cases; scan source/rendered copy/control inventory; run the complete gate suite.
+
+- [ ] T222 [US10] Complete FR-001–FR-167 and SC-001–SC-020 mappings in `specs/068-admin-product-functional-completion/evidence.md`
+- [ ] T223 [US10] Run `scripts/audit-product-completion.mjs` and remove every prohibited current-product message/dead control it reports
+- [ ] T224 [P] [US10] Add cross-domain unauthorized/stale/replayed mutation tests in `tests/Integration/Security/ProductMutationSecurityTest.php`
+- [ ] T225 [P] [US10] Add personal-data visibility/export/retention tests in `tests/Integration/Privacy/ProductDataPrivacyTest.php`
+- [ ] T226 [P] [US10] Add shared activity reconciliation tests in `tests/Integration/Activity/ProductActivityCoverageTest.php`
+- [ ] T227 [US10] Run `composer validate --strict`, `composer test`, and `composer test:integration`; record exact totals in `specs/068-admin-product-functional-completion/evidence.md`
+- [ ] T228 [US10] Run JS lint, CSS lint, Jest, root build, docs build, dependency verification, dist build, and dist verification; record results in `specs/068-admin-product-functional-completion/evidence.md`
+- [ ] T229 [US10] Run all Playwright workflows and inspect every admin/front-end/docs screenshot; index the dark/light/LTR/RTL/mobile/hover/focus/state artifacts in `specs/068-admin-product-functional-completion/evidence.md`
+- [ ] T230 [US10] Create and run 10,000-record admin-query/form-acceptance performance contracts in `tests/Performance/ProductPerformanceTest.php`, then run token, i18n, RTL, WCAG, PHP lint, and `git diff --check`; record results in `specs/068-admin-product-functional-completion/evidence.md`
+- [ ] T231 [US10] Run `clean-code-guard`, `wp-guard`, `woo-guard` where applicable, `test-guard`, and `docs-guard`; record clean results in `specs/068-admin-product-functional-completion/evidence.md`
+- [ ] T232 [US10] Update `PROGRESS.md`, `ROADMAP.md`, `DECISIONS.md`, `design/INVENTORY.md`, root and package READMEs, and docs to final truthful status
+- [ ] T233 [US10] Verify `git status`, changed-file ownership, active branch, current commit, remote parity, and no edits under `wp/wp-content/` or `dist/`
+- [ ] T234 [US10] Commit and push the verified active branch, then record PR #98 state in `PROGRESS.md` without marking ready while any requirement lacks proof
+- [ ] T235 [US10] Complete the final screen-by-screen branch/commit/files/tests/screenshots/risks/no-fake/no-dead/no-placeholder report in `specs/068-admin-product-functional-completion/evidence.md`
+
+## Dependencies and Execution Order
+
+1. Phase 1 planning/governance gates all runtime work.
+2. Phase 2 foundations gate every vertical slice.
+3. Email Studio (Phase 3) precedes Forms and Access notifications.
+4. Forms (Phase 4) precedes the complete Submissions Inbox (Phase 5).
+5. Data (Phase 6), Security/Access (Phase 7), and Blog (Phase 8) can begin after foundations but execute inline in this listed order to avoid overlapping `ConfigServiceProvider.php` and shared assets.
+6. Overview (Phase 9) follows the domain slices so its summaries/activity/readiness are real.
+7. Insights/Setup/Settings (Phase 10) follows shared readiness and job foundations.
+8. Product surfaces (Phase 11) follow stable domain/block contracts.
+9. Final audit (Phase 12) requires every prior checkpoint.
+
+## Requirement Traceability
+
+- FR-001–FR-011: T007–T010, T017–T041, T222–T235
+- FR-012–FR-019: T173–T184
+- FR-020–FR-026: T176–T184
+- FR-027–FR-045: T064–T091
+- FR-046–FR-058: T092–T111
+- FR-059–FR-070: T112–T132
+- FR-071–FR-083: T133–T155
+- FR-084–FR-095: T020–T027, T143–T155
+- FR-096–FR-110: T156–T172
+- FR-111–FR-125: T037–T039, T042–T063
+- FR-126–FR-133: T185–T191
+- FR-134–FR-143: T192–T196
+- FR-144–FR-153: T197–T206
+- FR-154–FR-167: T207–T221
+- SC-001–SC-020: T222–T235 plus the phase checkpoints referenced by `evidence.md`
+
+## Inline Execution Strategy
+
+- Execute one task at a time in numeric order.
+- For production changes, create the named failing test first and confirm the intended failure.
+- Claim only the files named by the current task and release them in the checkpoint handoff.
+- Commit at each phase checkpoint after guards and docs are clean; push only the active PR branch.
+- Do not substitute a truthful disabled surface for required current behavior; only absent optional dependencies may be gated with a working resolution path.
+- Do not start a company/client site.

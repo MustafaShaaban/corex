@@ -4,6 +4,31 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-03, Spec 068 PRODUCT FUNCTIONAL COMPLETION) -- planning complete; implementation next
+
+- **Branch:** `fix/067-admin-shell-and-completion` at `3ce717b`, tracking the same origin branch. **PR #98.** CoreX
+  Framework Mode; normal root; no worktrees. The previously unknown
+  `plugins/corex-config/src/Insights/InsightWidgets.php` was explicitly adopted by the owner as prior in-progress
+  work and is owned by Spec 068.
+- **Owner directive:** approved current design is required functionality. Required controls may not remain fake,
+  sample, planned, future, reference-only, read-only, placeholder-only, or dead. Genuinely absent optional
+  dependencies remain dependency-gated with a working resolution path. Select the recommended safe routine choice
+  and continue; do not start or recommend a company/client site.
+- **Authoritative spec:** `specs/068-admin-product-functional-completion/` — `spec.md` (FR-001–FR-167,
+  SC-001–SC-020), `plan.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md`, quality checklist, and
+  `tasks.md` (T001–T235). Decision #115.
+- **Planning done:** all 44 primary `F:\Work\CoreX.zip` design files inventoried; current runtime/source/tests/docs
+  audited; recommended shared-foundation vertical-slice architecture selected; Spec Kit specify/clarify/plan/tasks
+  and consistency analysis completed. WordPress 7.0 Environment Gate passed with CoreX theme/plugins active.
+- **Existing compatible work retained:** Spec 067 shell/links, Data Models tab structure, Email Studio navigation,
+  real Access denied/audit path, and their prior verification remain useful foundations but are not proof of the
+  new functional requirements.
+- **Current task:** finish Phase 1 governance, starting T004–T010: durable docs, executable completion audit,
+  evidence ledger, docs guard, and planning commit. Then Phase 2 shared Activity/Abilities/Jobs/Data/Mail contracts.
+- **Completion rule:** no task or screen is complete without direct tests, runtime evidence, applicable rendered
+  states, guards, docs, and requirement traceability in `specs/068-admin-product-functional-completion/evidence.md`.
+
+---
 ## RESUME HERE (2026-07-03, Spec 067 ADMIN SHELL + COMPLETION CORRECTION) -- A–F done; G–K remain
 
 - **Branch:** `fix/067-admin-shell-and-completion` (off `main` @ v0.33.0). **PR #98.** CoreX Framework Mode.
