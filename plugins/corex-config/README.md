@@ -97,6 +97,21 @@ Each managed table becomes a `TableDataSource` (key `table-<name>`). The `$wpdb`
 **bounded** (`LIMIT/OFFSET`); the row/column shaping is the pure, unit-tested `TableDataSource`. It is **opt-in**:
 Corex never enumerates arbitrary database tables.
 
+## Email Studio (Corex → Email Studio)
+
+The Email Studio is gated on the optional CoreX Email add-on. When active, its five sections show the real
+delivery mode and logged outcome counts, the real registered template inventory and subjects, the active brand
+layout as a sandboxed structural preview, the current partial-system limitation, and the merge placeholders
+detected in registered template output (with the templates that expose each path). Opening a
+registered template exposes **Edit / Preview / Plain text / Test send / Routing / Delivery logs**: Preview and
+Plain text use the real renderer, and Delivery logs use the real email-log repository.
+
+The screen does not invent editor, routing, or send behavior. Templates are currently code-defined; reusable
+partials and per-template routing do not have backing stores. Test Send remains disabled because the current
+`Mailer` contract has no per-send result the screen can report truthfully. Delivery logs are real site-wide send
+attempts and are labelled as not yet filterable by template. When CoreX Email is inactive, the whole studio shows
+an explicit activation state instead of loading add-on classes as a hard dependency.
+
 ## Insights screen (Corex → Insights)
 
 A **Corex → Insights** screen shows two result cards — **Performance** (Google PageSpeed Insights / Lighthouse)

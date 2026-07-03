@@ -4,13 +4,13 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-03, Spec 067 ADMIN SHELL + COMPLETION CORRECTION) -- foundation fixed; C–K remain
+## RESUME HERE (2026-07-03, Spec 067 ADMIN SHELL + COMPLETION CORRECTION) -- A–E done; F–K remain
 
 - **Branch:** `fix/067-admin-shell-and-completion` (off `main` @ v0.33.0). **PR #98.** CoreX Framework Mode.
 - **Owner correction:** the admin still renders as a centered card with white space + wp-admin chrome leaking,
   default links appear, and many designed surfaces/tabs are missing. Design authority = the extracted `F:\Work\
   CoreX.zip` `*.dc.html` files. Audit: `design/audits/065-owner-critical-admin-completion-audit.md` (full A–K map).
-- **DONE + render-verified (Email Studio + Operations & Security, dark):**
+- **DONE + render-verified:**
   - **A — full-bleed shell on ALL CoreX screens.** Root cause: `CorexAdminAssets::SCREEN_PATTERN` matched only a
     hardcoded subset → Forms/Submissions/Operations/Email Studio/Access never got the `corex-admin-screen` body
     class → the shell kept its card border/radius/shadow + margins + wp-admin footer/padding. Broadened to
@@ -18,14 +18,22 @@
   - **B — no default blue/purple links; tokenized focus/hover.** Replaced zero-specificity `:where(a)` with
     real-specificity brass content-link rules (visited handled, underline only on hover/focus, reduced-motion safe).
   - Confirmed the operations-mode `<select>` is already tokenized (appearance:none + RTL chevron + focus).
-- **REMAINING (C–K — real multi-tab build-out, scoped in the audit; NOT faked):** Blog Pro admin surface
-  (Analytics/Editorial/Comments/Authors, gated, no fake analytics) · Data Models tabs (Models/Records/Import/Export/
-  Migrations) · Email Studio subpages (Overview/Templates/Layouts/Partials/Variables + template detail Edit/Preview/
-  Plain-text/Test-send/Routing/Delivery-logs) · Access tabs (Overview/Role-matrix/Audit-log/Access-denied) · Insights
-  state widgets · Setup Wizard scenarios+steps · Operations dropdown option-state polish + Security Center · Forms &
-  Flows tabs · Settings/Media/Retention parity. Each is honestly gated where no safe mutation exists yet.
-- **Exact next step:** build C (Blog Pro gated surface, the "completely missing" item) first, then D/E/F/G/H/J/K
-  batch by batch — spec-first, guard-gated, tested, render-verified per tab. Do not fake analytics/logs/records.
+  - **C — Blog Pro reference surface** (commit `e9515fa`): Analytics/Editorial queue/Comments/Authors; sample
+    analytics are explicitly reference-only, while the other tabs use real WordPress state. Dark/light verified.
+  - **D — Data Models tabs** (commit `6a3e0f3`): Models/Records/Import/Export/Migrations around the existing real
+    catalog, read paths, dry-run, export, and migration state. Dark/light verified.
+  - **E — Email Studio + template detail:** Overview/Templates/Layouts/Partials/Variables and
+    Edit/Preview/Plain text/Test send/Routing/Delivery logs. Registry, subjects, layout, renderer, merge placeholders,
+    and logs are real; unsupported writes name the missing contract. All 11 routes verified dark/light; critical
+    views verified at 375px with no page overflow. Decision #113.
+- **Verification for E:** WordPress 7.0 boot/theme/plugins gate PASS; Pest **912** / **4015 assertions**; Jest
+  **125**; CSS lint; token inventory; Composer validation; dependency policy; root build; docs-app build; PHP lint;
+  `git diff --check`; clean-code/wp/test/docs guards all clean. Generated screenshots were inspected then removed.
+- **REMAINING (F–K — NOT faked):** Access tabs (Overview/Role matrix/Audit log/Access denied) · Insights state
+  widgets · Setup Wizard scenarios+steps · Operations dropdown option-state polish + Security Center · Forms & Flows
+  tabs · Settings/Media/Retention parity. Each stays real or honestly gated where no safe mutation exists yet.
+- **Exact next step:** build **F (Access & Abilities tabs)** next, spec/audit-first, guard-gated, tested, and
+  render-verified in dark/light/mobile. Do not invent audit entries or access-request behavior.
 
 ---
 ## RESUME HERE (2026-07-02, Spec 065 ADMIN PRODUCT COMPLETION) -- required scope; company-site paused

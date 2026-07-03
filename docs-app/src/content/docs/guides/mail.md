@@ -15,7 +15,11 @@ use Corex\Email\Mail;
 
 Mail::to('user@example.com')
     ->template('contact-notification')
-    ->with(['name' => $name, 'message' => $message])
+    ->with(['submission' => [
+        'name' => $name,
+        'email' => $email,
+        'message' => $message,
+    ]])
     ->send();
 ```
 
@@ -32,6 +36,17 @@ Delivery is **best-effort and never throws** — failures are logged, not fatal.
   resolved + validated.
 - **Driver** — `WpMailDriver` sends via `wp_mail` with the configured from-identity.
 - **Log** — each send is recorded to the `corex_email_log` CPT.
+
+## Inspect email state in wp-admin
+
+**Corex → Email Studio** is available when the CoreX Email add-on is active. Its Overview, Templates, Layouts,
+Partials, and Variables tabs inspect the real engine state. Registered-template detail provides Edit, Preview,
+Plain text, Test send, Routing, and Delivery logs. Preview and Plain text use the real renderer; Layouts previews
+the active brand wrapper; Variables lists only detectable `{{ path }}` placeholders from registered template
+output; Delivery logs are real site-wide attempts and are labelled as not yet filterable by template.
+
+The studio does not mutate code-defined templates or routing. Test Send stays disabled until the neutral `Mailer`
+seam returns a per-send result that a capability + nonce-gated action can report truthfully.
 
 ## Configure
 

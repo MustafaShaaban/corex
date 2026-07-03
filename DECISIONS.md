@@ -2071,3 +2071,21 @@ retention (dry-run prune), B4 Data Models CSV import dry-run + truthful migratio
 Blog (single/archive/index). B5 global fidelity verified across all ten admin screens. Portfolio next-scope is
 defined (planned after Blog). Honestly deferred with an on-screen reason: visual Forms/Email builders + the
 operations-mode/import commit write path. Full Pest 894, Jest 125, guards clean.
+
+## #113 -- Spec 067 Email Studio uses real read surfaces; mutations stay gated by missing contracts
+Date: 2026-07-03
+Context: The owner-critical admin-completion audit requires the five Email Studio tabs and six template-detail
+tabs from the approved design, while retaining the invariant that no templates, sends, routing, partials, or logs
+are fabricated. The existing engine has a registry, renderer, one runtime brand layout, and an email-log repository,
+but no visual-template store, partial store, per-template routing store, or result-returning test-send contract.
+Decision: Build every designed navigation surface now. Read from `TemplateRegistry`, `TemplateRenderer`, the bound
+`Layout`, and `EmailLogRepository`; label registry entries and site-wide logs honestly. Render HTML previews only in
+sandboxed iframes. Derive the Variables browser only from detectable `{{ path }}` placeholders in registered
+template output; do not guess values consumed directly in template code. Keep Edit, Routing, and Partials read-only
+with their exact code/storage boundary. Keep Test Send disabled until the `Mailer` seam returns a per-send
+delivered/failed result that a capability + nonce-gated action
+can report truthfully; a void dispatch must not be presented as success. Use responsive token-only CSS, including
+stacked template rows and a contained variables-table scroller at narrow widths.
+Why: this completes the approved product surface without creating unsafe writes or false success. The existing
+engine seams support trustworthy inspection; they do not yet support trustworthy mutation feedback.
+Status: Final on `fix/067-admin-shell-and-completion`; dark/light routes and 375px critical views render-verified.

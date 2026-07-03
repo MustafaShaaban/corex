@@ -61,3 +61,159 @@
 	font-family: var(--corex-admin-font-display);
 	font-weight: 600;
 }
+
+/* Email Studio tabs, template rows, preview, logs (spec 067). */
+.corex-admin .corex-email-studio__summary {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+	gap: var(--corex-admin-space-md);
+	margin-block-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-email-studio__stat {
+	padding: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-email-studio__stat-label {
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	text-transform: uppercase;
+	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+.corex-admin .corex-email-studio__stat-value {
+	margin-block-start: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-2xl);
+	font-weight: 700;
+}
+
+.corex-admin .corex-email-studio__row {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-md);
+	padding-block: var(--corex-admin-space-sm);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	text-decoration: none;
+}
+
+.corex-admin .corex-email-studio__row:hover {
+	background: var(--corex-admin-surface-raised);
+}
+
+.corex-admin .corex-email-studio__row-subject {
+	flex: 1;
+	min-inline-size: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-email-studio__row-open {
+	color: var(--corex-admin-action);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
+.corex-admin .corex-email-studio__row-status {
+	color: var(--corex-admin-success);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-email-studio__detail-title {
+	margin-block: var(--corex-admin-space-md) var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-email-studio__preview {
+	inline-size: 100%;
+	block-size: 32rem;
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-email-studio__plain {
+	max-block-size: 32rem;
+	overflow: auto;
+	padding: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-sm);
+	white-space: pre-wrap;
+}
+
+.corex-admin .corex-email-studio__table-scroll {
+	overflow-x: auto;
+}
+
+.corex-admin .corex-email-studio__vars {
+	inline-size: 100%;
+	min-inline-size: 32rem;
+	border-collapse: collapse;
+	margin-block-start: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-email-studio__vars code {
+	white-space: nowrap;
+}
+
+.corex-admin .corex-email-studio__vars th,
+.corex-admin .corex-email-studio__vars td {
+	padding: var(--corex-admin-space-sm);
+	text-align: start;
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-email-studio__logs {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.corex-admin .corex-email-studio__log {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-sm);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-email-studio__log-meta {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-email-studio__log.is-success span:first-child {
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-email-studio__log.is-danger span:first-child {
+	color: var(--corex-admin-error);
+}
+
+@media (max-width: 782px) { /* corex-token-allow: WordPress admin collapse breakpoint. */
+
+	.corex-admin .corex-email-studio__row {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: start;
+		gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	}
+
+	.corex-admin .corex-email-studio__row > code,
+	.corex-admin .corex-email-studio__row-subject {
+		grid-column: 1 / -1;
+	}
+
+	.corex-admin .corex-email-studio__log {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+}

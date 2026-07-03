@@ -20,7 +20,7 @@ any write), and use the scoped `--corex-admin-*` adapter (no global wp-admin res
 | Submissions | `corex-submissions` | The real stored `corex_submission` records: list + a server-rendered detail view (`?submission=ID`) + a capability + nonce-gated CSV export. Honest empty/not-found/permission states. |
 | Data Models | `corex-data-models` | A schema catalog of the real `DataRegistry` sources (fields + record counts) + per-model CSV export. Import (dry-run) and a pending-migrations view are honestly deferred — the data layer has no generic write path or migration tracker. |
 | Operations & Security | `corex-operations-security` | The real environment plus real WordPress hardening checks (HTTPS, `DISALLOW_FILE_EDIT`, debug-display hidden, no default "admin"). Operations-mode switching, login protection, and a capability editor are labelled future — CoreX never renames WordPress core files. |
-| Email Studio | `corex-email-studio` | A truthful overview of the transactional-email engine: gated on the optional CoreX Email add-on, the real registered templates (`TemplateRegistry::names()`), and an environment-derived delivery advisory. |
+| Email Studio | `corex-email-studio` | A gated five-tab studio: real delivery mode/log counts, registered templates + subjects, active brand-layout preview, partial-system limitation, and merge placeholders detected from registered template output. Template detail adds Edit / Preview / Plain text / Test send / Routing / Delivery logs; real renderer/log data is used, while unsupported mutations state the exact missing backend contract. |
 
 Each screen loads its own stylesheet only on its own hook (Principle VI), conveys status by text + tone (never
 colour alone), and uses logical CSS for RTL, dark, and light.

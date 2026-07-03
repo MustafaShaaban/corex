@@ -46,6 +46,31 @@ final class EmailStudio
     }
 
     /**
+     * @param array<string,list<string>> $templateSources Template name => subject/body sources.
+     *
+     * @return array<string,list<string>> Placeholder path => registered template names.
+     */
+    public function variables(array $templateSources): array
+    {
+        $variables = [];
+
+        foreach ($templateSources as $templateName => $sources) {
+            foreach ($sources as $source) {
+                preg_match_all('/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/', $source, $matches);
+
+                foreach ($matches[1] as $path) {
+                    $templates = $variables[$path] ?? [];
+                    if (! in_array($templateName, $templates, true)) {
+                        $variables[$path] = [...$templates, $templateName];
+                    }
+                }
+            }
+        }
+
+        return $variables;
+    }
+
+    /**
      * @param array{mode:string,label:string} $environment
      *
      * @return array{label:string,tone:string,detail:string}

@@ -44,28 +44,33 @@ Legend: ✅ done+verified · 🔶 in progress · ⛔ remaining (scoped) · 🔒 
   (e.g. "Manage records", "Open Submissions Inbox", "Configure mail settings"); confirm nav/tab/card/row/
   dropdown hover match the design in LTR + RTL.
 
-### C. Blog & Blog Pro — ⛔ REMAINING (Blog core done in v0.33.0; Blog Pro surface missing)
+### C. Blog & Blog Pro — ✅ DONE + RENDER-VERIFIED (this branch)
 - **Blog core:** ✅ single/archive/index designed (v0.33.0) with social-share + newsletter + cards + empty
-  states. **Blog settings/tabs** surface: ⛔ not built.
-- **Blog Pro:** ⛔ **completely missing from the admin.** Design: `Corex Blog Pro & Analytics.dc.html`.
+  states. No separate core-Blog settings surface was invented; the required Blog Pro tabs are the admin surface.
+- **Blog Pro:** ✅ visible under CoreX with the four designed tabs. Design: `Corex Blog Pro & Analytics.dc.html`.
 - **Required:** a visible Blog Pro admin surface with tabs **Analytics · Editorial queue · Comments ·
   Authors**, shown **honestly** — no fake live analytics; reference/sample values only if clearly labelled
   demo/reference; gated actions with the exact reason; no purchase/licensing. Comments tab may reflect real
   WP comment state where supported.
-- **Status:** must be added as a new gated admin screen matching the design; the owner needs it visible for
-  review even though it is future/gated.
+- **Delivered:** `corex-blog-pro` uses an explicit future-add-on/reference banner. Analytics values are labelled
+  sample/reference (never live); Editorial queue, Comments, and Authors use real WordPress counts/users. No
+  purchase/licensing behavior was added. Dark/light render-verified on 2026-07-03 (commit `e9515fa`).
 
-### D. Data Models — ⛔ REMAINING (single view exists; tabs missing)
-- **Now:** one page with model cards + fields + CSV export + a real CSV import dry-run + a truthful
-  migration overview (v0.33.0). **Broken:** no tabbed structure.
+### D. Data Models — ✅ DONE + RENDER-VERIFIED (this branch)
+- **Now:** the designed Models/Records/Import/Export/Migrations structure wraps the existing real catalog,
+  read-only record views, import dry-run, CSV export, and truthful migration state.
 - **Design:** `Corex Data Models.dc.html` — tabs **Models · Records · Import · Export · Migrations**.
 - **Required:** promote to tabs; **Records** = records table + record detail/view + create/edit/delete only
   where a real write adapter exists, else read-only/disabled with reason; **Import** = the existing dry-run +
   validation + rejected-rows report; **Export** = CSV (exists); **Migrations** = the truthful overview
   (exists). Add empty/loading/error/permission + mutation-confirmation states.
+- **Delivered:** all five tabs are discoverable and preserve the existing safe mutation boundaries; unsupported
+  writes remain disabled with their adapter requirement. Dark/light render-verified on 2026-07-03 (commit
+  `6a3e0f3`).
 
-### E. Email Studio & templates — ⛔ REMAINING (overview exists; subpages missing)
-- **Now:** one overview page (delivery mode + registered template list + honest editor deferral).
+### E. Email Studio & templates — ✅ DONE + RENDER-VERIFIED (this branch)
+- **Now:** five discoverable Studio tabs plus six template-detail tabs, all server-rendered from real engine state
+  or an exact gated reason.
 - **Design:** `Corex Email Studio.dc.html` + `Corex Email Templates Admin.dc.html` — Studio tabs
   **Overview · Templates · Layouts · Partials · Variables**; template-detail tabs **Edit · Preview · Plain
   text · Test send · Routing · Delivery logs**.
@@ -73,6 +78,17 @@ Legend: ✅ done+verified · 🔶 in progress · ⛔ remaining (scoped) · 🔒 
   variables/token browser; preview render where possible; local-capture/dev delivery warning; safe test-send
   if safe; delivery logs if real logs exist, else honest empty; visual editor disabled with exact reason.
   All email subpages discoverable + linked (no orphans).
+- **Delivered:** Overview uses the environment-derived delivery advisory plus real sent/failed log counts;
+  Templates lists the real registry + rendered subjects and labels every row Registered; Layouts renders the real
+  active brand wrapper in a sandboxed iframe; Partials exposes the real system boundary, while Variables derives
+  only detectable `{{ path }}` placeholders from registered template output and names their templates. Template
+  detail follows the approved Edit/Preview/Plain text/Test send/Routing/Delivery logs order. Preview/Plain text use
+  `TemplateRenderer`; logs use `EmailLogRepository` and explicitly state that they are site-wide, not filtered by
+  template. Editing/routing/partials remain code-defined with exact reasons. Test Send is disabled because the
+  `Mailer` seam returns no per-send result for truthful feedback (rather than pretending a send succeeded).
+- **Evidence:** all 11 Studio/detail routes returned HTTP 200 with no page errors/fatals in dark + light; desktop
+  screenshots captured for each. Templates/Variables/Preview also verified at 375px with no page overflow; mobile
+  template-row overlap was found and fixed, and the variables table now uses a contained horizontal scroller.
 
 ### F. Access & Abilities — ⛔ REMAINING (single matrix exists; tabs missing)
 - **Now:** one page (role×capability matrix + current-user perms + requirements + read-only note) (v0.33.0).
@@ -133,10 +149,10 @@ surface** (not removed).
 evidence per surface/tab.
 
 ## Honest status of this pass
-- **A (full-bleed shell) and B (default-link kill + focus) are done and render-verified** — the highest-
-  leverage, cross-cutting fixes: every CoreX screen is now full-bleed with no card/white-space and no wp-admin
-  default links.
-- **C–K are the multi-surface build-out** (Blog Pro, Data Models tabs, Email Studio subpages, Access tabs,
-  Insights states, Setup scenarios, Operations dropdown, Forms tabs, Settings parity). Each is a real,
+- **A–E are done and render-verified:** the full-bleed shell, tokenized links/focus, Blog Pro reference surface,
+  Data Models tabs, and Email Studio/detail tabs now match their approved structures while keeping real/gated
+  states explicit.
+- **F–K remain** (Access tabs, Insights states, Setup scenarios, Operations/Security polish, Forms tabs, Settings
+  parity). Each is a real,
   designed, multi-tab screen; they are scoped here and delivered in reviewed batches, honestly gated where a
   safe mutation does not yet exist. This is deliberately **not** faked or stubbed as "done".
