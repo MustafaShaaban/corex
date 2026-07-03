@@ -85,7 +85,7 @@ final class DataModelsScreen
         echo $this->page->open(
             'data-models',
             __('CoreX Data Models', 'corex'),
-            __('The data models registered on this site, their fields, and their record counts.', 'corex'),
+            __('The data models registered on this site — their schema, records, import/export, and migrations.', 'corex'),
         );
 
         if ($catalog['isEmpty']) {
@@ -99,16 +99,156 @@ final class DataModelsScreen
             return;
         }
 
+        $active = $this->activeTab();
+
         echo $this->statusNotice();
         echo $this->summaryBar($catalog);
-        echo $this->importPreviewCard();
-        echo '<div class="corex-data-models__list">';
-        foreach ($catalog['models'] as $model) {
-            echo $this->modelCard($model);
-        }
-        echo '</div>';
-        echo $this->migrationOverview();
+        echo $this->page->tabs('corex-data-models', $this->tabsList(), $active, __('Data model sections', 'corex'));
+
+        echo match ($active) {
+            'records'    => $this->recordsTab($catalog['models']),
+            'import'     => $this->importTab($catalog['models']),
+            'export'     => $this->exportTab($catalog['models']),
+            'migrations' => $this->migrationOverview(),
+            default      => $this->modelsTab($catalog['models']),
+        };
+
         echo $this->page->close();
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    private function tabsList(): array
+    {
+        return [
+            'models'     => __('Models', 'corex'),
+            'records'    => __('Records', 'corex'),
+            'import'     => __('Import', 'corex'),
+            'export'     => __('Export', 'corex'),
+            'migrations' => __('Migrations', 'corex'),
+        ];
+    }
+
+    private function activeTab(): string
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only tab selection.
+        $tab = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : '';
+
+        return array_key_exists($tab, $this->tabsList()) ? $tab : 'models';
+    }
+
+    /**
+     * Models tab: the schema catalog — each model's fields + live record count + a link to manage records.
+     *
+     * @param list<array{key:string,label:string,columns:list<array{id:string,label:string}>,columnCount:int,total:int}> $models
+     */
+    private function modelsTab(array $models): string
+    {
+        $cards = '';
+        foreach ($models as $model) {
+            $cards .= $this->modelCard($model);
+        }
+
+        return '<div class="corex-data-models__list">' . $cards . '</div>';
+    }
+
+    /**
+     * Records tab: a real, read-only records table per model (columns + a bounded first page), with a
+     * link to the full Data explorer for filtering/detail/management. Real rows, honest read-only.
+     *
+     * @param list<array{key:string,label:string,columns:list<array{id:string,label:string}>,columnCount:int,total:int}> $models
+     */
+    private function recordsTab(array $models): string
+    {
+        $out = '';
+        foreach ($models as $model) {
+            $source = $this->registry->find($model['key']);
+            if ($source === null) {
+                continue;
+            }
+
+            try {
+                $rows = $source->rows(1, 10);
+            } catch (\Throwable) {
+                $rows = [];
+            }
+
+            $head = '';
+            foreach ($model['columns'] as $column) {
+                $head .= '<th>' . esc_html($column['label']) . '</th>';
+            }
+
+            $body = '';
+            foreach ($rows as $row) {
+                $cells = '';
+                foreach ($model['columns'] as $column) {
+                    $value = $row[$column['id']] ?? '';
+                    $cells .= '<td>' . esc_html((string) (is_scalar($value) ? $value : '')) . '</td>';
+                }
+                $body .= '<tr>' . $cells . '</tr>';
+            }
+
+            $table = $rows === []
+                ? '<p class="corex-data-models__note-text">' . esc_html__('No records yet.', 'corex') . '</p>'
+                : '<table class="corex-data-models__fields"><thead><tr>' . $head . '</tr></thead><tbody>'
+                    . $body . '</tbody></table>';
+
+            $out .= '<section class="corex-surface corex-data-models__card">'
+                . '<header class="corex-data-models__card-head"><h2>' . esc_html($model['label']) . '</h2>'
+                . '<span class="corex-data-models__count">' . sprintf(
+                    /* translators: %d: total records in the model */
+                    esc_html(_n('%d record', '%d records', $model['total'], 'corex')),
+                    (int) $model['total'],
+                ) . '</span></header>' . $table
+                . '<p class="corex-data-models__note-text">'
+                . esc_html__('Showing the first 10 records (read-only). Use the Data explorer to filter, view details, and manage records; create/edit needs a per-model write adapter, which these sources do not yet expose.', 'corex')
+                . ' <a href="' . esc_url(admin_url('admin.php?page=corex-data')) . '">' . esc_html__('Open Data explorer', 'corex')
+                . '</a></p></section>';
+        }
+
+        return $out;
+    }
+
+    /**
+     * Import tab: the last dry-run preview + a per-model CSV dry-run form. Never writes.
+     *
+     * @param list<array{key:string,label:string,columns:list<array{id:string,label:string}>,columnCount:int,total:int}> $models
+     */
+    private function importTab(array $models): string
+    {
+        $forms = '';
+        foreach ($models as $model) {
+            $forms .= '<section class="corex-surface corex-data-models__card">'
+                . '<header class="corex-data-models__card-head"><h2>' . esc_html($model['label']) . '</h2>'
+                . '<code class="corex-data-models__key">' . esc_html($model['key']) . '</code></header>'
+                . $this->importForm($model['key']) . '</section>';
+        }
+
+        return $this->importPreviewCard() . $forms;
+    }
+
+    /**
+     * Export tab: a per-model capability + nonce-gated CSV export.
+     *
+     * @param list<array{key:string,label:string,columns:list<array{id:string,label:string}>,columnCount:int,total:int}> $models
+     */
+    private function exportTab(array $models): string
+    {
+        $rows = '';
+        foreach ($models as $model) {
+            $export = wp_nonce_url(
+                admin_url('admin-post.php?action=corex_data_export&source=' . rawurlencode($model['key'])),
+                'corex_data_export',
+            );
+            $rows .= '<div class="corex-data-models__export-row"><div><strong>' . esc_html($model['label'])
+                . '</strong> <code class="corex-data-models__key">' . esc_html($model['key']) . '</code></div>'
+                . '<a class="button" href="' . esc_url($export) . '">' . esc_html__('Export CSV', 'corex') . '</a></div>';
+        }
+
+        return '<section class="corex-surface corex-data-models__card">'
+            . '<header class="corex-data-models__card-head"><h2>' . esc_html__('Export CSV', 'corex') . '</h2></header>'
+            . $rows . '</section>';
     }
 
     /** PRG status notice after an import dry-run (read-only query args). */
@@ -203,10 +343,6 @@ final class DataModelsScreen
                 . '<td>' . esc_html($column['label']) . '</td></tr>';
         }
 
-        $export = wp_nonce_url(
-            admin_url('admin-post.php?action=corex_data_export&source=' . rawurlencode($model['key'])),
-            'corex_data_export',
-        );
         $explorer = admin_url('admin.php?page=corex-data');
 
         return sprintf(
@@ -216,9 +352,7 @@ final class DataModelsScreen
             . '<span class="corex-data-models__count">%4$s</span></header>'
             . '<table class="corex-data-models__fields"><thead><tr><th>%5$s</th><th>%6$s</th></tr></thead>'
             . '<tbody>%7$s</tbody></table>'
-            . '<p class="corex-data-models__actions">'
-            . '<a class="button" href="%8$s">%9$s</a> '
-            . '<a href="%10$s">%11$s</a></p>%12$s</section>',
+            . '<p class="corex-data-models__actions"><a href="%8$s">%9$s</a></p></section>',
             esc_attr($model['key']),
             esc_html($model['label']),
             esc_html($model['key']),
@@ -230,11 +364,8 @@ final class DataModelsScreen
             esc_html__('Field', 'corex'),
             esc_html__('Label', 'corex'),
             $fields,
-            esc_url($export),
-            esc_html__('Export CSV', 'corex'),
             esc_url($explorer),
             esc_html__('Manage records', 'corex'),
-            $this->importForm($model['key']),
         );
     }
 

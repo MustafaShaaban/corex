@@ -271,8 +271,7 @@ body.corex-admin-screen .corex-admin__shell {
 .corex-admin a:not([class*="button"]):not(.components-button):hover,
 .corex-admin a:not([class*="button"]):not(.components-button):focus {
 	color: var(--corex-admin-link-hover);
-	text-decoration: underline;
-	text-underline-offset: 0.2em;
+	text-decoration: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
