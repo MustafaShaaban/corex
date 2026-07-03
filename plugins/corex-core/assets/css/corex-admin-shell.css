@@ -15,16 +15,32 @@
 	font-family: var(--corex-admin-font-body);
 }
 
-/* Full-bleed CoreX surface, CoreX screens only (via the body class): strip the
-   wp-admin outer padding/margins so the shell reaches the content-area edges.
-   Scoped to body.corex-admin-screen — nothing else is touched. */
+/* Full-bleed CoreX surface (body.corex-admin-screen only): strip wp-admin
+   padding/margins, hide the wp-admin footer, and paint residual area the shell
+   colour so no wp-admin canvas leaks. */
 /* stylelint-disable selector-id-pattern */
 body.corex-admin-screen #wpcontent {
-	padding-inline-start: 0;
+	padding: 0;
+	background: var(--corex-admin-shell);
 }
 
 body.corex-admin-screen #wpbody-content {
 	padding-block-end: 0;
+	background: var(--corex-admin-shell);
+}
+
+body.corex-admin-screen #wpbody {
+	background: var(--corex-admin-shell);
+}
+
+body.corex-admin-screen #wpfooter {
+	display: none;
+}
+
+body.corex-admin-screen #wpbody-content > .notice,
+body.corex-admin-screen #wpbody-content > .updated,
+body.corex-admin-screen #wpbody-content > .error {
+	margin: var(--corex-admin-space-sm) var(--corex-admin-space-lg) 0;
 }
 /* stylelint-enable selector-id-pattern */
 
@@ -242,12 +258,28 @@ body.corex-admin-screen .corex-admin__shell {
 	font-family: var(--corex-admin-font-display);
 }
 
-.corex-admin :where(a) {
+/* No wp-admin default links in the CoreX surface: content links use the brass
+   token; buttons keep their styling. Real specificity (not :where) so wp-admin
+   colours never leak; underline only on hover (no layout shift). */
+.corex-admin a:not([class*="button"]):not(.components-button),
+.corex-admin a:not([class*="button"]):not(.components-button):visited {
 	color: var(--corex-admin-link);
+	text-decoration: none;
+	transition: color var(--corex-admin-motion-fast, 120ms) ease;
 }
 
-.corex-admin :where(a:hover) {
+.corex-admin a:not([class*="button"]):not(.components-button):hover,
+.corex-admin a:not([class*="button"]):not(.components-button):focus {
 	color: var(--corex-admin-link-hover);
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-admin a:not([class*="button"]):not(.components-button) {
+		transition: none;
+	}
 }
 
 .corex-admin :where(a, button, input, select, textarea, [tabindex]):focus-visible {
