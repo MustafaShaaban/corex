@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 643,
+    "consumer_records": 666,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -528,6 +528,7 @@
       "paths": [
         "plugins/corex-config/assets/access.css",
         "plugins/corex-config/assets/addons.css",
+        "plugins/corex-config/assets/blog-pro.css",
         "plugins/corex-config/assets/control-panel.css",
         "plugins/corex-config/assets/data-models.css",
         "plugins/corex-config/assets/data.css",

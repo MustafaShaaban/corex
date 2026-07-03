@@ -751,3 +751,49 @@ body.corex-admin-screen .corex-admin__shell {
 	-webkit-mask-image: url(../icons/nav-access.svg);
 	mask-image: url(../icons/nav-access.svg);
 }
+
+/* Shared CoreX tab strip (AdminPage::tabs) — tokenized, no default links,
+   hover/active/focus with no layout shift, RTL-correct. */
+.corex-admin__tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-2xs);
+	margin-block-end: var(--corex-admin-space-lg);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-admin__tab {
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text-muted);
+	font-weight: 600;
+	text-decoration: none;
+	border-block-end: 2px solid transparent;
+	margin-block-end: -1px;
+	transition:
+		color var(--corex-admin-motion-fast) ease,
+		border-color var(--corex-admin-motion-fast) ease;
+}
+
+.corex-admin .corex-admin__tab:hover,
+.corex-admin .corex-admin__tab:focus-visible {
+	color: var(--corex-admin-text);
+	text-decoration: none;
+}
+
+.corex-admin .corex-admin__tab.is-active {
+	color: var(--corex-admin-action);
+	border-block-end-color: var(--corex-admin-action);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-admin .corex-admin__tab {
+		transition: none;
+	}
+}
+
+.corex-admin__nav-icon--blog {
+	-webkit-mask-image: url(../icons/nav-blog.svg);
+	mask-image: url(../icons/nav-blog.svg);
+}

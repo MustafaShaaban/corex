@@ -202,6 +202,11 @@ final class ConfigServiceProvider extends ServiceProvider
         // Access & Abilities baseline (spec 065): read-only role × capability matrix.
         $this->container->singleton(\Corex\Config\Access\AccessScreen::class);
 
+        // Blog Pro reference surface (spec 067): visible, honestly-gated future add-on — real editorial/
+        // comments/authors data + a clearly-labelled sample analytics layout. No fake live metrics.
+        $this->container->singleton(\Corex\Config\Blog\BlogProModel::class);
+        $this->container->singleton(\Corex\Config\Blog\BlogProScreen::class);
+
         // Email Studio (spec 063): a truthful overview of the transactional-email engine. Gated on the
         // optional corex-email add-on; TemplateRegistry is resolved lazily via the container so
         // corex-config never hard-depends on the add-on (Principle IX).
@@ -230,6 +235,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\DataModels\DataModelsImportController::class)->register();
         $this->container->make(OperationsSecurityScreen::class)->register();
         $this->container->make(\Corex\Config\Access\AccessScreen::class)->register();
+        $this->container->make(\Corex\Config\Blog\BlogProScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();
         $this->container->make(\Corex\Config\Operations\MaintenanceGuard::class)->register();
         $this->container->make(EmailStudioScreen::class)->register();

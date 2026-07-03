@@ -100,6 +100,7 @@ final class AdminPage
             'corex-data-models'         => ['data', 'data-models'],
             'corex-operations-security' => ['security', 'operations-security'],
             'corex-access'              => ['access', 'access'],
+            'corex-blog-pro'            => ['blog', 'blog-pro'],
             'corex-insights'            => ['insights', 'insights'],
             'corex-setup'               => ['setup', 'setup'],
             'corex-settings-config'     => ['settings', 'settings'],
@@ -129,6 +130,7 @@ final class AdminPage
             'corex-data-models'         => __('Data Models', 'corex'),
             'corex-operations-security' => __('Operations & Security', 'corex'),
             'corex-access'              => __('Access & Abilities', 'corex'),
+            'corex-blog-pro'            => __('Blog Pro', 'corex'),
             'corex-insights'            => __('Insights', 'corex'),
             'corex-setup'               => __('Setup Wizard', 'corex'),
             'corex-settings-config'     => __('Settings', 'corex'),
@@ -194,6 +196,30 @@ final class AdminPage
             esc_html($title),
             esc_html($message),
         );
+    }
+
+    /**
+     * A tokenized CoreX tab strip (no browser-default links). Each tab links to the same page with a
+     * `tab` query arg; the active tab carries `is-active` + `aria-current`. Shared by every multi-tab
+     * CoreX screen so tabs look and behave identically.
+     *
+     * @param array<string,string> $tabs   key => label, in display order
+     */
+    public function tabs(string $pageSlug, array $tabs, string $active, string $label = 'Sections'): string
+    {
+        $items = '';
+        foreach ($tabs as $key => $tabLabel) {
+            $isActive = $key === $active;
+            $items .= sprintf(
+                '<a class="corex-admin__tab%1$s" href="%2$s"%3$s>%4$s</a>',
+                $isActive ? ' is-active' : '',
+                esc_url(add_query_arg(['page' => $pageSlug, 'tab' => $key], admin_url('admin.php'))),
+                $isActive ? ' aria-current="page"' : '',
+                esc_html($tabLabel),
+            );
+        }
+
+        return '<nav class="corex-admin__tabs" aria-label="' . esc_attr($label) . '">' . $items . '</nav>';
     }
 
     public function permissionDenied(string $section): string
