@@ -2525,3 +2525,24 @@ fixing the genuine defects the audit exposed. The PR is deliberately NOT marked 
 resolved (T234).
 Status: Final on `fix/067-admin-shell-and-completion`. Evidence: `specs/068-admin-product-functional-completion/evidence.md`
 §Final Verification (Phase 12).
+
+## #139 -- Spec 068 Phase 12: fix the dead front-end form block (formSlug forms never rendered)
+Date: 2026-07-10
+Context: The Phase 12 contact-form E2E exposed that `/contact` rendered no form at all. Root cause: the
+`corex/form` block's `block.json` declares attribute defaults `flowId: 0` and `flowSlug: ""`. WordPress merges
+those defaults into `$attributes` before rendering, so `FormBlockRenderer`'s branch condition
+`isset($attributes['flowId']) || isset($attributes['flowSlug'])` was ALWAYS true — every block, including a legacy
+`formSlug` form (the Contact form the `corex/contact` pattern uses), was routed to the flow renderer, which found
+no flow and returned an empty string. The submit path was fine (SubmitLifecycleTest passed), but the form was
+never visible — dead UI on a core front-end surface.
+Decision: Route to the flow renderer only when a flow is actually referenced —
+`((int) flowId) > 0 || trim(flowSlug) !== ''` — otherwise fall through to the registered `formSlug` form. Added
+`tests/Integration/Forms/FormBlockRenderingTest.php` (3) that renders the real registered block via `do_blocks`
+(so block.json defaults are merged, unlike the pure unit test which passes a null flow renderer) and asserts the
+form and the `corex/contact` pattern render, and that an unknown flow stays non-fatal.
+Why: the owner mandate is that approved design is required functionality and no required control may remain dead.
+A front-end contact form that renders nothing is exactly that. The fix is minimal, preserves flow-block behavior
+(a referenced flow still routes to the flow renderer), and is guarded by a test that exercises the real
+default-merge path the unit test missed.
+Status: Final on `fix/067-admin-shell-and-completion`. Verified live: `http://corex.local/contact/` now serves
+`<form data-corex-schema>`; the contact-form smoke E2E passes; full unit 1,257 and integration 107 stay green.

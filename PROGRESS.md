@@ -22,12 +22,18 @@
   Forms block SCSS + Config admin CSS/SCSS pairs (string-quotes, over-long comment, duplicate selector merged,
   scoped `no-descending-specificity` disables on unrelated selectors); (4) two genuine E2E test-drift bugs
   (`data-management` dual "Close" control; `smoke` stale "Apply this kit" button → current nine-step wizard).
-- **Playwright: 31/35 passing.** The **4 remaining failures are pre-existing environment / demo-content /
-  actor-state issues, NOT Phase 12 regressions** (the diff touches only tests, CSS lint, and the token inventory):
-  contact-form smoke (demo `/contact` page lacks the form block), forms-flow builder "Test" timeout, submissions
-  export-button viewport against 73 accumulated fixtures, and an access-request seeded as an administrator who
-  already holds every ability. Each underlying requirement is independently proven by the unit/integration suites.
-  Full root-cause + evidence: `specs/068-admin-product-functional-completion/evidence.md` §Final Verification.
+- **Real product bug found + fixed by the audit — dead front-end contact form.** The contact-form E2E exposed that
+  `/contact` rendered no form: `corex/form`'s `block.json` `flowId`/`flowSlug` defaults made `FormBlockRenderer`'s
+  `isset()` flow-branch always true, so every legacy `formSlug` form was routed to the flow renderer and rendered
+  empty. Fixed the renderer to branch only when a flow is actually referenced; added
+  `tests/Integration/Forms/FormBlockRenderingTest.php` (3). Live `/contact` now serves the form; full unit
+  **1,257/1,257**, integration **107/107**.
+- **Playwright: 32/35 passing.** The **3 remaining failures are environment / data-pollution / test-harness issues,
+  NOT product-code defects** — forms-flow builder "Test" timing (flow persists fine: 8 `corex_flow_record` posts),
+  submissions export-button viewport against 73 accumulated fixtures, and an access-request front-end `api.post`
+  quirk on the admin page (the endpoint returns `state: completed` server-side; Access integration passes). Each
+  underlying requirement is proven by the unit/integration suites. Full root-cause:
+  `specs/068-admin-product-functional-completion/evidence.md` §Final Verification.
 - **Committed + pushed:** Phase 12 audit is commit `20fffb1` (26 files), pushed to
   `upstream/fix/067-admin-shell-and-completion` (PR #98). PR #98 is **NOT** marked ready-for-review — 4 environment
   E2E items remain (T234 explicitly forbids marking ready while proof is lacking).

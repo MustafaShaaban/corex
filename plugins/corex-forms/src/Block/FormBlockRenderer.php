@@ -38,7 +38,13 @@ final class FormBlockRenderer implements BlockRenderer
      */
     public function render(array $attributes, string $content, object $block): string
     {
-        if ($this->flowRenderer !== null && (isset($attributes['flowId']) || isset($attributes['flowSlug']))) {
+        // block.json declares `flowId`/`flowSlug` defaults (0 / ""), so `isset()` is always true
+        // once WordPress merges those defaults in — which would route every block, including a
+        // legacy `formSlug` form, to the flow renderer and produce empty output. Route to the flow
+        // renderer only when a flow is actually referenced; otherwise fall through to the form path.
+        $referencesFlow = ((int) ($attributes['flowId'] ?? 0)) > 0
+            || trim((string) ($attributes['flowSlug'] ?? '')) !== '';
+        if ($this->flowRenderer !== null && $referencesFlow) {
             return $this->flowRenderer->render(
                 [...$attributes, 'variant' => 'form'],
                 $content,
