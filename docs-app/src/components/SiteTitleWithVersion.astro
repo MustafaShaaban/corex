@@ -1,0 +1,21 @@
+---
+/**
+ * Overrides Starlight's SiteTitle to place the documentation version selector beside
+ * the brand (Spec 068 FR-160). Renders the stock title unchanged, then the selector.
+ */
+import Default from '@astrojs/starlight/components/SiteTitle.astro';
+import VersionSelect from './VersionSelect.astro';
+---
+
+<div class="corex-sitetitle">
+	<Default {...Astro.props} />
+	<VersionSelect />
+</div>
+
+<style>
+	.corex-sitetitle {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+</style>

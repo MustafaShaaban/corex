@@ -1,0 +1,57 @@
+---
+/**
+ * Documentation version selector (Spec 068 FR-160). Shows the current framework
+ * version and offers the published release history — a real, functional control, never
+ * a dead placeholder. As more documented versions ship, add them to `options` below.
+ */
+import { CURRENT_VERSION, RELEASES_URL } from '../version';
+
+const options = [
+	{ label: `v${CURRENT_VERSION} (latest)`, href: '' },
+	{ label: 'Release history →', href: RELEASES_URL },
+];
+---
+
+<div class="corex-version">
+	<label class="sr-only" for="corex-version-select">Documentation version</label>
+	<select id="corex-version-select" class="corex-version__select" data-corex-version>
+		{options.map((o) => <option value={o.href}>{o.label}</option>)}
+	</select>
+</div>
+
+<script>
+	const select = document.querySelector('[data-corex-version]');
+	if (select instanceof HTMLSelectElement) {
+		select.addEventListener('change', () => {
+			const href = select.value;
+			if (href) {
+				window.location.href = href;
+				select.selectedIndex = 0; // keep "latest" selected for this site
+			}
+		});
+	}
+</script>
+
+<style>
+	.corex-version {
+		display: inline-flex;
+		margin-inline-start: 0.5rem;
+	}
+	.corex-version__select {
+		inline-size: auto;
+		padding: 0.25rem 0.5rem;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-white);
+		background-color: var(--sl-color-black);
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.375rem;
+	}
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+</style>
