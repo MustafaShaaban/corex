@@ -1,4 +1,4 @@
-/* CoreX Blog Pro functional workspace. Tokens + logical props only; scoped to this admin screen. */
+/* CoreX Blog Pro workspace. Tokens + logical props only; admin-scoped. */
 .corex-admin .corex-blog-pro-app {
 	display: flex;
 	flex-direction: column;

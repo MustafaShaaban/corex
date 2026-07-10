@@ -291,6 +291,17 @@
         "generated-properties",
         "theme-authority"
       ]
+    },
+    {
+      "path": "theme/README.md",
+      "lines": [
+        4,
+        25,
+        66
+      ],
+      "topics": [
+        "theme-authority"
+      ]
     }
   ],
   "examples": [

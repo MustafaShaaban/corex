@@ -54,12 +54,17 @@ test( 'the contact form validates and accepts a submission', async ( { page } ) 
 	await expect( page.locator( '.corex-form__status, [role="status"]' ).first() ).toBeVisible();
 } );
 
-test( 'the setup wizard applies a kit', async ( { page } ) => {
+test( 'the setup wizard loads and offers a real kit', async ( { page } ) => {
 	await page.goto( '/wp-admin/admin.php?page=corex-setup' );
 
-	await expect( page.getByRole( 'heading', { name: /Setup Wizard/i } ) ).toBeVisible();
+	// The nine-step wizard mounts (JS took over the server fallback). The full nine-step
+	// apply flow is exercised by setup-settings-insights.spec.js; this smoke just confirms the
+	// wizard surface loads and offers a real kit to choose.
+	await expect( page.getByRole( 'heading', { name: 'CoreX Setup Wizard' } ) ).toBeVisible();
+	await expect( page.locator( '.corex-setup__step' ) ).toHaveCount( 9 );
 
-	// Apply the first listed kit; expect the success notice.
-	await page.getByRole( 'button', { name: /Apply this kit/i } ).first().click();
-	await expect( page.locator( '.notice-success' ) ).toBeVisible();
+	// Welcome → Brand → Kit: a real kit option is offered.
+	await page.locator( '#corex-setup-next' ).click();
+	await page.locator( '#corex-setup-next' ).click();
+	await expect( page.locator( 'input[name="corex-kit"]' ).first() ).toBeVisible();
 } );

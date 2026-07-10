@@ -416,10 +416,14 @@ Create and implement one reviewed spec at a time:
    inheritance.
 4. **Specs 063–067 — historical staged gap/fidelity work.** Their compatible completed foundations remain, but
    their presentation-only and deferral boundaries are superseded by Spec 068 (Decision #115).
-5. **Spec 068 - Product Functional Completion** — active on PR #98. Implements shared product foundations then
-   functional vertical slices for Email; Forms/Flows/Submissions; Data/Data Models; Operations/Security/Access;
-   Blog Pro; Overview/Add-ons; Insights/Setup/Settings; approved components/theme/account/docs; and the final
-   requirement-by-requirement audit. Source: `specs/068-admin-product-functional-completion/`.
+5. **Spec 068 - Product Functional Completion** — Phases 1–12 implemented and verified on PR #98; the final
+   requirement-by-requirement audit (Phase 12) is complete with the completion audit at **0 findings**, full unit
+   **1,257/1,257**, integration **104/104**, Jest **209/209**, performance contracts **3/3**, and guards clean on the
+   diff. Implements shared product foundations then functional vertical slices for Email; Forms/Flows/Submissions;
+   Data/Data Models; Operations/Security/Access; Blog Pro; Overview/Add-ons; Insights/Setup/Settings; approved
+   components/theme/account/docs. **Residual before PR is marked ready:** 4 environment/demo-content/actor-state
+   Playwright specs (not code regressions) — see `specs/068-admin-product-functional-completion/evidence.md`
+   §Final Verification and Decision #138. Source: `specs/068-admin-product-functional-completion/`.
 
 Spec number 056 remains unavailable. Specs 066 and 067 are historical branch/decision identifiers without durable
 feature directories; do not reuse them. Spec 068 is the active product contract and authorizes only the work

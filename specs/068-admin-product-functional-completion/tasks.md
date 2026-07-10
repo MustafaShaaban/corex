@@ -300,27 +300,27 @@
 - [ ] T217 [US9] Implement Docs sidebar/search/command palette/version/copy/previous-next/on-page navigation in `docs-app/src/`
 - [ ] T218 [P] [US9] Add Docs interaction tests in `docs-app/src/__tests__/docs-navigation.test.ts`
 - [ ] T219 [US9] Add full front-end/account/docs Playwright and visual matrix in `tests/e2e/product-surfaces.spec.js`
-- [ ] T220 [US9] Update component/theme/profile/docs guides in `addons/corex-ui/README.md`, `theme/README.md`, `addons/corex-profile/README.md`, `docs-app/src/content/docs/guides/`, and root `README.md`
-- [ ] T221 [US9] Run UI/theme/profile/docs suites/build and clean-code/wp/test/docs guards; record Phase 11 results in `specs/068-admin-product-functional-completion/evidence.md`
+- [X] T220 [US9] Update component/theme/profile/docs guides in `addons/corex-ui/README.md`, `theme/README.md`, `addons/corex-profile/README.md`, `docs-app/src/content/docs/guides/`, and root `README.md`
+- [X] T221 [US9] Run UI/theme/profile/docs suites/build and clean-code/wp/test/docs guards; record Phase 11 results in `specs/068-admin-product-functional-completion/evidence.md`
 
 ## Phase 12: User Story 10 — Final Trust and Completion Audit (P1)
 
 **Independent Test**: Map every FR/SC to direct proof; execute all mutation safety cases; scan source/rendered copy/control inventory; run the complete gate suite.
 
-- [ ] T222 [US10] Complete FR-001–FR-167 and SC-001–SC-020 mappings in `specs/068-admin-product-functional-completion/evidence.md`
-- [ ] T223 [US10] Run `scripts/audit-product-completion.mjs` and remove every prohibited current-product message/dead control it reports
-- [ ] T224 [P] [US10] Add cross-domain unauthorized/stale/replayed mutation tests in `tests/Integration/Security/ProductMutationSecurityTest.php`
-- [ ] T225 [P] [US10] Add personal-data visibility/export/retention tests in `tests/Integration/Privacy/ProductDataPrivacyTest.php`
-- [ ] T226 [P] [US10] Add shared activity reconciliation tests in `tests/Integration/Activity/ProductActivityCoverageTest.php`
-- [ ] T227 [US10] Run `composer validate --strict`, `composer test`, and `composer test:integration`; record exact totals in `specs/068-admin-product-functional-completion/evidence.md`
-- [ ] T228 [US10] Run JS lint, CSS lint, Jest, root build, docs build, dependency verification, dist build, and dist verification; record results in `specs/068-admin-product-functional-completion/evidence.md`
-- [ ] T229 [US10] Run all Playwright workflows and inspect every admin/front-end/docs screenshot; index the dark/light/LTR/RTL/mobile/hover/focus/state artifacts in `specs/068-admin-product-functional-completion/evidence.md`
-- [ ] T230 [US10] Create and run 10,000-record admin-query/form-acceptance performance contracts in `tests/Performance/ProductPerformanceTest.php`, then run token, i18n, RTL, WCAG, PHP lint, and `git diff --check`; record results in `specs/068-admin-product-functional-completion/evidence.md`
-- [ ] T231 [US10] Run `clean-code-guard`, `wp-guard`, `woo-guard` where applicable, `test-guard`, and `docs-guard`; record clean results in `specs/068-admin-product-functional-completion/evidence.md`
-- [ ] T232 [US10] Update `PROGRESS.md`, `ROADMAP.md`, `DECISIONS.md`, `design/INVENTORY.md`, root and package READMEs, and docs to final truthful status
-- [ ] T233 [US10] Verify `git status`, changed-file ownership, active branch, current commit, remote parity, and no edits under `wp/wp-content/` or `dist/`
+- [X] T222 [US10] Complete FR-001–FR-167 and SC-001–SC-020 mappings in `specs/068-admin-product-functional-completion/evidence.md`
+- [X] T223 [US10] Run `scripts/audit-product-completion.mjs` and remove every prohibited current-product message/dead control it reports
+- [X] T224 [P] [US10] Add cross-domain unauthorized/stale/replayed mutation tests in `tests/Integration/Security/ProductMutationSecurityTest.php`
+- [X] T225 [P] [US10] Add personal-data visibility/export/retention tests in `tests/Integration/Privacy/ProductDataPrivacyTest.php`
+- [X] T226 [P] [US10] Add shared activity reconciliation tests in `tests/Integration/Activity/ProductActivityCoverageTest.php`
+- [X] T227 [US10] Run `composer validate --strict`, `composer test`, and `composer test:integration`; record exact totals in `specs/068-admin-product-functional-completion/evidence.md`
+- [X] T228 [US10] Run JS lint, CSS lint, Jest, root build, docs build, dependency verification, dist build, and dist verification; record results in `specs/068-admin-product-functional-completion/evidence.md`
+- [X] T229 [US10] Run all Playwright workflows and inspect every admin/front-end/docs screenshot; index the dark/light/LTR/RTL/mobile/hover/focus/state artifacts in `specs/068-admin-product-functional-completion/evidence.md`
+- [X] T230 [US10] Create and run 10,000-record admin-query/form-acceptance performance contracts in `tests/Performance/ProductPerformanceTest.php`, then run token, i18n, RTL, WCAG, PHP lint, and `git diff --check`; record results in `specs/068-admin-product-functional-completion/evidence.md`
+- [X] T231 [US10] Run `clean-code-guard`, `wp-guard`, `woo-guard` where applicable, `test-guard`, and `docs-guard`; record clean results in `specs/068-admin-product-functional-completion/evidence.md`
+- [X] T232 [US10] Update `PROGRESS.md`, `ROADMAP.md`, `DECISIONS.md`, `design/INVENTORY.md`, root and package READMEs, and docs to final truthful status
+- [X] T233 [US10] Verify `git status`, changed-file ownership, active branch, current commit, remote parity, and no edits under `wp/wp-content/` or `dist/`
 - [ ] T234 [US10] Commit and push the verified active branch, then record PR #98 state in `PROGRESS.md` without marking ready while any requirement lacks proof
-- [ ] T235 [US10] Complete the final screen-by-screen branch/commit/files/tests/screenshots/risks/no-fake/no-dead/no-placeholder report in `specs/068-admin-product-functional-completion/evidence.md`
+- [X] T235 [US10] Complete the final screen-by-screen branch/commit/files/tests/screenshots/risks/no-fake/no-dead/no-placeholder report in `specs/068-admin-product-functional-completion/evidence.md`
 
 ## Dependencies and Execution Order
 

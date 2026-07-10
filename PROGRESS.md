@@ -4,16 +4,33 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-10, Spec 068 PRODUCT FUNCTIONAL COMPLETION) -- Phase 11 COMPLETE (T210–T221 done + verified); Phase 12 (T222–T235) is the only remaining work
+## RESUME HERE (2026-07-10, Spec 068 PRODUCT FUNCTIONAL COMPLETION) -- Phase 12 (T222–T235) COMPLETE and verified; PR #98 NOT marked ready — 4 environment/demo-content E2E items remain as a scoped follow-up
 
-- **2026-07-10 verification pass (T217–T221):** the previously implementation-only Docs UI + docs + E2E batch is
-  now verified and complete. Focused Docs/Theme/Profile unit **99/99 (1,046 assertions)**; `astro build` green
-  (**284 pages** + Pagefind search index); `product-surfaces.spec.js` E2E **2/2**. Root-caused + fixed a real E2E
-  defect: `browser.newContext()` inherits the Playwright config `use.storageState` (admin), so the "guest" contexts
-  were signed in and the account block rendered the member panel — each guest context now opens with an explicit
-  empty `storageState` (verified: guest render shows the login/register/recovery forms, no `#wpadminbar`). test-guard
-  clean; `guides/profile.md` route table verified against the registered `corex/v1/account/*` routes. Ready to
-  commit T217–T221. **Next: commit this batch, then Phase 12 (T222–T235).**
+- **2026-07-10 final audit (Phase 12, T222–T235):** completed the final trust-and-completion audit against a real
+  WordPress 7.0 / WAMP MySQL runtime with `http://corex.local` serving. **Completion audit: 0 findings** (T223).
+  Added and verified the three shared-trust integration suites (T224–T226): cross-domain mutation security
+  **5/5**, personal-data privacy **4/4**, shared-activity coverage **5/5**. Added the performance contracts
+  (T230) **3/3 (69 assertions)** — a 10k-record admin read is clamped to ≤100 rows within the 1s p95 budget and a
+  real front-end form acceptance completes within 2s. Full suites: unit **1,257/1,257 (5,765 assertions)**,
+  integration **104/104 (519 assertions)**, Jest **209/209 (37 suites)**; `composer validate --strict` OK; JS lint
+  clean; CSS lint clean after remediating **22 accumulated stylelint findings**; root build + docs build (**284
+  pages**) + dependency security PASS + dist build/verify OK; token contracts **16/16**; `git diff --check` clean.
+- **Real defects fixed during the audit:** (1) `SetupWizardControllerTest` returned zero kits because the
+  `corex-kit-company` add-on was inactive in `./wp` — activated it (matching the other add-on integration suites)
+  so the real wizard offers the Company kit; (2) token-inventory drift — `theme/README.md` gained token references
+  not captured in the committed inventory, regenerated `docs-and-brand.json`; (3) 22 stylelint findings across
+  Forms block SCSS + Config admin CSS/SCSS pairs (string-quotes, over-long comment, duplicate selector merged,
+  scoped `no-descending-specificity` disables on unrelated selectors); (4) two genuine E2E test-drift bugs
+  (`data-management` dual "Close" control; `smoke` stale "Apply this kit" button → current nine-step wizard).
+- **Playwright: 31/35 passing.** The **4 remaining failures are pre-existing environment / demo-content /
+  actor-state issues, NOT Phase 12 regressions** (the diff touches only tests, CSS lint, and the token inventory):
+  contact-form smoke (demo `/contact` page lacks the form block), forms-flow builder "Test" timeout, submissions
+  export-button viewport against 73 accumulated fixtures, and an access-request seeded as an administrator who
+  already holds every ability. Each underlying requirement is independently proven by the unit/integration suites.
+  Full root-cause + evidence: `specs/068-admin-product-functional-completion/evidence.md` §Final Verification.
+- **Next:** owner-scoped follow-up — reset the dev site's accumulated test fixtures, seed a `/contact` demo page
+  containing the `corex/form` block, and reseed the forms-flow/access E2E specs with a non-admin actor; then the
+  four browser specs go green and PR #98 can be marked ready. Do **not** mark PR #98 ready until then (T234).
 
 
 - **Branch:** `fix/067-admin-shell-and-completion` at pushed Phase 2 checkpoint `63c6312`, tracking the same origin branch.

@@ -28,8 +28,10 @@ test( 'queries source records, opens detail, and queues a declared export', asyn
 	await page.locator( '.corex-data__source-row', { hasText: fixture.label } ).click();
 	await expect.poll( () => page.locator( '.corex-data__table tbody tr' ).count() ).toBeGreaterThan( 0 );
 	await page.getByRole( 'button', { name: 'View' } ).first().click();
-	await expect( page.getByRole( 'dialog', { name: 'Record detail' } ) ).toBeVisible();
-	await page.getByRole( 'button', { name: 'Close' } ).click();
+	const recordDialog = page.getByRole( 'dialog', { name: 'Record detail' } );
+	await expect( recordDialog ).toBeVisible();
+	// The dialog exposes both an icon and a text close affordance; use the first within scope.
+	await recordDialog.getByRole( 'button', { name: 'Close' } ).first().click();
 
 	const exportButton = page.getByRole( 'button', { name: 'Export', exact: true } );
 	await expect( exportButton ).toBeVisible();

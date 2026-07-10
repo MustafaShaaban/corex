@@ -41,6 +41,7 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: baseline;
+	justify-content: space-between;
 	gap: var(--corex-admin-space-sm);
 	margin-block-end: var(--corex-admin-space-md);
 }
@@ -213,11 +214,8 @@
 	margin-block-start: 0;
 }
 
-.corex-admin .corex-data-models__card-head {
-	justify-content: space-between;
-}
-
 .corex-admin .corex-data-models__access,
+/* stylelint-disable-next-line no-descending-specificity */
 .corex-admin .corex-data-models__capabilities span {
 	padding: var(--corex-admin-space-2xs) var(--corex-admin-space-sm);
 	font-family: var(--corex-admin-font-mono);

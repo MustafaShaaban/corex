@@ -6,7 +6,9 @@ const { test, expect } = require( '@playwright/test' );
 const { collectConsoleErrors } = require( './helpers' );
 
 const FLOW_SLUG = 'corex-inbox-e2e';
-const EMAIL = 'corex-inbox-e2e@example.com';
+// Unique per run so the seeded submission is searchable to exactly one row on a shared site
+// where prior runs' fixtures accumulate.
+const EMAIL = `corex-inbox-e2e-${ Date.now() }@example.com`;
 
 async function seedSubmission( page ) {
 	await page.goto( '/wp-admin/admin.php?page=corex-forms' );
@@ -63,14 +65,16 @@ test( 'filters works assigns notes bulk actions and audits personal-data exports
 	await expect( page.getByText( EMAIL, { exact: true } ) ).toBeVisible();
 	await expect( page.getByText( 'marked-test@example.com', { exact: true } ) ).toHaveCount( 0 );
 
-	await page.getByLabel( /Select submission/ ).check();
-	await page.getByLabel( 'Bulk action' ).selectOption( 'mark_read' );
+	// Scope to a single matching submission: the seeded fixture email can accumulate across
+	// runs on a shared site, so operate on the first match to keep the workflow isolation-safe.
+	await page.getByLabel( /Select submission/ ).first().check();
+	await page.getByRole( 'combobox', { name: 'Bulk action' } ).selectOption( 'mark_read' );
 	await page.getByRole( 'button', { name: 'Preview action' } ).click();
 	await expect( page.getByText( /will affect exactly 1 submissions/ ) ).toBeVisible();
 	await page.getByRole( 'button', { name: 'Confirm and apply' } ).click();
 	await expect( page.getByText( 'Bulk action applied.' ) ).toBeVisible();
 
-	await page.getByRole( 'button', { name: new RegExp( EMAIL ) } ).click();
+	await page.getByRole( 'button', { name: new RegExp( EMAIL ) } ).first().click();
 	const drawer = page.locator( '.corex-inbox__drawer' );
 	await expect( drawer ).toBeVisible();
 	await drawer.locator( '.corex-inbox__drawer-actions select' ).selectOption( 'in_progress' );
@@ -79,7 +83,7 @@ test( 'filters works assigns notes bulk actions and audits personal-data exports
 	await expect( drawer.getByText( 'Browser evidence note.' ) ).toBeVisible();
 	await drawer.getByRole( 'button', { name: 'Close detail' } ).click();
 
-	await page.getByLabel( /Select submission/ ).check();
+	await page.getByLabel( /Select submission/ ).first().check();
 	await page.getByRole( 'button', { name: 'Export', exact: true } ).click();
 	const modal = page.getByRole( 'dialog', { name: 'Export submissions' } );
 	await modal.getByText( 'I understand this export contains personal data' ).click();

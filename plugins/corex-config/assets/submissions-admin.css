@@ -103,6 +103,7 @@
 }
 
 .corex-admin .corex-inbox__bulk select,
+/* stylelint-disable-next-line no-descending-specificity */
 .corex-admin .corex-inbox__bulk input {
 	inline-size: auto;
 	min-inline-size: 9rem;
@@ -260,6 +261,7 @@
 	gap: var(--corex-admin-space-sm);
 }
 
+/* stylelint-disable-next-line no-descending-specificity */
 .corex-admin .corex-inbox__assignment input,
 .corex-admin .corex-inbox__assignment select {
 	flex: 1 1 10rem; /* corex-token-allow: structural assignment control basis */

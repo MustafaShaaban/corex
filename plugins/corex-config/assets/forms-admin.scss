@@ -112,7 +112,9 @@
 
 .corex-admin .corex-flow-list__rows > li > button:hover,
 .corex-admin .corex-flow-list__rows > li > button:focus-visible,
+/* stylelint-disable-next-line no-descending-specificity */
 .corex-admin .corex-flow-editor__stages button:hover,
+/* stylelint-disable-next-line no-descending-specificity */
 .corex-admin .corex-flow-editor__stages button:focus-visible,
 .corex-admin .corex-flow-editor__stages button.is-active {
 	background: var(--corex-admin-surface-alt);
@@ -154,6 +156,7 @@
 	scrollbar-gutter: stable;
 }
 
+/* stylelint-disable-next-line no-descending-specificity */
 .corex-admin .corex-flow-editor__stages button {
 	display: grid;
 	grid-template-columns: auto auto;
@@ -214,6 +217,7 @@
 	border-color: var(--corex-admin-action);
 }
 
+/* stylelint-disable-next-line no-descending-specificity */
 .corex-admin .corex-flow-editor__field-list li > button {
 	display: grid;
 	gap: var(--corex-admin-space-2xs);
@@ -313,6 +317,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
 	.corex-admin .corex-flows-app *,
 	.corex-admin .corex-flow-editor * {
 		scroll-behavior: auto;

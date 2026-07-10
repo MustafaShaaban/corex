@@ -2503,3 +2503,25 @@ design is required functionality) without introducing raw design values — the 
 truth, inlined for pages that cannot enqueue it.
 Status: Final on `fix/067-admin-shell-and-completion`; live dark/light/RTL render verification on corex.local is the
 recommended manual follow-up.
+
+## #138 -- Spec 068 Phase 12 final audit: activate the Company kit, remediate accumulated lint, classify residual E2E as environment drift
+Date: 2026-07-10
+Context: The Phase 12 final audit was the first run of the full integration suite, JS/CSS lint, and Playwright since
+earlier phases (prior sessions were blocked by the Codex app approval-credit gate and a stopped WAMP MySQL). Running
+them surfaced latent, never-executed issues rather than new regressions.
+Decision: (1) Activate the `corex-kit-company` add-on in `./wp` so `SetupWizardControllerTest` and the setup-wizard
+E2E exercise the real Company kit — this matches how the other add-on integration suites already rely on their add-on
+being active, and reflects the intended flagship state (the wizard must offer a kit, not an empty chooser).
+(2) Remediate the 22 accumulated stylelint findings in place: convert `@use` string-quotes to double quotes, split an
+over-long comment, merge the duplicate `.corex-data-models__card-head` selector, and apply scoped
+`stylelint-disable-next-line no-descending-specificity` only where the flagged selectors are genuinely unrelated
+(zero cascade effect); keep each `.css`/`.scss` pair byte-identical. (3) Regenerate the token inventory after
+`theme/README.md` drift. (4) Classify the 4 residual Playwright failures as pre-existing environment / demo-content /
+actor-state issues — not code regressions — with each underlying requirement independently proven by the
+unit/integration suites, and record a scoped follow-up (reset dev fixtures, seed a `/contact` demo form page, reseed
+forms-flow/access specs with a non-admin actor) instead of masking behavior or force-passing the specs.
+Why: keeps the completion truthful (constitution: code that contradicts the truth is wrong; no fake green) while
+fixing the genuine defects the audit exposed. The PR is deliberately NOT marked ready until the four E2E items are
+resolved (T234).
+Status: Final on `fix/067-admin-shell-and-completion`. Evidence: `specs/068-admin-product-functional-completion/evidence.md`
+§Final Verification (Phase 12).
