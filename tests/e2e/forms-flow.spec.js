@@ -44,7 +44,9 @@ test( 'creates publishes tests and submits a persisted flow without console erro
 		await expect( page.getByRole( 'button', { name: 'Move to draft' } ) ).toBeVisible();
 	}
 
-	await page.getByRole( 'button', { name: 'Test', exact: true } ).click();
+	// The Test stage lives in the stage rail; each stage button's accessible name carries its
+	// step number and status (e.g. "7 Test Ready"), so scope to the rail and match the label.
+	await page.locator( '.corex-flow-editor__stages button', { hasText: 'Test' } ).click();
 	await page.getByRole( 'button', { name: 'Run marked test' } ).click();
 	await expect( page.getByText( 'Marked test completed.' ) ).toBeVisible();
 	await expect( page.locator( '.corex-flow-test-results > li' ) ).toHaveCount( 7 );

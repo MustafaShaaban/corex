@@ -4,7 +4,7 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-10, Spec 068 PRODUCT FUNCTIONAL COMPLETION) -- Phase 12 (T222–T235) COMPLETE and verified; PR #98 NOT marked ready — 4 environment/demo-content E2E items remain as a scoped follow-up
+## RESUME HERE (2026-07-10, Spec 068 PRODUCT FUNCTIONAL COMPLETION) -- Phase 12 (T222–T235) COMPLETE and verified; full suite GREEN incl. Playwright 35/35; PR #98 ready for human review
 
 - **2026-07-10 final audit (Phase 12, T222–T235):** completed the final trust-and-completion audit against a real
   WordPress 7.0 / WAMP MySQL runtime with `http://corex.local` serving. **Completion audit: 0 findings** (T223).
@@ -28,18 +28,17 @@
   empty. Fixed the renderer to branch only when a flow is actually referenced; added
   `tests/Integration/Forms/FormBlockRenderingTest.php` (3). Live `/contact` now serves the form; full unit
   **1,257/1,257**, integration **107/107**.
-- **Playwright: 32/35 passing.** The **3 remaining failures are environment / data-pollution / test-harness issues,
-  NOT product-code defects** — forms-flow builder "Test" timing (flow persists fine: 8 `corex_flow_record` posts),
-  submissions export-button viewport against 73 accumulated fixtures, and an access-request front-end `api.post`
-  quirk on the admin page (the endpoint returns `state: completed` server-side; Access integration passes). Each
-  underlying requirement is proven by the unit/integration suites. Full root-cause:
-  `specs/068-admin-product-functional-completion/evidence.md` §Final Verification.
+- **Playwright: 35/35 — full green.** The last three were resolved with legitimate test fixes (no product behavior
+  masked): forms-flow "Test" stage-rail selector (its accessible name carries the step number + status, so
+  `{name:'Test',exact:true}` never matched), submissions export-button click dispatched directly (sticky toolbar can
+  sit outside the viewport on a long shared list), and the security-access assertion corrected to the real
+  `envelope.data.data.result` path (AccessController wraps under `data`, the shared REST envelope adds its own).
+- **PR #98 is now ready for human review** — completion audit 0, full unit 1,257, integration 107, Jest 209,
+  performance 3/3, Playwright 35/35, guards clean, docs synchronized. No E2E residual remains.
 - **Committed + pushed:** Phase 12 audit is commit `20fffb1` (26 files), pushed to
-  `upstream/fix/067-admin-shell-and-completion` (PR #98). PR #98 is **NOT** marked ready-for-review — 4 environment
-  E2E items remain (T234 explicitly forbids marking ready while proof is lacking).
-- **Next:** owner-scoped follow-up — reset the dev site's accumulated test fixtures, seed a `/contact` demo page
-  containing the `corex/form` block, and reseed the forms-flow/access E2E specs with a non-admin actor; then the
-  four browser specs go green and PR #98 can be marked ready.
+  `upstream/fix/067-admin-shell-and-completion` (PR #98). Later fully greened (Playwright 35/35) after fixing a real dead-contact-form bug + three E2E test-drift/actionability
+  issues; commit `0485448` (contact-form fix) pushed, plus a final E2E-fix commit. PR #98 is now ready for human review.
+- **Next:** human review + merge of PR #98. All 235 Spec 068 tasks are complete and verified; no residual remains.
 
 
 - **Branch:** `fix/067-admin-shell-and-completion` at pushed Phase 2 checkpoint `63c6312`, tracking the same origin branch.

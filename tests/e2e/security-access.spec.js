@@ -47,8 +47,10 @@ test( 'creates a live access request through the localized Access REST workflow'
 		);
 	} );
 
+	// AccessController wraps its payload under `data` (asserted by AccessControllerTest), and the
+	// shared REST envelope adds its own `data`, so the created request lands at data.data.result.
 	expect( result.envelope.ok ).toBe( true );
-	expect( result.envelope.data.result.state ).toBe( 'completed' );
+	expect( result.envelope.data.data.result.state ).toBe( 'completed' );
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
 

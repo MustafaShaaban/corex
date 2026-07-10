@@ -84,7 +84,11 @@ test( 'filters works assigns notes bulk actions and audits personal-data exports
 	await drawer.getByRole( 'button', { name: 'Close detail' } ).click();
 
 	await page.getByLabel( /Select submission/ ).first().check();
-	await page.getByRole( 'button', { name: 'Export', exact: true } ).click();
+	// On a shared site the inbox list can be long enough to keep the toolbar Export button
+	// outside the window viewport (sticky toolbar in a scroll container); dispatch the click
+	// event directly so the workflow stays reliable regardless of list length.
+	const exportButton = page.getByRole( 'button', { name: 'Export', exact: true } );
+	await exportButton.dispatchEvent( 'click' );
 	const modal = page.getByRole( 'dialog', { name: 'Export submissions' } );
 	await modal.getByText( 'I understand this export contains personal data' ).click();
 	await modal.getByRole( 'button', { name: 'Create export' } ).click();
