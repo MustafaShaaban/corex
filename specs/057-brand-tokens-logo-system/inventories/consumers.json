@@ -19,7 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-  "count": 1023,
+  "count": 1026,
   "consumers": [
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
@@ -9972,6 +9972,26 @@
       "target_definition": "spacing.30"
     },
     {
+      "path": "theme/patterns/loading.php",
+      "selector_or_context": "lines 15, 15: <section class=\"wp-block-group alignfull corex-loading\" style=\"padding-top:var(--wp--preset--spacing--70);padding-bottom:var(--wp--preset--spacing--70)\">",
+      "property": "--wp--preset--spacing--70",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.70"
+    },
+    {
+      "path": "theme/patterns/maintenance.php",
+      "selector_or_context": "lines 15, 15: <section class=\"wp-block-group alignfull corex-maintenance\" style=\"min-height:70vh;padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)\">",
+      "property": "--wp--preset--spacing--80",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.80"
+    },
+    {
       "path": "theme/patterns/section-contact-info.php",
       "selector_or_context": "lines 39: <div class=\"wp-block-column corex-contact__card has-border-color has-border-border-color has-surface-alt-background-color has-background\" style=\"border-width:var(--wp--custom--border--width--thin);border-radius:var(--wp--custom--radius--md);padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--40)\">",
       "property": "--wp--custom--border--width--thin",
@@ -10020,6 +10040,16 @@
       "direction_context": "logical",
       "resolution": "valid",
       "target_definition": "spacing.60"
+    },
+    {
+      "path": "theme/patterns/section-newsletter.php",
+      "selector_or_context": "lines 15, 15: <section class=\"wp-block-group alignfull corex-newsletter has-surface-alt-background-color has-background\" style=\"padding-top:var(--wp--preset--spacing--70);padding-bottom:var(--wp--preset--spacing--70)\">",
+      "property": "--wp--preset--spacing--70",
+      "owner": "theme",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.70"
     },
     {
       "path": "theme/patterns/section-process-steps.php",
