@@ -29,6 +29,7 @@
             "Corex\\Portfolio\\": "addons/corex-kit-portfolio/src/",
             "Corex\\Woo\\": "addons/corex-kit-woo/src/",
             "Corex\\Media\\": "addons/corex-media/src/",
+            "Corex\\Profile\\": "addons/corex-profile/src/",
             "Corex\\Cli\\": "packages/cli/src/"
         }
     },

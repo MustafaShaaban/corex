@@ -1,0 +1,150 @@
+/**
+ * CoreX front-office account block styles.
+ *
+ * Consumes theme.json presets only — no raw color/size/font literals
+ * (Principle V). RTL-first via logical properties (Principle VIII). Loaded
+ * only where the account block renders (Principle VI).
+ */
+
+.corex-account {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--40);
+	max-inline-size: 100%;
+}
+
+.corex-account__grid {
+	display: grid;
+	gap: var(--wp--preset--spacing--50);
+	grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.corex-account__form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--30);
+	padding: var(--wp--preset--spacing--50);
+	background-color: var(--wp--preset--color--surface-alt);
+	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
+	border-radius: var(--wp--custom--radius--md);
+}
+
+.corex-account__title {
+	font-family: var(--wp--preset--font-family--heading);
+	font-size: var(--wp--preset--font-size--xl);
+	margin-block: 0;
+}
+
+.corex-account__subtitle {
+	font-family: var(--wp--preset--font-family--heading);
+	font-size: var(--wp--preset--font-size--lg);
+	margin-block: var(--wp--preset--spacing--20) 0;
+}
+
+.corex-account__row {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--20);
+	margin-block: 0;
+}
+
+.corex-account__row input {
+	inline-size: 100%;
+	padding: var(--wp--preset--spacing--20);
+	font-family: var(--wp--preset--font-family--body);
+	color: var(--wp--preset--color--ink);
+	background-color: var(--wp--preset--color--surface);
+	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
+	border-radius: var(--wp--custom--radius--sm);
+}
+
+.corex-account__check {
+	display: flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--20);
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-account__note {
+	color: var(--wp--preset--color--ink-soft);
+	font-size: var(--wp--preset--font-size--sm);
+	margin-block: 0;
+}
+
+/* Off-screen honeypot — present for bots, invisible and skipped for people. */
+.corex-account__hp {
+	position: absolute;
+	inline-size: 1px;
+	block-size: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+.corex-account__submit,
+.corex-account__btn {
+	align-self: flex-start;
+	padding-block: var(--wp--preset--spacing--20);
+	padding-inline: var(--wp--preset--spacing--40);
+	font-family: var(--wp--preset--font-family--body);
+	color: var(--wp--preset--color--inverse);
+	background-color: var(--wp--preset--color--primary);
+	border: 0;
+	border-radius: var(--wp--custom--radius--sm);
+	cursor: pointer;
+}
+
+.corex-account__btn {
+	color: var(--wp--preset--color--ink);
+	background-color: var(--wp--preset--color--surface-alt);
+	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
+}
+
+.corex-account__submit:hover,
+.corex-account__btn:hover {
+	background-color: var(--wp--preset--color--primary-dark);
+	color: var(--wp--preset--color--inverse);
+}
+
+.corex-account__row input:focus-visible,
+.corex-account__submit:focus-visible,
+.corex-account__btn:focus-visible {
+	outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
+	outline-offset: var(--wp--custom--focus--offset);
+}
+
+.corex-account__status {
+	padding: var(--wp--preset--spacing--30);
+	border-radius: var(--wp--custom--radius--sm);
+	background-color: var(--wp--preset--color--surface-alt);
+	color: var(--wp--preset--color--ink);
+}
+
+.corex-account__status[data-state="error"] {
+	background-color: var(--wp--preset--color--error);
+	color: var(--wp--preset--color--inverse);
+}
+
+.corex-account__status[data-state="ok"] {
+	background-color: var(--wp--preset--color--success);
+	color: var(--wp--preset--color--inverse);
+}
+
+.corex-account__member {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--50);
+}
+
+.corex-account__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wp--preset--spacing--30);
+}
+
+.corex-account__session-list,
+.corex-account__notification-list {
+	margin-block: 0;
+	padding-inline-start: var(--wp--preset--spacing--40);
+	color: var(--wp--preset--color--ink-soft);
+}
