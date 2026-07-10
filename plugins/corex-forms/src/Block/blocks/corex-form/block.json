@@ -8,7 +8,10 @@
 	"description": "Renders a registered Corex form (server-rendered, secured submit).",
 	"textdomain": "corex",
 	"attributes": {
-		"formSlug": { "type": "string", "default": "contact" }
+		"source": { "type": "string", "default": "flow" },
+		"formSlug": { "type": "string", "default": "contact" },
+		"flowId": { "type": "integer", "default": 0 },
+		"flowSlug": { "type": "string", "default": "" }
 	},
 	"supports": { "html": false },
 	"editorScript": "file:./index.js",

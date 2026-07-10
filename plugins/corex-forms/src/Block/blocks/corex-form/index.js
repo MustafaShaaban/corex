@@ -1,9 +1,3 @@
-/**
- * Corex Form — editor registration for a DYNAMIC block. You PICK the form from a dropdown
- * of registered forms (spec 029) — no more typing a slug. The list comes from the cap-gated
- * REST route `corex/v1/forms`. The form markup is rendered server-side from the chosen
- * form's schema (FormBlockRenderer), previewed via <ServerSideRender>.
- */
 import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
@@ -14,40 +8,45 @@ import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
+import { flowOptions, normalizePublishedFlows } from '../flowBlockEditor.js';
 
 registerBlockType( metadata.name, {
 	edit: ( { attributes, setAttributes } ) => {
 		const blockProps = useBlockProps();
-		const [ forms, setForms ] = useState( null ); // null = loading
+		const [ choices, setChoices ] = useState( null );
+		const source = attributes.source || 'flow';
 
 		useEffect( () => {
-			apiFetch( { path: '/corex/v1/forms' } )
-				.then( ( list ) => setForms( Array.isArray( list ) ? list : [] ) )
-				.catch( () => setForms( [] ) );
-		}, [] );
+			const path = source === 'flow' ? '/corex/v1/flows?state=published' : '/corex/v1/forms';
+			apiFetch( { path } ).then( ( response ) => {
+				setChoices( source === 'flow' ? normalizePublishedFlows( response ) : ( Array.isArray( response ) ? response : [] ) );
+			} ).catch( () => setChoices( [] ) );
+		}, [ source ] );
 
-		const options = forms
-			? forms.map( ( f ) => ( { label: f.label, value: f.slug } ) )
-			: [];
+		const options = source === 'flow'
+			? flowOptions( choices || [] )
+			: [ { label: __( 'Select a registered form…', 'corex' ), value: '' }, ...( choices || [] ).map( ( form ) => ( { label: form.label, value: form.slug } ) ) ];
+		const value = source === 'flow' ? String( attributes.flowId || 0 ) : attributes.formSlug || '';
 
 		return (
 			<div { ...blockProps }>
 				<InspectorControls>
 					<PanelBody title={ __( 'Form', 'corex' ) }>
-						{ forms !== null && forms.length === 0 ? (
-							<p>{ __( 'No forms found.', 'corex' ) }</p>
-						) : (
-							<SelectControl
-								__nextHasNoMarginBottom
-								label={ __( 'Form', 'corex' ) }
-								value={ attributes.formSlug || '' }
-								options={ [
-									{ label: __( 'Select a form…', 'corex' ), value: '' },
-									...options,
-								] }
-								onChange={ ( formSlug ) => setAttributes( { formSlug } ) }
-							/>
-						) }
+						<SelectControl
+							__nextHasNoMarginBottom
+							label={ __( 'Source', 'corex' ) }
+							value={ source }
+							options={ [ { label: __( 'Published flow', 'corex' ), value: 'flow' }, { label: __( 'Registered form', 'corex' ), value: 'registered' } ] }
+							onChange={ ( nextSource ) => setAttributes( { source: nextSource, flowId: 0, formSlug: '' } ) }
+						/>
+						<SelectControl
+							__nextHasNoMarginBottom
+							label={ source === 'flow' ? __( 'Flow', 'corex' ) : __( 'Form', 'corex' ) }
+							value={ value }
+							options={ options }
+							disabled={ choices === null }
+							onChange={ ( selected ) => setAttributes( source === 'flow' ? { flowId: Number( selected ) } : { formSlug: selected } ) }
+						/>
 					</PanelBody>
 				</InspectorControls>
 				<ServerSideRender block={ metadata.name } attributes={ attributes } />

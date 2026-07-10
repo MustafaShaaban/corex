@@ -21,8 +21,10 @@ use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
 use Corex\Operations\Confirmation;
 use Corex\Operations\OperationResult;
+use Corex\Mail\RoutedMailer;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
+use DomainException;
 use InvalidArgumentException;
 
 /**
@@ -39,6 +41,7 @@ final class AccessService
         private readonly AccessRequestStore $requests,
         private readonly AccessUserDirectory $users,
         private readonly ActivityService $activity,
+        private readonly ?RoutedMailer $notifications = null,
     ) {
     }
 
@@ -171,6 +174,19 @@ final class AccessService
             occurredAt: $now,
         );
 
+        $this->notify('access.request.created', [
+            'request' => [
+                'id'          => $requestId,
+                'ability_key' => $abilityKey,
+                'area_key'    => $areaKey,
+            ],
+            'requester' => [
+                'id'    => $requesterId,
+                'name'  => $this->users->displayName($requesterId),
+                'email' => $this->users->emailAddress($requesterId),
+            ],
+        ]);
+
         return new OperationResult(
             operationId: Uuid::v4(),
             state: OperationResult::STATE_COMPLETED,
@@ -234,6 +250,24 @@ final class AccessService
             retentionUntil: $now->modify('+180 days'),
             occurredAt: $now,
         );
+
+        $requesterId = (int) $request['requesterId'];
+        $this->notify($kind, [
+            'request' => [
+                'id'       => $requestId,
+                'decision' => $state,
+                'note'     => trim($note),
+            ],
+            'requester' => [
+                'id'    => $requesterId,
+                'name'  => $this->users->displayName($requesterId),
+                'email' => $this->users->emailAddress($requesterId),
+            ],
+            'reviewer' => [
+                'id'   => $actorId,
+                'name' => $this->users->displayName($actorId),
+            ],
+        ]);
 
         return new OperationResult(
             operationId: Uuid::v4(),
@@ -325,6 +359,20 @@ final class AccessService
     {
         if (preg_match('/^[a-z0-9_-]+$/', $roleKey) !== 1) {
             throw new InvalidArgumentException('Role key is invalid.');
+        }
+    }
+
+    /** @param array<string,mixed> $context */
+    private function notify(string $trigger, array $context): void
+    {
+        if ($this->notifications === null) {
+            return;
+        }
+
+        try {
+            $this->notifications->dispatch($trigger, $context);
+        } catch (DomainException|InvalidArgumentException) {
+            // Access state is authoritative; optional notification failure cannot roll back the decision.
         }
     }
 }

@@ -1,0 +1,66 @@
+---
+title: Email Studio
+description: Create, version, route, preview, capture, test, inspect, and safely resend CoreX transactional email.
+---
+
+Email Studio turns CoreX transactional mail into an editable, versioned workflow without weakening the mail safety
+boundary. Activate **CoreX Email**, then open **CoreX → Email Studio**.
+
+## Safe delivery modes
+
+| Environment | Behavior |
+|---|---|
+| Local / Development | Always captures locally. Real recipients are never contacted. |
+| Staging | Captures unless a matching provider and live delivery are both deliberately enabled. |
+| Production | Blocks until the matching provider and live-delivery gate are both configured. |
+
+The built-in provider is `wp-mail`, which uses the site's WordPress transport and its configured SMTP/MTA, if
+present. Open **CoreX → Settings → Mail**, select `wp-mail`, validate that transport, and only then enable live
+delivery. An unknown provider label remains blocked; it does not pretend a provider driver exists.
+
+## Build and activate a template
+
+1. In **Templates**, create a stable lowercase slug and name.
+2. Enter subject, sender, HTML, plain-text mode, layout version, and the variable keys the template may consume.
+3. Save. Every save appends an immutable numbered draft; it never overwrites history.
+4. Use **Preview** to inspect desktop/mobile and RTL sample contexts. Preview data is labelled as sample data and
+   runs in a script-disabled iframe.
+5. Run **Health** and resolve invalid variables, missing manual plain text, subscription links, reply-to, or
+   provider configuration.
+6. Activate the intended draft. Routes send only an explicitly active version.
+
+Placeholders use `{{ path.to.value }}`. Every used path must be declared in the template's variable list and in the
+server schema. Values are escaped in HTML and stripped of markup in subjects/plain text. Scripts, event handlers,
+executable URLs, PHP, and header control characters are rejected before persistence.
+
+## Layouts and partials
+
+CoreX installs Transactional, Minimal, and Newsletter layouts. The WooCommerce layout appears only when
+WooCommerce is available. Saving a layout or partial creates the next revision. Layout regions and reusable partial
+content therefore remain explainable after later edits.
+
+## Route real events
+
+Routing connects a trigger to an active template, recipient rules, and an optional reply-to rule. A rule is either
+a fixed validated address or a dot path resolved from the event context.
+
+Built-in callers include:
+
+- `forms.<form-slug>.submitted`
+- `access.request.created`
+- `access.request.approved`
+- `access.request.denied`
+
+If Forms has no active route, its existing code-template/`wp_mail` fallback remains available. Access state changes
+are authoritative even if an optional notification fails.
+
+## Test, inspect, and retry
+
+**Test send** follows the same delivery policy as application mail and writes a typed result: captured, sent,
+failed, or rejected. **Delivery logs** show the redacted recipient, subject/template, state, provider event,
+provider, time, and retry relationship. Retryable attempts create a new linked attempt; the prior record is never
+mutated.
+
+All Email Studio REST reads require `manage_options`. Writes require both that capability and a valid WordPress REST
+nonce. Private templates, captures, routes, and attempts are stored as non-public WordPress records and are not
+exposed on the front end.

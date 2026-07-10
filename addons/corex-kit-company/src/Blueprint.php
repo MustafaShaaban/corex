@@ -60,6 +60,8 @@ abstract class Blueprint
     /**
      * The pages the kit creates when applied — each composing the kit's existing corex/*
      * patterns/blocks. One page may be marked `front` to become the static front page.
+     * A subclass MAY accept a demo `$level` (minimal|standard|full, FR-137) to narrow the set
+     * (see CompanyBlueprint); kits without levels keep this no-arg signature and ignore it.
      * Default: none (a kit that ships templates but seeds no pages).
      *
      * @return list<array{title:string,slug:string,content:string,front?:bool}>

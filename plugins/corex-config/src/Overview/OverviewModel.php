@@ -32,7 +32,8 @@ final class OverviewModel
      *   kitApplied: bool,
      *   hardeningWarnings: int,
      *   dataSources: list<array{label:string,key:string,total:int}>,
-     *   formsCount: int
+     *   formsCount: int,
+     *   flowsCount: int
      * } $facts
      *
      * @return array{
@@ -40,7 +41,7 @@ final class OverviewModel
      *   readiness: array{rows:list<array{label:string,note:string,done:bool,tone:string}>,done:int,total:int},
      *   integrations: list<array{label:string,note:string,tone:string}>,
      *   dataSources: list<array{label:string,key:string,count:int}>,
-     *   forms: array{count:int,note:string}
+     *   forms: array{count:int,flows:int,note:string}
      * }
      */
     public function build(array $facts): array
@@ -54,7 +55,8 @@ final class OverviewModel
             'dataSources'  => $this->dataSources($facts['dataSources']),
             'forms'        => [
                 'count' => max(0, $facts['formsCount']),
-                'note'  => __('Registered forms. The visual flow builder is a planned future capability.', 'corex'),
+                'flows' => max(0, $facts['flowsCount'] ?? 0),
+                'note'  => __('Registered code forms and versioned visitor flows.', 'corex'),
             ],
         ];
     }

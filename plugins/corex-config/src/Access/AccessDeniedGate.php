@@ -10,6 +10,9 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Admin\AdminPage;
+use Corex\Admin\StandalonePage;
+
 /**
  * The menu-level access-denied gate (spec 067, design: "Corex Access & Abilities" → Access denied).
  * WordPress blocks a user who lacks a page's registered capability BEFORE the page callback runs and
@@ -20,6 +23,10 @@ defined('ABSPATH') || exit;
  */
 final class AccessDeniedGate
 {
+    public function __construct(private readonly AdminPage $page)
+    {
+    }
+
     public function register(): void
     {
         add_action('admin_page_access_denied', [$this, 'intercept']);
@@ -35,17 +42,20 @@ final class AccessDeniedGate
 
         do_action('corex_admin_access_denied', $page);
 
-        wp_die(
-            '<h1>' . esc_html__('You don’t have access to this area', 'corex') . '</h1><p>'
-            . sprintf(
-                /* translators: %s: the required WordPress capability. */
-                esc_html__('Your role doesn’t include the %s capability CoreX requires. Ask a site administrator to grant it if you need this screen.', 'corex'),
-                '<code>manage_options</code>',
-            )
-            . '</p><p>' . esc_html__('This attempt was recorded in the CoreX access audit log.', 'corex') . '</p>'
-            . '<p><a href="' . esc_url(admin_url()) . '">' . esc_html__('Back to Dashboard', 'corex') . '</a></p>',
-            esc_html__('Access denied', 'corex'),
-            ['response' => 403],
+        status_header(403);
+        nocache_headers();
+        header('Content-Type: text/html; charset=' . get_bloginfo('charset'));
+
+        // The menu-level 403 fires before the admin page loads, so no CoreX admin stylesheet
+        // is enqueued. StandalonePage inlines the tokens + standalone sheet so the designed
+        // request-access surface is fully styled instead of a bare wp_die notice.
+        echo StandalonePage::fromCore()->document( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- StandalonePage returns a fully-escaped self-contained document.
+            __('Access denied', 'corex'),
+            '<main class="corex-standalone__card corex-standalone__card--wide" role="main">'
+                . $this->page->deniedSurface($page)
+                . '</main>',
+            'denied',
         );
+        exit;
     }
 }

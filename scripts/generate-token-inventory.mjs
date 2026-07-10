@@ -275,9 +275,21 @@ const variableReferences = ( content ) => {
 };
 
 const trackedFiles = ( root, roots = SOURCE_ROOTS ) =>
-	execFileSync( 'git', [ '-C', root, 'ls-files', ...roots ], {
-		encoding: 'utf8',
-	} )
+	execFileSync(
+		'git',
+		[
+			'-C',
+			root,
+			'ls-files',
+			'--cached',
+			'--others',
+			'--exclude-standard',
+			...roots,
+		],
+		{
+			encoding: 'utf8',
+		}
+	)
 		.split( /\r?\n/ )
 		.filter( Boolean )
 		.map( ( file ) => file.replaceAll( '\\', '/' ) )
@@ -473,6 +485,9 @@ const collectDocumentation = ( root ) => {
 			'-C',
 			root,
 			'ls-files',
+			'--cached',
+			'--others',
+			'--exclude-standard',
 			'theme',
 			'plugins',
 			'addons',

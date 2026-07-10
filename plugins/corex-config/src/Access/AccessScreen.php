@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Access;
 
 use Corex\Admin\AdminPage;
+use Corex\Access\RoleAbilityStore;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -18,9 +19,9 @@ defined('ABSPATH') || exit;
  * Abilities"): tabs Overview · Role matrix · Audit log · Access denied. Everything shown is REAL —
  * roles/capabilities read from WordPress, user counts from count_users(), permissions-plugin conflicts
  * from the active plugins, audit entries from recorded denied attempts ({@see AccessAuditLog}), and
- * the denied tab previews the exact surface a refused user gets. It performs no capability mutation —
- * a full role editor / advanced AAM is deliberately deferred, stated honestly, never faked — so it
- * cannot create a lockout. Access is AdminGuard-gated.
+ * the denied tab previews the exact surface a refused user gets. CoreX-owned ability states are editable
+ * through the guarded REST workflow; native WordPress/platform capabilities remain compatibility inputs.
+ * Access is AdminGuard-gated.
  */
 final class AccessScreen
 {
@@ -31,6 +32,7 @@ final class AccessScreen
         private readonly AdminPage $page,
         private readonly AccessMatrix $matrix,
         private readonly AccessAuditLog $audit,
+        private readonly RoleAbilityStore $roleAbilities,
     ) {
     }
 
@@ -65,6 +67,25 @@ final class AccessScreen
             ['corex-admin-shell'],
             '2.0.0',
         );
+        $base = dirname(__DIR__, 2);
+        $asset = is_file($base . '/build/admin/index.asset.php')
+            ? require $base . '/build/admin/index.asset.php'
+            : ['dependencies' => [], 'version' => 'dev'];
+        wp_enqueue_script(
+            'corex-access',
+            plugins_url('build/admin/index.js', $base . '/corex-config.php'),
+            [...$asset['dependencies'], 'corex-runtime'],
+            $asset['version'],
+            true,
+        );
+        wp_localize_script('corex-access', 'corexAccess', [
+            'restUrl' => esc_url_raw(rest_url('corex/v1/access')),
+            'nonce' => wp_create_nonce('wp_rest'),
+            'matrix' => $this->matrix->editableCorexMatrix($this->editableRoles(), $this->roleEffects(), $this->activePlugins()),
+            'requests' => [],
+            'audit' => $this->audit->entries(),
+        ]);
+        wp_set_script_translations('corex-access', 'corex');
     }
 
     public function render(): void
@@ -120,7 +141,7 @@ final class AccessScreen
     /**
      * Overview tab (design): real permissions-plugin conflict notice, role summary cards, the
      * tracked capability groups with risk labels, plus the existing truthful requirement/permission
-     * cards and the read-only statement.
+     * cards and the CoreX-owned ability editing statement.
      */
     private function overviewTab(): string
     {
@@ -141,6 +162,7 @@ final class AccessScreen
     private function matrixTab(): string
     {
         return $this->legend()
+            . '<div id="corex-access-app"></div>'
             . $this->matrixCard($this->matrix->build($this->roles()))
             . $this->lockoutNote();
     }
@@ -163,7 +185,7 @@ final class AccessScreen
         if ($entries === []) {
             return '<section class="corex-surface corex-access__card">' . $head
                 . '<p class="corex-access__muted">'
-                . esc_html__('No access events in the last 30 days. CoreX records permission-denied attempts on CoreX screens here. CoreX never changes roles or capabilities, so no grant/revoke entries can exist.', 'corex')
+                . esc_html__('No access events in the last 30 days. CoreX records permission-denied attempts, access requests, and access decisions here.', 'corex')
                 . '</p></section>';
         }
 
@@ -212,7 +234,7 @@ final class AccessScreen
             . '<p class="corex-access__note-text">'
             . sprintf(
                 /* translators: %s: the detected role/capability plugin name(s). */
-                esc_html__('CoreX detected %s. To avoid conflicting rules, CoreX stays read-only here and defers all role and capability management to that plugin.', 'corex'),
+                esc_html__('CoreX detected %s. Native platform capabilities stay read-only; CoreX-owned abilities remain editable here.', 'corex'),
                 esc_html(implode(', ', $conflicts)),
             )
             . '</p></div>';
@@ -296,7 +318,7 @@ final class AccessScreen
         return '<div class="corex-access__note corex-surface">'
             . '<p class="corex-access__note-title">' . esc_html__('CoreX cannot lock you out.', 'corex') . '</p>'
             . '<p class="corex-access__note-text">'
-            . esc_html__('This screen never edits roles or capabilities — CoreX admin access is hard-gated in code on manage_options, so nothing here can remove an administrator’s access. Use a dedicated roles plugin if you need to change capabilities.', 'corex')
+            . esc_html__('CoreX admin access is hard-gated in code on manage_options, so locked definitions cannot remove an administrator’s access. Editable states apply only to CoreX-owned abilities.', 'corex')
             . '</p></div>';
     }
 
@@ -376,7 +398,7 @@ final class AccessScreen
             . '<p class="corex-access__note-title">' . esc_html__('Editing roles', 'corex') . '</p>'
             . '<p class="corex-access__note-text">'
             . esc_html__(
-                'This is a read-only surface. A full capability/role editor and advanced access management are deliberately out of scope — CoreX never mutates roles here, so it cannot create a lockout. Use a dedicated roles plugin if you need to change capabilities.',
+                'CoreX manages CoreX-owned abilities here. Native WordPress and third-party capability editing remains with WordPress or a dedicated role plugin, preventing conflicting platform rules.',
                 'corex',
             )
             . '</p></div>';
@@ -491,6 +513,30 @@ final class AccessScreen
         }
 
         return $out;
+    }
+
+    /**
+     * @return list<array{key:string,name:string}>
+     */
+    private function editableRoles(): array
+    {
+        return array_map(
+            static fn (array $role): array => ['key' => $role['key'], 'name' => $role['name']],
+            $this->roles(),
+        );
+    }
+
+    /**
+     * @return array<string,array<string,string>>
+     */
+    private function roleEffects(): array
+    {
+        $effects = [];
+        foreach ($this->roles() as $role) {
+            $effects[$role['key']] = $this->roleAbilities->effectsForRole($role['key']);
+        }
+
+        return $effects;
     }
 
     /**

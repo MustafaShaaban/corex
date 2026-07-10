@@ -85,6 +85,19 @@ final class MediaServiceProvider extends ServiceProvider
 
         $converter = new WebpConverter($settings->quality);
 
+        // Register the bounded WebP-regeneration job so an admin action / `wp corex media regenerate`
+        // can backfill existing uploads in resumable batches (spec 068 T200).
+        $this->container->make(\Corex\Jobs\JobHandlerRegistry::class)->register(
+            new MediaRegenerationJob(
+                new WpMediaRegenerationSource(
+                    new WebpRegenerator($capability, $settings),
+                    $converter,
+                    $capability,
+                    $settings,
+                ),
+            ),
+        );
+
         add_filter('wp_generate_attachment_metadata', static function ($metadata, $attachmentId) use ($converter, $capability, $settings) {
             $id   = (int) $attachmentId;
             $file = (string) get_attached_file($id);

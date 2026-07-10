@@ -171,3 +171,139 @@
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-sm);
 }
+
+/* Security Center client workspace (spec 068 T151/T152). */
+.corex-admin .corex-security {
+	display: grid;
+	gap: var(--corex-admin-space-lg);
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-security__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-security__panel {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-security__head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	flex-wrap: wrap;
+}
+
+.corex-admin .corex-security__head h2,
+.corex-admin .corex-security__panel h2 {
+	margin: 0;
+}
+
+.corex-admin .corex-security__head > span,
+.corex-admin .corex-security__notice {
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-xs);
+	border-radius: var(--corex-admin-radius-pill);
+	background: var(--corex-admin-surface-alt);
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-security__head > span.is-ready,
+.corex-admin .corex-security__notice.is-success {
+	background: var(--corex-admin-success-soft);
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-security__head > span.is-warning,
+.corex-admin .corex-security__notice.is-error {
+	background: var(--corex-admin-warning-soft);
+	color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-security__checks,
+.corex-admin .corex-security__panel ul {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-security__checks li,
+.corex-admin .corex-security__panel li {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	padding: var(--corex-admin-space-sm);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-security__checks li.is-pass {
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-security__checks li.is-review {
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-security__checks small,
+.corex-admin .corex-security__panel small,
+.corex-admin .corex-security__panel p {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-security__mode-preview,
+.corex-admin .corex-security__policy {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-security__mode-preview label,
+.corex-admin .corex-security__policy label,
+.corex-admin .corex-security__confirm {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-security__confirm,
+.corex-admin .corex-security__policy label:has(input[type="checkbox"]) {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	font-weight: 500;
+}
+
+.corex-admin .corex-security__modal {
+	grid-column: 1 / -1;
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	padding: var(--corex-admin-space-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-md);
+	background: var(--corex-admin-warning-soft);
+}
+
+.corex-admin .corex-security__payload,
+.corex-admin .corex-security__panel code {
+	display: block;
+	padding: var(--corex-admin-space-sm);
+	overflow-x: auto;
+	border-radius: var(--corex-admin-radius-md);
+	background: var(--corex-admin-surface-alt);
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}

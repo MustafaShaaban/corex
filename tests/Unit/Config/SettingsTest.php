@@ -12,11 +12,23 @@ use Brain\Monkey\Functions;
 use Corex\Config\Settings\SettingsForm;
 use Corex\Config\Settings\SettingsRegistry;
 
+beforeEach(function () {
+    Functions\when('__')->returnArg();
+});
+
 it('enumerates the configurable sections and field keys', function () {
     $registry = new SettingsRegistry();
 
     expect(array_keys($registry->sections()))->toContain('brand', 'mail', 'forms', 'captcha')
-        ->and($registry->keys())->toContain('brand.logo_url', 'mail.from.address', 'forms.email.recipient', 'captcha.driver');
+        ->and($registry->keys())->toContain(
+            'brand.logo_url',
+            'mail.from.address',
+            'mail.reply_to',
+            'mail.provider',
+            'mail.live_delivery',
+            'forms.email.recipient',
+            'captcha.driver',
+        );
 });
 
 it('renders the settings form with current values and a nonce', function () {
@@ -25,7 +37,6 @@ it('renders the settings form with current values and a nonce', function () {
     Functions\when('esc_html__')->returnArg();
     Functions\when('esc_attr__')->returnArg();
     Functions\when('esc_url')->returnArg();
-    Functions\when('__')->returnArg();
 
     $form = new SettingsForm(new SettingsRegistry());
 
@@ -38,6 +49,9 @@ it('renders the settings form with current values and a nonce', function () {
         ->toContain('name="brand_footer_text"')               // a field, dot->underscore
         ->toContain('value="Powered by Acme"')                // its current value
         ->toContain('name="captcha_secret"')
+        ->toContain('name="mail_provider"')
+        ->toContain('value="wp-mail"')
+        ->toContain('name="mail_live_delivery"')
         ->toContain('type="password"')
         ->toContain('Save settings');
 });

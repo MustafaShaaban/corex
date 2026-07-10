@@ -1,0 +1,148 @@
+/* CoreX Setup Wizard — the nine-step guided flow.
+   Tokens + logical properties only. */
+.corex-admin .corex-setup {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-setup__stepper {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-setup__step {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	padding-block: var(--corex-admin-space-xs);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-pill);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-setup__step-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: 1.5rem;
+	block-size: 1.5rem;
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-pill);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-setup__step.is-current {
+	color: var(--corex-admin-action);
+	border-color: var(--corex-admin-action-subtle);
+	background: var(--corex-admin-action-subtle);
+}
+
+.corex-admin .corex-setup__step.is-done {
+	color: var(--corex-admin-success);
+	border-color: var(--corex-admin-border-strong);
+}
+
+.corex-admin .corex-setup__progress {
+	block-size: 0.375rem;
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-pill);
+	overflow: hidden;
+}
+
+.corex-admin .corex-setup__progress span {
+	display: block;
+	block-size: 100%;
+	background: var(--corex-admin-action);
+}
+
+.corex-admin .corex-setup__panel {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-setup__panel h2 {
+	margin: 0;
+}
+
+.corex-admin .corex-setup__muted {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-setup__options {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-setup__option {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	align-items: baseline;
+	padding: var(--corex-admin-space-sm);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-setup__option .corex-setup__muted {
+	grid-column: 2;
+}
+
+.corex-admin .corex-setup__fields {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-setup__fields li {
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-sm);
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-sm);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-setup__conflict {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-2xs);
+	padding-block: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-setup__conflict div {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-md);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-setup__confirm {
+	display: flex;
+	align-items: baseline;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-setup__ok {
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-setup__nav {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	margin-block-start: var(--corex-admin-space-md);
+}

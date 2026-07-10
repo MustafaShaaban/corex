@@ -22,23 +22,38 @@ use Corex\Forms\Schema\FieldSchema;
  */
 final class FieldRenderer
 {
-    private const INPUT_TYPES = ['text', 'email', 'number', 'tel', 'url', 'password', 'date', 'file'];
+    private const INPUT_TYPES = ['text', 'email', 'number', 'tel', 'url', 'password', 'date', 'time', 'file', 'hidden'];
 
     public function render(string $slug, FieldSchema $field): string
     {
         $id = 'corex-' . $slug . '-' . $field->name;
         $error = sprintf('<span class="corex-form__error" id="%s-error" role="alert"></span>', esc_attr($id));
 
-        if ($field->isChoice() && $field->type !== 'select') {
+        if ($field->type === 'step') {
+            return sprintf(
+                '<div class="corex-form__step" data-corex-step="%1$s"><h3 class="corex-form__step-title">%2$s</h3>%3$s</div>',
+                esc_attr($field->stepKey !== '' ? $field->stepKey : $field->name),
+                esc_html($field->label),
+                $this->help($id, $field),
+            );
+        }
+
+        if ($field->type === 'hidden') {
+            return $this->input($id, $field);
+        }
+
+        if ($field->isChoice() && ! in_array($field->type, ['select', 'multi-select'], true)) {
             return $this->group($id, $field, $error);
         }
 
         return sprintf(
-            '<div class="%1$s" data-corex-field="%2$s">%3$s%4$s%5$s</div>',
+            '<div class="%1$s" data-corex-field="%2$s" data-corex-visibility="%3$s">%4$s%5$s%6$s%7$s</div>',
             esc_attr($this->wrapperClass($field)),
             esc_attr($field->name),
+            esc_attr($field->visibility),
             $this->label($id, $field),
             $this->control($id, $field),
+            $this->help($id, $field),
             $error,
         );
     }
@@ -47,25 +62,30 @@ final class FieldRenderer
     {
         return match ($field->type) {
             'textarea'       => $this->textarea($id, $field),
-            'select'         => $this->select($id, $field),
-            'checkbox', 'toggle' => $this->checkbox($id, $field),
+            'select', 'multi-select' => $this->select($id, $field),
+            'checkbox', 'consent', 'toggle' => $this->checkbox($id, $field),
             default          => $this->input($id, $field),
         };
     }
 
     private function input(string $id, FieldSchema $field): string
     {
-        $type = in_array($field->type, self::INPUT_TYPES, true)
-            ? ($field->type === 'email' ? 'email' : $field->type)
-            : 'text';
+        $type = match ($field->type) {
+            'phone' => 'tel',
+            'rating' => 'number',
+            default => in_array($field->type, self::INPUT_TYPES, true) ? $field->type : 'text',
+        };
 
         return sprintf(
-            '<input id="%1$s" name="%2$s" type="%3$s" class="%4$s" aria-describedby="%1$s-error"%5$s%6$s />',
+            '<input id="%1$s" name="%2$s" type="%3$s" class="%4$s" aria-describedby="%5$s"%6$s%7$s%8$s%9$s />',
             esc_attr($id),
             esc_attr($field->name),
             esc_attr($type),
             esc_attr($this->controlClass($field)),
+            esc_attr($this->describedBy($id, $field)),
             $this->requiredAttr($field),
+            $this->placeholderAttr($field),
+            $this->valueAttr($field),
             $this->extraAttrs($field),
         );
     }
@@ -73,12 +93,15 @@ final class FieldRenderer
     private function textarea(string $id, FieldSchema $field): string
     {
         return sprintf(
-            '<textarea id="%1$s" name="%2$s" class="%3$s" aria-describedby="%1$s-error"%4$s%5$s></textarea>',
+            '<textarea id="%1$s" name="%2$s" class="%3$s" aria-describedby="%4$s"%5$s%6$s%7$s>%8$s</textarea>',
             esc_attr($id),
             esc_attr($field->name),
             esc_attr($this->controlClass($field)),
+            esc_attr($this->describedBy($id, $field)),
             $this->requiredAttr($field),
+            $this->placeholderAttr($field),
             $this->extraAttrs($field),
+            esc_html(is_scalar($field->defaultValue) ? (string) $field->defaultValue : ''),
         );
     }
 
@@ -87,15 +110,24 @@ final class FieldRenderer
         $options = '';
 
         foreach ($field->options as $value => $label) {
-            $options .= sprintf('<option value="%1$s">%2$s</option>', esc_attr($value), esc_html($label));
+            $options .= sprintf(
+                '<option value="%1$s"%2$s>%3$s</option>',
+                esc_attr($value),
+                $this->selectedAttr($this->isSelected($field, (string) $value)),
+                esc_html($label),
+            );
         }
 
+        $multiple = $field->type === 'multi-select';
+
         return sprintf(
-            '<select id="%1$s" name="%2$s" class="%3$s" aria-describedby="%1$s-error"%4$s%5$s>%6$s</select>',
+            '<select id="%1$s" name="%2$s" class="%3$s" aria-describedby="%4$s"%5$s%6$s%7$s>%8$s</select>',
             esc_attr($id),
-            esc_attr($field->name),
+            esc_attr($field->name . ($multiple ? '[]' : '')),
             esc_attr($this->controlClass($field)),
+            esc_attr($this->describedBy($id, $field)),
             $this->requiredAttr($field),
+            $multiple ? ' multiple' : '',
             $this->extraAttrs($field),
             $options,
         );
@@ -109,11 +141,13 @@ final class FieldRenderer
         $class = 'corex-form__checkbox' . ($field->type === 'toggle' ? ' corex-form__toggle' : '');
 
         return sprintf(
-            '<input id="%1$s" name="%2$s" type="checkbox" value="1" class="%3$s" aria-describedby="%1$s-error"%4$s%5$s />',
+            '<input id="%1$s" name="%2$s" type="checkbox" value="1" class="%3$s" aria-describedby="%4$s"%5$s%6$s%7$s />',
             esc_attr($id),
             esc_attr($field->name),
             esc_attr(trim($class . ' ' . $field->cssClass)),
+            esc_attr($this->describedBy($id, $field)),
             $this->requiredAttr($field),
+            $this->checkedAttr((bool) $field->defaultValue),
             $this->extraAttrs($field),
         );
     }
@@ -134,27 +168,30 @@ final class FieldRenderer
         foreach ($field->options as $value => $label) {
             $optionId = $id . '-' . $i++;
             $items .= sprintf(
-                '<span class="corex-form__option"><input id="%1$s" name="%2$s" type="%3$s" value="%4$s" class="corex-form__choice"%5$s />'
-                . '<label for="%1$s" class="corex-form__option-label">%6$s</label></span>',
+                '<span class="corex-form__option"><input id="%1$s" name="%2$s" type="%3$s" value="%4$s" class="corex-form__choice"%5$s%6$s />'
+                . '<label for="%1$s" class="corex-form__option-label">%7$s</label></span>',
                 esc_attr($optionId),
                 esc_attr($nameAttr),
                 esc_attr($inputType),
                 esc_attr($value),
                 $this->requiredAttr($field),
+                $this->checkedAttr($this->isSelected($field, (string) $value)),
                 esc_html($label),
             );
         }
 
         return sprintf(
-            '<fieldset class="%1$s" data-corex-field="%2$s" aria-describedby="%3$s-error">'
-            . '<legend class="%4$s">%5$s%6$s</legend>%7$s%8$s</fieldset>',
+            '<fieldset class="%1$s" data-corex-field="%2$s" data-corex-visibility="%3$s" aria-describedby="%4$s">'
+            . '<legend class="%5$s">%6$s%7$s</legend>%8$s%9$s%10$s</fieldset>',
             esc_attr($this->wrapperClass($field)),
             esc_attr($field->name),
-            esc_attr($id),
+            esc_attr($field->visibility),
+            esc_attr($this->describedBy($id, $field)),
             esc_attr($this->labelClass($field)),
             esc_html($field->label),
             $this->requiredMarker($field),
             $items,
+            $this->help($id, $field),
             $error,
         );
     }
@@ -181,6 +218,51 @@ final class FieldRenderer
     private function requiredAttr(FieldSchema $field): string
     {
         return $field->required ? ' required aria-required="true"' : '';
+    }
+
+    private function describedBy(string $id, FieldSchema $field): string
+    {
+        return $field->helpText === '' ? $id . '-error' : $id . '-help ' . $id . '-error';
+    }
+
+    private function placeholderAttr(FieldSchema $field): string
+    {
+        return $field->placeholder === '' ? '' : sprintf(' placeholder="%s"', esc_attr($field->placeholder));
+    }
+
+    private function valueAttr(FieldSchema $field): string
+    {
+        return is_scalar($field->defaultValue)
+            ? sprintf(' value="%s"', esc_attr((string) $field->defaultValue))
+            : '';
+    }
+
+    private function help(string $id, FieldSchema $field): string
+    {
+        return $field->helpText === ''
+            ? ''
+            : sprintf(
+                '<span class="corex-form__help" id="%1$s-help">%2$s</span>',
+                esc_attr($id),
+                esc_html($field->helpText),
+            );
+    }
+
+    private function isSelected(FieldSchema $field, string $value): bool
+    {
+        $defaults = is_array($field->defaultValue) ? $field->defaultValue : [$field->defaultValue];
+
+        return in_array($value, array_map('strval', $defaults), true);
+    }
+
+    private function selectedAttr(bool $selected): string
+    {
+        return $selected ? ' selected' : '';
+    }
+
+    private function checkedAttr(bool $checked): string
+    {
+        return $checked ? ' checked' : '';
     }
 
     private function extraAttrs(FieldSchema $field): string

@@ -34,6 +34,7 @@ final class AddonsScreen
         private readonly PendingKits $pending,
         private readonly AdminPage $page,
         private readonly DocsUrl $docs,
+        private readonly AddonCatalogService $catalog = new AddonCatalogService(),
     ) {
     }
 
@@ -125,22 +126,12 @@ final class AddonsScreen
      */
     private function renderSummary(array $views): void
     {
-        $total  = count($views);
-        $active = 0;
-        $kits   = 0;
-        foreach ($views as $view) {
-            if ($view->active) {
-                $active++;
-            }
-            if (str_starts_with($view->addon->slug, 'corex-kit-')) {
-                $kits++;
-            }
-        }
+        $summary = $this->catalog->summary($views);
 
         echo '<div class="corex-addons__summary">';
-        $this->renderSummaryStat(__('Active', 'corex'), (string) $active . ' <span class="corex-addons__summary-total">/ ' . (int) $total . '</span>');
+        $this->renderSummaryStat(__('Active', 'corex'), (string) $summary['active'] . ' <span class="corex-addons__summary-total">/ ' . (int) $summary['total'] . '</span>');
         $this->renderSummaryStat(__('Updates', 'corex'), '<span class="corex-addons__summary-muted">' . esc_html__('not tracked', 'corex') . '</span>');
-        $this->renderSummaryStat(__('Site kits', 'corex'), (string) $kits);
+        $this->renderSummaryStat(__('Site kits', 'corex'), (string) $summary['siteKits']);
         echo '<div class="corex-addons__philosophy"><div><p class="corex-addons__philosophy-title">'
             . esc_html__('Add-ons self-disable', 'corex') . '</p><p class="corex-addons__philosophy-text">'
             . esc_html__('Never a hard dependency — toggle freely.', 'corex') . '</p></div>'

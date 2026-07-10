@@ -10,6 +10,8 @@ namespace Corex\Admin;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
+
 /**
  * Shared, presentation-only markup for CoreX-owned wp-admin pages.
  */
@@ -164,7 +166,7 @@ final class AdminPage
             'blog-pro' => __('Blog Pro', 'corex'),
             'settings' => __('Settings', 'corex'),
             'insights' => __('Insights', 'corex'),
-            'setup' => __('Setup', 'corex'),
+            'setup' => __('Setup Wizard', 'corex'),
             'option-page' => __('Options', 'corex'),
         ];
 
@@ -246,7 +248,7 @@ final class AdminPage
             $section,
             __('Access denied', 'corex'),
             __('This CoreX screen requires site-administration access.', 'corex'),
-        ) . $this->deniedSurface() . $this->close();
+        ) . $this->deniedSurface($section) . $this->close();
     }
 
     /**
@@ -254,28 +256,30 @@ final class AdminPage
      * "Access denied" tab embeds for administrators. Never fires the audit event: the viewer
      * has access; nothing was denied.
      */
-    public function deniedPreview(): string
+    public function deniedPreview(string $section = 'access'): string
     {
         return '<section class="corex-denied corex-denied--preview">'
             . '<p class="corex-denied__preview">'
             . esc_html__('Preview — this is the state a user without access sees.', 'corex') . '</p>'
-            . $this->deniedBody()
+            . $this->deniedBody($section)
             . '</section>';
     }
 
     /**
      * The designed access-denied surface (design: "Corex Access & Abilities" → Access denied):
-     * lock mark, the missing capability named precisely, a real way back, and an honestly-disabled
-     * "Request access" (no request workflow exists yet — inventing one would fake behaviour).
+     * lock mark, the missing capability named precisely, a real way back, and a real request-access
+     * form that submits to the CoreX access request workflow.
      * Rendered for real by {@see permissionDenied()}.
      */
-    public function deniedSurface(): string
+    public function deniedSurface(string $section = 'access'): string
     {
-        return '<section class="corex-denied">' . $this->deniedBody() . '</section>';
+        return '<section class="corex-denied">' . $this->deniedBody($section) . '</section>';
     }
 
-    private function deniedBody(): string
+    private function deniedBody(string $section): string
     {
+        $ability = $this->requestAbilityFor($section);
+
         return '<span class="corex-denied__icon" aria-hidden="true">'
             . '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
             . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
@@ -290,12 +294,48 @@ final class AdminPage
             . '</p><div class="corex-denied__actions">'
             . '<a class="button button-primary" href="' . esc_url(admin_url()) . '">'
             . esc_html__('Back to Dashboard', 'corex') . '</a>'
-            . '<button type="button" class="button" disabled aria-disabled="true" '
-            . 'aria-describedby="corex-denied-request-reason">' . esc_html__('Request access', 'corex') . '</button>'
-            . '</div><p class="corex-denied__reason" id="corex-denied-request-reason">'
-            . esc_html__('“Request access” is disabled: no request workflow exists yet — contact an administrator directly.', 'corex')
+            . '</div><form class="corex-denied__request" method="post" action="'
+            . esc_url(rest_url('corex/v1/access/requests')) . '">'
+            . '<input type="hidden" name="_wpnonce" value="' . esc_attr(wp_create_nonce('wp_rest')) . '" />'
+            . '<input type="hidden" name="ability" value="' . esc_attr($ability) . '" />'
+            . '<label for="corex-denied-request-reason">' . esc_html__('Why do you need access?', 'corex') . '</label>'
+            . '<textarea id="corex-denied-request-reason" name="reason" rows="3" maxlength="2000" required>'
+            . '</textarea><button type="submit" class="button">'
+            . esc_html__('Request access', 'corex') . '</button></form>'
+            . '<p class="corex-denied__reason">'
+            . esc_html__('Your request is tracked in CoreX Access & Abilities so an administrator can approve or deny it.', 'corex')
             . '</p><p class="corex-denied__meta">'
             . esc_html__('Denied attempts are recorded in the access audit log.', 'corex')
             . '</p>';
+    }
+
+    private function requestAbilityFor(string $section): string
+    {
+        return [
+            'overview'                  => CorexAbility::MANAGE_ADMIN,
+            'corex-settings'            => CorexAbility::MANAGE_ADMIN,
+            'addons'                    => CorexAbility::MANAGE_ADMIN,
+            'corex-addons'              => CorexAbility::MANAGE_ADMIN,
+            'forms'                     => CorexAbility::MANAGE_FORMS,
+            'corex-forms'               => CorexAbility::MANAGE_FORMS,
+            'submissions'               => CorexAbility::MANAGE_SUBMISSIONS,
+            'corex-submissions'         => CorexAbility::MANAGE_SUBMISSIONS,
+            'email'                     => CorexAbility::MANAGE_EMAIL,
+            'corex-email-studio'        => CorexAbility::MANAGE_EMAIL,
+            'data'                      => CorexAbility::MANAGE_DATA,
+            'corex-data'                => CorexAbility::MANAGE_DATA,
+            'data-models'               => CorexAbility::MANAGE_DATA_MODELS,
+            'corex-data-models'         => CorexAbility::MANAGE_DATA_MODELS,
+            'operations-security'       => CorexAbility::MANAGE_OPERATIONS,
+            'corex-operations-security' => CorexAbility::MANAGE_OPERATIONS,
+            'access'                    => CorexAbility::MANAGE_ACCESS,
+            'corex-access'              => CorexAbility::MANAGE_ACCESS,
+            'blog-pro'                  => CorexAbility::MANAGE_BLOG,
+            'corex-blog-pro'            => CorexAbility::MANAGE_BLOG,
+            'settings'                  => CorexAbility::MANAGE_SETTINGS,
+            'corex-settings-config'     => CorexAbility::MANAGE_SETTINGS,
+            'setup'                     => CorexAbility::MANAGE_SETUP,
+            'corex-setup'               => CorexAbility::MANAGE_SETUP,
+        ][$section] ?? CorexAbility::MANAGE_ADMIN;
     }
 }

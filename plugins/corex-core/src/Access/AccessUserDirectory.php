@@ -21,4 +21,6 @@ interface AccessUserDirectory
     public function grantUserAbility(int $userId, string $abilityKey): void;
 
     public function displayName(int $userId): string;
+
+    public function emailAddress(int $userId): string;
 }

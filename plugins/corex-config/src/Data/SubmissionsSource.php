@@ -146,35 +146,38 @@ final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSou
 
     public function fields(): array
     {
-        return array_map(
-            static fn (array $field): DataField => new DataField(
-                key: strtolower(str_replace(' ', '-', $field['name'])),
-                label: $field['name'],
-                type: in_array($field['type'], [
-                    DataField::TYPE_ID,
-                    DataField::TYPE_TEXT,
-                    DataField::TYPE_TEXTAREA,
-                    DataField::TYPE_EMAIL,
-                    DataField::TYPE_TEL,
-                    DataField::TYPE_URL,
-                    DataField::TYPE_DATETIME,
-                    DataField::TYPE_FORM,
-                ], true) ? $field['type'] : DataField::TYPE_TEXT,
+        $fields = [
+            new DataField('date', __('Submitted', 'corex'), DataField::TYPE_DATETIME, false, true, true, [], true, DataField::PERSONAL_NONE, [], []),
+            new DataField('form', __('Form', 'corex'), DataField::TYPE_FORM, false, true, true, ['equals'], false, DataField::PERSONAL_NONE, [], []),
+            new DataField('summary', __('Submission', 'corex'), DataField::TYPE_TEXTAREA, false, true, true, [], false, DataField::PERSONAL_CONTENT, [], []),
+        ];
+        foreach ($this->reader->fieldKeys(50) as $key) {
+            $fieldKey = sanitize_key($key);
+            if (preg_match('/^[a-z][a-z0-9_-]*$/', $fieldKey) !== 1
+                || in_array($fieldKey, ['date', 'form', 'summary'], true)) {
+                continue;
+            }
+            $type = $this->inferType($key);
+            $fields[] = new DataField(
+                key: $fieldKey,
+                label: ucwords(str_replace(['_', '-'], ' ', $key)),
+                type: $type,
                 required: false,
                 nullable: true,
                 readOnly: true,
-                filterOperators: ['equals', 'contains'],
-                sortable: in_array($field['type'], [DataField::TYPE_ID, DataField::TYPE_DATETIME, DataField::TYPE_FORM], true),
-                personalDataClass: match ($field['type']) {
+                filterOperators: [],
+                sortable: false,
+                personalDataClass: match ($type) {
                     DataField::TYPE_EMAIL, DataField::TYPE_TEL => DataField::PERSONAL_CONTACT,
-                    DataField::TYPE_TEXTAREA                   => DataField::PERSONAL_CONTENT,
-                    default                                    => DataField::PERSONAL_NONE,
+                    DataField::TYPE_TEXTAREA => DataField::PERSONAL_CONTENT,
+                    default => DataField::PERSONAL_NONE,
                 },
                 validation: [],
                 importAliases: [],
-            ),
-            $this->schema(),
-        );
+            );
+        }
+
+        return $fields;
     }
 
     /**

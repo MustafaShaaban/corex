@@ -1,116 +1,124 @@
 <?php
 
 /**
- * Spec 067 contracts for the server-rendered Email Studio surface.
+ * Spec 068 contracts for the REST-backed functional Email Studio surface.
  *
  * @package Corex\Tests\Unit\Email
  */
 
 declare(strict_types=1);
 
-use Corex\Config\Email\EmailStudioScreen;
 use Corex\Tests\Support\ThemeContract;
 
-/** Return one method's source so markup contracts stay scoped to the relevant view. */
-function emailStudioMethodSource(string $method): string
+function emailStudioSource(string $path): string
 {
-    $reflection = new ReflectionMethod(EmailStudioScreen::class, $method);
-    $lines = file($reflection->getFileName());
-
-    return implode('', array_slice(
-        $lines === false ? [] : $lines,
-        $reflection->getStartLine() - 1,
-        $reflection->getEndLine() - $reflection->getStartLine() + 1,
-    ));
+    return (string) file_get_contents(ThemeContract::root() . '/' . $path);
 }
 
-it('exposes the approved studio and template-detail tabs in design order', function () {
-    $studio = emailStudioMethodSource('render');
-    $detail = emailStudioMethodSource('templateDetail');
-    $detailTabs = strstr($detail, '// phpcs:', true);
+function emailStudioComponentSource(): string
+{
+    $source = '';
+    foreach (glob(ThemeContract::root() . '/plugins/corex-config/src/Email/components/*.js') ?: [] as $file) {
+        $source .= (string) file_get_contents($file);
+    }
 
-    expect($studio)->toMatch("/'overview'.*'templates'.*'layouts'.*'partials'.*'variables'/s")
-        ->and($detailTabs)->not->toBeFalse()
-        ->and($detailTabs)->toMatch("/'edit'.*'preview'.*'plain'.*'test'.*'routing'.*'logs'/s")
-        ->and($detail)->toContain("aria-current=\"page\"");
+    return $source;
+}
+
+function emailStudioClientSource(): string
+{
+    return emailStudioSource('plugins/corex-config/src/Email/index.js')
+        . emailStudioSource('plugins/corex-config/src/Email/StudioPanel.js')
+        . emailStudioSource('plugins/corex-config/src/Email/useEmailStudio.js');
+}
+
+it('mounts a localized REST-backed client only when the optional email add-on is active', function () {
+    $screen = emailStudioSource('plugins/corex-config/src/Email/EmailStudioScreen.php');
+
+    expect($screen)->toContain('corex-email-studio-app')
+        ->and($screen)->toContain("rest_url('corex/v1/email-studio')")
+        ->and($screen)->toContain("wp_create_nonce('wp_rest')")
+        ->and($screen)->toContain("'settingsUrl'")
+        ->and($screen)->toContain('active_sitewide_plugins')
+        ->and($screen)->toContain('wp_set_script_translations');
 });
 
-it('renders the active brand layout as a sandboxed structural preview', function () {
-    $layout = emailStudioMethodSource('layoutsTab');
+it('exposes every approved functional section in design order', function () {
+    $client = emailStudioSource('plugins/corex-config/src/Email/emailStudioClient.js');
 
-    expect($layout)->toContain('layoutPreview')
-        ->and($layout)->toContain('<iframe')
-        ->and($layout)->toContain('sandbox')
-        ->and($layout)->toContain('Brand layout preview');
+    expect($client)->toMatch("/'overview'.*'templates'.*'layouts'.*'partials'.*'variables'.*'routing'.*'preview'.*'plain'.*'test'.*'logs'.*'health'/s");
 });
 
-it('keeps unsupported template mutations visibly disabled with exact reasons', function () {
-    $edit = emailStudioMethodSource('editDetail');
-    $testSend = emailStudioMethodSource('testDetail');
-    $routing = emailStudioMethodSource('routingDetail');
+it('uses declared mutation and read endpoints instead of disabled placeholder controls', function () {
+    $client = emailStudioClientSource();
+    $helpers = emailStudioSource('plugins/corex-config/src/Email/emailStudioClient.js');
+    $components = emailStudioComponentSource();
 
-    expect($edit)->toContain('defined in code')
-        ->and($testSend)->toContain('disabled')
-        ->and($testSend)->toContain('capability + nonce gated')
-        ->and($testSend)->toContain('per-send result')
-        ->and($routing)->toContain('set in code');
+    expect($client)->toMatch("/post\\(\\s*'draft'/")
+        ->and($client)->toMatch("/post\\(\\s*'activate'/")
+        ->and($client)->toMatch("/post\\(\\s*'layouts'/")
+        ->and($client)->toMatch("/post\\(\\s*'partials'/")
+        ->and($client)->toMatch("/post\\(\\s*'routes'/")
+        ->and($client)->toMatch("/post\\(\\s*'test'/")
+        ->and($client)->toMatch("/post\\(\\s*'resend'/")
+        ->and($client)->toContain('reply_to_rule: replyRule')
+        ->and($client)->toContain('settingsUrl={ config.settingsUrl }')
+        ->and($components)->toContain('name="layout_selection"')
+        ->and($components)->toContain("__( 'Layout revision', 'corex' )")
+        ->and($components)->not->toContain('name="layout_id"')
+        ->and($components)->toContain("__( 'Reply-to source', 'corex' )")
+        ->and($components)->toContain("__( 'Revise', 'corex' )")
+        ->and($components)->toContain('attempt.provider_event')
+        ->and($helpers)->toContain("health: ( id )")
+        ->and($client)->not->toContain('Send test (disabled)');
 });
 
-it('labels every real registry template with its truthful registered state', function () {
-    $templates = emailStudioMethodSource('templatesTab');
+it('renders desktop mobile and RTL previews in a script-disabled sandbox', function () {
+    $components = emailStudioComponentSource();
+    $helpers = emailStudioSource('plugins/corex-config/src/Email/emailStudioClient.js');
 
-    expect($templates)->toContain('corex-email-studio__row-status')
-        ->and($templates)->toContain("esc_html__('Registered', 'corex')");
+    expect($components)->toContain('sandbox=""')
+        ->and($components)->toContain("onDevice( 'desktop' )")
+        ->and($components)->toContain("onDevice( 'mobile' )")
+        ->and($components)->toContain("direction === 'rtl'")
+        ->and($components)->toContain('aria-pressed={ device')
+        ->and($components)->toContain('aria-pressed={ direction')
+        ->and($helpers)->toContain('Content-Security-Policy')
+        ->and($helpers)->toContain('escapeHtml');
 });
 
-it('derives variable rows from registered template sources instead of a fabricated common list', function () {
-    $variables = emailStudioMethodSource('variablesTab');
-    $logs = emailStudioMethodSource('logsDetail');
+it('loads truthful templates layouts partials routes captures and attempts from the API', function () {
+    $client = emailStudioSource('plugins/corex-config/src/Email/emailStudioClient.js');
+    $controller = emailStudioSource('addons/corex-email/src/Studio/EmailStudioController.php');
 
-    expect($variables)->toContain('studio->variables(')
-        ->and($variables)->toContain("__('Registered templates', 'corex')")
-        ->and($variables)->not->toContain("'site.name'")
-        ->and($logs)->toContain("__('Sent', 'corex')")
-        ->and($logs)->toContain("__('Failed', 'corex')")
-        ->and($logs)->toContain("__('(no subject)', 'corex')");
+    foreach (['templates', 'layouts', 'partials', 'routes', 'captures', 'attempts'] as $key) {
+        expect($client)->toContain("{$key}: Array.isArray");
+        expect($controller)->toContain("'{$key}'");
+    }
 });
 
-it('uses the real template renderer and delivery-log repository without fabricating data', function () {
-    $source = (string) file_get_contents(
-        ThemeContract::root() . '/plugins/corex-config/src/Email/EmailStudioScreen.php',
-    );
+it('ships scoped token-only responsive Email Studio styles and their SCSS source', function () {
+    $css = emailStudioSource('plugins/corex-config/assets/email-studio.css');
+    $scss = emailStudioSource('plugins/corex-config/assets/email-studio.scss');
 
-    expect($source)->toContain('TemplateRegistry::class')
-        ->and($source)->toContain('TemplateRenderer::class')
-        ->and($source)->toContain('EmailLogRepository::class')
-        ->and($source)->toContain("->byStatus('sent')")
-        ->and($source)->toContain("->byStatus('failed')");
-});
-
-it('ships scoped token-only responsive Email Studio styles', function () {
-    $css = (string) file_get_contents(
-        ThemeContract::root() . '/plugins/corex-config/assets/email-studio.css',
-    );
-    $variables = emailStudioMethodSource('variablesTab');
-
-    expect($css)->toContain('.corex-admin .corex-email-studio')
+    expect($css)->toBe($scss)
+        ->and($css)->toContain('.corex-admin .corex-email-app')
         ->and($css)->toContain('var(--corex-admin-')
         ->and($css)->not->toMatch('/#[0-9a-f]{3,8}\b/i')
-        ->and($css)->toContain('.corex-email-studio__table-scroll')
         ->and($css)->toContain('overflow-x: auto')
-        ->and($css)->toContain('min-inline-size: 32rem')
         ->and($css)->toContain('white-space: nowrap')
-        ->and($css)->toContain('@media (max-width: 782px)')
-        ->and($css)->toContain('grid-template-columns: minmax(0, 1fr) auto')
-        ->and($variables)->toContain('corex-email-studio__table-scroll');
+        ->and($css)->toContain('@media (max-width: 960px)')
+        ->and($css)->toContain('@media (max-width: 600px)')
+        ->and($css)->toContain('corex-token-allow: responsive breakpoint')
+        ->and($css)->toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 2fr)');
 });
 
-it('loads Email Studio CSS only on its own screen through the shared admin adapter', function () {
-    $source = (string) file_get_contents(
-        ThemeContract::root() . '/plugins/corex-config/src/Email/EmailStudioScreen.php',
-    );
+it('loads the shared runtime React bundle and CSS only on its own screen', function () {
+    $screen = emailStudioSource('plugins/corex-config/src/Email/EmailStudioScreen.php');
 
-    expect($source)->toContain('$hook !== $this->hook')
-        ->and($source)->toContain("'corex-email-studio'")
-        ->and($source)->toContain("['corex-admin-shell']");
+    expect($screen)->toContain('$hook !== $this->hook')
+        ->and($screen)->toContain("'corex-runtime'")
+        ->and($screen)->toContain("'corex-email-studio'")
+        ->and($screen)->toContain("['corex-admin-shell']")
+        ->and($screen)->toContain('build/admin/index.js');
 });

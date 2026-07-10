@@ -13,12 +13,30 @@ defined('ABSPATH') || exit;
 use Corex\Container\ContainerInterface;
 use Corex\Email\Driver\MailDriver;
 use Corex\Email\Driver\WpMailDriver;
+use Corex\Email\Capture\CapturedEmailRepository;
+use Corex\Email\Delivery\DeliveryPolicy;
+use Corex\Email\Delivery\EmailAttemptRepository;
 use Corex\Email\Log\EmailLogRepository;
 use Corex\Email\Log\EmailLogStore;
 use Corex\Email\Recipients\RecipientResolver;
 use Corex\Email\Recipients\UserDirectory;
 use Corex\Email\Recipients\WpUserDirectory;
 use Corex\Email\Security\HeaderGuard;
+use Corex\Email\Routing\EmailRouteDispatcher;
+use Corex\Email\Routing\EmailRouteMessageFactory;
+use Corex\Email\Routing\EmailRouteRepository;
+use Corex\Email\Routing\EmailRouteService;
+use Corex\Email\Studio\EmailLayoutRepository;
+use Corex\Email\Studio\EmailPartialRepository;
+use Corex\Email\Studio\EmailStudioController;
+use Corex\Email\Studio\EmailStudioSubmissionGateway;
+use Corex\Email\Studio\EmailStudioRepositories;
+use Corex\Email\Studio\EmailStudioService;
+use Corex\Email\Studio\EmailStudioStore;
+use Corex\Email\Studio\EmailTemplateRepository;
+use Corex\Email\Studio\EmailTemplateCatalog;
+use Corex\Email\Studio\EmailTemplateService;
+use Corex\Email\Studio\WpEmailStudioStore;
 use Corex\Email\Template\Layout;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Email\Template\TemplateRenderer;
@@ -29,6 +47,9 @@ use Corex\Email\Queue\MailQueueGate;
 use Corex\Email\Queue\QueuedMailer;
 use Corex\Foundation\ServiceProvider;
 use Corex\Mail\Mailer;
+use Corex\Mail\RoutedMailer;
+use Corex\Mail\MailTemplateCatalog;
+use Corex\Mail\SubmissionEmailGateway;
 use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\FeatureFlags;
@@ -41,10 +62,46 @@ use Corex\Support\Config\FeatureFlags;
  */
 final class MailServiceProvider extends ServiceProvider
 {
+    private const STUDIO_DEFAULTS_VERSION = '3';
+
     public function register(): void
     {
         $this->container->singleton(TemplateRegistry::class);
         $this->container->singleton(HeaderGuard::class);
+        $this->container->singleton(DeliveryPolicy::class);
+
+        $this->container->singleton(WpEmailStudioStore::class);
+        $this->container->singleton(
+            EmailStudioStore::class,
+            static fn (ContainerInterface $c): EmailStudioStore => $c->make(WpEmailStudioStore::class),
+        );
+        $this->container->singleton(EmailTemplateRepository::class);
+        $this->container->singleton(EmailTemplateCatalog::class);
+        $this->container->singleton(
+            MailTemplateCatalog::class,
+            static fn (ContainerInterface $c): MailTemplateCatalog => $c->make(EmailTemplateCatalog::class),
+        );
+        $this->container->singleton(EmailLayoutRepository::class);
+        $this->container->singleton(EmailPartialRepository::class);
+        $this->container->singleton(CapturedEmailRepository::class);
+        $this->container->singleton(EmailAttemptRepository::class);
+        $this->container->singleton(EmailRouteRepository::class);
+        $this->container->singleton(
+            EmailTemplateService::class,
+            static function (ContainerInterface $c): EmailTemplateService {
+                $defaults = self::defaultMailConfig();
+                $schema = $c->make(ConfigInterface::class)->get(
+                    'mail.variables',
+                    $defaults['variables'] ?? [],
+                );
+
+                return new EmailTemplateService(
+                    is_array($schema) ? $schema : [],
+                    $c->make(EmailPartialRepository::class),
+                    $c->make(Layout::class),
+                );
+            },
+        );
 
         $this->container->singleton(
             Layout::class,
@@ -110,11 +167,53 @@ final class MailServiceProvider extends ServiceProvider
                 $c->make(MailQueueDispatcher::class),
             ),
         );
+
+        $this->container->singleton(
+            EmailStudioService::class,
+            static function (ContainerInterface $c): EmailStudioService {
+                return new EmailStudioService(
+                    $c->make(DeliveryPolicy::class),
+                    $c->make(CapturedEmailRepository::class),
+                    $c->make(EmailAttemptRepository::class),
+                    $c->make(MailDriver::class),
+                    $c->make(EmailTemplateService::class),
+                    'wp-mail',
+                );
+            },
+        );
+        $this->container->singleton(
+            EmailRouteService::class,
+            static fn (ContainerInterface $c): EmailRouteService => new EmailRouteService(
+                $c->make(EmailRouteRepository::class),
+                new EmailRouteDispatcher(
+                    new EmailRouteMessageFactory(
+                        $c->make(EmailTemplateRepository::class),
+                        $c->make(EmailTemplateService::class),
+                        $c->make(EmailLayoutRepository::class),
+                    ),
+                    $c->make(EmailStudioService::class),
+                    $c->make(ConfigInterface::class),
+                ),
+            ),
+        );
+        $this->container->singleton(
+            RoutedMailer::class,
+            static fn (ContainerInterface $c): RoutedMailer => $c->make(EmailRouteService::class),
+        );
+        $this->container->singleton(EmailStudioRepositories::class);
+        $this->container->singleton(EmailStudioSubmissionGateway::class);
+        $this->container->singleton(
+            SubmissionEmailGateway::class,
+            static fn (ContainerInterface $c): EmailStudioSubmissionGateway => $c->make(EmailStudioSubmissionGateway::class),
+        );
+        $this->container->singleton(EmailStudioController::class);
     }
 
     public function boot(): void
     {
         add_action('init', [$this, 'registerEmailLogPostType']);
+        add_action('init', [$this, 'registerEmailStudio']);
+        add_action('rest_api_init', [$this, 'registerEmailStudioRoutes']);
 
         $this->container->make(TemplateRegistry::class)->register(
             $this->container->make(ContactNotificationTemplate::class),
@@ -158,6 +257,33 @@ final class MailServiceProvider extends ServiceProvider
     }
 
     /**
+     * Register private Studio persistence and idempotently install available layouts.
+     */
+    public function registerEmailStudio(): void
+    {
+        $this->container->make(WpEmailStudioStore::class)->registerPostType();
+        if (get_option('corex_email_studio_defaults_version') === self::STUDIO_DEFAULTS_VERSION) {
+            return;
+        }
+
+        $this->container->make(EmailLayoutRepository::class)->installDefaults(
+            class_exists('WooCommerce'),
+            get_current_user_id(),
+            new \DateTimeImmutable('now'),
+        );
+        $this->container->make(EmailPartialRepository::class)->installDefaults(
+            get_current_user_id(),
+            new \DateTimeImmutable('now'),
+        );
+        update_option('corex_email_studio_defaults_version', self::STUDIO_DEFAULTS_VERSION, false);
+    }
+
+    public function registerEmailStudioRoutes(): void
+    {
+        $this->container->make(EmailStudioController::class)->register();
+    }
+
+    /**
      * The brand values for the email layout, read at runtime from the resolved
      * theme.json (which already includes any brand.json override via spec 006) — so
      * a rebrand flows into mail with no code change (FR-005).
@@ -182,5 +308,13 @@ final class MailServiceProvider extends ServiceProvider
             'color' => $color,
             'dir'   => is_rtl() ? 'rtl' : 'ltr',
         ];
+    }
+
+    /** @return array<string,mixed> */
+    private static function defaultMailConfig(): array
+    {
+        $defaults = require dirname(__DIR__) . '/config/mail.php';
+
+        return is_array($defaults) ? $defaults : [];
     }
 }

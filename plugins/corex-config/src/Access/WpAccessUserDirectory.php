@@ -33,7 +33,7 @@ final class WpAccessUserDirectory implements AccessUserDirectory
         $user = new WP_User($userId);
 
         if (! $user->exists()) {
-            throw new RuntimeException('The access-request user no longer exists.');
+            throw new RuntimeException(__('The access-request user no longer exists.', 'corex'));
         }
 
         $user->add_cap($abilityKey, true);
@@ -50,6 +50,13 @@ final class WpAccessUserDirectory implements AccessUserDirectory
                 __('User %d', 'corex'),
                 $userId,
             );
+    }
+
+    public function emailAddress(int $userId): string
+    {
+        $user = get_userdata($userId);
+
+        return $user instanceof WP_User ? sanitize_email($user->user_email) : '';
     }
 
     /** @return list<int> */

@@ -7,6 +7,7 @@
  * Credentials + base URL come from env (wp-env / WAMP defaults), never hard-coded.
  */
 const { chromium, expect } = require( '@playwright/test' );
+const fs = require( 'fs' );
 const path = require( 'path' );
 
 const BASE_URL = process.env.COREX_BASE_URL || 'http://corex.local';
@@ -17,7 +18,31 @@ const STORAGE_STATE = path.join( __dirname, '.auth', 'admin.json' );
 
 module.exports = async () => {
 	const browser = await chromium.launch();
-	const page = await browser.newPage( { baseURL: BASE_URL } );
+	let context;
+	let page;
+
+	if ( fs.existsSync( STORAGE_STATE ) ) {
+		context = await browser.newContext( {
+			baseURL: BASE_URL,
+			storageState: STORAGE_STATE,
+		} );
+		page = await context.newPage();
+		await page.goto( '/wp-admin/' ).catch( () => {} );
+		if (
+			await page
+				.locator( '#wpadminbar' )
+				.isVisible()
+				.catch( () => false )
+		) {
+			await context.storageState( { path: STORAGE_STATE } );
+			await browser.close();
+			return;
+		}
+		await context.close();
+	}
+
+	context = await browser.newContext( { baseURL: BASE_URL } );
+	page = await context.newPage();
 
 	// Retry a few times: the very first login against a cold WP can bounce back to the form
 	// before the test cookie is honoured. Once it sticks, every spec reuses the saved state.
@@ -27,15 +52,22 @@ module.exports = async () => {
 		await page.fill( '#user_login', ADMIN_USER );
 		await page.fill( '#user_pass', ADMIN_PASS );
 		await page.click( '#wp-submit' );
-		await page.waitForURL( /wp-admin|wp-login/, { timeout: 15_000 } ).catch( () => {} );
+		await page
+			.waitForURL( /wp-admin|wp-login/, { timeout: 15_000 } )
+			.catch( () => {} );
 		// Confirm real authentication by loading an admin-only page and seeing the admin bar.
 		await page.goto( '/wp-admin/' ).catch( () => {} );
-		authed = await page.locator( '#wpadminbar' ).isVisible().catch( () => false );
+		authed = await page
+			.locator( '#wpadminbar' )
+			.isVisible()
+			.catch( () => false );
 	}
 
-	expect( authed, 'global-setup could not authenticate the admin user' ).toBe( true );
+	expect( authed, 'global-setup could not authenticate the admin user' ).toBe(
+		true
+	);
 
-	await page.context().storageState( { path: STORAGE_STATE } );
+	await context.storageState( { path: STORAGE_STATE } );
 	await browser.close();
 };
 

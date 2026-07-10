@@ -17,6 +17,11 @@ function appendQuery( params, query ) {
 			params.set( key, String( query[ key ] ) );
 		}
 	} );
+	Object.entries( query.filters || {} ).forEach( ( [ key, value ] ) => {
+		if ( value !== '' && value != null ) {
+			params.set( `filters[${ key }]`, String( value ) );
+		}
+	} );
 }
 
 /**
@@ -37,26 +42,6 @@ export function buildListUrl( restUrl, sourceKey, query = {} ) {
 }
 
 /**
- * The admin-post export URL — the *current* filtered/sorted view + the export nonce. The
- * browser navigates to this (a real file download), so it must be a full GET URL. The
- * server (DataExportController) re-checks the cap + nonce and bounds the row count.
- *
- * @param {string} adminPostUrl admin-post.php URL
- * @param {string} sourceKey
- * @param {Object} query        { search, form, sort, dir }
- * @param {string} nonce        the corex_data_export nonce
- * @return {string} the download URL
- */
-export function buildExportUrl( adminPostUrl, sourceKey, query = {}, nonce = '' ) {
-	const params = new URLSearchParams();
-	params.set( 'action', 'corex_data_export' );
-	params.set( 'source', sourceKey );
-	appendQuery( params, query );
-	params.set( '_wpnonce', nonce );
-	return `${ adminPostUrl }?${ params.toString() }`;
-}
-
-/**
  * Sort toggle: a new column sorts ascending; the active column flips direction.
  *
  * @param {Object} state  { sort, dir }
@@ -68,24 +53,6 @@ export function toggleSort( state, column ) {
 		return { sort: column, dir: 'asc' };
 	}
 	return { sort: column, dir: state.dir === 'asc' ? 'desc' : 'asc' };
-}
-
-/**
- * Accumulate the distinct, non-empty `form` values seen so far, so the form filter stays
- * populated across pages and after a filter narrows the visible rows. No backend change.
- *
- * @param {string[]} known existing form keys
- * @param {Object[]} rows  the just-loaded rows
- * @return {string[]} the merged, de-duplicated list (insertion order preserved)
- */
-export function mergeForms( known, rows ) {
-	const seen = new Set( known );
-	rows.forEach( ( row ) => {
-		if ( row && row.form ) {
-			seen.add( row.form );
-		}
-	} );
-	return Array.from( seen );
 }
 
 /**
@@ -136,4 +103,120 @@ export function viewState( { status, rowCount, hasQuery } ) {
 		return hasQuery ? 'empty-filtered' : 'empty';
 	}
 	return 'ready';
+}
+
+export function normalizeCatalog( sources ) {
+	return ( Array.isArray( sources ) ? sources : [] ).map( ( source ) => ( {
+		key: String( source.key || '' ),
+		label: String( source.label || source.key || '' ),
+		access: source.access || 'denied',
+		capabilities: source.capabilities || {},
+		actions: source.actions || {},
+		fields: Array.isArray( source.fields ) ? source.fields : [],
+	} ) );
+}
+
+export function canAction( source, operation ) {
+	return Boolean( source?.actions?.[ operation ]?.visible );
+}
+
+export function initialDataState( sourceKey = '' ) {
+	return {
+		sourceKey,
+		query: {
+			search: '',
+			filters: {},
+			sort: '',
+			dir: 'desc',
+			page: 1,
+			perPage: 20,
+		},
+		rows: [],
+		columns: [],
+		fields: [],
+		total: 0,
+		status: 'idle',
+		error: '',
+		selected: [],
+		preview: null,
+		pending: '',
+		notice: null,
+	};
+}
+
+export function dataReducer( state, action ) {
+	switch ( action.type ) {
+		case 'source':
+			return initialDataState( action.sourceKey );
+		case 'query': {
+			const patch = action.patch || {};
+			const onlyPage = Object.keys( patch ).every( ( key ) => key === 'page' );
+			return {
+				...state,
+				query: { ...state.query, ...patch, page: onlyPage ? patch.page : 1 },
+				selected: [],
+			};
+		}
+		case 'loading':
+			return { ...state, status: 'loading', error: '' };
+		case 'loaded':
+			return {
+				...state,
+				...action.payload,
+				status: 'ready',
+				error: '',
+				selected: [],
+			};
+		case 'select':
+			return { ...state, selected: toggleSelection( state.selected, action.id ) };
+		case 'select-all':
+			return {
+				...state,
+				selected: allRowsSelected( state.selected, state.rows )
+					? []
+					: state.rows.map( ( row ) => row.id ),
+			};
+		case 'preview':
+			return { ...state, preview: action.preview, pending: '' };
+		case 'request':
+			return { ...state, pending: action.request, notice: null };
+		case 'success':
+			return {
+				...state,
+				pending: '',
+				preview: null,
+				notice: { tone: 'success', message: action.message },
+			};
+		case 'error':
+			return {
+				...state,
+				status: state.rows.length ? state.status : 'error',
+				pending: '',
+				error: action.message,
+				notice: { tone: 'error', message: action.message },
+			};
+		case 'dismiss-preview':
+			return { ...state, preview: null };
+		default:
+			return state;
+	}
+}
+
+export function dataEndpoint( restUrl, sourceKey, action, id = null ) {
+	const source = sourceKey ? `${ restUrl }/${ sourceKey }` : restUrl;
+	const routes = {
+		'mutation-preview': `${ source }/mutations/preview`,
+		'mutation-apply': `${ source }/mutations/apply`,
+		import: `${ source }/imports${ id ? `/${ id }` : '' }`,
+		'import-commit': `${ source }/imports/${ id }/commit`,
+		'import-report': `${ source }/imports/${ id }/report`,
+		export: `${ source }/exports`,
+		'export-download': `${ source }/exports/${ id }/download`,
+		migrations: `${ restUrl }/migrations`,
+		'migration-preview': `${ restUrl }/migrations/preview`,
+		'migration-apply': `${ restUrl }/migrations/apply`,
+		'migration-rollback': `${ restUrl }/migrations/${ id }/rollback`,
+	};
+
+	return routes[ action ] || source;
 }

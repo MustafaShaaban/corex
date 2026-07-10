@@ -29,6 +29,7 @@ final class FormBlockRenderer implements BlockRenderer
         private readonly SchemaResolver $resolver,
         private readonly SchemaExporter $exporter,
         private readonly FieldRenderer $fieldRenderer,
+        private readonly ?FlowBlockRenderer $flowRenderer = null,
     ) {
     }
 
@@ -37,6 +38,14 @@ final class FormBlockRenderer implements BlockRenderer
      */
     public function render(array $attributes, string $content, object $block): string
     {
+        if ($this->flowRenderer !== null && (isset($attributes['flowId']) || isset($attributes['flowSlug']))) {
+            return $this->flowRenderer->render(
+                [...$attributes, 'variant' => 'form'],
+                $content,
+                $block,
+            );
+        }
+
         $slug = isset($attributes['formSlug']) ? sanitize_key((string) $attributes['formSlug']) : '';
         $form = $this->forms->find($slug);
 

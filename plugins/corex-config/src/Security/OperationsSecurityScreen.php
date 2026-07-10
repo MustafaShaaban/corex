@@ -12,17 +12,18 @@ use Corex\Admin\AdminPage;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeController;
 use Corex\Config\Operations\OperationsModeStore;
+use Corex\Config\Operations\ProductionReadinessSnapshotFactory;
+use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
+use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Security\Admin\AdminGuard;
+use DateTimeImmutable;
 
 defined('ABSPATH') || exit;
 
 /**
- * The Operations & Security overview (spec 063, Phase 4): a truthful, read-only surface that reports the
- * REAL operating environment and REAL, locally-verified WordPress hardening checks. It does NOT ship the
- * dangerous mutation features the design envisions — an operations-mode switch, a login-URL/rate-limit
- * guard, or a capability editor — because none of those exist in the codebase and faking them (or a
- * mode that "changed" when it did not) would violate the truthfulness rule. Those are shown as honest
- * future capabilities. Read-only: no state change, so no nonce; access is AdminGuard-gated.
+ * The Operations & Security overview reports the REAL operating environment and locally-verified
+ * WordPress hardening checks. The operations-mode switch is real, nonce/capability-gated, and
+ * Production launch uses the same readiness evidence shown on the page.
  */
 final class OperationsSecurityScreen
 {
@@ -34,6 +35,8 @@ final class OperationsSecurityScreen
         private readonly HardeningChecks $checks,
         private readonly OperationsMode $modes,
         private readonly OperationsModeStore $store,
+        private readonly ProductionReadinessSnapshotFactory $readiness,
+        private readonly LoginProtectionSettingsStore $loginSettings,
     ) {
     }
 
@@ -68,6 +71,19 @@ final class OperationsSecurityScreen
             ['corex-admin-shell'],
             '1.0.0',
         );
+        $base = dirname(__DIR__, 2);
+        $asset = is_file($base . '/build/admin/index.asset.php')
+            ? require $base . '/build/admin/index.asset.php'
+            : ['dependencies' => [], 'version' => 'dev'];
+        wp_enqueue_script(
+            'corex-operations-security',
+            plugins_url('build/admin/index.js', $base . '/corex-config.php'),
+            [...$asset['dependencies'], 'corex-runtime'],
+            $asset['version'],
+            true,
+        );
+        wp_localize_script('corex-operations-security', 'corexSecurity', $this->securityConfig());
+        wp_set_script_translations('corex-operations-security', 'corex');
     }
 
     public function render(): void
@@ -88,6 +104,7 @@ final class OperationsSecurityScreen
         );
 
         echo $this->statusNotice();
+        echo '<div id="corex-security-app" aria-live="polite"></div>';
         echo $this->modeCard();
         echo $this->checksCard($checks, $warnings);
         echo $this->auditCard();
@@ -106,6 +123,8 @@ final class OperationsSecurityScreen
 
         [$tone, $message] = match ($status) {
             'saved'   => ['success', __('Operations mode updated.', 'corex')],
+            'blocked' => ['error', __('Production launch is blocked by readiness checks. Resolve them, or type PRODUCTION to override intentionally.', 'corex')],
+            'production_confirm' => ['warning', __('Production mode needs typed confirmation. Type PRODUCTION and try again.', 'corex')],
             'confirm' => ['warning', __('That mode needs confirmation — tick the confirmation box and try again.', 'corex')],
             'invalid' => ['error', __('That is not a valid operations mode.', 'corex')],
             default   => ['', ''],
@@ -124,6 +143,8 @@ final class OperationsSecurityScreen
         $current  = $this->store->current();
         $env      = $this->modes->describe($current);
         $declared = $this->store->isDeclared();
+        $snapshot = $this->readiness->fromCurrentSite(new DateTimeImmutable('now'));
+        $blockers = $snapshot->blockingKeys();
 
         $options = '';
         foreach ($this->modes->all() as $mode) {
@@ -144,6 +165,14 @@ final class OperationsSecurityScreen
         $inherited = $declared ? '' :
             '<p class="corex-opsec__detail">' . esc_html__('Inherited from the WordPress environment type — declare a mode to override it.', 'corex') . '</p>';
 
+        $productionGate = $blockers === []
+            ? esc_html__('Production launch is ready. Type PRODUCTION to confirm the live-mode change.', 'corex')
+            : sprintf(
+                /* translators: %d: number of blocking readiness checks */
+                esc_html(_n('%d blocking readiness check must be resolved or intentionally overridden by typing PRODUCTION.', '%d blocking readiness checks must be resolved or intentionally overridden by typing PRODUCTION.', count($blockers), 'corex')),
+                count($blockers),
+            );
+
         return '<section class="corex-surface corex-opsec__env is-' . esc_attr($env['tone']) . '">'
             . '<p class="corex-admin__eyebrow">' . esc_html__('OPERATIONS MODE', 'corex') . '</p>'
             . '<h2>' . esc_html($env['label']) . '</h2>'
@@ -154,8 +183,11 @@ final class OperationsSecurityScreen
             . wp_nonce_field(OperationsModeController::ACTION, OperationsModeController::NONCE, true, false)
             . '<label class="corex-opsec__mode-label" for="corex-mode-select">' . esc_html__('Change mode', 'corex') . '</label>'
             . '<select id="corex-mode-select" name="corex_mode">' . $options . '</select>'
+            . '<label class="corex-opsec__mode-label" for="corex-production-confirm">' . esc_html__('Production confirmation', 'corex') . '</label>'
+            . '<input id="corex-production-confirm" type="text" name="corex_confirm_phrase" value="" autocomplete="off" placeholder="' . esc_attr__('Type PRODUCTION', 'corex') . '" />'
+            . '<p class="corex-opsec__detail">' . $productionGate . '</p>'
             . '<label class="corex-opsec__mode-confirm"><input type="checkbox" name="corex_confirm" value="1" /> '
-            . esc_html__('I understand production and maintenance affect real visitors.', 'corex') . '</label>'
+            . esc_html__('I understand maintenance affects real visitors.', 'corex') . '</label>'
             . '<button type="submit" class="button button-primary">' . esc_html__('Apply mode', 'corex') . '</button>'
             . '</form></section>';
     }
@@ -226,28 +258,105 @@ final class OperationsSecurityScreen
     }
 
     /**
-     * Honest deferral for the remaining security sub-features: a custom login URL + failed-login rate
-     * limiting (always with a reversible CLI/config recovery path) are the safe login-protection
-     * foundation still to land; the CoreX capability/role matrix arrives as the Access & Abilities
-     * baseline. Stated, never faked; this screen never renames WordPress core files.
+     * Recovery note for the implemented login-protection foundation: custom login routing, failed-login
+     * rate limiting, and the CLI reset command are all real; WordPress core files are never renamed.
      */
     private function deferralNote(): string
     {
         return '<div class="corex-opsec__note corex-surface">'
-            . '<p class="corex-opsec__note-title">' . esc_html__('Login protection', 'corex') . '</p>'
+            . '<p class="corex-opsec__note-title">' . esc_html__('Login recovery', 'corex') . '</p>'
             . '<p class="corex-opsec__note-text">'
             . esc_html__(
-                'A custom login URL and failed-login rate limiting — always with a reversible CLI/config recovery path so you cannot be locked out — are the safe login-protection foundation still to land. CoreX never renames WordPress core files.',
+                'Custom login routing and failed-login lockouts use a reversible recovery path: run wp corex security reset-login to restore the default login URL and release active lockouts. CoreX never renames WordPress core files.',
                 'corex',
             )
             . '</p></div>';
     }
 
     /**
+     * @return array<string,mixed>
+     */
+    private function securityConfig(): array
+    {
+        return [
+            'restUrl' => esc_url_raw(rest_url('corex/v1/security')),
+            'nonce' => wp_create_nonce('wp_rest'),
+            'mode' => $this->store->current(),
+            'readiness' => $this->readinessPayload(),
+            'loginPolicy' => $this->loginPolicyPayload($this->loginSettings->current()),
+            'lockouts' => [],
+            'activity' => $this->activityPayload(),
+            'recoveryCommand' => 'wp corex security reset-login',
+        ];
+    }
+
+    /**
+     * @return array{target_hash:string,blocking_keys:list<string>,checks:list<array<string,mixed>>}
+     */
+    private function readinessPayload(): array
+    {
+        $snapshot = $this->readiness->fromCurrentSite(new DateTimeImmutable('now'));
+
+        return [
+            'target_hash' => $snapshot->targetHash(),
+            'blocking_keys' => $snapshot->blockingKeys(),
+            'checks' => array_map(static fn (array $check): array => [
+                'key' => $check['key'],
+                'label' => $check['label'],
+                'status' => $check['state'] === 'pass' ? 'pass' : 'review',
+                'detail' => $check['summary'],
+                'blocking' => $check['state'] === 'blocking',
+                'resolution_url' => $check['resolution_url'],
+            ], $snapshot->checks()),
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function loginPolicyPayload(LoginProtectionSettings $settings): array
+    {
+        return [
+            'enabled' => $settings->enabled,
+            'block_default_endpoints' => $settings->blockDefaultEndpoints,
+            'custom_slug' => $settings->customSlug,
+            'max_attempts' => $settings->threshold,
+            'window_seconds' => $settings->windowSeconds,
+            'lockout_seconds' => $settings->lockoutSeconds,
+            'trusted_proxies' => $settings->trustedProxyRanges,
+            'retention_days' => $settings->retainDays,
+            'successful_login_logging' => $settings->successfulLoginLogging,
+        ];
+    }
+
+    /**
+     * @return list<array{id:string,kind:string,label:string,tone:string,occurred_at:string}>
+     */
+    private function activityPayload(): array
+    {
+        return array_map(function (array $entry): array {
+            $label = sprintf(
+                /* translators: 1: old operations mode, 2: new operations mode. */
+                __('Operations mode changed from %1$s to %2$s', 'corex'),
+                (string) $entry['from'],
+                (string) $entry['to'],
+            );
+
+            return [
+                'id' => (string) ($entry['time'] . '-' . $entry['to']),
+                'kind' => 'operations.mode.changed',
+                'label' => $label,
+                'tone' => 'info',
+                'occurred_at' => $entry['time'] > 0 ? wp_date(DATE_ATOM, (int) $entry['time']) : '',
+            ];
+        }, $this->store->history(8));
+    }
+
+    /**
      * The REAL, locally-verified hardening facts, gathered by the shared {@see HardeningFacts} boundary
      * so the Overview readiness panel and this screen never compute the same signal two ways.
      *
-     * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool}
+     * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool,indexingAllowed:bool,authSaltsConfigured:bool}
      */
     private function facts(): array
     {

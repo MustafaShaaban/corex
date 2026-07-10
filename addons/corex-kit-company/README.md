@@ -40,12 +40,25 @@ files and patterns it points at.
 
 ## Setup wizard
 
-A **Setup Wizard** submenu (under the Corex menu) lists the registered kits and, on apply
-(nonce + `manage_options`), runs the kit's plan: enables its feature flags, activates its
-module plugins, and seeds an idempotent demo Home page. The planning core (`SetupWizard`:
-`kits()` + `plan(name)`) is pure and unit-tested; the screen is the thin admin boundary
-(a React stepped wizard is the deferred upgrade). Kits declare their flags via
-`Blueprint::featureFlags()`.
+A **Setup Wizard** submenu (under the Corex menu) runs a guided **nine-step flow** (Welcome, Brand,
+Choose a kit, Demo content, Review plan, Backup, Apply, Launch checklist, Done). The JS wizard
+mounts over the server-rendered flow (which stays as the no-JS fallback) and consumes the cap+nonce
+gated REST surface `GET/POST corex/v1/setup/state|plan|apply`. It is composed from pure, unit-tested
+services (`Corex\Kit\Setup\`): `SetupProgress` (step/percentage/resume/blocked state), `ConflictResolver`
+(Keep/Replace/Suffix — the default is always Keep, so existing content is never overwritten silently),
+and `LaunchChecklist` (indexing/debug/environment/email/security/legal/forms/performance).
+
+- **Brand (FR-135):** persists real `brand.*` Config fields (company name, tagline, phone, email, address,
+  primary action, social links) via CoreX Settings.
+- **Demo levels (FR-137):** Minimal / Standard / Full seed progressively larger page sets
+  (`CompanyBlueprint::pages($level)`).
+- **Conflicts (FR-139/143):** a page that already holds user content is only ever Replaced or created
+  under a suffixed slug from an explicit operator choice; a required backup confirmation gates Apply.
+- **Rollback (FR-141):** the activator records `_corex_kit_page` dispositions (`created`/`adopted`/
+  `replaced`/`suffixed`) so a reset reverses only tracked changes.
+
+The planning core (`SetupWizard`: `kits()`, `plan(name, level)`, `brandFields()`, `demoLevels()`,
+`conflictChoices()`) is pure and unit-tested. Kits declare their flags via `Blueprint::featureFlags()`.
 
 
 ## Pages

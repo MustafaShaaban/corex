@@ -22,6 +22,9 @@ final class AdminDashboard
     private string $hook = '';
     private string $settingsHook = '';
 
+    /** True once a verified settings POST has been persisted this request, so the save toast shows. */
+    private bool $justSaved = false;
+
     public function __construct(
         private readonly SettingsRegistry $registry,
         private readonly SettingsForm $form,
@@ -29,6 +32,7 @@ final class AdminDashboard
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly OverviewRenderer $overview,
+        private readonly SettingsSanitizer $sanitizer = new SettingsSanitizer(),
     ) {
     }
 
@@ -155,6 +159,11 @@ final class AdminDashboard
             fn (string $sectionKey): ?SettingsSectionState => $this->sectionState($sectionKey),
             $this->activeTab(),
         );
+
+        if ($this->justSaved) {
+            echo $this->savedToast();
+        }
+
         echo $this->page->close();
     }
 
@@ -167,6 +176,11 @@ final class AdminDashboard
     {
         if ($key === 'media.webp.support') {
             return (string) apply_filters('corex_media_support_summary', '');
+        }
+
+        // The Advanced section is a live, read-only system-diagnostics read-out — never stored.
+        if (str_starts_with($key, 'advanced.')) {
+            return $this->diagnosticValue($key);
         }
 
         $stored = (string) $this->store->get($key);
@@ -184,6 +198,22 @@ final class AdminDashboard
         }
 
         return $stored;
+    }
+
+    /**
+     * The live value for one Advanced-section diagnostics row (spec 068 T203) — real runtime facts,
+     * never a stored or fabricated value.
+     */
+    private function diagnosticValue(string $key): string
+    {
+        return match ($key) {
+            'advanced.php_version'  => PHP_VERSION,
+            'advanced.wp_version'   => (string) get_bloginfo('version'),
+            'advanced.environment'  => (string) wp_get_environment_type(),
+            'advanced.memory_limit' => (string) ini_get('memory_limit'),
+            'advanced.multisite'    => is_multisite() ? __('Yes', 'corex') : __('No', 'corex'),
+            default                 => '',
+        };
     }
 
     private function sectionState(string $sectionKey): ?SettingsSectionState
@@ -263,9 +293,29 @@ final class AdminDashboard
 
         foreach ($this->registry->sections() as $section) {
             foreach ($section['fields'] as $key => $field) {
-                $this->saveField((string) $key, (string) ($field['type'] ?? 'text'));
+                $this->saveField((string) $key, $field);
             }
         }
+
+        $this->justSaved = true;
+    }
+
+    /**
+     * The transient "Settings saved" toast (design: Blocks & Components, C / admin components).
+     * Rendered once after a verified save; role="status" so assistive tech announces it, and it is
+     * dismissible + auto-hides through the enqueued settings script. Token-only markup.
+     */
+    private function savedToast(): string
+    {
+        return sprintf(
+            '<div class="corex-toast corex-toast--success" role="status" data-corex-toast>'
+            . '<p class="corex-toast__message">%1$s</p>'
+            . '<button type="button" class="corex-toast__dismiss" data-corex-toast-dismiss'
+            . ' aria-label="%2$s">&times;</button>'
+            . '</div>',
+            esc_html__('Settings saved.', 'corex'),
+            esc_attr__('Dismiss', 'corex'),
+        );
     }
 
     /**
@@ -273,9 +323,11 @@ final class AdminDashboard
      * toggle can be turned off); an empty write-only secret is left untouched (never cleared
      * by re-saving the form); everything else is sanitized text.
      */
-    private function saveField(string $key, string $type): void
+    /** @param array{type?:string,options?:array<string,string>} $field */
+    private function saveField(string $key, array $field): void
     {
         $name = str_replace('.', '_', $key);
+        $type = (string) ($field['type'] ?? 'text');
 
         if ($type === 'checkbox') {
             $this->store->save($key, isset($_POST[$name]) ? '1' : '0');
@@ -287,9 +339,17 @@ final class AdminDashboard
             return;
         }
 
-        $value = sanitize_text_field(wp_unslash($_POST[$name]));
+        $raw = wp_unslash($_POST[$name]);
+        if (! is_string($raw)) {
+            return;
+        }
 
-        if ($value === '' && $type === 'password') {
+        $value = $this->sanitizer->sanitize($raw, $type, $field['options'] ?? []);
+        if ($value === null) {
+            return;
+        }
+
+        if ($this->sanitizer->shouldPreserve($value, $type)) {
             return;
         }
 

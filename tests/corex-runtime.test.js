@@ -81,6 +81,16 @@ describe( 'Corex.api', () => {
 		expect( init.headers[ 'X-WP-Nonce' ] ).toBe( 'n-42' );
 	} );
 
+	it( 'supports PATCH mutations through the shared request contract', async () => {
+		mockFetch( { ok: true, message: '', data: { version: 2 } } );
+		const result = await window.Corex.api.patch( '/x/7', { expected_version: 1 } );
+		const init = global.fetch.mock.calls[ 0 ][ 1 ];
+
+		expect( init.method ).toBe( 'PATCH' );
+		expect( JSON.parse( init.body ) ).toEqual( { expected_version: 1 } );
+		expect( result.envelope.data.version ).toBe( 2 );
+	} );
+
 	it( 'resolves a network failure to an error result and never throws', async () => {
 		global.fetch = jest.fn( () => Promise.reject( new Error( 'offline' ) ) );
 		const result = await window.Corex.api.get( '/x' );
@@ -125,6 +135,18 @@ describe( 'Corex.forms.bind', () => {
 		expect( global.fetch ).toHaveBeenCalledTimes( 1 );
 		expect( success ).toHaveBeenCalledTimes( 1 );
 		expect( form.querySelector( '.corex-form__status' ).textContent ).toBe( 'Thanks!' );
+	} );
+
+	it( 'honors the published flow success definition returned by the visitor endpoint', async () => {
+		mockFetch( { ok: true, message: '', data: { success: { type: 'inline', message: 'Flow complete.' } } } );
+		const form = makeForm( EMAIL_REQUIRED );
+		form.querySelector( 'input[name="email"]' ).value = 'a@b.com';
+		window.Corex.forms.bind( form );
+
+		form.dispatchEvent( new Event( 'submit', { cancelable: true, bubbles: true } ) );
+		await flush();
+
+		expect( form.querySelector( '.corex-form__status' ).textContent ).toBe( 'Flow complete.' );
 	} );
 
 	it( 'renders server envelope errors and fires corex:form:error', async () => {

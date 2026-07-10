@@ -53,4 +53,16 @@ final class DataQuery
             max(1, min(self::MAX_PER_PAGE, (int) ($params['per_page'] ?? 20))),
         );
     }
+
+    public function withPerPage(int $perPage): self
+    {
+        return new self(
+            $this->search,
+            $this->filters,
+            $this->sortColumn,
+            $this->sortDir,
+            $this->page,
+            max(1, min(self::MAX_PER_PAGE, $perPage)),
+        );
+    }
 }

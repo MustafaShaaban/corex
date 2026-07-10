@@ -70,6 +70,6 @@ it('registers activity access and job tables as real data sources', function () 
 
     foreach ([ActivityTable::NAME, AccessTables::ROLE_GRANTS, AccessTables::REQUESTS, JobTable::NAME] as $table) {
         expect($managedNames)->toContain($table)
-            ->and($sourceKeys)->toContain('table-' . $table);
+            ->and($sourceKeys)->toContain('table-' . str_replace('_', '-', $table));
     }
 });

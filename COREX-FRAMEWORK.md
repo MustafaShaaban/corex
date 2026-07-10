@@ -513,6 +513,34 @@ One definition feeds: the editor block, the REST endpoint, the admin submissions
 
 ---
 
+### 11.1 Email Studio delivery boundary
+
+CoreX Mail adds a versioned, editable layer without replacing the neutral mail contract. Templates, layouts,
+partials, routes, captures, and immutable delivery attempts live in a private `corex_email_asset` store behind
+repositories. `EmailTemplateService` validates a declared merge-variable schema, rejects executable markup, expands
+active partials, and renders the selected immutable layout revision. Forms and Access depend only on
+`Corex\Mail\RoutedMailer`; when the add-on is absent, their existing fallbacks remain available.
+
+Delivery is fail-closed: local/development always capture; staging/production use the provider only when the
+configured provider matches the bound driver and the live-delivery gate is deliberately enabled. REST reads require
+`manage_options`; mutations additionally require a valid REST nonce. Preview rendering stays inside a script-disabled
+iframe, and delivery logs store redacted recipient evidence plus correlation and retry lineage.
+
+```mermaid
+graph LR
+    CALLER["Forms / Access / application"] --> ROUTE["RoutedMailer + route rules"]
+    ROUTE --> RENDER["Active template + layout + partial revisions"]
+    RENDER --> POLICY{"Environment + provider + live gate"}
+    POLICY -->|"local / development"| CAPTURE["Private capture"]
+    POLICY -->|"approved live delivery"| DRIVER["Bound MailDriver"]
+    POLICY -->|"unsafe or incomplete"| BLOCK["Rejected attempt"]
+    CAPTURE --> ATTEMPT["Immutable delivery attempt"]
+    DRIVER --> ATTEMPT
+    BLOCK --> ATTEMPT
+```
+
+---
+
 ## 12. Security: Two Doors
 
 Backoffice and frontend logins are separate concerns for different people.

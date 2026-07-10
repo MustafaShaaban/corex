@@ -1,0 +1,46 @@
+---
+title: Security Center
+description: Launch safely, protect login access, recover lockouts, and review CoreX access requests.
+---
+
+Open **CoreX → Operations & Security** for the launch checklist, operating mode, login protection, lockouts, recovery,
+and security activity. Open **CoreX → Access & Abilities** for CoreX-owned abilities and access requests.
+
+## Launch checklist
+
+Production mode uses the same readiness snapshot shown on screen. Review the checklist before switching modes. Blocking
+checks stop Production unless an owner intentionally types `PRODUCTION`.
+
+Maintenance mode has its own confirmation because it affects real visitors. Administrators remain able to access
+wp-admin, and the recovery path does not rename WordPress core files.
+
+## Login protection
+
+Login protection rate-limits failed login attempts using hashed identity/network evidence. It can also block default
+login endpoints behind a custom slug. The policy panel shows the active settings and the exact serialized shape CoreX
+uses for the security workflow.
+
+CoreX stores bounded login-attempt evidence for reporting and recovery. It does not store passwords, raw submitted
+credentials, or raw IP addresses.
+
+## Recovery
+
+If a protected route or lockout blocks owner access, run:
+
+```bash
+wp corex security reset-login
+```
+
+The command restores the standard `wp-login.php` route by disabling CoreX login-protection gates and releasing active
+lockouts. It does not change users, roles, passwords, content, or unrelated settings.
+
+Use `COREX_LOGIN_UNGUARD` only as a temporary emergency bypass and remove it after access is restored.
+
+## Access requests
+
+Denied CoreX admin screens now show a real request-access form. The request is stored with the requested CoreX ability,
+requester, reason, and expiry. Administrators review requests in **Access & Abilities** and approve or deny them through
+the Access workflow.
+
+CoreX edits only CoreX-owned abilities. Native WordPress capabilities and third-party role plugins remain external
+compatibility inputs.

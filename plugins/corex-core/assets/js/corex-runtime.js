@@ -136,6 +136,9 @@
 		post: function ( url, data, opts ) {
 			return request( url, 'POST', data || {}, opts );
 		},
+		patch: function ( url, data, opts ) {
+			return request( url, 'PATCH', data || {}, opts );
+		},
 		delete: function ( url, opts ) {
 			return request( url, 'DELETE', undefined, opts );
 		},
@@ -387,6 +390,33 @@
 		}
 	}
 
+	function successOf( form, envelope ) {
+		var configured = {};
+		try {
+			configured = JSON.parse( form.dataset.corexSuccessConfig || '{}' );
+		} catch ( e ) {
+			configured = {};
+		}
+		if ( envelope.data && envelope.data.success && typeof envelope.data.success === 'object' ) {
+			return Object.assign( {}, configured, envelope.data.success );
+		}
+		return configured;
+	}
+
+	function renderSuccess( form, envelope ) {
+		var success = successOf( form, envelope );
+		var target = success.target_url || ( success.type === 'url' ? success.url : '' );
+		if ( ( success.type === 'url' || success.type === 'page' ) && target ) {
+			emit( form, 'corex:form:redirect', { url: target, success: success } );
+			window.location.assign( target );
+			return;
+		}
+		if ( success.type && success.type !== 'inline' ) {
+			emit( form, 'corex:form:custom-success', { success: success } );
+		}
+		notices.status( form, success.message || form.dataset.corexSuccess || envelope.message, 'success' );
+	}
+
 	function submit( form ) {
 		if ( form.dataset.corexBusy === '1' ) {
 			return; // dedupe concurrent submits
@@ -403,7 +433,7 @@
 			var envelope = result.envelope;
 			if ( envelope.ok ) {
 				form.reset();
-				notices.status( form, form.dataset.corexSuccess || envelope.message, 'success' );
+				renderSuccess( form, envelope );
 				emit( form, 'corex:form:success', { envelope: envelope } );
 				return;
 			}

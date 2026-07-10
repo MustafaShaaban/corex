@@ -56,3 +56,29 @@ it('returns an empty plan for an unknown kit', function () {
 it('plans the company kit with no feature flags', function () {
     expect(wizardWithKits()->plan('company')['flags'])->toBe([]);
 });
+
+it('plans fewer pages for the minimal demo level than for full (FR-137)', function () {
+    $wizard = wizardWithKits();
+
+    expect(count($wizard->plan('company', 'minimal')['pages']))
+        ->toBeLessThan(count($wizard->plan('company', 'full')['pages']));
+});
+
+it('exposes the brand-step fields as real brand.* Config keys (FR-135)', function () {
+    $fields = wizardWithKits()->brandFields();
+    $keys   = array_column($fields, 'key');
+
+    expect($fields)->toHaveCount(8)
+        ->and($keys)->toBe([
+            'brand.company_name',
+            'brand.tagline',
+            'brand.phone',
+            'brand.email',
+            'brand.address',
+            'brand.primary_action_label',
+            'brand.primary_action_link',
+            'brand.social_links',
+        ])
+        // Every field is a namespaced brand key with a label — never a blank placeholder input.
+        ->and(array_filter($fields, static fn (array $f): bool => ! str_starts_with($f['key'], 'brand.') || $f['label'] === ''))->toBe([]);
+});

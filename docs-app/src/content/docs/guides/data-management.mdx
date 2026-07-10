@@ -1,0 +1,82 @@
+---
+title: Data management and adapters
+description: Query, mutate, import, export, and migrate registered CoreX data sources through explicit capabilities.
+---
+
+Open **CoreX → Data** for record work and **CoreX → Data Models** for schemas, imports, export history, and migrations.
+Both screens consume the same actor-scoped source catalog, so a control appears only when the source declares the
+operation, supplies its required adapter, and the current actor has the mapped ability.
+
+## Work with records
+
+Select a source, search, apply declared equality filters, and sort only fields marked sortable. CoreX validates the
+query against the source schema before calling its query adapter. Detail requests use the same record scope as list
+queries, preventing direct IDs from bypassing access rules.
+
+Create, update, delete, bulk update, and bulk delete are two-step operations:
+
+1. CoreX validates writable fields and at most 100 exact record IDs, then returns an actor-bound preview.
+2. The user reviews the exact scope and values and applies the token within five minutes.
+
+The token is consumed once and permission is checked again at apply time. Activity records retain operation evidence,
+not copied record values.
+
+## Import CSV safely
+
+On **Data Models → Import**, upload a CSV of at most 2 MB, 5,000 rows, and 200 columns. CoreX maps exact field names,
+declared aliases, and explicit choices; unknown columns can be rejected or deliberately ignored. The dry run validates
+required, email, select, and length rules and persists immutable accepted and rejected rows.
+
+Review the counts and rejection reasons, download the formula-safe rejection report, and confirm the dry-run checksum.
+Commit queues only those accepted rows. Remapping creates a new dry run, so an old review cannot authorize changed
+input.
+
+## Export and migration history
+
+Exports support current filters, selected IDs, or all accessible records. Choose explicit columns and CSV or XLSX.
+Personal-data columns require acknowledgement. Work runs as a bounded job; completed private artifacts are available
+only through the actor-scoped download endpoint. CSV neutralizes spreadsheet formulas and XLSX uses inline strings.
+
+A migration-capable source supplies its own immutable definitions and provider. Preview shows the exact plan,
+transaction support, rollback support, and a production warning. Apply snapshots first, then queues the unchanged plan.
+A supported rollback previews separately and reuses the original snapshot. Failed runs remain visible with recovery
+evidence.
+
+## Register an adapter
+
+Register the source in `DataRegistry`; do not build a parallel admin screen. Inside a CoreX service provider, after
+constructing `$contactsSource` as an object that implements `DataSource`, register it through the provider container:
+
+```php
+use Corex\Config\Data\DataRegistry;
+
+$container->make(DataRegistry::class)->register($contactsSource);
+```
+
+The source can implement:
+
+- `DataSource` for its stable key, label, legacy columns, bounded rows, and count.
+- `FieldAwareDataSource` for typed fields, validation, aliases, filter operators, sorting, write flags, and personal-data
+  classes.
+- `QueryableDataSource` for `query(DataQuery $query)`, `count(DataQuery $query)`, and `record(int $id)`.
+- `CapabilityAwareDataSource` for a `DataSourceCapabilities` declaration and operation-to-ability map.
+- `WritableDataSource` for a `DataWriteAdapter` that owns create, update, and delete persistence.
+- `MigrationAwareDataSource` for a `MigrationProvider` that declares plans, snapshots, executes, and rolls back.
+
+Declaring a capability without its concrete adapter does not expose the action. Keep data access inside the adapter,
+prepare variable SQL, cap page sizes, and return only declared fields. Optional integrations must degrade by omitting
+their capability; they must not become hard dependencies.
+
+## REST boundary
+
+Reads and writes live under `corex/v1/data`. Mutations require the REST nonce before payload parsing. Important route
+families are:
+
+- `GET /sources`, `GET /{source}`, and `GET /{source}/{id}`;
+- `POST /{source}/mutations/preview` and `/mutations/apply`;
+- `POST /{source}/imports`, remap/dry-run, commit, and rejection report routes;
+- create/history/download routes under `/{source}/exports`;
+- catalog, preview, apply, and rollback routes under `/migrations`.
+
+For team workflow around form responses, use the [Submissions Inbox](/guides/submissions/). For the lower-level query
+builder used in application code, see [Queries](/guides/queries/).

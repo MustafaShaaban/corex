@@ -8,20 +8,15 @@ declare(strict_types=1);
 
 namespace Corex\Config\Blog;
 
-use Corex\Admin\AdminPage;
-use Corex\Security\Admin\AdminGuard;
-
 defined('ABSPATH') || exit;
 
+use Corex\Admin\AdminPage;
+use Corex\Security\Admin\AdminGuard;
+use DateTimeImmutable;
+use RuntimeException;
+
 /**
- * The Blog Pro reference surface (spec 067, design: "Corex Blog Pro & Analytics"). Blog Pro is a future
- * add-on; the owner requires the designed surface visible NOW for review, shown honestly. This screen:
- *  - opens with a prominent "future add-on — reference only, not live" ribbon;
- *  - shows four tabs (Analytics, Editorial queue, Comments, Authors);
- *  - renders Analytics as an explicitly-labelled SAMPLE layout (no live metrics, no trackers);
- *  - renders Editorial, Comments, and Authors from REAL WordPress facts (post-status counts, comment
- *    counts, real authors), with moderation/management linking to the native WordPress screens.
- * It never fabricates live analytics, and never implements purchase/licensing/marketplace.
+ * Functional Blog Pro admin surface over native WordPress posts, comments, authors, and first-party analytics.
  */
 final class BlogProScreen
 {
@@ -30,7 +25,7 @@ final class BlogProScreen
     public function __construct(
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
-        private readonly BlogProModel $model,
+        private readonly BlogProServices $services,
     ) {
     }
 
@@ -65,6 +60,19 @@ final class BlogProScreen
             ['corex-admin-shell'],
             '1.0.0',
         );
+        $base = dirname(__DIR__, 2);
+        $asset = is_file($base . '/build/admin/index.asset.php')
+            ? require $base . '/build/admin/index.asset.php'
+            : ['dependencies' => [], 'version' => 'dev'];
+        wp_enqueue_script(
+            'corex-blog-pro',
+            plugins_url('build/admin/index.js', $base . '/corex-config.php'),
+            [...$asset['dependencies'], 'corex-runtime'],
+            $asset['version'],
+            true,
+        );
+        wp_localize_script('corex-blog-pro', 'corexBlogPro', $this->clientConfig());
+        wp_set_script_translations('corex-blog-pro', 'corex');
     }
 
     public function render(): void
@@ -75,181 +83,136 @@ final class BlogProScreen
             return;
         }
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only tab selection.
-        $tab = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : '';
-        $active = $this->model->activeTab($tab);
-
         echo $this->page->open(
             'blog-pro',
             __('CoreX Blog Pro', 'corex'),
-            __('A reference view of the planned Blog Pro add-on, built on native WordPress posts.', 'corex'),
+            __('Native publishing, analytics, comments, authors, and sharing in one real workflow.', 'corex'),
         );
-
-        echo $this->ribbon();
-        echo $this->page->tabs('corex-blog-pro', $this->model->tabs(), $active, __('Blog Pro sections', 'corex'));
-
-        echo match ($active) {
-            BlogProModel::EDITORIAL => $this->editorialTab(),
-            BlogProModel::COMMENTS  => $this->commentsTab(),
-            BlogProModel::AUTHORS   => $this->authorsTab(),
-            default                 => $this->analyticsTab(),
-        };
-
+        echo '<div id="corex-blog-pro-app" aria-live="polite"></div>';
         echo $this->page->close();
     }
 
-    /** The honest "future add-on, reference only, not live" ribbon (design: the purple future ribbon). */
-    private function ribbon(): string
-    {
-        return '<div class="corex-surface corex-blogpro__ribbon">'
-            . '<span class="corex-blogpro__ribbon-badge">' . esc_html__('FUTURE ADD-ON', 'corex') . '</span>'
-            . '<p class="corex-blogpro__ribbon-text">'
-            . '<strong>' . esc_html__('Blog Pro is a future add-on — reference only, not part of CoreX Core yet.', 'corex') . '</strong> '
-            . esc_html__('It builds on native WordPress posts (never replaces them). The Analytics figures below are sample data for layout review, not live metrics — no third-party trackers. Editorial, Comments, and Authors below show real data from this site.', 'corex')
-            . '</p></div>';
-    }
-
-    private function analyticsTab(): string
-    {
-        $ref  = $this->model->analyticsReference();
-        $cards = '';
-        foreach ($ref['stats'] as $stat) {
-            $cards .= '<div class="corex-surface corex-blogpro__stat">'
-                . '<div class="corex-blogpro__stat-label">' . esc_html($stat['label']) . '</div>'
-                . '<div class="corex-blogpro__stat-value">' . esc_html($stat['value']) . '</div>'
-                . '<div class="corex-blogpro__stat-trend">' . esc_html($stat['trend']) . ' '
-                . esc_html__('vs prev 30d', 'corex') . '</div></div>';
-        }
-
-        return '<section>'
-            . '<p class="corex-blogpro__sample">' . esc_html__('Sample data · reference layout, not live metrics.', 'corex') . '</p>'
-            . '<div class="corex-blogpro__stats">' . $cards . '</div>'
-            . '<p class="corex-blogpro__note">'
-            . esc_html__('A first-party, privacy-friendly analytics engine (real views, reads, and engagement) is a planned Blog Pro capability. It is not enabled yet, so these figures are a reference layout only.', 'corex')
-            . '</p></section>';
-    }
-
-    private function editorialTab(): string
-    {
-        $counts = $this->postCounts();
-        $rows   = $this->countCards($this->model->editorial($counts));
-
-        return '<section>'
-            . '<div class="corex-blogpro__stats">' . $rows . '</div>'
-            . '<p class="corex-blogpro__note">'
-            . esc_html__('Real editorial state from this site. An assignable editorial workflow (owners, due dates, statuses) is a planned Blog Pro capability.', 'corex')
-            . ' <a href="' . esc_url(admin_url('edit.php?post_type=post')) . '">' . esc_html__('Manage posts', 'corex') . '</a>'
-            . '</p></section>';
-    }
-
-    private function commentsTab(): string
-    {
-        $counts = $this->commentCounts();
-        $rows   = $this->countCards($this->model->comments($counts));
-
-        return '<section>'
-            . '<div class="corex-blogpro__stats">' . $rows . '</div>'
-            . '<p class="corex-blogpro__note">'
-            . esc_html__('Real comment state from this site. Moderation happens on the WordPress Comments screen; an in-CoreX moderation queue is a planned Blog Pro capability.', 'corex')
-            . ' <a href="' . esc_url(admin_url('edit-comments.php')) . '">' . esc_html__('Moderate comments', 'corex') . '</a>'
-            . '</p></section>';
-    }
-
-    private function authorsTab(): string
-    {
-        $authors = $this->model->authors($this->authorRows());
-
-        if ($authors === []) {
-            return '<section>' . $this->page->state(
-                'empty',
-                __('No authors yet', 'corex'),
-                __('Users who can publish posts will appear here with their real published-post counts.', 'corex'),
-            ) . '</section>';
-        }
-
-        $rows = '';
-        foreach ($authors as $author) {
-            $rows .= '<li class="corex-blogpro__author">'
-                . '<span>' . esc_html($author['name']) . '</span>'
-                . '<span class="corex-blogpro__author-count">' . sprintf(
-                    /* translators: %d: number of published posts by the author */
-                    esc_html(_n('%d published post', '%d published posts', $author['posts'], 'corex')),
-                    (int) $author['posts'],
-                ) . '</span></li>';
-        }
-
-        return '<section><ul class="corex-blogpro__authors">' . $rows . '</ul>'
-            . '<p class="corex-blogpro__note">'
-            . esc_html__('Real authors on this site. Author profiles, bylines, and per-author analytics are planned Blog Pro capabilities.', 'corex')
-            . ' <a href="' . esc_url(admin_url('users.php')) . '">' . esc_html__('Manage users', 'corex') . '</a>'
-            . '</p></section>';
-    }
-
     /**
-     * @param list<array{label:string,count:int,tone:string}> $items
+     * @return array<string,mixed>
      */
-    private function countCards(array $items): string
+    private function clientConfig(): array
     {
-        $cards = '';
-        foreach ($items as $item) {
-            $cards .= '<div class="corex-surface corex-blogpro__stat is-' . esc_attr($item['tone']) . '">'
-                . '<div class="corex-blogpro__stat-label">' . esc_html($item['label']) . '</div>'
-                . '<div class="corex-blogpro__stat-value">' . esc_html(number_format_i18n($item['count'])) . '</div></div>';
-        }
-
-        return $cards;
-    }
-
-    /**
-     * @return array{draft:int,pending:int,future:int,publish:int}
-     */
-    private function postCounts(): array
-    {
-        $counts = wp_count_posts('post');
+        $posts = $this->posts();
+        $selectedPostId = (int) ($posts[0]['id'] ?? 0);
 
         return [
-            'draft'   => (int) ($counts->draft ?? 0),
-            'pending' => (int) ($counts->pending ?? 0),
-            'future'  => (int) ($counts->future ?? 0),
-            'publish' => (int) ($counts->publish ?? 0),
+            'restUrl' => esc_url_raw(rest_url('corex/v1')),
+            'nonce' => wp_create_nonce('wp_rest'),
+            'posts' => $posts,
+            'selectedPostId' => $selectedPostId,
+            'analytics' => $selectedPostId > 0 ? $this->analytics($selectedPostId) : [],
+            'editorial' => $selectedPostId > 0 ? $this->editorial($selectedPostId) : null,
+            'comments' => $selectedPostId > 0 ? array_map($this->comment(...), $this->services->comments->queue($selectedPostId)) : [],
+            'authors' => $this->authors(),
+            'shareControls' => $selectedPostId > 0 ? $this->shareControls($selectedPostId) : [],
         ];
     }
 
     /**
-     * @return array{approved:int,moderated:int,spam:int,trash:int}
+     * @return list<array{id:int,title:string,status:string,permalink:string}>
      */
-    private function commentCounts(): array
+    private function posts(): array
     {
-        $counts = wp_count_comments();
-
-        return [
-            'approved'  => (int) ($counts->approved ?? 0),
-            'moderated' => (int) ($counts->moderated ?? 0),
-            'spam'      => (int) ($counts->spam ?? 0),
-            'trash'     => (int) ($counts->trash ?? 0),
-        ];
-    }
-
-    /**
-     * @return list<array{name:string,posts:int}>
-     */
-    private function authorRows(): array
-    {
-        $users = get_users([
-            'capability' => 'edit_posts',
-            'number'     => 20,
-            'orderby'    => 'display_name',
-            'fields'     => ['ID', 'display_name'],
+        $posts = get_posts([
+            'post_type' => 'post',
+            'post_status' => ['draft', 'pending', 'future', 'publish'],
+            'numberposts' => 20,
+            'orderby' => 'modified',
+            'order' => 'DESC',
         ]);
 
-        $rows = [];
-        foreach ($users as $user) {
-            $rows[] = [
-                'name'  => (string) $user->display_name,
-                'posts' => (int) count_user_posts((int) $user->ID, 'post', true),
-            ];
+        return array_map(static fn (\WP_Post $post): array => [
+            'id' => (int) $post->ID,
+            'title' => get_the_title($post),
+            'status' => (string) $post->post_status,
+            'permalink' => get_permalink($post) ?: '',
+        ], is_array($posts) ? $posts : []);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function analytics(int $postId): array
+    {
+        $aggregate = $this->services->analytics->aggregate($postId, ...$this->range());
+
+        return [
+            'views' => $aggregate->views,
+            'reads' => $aggregate->reads,
+            'share_clicks' => $aggregate->shareClicks,
+            'unique_visitors' => $aggregate->uniqueVisitors,
+            'average_read_seconds' => $aggregate->averageReadSeconds,
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function editorial(int $postId): array
+    {
+        try {
+            $item = $this->services->editorial->item($postId);
+        } catch (RuntimeException) {
+            return [];
         }
 
-        return $rows;
+        return [
+            'post_id' => $item->postId,
+            'editorial_state' => $item->editorialState,
+            'native_status' => $item->nativeStatus,
+            'assignee_id' => $item->assigneeId,
+            'due_at' => $item->dueAt?->format(DATE_ATOM),
+        ];
+    }
+
+    /**
+     * @return list<array<string,mixed>>
+     */
+    private function authors(): array
+    {
+        return $this->services->authors->authors(...$this->range());
+    }
+
+    /**
+     * @return list<array{target:string,label:string,url:string}>
+     */
+    private function shareControls(int $postId): array
+    {
+        return $this->services->sharing->controls(
+            $postId,
+            get_permalink($postId) ?: '',
+            get_the_title($postId),
+        );
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function comment(CommentModerationItem $comment): array
+    {
+        return [
+            'comment_id' => $comment->commentId,
+            'post_id' => $comment->postId,
+            'author' => $comment->author,
+            'state' => $comment->state,
+            'first_comment' => $comment->firstComment,
+            'likely_spam' => $comment->likelySpam,
+            'held_for_review' => $comment->heldForReview,
+        ];
+    }
+
+    /**
+     * @return array{0:DateTimeImmutable,1:DateTimeImmutable}
+     */
+    private function range(): array
+    {
+        $until = new DateTimeImmutable('+1 day');
+
+        return [$until->modify('-30 days'), $until];
     }
 }

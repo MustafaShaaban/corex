@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/drawer",
+	"title": "Corex Drawer",
+	"category": "corex",
+	"icon": "align-pull-right",
+	"description": "An accessible slide-in panel opened by a trigger button — native <dialog>, focus-trapped, ESC and backdrop to close, slides from the start or end edge, degrades without JS (dynamic).",
+	"textdomain": "corex",
+	"attributes": {
+		"title": { "type": "string", "default": "" },
+		"triggerLabel": { "type": "string", "default": "" },
+		"content": { "type": "string", "default": "" },
+		"side": { "type": "string", "default": "end" }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"viewScript": "file:./view.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\DrawerRenderer" }
+}

@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/subscribe",
+	"title": "Subscribe",
+	"category": "corex",
+	"icon": "email-alt",
+	"description": "Renders a published Corex flow as a subscription form.",
+	"textdomain": "corex",
+	"attributes": {
+		"flowId": { "type": "integer", "default": 0 },
+		"variant": { "type": "string", "default": "subscribe" },
+		"heading": { "type": "string", "default": "" },
+		"intro": { "type": "string", "default": "" },
+		"submitLabel": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"corex": { "renderer": "Corex\\Forms\\Block\\FlowBlockRenderer" }
+}

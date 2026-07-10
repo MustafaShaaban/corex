@@ -31,6 +31,7 @@ function overviewFacts(array $overrides = []): array
         'hardeningWarnings' => 0,
         'dataSources'       => [['label' => 'Submissions', 'key' => 'submissions', 'total' => 12]],
         'formsCount'        => 1,
+        'flowsCount'        => 3,
     ], $overrides);
 }
 
@@ -41,6 +42,20 @@ it('builds the five dashboard regions from real facts', function () {
         ->and($data['tiles'])->toHaveCount(4)
         ->and($data['dataSources'][0]['count'])->toBe(12)
         ->and($data['forms']['count'])->toBe(1);
+});
+
+it('projects real registered forms and versioned flows without a planned/read-only claim', function () {
+    $forms = (new OverviewModel())->build(overviewFacts())['forms'];
+
+    expect($forms['count'])->toBe(1)
+        ->and($forms['flows'])->toBe(3)
+        ->and($forms['note'])->not->toContain('planned')
+        ->and($forms['note'])->not->toContain('future')
+        ->and($forms['flows'])->toBe(max(0, $forms['flows']));
+
+    // Negative or absent flow counts never render as a fabricated negative.
+    $clamped = (new OverviewModel())->build(overviewFacts(['flowsCount' => -5]))['forms'];
+    expect($clamped['flows'])->toBe(0);
 });
 
 it('reports submissions as an em dash when the forms source is unavailable — never a fabricated zero', function () {

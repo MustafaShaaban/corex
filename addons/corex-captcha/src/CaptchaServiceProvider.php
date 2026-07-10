@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
+use Corex\Security\ChallengeVerifier;
 use Corex\Support\Config\ConfigInterface;
 
 /**
@@ -30,6 +31,10 @@ final class CaptchaServiceProvider extends ServiceProvider
         $this->container->singleton(
             Captcha::class,
             static fn (ContainerInterface $c): Captcha => $c->make(CaptchaResolver::class)->resolve(),
+        );
+        $this->container->singleton(
+            ChallengeVerifier::class,
+            static fn (ContainerInterface $c): ChallengeVerifier => $c->make(Captcha::class),
         );
 
         $this->container->singleton(

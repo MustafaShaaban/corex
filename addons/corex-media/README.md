@@ -18,6 +18,10 @@ panel, a regeneration command, and an optimized `<picture>` helper.
 - **Regeneration** — `wp corex media regenerate-webp [--dry-run] [--limit=<n>] [--attachment=<id>]` backfills WebP
   siblings for existing uploads (also tracked + gated). It never deletes/overwrites originals, skips attachments
   that already have a sibling, respects the current settings, and reports convert/skipped/converted/failed counts.
+  For large libraries the same backfill also runs as a **bounded background job** (`MediaRegenerationJob`, kind
+  `media-webp-regeneration`): it processes attachments in resumable batches (`WpMediaRegenerationSource` →
+  `WebpRegenerator` plan → `WebpConverter`) so a big library is converted safely without one blocking request.
+  The job's pure progression logic is unit-tested; it never overwrites an original or an existing sibling.
 - **Reset/cleanup** — `wp corex media reset-webp [--dry-run] [--all] [--attachment=<id>] [--limit=<n>]` deletes only
   tracked CoreX-generated derivatives (never originals, manually-uploaded WebP, or untracked files), clears the
   meta, and reports scanned/deleted/skipped/failed. Deleting an attachment removes only its tracked derivative.

@@ -27,4 +27,13 @@ interface TableDataReader
     public function total(string $table): int;
 
     public function delete(string $table, int $id): bool;
+
+    /** @param list<string> $columns @return list<array<string,scalar>> */
+    public function query(string $table, array $columns, DataQuery $query): array;
+
+    /** @param list<string> $columns */
+    public function countQuery(string $table, array $columns, DataQuery $query): int;
+
+    /** @param list<string> $columns @return array<string,scalar>|null */
+    public function find(string $table, array $columns, int $id): ?array;
 }

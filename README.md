@@ -30,7 +30,7 @@ addons/              optional, self-disabling packages (never hard dependencies)
   corex-ui/          server-rendered corex/* blocks + patterns + the Design Language System catalog.
   corex-captcha/     pluggable captcha (honeypot + remote providers) with a verification endpoint.
   corex-media/       WebP-on-upload + <picture> helper + image-support probe.
-  corex-email/       Corex Mail — templated, queueable transactional email.
+  corex-email/       Corex Mail — versioned Email Studio, safe routing/capture, attempts, and queued mail.
   corex-newsletter/  double-opt-in subscriber capture.
   corex-careers/     jobs CPT + application flow.
   corex-bookings/    booking/call-request flow.

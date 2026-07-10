@@ -18,13 +18,15 @@ jest.mock( '@wordpress/block-editor', () => ( {
 jest.mock( '@wordpress/components', () => ( {
 	PanelBody: ( { children } ) => children,
 	SelectControl: SelectControlMock,
+	TextControl: () => null,
+	TextareaControl: () => null,
 } ), { virtual: true } );
 jest.mock( '@wordpress/server-side-render', () => ServerSideRenderMock, { virtual: true } );
 jest.mock( '@wordpress/element', () => ( {
 	useState: ( init ) => [ init, jest.fn() ],
 	useEffect: ( fn ) => fn(),
 } ), { virtual: true } );
-jest.mock( '@wordpress/api-fetch', () => jest.fn( () => Promise.resolve( [ { slug: 'contact', label: 'Contact' } ] ) ), { virtual: true } );
+jest.mock( '@wordpress/api-fetch', () => jest.fn( () => Promise.resolve( { data: { flows: [ { id: 7, name: 'Contact', state: 'published' } ] } } ) ), { virtual: true } );
 jest.mock( '@wordpress/i18n', () => ( { __: ( s ) => s } ), { virtual: true } );
 
 import './index.js';
@@ -45,10 +47,10 @@ describe( 'form block — form selector', () => {
 		expect( config.save() ).toBeNull();
 	} );
 
-	test( 'edit() fetches the form list and renders a SelectControl (not free text)', () => {
-		const element = config.edit( { attributes: { formSlug: 'contact' }, setAttributes: jest.fn() } );
+	test( 'edit() defaults to published flows with source and record selectors', () => {
+		const element = config.edit( { attributes: { source: 'flow', flowId: 7 }, setAttributes: jest.fn() } );
 
-		expect( apiFetch ).toHaveBeenCalledWith( { path: '/corex/v1/forms' } );
-		expect( collect( element, SelectControlMock ).length ).toBe( 1 );
+		expect( apiFetch ).toHaveBeenCalledWith( { path: '/corex/v1/flows?state=published' } );
+		expect( collect( element, SelectControlMock ).length ).toBe( 2 );
 	} );
 } );

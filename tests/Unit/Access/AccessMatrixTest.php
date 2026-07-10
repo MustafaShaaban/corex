@@ -10,6 +10,8 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Access\AccessPolicy;
+use Corex\Access\CorexAbility;
 use Corex\Config\Access\AccessMatrix;
 
 beforeEach(function () {
@@ -121,4 +123,38 @@ it('detects known permissions plugins and ignores everything else', function () 
 
 it('reports no conflicts when no permissions plugin is active', function () {
     expect($this->matrix->conflicts(['akismet/akismet.php']))->toBe([]);
+});
+
+it('projects editable CoreX ability states without mutating native WordPress capabilities', function () {
+    $matrix = $this->matrix->editableCorexMatrix(
+        roles: [
+            ['key' => 'administrator', 'name' => 'Administrator'],
+            ['key' => 'editor', 'name' => 'Editor'],
+        ],
+        effectsByRole: [
+            'editor' => [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW],
+        ],
+        activePlugins: [],
+    );
+    $byKey = array_column($matrix['rows'], null, 'key');
+
+    expect($byKey[CorexAbility::MANAGE_FORMS]['cells']['editor']['effect'])->toBe(AccessPolicy::EFFECT_ALLOW)
+        ->and($byKey[CorexAbility::MANAGE_FORMS]['cells']['editor']['editable'])->toBeTrue()
+        ->and($byKey[CorexAbility::MANAGE_DATA]['cells']['editor']['effect'])->toBe(AccessPolicy::EFFECT_INHERIT)
+        ->and($byKey[CorexAbility::MANAGE_ADMIN]['cells']['editor']['editable'])->toBeFalse()
+        ->and($byKey[CorexAbility::MANAGE_ADMIN]['cells']['editor']['reason'])->toBe('locked_definition');
+});
+
+it('makes native platform capabilities read-only when a role plugin is active but keeps CoreX states visible', function () {
+    $matrix = $this->matrix->editableCorexMatrix(
+        roles: [['key' => 'editor', 'name' => 'Editor']],
+        effectsByRole: ['editor' => [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_DENY]],
+        activePlugins: ['members/members.php'],
+    );
+    $forms = array_column($matrix['rows'], null, 'key')[CorexAbility::MANAGE_FORMS];
+
+    expect($matrix['conflicts'])->toBe(['Members'])
+        ->and($matrix['nativeCapabilitiesEditable'])->toBeFalse()
+        ->and($forms['cells']['editor']['effect'])->toBe(AccessPolicy::EFFECT_DENY)
+        ->and($forms['cells']['editor']['editable'])->toBeTrue();
 });

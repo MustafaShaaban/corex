@@ -16,6 +16,7 @@ use Corex\Mail\Mailer;
 use Corex\Mail\AttemptingMailer;
 use Corex\Mail\MailRequest;
 use Corex\Mail\MailResult;
+use Corex\Mail\RoutedMailer;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
@@ -42,6 +43,23 @@ final class SendEmailListener
 
     public function dispatch(FormSubmittedEvent $event): MailResult
     {
+        $context = [
+            'submission' => $event->values,
+            'form'       => ['slug' => $event->formSlug],
+            'site'       => ['name' => get_bloginfo('name')],
+        ];
+
+        if ($this->container->has(RoutedMailer::class)) {
+            $routed = $this->container->make(RoutedMailer::class)->dispatch(
+                'forms.' . $event->formSlug . '.submitted',
+                $context,
+            );
+
+            if ($routed !== null) {
+                return $routed;
+            }
+        }
+
         $recipient = (string) $this->config->get('forms.email.recipient', '');
 
         if ($recipient === '') {
@@ -51,11 +69,7 @@ final class SendEmailListener
         $request = new MailRequest(
                 to: [$recipient],
                 templateName: 'contact-notification',
-                context: [
-                    'submission' => $event->values,
-                    'form'       => ['slug' => $event->formSlug],
-                    'site'       => ['name' => get_bloginfo('name')],
-                ],
+                context: $context,
             );
 
         if ($this->container->has(Mailer::class)) {

@@ -13,10 +13,9 @@
     {
       "path": "addons/corex-email/README.md",
       "lines": [
-        63
+        99
       ],
       "topics": [
-        "brand.json",
         "theme-authority"
       ]
     },
@@ -34,8 +33,8 @@
     {
       "path": "addons/corex-ui/README.md",
       "lines": [
-        52,
-        53
+        53,
+        54
       ],
       "topics": [
         "brand.json",
@@ -245,7 +244,7 @@
     {
       "path": "docs-app/src/content/docs/guides/mail.md",
       "lines": [
-        30
+        34
       ],
       "topics": [
         "brand.json",
@@ -268,7 +267,7 @@
     {
       "path": "packages/cli/README.md",
       "lines": [
-        141
+        158
       ],
       "topics": [
         "brand.json"
@@ -290,15 +289,6 @@
       "topics": [
         "brand.json",
         "generated-properties",
-        "theme-authority"
-      ]
-    },
-    {
-      "path": "plugins/corex-forms/README.md",
-      "lines": [
-        175
-      ],
-      "topics": [
         "theme-authority"
       ]
     }

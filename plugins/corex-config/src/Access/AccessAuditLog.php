@@ -14,8 +14,8 @@ defined('ABSPATH') || exit;
  * The access audit log (spec 067, design: "Corex Access & Abilities" → Audit log). Records REAL
  * access events only — currently permission-denied attempts on CoreX screens, published through the
  * `corex_admin_access_denied` action by {@see \Corex\Admin\AdminPage::permissionDenied()} and
- * {@see AccessDeniedGate}. CoreX never mutates roles or capabilities, so no grant/revoke entries can
- * exist yet; the screen states that honestly instead of inventing history. Entries live in a bounded,
+ * {@see AccessDeniedGate}. Access request and decision events are recorded through the shared activity
+ * stream; this legacy local log remains the denied-attempt fallback. Entries live in a bounded,
  * autoload-off option and are pruned to the designed 30-day window on every read and write.
  */
 final class AccessAuditLog

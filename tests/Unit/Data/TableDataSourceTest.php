@@ -38,6 +38,24 @@ function tableReader(array $rows, int $total): TableDataReader
 
             return $id > 0;
         }
+
+        public function query(string $table, array $columns, \Corex\Config\Data\DataQuery $query): array
+        {
+            return array_slice($this->rows, ($query->page - 1) * $query->perPage, $query->perPage);
+        }
+
+        public function countQuery(string $table, array $columns, \Corex\Config\Data\DataQuery $query): int
+        {
+            return $this->total;
+        }
+
+        public function find(string $table, array $columns, int $id): ?array
+        {
+            foreach ($this->rows as $row) {
+                if ((int) ($row['id'] ?? 0) === $id) return $row;
+            }
+            return null;
+        }
     };
 }
 
@@ -82,4 +100,31 @@ it('delegates total and delete to the reader with the table name', function () {
     expect($s->total())->toBe(42)
         ->and($s->delete(7))->toBeTrue()
         ->and($reader->deleted)->toBe([7]);
+});
+
+it('queries pages and exposes truthful schema and detail through the reader', function () {
+    $reader = tableReader([
+        ['id' => 5, 'number' => 'INV-1', 'total' => '100', 'secret' => 'drop'],
+        ['id' => 6, 'number' => 'INV-2', 'total' => '200'],
+    ], 2);
+    $source = source($reader);
+    $query = \Corex\Config\Data\DataQuery::from(['page' => 1, 'per_page' => 1]);
+
+    expect($source->query($query))->toBe([['id' => 5, 'number' => 'INV-1', 'total' => '100']])
+        ->and($source->count($query))->toBe(2)
+        ->and($source->record(6))->toBe(['id' => 6, 'number' => 'INV-2', 'total' => '200'])
+        ->and($source->schema())->toBe([
+            ['name' => 'Number', 'type' => 'text'],
+            ['name' => 'Total', 'type' => 'text'],
+        ]);
+});
+
+it('normalizes managed table underscores into URL-safe source keys', function () {
+    $source = new TableDataSource(
+        new ManagedTable('invoice_items', 'Invoice items', [['id' => 'name', 'label' => 'Name']]),
+        tableReader([], 0),
+    );
+
+    expect($source->key())->toBe('table-invoice-items')
+        ->and($source->capabilities()->sourceKey)->toBe('table-invoice-items');
 });

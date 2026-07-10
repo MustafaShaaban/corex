@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/cta-flow",
+	"title": "CTA + Flow",
+	"category": "corex",
+	"icon": "megaphone",
+	"description": "Pairs call-to-action content with a published Corex flow.",
+	"textdomain": "corex",
+	"attributes": {
+		"flowId": { "type": "integer", "default": 0 },
+		"variant": { "type": "string", "default": "cta-flow" },
+		"heading": { "type": "string", "default": "" },
+		"intro": { "type": "string", "default": "" },
+		"submitLabel": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"corex": { "renderer": "Corex\\Forms\\Block\\FlowBlockRenderer" }
+}

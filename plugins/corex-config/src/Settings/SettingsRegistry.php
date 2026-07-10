@@ -25,6 +25,41 @@ final class SettingsRegistry implements FieldSections
             'brand' => [
                 'title'  => 'Brand',
                 'fields' => [
+                    'brand.company_name' => [
+                        'label' => 'Company name',
+                        'type'  => 'text',
+                        'help'  => 'Used across the site chrome, footer, and the Setup Wizard brand step.',
+                    ],
+                    'brand.tagline' => [
+                        'label' => 'Tagline',
+                        'type'  => 'text',
+                    ],
+                    'brand.phone' => [
+                        'label' => 'Contact phone',
+                        'type'  => 'tel',
+                    ],
+                    'brand.email' => [
+                        'label' => 'Contact email',
+                        'type'  => 'email',
+                    ],
+                    'brand.address' => [
+                        'label' => 'Address',
+                        'type'  => 'text',
+                    ],
+                    'brand.primary_action_label' => [
+                        'label' => 'Primary action label',
+                        'type'  => 'text',
+                        'help'  => 'The call-to-action button label used by kit patterns (e.g. "Get a quote").',
+                    ],
+                    'brand.primary_action_link' => [
+                        'label' => 'Primary action link',
+                        'type'  => 'url',
+                    ],
+                    'brand.social_links' => [
+                        'label' => 'Social links',
+                        'type'  => 'text',
+                        'help'  => 'Comma-separated profile URLs.',
+                    ],
                     'brand.logo_url'    => [
                         'label' => 'Admin logo',
                         'type'  => 'media',
@@ -53,6 +88,24 @@ final class SettingsRegistry implements FieldSections
                 'fields' => [
                     'mail.from.name'    => ['label' => 'From name', 'type' => 'text'],
                     'mail.from.address' => ['label' => 'From address', 'type' => 'email'],
+                    'mail.reply_to'     => [
+                        'label' => __('Default reply-to address', 'corex'),
+                        'type'  => 'email',
+                    ],
+                    'mail.provider'     => [
+                        'label'   => __('Delivery provider', 'corex'),
+                        'type'    => 'select',
+                        'options' => [
+                            ''        => __('Disabled', 'corex'),
+                            'wp-mail' => __('WordPress wp_mail', 'corex'),
+                        ],
+                        'help' => __('Verify the site transport before enabling live delivery.', 'corex'),
+                    ],
+                    'mail.live_delivery' => [
+                        'label' => __('Enable live delivery', 'corex'),
+                        'type'  => 'checkbox',
+                        'help'  => __('Production mail remains blocked unless a matching provider is also selected.', 'corex'),
+                    ],
                 ],
             ],
             'forms' => [
@@ -195,6 +248,20 @@ final class SettingsRegistry implements FieldSections
                         'help_url'  => 'https://developers.cloudflare.com/fundamentals/setup/find-account-and-zone-ids/',
                         'help_link' => 'Find your Cloudflare account ID',
                     ],
+                ],
+            ],
+            // Advanced is a read-only system-diagnostics read-out (spec 068 T203). Destructive resets
+            // live behind their own typed-confirmation surfaces (Operations & Security, Setup Wizard);
+            // this section never fabricates a value. Operations, Data Sources, and Design Tokens keep
+            // their dedicated screens rather than being duplicated here.
+            'advanced' => [
+                'title'  => 'Advanced',
+                'fields' => [
+                    'advanced.php_version'  => ['label' => 'PHP version', 'type' => 'info', 'help' => 'The PHP runtime this site is on.'],
+                    'advanced.wp_version'   => ['label' => 'WordPress version', 'type' => 'info'],
+                    'advanced.environment'  => ['label' => 'Environment type', 'type' => 'info'],
+                    'advanced.memory_limit' => ['label' => 'PHP memory limit', 'type' => 'info'],
+                    'advanced.multisite'    => ['label' => 'Multisite', 'type' => 'info'],
                 ],
             ],
         ];

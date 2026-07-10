@@ -10,12 +10,16 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AccessPolicy;
+use Corex\Access\CorexAbility;
+use Corex\Access\CorexAbilityCatalog;
+
 /**
  * Pure model for Access & Abilities (spec 065 baseline, spec 067 tabs). It builds a truthful role ×
  * capability matrix, role summaries, and permissions-plugin conflict detection from the REAL WordPress
- * roles and the capabilities CoreX actually uses — it invents no `corex_*` capability that does not
- * exist (CoreX admin is gated on `manage_options`). Advanced role editing / a full capability mutation
- * editor is deliberately out of scope; this surface is read-only. WordPress-free, so it is unit-testable.
+ * roles, native capability compatibility inputs, and editable CoreX-owned ability effects. It invents
+ * no `corex_*` capability that does not exist (CoreX admin is gated on `manage_options`). WordPress-free,
+ * so it is unit-testable.
  */
 final class AccessMatrix
 {
@@ -23,18 +27,6 @@ final class AccessMatrix
      * The roles WordPress ships with; anything else on the site is a custom role.
      */
     private const CORE_ROLES = ['administrator', 'editor', 'author', 'contributor', 'subscriber'];
-
-    /**
-     * Role/capability-manager plugins CoreX recognises (design: Access overview compatibility
-     * notice). Keyed by the plugin-directory prefix of the plugin basename.
-     */
-    private const PERMISSION_PLUGINS = [
-        'user-role-editor/'            => 'User Role Editor',
-        'members/'                     => 'Members',
-        'capability-manager-enhanced/' => 'PublishPress Capabilities',
-        'advanced-access-manager/'     => 'Advanced Access Manager',
-        'wpfront-user-role-editor/'    => 'WPFront User Role Editor',
-    ];
 
     /**
      * The capability groups shown, each mapped to the REAL WordPress capability it checks.
@@ -100,16 +92,7 @@ final class AccessMatrix
      */
     public function conflicts(array $activePlugins): array
     {
-        $found = [];
-        foreach ($activePlugins as $basename) {
-            foreach (self::PERMISSION_PLUGINS as $prefix => $name) {
-                if (str_starts_with((string) $basename, $prefix)) {
-                    $found[] = $name;
-                }
-            }
-        }
-
-        return array_values(array_unique($found));
+        return (new RolePluginCompatibility())->detect($activePlugins);
     }
 
     /**
@@ -150,6 +133,59 @@ final class AccessMatrix
     }
 
     /**
+     * Build the editable CoreX-owned ability matrix. Native WordPress/platform capabilities stay
+     * outside this mutation model; external role plugins are surfaced as compatibility context only.
+     *
+     * @param list<array{key:string,name:string}> $roles
+     * @param array<string,array<string,string>>  $effectsByRole role key => ability key => effect
+     * @param list<string>                        $activePlugins
+     *
+     * @return array{
+     *   roles:list<array{key:string,name:string}>,
+     *   rows:list<array{key:string,label:string,group:string,risk:string,locked:bool,cells:array<string,array{effect:string,editable:bool,reason:string|null}>>>,
+     *   conflicts:list<string>,
+     *   nativeCapabilitiesEditable:bool
+     * }
+     */
+    public function editableCorexMatrix(array $roles, array $effectsByRole, array $activePlugins): array
+    {
+        $conflicts = $this->conflicts($activePlugins);
+        $rows = [];
+
+        foreach (CorexAbilityCatalog::defaults()->all() as $ability) {
+            $cells = [];
+            foreach ($roles as $role) {
+                $roleKey = (string) $role['key'];
+                $editable = ! $ability->locked;
+                $cells[$roleKey] = [
+                    'effect' => $this->effect($effectsByRole[$roleKey][$ability->key] ?? AccessPolicy::EFFECT_INHERIT),
+                    'editable' => $editable,
+                    'reason' => $editable ? null : 'locked_definition',
+                ];
+            }
+
+            $rows[] = [
+                'key' => $ability->key,
+                'label' => $ability->label,
+                'group' => $ability->group,
+                'risk' => $ability->risk,
+                'locked' => $ability->locked,
+                'cells' => $cells,
+            ];
+        }
+
+        return [
+            'roles' => array_map(static fn (array $role): array => [
+                'key' => (string) $role['key'],
+                'name' => (string) $role['name'],
+            ], $roles),
+            'rows' => $rows,
+            'conflicts' => $conflicts,
+            'nativeCapabilitiesEditable' => $conflicts === [],
+        ];
+    }
+
+    /**
      * Which of the tracked capabilities the current user holds — for the "your permissions" summary.
      *
      * @param array<string,bool> $userCaps
@@ -168,5 +204,12 @@ final class AccessMatrix
         }
 
         return $out;
+    }
+
+    private function effect(string $effect): string
+    {
+        return in_array($effect, [AccessPolicy::EFFECT_ALLOW, AccessPolicy::EFFECT_DENY, AccessPolicy::EFFECT_INHERIT], true)
+            ? $effect
+            : AccessPolicy::EFFECT_INHERIT;
     }
 }

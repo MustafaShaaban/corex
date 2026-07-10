@@ -25,6 +25,7 @@ are composed of these units. Optional add-on; requires `corex-core` and the `cor
 | `corex/gallery` | A responsive CSS grid of `images[]` from the media library, alt text + optional captions |
 | `corex/tabs` | Tabbed content from `tabs[]` — a CSS-only accessible widget with **no view JavaScript** |
 | `corex/modal` | An accessible dialog — a trigger + native `<dialog>` (focus-trap, ESC, backdrop), `title`/`triggerLabel`/`content`; degrades without JS (spec 054) |
+| `corex/carousel` | The one slider primitive — a scroll-snap row of `slides[]`, `perView` (1–6), opt-in `autoplay`. Swipeable and keyboard-scrollable with **no JS**; enhanced with prev/next/dot buttons. Autoplay pauses on hover/focus/tab-blur and never runs under reduced motion; RTL-correct (spec 068) |
 
 Each is server-rendered, escaped, and token-styled; its CSS loads only where the block renders
 (declared in `block.json`). The component blocks (`stat`/`testimonial`/`pricing`/`accordion` plus the
@@ -58,6 +59,14 @@ edits.
 `Corex\Ui\DesignSystemCatalog` enumerates the full six-category taxonomy (Foundations, Components, Blocks,
 Patterns, Templates, Guidelines) with a `mechanism` per entry, **drift-checked** against the real registered
 `corex/*` blocks. Full documentation: the docs-app [Design System section](../../docs-app/src/content/docs/design-system/).
+
+`Corex\Ui\ApprovedComponentInventory` (spec 068) records the approved **Blocks & Components** design inventory —
+33 content / 8 WooCommerce / 13 admin / 23 core-UI items — each with its design status and the real delivery
+`resolution` that ships it (a `corex/*` block, block style, pattern, admin/runtime stylesheet selector, or an
+allowed deferral). A reconciliation test proves every non-deferred item points at an artifact that exists, so
+no component can be claimed that the framework does not ship. The admin `.corex-toast` (transient save
+confirmation) and `.corex-tooltip` (accessible supplemental affordance) primitives ship token-only in the
+corex-core admin shell.
 
 ## Manifest
 

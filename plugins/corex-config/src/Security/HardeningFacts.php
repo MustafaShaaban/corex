@@ -19,7 +19,7 @@ defined('ABSPATH') || exit;
 final class HardeningFacts
 {
     /**
-     * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool}
+     * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool,indexingAllowed:bool,authSaltsConfigured:bool}
      */
     public static function gather(): array
     {
@@ -36,6 +36,24 @@ final class HardeningFacts
             'fileEditDisabled'   => defined('DISALLOW_FILE_EDIT') && DISALLOW_FILE_EDIT === true,
             'debugDisplayOff'    => ! $displayEnabled,
             'defaultAdminAbsent' => username_exists('admin') === null,
+            'indexingAllowed'    => (string) get_option('blog_public', '1') !== '0',
+            'authSaltsConfigured' => self::authSaltsConfigured(),
         ];
+    }
+
+    private static function authSaltsConfigured(): bool
+    {
+        foreach (['AUTH_KEY', 'SECURE_AUTH_KEY', 'LOGGED_IN_KEY', 'NONCE_KEY', 'AUTH_SALT', 'SECURE_AUTH_SALT', 'LOGGED_IN_SALT', 'NONCE_SALT'] as $constant) {
+            if (! defined($constant)) {
+                return false;
+            }
+
+            $value = (string) constant($constant);
+            if ($value === '' || str_contains($value, 'put your unique phrase here')) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

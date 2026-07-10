@@ -32,7 +32,7 @@ interface QueryableDataSource extends DataSource
     /**
      * One record as label → value fields for the detail view, or null if absent/forbidden.
      *
-     * @return array{id:int,date:string,form:string,fields:list<array{label:string,value:string}>}|null
+     * @return array<string,mixed>|null
      */
     public function record(int $id): ?array;
 }

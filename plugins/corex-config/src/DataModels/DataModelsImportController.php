@@ -8,18 +8,16 @@ declare(strict_types=1);
 
 namespace Corex\Config\DataModels;
 
+use Corex\Admin\StandalonePage;
 use Corex\Config\Data\DataRegistry;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
 
 /**
- * Runs a real CSV import dry-run for a data model (spec 065). An `admin_post` handler gated by the
- * shared {@see AdminGuard} (capability + nonce) accepts an uploaded CSV, parses it safely (bounded rows,
- * uploaded-file check), validates it against the model's columns via {@see DataImportValidator}, and
- * stores the preview in a short-lived per-user transient for display. It writes NOTHING to the database —
- * committing a validated import needs a per-model write adapter that the read-only data sources do not
- * expose, so this is a dry-run only, by design and honestly stated.
+ * Legacy admin-post CSV dry-run for a data model (spec 065). The current Spec 068 Data Models workflow uses the
+ * REST-backed {@see DataImportService} for immutable dry-run plus checksum-bound commit; this handler remains a
+ * compatibility preview path gated by the shared {@see AdminGuard} and intentionally performs no persistence.
  */
 final class DataModelsImportController
 {
@@ -50,11 +48,16 @@ final class DataModelsImportController
     public function handle(): void
     {
         if (! $this->guard->verifiedPost(self::NONCE, self::ACTION)) {
-            wp_die(
-                esc_html__('You are not allowed to import, or your link expired.', 'corex'),
-                '',
-                ['response' => 403],
+            status_header(403);
+            nocache_headers();
+            header('Content-Type: text/html; charset=' . get_bloginfo('charset'));
+            echo StandalonePage::fromCore()->notice( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- StandalonePage returns a fully-escaped self-contained document.
+                __('Access denied', 'corex'),
+                __('You are not allowed to import, or your link expired.', 'corex'),
+                admin_url('admin.php?page=corex-data-models'),
+                __('Back to Data Models', 'corex'),
             );
+            exit;
         }
 
         $modelKey = isset($_POST['corex_model']) ? sanitize_key(wp_unslash($_POST['corex_model'])) : '';

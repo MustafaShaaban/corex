@@ -421,6 +421,12 @@ body.corex-admin-screen .corex-admin__shell {
 
 .corex-admin select {
 	appearance: none;
+
+	/* WordPress core admin sets `select { line-height: 2.71 }`, which the shell's
+	   control rule did not reset — leaking a ~38px line box that inflated every
+	   native select to ~64px, taller than the sibling inputs. Reset it so selects
+	   match the input control height. */
+	line-height: normal;
 	padding-inline-end: var(--corex-admin-space-xl);
 	background-image: url(../icons/chevron-down.svg);
 	background-repeat: no-repeat;
@@ -528,7 +534,11 @@ body.corex-admin-screen .corex-admin__shell {
 
 .corex-admin .corex-select__option.is-active {
 	color: var(--corex-admin-text);
-	background: var(--corex-admin-surface-alt);
+
+	/* surface-alt is darker than the list's surface-raised in dark mode, so the
+	   hovered/active option was almost invisible. Use the brass action tint for
+	   a clearly-legible highlight in both schemes. */
+	background: var(--corex-admin-action-subtle);
 }
 
 .corex-admin .corex-select__option.is-selected {
@@ -876,6 +886,32 @@ body.corex-admin-screen .corex-admin__shell {
 	gap: var(--corex-admin-space-sm);
 }
 
+.corex-admin .corex-denied__request {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	inline-size: min(100%, 34rem);
+	padding: var(--corex-admin-space-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	border-radius: var(--corex-admin-radius-md);
+	background: var(--corex-admin-surface);
+	text-align: start;
+}
+
+.corex-admin .corex-denied__request label {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-denied__request textarea {
+	inline-size: 100%;
+	min-block-size: 7rem;
+	resize: vertical;
+}
+
+.corex-admin .corex-denied__request .button {
+	justify-self: start;
+}
+
 .corex-admin .corex-denied__reason,
 .corex-admin .corex-denied__meta {
 	margin: 0;
@@ -886,4 +922,142 @@ body.corex-admin-screen .corex-admin__shell {
 .corex-admin .corex-denied__meta {
 	font-family: var(--corex-admin-font-mono);
 	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+/* Toast — transient confirmation (design: Blocks & Components, C / admin).
+   Fixed to the block-end edge, token-only, logical properties (RTL-correct).
+   Carries role="status" in markup so assistive tech announces it. Slides in
+   under motion, stays put (dismiss-only) under reduced motion; the tone variant
+   tints the leading border. */
+.corex-admin .corex-toast {
+	position: fixed;
+	inset-block-end: var(--corex-admin-space-lg);
+	inset-inline: 0;
+	z-index: 100;
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	inline-size: max-content;
+	max-inline-size: min(28rem, calc(100% - 2 * var(--corex-admin-space-lg)));
+	margin-inline: auto;
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start-width: var(--corex-admin-border-width);
+	border-inline-start-color: var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: var(--corex-admin-shadow-lg);
+}
+
+.corex-admin .corex-toast--success {
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-toast--warning {
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-toast__message {
+	margin: 0;
+}
+
+.corex-admin .corex-toast__dismiss {
+	flex: none;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-lg);
+	line-height: 1;
+	cursor: pointer;
+}
+
+.corex-admin .corex-toast__dismiss:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+	.corex-admin .corex-toast {
+		animation: corex-toast-in var(--corex-admin-motion-slow) ease;
+	}
+}
+
+@keyframes corex-toast-in {
+
+	from {
+		opacity: 0;
+		transform: translateY(var(--corex-admin-space-sm));
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Tooltip — an accessible supplemental affordance (design: Blocks &
+   Components, D / core UI). The bubble is described by the trigger via
+   aria-describedby in markup; it reveals on hover and on keyboard focus-within,
+   is token-only and logical-property positioned, and its fade is removed under
+   reduced motion. */
+.corex-admin .corex-tooltip {
+	position: relative;
+	display: inline-flex;
+}
+
+.corex-admin .corex-tooltip__trigger {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-base);
+	line-height: 1;
+	cursor: help;
+}
+
+.corex-admin .corex-tooltip__trigger:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-tooltip__bubble {
+	position: absolute;
+	inset-block-end: calc(100% + var(--corex-admin-space-2xs));
+	inset-inline-start: 50%;
+	transform: translateX(-50%);
+	z-index: 100;
+	inline-size: max-content;
+	max-inline-size: 16rem;
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	box-shadow: var(--corex-admin-shadow-md);
+	font-size: var(--corex-admin-font-xs);
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity var(--corex-admin-motion-fast) ease;
+}
+
+.corex-admin .corex-tooltip:hover .corex-tooltip__bubble,
+.corex-admin .corex-tooltip:focus-within .corex-tooltip__bubble {
+	opacity: 1;
+	visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-admin .corex-tooltip__bubble {
+		transition: none;
+	}
 }

@@ -89,7 +89,7 @@ final class CompanyBlueprint extends Blueprint
      */
     public function pages(string $level = 'standard'): array
     {
-        return [
+        $all = [
             [
                 'title'   => __('Home', 'corex'),
                 'slug'    => 'home',
@@ -187,6 +187,30 @@ final class CompanyBlueprint extends Blueprint
                     . esc_html__('We’ll be back shortly.', 'corex') . '</p><!-- /wp:paragraph -->',
             ],
         ];
+
+        return $this->forLevel($all, $level);
+    }
+
+    /**
+     * Filter the full page set to the chosen demo level (FR-137): Minimal seeds the essential
+     * pages (home, about, contact) plus the always-present legal pages; Standard adds the
+     * representative marketing pages; Full seeds the complete showcase.
+     *
+     * @param list<array{title:string,slug:string,content:string,front?:bool,seo?:array{title:string,description:string}}> $all
+     *
+     * @return list<array{title:string,slug:string,content:string,front?:bool,seo?:array{title:string,description:string}}>
+     */
+    private function forLevel(array $all, string $level): array
+    {
+        if ($level === 'full') {
+            return $all;
+        }
+
+        $minimal  = ['home', 'about', 'contact', 'privacy-policy', 'terms', 'cookie-policy'];
+        $standard = array_merge($minimal, ['services', 'work', 'blog', 'faq']);
+        $allowed  = $level === 'minimal' ? $minimal : $standard;
+
+        return array_values(array_filter($all, static fn (array $page): bool => in_array($page['slug'], $allowed, true)));
     }
 
     /**

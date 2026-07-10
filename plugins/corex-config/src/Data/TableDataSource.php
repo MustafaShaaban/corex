@@ -21,7 +21,7 @@ use Corex\Data\DataSourceCapabilities;
  * ones defaulted to ''), so a managed table appears in Corex → Data like any other source with
  * no new UI. The `$wpdb` access lives in the injected reader, so this shaping is unit-tested.
  */
-final class TableDataSource implements DataSource, CapabilityAwareDataSource, FieldAwareDataSource
+final class TableDataSource implements QueryableDataSource, SchemaAwareDataSource, CapabilityAwareDataSource, FieldAwareDataSource
 {
     public function __construct(
         private readonly ManagedTable $table,
@@ -31,7 +31,7 @@ final class TableDataSource implements DataSource, CapabilityAwareDataSource, Fi
 
     public function key(): string
     {
-        return 'table-' . $this->table->name;
+        return 'table-' . str_replace('_', '-', $this->table->name);
     }
 
     public function label(): string
@@ -78,14 +78,39 @@ final class TableDataSource implements DataSource, CapabilityAwareDataSource, Fi
         return $this->reader->delete($this->table->name, $id);
     }
 
+    public function query(DataQuery $query): array
+    {
+        return $this->shapeRows($this->reader->query($this->table->name, $this->table->columnIds(), $query));
+    }
+
+    public function count(DataQuery $query): int
+    {
+        return $this->reader->countQuery($this->table->name, $this->table->columnIds(), $query);
+    }
+
+    public function record(int $id): ?array
+    {
+        $record = $this->reader->find($this->table->name, $this->table->columnIds(), $id);
+
+        return $record === null ? null : $this->shapeRow($record);
+    }
+
+    public function schema(): array
+    {
+        return array_map(
+            static fn (array $column): array => ['name' => $column['label'], 'type' => DataField::TYPE_TEXT],
+            $this->table->displayColumns(),
+        );
+    }
+
     public function capabilities(): DataSourceCapabilities
     {
         return new DataSourceCapabilities(
             sourceKey: $this->key(),
             read: true,
-            query: false,
+            query: true,
             schema: true,
-            detail: false,
+            detail: true,
             create: false,
             update: false,
             delete: true,
@@ -100,6 +125,8 @@ final class TableDataSource implements DataSource, CapabilityAwareDataSource, Fi
             maxPageSize: 100,
             permissionMap: [
                 DataSourceCapabilities::READ       => CorexAbility::MANAGE_DATA,
+                DataSourceCapabilities::QUERY      => CorexAbility::MANAGE_DATA,
+                DataSourceCapabilities::DETAIL     => CorexAbility::MANAGE_DATA,
                 DataSourceCapabilities::DELETE     => CorexAbility::MANAGE_DATA,
                 DataSourceCapabilities::EXPORT_CSV => CorexAbility::MANAGE_DATA,
             ],
@@ -124,5 +151,22 @@ final class TableDataSource implements DataSource, CapabilityAwareDataSource, Fi
             ),
             $this->table->displayColumns(),
         );
+    }
+
+    /** @param list<array<string,scalar>> $records @return list<array<string,scalar>> */
+    private function shapeRows(array $records): array
+    {
+        return array_map($this->shapeRow(...), $records);
+    }
+
+    /** @param array<string,scalar> $record @return array<string,scalar> */
+    private function shapeRow(array $record): array
+    {
+        $row = ['id' => $record['id'] ?? 0];
+        foreach ($this->table->columnIds() as $column) {
+            $row[$column] = $record[$column] ?? '';
+        }
+
+        return $row;
     }
 }

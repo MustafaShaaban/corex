@@ -21,6 +21,7 @@ use Corex\Config\Settings\SettingsSectionState;
 
 function formWithCaptchaState(?SettingsSectionState $state): string
 {
+    Functions\when('__')->returnArg();
     Functions\when('esc_html')->returnArg();
     Functions\when('esc_attr')->returnArg();
     Functions\when('esc_url')->returnArg();

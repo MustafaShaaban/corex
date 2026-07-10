@@ -1,0 +1,96 @@
+/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+
+/**
+ * corex/drawer — token-only, logical properties (RTL-correct). A slide-in panel built on the
+ * native <dialog>. Consumes the 054 foundation tokens: z-index, radius, shadow, focus ring, motion.
+ * The panel is pinned to a block edge and spans the full block size; start/end are logical so it is
+ * correct in RTL. No hardcoded values.
+ */
+/* stylelint-enable @stylistic/max-line-length */
+.corex-drawer {
+	margin: 0;
+	block-size: 100%;
+	max-block-size: 100%;
+	inline-size: min(24rem, 92vw);
+	padding: var(--wp--preset--spacing--40);
+	border: 0;
+	box-shadow: var(--wp--preset--shadow--lg);
+	background: var(--wp--preset--color--surface);
+	color: var(--wp--preset--color--ink);
+	z-index: var(--wp--custom--z--modal);
+}
+
+.corex-drawer--end {
+	margin-inline-start: auto;
+	border-start-start-radius: var(--wp--custom--radius--lg);
+	border-end-start-radius: var(--wp--custom--radius--lg);
+}
+
+.corex-drawer--start {
+	margin-inline-end: auto;
+	border-start-end-radius: var(--wp--custom--radius--lg);
+	border-end-end-radius: var(--wp--custom--radius--lg);
+}
+
+.corex-drawer::backdrop {
+	background: var(--wp--preset--color--overlay);
+}
+
+.corex-drawer__title {
+	margin-block: 0 var(--wp--preset--spacing--20);
+}
+
+.corex-drawer__close {
+	position: absolute;
+	inset-block-start: var(--wp--preset--spacing--20);
+	inset-inline-end: var(--wp--preset--spacing--20);
+	border: 0;
+	background: transparent;
+	font-size: var(--wp--preset--font-size--base);
+	line-height: 1;
+	cursor: pointer;
+	color: inherit;
+}
+
+.corex-drawer__trigger:focus-visible,
+.corex-drawer__close:focus-visible {
+	outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
+	outline-offset: var(--wp--custom--focus--offset);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+	.corex-drawer--end[open] {
+		animation: corex-drawer-in-end var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);
+	}
+
+	.corex-drawer--start[open] {
+		animation: corex-drawer-in-start var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);
+	}
+}
+
+@keyframes corex-drawer-in-end {
+
+	from {
+		opacity: 0;
+		transform: translateX(var(--wp--preset--spacing--40));
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes corex-drawer-in-start {
+
+	from {
+		opacity: 0;
+		transform: translateX(calc(-1 * var(--wp--preset--spacing--40)));
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}

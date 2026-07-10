@@ -21,6 +21,8 @@ use Corex\Activity\ActivityService;
 use Corex\Config\Access\AccessService;
 use Corex\Operations\Confirmation;
 use Corex\Operations\OperationResult;
+use Corex\Mail\MailResult;
+use Corex\Mail\RoutedMailer;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -109,6 +111,11 @@ beforeEach(function () {
         {
             return 'User ' . $userId;
         }
+
+        public function emailAddress(int $userId): string
+        {
+            return sprintf('user-%d@example.com', $userId);
+        }
     };
 
     $this->activityRepository = new class implements ActivityRepository {
@@ -139,6 +146,17 @@ beforeEach(function () {
         }
     };
 
+    $this->notifications = new class implements RoutedMailer {
+        /** @var list<array{trigger:string,context:array<string,mixed>}> */
+        public array $calls = [];
+
+        public function dispatch(string $trigger, array $context): ?MailResult
+        {
+            $this->calls[] = compact('trigger', 'context');
+
+            return null;
+        }
+    };
     $catalog = CorexAbilityCatalog::defaults();
     $this->service = new AccessService(
         catalog: $catalog,
@@ -147,6 +165,7 @@ beforeEach(function () {
         requests: $this->requests,
         users: $this->users,
         activity: new ActivityService($this->activityRepository),
+        notifications: $this->notifications,
     );
 });
 
@@ -201,7 +220,12 @@ it('creates and approves an ability request exactly once', function () {
     expect($created->state)->toBe(OperationResult::STATE_COMPLETED)
         ->and($approved->state)->toBe(OperationResult::STATE_COMPLETED)
         ->and($this->users->granted[12])->toBe([CorexAbility::MANAGE_FORMS])
-        ->and($replayed->state)->toBe(OperationResult::STATE_BLOCKED);
+        ->and($replayed->state)->toBe(OperationResult::STATE_BLOCKED)
+        ->and(array_column($this->notifications->calls, 'trigger'))->toBe([
+            'access.request.created',
+            'access.request.approved',
+        ])
+        ->and($this->notifications->calls[1]['context']['requester']['email'])->toBe('user-12@example.com');
 });
 
 it('denies a request without granting an ability', function () {

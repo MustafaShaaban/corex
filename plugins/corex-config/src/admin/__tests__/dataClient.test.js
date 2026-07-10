@@ -1,19 +1,18 @@
 /**
- * Unit tests for the pure Data-screen client helpers (spec 053 US2). These encode the
- * client<->server contract from contracts/data-screen.md: the list URL carries the query
- * params DataController::queryFrom() sanitises; the export URL targets the admin-post
- * handler with the *current* filters + the corex_data_export nonce; sort toggles; the
- * form filter accumulates distinct forms; and the view-state classifier picks one of
- * loading/error/empty/empty-filtered/ready. Pure functions — no DOM, no network.
+ * Pure Data client contracts: query serialization, sort and selection behavior,
+ * reducer transitions, capability projection, endpoint construction, and view states.
  */
 import {
 	buildListUrl,
-	buildExportUrl,
 	toggleSort,
-	mergeForms,
 	viewState,
 	toggleSelection,
 	allRowsSelected,
+	initialDataState,
+	dataReducer,
+	canAction,
+	dataEndpoint,
+	normalizeCatalog,
 } from '../dataClient.js';
 
 describe( 'buildListUrl', () => {
@@ -35,6 +34,15 @@ describe( 'buildListUrl', () => {
 		expect( url ).toContain( 'per_page=20' );
 	} );
 
+	it( 'serializes declared nested field filters', () => {
+		const url = new URL( buildListUrl( '/data', 'contacts', {
+			filters: { status: 'active', empty: '' }, page: 1, perPage: 20,
+		} ), 'https://example.test' );
+
+		expect( url.searchParams.get( 'filters[status]' ) ).toBe( 'active' );
+		expect( url.searchParams.has( 'filters[empty]' ) ).toBe( false );
+	} );
+
 	it( 'omits empty optional params but always sends paging', () => {
 		const url = buildListUrl( '/data', 'submissions', { page: 1, perPage: 20 } );
 		expect( url ).not.toContain( 'search=' );
@@ -42,25 +50,6 @@ describe( 'buildListUrl', () => {
 		expect( url ).not.toContain( 'sort=' );
 		expect( url ).toContain( 'page=1' );
 		expect( url ).toContain( 'per_page=20' );
-	} );
-} );
-
-describe( 'buildExportUrl', () => {
-	it( 'targets the admin-post export action with the current query + nonce', () => {
-		const url = buildExportUrl(
-			'https://x.test/wp-admin/admin-post.php',
-			'submissions',
-			{ search: 'hi', form: 'contact', sort: 'date', dir: 'asc' },
-			'NONCE123',
-		);
-		expect( url ).toContain( 'admin-post.php?' );
-		expect( url ).toContain( 'action=corex_data_export' );
-		expect( url ).toContain( 'source=submissions' );
-		expect( url ).toContain( 'search=hi' );
-		expect( url ).toContain( 'form=contact' );
-		expect( url ).toContain( 'sort=date' );
-		expect( url ).toContain( 'dir=asc' );
-		expect( url ).toContain( '_wpnonce=NONCE123' );
 	} );
 } );
 
@@ -81,15 +70,6 @@ describe( 'toggleSort', () => {
 			sort: 'date',
 			dir: 'asc',
 		} );
-	} );
-} );
-
-describe( 'mergeForms', () => {
-	it( 'accumulates distinct non-empty form values, stable across pages', () => {
-		const a = mergeForms( [], [ { form: 'contact' }, { form: 'quote' }, { form: '' } ] );
-		expect( a ).toEqual( [ 'contact', 'quote' ] );
-		const b = mergeForms( a, [ { form: 'contact' }, { form: 'newsletter' } ] );
-		expect( b ).toEqual( [ 'contact', 'quote', 'newsletter' ] );
 	} );
 } );
 
@@ -119,5 +99,68 @@ describe( 'viewState', () => {
 		expect( viewState( { status: 'ready', rowCount: 0, hasQuery: false } ) ).toBe( 'empty' );
 		expect( viewState( { status: 'ready', rowCount: 0, hasQuery: true } ) ).toBe( 'empty-filtered' );
 		expect( viewState( { status: 'ready', rowCount: 3, hasQuery: true } ) ).toBe( 'ready' );
+	} );
+} );
+
+describe( 'Spec 068 data management state', () => {
+	it( 'normalizes the permission-projected source catalog without inventing actions', () => {
+		const catalog = normalizeCatalog( [ {
+			key: 'contacts',
+			label: 'Contacts',
+			actions: {
+				create: { supported: true, allowed: true, visible: true },
+				delete: { supported: true, allowed: false, visible: false },
+			},
+			fields: [ { key: 'name', label: 'Name', read_only: false } ],
+		} ] );
+
+		expect( canAction( catalog[ 0 ], 'create' ) ).toBe( true );
+		expect( canAction( catalog[ 0 ], 'delete' ) ).toBe( false );
+		expect( canAction( catalog[ 0 ], 'bulk_delete' ) ).toBe( false );
+		expect( catalog[ 0 ].fields[ 0 ].key ).toBe( 'name' );
+	} );
+
+	it( 'reduces query selection request and preview state without stale cross-source data', () => {
+		let state = initialDataState( 'contacts' );
+		state = dataReducer( state, { type: 'query', patch: { search: 'Ada', page: 3 } } );
+		expect( state.query ).toMatchObject( { search: 'Ada', page: 1 } );
+
+		state = dataReducer( state, { type: 'loaded', payload: {
+			rows: [ { id: 1, name: 'Ada' } ], fields: [], columns: [], total: 1, page: 1, per_page: 20,
+		} } );
+		state = dataReducer( state, { type: 'select', id: 1 } );
+		expect( state.selected ).toEqual( [ 1 ] );
+
+		state = dataReducer( state, { type: 'preview', preview: { token: 'one-time', operation: 'delete' } } );
+		expect( state.preview.token ).toBe( 'one-time' );
+		state = dataReducer( state, { type: 'source', sourceKey: 'orders' } );
+		expect( state.sourceKey ).toBe( 'orders' );
+		expect( state.rows ).toEqual( [] );
+		expect( state.selected ).toEqual( [] );
+		expect( state.preview ).toBeNull();
+	} );
+
+	it( 'tracks mutation success and recoverable errors for announced feedback', () => {
+		let state = initialDataState( 'contacts' );
+		state = dataReducer( state, { type: 'request', request: 'mutation' } );
+		expect( state.pending ).toBe( 'mutation' );
+		state = dataReducer( state, { type: 'success', message: 'Record updated.' } );
+		expect( state.pending ).toBe( '' );
+		expect( state.notice ).toEqual( { tone: 'success', message: 'Record updated.' } );
+		state = dataReducer( state, { type: 'error', message: 'Try again.' } );
+		expect( state.notice ).toEqual( { tone: 'error', message: 'Try again.' } );
+	} );
+} );
+
+describe( 'Spec 068 endpoint construction', () => {
+	it( 'builds mutation import export and migration endpoints from one REST root', () => {
+		expect( dataEndpoint( '/corex/v1/data', 'contacts', 'mutation-preview' ) )
+			.toBe( '/corex/v1/data/contacts/mutations/preview' );
+		expect( dataEndpoint( '/corex/v1/data', 'contacts', 'import', 12 ) )
+			.toBe( '/corex/v1/data/contacts/imports/12' );
+		expect( dataEndpoint( '/corex/v1/data', 'contacts', 'export-download', 9 ) )
+			.toBe( '/corex/v1/data/contacts/exports/9/download' );
+		expect( dataEndpoint( '/corex/v1/data', '', 'migration-preview' ) )
+			.toBe( '/corex/v1/data/migrations/preview' );
 	} );
 } );

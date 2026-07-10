@@ -14,6 +14,7 @@ use Corex\Config\Settings\SettingsForm;
 use Corex\Config\Settings\SettingsRegistry;
 
 beforeEach(function () {
+    Functions\when('__')->returnArg();
     Functions\when('esc_attr')->returnArg();
     Functions\when('esc_html')->returnArg();
     Functions\when('esc_url')->returnArg();

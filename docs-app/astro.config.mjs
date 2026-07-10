@@ -44,9 +44,12 @@ export default defineConfig({
 				{
 					label: 'Guides',
 					items: [
-						{ label: 'Create a form', slug: 'guides/forms' },
+						{ label: 'Forms & Flows', slug: 'guides/forms-flows' },
+						{ label: 'Submissions Inbox', slug: 'guides/submissions' },
+						{ label: 'Code-defined forms', slug: 'guides/forms' },
 						{ label: 'Response contract & runtime', slug: 'guides/frontend-runtime' },
 						{ label: 'Manage submission data', slug: 'guides/data' },
+						{ label: 'Security Center', slug: 'guides/security' },
 						{ label: 'REST resources', slug: 'guides/rest' },
 						{ label: 'Headless WordPress', slug: 'guides/headless' },
 						{ label: 'Assets & cache-busting', slug: 'guides/assets' },
@@ -65,6 +68,8 @@ export default defineConfig({
 						{ label: 'Settings & feature flags', slug: 'guides/configuration' },
 						{ label: 'Custom option pages', slug: 'guides/option-pages' },
 						{ label: 'Send email (Corex Mail)', slug: 'guides/mail' },
+						{ label: 'Email Studio', slug: 'guides/email-studio' },
+						{ label: 'Blog Pro', slug: 'guides/blog-pro' },
 						{ label: 'Model · Controller · Service', slug: 'guides/mvc' },
 						{ label: 'Updates & distribution', slug: 'guides/updates' },
 						{ label: 'Insights (performance & readiness)', slug: 'guides/insights' },

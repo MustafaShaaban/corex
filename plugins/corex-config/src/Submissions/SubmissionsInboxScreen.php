@@ -8,34 +8,26 @@ declare(strict_types=1);
 
 namespace Corex\Config\Submissions;
 
-use Corex\Admin\AdminPage;
-use Corex\Config\Data\SubmissionsReader;
-use Corex\Security\Admin\AdminGuard;
-
 defined('ABSPATH') || exit;
 
+use Corex\Access\CorexAbility;
+use Corex\Admin\AdminPage;
+use Corex\Config\Retention\RetentionController;
+use Corex\Config\Retention\RetentionSettings;
+use Corex\Config\Retention\SubmissionRetention;
+use Corex\Security\Admin\AdminGuard;
+
 /**
- * The Submissions Inbox (spec 063, Phase 2): a business-friendly view of the REAL stored form
- * submissions, distinct from the raw Data explorer. It reads live `corex_submission` records through
- * {@see SubmissionsReader}, shapes them with the pure {@see SubmissionsInbox}, and renders an escaped
- * list plus a server-rendered detail view (`?submission=ID`). Export reuses the existing
- * capability + nonce-gated CSV handler. No fabricated records — an empty store shows an honest empty
- * state. Read-only display; the only mutation path (export) carries `manage_options` + a nonce.
+ * Guarded mount for the functional Inbox client and confirmed retention controls.
  */
 final class SubmissionsInboxScreen
 {
-    private const PER_PAGE    = 25;
-    private const RECENT_DAYS = 7;
-
     private string $hook = '';
 
     public function __construct(
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
-        private readonly SubmissionsInbox $inbox,
-        private readonly SubmissionsReader $reader,
-        private readonly \Corex\Config\Retention\SubmissionRetention $retention,
-        private readonly \Corex\Config\Retention\RetentionController $retentionController,
+        private readonly SubmissionRetention $retention,
     ) {
     }
 
@@ -51,7 +43,7 @@ final class SubmissionsInboxScreen
             'corex-settings',
             __('CoreX Submissions', 'corex'),
             __('Submissions', 'corex'),
-            'manage_options',
+            CorexAbility::MANAGE_SUBMISSIONS,
             'corex-submissions',
             [$this, 'render'],
             26,
@@ -64,25 +56,37 @@ final class SubmissionsInboxScreen
             return;
         }
 
-        wp_enqueue_style(
-            'corex-submissions-admin',
-            plugins_url('assets/submissions-admin.css', COREX_CONFIG_FILE),
-            ['corex-admin-shell'],
-            '1.0.0',
+        $base = dirname(__DIR__, 2);
+        $asset = is_file($base . '/build/admin/index.asset.php')
+            ? require $base . '/build/admin/index.asset.php'
+            : ['dependencies' => [], 'version' => 'dev'];
+        $dependencies = array_map('strval', (array) ($asset['dependencies'] ?? []));
+        $dependencies[] = 'corex-runtime';
+
+        wp_enqueue_script(
+            'corex-submissions-inbox',
+            plugins_url('build/admin/index.js', $base . '/corex-config.php'),
+            array_values(array_unique($dependencies)),
+            (string) ($asset['version'] ?? 'dev'),
+            true,
         );
+        wp_enqueue_style(
+            'corex-submissions-inbox',
+            plugins_url('assets/submissions-admin.css', $base . '/corex-config.php'),
+            ['corex-admin-shell'],
+            (string) ($asset['version'] ?? 'dev'),
+        );
+        wp_localize_script('corex-submissions-inbox', 'corexSubmissions', [
+            'restUrl' => esc_url_raw(rest_url('corex/v1/submissions')),
+            'nonce' => wp_create_nonce('wp_rest'),
+        ]);
+        wp_set_script_translations('corex-submissions-inbox', 'corex', $base . '/languages');
     }
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
+        if (! $this->authorized()) {
             echo $this->page->permissionDenied('submissions');
-
-            return;
-        }
-
-        $detailId = $this->requestedId();
-        if ($detailId > 0) {
-            $this->renderDetail($detailId);
 
             return;
         }
@@ -90,247 +94,83 @@ final class SubmissionsInboxScreen
         echo $this->page->open(
             'submissions',
             __('CoreX Submissions', 'corex'),
-            __('The real form submissions stored on this site. Manage form definitions in Forms & Flows.', 'corex'),
+            __('Search, assign, reply, export, and retain every accessible real or marked-test flow response.', 'corex'),
         );
-
-        $total = $this->safeTotal();
-        if ($total <= 0) {
-            echo $this->page->state(
-                'empty',
-                __('No submissions yet', 'corex'),
-                __('Submissions from your CoreX forms will appear here once visitors start sending them.', 'corex'),
-            );
-            echo $this->page->close();
-
-            return;
-        }
-
-        $summary = $this->inbox->summary([
-            'total'      => $total,
-            'recent'     => $this->recentCount(),
-            'recentDays' => self::RECENT_DAYS,
-        ]);
-
-        echo $this->retentionNotice();
-        echo $this->summaryBar($summary);
-        echo $this->renderList();
-        echo $this->retentionPanel();
+        echo '<div id="corex-submissions-app" aria-live="polite"></div>';
+        echo $this->retentionNotice() . $this->retentionPanel();
         echo $this->page->close();
     }
 
-    private function summaryBar(array $summary): string
+    private function authorized(): bool
     {
-        $export = wp_nonce_url(
-            admin_url('admin-post.php?action=corex_data_export&source=submissions'),
-            'corex_data_export',
-        );
-
-        return '<div class="corex-submissions__summary">'
-            . $this->stat(__('Total', 'corex'), (string) $summary['total'])
-            . $this->stat(
-                /* translators: %d: number of days in the recent window */
-                sprintf(esc_html__('Last %d days', 'corex'), (int) $summary['recentDays']),
-                (string) $summary['recent'],
-            )
-            . $this->stat(__('Export', 'corex'), '<a class="button" href="' . esc_url($export) . '">'
-                . esc_html__('Download CSV', 'corex') . '</a>')
-            . '</div>';
+        return $this->guard->authorized(CorexAbility::MANAGE_SUBMISSIONS)
+            || $this->guard->authorized('manage_options');
     }
 
-    private function stat(string $label, string $valueHtml): string
-    {
-        return '<div class="corex-submissions__summary-card"><p class="corex-submissions__summary-label">'
-            . esc_html($label) . '</p><p class="corex-submissions__summary-value">' . wp_kses_post($valueHtml)
-            . '</p></div>';
-    }
-
-    private function renderList(): string
-    {
-        $rows = $this->inbox->rows($this->safePage(1, self::PER_PAGE));
-
-        $body = '';
-        foreach ($rows as $row) {
-            $detailUrl = admin_url('admin.php?page=corex-submissions&submission=' . (int) $row['id']);
-            $body     .= '<tr>'
-                . '<td>' . esc_html($row['date']) . '</td>'
-                . '<td><code>' . esc_html($row['form']) . '</code></td>'
-                . '<td>' . esc_html($row['preview']) . '</td>'
-                . '<td><a href="' . esc_url($detailUrl) . '">' . esc_html__('View', 'corex') . '</a></td>'
-                . '</tr>';
-        }
-
-        return '<table class="corex-submissions__table"><thead><tr>'
-            . '<th>' . esc_html__('Received', 'corex') . '</th>'
-            . '<th>' . esc_html__('Form', 'corex') . '</th>'
-            . '<th>' . esc_html__('Preview', 'corex') . '</th>'
-            . '<th>' . esc_html__('Detail', 'corex') . '</th>'
-            . '</tr></thead><tbody>' . $body . '</tbody></table>'
-            . '<p class="corex-submissions__note">'
-            . esc_html__('Showing the most recent submissions. Use CoreX Data for full filtering and search.', 'corex')
-            . '</p>';
-    }
-
-    private function renderDetail(int $id): void
-    {
-        $submission = $this->safeFind($id);
-
-        echo $this->page->open(
-            'submissions',
-            __('Submission detail', 'corex'),
-            __('A single stored submission. Fields are shown exactly as received.', 'corex'),
-        );
-
-        $back = '<p><a href="' . esc_url(admin_url('admin.php?page=corex-submissions')) . '">'
-            . esc_html__('← Back to Submissions', 'corex') . '</a></p>';
-
-        if ($submission === null) {
-            echo $back . $this->page->state(
-                'error',
-                __('Submission not found', 'corex'),
-                __('This submission no longer exists or was removed.', 'corex'),
-            );
-            echo $this->page->close();
-
-            return;
-        }
-
-        echo $back . '<section class="corex-surface corex-submissions__detail">'
-            . '<header class="corex-submissions__detail-head">'
-            . '<code class="corex-submissions__form">' . esc_html($submission['form']) . '</code>'
-            . '<span class="corex-submissions__date">' . esc_html($submission['date']) . '</span></header>'
-            . '<table class="corex-submissions__fields"><tbody>';
-
-        foreach ($submission['fields'] as $key => $value) {
-            $display = is_array($value) ? implode(', ', array_map('strval', $value)) : (string) $value;
-            echo '<tr><th scope="row"><code>' . esc_html((string) $key) . '</code></th>'
-                . '<td>' . nl2br(esc_html($display)) . '</td></tr>';
-        }
-
-        echo '</tbody></table></section>' . $this->page->close();
-    }
-
-    /**
-     * The retention panel (spec 065): the real submission retention window + a dry-run preview of how
-     * many stored submissions are older than it, a capability + nonce-gated save form, and a
-     * confirmed "prune now" action. Nothing is deleted without the preview + the confirmation box.
-     */
     private function retentionPanel(): string
     {
-        $days    = $this->retention->days();
+        $days = $this->retention->days();
         $preview = $this->retention->preview();
-        $save    = \Corex\Config\Retention\RetentionController::SAVE_ACTION;
-        $prune   = \Corex\Config\Retention\RetentionController::PRUNE_ACTION;
-        $nonceName = \Corex\Config\Retention\RetentionController::NONCE;
-
         $status = $preview['enabled']
             ? sprintf(
-                /* translators: 1: retention window in days, 2: number of submissions older than it */
-                esc_html__('Keeping submissions for %1$d days. %2$d are older than the window.', 'corex'),
-                (int) $days,
+                /* translators: 1: retention days, 2: matching submissions */
+                __('%1$d-day policy · %2$d currently due', 'corex'),
+                $days,
                 (int) $preview['count'],
             )
-            : esc_html__('Retention is off — submissions are kept indefinitely.', 'corex');
+            : __('Retention is off; submissions are kept indefinitely.', 'corex');
+        $prune = $preview['willPrune'] ? $this->pruneForm() : '';
 
-        $pruneButton = $preview['willPrune']
-            ? '<form class="corex-submissions__retain-prune" method="post" action="'
-                . esc_url(admin_url('admin-post.php')) . '">'
-                . '<input type="hidden" name="action" value="' . esc_attr($prune) . '" />'
-                . wp_nonce_field($prune, $nonceName, true, false)
-                . '<label><input type="checkbox" name="corex_confirm" value="1" /> '
-                . esc_html__('Confirm: move the submissions above to trash.', 'corex') . '</label> '
-                . '<button type="submit" class="button">' . esc_html__('Prune now', 'corex') . '</button></form>'
-            : '';
-
-        return '<section class="corex-surface corex-submissions__retain">'
-            . '<header class="corex-submissions__retain-head"><h2>' . esc_html__('Data retention', 'corex') . '</h2>'
-            . '<span class="corex-submissions__retain-status">' . $status . '</span></header>'
-            . '<form class="corex-submissions__retain-form" method="post" action="'
-            . esc_url(admin_url('admin-post.php')) . '">'
-            . '<input type="hidden" name="action" value="' . esc_attr($save) . '" />'
-            . wp_nonce_field($save, $nonceName, true, false)
-            . '<label for="corex-retention-days">' . esc_html__('Keep submissions for (days, 0 = forever)', 'corex') . '</label>'
+        return '<section class="corex-inbox-retention corex-surface">'
+            . '<header><div><p class="corex-inbox__eyebrow">' . esc_html__('Privacy operations', 'corex') . '</p>'
+            . '<h2>' . esc_html__('Submission retention', 'corex') . '</h2></div><span>' . esc_html($status) . '</span></header>'
+            . '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">'
+            . '<input type="hidden" name="action" value="' . esc_attr(RetentionController::SAVE_ACTION) . '" />'
+            . wp_nonce_field(RetentionController::SAVE_ACTION, RetentionController::NONCE, true, false)
+            . '<label for="corex-retention-days">' . esc_html__('Keep for days (0 = forever)', 'corex') . '</label>'
             . '<input id="corex-retention-days" type="number" name="corex_retention_days" min="0" max="'
-            . esc_attr((string) \Corex\Config\Retention\RetentionSettings::MAX_DAYS) . '" value="' . esc_attr((string) $days) . '" />'
-            . '<button type="submit" class="button button-primary">' . esc_html__('Save', 'corex') . '</button>'
-            . '</form>'
-            . $pruneButton
-            . '<p class="corex-submissions__retain-note">'
-            . esc_html__('Pruning moves old submissions to trash (recoverable) after you confirm — never deletes without a preview.', 'corex')
-            . '</p></section>';
+            . esc_attr((string) RetentionSettings::MAX_DAYS) . '" value="' . esc_attr((string) $days) . '" />'
+            . '<button type="submit" class="button button-primary">' . esc_html__('Save policy', 'corex') . '</button>'
+            . '</form>' . $prune . '</section>';
     }
 
-    /** PRG status notice after a retention save/prune (read-only query args). */
+    private function pruneForm(): string
+    {
+        return '<form class="corex-inbox-retention__apply" method="post" action="'
+            . esc_url(admin_url('admin-post.php')) . '">'
+            . '<input type="hidden" name="action" value="' . esc_attr(RetentionController::PRUNE_ACTION) . '" />'
+            . wp_nonce_field(RetentionController::PRUNE_ACTION, RetentionController::NONCE, true, false)
+            . '<label>' . esc_html__('Action', 'corex') . '<select name="corex_retention_action">'
+            . '<option value="archive">' . esc_html__('Archive', 'corex') . '</option>'
+            . '<option value="trash">' . esc_html__('Move to trash', 'corex') . '</option>'
+            . '<option value="anonymize">' . esc_html__('Anonymize personal data', 'corex') . '</option></select></label>'
+            . '<label><input type="checkbox" name="corex_include_test" value="1" /> '
+            . esc_html__('Include marked-test submissions', 'corex') . '</label>'
+            . '<label><input type="checkbox" name="corex_confirm" value="1" /> '
+            . esc_html__('Confirm moving due submissions to the recoverable trash.', 'corex') . '</label>'
+            . '<button type="submit" class="button">' . esc_html__('Apply retention', 'corex') . '</button></form>';
+    }
+
     private function retentionNotice(): string
     {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only status after a PRG redirect.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only PRG result.
         $status = isset($_GET['corex_status']) ? sanitize_key(wp_unslash($_GET['corex_status'])) : '';
         if (! str_starts_with($status, 'retention-')) {
             return '';
         }
-
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display value.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only PRG result.
         $count = isset($_GET['corex_count']) ? absint(wp_unslash($_GET['corex_count'])) : 0;
-
-        [$tone, $message] = match ($status) {
-            'retention-saved'   => ['success', __('Retention window saved.', 'corex')],
-            'retention-confirm' => ['warning', __('Tick the confirmation box to prune.', 'corex')],
-            'retention-pruned'  => ['success', sprintf(
-                /* translators: %d: number of submissions moved to trash */
+        $message = match ($status) {
+            'retention-saved' => __('Retention policy saved.', 'corex'),
+            'retention-confirm' => __('Confirm the retention action before applying it.', 'corex'),
+            'retention-pruned' => sprintf(
+                /* translators: %d: submissions moved to trash */
                 _n('%d submission moved to trash.', '%d submissions moved to trash.', $count, 'corex'),
                 $count,
-            )],
-            default => ['', ''],
+            ),
+            default => '',
         };
 
-        return $message === '' ? '' : $this->page->state($tone, __('Data retention', 'corex'), $message);
-    }
-
-    /** Read-only display id from the query string; a bare read needs no nonce (WP convention). */
-    private function requestedId(): int
-    {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only detail view, no state change.
-        return isset($_GET['submission']) ? absint(wp_unslash($_GET['submission'])) : 0;
-    }
-
-    private function safeTotal(): int
-    {
-        try {
-            return $this->reader->total();
-        } catch (\Throwable) {
-            return 0;
-        }
-    }
-
-    private function recentCount(): int
-    {
-        try {
-            return array_sum($this->reader->dailyCounts(self::RECENT_DAYS));
-        } catch (\Throwable) {
-            return 0;
-        }
-    }
-
-    /**
-     * @return list<array{id:int,date:string,form:string,fields:array<string,mixed>}>
-     */
-    private function safePage(int $page, int $perPage): array
-    {
-        try {
-            return $this->reader->page($page, $perPage);
-        } catch (\Throwable) {
-            return [];
-        }
-    }
-
-    /**
-     * @return array{id:int,date:string,form:string,fields:array<string,mixed>}|null
-     */
-    private function safeFind(int $id): ?array
-    {
-        try {
-            return $this->reader->find($id);
-        } catch (\Throwable) {
-            return null;
-        }
+        return $message === '' ? '' : $this->page->state('success', __('Retention', 'corex'), $message);
     }
 }

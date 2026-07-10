@@ -8,7 +8,10 @@ declare(strict_types=1);
 
 namespace Corex\Config\Operations;
 
+use Corex\Admin\StandalonePage;
+use Corex\Operations\OperationResult;
 use Corex\Security\Admin\AdminGuard;
+use DateTimeImmutable;
 
 defined('ABSPATH') || exit;
 
@@ -29,6 +32,8 @@ final class OperationsModeController
         private readonly AdminGuard $guard,
         private readonly OperationsMode $modes,
         private readonly OperationsModeStore $store,
+        private readonly ProductionReadinessSnapshotFactory $readiness,
+        private readonly ProductionLaunchService $productionLaunch,
     ) {
     }
 
@@ -40,17 +45,28 @@ final class OperationsModeController
     public function handle(): void
     {
         if (! $this->guard->verifiedPost(self::NONCE, self::ACTION)) {
-            wp_die(
-                esc_html__('You are not allowed to change the operations mode, or your link expired.', 'corex'),
-                '',
-                ['response' => 403],
+            status_header(403);
+            nocache_headers();
+            header('Content-Type: text/html; charset=' . get_bloginfo('charset'));
+            echo StandalonePage::fromCore()->notice( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- StandalonePage returns a fully-escaped self-contained document.
+                __('Access denied', 'corex'),
+                __('You are not allowed to change the operations mode, or your link expired.', 'corex'),
+                admin_url('admin.php?page=corex-operations-security'),
+                __('Back to Operations & Security', 'corex'),
             );
+            exit;
         }
 
         $mode = isset($_POST['corex_mode']) ? sanitize_key(wp_unslash($_POST['corex_mode'])) : '';
 
         if (! $this->modes->isValid($mode)) {
             $this->redirect('invalid');
+
+            return;
+        }
+
+        if ($mode === OperationsMode::PRODUCTION) {
+            $this->handleProductionLaunch();
 
             return;
         }
@@ -64,6 +80,35 @@ final class OperationsModeController
 
         $applied = $this->store->set($mode, get_current_user_id());
         $this->redirect('saved', $applied);
+    }
+
+    private function handleProductionLaunch(): void
+    {
+        $now      = new DateTimeImmutable('now');
+        $actorId  = get_current_user_id();
+        $snapshot = $this->readiness->fromCurrentSite($now);
+        $preview  = $this->productionLaunch->preview($snapshot, $actorId, $now);
+        $phrase   = isset($_POST['corex_confirm_phrase'])
+            ? sanitize_text_field(wp_unslash($_POST['corex_confirm_phrase']))
+            : '';
+
+        if ($phrase !== ProductionLaunchService::REQUIRED_PHRASE) {
+            $this->redirect('production_confirm');
+
+            return;
+        }
+
+        $result = $this->productionLaunch->apply(new ProductionLaunchRequest(
+            snapshot: $snapshot,
+            actorId: $actorId,
+            now: $now,
+            override: new ProductionLaunchOverride($preview->confirmation, $phrase),
+        ));
+
+        $this->redirect(
+            $result->state === OperationResult::STATE_COMPLETED ? 'saved' : 'blocked',
+            OperationsMode::PRODUCTION,
+        );
     }
 
     private function redirect(string $status, string $mode = ''): void

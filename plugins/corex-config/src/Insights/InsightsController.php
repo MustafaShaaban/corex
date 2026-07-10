@@ -23,11 +23,17 @@ use WP_REST_Response;
  */
 final class InsightsController
 {
+    private readonly InsightRunService $runService;
+
     public function __construct(
         private readonly InsightRegistry $registry,
         private readonly InsightStore $store,
         private readonly string $option = 'corex_insights',
+        ?InsightRunService $runService = null,
+        private readonly ?InsightWidgets $widgets = null,
+        private readonly ?InsightWidgetFacts $widgetFacts = null,
     ) {
+        $this->runService = $runService ?? new InsightRunService($registry, $store);
     }
 
     public function register(): void
@@ -42,6 +48,18 @@ final class InsightsController
             'methods'             => 'POST',
             'callback'            => [$this, 'run'],
             'permission_callback' => [$this, 'canRun'],
+        ]);
+
+        register_rest_route('corex/v1', '/insights/recommendations', [
+            'methods'             => 'GET',
+            'callback'            => [$this, 'recommendations'],
+            'permission_callback' => [$this, 'canManage'],
+        ]);
+
+        register_rest_route('corex/v1', '/insights/widgets', [
+            'methods'             => 'GET',
+            'callback'            => [$this, 'widgetsResponse'],
+            'permission_callback' => [$this, 'canManage'],
         ]);
     }
 
@@ -83,18 +101,41 @@ final class InsightsController
      */
     public function result(string $providerId): ?array
     {
-        $provider = $this->registry->find($providerId);
+        $state = (array) get_option($this->option, []);
+        $run   = $this->runService->run($providerId, (string) home_url('/'), $state);
 
-        if ($provider === null) {
+        if ($run === null) {
             return null;
         }
 
-        $result = $provider->run((string) home_url('/'));
-        $state  = (array) get_option($this->option, []);
+        update_option($this->option, $run['state']);
 
-        update_option($this->option, $this->store->put($state, $result));
+        return $run['result'];
+    }
 
-        return $result->toArray();
+    /**
+     * The aggregated actionable recommendations from every provider's latest stored result.
+     *
+     * @return list<array{provider:string,label:string,grade:string,recommendations:list<string>}>
+     */
+    public function recommendationList(): array
+    {
+        return $this->runService->recommendations((array) get_option($this->option, []));
+    }
+
+    /**
+     * The full designed Insights widget set, built from real gathered facts. Empty when the widget
+     * model/facts collaborators are not wired (kept optional so the pure seams stay testable).
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function widgetList(): array
+    {
+        if ($this->widgets === null || $this->widgetFacts === null) {
+            return [];
+        }
+
+        return $this->widgets->widgets($this->widgetFacts->gather());
     }
 
     public function index(WP_REST_Request $request): WP_REST_Response
@@ -114,5 +155,19 @@ final class InsightsController
         }
 
         return new WP_REST_Response(ResponseEnvelope::success(['result' => $payload])->toArray());
+    }
+
+    public function recommendations(WP_REST_Request $request): WP_REST_Response
+    {
+        return new WP_REST_Response(
+            ResponseEnvelope::success(['recommendations' => $this->recommendationList()])->toArray(),
+        );
+    }
+
+    public function widgetsResponse(WP_REST_Request $request): WP_REST_Response
+    {
+        return new WP_REST_Response(
+            ResponseEnvelope::success(['widgets' => $this->widgetList()])->toArray(),
+        );
     }
 }

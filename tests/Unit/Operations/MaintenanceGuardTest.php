@@ -67,3 +67,20 @@ it('blocks a logged-in non-admin visitor in maintenance mode', function () {
 
     expect($guard->shouldBlock())->toBeTrue();
 });
+
+it('builds a branded maintenance card body (no bare wp_die notice)', function () {
+    Functions\when('esc_html')->returnArg();
+    Functions\when('esc_html__')->returnArg();
+    // An empty site name exercises the brand-name fallback in the eyebrow. get_bloginfo is
+    // stubbed (not left undefined) because earlier suites may already have defined it.
+    Functions\when('get_bloginfo')->justReturn('');
+
+    $html = maintenanceGuard(OperationsMode::MAINTENANCE)->bodyHtml();
+
+    expect($html)->toContain('corex-standalone__card')
+        ->and($html)->toContain('corex-standalone__mark')
+        ->and($html)->toContain('We’ll be back soon')
+        ->and($html)->toContain('Scheduled maintenance')
+        // With no site name, the eyebrow falls back to the brand.
+        ->and($html)->toContain('Corex');
+});

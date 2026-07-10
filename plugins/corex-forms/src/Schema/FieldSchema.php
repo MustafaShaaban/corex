@@ -42,6 +42,13 @@ final class FieldSchema
         public readonly string $width = 'full',
         public readonly string $cssClass = '',
         public readonly array $attrs = [],
+        public readonly string $placeholder = '',
+        public readonly string $helpText = '',
+        public readonly mixed $defaultValue = null,
+        public readonly string $visibility = 'visible',
+        public readonly string $stepKey = '',
+        public readonly string $personalDataClass = 'none',
+        public readonly array $extensionConfig = [],
     ) {
     }
 
@@ -50,6 +57,6 @@ final class FieldSchema
      */
     public function isChoice(): bool
     {
-        return in_array($this->type, ['select', 'radio', 'checkbox-group'], true);
+        return in_array($this->type, ['select', 'multi-select', 'radio', 'checkbox-group'], true);
     }
 }
