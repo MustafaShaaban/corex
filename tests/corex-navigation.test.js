@@ -102,6 +102,78 @@ it( 'toggles the transparent header state on scroll', async () => {
 	expect( header.getAttribute( 'data-corex-header-state' ) ).toBe( 'scrolled' );
 } );
 
+it( 'toggles a solid sticky header state on scroll too', async () => {
+	document.body.innerHTML =
+		'<header class="corex-header corex-header--sticky">x</header>';
+	load();
+
+	const header = document.querySelector( '.corex-header--sticky' );
+	expect( header.getAttribute( 'data-corex-header-state' ) ).toBe( 'top' );
+
+	Object.defineProperty( window, 'scrollY', { value: 200, configurable: true, writable: true } );
+	window.dispatchEvent( new window.Event( 'scroll' ) );
+	await flush();
+
+	expect( header.getAttribute( 'data-corex-header-state' ) ).toBe( 'scrolled' );
+} );
+
+function setSearchDom() {
+	document.body.innerHTML = `
+		<header class="corex-header">
+			<button type="button" class="corex-header__search-toggle"
+				data-corex-search-toggle aria-expanded="false" aria-controls="corex-search">
+				<span class="screen-reader-text">Search</span>
+			</button>
+			<div id="corex-search" class="corex-header__search-panel" data-corex-search-panel hidden>
+				<form role="search"><input type="search" id="s" /></form>
+			</div>
+			<a href="#elsewhere" id="elsewhere">Elsewhere</a>
+		</header>`;
+}
+
+it( 'opens the search overlay and moves focus into it', () => {
+	setSearchDom();
+	load();
+
+	const toggle = document.querySelector( '[data-corex-search-toggle]' );
+	const panel = document.querySelector( '[data-corex-search-panel]' );
+	toggle.click();
+
+	expect( toggle.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+	expect( panel.hasAttribute( 'hidden' ) ).toBe( false );
+	expect( document.activeElement ).toBe( panel.querySelector( 'input' ) );
+} );
+
+it( 'closes the search overlay on Escape and returns focus to the toggle', () => {
+	setSearchDom();
+	load();
+
+	const toggle = document.querySelector( '[data-corex-search-toggle]' );
+	const panel = document.querySelector( '[data-corex-search-panel]' );
+	toggle.click();
+
+	panel.dispatchEvent(
+		new window.KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true } )
+	);
+
+	expect( toggle.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+	expect( panel.hasAttribute( 'hidden' ) ).toBe( true );
+	expect( document.activeElement ).toBe( toggle );
+} );
+
+it( 'closes the search overlay on an outside click', () => {
+	setSearchDom();
+	load();
+
+	const toggle = document.querySelector( '[data-corex-search-toggle]' );
+	const panel = document.querySelector( '[data-corex-search-panel]' );
+	toggle.click();
+	document.getElementById( 'elsewhere' ).click();
+
+	expect( toggle.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+	expect( panel.hasAttribute( 'hidden' ) ).toBe( true );
+} );
+
 it( 'removes its listeners on destroy', () => {
 	setMegaDom();
 	const nav = load();
