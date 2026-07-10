@@ -28,9 +28,12 @@
   export-button viewport against 73 accumulated fixtures, and an access-request seeded as an administrator who
   already holds every ability. Each underlying requirement is independently proven by the unit/integration suites.
   Full root-cause + evidence: `specs/068-admin-product-functional-completion/evidence.md` §Final Verification.
+- **Committed + pushed:** Phase 12 audit is commit `20fffb1` (26 files), pushed to
+  `upstream/fix/067-admin-shell-and-completion` (PR #98). PR #98 is **NOT** marked ready-for-review — 4 environment
+  E2E items remain (T234 explicitly forbids marking ready while proof is lacking).
 - **Next:** owner-scoped follow-up — reset the dev site's accumulated test fixtures, seed a `/contact` demo page
   containing the `corex/form` block, and reseed the forms-flow/access E2E specs with a non-admin actor; then the
-  four browser specs go green and PR #98 can be marked ready. Do **not** mark PR #98 ready until then (T234).
+  four browser specs go green and PR #98 can be marked ready.
 
 
 - **Branch:** `fix/067-admin-shell-and-completion` at pushed Phase 2 checkpoint `63c6312`, tracking the same origin branch.
