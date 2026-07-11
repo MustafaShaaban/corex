@@ -16,7 +16,10 @@ use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Config\Security\HardeningChecks;
 use Corex\Config\Security\HardeningFacts;
+use Corex\Activity\ActivityEvent;
+use Corex\Activity\ActivityService;
 use Corex\Container\ContainerInterface;
+use Corex\Forms\Flow\FlowRepository;
 use Corex\Forms\FormRegistry;
 use Corex\Provisioning\KitProvisioner;
 
@@ -78,7 +81,26 @@ final class OverviewRenderer
     {
         return '<section class="corex-overview__env corex-surface is-' . esc_attr($env['tone']) . '">'
             . '<span class="corex-overview__env-badge">' . esc_html($env['label']) . '</span>'
-            . '<span class="corex-overview__env-detail">' . esc_html($env['detail']) . '</span></section>';
+            . '<span class="corex-overview__env-detail">' . esc_html($env['detail']) . '</span>'
+            . $this->versionBadge() . '</section>';
+    }
+
+    /**
+     * The real installed CoreX framework version, from the corex-core plugin constant. It
+     * renders in the environment bar so operators can confirm exactly which build is live.
+     */
+    private function versionBadge(): string
+    {
+        $version = defined('COREX_CORE_VERSION') ? (string) COREX_CORE_VERSION : '';
+        if ($version === '') {
+            return '';
+        }
+
+        return '<span class="corex-overview__env-version">' . esc_html(sprintf(
+            /* translators: %s: the installed CoreX framework version, e.g. 0.33.0 */
+            __('CoreX v%s', 'corex'),
+            $version,
+        )) . '</span>';
     }
 
     /**
@@ -125,13 +147,19 @@ final class OverviewRenderer
     }
 
     /**
-     * @param array{count:int,note:string} $forms
+     * @param array{count:int,flows:int,note:string} $forms
      */
     private function formsCard(array $forms): string
     {
+        $flowsLabel = sprintf(
+            /* translators: %d: number of versioned visitor flows */
+            _n('%d flow', '%d flows', (int) $forms['flows'], 'corex'),
+            (int) $forms['flows'],
+        );
+
         return '<section class="corex-surface corex-overview__card corex-overview__card--compact">'
             . '<header class="corex-overview__card-head"><h2>' . esc_html__('Forms & Flows', 'corex') . '</h2>'
-            . '<span class="corex-overview__pill">' . esc_html__('Read-only', 'corex') . '</span></header>'
+            . '<span class="corex-overview__pill">' . esc_html($flowsLabel) . '</span></header>'
             . '<p class="corex-overview__big">' . esc_html((string) $forms['count']) . '</p>'
             . '<p class="corex-overview__muted">' . esc_html($forms['note']) . '</p>'
             . '<p><a href="' . esc_url(admin_url('admin.php?page=corex-forms')) . '">'
@@ -184,12 +212,40 @@ final class OverviewRenderer
 
     private function activityCard(): string
     {
-        return '<section class="corex-surface corex-overview__card corex-overview__activity">'
-            . '<header class="corex-overview__card-head"><h2>' . esc_html__('Recent activity', 'corex') . '</h2>'
-            . '<span class="corex-overview__pill">' . esc_html__('Empty', 'corex') . '</span></header>'
-            . '<div class="corex-overview__empty"><p>'
-            . esc_html__('No recent framework events yet.', 'corex') . '</p><p class="corex-overview__muted">'
-            . esc_html__('Activity appears here once event logging is available.', 'corex') . '</p></div></section>';
+        $events = $this->recentActivity();
+        $head   = '<section class="corex-surface corex-overview__card corex-overview__activity">'
+            . '<header class="corex-overview__card-head"><h2>' . esc_html__('Recent activity', 'corex') . '</h2>';
+
+        if ($events === []) {
+            return $head . '</header><div class="corex-overview__empty"><p>'
+                . esc_html__('No recent framework events yet.', 'corex') . '</p><p class="corex-overview__muted">'
+                . esc_html__('Activity appears here as forms, data, access, and security events occur.', 'corex')
+                . '</p></div></section>';
+        }
+
+        $rows = '';
+        foreach ($events as $event) {
+            $when = wp_date(get_option('date_format') . ' ' . get_option('time_format'), $event->occurredAt->getTimestamp());
+            /* translators: 1: actor label, 2: activity area, 3: activity kind */
+            $summary = sprintf(__('%1$s · %2$s %3$s', 'corex'), $event->actorLabel, $event->area, $event->kind);
+            $rows   .= '<li class="corex-overview__event is-' . esc_attr($this->outcomeTone($event->outcome)) . '">'
+                . '<span class="corex-overview__event-summary">' . esc_html($summary) . '</span>'
+                . '<span class="corex-overview__event-target">' . esc_html($event->targetLabel) . '</span>'
+                . '<time class="corex-overview__event-time">' . esc_html((string) $when) . '</time></li>';
+        }
+
+        return $head
+            . '<a class="corex-overview__link" href="' . esc_url(admin_url('admin.php?page=corex-access&tab=audit')) . '">'
+            . esc_html__('Audit log', 'corex') . ' &rarr;</a></header>'
+            . '<ul class="corex-overview__events">' . $rows . '</ul></section>';
+    }
+
+    private function outcomeTone(string $outcome): string
+    {
+        return match ($outcome) {
+            ActivityEvent::OUTCOME_FAILURE, ActivityEvent::OUTCOME_DENIED => OverviewModel::TONE_WARNING,
+            default => OverviewModel::TONE_NEUTRAL,
+        };
     }
 
     /**
@@ -228,6 +284,7 @@ final class OverviewRenderer
             'hardeningWarnings' => $this->hardening->warnings($this->hardening->checks(HardeningFacts::gather())),
             'dataSources'       => $this->dataSources(),
             'formsCount'        => $this->formsCount(),
+            'flowsCount'        => $this->flowsCount(),
         ];
     }
 
@@ -307,6 +364,40 @@ final class OverviewRenderer
             return count($registry->all());
         } catch (\Throwable) {
             return 0;
+        }
+    }
+
+    /**
+     * Real count of persisted visitor flows. Resolves lazily so corex-config never
+     * hard-depends on the Forms plugin (Principle IX); absent Forms renders as zero.
+     */
+    private function flowsCount(): int
+    {
+        try {
+            /** @var FlowRepository $flows */
+            $flows = $this->container->make(FlowRepository::class);
+
+            return count($flows->all());
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    /**
+     * The most recent real framework activity events. Resolves the core Activity
+     * service lazily; an unavailable service or empty log yields an honest empty list.
+     *
+     * @return list<ActivityEvent>
+     */
+    private function recentActivity(): array
+    {
+        try {
+            /** @var ActivityService $activity */
+            $activity = $this->container->make(ActivityService::class);
+
+            return $activity->query([], 1, 5);
+        } catch (\Throwable) {
+            return [];
         }
     }
 }

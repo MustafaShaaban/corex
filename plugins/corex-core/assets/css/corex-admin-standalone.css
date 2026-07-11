@@ -1,0 +1,286 @@
+/**
+ * Self-contained CoreX interstitial styles for pages that render OUTSIDE the
+ * enqueued admin shell: the Maintenance-mode 503 (anonymous front-end) and the
+ * menu-level access-denied / request-access 403. Those responses go through
+ * StandalonePage, which inlines the --corex-admin-* token adapter plus this
+ * sheet, so the page is fully branded with no external stylesheet. Token-only
+ * colours; logical properties (RTL-first).
+ */
+
+.corex-standalone {
+	margin: 0;
+	min-block-size: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: var(--corex-admin-space-xl) var(--corex-admin-space-lg);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-shell);
+	background-image: var(--corex-admin-login-backdrop);
+	background-repeat: no-repeat;
+	font-family: var(--corex-admin-font-body);
+	line-height: var(--corex-admin-line-normal);
+	-webkit-font-smoothing: antialiased;
+}
+
+.corex-standalone *,
+.corex-standalone *::before,
+.corex-standalone *::after {
+	box-sizing: border-box;
+}
+
+.corex-standalone__card {
+	inline-size: min(100%, 32rem);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-2xl) var(--corex-admin-space-xl);
+	text-align: center;
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-lg);
+	box-shadow: var(--corex-admin-shadow-lg);
+}
+
+.corex-standalone__card--wide {
+	inline-size: min(100%, 40rem);
+}
+
+.corex-standalone__mark {
+	display: inline-flex;
+	inline-size: 2.75rem;
+	block-size: 2.75rem;
+	color: var(--corex-admin-action);
+}
+
+.corex-standalone__mark svg {
+	inline-size: 100%;
+	block-size: 100%;
+}
+
+.corex-standalone__eyebrow {
+	margin: 0;
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-standalone__title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-2xl);
+	font-weight: 700;
+	line-height: var(--corex-admin-line-tight);
+}
+
+.corex-standalone__text {
+	margin: 0;
+	max-inline-size: 46ch;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-standalone__status {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	margin-block-start: var(--corex-admin-space-xs);
+	padding: var(--corex-admin-space-2xs) var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-pill);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-standalone__status::before {
+	content: "";
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	border-radius: var(--corex-admin-radius-pill);
+	background: var(--corex-admin-warning);
+}
+
+.corex-standalone__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--corex-admin-space-sm);
+	margin-block-start: var(--corex-admin-space-xs);
+}
+
+/* Buttons and links (no wp-admin stylesheet in this context). */
+.corex-standalone .button,
+.corex-standalone__btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--corex-admin-space-2xs);
+	min-block-size: var(--corex-admin-control-height);
+	padding: var(--corex-admin-space-xs) var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+	font: inherit;
+	font-weight: 600;
+	text-decoration: none;
+	cursor: pointer;
+	transition:
+		border-color var(--corex-admin-motion-fast) ease,
+		background var(--corex-admin-motion-fast) ease;
+}
+
+.corex-standalone .button:hover,
+.corex-standalone__btn:hover {
+	border-color: var(--corex-admin-action);
+}
+
+.corex-standalone .button-primary {
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-standalone .button-primary:hover {
+	background: var(--corex-admin-action-hover);
+	border-color: var(--corex-admin-action-hover);
+}
+
+.corex-standalone :where(a):not(.button) {
+	color: var(--corex-admin-link);
+}
+
+.corex-standalone :where(a):not(.button):hover {
+	color: var(--corex-admin-link-hover);
+}
+
+.corex-standalone :focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+/* Denied / request-access component (markup from AdminPage::deniedSurface),
+   restyled self-contained for the standalone 403 page. */
+.corex-standalone .corex-denied {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--corex-admin-space-md);
+	inline-size: 100%;
+}
+
+.corex-standalone .corex-denied__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: 3.5rem;
+	block-size: 3.5rem;
+	color: var(--corex-admin-action);
+	background: var(--corex-admin-action-subtle);
+	border-radius: var(--corex-admin-radius-lg);
+}
+
+.corex-standalone .corex-denied__icon svg {
+	inline-size: 1.75rem;
+	block-size: 1.75rem;
+}
+
+.corex-standalone .corex-denied__title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-xl);
+	font-weight: 700;
+}
+
+.corex-standalone .corex-denied__text {
+	margin: 0;
+	max-inline-size: 52ch;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-standalone .corex-denied__text code {
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	color: var(--corex-admin-action);
+}
+
+.corex-standalone .corex-denied__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-standalone .corex-denied__request {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	inline-size: min(100%, 30rem);
+	margin-block-start: var(--corex-admin-space-xs);
+	padding: var(--corex-admin-space-md);
+	text-align: start;
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-standalone .corex-denied__request label {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-standalone .corex-denied__request textarea {
+	inline-size: 100%;
+	min-block-size: 7rem;
+	padding: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+	font: inherit;
+	resize: vertical;
+}
+
+.corex-standalone .corex-denied__request textarea:focus-visible {
+	border-color: var(--corex-admin-action);
+}
+
+.corex-standalone .corex-denied__request .button {
+	justify-self: start;
+}
+
+.corex-standalone .corex-denied__reason,
+.corex-standalone .corex-denied__meta {
+	margin: 0;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-standalone .corex-denied__meta {
+	font-family: var(--corex-admin-font-mono);
+	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+@media (max-width: 30rem) {
+
+	.corex-standalone__card {
+		padding: var(--corex-admin-space-xl) var(--corex-admin-space-md);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-standalone .button,
+	.corex-standalone__btn {
+		transition: none;
+	}
+}

@@ -38,6 +38,22 @@ defined('ABSPATH') || exit;
 			</details>
 			<!-- /wp:details -->
 
+			<!-- wp:html -->
+			<div class="corex-header__search">
+				<button type="button" class="corex-header__search-toggle" data-corex-search-toggle aria-controls="corex-header-search" aria-expanded="false" hidden>
+					<svg class="corex-header__search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+					<span class="screen-reader-text"><?php echo esc_html__('Search', 'corex'); ?></span>
+				</button>
+				<div id="corex-header-search" class="corex-header__search-panel" data-corex-search-panel>
+					<form role="search" method="get" class="corex-header__search-form" action="<?php echo esc_url(home_url('/')); ?>">
+						<label for="corex-header-search-field" class="screen-reader-text"><?php echo esc_html__('Search for:', 'corex'); ?></label>
+						<input type="search" id="corex-header-search-field" class="corex-header__search-field" name="s" placeholder="<?php echo esc_attr__('Search…', 'corex'); ?>" />
+						<button type="submit" class="corex-header__search-submit"><?php echo esc_html__('Search', 'corex'); ?></button>
+					</form>
+				</div>
+			</div>
+			<!-- /wp:html -->
+
 			<!-- wp:buttons {"className":"corex-header__cta","layout":{"type":"flex","verticalAlignment":"center"}} -->
 			<div class="wp-block-buttons corex-header__cta"><!-- wp:button {"className":"is-style-outline"} -->
 			<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="#"><?php echo esc_html__('Sign in', 'corex'); ?></a></div>

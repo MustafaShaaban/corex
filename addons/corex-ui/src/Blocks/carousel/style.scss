@@ -1,0 +1,126 @@
+/* stylelint-disable @stylistic/max-line-length -- existing module documentation */
+
+/**
+ * corex/carousel — the one slider primitive. Token-only, logical properties (RTL-correct). The
+ * viewport is a horizontal scroll-snap row: swipeable on touch and keyboard-scrollable when focused,
+ * with no JavaScript. `--corex-carousel-per` (set by the per-view modifier) drives how many slides
+ * share the viewport, so one engine powers 1-up through 6-up layouts. Arrows and dots are real
+ * buttons; under reduced motion scrolling jump-cuts. No hardcoded values.
+ */
+/* stylelint-enable @stylistic/max-line-length */
+.corex-carousel {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--20);
+}
+
+.corex-carousel__viewport {
+	display: block;
+	overflow-x: auto;
+	overflow-y: hidden;
+	scroll-snap-type: x mandatory;
+	scroll-behavior: smooth;
+	scrollbar-width: thin;
+}
+
+.corex-carousel__viewport:focus-visible {
+	outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
+	outline-offset: var(--wp--custom--focus--offset);
+}
+
+.corex-carousel__track {
+	display: flex;
+	gap: var(--wp--preset--spacing--30);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+/* Slides-per-view: each modifier sets the slide basis directly with the real
+   gap token, so one engine yields 1-up through 6-up with no local props. */
+.corex-carousel__slide {
+	flex: 0 0 100%;
+	min-inline-size: 0;
+	scroll-snap-align: start;
+}
+
+.corex-carousel--per-2 .corex-carousel__slide {
+	flex-basis: calc((100% - 1 * var(--wp--preset--spacing--30)) / 2);
+}
+
+.corex-carousel--per-3 .corex-carousel__slide {
+	flex-basis: calc((100% - 2 * var(--wp--preset--spacing--30)) / 3);
+}
+
+.corex-carousel--per-4 .corex-carousel__slide {
+	flex-basis: calc((100% - 3 * var(--wp--preset--spacing--30)) / 4);
+}
+
+.corex-carousel--per-5 .corex-carousel__slide {
+	flex-basis: calc((100% - 4 * var(--wp--preset--spacing--30)) / 5);
+}
+
+.corex-carousel--per-6 .corex-carousel__slide {
+	flex-basis: calc((100% - 5 * var(--wp--preset--spacing--30)) / 6);
+}
+
+.corex-carousel__controls {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--wp--preset--spacing--20);
+}
+
+.corex-carousel__arrow {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: var(--wp--preset--spacing--50);
+	block-size: var(--wp--preset--spacing--50);
+	padding: 0;
+	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
+	border-radius: var(--wp--custom--radius--full);
+	background: var(--wp--preset--color--surface);
+	color: var(--wp--preset--color--ink);
+	font-size: var(--wp--preset--font-size--lg);
+	line-height: 1;
+	cursor: pointer;
+}
+
+.corex-carousel__arrow:hover {
+	background: var(--wp--preset--color--surface-alt);
+}
+
+.corex-carousel__dots {
+	display: flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--10);
+}
+
+.corex-carousel__dot {
+	inline-size: var(--wp--preset--spacing--20);
+	block-size: var(--wp--preset--spacing--20);
+	padding: 0;
+	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
+	border-radius: var(--wp--custom--radius--full);
+	background: transparent;
+	cursor: pointer;
+}
+
+.corex-carousel__dot[aria-current="true"] {
+	background: var(--wp--preset--color--primary);
+	border-color: var(--wp--preset--color--primary);
+}
+
+.corex-carousel__arrow:focus-visible,
+.corex-carousel__dot:focus-visible {
+	outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
+	outline-offset: var(--wp--custom--focus--offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-carousel__viewport {
+		scroll-behavior: auto;
+	}
+}

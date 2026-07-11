@@ -1,9 +1,8 @@
 /**
  * Playwright config for the Corex E2E smoke.
  *
- * ENVIRONMENT-GATED: requires a running site (Apache/WAMP up) at COREX_BASE_URL — this
- * headless WAMP setup has Apache stopped (no elevation), so these specs are authored and
- * ready but not executed here. To run locally:
+ * ENVIRONMENT-GATED: requires a running site at COREX_BASE_URL and valid CoreX admin
+ * credentials in COREX_ADMIN_USER / COREX_ADMIN_PASS. To run locally:
  *   1. Start full WAMP from the tray (so http://corex.local serves).
  *   2. npx playwright install chromium
  *   3. npm run test:e2e

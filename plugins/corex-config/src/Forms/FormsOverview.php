@@ -11,12 +11,8 @@ namespace Corex\Config\Forms;
 defined('ABSPATH') || exit;
 
 /**
- * Pure view model for the Forms & Flows admin screen (spec 063, Phase 2). CoreX forms are
- * code-defined (a `Corex\Forms\Form` registers a slug + field schema + submission listeners), so this
- * screen is a truthful, read-only inventory of the REAL registered forms and their fields — not a
- * visual form builder (that stays a future capability, honestly labelled). It never invents a form or
- * a field; the corex-config boundary passes in the already-resolved registered forms, and this model
- * only shapes and counts them, including the honest empty state. WordPress-free, so it is unit-testable.
+ * Compatibility projection for code-defined registered forms. Persisted Flow builder data uses its
+ * own REST projections; this keeps the legacy inventory truthful without fabricating field or rule state.
  */
 final class FormsOverview
 {
@@ -33,24 +29,24 @@ final class FormsOverview
     public function summary(array $forms): array
     {
         $fieldTotal = 0;
-        $shaped     = [];
+        $shaped = [];
 
         foreach ($forms as $form) {
-            $count       = count($form['fields']);
-            $fieldTotal += $count;
-            $shaped[]    = [
-                'slug'       => $form['slug'],
-                'label'      => $form['label'],
-                'fieldCount' => $count,
-                'fields'     => $form['fields'],
+            $fieldCount = count($form['fields']);
+            $fieldTotal += $fieldCount;
+            $shaped[] = [
+                'slug' => $form['slug'],
+                'label' => $form['label'],
+                'fieldCount' => $fieldCount,
+                'fields' => $form['fields'],
             ];
         }
 
         return [
-            'count'      => count($shaped),
+            'count' => count($shaped),
             'fieldTotal' => $fieldTotal,
-            'forms'      => $shaped,
-            'isEmpty'    => $shaped === [],
+            'forms' => $shaped,
+            'isEmpty' => $shaped === [],
         ];
     }
 }

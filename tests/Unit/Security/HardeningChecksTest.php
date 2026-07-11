@@ -17,7 +17,7 @@ beforeEach(function () {
 });
 
 /**
- * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool}
+ * @return array{ssl:bool,fileEditDisabled:bool,debugDisplayOff:bool,defaultAdminAbsent:bool,indexingAllowed:bool,authSaltsConfigured:bool}
  */
 function hardeningFacts(array $overrides = []): array
 {
@@ -26,13 +26,15 @@ function hardeningFacts(array $overrides = []): array
         'fileEditDisabled'   => true,
         'debugDisplayOff'    => true,
         'defaultAdminAbsent' => true,
+        'indexingAllowed'    => true,
+        'authSaltsConfigured' => true,
     ], $overrides);
 }
 
 it('passes every check on a fully hardened install', function () {
     $checks = (new HardeningChecks())->checks(hardeningFacts());
 
-    expect($checks)->toHaveCount(4)
+    expect($checks)->toHaveCount(6)
         ->and(array_column($checks, 'status'))->each->toBe(HardeningChecks::PASS);
 });
 
@@ -58,4 +60,17 @@ it('gives a warning check an actionable remediation detail', function () {
 
     expect($fileEdit['status'])->toBe(HardeningChecks::WARN)
         ->and($fileEdit['detail'])->toContain('DISALLOW_FILE_EDIT');
+});
+
+it('checks production indexing and authentication salts as explicit launch hardening signals', function () {
+    $checks = (new HardeningChecks())->checks(hardeningFacts([
+        'indexingAllowed' => false,
+        'authSaltsConfigured' => false,
+    ]));
+    $byKey = array_column($checks, null, 'key');
+
+    expect($byKey['search_indexing']['status'])->toBe(HardeningChecks::WARN)
+        ->and($byKey['search_indexing']['detail'])->toContain('Search Engine Visibility')
+        ->and($byKey['auth_salts']['status'])->toBe(HardeningChecks::WARN)
+        ->and($byKey['auth_salts']['detail'])->toContain('authentication unique keys and salts');
 });

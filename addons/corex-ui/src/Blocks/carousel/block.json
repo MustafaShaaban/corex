@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/carousel",
+	"title": "Corex Carousel",
+	"category": "corex",
+	"icon": "images-alt2",
+	"description": "One scroll-snap slider primitive — swipeable and keyboard-scrollable with no JavaScript, enhanced with prev/next/dot controls and opt-in autoplay. Configurable slides-per-view (1–6), RTL-correct, reduced-motion safe (dynamic).",
+	"textdomain": "corex",
+	"attributes": {
+		"slides": { "type": "array", "default": [], "items": { "type": "object" } },
+		"perView": { "type": "number", "default": 1 },
+		"autoplay": { "type": "boolean", "default": false },
+		"label": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false, "anchor": true },
+	"editorScript": "file:./index.js",
+	"viewScript": "file:./view.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\CarouselRenderer" }
+}

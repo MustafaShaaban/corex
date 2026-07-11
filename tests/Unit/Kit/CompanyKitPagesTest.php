@@ -3,10 +3,10 @@
 /**
  * Spec 059 / M4 — Company Site Kit v1 page coverage.
  *
- * Keeps CompanyBlueprint::pages() honest: it must provide the full v1 content-page set,
- * exactly one front page, unique slugs, compose only patterns the UI library registers,
- * carry no raw color/size literals, and keep the same page set across demo levels.
- * (System surfaces — 404/search/single/archive — are owned by the universal templates.)
+ * Keeps CompanyBlueprint::pages() honest: Full demo provides the complete v1 content-page set,
+ * exactly one front page, unique slugs, composes only patterns the UI library registers,
+ * carries no raw color/size literals, and the demo levels seed progressively larger page sets
+ * (FR-137). (System surfaces — 404/search/single/archive — are owned by the universal templates.)
  *
  * @package Corex\Tests\Unit\Kit
  */
@@ -37,9 +37,9 @@ function expectedV1Slugs(): array
     ];
 }
 
-it('provides the full v1 content-page set', function () {
+it('provides the full v1 content-page set at the Full demo level', function () {
     stubKitI18n();
-    $slugs = array_column((new CompanyBlueprint())->pages(), 'slug');
+    $slugs = array_column((new CompanyBlueprint())->pages('full'), 'slug');
 
     foreach (expectedV1Slugs() as $slug) {
         expect($slugs)->toContain($slug);
@@ -78,14 +78,20 @@ it('uses no hardcoded colors or pixel sizes in any page content', function () {
     }
 });
 
-it('keeps the same page set across demo levels', function () {
+it('seeds progressively larger page sets across demo levels (FR-137)', function () {
     stubKitI18n();
     $blueprint = new CompanyBlueprint();
 
-    $minimal = array_column($blueprint->pages('minimal'), 'slug');
+    $minimal  = array_column($blueprint->pages('minimal'), 'slug');
     $standard = array_column($blueprint->pages('standard'), 'slug');
-    $full = array_column($blueprint->pages('full'), 'slug');
+    $full     = array_column($blueprint->pages('full'), 'slug');
 
-    expect($standard)->toBe($minimal)
-        ->and($full)->toBe($minimal);
+    // Each level is a strict superset of the previous, and Full is the complete v1 set.
+    expect(count($minimal))->toBeLessThan(count($standard))
+        ->and(count($standard))->toBeLessThan(count($full))
+        ->and(array_diff($minimal, $standard))->toBe([])
+        ->and(array_diff($standard, $full))->toBe([])
+        ->and($full)->toHaveCount(count(expectedV1Slugs()))
+        // Minimal always includes the essential + legal pages; the home stays the front page.
+        ->and($minimal)->toContain('home', 'about', 'contact', 'privacy-policy');
 });

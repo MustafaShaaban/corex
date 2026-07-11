@@ -343,8 +343,37 @@
 		form.addEventListener( 'change', applyConditionalRows );
 	}
 
+	// Save toast: dismiss on the close button and auto-hide after a few seconds. Under reduced
+	// motion the toast stays until dismissed (no timed disappearance). Without JS the toast is a
+	// static role="status" banner — announced and readable, just not auto-dismissed.
+	function initToast() {
+		const toast = document.querySelector( '[data-corex-toast]' );
+		if ( ! toast ) {
+			return;
+		}
+
+		function remove() {
+			if ( toast.parentNode ) {
+				toast.parentNode.removeChild( toast );
+			}
+		}
+
+		const dismiss = toast.querySelector( '[data-corex-toast-dismiss]' );
+		if ( dismiss ) {
+			dismiss.addEventListener( 'click', remove );
+		}
+
+		const reduce =
+			window.matchMedia &&
+			window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+		if ( ! reduce ) {
+			window.setTimeout( remove, 5000 );
+		}
+	}
+
 	initMedia();
 	initTabs();
 	initSelects();
 	initConditionalRows();
+	initToast();
 } )();

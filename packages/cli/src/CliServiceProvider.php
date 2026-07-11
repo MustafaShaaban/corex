@@ -16,6 +16,7 @@ use Corex\Cli\Commands\MakeCommand;
 use Corex\Cli\Commands\ReadinessCommand;
 use Corex\Cli\Commands\ReadinessCommandServices;
 use Corex\Cli\Commands\ResetCommand;
+use Corex\Cli\Commands\SecurityResetLoginCommand;
 use Corex\Cli\Commands\VersionCommand;
 use Corex\Cli\Release\CiSecurityReadiness;
 use Corex\Cli\Release\ComponentCoverageReadinessCheck;
@@ -284,6 +285,17 @@ final class CliServiceProvider extends ServiceProvider
             'corex reset',
             static function (array $args, array $assoc) use ($reset): void {
                 $reset->run($args, $assoc);
+            },
+        );
+
+        $securityReset = new SecurityResetLoginCommand(
+            $this->container->make(\Corex\Config\Security\LoginProtection\LoginLockoutStore::class),
+        );
+
+        WP_CLI::add_command(
+            'corex security reset-login',
+            static function () use ($securityReset): void {
+                $securityReset->run();
             },
         );
 

@@ -22,11 +22,11 @@ function emailLogCount(): int
         'post_type'      => 'corex_email_log',
         'post_status'    => 'any',
         'fields'         => 'ids',
-        'posts_per_page' => 100,
-        'no_found_rows'  => true,
+        'posts_per_page' => 1,
+        'no_found_rows'  => false,
     ]);
 
-    return $query->post_count;
+    return (int) $query->found_posts;
 }
 
 it('delivers a templated email and records one sent log', function () {

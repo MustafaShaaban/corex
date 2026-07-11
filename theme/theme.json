@@ -229,6 +229,9 @@
     "customTemplates": [
         { "name": "page-landing", "title": "Landing page", "postTypes": ["page"] },
         { "name": "page-contact", "title": "Contact page", "postTypes": ["page"] },
-        { "name": "page-form", "title": "Form page", "postTypes": ["page"] }
+        { "name": "page-form", "title": "Form page", "postTypes": ["page"] },
+        { "name": "page-about", "title": "About page", "postTypes": ["page"] },
+        { "name": "page-services", "title": "Services page", "postTypes": ["page"] },
+        { "name": "page-account", "title": "Account page", "postTypes": ["page"] }
     ]
 }

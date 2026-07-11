@@ -11,12 +11,9 @@ namespace Corex\Config\DataModels;
 defined('ABSPATH') || exit;
 
 /**
- * A real CSV import dry-run (spec 065): validates a parsed CSV against a data model's known columns and
- * reports exactly what a real import would accept or reject — without writing anything. It is the
- * "dry-run must be real" contract: header columns are matched to the model's column ids, unknown/missing
- * columns are surfaced, and each row is accepted or rejected with a concrete reason (wrong column count,
- * or an all-empty row). WordPress-free, so it is unit-testable. It performs no persistence — committing
- * a validated import needs a per-model write adapter, which the current read-only sources do not expose.
+ * CSV dry-run validator (spec 065 compatibility path): validates a parsed CSV against a data model's known columns
+ * and reports exactly which rows are accepted or rejected without persisting anything. The Spec 068 commit workflow
+ * is handled by {@see DataImportService}, which binds accepted rows to a source write adapter.
  */
 final class DataImportValidator
 {

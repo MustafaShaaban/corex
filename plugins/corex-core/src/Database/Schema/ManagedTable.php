@@ -24,7 +24,29 @@ final class ManagedTable
         public readonly string $name,
         public readonly string $label,
         public readonly array $columns,
+        private readonly ?string $textDomain = null,
     ) {
+    }
+
+    public function displayLabel(): string
+    {
+        return $this->textDomain === null ? $this->label : __($this->label, $this->textDomain);
+    }
+
+    /** @return list<array{id:string,label:string}> */
+    public function displayColumns(): array
+    {
+        if ($this->textDomain === null) {
+            return $this->columns;
+        }
+
+        return array_map(
+            fn (array $column): array => [
+                'id'    => $column['id'],
+                'label' => __($column['label'], $this->textDomain),
+            ],
+            $this->columns,
+        );
     }
 
     /**

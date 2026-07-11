@@ -1,0 +1,58 @@
+---
+title: Forms & Flows
+description: Build, publish, embed, test, and extend versioned visitor flows in CoreX.
+---
+
+CoreX Forms & Flows is the administrative path for forms, subscriptions, surveys, and other structured visitor
+interactions. Open **CoreX → Forms & Flows**, create a draft, configure every stage, and publish the validated snapshot.
+
+## Build and publish
+
+The builder stores stable field identities even when fields move. Configure the field schema, ordered validation,
+first-match routing and fallback, email bindings, and success behavior before publishing. Every save appends an
+immutable version; a stale browser receives a conflict instead of overwriting another administrator's work.
+
+Published flows accept the built-in field types: text, email, phone, number, textarea, select, multi-select, radio,
+checkbox, date, time, URL, hidden, consent, rating, and step. Extensions can add field types, validation rules, actions,
+routing targets, email variables, and success states through the Forms registries.
+
+## Preview and test
+
+Preview shows the current draft without changing the published visitor version. **Run marked test** executes the real
+seven-stage pipeline and stores a submission with the test marker:
+
+```text
+validation → protection → storage → routing → email → inbox → timeline
+```
+
+The result panel reports each real stage outcome. Test submissions remain visible for diagnosis but are distinguishable
+from ordinary submissions and can be excluded from normal metrics and exports.
+
+## Add a block
+
+Insert Flow, Form, Success Message, Subscribe, Survey, or CTA + Flow, then choose a published flow in the block sidebar.
+The Form block defaults to persisted flows and also offers the legacy registered-form source. Dynamic rendering uses the
+published immutable schema and conditionally loads the shared runtime and token-only RTL-safe styles.
+
+Visitor submissions post to `/wp-json/corex/v1/flows/{id}/submit`. The browser improves feedback, but the REST boundary
+re-sanitizes and re-validates every value before the pipeline runs. Inline success messages, page/URL redirects, and
+registered custom success behavior come from the published version.
+
+## Routing and email
+
+Routing rules run by position and stop at the first match; the fallback is mandatory. Supported targets include fixed
+email, WordPress user, role, team/department, page owner, post author, flow owner, a submitted field value, and registered
+custom targets.
+
+Email bindings cover submitter confirmation, team notification, and administrator failure alerts. Bind an active Email
+Studio template and map recipients/reply-to values from the submission. Delivery still follows Email Studio's environment
+policy, so Development captures mail and Production requires an explicitly ready provider.
+
+## Stored evidence
+
+Each accepted submission records its flow and version, submitted values, hidden and UTM metadata, consent snapshot, spam
+evidence, resolved route, email outcome, Inbox assignment, test marker, and timeline. If a later stage fails, committed
+safe state remains available with the retryable outcome instead of being relabeled as success.
+
+For code-defined compatibility forms and low-level API details, see [Create a form](/guides/forms/) and the
+[frontend runtime](/guides/frontend-runtime/).

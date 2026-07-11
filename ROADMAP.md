@@ -395,15 +395,13 @@ These items require later validation and dedicated specs. They must not leak int
 
 ## 17. Current and next recommended specs
 
-> **Active direction (2026-07-02, owner correction): Spec 065 — Admin Product Completion.**
-> **Company-site recommendations are PAUSED** — the roadmap must not recommend starting a company site as the next
-> step until the owner accepts the admin/dashboard/product experience. A stable company-site base remains available
-> at **v0.31.0** separately. Milestones: Spec 063 = truthful surfaces (not product-complete); Spec 064 = partial
-> Overview fidelity; **Spec 065 = the required completion pass** (`specs/065-admin-product-completion/`). Only
-> **WooCommerce kit/screens**, **advanced AAM / full capability-editor / complex role mutation**, and
-> **commercial/Pro/marketplace/licensing** may remain deferred. **Blog is required.** Portfolio is lower-priority
-> but still planned (after Blog). Every admin surface must show real data/state or an honest empty/error/unavailable
-> state — no vague "future" placeholder for a safe feature.
+> **Active direction (2026-07-03, owner correction): Spec 068 — Product Functional Completion.**
+> The approved current design is the functional contract. A required current control may not remain sample,
+> planned, future, reference-only, read-only, placeholder-only, or dead. An absent optional dependency may gate its
+> dependent behavior only with a working install/activate/connect path. Spec 068 supersedes the earlier Spec
+> 063/065/067 deferral boundary where it conflicts and requires direct functional, security, test, runtime, and
+> rendered evidence for all fourteen product areas. Company/client-site work and recommendations remain prohibited
+> until the Spec 068 completion audit passes.
 
 Create and implement one reviewed spec at a time:
 
@@ -416,20 +414,17 @@ Create and implement one reviewed spec at a time:
    the full v1 page set + demo levels + SEO starter, reusing the existing provisioning. Remaining: the M5 section
    blocks the kit proved necessary (services/team/case-study/locations grids) and the `make:site` visual-foundation
    inheritance.
-4. **Spec 063 - New Design Gap Implementation** — active. Closes the *implementation-ready* CoreX design gaps from
-   the new "Corex Final Design Gap-Closure" package (`design/handoffs/063-new-design-gap-implementation.md`) in
-   priority order, under one hard invariant: **every surface communicates its real state — no fabricated data,
-   integrations, or Pro/marketplace/licensing behavior, and no dead entry points.** One parent goal split into
-   independently shippable batches (Phase 0–8): truthfulness/gates; Admin Overview truthful states; Forms & Flows +
-   Submissions Inbox + Email Studio; Data Models CRUD + import/export + migrations; Operations Mode + Security
-   Center + Access & Abilities (AAM-lite); Settings/media/retention/advanced; Insights + Setup Wizard; Blog +
-   social sharing + Company Site Kit gaps + core blocks. This program **subsumes and sequences M7** (Forms/Email)
-   and polishes M6; it does **not** authorize Pro/commercial, marketplace, WooCommerce internals, a full page/form
-   builder, a custom blog engine, a full AAM clone, or a full auth/portal. Batches whose owner decision is
-   unresolved (Operations Mode model, Security Center scope, Access & Abilities scope, Forms-vs-Flow model, Email
-   Studio boundary, Data-model-manager scope, Company Site Kit coverage) stop for owner sign-off before code.
+4. **Specs 063–067 — historical staged gap/fidelity work.** Their compatible completed foundations remain, but
+   their presentation-only and deferral boundaries are superseded by Spec 068 (Decision #115).
+5. **Spec 068 - Product Functional Completion** — Phases 1–12 implemented and verified on PR #98; the final
+   requirement-by-requirement audit (Phase 12) is complete with the completion audit at **0 findings**, full unit
+   **1,257/1,257**, integration **104/104**, Jest **209/209**, performance contracts **3/3**, and guards clean on the
+   diff. Implements shared product foundations then functional vertical slices for Email; Forms/Flows/Submissions;
+   Data/Data Models; Operations/Security/Access; Blog Pro; Overview/Add-ons; Insights/Setup/Settings; approved
+   components/theme/account/docs. **Residual before PR is marked ready:** 4 environment/demo-content/actor-state
+   Playwright specs (not code regressions) — see `specs/068-admin-product-functional-completion/evidence.md`
+   §Final Verification and Decision #138. Source: `specs/068-admin-product-functional-completion/`.
 
-Spec number 056 is unavailable: both `056-dependency-security-remediation` and the already-merged
-`056-design-roadmap-inventory` directory exist. Do not reuse or create another 056 spec. The immediate sequence is
-Spec 057 foundational contracts, then its authorized implementation batches. M0 is closed; no later spec listed
-here authorizes product code.
+Spec number 056 remains unavailable. Specs 066 and 067 are historical branch/decision identifiers without durable
+feature directories; do not reuse them. Spec 068 is the active product contract and authorizes only the work
+explicitly traced in its reviewed tasks.

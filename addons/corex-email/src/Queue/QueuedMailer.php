@@ -12,6 +12,10 @@ defined('ABSPATH') || exit;
 
 use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
+use Corex\Mail\AttemptingMailer;
+use Corex\Mail\MailResult;
+use Corex\Support\Uuid;
+use DateTimeImmutable;
 
 /**
  * A Mailer decorator that queues a send when the gate allows (Action Scheduler present
@@ -20,7 +24,7 @@ use Corex\Mail\MailRequest;
  * else, and any install without the backend/flag, sends inline exactly as before. Like
  * the seam it implements, send() never throws.
  */
-final class QueuedMailer implements Mailer
+final class QueuedMailer implements AttemptingMailer
 {
     public function __construct(
         private readonly Mailer $inner,
@@ -31,12 +35,41 @@ final class QueuedMailer implements Mailer
 
     public function send(MailRequest $request): void
     {
+        $this->attempt($request);
+    }
+
+    public function attempt(MailRequest $request): MailResult
+    {
         if ($this->gate->shouldQueue($this->dispatcher->available())) {
             $this->dispatcher->enqueue($request);
 
-            return;
+            return new MailResult(
+                attemptId: Uuid::v4(),
+                requestId: $request->requestId,
+                state: MailResult::STATE_QUEUED,
+                provider: 'action-scheduler',
+                message: __('The mail attempt was queued.', 'corex'),
+                occurredAt: new DateTimeImmutable('now'),
+                retryable: false,
+                parentAttemptId: $request->parentAttemptId,
+            );
+        }
+
+        if ($this->inner instanceof AttemptingMailer) {
+            return $this->inner->attempt($request);
         }
 
         $this->inner->send($request);
+
+        return new MailResult(
+            attemptId: Uuid::v4(),
+            requestId: $request->requestId,
+            state: MailResult::STATE_ACCEPTED,
+            provider: 'legacy-mailer',
+            message: __('The legacy mailer accepted the request without a delivery result.', 'corex'),
+            occurredAt: new DateTimeImmutable('now'),
+            retryable: false,
+            parentAttemptId: $request->parentAttemptId,
+        );
     }
 }

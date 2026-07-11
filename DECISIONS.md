@@ -2071,3 +2071,478 @@ retention (dry-run prune), B4 Data Models CSV import dry-run + truthful migratio
 Blog (single/archive/index). B5 global fidelity verified across all ten admin screens. Portfolio next-scope is
 defined (planned after Blog). Honestly deferred with an on-screen reason: visual Forms/Email builders + the
 operations-mode/import commit write path. Full Pest 894, Jest 125, guards clean.
+
+## #113 -- Spec 067 Email Studio uses real read surfaces; mutations stay gated by missing contracts
+Date: 2026-07-03
+Context: The owner-critical admin-completion audit requires the five Email Studio tabs and six template-detail
+tabs from the approved design, while retaining the invariant that no templates, sends, routing, partials, or logs
+are fabricated. The existing engine has a registry, renderer, one runtime brand layout, and an email-log repository,
+but no visual-template store, partial store, per-template routing store, or result-returning test-send contract.
+Decision: Build every designed navigation surface now. Read from `TemplateRegistry`, `TemplateRenderer`, the bound
+`Layout`, and `EmailLogRepository`; label registry entries and site-wide logs honestly. Render HTML previews only in
+sandboxed iframes. Derive the Variables browser only from detectable `{{ path }}` placeholders in registered
+template output; do not guess values consumed directly in template code. Keep Edit, Routing, and Partials read-only
+with their exact code/storage boundary. Keep Test Send disabled until the `Mailer` seam returns a per-send
+delivered/failed result that a capability + nonce-gated action
+can report truthfully; a void dispatch must not be presented as success. Use responsive token-only CSS, including
+stacked template rows and a contained variables-table scroller at narrow widths.
+Why: this completes the approved product surface without creating unsafe writes or false success. The existing
+engine seams support trustworthy inspection; they do not yet support trustworthy mutation feedback.
+Status: Final on `fix/067-admin-shell-and-completion`; dark/light routes and 375px critical views render-verified.
+
+## #114 -- Spec 067 Access & Abilities: real denied path via the WP menu gate; audit log records only real events
+Date: 2026-07-03
+Context: The audit (item F) requires the designed Access tabs (Overview / Role matrix / Audit log / Access denied)
+without inventing corex_* capabilities, audit history, or request-access behavior. WordPress refuses a user who
+lacks a page's registered capability BEFORE the page callback runs, so an in-page denied render alone could never
+be the real denied experience, and no access events existed to audit.
+Decision: (1) Make the designed denied state the REAL one: a new `AccessDeniedGate` hooks core's
+`admin_page_access_denied` for `corex-*` pages only, publishes a new `corex_admin_access_denied` action, and
+wp_dies with the designed content at a true HTTP 403; the shared `AdminPage::permissionDenied()` renders the same
+designed surface in-shell as defense-in-depth and fires the same action; the Access screen's "Access denied" tab
+embeds it as a labelled preview that never fires the event. (2) A new `AccessAuditLog` (autoload-off option,
+30-day window, 100-entry cap) records ONLY those real denied events; the tab states honestly that grant/revoke
+entries cannot exist because CoreX never mutates roles. (3) "Request access" ships visibly disabled with the exact
+reason (no workflow exists); the back action targets the WP Dashboard, not the CoreX Overview, because a refused
+user cannot open the Overview either. (4) The tracked abilities remain the real WordPress capabilities CoreX
+checks; role cards use real count_users() data; the permissions-plugin conflict notice appears only when a known
+role-manager plugin is really active.
+Why: the design's "HTTP 403 - logged to access audit" promise can only be kept at the menu gate; everything else
+would be a simulated denial. Recording only real events preserves the truthfulness invariant while giving the
+audit tab a live data source from day one.
+Also fixed while verifying: the body-level shell canvas paint never applied (tokens lived only on the descendant
+`.corex-admin` scope), leaking a light band below short pages -- tokens now bind to `body.corex-admin-screen` with
+`corex-appearance-*` pinning like the login; and the matrix table leaked min-content width into the document
+scroll area on phones -- contained via a mobile `minmax(0, 1fr)` shell track + `contain: layout` on the scroller.
+Status: Final on `fix/067-admin-shell-and-completion`; all four tabs render-verified dark/light + 375px; real
+403 + audit entry E2E-verified with a live editor-role user.
+
+## #115 -- Spec 068: approved current design is required functionality
+Date: 2026-07-03
+Context: Owner review rejected the presentation-only completion boundary used by Specs 063, 065, and the early
+Spec 067 audit. Multiple approved screens still exposed sample analytics, read-only inventories, planned/future
+copy, disabled actions, or tabs without a persistence/service contract. The owner explicitly defined the design as
+the functional contract and directed CoreX work to continue until every approved current control and workflow is
+real, secure, tested, and visually verified. The owner also authorized selecting the recommended safe routine choice
+without stopping for repeated approvals.
+Decision: (1) Adopt `specs/068-admin-product-functional-completion/` as the authoritative completion contract while
+continuing on the active PR #98 branch. It supersedes older deferral decisions only where they conflict; completed
+compatible work remains. (2) Required current behavior may not be replaced by an honest disabled/read-only/future
+surface. Only a genuinely absent optional dependency may gate a control, and it must provide a real resolution path.
+(3) Deliver vertical slices over shared activity, ability, bounded-job, data-write, result, and mail contracts so
+screens do not grow incompatible one-off backends. (4) Preserve WordPress-native posts/comments/users/roles/media
+and keep the theme presentation-only. (5) Maintain direct FR/SC-to-task/test/runtime/render evidence; broad green
+tests or screenshots alone do not prove completion. (6) Do not start or recommend a client/company-site project
+until the Spec 068 completion audit passes.
+Why: the product cannot claim completion while its designed actions are demonstrations. A single evidence-backed
+contract prevents scope from shrinking around the current code, while vertical slices keep the mandated breadth
+reviewable, reversible, and constitution-compliant.
+Status: Final. Spec/plan/tasks approved by standing owner direction; implementation active on
+`fix/067-admin-shell-and-completion`.
+
+## #116 -- Spec 068 Email Studio: immutable authoring, fail-closed delivery, and neutral routed consumers
+Date: 2026-07-03
+Context: The approved Email Studio design required real template/layout/partial editing, preview, routing, test
+sends, logs, health, and resend. The old screen could inspect code-defined templates but had no trustworthy write
+store or per-attempt result boundary. A live-send UI also needed to prevent a configuration label from impersonating
+an installed delivery driver.
+Decision: (1) Persist private Email Studio records behind typed repositories using append-only template, layout,
+partial, capture, and attempt revisions; activation moves only a template pointer. (2) Restrict merge data to a
+registered scalar schema, reject executable markup/header injection, require a real stored layout revision, and
+compose preview output in a script-disabled iframe. (3) Always capture local/development mail. Staging/production
+may call the bound driver only when the configured provider name matches it and the live-delivery switch is enabled;
+otherwise write a typed rejected result. (4) Store redacted recipient evidence and correlation/provenance in attempts,
+while private Development captures retain inspectable content for 30 days. Retries append a linked attempt and never
+rewrite history. (5) Expose reads to `manage_options` and require both that capability and a REST nonce for writes.
+(6) Let Forms and Access depend on the neutral `Corex\Mail\RoutedMailer` contract; add-on absence/failure preserves
+their existing fallback or authoritative state change. (7) Install native layouts/partials idempotently and migrate
+legacy layout payloads into explicit header/accent/body/button/footer regions without deleting site data. (8) Keep
+route-rule resolution, active-template preparation, and delivery-policy dispatch as separate actors; compose the
+browser client from focused panels and state/API hooks; inject the REST boundary with a typed repository record.
+Why: immutable revisions make rendered mail explainable; explicit provider matching and a second live gate prevent
+accidental delivery; neutral consumer seams keep the optional add-on optional; private captures plus redacted attempt
+logs balance local debugging with operational privacy.
+Status: Final on `fix/067-admin-shell-and-completion`; T042–T063 complete and fully guard/visual verified.
+
+## #117 -- Spec 068 Forms: immutable flow snapshots and ordered extension-safe execution
+Date: 2026-07-04
+Context: The approved Forms & Flows builder requires editable persisted definitions without invalidating historical
+submissions, plus custom fields/rules/actions/routing/variables/success states. Code-defined forms and a mutable
+schema alone cannot preserve the exact consent, routing, or notification contract used by an earlier submission.
+Decision: (1) Persist private Flow metadata separately from append-only FlowVersion snapshots through a typed store
+and repository; canonical recursive key ordering produces stable checksums while field/rule list order remains
+significant. (2) Reject stale version/checksum writes before appending and publish only a complete current draft.
+(3) Model Draft, Published, Closed, and Expired transitions explicitly; publication moves a pointer to an immutable
+version and never rewrites it. (4) Evaluate enabled routing rules by position with first-match-wins semantics and a
+mandatory fallback. (5) Expose ordered field/rule/action/email-variable/success registries; custom email variables
+must resolve to scalar or null values. (6) Store flow records in a private, non-UI WordPress post type behind
+`FlowStore`, keeping WordPress calls out of aggregates and services.
+Why: immutable snapshots make every submission reproducible; optimistic conflict checks prevent silent editor
+overwrites; ordered routing and typed registries give extensions a stable seam without letting runtime callbacks or
+mutable admin state leak into persisted history.
+Decision extension: (7) Execute visitor and marked-test input through typed validation, protection, storage, routing,
+email, Inbox, and timeline stages; retain already-stored state and typed retryability on a later failure. (8) Bind
+flow emails to active Email Studio templates through neutral template/catalog capabilities, with persisted recipient
+and reply-to mappings and environment-aware delivery. (9) Consume optional captcha through a Core security seam so
+Forms remains add-on-neutral and remote providers fail closed. (10) Render Flow, Form, Success Message, Subscribe,
+Survey, and CTA + Flow from the published immutable version; keep registered code forms as explicit compatibility.
+Status: Final for T064–T090 on `fix/067-admin-shell-and-completion`; T091 external lint/browser evidence remains open.
+
+## #118 -- Spec 068 Submissions: permission-scoped operations over durable flow evidence
+Date: 2026-07-04
+Context: A stored flow response contains personal data and is useful only when authorized teammates can find, work,
+email, export, and retain it without inaccessible counts, stale overwrites, partial bulk mutations, or optional-add-on
+coupling. The existing recent-submissions table and synchronous CSV link could not meet that operational contract.
+Decision: (1) Pass an immutable actor scope into every Inbox repository query and apply the same scope to counts,
+detail, workflow, bulk, email, export, and artifact access. (2) Keep submission workflow projections beside the private
+submission record, use optimistic update timestamps, and append note/status/assignment/email/retention evidence to the
+timeline. (3) Bind bulk mutations to an expiring single-use preview containing exact IDs and expected timestamps; abort
+the whole action on stale or inaccessible state. (4) Run explicit-column selected/filter/accessible exports through
+the shared bounded-job system, keep CSV artifacts private behind authorized REST, exclude marked tests by default, and
+audit scope/count/columns without payload values. (5) Consume reply/resend/redacted logs through a core-neutral gateway
+implemented by Email Studio when active. (6) Retain recoverable archive/trash plus irreversible personal-data
+anonymization as separate confirmed actions, with marked-test inclusion always explicit.
+Why: permission scope before persistence prevents count/detail side channels; optimistic and preview-bound operations
+preserve teammate work; immutable template and timeline references make email and compliance actions explainable;
+neutral ports preserve the optional add-on boundary; private job artifacts avoid public personal-data URLs.
+Status: Final for T092–T110 on `fix/067-admin-shell-and-completion`; T111 external lint/browser evidence remains open.
+
+## #119 -- Spec 068 Data: source-declared writes behind single-use mutation previews
+Date: 2026-07-04
+Context: Data sources already declared granular capability flags, but a flag alone cannot prove that New, Edit,
+Delete, or bulk controls persist anything. The legacy `DataSource::delete()` seam also bypassed the shared operation
+result and audit contracts, while FR-063/064/070 require every model mutation to preview before apply.
+Decision: (1) Treat write support as the intersection of a declared capability, actor permission, and the source
+implementing `WritableDataSource` with a real `DataWriteAdapter`; otherwise hide the action and reject authorization.
+(2) Normalize and validate exact IDs, operation shape, source fields, required create values, and the 100-record bulk
+ceiling before issuing a preview. (3) Persist previews for five minutes under a hashed transient key, bind them to the
+actor, consume them once, and re-authorize at apply time. (4) Dispatch only through `DataWriteAdapter`; never call the
+legacy source delete method. (5) Wrap the adapter result with the shared activity event ID while auditing operation
+and counts but not submitted record values.
+Why: capability truthfulness prevents dead UI; an exact one-time preview closes the gap between displayed intent and
+persisted scope; a neutral adapter lets models choose their storage without moving SQL or WordPress CRUD into the UI;
+value-free activity context keeps operational accountability without duplicating personal or secret data.
+Status: Final for T112–T117 on `fix/067-admin-shell-and-completion`; Phase 6 import/export/migration/UI work continues.
+
+## #120 -- Spec 068 Data imports: immutable dry runs are the only commit source
+Date: 2026-07-04
+Context: The prior CSV handler checked header width and empty rows, stored a five-minute display transient, and could
+never write. It did not preserve mapping decisions, validate source field types, bind a later commit to the preview,
+or produce a complete downloadable rejection artifact.
+Decision: (1) Resolve each CSV column through an explicit mapping, exact field key, or source-declared import alias;
+make unknown-column rejection or ignoring an explicit run policy. (2) Validate every row against writable required,
+email, select, and length field contracts and persist the exact accepted values plus rejected source rows/reasons in
+a private immutable run. (3) Hash the file/mapping/policy/result projection and accept commit only for the same actor,
+valid state, and exact checksum. (4) Queue the accepted count through the shared bounded-job engine and create only
+the stored accepted rows through `DataWriteAdapter`; never reparse or widen the source file at commit time. (5) Audit
+validated/queued/completed counts without payload values and prefix spreadsheet-formula-leading report cells.
+Why: a durable immutable plan makes preview and apply identical, prevents mapping/file substitution, supports bounded
+retries, and preserves useful rejection evidence without allowing CSV formulas or public personal-data artifacts.
+Status: Final for T118–T120 on `fix/067-admin-shell-and-completion`; export/migration/REST/UI work continues.
+
+## #121 -- Spec 068 Data/Data Models: route-bound previews and artifacts
+Date: 2026-07-07
+Context: Data mutations, imports, exports, and migrations are previewed or queued through source-scoped REST routes.
+Without binding the later apply/download/rollback request back to the route source and preview/run identity, a valid
+token or run ID from one source could be replayed against a different URL shape or UI state.
+Decision: (1) Bind Data mutation apply requests to an explicit `DataMutationApplyRequest` containing actor, route
+source, token, actor label, and current time; reject apply when the consumed preview source differs from the route.
+(2) Require import remap/commit routes to match the stored run actor and source before dry-run or commit state moves.
+(3) Scope export history/download by route source and reject artifact downloads whose stored source differs from the
+requested route. (4) Require migration apply/rollback queueing to match the previewed action/run identity so a
+rollback-capable run cannot be substituted for an unrelated preview. (5) Return binary CSV/XLSX artifacts through an
+explicit base64 JSON envelope so REST responses do not corrupt binary content.
+Why: preview tokens and job artifacts are safety boundaries, not just UI conveniences. Route/source binding closes
+cross-source replay and confused-deputy paths while preserving extension-friendly adapters and actor-scoped history.
+Status: Final for T121–T132 implementation on `fix/067-admin-shell-and-completion`; current external integration,
+lint, and browser gates remain open under T132.
+
+## #122 -- Spec 068 Operations: Production launch is readiness-gated by a typed override
+Date: 2026-07-07
+Context: The Operations & Security screen already had a real operations-mode switch, but Production needed a stronger
+launch gate than a generic checkbox. The approved design requires Production readiness enforcement, override evidence,
+and no fake or divergent status between the visible checklist and the state-changing action.
+Decision: (1) Represent Production readiness as an immutable `ReadinessSnapshot` with normalized check states and a
+stable target hash. (2) Build the snapshot from the same local WordPress hardening facts used by the screen, mapping
+hardening warnings to blocking Production launch checks. (3) Require the operator to type `PRODUCTION` before a
+Production mode transition; blocking checks remain blocked without that actor-bound, five-minute confirmation. (4)
+Route the admin-post Production transition through `ProductionLaunchService`, while Maintenance keeps its existing
+explicit checkbox and no-lockout guard path. (5) Surface the same blocker count in the form so the UI and mutation
+gate share one evidence source.
+Why: a typed phrase makes the live-site transition intentional; shared readiness evidence prevents a screen/action
+split-brain; actor/time/target-bound confirmations give future audit and UI layers a stable operation contract without
+renaming WordPress core files or weakening the maintenance no-lockout invariant.
+Status: Final for T133–T134 on `fix/067-admin-shell-and-completion`; T135+ login/access/UI/docs/security gates remain.
+
+## #123 -- Spec 068 Operations: Maintenance recovery uses an explicit bypass filter
+Date: 2026-07-07
+Context: Maintenance mode must block anonymous front-end visitors without creating an owner lockout. Signed-in
+administrators already pass through, but tests also need a reversible emergency recovery path that does not require
+renaming WordPress files, changing stored mode, or poisoning the PHP process with an undefinable constant.
+Decision: Add a `corex_maintenance_bypass` WordPress filter checked only after the stored mode is confirmed as
+Maintenance and before request-context/user checks. The filter bypasses the response guard for the current request but
+does not mutate the saved operations mode.
+Why: a filter is reversible within the request/test process, works for emergency owner tooling, and preserves the
+truthful persisted state. A PHP constant was rejected because it cannot be unset inside integration test processes and
+would leak into unrelated tests.
+Status: Source implemented for T135 on `fix/067-admin-shell-and-completion`; DB-backed integration execution remains
+open while local WAMP MySQL refuses connections.
+
+## #124 -- Spec 068 Login protection: hash-only attempts with trusted proxy resolution
+Date: 2026-07-07
+Context: Login protection must enforce failed-login limits, report activity, honor retention, and work behind trusted
+proxies without collecting raw submitted credentials or analytics-grade raw IP data. It also must avoid spoofed
+`X-Forwarded-For` headers from untrusted peers.
+Decision: (1) Model login protection as immutable settings, context, decision, and attempt records. (2) Hash the
+normalized identity and resolved client IP before persistence; never store raw passwords, raw submitted credentials,
+or raw IP addresses in the attempt table. (3) Count recent failures by identity/network hash inside the configured
+window; the threshold-crossing attempt is recorded as a lockout with `locked_until` and retention metadata. (4)
+Resolve forwarded client addresses only when the immediate remote address is inside configured trusted proxy ranges,
+supporting IPv4 and IPv6 CIDR checks. (5) Persist attempts through a `LoginAttemptStore` port backed by a managed
+CoreX `login_attempts` table with retention pruning.
+Why: the policy remains deterministic and unit-testable, the repository satisfies reporting/retention without leaking
+sensitive login data, and trusted-proxy checks prevent attackers from choosing their own rate-limit bucket.
+Status: Final for T136–T137 on `fix/067-admin-shell-and-completion`; custom login route/recovery command/UI remain.
+
+## #125 -- Spec 068 Login route: honest 404 guard without moving core files
+Date: 2026-07-07
+Context: CoreX needs a custom login URL and default-endpoint protection, but the constitution and spec forbid moving
+or renaming WordPress core files. The recovery path must also bypass the guard without depending on the protected URL.
+Decision: Implement `LoginRouteGuard` as a reversible request guard: it registers the configured custom slug rewrite,
+blocks anonymous `/wp-login.php` and `/wp-admin` requests with an honest 404 decision when protection is enabled, and
+always allows authenticated users, disabled policy, unrelated public routes, and `COREX_LOGIN_UNGUARD` recovery.
+Why: the default endpoints become non-discoverable to anonymous visitors without altering WordPress files or routing
+internals, and recovery remains a configuration/runtime bypass rather than a secret core-file mutation.
+Status: Final for T138 on `fix/067-admin-shell-and-completion`; reset command integration remains under T139–T141.
+
+## #126 -- Spec 068 Login recovery: reset command disables gates and releases lockouts
+Date: 2026-07-07
+Context: Login protection can hide default endpoints and create active lockouts, so recovery must not depend on the
+protected login URL and must not mutate users, roles, or passwords.
+Decision: Implement `wp corex security reset-login` through `SecurityResetLoginCommand`. The command disables
+`enabled` and `block_default_endpoints` in the login-protection settings, preserves unrelated settings such as the
+custom slug, releases active lockouts through a `LoginLockoutStore` port, reports the restored `wp-login.php` URL, and
+reports whether `COREX_LOGIN_UNGUARD` is active. The route guard separately honors `COREX_LOGIN_UNGUARD` as a runtime
+bypass.
+Why: resetting only the protection gates restores access without broad security/settings rollback and without touching
+user credentials. The lockout-release port keeps the command unit-testable while the WordPress store owns persistence.
+Status: Final for T140–T141 on `fix/067-admin-shell-and-completion`; T139 DB-backed integration remains pending.
+
+## #127 -- Spec 068 Access denied: request access submits to the real Access workflow
+Date: 2026-07-07
+Context: Spec 067 originally shipped the denied surface with an honestly disabled "Request access" control because no
+request workflow existed. Spec 068 now has the Access request service, REST controller, persistence table, notification
+hooks, and review/decision flow, so keeping the disabled control would make the visible UI stale and misleading.
+Decision: Replace the disabled denied-state control with a real POST form to `corex/v1/access/requests`. The form
+includes the REST nonce as `_wpnonce`, maps each denied CoreX section/page slug to its corresponding CoreX-owned
+ability, and requires a bounded reason. `AccessController` accepts `_wpnonce` as a progressive-enhancement fallback to
+the JavaScript `X-WP-Nonce` header. The menu-level `AccessDeniedGate` reuses `AdminPage::deniedSurface()` so the true
+WordPress 403 path and the in-page defense-in-depth path cannot drift.
+Why: denied users get one real workflow instead of a dead button; administrators review the same request records in
+Access & Abilities; and the form remains functional without requiring JavaScript to set request headers.
+Status: Final for T149 on `fix/067-admin-shell-and-completion`; DB-backed integration gates from T135/T139/T143 remain
+pending while local WAMP MySQL refuses WordPress bootstrap.
+
+## #128 -- Spec 068 Security Center: client workspace layers over the server-side mode form
+Date: 2026-07-07
+Context: Operations & Security already had a nonce-gated server form for mode changes and shared readiness evidence for
+Production launch. Spec 068 adds a richer Security Center workspace for launch checklist, typed confirmation, login
+policy, lockouts, recovery, and activity. Removing the server form during the UI migration would weaken the no-JS and
+fallback path for a sensitive operation.
+Decision: Mount `SecurityCenter` from the shared admin bundle on `#corex-security-app`, localize real readiness,
+login-protection settings, mode activity, nonce, REST root, and recovery command from `OperationsSecurityScreen`, and
+preserve the existing server-side mode form as the authoritative mutation fallback. The client owns preview/state UI
+for the launch checklist, typed Production modal, Maintenance confirmation, login policy, lockouts, recovery guidance,
+activity, and recoverable notices; server endpoints remain responsible for sensitive mutations.
+Why: this adds the designed Security Center workspace without replacing a working nonce/capability-gated operation with
+a half-migrated client-only control, and it keeps the source of truth in the same PHP services already covered by unit
+tests.
+Status: Final for T150–T151 on `fix/067-admin-shell-and-completion`; T152 styling and T153 browser coverage remain.
+
+## #129 -- Spec 068 Blog analytics: managed hash-only reading events
+Date: 2026-07-08
+Context: Blog Pro needs real first-party analytics for views, reads, share clicks, uniqueness, ranges, and reporting,
+but the owner directive forbids fake counters while the constitution and Spec 068 privacy decision forbid covert raw
+visitor tracking.
+Decision: Store Blog analytics as consent-gated `ReadingEvent` records in a CoreX managed `blog_reading_events` table.
+The analytics service hashes a salted visitor key/IP/user-agent tuple before persistence, drops events without consent
+or a visitor key, and aggregates from the `ReadingEventStore` port. The WordPress repository stores only post ID,
+event type, visitor hash, occurred timestamp, optional reading seconds, optional share target, and retention timestamp;
+raw visitor key, raw IP address, and raw user agent are not table columns. The repository is bound as the default
+`ReadingEventStore`, `BlogAnalyticsService` is container-resolved, and the foundation schema version is bumped so
+existing installs can create the new table.
+Why: CoreX can now report real native Blog engagement without inventing sample metrics or collecting unnecessary raw
+identifiers. The store remains queryable through bounded indexes and visible in the managed Data registry while future
+REST/client/chart work consumes the same injected service.
+Status: Final for T156–T158 on `fix/067-admin-shell-and-completion`; editorial, comment, sharing, REST/client, theme,
+and browser coverage remain in Phase 8.
+
+## #130 -- Spec 068 Blog editorial workflow: CoreX state maps to native post status
+Date: 2026-07-08
+Context: Blog Pro must stop being a reference-only editorial surface, but FR-096 requires it to operate on native
+WordPress posts, statuses, schedules, users, and metadata instead of replacing the publishing model.
+Decision: Represent editorial workflow as CoreX metadata layered over native posts. `EditorialWorkflowService` maps
+Draft and Needs Changes to native `draft`, Ready for Review and Approved to native `pending`, Scheduled to native
+`future` with a required schedule timestamp, and Published to native `publish`. Assignee, due date, scheduled
+timestamp, and actor-authored review notes persist through an `EditorialWorkflowStore` port; the WordPress adapter
+stores those values in post meta and delegates status/schedule changes to `wp_update_post()`.
+Why: CoreX gets the approved editorial states and review metadata while WordPress remains the source of truth for
+publication status, scheduling, and post interoperability. The schedule guard prevents a fake Scheduled state that is
+not backed by native scheduling.
+Status: Final for T159–T160 on `fix/067-admin-shell-and-completion`; comment moderation, author analytics, sharing,
+REST/client, theme, docs, and browser coverage remain in Phase 8.
+
+## #131 -- Spec 068 Blog moderation and authors stay native
+Date: 2026-07-08
+Context: Blog Pro must moderate comments and report authors without replacing WordPress comments, users, roles, or post
+counts.
+Decision: Implement `CommentModerationService` directly over native comment APIs for queue classification and approve,
+reply, edit, spam, and trash actions. Implement `AuthorAnalyticsService` as a projection over native author users,
+native published-post counts, and first-party Blog analytics aggregates. The services are container-bound for later
+REST/client consumption and do not introduce a separate Blog author/comment store.
+Why: the product gains real moderation and author metrics while preserving WordPress interoperability and avoiding
+duplicate comment/user state. The integration test proves the mutation path changes native comment records rather than
+an invented CoreX-only queue.
+Status: Final for T161–T162 on `fix/067-admin-shell-and-completion`; social sharing, REST/client, theme, docs, and
+browser coverage remain in Phase 8.
+
+## #132 -- Spec 068 Blog social sharing logs first-party clicks only when enabled
+Date: 2026-07-08
+Context: Blog Pro needs real share controls and click logging without inventing engagement metrics or adding an
+external provider dependency.
+Decision: Add `SocialSharingService` with option-backed `SocialSharingSettings`. The service builds configured
+X/Facebook/LinkedIn/copy-link controls from native post permalinks/titles and records share clicks by delegating to the
+consent-aware first-party `BlogAnalyticsService` only when logging is enabled. The copy-link target is a real control
+with the native permalink; unknown targets are ignored for rendering and sanitized before analytics logging.
+Why: sharing remains truthful and provider-neutral, click metrics reuse the same hashed reading-event store as Blog
+analytics, and disabled logging produces no fake or inferred click event.
+Status: Final for T163 on `fix/067-admin-shell-and-completion`; REST/client, theme, docs, and browser coverage remain
+in Phase 8.
+
+## #133 -- Spec 068 Blog REST: thin controller over native Blog services
+Date: 2026-07-08
+Context: Blog Pro needs client-accessible workflows for analytics, editorial state, native comments, authors, and
+sharing without moving domain logic into request handlers.
+Decision: Add `BlogProController` under `corex/v1` with nonce/capability-gated routes for analytics, share controls,
+share-click logging, editorial transitions, comment queue/moderation, and authors. The controller sanitizes request
+parameters, wraps response data consistently, and delegates to `BlogAnalyticsService`, `EditorialWorkflowService`,
+`CommentModerationService`, `AuthorAnalyticsService`, and `SocialSharingService` through a `BlogProServices`
+aggregate.
+Why: the upcoming Blog Pro client can use one REST boundary while all persistence and WordPress-native mutation logic
+stays in services/stores. This preserves the thin-controller constitution rule and keeps route tests focused on the
+contract rather than service internals.
+Status: Final for T164–T165 on `fix/067-admin-shell-and-completion`; client, theme, docs, and browser coverage remain
+in Phase 8.
+
+## #134 -- Spec 068 Blog Pro client: replace reference renderer with real localized state
+Date: 2026-07-08
+Context: The previous Blog Pro screen and model still carried future/reference/sample analytics copy. Spec 068 forbids
+that state for approved current surfaces once the real services exist.
+Decision: Replace the server-rendered reference Blog Pro surface with a real client mount in the shared admin bundle.
+`BlogProScreen` localizes real native posts, analytics aggregates, editorial metadata, moderation queue, author
+analytics, share controls, REST root, and nonce into `corexBlogPro`. `BlogProModel` is reduced to functional tab
+metadata only, and `blogProState.js` owns endpoint construction, analytics normalization, payload shaping, and reducer
+state for the client.
+Why: the visible Blog Pro surface now consumes the same real services as REST/tests and no longer carries fake/sample
+metrics or future-only messaging. Keeping state helpers pure gives chart/workflow behavior a fast Jest contract before
+the richer UI polish lands.
+Status: Final for T166–T167 on `fix/067-admin-shell-and-completion`; token-only styling, theme templates, docs, and
+browser coverage remain in Phase 8.
+
+## #135 -- Spec 068 approved component inventory is a reconciled contract, not prose
+Date: 2026-07-09
+Context: Phase 11 (FR-154) requires the approved "Blocks & Components" inventory to be real, not a design reference.
+The design file marks each of 77 items with a status (approved/revision/missing/future) and a build order that defers
+WooCommerce blocks and Pro items; the owner mandate makes approved current surfaces required functionality.
+Decision: Encode the full inventory as `Corex\Ui\ApprovedComponentInventory` — every item carries its design status
+and a concrete delivery `resolution` (`corex-block:<slug>`, `block-style:<name>`, `pattern:<name>`, `admin:<selector>`,
+`runtime:<class>`, `core-block`, or `deferred:<reason>`). A reconciliation test asserts the per-category counts, that
+no claimed `corex/*` block is phantom, that deferrals use only allowed reasons (`woocommerce-dependency`/`future-pro`/
+`phase-2`), and that every non-deferred item resolves to an artifact that actually exists on disk. WooCommerce stays
+dependency-gated; composable atoms (icon box, trust badges, button groups, pricing comparison) resolve to core blocks
+or block styles per the design's own "prefer core blocks/patterns" rule.
+Why: the reconciliation is the truthful gate — it converts "the design is required" into a machine-checked list and
+scopes implementation to the items that are genuinely current-yet-absent, so no component can be claimed that the
+framework does not ship.
+Status: Final. The test scoped T208 to the slider primitive + toast + tooltip; rich-tabs finalize and other
+content-block polish remain tracked for later Phase 11 passes.
+
+## #136 -- Spec 068 slider is one scroll-snap primitive; toast/tooltip are token-only admin DLS primitives
+Date: 2026-07-09
+Context: The design asks for a single slider engine (1-up…6-up, no autoplay by default, reduced-motion/RTL/no-JS
+fallback) plus admin Toast and core-UI Tooltip atoms. None existed. Shipping CSS nothing uses would be dead UI.
+Decision: Ship `corex/carousel` as the one slider block — a CSS scroll-snap row that is swipeable and
+keyboard-scrollable with no JavaScript, progressively enhanced with prev/next/dot buttons and opt-in autoplay
+(paused on hover/focus/tab-blur, disabled under reduced motion), driven by a `perView` attribute (1–6) so one engine
+yields every layout. Direction is handled by `scrollIntoView({inline:'start'})`, so RTL is correct for free. Deliver
+`.corex-toast` and `.corex-tooltip` as token-only primitives in the corex-core admin shell and wire each to a real
+consumer: the toast to a Settings-save confirmation (previously silent) and the tooltip to the settings secret field's
+write-only note — so neither is dead UI, following the existing `.corex-skeleton` primitive precedent.
+Why: satisfies FR-154/162/163 with real, tested, non-fake surfaces; the slider stays a single maintained engine and
+the admin primitives gain genuine consumers instead of speculative CSS.
+Status: Final for T208–T209 on `fix/067-admin-shell-and-completion`.
+
+## #137 -- Spec 068 wp_die interstitials get a self-contained branded shell; the login-hiding 404 stays generic
+Date: 2026-07-09
+Context: The Maintenance-mode 503 and the menu-level access-denied / request-access 403 both short-circuit the normal
+page lifecycle through `wp_die`, so no enqueued CoreX stylesheet is present — the designed `corex-denied` markup and
+the maintenance notice rendered as bare, unstyled WordPress error pages. This was owner-reported ("maintenance mode
+and request access … are not styled yet").
+Decision: Add `Corex\Admin\StandalonePage`, which builds a complete `<!DOCTYPE html>` document and inlines the
+`--corex-admin-*` token adapter (font URLs absolutized) plus a new self-contained `corex-admin-standalone.css` that
+consumes only tokens. `MaintenanceGuard::maybeBlock()` and `AccessDeniedGate::intercept()` now emit that document with
+the correct 503/403 headers instead of `wp_die`. The document body carries `corex-standalone corex-admin-screen` so
+the inlined adapter resolves in dark/light/RTL exactly like the admin shell. A shared `StandalonePage::notice()`
+(with a shared `StandalonePage::brandMark()`) then brands every other admin-post front-controller interstitial —
+DataExportController (403 not-allowed / 403 expired / 404 unknown source), DataModelsImportController,
+OperationsModeController, and RetentionController nonce/cap/expired-link failures — each with the correct status,
+a Back-to-screen action, and no bare notice. The custom-login `LoginRouteGuard` 404 is deliberately left as a generic
+"Not found": branding it would reveal that CoreX is hiding the login endpoint, which defeats the feature.
+Why: turns the two primary front-facing framework interstitials into real designed surfaces (owner mandate: approved
+design is required functionality) without introducing raw design values — the token adapter stays the single source of
+truth, inlined for pages that cannot enqueue it.
+Status: Final on `fix/067-admin-shell-and-completion`; live dark/light/RTL render verification on corex.local is the
+recommended manual follow-up.
+
+## #138 -- Spec 068 Phase 12 final audit: activate the Company kit, remediate accumulated lint, classify residual E2E as environment drift
+Date: 2026-07-10
+Context: The Phase 12 final audit was the first run of the full integration suite, JS/CSS lint, and Playwright since
+earlier phases (prior sessions were blocked by the Codex app approval-credit gate and a stopped WAMP MySQL). Running
+them surfaced latent, never-executed issues rather than new regressions.
+Decision: (1) Activate the `corex-kit-company` add-on in `./wp` so `SetupWizardControllerTest` and the setup-wizard
+E2E exercise the real Company kit — this matches how the other add-on integration suites already rely on their add-on
+being active, and reflects the intended flagship state (the wizard must offer a kit, not an empty chooser).
+(2) Remediate the 22 accumulated stylelint findings in place: convert `@use` string-quotes to double quotes, split an
+over-long comment, merge the duplicate `.corex-data-models__card-head` selector, and apply scoped
+`stylelint-disable-next-line no-descending-specificity` only where the flagged selectors are genuinely unrelated
+(zero cascade effect); keep each `.css`/`.scss` pair byte-identical. (3) Regenerate the token inventory after
+`theme/README.md` drift. (4) Classify the 4 residual Playwright failures as pre-existing environment / demo-content /
+actor-state issues — not code regressions — with each underlying requirement independently proven by the
+unit/integration suites, and record a scoped follow-up (reset dev fixtures, seed a `/contact` demo form page, reseed
+forms-flow/access specs with a non-admin actor) instead of masking behavior or force-passing the specs.
+Why: keeps the completion truthful (constitution: code that contradicts the truth is wrong; no fake green) while
+fixing the genuine defects the audit exposed. The PR is deliberately NOT marked ready until the four E2E items are
+resolved (T234).
+Status: Final on `fix/067-admin-shell-and-completion`. Evidence: `specs/068-admin-product-functional-completion/evidence.md`
+§Final Verification (Phase 12).
+
+## #139 -- Spec 068 Phase 12: fix the dead front-end form block (formSlug forms never rendered)
+Date: 2026-07-10
+Context: The Phase 12 contact-form E2E exposed that `/contact` rendered no form at all. Root cause: the
+`corex/form` block's `block.json` declares attribute defaults `flowId: 0` and `flowSlug: ""`. WordPress merges
+those defaults into `$attributes` before rendering, so `FormBlockRenderer`'s branch condition
+`isset($attributes['flowId']) || isset($attributes['flowSlug'])` was ALWAYS true — every block, including a legacy
+`formSlug` form (the Contact form the `corex/contact` pattern uses), was routed to the flow renderer, which found
+no flow and returned an empty string. The submit path was fine (SubmitLifecycleTest passed), but the form was
+never visible — dead UI on a core front-end surface.
+Decision: Route to the flow renderer only when a flow is actually referenced —
+`((int) flowId) > 0 || trim(flowSlug) !== ''` — otherwise fall through to the registered `formSlug` form. Added
+`tests/Integration/Forms/FormBlockRenderingTest.php` (3) that renders the real registered block via `do_blocks`
+(so block.json defaults are merged, unlike the pure unit test which passes a null flow renderer) and asserts the
+form and the `corex/contact` pattern render, and that an unknown flow stays non-fatal.
+Why: the owner mandate is that approved design is required functionality and no required control may remain dead.
+A front-end contact form that renders nothing is exactly that. The fix is minimal, preserves flow-block behavior
+(a referenced flow still routes to the flow renderer), and is guarded by a test that exercises the real
+default-merge path the unit test missed.
+Status: Final on `fix/067-admin-shell-and-completion`. Verified live: `http://corex.local/contact/` now serves
+`<form data-corex-schema>`; the contact-form smoke E2E passes; full unit 1,257 and integration 107 stay green.

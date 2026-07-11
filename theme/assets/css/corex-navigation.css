@@ -89,11 +89,105 @@
 	}
 }
 
+/* Solid sticky header: sticks to the top and gains elevation once scrolled. The
+   script flips data-corex-header-state; the elevation change lives here. */
+.corex-header--sticky {
+	position: sticky;
+	inset-block-start: 0;
+	z-index: var(--wp--custom--z--sticky);
+	background-color: var(--wp--preset--color--surface);
+}
+
+.corex-header--sticky[data-corex-header-state="scrolled"] {
+	box-shadow: var(--wp--preset--shadow--sm);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+	.corex-header--sticky {
+		transition:
+			box-shadow var(--wp--custom--motion--duration--base)
+			var(--wp--custom--motion--easing--standard);
+	}
+}
+
 /* Action slots (search, language) align within the actions row. */
 .corex-header__search,
 .corex-header__lang {
 	display: flex;
 	align-items: center;
+	position: relative;
+}
+
+/* Search overlay ----------------------------------------------------- */
+
+/* The toggle is a token-only icon button; hidden in markup and revealed by the
+   script, so no-JS visitors get the inline form below, never a dead control. */
+.corex-header__search-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: 2.75rem;
+	block-size: 2.75rem;
+	padding: 0;
+	border: var(--wp--custom--border--width--thin) solid transparent;
+	border-radius: var(--wp--custom--radius--sm);
+	background-color: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+.corex-header__search-toggle[hidden] {
+	display: none;
+}
+
+.corex-header__search-toggle:hover {
+	background-color: var(--wp--preset--color--surface-alt);
+}
+
+.corex-header__search-toggle:focus-visible {
+	outline:
+		var(--wp--custom--focus--width) solid
+		var(--wp--custom--focus--color);
+	outline-offset: var(--wp--custom--focus--offset);
+}
+
+.corex-header__search-icon {
+	inline-size: 1.25rem;
+	block-size: 1.25rem;
+}
+
+/* No-JS: the panel is a plain inline search form. With the script it becomes
+   an overlay under the toggle (a dropdown on wider viewports). */
+.corex-header__search-form {
+	display: flex;
+	align-items: center;
+	column-gap: var(--wp--preset--spacing--20);
+}
+
+.corex-header__search-field {
+	min-inline-size: 0;
+	font-family: var(--wp--preset--font-family--body);
+}
+
+.corex-header__search-panel[hidden] {
+	display: none;
+}
+
+@media (min-width: 48em) { /* corex-token-allow: nav breakpoint */
+	.corex-header__search-panel:not([hidden]) {
+		position: absolute;
+		inset-block-start: calc(100% + var(--wp--preset--spacing--20));
+		inset-inline-end: 0;
+		z-index: var(--wp--custom--z--dropdown);
+		background-color: var(--wp--preset--color--surface-raised);
+		border:
+			var(--wp--custom--border--width--thin) solid
+			var(--wp--preset--color--border);
+		border-radius: var(--wp--custom--radius--md);
+		padding: var(--wp--preset--spacing--40);
+		box-shadow: var(--wp--preset--shadow--md);
+	}
 }
 
 /* Mega menu (native <details>) --------------------------------------- */

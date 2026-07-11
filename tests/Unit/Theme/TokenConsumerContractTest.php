@@ -85,6 +85,7 @@ it('rejects unrecorded raw design values outside approved allowances', function 
                 'plugins/corex-core/assets/css/corex-admin-tokens.css',
                 'plugins/corex-core/assets/css/corex-admin-shell.css',
                 'plugins/corex-core/assets/css/corex-admin-login.css',
+                'plugins/corex-core/assets/css/corex-admin-standalone.css',
                 'plugins/corex-config/assets/control-panel.css',
                 'plugins/corex-config/assets/data.css',
                 'plugins/corex-config/assets/insights.css',

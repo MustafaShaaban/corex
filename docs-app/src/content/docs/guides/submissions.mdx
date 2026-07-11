@@ -1,0 +1,69 @@
+---
+title: Submissions Inbox
+description: Work, email, export, and retain permission-scoped CoreX flow responses safely.
+---
+
+Open **CoreX → Submissions** to work with the responses stored by published flows. The Inbox is distinct from the raw
+Data explorer: it owns team workflow, personal-data controls, related email actions, and the submission timeline.
+
+## Find and work a response
+
+Search by submitter or flow and combine flow, status, owner, and date filters. Marked tests are hidden by default; turn
+on **Include marked tests** only when diagnosing the real seven-stage flow pipeline. Every list count and detail request
+uses the current actor's record scope, so inaccessible records do not leak through counts, filters, or direct IDs.
+
+Open a row to inspect:
+
+- submitted fields, hidden metadata, and UTM attribution;
+- consent, spam, and immutable flow-version evidence;
+- read, status, owner, export, and retention state;
+- attributed internal notes, related email attempts, and the append-only timeline.
+
+Change the status to New, In Progress, Replied, Closed, Spam, or Archived. Read, status, and assignment writes are
+optimistic: if another teammate changed the response after it loaded, CoreX returns a conflict and asks the Inbox to
+refresh instead of overwriting their work.
+
+## Bulk actions
+
+Select up to 100 visible rows, then preview Mark read, Assign, Mark spam, or Archive. The preview is bound to your user,
+the exact selected IDs, and their update timestamps; it expires after five minutes and can be applied once. If any row
+changes or becomes inaccessible, the whole action stops before mutation rather than silently applying a partial result.
+
+## Reply and inspect delivery
+
+When the submission contains a valid email address and Email Studio is active, the drawer can send a reply. A related
+retryable template attempt can be resent from its immutable template version and current submission context. **Open
+log** returns the redacted delivery record only when that attempt belongs to the open submission. Development captures
+these messages; Staging and Production still follow Email Studio's provider and live-delivery gates.
+
+## Export personal data
+
+Choose **Export**, then select one scope:
+
+1. Selected rows.
+2. The current filter.
+3. All records you can access.
+
+Select identity/workflow, submitted fields, hidden metadata, UTM, consent snapshot, or permitted notes. Personal-data
+columns require both the export permission and an explicit acknowledgement. Marked tests remain excluded unless you
+opt in. CoreX creates a bounded export job and a private CSV artifact; history records the actor, scope, columns, row
+count, and time, while the shared activity stream records the queued compliance event without copying submitted values.
+
+CSV values are formula-safe. Downloads pass through the authorized Inbox endpoint rather than exposing a public uploads
+URL.
+
+## Retention
+
+Set the age window under **Submission retention**. The preview count excludes marked tests by default. After confirming,
+choose one operation:
+
+- **Archive** keeps the response and marks its workflow and retention state.
+- **Move to trash** uses WordPress's recoverable trash.
+- **Anonymize personal data** removes submitted values, submitter projections, hidden/UTM/consent data, and notes while
+  preserving non-personal workflow evidence.
+
+Each applied archive or anonymization writes a retention timeline event. Including marked tests is a separate explicit
+choice so diagnostic fixtures are never swept into ordinary retention work accidentally.
+
+For creating the versioned response source, see [Forms & Flows](/guides/forms-flows/). For generic source adapters and
+data exploration, see [Manage submission data](/guides/data/).

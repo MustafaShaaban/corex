@@ -10,11 +10,13 @@ namespace Corex\Captcha;
 
 defined('ABSPATH') || exit;
 
+use Corex\Security\ChallengeVerifier;
+
 /**
  * Verifies an anti-bot challenge. Implementations are fail-closed: anything other
  * than a confirmed pass returns false.
  */
-interface Captcha
+interface Captcha extends ChallengeVerifier
 {
     /**
      * @param array<string,mixed> $context

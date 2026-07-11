@@ -17,7 +17,9 @@ defined('ABSPATH') || exit;
  * a real engine is active (detect-and-defer) — see the Forms email listener.
  *
  * Sending is best-effort: an implementation MUST NOT throw — delivery failures are
- * the engine's concern to catch and log, never the caller's request to abort.
+ * the engine's concern to catch and log, never the caller's request to abort. Existing
+ * implementations keep this void contract; result-bearing engines also implement
+ * {@see AttemptingMailer} so callers can opt into a truthful {@see MailResult}.
  */
 interface Mailer
 {

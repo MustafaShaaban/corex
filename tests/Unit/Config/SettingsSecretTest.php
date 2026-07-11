@@ -17,6 +17,10 @@ use Brain\Monkey\Functions;
 use Corex\Config\Settings\SettingsForm;
 use Corex\Config\Settings\SettingsRegistry;
 
+beforeEach(function () {
+    Functions\when('__')->returnArg();
+});
+
 function stubSettingsEscapers(): void
 {
     Functions\when('esc_html')->returnArg();

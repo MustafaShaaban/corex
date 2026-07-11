@@ -59,9 +59,29 @@ final class SetupWizardScreen
      */
     public function maybeEnqueue(string $hook): void
     {
-        if ($hook === $this->hook && $this->hook !== '') {
-            wp_enqueue_style('corex-admin-shell');
+        if ($hook !== $this->hook || $this->hook === '') {
+            return;
         }
+
+        wp_enqueue_style('corex-admin-shell');
+        wp_enqueue_style(
+            'corex-setup-wizard',
+            plugins_url('assets/setup-wizard.css', dirname(__DIR__) . '/corex-kit-company.php'),
+            ['corex-admin-shell'],
+            '1.0.0',
+        );
+        wp_enqueue_script(
+            'corex-setup-wizard',
+            plugins_url('assets/setup-wizard.js', dirname(__DIR__) . '/corex-kit-company.php'),
+            ['corex-runtime'],
+            '1.0.0',
+            true,
+        );
+        wp_localize_script('corex-setup-wizard', 'corexSetup', [
+            'restUrl'  => esc_url_raw(rest_url('corex/v1/setup')),
+            'nonce'    => wp_create_nonce('wp_rest'),
+            'adminUrl' => esc_url_raw(admin_url()),
+        ]);
     }
 
     public function render(): void
@@ -82,6 +102,10 @@ final class SetupWizardScreen
             __('CoreX Setup Wizard', 'corex'),
             __('Choose a starter kit, review its modules, then apply the plan.', 'corex'),
         );
+
+        // The nine-step JS wizard mounts here; the server-rendered flow below is the no-JS fallback.
+        echo '<div id="corex-setup-app" class="corex-setup"></div>';
+        echo '<div class="corex-setup-fallback">';
         echo $this->stepper($step);
 
         if ($kits === []) {
@@ -98,6 +122,7 @@ final class SetupWizardScreen
             echo $this->renderChoose($kits);
         }
 
+        echo '</div>';
         echo $this->page->close();
     }
 

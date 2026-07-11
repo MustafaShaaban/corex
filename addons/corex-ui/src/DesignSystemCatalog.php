@@ -51,6 +51,7 @@ final class DesignSystemCatalog
         'breadcrumbs' => 'Breadcrumbs',
         'copyright'   => 'Copyright',
         'modal'       => 'Modal / dialog',
+        'drawer'      => 'Drawer',
     ];
 
     /** Component atoms delivered by a mechanism other than a Corex block (gap analysis, research D2). */
@@ -67,8 +68,8 @@ final class DesignSystemCatalog
         ['name' => 'Table / list',  'mechanism' => self::MECH_CORE_BLOCK],
         ['name' => 'Form controls', 'mechanism' => self::MECH_CORE_BLOCK],
         ['name' => 'Toast / notification', 'mechanism' => self::MECH_RUNTIME],
-        // Modal / dialog is now the corex/modal block (054 US3) — see COMPONENT_BLOCKS.
-        ['name' => 'Drawer',        'mechanism' => self::MECH_DEFERRED],
+        // Modal / dialog is now the corex/modal block (054 US3); Drawer is the corex/drawer block
+        // (068 US9) — both in COMPONENT_BLOCKS.
         ['name' => 'Popover',       'mechanism' => self::MECH_DEFERRED],
         ['name' => 'Tooltip',       'mechanism' => self::MECH_DEFERRED],
         ['name' => 'Stepper',       'mechanism' => self::MECH_DEFERRED],
@@ -86,6 +87,7 @@ final class DesignSystemCatalog
         'team'        => 'Team',
         'gallery'     => 'Gallery',
         'posts'       => 'Posts',
+        'carousel'    => 'Carousel / slider',
     ];
 
     /** Composed section patterns (corex-ui PatternLibrary). */

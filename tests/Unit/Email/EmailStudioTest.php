@@ -50,3 +50,16 @@ it('flags staging delivery as a warning to protect real contacts', function () {
     expect($overview['delivery']['tone'])->toBe(EmailStudio::TONE_WARNING)
         ->and($overview['delivery']['label'])->not->toBe('');
 });
+
+it('derives the variable browser from placeholders in real registered template sources', function () {
+    $variables = (new EmailStudio())->variables([
+        'contact' => ['Subject', '<p>{{ submission.name }} {{ submission.email }}</p>'],
+        'receipt' => ['Hi {{ recipient.name }}', '<p>{{ submission.email }}</p>'],
+    ]);
+
+    expect($variables)->toBe([
+        'submission.name'  => ['contact'],
+        'submission.email' => ['contact', 'receipt'],
+        'recipient.name'   => ['receipt'],
+    ]);
+});

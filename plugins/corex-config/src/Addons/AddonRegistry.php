@@ -74,6 +74,15 @@ final class AddonRegistry
                 tier: AddonTier::Recommended,
             ),
             $this->addon(
+                'corex-profile',
+                'Corex Profile',
+                summary: 'Front-office accounts — login, registration, recovery, profile, sessions.',
+                description: 'Layers login, registration, forgot/reset password, profile editing, notifications, and active-session management over WordPress auth, kept separate from wp-admin. Presentation lives in the theme.',
+                provides: ['account blocks (login, register, reset, profile, sessions, notifications)', 'corex/v1/account/* REST'],
+                docsUrl: '/guides/profile/',
+                tier: AddonTier::Optional,
+            ),
+            $this->addon(
                 'corex-careers',
                 'Corex Careers',
                 summary: 'Job listings.',

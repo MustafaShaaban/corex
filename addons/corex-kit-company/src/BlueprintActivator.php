@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Kit;
 
+use Corex\Kit\Setup\ConflictResolver;
 use Corex\Provisioning\ApplyOutcome;
 use Corex\Provisioning\PageContent;
 use Corex\Provisioning\PageDisposition;
@@ -44,18 +45,20 @@ final class BlueprintActivator
     public function __construct(
         private readonly PagePlanner $planner = new PagePlanner(),
         private readonly PageContent $content = new PageContent(),
+        private readonly ConflictResolver $conflicts = new ConflictResolver(),
     ) {
     }
 
     /**
      * @param array{flags:list<string>,modules:list<string>,pages?:list<array{title:string,slug:string,content:string,front?:bool}>} $plan
+     * @param array<string,string> $choices slug => keep|replace|suffix for conflicting pages (default keep)
      */
-    public function apply(array $plan): ApplyOutcome
+    public function apply(array $plan, array $choices = []): ApplyOutcome
     {
         $flags   = $this->enableFlags($plan['flags']);
         $modules = $this->activateModules($plan['modules']);
 
-        return $this->seedPages($plan['pages'] ?? [], $modules, $flags);
+        return $this->seedPages($plan['pages'] ?? [], $modules, $flags, $choices);
     }
 
     /**
@@ -79,9 +82,15 @@ final class BlueprintActivator
         return $this->planner->plan($pages, $this->signals($pages));
     }
 
-    public function seedPages(array $pages, array $modules = [], array $flags = []): ApplyOutcome
+    public function seedPages(array $pages, array $modules = [], array $flags = [], array $choices = []): ApplyOutcome
     {
         $dispositions = $this->classify($pages);
+
+        if ($choices !== []) {
+            // Apply explicit operator conflict choices (FR-139). The resolver defaults every
+            // unchosen conflict to Keep Mine, so nothing is overwritten silently (FR-143).
+            $dispositions = $this->conflicts->resolve($dispositions, $choices);
+        }
 
         $bySlug = [];
         foreach ($pages as $page) {
@@ -170,6 +179,40 @@ final class BlueprintActivator
             update_post_meta($existing->ID, self::PAGE_META, $persistedAs);
 
             return ['pageId' => $existing->ID, 'persistedAs' => $persistedAs];
+        }
+
+        // Replace only runs from an explicit operator conflict choice (never a default), so existing
+        // content is never overwritten silently (FR-143); the apply flow requires a backup first (FR-140).
+        if ($disposition->action === PageDisposition::REPLACE) {
+            $existing = get_page_by_path($disposition->slug);
+
+            if (! $existing instanceof \WP_Post) {
+                return ['pageId' => null, 'persistedAs' => null];
+            }
+
+            wp_update_post(['ID' => $existing->ID, 'post_content' => $page['content']]);
+            update_post_meta($existing->ID, self::PAGE_META, PageDisposition::PERSISTED_REPLACED);
+
+            return ['pageId' => $existing->ID, 'persistedAs' => PageDisposition::PERSISTED_REPLACED];
+        }
+
+        // Suffix leaves the operator's page untouched and creates the kit page under a fresh, non-colliding slug.
+        if ($disposition->action === PageDisposition::SUFFIX) {
+            $id = wp_insert_post([
+                'post_title'   => $page['title'],
+                'post_name'    => $disposition->persistSlug(),
+                'post_status'  => 'publish',
+                'post_type'    => 'page',
+                'post_content' => $page['content'],
+            ]);
+
+            if (! is_int($id) || $id <= 0) {
+                return ['pageId' => null, 'persistedAs' => null];
+            }
+
+            update_post_meta($id, self::PAGE_META, PageDisposition::PERSISTED_SUFFIXED);
+
+            return ['pageId' => $id, 'persistedAs' => PageDisposition::PERSISTED_SUFFIXED];
         }
 
         return ['pageId' => null, 'persistedAs' => null];

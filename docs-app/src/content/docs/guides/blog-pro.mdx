@@ -1,0 +1,56 @@
+---
+title: Blog Pro
+description: Manage native WordPress posts with first-party analytics, an editorial workflow, comment moderation, author insights, and sharing — plus a complete native front end.
+---
+
+Blog Pro is a functional workspace over **native WordPress posts** — it does not replace the post model. Open
+**CoreX → Blog Pro**. The native front-end blocks (sharing, newsletter) require **CoreX Email** and **CoreX
+Newsletter** to be active.
+
+## Analytics — first-party reading signals
+
+Blog Pro collects reading signals **on your own site**, with privacy built in:
+
+- Collection is **consent-aware**; without consent, events are dropped.
+- Visitor identity is **hashed** — no raw IP address or user agent is stored.
+- Events are retained for **180 days**, then pruned.
+
+The Analytics panel surfaces four aggregates: **views**, **reads**, **share clicks**, and **average read
+seconds**. Counts start at zero on a fresh install and grow from real first-party events — no sample data.
+
+## Editorial workflow
+
+Each post carries an editorial state mapped onto native WordPress post statuses:
+
+| Editorial state | Native status |
+|---|---|
+| Draft | `draft` |
+| Ready for Review | `pending` |
+| Needs Changes | `draft` |
+| Approved | `pending` |
+| Scheduled | `future` |
+| Published | `publish` |
+
+Transitions use `wp_update_post()` and record the assignee, due date, scheduled timestamp, and author-written
+review notes. The post itself is never swapped for a custom model.
+
+## Comments, authors, and sharing
+
+- **Moderation queue** — held, first-time, and likely-spam comments are classified and actioned
+  (approve, reply, edit, spam, trash) through the native WordPress comment APIs.
+- **Authors** — real author users with true published-post counts and first-party views/reads/engagement.
+- **Sharing** — option-backed X, Facebook, LinkedIn, and copy-link controls over native post URLs and titles.
+  Share clicks are logged through the consent-aware analytics service when enabled.
+
+## Native front end
+
+The theme ships a complete native blog experience. The single-post template (`theme/templates/single.html`)
+renders post meta, content, tags, and:
+
+- the **social share** row (`corex/social-share`),
+- a **newsletter signup** (`corex/newsletter-signup`),
+- the native **comment thread and reply form**, and
+- a **More from the blog** related-posts query.
+
+The `index.html` and `archive.html` templates render a responsive post grid with excerpts, a no-results state,
+and pagination.

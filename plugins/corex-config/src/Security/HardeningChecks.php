@@ -27,7 +27,9 @@ final class HardeningChecks
      *   ssl:bool,
      *   fileEditDisabled:bool,
      *   debugDisplayOff:bool,
-     *   defaultAdminAbsent:bool
+     *   defaultAdminAbsent:bool,
+     *   indexingAllowed:bool,
+     *   authSaltsConfigured:bool
      * } $facts
      *
      * @return list<array{key:string,label:string,status:string,detail:string}>
@@ -62,6 +64,20 @@ final class HardeningChecks
                 $facts['defaultAdminAbsent'],
                 __('There is no user literally named "admin".', 'corex'),
                 __('Avoid a user named "admin" — it is the first username brute-force bots try.', 'corex'),
+            ),
+            $this->check(
+                'search_indexing',
+                __('Search indexing allowed', 'corex'),
+                $facts['indexingAllowed'],
+                __('Search engines are not discouraged from indexing this production site.', 'corex'),
+                __('Review Settings → Reading → Search Engine Visibility before Production launch.', 'corex'),
+            ),
+            $this->check(
+                'auth_salts',
+                __('Authentication salts configured', 'corex'),
+                $facts['authSaltsConfigured'],
+                __('WordPress authentication unique keys and salts are configured.', 'corex'),
+                __('Set unique WordPress authentication unique keys and salts in wp-config.php.', 'corex'),
             ),
         ];
     }

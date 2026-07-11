@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Corex\Config\Retention;
 
+use Corex\Admin\StandalonePage;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -57,18 +58,27 @@ final class RetentionController
             return;
         }
 
-        $removed = $this->retention->prune();
+        $action = isset($_POST['corex_retention_action'])
+            ? sanitize_key(wp_unslash($_POST['corex_retention_action']))
+            : 'trash';
+        $includeTest = isset($_POST['corex_include_test']) && $_POST['corex_include_test'] === '1';
+        $removed = $this->retention->prune($action, $includeTest);
         $this->redirect('retention-pruned', $removed);
     }
 
     private function assertAllowed(string $action): void
     {
         if (! $this->guard->verifiedPost(self::NONCE, $action)) {
-            wp_die(
-                esc_html__('You are not allowed to change retention, or your link expired.', 'corex'),
-                '',
-                ['response' => 403],
+            status_header(403);
+            nocache_headers();
+            header('Content-Type: text/html; charset=' . get_bloginfo('charset'));
+            echo StandalonePage::fromCore()->notice( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- StandalonePage returns a fully-escaped self-contained document.
+                __('Access denied', 'corex'),
+                __('You are not allowed to change retention, or your link expired.', 'corex'),
+                admin_url('admin.php?page=corex-submissions'),
+                __('Back to Submissions', 'corex'),
             );
+            exit;
         }
     }
 

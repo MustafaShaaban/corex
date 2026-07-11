@@ -131,6 +131,23 @@ Two modes:
 logic (the plan + the safety gate) is the pure, unit-tested `Corex\Cli\Reset\ResetPlanner`
 + `ResetGate`; only `ResetExecutor` touches WordPress.
 
+### `security reset-login` — recover protected login access
+
+```bash
+wp corex security reset-login
+```
+
+Disables CoreX login-protection gates and releases active lockouts so an owner can regain access through the standard
+WordPress login URL. It is intentionally narrow:
+
+- disables `enabled` and `block_default_endpoints` in the login-protection settings;
+- preserves unrelated settings such as the custom login slug;
+- releases active lockouts through the login-attempt store;
+- prints the restored `wp-login.php` URL and whether `COREX_LOGIN_UNGUARD` is active;
+- never changes users, roles, passwords, content, or WordPress core files.
+
+Use it when a custom login route, default-endpoint protection, or active lockout blocks owner access.
+
 ### `doctor` — health check (spec 036)
 
 ```bash

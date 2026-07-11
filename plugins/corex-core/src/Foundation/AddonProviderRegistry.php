@@ -18,6 +18,7 @@ use Corex\Kit\KitServiceProvider;
 use Corex\Media\MediaServiceProvider;
 use Corex\Newsletter\NewsletterServiceProvider;
 use Corex\Portfolio\PortfolioServiceProvider;
+use Corex\Profile\ProfileServiceProvider;
 use Corex\Ui\UiServiceProvider;
 use Corex\Woo\WooServiceProvider;
 
@@ -56,6 +57,11 @@ final class AddonProviderRegistry
                 'corex-media',
                 MediaServiceProvider::class,
                 'corex-media/corex-media.php',
+            ),
+            new AddonProvider(
+                'corex-profile',
+                ProfileServiceProvider::class,
+                'corex-profile/corex-profile.php',
             ),
             new AddonProvider(
                 'corex-careers',

@@ -39,12 +39,29 @@ look — client sites stay neutral):
 
 All overridable via the Config engine (`brand.logo_url`, `brand.login_url`, `brand.footer_text`).
 
+## Overview (Corex → Overview)
+
+The Overview is the command center. It composes a dense readiness dashboard from **already-gathered, real
+WordPress facts** — it never fabricates a count, an integration, a readiness score, or an activity feed. It
+shows: stat tiles (published posts/pages, stored submissions, active/installed add-ons); a launch-readiness
+checklist (brand, kit applied, front page, transactional email, spam protection, hardening); an analytics &
+security integrations panel (honest connected / not-configured chips); a data-sources summary; a Forms & Flows
+card with the real registered-form count and versioned-flow count; and a **recent-activity feed** projected
+from the core `Corex\Activity\ActivityService` (the five latest real events, with an honest empty state when
+there are none). The pure `OverviewModel` composes the regions; `OverviewRenderer` gathers the live facts and
+resolves optional services (`FlowRepository`, `ActivityService`) lazily so the screen never hard-depends on
+them.
+
 ## Settings dashboard
 
-A top-level **Corex** admin menu → a settings screen for **brand / mail / forms / captcha**. Each field
-is a Config dot-key, so saving persists to the prefixed option the **Config engine reads** — the framework
-consumes settings with no extra wiring (e.g. saving `mail.from.address` is what `WpMailDriver` reads).
-Saving is nonce + `manage_options` gated and sanitized.
+A top-level **Corex** admin menu → a tabbed settings screen: **Brand / Mail / Forms / Captcha / Media / Insights
+/ Advanced**. Each field is a Config dot-key, so saving persists to the prefixed option the **Config engine reads**
+— the framework consumes settings with no extra wiring (e.g. saving `mail.from.address` is what `WpMailDriver`
+reads). Saving is nonce + `manage_options` gated and sanitized by the pure `SettingsSanitizer` (invalid
+email/URL/unknown-select values are rejected, not saved; empty write-only secrets are preserved). **Advanced** is a
+read-only system-diagnostics read-out (PHP/WordPress/environment/memory/multisite) — destructive resets live behind
+their own typed-confirmation surfaces (Operations & Security, Setup Wizard), and Operations, Data Sources, and
+Design Tokens keep their dedicated screens rather than being duplicated here.
 
 ```php
 $store = $container->make(Corex\Config\Settings\SettingsStore::class);
@@ -65,22 +82,34 @@ require `corex-ui`, mirroring the blueprints); the `AddonsScreen` only renders +
 `Corex\Security\Admin\AdminGuard`, cap + nonce) and delegates the plugin/flag writes to `AddonActivator`.
 Companion to the setup wizard (which composes a whole kit at once).
 
+The truthful summary bar (active / installed / site-kit counts) is projected by the pure
+`Corex\Config\Addons\AddonCatalogService`, shared with the Overview add-on tile. CoreX ships no update-checker,
+so the Updates cell honestly reads **not tracked** — never a faked count — and a not-installed add-on shows a
+real installation path (add the plugin package to `wp-content/plugins`) rather than a fabricated update.
+
 ## Data screen (Corex → Data)
 
-A **Corex → Data** admin screen shows your form **submissions** — and any registered Corex custom-table data
-source — with a search box, a source/form filter, sortable column headers, pagination, a **CSV Export** button
-(the current filtered view, bounded to 5000 rows), a per-record **detail drawer**, and distinct loading / error /
-empty states (spec 053 US2; it supersedes the earlier minimal DataViews table). The data is served by the
-cap-gated `corex/v1/data/<source>` REST routes (`manage_options`; deletes + export require a nonce); the export
-streams from the `corex_data_export` `admin-post` handler.
+A **Corex → Data** workspace lists submissions and registered custom-table sources through the canonical
+`corex/v1/data` REST boundary. Search, declared field filters, source-approved sorting, detail, pagination, create,
+edit, delete, bounded bulk actions, and CSV/XLSX exports appear only when the current actor and source both allow the
+operation. Every write first returns an exact, actor-bound five-minute preview and accepts that preview once. Export
+scope can be the current query, selected rows, or all accessible rows; columns are explicit and personal-data fields
+require acknowledgement.
 
-It is built on a pure `DataSource` abstraction (`key/label/columns/rows/total/delete`): the submissions source is
-the reference implementation (`SubmissionsSource` + the `WpSubmissionsReader` boundary); an add-on registers its
-own `DataSource` (e.g. over a `TableRepository`) to appear in the same screen with no new UI code. The screen
-renders + gates via the shared `AdminGuard`. (Spec 030.)
+**Corex → Data Models** uses the same capability catalog for schema inspection and records, plus CSV upload/mapping/
+dry-run/commit, rejection reports, export history/downloads, and provider-declared migration apply/rollback. Imports
+write only accepted rows from the confirmed checksum. Migration previews show the exact plan and create a provider
+snapshot before queueing. Unsupported actions are omitted rather than presented as dead controls.
+
+The base `DataSource` remains read compatible. Add-ons opt into richer behavior with `QueryableDataSource`,
+`FieldAwareDataSource`, `CapabilityAwareDataSource`, `WritableDataSource`, or `MigrationAwareDataSource`; the UI never
+infers a write path without the matching adapter. See the
+[Data management guide](../../docs-app/src/content/docs/guides/data-management.mdx) for the extension contracts and
+safety model.
 
 **Custom tables appear automatically.** Mark any Corex-managed table **managed** and it shows up in Corex → Data
-like a post-type list — browsable, paginated, and deletable — with no admin code (spec 038):
+like a post-type list — browsable and paginated, with richer actions only when it supplies their adapters — with no
+admin code (spec 038):
 
 ```php
 // in a service provider's boot(), once the table exists
@@ -97,12 +126,68 @@ Each managed table becomes a `TableDataSource` (key `table-<name>`). The `$wpdb`
 **bounded** (`LIMIT/OFFSET`); the row/column shaping is the pure, unit-tested `TableDataSource`. It is **opt-in**:
 Corex never enumerates arbitrary database tables.
 
+## Submissions Inbox (Corex → Submissions)
+
+The Submissions Inbox is the operational workspace over persisted flow responses. It provides permission-scoped
+search, flow/status/owner/date filters, marked-test visibility, page selection, unread state, ownership, and the six
+workflow statuses: New, In Progress, Replied, Closed, Spam, and Archived. Opening a row shows submitted values, hidden
+and UTM metadata, consent and flow-version snapshots, spam/retention/export state, internal notes, related email
+attempts, and the append-only timeline.
+
+Every mutation uses `corex/v1/submissions` with the CoreX submissions ability and a REST nonce. Status, read, and
+assignment writes carry the record's `updated_at` value, so stale tabs receive a conflict. Bulk mark-read, assignment,
+spam, and archive actions require a bounded actor-bound preview token and abort if any selected record changed or became
+inaccessible. Email replies, safe resends, and redacted attempt logs cross the neutral `SubmissionEmailGateway`; the
+optional Email Studio add-on supplies the implementation without becoming a hard dependency.
+
+Exports support all accessible records, the current filter, or selected rows. Administrators choose explicit data
+classes and must acknowledge personal-data columns. Export work runs through CoreX bounded jobs, stores its CSV artifact
+in private WordPress data, marks exported submissions, and records scope, actor, columns, count, and time in both export
+history and the shared activity stream. Marked-test submissions are excluded unless explicitly included.
+
+Retention defaults to the same marked-test exclusion and offers dry-run counts plus confirmed Archive, recoverable
+Trash, or Anonymize operations. Anonymization removes submitted values, submitter projections, hidden/UTM/consent data,
+and notes while retaining non-personal workflow evidence and a retention timeline event.
+
+## Email Studio (Corex → Email Studio)
+
+The Email Studio is gated on the optional CoreX Email add-on. When active, its REST-backed React client provides
+**Overview / Templates / Layouts / Partials / Variables / Routing / Preview / Plain text / Test send / Delivery logs / Health**.
+It creates editable templates, saves immutable draft revisions, activates a selected revision, revises layouts
+and partials, binds triggers with recipient and optional reply-to rules, renders desktop/mobile/RTL sample previews,
+captures or delivers tests according to the environment policy, and shows persisted captures and typed delivery
+attempts with retry lineage.
+
+All reads require `manage_options`; mutations additionally require the REST nonce localized into the screen. HTML
+variables are escaped, unsafe executable content and injected headers are rejected, preview iframes are sandboxed,
+and styles use the shared CoreX admin tokens with logical properties. Development never reaches a live transport;
+Production requires the matching configured provider plus deliberate live activation. When CoreX Email is inactive,
+the screen shows a direct Add-ons activation path and does not instantiate add-on services.
+
+## Blog Pro (Corex → Blog Pro)
+
+Blog Pro is a functional workspace over **native WordPress posts**. Its REST-backed React client renders
+**Analytics / Native posts / Editorial workflow / Moderation queue / Authors / Sharing** from live state — no
+sample data. Analytics are **first-party and consent-aware**: visitor identity is hashed (no raw IP or user
+agent stored) and reading events are retained for 180 days. The editorial workflow maps explicit states
+(Draft, Ready for Review, Needs Changes, Approved, Scheduled, Published) onto native post statuses via
+`wp_update_post()`; comment moderation and author analytics use the native WordPress comment and user APIs.
+
+The native front end ships complete templates in `theme/`: `single.html` renders the post plus the
+`corex/social-share` block, the `corex/newsletter-signup` block, the native comment thread and reply form, and a
+related-posts query; `index.html` and `archive.html` render a responsive post grid with excerpts, a no-results
+state, and pagination. The sharing and newsletter blocks require the CoreX Email and CoreX Newsletter add-ons.
+
 ## Insights screen (Corex → Insights)
 
-A **Corex → Insights** screen shows two result cards — **Performance** (Google PageSpeed Insights / Lighthouse)
-and **Readiness** (the site's agent-readiness: HTTPS, an `llms.txt`, a sitemap, agent-permitting robots, exposed
-MCP abilities) — each with a **Run check** button. Every result is **scored, graded (A–F), cached, and
-history-kept**.
+A **Corex → Insights** screen shows the designed widget set. Two are **runnable result cards** —
+**Performance** (Google PageSpeed Insights / Lighthouse) and **Readiness** (the site's agent-readiness: HTTPS, an
+`llms.txt`, a sitemap, agent-permitting robots, exposed MCP abilities) — each with a **Run check** button; every
+result is **scored, graded (A–F), cached, and history-kept**. Below them, five **informational widgets** render
+from real gathered facts (`InsightWidgetFacts` → `InsightWidgets`): **Cloudflare** (connected/not-connected),
+**Security events** (recent operations/access activity), **SEO & indexing readiness**, **Operations health**
+(mode/cron/PHP/WordPress versions), and **Forms & Flows analytics** (live submission/flow counts). Aggregated
+recommendations from every provider's latest result are available at `GET corex/v1/insights/recommendations`.
 
 It is built on a pluggable `InsightProvider` seam; each provider's **normaliser/scorer is pure and unit-tested**
 (`PsiNormalizer`, `CloudflareNormalizer`, `ReadinessScorer`, `Grade`, `InsightStore`), while the HTTP fetch, the
@@ -142,10 +227,6 @@ are write-only. Scaffold one with `wp corex make:option-page <Name>`.
 composer test              # headless: branding + settings + the add-on registry/manager dependency rules
 composer test:integration  # real ./wp: a saved setting read back; the add-on activator flag sync
 ```
-
-> The **React/DataViews UI** (DataViews tables for submissions/subscribers/applications, the setup wizard,
-> a health-check runner) is the deferred upgrade — it needs a Node build + a browser to author and verify.
-> The current settings screen is server-rendered (Settings-API style) and fully testable.
 
 > The rendered admin appearance (the login page showing the Corex logo) is a browser check. The full
 > **settings/dashboard UI** (React/DataViews) is spec 017 and needs a Node build + a browser to author.

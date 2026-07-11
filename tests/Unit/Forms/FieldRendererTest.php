@@ -50,6 +50,16 @@ it('renders a textarea and a select with options', function () {
         ->toContain('<select')
         ->toContain('<option value="sales">Sales</option>')
         ->toContain('<option value="support">Support</option>');
+
+    expect(renderField('topics', [
+        'type' => 'multi-select',
+        'options' => ['news' => 'News'],
+        'default_value' => ['news'],
+    ]))
+        ->toContain('<select')
+        ->toContain('name="topics[]"')
+        ->toContain(' multiple')
+        ->toContain('<option value="news" selected>News</option>');
 });
 
 it('renders a radio group as a fieldset with a legend and one input per option', function () {

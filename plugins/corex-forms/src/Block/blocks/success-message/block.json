@@ -1,0 +1,18 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/success-message",
+	"title": "Success Message",
+	"category": "corex",
+	"icon": "yes-alt",
+	"description": "Renders the success message from a published Corex flow.",
+	"textdomain": "corex",
+	"attributes": {
+		"flowId": { "type": "integer", "default": 0 },
+		"variant": { "type": "string", "default": "success-message" }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"corex": { "renderer": "Corex\\Forms\\Block\\FlowBlockRenderer" }
+}

@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/survey",
+	"title": "Survey",
+	"category": "corex",
+	"icon": "forms",
+	"description": "Renders a published Corex flow as a survey.",
+	"textdomain": "corex",
+	"attributes": {
+		"flowId": { "type": "integer", "default": 0 },
+		"variant": { "type": "string", "default": "survey" },
+		"heading": { "type": "string", "default": "" },
+		"intro": { "type": "string", "default": "" },
+		"submitLabel": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"corex": { "renderer": "Corex\\Forms\\Block\\FlowBlockRenderer" }
+}

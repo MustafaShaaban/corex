@@ -1,0 +1,37 @@
+@use "corex-form/style";
+
+.corex-flow {
+	display: grid;
+	gap: var(--wp--preset--spacing--40);
+	color: var(--wp--preset--color--ink);
+}
+
+.corex-flow__title,
+.corex-flow__intro,
+.corex-form__help,
+.corex-form__step-title {
+	margin: 0;
+}
+
+.corex-form__help {
+	color: var(--wp--preset--color--ink-soft);
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.corex-form__step {
+	grid-column: 1 / -1;
+	padding-block: var(--wp--preset--spacing--30);
+}
+
+.corex-flow--cta-flow {
+	padding-block: var(--wp--preset--spacing--60);
+	padding-inline: var(--wp--preset--spacing--60);
+	background: var(--wp--preset--color--surface-alt);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-flow * {
+		scroll-behavior: auto;
+	}
+}

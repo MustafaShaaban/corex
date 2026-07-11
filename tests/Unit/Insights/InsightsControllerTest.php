@@ -75,5 +75,11 @@ it('runs a known provider, stores it, and returns a secret-free payload', functi
 });
 
 it('returns null for an unknown provider (the route maps this to 404)', function () {
+    // result() now loads the stored state uniformly before delegating the run; an unknown
+    // provider still yields null (and never persists a fabricated result).
+    Functions\when('home_url')->justReturn('https://example.com/');
+    Functions\when('get_option')->justReturn([]);
+    Functions\expect('update_option')->never();
+
     expect(controller()->result('nope'))->toBeNull();
 });

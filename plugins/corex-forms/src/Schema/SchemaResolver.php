@@ -60,6 +60,13 @@ final class SchemaResolver
                 $this->width((string) ($definition['width'] ?? 'full')),
                 (string) ($definition['class'] ?? ''),
                 $this->parseAttrs($definition['attrs'] ?? []),
+                (string) ($definition['placeholder'] ?? ''),
+                (string) ($definition['help_text'] ?? ''),
+                $definition['default_value'] ?? null,
+                (string) ($definition['visibility'] ?? 'visible'),
+                (string) ($definition['step_key'] ?? ''),
+                (string) ($definition['personal_data_class'] ?? 'none'),
+                (array) ($definition['extension_config'] ?? []),
             );
         }
 

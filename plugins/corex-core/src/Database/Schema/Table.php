@@ -22,6 +22,9 @@ final class Table
      */
     private array $columns = [];
 
+    /** @var list<string> */
+    private array $indexes = [];
+
     public function __construct(public readonly string $name)
     {
     }
@@ -68,13 +71,36 @@ final class Table
         return $this->datetime('created_at', nullable: true)->datetime('updated_at', nullable: true);
     }
 
+    /** @param list<string> $columns */
+    public function index(string $name, array $columns, bool $unique = false): self
+    {
+        $this->assertIdentifier($name);
+
+        if ($columns === []) {
+            throw new \InvalidArgumentException('A table index requires at least one column.');
+        }
+
+        foreach ($columns as $column) {
+            $this->assertIdentifier($column);
+        }
+
+        $this->indexes[] = sprintf(
+            '%sKEY %s (%s)',
+            $unique ? 'UNIQUE ' : '',
+            $name,
+            implode(', ', $columns),
+        );
+
+        return $this;
+    }
+
     public function createSql(string $fullTableName, string $charsetCollate): string
     {
         // dbDelta-friendly format: one column per line, two spaces before the key.
         return sprintf(
             "CREATE TABLE %s (\n\t%s,\n\tPRIMARY KEY  (id)\n) %s;",
             $fullTableName,
-            implode(",\n\t", $this->columns),
+            implode(",\n\t", [...$this->columns, ...$this->indexes]),
             $charsetCollate
         );
     }
@@ -84,5 +110,12 @@ final class Table
         $this->columns[] = $definition . ($nullable ? ' NULL' : ' NOT NULL');
 
         return $this;
+    }
+
+    private function assertIdentifier(string $identifier): void
+    {
+        if (preg_match('/^[a-z][a-z0-9_]*$/', $identifier) !== 1) {
+            throw new \InvalidArgumentException(sprintf('Unsafe schema identifier: "%s".', $identifier));
+        }
     }
 }

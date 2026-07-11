@@ -10,6 +10,8 @@ namespace Corex\Config\Data;
 
 defined('ABSPATH') || exit;
 
+use Corex\Admin\StandalonePage;
+
 /**
  * Exports the current (filtered) result of a Corex data source to a CSV download (spec 045,
  * US2). `manage_options` + a nonce gate the `admin_post` handler; the CSV assembly is the
@@ -37,19 +39,19 @@ final class DataExportController
     public function handle(): void
     {
         if (! current_user_can('manage_options')) {
-            wp_die(esc_html__('You are not allowed to export this data.', 'corex'), '', ['response' => 403]);
+            $this->fail(403, __('Access denied', 'corex'), __('You are not allowed to export this data.', 'corex'));
         }
 
         $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '';
         if (wp_verify_nonce($nonce, 'corex_data_export') === false) {
-            wp_die(esc_html__('Your export link expired — reload the page and try again.', 'corex'), '', ['response' => 403]);
+            $this->fail(403, __('Link expired', 'corex'), __('Your export link expired — reload the page and try again.', 'corex'));
         }
 
         $sourceKey = isset($_GET['source']) ? sanitize_key(wp_unslash($_GET['source'])) : '';
         $csv       = $this->csvFor($sourceKey, $this->queryFromGet());
 
         if ($csv === null) {
-            wp_die(esc_html__('Unknown data source.', 'corex'), '', ['response' => 404]);
+            $this->fail(404, __('Not found', 'corex'), __('Unknown data source.', 'corex'));
         }
 
         nocache_headers();
@@ -57,6 +59,25 @@ final class DataExportController
         header('Content-Disposition: attachment; filename="corex-' . $sourceKey . '.csv"');
 
         echo $csv; // The CsvWriter has already RFC-4180-escaped every field.
+        exit;
+    }
+
+    /**
+     * Emit a branded standalone error page with the correct status and terminate. The export
+     * handler runs from `admin_post` with no admin shell loaded, so a self-contained document
+     * keeps these interstitials on-brand instead of a bare wp_die notice.
+     */
+    private function fail(int $status, string $title, string $message): never
+    {
+        status_header($status);
+        nocache_headers();
+        header('Content-Type: text/html; charset=' . get_bloginfo('charset'));
+        echo StandalonePage::fromCore()->notice( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- StandalonePage returns a fully-escaped self-contained document.
+            $title,
+            $message,
+            admin_url('admin.php?page=corex-data'),
+            __('Back to Data', 'corex'),
+        );
         exit;
     }
 

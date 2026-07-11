@@ -50,6 +50,9 @@ it('renders the Overview readiness grid and Setup progress component contracts',
         ->and($overview)->toContain('corex-overview__tiles')
         ->and($overview)->toContain('Launch readiness')
         ->and($overview)->toContain('Analytics & security')
+        // The Overview surfaces the real installed CoreX framework version.
+        ->and($overview)->toContain('corex-overview__env-version')
+        ->and($overview)->toContain('COREX_CORE_VERSION')
         ->and($setup)->toContain('corex-wizard__steps')
         ->and($setup)->toContain('corex-wizard__kits');
 });

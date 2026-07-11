@@ -101,3 +101,117 @@
 .corex-admin .corex-insight-card__foot {
 	margin-block-start: auto;
 }
+
+/* The designed informational widget set (Cloudflare, Security, SEO,
+   Operations, Forms), rendered from real gathered facts below the
+   runnable Performance/Readiness cards. Tokens + logical props. */
+.corex-admin .corex-insights__widgets {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+	gap: var(--corex-admin-space-md);
+	margin-block-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-insight-widget {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: var(--corex-admin-shadow-sm);
+}
+
+.corex-admin .corex-insight-widget__head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-insight-widget__head h2 {
+	margin: 0;
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin .corex-insight-widget__sub {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-insight-widget__note {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-insight-widget__rows,
+.corex-admin .corex-insight-widget__events {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-2xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-insight-widget__row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-insight-widget__row:last-child {
+	border-block-end: 0;
+}
+
+.corex-admin .corex-insight-widget__row.is-warning strong {
+	color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-insight-widget__row.is-success strong {
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-insight-widget__event {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-2xs);
+	padding-block: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-insight-widget__event:last-child {
+	border-block-end: 0;
+}
+
+.corex-admin .corex-insight-widget__event time {
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-insight-widget__event.is-warning span {
+	color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-insight-widget__alt {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-insight-widget__alt-title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}

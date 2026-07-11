@@ -14,6 +14,7 @@ use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Kit\Company\CompanyBlueprint;
 use Corex\Kit\Provisioning\BlueprintKitProvisioner;
+use Corex\Kit\Setup\SetupWizardController;
 use Corex\Provisioning\KitProvisioner;
 
 /**
@@ -48,5 +49,10 @@ final class KitServiceProvider extends ServiceProvider
         if (is_admin()) {
             $this->container->make(SetupWizardScreen::class)->register();
         }
+
+        // The nine-step wizard REST surface (cap + nonce gated) for the React/live wizard.
+        add_action('rest_api_init', function (): void {
+            $this->container->make(SetupWizardController::class)->register();
+        });
     }
 }

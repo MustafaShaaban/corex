@@ -64,7 +64,11 @@ it('scopes admin roles to CoreX screens and never makes them client brand author
         expect($css)->toContain($property . ':');
     }
 
-    expect($css)->not->toMatch('/(?:^|,)\s*(?::root|html|body(?!\.login\.corex-login))\b/m')
+    // Only the two CoreX-owned body scopes may carry the tokens: the branded login
+    // (body.login.corex-login) and the full-bleed admin canvas (body.corex-admin-screen,
+    // applied by CorexAdminAssets on CoreX screens only — spec 067 F). Never bare
+    // :root/html/body, so the adapter can never become client brand authority.
+    expect($css)->not->toMatch('/(?:^|,)\s*(?::root|html|body(?!\.(?:login\.corex-login|corex-admin-screen)))\b/m')
         ->not->toContain('--wp--preset--');
 });
 

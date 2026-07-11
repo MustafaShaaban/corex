@@ -5,8 +5,8 @@ description: The truthful admin screens, blocks, and patterns added by the Spec 
 
 Spec 063 closed the implementation-ready gaps from the "Corex Final Design Gap-Closure" package under one
 invariant: **every surface communicates its real state — no fabricated data, integrations, Pro/marketplace/
-licensing behavior, and no dead entry points.** Where a design feature has no backing in the framework, it is
-surfaced as an honest, labelled future capability rather than a fake.
+licensing behavior, and no dead entry points.** Where an optional or not-yet-backed design feature appears, the
+surface labels the exact current limitation and provides the safest available path instead of pretending it works.
 
 ## New admin screens
 
@@ -16,11 +16,11 @@ any write), and use the scoped `--corex-admin-*` adapter (no global wp-admin res
 | Screen | Page slug | What it shows (real data only) |
 |---|---|---|
 | Overview summary | `corex-settings` | An "At a glance" strip: environment/mode badge (`wp_get_environment_type()`), add-on active/total, form submissions (honest "not available" when the source is off), media delivery, a readiness pointer, and a docs link. |
-| Forms & Flows | `corex-forms` | A read-only inventory of the real code-defined forms (`FormRegistry`) and their fields/validation. The visual builder is labelled a future capability. |
-| Submissions | `corex-submissions` | The real stored `corex_submission` records: list + a server-rendered detail view (`?submission=ID`) + a capability + nonce-gated CSV export. Honest empty/not-found/permission states. |
-| Data Models | `corex-data-models` | A schema catalog of the real `DataRegistry` sources (fields + record counts) + per-model CSV export. Import (dry-run) and a pending-migrations view are honestly deferred — the data layer has no generic write path or migration tracker. |
+| Forms & Flows | `corex-forms` | A persisted visual flow builder with draft/published versions, field/rule/action registries, routing, Email Studio bindings, success states, preview/test mode, and supported front-end flow blocks. |
+| Submissions | `corex-submissions` | The permission-scoped Inbox for real flow submissions: filters, detail drawer, status/read/assignment, notes, timeline, related email actions, bulk previews, retention, and audited exports. |
+| Data Models | `corex-data-models` | The actor-scoped `DataRegistry` catalog and records plus adapter-backed CSV dry-run/commit, rejected-row reports, CSV/XLSX export history, and provider-declared migration apply/rollback. Unsupported actions are omitted. |
 | Operations & Security | `corex-operations-security` | The real environment plus real WordPress hardening checks (HTTPS, `DISALLOW_FILE_EDIT`, debug-display hidden, no default "admin"). Operations-mode switching, login protection, and a capability editor are labelled future — CoreX never renames WordPress core files. |
-| Email Studio | `corex-email-studio` | A truthful overview of the transactional-email engine: gated on the optional CoreX Email add-on, the real registered templates (`TemplateRegistry::names()`), and an environment-derived delivery advisory. |
+| Email Studio | `corex-email-studio` | A functional studio for persisted templates, layouts, partials, variables, routing, desktop/mobile/RTL previews, plain text, environment-aware test sends, delivery logs, health checks, and resend lineage. |
 
 Each screen loads its own stylesheet only on its own hook (Principle VI), conveys status by text + tone (never
 colour alone), and uses logical CSS for RTL, dark, and light.

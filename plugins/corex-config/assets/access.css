@@ -1,5 +1,6 @@
-/* CoreX Access & Abilities baseline (spec 065): read-only role x capability
-   matrix. Tokens + logical properties only; scoped (Principle VI). */
+/* CoreX Access & Abilities (spec 065 baseline → spec 067 tabs): read-only
+   role x capability surface — overview cards, matrix, audit log, denied
+   preview. Tokens + logical properties only; scoped (Principle VI). */
 .corex-admin .corex-access__card {
 	margin-block-end: var(--corex-admin-space-lg);
 }
@@ -8,6 +9,282 @@
 	margin: 0 0 var(--corex-admin-space-md);
 }
 
+.corex-admin .corex-access__head--split {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-sm);
+	margin-block-end: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-access__head--split h2 {
+	margin: 0;
+}
+
+.corex-admin .corex-access__head-titles {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-access__window {
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-xs);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-pill);
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+/* Role summary cards (overview) */
+.corex-admin .corex-access__roles {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-access__role {
+	padding: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-access__role-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-access__role-head h3 {
+	margin: 0;
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin .corex-access__origin {
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-xs);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-pill);
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+}
+
+.corex-admin .corex-access__origin.is-custom {
+	border-color: var(--corex-admin-action);
+	color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-access__role-users {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-access__role-granted {
+	display: flex;
+	align-items: baseline;
+	gap: var(--corex-admin-space-xs);
+	margin: var(--corex-admin-space-md) 0 0;
+}
+
+.corex-admin .corex-access__role-granted strong {
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-xl);
+	font-weight: 700;
+}
+
+.corex-admin .corex-access__role-granted span {
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-xs);
+}
+
+/* Capability groups (overview) */
+.corex-admin .corex-access__groups {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.corex-admin .corex-access__group {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-sm);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-access__group:last-child {
+	border-block-end: 0;
+}
+
+.corex-admin .corex-access__group-dot {
+	flex: none;
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	border-radius: var(--corex-admin-radius-sm);
+	background: var(--corex-admin-text-subtle);
+}
+
+.corex-admin .corex-access__group.is-high .corex-access__group-dot {
+	background: var(--corex-admin-error);
+}
+
+.corex-admin .corex-access__group-label {
+	flex: 1;
+	min-inline-size: 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-access__group-label code {
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-access__group-chips {
+	display: flex;
+	gap: var(--corex-admin-space-xs);
+	flex: none;
+}
+
+/* Chips (shared: groups, matrix, audit) */
+.corex-admin .corex-access__chip {
+	padding-block: var(--corex-admin-space-2xs);
+	padding-inline: var(--corex-admin-space-xs);
+	border-radius: var(--corex-admin-radius-pill);
+	background: var(--corex-admin-surface-alt);
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	white-space: nowrap;
+}
+
+.corex-admin .corex-access__chip.is-danger {
+	background: var(--corex-admin-error-soft);
+	color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-access__chip.is-warning {
+	background: var(--corex-admin-warning-soft);
+	color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-access__chip.is-locked {
+	background: var(--corex-admin-warning-soft);
+	color: var(--corex-admin-warning);
+}
+
+/* Legend + matrix marks */
+.corex-admin .corex-access__legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-md);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-access__legend-item {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-access__mark {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: 1.625rem;
+	block-size: 1.625rem;
+	border-radius: var(--corex-admin-radius-sm);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 700;
+}
+
+.corex-admin .corex-access__mark.is-yes {
+	background: var(--corex-admin-success-soft);
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-access__mark.is-no {
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	color: var(--corex-admin-text-subtle);
+}
+
+.corex-admin .corex-access__mark.is-locked {
+	background: var(--corex-admin-warning-soft);
+	color: var(--corex-admin-warning);
+}
+
+/* Conflict + preview notices */
+.corex-admin .corex-access__conflict {
+	margin-block-end: var(--corex-admin-space-lg);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+}
+
+.corex-admin .corex-access__preview-note {
+	margin-block-end: var(--corex-admin-space-lg);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+}
+
+/* Audit log */
+.corex-admin .corex-access__audit {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.corex-admin .corex-access__event {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-sm);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-access__event:last-child {
+	border-block-end: 0;
+}
+
+.corex-admin .corex-access__event-dot {
+	flex: none;
+	margin-block-start: var(--corex-admin-space-xs);
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	border-radius: var(--corex-admin-radius-pill);
+	background: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-access__event-body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-2xs);
+	flex: 1;
+	min-inline-size: 0;
+}
+
+.corex-admin .corex-access__event-text {
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-access__event-meta {
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-xs);
+}
+
+/* Your permissions + requirements (baseline, kept) */
 .corex-admin .corex-access__you-list,
 .corex-admin .corex-access__reqs {
 	list-style: none;
@@ -45,6 +322,11 @@
 
 .corex-admin .corex-access__scroll {
 	overflow-x: auto;
+
+	/* Without layout containment the collapsed table still leaks its
+	   min-content width into the document scroll area at phone widths,
+	   letting the whole page pan sideways — contain it (spec 067 F). */
+	contain: layout;
 }
 
 .corex-admin .corex-access__matrix {
@@ -99,4 +381,59 @@
 	color: var(--corex-admin-text);
 	font-family: var(--corex-admin-font-display);
 	font-weight: 600;
+}
+
+/* Editable Access workspace (spec 068 T148/T152). */
+.corex-admin .corex-access-app {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-access-app .corex-access__head {
+	margin-block-end: 0;
+}
+
+.corex-admin .corex-access__mode-label {
+	font-weight: 600;
+}
+
+.corex-admin .corex-access-app select {
+	max-inline-size: 100%;
+}
+
+.corex-admin .corex-access-app .corex-access__matrix td {
+	text-align: start;
+}
+
+.corex-admin .corex-access-app .corex-access__matrix td select {
+	margin-inline-end: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-access__panels {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-access__panels section {
+	padding: var(--corex-admin-space-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	border-radius: var(--corex-admin-radius-md);
+	background: var(--corex-admin-surface);
+}
+
+.corex-admin .corex-access__panels h3 {
+	margin-block: 0 var(--corex-admin-space-xs);
+	font-size: var(--corex-admin-font-md);
+}
+
+.corex-admin .corex-access__panels ul {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-2xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
 }

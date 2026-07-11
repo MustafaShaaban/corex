@@ -8,23 +8,19 @@ declare(strict_types=1);
 
 namespace Corex\Config\Data;
 
+use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
 
-/**
- * The Corex → Data admin screen: a submenu that mounts the React DataViews app for the
- * registered data sources. Renders + gates (shared AdminGuard); enqueues the built script
- * only on its own screen and hands it the REST root, a nonce, and the source list. The data
- * itself comes from the cap-gated DataController (spec 030).
- */
+/** Mounts the capability-derived Data management client on its guarded screen. */
 final class DataAdminScreen
 {
     private string $hook = '';
 
     public function __construct(
-        private readonly DataRegistry $registry,
+        private readonly DataSourceService $sources,
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
     ) {
@@ -42,7 +38,7 @@ final class DataAdminScreen
             'corex-settings',
             __('Corex Data', 'corex'),
             __('Data', 'corex'),
-            'manage_options',
+            CorexAbility::MANAGE_DATA,
             'corex-data',
             [$this, 'render'],
             30,
@@ -51,17 +47,17 @@ final class DataAdminScreen
 
     public function render(): void
     {
-        if (! $this->guard->authorized()) {
-            echo $this->page->permissionDenied('data');
+        if (! $this->guard->authorized(CorexAbility::MANAGE_DATA)) {
+            echo wp_kses_post($this->page->permissionDenied('data'));
 
             return;
         }
 
-        echo $this->page->open(
+        echo wp_kses_post($this->page->open(
             'data',
             __('CoreX Data', 'corex'),
-            __('Search, filter, inspect, and export records from registered CoreX data sources.', 'corex'),
-        ) . '<div id="corex-data-app"></div>' . $this->page->close();
+            __('Query and manage records through each registered source\'s declared capabilities.', 'corex'),
+        ) . '<div id="corex-data-app"></div>' . $this->page->close());
     }
 
     public function maybeEnqueue(string $hook): void
@@ -70,22 +66,11 @@ final class DataAdminScreen
             return;
         }
 
-        $base  = dirname(__DIR__, 2); // corex-config plugin root
+        $base = dirname(__DIR__, 2);
         $asset = is_file($base . '/build/admin/index.asset.php')
             ? require $base . '/build/admin/index.asset.php'
             : ['dependencies' => [], 'version' => 'dev'];
-
-        // The React uses the core DataViews component from the runtime `wp.dataviews` global.
-        // Only declare `wp-dataviews` as a dependency when WordPress actually registers that
-        // handle (newer cores) — otherwise enqueueing an unregistered dep emits a notice, and
-        // the React already falls back to a plain table when the global is absent.
-        $deps = $asset['dependencies'];
-        // The shared runtime (spec 043): the app calls window.Corex.api for envelope-shaped data.
-        $deps[] = 'corex-runtime';
-
-        if (wp_script_is('wp-dataviews', 'registered')) {
-            $deps[] = 'wp-dataviews';
-        }
+        $deps = [...$asset['dependencies'], 'corex-runtime'];
 
         wp_enqueue_script(
             'corex-data',
@@ -94,25 +79,17 @@ final class DataAdminScreen
             $asset['version'],
             true,
         );
-
         wp_enqueue_style(
             'corex-data',
             plugins_url('assets/data.css', $base . '/corex-config.php'),
             ['corex-admin-shell'],
             $asset['version'],
         );
-
         wp_localize_script('corex-data', 'corexData', [
-            'restUrl'     => esc_url_raw(rest_url('corex/v1/data')),
-            'nonce'       => wp_create_nonce('wp_rest'),
-            // The CSV export streams from the admin-post handler (DataExportController),
-            // which re-checks this nonce + manage_options and bounds the row count.
-            'exportUrl'   => esc_url_raw(admin_url('admin-post.php')),
-            'exportNonce' => wp_create_nonce('corex_data_export'),
-            'sources'     => array_map(
-                static fn (DataSource $s): array => ['key' => $s->key(), 'label' => $s->label()],
-                $this->registry->all(),
-            ),
+            'restUrl' => esc_url_raw(rest_url('corex/v1/data')),
+            'nonce' => wp_create_nonce('wp_rest'),
+            'sources' => $this->sources->catalog(get_current_user_id()),
         ]);
+        wp_set_script_translations('corex-data', 'corex');
     }
 }

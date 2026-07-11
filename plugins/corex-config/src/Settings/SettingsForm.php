@@ -346,14 +346,24 @@ final class SettingsForm
      */
     private function secret(string $name, bool $isSet, bool $disabled = false): string
     {
+        $tipId = $name . '-secret-tip';
+
         return sprintf(
             '<input id="%1$s" name="%1$s" type="password" value="" autocomplete="new-password"'
             . ' class="regular-text" placeholder="%2$s"%4$s />'
-            . ' <span class="corex-secret-state">%3$s</span>',
+            . ' <span class="corex-secret-state">%3$s</span>'
+            . ' <span class="corex-tooltip">'
+            . '<button type="button" class="corex-tooltip__trigger" aria-describedby="%5$s"'
+            . ' aria-label="%6$s">&#9432;</button>'
+            . '<span class="corex-tooltip__bubble" role="tooltip" id="%5$s">%7$s</span>'
+            . '</span>',
             esc_attr($name),
             $isSet ? esc_attr__('Leave blank to keep the saved value', 'corex') : esc_attr__('Not set', 'corex'),
             $isSet ? esc_html__('Saved', 'corex') : esc_html__('Not set', 'corex'),
             $this->disabledAttr($disabled),
+            esc_attr($tipId),
+            esc_attr__('About this secret', 'corex'),
+            esc_html__('Stored write-only — the saved value is never shown again. Leave blank to keep it.', 'corex'),
         );
     }
 

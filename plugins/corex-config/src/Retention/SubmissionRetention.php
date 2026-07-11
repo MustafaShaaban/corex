@@ -8,8 +8,6 @@ declare(strict_types=1);
 
 namespace Corex\Config\Retention;
 
-use Corex\Config\Data\SubmissionsReader;
-
 defined('ABSPATH') || exit;
 
 /**
@@ -25,7 +23,7 @@ final class SubmissionRetention
 
     public function __construct(
         private readonly RetentionSettings $settings,
-        private readonly SubmissionsReader $reader,
+        private readonly SubmissionRetentionStore $reader,
     ) {
     }
 
@@ -48,20 +46,20 @@ final class SubmissionRetention
      *
      * @return array{days:int,enabled:bool,count:int,willPrune:bool}
      */
-    public function preview(): array
+    public function preview(bool $includeTest = false): array
     {
         $days = $this->days();
 
-        return $this->settings->preview($days, count($this->oldIds($days)));
+        return $this->settings->preview($days, count($this->oldIds($days, $includeTest)));
     }
 
     /**
      * Prune the submissions older than the current window to trash. Returns the number trashed.
      * The caller MUST have verified capability + nonce + confirmation before calling this.
      */
-    public function prune(): int
+    public function prune(string $action = 'trash', bool $includeTest = false): int
     {
-        return $this->pruneIds($this->oldIds($this->days()));
+        return $this->applyIds($action, $this->oldIds($this->days(), $includeTest));
     }
 
     /**
@@ -70,11 +68,19 @@ final class SubmissionRetention
      *
      * @param list<int> $ids
      */
-    public function pruneIds(array $ids): int
+    public function applyIds(string $action, array $ids): int
     {
+        if (! in_array($action, ['archive', 'trash', 'anonymize'], true)) {
+            throw new \InvalidArgumentException('The submission retention action is invalid.');
+        }
         $removed = 0;
         foreach ($ids as $id) {
-            if ($this->reader->trash((int) $id)) {
+            $applied = match ($action) {
+                'archive' => $this->reader->archiveForRetention((int) $id),
+                'anonymize' => $this->reader->anonymizeForRetention((int) $id),
+                default => $this->reader->trashForRetention((int) $id),
+            };
+            if ($applied) {
                 $removed++;
             }
         }
@@ -87,13 +93,13 @@ final class SubmissionRetention
      *
      * @return list<int>
      */
-    private function oldIds(int $days): array
+    private function oldIds(int $days, bool $includeTest): array
     {
         if (! $this->settings->isEnabled($days)) {
             return [];
         }
 
-        $query = new \WP_Query([
+        $args = [
             'post_type'      => 'corex_submission',
             'post_status'    => 'private',
             'posts_per_page' => RetentionSettings::MAX_PRUNE,
@@ -104,7 +110,14 @@ final class SubmissionRetention
                 'before'    => $days . ' days ago',
                 'inclusive' => true,
             ]],
-        ]);
+        ];
+        if (! $includeTest) {
+            $args['meta_query'] = ['relation' => 'OR',
+                ['key' => 'corex_is_test', 'compare' => 'NOT EXISTS'],
+                ['key' => 'corex_is_test', 'value' => '0', 'compare' => '='],
+            ];
+        }
+        $query = new \WP_Query($args);
 
         return array_map('intval', (array) $query->posts);
     }

@@ -34,7 +34,7 @@ it('renders the real sections as ARIA tabs in the fixed order', function () {
 
     preg_match_all('/data-corex-tab="([a-z]+)"/', $html, $matches);
 
-    expect($matches[1])->toBe(['brand', 'mail', 'forms', 'captcha', 'media', 'insights'])
+    expect($matches[1])->toBe(['brand', 'mail', 'forms', 'captcha', 'media', 'insights', 'advanced'])
         ->and($html)->toContain('role="tablist"')
         ->toContain('role="tab"')
         ->toContain('role="tabpanel"')

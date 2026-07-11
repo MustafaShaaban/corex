@@ -11,15 +11,19 @@ declare(strict_types=1);
 
 use Corex\Boot;
 use Corex\Database\QueryExecutor;
+use Corex\Fields\AcfFieldDriver;
 use Corex\Fields\FieldDriver;
 use Corex\Fields\MetaFieldDriver;
 use Corex\Repositories\Hydrator;
 use Corex\Support\Facades\Config;
 
-it('resolves the data layer through the container, using native meta when ACF is absent', function () {
+it('resolves the data layer through the container using the available field provider', function () {
     $container = Boot::app()->container();
+    $expected  = function_exists('get_field') && function_exists('update_field')
+        ? AcfFieldDriver::class
+        : MetaFieldDriver::class;
 
-    expect($container->make(FieldDriver::class))->toBeInstanceOf(MetaFieldDriver::class)
+    expect($container->make(FieldDriver::class))->toBeInstanceOf($expected)
         ->and($container->make(Hydrator::class))->toBeInstanceOf(Hydrator::class)
         ->and($container->make(QueryExecutor::class))->toBeInstanceOf(QueryExecutor::class);
 });

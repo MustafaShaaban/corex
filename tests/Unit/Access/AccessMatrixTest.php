@@ -10,6 +10,8 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Access\AccessPolicy;
+use Corex\Access\CorexAbility;
 use Corex\Config\Access\AccessMatrix;
 
 beforeEach(function () {
@@ -63,4 +65,96 @@ it('reports the current user permissions against the tracked capabilities', func
     expect($byLabel['manage_options'])->toBeTrue()
         ->and($byLabel['upload_files'])->toBeTrue()
         ->and($byLabel['publish_posts'])->toBeFalse();
+});
+
+it('marks the code-gated CoreX admin ability as high risk and locked', function () {
+    $groups = $this->matrix->groups();
+    $byKey = [];
+    foreach ($groups as $g) {
+        $byKey[$g['key']] = $g;
+    }
+
+    expect($byKey['corex_admin']['risk'])->toBe('high')
+        ->and($byKey['corex_admin']['locked'])->toBeTrue()
+        ->and($byKey['content']['risk'])->toBe('standard')
+        ->and($byKey['content']['locked'])->toBeFalse();
+});
+
+it('carries risk and locked metadata through to matrix rows', function () {
+    $built = $this->matrix->build(accessRoles());
+
+    expect($built['rows'][0]['locked'])->toBeTrue()
+        ->and($built['rows'][0]['risk'])->toBe('high')
+        ->and($built['rows'][1]['locked'])->toBeFalse();
+});
+
+it('summarises roles with real user counts, origin, and granted ability counts', function () {
+    $summaries = $this->matrix->roleSummaries(accessRoles(), ['administrator' => 2, 'author' => 5]);
+
+    expect($summaries)->toHaveCount(3)
+        ->and($summaries[0]['name'])->toBe('Administrator')
+        ->and($summaries[0]['isCore'])->toBeTrue()
+        ->and($summaries[0]['users'])->toBe(2)
+        ->and($summaries[0]['granted'])->toBe(5)      // holds every tracked capability
+        ->and($summaries[0]['total'])->toBe(5)
+        ->and($summaries[1]['granted'])->toBe(2)      // author: publish_posts + upload_files
+        ->and($summaries[1]['users'])->toBe(5)
+        ->and($summaries[2]['users'])->toBe(0);       // subscriber count missing => 0
+});
+
+it('flags a custom role as non-core', function () {
+    $summaries = $this->matrix->roleSummaries(
+        [['key' => 'site_manager', 'name' => 'Site Manager', 'caps' => []]],
+        [],
+    );
+
+    expect($summaries[0]['isCore'])->toBeFalse();
+});
+
+it('detects known permissions plugins and ignores everything else', function () {
+    $conflicts = $this->matrix->conflicts([
+        'members/members.php',
+        'akismet/akismet.php',
+        'user-role-editor/user-role-editor.php',
+    ]);
+
+    expect($conflicts)->toBe(['Members', 'User Role Editor']);
+});
+
+it('reports no conflicts when no permissions plugin is active', function () {
+    expect($this->matrix->conflicts(['akismet/akismet.php']))->toBe([]);
+});
+
+it('projects editable CoreX ability states without mutating native WordPress capabilities', function () {
+    $matrix = $this->matrix->editableCorexMatrix(
+        roles: [
+            ['key' => 'administrator', 'name' => 'Administrator'],
+            ['key' => 'editor', 'name' => 'Editor'],
+        ],
+        effectsByRole: [
+            'editor' => [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_ALLOW],
+        ],
+        activePlugins: [],
+    );
+    $byKey = array_column($matrix['rows'], null, 'key');
+
+    expect($byKey[CorexAbility::MANAGE_FORMS]['cells']['editor']['effect'])->toBe(AccessPolicy::EFFECT_ALLOW)
+        ->and($byKey[CorexAbility::MANAGE_FORMS]['cells']['editor']['editable'])->toBeTrue()
+        ->and($byKey[CorexAbility::MANAGE_DATA]['cells']['editor']['effect'])->toBe(AccessPolicy::EFFECT_INHERIT)
+        ->and($byKey[CorexAbility::MANAGE_ADMIN]['cells']['editor']['editable'])->toBeFalse()
+        ->and($byKey[CorexAbility::MANAGE_ADMIN]['cells']['editor']['reason'])->toBe('locked_definition');
+});
+
+it('makes native platform capabilities read-only when a role plugin is active but keeps CoreX states visible', function () {
+    $matrix = $this->matrix->editableCorexMatrix(
+        roles: [['key' => 'editor', 'name' => 'Editor']],
+        effectsByRole: ['editor' => [CorexAbility::MANAGE_FORMS => AccessPolicy::EFFECT_DENY]],
+        activePlugins: ['members/members.php'],
+    );
+    $forms = array_column($matrix['rows'], null, 'key')[CorexAbility::MANAGE_FORMS];
+
+    expect($matrix['conflicts'])->toBe(['Members'])
+        ->and($matrix['nativeCapabilitiesEditable'])->toBeFalse()
+        ->and($forms['cells']['editor']['effect'])->toBe(AccessPolicy::EFFECT_DENY)
+        ->and($forms['cells']['editor']['editable'])->toBeTrue();
 });
