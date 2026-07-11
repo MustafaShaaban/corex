@@ -4,7 +4,24 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-10, Spec 068 PRODUCT FUNCTIONAL COMPLETION) -- Phase 12 (T222–T235) COMPLETE and verified; full suite GREEN incl. Playwright 35/35; PR #98 ready for human review
+## RESUME HERE (2026-07-11) -- Spec 068 MERGED to `main` (PR #98, merge commit `9d54ce0`, on upstream + origin). Post-merge security/UI fixes shipped.
+
+- **PR #98 merged.** Spec 068 product functional completion (Phases 1–12) plus the post-audit fixes are on
+  `main` (upstream Azure DevOps + origin GitHub, both at `9d54ce0`). Full suite green at merge: unit **1,260**,
+  integration **110**, Jest **263**, Playwright **35/35**, guards clean.
+- **Post-audit fixes (this session):** (1) the front-end contact form was dead (`corex/form` block.json flow
+  defaults made `isset()` always route to the flow renderer) — fixed; (2) login-protection was display-only —
+  added persistence (REST `corex/v1/security/login-protection` + Save button), enforcement adapter
+  (`LoginProtectionEnforcer` on `authenticate`/`wp_login_failed`/`wp_login`), and custom-login-URL **hiding**
+  (WPS Hide Login parity: logged-out `/wp-admin` and `/wp-login.php` **404** instead of revealing the slug;
+  the slug serves `wp-login.php` warning-free via `wp_loaded` with its globals declared); (3) dark-mode native
+  `<select>` option colours/hover fixed globally from tokens.
+- **⚠️ Dev box note:** the corex.local **admin password was reset to `password`** during login-flow testing
+  (the E2E default) — change it if needed. Login protection is left **disabled** on corex.local (enable via
+  Operations & Security → Login policy → Save). Recovery: `wp corex security reset-login` / `COREX_LOGIN_UNGUARD`.
+- **Next:** none required — Spec 068 is merged. New work starts from `main` on a fresh branch.
+
+## (archived) Phase 12 completion — PR #98 pre-merge state
 
 - **2026-07-10 final audit (Phase 12, T222–T235):** completed the final trust-and-completion audit against a real
   WordPress 7.0 / WAMP MySQL runtime with `http://corex.local` serving. **Completion audit: 0 findings** (T223).
