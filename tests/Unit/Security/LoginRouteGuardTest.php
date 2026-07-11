@@ -59,3 +59,30 @@ it('does not block unrelated public routes', function () {
     expect($guard->decision('/about/', authenticated: false)->blocked)->toBeFalse()
         ->and($guard->decision('/wp-content/uploads/logo.png', authenticated: false)->blocked)->toBeFalse();
 });
+
+it('hides /wp-admin and wp-login.php from logged-out visitors instead of revealing the slug', function () {
+    $guard = new LoginRouteGuard(routePolicy());
+
+    // Logged-out default endpoints are hidden (this is the bug fix: /wp-admin must 404, not
+    // redirect to — and reveal — the custom login).
+    expect($guard->hidesDefaultEndpoint('/wp-admin/', 'index.php', loggedIn: false, isAdmin: true, ajax: false))->toBeTrue()
+        ->and($guard->hidesDefaultEndpoint('/wp-login.php', 'wp-login.php', loggedIn: false, isAdmin: false, ajax: false))->toBeTrue();
+});
+
+it('never hides admin for logged-in users, AJAX, admin-post, or public routes', function () {
+    $guard = new LoginRouteGuard(routePolicy());
+
+    expect($guard->hidesDefaultEndpoint('/wp-admin/', 'index.php', loggedIn: true, isAdmin: true, ajax: false))->toBeFalse()
+        ->and($guard->hidesDefaultEndpoint('/wp-admin/admin-ajax.php', 'admin-ajax.php', loggedIn: false, isAdmin: true, ajax: true))->toBeFalse()
+        ->and($guard->hidesDefaultEndpoint('/wp-admin/admin-ajax.php', 'admin-ajax.php', loggedIn: false, isAdmin: true, ajax: false))->toBeFalse()
+        ->and($guard->hidesDefaultEndpoint('/wp-admin/admin-post.php', 'admin-post.php', loggedIn: false, isAdmin: true, ajax: false))->toBeFalse()
+        ->and($guard->hidesDefaultEndpoint('/about/', 'index.php', loggedIn: false, isAdmin: false, ajax: false))->toBeFalse();
+});
+
+it('never hides when the policy is disabled or default-endpoint blocking is off', function () {
+    $disabled = new LoginRouteGuard(routePolicy(['enabled' => false]));
+    $noBlock = new LoginRouteGuard(routePolicy(['blockDefaultEndpoints' => false]));
+
+    expect($disabled->hidesDefaultEndpoint('/wp-admin/', 'index.php', loggedIn: false, isAdmin: true, ajax: false))->toBeFalse()
+        ->and($noBlock->hidesDefaultEndpoint('/wp-login.php', 'wp-login.php', loggedIn: false, isAdmin: false, ajax: false))->toBeFalse();
+});

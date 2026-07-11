@@ -21,39 +21,91 @@ final readonly class LoginRouteGuard
 
     public function register(): void
     {
-        // Block direct access to the default endpoint (works via the login lifecycle).
+        // Secondary defence: block the default endpoint via the login lifecycle too.
         add_action('login_init', [$this, 'maybeBlockDefaultEndpoint'], 0);
 
         if (! $this->settings->enabled || $this->settings->customSlug === '') {
             return;
         }
 
-        // Serve the core login handler when the custom slug is requested, and rewrite every
-        // WordPress-generated login/logout URL to the custom slug so nothing points at the blocked
-        // default endpoint. A rewrite rule cannot be used here: WordPress resolves rules to
-        // index.php query vars, never to wp-login.php, so the slug would 404.
-        add_action('init', [$this, 'maybeServeCustomLogin'], 1);
+        // The single early handler (on wp_loaded, before wp-admin's auth_redirect and before the
+        // request is parsed, exactly like WPS Hide Login): it serves the custom slug and 404s the
+        // default endpoints for logged-out visitors so /wp-admin and /wp-login.php are hidden rather
+        // than redirected to (and thereby revealing) the custom login. A rewrite rule cannot be used:
+        // WordPress resolves rules to index.php query vars, never to wp-login.php, so the slug 404s.
+        add_action('wp_loaded', [$this, 'handleRequest'], 1);
         add_filter('login_url', [$this, 'filterLoginUrl'], 20, 1);
         add_filter('site_url', [$this, 'filterSiteUrl'], 20, 2);
         add_filter('network_site_url', [$this, 'filterSiteUrl'], 20, 2);
     }
 
     /**
-     * When the request path is the custom login slug, hand the request to the core login handler
-     * exactly as if wp-login.php had been requested — without moving or renaming the core file.
+     * Serve the custom slug, then hide the default endpoints from unauthenticated visitors.
+     *
+     * wp-login.php shares state across its code paths through variables it treats as global
+     * ($user_login, $error, $action, $interim_login); because it is included from inside this method
+     * they must be declared global here or PHP reports them as undefined. $pagenow is set so
+     * conditional tags and hooks resolve to the login screen.
      */
-    public function maybeServeCustomLogin(): void
+    public function handleRequest(): void
     {
         $requestUri = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '';
-        $path = trim($this->normalizedPath($requestUri), '/');
-        if ($path === '' || $path !== trim($this->settings->customSlug, '/')) {
-            return;
+        $path = $this->normalizedPath($requestUri);
+        $slug = trim($this->settings->customSlug, '/');
+
+        // 1. The custom slug hands off to the real core login handler.
+        if ($slug !== '' && trim($path, '/') === $slug) {
+            global $pagenow, $error, $interim_login, $action, $user_login;
+            $pagenow = 'wp-login.php';
+            require_once ABSPATH . 'wp-login.php';
+            exit;
         }
 
-        global $pagenow;
-        $pagenow = 'wp-login.php';
-        require_once ABSPATH . 'wp-login.php';
-        exit;
+        // 2. Hide the default endpoints so /wp-admin and /wp-login.php 404 for logged-out visitors
+        //    instead of redirecting to the custom login and revealing it.
+        $script = strtolower(basename((string) (parse_url($requestUri, PHP_URL_PATH) ?: '')));
+        if ($this->hidesDefaultEndpoint(
+            $path,
+            $script,
+            is_user_logged_in(),
+            is_admin(),
+            function_exists('wp_doing_ajax') && wp_doing_ajax(),
+        )) {
+            $this->deny(404);
+        }
+    }
+
+    /**
+     * Whether this request to a default login/admin endpoint must be hidden (404'd). Pure, so the
+     * hiding rules are unit-testable. Recovery bypass, logged-in users, AJAX, admin-ajax.php, and
+     * admin-post.php are never hidden; the custom slug is handled before this is reached.
+     */
+    public function hidesDefaultEndpoint(
+        string $path,
+        string $script,
+        bool $loggedIn,
+        bool $isAdmin,
+        bool $ajax,
+    ): bool {
+        if (! $this->settings->enabled || ! $this->settings->blockDefaultEndpoints || $this->unguarded()) {
+            return false;
+        }
+        if ($loggedIn || $ajax || in_array($script, ['admin-ajax.php', 'admin-post.php'], true)) {
+            return false;
+        }
+
+        return str_contains($path, 'wp-login.php') || $isAdmin;
+    }
+
+    private function deny(int $statusCode): void
+    {
+        nocache_headers();
+        status_header($statusCode);
+        wp_die(
+            esc_html__('Not found.', 'corex'),
+            esc_html__('Not found', 'corex'),
+            ['response' => $statusCode],
+        );
     }
 
     /** Point WordPress login links at the custom slug instead of the blocked default endpoint. */

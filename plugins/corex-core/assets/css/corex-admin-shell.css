@@ -438,6 +438,20 @@ body.corex-admin-screen .corex-admin__shell {
 	background-position: left var(--corex-admin-space-sm) center;
 }
 
+/* Readable native <select> options in dark/light on every admin page. Browsers
+   leave <option> colours at their light default unless set, so the dark admin
+   dropdown/hover was unreadable except where set locally or enhanced. Token
+   colours make every native select match the enhanced popup. */
+.corex-admin select option {
+	color: var(--corex-admin-text);
+	background-color: var(--corex-admin-surface);
+}
+
+/* Hover affordance on the closed control, matching the enhanced select. */
+.corex-admin select:hover {
+	border-color: var(--corex-admin-border-strong);
+}
+
 .corex-admin input[type="text"]::placeholder,
 .corex-admin input[type="search"]::placeholder,
 .corex-admin input[type="email"]::placeholder,
