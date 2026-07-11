@@ -90,11 +90,19 @@ final readonly class LoginRouteGuard
         if (! $this->settings->enabled || ! $this->settings->blockDefaultEndpoints || $this->unguarded()) {
             return false;
         }
-        if ($loggedIn || $ajax || in_array($script, ['admin-ajax.php', 'admin-post.php'], true)) {
+        if ($ajax || in_array($script, ['admin-ajax.php', 'admin-post.php'], true)) {
             return false;
         }
 
-        return str_contains($path, 'wp-login.php') || $isAdmin;
+        // The default login endpoint is never reachable directly, for anyone: the login, logout,
+        // lostpassword, and register flows all route through the custom slug via the login_url
+        // filters, so a logged-in visitor has no legitimate need for wp-login.php either.
+        if (str_contains($path, 'wp-login.php')) {
+            return true;
+        }
+
+        // The admin area is hidden only from logged-out visitors; logged-in users need it.
+        return $isAdmin && ! $loggedIn;
     }
 
     private function deny(int $statusCode): void

@@ -60,16 +60,18 @@ it('does not block unrelated public routes', function () {
         ->and($guard->decision('/wp-content/uploads/logo.png', authenticated: false)->blocked)->toBeFalse();
 });
 
-it('hides /wp-admin and wp-login.php from logged-out visitors instead of revealing the slug', function () {
+it('hides the default login endpoint from everyone and /wp-admin from logged-out visitors', function () {
     $guard = new LoginRouteGuard(routePolicy());
 
-    // Logged-out default endpoints are hidden (this is the bug fix: /wp-admin must 404, not
-    // redirect to — and reveal — the custom login).
-    expect($guard->hidesDefaultEndpoint('/wp-admin/', 'index.php', loggedIn: false, isAdmin: true, ajax: false))->toBeTrue()
-        ->and($guard->hidesDefaultEndpoint('/wp-login.php', 'wp-login.php', loggedIn: false, isAdmin: false, ajax: false))->toBeTrue();
+    // wp-login.php is hidden for logged-out AND logged-in visitors — only the custom slug serves
+    // login; everything routes through it (this is the bug fix: nothing but the slug reaches login).
+    expect($guard->hidesDefaultEndpoint('/wp-login.php', 'wp-login.php', loggedIn: false, isAdmin: false, ajax: false))->toBeTrue()
+        ->and($guard->hidesDefaultEndpoint('/wp-login.php', 'wp-login.php', loggedIn: true, isAdmin: false, ajax: false))->toBeTrue()
+        // /wp-admin is hidden from logged-out visitors so it 404s instead of revealing the slug.
+        ->and($guard->hidesDefaultEndpoint('/wp-admin/', 'index.php', loggedIn: false, isAdmin: true, ajax: false))->toBeTrue();
 });
 
-it('never hides admin for logged-in users, AJAX, admin-post, or public routes', function () {
+it('never hides /wp-admin for logged-in users, AJAX, admin-post, or public routes', function () {
     $guard = new LoginRouteGuard(routePolicy());
 
     expect($guard->hidesDefaultEndpoint('/wp-admin/', 'index.php', loggedIn: true, isAdmin: true, ajax: false))->toBeFalse()
