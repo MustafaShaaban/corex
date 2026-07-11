@@ -310,6 +310,8 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionService::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\ClientIpResolver::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginRouteGuard::class);
+        $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionEnforcer::class);
+        $this->container->singleton(\Corex\Config\Security\SecuritySettingsController::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\WpLoginAttemptStore::class);
         $this->container->singleton(
             \Corex\Config\Security\LoginProtection\LoginAttemptStore::class,
@@ -647,6 +649,8 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();
         $this->container->make(\Corex\Config\Operations\MaintenanceGuard::class)->register();
         $this->container->make(\Corex\Config\Security\LoginProtection\LoginRouteGuard::class)->register();
+        $this->container->make(\Corex\Config\Security\LoginProtection\LoginProtectionEnforcer::class)->register();
+        $this->container->make(\Corex\Config\Security\SecuritySettingsController::class)->register();
         $this->container->make(EmailStudioScreen::class)->register();
         $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();

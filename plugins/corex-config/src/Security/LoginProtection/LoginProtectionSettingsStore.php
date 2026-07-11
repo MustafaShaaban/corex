@@ -17,6 +17,31 @@ final class LoginProtectionSettingsStore
 {
     public const OPTION = 'corex_login_protection_settings';
 
+    /**
+     * Persist a sanitized login-protection payload and return the stored settings. The custom login
+     * URL is served by {@see LoginRouteGuard} via request interception, so no rewrite flush is needed.
+     *
+     * @param array<string,mixed> $input
+     */
+    public function save(array $input): LoginProtectionSettings
+    {
+        $stored = [
+            'enabled'                  => (bool) ($input['enabled'] ?? false),
+            'custom_slug'              => sanitize_title((string) ($input['custom_slug'] ?? 'corex-login')) ?: 'corex-login',
+            'block_default_endpoints'  => (bool) ($input['block_default_endpoints'] ?? true),
+            'threshold'                => max(1, (int) ($input['threshold'] ?? 5)),
+            'window_seconds'           => max(1, (int) ($input['window_seconds'] ?? 300)),
+            'lockout_seconds'          => max(1, (int) ($input['lockout_seconds'] ?? 900)),
+            'trusted_proxy_mode'       => (bool) ($input['trusted_proxy_mode'] ?? false),
+            'trusted_proxy_ranges'     => $this->strings($input['trusted_proxy_ranges'] ?? []),
+            'retain_days'              => max(1, (int) ($input['retain_days'] ?? 30)),
+            'successful_login_logging' => (bool) ($input['successful_login_logging'] ?? true),
+        ];
+        update_option(self::OPTION, $stored, false);
+
+        return $this->current();
+    }
+
     public function current(): LoginProtectionSettings
     {
         $stored = get_option(self::OPTION, []);

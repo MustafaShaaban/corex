@@ -78,6 +78,15 @@ export function securityReducer( state = initialSecurityState(), action = {} ) {
 			return { ...state, maintenanceConfirmed: action.confirmed === true };
 		case 'setLoginPolicy':
 			return { ...state, loginPolicy: normalizeLoginPolicy( { ...state.loginPolicy, ...( action.patch || {} ) } ) };
+		case 'savingLoginPolicy':
+			return { ...state, status: 'saving', notice: null };
+		case 'savedLoginPolicy':
+			return {
+				...state,
+				status: 'ready',
+				loginPolicy: normalizeLoginPolicy( action.policy || state.loginPolicy ),
+				notice: { tone: 'success', message: action.message || 'Login protection settings saved.' },
+			};
 		case 'lockoutsLoaded':
 			return { ...state, lockouts: normalizeLockouts( action.lockouts ) };
 		case 'recovered':

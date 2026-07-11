@@ -269,6 +269,12 @@
 	gap: var(--corex-admin-space-sm);
 }
 
+.corex-admin .corex-security__actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-block-start: var(--corex-admin-space-md);
+}
+
 .corex-admin .corex-security__mode-preview label,
 .corex-admin .corex-security__policy label,
 .corex-admin .corex-security__confirm {

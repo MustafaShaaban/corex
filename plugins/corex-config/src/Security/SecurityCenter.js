@@ -5,6 +5,7 @@ import {
 	initialSecurityState,
 	lockoutSummary,
 	modeActionState,
+	securityEndpoint,
 	securityReducer,
 } from './securityCenterState.js';
 
@@ -19,7 +20,7 @@ export default function SecurityCenter( { config = {} } ) {
 	return (
 		<div className="corex-security" data-testid="corex-security-center">
 			<LaunchChecklist state={ state } action={ action } dispatch={ dispatch } />
-			<LoginPolicy policy={ state.loginPolicy } policyPayload={ policyPayload } dispatch={ dispatch } />
+			<LoginPolicy policy={ state.loginPolicy } policyPayload={ policyPayload } dispatch={ dispatch } config={ config } saving={ state.status === 'saving' } />
 			<div className="corex-security__grid">
 				<Lockouts lockouts={ state.lockouts } summary={ lockouts } />
 				<Recovery recovery={ state.recovery } config={ config } dispatch={ dispatch } />
@@ -101,7 +102,29 @@ function LaunchChecklist( { state, action, dispatch } ) {
 	);
 }
 
-function LoginPolicy( { policy, policyPayload, dispatch } ) {
+function LoginPolicy( { policy, policyPayload, dispatch, config = {}, saving = false } ) {
+	const save = async () => {
+		if ( ! window.Corex || ! window.Corex.api || ! config.restUrl ) {
+			dispatch( { type: 'error', message: __( 'The security API is unavailable.', 'corex' ) } );
+			return;
+		}
+		dispatch( { type: 'savingLoginPolicy' } );
+		const result = await window.Corex.api.post(
+			securityEndpoint( config.restUrl, 'login-protection' ),
+			policyPayload,
+			{ nonce: config.nonce }
+		);
+		if ( result && result.ok ) {
+			dispatch( {
+				type: 'savedLoginPolicy',
+				policy: result.envelope?.data?.login_protection || policyPayload,
+				message: result.envelope?.data?.message,
+			} );
+		} else {
+			dispatch( { type: 'error', message: __( 'Could not save login protection settings.', 'corex' ) } );
+		}
+	};
+
 	return (
 		<section className="corex-surface corex-security__panel">
 			<header className="corex-security__head">
@@ -147,7 +170,11 @@ function LoginPolicy( { policy, policyPayload, dispatch } ) {
 					/>
 				</label>
 			</div>
-			<code className="corex-security__payload">{ JSON.stringify( policyPayload ) }</code>
+			<div className="corex-security__actions">
+				<button type="button" className="button button-primary" disabled={ saving } onClick={ save }>
+					{ saving ? __( 'Saving…', 'corex' ) : __( 'Save login protection', 'corex' ) }
+				</button>
+			</div>
 		</section>
 	);
 }
