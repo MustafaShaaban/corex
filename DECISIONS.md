@@ -2546,3 +2546,65 @@ A front-end contact form that renders nothing is exactly that. The fix is minima
 default-merge path the unit test missed.
 Status: Final on `fix/067-admin-shell-and-completion`. Verified live: `http://corex.local/contact/` now serves
 `<form data-corex-schema>`; the contact-form smoke E2E passes; full unit 1,257 and integration 107 stay green.
+
+## #140 -- Spec 069: login hiding is defeated and fails open (reproduced on corex.local, pre-implementation)
+Date: 2026-07-16
+Context: The owner reported for the second time that the login policy "doesn't behave like wp hide login".
+Before writing any code, the four claims below were reproduced against the real runtime at `http://corex.local`
+with login protection in its as-found state (`enabled: true`, `custom_slug: corex-login`,
+`block_default_endpoints: true`). Note this contradicted `PROGRESS.md`, which recorded protection as *disabled*
+on this box; PROGRESS was stale and is corrected in the same change.
+
+Findings, all measured, not inferred:
+
+1. **The custom login URL is leaked in plain text to anonymous visitors.** `GET /login` returns
+   `302 -> http://corex.local/corex-login/`. WordPress core's `wp_redirect_admin_locations`
+   (`template_redirect`, prio 1000) is never removed, and `LoginRouteGuard`'s `site_url`/`login_url` filters
+   helpfully rewrite core's redirect target to the secret slug. One unauthenticated request defeats the entire
+   feature. `/dashboard` and `/admin` likewise 302 to `/wp-admin/`. This is the headline defect: hiding that
+   hands out the hiding place.
+
+2. **The 404 is trivially fingerprintable.** A genuinely absent URL returns the theme 404: **79,968 bytes**,
+   `<title>Page not found - Corex</title>`. The "hidden" `/wp-login.php` returns `LoginRouteGuard::deny()`'s
+   `wp_die` page: **2,515 bytes**, `<title>Not found</title>`. Same status, ~32x size difference -- a scanner
+   separates "hides its login" from "no such page" on response size alone. Corroborating evidence: when the guard
+   is inactive, `/corex-login/` 404s at exactly 79,968 bytes -- byte-identical to the control. The correct
+   response already exists; the guard simply does not use it.
+
+3. **Total lockout is reachable from stored state (Trap 1, as predicted).** `LoginProtectionSettingsStore::save()`
+   L30 has a `?: 'corex-login'` fallback; `current()` L52 does not. Stored slug `!!!` -> `sanitize_title()` -> `''`
+   -> the empty string slips past `LoginProtectionSettings`'s `!== ''` guard (no throw) -> `register()` bails at
+   L27 so no slug is served, while the *unconditional* `login_init` registration at L25 still 404s `wp-login.php`
+   via `decision()`. Measured: `/wp-login.php` 404, `/corex-login/` 404. No login URL exists at all; the front
+   page still serves 200, so the site looks healthy while nobody can log in.
+
+4. **Silent fail-open + whole-plugin outage (Trap 2 -- WORSE than the predicted fatal).** A 1-2 char slug
+   (e.g. `ab`) passes `sanitize_title` but fails the value object's `/^[a-z0-9][a-z0-9-]{2,80}$/` and throws.
+   The container builds it on every `make()` (ConfigServiceProvider L304-308) and `boot()` L651 resolves it
+   unguarded -- but provider boot is caught at `ProviderRepository.php:91`, which logs and continues. So it does
+   NOT fatal. Instead the **entire ConfigServiceProvider fails to boot**: measured `corex/v1/insights/widgets`
+   and `corex/v1/data/sources` -> 404, and `/wp-login.php` -> **200 while the stored setting still reads
+   `enabled: true`**. The owner is told they are protected and is not. No visible symptom: front page 200; the
+   only trace is one `debug.log` line, and `wp-config.php` redefines `WP_DEBUG` to `false`.
+
+5. **Recovery reports a dead URL.** `wp corex security reset-login` correctly restores `wp-login.php` (verified
+   200), but prints `Restored login URL: http://corex.local/corex-login/` -- which 404s immediately after, because
+   `wp_login_url()` is called in a request where the guard's filters are still registered. The one documented
+   recovery path tells a locked-out owner to visit a page that does not exist.
+
+Decision: Treat (1) and (4) as security defects, not cosmetic gaps. (1) means the feature currently provides
+*no* obscurity while implying that it does. (4) means a validation error silently downgrades a security control
+the owner explicitly enabled -- and takes an entire plugin's screens and routes with it. Spec 069 gains FR-011a
+("protection MUST NOT fail open") and SC-004 is widened to cover unrelated-capability loss and silent downgrade.
+The Trap 2 description in `plan.md` was written predicting a fatal and has been corrected to the measured
+behaviour; the prediction was wrong in the safe direction and the reality is more dangerous.
+
+Why: the constitution puts truth above convenience -- a control that reports itself active while serving the
+unprotected default is exactly the "dead/fake UI" the owner mandate forbids, in its most consequential form.
+Reproducing before fixing also gives the rewrite a real before/after: the control 404 (79,968 bytes) is the
+literal target for the theme-404 response FR-001 requires.
+
+Status: Recorded pre-implementation on `fix/069-admin-correctness-and-login-parity`. corex.local was restored to
+its exact as-found state after each probe (verified: `/wp-login.php` 404/2515, `/corex-login/` 200,
+insights REST 401 -- i.e. provider booting again). Recovery was proven working BEFORE any login code was touched,
+per tasks T002.
