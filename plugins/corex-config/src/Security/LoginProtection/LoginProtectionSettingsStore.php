@@ -27,7 +27,7 @@ final class LoginProtectionSettingsStore
     {
         $stored = [
             'enabled'                  => (bool) ($input['enabled'] ?? false),
-            'custom_slug'              => sanitize_title((string) ($input['custom_slug'] ?? 'corex-login')) ?: 'corex-login',
+            'custom_slug'              => $this->slug($input['custom_slug'] ?? null),
             'block_default_endpoints'  => (bool) ($input['block_default_endpoints'] ?? true),
             'threshold'                => max(1, (int) ($input['threshold'] ?? 5)),
             'window_seconds'           => max(1, (int) ($input['window_seconds'] ?? 300)),
@@ -49,7 +49,7 @@ final class LoginProtectionSettingsStore
 
         return new LoginProtectionSettings(
             enabled: (bool) ($stored['enabled'] ?? false),
-            customSlug: sanitize_title((string) ($stored['custom_slug'] ?? 'corex-login')),
+            customSlug: $this->slug($stored['custom_slug'] ?? null),
             blockDefaultEndpoints: (bool) ($stored['block_default_endpoints'] ?? true),
             threshold: max(1, (int) ($stored['threshold'] ?? 5)),
             windowSeconds: max(1, (int) ($stored['window_seconds'] ?? 300)),
@@ -59,6 +59,21 @@ final class LoginProtectionSettingsStore
             retainDays: max(1, (int) ($stored['retain_days'] ?? 30)),
             successfulLoginLogging: (bool) ($stored['successful_login_logging'] ?? true),
         );
+    }
+
+    /**
+     * The one slug resolution both reads and writes use.
+     *
+     * Reads went through a different rule than writes, so a stored slug could read back as
+     * something the writer would never have produced — including an empty string, which meant
+     * "no login URL exists" while the default endpoint stayed hidden. Because the container
+     * rebuilds LoginProtectionSettings on every make(), an unusable read also took the entire
+     * ConfigServiceProvider down and silently disabled login protection (DECISIONS #140).
+     * Anything that resolves a stored slug MUST come through here.
+     */
+    private function slug(mixed $raw): string
+    {
+        return LoginSlug::orDefault(sanitize_title((string) ($raw ?? LoginSlug::DEFAULT)));
     }
 
     /**
