@@ -15,8 +15,8 @@ const ROUTES = [
 	[ 'corex-forms', 'Forms & Flows' ],
 	[ 'corex-submissions', 'Submissions' ],
 	[ 'corex-email-studio', 'Email Studio' ],
-	[ 'corex-data', 'Data' ],
-	[ 'corex-data-models', 'Data Models' ],
+	// Spec 069: one Data entry. `corex-data` rendered the same explorer and now redirects here.
+	[ 'corex-data-models', 'Data' ],
 	[ 'corex-operations-security', 'Operations & Security' ],
 	[ 'corex-access', 'Access & Abilities' ],
 	[ 'corex-blog-pro', 'Blog Pro' ],

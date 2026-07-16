@@ -101,7 +101,8 @@ final class AdminPage
             'corex-forms'               => ['forms', 'forms'],
             'corex-submissions'         => ['submissions', 'submissions'],
             'corex-email-studio'        => ['mail', 'email'],
-            'corex-data'                => ['data', 'data'],
+            // Spec 069: the standalone Data screen was retired — it rendered the same explorer as
+            // this screen's Records tab — and its address redirects here.
             'corex-data-models'         => ['data', 'data-models'],
             'corex-operations-security' => ['security', 'operations-security'],
             'corex-access'              => ['access', 'access'],
@@ -131,8 +132,7 @@ final class AdminPage
             'corex-forms'               => __('Forms & Flows', 'corex'),
             'corex-submissions'         => __('Submissions', 'corex'),
             'corex-email-studio'        => __('Email Studio', 'corex'),
-            'corex-data'                => __('Data', 'corex'),
-            'corex-data-models'         => __('Data Models', 'corex'),
+            'corex-data-models'         => __('Data', 'corex'),
             'corex-operations-security' => __('Operations & Security', 'corex'),
             'corex-access'              => __('Access & Abilities', 'corex'),
             'corex-blog-pro'            => __('Blog Pro', 'corex'),
@@ -156,8 +156,7 @@ final class AdminPage
         $labels = [
             'overview' => __('Overview', 'corex'),
             'addons' => __('Add-ons', 'corex'),
-            'data' => __('Data', 'corex'),
-            'data-models' => __('Data Models', 'corex'),
+            'data-models' => __('Data', 'corex'),
             'forms' => __('Forms & Flows', 'corex'),
             'submissions' => __('Submissions', 'corex'),
             'email' => __('Email Studio', 'corex'),
@@ -322,10 +321,11 @@ final class AdminPage
             'corex-submissions'         => CorexAbility::MANAGE_SUBMISSIONS,
             'email'                     => CorexAbility::MANAGE_EMAIL,
             'corex-email-studio'        => CorexAbility::MANAGE_EMAIL,
-            'data'                      => CorexAbility::MANAGE_DATA,
-            'corex-data'                => CorexAbility::MANAGE_DATA,
-            'data-models'               => CorexAbility::MANAGE_DATA_MODELS,
-            'corex-data-models'         => CorexAbility::MANAGE_DATA_MODELS,
+            // Records browsing needs MANAGE_DATA and everything else on the screen needs
+            // MANAGE_DATA_MODELS; either one opens it. Someone seeing the denied surface holds
+            // neither, and records is the common need, so that is what they are offered.
+            'data-models'               => CorexAbility::MANAGE_DATA,
+            'corex-data-models'         => CorexAbility::MANAGE_DATA,
             'operations-security'       => CorexAbility::MANAGE_OPERATIONS,
             'corex-operations-security' => CorexAbility::MANAGE_OPERATIONS,
             'access'                    => CorexAbility::MANAGE_ACCESS,

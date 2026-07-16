@@ -24,7 +24,11 @@ export default function QueryBar( { explorer, openCreate, openExport } ) {
 				} } ) } /> ) }
 			{ explorer.can( 'create' ) && <Button variant="primary" onClick={ openCreate }>{ __( 'New record', 'corex' ) }</Button> }
 			{ ( explorer.can( 'export_csv' ) || explorer.can( 'export_xlsx' ) ) &&
-				<Button variant="secondary" onClick={ openExport }>{ __( 'Export', 'corex' ) }</Button> }
+				/* "Export records", not "Export": this explorer now lives on the same screen as the
+				   Export tab, and two controls answering to the same name is ambiguous to anyone
+				   navigating by label — a screen reader especially. It also says the more useful
+				   thing: this exports the rows in view, the tab exports a model. */
+				<Button variant="secondary" onClick={ openExport }>{ __( 'Export records', 'corex' ) }</Button> }
 		</div>
 	</div>;
 }

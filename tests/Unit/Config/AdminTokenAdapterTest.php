@@ -76,7 +76,8 @@ it('loads the adapter only through CoreX owned admin screen styles', function ()
     $owners = [
         'plugins/corex-config/src/Settings/AdminDashboard.php' => 'corex-control-panel',
         'plugins/corex-config/src/Addons/AddonsScreen.php' => 'corex-addons',
-        'plugins/corex-config/src/Data/DataAdminScreen.php' => 'corex-data',
+        // The retired Data screen only redirects now; Data Models enqueues corex-data.
+        'plugins/corex-config/src/DataModels/DataModelsScreen.php' => 'corex-data',
         'plugins/corex-config/src/Insights/InsightsScreen.php' => 'corex-insights',
         'addons/corex-captcha/src/CaptchaServiceProvider.php' => 'corex-captcha-admin',
     ];

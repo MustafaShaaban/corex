@@ -24,10 +24,40 @@ test( 'renders launch checklist login policy lockouts recovery and activity with
 	await page.getByLabel( 'Type PRODUCTION' ).fill( 'PRODUCTION' );
 	await expect( page.getByText( 'Typed confirmation is ready.' ) ).toBeVisible();
 
-	await page.getByRole( 'button', { name: 'Mark command reviewed' } ).click();
-	await expect( page.getByText( 'Recovery guidance reviewed.' ) ).toBeVisible();
+	// Recovery shows the command and nothing else (spec 069). It used to carry a "Mark command
+	// reviewed" button that flipped a label and did nothing else — and this spec asserted that it
+	// worked, which is how a control with no effect stayed shipped. Recovery runs from the CLI by
+	// necessity: it exists for when the admin is unreachable, so no button here could perform it.
+	// Scoped to the panel's own code block: the command also appears in the login-policy warning,
+	// so an unscoped text match is ambiguous.
+	await expect( page.locator( '.corex-security__panel code', { hasText: 'wp corex security reset-login' } ).first() ).toBeVisible();
+	await expect( page.getByRole( 'button', { name: 'Mark command reviewed' } ) ).toHaveCount( 0 );
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
+} );
+
+test( 'always says where the login is, and warns before hiding the default endpoints', async ( { page } ) => {
+	// The owner has to leave this screen knowing where to sign in — saving hides wp-login.php and
+	// wp-admin, and used to say nothing about what replaced them. The address reflects the SAVED
+	// settings, so it is shown whether protection is on or off: it is always true.
+	await page.goto( '/wp-admin/admin.php?page=corex-operations-security' );
+
+	await expect( page.getByText( 'Sign in at:' ) ).toBeVisible();
+	await expect( page.locator( '.corex-security__login-url a' ) ).toHaveAttribute( 'href', /^https?:\/\/.+/ );
+
+	// The warning is about what saving WILL do, so it tracks the checkboxes, not the saved state.
+	const enable = page.getByLabel( 'Enable failed-login protection' );
+	const hide = page.getByLabel( 'Hide wp-login.php and wp-admin' );
+	if ( ! ( await enable.isChecked() ) ) {
+		await enable.check();
+	}
+	if ( ! ( await hide.isChecked() ) ) {
+		await hide.check();
+	}
+	await expect( page.locator( '.corex-security__warning' ) ).toBeVisible();
+
+	await enable.uncheck();
+	await expect( page.locator( '.corex-security__warning' ) ).toHaveCount( 0 );
 } );
 
 test( 'creates a live access request through the localized Access REST workflow', async ( { page } ) => {

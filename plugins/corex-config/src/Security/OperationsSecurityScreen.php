@@ -17,7 +17,7 @@ use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
 use Corex\Config\Security\LoginProtection\LoginLockoutReader;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
-use Corex\Config\Security\LoginProtection\LoginSlug;
+use Corex\Config\Security\LoginProtection\LoginUrl;
 use Corex\Security\Admin\AdminGuard;
 use DateTimeImmutable;
 
@@ -328,27 +328,6 @@ final class OperationsSecurityScreen
         }, $this->lockouts->recentLockouts($now));
     }
 
-    /**
-     * The address the login is actually served from right now.
-     *
-     * Built the same way the guard serves it, honouring the permalink setting, so what the screen
-     * shows and what the site answers cannot drift apart.
-     */
-    private function loginUrl(LoginProtectionSettings $settings): string
-    {
-        if (! $settings->enabled) {
-            return esc_url_raw(rtrim((string) get_option('siteurl'), '/') . '/wp-login.php');
-        }
-
-        $slug = $settings->customSlug !== '' ? $settings->customSlug : LoginSlug::DEFAULT;
-
-        return esc_url_raw(
-            get_option('permalink_structure')
-                ? user_trailingslashit(home_url('/') . $slug)
-                : home_url('/') . '?' . $slug,
-        );
-    }
-
     /** The account a lockout hit, when the attempt matched a real user. */
     private function accountName(?int $userId): string
     {
@@ -401,9 +380,9 @@ final class OperationsSecurityScreen
             'block_default_endpoints' => $settings->blockDefaultEndpoints,
             'custom_slug' => $settings->customSlug,
             // The address the owner must actually use. Showing it is the difference between a
-            // setting and a usable instruction — and the guard rewrites it, so it cannot be
-            // assembled by hand in the client.
-            'login_url' => $this->loginUrl($settings),
+            // setting and a usable instruction — and it comes from the same resolver the guard
+            // serves, so the screen cannot describe an address the site does not answer.
+            'login_url' => esc_url_raw(LoginUrl::forSettings($settings)),
             // Whether the slug in use is the one that was stored. It will not be if a hand-edited
             // option, a migration, or an older CoreX left an unusable value: the store falls back
             // to a working default rather than lock the owner out, but silently substituting an

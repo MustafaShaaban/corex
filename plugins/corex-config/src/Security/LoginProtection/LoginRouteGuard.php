@@ -348,13 +348,7 @@ final class LoginRouteGuard
     /** The custom login URL, honouring the site's permalink and trailing-slash settings. */
     public function loginUrl(?string $scheme = null): string
     {
-        $slug = $this->settings->customSlug;
-
-        if (! get_option('permalink_structure')) {
-            return home_url('/', $scheme) . '?' . $slug;
-        }
-
-        return user_trailingslashit(home_url('/', $scheme) . $slug);
+        return LoginUrl::forSettings($this->settings, $scheme);
     }
 
     /** Keep a rewritten URL on the scheme it arrived on rather than forcing one. */

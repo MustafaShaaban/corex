@@ -22,7 +22,9 @@ it('applies the shared page shell to every current CoreX admin renderer', functi
 })->with([
     'overview' => ['plugins/corex-config/src/Settings/AdminDashboard.php', 'overview'],
     'add-ons' => ['plugins/corex-config/src/Addons/AddonsScreen.php', 'addons'],
-    'data' => ['plugins/corex-config/src/Data/DataAdminScreen.php', 'data'],
+    // Spec 069: the standalone Data screen is retired — it rendered the same explorer as Data
+    // Models' Records tab — so the shell contract belongs to the screen that survived.
+    'data' => ['plugins/corex-config/src/DataModels/DataModelsScreen.php', 'data-models'],
     'insights and readiness' => ['plugins/corex-config/src/Insights/InsightsScreen.php', 'insights'],
     'setup wizard' => ['addons/corex-kit-company/src/SetupWizardScreen.php', 'setup'],
     'declarative option pages' => ['plugins/corex-config/src/Options/OptionPageScreen.php', 'option-page'],

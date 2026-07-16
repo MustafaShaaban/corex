@@ -9603,7 +9603,7 @@
     },
     {
       "path": "plugins/corex-core/src/Admin/AdminPage.php",
-      "selector_or_context": "lines 185: . '<rect x=\"18\" y=\"18\" width=\"12\" height=\"12\" rx=\"2.5\" fill=\"var(--corex-admin-action)\"/>'",
+      "selector_or_context": "lines 184: . '<rect x=\"18\" y=\"18\" width=\"12\" height=\"12\" rx=\"2.5\" fill=\"var(--corex-admin-action)\"/>'",
       "property": "--corex-admin-action",
       "owner": "core-plugin",
       "surface": "front-end",

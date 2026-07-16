@@ -16,7 +16,7 @@
     {
       "style": "corex-data",
       "asset": "plugins/corex-config/assets/data.css",
-      "owner": "plugins/corex-config/src/Data/DataAdminScreen.php",
+      "owner": "plugins/corex-config/src/DataModels/DataModelsScreen.php",
       "scope": ".corex-data* owned screen"
     },
     {
@@ -5145,7 +5145,7 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-core/src/Admin/AdminPage.php",
-      "context": "lines 185: . '<rect x=\"18\" y=\"18\" width=\"12\" height=\"12\" rx=\"2.5\" fill=\"var(--corex-admin-action)\"/>'"
+      "context": "lines 184: . '<rect x=\"18\" y=\"18\" width=\"12\" height=\"12\" rx=\"2.5\" fill=\"var(--corex-admin-action)\"/>'"
     }
   ],
   "adapter_status": "planned; corex-core registers shared handle, screen owners enqueue as dependency, never global or client-brand authority"

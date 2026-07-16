@@ -180,7 +180,11 @@ function LoginPolicy( { policy, policyPayload, dispatch, config = {}, saving = f
 					/>
 				</label>
 			</div>
-			{ policy.enabled && policy.loginUrl && (
+			{ policy.loginUrl && (
+				/* Where the login IS, from the saved settings — not where the unsaved checkboxes
+				   above imply it would be. Showing a predicted address next to a live one is how
+				   an owner ends up bookmarking a URL that does not exist yet. It refreshes from
+				   the save response. */
 				<p className="corex-security__login-url">
 					{ __( 'Sign in at:', 'corex' ) }{ ' ' }
 					<a href={ policy.loginUrl } rel="bookmark">{ policy.loginUrl }</a>

@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginSlug;
+use Corex\Config\Security\LoginProtection\LoginUrl;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -210,6 +211,9 @@ final class SecuritySettingsController
             'enabled'                  => $settings->enabled,
             'block_default_endpoints'  => $settings->blockDefaultEndpoints,
             'custom_slug'              => $settings->customSlug,
+            // Without this the screen keeps showing the address from before the save, so an owner
+            // who just moved their login is told the old one.
+            'login_url'                => esc_url_raw(LoginUrl::forSettings($settings)),
             'max_attempts'             => $settings->threshold,
             'window_seconds'           => $settings->windowSeconds,
             'lockout_seconds'          => $settings->lockoutSeconds,

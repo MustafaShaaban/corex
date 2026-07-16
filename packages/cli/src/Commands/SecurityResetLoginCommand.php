@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginLockoutStore;
 use Corex\Config\Security\LoginProtection\LoginSlug;
+use Corex\Config\Security\LoginProtection\LoginUrl;
 use DateTimeImmutable;
 
 /**
@@ -48,15 +49,13 @@ final class SecurityResetLoginCommand
     /**
      * The login URL that will actually work on the next request.
      *
-     * Deliberately not wp_login_url(): LoginRouteGuard's filters are already registered in this
-     * process and still rewrite to the custom slug, so wp_login_url() reports the address this
-     * command has just disabled. That is not hypothetical — it printed a URL that 404'd for an
-     * owner who was already locked out, which is the one moment the advice has to be right
-     * (DECISIONS #140). Reading the raw option sidesteps the filter.
+     * Protection is off by the time this is read, so the stock login is the honest answer — and
+     * LoginUrl::defaultUrl() builds it without the filters that would otherwise hand back the
+     * address this command has just disabled (DECISIONS #140).
      */
     private function restoredLoginUrl(): string
     {
-        return rtrim((string) get_option('siteurl'), '/') . '/wp-login.php';
+        return LoginUrl::defaultUrl();
     }
 
     public function run(): void

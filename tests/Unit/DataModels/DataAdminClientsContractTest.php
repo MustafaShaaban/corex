@@ -15,30 +15,46 @@ function dataClientSource(string $path): string
     return (string) file_get_contents(ThemeContract::root() . '/' . $path);
 }
 
-it('mounts both Data clients with actor-scoped source capabilities', function () {
-    $data = dataClientSource('plugins/corex-config/src/Data/DataAdminScreen.php');
+it('mounts the one Data client with actor-scoped source capabilities', function () {
+    // Spec 069: there used to be two of these. `page=corex-data` and `page=corex-data-models`
+    // mounted the identical DataExplorer from an identical config against the same REST base, so
+    // the standalone screen was retired.
     $models = dataClientSource('plugins/corex-config/src/DataModels/DataModelsScreen.php');
 
-    foreach ([$data, $models] as $screen) {
-        expect($screen)->toContain('DataSourceService')
-            ->and($screen)->toContain('get_current_user_id()')
-            ->and($screen)->toContain("rest_url('corex/v1/data')")
-            ->and($screen)->toContain("wp_create_nonce('wp_rest')")
-            ->and($screen)->toContain('build/admin/index.js')
-            ->and($screen)->toContain("'corex-runtime'");
-    }
-
-    expect($data)->toContain('corex-data-app')
+    expect($models)->toContain('DataSourceService')
+        ->and($models)->toContain('get_current_user_id()')
+        ->and($models)->toContain("rest_url('corex/v1/data')")
+        ->and($models)->toContain("wp_create_nonce('wp_rest')")
+        ->and($models)->toContain('build/admin/index.js')
+        ->and($models)->toContain("'corex-runtime'")
         ->and($models)->toContain('corex-data-models-app');
 });
 
-it('uses explicit Data abilities at both the menu and REST permission boundaries', function () {
+it('keeps the retired Data address working instead of deleting it', function () {
     $data = dataClientSource('plugins/corex-config/src/Data/DataAdminScreen.php');
+
+    // It redirects and nothing else — no client, no mount, no duplicate enqueue.
+    expect($data)->toContain('wp_safe_redirect')
+        ->and($data)->toContain('corex-data-models')
+        ->and($data)->toContain('tab=records')
+        ->and($data)->not->toContain('corex-data-app')
+        ->and($data)->not->toContain('add_submenu_page')
+        ->and($data)->not->toContain('wp_enqueue_script');
+});
+
+it('admits either Data ability and gates each tab on the one it needs', function () {
     $models = dataClientSource('plugins/corex-config/src/DataModels/DataModelsScreen.php');
+    $tabs = dataClientSource('plugins/corex-config/src/DataModels/modelClient.js');
     $controller = dataClientSource('plugins/corex-config/src/Data/DataManagementController.php');
 
-    expect($data)->toContain('CorexAbility::MANAGE_DATA')
+    // MANAGE_DATA and MANAGE_DATA_MODELS are independent — neither implies the other. Gating the
+    // surviving screen on models alone would lock out data-only users, and records could not be
+    // gated on models because the sources it reads are gated on data.
+    expect($models)->toContain('CorexAbility::MANAGE_DATA')
         ->and($models)->toContain('CorexAbility::MANAGE_DATA_MODELS')
+        ->and($tabs)->toContain("key: 'records', ability: 'data'")
+        ->and($tabs)->toContain("key: 'models', ability: 'models'")
+        // The REST side already admitted either; the screen now matches it.
         ->and($controller)->toContain("'permission_callback' => [\$this, 'canManage']")
         ->and($controller)->not->toContain("'permission_callback' => '__return_true'");
 });

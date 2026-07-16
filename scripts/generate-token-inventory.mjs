@@ -48,7 +48,8 @@ const ADMIN_OWNERS = [
 	{
 		style: 'corex-data',
 		asset: ADMIN_FILES[ 1 ],
-		owner: 'plugins/corex-config/src/Data/DataAdminScreen.php',
+		// The standalone Data screen is retired and only redirects now; Data Models enqueues this.
+		owner: 'plugins/corex-config/src/DataModels/DataModelsScreen.php',
 		scope: '.corex-data* owned screen',
 	},
 	{
