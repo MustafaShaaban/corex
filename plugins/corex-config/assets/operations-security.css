@@ -313,3 +313,39 @@
 	font-family: var(--corex-admin-font-mono);
 	font-size: var(--corex-admin-font-xs);
 }
+
+/* The address the owner must use: the one thing here they have to keep. */
+.corex-admin .corex-security__login-url {
+	margin-block: var(--corex-admin-space-md) 0;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action);
+	border-radius: var(--corex-admin-radius-md);
+	background: var(--corex-admin-surface-alt);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	word-break: break-all;
+}
+
+.corex-admin .corex-security__login-url a {
+	color: var(--corex-admin-action);
+	font-family: var(--corex-admin-font-mono);
+}
+
+/* Saving is when the default endpoints vanish — say so before, not after. */
+.corex-admin .corex-security__warning {
+	margin-block: var(--corex-admin-space-xs) 0;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-md);
+	background: var(--corex-admin-warning-soft);
+	color: var(--corex-admin-warning);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-security__lockouts li.is-active {
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+}
+
+.corex-admin .corex-security__lockouts li.is-expired {
+	color: var(--corex-admin-text-muted);
+}

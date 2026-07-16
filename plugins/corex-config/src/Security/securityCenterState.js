@@ -38,11 +38,17 @@ export function normalizeReadiness( snapshot = {} ) {
 
 export function normalizeLoginPolicy( policy = {} ) {
 	return {
-		enabled: policy.enabled !== false,
+		// Defaults mirror the server (LoginProtectionSettingsStore). They used to disagree —
+		// `enabled` defaulted to true here and false there, `windowSeconds` to 900 against 300 —
+		// so an unsaved form showed a state the site was not in.
+		enabled: policy.enabled === true,
 		blockDefaultEndpoints: policy.blockDefaultEndpoints === true || policy.block_default_endpoints === true,
 		customSlug: policy.customSlug || policy.custom_slug || 'corex-login',
+		loginUrl: policy.loginUrl || policy.login_url || '',
+		slugSubstituted: policy.slugSubstituted === true || policy.slug_substituted === true,
+		storedSlug: policy.storedSlug || policy.stored_slug || '',
 		maxAttempts: clampInteger( policy.maxAttempts ?? policy.max_attempts, 5, 1, 50 ),
-		windowSeconds: clampInteger( policy.windowSeconds ?? policy.window_seconds, 900, 60, 86400 ),
+		windowSeconds: clampInteger( policy.windowSeconds ?? policy.window_seconds, 300, 60, 86400 ),
 		lockoutSeconds: clampInteger( policy.lockoutSeconds ?? policy.lockout_seconds, 900, 60, 604800 ),
 		trustedProxies: Array.isArray( policy.trustedProxies )
 			? policy.trustedProxies.map( String )
@@ -168,10 +174,14 @@ function normalizeLockouts( lockouts = [] ) {
 	return Array.isArray( lockouts )
 		? lockouts.map( ( lockout ) => ( {
 			id: lockout.id || '',
-			identity: lockout.identity || 'Unknown identity',
-			network: lockout.network || 'Unknown network',
-			active: lockout.active !== false,
-			lockedUntil: lockout.locked_until || '',
+			// Identities are stored hashed by design, so a short fingerprint is all there is.
+			identity: lockout.identity || '',
+			network: lockout.network || '',
+			account: lockout.account || '',
+			reason: lockout.reason || '',
+			// `active` defaulted to true, so a row with no flag was reported as an ongoing lockout.
+			active: lockout.active === true,
+			lockedUntil: lockout.lockedUntil || lockout.locked_until || '',
 		} ) )
 		: [];
 }

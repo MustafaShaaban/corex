@@ -23,7 +23,7 @@ export default function SecurityCenter( { config = {} } ) {
 			<LoginPolicy policy={ state.loginPolicy } policyPayload={ policyPayload } dispatch={ dispatch } config={ config } saving={ state.status === 'saving' } />
 			<div className="corex-security__grid">
 				<Lockouts lockouts={ state.lockouts } summary={ lockouts } />
-				<Recovery recovery={ state.recovery } config={ config } dispatch={ dispatch } />
+				<Recovery config={ config } />
 				<Activity activity={ state.activity } />
 			</div>
 			{ state.notice && (
@@ -134,6 +134,16 @@ function LoginPolicy( { policy, policyPayload, dispatch, config = {}, saving = f
 				</div>
 				<span>{ policy.enabled ? __( 'Enabled', 'corex' ) : __( 'Disabled', 'corex' ) }</span>
 			</header>
+			{ policy.slugSubstituted && (
+				<p className="corex-security__notice is-error" role="alert">
+					{ sprintf(
+						/* translators: 1: the unusable saved address, 2: the address in use instead. */
+						__( 'The saved login address (%1$s) cannot be used, so CoreX is serving the login at %2$s instead. Save a valid address to resolve this.', 'corex' ),
+						policy.storedSlug,
+						policy.customSlug
+					) }
+				</p>
+			) }
 			<div className="corex-security__policy">
 				<label>
 					<input
@@ -149,10 +159,10 @@ function LoginPolicy( { policy, policyPayload, dispatch, config = {}, saving = f
 						checked={ policy.blockDefaultEndpoints }
 						onChange={ ( event ) => dispatch( { type: 'setLoginPolicy', patch: { blockDefaultEndpoints: event.target.checked } } ) }
 					/>
-					{ __( 'Block default login endpoints', 'corex' ) }
+					{ __( 'Hide wp-login.php and wp-admin', 'corex' ) }
 				</label>
 				<label>
-					{ __( 'Custom login slug', 'corex' ) }
+					{ __( 'Custom login address', 'corex' ) }
 					<input
 						type="text"
 						value={ policy.customSlug }
@@ -170,6 +180,21 @@ function LoginPolicy( { policy, policyPayload, dispatch, config = {}, saving = f
 					/>
 				</label>
 			</div>
+			{ policy.enabled && policy.loginUrl && (
+				<p className="corex-security__login-url">
+					{ __( 'Sign in at:', 'corex' ) }{ ' ' }
+					<a href={ policy.loginUrl } rel="bookmark">{ policy.loginUrl }</a>
+				</p>
+			) }
+			{ policy.enabled && policy.blockDefaultEndpoints && (
+				<p className="corex-security__warning" role="note">
+					{ sprintf(
+						/* translators: %s: the CLI recovery command. */
+						__( 'Bookmark that address before you sign out. Once saved, wp-login.php and wp-admin return "not found" for everyone, and this address is the only way in. If you lose it, run %s.', 'corex' ),
+						config.recoveryCommand || 'wp corex security reset-login'
+					) }
+				</p>
+			) }
 			<div className="corex-security__actions">
 				<button type="button" className="button button-primary" disabled={ saving } onClick={ save }>
 					{ saving ? __( 'Saving…', 'corex' ) : __( 'Save login protection', 'corex' ) }
@@ -192,13 +217,29 @@ function Lockouts( { lockouts, summary } ) {
 				) }
 			</p>
 			{ lockouts.length === 0 ? (
-				<p>{ __( 'No lockouts are currently visible in the local evidence snapshot.', 'corex' ) }</p>
+				<p>{ __( 'No login lockouts have been recorded.', 'corex' ) }</p>
 			) : (
-				<ul>
+				<ul className="corex-security__lockouts">
 					{ lockouts.map( ( lockout ) => (
-						<li key={ lockout.id }>
-							<span>{ lockout.identity }</span>
-							<small>{ lockout.lockedUntil }</small>
+						<li key={ lockout.id } className={ lockout.active ? 'is-active' : 'is-expired' }>
+							<span>{ lockout.account || sprintf(
+								/* translators: %s: a short fingerprint of the hashed identity. */
+								__( 'Unrecognised sign-in (%s)', 'corex' ),
+								lockout.identity
+							) }</span>
+							<small>
+								{ lockout.active
+									? sprintf(
+										/* translators: %s: date and time the lockout ends. */
+										__( 'Locked until %s', 'corex' ),
+										lockout.lockedUntil
+									)
+									: sprintf(
+										/* translators: %s: date and time the lockout ended. */
+										__( 'Expired %s', 'corex' ),
+										lockout.lockedUntil
+									) }
+							</small>
 						</li>
 					) ) }
 				</ul>
@@ -207,26 +248,22 @@ function Lockouts( { lockouts, summary } ) {
 	);
 }
 
-function Recovery( { recovery, config, dispatch } ) {
+/**
+ * Recovery is documentation, not a control.
+ *
+ * It used to carry a "Mark command reviewed" button that only flipped a label — no server call, no
+ * effect. Recovery necessarily runs from the CLI: it exists for the case where the admin cannot be
+ * reached, so a button inside the admin could not perform it even in principle. Showing the command
+ * is the honest whole of what this panel can do.
+ */
+function Recovery( { config } ) {
+	const command = config.recoveryCommand || 'wp corex security reset-login';
+
 	return (
 		<section className="corex-surface corex-security__panel">
 			<h2>{ __( 'Recovery', 'corex' ) }</h2>
-			<p>{ __( 'Use the CLI recovery command when protected login settings block owner access.', 'corex' ) }</p>
-			<code>{ config.recoveryCommand || 'wp corex security reset-login' }</code>
-			<button
-				type="button"
-				className="button"
-				onClick={ () =>
-					dispatch( {
-						type: 'recovered',
-						result: { command: config.recoveryCommand || 'wp corex security reset-login' },
-						message: __( 'Recovery command highlighted for operator use.', 'corex' ),
-					} )
-				}
-			>
-				{ __( 'Mark command reviewed', 'corex' ) }
-			</button>
-			{ recovery && <p>{ __( 'Recovery guidance reviewed.', 'corex' ) }</p> }
+			<p>{ __( 'Locked out? Run this on the server to restore the default login address and release every active lockout. Your users and passwords are untouched.', 'corex' ) }</p>
+			<code>{ command }</code>
 		</section>
 	);
 }

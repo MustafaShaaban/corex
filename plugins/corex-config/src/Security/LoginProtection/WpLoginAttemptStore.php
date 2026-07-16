@@ -18,9 +18,11 @@ use RuntimeException;
 /**
  * WordPress persistence adapter for hashed login attempt and lockout evidence.
  */
-final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore
+final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore, LoginLockoutReader
 {
     private const MAX_PRUNE_SIZE = 5000;
+
+    private const MAX_LOCKOUT_READ = 100;
 
     public function __construct(private readonly Migrator $migrator)
     {
@@ -102,6 +104,23 @@ final class WpLoginAttemptStore implements LoginAttemptStore, LoginLockoutStore
         }
 
         return (int) $deleted;
+    }
+
+    /**
+     * @return list<LoginAttemptRecord>
+     */
+    public function recentLockouts(DateTimeImmutable $now, int $limit = 20): array
+    {
+        global $wpdb;
+
+        $limit = min(self::MAX_LOCKOUT_READ, max(1, $limit));
+        $rows = $wpdb->get_results($wpdb->prepare(
+            'SELECT * FROM ' . $this->table() . ' WHERE outcome = %s ORDER BY locked_until DESC, id DESC LIMIT %d',
+            LoginAttemptRecord::LOCKED,
+            $limit,
+        ), ARRAY_A);
+
+        return array_map($this->hydrate(...), is_array($rows) ? $rows : []);
     }
 
     public function releaseActiveLockouts(DateTimeImmutable $now): int

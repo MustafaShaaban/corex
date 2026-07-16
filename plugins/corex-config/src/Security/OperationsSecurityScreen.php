@@ -13,8 +13,11 @@ use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeController;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Config\Operations\ProductionReadinessSnapshotFactory;
+use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
+use Corex\Config\Security\LoginProtection\LoginLockoutReader;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
+use Corex\Config\Security\LoginProtection\LoginSlug;
 use Corex\Security\Admin\AdminGuard;
 use DateTimeImmutable;
 
@@ -37,6 +40,7 @@ final class OperationsSecurityScreen
         private readonly OperationsModeStore $store,
         private readonly ProductionReadinessSnapshotFactory $readiness,
         private readonly LoginProtectionSettingsStore $loginSettings,
+        private readonly LoginLockoutReader $lockouts,
     ) {
     }
 
@@ -278,16 +282,89 @@ final class OperationsSecurityScreen
      */
     private function securityConfig(): array
     {
+        $settings = $this->loginSettings->current();
+
         return [
             'restUrl' => esc_url_raw(rest_url('corex/v1/security')),
             'nonce' => wp_create_nonce('wp_rest'),
             'mode' => $this->store->current(),
             'readiness' => $this->readinessPayload(),
-            'loginPolicy' => $this->loginPolicyPayload($this->loginSettings->current()),
-            'lockouts' => [],
+            'loginPolicy' => $this->loginPolicyPayload($settings),
+            'lockouts' => $this->lockoutsPayload(),
             'activity' => $this->activityPayload(),
             'recoveryCommand' => 'wp corex security reset-login',
         ];
+    }
+
+    /**
+     * Real lockouts from the evidence table.
+     *
+     * This was hardcoded to an empty array, so the panel reported "no lockouts" no matter what had
+     * actually been recorded — a control that always says the same thing tells the operator nothing.
+     *
+     * Identities are stored as SHA-256 by design (LoginAttemptRecord), so there is no name to show.
+     * A short fingerprint is enough to tell two lockouts apart and to line one up with the audit
+     * log, and the account is named only when the attempt matched a real user, which is already
+     * recorded. Nothing here is reconstructed or guessed.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function lockoutsPayload(): array
+    {
+        $now = new DateTimeImmutable('now');
+
+        return array_map(function (LoginAttemptRecord $record) use ($now): array {
+            $lockedUntil = $record->lockedUntil;
+
+            return [
+                'id' => substr($record->identityHash, 0, 12) . '-' . ($lockedUntil?->format('U') ?? '0'),
+                'identity' => substr($record->identityHash, 0, 12),
+                'network' => substr($record->networkHash, 0, 12),
+                'account' => $this->accountName($record->userId),
+                'reason' => $record->reasonCode,
+                'active' => $lockedUntil !== null && $lockedUntil > $now,
+                'locked_until' => $lockedUntil === null ? '' : $this->formatDate($lockedUntil),
+            ];
+        }, $this->lockouts->recentLockouts($now));
+    }
+
+    /**
+     * The address the login is actually served from right now.
+     *
+     * Built the same way the guard serves it, honouring the permalink setting, so what the screen
+     * shows and what the site answers cannot drift apart.
+     */
+    private function loginUrl(LoginProtectionSettings $settings): string
+    {
+        if (! $settings->enabled) {
+            return esc_url_raw(rtrim((string) get_option('siteurl'), '/') . '/wp-login.php');
+        }
+
+        $slug = $settings->customSlug !== '' ? $settings->customSlug : LoginSlug::DEFAULT;
+
+        return esc_url_raw(
+            get_option('permalink_structure')
+                ? user_trailingslashit(home_url('/') . $slug)
+                : home_url('/') . '?' . $slug,
+        );
+    }
+
+    /** The account a lockout hit, when the attempt matched a real user. */
+    private function accountName(?int $userId): string
+    {
+        if ($userId === null || $userId < 1) {
+            return '';
+        }
+
+        $user = get_userdata($userId);
+
+        return $user === false ? '' : $user->user_login;
+    }
+
+    private function formatDate(DateTimeImmutable $date): string
+    {
+        return wp_date((string) get_option('date_format') . ' ' . (string) get_option('time_format'), $date->getTimestamp())
+            ?: $date->format('c');
     }
 
     /**
@@ -316,10 +393,23 @@ final class OperationsSecurityScreen
      */
     private function loginPolicyPayload(LoginProtectionSettings $settings): array
     {
+        $stored = get_option(LoginProtectionSettingsStore::OPTION, []);
+        $storedSlug = is_array($stored) ? (string) ($stored['custom_slug'] ?? '') : '';
+
         return [
             'enabled' => $settings->enabled,
             'block_default_endpoints' => $settings->blockDefaultEndpoints,
             'custom_slug' => $settings->customSlug,
+            // The address the owner must actually use. Showing it is the difference between a
+            // setting and a usable instruction — and the guard rewrites it, so it cannot be
+            // assembled by hand in the client.
+            'login_url' => $this->loginUrl($settings),
+            // Whether the slug in use is the one that was stored. It will not be if a hand-edited
+            // option, a migration, or an older CoreX left an unusable value: the store falls back
+            // to a working default rather than lock the owner out, but silently substituting an
+            // address and still reporting "protected" is exactly the discrepancy FR-011a forbids.
+            'slug_substituted' => $storedSlug !== '' && sanitize_title($storedSlug) !== $settings->customSlug,
+            'stored_slug' => $storedSlug,
             'max_attempts' => $settings->threshold,
             'window_seconds' => $settings->windowSeconds,
             'lockout_seconds' => $settings->lockoutSeconds,

@@ -332,6 +332,11 @@ final class ConfigServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\WpLoginAttemptStore =>
                 $c->make(\Corex\Config\Security\LoginProtection\WpLoginAttemptStore::class),
         );
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginLockoutReader::class,
+            static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\WpLoginAttemptStore =>
+                $c->make(\Corex\Config\Security\LoginProtection\WpLoginAttemptStore::class),
+        );
 
         $this->container->singleton(AdminDashboard::class);
         $this->container->singleton(AddonsScreen::class);
