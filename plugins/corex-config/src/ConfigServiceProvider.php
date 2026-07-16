@@ -309,7 +309,16 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionPolicy::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionService::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\ClientIpResolver::class);
-        $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginRouteGuard::class);
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginRouteGuard::class,
+            static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\LoginRouteGuard =>
+                new \Corex\Config\Security\LoginProtection\LoginRouteGuard(
+                    $c->make(\Corex\Config\Security\LoginProtection\LoginProtectionSettings::class),
+                    // The wp-config break-glass. Fixed before WordPress loads, so reading it once here
+                    // is safe, and injecting it keeps the recovery path testable.
+                    defined('COREX_LOGIN_UNGUARD') && COREX_LOGIN_UNGUARD === true,
+                ),
+        );
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionEnforcer::class);
         $this->container->singleton(\Corex\Config\Security\SecuritySettingsController::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\WpLoginAttemptStore::class);

@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginLockoutStore;
+use Corex\Config\Security\LoginProtection\LoginSlug;
 use DateTimeImmutable;
 
 /**
@@ -32,13 +33,30 @@ final class SecurityResetLoginCommand
         $settings = is_array($settings) ? $settings : [];
         $settings['enabled'] = false;
         $settings['block_default_endpoints'] = false;
+        // Reset the slug too: recovery exists for owners locked out by a bad one, and leaving it
+        // in place means re-enabling protection walks straight back into the same lockout.
+        $settings['custom_slug'] = LoginSlug::DEFAULT;
         update_option(LoginProtectionSettingsStore::OPTION, $settings, false);
 
         return [
-            'restored_login_url' => function_exists('wp_login_url') ? wp_login_url() : admin_url('wp-login.php'),
+            'restored_login_url' => $this->restoredLoginUrl(),
             'released_lockouts' => $this->attempts->releaseActiveLockouts($now),
             'unguard_constant_active' => defined('COREX_LOGIN_UNGUARD') && COREX_LOGIN_UNGUARD === true,
         ];
+    }
+
+    /**
+     * The login URL that will actually work on the next request.
+     *
+     * Deliberately not wp_login_url(): LoginRouteGuard's filters are already registered in this
+     * process and still rewrite to the custom slug, so wp_login_url() reports the address this
+     * command has just disabled. That is not hypothetical — it printed a URL that 404'd for an
+     * owner who was already locked out, which is the one moment the advice has to be right
+     * (DECISIONS #140). Reading the raw option sidesteps the filter.
+     */
+    private function restoredLoginUrl(): string
+    {
+        return rtrim((string) get_option('siteurl'), '/') . '/wp-login.php';
     }
 
     public function run(): void

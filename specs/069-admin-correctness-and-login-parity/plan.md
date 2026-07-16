@@ -133,9 +133,17 @@ Rewrite `LoginRouteGuard`:
 | Two rulesets | `decision()` L164-184 allows logged-in; `hidesDefaultEndpoint()` L83-106 blocks everyone; only the former is tested | One pure, tested predicate |
 | `wp_redirect` | Unfiltered | Filtered — any redirect to the default login rewrites to the slug |
 | Shortcuts | core's `wp_redirect_admin_locations` leaks `/login`, `/dashboard`, `/admin` | `remove_action('template_redirect', 'wp_redirect_admin_locations', 1000)` |
-| Rewriting | `str_replace` L138-141 — no scheme, no query args, no `admin_url` | Parse + `add_query_arg`, honour `is_ssl()`, filter `admin_url`/`network_admin_url` |
-| Logged-in | Hard 404 for everyone (L100-102) — breaks interim login and `action=postpass` | Served, as WPS does (FR-006) |
+| Rewriting | `str_replace` L138-141 — no scheme, no query args, drops plain-permalink form | Parse + `add_query_arg`, honour the request scheme and the site's permalink/trailing-slash settings |
+| Logged-in | Hidden from everyone (L100-102) | **Unchanged — the current behaviour is correct** (see below) |
 | Multisite | `network_site_url` only | + `site_option_welcome_email`, `wp-signup.php`/`wp-activate.php` |
+
+**Two corrections to this plan's original claims, made after checking core rather than assuming:**
+
+1. **Do not filter `admin_url`/`network_admin_url`.** The original plan said to. `admin_url()` resolves to `/wp-admin/…` and never points at the login, so filtering it would rewrite legitimate admin links to the login screen. WPS does not filter it either. Dropped.
+
+2. **Do not serve `wp-login.php` to logged-in users.** The original plan called the current hard-hide a defect that "breaks interim login and `action=postpass`". It does not. Core builds both through filtered functions — the password form uses `site_url('wp-login.php?action=postpass', 'login_post')` (`wp-includes/post-template.php:1812`) and the auth-check iframe uses `wp_login_url()` (`wp-includes/functions.php:7504`) — so both are rewritten to the custom slug and never touch the default endpoint. Hiding it from everyone is therefore safe, matches WPS, and is what ships today. FR-006 is restated as "those flows keep working *via the custom address*".
+
+   This is load-bearing: the hiding is only safe **because** the rewrite is total. T016/T017 (rewrite + `wp_redirect`) are prerequisites for T019, not independent of it.
 
 Delete the dead `normalizedPath()` no-op ternary (L203) and the superseded `login_init`/`maybeBlockDefaultEndpoint` path.
 

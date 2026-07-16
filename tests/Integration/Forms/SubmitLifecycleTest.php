@@ -33,15 +33,18 @@ function submitRequest(array $body, string $nonce): WP_REST_Request
 
 function submissionCount(): int
 {
+    // found_posts, not post_count: post_count only counts the rows this page returned, so a
+    // per-page cap silently becomes the answer. With the cap at 100 and 100+ submissions on the
+    // box, "before" and "after" both read 100 and `before + 1` could never match — the test
+    // defeated itself as soon as the table outgrew one page, and every run added a row.
     $query = new WP_Query([
         'post_type'      => 'corex_submission',
         'post_status'    => 'any',
         'fields'         => 'ids',
-        'posts_per_page' => 100,
-        'no_found_rows'  => true,
+        'posts_per_page' => 1,
     ]);
 
-    return $query->post_count;
+    return (int) $query->found_posts;
 }
 
 $valid = ['name' => 'Mustafa', 'email' => 'm@example.com', 'message' => 'Hello from the test'];

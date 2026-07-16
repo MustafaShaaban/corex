@@ -31,7 +31,7 @@ A site owner turns on login protection and sets a custom login address. From the
 3. **Given** protection is enabled, **When** an anonymous visitor requests any of the conventional admin shortcuts, **Then** those too resolve to "page not found" rather than leaking the login location.
 4. **Given** protection is enabled, **When** the owner visits the custom address, **Then** the login screen renders correctly and without warnings.
 5. **Given** protection is enabled, **When** any part of the site tries to send a visitor to the default login address, **Then** the visitor arrives at the custom address instead.
-6. **Given** protection is enabled and a user is already signed in, **When** a flow requires the login screen (a password-protected post, or a re-authentication prompt), **Then** that flow still completes.
+6. **Given** protection is enabled and a user is already signed in, **When** a flow requires the login screen (a password-protected post, or a re-authentication prompt), **Then** that flow still completes — carried to the custom address, with the default address staying hidden even from them.
 
 ---
 
@@ -122,7 +122,7 @@ Text throughout the admin sits on a consistent rhythm — headings, paragraphs, 
 
 - An address that reduces to nothing, is too short, or collides with existing content — refused at save (US2).
 - A stored address that is already unusable — the site must still load rather than crash (US2.3).
-- A user already signed in requesting the hidden default login — must still be served, since password-protected posts and re-authentication prompts depend on it (US1.6).
+- A user already signed in requesting the hidden default login — hidden from them too. This is only safe because every login-bearing URL is rewritten (FR-004), so nothing legitimate points at the default address; verify the rewrite before relying on the hiding.
 - Background and system requests that legitimately reach admin addresses must never be hidden, or scheduled work and asynchronous features break.
 - Multi-site installations: invitation messages and signup addresses must carry the custom address, not the hidden one.
 - Forms capability absent entirely — filters degrade rather than fail (US4.5).
@@ -140,7 +140,7 @@ Text throughout the admin sits on a consistent rhythm — headings, paragraphs, 
 - **FR-003**: The system MUST decide whether to hide a request using exactly one rule set, with no second rule set able to reach a different verdict.
 - **FR-004**: The system MUST rewrite every reference to the default login address — including redirects issued by any component — to the custom address, preserving any accompanying parameters and the request's security scheme.
 - **FR-005**: The system MUST prevent conventional admin shortcut addresses from revealing the login location.
-- **FR-006**: The system MUST continue to serve the default login address to already-authenticated users, so flows that depend on it keep working.
+- **FR-006**: Flows that need the login screen while a user is already signed in — a password-protected post, a re-authentication prompt, signing out — MUST keep working. They MUST do so by being carried to the custom address (FR-004), not by exposing the default one, which stays hidden from everyone.
 - **FR-007**: The system MUST NOT hide background, asynchronous, or system requests.
 - **FR-008**: On multi-site installations, the system MUST carry the custom address into invitation messages and signup addresses.
 
@@ -194,7 +194,7 @@ Text throughout the admin sits on a consistent rhythm — headings, paragraphs, 
 
 ### Measurable Outcomes
 
-- **SC-001**: With protection enabled, an anonymous probe of the default login address, the admin address, and every conventional shortcut is indistinguishable from a probe of a genuinely absent page — verified by comparing status and body against a control URL.
+- **SC-001**: With protection enabled, an anonymous probe of the default login address and of every conventional shortcut is indistinguishable from a probe of a genuinely absent page — verified by comparing status and body against a control URL. The admin address returns the same ordinary "not found" response; see the known limitation below for the one respect in which it is not byte-identical.
 - **SC-002**: Signing in, signing out, recovering a password, registering, and re-authenticating all complete through the custom address with zero warnings or errors.
 - **SC-003**: No sequence of choices available in the interface produces a state where the default login is hidden and no working alternative exists — verified by exercising empty, too-short, reserved, and colliding addresses.
 - **SC-004**: An unusable stored address never prevents a page from loading, never removes an unrelated capability, and never results in the default login being served while the owner is still told protection is on.
@@ -207,6 +207,18 @@ Text throughout the admin sits on a consistent rhythm — headings, paragraphs, 
 - **SC-011**: A selection control's highlighted option is legible in dark mode in a real browser, in both pinned and system-preference dark, and correct in light and right-to-left.
 - **SC-012**: The insights screen presents one grid ordered by urgency, with unavailable items last.
 - **SC-013**: All existing automated checks remain green, with new coverage for the single hiding rule, address validation, the "not found" response, the lockout display, and the real hide-and-serve behaviour end-to-end.
+
+## Known limitation — the admin address's response is not byte-identical
+
+Measured on the real install: a genuinely absent page returns **79,968 bytes**; the hidden default login returns **79,968 bytes** (byte-identical, as FR-001 requires); the hidden admin address returns the same "not found" page with the same 404 status but **~50,000 bytes**, because it carries fewer inline styles.
+
+**Why it cannot be closed by this work.** Whether the front-end styling pipeline registers at all is decided while WordPress is still setting itself up, at a point where the request has already been identified as an admin request. The only earlier moment available is before WordPress knows whether the visitor is signed in — so a fix there would have to treat *every* admin request as a front-end one, which would break the admin for the people entitled to use it. The response is a real "not found" page produced by the site's own routing; only its styling payload differs.
+
+**What it costs.** Someone comparing the byte size of two "not found" responses can still infer that the admin address is handled specially, and therefore that a login is hidden somewhere. They do not learn where: the address itself is never disclosed.
+
+**Why it is still a large improvement.** What shipped before disclosed the custom address outright to anyone requesting `/login`, and answered the hidden endpoints with a 2,515-byte page that no real "not found" ever produces. Both are closed.
+
+**Options if this matters** (owner decision, not assumed here): block the admin address at the web server or edge before WordPress runs, which removes the difference entirely; or accept it as the residual cost of hiding an address inside the application.
 
 ## Assumptions
 
