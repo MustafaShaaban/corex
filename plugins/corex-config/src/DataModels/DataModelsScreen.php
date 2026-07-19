@@ -10,6 +10,7 @@ namespace Corex\Config\DataModels;
 
 use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
+use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Data\DataSourceService;
 use Corex\Config\Forms\FlowFilterOptions;
 use Corex\Security\Admin\AdminGuard;
@@ -122,13 +123,13 @@ final class DataModelsScreen
             'corex-data',
             plugins_url('assets/data.css', $base . '/corex-config.php'),
             ['corex-admin-shell'],
-            $asset['version'],
+            ScreenAsset::version($base . '/assets/data.css'),
         );
         wp_enqueue_style(
             'corex-data-models',
             plugins_url('assets/data-models.css', $base . '/corex-config.php'),
             ['corex-data'],
-            $asset['version'],
+            ScreenAsset::version($base . '/assets/data-models.css'),
         );
         wp_localize_script('corex-data-models', 'corexDataModels', [
             'restUrl' => esc_url_raw(rest_url('corex/v1/data')),

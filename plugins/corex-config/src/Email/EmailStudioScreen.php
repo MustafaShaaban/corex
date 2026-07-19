@@ -11,6 +11,7 @@ namespace Corex\Config\Email;
 defined('ABSPATH') || exit;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Security\Admin\AdminGuard;
 
 /**
@@ -71,7 +72,7 @@ final class EmailStudioScreen
             'corex-email-studio',
             plugins_url('assets/email-studio.css', $base . '/corex-config.php'),
             ['corex-admin-shell'],
-            (string) ($asset['version'] ?? 'dev'),
+            ScreenAsset::version($base . '/assets/email-studio.css'),
         );
         wp_localize_script('corex-email-studio', 'corexEmailStudio', [
             'restUrl'     => esc_url_raw(rest_url('corex/v1/email-studio')),

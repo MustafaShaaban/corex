@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
+use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Forms\FlowFilterOptions;
 use Corex\Config\Retention\RetentionController;
 use Corex\Config\Retention\RetentionSettings;
@@ -76,7 +77,7 @@ final class SubmissionsInboxScreen
             'corex-submissions-inbox',
             plugins_url('assets/submissions-admin.css', $base . '/corex-config.php'),
             ['corex-admin-shell'],
-            (string) ($asset['version'] ?? 'dev'),
+            ScreenAsset::version($base . '/assets/submissions-admin.css'),
         );
         wp_localize_script('corex-submissions-inbox', 'corexSubmissions', [
             'restUrl' => esc_url_raw(rest_url('corex/v1/submissions')),

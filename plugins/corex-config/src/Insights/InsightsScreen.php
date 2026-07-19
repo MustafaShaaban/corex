@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Insights;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -70,12 +71,24 @@ final class InsightsScreen
             return;
         }
 
-        $base = dirname(__DIR__, 2) . '/corex-config.php';
+        $dir = dirname(__DIR__, 2);
+        $base = $dir . '/corex-config.php';
 
-        wp_enqueue_style('corex-insights', plugins_url('assets/insights.css', $base), ['corex-admin-shell'], '1.1.0');
+        wp_enqueue_style(
+            'corex-insights',
+            plugins_url('assets/insights.css', $base),
+            ['corex-admin-shell'],
+            ScreenAsset::version($dir . '/assets/insights.css'),
+        );
         // Depends on the shared runtime (spec 043): the script talks to the envelope through
         // window.Corex.api, and corex-runtime brings wp-i18n.
-        wp_enqueue_script('corex-insights', plugins_url('assets/insights.js', $base), ['corex-runtime'], '1.1.0', true);
+        wp_enqueue_script(
+            'corex-insights',
+            plugins_url('assets/insights.js', $base),
+            ['corex-runtime'],
+            ScreenAsset::version($dir . '/assets/insights.js'),
+            true,
+        );
 
         wp_localize_script('corex-insights', 'corexInsights', [
             'restUrl'   => esc_url_raw(rest_url('corex/v1/insights')),

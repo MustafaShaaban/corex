@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Security;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeController;
 use Corex\Config\Operations\OperationsModeStore;
@@ -73,7 +74,7 @@ final class OperationsSecurityScreen
             'corex-operations-security',
             plugins_url('assets/operations-security.css', COREX_CONFIG_FILE),
             ['corex-admin-shell'],
-            '1.0.0',
+            ScreenAsset::version(dirname(COREX_CONFIG_FILE) . '/assets/operations-security.css'),
         );
         $base = dirname(__DIR__, 2);
         $asset = is_file($base . '/build/admin/index.asset.php')
