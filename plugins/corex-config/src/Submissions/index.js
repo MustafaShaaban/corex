@@ -10,7 +10,9 @@ import { __, _n, sprintf } from '@wordpress/i18n';
 import { buildExportPayload, toggleSubmission } from './inbox.js';
 import { useInbox } from './useInbox.js';
 
-const config = window.corexSubmissions || { restUrl: '', nonce: '' };
+const config = window.corexSubmissions || { restUrl: '', nonce: '', flows: [] };
+// Empty when the forms add-on is absent (Principle IX) — the form filter simply does not render.
+const FLOWS = Array.isArray( config.flows ) ? config.flows : [];
 const STATUSES = [ 'new', 'in_progress', 'replied', 'closed', 'spam', 'archived' ];
 const STATUS_LABELS = {
 	new: __( 'New', 'corex' ),
@@ -40,7 +42,7 @@ function App() {
 			<InboxHeader total={ inbox.state.total } onExport={ () => setExportOpen( true ) } />
 			{ inbox.state.message && <div className="corex-inbox__notice is-success" role="status">{ inbox.state.message }</div> }
 			{ inbox.state.error && <div className="corex-inbox__notice is-error" role="alert">{ inbox.state.error }</div> }
-			<Filters filters={ filters } update={ updateFilter } />
+			<Filters filters={ filters } update={ updateFilter } flows={ FLOWS } />
 			<BulkToolbar
 				count={ inbox.state.selectedIds.length }
 				action={ bulkAction }
@@ -73,10 +75,34 @@ function InboxHeader( { total, onExport } ) {
 	</header>;
 }
 
-function Filters( { filters, update } ) {
+function FormFilter( { flows, value, update } ) {
+	// No forms yet — say so rather than present an empty control that looks broken. The filter is
+	// also absent entirely when the forms add-on is not installed (flows arrives empty).
+	if ( ! flows.length ) {
+		return null;
+	}
+
+	return <label>
+		<span>{ __( 'Form', 'corex' ) }</span>
+		{ /* The value is the flow ID because that is what the inbox stores (meta corex_flow_id) —
+		     the data explorer keys the same list by slug instead. The owner picks a name either
+		     way; they used to have to know the number.
+
+		     aria-label because a <label> wrapping a control names it from the label's whole
+		     subtree, and an embedded control contributes its VALUE — so this would announce as
+		     "Form All forms" and rename itself every time the selection changed. */ }
+		<select aria-label={ __( 'Form', 'corex' ) } value={ value }
+			onChange={ ( event ) => update( 'flow', event.target.value ) }>
+			<option value="">{ __( 'All forms', 'corex' ) }</option>
+			{ flows.map( ( flow ) => <option key={ flow.id } value={ flow.id }>{ flow.name }</option> ) }
+		</select>
+	</label>;
+}
+
+function Filters( { filters, update, flows } ) {
 	return <section className="corex-inbox__filters" aria-label={ __( 'Submission filters', 'corex' ) }>
 		<label className="is-wide"><span>{ __( 'Search', 'corex' ) }</span><input type="search" value={ filters.search } onChange={ ( event ) => update( 'search', event.target.value ) } placeholder={ __( 'Name, email, or flow', 'corex' ) } /></label>
-		<label><span>{ __( 'Flow ID', 'corex' ) }</span><input type="number" min="1" value={ filters.flow } onChange={ ( event ) => update( 'flow', event.target.value ) } /></label>
+		<FormFilter flows={ flows } value={ filters.flow } update={ update } />
 		<label><span>{ __( 'Status', 'corex' ) }</span><select value={ filters.status } onChange={ ( event ) => update( 'status', event.target.value ) }><option value="">{ __( 'All statuses', 'corex' ) }</option>{ STATUSES.map( ( status ) => <option key={ status } value={ status }>{ STATUS_LABELS[ status ] }</option> ) }</select></label>
 		<label><span>{ __( 'Owner', 'corex' ) }</span><input value={ filters.owner } onChange={ ( event ) => update( 'owner', event.target.value ) } placeholder="team:sales" /></label>
 		<label><span>{ __( 'From', 'corex' ) }</span><input type="date" value={ filters.dateFrom } onChange={ ( event ) => update( 'dateFrom', event.target.value ) } /></label>

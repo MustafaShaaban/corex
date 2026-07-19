@@ -72,6 +72,33 @@ test( 'queries source records, opens detail, and queues a declared export', asyn
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
 
+test( 'presents models as a keyboard-operable accordion', async ( { page } ) => {
+	await page.goto( '/wp-admin/admin.php?page=corex-data-models&tab=models' );
+
+	const entries = page.locator( '.corex-data-models__card' );
+	expect( await entries.count() ).toBeGreaterThan( 0 );
+
+	// First open so the panel never lands as a row of closed bars; the rest shut so it scans.
+	await expect( entries.nth( 0 ) ).toHaveAttribute( 'open', '' );
+
+	if ( ( await entries.count() ) < 2 ) {
+		return;
+	}
+
+	await expect( entries.nth( 1 ) ).not.toHaveAttribute( 'open', '' );
+	// Collapsed content is genuinely hidden, not merely painted over.
+	await expect( entries.nth( 1 ).locator( '.corex-data-models__fields' ) ).toBeHidden();
+
+	const summary = entries.nth( 1 ).locator( 'summary' );
+	await summary.focus();
+	await expect( summary ).toBeFocused();
+	await page.keyboard.press( 'Enter' );
+	await expect( entries.nth( 1 ) ).toHaveAttribute( 'open', '' );
+
+	await page.keyboard.press( 'Space' );
+	await expect( entries.nth( 1 ) ).not.toHaveAttribute( 'open', '' );
+} );
+
 test( 'renders every Data workflow from declared source capabilities', async ( { page } ) => {
 	const errors = collectConsoleErrors( page );
 	await page.goto( '/wp-admin/admin.php?page=corex-data-models' );

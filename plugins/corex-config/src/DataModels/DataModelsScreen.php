@@ -11,6 +11,7 @@ namespace Corex\Config\DataModels;
 use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
 use Corex\Config\Data\DataSourceService;
+use Corex\Config\Forms\FlowFilterOptions;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -38,6 +39,7 @@ final class DataModelsScreen
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly DataSourceService $sources,
+        private readonly FlowFilterOptions $flows,
     ) {
     }
 
@@ -132,6 +134,10 @@ final class DataModelsScreen
             'restUrl' => esc_url_raw(rest_url('corex/v1/data')),
             'nonce' => wp_create_nonce('wp_rest'),
             'sources' => $this->sources->catalog(get_current_user_id()),
+            // Real form names for the records filter. NOTE: the explorer filters on the form SLUG
+            // (meta corex_form_slug) while the submissions inbox filters on the flow ID
+            // (meta corex_flow_id) — same list, different key.
+            'flows' => $this->flows->all(),
             // Which tabs this user may open. Records needs `data` because that is what the sources
             // it reads are gated on; everything else reshapes the models themselves.
             'abilities' => [

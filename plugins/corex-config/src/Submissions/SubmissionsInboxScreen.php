@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
+use Corex\Config\Forms\FlowFilterOptions;
 use Corex\Config\Retention\RetentionController;
 use Corex\Config\Retention\RetentionSettings;
 use Corex\Config\Retention\SubmissionRetention;
@@ -28,6 +29,7 @@ final class SubmissionsInboxScreen
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly SubmissionRetention $retention,
+        private readonly FlowFilterOptions $flows,
     ) {
     }
 
@@ -79,6 +81,9 @@ final class SubmissionsInboxScreen
         wp_localize_script('corex-submissions-inbox', 'corexSubmissions', [
             'restUrl' => esc_url_raw(rest_url('corex/v1/submissions')),
             'nonce' => wp_create_nonce('wp_rest'),
+            // Real form names to filter by. The inbox asked for a numeric flow ID, which nobody
+            // knows. Empty when the forms add-on is absent — the filter drops, the screen works.
+            'flows' => $this->flows->all(),
         ]);
         wp_set_script_translations('corex-submissions-inbox', 'corex', $base . '/languages');
     }

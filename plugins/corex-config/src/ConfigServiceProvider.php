@@ -299,6 +299,11 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Security\HardeningChecks::class);
         $this->container->singleton(\Corex\Config\Operations\ProductionReadinessSnapshotFactory::class);
         $this->container->singleton(\Corex\Config\Operations\ProductionLaunchService::class);
+        $this->container->singleton(
+            \Corex\Config\Forms\FlowFilterOptions::class,
+            static fn (ContainerInterface $c): \Corex\Config\Forms\FlowFilterOptions =>
+                new \Corex\Config\Forms\FlowFilterOptions($c),
+        );
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginAttemptTable::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore::class);
         $this->container->bind(
