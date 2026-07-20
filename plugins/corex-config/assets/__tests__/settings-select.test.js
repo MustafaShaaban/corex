@@ -1,13 +1,18 @@
 /**
- * Settings custom-select accessibility (correction 3). The settings script progressively
- * enhances each native <select> into an in-DOM ARIA listbox (so the open dropdown is readable
- * in dark mode on every browser), while keeping the hidden native <select> as the form value so
- * submission still works and the field degrades without JS. jsdom drives the IIFE over a DOM we
- * set up first.
+ * Settings custom-select accessibility (correction 3). Each native <select> is progressively
+ * enhanced into an in-DOM ARIA listbox (so the open dropdown is readable in dark mode on every
+ * browser — a native popup is drawn by the OS and cannot be styled), while the hidden native
+ * <select> stays as the form value so submission still works and the field degrades without JS.
+ * jsdom drives the IIFEs over a DOM we set up first.
+ *
+ * The enhancement itself now lives in corex-core (assets/js/corex-select.js) and is shared with
+ * every CoreX screen; settings.js consumes it through window.Corex.enhanceSelect. Both scripts
+ * load here in the same order WordPress enqueues them.
  */
 
 function loadSettings() {
 	jest.isolateModules( () => {
+		require( '../../../corex-core/assets/js/corex-select.js' );
 		require( '../settings.js' );
 	} );
 }

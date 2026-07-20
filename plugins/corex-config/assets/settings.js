@@ -155,163 +155,17 @@
 		} );
 	}
 
-	// Progressive-enhancement accessible select: upgrades each native <select> in the settings
-	// form into an in-DOM ARIA listbox so the open dropdown is readable in dark mode on every
-	// browser. The native <select> is kept (hidden) so the form still submits and the field
-	// degrades to a usable native control without JS.
-	function enhanceSelect( native ) {
-		if ( native.dataset.corexEnhanced ) {
+	// The accessible select lives in corex-core (assets/js/corex-select.js) and is shared with
+	// every other CoreX screen; this used to carry its own copy of the same ~150 lines. The
+	// native <select> is still what submits, so the form keeps working without JavaScript.
+	function initSelects() {
+		const enhance = window.Corex && window.Corex.enhanceSelect;
+		if ( ! enhance ) {
 			return;
 		}
-		native.dataset.corexEnhanced = '1';
-
-		const labelEl = native.id
-			? document.querySelector( 'label[for="' + native.id + '"]' )
-			: null;
-		const labelText = labelEl ? labelEl.textContent.trim() : '';
-
-		const wrap = document.createElement( 'div' );
-		wrap.className = 'corex-select corex-select--enhanced';
-
-		const button = document.createElement( 'button' );
-		button.type = 'button';
-		button.className = 'corex-select__button';
-		button.setAttribute( 'aria-haspopup', 'listbox' );
-		button.setAttribute( 'aria-expanded', 'false' );
-		if ( labelText ) {
-			button.setAttribute( 'aria-label', labelText );
-		}
-		// Mirror a disabled section's native select so the custom control is non-actionable too.
-		button.disabled = native.disabled;
-
-		const valueText = document.createElement( 'span' );
-		valueText.className = 'corex-select__value';
-		const chevron = document.createElement( 'span' );
-		chevron.className = 'corex-select__chevron';
-		chevron.setAttribute( 'aria-hidden', 'true' );
-		button.append( valueText, chevron );
-
-		const list = document.createElement( 'ul' );
-		list.className = 'corex-select__list';
-		list.setAttribute( 'role', 'listbox' );
-		if ( labelText ) {
-			list.setAttribute( 'aria-label', labelText );
-		}
-		list.hidden = true;
-
-		const options = Array.prototype.map.call(
-			native.options,
-			function ( opt ) {
-				const li = document.createElement( 'li' );
-				li.setAttribute( 'role', 'option' );
-				li.className = 'corex-select__option';
-				li.textContent = opt.textContent;
-				li.dataset.value = opt.value;
-				list.appendChild( li );
-				return li;
-			}
-		);
-
-		let active = Math.max( 0, native.selectedIndex );
-
-		function syncValue() {
-			valueText.textContent = native.options[ native.selectedIndex ]
-				? native.options[ native.selectedIndex ].textContent
-				: '';
-			options.forEach( function ( li, i ) {
-				const isSel = i === native.selectedIndex;
-				li.setAttribute( 'aria-selected', isSel ? 'true' : 'false' );
-				li.classList.toggle( 'is-selected', isSel );
-			} );
-		}
-
-		function markActive() {
-			options.forEach( function ( li, i ) {
-				li.classList.toggle( 'is-active', i === active );
-			} );
-		}
-
-		function open() {
-			active = Math.max( 0, native.selectedIndex );
-			markActive();
-			list.hidden = false;
-			button.setAttribute( 'aria-expanded', 'true' );
-		}
-		function close() {
-			list.hidden = true;
-			button.setAttribute( 'aria-expanded', 'false' );
-		}
-		function choose( index ) {
-			native.selectedIndex = index;
-			native.dispatchEvent( new Event( 'change', { bubbles: true } ) );
-			syncValue();
-			close();
-			button.focus();
-		}
-
-		button.addEventListener( 'click', function () {
-			if ( list.hidden ) {
-				open();
-			} else {
-				close();
-			}
-		} );
-
-		button.addEventListener( 'keydown', function ( event ) {
-			if ( event.key === 'Escape' ) {
-				close();
-			} else if (
-				list.hidden &&
-				( event.key === 'ArrowDown' ||
-					event.key === 'Enter' ||
-					event.key === ' ' )
-			) {
-				event.preventDefault();
-				open();
-			} else if ( ! list.hidden && event.key === 'ArrowDown' ) {
-				event.preventDefault();
-				active = Math.min( active + 1, options.length - 1 );
-				markActive();
-			} else if ( ! list.hidden && event.key === 'ArrowUp' ) {
-				event.preventDefault();
-				active = Math.max( active - 1, 0 );
-				markActive();
-			} else if (
-				! list.hidden &&
-				( event.key === 'Enter' || event.key === ' ' )
-			) {
-				event.preventDefault();
-				choose( active );
-			}
-		} );
-
-		options.forEach( function ( li, i ) {
-			li.addEventListener( 'mouseenter', function () {
-				active = i;
-				markActive();
-			} );
-			li.addEventListener( 'mousedown', function ( event ) {
-				event.preventDefault();
-				choose( i );
-			} );
-		} );
-
-		document.addEventListener( 'mousedown', function ( event ) {
-			if ( ! wrap.contains( event.target ) ) {
-				close();
-			}
-		} );
-
-		native.style.display = 'none';
-		native.after( wrap );
-		wrap.append( button, list );
-		syncValue();
-	}
-
-	function initSelects() {
 		document
 			.querySelectorAll( '.corex-settings-form select' )
-			.forEach( enhanceSelect );
+			.forEach( enhance );
 	}
 
 	// Driver-aware fields: a row with data-corex-show-for is visible only when the controlling

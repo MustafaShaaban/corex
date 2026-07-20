@@ -187,7 +187,7 @@ final class OperationsSecurityScreen
             . '<input type="hidden" name="action" value="' . esc_attr(OperationsModeController::ACTION) . '" />'
             . wp_nonce_field(OperationsModeController::ACTION, OperationsModeController::NONCE, true, false)
             . '<label class="corex-opsec__mode-label" for="corex-mode-select">' . esc_html__('Change mode', 'corex') . '</label>'
-            . '<select id="corex-mode-select" name="corex_mode">' . $options . '</select>'
+            . '<select id="corex-mode-select" name="corex_mode" data-corex-select>' . $options . '</select>'
             . '<label class="corex-opsec__mode-label" for="corex-production-confirm">' . esc_html__('Production confirmation', 'corex') . '</label>'
             . '<input id="corex-production-confirm" type="text" name="corex_confirm_phrase" value="" autocomplete="off" placeholder="' . esc_attr__('Type PRODUCTION', 'corex') . '" />'
             . '<p class="corex-opsec__detail">' . $productionGate . '</p>'

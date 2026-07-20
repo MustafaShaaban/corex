@@ -1,0 +1,279 @@
+/**
+ * CorexSelect — the approved admin selection control.
+ *
+ * The design system has declared a Select since the component inventory was written
+ * (`admin:corex-select`, ApprovedComponentInventory.php), and `.corex-select` in the admin shell
+ * has styled it all along, but nothing in React ever rendered it: every admin screen used a raw
+ * <select> or Gutenberg's SelectControl instead. Both draw their OPEN menu through the operating
+ * system, which is why the dark-mode highlight could never be fixed from CSS — no `option:hover`
+ * rule can reach a popup the page does not paint. This renders the menu in the DOM, so the
+ * palette applies to it like anything else.
+ *
+ * ARIA follows the collapsed-listbox pattern: a button owning a listbox, with the active option
+ * tracked through `aria-activedescendant` rather than by moving focus, so the button keeps focus
+ * while the menu is open.
+ */
+import {
+	useCallback,
+	useEffect,
+	useId,
+	useMemo,
+	useRef,
+	useState,
+} from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
+
+/** Type-ahead resets once typing stops, matching how a native select behaves. */
+const TYPEAHEAD_RESET_MS = 500;
+
+export default function CorexSelect( {
+	label,
+	value,
+	options = [],
+	onChange,
+	id,
+	disabled = false,
+	block = false,
+	className = '',
+	describedBy,
+	// Shown, disabled, when there is nothing to choose from. An optional dependency that is not
+	// installed yields an empty list (Principle IX), and an empty popup reads as a broken control
+	// rather than an absent one.
+	emptyLabel = __( 'No options available', 'corex' ),
+} ) {
+	const generatedId = useId();
+	const baseId = id || `corex-select-${ generatedId }`;
+	const listId = `${ baseId }__list`;
+
+	const [ open, setOpen ] = useState( false );
+	const [ activeIndex, setActiveIndex ] = useState( 0 );
+
+	const wrapRef = useRef( null );
+	const buttonRef = useRef( null );
+	const typeahead = useRef( { term: '', at: 0 } );
+
+	const isEmpty = options.length === 0;
+	const inert = disabled || isEmpty;
+
+	const selectedIndex = useMemo( () => {
+		const found = options.findIndex( ( option ) => option.value === value );
+		return found === -1 ? 0 : found;
+	}, [ options, value ] );
+
+	const selectedLabel = isEmpty
+		? emptyLabel
+		: options[ selectedIndex ]?.label ?? '';
+
+	const close = useCallback( () => {
+		setOpen( false );
+	}, [] );
+
+	const openMenu = useCallback( () => {
+		if ( inert ) {
+			return;
+		}
+		setActiveIndex( selectedIndex );
+		setOpen( true );
+	}, [ inert, selectedIndex ] );
+
+	const choose = useCallback(
+		( index ) => {
+			const option = options[ index ];
+			close();
+			// Focus returns to the button, or the menu closes under a focused element that no
+			// longer exists and the tab order restarts at the top of the page.
+			buttonRef.current?.focus();
+			if ( option && option.value !== value ) {
+				onChange?.( option.value );
+			}
+		},
+		[ close, onChange, options, value ]
+	);
+
+	// Clicking anywhere else dismisses the menu. Bound only while open so a screen with many
+	// selects is not listening on every document click.
+	useEffect( () => {
+		if ( ! open ) {
+			return undefined;
+		}
+		const onDocumentDown = ( event ) => {
+			if ( ! wrapRef.current?.contains( event.target ) ) {
+				close();
+			}
+		};
+		document.addEventListener( 'mousedown', onDocumentDown );
+		return () =>
+			document.removeEventListener( 'mousedown', onDocumentDown );
+	}, [ open, close ] );
+
+	/** Jump to the next option starting with what was typed — native selects do this. */
+	const typeaheadTo = useCallback(
+		( key ) => {
+			const now = Date.now();
+			const term =
+				now - typeahead.current.at > TYPEAHEAD_RESET_MS
+					? key
+					: typeahead.current.term + key;
+			typeahead.current = { term, at: now };
+
+			const from = open ? activeIndex : selectedIndex;
+			const lower = term.toLowerCase();
+			// Start the search after the current option so repeating one letter cycles.
+			for ( let step = 1; step <= options.length; step++ ) {
+				const index = ( from + step ) % options.length;
+				if (
+					options[ index ].label.toLowerCase().startsWith( lower )
+				) {
+					if ( open ) {
+						setActiveIndex( index );
+					} else {
+						choose( index );
+					}
+					return;
+				}
+			}
+		},
+		[ activeIndex, choose, open, options, selectedIndex ]
+	);
+
+	const onKeyDown = ( event ) => {
+		if ( inert ) {
+			return;
+		}
+
+		const { key } = event;
+
+		if ( key === 'Escape' ) {
+			close();
+			return;
+		}
+
+		if (
+			! open &&
+			( key === 'ArrowDown' ||
+				key === 'ArrowUp' ||
+				key === 'Enter' ||
+				key === ' ' )
+		) {
+			event.preventDefault();
+			openMenu();
+			return;
+		}
+
+		if ( open ) {
+			if ( key === 'ArrowDown' ) {
+				event.preventDefault();
+				setActiveIndex( ( index ) =>
+					Math.min( index + 1, options.length - 1 )
+				);
+				return;
+			}
+			if ( key === 'ArrowUp' ) {
+				event.preventDefault();
+				setActiveIndex( ( index ) => Math.max( index - 1, 0 ) );
+				return;
+			}
+			if ( key === 'Home' ) {
+				event.preventDefault();
+				setActiveIndex( 0 );
+				return;
+			}
+			if ( key === 'End' ) {
+				event.preventDefault();
+				setActiveIndex( options.length - 1 );
+				return;
+			}
+			if ( key === 'Enter' || key === ' ' ) {
+				event.preventDefault();
+				choose( activeIndex );
+				return;
+			}
+			if ( key === 'Tab' ) {
+				close();
+				return;
+			}
+		}
+
+		// Single printable character: type-ahead. Modifier combos are shortcuts, not typing.
+		if (
+			key.length === 1 &&
+			! event.altKey &&
+			! event.ctrlKey &&
+			! event.metaKey
+		) {
+			event.preventDefault();
+			typeaheadTo( key );
+		}
+	};
+
+	const classes = [
+		'corex-select',
+		block ? 'corex-select--block' : '',
+		className,
+	]
+		.filter( Boolean )
+		.join( ' ' );
+
+	return (
+		<div className={ classes } ref={ wrapRef }>
+			<button
+				type="button"
+				id={ baseId }
+				ref={ buttonRef }
+				className="corex-select__button"
+				aria-haspopup="listbox"
+				aria-expanded={ open }
+				aria-controls={ open ? listId : undefined }
+				aria-activedescendant={
+					open && ! isEmpty
+						? `${ baseId }__option-${ activeIndex }`
+						: undefined
+				}
+				// A wrapping <label> would name this from its whole subtree, and an embedded
+				// control contributes its VALUE — so the control would rename itself on every
+				// selection. The label text is applied directly instead.
+				aria-label={ label }
+				aria-describedby={ describedBy }
+				disabled={ inert }
+				onClick={ () => ( open ? close() : openMenu() ) }
+				onKeyDown={ onKeyDown }
+			>
+				<span className="corex-select__value">{ selectedLabel }</span>
+				<span className="corex-select__chevron" aria-hidden="true" />
+			</button>
+			{ open && ! isEmpty && (
+				<ul
+					className="corex-select__list"
+					role="listbox"
+					id={ listId }
+					aria-label={ label }
+				>
+					{ options.map( ( option, index ) => (
+						<li
+							key={ option.value }
+							id={ `${ baseId }__option-${ index }` }
+							role="option"
+							aria-selected={ index === selectedIndex }
+							className={ [
+								'corex-select__option',
+								index === activeIndex ? 'is-active' : '',
+								index === selectedIndex ? 'is-selected' : '',
+							]
+								.filter( Boolean )
+								.join( ' ' ) }
+							onMouseEnter={ () => setActiveIndex( index ) }
+							// mousedown, not click: a click would first blur the button and the
+							// outside-click handler would close the menu before the choice landed.
+							onMouseDown={ ( event ) => {
+								event.preventDefault();
+								choose( index );
+							} }
+						>
+							{ option.label }
+						</li>
+					) ) }
+				</ul>
+			) }
+		</div>
+	);
+}

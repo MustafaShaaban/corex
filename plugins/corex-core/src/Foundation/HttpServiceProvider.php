@@ -92,6 +92,16 @@ final class HttpServiceProvider extends ServiceProvider
             $this->assetVersion('js/corex-login.js'),
             true,
         );
+
+        // Upgrades server-rendered <select data-corex-select> into the approved accessible
+        // listbox. Registered only; CorexAdminAssets enqueues it on CoreX screens (Principle VI).
+        wp_register_script(
+            'corex-select',
+            $assets . '/js/corex-select.js',
+            [],
+            $this->assetVersion('js/corex-select.js'),
+            true,
+        );
     }
 
     /**
