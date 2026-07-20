@@ -94,6 +94,47 @@
 	font-size: var(--wp--preset--font-size--sm);
 }
 
+/*
+ * The select had no rule at all here, so it kept the browser's default chrome —
+ * a grey box that ignored the theme's colours entirely while every field beside
+ * it followed them.
+ *
+ * Deliberately still a native <select>, unlike the admin. The accessible
+ * CorexSelect lives in the admin bundle and depends on admin tokens; putting
+ * it on a public form would load an admin bundle on the front end
+ * (Principle VI) and make a visitor's most important control
+ * JavaScript-dependent. `color-scheme` is the standards-based lever for the
+ * one thing CSS cannot reach — the OS-drawn option popup — and costs nothing.
+ */
+
+/* stylelint-disable @stylistic/max-line-length -- inline SVG data URI cannot wrap */
+select.corex-form__input {
+	appearance: none;
+	padding-inline-end: var(--wp--preset--spacing--50);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right var(--wp--preset--spacing--30) center;
+	background-size: 0.875rem;
+
+	/* Draws the option list in the page's scheme, not always light. */
+	color-scheme: light dark;
+}
+/* stylelint-enable @stylistic/max-line-length */
+
+/*
+ * No explicit [dir="rtl"] rule here: this stylesheet has a real RTL build
+ * (style-index-rtl.css) that already mirrors `background-position: right` to
+ * `left`. Writing the rule by hand broke LTR — the build strips the attribute
+ * selector, so the override applied unconditionally and put the chevron on the
+ * wrong side in both directions. Verified against both built files.
+ */
+
+/* A multi-select is a list box, not a dropdown: no room for a chevron. */
+select.corex-form__input[multiple] {
+	padding-inline-end: var(--wp--preset--spacing--30);
+	background-image: none;
+}
+
 .corex-form__submit {
 	align-self: start;
 	padding-block: var(--wp--preset--spacing--30);

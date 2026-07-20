@@ -9763,7 +9763,7 @@
     },
     {
       "path": "plugins/corex-forms/src/Block/blocks/corex-form/style.scss",
-      "selector_or_context": "lines 122: outline-offset: var(--wp--custom--focus--offset);",
+      "selector_or_context": "lines 163: outline-offset: var(--wp--custom--focus--offset);",
       "property": "--wp--custom--focus--offset",
       "owner": "forms-plugin",
       "surface": "front-end",
@@ -9773,7 +9773,7 @@
     },
     {
       "path": "plugins/corex-forms/src/Block/blocks/corex-form/style.scss",
-      "selector_or_context": "lines 121: outline: var(--wp--custom--focus--width) solid var(--wp--preset--color--error);",
+      "selector_or_context": "lines 162: outline: var(--wp--custom--focus--width) solid var(--wp--preset--color--error);",
       "property": "--wp--custom--focus--width",
       "owner": "forms-plugin",
       "surface": "front-end",
@@ -9793,7 +9793,7 @@
     },
     {
       "path": "plugins/corex-forms/src/Block/blocks/corex-form/style.scss",
-      "selector_or_context": "lines 112, 121: color: var(--wp--preset--color--error); | outline: var(--wp--custom--focus--width) solid var(--wp--preset--color--error);",
+      "selector_or_context": "lines 153, 162: color: var(--wp--preset--color--error); | outline: var(--wp--custom--focus--width) solid var(--wp--preset--color--error);",
       "property": "--wp--preset--color--error",
       "owner": "forms-plugin",
       "surface": "front-end",
@@ -9803,7 +9803,7 @@
     },
     {
       "path": "plugins/corex-forms/src/Block/blocks/corex-form/style.scss",
-      "selector_or_context": "lines 76, 81, 92, 107: color: var(--wp--preset--color--ink);",
+      "selector_or_context": "lines 76, 81, 92, 148: color: var(--wp--preset--color--ink);",
       "property": "--wp--preset--color--ink",
       "owner": "forms-plugin",
       "surface": "front-end",
@@ -9813,7 +9813,7 @@
     },
     {
       "path": "plugins/corex-forms/src/Block/blocks/corex-form/style.scss",
-      "selector_or_context": "lines 102: background-color: var(--wp--preset--color--primary);",
+      "selector_or_context": "lines 143: background-color: var(--wp--preset--color--primary);",
       "property": "--wp--preset--color--primary",
       "owner": "forms-plugin",
       "surface": "front-end",
@@ -9823,7 +9823,7 @@
     },
     {
       "path": "plugins/corex-forms/src/Block/blocks/corex-form/style.scss",
-      "selector_or_context": "lines 93, 101: background-color: var(--wp--preset--color--surface); | color: var(--wp--preset--color--surface);",
+      "selector_or_context": "lines 93, 142: background-color: var(--wp--preset--color--surface); | color: var(--wp--preset--color--surface);",
       "property": "--wp--preset--color--surface",
       "owner": "forms-plugin",
       "surface": "front-end",
@@ -9833,7 +9833,7 @@
     },
     {
       "path": "plugins/corex-forms/src/Block/blocks/corex-form/style.scss",
-      "selector_or_context": "lines 77, 82, 94, 113: font-size: var(--wp--preset--font-size--sm);",
+      "selector_or_context": "lines 77, 82, 94, 154: font-size: var(--wp--preset--font-size--sm);",
       "property": "--wp--preset--font-size--sm",
       "owner": "forms-plugin",
       "surface": "front-end",
@@ -9853,7 +9853,7 @@
     },
     {
       "path": "plugins/corex-forms/src/Block/blocks/corex-form/style.scss",
-      "selector_or_context": "lines 18, 90, 91, 99, 106: gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30); | padding-inline: var(--wp--preset--spacing--30);",
+      "selector_or_context": "lines 18, 90, 91, 116, 134, 140, 147: gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30); | padding-inline: var(--wp--preset--spacing--30);",
       "property": "--wp--preset--spacing--30",
       "owner": "forms-plugin",
       "surface": "front-end",
@@ -9863,7 +9863,7 @@
     },
     {
       "path": "plugins/corex-forms/src/Block/blocks/corex-form/style.scss",
-      "selector_or_context": "lines 7, 100: gap: var(--wp--preset--spacing--50); | padding-inline: var(--wp--preset--spacing--50);",
+      "selector_or_context": "lines 7, 113, 141: gap: var(--wp--preset--spacing--50); | padding-inline-end: var(--wp--preset--spacing--50); | padding-inline: var(--wp--preset--spacing--50);",
       "property": "--wp--preset--spacing--50",
       "owner": "forms-plugin",
       "surface": "front-end",
