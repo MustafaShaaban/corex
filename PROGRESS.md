@@ -4,7 +4,14 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-20) -- Spec 069 implementation complete on `fix/069-admin-correctness-and-login-parity`. Ready for PR + v0.34.0.
+## RESUME HERE (2026-07-20) -- Spec 069 MERGED to `main` (PR #107). Released as **v0.34.0**.
+
+- **PR #107 merged** to `main` (merge commit on `origin/main`), then cut `release/v0.34.0`: 16 version files
+  bumped (4 plugin + 11 addon headers, 14 `*_VERSION` constants, `theme/style.css`) and the CHANGELOG written.
+- **Next:** none required for Spec 069. New work starts from `main` on a fresh branch. Note `output/` is an
+  untracked directory of Playwright evidence screenshots — either gitignore it or delete it.
+
+## (detail) Spec 069 — what was fixed
 
 - **All four owner-reported defects are fixed and verified on `corex.local`:**
   1. **Hidden `/wp-admin` no longer announces itself.** It rendered the theme 404 *with a PHP deprecation

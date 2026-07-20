@@ -6,6 +6,64 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.34.0] — 2026-07-20
+
+Spec 069 — Admin correctness and login-hiding parity. A correction release. Login hiding now behaves the way the
+reference plugin does instead of announcing itself, the Insights and Overview grids hold one coherent column
+rhythm, and every selection control in the admin is the approved accessible component rather than a native
+`<select>` whose dropdown the operating system draws and CSS cannot reach.
+
+### Fixed
+
+- **A hidden `/wp-admin` no longer announces itself.** With login hiding enabled, the endpoint returned the theme's
+  404 — and printed `Function print_emoji_styles is deprecated since version 6.4.0!` into the body, which tells a
+  scanner far more than the 404 conceals. WordPress unhooks that shim through a branch on `is_admin()`, and
+  `WP_ADMIN` cannot be unset, so on a hidden admin request core inspected the wrong hook and the deprecated
+  function ran. The shim is now moved to the hook core actually inspects, which both silences the notice and lets
+  core enqueue the emoji styles a genuine 404 carries. Measured on a real install: a missing page returns
+  **79,968 bytes**, the hidden `/wp-login.php` is **byte-identical**, and the hidden `/wp-admin` returns
+  **46,587 bytes with no diagnostic**. The remaining difference is WordPress's per-block stylesheets, which no
+  plugin can reach — `wp_should_load_separate_core_block_assets()` returns `false` on `is_admin()` before its own
+  filter runs. Size comparison can therefore still reveal that the admin address is handled specially, but never
+  where the login moved to (`Corex\Config\Security\LoginProtection\LoginRouteGuard`).
+- **The dark-mode dropdown highlight, properly this time.** Two previous attempts tried to fix it in CSS. It has no
+  CSS fix: the open menu of a native `<select>` is painted by the operating system, so no `option:hover` or
+  `option:checked` rule reaches it. Every selection control in the admin is now `CorexSelect`, the in-DOM ARIA
+  listbox the component inventory has listed as the approved Select since it was written. Unselected options sit
+  in the muted tone and lift to full contrast on hover — the signal the design always carried in the text colour,
+  which the previous implementation had moved onto a background barely distinguishable from the menu behind it.
+- **Admin stylesheets were being served stale.** Three different cache-busting spellings had grown up across the
+  screens, two of which never change when a stylesheet is edited — Insights sat on a hardcoded `1.1.0` through
+  every restyle, so returning visitors kept the old sheet and each fix looked like it had not landed. All screen
+  assets now version by file modification time (`Corex\Config\AdminUi\ScreenAsset`).
+- **The Insights screen presented one grid.** The informational widgets were being placed inside a container that
+  was itself a cell of the screen grid, so all five collapsed into a single narrow column beside the run cards.
+  Cards and widgets are now siblings in one two-column grid, ordered by what needs attention rather than by the
+  order they happen to be built in — an unconfigured integration used to sit above everything that had something
+  to report.
+- **The Overview held one column rhythm.** The status tiles used an automatic track count that changed with the
+  viewport, so the row re-flowed to three or five uneven tiles at ordinary widths and drifted against the cards
+  below. Fixed to the four tracks the approved design specifies. Cards in each row now fill their row rather than
+  leaving a block of empty canvas beside a shorter neighbour.
+- **The front-end form select was themed.** No rule anywhere targeted it, so it kept the browser's default chrome
+  while every field beside it followed the theme. It now uses the theme's own colours and spacing, with the
+  dropdown following the page's light or dark scheme.
+- **Two long-standing test failures** that were time-dependent rather than real regressions: one seeded a page view
+  at a fixed date and then asked for "the last 7 days"; the other assumed its fixtures would stay on the first
+  page of results regardless of how much real activity the install had accumulated.
+
+### Changed
+
+- **One Data destination.** The standalone Data screen rendered the same explorer as the Data Models Records tab;
+  it is retired and its address redirects there, with every tab now deep-linkable by URL.
+- **Filter submissions and records by form name.** Both screens asked for an identifier nobody knows — a numeric
+  flow ID in one, a typed slug in the other. Both now offer the real form names. Forms remains an optional add-on:
+  when it is absent the filter simply does not appear.
+- **Data models are an accordion**, so a long model list stays scannable.
+- **Selection controls report the same accessibility role as the native control they replace**, so assistive
+  technology sees no change. Block-editor controls are deliberately unchanged: they render in the WordPress editor
+  sidebar, where the editor's own design language is the correct one.
+
 ## [0.33.0] — 2026-07-03
 
 Spec 065 — Admin product completion. The required completion pass after Spec 063 (truthful surfaces) and Spec 064
