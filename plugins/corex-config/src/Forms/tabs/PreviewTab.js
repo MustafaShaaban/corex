@@ -17,6 +17,10 @@ function PreviewField( { field } ) {
 		return <label>{ field.label }<textarea placeholder={ field.placeholder } required={ field.required } /></label>;
 	}
 	if ( [ 'select', 'multi-select', 'radio', 'checkbox' ].includes( field.type ) ) {
+		// Deliberately a native <select>, not CorexSelect. This is a preview of what a VISITOR
+		// will see, and the front end renders a native control (FieldRenderer.php) — showing the
+		// admin component here would preview something the site does not serve. It also has to
+		// support `multiple`, which the single-value admin control does not.
 		return <label>{ field.label }<select multiple={ field.type === 'multi-select' } required={ field.required }>{ ( field.options || [] ).map( ( option ) => <option key={ option.value } value={ option.value }>{ option.label }</option> ) }</select></label>;
 	}
 

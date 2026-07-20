@@ -1,6 +1,7 @@
 import { useState } from '@wordpress/element';
-import { Button, CheckboxControl, Modal, SelectControl } from '@wordpress/components';
+import { Button, CheckboxControl, Modal } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import CorexSelect from '../components/CorexSelect.js';
 
 export default function ExportDialog( { source, state, close, create } ) {
 	const fields = source?.fields || [];
@@ -19,18 +20,20 @@ export default function ExportDialog( { source, state, close, create } ) {
 	};
 
 	return <Modal title={ __( 'Create export', 'corex' ) } onRequestClose={ close }>
-		<SelectControl label={ __( 'Scope', 'corex' ) } value={ scope } onChange={ setScope } options={ [
+		{ /* Scopes that cannot apply are left out rather than shown greyed: the list only ever
+		     offers things that work. */ }
+		<CorexSelect label={ __( 'Scope', 'corex' ) } value={ scope } onChange={ setScope } block options={ [
 			{ label: __( 'Current filters', 'corex' ), value: 'filtered' },
-			{ label: __( 'Selected rows', 'corex' ), value: 'selected', disabled: state.selected.length === 0 },
+			...( state.selected.length ? [ { label: __( 'Selected rows', 'corex' ), value: 'selected' } ] : [] ),
 			{ label: __( 'All accessible rows', 'corex' ), value: 'all' },
 		] } />
 		<fieldset className="corex-data__column-picker"><legend>{ __( 'Columns', 'corex' ) }</legend>
 			{ fields.map( ( field ) => <CheckboxControl key={ field.key } label={ field.label } checked={ columns.includes( field.key ) }
 				onChange={ ( checked ) => setColumns( ( current ) => checked ? [ ...current, field.key ] : current.filter( ( key ) => key !== field.key ) ) } /> ) }
 		</fieldset>
-		<SelectControl label={ __( 'Format', 'corex' ) } value={ format } onChange={ setFormat } options={ [
+		<CorexSelect label={ __( 'Format', 'corex' ) } value={ format } onChange={ setFormat } block options={ [
 			{ label: __( 'CSV', 'corex' ), value: 'csv' },
-			{ label: __( 'XLSX', 'corex' ), value: 'xlsx', disabled: ! source?.actions?.export_xlsx?.visible },
+			...( source?.actions?.export_xlsx?.visible ? [ { label: __( 'XLSX', 'corex' ), value: 'xlsx' } ] : [] ),
 		] } />
 		{ personal && <CheckboxControl label={ __( 'I understand this export contains personal data and must be handled securely.', 'corex' ) }
 			checked={ acknowledged } onChange={ setAcknowledged } /> }

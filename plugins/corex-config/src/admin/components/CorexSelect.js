@@ -36,6 +36,13 @@ export default function CorexSelect( {
 	block = false,
 	className = '',
 	describedBy,
+	// Submitted field name. Several screens read their forms with `new FormData( form )`
+	// (useEmailStudio.js), and a <button> contributes nothing to FormData — so when this control
+	// stands in for a named <select>, it also renders a hidden input carrying the value. Without
+	// it the field would silently vanish from the request.
+	name,
+	// Uncontrolled seed, for the form-driven screens that used `defaultValue` on a native select.
+	defaultValue,
 	// Shown, disabled, when there is nothing to choose from. An optional dependency that is not
 	// installed yields an empty list (Principle IX), and an empty popup reads as a broken control
 	// rather than an absent one.
@@ -47,6 +54,14 @@ export default function CorexSelect( {
 
 	const [ open, setOpen ] = useState( false );
 	const [ activeIndex, setActiveIndex ] = useState( 0 );
+	// Only consulted when `value` is not supplied, so a controlled parent stays the only source
+	// of truth and this never competes with it.
+	const [ uncontrolled, setUncontrolled ] = useState(
+		defaultValue ?? options[ 0 ]?.value ?? ''
+	);
+
+	const isControlled = value !== undefined;
+	const currentValue = isControlled ? value : uncontrolled;
 
 	const wrapRef = useRef( null );
 	const buttonRef = useRef( null );
@@ -56,9 +71,11 @@ export default function CorexSelect( {
 	const inert = disabled || isEmpty;
 
 	const selectedIndex = useMemo( () => {
-		const found = options.findIndex( ( option ) => option.value === value );
+		const found = options.findIndex(
+			( option ) => option.value === currentValue
+		);
 		return found === -1 ? 0 : found;
-	}, [ options, value ] );
+	}, [ options, currentValue ] );
 
 	const selectedLabel = isEmpty
 		? emptyLabel
@@ -83,11 +100,15 @@ export default function CorexSelect( {
 			// Focus returns to the button, or the menu closes under a focused element that no
 			// longer exists and the tab order restarts at the top of the page.
 			buttonRef.current?.focus();
-			if ( option && option.value !== value ) {
-				onChange?.( option.value );
+			if ( ! option || option.value === currentValue ) {
+				return;
 			}
+			if ( ! isControlled ) {
+				setUncontrolled( option.value );
+			}
+			onChange?.( option.value );
 		},
-		[ close, onChange, options, value ]
+		[ close, currentValue, isControlled, onChange, options ]
 	);
 
 	// Clicking anywhere else dismisses the menu. Bound only while open so a screen with many
@@ -216,11 +237,18 @@ export default function CorexSelect( {
 
 	return (
 		<div className={ classes } ref={ wrapRef }>
+			{ name && (
+				<input type="hidden" name={ name } value={ currentValue } />
+			) }
 			<button
 				type="button"
 				id={ baseId }
 				ref={ buttonRef }
 				className="corex-select__button"
+				// The ARIA select-only combobox pattern, and the same role a native <select>
+				// exposes implicitly — so replacing the control changes nothing for assistive
+				// technology, or for the tests and users that address it by role.
+				role="combobox"
 				aria-haspopup="listbox"
 				aria-expanded={ open }
 				aria-controls={ open ? listId : undefined }

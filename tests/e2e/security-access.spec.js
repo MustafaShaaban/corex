@@ -5,7 +5,41 @@
  */
 
 const { test, expect } = require( '@playwright/test' );
+const { execFileSync } = require( 'node:child_process' );
+const fs = require( 'node:fs' );
+const os = require( 'node:os' );
+const path = require( 'node:path' );
 const { collectConsoleErrors } = require( './helpers' );
+
+/**
+ * Run PHP inside the real WordPress this suite is already testing against.
+ *
+ * Used only to set up and tear down the login-hiding precondition, which has no REST route an
+ * anonymous context could reach. Returns null when WP-CLI is unavailable, so the tests that
+ * depend on it can skip rather than fail on an environment that cannot support them.
+ *
+ * Goes through a temp file and `eval-file` rather than `eval`: WP-CLI on Windows is a shim that
+ * needs a shell, and the shell then re-parses the PHP and eats its quotes.
+ *
+ * @param {string} php PHP to execute in the loaded WordPress.
+ * @return {string|null} Trimmed stdout, or null if WP-CLI could not run.
+ */
+function wpEval( php ) {
+	const root = path.join( __dirname, '..', '..' );
+	const file = path.join( os.tmpdir(), `corex-e2e-${ Date.now() }.php` );
+	fs.writeFileSync( file, `<?php\n${ php }\n` );
+	try {
+		return execFileSync(
+			'wp',
+			[ `--path=${ path.join( root, 'wp' ) }`, 'eval-file', file ],
+			{ cwd: root, encoding: 'utf8', shell: true, stdio: 'pipe' }
+		).trim();
+	} catch {
+		return null;
+	} finally {
+		fs.rmSync( file, { force: true } );
+	}
+}
 
 test( 'renders launch checklist login policy lockouts recovery and activity without console errors', async ( { page } ) => {
 	const errors = collectConsoleErrors( page );
@@ -19,7 +53,11 @@ test( 'renders launch checklist login policy lockouts recovery and activity with
 	await expect( page.getByRole( 'heading', { name: 'Recovery' } ) ).toBeVisible();
 	await expect( page.getByRole( 'heading', { name: 'Security activity' } ) ).toBeVisible();
 
-	await page.getByLabel( 'Target mode' ).selectOption( 'production' );
+	// Mode is a CorexSelect now (spec 069): an in-DOM listbox, not a native <select>, because a
+	// native popup is OS-drawn and its dark-mode highlight cannot be styled. selectOption() only
+	// drives real <select> elements, so this is opened and picked the way a person would.
+	await page.getByRole( 'combobox', { name: 'Target mode' } ).click();
+	await page.getByRole( 'option', { name: 'Production' } ).click();
 	await expect( page.getByRole( 'dialog', { name: 'Production confirmation' } ) ).toBeVisible();
 	await page.getByLabel( 'Type PRODUCTION' ).fill( 'PRODUCTION' );
 	await expect( page.getByText( 'Typed confirmation is ready.' ) ).toBeVisible();
@@ -88,6 +126,51 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 	// The whole point of hiding is that a probe learns nothing, so these must run signed OUT —
 	// the project-wide storageState would authenticate them and skip the guard entirely.
 	test.use( { storageState: { cookies: [], origins: [] } } );
+
+	// Login hiding is off by default on a dev box, and these assertions are meaningless without
+	// it. Rather than depend on ambient site state — which is how they passed locally and would
+	// have failed on any other machine — turn it on for the duration and put it back afterwards.
+	// The custom address keeps working throughout, and global-setup.js already falls back to it,
+	// so the rest of the suite is unaffected either way. Recovery if this ever dies mid-run:
+	// `wp corex security reset-login`.
+	let restore = null;
+
+	test.beforeEach( () => {
+		test.skip(
+			restore === null,
+			'WP-CLI is not reachable, so login hiding could not be switched on for these probes.'
+		);
+	} );
+
+	test.beforeAll( () => {
+		const before = wpEval(
+			'echo wp_json_encode( get_option( "corex_login_protection_settings", null ) );'
+		);
+		if ( before === null ) {
+			return;
+		}
+		restore = before;
+		wpEval(
+			'( new \\Corex\\Config\\Security\\LoginProtection\\LoginProtectionSettingsStore() )' +
+				'->save( [ "enabled" => true, "custom_slug" => "corex-login", "block_default_endpoints" => true ] );'
+		);
+	} );
+
+	test.afterAll( () => {
+		if ( restore === null ) {
+			return;
+		}
+		if ( JSON.parse( restore ) === null ) {
+			wpEval( 'delete_option( "corex_login_protection_settings" );' );
+			return;
+		}
+		// The captured JSON is embedded as a heredoc so no amount of quoting in the stored
+		// settings can break out of it.
+		wpEval(
+			'update_option( "corex_login_protection_settings", json_decode( <<<\'COREX_JSON\'\n' +
+				`${ restore }\nCOREX_JSON, true ), false );`
+		);
+	} );
 
 	// Anything a probe could use to tell "handled" from "absent". The deprecation notice that
 	// shipped (print_emoji_styles, printed into the body because WP_DEBUG_DISPLAY is on) is the

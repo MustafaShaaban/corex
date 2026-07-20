@@ -1,4 +1,21 @@
 import { __ } from '@wordpress/i18n';
+import CorexSelect from '../../admin/components/CorexSelect.js';
+
+const FIELD_WIDTHS = [
+	{ value: 'full', label: __( 'Full', 'corex' ) },
+	{ value: 'half', label: __( 'Half', 'corex' ) },
+	{ value: 'third', label: __( 'Third', 'corex' ) },
+	{ value: 'two-thirds', label: __( 'Two thirds', 'corex' ) },
+];
+
+const PERSONAL_DATA_CLASSES = [
+	{ value: 'none', label: __( 'None', 'corex' ) },
+	{ value: 'contact', label: __( 'Contact', 'corex' ) },
+	{ value: 'identity', label: __( 'Identity', 'corex' ) },
+	{ value: 'consent', label: __( 'Consent', 'corex' ) },
+	{ value: 'sensitive', label: __( 'Sensitive', 'corex' ) },
+	{ value: 'custom', label: __( 'Custom', 'corex' ) },
+];
 
 function TextField( { label, name, value, onChange, ...props } ) {
 	const id = `corex-flow-field-${ name }`;
@@ -28,26 +45,18 @@ export function FieldSettings( { field, onChange } ) {
 				<TextField label={ __( 'Placeholder', 'corex' ) } name="placeholder" value={ field.placeholder } onChange={ change } />
 				<TextField label={ __( 'Help text', 'corex' ) } name="help_text" value={ field.help_text } onChange={ change } />
 				<TextField label={ __( 'Default value', 'corex' ) } name="default_value" value={ field.default_value } onChange={ change } />
-				<label htmlFor="corex-flow-field-width">
-					{ __( 'Width', 'corex' ) }
-					<select id="corex-flow-field-width" name="width" value={ field.width || 'full' } onChange={ change }>
-						<option value="full">{ __( 'Full', 'corex' ) }</option>
-						<option value="half">{ __( 'Half', 'corex' ) }</option>
-						<option value="third">{ __( 'Third', 'corex' ) }</option>
-						<option value="two-thirds">{ __( 'Two thirds', 'corex' ) }</option>
-					</select>
-				</label>
-				<label htmlFor="corex-flow-field-personal-data">
-					{ __( 'Personal data class', 'corex' ) }
-					<select id="corex-flow-field-personal-data" name="personal_data_class" value={ field.personal_data_class || 'none' } onChange={ change }>
-						<option value="none">{ __( 'None', 'corex' ) }</option>
-						<option value="contact">{ __( 'Contact', 'corex' ) }</option>
-						<option value="identity">{ __( 'Identity', 'corex' ) }</option>
-						<option value="consent">{ __( 'Consent', 'corex' ) }</option>
-						<option value="sensitive">{ __( 'Sensitive', 'corex' ) }</option>
-						<option value="custom">{ __( 'Custom', 'corex' ) }</option>
-					</select>
-				</label>
+				<div className="corex-field">
+					<span>{ __( 'Width', 'corex' ) }</span>
+					<CorexSelect id="corex-flow-field-width" label={ __( 'Width', 'corex' ) }
+						value={ field.width || 'full' } options={ FIELD_WIDTHS }
+						onChange={ ( value ) => change( { target: { name: 'width', value } } ) } block />
+				</div>
+				<div className="corex-field">
+					<span>{ __( 'Personal data class', 'corex' ) }</span>
+					<CorexSelect id="corex-flow-field-personal-data" label={ __( 'Personal data class', 'corex' ) }
+						value={ field.personal_data_class || 'none' } options={ PERSONAL_DATA_CLASSES }
+						onChange={ ( value ) => change( { target: { name: 'personal_data_class', value } } ) } block />
+				</div>
 				<label className="is-wide" htmlFor="corex-flow-field-options">
 					{ __( 'Options (value:label, one per line)', 'corex' ) }
 					<textarea

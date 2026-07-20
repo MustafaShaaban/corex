@@ -497,6 +497,19 @@ body.corex-admin-screen .corex-admin__shell {
 	accent-color: var(--corex-admin-action);
 }
 
+/* Label text stacked above its control.
+   Every screen had grown its own `<label>` rule for this. A selection control
+   is a button plus a listbox, and a <label> cannot label either — so those
+   fields need a plain wrapper naming the control directly, and that may as
+   well be the one definition for all of them. */
+.corex-admin .corex-field {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
 /* Accessible custom select (ARIA combobox/listbox): an in-DOM dropdown, always
    readable in dark/light, replacing the OS-rendered native popup. This is the
    approved Select in the component inventory ("admin:corex-select"), and the
@@ -538,6 +551,11 @@ body.corex-admin-screen .corex-admin__shell {
 	font: inherit;
 	text-align: start;
 	cursor: pointer;
+}
+
+/* Only the .corex-field label above it is bold, never the control itself. */
+.corex-admin .corex-field .corex-select__button {
+	font-weight: 400;
 }
 
 /* Matches the affordance the native control has (see `select:hover` above), so

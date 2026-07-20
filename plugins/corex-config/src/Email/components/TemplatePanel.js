@@ -1,4 +1,5 @@
 import { __, sprintf } from '@wordpress/i18n';
+import CorexSelect from '../../admin/components/CorexSelect.js';
 import { Field } from './shared.js';
 
 function TemplateRail( { templates, selectedId, busy, onCreate, onSelect } ) {
@@ -60,38 +61,60 @@ function TemplateRail( { templates, selectedId, busy, onCreate, onSelect } ) {
 	);
 }
 
+/**
+ * The shared draft handler is event-shaped (`event.target.name` / `.value`, useEmailStudio.js),
+ * and CorexSelect reports a plain value. Rather than reshape a handler five other fields depend
+ * on, the two selection controls here hand it the shape it expects.
+ *
+ * @param {string}   name     The draft field this control writes to.
+ * @param {Function} onChange The shared event-shaped draft handler.
+ * @return {Function} A CorexSelect onChange that reports an event-shaped value.
+ */
+function asFieldEvent( name, onChange ) {
+	return ( value ) => onChange( { target: { name, value } } );
+}
+
 function LayoutSelector( { layouts, draft, error, onChange } ) {
+	const label = __( 'Layout revision', 'corex' );
+	const options = [
+		// Kept as a real option rather than a disabled one: validateDraftForm() already reports
+		// "Choose a layout version." for it, so leaving it selectable keeps that the single place
+		// the rule lives.
+		{ value: '0:0', label: __( 'Choose a layout', 'corex' ) },
+		...layouts.map( ( layout ) => ( {
+			value: `${ layout.id }:${ layout.version }`,
+			label: sprintf(
+				/* translators: 1: Email layout name. 2: Layout version number. */
+				__( '%1$s — version %2$d', 'corex' ),
+				layout.name,
+				layout.version
+			),
+		} ) ),
+	];
+
 	return (
-		<label htmlFor="corex-email-layout-selection">
-			{ __( 'Layout revision', 'corex' ) }
-			<select
+		<div className="corex-field">
+			<span id="corex-email-layout-selection-label">{ label }</span>
+			<CorexSelect
 				id="corex-email-layout-selection"
-				name="layout_selection"
+				label={ label }
 				value={ `${ draft.layout_id }:${ draft.layout_version }` }
-				aria-invalid={ error ? 'true' : undefined }
-				onChange={ onChange }
-			>
-				<option value="0:0" disabled>
-					{ __( 'Choose a layout', 'corex' ) }
-				</option>
-				{ layouts.map( ( layout ) => (
-					<option
-						key={ `${ layout.id }:${ layout.version }` }
-						value={ `${ layout.id }:${ layout.version }` }
-					>
-						{ sprintf(
-							/* translators: 1: Email layout name. 2: Layout version number. */
-							__( '%1$s — version %2$d', 'corex' ),
-							layout.name,
-							layout.version
-						) }
-					</option>
-				) ) }
-			</select>
+				options={ options }
+				onChange={ asFieldEvent( 'layout_selection', onChange ) }
+				describedBy={
+					error ? 'corex-email-layout-selection-error' : undefined
+				}
+				block
+			/>
 			{ error && (
-				<span className="corex-email-app__field-error">{ error }</span>
+				<span
+					id="corex-email-layout-selection-error"
+					className="corex-email-app__field-error"
+				>
+					{ error }
+				</span>
 			) }
-		</label>
+		</div>
 	);
 }
 
@@ -134,20 +157,25 @@ function DraftFields( { layouts, draft, errors, onChange } ) {
 				textarea
 				wide
 			/>
-			<label htmlFor="corex-email-plain-text-mode">
-				{ __( 'Plain-text mode', 'corex' ) }
-				<select
+			<div className="corex-field">
+				<span id="corex-email-plain-text-mode-label">
+					{ __( 'Plain-text mode', 'corex' ) }
+				</span>
+				<CorexSelect
 					id="corex-email-plain-text-mode"
-					name="plain_text_mode"
+					label={ __( 'Plain-text mode', 'corex' ) }
 					value={ draft.plain_text_mode }
-					onChange={ onChange }
-				>
-					<option value="auto">
-						{ __( 'Generate automatically', 'corex' ) }
-					</option>
-					<option value="manual">{ __( 'Manual', 'corex' ) }</option>
-				</select>
-			</label>
+					options={ [
+						{
+							value: 'auto',
+							label: __( 'Generate automatically', 'corex' ),
+						},
+						{ value: 'manual', label: __( 'Manual', 'corex' ) },
+					] }
+					onChange={ asFieldEvent( 'plain_text_mode', onChange ) }
+					block
+				/>
+			</div>
 			<Field
 				label={ __( 'Plain text', 'corex' ) }
 				name="plain_text"

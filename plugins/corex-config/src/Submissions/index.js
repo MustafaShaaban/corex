@@ -7,6 +7,7 @@ import {
 } from '@wordpress/element';
 import { Button, Modal, Spinner } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
+import CorexSelect from '../admin/components/CorexSelect.js';
 import { buildExportPayload, toggleSubmission } from './inbox.js';
 import { useInbox } from './useInbox.js';
 
@@ -22,6 +23,49 @@ const STATUS_LABELS = {
 	spam: __( 'Spam', 'corex' ),
 	archived: __( 'Archived', 'corex' ),
 };
+const STATUS_OPTIONS = STATUSES.map( ( status ) => ( {
+	value: status,
+	label: STATUS_LABELS[ status ],
+} ) );
+const BULK_ACTIONS = [
+	{ value: 'mark_read', label: __( 'Mark read', 'corex' ) },
+	{ value: 'assign', label: __( 'Assign', 'corex' ) },
+	{ value: 'mark_spam', label: __( 'Mark spam', 'corex' ) },
+	{ value: 'archive', label: __( 'Archive', 'corex' ) },
+];
+const OWNER_TYPES = [
+	{ value: 'user', label: __( 'User', 'corex' ) },
+	{ value: 'team', label: __( 'Team', 'corex' ) },
+	{ value: 'role', label: __( 'Role', 'corex' ) },
+	{ value: 'none', label: __( 'Unassigned', 'corex' ) },
+];
+// The drawer leads with Unassigned because that is the state most rows start in.
+const ASSIGNMENT_OWNER_TYPES = [
+	OWNER_TYPES[ 3 ],
+	OWNER_TYPES[ 0 ],
+	OWNER_TYPES[ 1 ],
+	OWNER_TYPES[ 2 ],
+];
+
+/**
+ * Export scopes, minus any that cannot apply right now.
+ *
+ * The native control kept "Selected rows" in the list and disabled it when nothing was selected.
+ * An option that can never be chosen is better left out than shown greyed: the list then only
+ * ever offers things that work.
+ *
+ * @param {number} selectedCount How many rows are currently ticked.
+ * @return {Array} Option list for the scope control.
+ */
+function exportScopes( selectedCount ) {
+	return [
+		...( selectedCount
+			? [ { value: 'selected', label: __( 'Selected rows', 'corex' ) } ]
+			: [] ),
+		{ value: 'filtered', label: __( 'Current filter', 'corex' ) },
+		{ value: 'accessible', label: __( 'All accessible', 'corex' ) },
+	];
+}
 
 function App() {
 	const [ filters, setFilters ] = useState( {
@@ -82,7 +126,7 @@ function FormFilter( { flows, value, update } ) {
 		return null;
 	}
 
-	return <label>
+	return <div className="corex-field">
 		<span>{ __( 'Form', 'corex' ) }</span>
 		{ /* The value is the flow ID because that is what the inbox stores (meta corex_flow_id) —
 		     the data explorer keys the same list by slug instead. The owner picks a name either
@@ -91,19 +135,18 @@ function FormFilter( { flows, value, update } ) {
 		     aria-label because a <label> wrapping a control names it from the label's whole
 		     subtree, and an embedded control contributes its VALUE — so this would announce as
 		     "Form All forms" and rename itself every time the selection changed. */ }
-		<select aria-label={ __( 'Form', 'corex' ) } value={ value }
-			onChange={ ( event ) => update( 'flow', event.target.value ) }>
-			<option value="">{ __( 'All forms', 'corex' ) }</option>
-			{ flows.map( ( flow ) => <option key={ flow.id } value={ flow.id }>{ flow.name }</option> ) }
-		</select>
-	</label>;
+		<CorexSelect label={ __( 'Form', 'corex' ) } value={ value }
+			options={ [ { value: '', label: __( 'All forms', 'corex' ) },
+				...flows.map( ( flow ) => ( { value: String( flow.id ), label: flow.name } ) ) ] }
+			onChange={ ( flow ) => update( 'flow', flow ) } block />
+	</div>;
 }
 
 function Filters( { filters, update, flows } ) {
 	return <section className="corex-inbox__filters" aria-label={ __( 'Submission filters', 'corex' ) }>
 		<label className="is-wide"><span>{ __( 'Search', 'corex' ) }</span><input type="search" value={ filters.search } onChange={ ( event ) => update( 'search', event.target.value ) } placeholder={ __( 'Name, email, or flow', 'corex' ) } /></label>
 		<FormFilter flows={ flows } value={ filters.flow } update={ update } />
-		<label><span>{ __( 'Status', 'corex' ) }</span><select value={ filters.status } onChange={ ( event ) => update( 'status', event.target.value ) }><option value="">{ __( 'All statuses', 'corex' ) }</option>{ STATUSES.map( ( status ) => <option key={ status } value={ status }>{ STATUS_LABELS[ status ] }</option> ) }</select></label>
+		<div className="corex-field"><span>{ __( 'Status', 'corex' ) }</span><CorexSelect label={ __( 'Status', 'corex' ) } value={ filters.status } options={ [ { value: '', label: __( 'All statuses', 'corex' ) }, ...STATUSES.map( ( status ) => ( { value: status, label: STATUS_LABELS[ status ] } ) ) ] } onChange={ ( status ) => update( 'status', status ) } block /></div>
 		<label><span>{ __( 'Owner', 'corex' ) }</span><input value={ filters.owner } onChange={ ( event ) => update( 'owner', event.target.value ) } placeholder="team:sales" /></label>
 		<label><span>{ __( 'From', 'corex' ) }</span><input type="date" value={ filters.dateFrom } onChange={ ( event ) => update( 'dateFrom', event.target.value ) } /></label>
 		<label><span>{ __( 'To', 'corex' ) }</span><input type="date" value={ filters.dateTo } onChange={ ( event ) => update( 'dateTo', event.target.value ) } /></label>
@@ -115,10 +158,8 @@ function BulkToolbar( props ) {
 	if ( props.count === 0 ) return null;
 	return <div className="corex-inbox__bulk" role="region" aria-label={ __( 'Bulk actions', 'corex' ) }>
 		<strong>{ sprintf( __( '%d selected', 'corex' ), props.count ) }</strong>
-		<select value={ props.action } onChange={ ( event ) => props.setAction( event.target.value ) } aria-label={ __( 'Bulk action', 'corex' ) }>
-			<option value="mark_read">{ __( 'Mark read', 'corex' ) }</option><option value="assign">{ __( 'Assign', 'corex' ) }</option><option value="mark_spam">{ __( 'Mark spam', 'corex' ) }</option><option value="archive">{ __( 'Archive', 'corex' ) }</option>
-		</select>
-		{ props.action === 'assign' && <><select value={ props.owner.owner_type } onChange={ ( e ) => props.setOwner( { ...props.owner, owner_type: e.target.value } ) }><option value="user">{ __( 'User', 'corex' ) }</option><option value="team">{ __( 'Team', 'corex' ) }</option><option value="role">{ __( 'Role', 'corex' ) }</option><option value="none">{ __( 'Unassigned', 'corex' ) }</option></select><input value={ props.owner.owner_key } disabled={ props.owner.owner_type === 'none' } onChange={ ( e ) => props.setOwner( { ...props.owner, owner_key: e.target.value } ) } placeholder={ __( 'Owner key', 'corex' ) } /></> }
+		<CorexSelect label={ __( 'Bulk action', 'corex' ) } value={ props.action } options={ BULK_ACTIONS } onChange={ props.setAction } />
+		{ props.action === 'assign' && <><CorexSelect label={ __( 'Owner type', 'corex' ) } value={ props.owner.owner_type } options={ OWNER_TYPES } onChange={ ( ownerType ) => props.setOwner( { ...props.owner, owner_type: ownerType } ) } /><input value={ props.owner.owner_key } disabled={ props.owner.owner_type === 'none' } onChange={ ( e ) => props.setOwner( { ...props.owner, owner_key: e.target.value } ) } placeholder={ __( 'Owner key', 'corex' ) } /></> }
 		<Button variant="primary" onClick={ props.onPreview }>{ __( 'Preview action', 'corex' ) }</Button><Button variant="tertiary" onClick={ props.onClear }>{ __( 'Clear selection', 'corex' ) }</Button>
 	</div>;
 }
@@ -164,8 +205,8 @@ function DetailDrawer( { drawer, inbox } ) {
 	if ( ! record ) return <aside className="corex-inbox__drawer"><Button onClick={ inbox.close }>{ __( 'Close', 'corex' ) }</Button><p>{ drawer.error }</p></aside>;
 	const emails = Object.values( record.related_emails?.bindings || {} ).filter( ( item ) => item?.attempt_id );
 	return <aside className="corex-inbox__drawer" aria-labelledby="corex-submission-title"><header><div><p>{ record.flow }</p><h2 id="corex-submission-title">{ record.submitter_name || __( 'Anonymous submission', 'corex' ) }</h2><span>{ record.submitter_email }</span></div><Button icon="no-alt" label={ __( 'Close detail', 'corex' ) } onClick={ inbox.close } /></header>
-		<div className="corex-inbox__drawer-actions"><select value={ record.status } onChange={ ( e ) => inbox.update( record.id, { status: e.target.value, expected_updated_at: record.updated_at } ) }>{ STATUSES.map( ( status ) => <option key={ status } value={ status }>{ STATUS_LABELS[ status ] }</option> ) }</select>{ ! record.read_at && <Button onClick={ () => inbox.update( record.id, { mark_read: true, expected_updated_at: record.updated_at } ) }>{ __( 'Mark read', 'corex' ) }</Button> }</div>
-		<section><h3>{ __( 'Assignment', 'corex' ) }</h3><div className="corex-inbox__assignment"><select value={ owner.owner_type } onChange={ ( e ) => setOwner( { ...owner, owner_type: e.target.value, owner_key: e.target.value === 'none' ? '' : owner.owner_key } ) }><option value="none">{ __( 'Unassigned', 'corex' ) }</option><option value="user">{ __( 'User', 'corex' ) }</option><option value="team">{ __( 'Team', 'corex' ) }</option><option value="role">{ __( 'Role', 'corex' ) }</option></select><input value={ owner.owner_key } disabled={ owner.owner_type === 'none' } onChange={ ( e ) => setOwner( { ...owner, owner_key: e.target.value } ) } placeholder={ __( 'Eligible owner key', 'corex' ) } /><Button variant="secondary" onClick={ () => inbox.update( record.id, { ...owner, expected_updated_at: record.updated_at } ) }>{ __( 'Assign', 'corex' ) }</Button></div></section>
+		<div className="corex-inbox__drawer-actions"><CorexSelect label={ __( 'Status', 'corex' ) } value={ record.status } options={ STATUS_OPTIONS } block onChange={ ( status ) => inbox.update( record.id, { status, expected_updated_at: record.updated_at } ) } />{ ! record.read_at && <Button onClick={ () => inbox.update( record.id, { mark_read: true, expected_updated_at: record.updated_at } ) }>{ __( 'Mark read', 'corex' ) }</Button> }</div>
+		<section><h3>{ __( 'Assignment', 'corex' ) }</h3><div className="corex-inbox__assignment"><CorexSelect label={ __( 'Owner type', 'corex' ) } value={ owner.owner_type } options={ ASSIGNMENT_OWNER_TYPES } onChange={ ( ownerType ) => setOwner( { ...owner, owner_type: ownerType, owner_key: ownerType === 'none' ? '' : owner.owner_key } ) } /><input value={ owner.owner_key } disabled={ owner.owner_type === 'none' } onChange={ ( e ) => setOwner( { ...owner, owner_key: e.target.value } ) } placeholder={ __( 'Eligible owner key', 'corex' ) } /><Button variant="secondary" onClick={ () => inbox.update( record.id, { ...owner, expected_updated_at: record.updated_at } ) }>{ __( 'Assign', 'corex' ) }</Button></div></section>
 		<DetailSection title={ __( 'Submitted fields', 'corex' ) } value={ record.values } />
 		<DetailSection title={ __( 'Hidden metadata', 'corex' ) } value={ record.hidden_metadata } />
 		<DetailSection title={ __( 'UTM attribution', 'corex' ) } value={ record.utm } />
@@ -195,7 +236,7 @@ function ExportModal( { close, inbox, filters, selectedIds } ) {
 	const personal = columns.some( ( item ) => [ 'submitted_fields', 'hidden_metadata', 'utm', 'consent_snapshot', 'notes' ].includes( item ) );
 	const choices = useMemo( () => [ 'identity', 'workflow', 'submitted_fields', 'hidden_metadata', 'utm', 'consent_snapshot', 'notes' ], [] );
 	const refresh = async () => { const result = await inbox.loadExports(); if ( result.envelope.ok ) setHistory( result.envelope.data.exports ); };
-	return <Modal title={ __( 'Export submissions', 'corex' ) } onRequestClose={ close } className="corex-inbox__export-modal"><label>{ __( 'Scope', 'corex' ) }<select value={ scope } onChange={ ( e ) => setScope( e.target.value ) }><option value="selected" disabled={ ! selectedIds.length }>{ __( 'Selected rows', 'corex' ) }</option><option value="filtered">{ __( 'Current filter', 'corex' ) }</option><option value="accessible">{ __( 'All accessible', 'corex' ) }</option></select></label><fieldset><legend>{ __( 'Columns', 'corex' ) }</legend>{ choices.map( ( choice ) => <label key={ choice }><input type="checkbox" checked={ columns.includes( choice ) } onChange={ () => setColumns( columns.includes( choice ) ? columns.filter( ( item ) => item !== choice ) : [ ...columns, choice ] ) } /> { choice.replaceAll( '_', ' ' ) }</label> ) }</fieldset><label><input type="checkbox" checked={ includeTest } onChange={ ( e ) => setIncludeTest( e.target.checked ) } /> { __( 'Include marked tests', 'corex' ) }</label>{ personal && <label className="corex-inbox__warning"><input type="checkbox" checked={ acknowledged } onChange={ ( e ) => setAcknowledged( e.target.checked ) } /> { __( 'I understand this export contains personal data and will handle it according to policy.', 'corex' ) }</label> }<div className="corex-inbox__modal-actions"><Button onClick={ refresh }>{ __( 'Refresh history', 'corex' ) }</Button><Button variant="primary" disabled={ ! columns.length || ( personal && ! acknowledged ) } onClick={ async () => { const data = await inbox.createExport( buildExportPayload( { scope, selectedIds, columns, includeTest, acknowledged, filters: { search: filters.search, flow: filters.flow, status: filters.status, owner: filters.owner, date_from: filters.dateFrom, date_to: filters.dateTo } } ) ); if ( data ) refresh(); } }>{ __( 'Create export', 'corex' ) }</Button></div><ul className="corex-inbox__export-history">{ history.map( ( item ) => <li key={ item.id }><span>#{ item.id } · { item.scope } · { item.record_count }</span><Button variant="link" onClick={ async () => { const result = await inbox.downloadExport( item.id ); if ( result.envelope.ok ) downloadCsv( result.envelope.data.artifact ); } }>{ __( 'Download', 'corex' ) }</Button></li> ) }</ul></Modal>;
+	return <Modal title={ __( 'Export submissions', 'corex' ) } onRequestClose={ close } className="corex-inbox__export-modal"><label>{ __( 'Scope', 'corex' ) }<CorexSelect label={ __( 'Scope', 'corex' ) } value={ scope } options={ exportScopes( selectedIds.length ) } onChange={ setScope } /></label><fieldset><legend>{ __( 'Columns', 'corex' ) }</legend>{ choices.map( ( choice ) => <label key={ choice }><input type="checkbox" checked={ columns.includes( choice ) } onChange={ () => setColumns( columns.includes( choice ) ? columns.filter( ( item ) => item !== choice ) : [ ...columns, choice ] ) } /> { choice.replaceAll( '_', ' ' ) }</label> ) }</fieldset><label><input type="checkbox" checked={ includeTest } onChange={ ( e ) => setIncludeTest( e.target.checked ) } /> { __( 'Include marked tests', 'corex' ) }</label>{ personal && <label className="corex-inbox__warning"><input type="checkbox" checked={ acknowledged } onChange={ ( e ) => setAcknowledged( e.target.checked ) } /> { __( 'I understand this export contains personal data and will handle it according to policy.', 'corex' ) }</label> }<div className="corex-inbox__modal-actions"><Button onClick={ refresh }>{ __( 'Refresh history', 'corex' ) }</Button><Button variant="primary" disabled={ ! columns.length || ( personal && ! acknowledged ) } onClick={ async () => { const data = await inbox.createExport( buildExportPayload( { scope, selectedIds, columns, includeTest, acknowledged, filters: { search: filters.search, flow: filters.flow, status: filters.status, owner: filters.owner, date_from: filters.dateFrom, date_to: filters.dateTo } } ) ); if ( data ) refresh(); } }>{ __( 'Create export', 'corex' ) }</Button></div><ul className="corex-inbox__export-history">{ history.map( ( item ) => <li key={ item.id }><span>#{ item.id } · { item.scope } · { item.record_count }</span><Button variant="link" onClick={ async () => { const result = await inbox.downloadExport( item.id ); if ( result.envelope.ok ) downloadCsv( result.envelope.data.artifact ); } }>{ __( 'Download', 'corex' ) }</Button></li> ) }</ul></Modal>;
 }
 
 function downloadCsv( artifact ) {

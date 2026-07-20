@@ -82,6 +82,9 @@ describe( 'CorexSelect', () => {
 	it( 'renders a collapsed combobox naming its label and current value', () => {
 		mount();
 
+		// The role a native <select> exposes implicitly. Keeping it means swapping the control
+		// changes nothing for assistive technology or for anything addressing it by role.
+		expect( button().getAttribute( 'role' ) ).toBe( 'combobox' );
 		expect( button().getAttribute( 'aria-haspopup' ) ).toBe( 'listbox' );
 		expect( button().getAttribute( 'aria-expanded' ) ).toBe( 'false' );
 		expect( button().getAttribute( 'aria-label' ) ).toBe( 'Form' );
@@ -262,6 +265,57 @@ describe( 'CorexSelect', () => {
 	it( 'falls back to the first option when the value matches nothing', () => {
 		// A stale filter value must not blank the control.
 		mount( { value: 'deleted-form' } );
+
+		expect( button().textContent ).toContain( 'Contact us' );
+	} );
+
+	it( 'submits with the form when given a name', () => {
+		// Several screens read their forms with `new FormData( form )` (useEmailStudio.js). A
+		// <button> contributes nothing to FormData, so without a hidden input the field would
+		// silently vanish from the request and the save would look like it worked.
+		const form = document.createElement( 'form' );
+		document.body.appendChild( form );
+		const formRoot = createRoot( form );
+
+		act( () => {
+			formRoot.render(
+				<CorexSelect
+					label="Reply-to source"
+					name="reply_to_rule"
+					defaultValue="context"
+					options={ OPTIONS }
+					onChange={ () => {} }
+				/>
+			);
+		} );
+
+		expect(
+			Object.fromEntries( new window.FormData( form ).entries() )
+		).toEqual( { reply_to_rule: 'context' } );
+
+		act( () => formRoot.unmount() );
+		form.remove();
+	} );
+
+	it( 'manages its own value when uncontrolled', () => {
+		// The form-driven screens used `defaultValue` on a native select and never tracked the
+		// value in React; the control has to keep working the same way.
+		const onChange = jest.fn();
+		mount( { value: undefined, defaultValue: 'careers', onChange } );
+
+		expect( button().textContent ).toContain( 'Careers application' );
+
+		press( 'ArrowDown' );
+		press( 'ArrowDown' );
+		press( 'Enter' );
+
+		expect( onChange ).toHaveBeenCalledWith( 'support' );
+		// Uncontrolled: the displayed value moves without a parent feeding it back.
+		expect( button().textContent ).toContain( 'Support request' );
+	} );
+
+	it( 'defaults an uncontrolled control to the first option', () => {
+		mount( { value: undefined, defaultValue: undefined } );
 
 		expect( button().textContent ).toContain( 'Contact us' );
 	} );

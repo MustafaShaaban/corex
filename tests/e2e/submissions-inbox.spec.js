@@ -68,7 +68,10 @@ test( 'filters works assigns notes bulk actions and audits personal-data exports
 	// Scope to a single matching submission: the seeded fixture email can accumulate across
 	// runs on a shared site, so operate on the first match to keep the workflow isolation-safe.
 	await page.getByLabel( /Select submission/ ).first().check();
-	await page.getByRole( 'combobox', { name: 'Bulk action' } ).selectOption( 'mark_read' );
+	// Bulk action is a CorexSelect now (spec 069) — an in-DOM listbox rather than a native
+	// <select>, so it is opened and picked rather than driven with selectOption().
+	await page.getByRole( 'combobox', { name: 'Bulk action' } ).click();
+	await page.getByRole( 'option', { name: 'Mark read' } ).click();
 	await page.getByRole( 'button', { name: 'Preview action' } ).click();
 	await expect( page.getByText( /will affect exactly 1 submissions/ ) ).toBeVisible();
 	await page.getByRole( 'button', { name: 'Confirm and apply' } ).click();
@@ -77,7 +80,8 @@ test( 'filters works assigns notes bulk actions and audits personal-data exports
 	await page.getByRole( 'button', { name: new RegExp( EMAIL ) } ).first().click();
 	const drawer = page.locator( '.corex-inbox__drawer' );
 	await expect( drawer ).toBeVisible();
-	await drawer.locator( '.corex-inbox__drawer-actions select' ).selectOption( 'in_progress' );
+	await drawer.getByRole( 'combobox', { name: 'Status' } ).click();
+	await page.getByRole( 'option', { name: 'In progress' } ).click();
 	await drawer.getByPlaceholder( 'Add a team note' ).fill( 'Browser evidence note.' );
 	await drawer.getByRole( 'button', { name: 'Add note' } ).click();
 	await expect( drawer.getByText( 'Browser evidence note.' ) ).toBeVisible();

@@ -1,4 +1,5 @@
 import { __, sprintf } from '@wordpress/i18n';
+import CorexSelect from '../../admin/components/CorexSelect.js';
 import { Field } from './shared.js';
 
 function RouteList( { routes } ) {
@@ -43,50 +44,55 @@ function RouteList( { routes } ) {
 }
 
 function SourceSelect( { id, name, label, includeNone = false } ) {
+	const options = [
+		...( includeNone
+			? [ { value: 'none', label: __( 'No reply-to rule', 'corex' ) } ]
+			: [] ),
+		{ value: 'context', label: __( 'Context path', 'corex' ) },
+		{ value: 'literal', label: __( 'Fixed address', 'corex' ) },
+	];
+
 	return (
-		<label htmlFor={ id }>
-			{ label }
-			<select
+		<div className="corex-field">
+			<span id={ `${ id }-label` }>{ label }</span>
+			<CorexSelect
 				id={ id }
 				name={ name }
+				label={ label }
+				options={ options }
 				defaultValue={ includeNone ? 'none' : 'context' }
-			>
-				{ includeNone && (
-					<option value="none">
-						{ __( 'No reply-to rule', 'corex' ) }
-					</option>
-				) }
-				<option value="context">
-					{ __( 'Context path', 'corex' ) }
-				</option>
-				<option value="literal">
-					{ __( 'Fixed address', 'corex' ) }
-				</option>
-			</select>
-		</label>
+				block
+			/>
+		</div>
 	);
 }
 
 function TemplateSelect( { templates } ) {
+	const label = __( 'Template', 'corex' );
+
+	// The native control carried `required` with an empty placeholder option. A custom control
+	// cannot use browser validation, so the guarantee is kept by construction instead: the list
+	// holds only real templates and the first is preselected, so `template_id` is never empty.
+	// When there are no templates at all the control says so and is not openable, which is more
+	// honest than a form that validates and then fails at the server.
 	return (
-		<label htmlFor="corex-email-route-template">
-			{ __( 'Template', 'corex' ) }
-			<select
+		<div className="corex-field">
+			<span id="corex-email-route-template-label">{ label }</span>
+			<CorexSelect
 				id="corex-email-route-template"
 				name="template_id"
-				required
-				defaultValue=""
-			>
-				<option value="" disabled>
-					{ __( 'Choose a template', 'corex' ) }
-				</option>
-				{ templates.map( ( template ) => (
-					<option key={ template.id } value={ template.id }>
-						{ template.name }
-					</option>
-				) ) }
-			</select>
-		</label>
+				label={ label }
+				options={ templates.map( ( template ) => ( {
+					value: String( template.id ),
+					label: template.name,
+				} ) ) }
+				emptyLabel={ __(
+					'No templates yet — create one first',
+					'corex'
+				) }
+				block
+			/>
+		</div>
 	);
 }
 

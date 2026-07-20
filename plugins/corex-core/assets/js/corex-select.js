@@ -36,6 +36,9 @@
 		const button = document.createElement( 'button' );
 		button.type = 'button';
 		button.className = 'corex-select__button';
+		// The ARIA select-only combobox pattern, and the same role the native <select> it
+		// replaces exposes implicitly — assistive technology sees no change.
+		button.setAttribute( 'role', 'combobox' );
 		button.setAttribute( 'aria-haspopup', 'listbox' );
 		button.setAttribute( 'aria-expanded', 'false' );
 		if ( labelText ) {

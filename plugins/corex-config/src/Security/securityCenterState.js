@@ -23,10 +23,14 @@ export function initialSecurityState() {
 }
 
 export function normalizeReadiness( snapshot = {} ) {
-	const checks = Array.isArray( snapshot.checks ) ? snapshot.checks.map( normalizeCheck ) : [];
+	const checks = Array.isArray( snapshot.checks )
+		? snapshot.checks.map( normalizeCheck )
+		: [];
 	const blockingKeys = Array.isArray( snapshot.blocking_keys )
 		? snapshot.blocking_keys.map( String )
-		: checks.filter( ( check ) => check.blocking ).map( ( check ) => check.key );
+		: checks
+				.filter( ( check ) => check.blocking )
+				.map( ( check ) => check.key );
 
 	return {
 		checks,
@@ -42,19 +46,46 @@ export function normalizeLoginPolicy( policy = {} ) {
 		// `enabled` defaulted to true here and false there, `windowSeconds` to 900 against 300 —
 		// so an unsaved form showed a state the site was not in.
 		enabled: policy.enabled === true,
-		blockDefaultEndpoints: policy.blockDefaultEndpoints === true || policy.block_default_endpoints === true,
+		blockDefaultEndpoints:
+			policy.blockDefaultEndpoints === true ||
+			policy.block_default_endpoints === true,
 		customSlug: policy.customSlug || policy.custom_slug || 'corex-login',
 		loginUrl: policy.loginUrl || policy.login_url || '',
-		slugSubstituted: policy.slugSubstituted === true || policy.slug_substituted === true,
+		slugSubstituted:
+			policy.slugSubstituted === true || policy.slug_substituted === true,
 		storedSlug: policy.storedSlug || policy.stored_slug || '',
-		maxAttempts: clampInteger( policy.maxAttempts ?? policy.max_attempts, 5, 1, 50 ),
-		windowSeconds: clampInteger( policy.windowSeconds ?? policy.window_seconds, 300, 60, 86400 ),
-		lockoutSeconds: clampInteger( policy.lockoutSeconds ?? policy.lockout_seconds, 900, 60, 604800 ),
+		maxAttempts: clampInteger(
+			policy.maxAttempts ?? policy.max_attempts,
+			5,
+			1,
+			50
+		),
+		windowSeconds: clampInteger(
+			policy.windowSeconds ?? policy.window_seconds,
+			300,
+			60,
+			86400
+		),
+		lockoutSeconds: clampInteger(
+			policy.lockoutSeconds ?? policy.lockout_seconds,
+			900,
+			60,
+			604800
+		),
 		trustedProxies: Array.isArray( policy.trustedProxies )
 			? policy.trustedProxies.map( String )
-			: ( Array.isArray( policy.trusted_proxies ) ? policy.trusted_proxies.map( String ) : [] ),
-		retentionDays: clampInteger( policy.retentionDays ?? policy.retention_days, 30, 1, 365 ),
-		successfulLoginLogging: policy.successfulLoginLogging !== false && policy.successful_login_logging !== false,
+			: Array.isArray( policy.trusted_proxies )
+			? policy.trusted_proxies.map( String )
+			: [],
+		retentionDays: clampInteger(
+			policy.retentionDays ?? policy.retention_days,
+			30,
+			1,
+			365
+		),
+		successfulLoginLogging:
+			policy.successfulLoginLogging !== false &&
+			policy.successful_login_logging !== false,
 	};
 }
 
@@ -70,28 +101,53 @@ export function securityReducer( state = initialSecurityState(), action = {} ) {
 				mode,
 				selectedMode: mode,
 				readiness: normalizeReadiness( action.payload?.readiness ),
-				loginPolicy: normalizeLoginPolicy( action.payload?.loginPolicy ),
+				loginPolicy: normalizeLoginPolicy(
+					action.payload?.loginPolicy
+				),
 				lockouts: normalizeLockouts( action.payload?.lockouts ),
 				activity: normalizeActivity( action.payload?.activity ),
 				notice: null,
 			};
 		}
 		case 'selectMode':
-			return { ...state, selectedMode: normalizeMode( action.mode ), productionPhrase: '', maintenanceConfirmed: false };
+			return {
+				...state,
+				selectedMode: normalizeMode( action.mode ),
+				productionPhrase: '',
+				maintenanceConfirmed: false,
+			};
 		case 'setProductionPhrase':
-			return { ...state, productionPhrase: String( action.phrase || '' ) };
+			return {
+				...state,
+				productionPhrase: String( action.phrase || '' ),
+			};
 		case 'setMaintenanceConfirmed':
-			return { ...state, maintenanceConfirmed: action.confirmed === true };
+			return {
+				...state,
+				maintenanceConfirmed: action.confirmed === true,
+			};
 		case 'setLoginPolicy':
-			return { ...state, loginPolicy: normalizeLoginPolicy( { ...state.loginPolicy, ...( action.patch || {} ) } ) };
+			return {
+				...state,
+				loginPolicy: normalizeLoginPolicy( {
+					...state.loginPolicy,
+					...( action.patch || {} ),
+				} ),
+			};
 		case 'savingLoginPolicy':
 			return { ...state, status: 'saving', notice: null };
 		case 'savedLoginPolicy':
 			return {
 				...state,
 				status: 'ready',
-				loginPolicy: normalizeLoginPolicy( action.policy || state.loginPolicy ),
-				notice: { tone: 'success', message: action.message || 'Login protection settings saved.' },
+				loginPolicy: normalizeLoginPolicy(
+					action.policy || state.loginPolicy
+				),
+				notice: {
+					tone: 'success',
+					message:
+						action.message || 'Login protection settings saved.',
+				},
 			};
 		case 'lockoutsLoaded':
 			return { ...state, lockouts: normalizeLockouts( action.lockouts ) };
@@ -99,12 +155,22 @@ export function securityReducer( state = initialSecurityState(), action = {} ) {
 			return {
 				...state,
 				recovery: action.result || null,
-				notice: { tone: 'success', message: action.message || 'Login recovery completed.' },
+				notice: {
+					tone: 'success',
+					message: action.message || 'Login recovery completed.',
+				},
 			};
 		case 'activityLoaded':
 			return { ...state, activity: normalizeActivity( action.activity ) };
 		case 'error':
-			return { ...state, status: 'ready', notice: { tone: 'error', message: action.message || 'Security action failed.' } };
+			return {
+				...state,
+				status: 'ready',
+				notice: {
+					tone: 'error',
+					message: action.message || 'Security action failed.',
+				},
+			};
 		default:
 			return state;
 	}
@@ -173,28 +239,28 @@ function normalizeCheck( check = {} ) {
 function normalizeLockouts( lockouts = [] ) {
 	return Array.isArray( lockouts )
 		? lockouts.map( ( lockout ) => ( {
-			id: lockout.id || '',
-			// Identities are stored hashed by design, so a short fingerprint is all there is.
-			identity: lockout.identity || '',
-			network: lockout.network || '',
-			account: lockout.account || '',
-			reason: lockout.reason || '',
-			// `active` defaulted to true, so a row with no flag was reported as an ongoing lockout.
-			active: lockout.active === true,
-			lockedUntil: lockout.lockedUntil || lockout.locked_until || '',
-		} ) )
+				id: lockout.id || '',
+				// Identities are stored hashed by design, so a short fingerprint is all there is.
+				identity: lockout.identity || '',
+				network: lockout.network || '',
+				account: lockout.account || '',
+				reason: lockout.reason || '',
+				// `active` defaulted to true, so a row with no flag was reported as an ongoing lockout.
+				active: lockout.active === true,
+				lockedUntil: lockout.lockedUntil || lockout.locked_until || '',
+		  } ) )
 		: [];
 }
 
 function normalizeActivity( activity = [] ) {
 	return Array.isArray( activity )
 		? activity.map( ( event ) => ( {
-			id: event.id || '',
-			kind: event.kind || 'security.event',
-			label: event.label || event.kind || 'Security event',
-			tone: event.tone || 'info',
-			occurredAt: event.occurred_at || '',
-		} ) )
+				id: event.id || '',
+				kind: event.kind || 'security.event',
+				label: event.label || event.kind || 'Security event',
+				tone: event.tone || 'info',
+				occurredAt: event.occurred_at || '',
+		  } ) )
 		: [];
 }
 

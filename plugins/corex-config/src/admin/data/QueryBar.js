@@ -1,5 +1,6 @@
-import { Button, SelectControl, TextControl } from '@wordpress/components';
+import { Button, TextControl } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
+import CorexSelect from '../components/CorexSelect.js';
 
 function fieldFilterLabel( fieldLabel ) {
 	/* translators: %s: field label. */
@@ -44,7 +45,7 @@ export default function QueryBar( { explorer, openCreate, openExport, flows = []
 				// A list of real names where we have one; free text everywhere else, and the
 				// search box above still matches text either way.
 				return choices
-					? <SelectControl key={ field.key } hideLabelFromVision
+					? <CorexSelect key={ field.key }
 						label={ fieldFilterLabel( field.label ) }
 						value={ state.query.filters[ field.key ] || '' }
 						options={ choices } onChange={ patch } />
