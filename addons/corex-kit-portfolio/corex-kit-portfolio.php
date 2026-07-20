@@ -3,7 +3,7 @@
  * Plugin Name:       Corex Kit — Portfolio
  * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       The Portfolio starter kit — a projects CPT, a dynamic projects-grid block, portfolio FSE templates, and a Blueprint. Composes the Corex blocks engine; presentation + a portfolio domain.
- * Version:           0.33.0
+ * Version:           0.34.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
@@ -23,7 +23,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_KIT_PORTFOLIO_VERSION')) {
-    define('COREX_KIT_PORTFOLIO_VERSION', '0.33.0');
+    define('COREX_KIT_PORTFOLIO_VERSION', '0.34.0');
 }
 
 (static function (): void {
