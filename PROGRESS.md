@@ -4,7 +4,37 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-11) -- Spec 068 MERGED to `main` (PR #98, merge commit `9d54ce0`, on upstream + origin). Post-merge security/UI fixes shipped.
+## RESUME HERE (2026-07-20) -- Spec 069 implementation complete on `fix/069-admin-correctness-and-login-parity`. Ready for PR + v0.34.0.
+
+- **All four owner-reported defects are fixed and verified on `corex.local`:**
+  1. **Hidden `/wp-admin` no longer announces itself.** It rendered the theme 404 *with a PHP deprecation
+     printed into the body* (`print_emoji_styles`). Core unhooks that shim via a branch on `is_admin()`, and
+     `WP_ADMIN` cannot be unset, so on a hidden admin request core inspected the wrong hook and the deprecated
+     function ran. The guard now moves the shim to the hook core actually inspects, which silences it *and*
+     enqueues the emoji styles a real 404 carries. Measured: control 404 **79,968 B**, `/wp-login.php`
+     **byte-identical**, `/wp-admin` **46,587 B, no diagnostic**. The remaining gap is per-block core CSS,
+     which is unreachable (`wp_should_load_separate_core_block_assets()` returns false on `is_admin()` before
+     its own filter runs). Spec limitation updated with the measured figures.
+  2. **Insights grid.** `insights.js` appended the widgets into a container that was itself a child of the
+     screen grid, so all five collapsed into one ~370px column beside the cards. Now one grid of two equal
+     columns per the capture, ordered by urgency (FR-027).
+  3. **Overview grid.** Checked against the frozen capture first, which corrected two assumptions: the mirrored
+     `1.15fr 1fr` / `1fr 1.15fr` ratios **are the design** and were left alone. The real defect was the
+     `auto-fit` tile row drifting off four tracks. `align-items` was moved to `stretch` — a documented departure,
+     because the capture was drawn with a 3-row data card and this install renders 7.
+  4. **Select boxes.** The reported dark-mode hover had no CSS fix — a native `<option>` popup is OS-drawn. Every
+     admin select is now `CorexSelect`, the approved in-DOM listbox. See DECISIONS #141.
+- **Also fixed:** admin CSS was being served stale (three different versioning spellings, two of which never
+  bust on a CSS edit) — this is why earlier fixes "didn't land". One `ScreenAsset::version()` now.
+- **Suites:** unit **1,291**, integration **158/158** (green for the first time in a while — two pre-existing
+  failures were calendar rot, DECISIONS #142), Jest **294**, Playwright **45/45** (was 35; 10 added), stylelint
+  clean, guards clean.
+- **⚠️ Dev box:** login protection is **off** on corex.local (the E2E enables and restores it per-run). Admin
+  password is still `password`. Recovery: `wp corex security reset-login` / `COREX_LOGIN_UNGUARD`.
+- **Next:** raise the PR against `main`, then cut **v0.34.0** (16 version files + CHANGELOG; see the release
+  section of `COREX-WORKING-GUIDE.md`). Azure deploys from release tags — confirm before pushing the tag upstream.
+
+## (archived) RESUME (2026-07-11) -- Spec 068 MERGED to `main` (PR #98, merge commit `9d54ce0`, on upstream + origin). Post-merge security/UI fixes shipped.
 
 - **PR #98 merged.** Spec 068 product functional completion (Phases 1–12) plus the post-audit fixes are on
   `main` (upstream Azure DevOps + origin GitHub, both at `9d54ce0`). Full suite green at merge: unit **1,260**,

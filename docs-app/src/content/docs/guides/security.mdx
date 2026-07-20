@@ -23,6 +23,15 @@ uses for the security workflow.
 CoreX stores bounded login-attempt evidence for reporting and recovery. It does not store passwords, raw submitted
 credentials, or raw IP addresses.
 
+With hiding enabled, a signed-out request to `/wp-login.php` or `/wp-admin` gets the site's ordinary "not found"
+page, and the conventional shortcuts (`/login`, `/dashboard`, `/admin`) stop redirecting to the custom address.
+`/wp-login.php` is byte-identical to a genuine miss; `/wp-admin` carries the same page with fewer of WordPress's
+per-block stylesheets, so response size can still reveal that the admin address is handled specially — though not
+where the login moved to.
+
+Hiding is obscurity, not access control: it cuts automated probing, while the rate limiting above is what defends
+credentials.
+
 ## Recovery
 
 If a protected route or lockout blocks owner access, run:

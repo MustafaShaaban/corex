@@ -100,10 +100,21 @@ it('records events from every domain into one authoritative store', function () 
 it('reconciles activity by domain area', function () {
     $ids = fn (array $events): array => array_map(static fn (ActivityEvent $event): int => $event->id, $events);
 
-    expect($ids($this->service->query(['area' => ActivityEvent::AREA_DATA], 1, 100)))->toContain($this->dataId)
-        ->and($ids($this->service->query(['area' => ActivityEvent::AREA_DATA], 1, 100)))->not->toContain($this->submissionsId)
-        ->and($ids($this->service->query(['area' => ActivityEvent::AREA_ACCESS], 1, 100)))->toContain($this->accessId)
-        ->and($ids($this->service->query(['area' => ActivityEvent::AREA_ACCESS], 1, 100)))->not->toContain($this->emailId);
+    // Scoped to the window these events were seeded into, exactly as the time-window test below
+    // does. Without it the assertion silently depends on how much unrelated activity the database
+    // already holds: results come back newest-first, the fixtures carry a fixed 2026-07-10 date,
+    // and on an install with a few hundred real events they fall past the first page and the test
+    // fails for a reason that has nothing to do with area reconciliation.
+    $inWindow = fn (string $area): array => $ids($this->service->query([
+        'area' => $area,
+        'date_from' => new DateTimeImmutable('2026-07-10T08:00:00+00:00'),
+        'date_to' => new DateTimeImmutable('2026-07-10T10:00:00+00:00'),
+    ], 1, 100));
+
+    expect($inWindow(ActivityEvent::AREA_DATA))->toContain($this->dataId)
+        ->and($inWindow(ActivityEvent::AREA_DATA))->not->toContain($this->submissionsId)
+        ->and($inWindow(ActivityEvent::AREA_ACCESS))->toContain($this->accessId)
+        ->and($inWindow(ActivityEvent::AREA_ACCESS))->not->toContain($this->emailId);
 });
 
 it('reconciles one actor cross-domain footprint and denied outcomes', function () {

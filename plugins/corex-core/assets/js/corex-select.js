@@ -171,60 +171,66 @@
 			}
 		} );
 
+		function moveActive( to ) {
+			active = Math.max( 0, Math.min( to, options.length - 1 ) );
+			markActive();
+		}
+
+		/**
+		 * What each key does, by menu state. A table rather than a branch ladder, matching the
+		 * React CorexSelect so the two controls cannot drift apart on keyboard behaviour.
+		 *
+		 * Tab is absent from `closed` deliberately: it must keep moving focus normally.
+		 */
+		const keyActions = {
+			closed: {
+				ArrowDown: open,
+				ArrowUp: open,
+				Enter: open,
+				' ': open,
+			},
+			open: {
+				ArrowDown() {
+					moveActive( active + 1 );
+				},
+				ArrowUp() {
+					moveActive( active - 1 );
+				},
+				Home() {
+					moveActive( 0 );
+				},
+				End() {
+					moveActive( options.length - 1 );
+				},
+				Enter() {
+					choose( active );
+				},
+				' '() {
+					choose( active );
+				},
+			},
+		};
+
 		button.addEventListener( 'keydown', function ( event ) {
 			const key = event.key;
 
+			// Escape and Tab both dismiss, but only Escape consumes the keystroke — Tab has to
+			// go on and move focus.
 			if ( key === 'Escape' ) {
+				event.preventDefault();
+				close();
+				return;
+			}
+			if ( key === 'Tab' ) {
 				close();
 				return;
 			}
 
-			if (
-				list.hidden &&
-				( key === 'ArrowDown' ||
-					key === 'ArrowUp' ||
-					key === 'Enter' ||
-					key === ' ' )
-			) {
+			const action = keyActions[ list.hidden ? 'closed' : 'open' ][ key ];
+			if ( action ) {
 				event.preventDefault();
-				open();
+				action();
 				return;
-			}
-
-			if ( ! list.hidden ) {
-				if ( key === 'ArrowDown' ) {
-					event.preventDefault();
-					active = Math.min( active + 1, options.length - 1 );
-					markActive();
-					return;
-				}
-				if ( key === 'ArrowUp' ) {
-					event.preventDefault();
-					active = Math.max( active - 1, 0 );
-					markActive();
-					return;
-				}
-				if ( key === 'Home' ) {
-					event.preventDefault();
-					active = 0;
-					markActive();
-					return;
-				}
-				if ( key === 'End' ) {
-					event.preventDefault();
-					active = options.length - 1;
-					markActive();
-					return;
-				}
-				if ( key === 'Enter' || key === ' ' ) {
-					event.preventDefault();
-					choose( active );
-					return;
-				}
-				if ( key === 'Tab' ) {
-					close();
-					return;
-				}
 			}
 
 			// Single printable character: type-ahead. Modifier combos are shortcuts, not typing.

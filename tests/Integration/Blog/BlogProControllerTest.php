@@ -70,7 +70,10 @@ it('registers the Blog Pro REST routes', function () {
 });
 
 it('returns real analytics and configured share controls for a native post', function () {
-    $now = new DateTimeImmutable('2026-07-08T12:00:00+00:00');
+    // Relative to now, not a fixed date: the request below asks for the last 7 days, so a
+    // hardcoded timestamp silently falls out of range as the calendar moves and the test starts
+    // reporting zero views for reasons that have nothing to do with the code under test.
+    $now = new DateTimeImmutable('-1 day');
     $analytics = $this->container->make(BlogAnalyticsService::class);
     $analytics->recordView((int) $this->postId, 'session-a', '203.0.113.8', 'Browser', true, $now);
     $analytics->recordRead((int) $this->postId, 'session-a', '203.0.113.8', 'Browser', 45, true, $now);

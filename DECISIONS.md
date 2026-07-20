@@ -2608,3 +2608,81 @@ Status: Recorded pre-implementation on `fix/069-admin-correctness-and-login-pari
 its exact as-found state after each probe (verified: `/wp-login.php` 404/2515, `/corex-login/` 200,
 insights REST 401 -- i.e. provider booting again). Recovery was proven working BEFORE any login code was touched,
 per tasks T002.
+
+## #141 -- Spec 069: one selection control, because the reported bug had no CSS fix
+Date: 2026-07-20
+Context: The owner reported for the third time that "the select boxes still didn't get fixed", specifically the
+dark-mode hover. Two previous passes had tried to fix it in CSS. It cannot be fixed in CSS: the OPEN menu of a
+native `<select>` is drawn by the operating system, not the page, so no `option:hover` or `option:checked` rule
+reaches it. `tasks.md` T047 anticipated exactly this and pre-authorised replacing the control.
+
+Decision: every selection control in the CoreX admin is now `CorexSelect` -- the in-DOM ARIA listbox that
+`ApprovedComponentInventory.php:142` has declared as the approved Select all along, and that
+`corex-admin-shell.css` has styled all along, but that nothing in React ever rendered. ~31 sites across 20 files.
+The last native `<select>` in the admin is gone.
+
+Three boundaries were drawn deliberately and are NOT oversights:
+
+1. **Block-editor `SelectControl` stays** (`addons/corex-ui/src/Blocks/*`, `corex-forms` block editors). Those
+   render in the Gutenberg sidebar, where Gutenberg's own design language is correct and the CoreX admin shell
+   is not loaded. Migrating them would make the editor inconsistent with itself.
+2. **The front-end form select stays native** (`corex-forms` FieldRenderer). CorexSelect lives in the admin
+   bundle and depends on admin tokens; shipping it to a public page would load an admin bundle on the front end
+   (Principle VI) and make a visitor's most important control JavaScript-dependent. It is themed from
+   theme.json presets instead, with `color-scheme: light dark` -- the standards-based lever for the one thing
+   CSS cannot reach.
+3. **The forms Preview tab stays native.** It previews what a VISITOR sees, and the front end renders native;
+   previewing the admin component there would preview something the site does not serve.
+
+What the design capture corrected. Before touching anything, `.corex-select` was checked against the "Select &
+dropdown menu" block of `Corex Component Library.dc.html`. The shipped rules were off-design in five ways, which
+is why even the enhanced control looked wrong. The substantive one: the design carries the hover signal
+primarily in the TEXT colour (muted -> full contrast), with the background only assisting. The previous
+implementation started options at full contrast, so the background had to carry the signal alone -- and
+`surface-alt` is barely a step from the menu's `surface-raised`. A comment in the old CSS had noticed that
+symptom and worked around it by using the accent tint, which is the SELECTED colour, so hover and selected then
+looked alike. Measured in a real browser after the fix, dark and light: menu/idle/hover/selected all match the
+capture.
+
+Two defects this surfaced that would otherwise have shipped silently:
+
+- **FormData.** Email Studio reads its forms with `new FormData( form )`. A `<button>` contributes nothing to
+  FormData, so a naive swap would have dropped `template_id`, `recipient_source` and `reply_to_source` from
+  every route save -- and the form would have looked like it worked. CorexSelect takes a `name` and renders a
+  hidden input, plus an uncontrolled mode for the screens that used `defaultValue`.
+- **Load-bearing "duplicate" CSS.** The per-screen `select { inline-size: 100% }` rules removed as duplicates
+  were holding the Submissions filter row inside its grid. Without them the Form control sat on top of Owner.
+  Caught by rendering the screen; no test would have. Fields now share one `.corex-field` wrapper in the shell
+  rather than the four per-screen `<label>` rules that had grown up -- a `<label>` cannot label a button plus a
+  listbox anyway, so those wrappers had to stop being labels regardless.
+
+Why: the owner mandate treats approved design as required functionality, and a control that cannot be made to
+match the design is not a styling gap -- it is the wrong control. Three failed CSS attempts is enough evidence.
+
+Status: Implemented on `fix/069-admin-correctness-and-login-parity`. Unit 1,291, integration 158, Jest 294,
+Playwright 45/45, stylelint clean, guards clean.
+
+## #142 -- Spec 069: two long-standing test failures were calendar rot, not regressions
+Date: 2026-07-20
+Context: `ProductActivityCoverageTest` and `BlogProControllerTest` were failing at the start of this session.
+Verified pre-existing by stashing all working-tree changes and re-running -- they failed identically on a clean
+tree, so they were not caused by this branch.
+
+Both were time-dependent in the same way, and both had passed when written:
+
+- `BlogProControllerTest` seeded a page view at a hardcoded `2026-07-08` and then queried "the last 7 days".
+  Once the calendar passed 2026-07-15 the seeded view fell out of the window and the test reported zero views
+  for a reason that had nothing to do with the code. Fixed by anchoring the fixture to `-1 day`.
+- `ProductActivityCoverageTest` seeded events at a fixed `2026-07-10` and asserted they appeared in page 1 of
+  100 for their area. Results come back newest-first, so on an install that has accumulated a few hundred real
+  activity events the fixtures fall past the first page. Fixed by scoping the query to the window the events
+  were seeded into -- which the sibling time-window test in the same file already did, and which is why that
+  one kept passing.
+
+Why record it: both look like flakes and neither is. A test whose result depends on the wall clock or on how
+much unrelated data the database happens to hold will keep coming back, and the next person to hit it will
+reasonably assume their own change caused it. The same class of defect was introduced and caught within this
+session -- three new Playwright tests silently depended on login protection being enabled ambiently; they now
+enable it themselves and restore the exact prior value.
+
+Status: Both fixed. Integration suite is fully green (158/158) for the first time this session.

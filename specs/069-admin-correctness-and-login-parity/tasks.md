@@ -98,34 +98,34 @@ description: "Task list for Spec 069 — Admin Correctness & Login Hiding Parity
 
 ## Phase 6: US4 — Filter by form name (P2)
 
-- [ ] **T037** [US4] Failing tests for the flow list localization via lazy container resolution in `try/catch` (Principle IX; pattern at `InsightWidgetFacts.php` L143-158) — including **forms entirely absent → screens still work** (FR-023, SC-008).
-- [ ] **T038** [US4] Localize the flow list (`FlowService::all()` → id/name/slug) into both screens' configs. `SubmissionsInboxScreen.php`, `DataModelsScreen.php`.
-- [ ] **T039** [US4] Submissions: replace the numeric `Flow ID` input (`index.js` L79) with a name select posting the **flow id** (meta `corex_flow_id`); keep free-text search (L78). Server path unchanged. Jest test.
-- [ ] **T040** [US4] Records: give `QueryBar.js`'s `form` field a select posting the **form slug** (meta `corex_form_slug`) — **a different key from Submissions; do not conflate** (FR-022). Keep free text alongside. Jest test.
-- [ ] **T041** [P] [US4] Empty-list state communicated plainly (FR-023). Prefer the `.corex-select` widget (`corex-admin-shell.css` L485-561). i18n; RTL; WCAG 2.2 AA.
+- [x] **T037** [US4] Failing tests for the flow list localization via lazy container resolution in `try/catch` (Principle IX; pattern at `InsightWidgetFacts.php` L143-158) — including **forms entirely absent → screens still work** (FR-023, SC-008).
+- [x] **T038** [US4] Localize the flow list (`FlowService::all()` → id/name/slug) into both screens' configs. `SubmissionsInboxScreen.php`, `DataModelsScreen.php`.
+- [x] **T039** [US4] Submissions: replace the numeric `Flow ID` input (`index.js` L79) with a name select posting the **flow id** (meta `corex_flow_id`); keep free-text search (L78). Server path unchanged. Jest test.
+- [x] **T040** [US4] Records: give `QueryBar.js`'s `form` field a select posting the **form slug** (meta `corex_form_slug`) — **a different key from Submissions; do not conflate** (FR-022). Keep free text alongside. Jest test.
+- [x] **T041** [P] [US4] Empty-list state communicated plainly (FR-023). Prefer the `.corex-select` widget (`corex-admin-shell.css` L485-561). i18n; RTL; WCAG 2.2 AA.
 - [ ] **T042** [US4] Verify against seeded data on `corex.local`: both filters narrow correctly; confirm each keys on the right meta. Guards clean.
 
 ---
 
 ## Phase 7: US5 — Models accordion (P3)
 
-- [ ] **T043** [US5] Failing Jest test for accordion semantics: first expanded, rest collapsed, state announced.
-- [ ] **T044** [US5] Convert `ModelsPanel.js` L31 cards to an accordion — header as trigger; fields table + chips collapse (FR-024). Styles in `assets/data-models.css` using logical properties.
+- [x] **T043** [US5] Failing Jest test for accordion semantics: first expanded, rest collapsed, state announced.
+- [x] **T044** [US5] Convert `ModelsPanel.js` L31 cards to an accordion — header as trigger; fields table + chips collapse (FR-024). Styles in `assets/data-models.css` using logical properties.
 - [ ] **T045** [US5] Verify keyboard-only operation and screen-reader announcement; RTL. Guards clean.
 
 ---
 
 ## Phase 8: US6 — The admin reads cleanly (P3)
 
-- [ ] **T046** [US6] Fix the dark-mode select option highlight — no `option:hover`/`option:checked` rule exists anywhere. Apply the tokens that already work on `.corex-select` (shell L552-555). Delete the redundant `.corex-data__form option` override (`data.css` L287-290). `corex-admin-shell.css`.
-- [ ] **T047** [US6] **Verify T046 in a real browser** — pinned dark *and* `prefers-color-scheme: dark` (FR-026, SC-011). Native popups are OS-rendered: **if the highlight will not take, migrate the remaining native selects to `.corex-select`** rather than ship a rule that silently does nothing. Do not mark T046 done on a CSS read alone.
+- [x] **T046** [US6] Fix the dark-mode select option highlight — no `option:hover`/`option:checked` rule exists anywhere. Apply the tokens that already work on `.corex-select` (shell L552-555). Delete the redundant `.corex-data__form option` override (`data.css` L287-290). `corex-admin-shell.css`.
+- [x] **T047** [US6] **Verify T046 in a real browser** — pinned dark *and* `prefers-color-scheme: dark` (FR-026, SC-011). Native popups are OS-rendered: **if the highlight will not take, migrate the remaining native selects to `.corex-select`** rather than ship a rule that silently does nothing. Do not mark T046 done on a CSS read alone.
 - [ ] **T048** [US6] Add the missing base layer to `corex-admin-shell.css`: heading rhythm (L258-266 sets colour/font only), a `.corex-admin p` rule (**none exists**), and one shared description/help component (FR-025).
 - [ ] **T049** [US6] Remove the per-sheet duplicates the base layer replaces: the `margin: 0` heading resets (`control-panel.css` L14-20, `insights.css` L43-48/L133-136, shell L588-590/L682-684/L699-700) and the four spellings of the muted-description pattern (shell L247-252, control-panel L243-247, insights L138-143, addons L150). Reconcile stat-card `xs` (control-panel L37-59) vs overview tile `2xs` (L501-522).
 - [ ] **T050** [US6] Visual pass across **all 11 admin sheets** — T048/T049 reach every screen, not just the three in this spec.
-- [ ] **T051** [P] [US6] Insights: unify the two grids (`.corex-insights` 24rem/lg L3-7 vs `.corex-insights__widgets` 18rem/md L108-113) onto shared tokens (FR-027).
-- [ ] **T052** [US6] Insights: order cards by state urgency rather than registration order (`InsightWidgets::widgets()` L53-64) — critical first, `disconnected`/`empty` last (FR-027). Unit test for the ordering.
-- [ ] **T053** [P] [US6] Fix `InsightsScreen.php` L75's hardcoded `'1.1.0'` → `filemtime`, matching every other sheet (FR-029). **Without this, the WS8 redesign ships stale to returning visitors.**
-- [ ] **T054** [US6] stylelint clean; RTL + light mode verified on every changed screen (FR-028). Guards clean.
+- [x] **T051** [P] [US6] Insights: unify the two grids (`.corex-insights` 24rem/lg L3-7 vs `.corex-insights__widgets` 18rem/md L108-113) onto shared tokens (FR-027).
+- [x] **T052** [US6] Insights: order cards by state urgency rather than registration order (`InsightWidgets::widgets()` L53-64) — critical first, `disconnected`/`empty` last (FR-027). Unit test for the ordering.
+- [x] **T053** [P] [US6] Fix `InsightsScreen.php` L75's hardcoded `'1.1.0'` → `filemtime`, matching every other sheet (FR-029). **Without this, the WS8 redesign ships stale to returning visitors.**
+- [x] **T054** [US6] stylelint clean; RTL + light mode verified on every changed screen (FR-028). Guards clean.
 
 ---
 

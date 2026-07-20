@@ -34,7 +34,6 @@ export default function CorexSelect( {
 	id,
 	disabled = false,
 	block = false,
-	className = '',
 	describedBy,
 	// Submitted field name. Several screens read their forms with `new FormData( form )`
 	// (useEmailStudio.js), and a <button> contributes nothing to FormData — so when this control
@@ -157,6 +156,34 @@ export default function CorexSelect( {
 		[ activeIndex, choose, open, options, selectedIndex ]
 	);
 
+	/**
+	 * What each key does, by menu state. A table rather than a branch ladder so a new key is a
+	 * new entry instead of another arm in an already-long conditional — and so the two states
+	 * can be read side by side, which is where keyboard bugs hide.
+	 *
+	 * Tab is absent from `closed` deliberately: it must keep moving focus normally.
+	 */
+	const keyActions = {
+		closed: {
+			ArrowDown: openMenu,
+			ArrowUp: openMenu,
+			Enter: openMenu,
+			' ': openMenu,
+		},
+		open: {
+			ArrowDown: () =>
+				setActiveIndex( ( index ) =>
+					Math.min( index + 1, options.length - 1 )
+				),
+			ArrowUp: () =>
+				setActiveIndex( ( index ) => Math.max( index - 1, 0 ) ),
+			Home: () => setActiveIndex( 0 ),
+			End: () => setActiveIndex( options.length - 1 ),
+			Enter: () => choose( activeIndex ),
+			' ': () => choose( activeIndex ),
+		},
+	};
+
 	const onKeyDown = ( event ) => {
 		if ( inert ) {
 			return;
@@ -164,55 +191,23 @@ export default function CorexSelect( {
 
 		const { key } = event;
 
+		// Escape and Tab both dismiss, but only Escape consumes the keystroke — Tab has to go on
+		// and move focus.
 		if ( key === 'Escape' ) {
+			event.preventDefault();
+			close();
+			return;
+		}
+		if ( key === 'Tab' ) {
 			close();
 			return;
 		}
 
-		if (
-			! open &&
-			( key === 'ArrowDown' ||
-				key === 'ArrowUp' ||
-				key === 'Enter' ||
-				key === ' ' )
-		) {
+		const action = keyActions[ open ? 'open' : 'closed' ][ key ];
+		if ( action ) {
 			event.preventDefault();
-			openMenu();
+			action();
 			return;
-		}
-
-		if ( open ) {
-			if ( key === 'ArrowDown' ) {
-				event.preventDefault();
-				setActiveIndex( ( index ) =>
-					Math.min( index + 1, options.length - 1 )
-				);
-				return;
-			}
-			if ( key === 'ArrowUp' ) {
-				event.preventDefault();
-				setActiveIndex( ( index ) => Math.max( index - 1, 0 ) );
-				return;
-			}
-			if ( key === 'Home' ) {
-				event.preventDefault();
-				setActiveIndex( 0 );
-				return;
-			}
-			if ( key === 'End' ) {
-				event.preventDefault();
-				setActiveIndex( options.length - 1 );
-				return;
-			}
-			if ( key === 'Enter' || key === ' ' ) {
-				event.preventDefault();
-				choose( activeIndex );
-				return;
-			}
-			if ( key === 'Tab' ) {
-				close();
-				return;
-			}
 		}
 
 		// Single printable character: type-ahead. Modifier combos are shortcuts, not typing.
@@ -227,13 +222,7 @@ export default function CorexSelect( {
 		}
 	};
 
-	const classes = [
-		'corex-select',
-		block ? 'corex-select--block' : '',
-		className,
-	]
-		.filter( Boolean )
-		.join( ' ' );
+	const classes = block ? 'corex-select corex-select--block' : 'corex-select';
 
 	return (
 		<div className={ classes } ref={ wrapRef }>
