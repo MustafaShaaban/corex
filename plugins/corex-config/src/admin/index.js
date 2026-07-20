@@ -7,18 +7,10 @@ import '../DataModels/index.js';
 import AccessWorkspace from '../access/AccessWorkspace.js';
 import BlogProApp from '../blog/BlogProApp.js';
 import SecurityCenter from '../Security/SecurityCenter.js';
-import DataExplorer from './data/DataExplorer.js';
 
-const mount = document.getElementById( 'corex-data-app' );
-if ( mount ) {
-	const config = window.corexData || { restUrl: '', nonce: '', sources: [] };
-	const app = <DataExplorer config={ config } />;
-	if ( typeof createRoot === 'function' ) {
-		createRoot( mount ).render( app );
-	} else {
-		render( app, mount );
-	}
-}
+// The `corex-data-app` mount is gone: the standalone Data screen rendered the same DataExplorer as
+// the Data Models Records tab, so the screen was retired and its address redirects there. The
+// explorer itself lives on, mounted by DataModelsApp.
 
 const accessMount = document.getElementById( 'corex-access-app' );
 if ( accessMount ) {

@@ -52,7 +52,7 @@ final class InsightWidgets
      */
     public function widgets(array $facts): array
     {
-        return [
+        return $this->byUrgency([
             $this->performance($facts),
             $this->cloudflare($facts),
             $this->security($facts),
@@ -60,7 +60,57 @@ final class InsightWidgets
             $this->agentReadiness($facts),
             $this->operations($facts),
             $this->forms($facts),
-        ];
+        ]);
+    }
+
+    /**
+     * Order by how much the widget wants attention, not by the order they happen to be built in
+     * (FR-027). Anything flagged for attention comes first — a warning is the whole reason to
+     * open this screen — then widgets carrying real signal, and anything with nothing to show
+     * sinks to the bottom.
+     *
+     * `disconnected` sorts below `empty`: an unconfigured integration is a standing fact about
+     * the site, whereas "no data yet" is about something already wired up and therefore closer
+     * to becoming useful.
+     *
+     * @param list<array<string,mixed>> $widgets
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function byUrgency(array $widgets): array
+    {
+        // Decorate with the original index so ties keep registration order. usort() is not
+        // guaranteed stable for equal elements, and without this the screen would reshuffle
+        // between requests for no visible reason.
+        $ordered = array_values(array_map(
+            static fn (int $index, array $widget): array => ['index' => $index, 'widget' => $widget],
+            array_keys($widgets),
+            $widgets,
+        ));
+
+        usort($ordered, function (array $a, array $b): int {
+            return [$this->rank($a['widget']), $a['index']] <=> [$this->rank($b['widget']), $b['index']];
+        });
+
+        return array_column($ordered, 'widget');
+    }
+
+    /**
+     * @param array<string,mixed> $widget
+     */
+    private function rank(array $widget): int
+    {
+        if (in_array($widget['chipTone'] ?? '', ['error', 'warning'], true)) {
+            return 0;
+        }
+
+        return match ($widget['state'] ?? '') {
+            self::STATE_LIVE         => 1,
+            self::STATE_CONNECTED    => 2,
+            self::STATE_EMPTY        => 3,
+            self::STATE_DISCONNECTED => 4,
+            default                  => 5,
+        };
     }
 
     /**

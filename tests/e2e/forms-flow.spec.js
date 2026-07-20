@@ -29,7 +29,10 @@ test( 'creates publishes tests and submits a persisted flow without console erro
 		await page.getByRole( 'button', { name: 'Create draft' } ).click();
 		await expect( page.getByRole( 'heading', { name: FLOW_NAME } ) ).toBeVisible();
 
-		await page.getByLabel( 'Field type' ).selectOption( 'email' );
+		// Field type is a CorexSelect now (spec 069) — an in-DOM listbox rather than a native
+		// <select>, so it is opened and picked rather than driven with selectOption().
+		await page.getByRole( 'combobox', { name: 'Field type' } ).click();
+		await page.getByRole( 'option', { name: 'Email', exact: true } ).click();
 		await page.getByRole( 'button', { name: 'Add field' } ).click();
 		await page.getByLabel( 'Label', { exact: true } ).fill( 'Email address' );
 		await page.getByLabel( 'Placeholder' ).fill( 'name@example.com' );

@@ -439,12 +439,30 @@ body.corex-admin-screen .corex-admin__shell {
 }
 
 /* Readable native <select> options in dark/light on every admin page. Browsers
-   leave <option> colours at their light default unless set, so the dark admin
-   dropdown/hover was unreadable except where set locally or enhanced. Token
-   colours make every native select match the enhanced popup. */
+   leave <option> colours at their light default unless set.
+
+   This is a fallback, not the design: the OPEN popup of a native select is
+   drawn by the operating system, so `option:hover` and `option:checked` cannot
+   be reached from CSS at all, and the highlight follows the OS rather than the
+   admin palette. `color-scheme` on the tokens is what keeps that highlight
+   sane. Anything that needs a styled menu uses .corex-select below. */
 .corex-admin select option {
 	color: var(--corex-admin-text);
 	background-color: var(--corex-admin-surface);
+}
+
+/* @wordpress/components SelectControl renders its own class and was reached by
+   no rule here at all, so it fell through to Gutenberg's light-biased default
+   and looked foreign on a dark CoreX screen. Route it through the same
+   appearance as every other control. */
+.corex-admin .components-select-control__input,
+.corex-admin .components-select-control select {
+	min-block-size: var(--corex-admin-control-height);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	box-shadow: none;
 }
 
 /* Hover affordance on the closed control, matching the enhanced select. */
@@ -479,26 +497,55 @@ body.corex-admin-screen .corex-admin__shell {
 	accent-color: var(--corex-admin-action);
 }
 
+/* Label text stacked above its control.
+   Every screen had grown its own `<label>` rule for this. A selection control
+   is a button plus a listbox, and a <label> cannot label either — so those
+   fields need a plain wrapper naming the control directly, and that may as
+   well be the one definition for all of them. */
+.corex-admin .corex-field {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
 /* Accessible custom select (ARIA combobox/listbox): an in-DOM dropdown, always
-   readable in dark/light, replacing the OS-rendered native popup. Shared by the
-   Data filter (React) and the Settings selects (enhanced from a native one). */
+   readable in dark/light, replacing the OS-rendered native popup. This is the
+   approved Select in the component inventory ("admin:corex-select"), and the
+   only one that can style its own open menu — a native <option> popup is drawn
+   by the OS, so no CSS rule can reach its highlight.
+
+   Values below follow the "Select & dropdown menu" block of the Component
+   Library capture; its --cx-* variables map 1:1 onto these tokens. */
 .corex-admin .corex-select {
 	position: relative;
 	display: inline-block;
 	min-inline-size: 11rem;
 }
 
+/* Full-width variant for form fields, where the control fills its row rather
+   than sitting inline in a toolbar. */
+.corex-admin .corex-select--block {
+	display: block;
+	min-inline-size: 0;
+	inline-size: 100%;
+}
+
 .corex-admin .corex-select__button {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: var(--corex-admin-space-sm);
+	gap: var(--corex-admin-space-xs);
 	inline-size: 100%;
 	min-block-size: var(--corex-admin-control-height);
 	padding-block: 0;
-	padding-inline: var(--corex-admin-space-md);
+	padding-inline: var(--corex-admin-space-sm);
 	color: var(--corex-admin-text);
-	background: var(--corex-admin-surface);
+
+	/* Raised, not the page surface: the capture puts the closed field one step
+	   above its background so it reads as an control rather than a panel. */
+	background: var(--corex-admin-surface-raised);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-sm);
 	font: inherit;
@@ -506,9 +553,27 @@ body.corex-admin-screen .corex-admin__shell {
 	cursor: pointer;
 }
 
+/* Only the .corex-field label above it is bold, never the control itself. */
+.corex-admin .corex-field .corex-select__button {
+	font-weight: 400;
+}
+
+/* Matches the affordance the native control has (see `select:hover` above), so
+   the two behave the same wherever both still appear on a screen. */
+.corex-admin .corex-select__button:hover {
+	border-color: var(--corex-admin-border-strong);
+}
+
 .corex-admin .corex-select__button:focus-visible {
 	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
 	outline-offset: var(--corex-admin-focus-offset);
+}
+
+/* A long option must not stretch the control past its column. */
+.corex-admin .corex-select__value {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .corex-admin .corex-select__chevron {
@@ -532,15 +597,21 @@ body.corex-admin-screen .corex-admin__shell {
 	overflow-y: auto;
 	list-style: none;
 	background: var(--corex-admin-surface-raised);
-	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
-	border-radius: var(--corex-admin-radius-sm);
-	box-shadow: var(--corex-admin-shadow-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: var(--corex-admin-shadow-lg);
 }
 
+/* Unselected options sit back in the muted tone; lifting them to full text
+   colour on hover is the primary highlight signal, with the background only
+   assisting. Getting this backwards is what made the dark-mode hover
+   unreadable before: options were already full-contrast, so the background
+   had to carry the whole signal alone, and surface-alt is barely a step from
+   the list's surface-raised. */
 .corex-admin .corex-select__option {
 	padding-block: var(--corex-admin-space-xs);
 	padding-inline: var(--corex-admin-space-sm);
-	color: var(--corex-admin-text);
+	color: var(--corex-admin-text-muted);
 	border-radius: var(--corex-admin-radius-sm);
 	font-size: var(--corex-admin-font-sm);
 	cursor: pointer;
@@ -548,16 +619,17 @@ body.corex-admin-screen .corex-admin__shell {
 
 .corex-admin .corex-select__option.is-active {
 	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+}
 
-	/* surface-alt is darker than the list's surface-raised in dark mode, so the
-	   hovered/active option was almost invisible. Use the brass action tint for
-	   a clearly-legible highlight in both schemes. */
+/* "Selected items carry the brass accent" — capture caption. */
+.corex-admin .corex-select__option.is-selected {
+	color: var(--corex-admin-action);
 	background: var(--corex-admin-action-subtle);
 }
 
-.corex-admin .corex-select__option.is-selected {
-	color: var(--corex-admin-action);
-	font-weight: 600;
+.corex-admin .corex-select__option[aria-disabled="true"] {
+	cursor: not-allowed;
 }
 
 .corex-admin :where(.card, .corex-surface) {

@@ -12,6 +12,8 @@ defined('ABSPATH') || exit;
 
 use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
+use Corex\Config\AdminUi\ScreenAsset;
+use Corex\Config\Forms\FlowFilterOptions;
 use Corex\Config\Retention\RetentionController;
 use Corex\Config\Retention\RetentionSettings;
 use Corex\Config\Retention\SubmissionRetention;
@@ -28,6 +30,7 @@ final class SubmissionsInboxScreen
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly SubmissionRetention $retention,
+        private readonly FlowFilterOptions $flows,
     ) {
     }
 
@@ -74,11 +77,14 @@ final class SubmissionsInboxScreen
             'corex-submissions-inbox',
             plugins_url('assets/submissions-admin.css', $base . '/corex-config.php'),
             ['corex-admin-shell'],
-            (string) ($asset['version'] ?? 'dev'),
+            ScreenAsset::version($base . '/assets/submissions-admin.css'),
         );
         wp_localize_script('corex-submissions-inbox', 'corexSubmissions', [
             'restUrl' => esc_url_raw(rest_url('corex/v1/submissions')),
             'nonce' => wp_create_nonce('wp_rest'),
+            // Real form names to filter by. The inbox asked for a numeric flow ID, which nobody
+            // knows. Empty when the forms add-on is absent — the filter drops, the screen works.
+            'flows' => $this->flows->all(),
         ]);
         wp_set_script_translations('corex-submissions-inbox', 'corex', $base . '/languages');
     }
@@ -140,7 +146,7 @@ final class SubmissionsInboxScreen
             . esc_url(admin_url('admin-post.php')) . '">'
             . '<input type="hidden" name="action" value="' . esc_attr(RetentionController::PRUNE_ACTION) . '" />'
             . wp_nonce_field(RetentionController::PRUNE_ACTION, RetentionController::NONCE, true, false)
-            . '<label>' . esc_html__('Action', 'corex') . '<select name="corex_retention_action">'
+            . '<label>' . esc_html__('Action', 'corex') . '<select name="corex_retention_action" data-corex-select>'
             . '<option value="archive">' . esc_html__('Archive', 'corex') . '</option>'
             . '<option value="trash">' . esc_html__('Move to trash', 'corex') . '</option>'
             . '<option value="anonymize">' . esc_html__('Anonymize personal data', 'corex') . '</option></select></label>'

@@ -12,6 +12,7 @@ use Corex\Cli\Commands\SecurityResetLoginCommand;
 use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginRouteGuard;
+use Corex\Config\Security\LoginProtection\LoginSlug;
 use Corex\Config\Security\LoginProtection\WpLoginAttemptStore;
 
 beforeEach(function () {
@@ -30,11 +31,23 @@ afterEach(function () {
     }
 });
 
-it('reports the unguard constant as an immediate protected-route bypass', function () {
+it('stops hiding the default endpoints while the unguard break-glass is active', function () {
+    update_option(LoginProtectionSettingsStore::OPTION, [
+        'enabled' => true,
+        'custom_slug' => 'team-login',
+        'block_default_endpoints' => true,
+    ]);
     $settings = (new LoginProtectionSettingsStore())->current();
-    $guard = new LoginRouteGuard($settings);
 
-    expect($guard->decision('/wp-login.php', authenticated: false, unguarded: true)->blocked)->toBeFalse();
+    $guarded = new LoginRouteGuard($settings, unguarded: false);
+    $unguarded = new LoginRouteGuard($settings, unguarded: true);
+
+    expect($guarded->entryPointFor('/wp-login.php', isAdmin: false))->toBe('hide')
+        ->and($unguarded->entryPointFor('/wp-login.php', isAdmin: false))->toBe('pass')
+        ->and($unguarded->hidesAdminArea(isAdmin: true, loggedIn: false, ajax: false, script: 'index.php', path: '/wp-admin/'))->toBeFalse()
+        // The slug keeps working during recovery — the break-glass restores the default, it does
+        // not tear down the custom entrance an owner may still be using.
+        ->and($unguarded->entryPointFor('/team-login/', isAdmin: false))->toBe('serve_login');
 });
 
 it('resets protected login settings and releases active lockouts without changing users or passwords', function () {
@@ -69,13 +82,34 @@ it('resets protected login settings and releases active lockouts without changin
         lockedUntil: $now->modify('+15 minutes'),
     ));
 
-    $result = (new SecurityResetLoginCommand($store))->restore($now);
+    // Register the guard's rewriting filters, exactly as a real WP-CLI run has them: the command
+    // executes in a booted process where the guard is already live. Without this the test cannot
+    // see the bug it exists to catch — the reported URL was the custom slug, which 404s the moment
+    // the command disables it, and the assertion below passed anyway (DECISIONS #140).
+    $guard = new LoginRouteGuard((new LoginProtectionSettingsStore())->current());
+    $guard->register();
+
+    try {
+        $result = (new SecurityResetLoginCommand($store))->restore($now);
+    } finally {
+        // Detach before asserting: these filters are global, and leaving them attached rewrites
+        // site_url() for every test that runs after this one.
+        remove_filter('site_url', [$guard, 'filterSiteUrl'], 20);
+        remove_filter('network_site_url', [$guard, 'filterSiteUrl'], 20);
+
+        foreach (['login_url', 'logout_url', 'lostpassword_url', 'register_url', 'wp_redirect', 'site_option_welcome_email'] as $hook) {
+            remove_filter($hook, [$guard, 'filterLoginUrl'], 20);
+        }
+    }
     $after = get_option(LoginProtectionSettingsStore::OPTION);
     $afterHash = (string) $wpdb->get_var($wpdb->prepare('SELECT user_pass FROM ' . $wpdb->users . ' WHERE ID = %d', $adminId));
 
     expect($result['restored_login_url'])->toContain('wp-login.php')
+        ->and($result['restored_login_url'])->not->toContain('team-login')
         ->and($result['released_lockouts'])->toBeGreaterThanOrEqual(1)
         ->and($after['enabled'])->toBeFalse()
         ->and($after['block_default_endpoints'])->toBeFalse()
+        // The slug resets too, so re-enabling protection cannot walk back into the same lockout.
+        ->and($after['custom_slug'])->toBe(LoginSlug::DEFAULT)
         ->and($afterHash)->toBe($beforeHash);
 });

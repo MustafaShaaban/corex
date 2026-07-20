@@ -50,10 +50,13 @@ it('recognizes every current CoreX admin screen and rejects unrelated admin hook
     }
 });
 
-it('enqueues the shared shell only for a CoreX screen', function () {
+it('enqueues the shared shell and select enhancement only for a CoreX screen', function () {
     $assets = new CorexAdminAssets();
 
     Functions\expect('wp_enqueue_style')->once()->with('corex-admin-shell');
+    // The accessible select upgrade rides the shell so a screen only has to mark a control with
+    // data-corex-select, never wire up its own script — and it stays off every non-CoreX screen.
+    Functions\expect('wp_enqueue_script')->once()->with('corex-select');
     $assets->enqueue('corex_page_corex-data');
 
     $assets->enqueue('plugins.php');

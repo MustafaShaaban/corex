@@ -32,22 +32,79 @@
 	font-weight: 600;
 }
 
+/* Tighter than the old card stack: closed rows should read as
+   one scannable list, not cards floating apart. */
 .corex-admin .corex-data-models__list {
 	display: grid;
-	gap: var(--corex-admin-space-lg);
+	gap: var(--corex-admin-space-sm);
 }
 
+/* The whole header is the disclosure control, so it must look
+   and behave like one. */
 .corex-admin .corex-data-models__card-head {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: baseline;
 	justify-content: space-between;
 	gap: var(--corex-admin-space-sm);
-	margin-block-end: var(--corex-admin-space-md);
+	cursor: pointer;
+	list-style: none;
+}
+
+/* Both spellings: WebKit needs the pseudo-element, the rest
+   take list-style. */
+.corex-admin .corex-data-models__card-head::-webkit-details-marker {
+	display: none;
+}
+
+/* Focus lands on <summary>; without this the ring is the
+   browser's default, not ours. */
+.corex-admin .corex-data-models__card-head:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-action);
+	outline-offset: var(--corex-admin-focus-offset);
+	border-radius: var(--corex-admin-radius-sm);
 }
 
 .corex-admin .corex-data-models__card-head h2 {
 	margin: 0;
+}
+
+/* A disclosure needs a visible affordance, not just a cursor. */
+.corex-admin .corex-data-models__card-head::after {
+	content: "";
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	margin-inline-start: auto;
+	border-inline-end: var(--corex-admin-border-width) solid var(--corex-admin-text-muted);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-text-muted);
+	transform: rotate(45deg);
+	transition: transform var(--corex-admin-motion-fast) ease;
+}
+
+.corex-admin .corex-data-models__card[open] > .corex-data-models__card-head::after {
+	transform: rotate(-135deg);
+}
+
+.corex-admin .corex-data-models__card[open] > .corex-data-models__card-head {
+	margin-block-end: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-data-models__summary-meta {
+	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-data-models__card-body {
+	display: grid;
+	gap: var(--corex-admin-space-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-admin .corex-data-models__card-head::after {
+		transition: none;
+	}
 }
 
 .corex-admin .corex-data-models__key {

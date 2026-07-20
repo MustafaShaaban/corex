@@ -9,12 +9,16 @@ declare(strict_types=1);
 namespace Corex\Config\Security;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeController;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Config\Operations\ProductionReadinessSnapshotFactory;
+use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
+use Corex\Config\Security\LoginProtection\LoginLockoutReader;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
+use Corex\Config\Security\LoginProtection\LoginUrl;
 use Corex\Security\Admin\AdminGuard;
 use DateTimeImmutable;
 
@@ -37,6 +41,7 @@ final class OperationsSecurityScreen
         private readonly OperationsModeStore $store,
         private readonly ProductionReadinessSnapshotFactory $readiness,
         private readonly LoginProtectionSettingsStore $loginSettings,
+        private readonly LoginLockoutReader $lockouts,
     ) {
     }
 
@@ -69,7 +74,7 @@ final class OperationsSecurityScreen
             'corex-operations-security',
             plugins_url('assets/operations-security.css', COREX_CONFIG_FILE),
             ['corex-admin-shell'],
-            '1.0.0',
+            ScreenAsset::version(dirname(COREX_CONFIG_FILE) . '/assets/operations-security.css'),
         );
         $base = dirname(__DIR__, 2);
         $asset = is_file($base . '/build/admin/index.asset.php')
@@ -182,7 +187,7 @@ final class OperationsSecurityScreen
             . '<input type="hidden" name="action" value="' . esc_attr(OperationsModeController::ACTION) . '" />'
             . wp_nonce_field(OperationsModeController::ACTION, OperationsModeController::NONCE, true, false)
             . '<label class="corex-opsec__mode-label" for="corex-mode-select">' . esc_html__('Change mode', 'corex') . '</label>'
-            . '<select id="corex-mode-select" name="corex_mode">' . $options . '</select>'
+            . '<select id="corex-mode-select" name="corex_mode" data-corex-select>' . $options . '</select>'
             . '<label class="corex-opsec__mode-label" for="corex-production-confirm">' . esc_html__('Production confirmation', 'corex') . '</label>'
             . '<input id="corex-production-confirm" type="text" name="corex_confirm_phrase" value="" autocomplete="off" placeholder="' . esc_attr__('Type PRODUCTION', 'corex') . '" />'
             . '<p class="corex-opsec__detail">' . $productionGate . '</p>'
@@ -278,16 +283,68 @@ final class OperationsSecurityScreen
      */
     private function securityConfig(): array
     {
+        $settings = $this->loginSettings->current();
+
         return [
             'restUrl' => esc_url_raw(rest_url('corex/v1/security')),
             'nonce' => wp_create_nonce('wp_rest'),
             'mode' => $this->store->current(),
             'readiness' => $this->readinessPayload(),
-            'loginPolicy' => $this->loginPolicyPayload($this->loginSettings->current()),
-            'lockouts' => [],
+            'loginPolicy' => $this->loginPolicyPayload($settings),
+            'lockouts' => $this->lockoutsPayload(),
             'activity' => $this->activityPayload(),
             'recoveryCommand' => 'wp corex security reset-login',
         ];
+    }
+
+    /**
+     * Real lockouts from the evidence table.
+     *
+     * This was hardcoded to an empty array, so the panel reported "no lockouts" no matter what had
+     * actually been recorded — a control that always says the same thing tells the operator nothing.
+     *
+     * Identities are stored as SHA-256 by design (LoginAttemptRecord), so there is no name to show.
+     * A short fingerprint is enough to tell two lockouts apart and to line one up with the audit
+     * log, and the account is named only when the attempt matched a real user, which is already
+     * recorded. Nothing here is reconstructed or guessed.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function lockoutsPayload(): array
+    {
+        $now = new DateTimeImmutable('now');
+
+        return array_map(function (LoginAttemptRecord $record) use ($now): array {
+            $lockedUntil = $record->lockedUntil;
+
+            return [
+                'id' => substr($record->identityHash, 0, 12) . '-' . ($lockedUntil?->format('U') ?? '0'),
+                'identity' => substr($record->identityHash, 0, 12),
+                'network' => substr($record->networkHash, 0, 12),
+                'account' => $this->accountName($record->userId),
+                'reason' => $record->reasonCode,
+                'active' => $lockedUntil !== null && $lockedUntil > $now,
+                'locked_until' => $lockedUntil === null ? '' : $this->formatDate($lockedUntil),
+            ];
+        }, $this->lockouts->recentLockouts($now));
+    }
+
+    /** The account a lockout hit, when the attempt matched a real user. */
+    private function accountName(?int $userId): string
+    {
+        if ($userId === null || $userId < 1) {
+            return '';
+        }
+
+        $user = get_userdata($userId);
+
+        return $user === false ? '' : $user->user_login;
+    }
+
+    private function formatDate(DateTimeImmutable $date): string
+    {
+        return wp_date((string) get_option('date_format') . ' ' . (string) get_option('time_format'), $date->getTimestamp())
+            ?: $date->format('c');
     }
 
     /**
@@ -316,10 +373,23 @@ final class OperationsSecurityScreen
      */
     private function loginPolicyPayload(LoginProtectionSettings $settings): array
     {
+        $stored = get_option(LoginProtectionSettingsStore::OPTION, []);
+        $storedSlug = is_array($stored) ? (string) ($stored['custom_slug'] ?? '') : '';
+
         return [
             'enabled' => $settings->enabled,
             'block_default_endpoints' => $settings->blockDefaultEndpoints,
             'custom_slug' => $settings->customSlug,
+            // The address the owner must actually use. Showing it is the difference between a
+            // setting and a usable instruction — and it comes from the same resolver the guard
+            // serves, so the screen cannot describe an address the site does not answer.
+            'login_url' => esc_url_raw(LoginUrl::forSettings($settings)),
+            // Whether the slug in use is the one that was stored. It will not be if a hand-edited
+            // option, a migration, or an older CoreX left an unusable value: the store falls back
+            // to a working default rather than lock the owner out, but silently substituting an
+            // address and still reporting "protected" is exactly the discrepancy FR-011a forbids.
+            'slug_substituted' => $storedSlug !== '' && sanitize_title($storedSlug) !== $settings->customSlug,
+            'stored_slug' => $storedSlug,
             'max_attempts' => $settings->threshold,
             'window_seconds' => $settings->windowSeconds,
             'lockout_seconds' => $settings->lockoutSeconds,

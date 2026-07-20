@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
-import { Button, CheckboxControl, SelectControl } from '@wordpress/components';
+import { Button, CheckboxControl } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import { dataEndpoint } from '../admin/dataClient.js';
 import { dataModelsApi, downloadArtifact } from './dataModelsApi.js';
 import { actionSources } from './modelClient.js';
 import SourceSelect from './SourceSelect.js';
+import CorexSelect from '../admin/components/CorexSelect.js';
 
 function exportRunLabel( run ) {
 	const scopes = {
@@ -88,9 +89,9 @@ export default function ExportPanel( { config, sources } ) {
 					checked ? [ ...current, field.key ] : current.filter( ( key ) => key !== field.key )
 				) } /> ) }
 		</fieldset>
-		<SelectControl label={ __( 'Format', 'corex' ) } value={ format } onChange={ setFormat } options={ [
+		<CorexSelect label={ __( 'Format', 'corex' ) } value={ format } onChange={ setFormat } block options={ [
 			{ label: __( 'CSV', 'corex' ), value: 'csv' },
-			{ label: __( 'XLSX', 'corex' ), value: 'xlsx', disabled: ! source?.actions.export_xlsx?.visible },
+			...( source?.actions.export_xlsx?.visible ? [ { label: __( 'XLSX', 'corex' ), value: 'xlsx' } ] : [] ),
 		] } />
 		{ personal && <CheckboxControl label={ __( 'I acknowledge this export contains personal data.', 'corex' ) }
 			checked={ acknowledged } onChange={ setAcknowledged } /> }

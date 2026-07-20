@@ -46,11 +46,49 @@ function insightFacts(array $overrides = []): array
 
 it('builds the seven designed widgets with distinct ids and no planned state', function () {
     $widgets = (new InsightWidgets())->widgets(insightFacts());
-    $ids     = array_column($widgets, 'key');
     $states  = array_column($widgets, 'state');
 
-    expect($ids)->toBe(['performance', 'cloudflare', 'security', 'seo', 'ai', 'ops', 'forms'])
+    expect(array_column($widgets, 'key'))
+        ->toHaveCount(7)
+        ->and(array_unique(array_column($widgets, 'key')))->toHaveCount(7)
         ->and($states)->not->toContain('planned');
+});
+
+it('orders widgets by urgency, with nothing-to-show last', function () {
+    // FR-027. Registration order put an unconfigured Cloudflare second and buried the widgets
+    // that actually had something to say. With the default facts: seo/ops/forms are live,
+    // performance/security/ai have no data yet, and cloudflare is unconfigured.
+    $widgets = (new InsightWidgets())->widgets(insightFacts());
+
+    expect(array_column($widgets, 'key'))
+        ->toBe(['seo', 'ops', 'forms', 'performance', 'security', 'ai', 'cloudflare']);
+});
+
+it('floats a widget wanting attention above everything else', function () {
+    // A hidden site is the reason someone opens this screen; it must not sit below three
+    // healthy widgets. searchVisible false gives SEO a warning chip.
+    $widgets = (new InsightWidgets())->widgets(insightFacts([
+        'searchVisible' => false,
+        'cronOverdue'   => 4,
+    ]));
+    $keys = array_column($widgets, 'key');
+
+    expect(array_slice($keys, 0, 2))->toBe(['seo', 'ops'])
+        ->and($widgets[0]['chipTone'])->toBe('warning')
+        ->and($widgets[1]['chipTone'])->toBe('warning');
+});
+
+it('keeps registration order within one urgency rank', function () {
+    // usort() is not stable for equal elements. Without the index tiebreak the screen would
+    // reshuffle equally-urgent widgets between requests for no visible reason.
+    $widgets = (new InsightWidgets())->widgets(insightFacts());
+    $live    = array_values(array_filter(
+        $widgets,
+        static fn (array $w): bool => $w['state'] === InsightWidgets::STATE_LIVE && $w['chipTone'] === 'success',
+    ));
+
+    // seo (built 4th), ops (6th), forms (7th) — relative order preserved.
+    expect(array_column($live, 'key'))->toBe(['seo', 'ops', 'forms']);
 });
 
 it('projects real Forms & Flows analytics rows instead of a planned placeholder', function () {

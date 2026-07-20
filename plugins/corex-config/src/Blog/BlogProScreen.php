@@ -11,6 +11,7 @@ namespace Corex\Config\Blog;
 defined('ABSPATH') || exit;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Security\Admin\AdminGuard;
 use DateTimeImmutable;
 use RuntimeException;
@@ -58,7 +59,7 @@ final class BlogProScreen
             'corex-blog-pro',
             plugins_url('assets/blog-pro.css', COREX_CONFIG_FILE),
             ['corex-admin-shell'],
-            '1.0.0',
+            ScreenAsset::version(dirname(COREX_CONFIG_FILE) . '/assets/blog-pro.css'),
         );
         $base = dirname(__DIR__, 2);
         $asset = is_file($base . '/build/admin/index.asset.php')

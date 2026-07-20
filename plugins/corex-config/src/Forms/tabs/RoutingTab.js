@@ -1,5 +1,14 @@
 import { __ } from '@wordpress/i18n';
 import { generateUuid } from '../uuid.js';
+import CorexSelect from '../../admin/components/CorexSelect.js';
+
+const CONDITION_OPERATORS = [
+	{ value: 'equals', label: __( 'Equals', 'corex' ) },
+	{ value: 'not_equals', label: __( 'Does not equal', 'corex' ) },
+	{ value: 'contains', label: __( 'Contains', 'corex' ) },
+	{ value: 'exists', label: __( 'Exists', 'corex' ) },
+	{ value: 'empty', label: __( 'Is empty', 'corex' ) },
+];
 
 export function RoutingTab( { routing, targetTypes, onChange } ) {
 	const rules = Array.isArray( routing.rules ) ? routing.rules : [];
@@ -58,34 +67,16 @@ export function RoutingTab( { routing, targetTypes, onChange } ) {
 								} )
 							}
 						/>
-						<select
-							aria-label={ __( 'Condition operator', 'corex' ) }
+						<CorexSelect
+							label={ __( 'Condition operator', 'corex' ) }
 							value={ rule.condition?.operator || 'equals' }
-							onChange={ ( event ) =>
+							options={ CONDITION_OPERATORS }
+							onChange={ ( operator ) =>
 								updateRule( index, {
-									condition: {
-										...rule.condition,
-										operator: event.target.value,
-									},
+									condition: { ...rule.condition, operator },
 								} )
 							}
-						>
-							<option value="equals">
-								{ __( 'Equals', 'corex' ) }
-							</option>
-							<option value="not_equals">
-								{ __( 'Does not equal', 'corex' ) }
-							</option>
-							<option value="contains">
-								{ __( 'Contains', 'corex' ) }
-							</option>
-							<option value="exists">
-								{ __( 'Exists', 'corex' ) }
-							</option>
-							<option value="empty">
-								{ __( 'Is empty', 'corex' ) }
-							</option>
-						</select>
+						/>
 						<input
 							aria-label={ __( 'Condition value', 'corex' ) }
 							value={ rule.condition?.value || '' }
@@ -141,19 +132,12 @@ export function RoutingTab( { routing, targetTypes, onChange } ) {
 function TargetSelect( { target, targetTypes, onChange } ) {
 	return (
 		<div className="corex-flow-editor__target">
-			<select
-				aria-label={ __( 'Routing target type', 'corex' ) }
+			<CorexSelect
+				label={ __( 'Routing target type', 'corex' ) }
 				value={ target.type }
-				onChange={ ( event ) =>
-					onChange( { type: event.target.value, config: {} } )
-				}
-			>
-				{ targetTypes.map( ( type ) => (
-					<option key={ type } value={ type }>
-						{ type }
-					</option>
-				) ) }
-			</select>
+				options={ targetTypes.map( ( type ) => ( { value: type, label: type } ) ) }
+				onChange={ ( type ) => onChange( { type, config: {} } ) }
+			/>
 			<input
 				aria-label={ __( 'Routing target value', 'corex' ) }
 				value={ target.config?.value || '' }

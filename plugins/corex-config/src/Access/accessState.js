@@ -9,9 +9,12 @@ export function accessEndpoint( root, path = '' ) {
 export function normalizeAccessPayload( payload = {} ) {
 	return {
 		roles: Array.isArray( payload.roles ) ? payload.roles : [],
-		rows: Array.isArray( payload.rows ) ? payload.rows.map( normalizeRow ) : [],
+		rows: Array.isArray( payload.rows )
+			? payload.rows.map( normalizeRow )
+			: [],
 		conflicts: Array.isArray( payload.conflicts ) ? payload.conflicts : [],
-		nativeCapabilitiesEditable: payload.nativeCapabilitiesEditable !== false,
+		nativeCapabilitiesEditable:
+			payload.nativeCapabilitiesEditable !== false,
 	};
 }
 
@@ -60,7 +63,8 @@ export function accessReducer( state = initialAccessState(), action = {} ) {
 				...state,
 				...normalized,
 				status: 'ready',
-				selectedRole: state.selectedRole || normalized.roles[ 0 ]?.key || '',
+				selectedRole:
+					state.selectedRole || normalized.roles[ 0 ]?.key || '',
 				draft: snapshotEffects( normalized.rows ),
 				preview: null,
 			};
@@ -68,7 +72,12 @@ export function accessReducer( state = initialAccessState(), action = {} ) {
 		case 'selectRole':
 			return { ...state, selectedRole: action.role || '', preview: null };
 		case 'setEffect':
-			return setEffect( state, action.role, action.ability, action.effect );
+			return setEffect(
+				state,
+				action.role,
+				action.ability,
+				action.effect
+			);
 		case 'preview':
 			return { ...state, preview: action.preview || null, notice: null };
 		case 'applied':
@@ -76,14 +85,29 @@ export function accessReducer( state = initialAccessState(), action = {} ) {
 				...state,
 				preview: null,
 				draft: {},
-				notice: { tone: 'success', message: action.message || 'Access updated.' },
+				notice: {
+					tone: 'success',
+					message: action.message || 'Access updated.',
+				},
 			};
 		case 'requestQueueLoaded':
-			return { ...state, requestQueue: Array.isArray( action.requests ) ? action.requests : [] };
+			return {
+				...state,
+				requestQueue: Array.isArray( action.requests )
+					? action.requests
+					: [],
+			};
 		case 'modal':
 			return { ...state, modal: action.modal || null };
 		case 'error':
-			return { ...state, status: 'ready', notice: { tone: 'error', message: action.message || 'Access action failed.' } };
+			return {
+				...state,
+				status: 'ready',
+				notice: {
+					tone: 'error',
+					message: action.message || 'Access action failed.',
+				},
+			};
 		default:
 			return state;
 	}
@@ -126,7 +150,10 @@ function snapshotEffects( rows ) {
 	const draft = {};
 	rows.forEach( ( row ) => {
 		Object.entries( row.cells ).forEach( ( [ role, cell ] ) => {
-			draft[ role ] = { ...( draft[ role ] || {} ), [ row.key ]: cell.effect };
+			draft[ role ] = {
+				...( draft[ role ] || {} ),
+				[ row.key ]: cell.effect,
+			};
 		} );
 	} );
 	return draft;

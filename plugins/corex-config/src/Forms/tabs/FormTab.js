@@ -1,6 +1,7 @@
 import { useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import { FieldSettings } from '../components/FieldSettings.js';
+import CorexSelect from '../../admin/components/CorexSelect.js';
 
 export function FormTab( { draft, fieldTypes, busy, onAdd, onUpdate, onMove, onRemove } ) {
 	const [ selected, setSelected ] = useState( draft.configuration.schema[ 0 ]?.uuid || null );
@@ -12,12 +13,13 @@ export function FormTab( { draft, fieldTypes, busy, onAdd, onUpdate, onMove, onR
 			<section className="corex-flow-editor__field-list">
 				<header><div><h2>{ __( 'Form fields', 'corex' ) }</h2><p>{ __( 'Fields keep stable identities when reordered.', 'corex' ) }</p></div></header>
 				<div className="corex-flow-editor__add-field">
-					<label htmlFor="corex-flow-new-field-type">
-						{ __( 'Field type', 'corex' ) }
-						<select id="corex-flow-new-field-type" value={ type } onChange={ ( event ) => setType( event.target.value ) }>
-							{ fieldTypes.map( ( definition ) => <option key={ definition.key } value={ definition.key }>{ definition.label }</option> ) }
-						</select>
-					</label>
+					<div className="corex-field">
+						<span>{ __( 'Field type', 'corex' ) }</span>
+						<CorexSelect id="corex-flow-new-field-type" label={ __( 'Field type', 'corex' ) }
+							value={ type }
+							options={ fieldTypes.map( ( definition ) => ( { value: definition.key, label: definition.label } ) ) }
+							onChange={ setType } />
+					</div>
 					<button type="button" className="button" disabled={ busy } onClick={ () => setSelected( onAdd( type ) ) }>{ __( 'Add field', 'corex' ) }</button>
 				</div>
 				{ draft.configuration.schema.length === 0 ? <p>{ __( 'Add the first field to configure this form.', 'corex' ) }</p> : null }

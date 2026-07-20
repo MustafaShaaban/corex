@@ -63,8 +63,14 @@ it('uses declared mutation and read endpoints instead of disabled placeholder co
         ->and($client)->toMatch("/post\\(\\s*'resend'/")
         ->and($client)->toContain('reply_to_rule: replyRule')
         ->and($client)->toContain('settingsUrl={ config.settingsUrl }')
-        ->and($components)->toContain('name="layout_selection"')
+        // The layout control writes to the draft's `layout_selection` key, never `layout_id`
+        // directly — useEmailStudio splits the "id:version" pair. It is a CorexSelect now
+        // (spec 069: a native popup is OS-drawn, so its dark-mode highlight cannot be styled),
+        // which reports a plain value, so the field name lives in the handler rather than a
+        // `name` attribute. Same contract, different spelling.
+        ->and($components)->toContain("asFieldEvent( 'layout_selection'")
         ->and($components)->toContain("__( 'Layout revision', 'corex' )")
+        ->and($components)->not->toContain("asFieldEvent( 'layout_id'")
         ->and($components)->not->toContain('name="layout_id"')
         ->and($components)->toContain("__( 'Reply-to source', 'corex' )")
         ->and($components)->toContain("__( 'Revise', 'corex' )")

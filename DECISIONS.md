@@ -2546,3 +2546,143 @@ A front-end contact form that renders nothing is exactly that. The fix is minima
 default-merge path the unit test missed.
 Status: Final on `fix/067-admin-shell-and-completion`. Verified live: `http://corex.local/contact/` now serves
 `<form data-corex-schema>`; the contact-form smoke E2E passes; full unit 1,257 and integration 107 stay green.
+
+## #140 -- Spec 069: login hiding is defeated and fails open (reproduced on corex.local, pre-implementation)
+Date: 2026-07-16
+Context: The owner reported for the second time that the login policy "doesn't behave like wp hide login".
+Before writing any code, the four claims below were reproduced against the real runtime at `http://corex.local`
+with login protection in its as-found state (`enabled: true`, `custom_slug: corex-login`,
+`block_default_endpoints: true`). Note this contradicted `PROGRESS.md`, which recorded protection as *disabled*
+on this box; PROGRESS was stale and is corrected in the same change.
+
+Findings, all measured, not inferred:
+
+1. **The custom login URL is leaked in plain text to anonymous visitors.** `GET /login` returns
+   `302 -> http://corex.local/corex-login/`. WordPress core's `wp_redirect_admin_locations`
+   (`template_redirect`, prio 1000) is never removed, and `LoginRouteGuard`'s `site_url`/`login_url` filters
+   helpfully rewrite core's redirect target to the secret slug. One unauthenticated request defeats the entire
+   feature. `/dashboard` and `/admin` likewise 302 to `/wp-admin/`. This is the headline defect: hiding that
+   hands out the hiding place.
+
+2. **The 404 is trivially fingerprintable.** A genuinely absent URL returns the theme 404: **79,968 bytes**,
+   `<title>Page not found - Corex</title>`. The "hidden" `/wp-login.php` returns `LoginRouteGuard::deny()`'s
+   `wp_die` page: **2,515 bytes**, `<title>Not found</title>`. Same status, ~32x size difference -- a scanner
+   separates "hides its login" from "no such page" on response size alone. Corroborating evidence: when the guard
+   is inactive, `/corex-login/` 404s at exactly 79,968 bytes -- byte-identical to the control. The correct
+   response already exists; the guard simply does not use it.
+
+3. **Total lockout is reachable from stored state (Trap 1, as predicted).** `LoginProtectionSettingsStore::save()`
+   L30 has a `?: 'corex-login'` fallback; `current()` L52 does not. Stored slug `!!!` -> `sanitize_title()` -> `''`
+   -> the empty string slips past `LoginProtectionSettings`'s `!== ''` guard (no throw) -> `register()` bails at
+   L27 so no slug is served, while the *unconditional* `login_init` registration at L25 still 404s `wp-login.php`
+   via `decision()`. Measured: `/wp-login.php` 404, `/corex-login/` 404. No login URL exists at all; the front
+   page still serves 200, so the site looks healthy while nobody can log in.
+
+4. **Silent fail-open + whole-plugin outage (Trap 2 -- WORSE than the predicted fatal).** A 1-2 char slug
+   (e.g. `ab`) passes `sanitize_title` but fails the value object's `/^[a-z0-9][a-z0-9-]{2,80}$/` and throws.
+   The container builds it on every `make()` (ConfigServiceProvider L304-308) and `boot()` L651 resolves it
+   unguarded -- but provider boot is caught at `ProviderRepository.php:91`, which logs and continues. So it does
+   NOT fatal. Instead the **entire ConfigServiceProvider fails to boot**: measured `corex/v1/insights/widgets`
+   and `corex/v1/data/sources` -> 404, and `/wp-login.php` -> **200 while the stored setting still reads
+   `enabled: true`**. The owner is told they are protected and is not. No visible symptom: front page 200; the
+   only trace is one `debug.log` line, and `wp-config.php` redefines `WP_DEBUG` to `false`.
+
+5. **Recovery reports a dead URL.** `wp corex security reset-login` correctly restores `wp-login.php` (verified
+   200), but prints `Restored login URL: http://corex.local/corex-login/` -- which 404s immediately after, because
+   `wp_login_url()` is called in a request where the guard's filters are still registered. The one documented
+   recovery path tells a locked-out owner to visit a page that does not exist.
+
+Decision: Treat (1) and (4) as security defects, not cosmetic gaps. (1) means the feature currently provides
+*no* obscurity while implying that it does. (4) means a validation error silently downgrades a security control
+the owner explicitly enabled -- and takes an entire plugin's screens and routes with it. Spec 069 gains FR-011a
+("protection MUST NOT fail open") and SC-004 is widened to cover unrelated-capability loss and silent downgrade.
+The Trap 2 description in `plan.md` was written predicting a fatal and has been corrected to the measured
+behaviour; the prediction was wrong in the safe direction and the reality is more dangerous.
+
+Why: the constitution puts truth above convenience -- a control that reports itself active while serving the
+unprotected default is exactly the "dead/fake UI" the owner mandate forbids, in its most consequential form.
+Reproducing before fixing also gives the rewrite a real before/after: the control 404 (79,968 bytes) is the
+literal target for the theme-404 response FR-001 requires.
+
+Status: Recorded pre-implementation on `fix/069-admin-correctness-and-login-parity`. corex.local was restored to
+its exact as-found state after each probe (verified: `/wp-login.php` 404/2515, `/corex-login/` 200,
+insights REST 401 -- i.e. provider booting again). Recovery was proven working BEFORE any login code was touched,
+per tasks T002.
+
+## #141 -- Spec 069: one selection control, because the reported bug had no CSS fix
+Date: 2026-07-20
+Context: The owner reported for the third time that "the select boxes still didn't get fixed", specifically the
+dark-mode hover. Two previous passes had tried to fix it in CSS. It cannot be fixed in CSS: the OPEN menu of a
+native `<select>` is drawn by the operating system, not the page, so no `option:hover` or `option:checked` rule
+reaches it. `tasks.md` T047 anticipated exactly this and pre-authorised replacing the control.
+
+Decision: every selection control in the CoreX admin is now `CorexSelect` -- the in-DOM ARIA listbox that
+`ApprovedComponentInventory.php:142` has declared as the approved Select all along, and that
+`corex-admin-shell.css` has styled all along, but that nothing in React ever rendered. ~31 sites across 20 files.
+The last native `<select>` in the admin is gone.
+
+Three boundaries were drawn deliberately and are NOT oversights:
+
+1. **Block-editor `SelectControl` stays** (`addons/corex-ui/src/Blocks/*`, `corex-forms` block editors). Those
+   render in the Gutenberg sidebar, where Gutenberg's own design language is correct and the CoreX admin shell
+   is not loaded. Migrating them would make the editor inconsistent with itself.
+2. **The front-end form select stays native** (`corex-forms` FieldRenderer). CorexSelect lives in the admin
+   bundle and depends on admin tokens; shipping it to a public page would load an admin bundle on the front end
+   (Principle VI) and make a visitor's most important control JavaScript-dependent. It is themed from
+   theme.json presets instead, with `color-scheme: light dark` -- the standards-based lever for the one thing
+   CSS cannot reach.
+3. **The forms Preview tab stays native.** It previews what a VISITOR sees, and the front end renders native;
+   previewing the admin component there would preview something the site does not serve.
+
+What the design capture corrected. Before touching anything, `.corex-select` was checked against the "Select &
+dropdown menu" block of `Corex Component Library.dc.html`. The shipped rules were off-design in five ways, which
+is why even the enhanced control looked wrong. The substantive one: the design carries the hover signal
+primarily in the TEXT colour (muted -> full contrast), with the background only assisting. The previous
+implementation started options at full contrast, so the background had to carry the signal alone -- and
+`surface-alt` is barely a step from the menu's `surface-raised`. A comment in the old CSS had noticed that
+symptom and worked around it by using the accent tint, which is the SELECTED colour, so hover and selected then
+looked alike. Measured in a real browser after the fix, dark and light: menu/idle/hover/selected all match the
+capture.
+
+Two defects this surfaced that would otherwise have shipped silently:
+
+- **FormData.** Email Studio reads its forms with `new FormData( form )`. A `<button>` contributes nothing to
+  FormData, so a naive swap would have dropped `template_id`, `recipient_source` and `reply_to_source` from
+  every route save -- and the form would have looked like it worked. CorexSelect takes a `name` and renders a
+  hidden input, plus an uncontrolled mode for the screens that used `defaultValue`.
+- **Load-bearing "duplicate" CSS.** The per-screen `select { inline-size: 100% }` rules removed as duplicates
+  were holding the Submissions filter row inside its grid. Without them the Form control sat on top of Owner.
+  Caught by rendering the screen; no test would have. Fields now share one `.corex-field` wrapper in the shell
+  rather than the four per-screen `<label>` rules that had grown up -- a `<label>` cannot label a button plus a
+  listbox anyway, so those wrappers had to stop being labels regardless.
+
+Why: the owner mandate treats approved design as required functionality, and a control that cannot be made to
+match the design is not a styling gap -- it is the wrong control. Three failed CSS attempts is enough evidence.
+
+Status: Implemented on `fix/069-admin-correctness-and-login-parity`. Unit 1,291, integration 158, Jest 294,
+Playwright 45/45, stylelint clean, guards clean.
+
+## #142 -- Spec 069: two long-standing test failures were calendar rot, not regressions
+Date: 2026-07-20
+Context: `ProductActivityCoverageTest` and `BlogProControllerTest` were failing at the start of this session.
+Verified pre-existing by stashing all working-tree changes and re-running -- they failed identically on a clean
+tree, so they were not caused by this branch.
+
+Both were time-dependent in the same way, and both had passed when written:
+
+- `BlogProControllerTest` seeded a page view at a hardcoded `2026-07-08` and then queried "the last 7 days".
+  Once the calendar passed 2026-07-15 the seeded view fell out of the window and the test reported zero views
+  for a reason that had nothing to do with the code. Fixed by anchoring the fixture to `-1 day`.
+- `ProductActivityCoverageTest` seeded events at a fixed `2026-07-10` and asserted they appeared in page 1 of
+  100 for their area. Results come back newest-first, so on an install that has accumulated a few hundred real
+  activity events the fixtures fall past the first page. Fixed by scoping the query to the window the events
+  were seeded into -- which the sibling time-window test in the same file already did, and which is why that
+  one kept passing.
+
+Why record it: both look like flakes and neither is. A test whose result depends on the wall clock or on how
+much unrelated data the database happens to hold will keep coming back, and the next person to hit it will
+reasonably assume their own change caused it. The same class of defect was introduced and caught within this
+session -- three new Playwright tests silently depended on login protection being enabled ambiently; they now
+enable it themselves and restore the exact prior value.
+
+Status: Both fixed. Integration suite is fully green (158/158) for the first time this session.

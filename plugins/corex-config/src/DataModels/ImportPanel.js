@@ -1,10 +1,11 @@
 import { useMemo, useState } from '@wordpress/element';
-import { Button, CheckboxControl, SelectControl } from '@wordpress/components';
+import { Button, CheckboxControl } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import { dataEndpoint } from '../admin/dataClient.js';
 import { dataModelsApi, downloadArtifact } from './dataModelsApi.js';
 import { actionSources, importSummary } from './modelClient.js';
 import SourceSelect from './SourceSelect.js';
+import CorexSelect from '../admin/components/CorexSelect.js';
 
 export default function ImportPanel( { config, sources } ) {
 	const candidates = useMemo( () => actionSources( sources, 'import_dry_run' ), [ sources ] );
@@ -85,7 +86,7 @@ export default function ImportPanel( { config, sources } ) {
 			{ /* translators: 1: accepted rows, 2: rejected rows, 3: total rows. */ }
 			<p>{ sprintf( __( '%1$d accepted · %2$d rejected · %3$d total', 'corex' ), summary.accepted, summary.rejected, summary.total ) }</p>
 			{ summary.unknown.length > 0 && <fieldset><legend>{ __( 'Unknown columns', 'corex' ) }</legend>
-				{ summary.unknown.map( ( column ) => <SelectControl key={ column } label={ column } value={ mappings[ column ] || '' }
+				{ summary.unknown.map( ( column ) => <CorexSelect key={ column } label={ column } value={ mappings[ column ] || '' } block
 					onChange={ ( value ) => setMappings( ( current ) => ( { ...current, [ column ]: value } ) ) }
 					options={ [ { label: __( 'Ignore', 'corex' ), value: '' }, ...source.fields.filter( ( field ) => ! field.read_only )
 						.map( ( field ) => ( { label: field.label, value: field.key } ) ) ] } /> ) }

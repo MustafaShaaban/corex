@@ -1,5 +1,14 @@
 import { useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
+import CorexSelect from '../admin/components/CorexSelect.js';
+
+const LIFECYCLE_STATES = [
+	{ value: '', label: __( 'All states', 'corex' ) },
+	{ value: 'draft', label: __( 'Draft', 'corex' ) },
+	{ value: 'published', label: __( 'Published', 'corex' ) },
+	{ value: 'closed', label: __( 'Closed', 'corex' ) },
+	{ value: 'expired', label: __( 'Expired', 'corex' ) },
+];
 
 function NewFlowForm( { busy, ownerId, onCreate } ) {
 	const submit = async ( event ) => {
@@ -87,20 +96,16 @@ export function FlowList( { flows, status, ownerId, onLoad, onCreate, onSelect }
 								onChange={ ( event ) => setSearch( event.target.value ) }
 							/>
 						</label>
-						<label htmlFor="corex-flow-state-filter">
-							{ __( 'Lifecycle state', 'corex' ) }
-							<select
+						<div className="corex-field">
+							<span>{ __( 'Lifecycle state', 'corex' ) }</span>
+							<CorexSelect
 								id="corex-flow-state-filter"
+								label={ __( 'Lifecycle state', 'corex' ) }
 								value={ lifecycle }
-								onChange={ ( event ) => setLifecycle( event.target.value ) }
-							>
-								<option value="">{ __( 'All states', 'corex' ) }</option>
-								<option value="draft">{ __( 'Draft', 'corex' ) }</option>
-								<option value="published">{ __( 'Published', 'corex' ) }</option>
-								<option value="closed">{ __( 'Closed', 'corex' ) }</option>
-								<option value="expired">{ __( 'Expired', 'corex' ) }</option>
-							</select>
-						</label>
+								options={ LIFECYCLE_STATES }
+								onChange={ setLifecycle }
+							/>
+						</div>
 						<button type="submit" className="button" disabled={ busy }>{ __( 'Apply filters', 'corex' ) }</button>
 					</form>
 				</header>

@@ -1,7 +1,8 @@
 import { useState } from '@wordpress/element';
-import { Button, Modal, SelectControl } from '@wordpress/components';
+import { Button, Modal } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import FieldControl, { writableFields } from './FieldControl.js';
+import CorexSelect from '../components/CorexSelect.js';
 
 export default function BulkEditDialog( { source, count, close, preview } ) {
 	const fields = writableFields( source );
@@ -12,7 +13,8 @@ export default function BulkEditDialog( { source, count, close, preview } ) {
 	return <Modal title={ __( 'Bulk edit records', 'corex' ) } onRequestClose={ close }>
 		{ /* translators: %d: selected record count. */ }
 		<p>{ sprintf( __( 'Change one field for %d selected record(s).', 'corex' ), count ) }</p>
-		<SelectControl label={ __( 'Field', 'corex' ) } value={ fieldKey } onChange={ setFieldKey }
+		<CorexSelect label={ __( 'Field', 'corex' ) } value={ fieldKey } onChange={ setFieldKey }
+			emptyLabel={ __( 'No editable fields', 'corex' ) }
 			options={ fields.map( ( candidate ) => ( { label: candidate.label, value: candidate.key } ) ) } />
 		{ field && <FieldControl field={ field } value={ fieldValue } onChange={ setFieldValue } /> }
 		<div className="corex-data__dialog-actions">

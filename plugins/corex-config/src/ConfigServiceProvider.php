@@ -299,6 +299,11 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Security\HardeningChecks::class);
         $this->container->singleton(\Corex\Config\Operations\ProductionReadinessSnapshotFactory::class);
         $this->container->singleton(\Corex\Config\Operations\ProductionLaunchService::class);
+        $this->container->singleton(
+            \Corex\Config\Forms\FlowFilterOptions::class,
+            static fn (ContainerInterface $c): \Corex\Config\Forms\FlowFilterOptions =>
+                new \Corex\Config\Forms\FlowFilterOptions($c),
+        );
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginAttemptTable::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore::class);
         $this->container->bind(
@@ -309,7 +314,16 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionPolicy::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionService::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\ClientIpResolver::class);
-        $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginRouteGuard::class);
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginRouteGuard::class,
+            static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\LoginRouteGuard =>
+                new \Corex\Config\Security\LoginProtection\LoginRouteGuard(
+                    $c->make(\Corex\Config\Security\LoginProtection\LoginProtectionSettings::class),
+                    // The wp-config break-glass. Fixed before WordPress loads, so reading it once here
+                    // is safe, and injecting it keeps the recovery path testable.
+                    defined('COREX_LOGIN_UNGUARD') && COREX_LOGIN_UNGUARD === true,
+                ),
+        );
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionEnforcer::class);
         $this->container->singleton(\Corex\Config\Security\SecuritySettingsController::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\WpLoginAttemptStore::class);
@@ -320,6 +334,11 @@ final class ConfigServiceProvider extends ServiceProvider
         );
         $this->container->singleton(
             \Corex\Config\Security\LoginProtection\LoginLockoutStore::class,
+            static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\WpLoginAttemptStore =>
+                $c->make(\Corex\Config\Security\LoginProtection\WpLoginAttemptStore::class),
+        );
+        $this->container->singleton(
+            \Corex\Config\Security\LoginProtection\LoginLockoutReader::class,
             static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\WpLoginAttemptStore =>
                 $c->make(\Corex\Config\Security\LoginProtection\WpLoginAttemptStore::class),
         );

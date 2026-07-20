@@ -399,7 +399,7 @@
 	font-weight: 600;
 }
 
-.corex-admin .corex-access-app select {
+.corex-admin .corex-access-app .corex-select {
 	max-inline-size: 100%;
 }
 
@@ -407,7 +407,7 @@
 	text-align: start;
 }
 
-.corex-admin .corex-access-app .corex-access__matrix td select {
+.corex-admin .corex-access-app .corex-access__matrix td .corex-select {
 	margin-inline-end: var(--corex-admin-space-sm);
 }
 

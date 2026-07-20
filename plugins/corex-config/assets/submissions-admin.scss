@@ -75,7 +75,6 @@
 }
 
 .corex-admin .corex-inbox input:not([type="checkbox"]),
-.corex-admin .corex-inbox select,
 .corex-admin .corex-inbox textarea,
 .corex-admin .corex-inbox-retention input[type="number"] {
 	inline-size: 100%;
@@ -102,7 +101,7 @@
 	border-radius: var(--corex-admin-radius-md);
 }
 
-.corex-admin .corex-inbox__bulk select,
+.corex-admin .corex-inbox__bulk .corex-select,
 /* stylelint-disable-next-line no-descending-specificity */
 .corex-admin .corex-inbox__bulk input {
 	inline-size: auto;
@@ -263,7 +262,7 @@
 
 /* stylelint-disable-next-line no-descending-specificity */
 .corex-admin .corex-inbox__assignment input,
-.corex-admin .corex-inbox__assignment select {
+.corex-admin .corex-inbox__assignment .corex-select {
 	flex: 1 1 10rem; /* corex-token-allow: structural assignment control basis */
 }
 

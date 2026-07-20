@@ -71,5 +71,9 @@ final class CorexAdminAssets
         }
 
         wp_enqueue_style('corex-admin-shell');
+
+        // Upgrades any server-rendered select that opted in with data-corex-select. Loaded
+        // alongside the shell so a screen only has to mark the control, not wire up a script.
+        wp_enqueue_script('corex-select');
     }
 }

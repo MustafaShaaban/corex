@@ -10,6 +10,7 @@ namespace Corex\Config\Access;
 
 use Corex\Admin\AdminPage;
 use Corex\Access\RoleAbilityStore;
+use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -65,7 +66,7 @@ final class AccessScreen
             'corex-access',
             plugins_url('assets/access.css', COREX_CONFIG_FILE),
             ['corex-admin-shell'],
-            '2.0.0',
+            ScreenAsset::version(dirname(COREX_CONFIG_FILE) . '/assets/access.css'),
         );
         $base = dirname(__DIR__, 2);
         $asset = is_file($base . '/build/admin/index.asset.php')

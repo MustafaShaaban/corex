@@ -273,20 +273,13 @@
 /* Every toolbar control shares one height so search, the source filter, Reset,
    Export, and New record read as one consistent control row. */
 .corex-admin .corex-data__toolbar .corex-data__search,
-.corex-admin .corex-data__toolbar .corex-data__form,
+.corex-admin .corex-data__toolbar .corex-select__button,
 .corex-admin .corex-data__toolbar .button {
 	block-size: var(--corex-admin-control-height);
 	min-block-size: var(--corex-admin-control-height);
 	padding-block: 0;
 	line-height: normal;
 	border-radius: var(--corex-admin-radius-sm);
-}
-
-/* Readable native dropdown options in both schemes (the popup follows
-   color-scheme; option colours are explicit so a highlight stays readable). */
-.corex-admin .corex-data__form option {
-	color: var(--corex-admin-text);
-	background: var(--corex-admin-surface);
 }
 
 

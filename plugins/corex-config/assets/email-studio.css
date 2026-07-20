@@ -139,8 +139,7 @@
 }
 
 .corex-admin .corex-email-app input:not([type="checkbox"]),
-.corex-admin .corex-email-app textarea,
-.corex-admin .corex-email-app select {
+.corex-admin .corex-email-app textarea {
 	inline-size: 100%;
 	min-block-size: var(--corex-admin-control-height);
 	margin: 0;
@@ -384,8 +383,7 @@
 
 .corex-admin .corex-email-app button:focus-visible,
 .corex-admin .corex-email-app input:focus-visible,
-.corex-admin .corex-email-app textarea:focus-visible,
-.corex-admin .corex-email-app select:focus-visible {
+.corex-admin .corex-email-app textarea:focus-visible {
 	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
 	outline-offset: var(--corex-admin-focus-offset);
 	box-shadow: none;

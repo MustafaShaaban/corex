@@ -37,7 +37,8 @@ export default function DataExplorer( { config } ) {
 			<div className="corex-data__metrics"><div className="corex-data__metric"><span>{ __( 'Total rows', 'corex' ) }</span><strong>{ explorer.state.total }</strong></div>
 				<div className="corex-data__metric"><span>{ __( 'Fields', 'corex' ) }</span><strong>{ explorer.source?.fields?.length || 0 }</strong></div></div>
 			<section className="corex-data__panel" aria-live="polite">
-				<QueryBar explorer={ explorer } openCreate={ () => setEditor( {} ) } openExport={ () => setExporting( true ) } />
+				<QueryBar explorer={ explorer } openCreate={ () => setEditor( {} ) } openExport={ () => setExporting( true ) }
+					flows={ Array.isArray( config.flows ) ? config.flows : [] } />
 				{ explorer.state.notice && <p className={ `corex-data__notice is-${ explorer.state.notice.tone }` }
 					role={ explorer.state.notice.tone === 'error' ? 'alert' : 'status' }>{ explorer.state.notice.message }</p> }
 				<BulkBar explorer={ explorer } edit={ () => setBulkEdit( true ) } exportRows={ () => setExporting( true ) } />

@@ -19,7 +19,26 @@ it('composes the seven designed Insights widgets from real gathered facts', func
     $widgets = $controller->widgetList();
     $keys    = array_column($widgets, 'key');
 
-    expect($keys)->toBe(['performance', 'cloudflare', 'security', 'seo', 'ai', 'ops', 'forms']);
+    // The set, not the sequence: widgets are ordered by urgency now (FR-027), so the order here
+    // depends on the live state of this install and is asserted as a contract below rather than
+    // as a fixed list. InsightWidgetsTest covers the ordering itself against controlled facts.
+    expect($keys)->toHaveCount(7)
+        ->and(array_unique($keys))->toHaveCount(7)
+        ->and($keys)->toEqualCanonicalizing(['performance', 'cloudflare', 'security', 'seo', 'ai', 'ops', 'forms']);
+
+    // Nothing with an empty or unconfigured state may sit above something carrying real signal.
+    $idle = array_keys(array_filter(
+        $widgets,
+        static fn (array $w): bool => in_array($w['state'], ['empty', 'disconnected'], true),
+    ));
+    $signal = array_keys(array_filter(
+        $widgets,
+        static fn (array $w): bool => ! in_array($w['state'], ['empty', 'disconnected'], true),
+    ));
+
+    if ($idle !== [] && $signal !== []) {
+        expect(max($signal))->toBeLessThan(min($idle));
+    }
 
     // Every widget carries a non-empty honest state and a title — never a fabricated blank.
     foreach ($widgets as $widget) {

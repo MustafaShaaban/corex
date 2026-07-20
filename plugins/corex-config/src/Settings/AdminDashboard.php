@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Settings;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Overview\OverviewRenderer;
 use Corex\Security\Admin\AdminGuard;
 
@@ -89,7 +90,7 @@ final class AdminDashboard
             'corex-control-panel',
             plugins_url('assets/control-panel.css', $base),
             ['corex-admin-shell'],
-            $this->assetVersion($dir . '/assets/control-panel.css'),
+            ScreenAsset::version($dir . '/assets/control-panel.css'),
         );
 
         if ($hook !== $this->settingsHook) {
@@ -101,20 +102,9 @@ final class AdminDashboard
             'corex-settings',
             plugins_url('assets/settings.js', $base),
             ['media-views'],
-            $this->assetVersion($dir . '/assets/settings.js'),
+            ScreenAsset::version($dir . '/assets/settings.js'),
             true,
         );
-    }
-
-    /**
-     * Cache-busting filemtime version for a source asset (busts on every edit, any environment;
-     * falls back to the plugin version), so the owner always sees the latest admin CSS/JS.
-     */
-    private function assetVersion(string $path): string
-    {
-        $mtime = is_file($path) ? filemtime($path) : false;
-
-        return $mtime !== false ? (string) $mtime : (defined('COREX_CONFIG_VERSION') ? COREX_CONFIG_VERSION : '1.0.0');
     }
 
     public function render(): void

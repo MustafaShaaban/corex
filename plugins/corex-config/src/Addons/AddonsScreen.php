@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Addons;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Docs\DocsUrl;
 use Corex\Foundation\AddonStatus;
 use Corex\Provisioning\KitProvisioner;
@@ -75,7 +76,7 @@ final class AddonsScreen
             'corex-addons',
             plugins_url('assets/addons.css', COREX_CONFIG_FILE),
             ['corex-admin-shell'],
-            '1.1.0',
+            ScreenAsset::version(dirname(COREX_CONFIG_FILE) . '/assets/addons.css'),
         );
     }
 

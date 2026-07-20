@@ -11,6 +11,7 @@ namespace Corex\Config\Forms;
 defined('ABSPATH') || exit;
 
 use Corex\Admin\AdminPage;
+use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Security\Admin\AdminGuard;
 
 /**
@@ -71,7 +72,7 @@ final class FormsFlowsScreen
             'corex-forms-builder',
             plugins_url('assets/forms-admin.css', $base . '/corex-config.php'),
             ['corex-admin-shell'],
-            (string) ($asset['version'] ?? 'dev'),
+            ScreenAsset::version($base . '/assets/forms-admin.css'),
         );
         wp_localize_script('corex-forms-builder', 'corexFlows', [
             'restUrl' => esc_url_raw(rest_url('corex/v1/flows')),

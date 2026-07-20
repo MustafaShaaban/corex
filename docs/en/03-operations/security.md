@@ -23,6 +23,20 @@ Login protection can:
 - retain only bounded login-attempt evidence;
 - release lockouts through the recovery command.
 
+### What a hidden endpoint looks like from outside
+
+With hiding enabled, a signed-out request to `/wp-login.php` or `/wp-admin` gets the site's ordinary "not found"
+page — the same 404 your theme serves for any address that was never there. Nothing in the response names the
+custom address, and the conventional shortcuts (`/login`, `/dashboard`, `/admin`) stop redirecting to it.
+
+`/wp-login.php` is byte-identical to a genuine miss. `/wp-admin` carries the same page with fewer of WordPress's
+per-block stylesheets, because whether the front-end asset pipeline registers at all is decided while the request
+is still identified as an admin one. Someone comparing response sizes of two "not found" pages can therefore
+still infer that the admin address is handled specially — but not where the login moved to.
+
+Hiding is obscurity, not access control. It cuts automated probing; the rate limiting above is what actually
+defends credentials.
+
 If an owner is locked out or the protected route is misconfigured, run:
 
 ```bash
