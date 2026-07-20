@@ -261,13 +261,12 @@ final class LoginRouteGuard
      * direction.
      *
      * KNOWN LIMITATION: this narrows the difference, it does not erase it. A hidden /wp-admin
-     * still carries fewer inline styles than a front-end 404, because whether the front-end asset
-     * pipeline registers at all is decided at `init` while is_admin() is true — long before this
-     * runs on wp_loaded. Correcting it earlier is not possible: the only hook before `init` is
-     * plugins_loaded, where the login state is unknowable (pluggable.php has not loaded), and
-     * making is_admin() false for every admin request would break the admin for the people
-     * entitled to use it. Hiding /wp-login.php — the endpoint that actually identifies a hidden
-     * login — IS byte-identical; see the spec for the measured sizes.
+     * serves the *monolithic* wp-block-library stylesheet where a front-end 404 serves core's
+     * per-block sheets, because wp_should_load_separate_core_block_assets() returns false on
+     * is_admin() before its own filter runs (wp-includes/script-loader.php) — that one really is
+     * unreachable. The response is styled and visually indistinguishable; its byte count is not
+     * identical. Hiding /wp-login.php — the endpoint that actually identifies a hidden login —
+     * IS byte-identical; see the spec for the measured sizes.
      *
      * Public only so it can be tested. render404() exits, so nothing downstream of it is
      * observable from a test; this hook surgery is the part that has to be right, and the defect
@@ -284,6 +283,55 @@ final class LoginRouteGuard
         remove_action('template_redirect', '_wp_admin_bar_init', 0);
 
         $this->relocateEmojiStyles();
+        $this->restoreBlockStyles();
+    }
+
+    /**
+     * Give the hidden 404 the block stylesheets core withholds from an admin request.
+     *
+     * wp_common_block_scripts_and_styles() opens with `if (is_admin() && ! wp_should_load_block_
+     * editor_scripts_and_styles()) return;` (wp-includes/script-loader.php). On a hidden /wp-admin
+     * both hold — is_admin() is true and there is no block-editor screen — so core returned early
+     * and the response got no per-block sheets, no monolithic wp-block-library, no
+     * wp-block-library-theme, and never fired enqueue_block_assets. Global styles have no such
+     * gate, so theme.json tokens still printed: the 404 arrived with colours and custom properties
+     * but no block layout or appearance CSS. On a block theme with no functions.php and a
+     * metadata-only style.css, that is a visibly broken page — which is what the size gap recorded
+     * in spec 069 actually meant.
+     *
+     * wp_enqueue_scripts fires from wp_head() during template-loader.php, and render404() runs on
+     * wp_loaded, so hooking here is in time. Enqueuing the styles directly is deliberate: filtering
+     * should_load_block_editor_scripts_and_styles would also satisfy the block-*editor* branch
+     * further down script-loader.php and pull in editor assets that a genuine front-end 404 never
+     * carries, widening the fingerprint in the other direction.
+     */
+    private function restoreBlockStyles(): void
+    {
+        // Priority 20: after core's own wp_enqueue_scripts:10 handler, so enqueueBlockStyles()
+        // can tell whether core already did this and only fill a genuine gap. A named callable
+        // rather than a closure so it can be unhooked — by a host that wants none of this, and
+        // by the tests, which would otherwise leak it into every later test's <head>.
+        add_action('wp_enqueue_scripts', [$this, 'enqueueBlockStyles'], 20);
+    }
+
+    /**
+     * Enqueue what wp_common_block_scripts_and_styles() skipped.
+     *
+     * Public only so it can be hooked by name and asserted; see restoreBlockStyles().
+     *
+     * @internal
+     */
+    public function enqueueBlockStyles(): void
+    {
+        wp_enqueue_style('wp-block-library');
+
+        if (current_theme_supports('wp-block-styles')) {
+            wp_enqueue_style('wp-block-library-theme');
+        }
+
+        if (did_action('enqueue_block_assets') === 0) {
+            do_action('enqueue_block_assets');
+        }
     }
 
     /**

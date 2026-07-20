@@ -14,6 +14,7 @@ use Corex\Config\DataModels\MigrationRun;
 use Corex\Access\CorexAbility;
 use Corex\Http\Middleware\Request;
 use Corex\Http\Middleware\Response;
+use Corex\Http\RouteParam;
 use DomainException;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -66,7 +67,7 @@ final readonly class DataManagementController
         return $this->gateway->read($request, function () use ($request): Response {
             $record = $this->services->queries->detail(
                 get_current_user_id(), sanitize_key((string) $request->get_param('source')),
-                absint($request->get_param('id')),
+                RouteParam::int($request),
             );
             if ($record === null) {
                 throw new DomainException(__('The data record is unavailable.', 'corex'));
@@ -123,7 +124,7 @@ final readonly class DataManagementController
             $this->assertImportRoute($request);
 
             return Response::ok(['import' => $this->services->imports->remap(
-                get_current_user_id(), absint($request->get_param('id')),
+                get_current_user_id(), RouteParam::int($request),
                 (array) ($safe->input['mapping'] ?? []), (string) ($safe->input['unknown_policy'] ?? 'reject'),
             )->toArray()]);
         });
@@ -135,7 +136,7 @@ final readonly class DataManagementController
             $this->assertImportRoute($request);
 
             return Response::ok(['import' => $this->services->imports->commit(
-                get_current_user_id(), absint($request->get_param('id')),
+                get_current_user_id(), RouteParam::int($request),
                 (string) ($safe->input['input_hash'] ?? ''),
             )->toArray()]);
         });
@@ -144,7 +145,7 @@ final readonly class DataManagementController
     public function importReport(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->read($request, function () use ($request): Response {
-            $run = $this->services->importRuns->find(absint($request->get_param('id')));
+            $run = $this->services->importRuns->find(RouteParam::int($request));
             if ($run === null || $run->actorId !== get_current_user_id()
                 || $run->sourceKey !== sanitize_key((string) $request->get_param('source'))) {
                 throw new DomainException(__('The import report is unavailable.', 'corex'));
@@ -188,7 +189,7 @@ final readonly class DataManagementController
         return $this->gateway->read($request, function () use ($request): Response {
             $artifact = $this->services->exports->download(
                 get_current_user_id(),
-                absint($request->get_param('id')),
+                RouteParam::int($request),
                 false,
                 sanitize_key((string) $request->get_param('source')),
             );
@@ -251,13 +252,13 @@ final readonly class DataManagementController
             $token = (string) ($safe->input['token'] ?? '');
             $rollback = $token === ''
                 ? $this->migrationPreviewArray($this->services->migrations->previewRollback(
-                    get_current_user_id(), absint($request->get_param('run')),
+                    get_current_user_id(), RouteParam::int($request, 'run'),
                 ))
                 : $this->services->migrations->queue(
                     get_current_user_id(),
                     $token,
                     MigrationRun::ACTION_ROLLBACK,
-                    absint($request->get_param('run')),
+                    RouteParam::int($request, 'run'),
                 )->toArray();
 
             return Response::ok([$token === '' ? 'preview' : 'run' => $rollback]);
@@ -368,7 +369,7 @@ final readonly class DataManagementController
 
     private function assertImportRoute(WP_REST_Request $request): void
     {
-        $run = $this->services->importRuns->find(absint($request->get_param('id')));
+        $run = $this->services->importRuns->find(RouteParam::int($request));
         if ($run === null || $run->actorId !== get_current_user_id()
             || $run->sourceKey !== sanitize_key((string) $request->get_param('source'))) {
             throw new DomainException(__('The data import is unavailable.', 'corex'));

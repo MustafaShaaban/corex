@@ -40,14 +40,30 @@
 		return { ok: false, code: 'error', message: message || t( 'Something went wrong. Please try again.' ), details: {} };
 	}
 
-	function normalise( body, httpOk ) {
+	/**
+	 * Describe a failure that carried no message of its own — a blank 5xx, an HTML error
+	 * page, a proxy timeout. Naming the status is the difference between "the server broke"
+	 * and "the network broke", which are not the same problem to chase.
+	 */
+	function statusMessage( status ) {
+		if ( ! status ) {
+			return ''; // No response at all — the caller's generic default is the honest one.
+		}
+		/* translators: %d: HTTP status code of the failed response. */
+		return t( 'The server returned an unexpected response (%d).' ).replace(
+			'%d',
+			String( status )
+		);
+	}
+
+	function normalise( body, httpOk, status ) {
 		if ( isEnvelope( body ) ) {
 			return body;
 		}
 		if ( httpOk ) {
 			return { ok: true, message: '', data: body && typeof body === 'object' ? body : {} };
 		}
-		return genericError( body && body.message );
+		return genericError( ( body && body.message ) || statusMessage( status ) );
 	}
 
 	/* ----------------------------------------------------------------------- *
@@ -63,19 +79,52 @@
 		return ( window.corexRuntime && window.corexRuntime.nonce ) || '';
 	}
 
+	/** A Response is only useful to us if we can read a status and a body off it. */
+	function isResponse( value ) {
+		return (
+			value !== null &&
+			typeof value === 'object' &&
+			typeof value.status === 'number' &&
+			typeof value.json === 'function'
+		);
+	}
+
+	function fromResponse( response ) {
+		return response
+			.json()
+			.catch( function () {
+				return null; // non-JSON / HTML body → described by status, never a parse throw
+			} )
+			.then( function ( body ) {
+				return {
+					ok: response.ok,
+					status: response.status,
+					envelope: normalise( body, response.ok, response.status ),
+				};
+			} );
+	}
+
 	function viaApiFetch( url, method, data, opts ) {
 		var nonce = nonceFor( opts );
-		return wp.apiFetch( {
-			url: url,
-			method: method,
-			data: data,
-			parse: false,
-			headers: nonce ? { 'X-WP-Nonce': nonce } : {},
-		} ).then( function ( response ) {
-			return response.json().then( function ( body ) {
-				return { ok: response.ok, status: response.status, envelope: normalise( body, response.ok ) };
+		return wp
+			.apiFetch( {
+				url: url,
+				method: method,
+				data: data,
+				parse: false,
+				headers: nonce ? { 'X-WP-Nonce': nonce } : {},
+			} )
+			.then( fromResponse, function ( error ) {
+				// With parse:false core does NOT resolve on a non-2xx — parseAndThrowError()
+				// rethrows the raw Response (wp-includes/js/dist/api-fetch.js). Reading it here
+				// is what keeps the server's own message: without this every 4xx/5xx fell into
+				// request()'s blanket catch and surfaced as "Something went wrong", which is how
+				// a plain 404 from the Email Studio spent a release looking like a mystery.
+				if ( isResponse( error ) ) {
+					return fromResponse( error );
+				}
+				throw error; // genuine transport failure — request() owns it
 			} );
-		} );
 	}
 
 	function viaFetch( url, method, data, opts ) {
@@ -102,14 +151,7 @@
 			if ( timer ) {
 				window.clearTimeout( timer );
 			}
-			return response
-				.json()
-				.catch( function () {
-					return null; // non-JSON / HTML body → generic error, never a parse throw
-				} )
-				.then( function ( body ) {
-					return { ok: response.ok, status: response.status, envelope: normalise( body, response.ok ) };
-				} );
+			return fromResponse( response );
 		} );
 	}
 
@@ -120,7 +162,9 @@
 
 		return run( url, method, data, opts )
 			.catch( function () {
-				// Network failure, timeout/abort, or apiFetch rejection without a parsable body.
+				// Genuine transport failure only: no response ever arrived (network down,
+				// timeout/abort, DNS). An error *response* is read by fromResponse() and keeps
+				// its own message, so status 0 now means exactly "nothing came back".
 				return { ok: false, status: 0, envelope: genericError() };
 			} )
 			.then( function ( result ) {

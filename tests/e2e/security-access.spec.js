@@ -221,6 +221,37 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 		expect( control ).toContain( 'wp-emoji-styles-inline-css' );
 		expect( admin ).toContain( 'wp-emoji-styles-inline-css' );
 	} );
+
+	test( 'the hidden admin 404 is styled, not just correctly routed', async ( {
+		request,
+	} ) => {
+		// wp_common_block_scripts_and_styles() returns early on is_admin(), so this response
+		// once carried theme.json tokens and no block CSS whatever — a correctly routed 404
+		// that rendered as an unstyled page. The size assertion is the part that matters: the
+		// gap between the two responses was ~33KB of missing stylesheet, and nothing here
+		// measured it, so "renders 404" passed while the page was visibly broken.
+		const control = await (
+			await request.get( CONTROL, { maxRedirects: 0 } )
+		).text();
+		const admin = await (
+			await request.get( '/wp-admin/', { maxRedirects: 0 } )
+		).text();
+
+		expect( admin, 'hidden admin 404 must carry block styles' ).toContain(
+			'wp-block-library'
+		);
+
+		// Not byte-identical: wp_should_load_separate_core_block_assets() returns false on
+		// is_admin() before its own filter runs, so this response gets the monolithic sheet
+		// where the control gets per-block ones. Within 5% is close enough that the size does
+		// not reveal which endpoint is special, and far tighter than the 42% gap it replaced.
+		const ratio =
+			Math.abs( admin.length - control.length ) / control.length;
+		expect(
+			ratio,
+			`hidden admin ${ admin.length }B vs control ${ control.length }B`
+		).toBeLessThan( 0.05 );
+	} );
 } );
 
 test( 'contains Security and Access workspaces at mobile tablet desktop wide and RTL viewports', async ( { page } ) => {

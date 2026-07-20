@@ -51,9 +51,18 @@
 	scroll-margin-block-start: var(--wp--custom--header--height);
 }
 
-/* Never let the header force horizontal page scroll. */
-.corex-header,
-.corex-header__inner {
+/* Never let the header force horizontal page scroll.
+ *
+ * Deliberately not applied to .corex-header__inner. That element is the constrained child of
+ * a layout container, and core sizes it with `.is-layout-constrained > :where(…)`, which has
+ * exactly this selector's specificity — so which of the two wins is decided by stylesheet
+ * order alone. Inline block styles print after this file on a normal front-end request, so
+ * core won and the rule was already inert; when this sheet loads as a <link> instead (core
+ * turns off on-demand block assets whenever is_admin() is true, which includes the hidden
+ * /wp-admin 404), the order inverted and the header stretched edge to edge. The inner element
+ * cannot overflow a parent that is already capped at 100%, so the guard belongs here only.
+ */
+.corex-header {
 	max-inline-size: 100%;
 }
 

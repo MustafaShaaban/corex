@@ -6,6 +6,34 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Editing an email template no longer fails with "Something went wrong."** Two defects stacked. WordPress
+  resolves a request's JSON body before its URL parameters, and the editor was posting the stored version's own
+  `id` alongside the fields it edits — so a save aimed at one template looked up a *version* id as if it were a
+  template, found nothing, and answered 404. Only templates that already had a saved revision could hit it,
+  which is why it looked intermittent. The message never reached the screen because the client assumed
+  `wp.apiFetch` resolves on an error status when core in fact rethrows the response, so every server error was
+  replaced with a generic one. Both ends are fixed: route identity is now read from the path where nothing can
+  shadow it (`Corex\Http\RouteParam`, applied across the Email Studio, Flows, Submissions and Data
+  controllers), and the transport reads error responses instead of discarding them. Per-field validation
+  messages the server was already sending now appear too.
+- **A hidden `/wp-admin` renders the theme's 404 properly styled.** It was correctly routed but visually
+  broken: `wp_common_block_scripts_and_styles()` returns early on `is_admin()`, so the response carried
+  `theme.json` tokens and no block CSS at all — no per-block sheets, no `wp-block-library`, and
+  `enqueue_block_assets` never fired. On a block theme whose `style.css` is metadata only, that is an unstyled
+  page. Spec 069 documented this as unreachable; that is true of a different gate, while this one is hooked to
+  `wp_enqueue_scripts` and runs long after the guard does. Measured on a real install: the hidden admin went
+  from **46,587 bytes to 79,711**, against a genuine 404's **79,964** — visually identical, with computed
+  typography, layout and header geometry matching exactly. It remains ~250 bytes apart rather than
+  byte-identical, because `wp_should_load_separate_core_block_assets()` genuinely cannot be reached on an admin
+  request, so this response gets the combined stylesheet where a front-end 404 gets separate ones
+  (`Corex\Config\Security\LoginProtection\LoginRouteGuard`).
+- **The site header no longer stretches edge to edge when its stylesheet loads as a file.** `.corex-header__inner`
+  carried a `max-inline-size` rule with the same specificity as WordPress's constrained-layout rule, so which
+  one won depended entirely on stylesheet order — inert on an ordinary page view, and wrong wherever the order
+  inverts.
+
 ## [0.34.0] — 2026-07-20
 
 Spec 069 — Admin correctness and login-hiding parity. A correction release. Login hiding now behaves the way the

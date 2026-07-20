@@ -67,6 +67,26 @@ it('moves the emoji shim so core can unhook it during an admin-context 404', fun
 // not run in an admin context, so core would inspect the front-end hook we just emptied and bail.
 // That half of the contract is covered against a real request in tests/e2e/security-access.spec.js.
 
+it('re-enqueues the block stylesheets core withholds from an admin request', function () {
+    // wp_common_block_scripts_and_styles() returns early on is_admin() unless a block-editor
+    // screen is up (wp-includes/script-loader.php), so the hidden 404 got no per-block sheets,
+    // no wp-block-library, and never fired enqueue_block_assets. theme.json global styles have
+    // no such gate, so the page arrived with design tokens and no block CSS at all — visibly
+    // unstyled on a block theme whose style.css is metadata only.
+    $guard = hiddenAdminGuard();
+    $guard->dropAdminContext();
+
+    expect(has_action('wp_enqueue_scripts', [$guard, 'enqueueBlockStyles']))->not->toBeFalse();
+
+    $guard->enqueueBlockStyles();
+
+    expect(wp_style_is('wp-block-library', 'enqueued'))->toBeTrue();
+
+    // Leave no hook behind: this fires on every later test's wp_enqueue_scripts otherwise.
+    remove_action('wp_enqueue_scripts', [$guard, 'enqueueBlockStyles'], 20);
+    wp_dequeue_style('wp-block-library');
+});
+
 it('strips the admin bar init that would otherwise mark the missing page as admin', function () {
     add_action('template_redirect', '_wp_admin_bar_init', 0);
 

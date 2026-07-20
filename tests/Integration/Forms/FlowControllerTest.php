@@ -119,23 +119,23 @@ it('creates updates publishes and reads an immutable flow through REST', functio
     $updatePayload['expected_version'] = 1;
     $updatePayload['expected_checksum'] = $version['checksum'];
     $update = flowRestRequest('PATCH', '/corex/v1/flows/' . $flow['id'], $updatePayload);
-    $update->set_param('id', $flow['id']);
+    $update->set_url_params(['id' => $flow['id']]);
     $updated = $this->controller->update($update);
 
     $publish = flowRestRequest('POST', '/corex/v1/flows/' . $flow['id'] . '/publish', ['expected_version' => 2]);
-    $publish->set_param('id', $flow['id']);
+    $publish->set_url_params(['id' => $flow['id']]);
     $published = $this->controller->publish($publish);
 
     $visitor = flowRestRequest('POST', '/corex/v1/flows/' . $flow['id'] . '/submit', ['email' => 'visitor@example.com']);
-    $visitor->set_param('id', $flow['id']);
+    $visitor->set_url_params(['id' => $flow['id']]);
     $submitted = $this->submissionController->submit($visitor);
 
     $test = flowRestRequest('POST', '/corex/v1/flows/' . $flow['id'] . '/test', ['expected_version' => 2]);
-    $test->set_param('id', $flow['id']);
+    $test->set_url_params(['id' => $flow['id']]);
     $tested = $this->controller->test($test);
 
     $show = flowRestRequest('GET', '/corex/v1/flows/' . $flow['id']);
-    $show->set_param('id', $flow['id']);
+    $show->set_url_params(['id' => $flow['id']]);
     $found = $this->controller->show($show);
 
     expect($created->get_status())->toBe(201)
@@ -163,7 +163,7 @@ it('returns a 409 conflict without appending when the draft checksum is stale', 
     $payload['expected_version'] = 1;
     $payload['expected_checksum'] = 'stale';
     $request = flowRestRequest('PATCH', '/corex/v1/flows/' . $flowId, $payload);
-    $request->set_param('id', $flowId);
+    $request->set_url_params(['id' => $flowId]);
 
     $response = $this->controller->update($request);
 
@@ -187,7 +187,7 @@ it('returns field errors and stores nothing when a published visitor payload is 
     $created = $this->controller->create(flowRestRequest('POST', '/corex/v1/flows', flowRestPayload()));
     $flowId = $created->get_data()['data']['flow']['id'];
     $publish = flowRestRequest('POST', '/corex/v1/flows/' . $flowId . '/publish', ['expected_version' => 1]);
-    $publish->set_param('id', $flowId);
+    $publish->set_url_params(['id' => $flowId]);
     $this->controller->publish($publish);
     $before = count(get_posts([
         'post_type' => 'corex_submission',
@@ -197,7 +197,7 @@ it('returns field errors and stores nothing when a published visitor payload is 
     ]));
 
     $visitor = flowRestRequest('POST', '/corex/v1/flows/' . $flowId . '/submit', ['email' => 'not-an-email']);
-    $visitor->set_param('id', $flowId);
+    $visitor->set_url_params(['id' => $flowId]);
     $response = $this->submissionController->submit($visitor);
 
     expect($response->get_status())->toBe(422)
@@ -221,7 +221,7 @@ it('rejects an unpublished visitor flow without creating a submission', function
         'fields' => 'ids',
     ]));
     $visitor = flowRestRequest('POST', '/corex/v1/flows/' . $flowId . '/submit', ['email' => 'visitor@example.com']);
-    $visitor->set_param('id', $flowId);
+    $visitor->set_url_params(['id' => $flowId]);
 
     $response = $this->submissionController->submit($visitor);
 

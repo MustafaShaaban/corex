@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Http\Middleware\Request;
 use Corex\Http\Middleware\Response;
+use Corex\Http\RouteParam;
 use DomainException;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -54,7 +55,7 @@ final readonly class SubmissionsController
     public function show(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->read($request, function () use ($request): Response {
-            $record = $this->services->queries->detail(get_current_user_id(), absint($request->get_param('id')));
+            $record = $this->services->queries->detail(get_current_user_id(), RouteParam::int($request));
             if ($record === null) {
                 throw new DomainException(__('Submission was not found.', 'corex'));
             }
@@ -67,7 +68,7 @@ final readonly class SubmissionsController
     {
         return $this->gateway->mutate($request, $this->updateShape(), function (Request $safe) use ($request): Response {
             $scope = $this->scope();
-            $id = absint($request->get_param('id'));
+            $id = RouteParam::int($request);
             $expected = (string) ($safe->input['expected_updated_at'] ?? '');
             $record = null;
             if (($safe->input['status'] ?? '') !== '') {
@@ -99,7 +100,7 @@ final readonly class SubmissionsController
             'visibility' => 'sanitize_key',
         ], fn (Request $safe): Response => Response::ok(['note' => $this->services->workflow->addNote(
             $this->scope(),
-            absint($request->get_param('id')),
+            RouteParam::int($request),
             (string) ($safe->input['body'] ?? ''),
             (string) ($safe->input['visibility'] ?? 'corex-team'),
         )]));
@@ -112,7 +113,7 @@ final readonly class SubmissionsController
             'body' => 'wp_kses_post',
         ], fn (Request $safe): Response => Response::ok(['result' => $this->services->email->reply(
             $this->scope(),
-            absint($request->get_param('id')),
+            RouteParam::int($request),
             new SubmissionReply((string) ($safe->input['subject'] ?? ''), (string) ($safe->input['body'] ?? '')),
         )->toArray()]));
     }
@@ -122,7 +123,7 @@ final readonly class SubmissionsController
         return $this->gateway->mutate($request, ['attempt_id' => 'sanitize_text_field'], fn (Request $safe): Response =>
             Response::ok(['result' => $this->services->email->resend(
                 $this->scope(),
-                absint($request->get_param('id')),
+                RouteParam::int($request),
                 (string) ($safe->input['attempt_id'] ?? ''),
             )->toArray()]));
     }
@@ -131,7 +132,7 @@ final readonly class SubmissionsController
     {
         return $this->gateway->read($request, fn (): Response => Response::ok(['log' => $this->services->email->log(
             $this->scope(),
-            absint($request->get_param('id')),
+            RouteParam::int($request),
             sanitize_text_field((string) $request->get_param('attempt_id')),
         )]));
     }
@@ -178,7 +179,7 @@ final readonly class SubmissionsController
     public function downloadExport(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->read($request, fn (): Response => Response::ok([
-            'artifact' => $this->services->exports->download($this->scope(), absint($request->get_param('export'))),
+            'artifact' => $this->services->exports->download($this->scope(), RouteParam::int($request, 'export')),
         ]));
     }
 

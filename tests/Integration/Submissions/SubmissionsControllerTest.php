@@ -92,19 +92,19 @@ it('queries details mutates status and adds notes through canonical envelopes', 
 
     $list = $this->submissionsController->index(submissionsRequest('GET', '/corex/v1/submissions', ['flow' => 90]));
     $detailRequest = submissionsRequest('GET', '/corex/v1/submissions/' . $submissionId);
-    $detailRequest->set_param('id', $submissionId);
+    $detailRequest->set_url_params(['id' => $submissionId]);
     $detail = $this->submissionsController->show($detailRequest);
     $patch = submissionsRequest('PATCH', '/corex/v1/submissions/' . $submissionId, [
         'status' => 'in_progress',
         'expected_updated_at' => '2026-07-04T12:00:00+00:00',
     ]);
-    $patch->set_param('id', $submissionId);
+    $patch->set_url_params(['id' => $submissionId]);
     $updated = $this->submissionsController->update($patch);
     $note = submissionsRequest('POST', '/corex/v1/submissions/' . $submissionId . '/notes', [
         'body' => 'Follow up tomorrow.',
         'visibility' => 'corex-team',
     ]);
-    $note->set_param('id', $submissionId);
+    $note->set_url_params(['id' => $submissionId]);
     $noted = $this->submissionsController->addNote($note);
 
     expect($list->get_status())->toBe(200)
@@ -128,7 +128,7 @@ it('rejects mutation without a valid REST nonce before changing state', function
         ],
     ]);
     $request = new WP_REST_Request('PATCH', '/corex/v1/submissions/' . $submissionId);
-    $request->set_param('id', $submissionId);
+    $request->set_url_params(['id' => $submissionId]);
     $request->set_body_params(['status' => 'closed', 'expected_updated_at' => 'v1']);
 
     $response = $this->submissionsController->update($request);
