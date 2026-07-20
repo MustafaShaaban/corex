@@ -1,9 +1,26 @@
 /** CoreX Insights and readiness cards; scoped to the CoreX shell. */
 
+/* One grid for everything on the screen: the two runnable cards
+   (Performance, Readiness) and the five informational widgets are siblings
+   in it. They used to be two nested grids -- the widget container was a
+   child of this one, so it became a single ~370px cell and its own tracks
+   collapsed to one column, stacking every widget in a narrow strip beside
+   the cards. Two equal columns, per the design capture. */
 .corex-admin .corex-insights {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
-	gap: var(--corex-admin-space-lg);
+	grid-template-columns: 1fr;
+	gap: var(--corex-admin-space-md);
+
+	/* Not `start`: these cards are flex columns with a footer pinned by
+	   margin-block-start, so stretching gives a flush bottom edge per row. */
+	align-items: stretch;
+}
+
+@media (min-width: 48rem) { /* corex-token-allow: responsive breakpoint */
+
+	.corex-admin .corex-insights {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 }
 
 .corex-admin .corex-insight-card {
@@ -103,15 +120,9 @@
 }
 
 /* The designed informational widget set (Cloudflare, Security, SEO,
-   Operations, Forms), rendered from real gathered facts below the
-   runnable Performance/Readiness cards. Tokens + logical props. */
-.corex-admin .corex-insights__widgets {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-	gap: var(--corex-admin-space-md);
-	margin-block-start: var(--corex-admin-space-lg);
-}
-
+   Operations, Forms), rendered from real gathered facts alongside the
+   runnable Performance/Readiness cards in the shared grid above.
+   Tokens + logical props. */
 .corex-admin .corex-insight-widget {
 	display: flex;
 	flex-direction: column;

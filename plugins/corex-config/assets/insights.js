@@ -267,12 +267,12 @@
 				  '</ul>'
 				: '' ) +
 			( widget.alt ? widgetAlt( widget.alt ) : '' );
-		widgetsRoot.appendChild( el );
-	}
 
-	const widgetsRoot = document.createElement( 'div' );
-	widgetsRoot.className = 'corex-insights__widgets';
-	root.appendChild( widgetsRoot );
+		// Straight into the screen grid, alongside the provider cards. This used to append into
+		// a nested `.corex-insights__widgets` container, which the outer grid then treated as a
+		// single cell -- so all five widgets collapsed into one narrow column beside the cards.
+		root.appendChild( el );
+	}
 
 	api.get( restUrl + '/widgets', { nonce } ).then( ( result ) => {
 		const payload = result.envelope.ok ? result.envelope.data : null;
