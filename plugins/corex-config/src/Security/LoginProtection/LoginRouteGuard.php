@@ -235,7 +235,7 @@ final class LoginRouteGuard
         unset($_SERVER['PATH_INFO']);
 
         if (is_admin()) {
-            $this->quietenAdminContext();
+            $this->dropAdminContext();
         }
 
         if (! defined('WP_USE_THEMES')) {
@@ -252,36 +252,69 @@ final class LoginRouteGuard
     }
 
     /**
-     * Stop an admin request from leaking admin-ness into a front-end 404.
-     *
-     * WP_ADMIN is a constant and cannot be unset, so is_admin() stays true while we render the
-     * theme's 404 and core takes admin branches it should not. Only applied when the hidden
-     * request really is an admin one — doing it unconditionally strips emoji styles a genuine
-     * front-end 404 has, which makes the response differ in the other direction.
-     */
-    /**
      * Strip the admin-ness that would otherwise leak into a hidden admin request's 404.
      *
-     * KNOWN LIMITATION: this narrows the difference, it does not erase it. A hidden /wp-admin
-     * renders the real theme 404 but carries fewer inline styles than a front-end 404 (measured
-     * ~50 KB against ~80 KB), because whether the front-end asset pipeline registers at all is
-     * decided at `init`, while is_admin() is true — long before this runs on wp_loaded. Correcting
-     * it earlier is not possible: the only hook before `init` is plugins_loaded, where the login
-     * state is unknowable (pluggable.php has not loaded), and making is_admin() false for every
-     * admin request would break the admin for the people entitled to use it.
+     * WP_ADMIN is a constant and cannot be unset, so is_admin() stays true while we render the
+     * theme's 404 and core keeps taking admin branches it should not. Each one has to be undone
+     * by hand. Only applied when the hidden request really is an admin one — doing it to a
+     * front-end request would strip things a genuine front-end 404 has, differing in the other
+     * direction.
      *
-     * So a determined attacker comparing response sizes can still tell /wp-admin is handled. That
-     * is a far weaker signal than what shipped before — a 2.5 KB wp_die page, and /login handing
-     * out the slug outright — but it is not nothing, and it is not what SC-001 asks for. Hiding
-     * /wp-login.php, the endpoint that actually identifies a hidden login, IS byte-identical.
+     * KNOWN LIMITATION: this narrows the difference, it does not erase it. A hidden /wp-admin
+     * still carries fewer inline styles than a front-end 404, because whether the front-end asset
+     * pipeline registers at all is decided at `init` while is_admin() is true — long before this
+     * runs on wp_loaded. Correcting it earlier is not possible: the only hook before `init` is
+     * plugins_loaded, where the login state is unknowable (pluggable.php has not loaded), and
+     * making is_admin() false for every admin request would break the admin for the people
+     * entitled to use it. Hiding /wp-login.php — the endpoint that actually identifies a hidden
+     * login — IS byte-identical; see the spec for the measured sizes.
+     *
+     * Public only so it can be tested. render404() exits, so nothing downstream of it is
+     * observable from a test; this hook surgery is the part that has to be right, and the defect
+     * it fixes shipped precisely because nothing could see it.
+     *
+     * @internal
      */
-    private function quietenAdminContext(): void
+    public function dropAdminContext(): void
     {
         // is_admin_bar_showing() returns true on is_admin() alone (wp-includes/admin-bar.php),
         // short-circuiting both the logged-out check and the show_admin_bar filter — so filtering
         // does nothing and the init itself has to go. With no $wp_admin_bar the render no-ops.
         // Without this, a logged-out visitor's "missing page" arrives carrying admin bar markup.
         remove_action('template_redirect', '_wp_admin_bar_init', 0);
+
+        $this->relocateEmojiStyles();
+    }
+
+    /**
+     * Move core's deprecated emoji-style shim to where core will look for it.
+     *
+     * Core registers print_emoji_styles() on `wp_print_styles` only (default-filters.php) and
+     * unhooks it from wp_enqueue_emoji_styles(), which picks its target from is_admin():
+     *
+     *     $action = is_admin() ? 'admin_print_styles' : 'wp_print_styles';
+     *     if ( ! has_action( $action, 'print_emoji_styles' ) ) { return; }
+     *
+     * On a hidden /wp-admin, is_admin() is still true, so core looked at `admin_print_styles`,
+     * found nothing, and returned without unhooking. wp_head() then fired `wp_print_styles`, the
+     * deprecated function ran, and with WP_DEBUG_DISPLAY on the notice was printed into the body
+     * of the "missing page" — the loudest possible way to announce that something is hidden here.
+     *
+     * Removing the hook outright would silence it but leave the response missing the emoji styles
+     * a real front-end 404 carries, widening the size gap that SC-001 is about. Moving it to the
+     * hook core is about to inspect makes core's own unhook succeed, so we get exactly what a
+     * front-end request gets: the shim removed and the modern inline styles enqueued in its place.
+     * `admin_print_styles` never fires during a front-end template render, so the moved hook is
+     * inert either way.
+     */
+    private function relocateEmojiStyles(): void
+    {
+        if (has_action('wp_print_styles', 'print_emoji_styles') === false) {
+            return;
+        }
+
+        remove_action('wp_print_styles', 'print_emoji_styles');
+        add_action('admin_print_styles', 'print_emoji_styles');
     }
 
     /** Point a URL that references the default login at the custom slug instead. */

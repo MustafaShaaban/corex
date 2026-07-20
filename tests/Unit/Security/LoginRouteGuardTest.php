@@ -120,6 +120,35 @@ it('never hides the admin area when default-endpoint hiding is off', function ()
         ->toBeFalse();
 });
 
+it('moves the deprecated emoji shim to the hook core will actually inspect', function () {
+    // The hidden /wp-admin 404 arrived with "Function print_emoji_styles is deprecated" printed
+    // into its body — the loudest possible way to announce that something is hidden here.
+    // Core unhooks that shim from wp_enqueue_emoji_styles(), choosing its target with
+    // `is_admin() ? 'admin_print_styles' : 'wp_print_styles'`. WP_ADMIN cannot be unset, so core
+    // looked at admin_print_styles, found nothing, and never unhooked. Moving the shim to the
+    // hook core is about to inspect makes core's own unhook succeed.
+    $guard = new LoginRouteGuard(routePolicy());
+
+    Functions\when('has_action')->justReturn(10);
+    Functions\expect('remove_action')->once()->with('wp_print_styles', 'print_emoji_styles');
+    Functions\expect('add_action')->once()->with('admin_print_styles', 'print_emoji_styles');
+    Functions\expect('remove_action')->once()->with('template_redirect', '_wp_admin_bar_init', 0);
+
+    $guard->dropAdminContext();
+});
+
+it('leaves the emoji shim alone when it is not registered', function () {
+    // Another plugin may already have unhooked it. Re-adding it on admin_print_styles would put
+    // back something the site deliberately removed.
+    $guard = new LoginRouteGuard(routePolicy());
+
+    Functions\when('has_action')->justReturn(false);
+    Functions\expect('add_action')->never();
+    Functions\expect('remove_action')->once()->with('template_redirect', '_wp_admin_bar_init', 0);
+
+    $guard->dropAdminContext();
+});
+
 it('matches the slug by query string when the site uses plain permalinks', function () {
     Functions\when('get_option')->alias(static fn (string $key, $default = false) => $key === 'permalink_structure' ? '' : $default);
     $guard = new LoginRouteGuard(routePolicy(['customSlug' => 'team-login']));

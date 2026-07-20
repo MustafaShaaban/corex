@@ -56,6 +56,11 @@ const SCREENS = [
 	{ name: 'insights', url: '/wp-admin/admin.php?page=corex-insights' },
 	{ name: 'setup', url: '/wp-admin/admin.php?page=corex-setup' },
 	{ name: 'login', url: '/wp-login.php', loggedOut: true },
+	// The hidden-endpoint pair, for eyeballing side by side: with login hiding enabled these two
+	// must look like the same page. `login` above becomes the same 404 in that state, which is the
+	// point — the control is what proves it.
+	{ name: 'notfound-control', url: '/corex-definitely-not-a-page/', loggedOut: true },
+	{ name: 'notfound-wp-admin', url: '/wp-admin/', loggedOut: true },
 ].filter( ( s ) => ! only || only.includes( s.name ) );
 
 ( async () => {
