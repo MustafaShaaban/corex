@@ -44,6 +44,30 @@ test( 'Overview projects real readiness, activity, and command-center counts', a
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
 
+test( 'Overview tiles hold four evenly pitched columns', async ( { page } ) => {
+	// The tiles were an auto-fit grid, so the track count changed with the viewport and the row
+	// re-flowed to three or five unevenly-sized tiles at ordinary widths. The approved capture
+	// ("Corex Admin Overview.dc.html") specifies repeat(4,1fr); four fixed tracks hold that shape.
+	//
+	// Note this deliberately does NOT assert alignment with the card grids below: those are
+	// 1.15fr/1fr, so their gutter sits at ~53.5% while four equal tiles divide at 50%. The capture
+	// specifies both, so the offset is the design, not a defect.
+	await page.setViewportSize( { width: 1440, height: 900 } );
+	await page.goto( '/wp-admin/admin.php?page=corex-settings' );
+	await expect( page.locator( '.corex-overview__tile' ) ).toHaveCount( 4 );
+
+	const tiles = await page
+		.locator( '.corex-overview__tile' )
+		.evaluateAll( ( els ) => els.map( ( el ) => el.getBoundingClientRect().x ) );
+
+	// One row of four: four distinct offsets, evenly pitched.
+	expect( new Set( tiles.map( Math.round ) ).size ).toBe( 4 );
+	const pitches = tiles.slice( 1 ).map( ( x, i ) => x - tiles[ i ] );
+	for ( const pitch of pitches ) {
+		expect( Math.abs( pitch - pitches[ 0 ] ) ).toBeLessThan( 2 );
+	}
+} );
+
 test( 'Add-ons lists real packages with truthful summary counts', async ( { page } ) => {
 	const errors = collectConsoleErrors( page );
 	await page.goto( '/wp-admin/admin.php?page=corex-addons' );

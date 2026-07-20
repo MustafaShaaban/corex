@@ -335,97 +335,6 @@
 	}
 }
 
-/* Overview operational summary (spec 063, Phase 1). Truthful at-a-glance
-   rows; tone by class + text, never colour alone. Tokens + logical
-   properties only; self-contained (no dependency on the Add-ons sheet). */
-.corex-admin .corex-overview-summary__head {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: baseline;
-	gap: var(--corex-admin-space-sm);
-}
-
-.corex-admin .corex-overview-summary__env {
-	margin-inline-start: auto;
-	display: inline-flex;
-	align-items: center;
-	padding-block: var(--corex-admin-space-2xs);
-	padding-inline: var(--corex-admin-space-sm);
-	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
-	border-radius: var(--corex-admin-radius-pill);
-	background: var(--corex-admin-surface-alt);
-	color: var(--corex-admin-text);
-	font-family: var(--corex-admin-font-mono);
-	font-size: var(--corex-admin-font-xs);
-	font-weight: 600;
-	white-space: nowrap;
-}
-
-.corex-admin .corex-overview-summary__env.corex-badge--success {
-	border-color: var(--corex-admin-success);
-	color: var(--corex-admin-success);
-}
-
-.corex-admin .corex-overview-summary__env.corex-badge--warning {
-	border-color: var(--corex-admin-warning);
-	color: var(--corex-admin-warning);
-}
-
-.corex-admin .corex-overview-summary__env.corex-badge--info {
-	border-color: var(--corex-admin-info);
-	color: var(--corex-admin-info);
-}
-
-.corex-admin .corex-overview-summary__grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-	gap: var(--corex-admin-space-md);
-	margin-block-start: var(--corex-admin-space-lg);
-}
-
-.corex-admin .corex-overview-summary__cell {
-	padding: var(--corex-admin-space-md);
-	background: var(--corex-admin-surface);
-	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
-	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);
-	border-radius: var(--corex-admin-radius-md);
-}
-
-.corex-admin .corex-overview-summary__cell.is-success {
-	border-inline-start-color: var(--corex-admin-success);
-}
-
-.corex-admin .corex-overview-summary__cell.is-warning {
-	border-inline-start-color: var(--corex-admin-warning);
-}
-
-.corex-admin .corex-overview-summary__cell.is-info {
-	border-inline-start-color: var(--corex-admin-info);
-}
-
-.corex-admin .corex-overview-summary__label {
-	margin: 0;
-	color: var(--corex-admin-text-muted);
-	font-family: var(--corex-admin-font-mono);
-	font-size: var(--corex-admin-font-xs);
-	text-transform: uppercase;
-	letter-spacing: var(--corex-admin-letter-wide);
-}
-
-.corex-admin .corex-overview-summary__value {
-	margin: var(--corex-admin-space-xs) 0 0;
-	color: var(--corex-admin-text);
-	font-family: var(--corex-admin-font-display);
-	font-size: var(--corex-admin-font-lg);
-	font-weight: 600;
-}
-
-.corex-admin .corex-overview-summary__detail {
-	margin: var(--corex-admin-space-2xs) 0 0;
-	color: var(--corex-admin-text-muted);
-	font-size: var(--corex-admin-font-sm);
-}
-
 /* ==========================================================================
    Overview readiness dashboard (spec 064) — the single cohesive grid that
    replaces the previously stacked panels. Dense, aligned, no dead canvas.
@@ -485,10 +394,24 @@
 	letter-spacing: var(--corex-admin-letter-wide);
 }
 
+/* Four fixed tracks, per the approved capture ("Corex Admin Overview.dc.html":
+   repeat(4,1fr)). auto-fit resolved to a different track count at almost every
+   width, so the tile edges wandered independently of the two-column card grids
+   below and the screen read as three unrelated column systems. Fixed tracks put
+   every second tile boundary on the card gutter. */
 .corex-admin .corex-overview__tiles {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: var(--corex-admin-space-md);
+}
+
+@media (min-width: 60rem) { /* corex-token-allow: responsive breakpoint */
+
+	/* Matches the breakpoint where the card grids below go two-up, so the tile
+	   row and the cards change shape together rather than at separate widths. */
+	.corex-admin .corex-overview__tiles {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
 }
 
 .corex-admin .corex-overview__tile {
@@ -524,7 +447,15 @@
 .corex-admin .corex-overview__grid {
 	display: grid;
 	gap: var(--corex-admin-space-md);
-	align-items: start;
+
+	/* The capture specifies `align-items: start`, and at the content volume it
+	   was drawn with (a 3-row data card) that reads identically to this.
+	   Against real data it does not: this install renders 7 data sources, so
+	   the right column runs ~260px past the readiness card and leaves a block
+	   of dead canvas beside it — the exact thing this grid's own brief forbids
+	   ("no dead canvas", above). Stretching keeps the drawn column ratios
+	   while holding that promise. */
+	align-items: stretch;
 }
 
 .corex-admin .corex-overview__grid--primary {
