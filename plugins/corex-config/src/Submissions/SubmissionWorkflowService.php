@@ -10,6 +10,7 @@ namespace Corex\Config\Submissions;
 
 defined('ABSPATH') || exit;
 
+use Corex\Events\EventDispatcher;
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
@@ -22,6 +23,7 @@ final readonly class SubmissionWorkflowService
     public function __construct(
         private SubmissionWorkflowStore $submissions,
         private SubmissionTimelineStore $timeline,
+        private ?EventDispatcher $events = null,
     ) {
     }
 
@@ -77,6 +79,14 @@ final readonly class SubmissionWorkflowService
             'to' => $assignment->label(),
             'actor_id' => $scope->actorId,
         ]);
+
+        // Tell the assignee (a person), independently of the inbox UI.
+        $this->events?->dispatch(new SubmissionAssignedEvent(
+            submissionId: $submissionId,
+            assigneeType: $assignment->type,
+            assigneeKey: $assignment->key,
+            actorId: $scope->actorId,
+        ));
 
         return $updated;
     }

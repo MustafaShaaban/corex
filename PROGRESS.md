@@ -118,10 +118,19 @@ Verified: 4 REST integration tests (list/count, nonce-gated read 403-without/200
 manage-tier resolve) + 9 repo integration + full unit (1394 pass / 8 pre-existing) green; 9 routes
 register live; front page 200. Guards clean. **preferences** endpoints deferred to T020.
 
-**Next for Phase B:** T013's remaining producers (submission **assigned**, Email Studio failure, Readiness)
-as independent slices, and/or **T015–T019 surfaces** (bell/drawer/screen/toolbar — the REST API they
-consume is now live). Then preferences + retention = the framework's first recurring job (T020–T022),
-then Phase C Dashboard (T023–T025).
+**T013 slice 6 (Submission-assigned producer) — shipped.** `SubmissionAssignedEvent` dispatched from
+`SubmissionWorkflowService::assign` via an optional `EventDispatcher` (2→3 ctor; all its unit/integration
+constructions use 2 args, still valid). `SubmissionAssignedNotificationProducer` notifies the assignee
+(`forUser`, `submission.assigned`, ACTION, dedup `submission.assigned:{id}:{userKey}`) only for person
+assignments — never team/role, never self-assignment. Verified: 4 producer unit + 63 Notifications/
+Submissions unit + 4 Submissions integration green; live end-to-end; front page 200. Guards clean.
+**Six producers register at boot:** forms.submissions, access.requests, jobs.failures, jobs.exports,
+security.lockouts, submissions.assignments.
+
+**Next for Phase B:** T013's last two producers (Email Studio failure, Readiness blocker/cleared) as
+independent slices, and/or **T015–T019 surfaces** (bell/drawer/screen/toolbar — the REST API they consume
+is now live and integration-tested). Then preferences + retention = the framework's first recurring job
+(T020–T022), then Phase C Dashboard (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
