@@ -4,7 +4,7 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-21) -- Phase A shipped + repo cleaned; Phase B (Notification Center) persistence store green (T003–T010) on `spec/072-notification-center-and-dashboard`.
+## RESUME HERE (2026-07-22) -- Spec 072 (Notification Center & Command Center) COMPLETE + gated on `spec/072-notification-center-and-dashboard`; **PR #119 open, blocked only on human review + the 070→071→072 stack merge**. Everything below is the build log for that branch.
 
 **Phase A (spec 071) is committed, pushed, and PR'd.** Working tree was 79 uncommitted files; now
 three logical commits on `spec/071` (`docs(070)` backfill · `feat(071)` implementation · `docs(071)`
@@ -257,14 +257,30 @@ guaranteed), and the operations guide.
 `spec/071-form-delivery-and-recaptcha-reliability` (stacked — auto-retargets to `main` as 070→071 merge).
 Blocked only on human review + the stack merge order (PR #117 spec-070 → #118 spec-071 → #119 spec-072).
 
+**T026 COMPLETE — performance guard.** `NotificationPerformanceTest` (integration) seeds 10k notifications
+and asserts `unreadCountForActor`, a filtered `queryForActor` page, and `pruneOlderThan` each finish well
+within budget, then cleans up its seed. This is the evidence behind FR-026: the store caps its candidate
+scan at 500 rows and paginates in PHP, so volume never slows a read. Green.
+
+**T019 COMPLETE — the e2e matrix.** `tests/e2e/notification-center.spec.js` is now **6 tests green live**
+(was 3). The three added prove what only a real browser can: **toolbar-not-doubled** (off a CoreX screen the
+admin-bar node links to the center and no shell bell exists; on a CoreX screen the bell shows and the toolbar
+node stands down — asserted both directions, so neither surface can silently vanish); **light/dark/RTL** (the
+drawer's computed background differs per theme, proving it paints from shell tokens not a hardcoded colour,
+and `dir="rtl"` alone flips the panel edge-to-edge, proving `inset-inline-end` was never written as `right`);
+**mobile containment** (opening the drawer at 375×812 adds no horizontal overflow past the screen's own
+baseline). No Jest was added: both surfaces are server-rendered PHP, and the 99+ cap with the true count in
+the accessible label is already asserted in `NotificationBellTest` + `NotificationToolbarTest` — proving it in
+a browser would need 100+ seeded rows to learn nothing new. `lint-js` clean (also cleared three pre-existing
+lint errors the file carried). Task list reconciled: T014's preferences sub-item, T015 "drawer finish", and
+T016 "screen finish" were all completed earlier but left unticked — now closed with their real resolutions.
+
 **Remaining — all optional / deferred, none blocking:** T024 opt-in widgets + Development-only rules; T021
 `NotificationChannelPolicy` (speculative until an email delivery channel exists — the producers already tag
-mail failures `email` for it); T019/T026 Jest/Playwright + performance gaps (core interactions already
-e2e-covered); the assigned-to-me/updates/history screen views (need a recipient/resolved filter on
-`NotificationQuery`).
-**Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
-`upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
-excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
+mail failures `email` for it); the assigned-to-me/updates/history screen views (need a recipient/resolved
+filter on `NotificationQuery` — an API extension, deliberately not smuggled into the screen work).
+**Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in `upsertByDedupKey`) —
+decide whether an explicit reopen endpoint needs it or drop it. MFA excluded throughout.
 
 ---
 ## (previous, 2026-07-20b) -- Spec 071 US1 COMPLETE on `spec/071-form-delivery-and-recaptcha-reliability`.
