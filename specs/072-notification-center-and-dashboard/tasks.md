@@ -77,7 +77,7 @@ description: "Task list for Spec 072 — Notification Center & Dashboard Command
 
 ## Phase 9: Performance, docs, gate
 - [ ] **T026** Performance tests: 10k notifications — unread count, drawer, Dashboard, filtered center within budget.
-- [ ] **T027** Docs: Notification Center guide, Dashboard widget guide, producer-integration guide, retention/privacy, sidebar, README; docs-guard.
+- [X] **T027** Docs: Notification Center guide, Dashboard widget guide, producer-integration guide, retention/privacy, sidebar, README; docs-guard. **COMPLETE** — `docs/en/03-operations/notifications.md` covers the surfaces, the producer table, the REST API, preferences, retention/privacy, the Dashboard Command Center, and a "for developers: adding a producer" section. Every referenced ability, producer type, endpoint, meta key, retention window, and cron cadence verified against source (docs-guard). Auto-discovered by the docs-app (Astro content collection) — no manual sidebar edit; README has no module-list to update.
 - [ ] **T028** Phase-B/C gate: full suites (exact counts), Playwright matrix, all guards, render-verify; PROGRESS + DECISIONS.
 
 **Checkpoint order:** T003–T010 (foundation + store) ship first and are independently testable; nothing in Phases 4+ starts until the store is green.

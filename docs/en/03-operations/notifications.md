@@ -1,0 +1,101 @@
+# Notifications and the Command Center
+
+The CoreX Notification Center collects the things that need someone's attention — a new form submission, a failed
+email, a background job that failed, an access request, a login lockout, a readiness blocker — and surfaces them
+consistently across the admin. Every read is scoped to the current user: you only ever see what you are allowed to see.
+
+## Where notifications appear
+
+- **The header bell** — on every CoreX screen, the shell header shows a bell with your real unread count (capped
+  visually at `99+`, with the true count in its accessible label). It is keyboard operable and opens a drawer.
+- **The drawer** — opens from the bell: a modal dialog listing your notifications, with per-item *Mark read* and a
+  *Mark all as read*. It traps focus while open, closes on `Escape`, and returns focus to the bell.
+- **The Notifications screen** (`CoreX → Notifications`) — the full center, with saved views (Inbox, Requires
+  attention, Submissions, Security, System), a severity filter, pagination, and a Preferences tab.
+- **The admin-toolbar entry** — on non-CoreX screens (and the front end), the WordPress toolbar carries a
+  *Notifications* entry with your unread count. It never appears at the same time as the header bell — on a CoreX
+  screen the bell owns that surface.
+- **The Overview card** — the CoreX Overview shows a compact *Attention required* card next to Recent Activity.
+- **The Dashboard Command Center** — a widget on the WordPress dashboard (see below).
+
+Access to the full Notifications screen requires the **Manage notifications** ability
+(`corex_manage_notifications`). Administrators hold it automatically; grant it to others through
+`CoreX → Access & Abilities`.
+
+## What produces notifications
+
+Producers turn framework events into notifications. Each is **dependency-aware** — a producer whose module is not
+present simply produces nothing. The shipped producers are:
+
+| Source | Notification | Goes to |
+| --- | --- | --- |
+| New form submission | `submission.new` (merged per form) | Submissions managers |
+| Submission notification email failed | `submission.email_failed` | Submissions managers |
+| Submission assigned to a person | `submission.assigned` | The assignee |
+| Access request filed | `access.request` | Access managers |
+| Background job failed | `job.failed` | Operations managers |
+| Export finished | `export.ready` | The person who ran it |
+| Sign-in lockout triggered | `security.lockout` (merged per identity) | Operations managers |
+| Email Studio delivery failed | `email.delivery_failed` (merged per provider) | Email managers |
+| Readiness blocker appears / clears | `readiness.blocker` | Operations managers |
+
+Repeated occurrences of the same condition merge into one growing notification (an occurrence count) rather than a
+flood. Condition-based notifications — a readiness blocker, a lockout — clear themselves when the condition ends.
+
+## REST API
+
+All routes live under `corex/v1/notifications` and return the standard `{ ok, message, data }` envelope. Reads
+require you to be signed in; mutations additionally require a REST nonce; resolving a shared condition requires
+**Manage notifications**.
+
+- `GET /notifications` — your bounded, filtered list (`page`, `per_page`, `category`, `severity`, `unread_only`).
+- `GET /notifications/count` — your unread count.
+- `GET /notifications/{id}` — one notification, or `404` if it is not yours to see.
+- `POST /notifications/{id}/read` · `/unread` · `/dismiss` · `/snooze` — per-user state.
+- `POST /notifications/read-all` — mark everything you can see as read.
+- `POST /notifications/{id}/resolve` — resolve the underlying condition (Manage notifications).
+- `GET` / `POST /notifications/preferences` — read and save your category preferences.
+
+## Preferences
+
+On the Notifications screen, the **Preferences** tab lists every category with an in-app toggle. Mute the categories
+you do not want to see in-app. The mandatory categories — **security**, **system**, and **operations** — can never be
+muted; they render disabled and are always shown, because you must not be able to hide something you need to see. The
+server enforces this too, so a saved preference can never suppress a mandatory category.
+
+Preferences are stored per user in user meta (`corex_notification_preferences`) — not a custom table.
+
+## Retention and privacy
+
+Notifications are pruned automatically by a **daily** background job (the framework's first recurring job, on
+WP-Cron). Only **resolved** conditions and **expired** notifications older than the retention window (90 days) are
+removed; an unresolved condition persists however old it is, because it still needs attention. Notification records
+are secret-free by construction — a token, credential, or key in metadata is rejected when the notification is
+created — and diagnostic detail that carries no such guarantee (a raw job error, for example) is kept off the
+notification and left on the owning screen.
+
+## The Dashboard Command Center
+
+The **CoreX Command Center** widget on the WordPress dashboard (visible to administrators) is a server-rendered
+summary of three things, each a navigation-only link into CoreX — never an action:
+
+- **Site state** — the current operating mode.
+- **Attention** — your unread notification count.
+- **Readiness** — the number of blocking readiness checks.
+
+It runs only local checks: rendering the widget never makes an outbound network request.
+
+## For developers: adding a producer
+
+A producer is any class implementing `Corex\Notifications\NotificationProducer`:
+
+1. Define a domain event in your module implementing `Corex\Events\Event`.
+2. Dispatch it from your module's service through the injected `Corex\Events\EventDispatcher`.
+3. Write a producer whose `register()` listens for that event and publishes a `Notification` through
+   `Corex\Notifications\NotificationService`, and whose `isAvailable()` returns `class_exists(YourEvent::class)`.
+4. Add it in `ConfigServiceProvider::registerNotificationProducers()`.
+
+Publish a notification with `Notification::create(...)`, choosing a category, a severity, a recipient
+(`NotificationRecipient::forUser`/`forUsers`/`forAbility`), and a **dedup key**: reuse one key for a recurring
+condition so occurrences merge, or a unique key per distinct item. Put a mail-failure notification in the `email`
+category so the channel policy can keep it off email — never email an email failure.

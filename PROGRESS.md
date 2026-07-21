@@ -241,13 +241,18 @@ renders 3 nav links); 164 config + 3 foundation green; front 200.
 **no outbound HTTP** during render (FR-015) via a `pre_http_request` guard. Server-rendered PHP, so no Jest
 needed. 3 tests green.
 
-**Next: the loose ends (all optional/deferred).** T024 opt-in widgets + Development-only rules (never register
-for users with no data). T021 `NotificationChannelPolicy` (still speculative until an email delivery channel
-exists — the producers already tag mail failures `email` for it). T019 Jest/Playwright matrix gaps (core
-interactions already e2e-covered). Assigned-to-me/updates/history screen views (need a recipient/resolved
-filter on `NotificationQuery`). **Everything substantive in spec 072 is shipped and verified:** the entire
-Notification Center (backend, REST, bell/drawer/screen/toolbar/Overview-card, retention recurring job, full
-preferences) plus the Dashboard Command Center widget with its no-remote-call guarantee.
+**T027 COMPLETE — documentation.** `docs/en/03-operations/notifications.md`: the surfaces, the producer table,
+the REST API, preferences, retention/privacy, the Dashboard Command Center, and a developer "adding a producer"
+section. Every referenced ability, producer type, endpoint, meta key, retention window, and cron cadence
+verified against source (docs-guard); auto-discovered by the docs-app.
+
+**Next: the loose ends (all optional/deferred).** T024 opt-in widgets + Development-only rules. T021
+`NotificationChannelPolicy` (still speculative until an email delivery channel exists). T019/T026
+Jest/Playwright + performance gaps (core interactions already e2e-covered). Assigned-to-me/updates/history
+screen views (need a recipient/resolved filter on `NotificationQuery`). **Everything substantive in spec 072
+is shipped, verified, and documented:** the entire Notification Center (backend, REST,
+bell/drawer/screen/toolbar/Overview-card, retention recurring job, full preferences), the Dashboard Command
+Center widget with its no-remote-call guarantee, and the operations guide.
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
