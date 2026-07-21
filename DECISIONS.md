@@ -2971,4 +2971,29 @@ read is cheaper and lossless); detect FluentSMTP by its version constant to name
 (rejected: borderline reliance on an internal, and unnecessary -- the filter signal is enough and
 FluentSMTP is named only as the common example in guidance, not as a detected fact).
 
+## #151 -- Spec 072 T015: the notification drawer is NOT added to the spec-068 ApprovedComponentInventory
+
+Date: 2026-07-21
+
+Decision: The `NotificationDrawer`/bell are verified by a Playwright e2e (`tests/e2e/notification-center.spec.js`)
+for their accessibility contract, and are NOT declared in `addons/corex-ui/src/ApprovedComponentInventory.php`,
+despite spec 072 `tasks.md` (T015) calling for it. That inventory strictly reconciles against the spec-068
+design file `Corex Blocks & Components.dc.html` -- its test asserts exactly 77 approved components
+(33/8/13/23 per category). The notification drawer is a spec-072 runtime component that the spec-068 design
+file does not approve.
+
+Why: adding the drawer would force `expectedCounts()` and the `->toHaveCount(77)` total to 79 and claim a
+design approval that does not exist -- the precise dishonesty that inventory test guards against. The
+inventory's job is "the framework never claims a component the approved design didn't", not "every runtime
+widget is listed". Forcing the entry would either break the count reconciliation or require editing the
+spec-068 design source, which is out of spec-072 scope. The drawer's real, harder-to-fake guarantee -- focus
+trap, Escape, focus-return, aria-modal -- is proven by the live browser e2e instead, which is stronger
+verification than an inventory row.
+
+Alternatives considered: add the entry and bump the counts to 79 (rejected: falsely asserts spec-068 design
+approval and breaks the strict reconciliation); extend the spec-068 design file to include the drawer
+(rejected: out of scope for spec 072, and the design file is the source of truth for spec 068, not 072). If
+the owner later wants CoreX-072 admin components tracked in a governed inventory, that is a new, spec-072-owned
+inventory -- not an edit to spec 068's.
+
 Status: Final.

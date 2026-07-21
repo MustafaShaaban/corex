@@ -177,11 +177,20 @@ not colliding with the PHP `src/Notifications/` on case-insensitive filesystems)
 the Overview screen (`toplevel_page_corex-settings`); `CorexAdminAssetsTest` updated (5 pass); front 200,
 admin 302. Guards clean.
 
-**Next: finish T015** — (1) `ApprovedComponentInventory` + `EXPECTED_COUNTS` declaration for the drawer
-(confirm the spec-068 design file approves one first); (2) Playwright e2e for focus-trap/Escape/return
-(jsdom can't verify, and the repo has no React-render Jest harness). Then T016 `NotificationsScreen`, T017
-toolbar entry, T018 Overview *Attention Required* card, T019 e2e; then preferences + retention (T020–T022;
-T014 preferences endpoints wait on T020), then Phase C Dashboard (T023–T025).
+**T015 COMPLETE — bell + drawer, verified live in a real browser.** Playwright e2e
+(`tests/e2e/notification-center.spec.js`, 2 tests green against corex.local): the header bell opens the
+drawer, Escape closes it and returns focus to the bell (aria-expanded toggles), and focus is trapped
+inside the panel. The `ApprovedComponentInventory` declaration was deliberately NOT done — the drawer is a
+spec-072 runtime component and that inventory strictly reconciles the spec-068 design file's 77 components
+(adding it would falsely claim a design approval and break the count test); the accessibility contract is
+proven by the e2e instead. DECISIONS #151.
+
+**Next: T016–T019 + the rest of Phase B.** T016 `NotificationsScreen` (slug `corex-notifications`) — the
+full filtered center (inbox/attention/assigned/system/updates/history views, bounded server-side filtering,
+bulk mark-read), consuming the live REST API. T017 admin-toolbar entry for non-CoreX screens (never both
+bells at once). T018 Overview *Attention Required* card. T019 Jest/Playwright matrix. Then preferences +
+retention = the framework's first recurring job (T020–T022; T014 preferences endpoints wait on T020), then
+Phase C Dashboard (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
