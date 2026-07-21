@@ -701,6 +701,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();
         $this->container->make(InsightsScreen::class)->register();
+        $this->container->make(\Corex\Config\Notifications\NotificationsScreen::class)->register();
         $this->container->make(OptionPageScreen::class)->register();
         $this->container->make(\Corex\Config\Data\DataExportController::class)->register(); // CSV export (spec 045)
 

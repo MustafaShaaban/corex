@@ -185,12 +185,19 @@ spec-072 runtime component and that inventory strictly reconciles the spec-068 d
 (adding it would falsely claim a design approval and break the count test); the accessibility contract is
 proven by the e2e instead. DECISIONS #151.
 
-**Next: T016–T019 + the rest of Phase B.** T016 `NotificationsScreen` (slug `corex-notifications`) — the
-full filtered center (inbox/attention/assigned/system/updates/history views, bounded server-side filtering,
-bulk mark-read), consuming the live REST API. T017 admin-toolbar entry for non-CoreX screens (never both
-bells at once). T018 Overview *Attention Required* card. T019 Jest/Playwright matrix. Then preferences +
-retention = the framework's first recurring job (T020–T022; T014 preferences endpoints wait on T020), then
-Phase C Dashboard (T023–T025).
+**T016 started — screen + list app shipped.** PHP `NotificationsScreen` registers **CoreX → Notifications**
+(slug `corex-notifications`, gated on `MANAGE_NOTIFICATIONS`), rendering the shared shell + a
+`#corex-notifications-app` React mount. React `NotificationsApp` (mounted from `admin/index.js`, in the
+build/admin bundle): paginated list from `GET /notifications`, unread-only + severity filters (bounded
+server-side via `NotificationQuery`), per-item mark-read, bulk mark-all, honest loading/error/empty/list
+states. Verified: build compiles; menu registers + screen renders live (admin); 164 config + 3 foundation
+integration green; front 200. The shell bell + drawer also appear on this screen.
+
+**Next: finish T016** — token-based screen CSS; the named saved views (attention / assigned to me / system
+/ updates / history) as tabbed filters + the "unavailable" fifth state; Playwright e2e. Then T017
+admin-toolbar entry (non-CoreX screens; never both bells at once), T018 Overview *Attention Required* card,
+T019 Jest/Playwright matrix. Then preferences + retention = the framework's first recurring job (T020–T022;
+T014 preferences endpoints wait on T020), then Phase C Dashboard (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
