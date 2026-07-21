@@ -50,13 +50,28 @@ it('recognizes every current CoreX admin screen and rejects unrelated admin hook
     }
 });
 
-it('enqueues the shared shell and select enhancement only for a CoreX screen', function () {
+it('enqueues the shared shell, select enhancement, and notification bell only for a CoreX screen', function () {
+    if (! defined('COREX_CONFIG_FILE')) {
+        define('COREX_CONFIG_FILE', dirname(__DIR__, 3) . '/plugins/corex-config/corex-config.php');
+    }
     $assets = new CorexAdminAssets();
+
+    Functions\when('plugins_url')->justReturn('http://example.test/build/notifications/index.js');
+    Functions\when('wp_set_script_translations')->justReturn(true);
 
     Functions\expect('wp_enqueue_style')->once()->with('corex-admin-shell');
     // The accessible select upgrade rides the shell so a screen only has to mark a control with
     // data-corex-select, never wire up its own script — and it stays off every non-CoreX screen.
     Functions\expect('wp_enqueue_script')->once()->with('corex-select');
+    // The notification bell's drawer bundle rides the shell too, so the bell opens on every CoreX
+    // screen — enqueued exactly once here rather than by each per-screen product app (spec 072).
+    Functions\expect('wp_enqueue_script')->once()->with(
+        'corex-notifications',
+        \Mockery::any(),
+        \Mockery::any(),
+        \Mockery::any(),
+        true,
+    );
     $assets->enqueue('corex_page_corex-data');
 
     $assets->enqueue('plugins.php');

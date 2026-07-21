@@ -75,5 +75,21 @@ final class CorexAdminAssets
         // Upgrades any server-rendered select that opted in with data-corex-select. Loaded
         // alongside the shell so a screen only has to mark the control, not wire up a script.
         wp_enqueue_script('corex-select');
+
+        // Enhances the shell header's notification bell with its drawer on every CoreX screen, in
+        // its own small bundle so it mounts exactly once — independent of the per-screen product
+        // apps that also load build/admin/index.js (spec 072 FR-016).
+        $base = dirname(COREX_CONFIG_FILE);
+        $asset = is_file($base . '/build/notification-ui/index.asset.php')
+            ? require $base . '/build/notification-ui/index.asset.php'
+            : ['dependencies' => [], 'version' => 'dev'];
+        wp_enqueue_script(
+            'corex-notifications',
+            plugins_url('build/notification-ui/index.js', COREX_CONFIG_FILE),
+            [...$asset['dependencies'], 'corex-runtime'],
+            $asset['version'],
+            true,
+        );
+        wp_set_script_translations('corex-notifications', 'corex');
     }
 }

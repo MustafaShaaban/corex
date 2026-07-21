@@ -168,13 +168,20 @@ drawer CSS added to the shell stylesheet (token-governance test green; used a ra
 enqueued per-product-screen today, so the drawer is interactive on those screens now; the bell renders
 + counts everywhere. Build output is gitignored (CI rebuilds from the committed source). Front page 200.
 
-**Next: finish T015** — (1) global enqueue so the bell opens on *every* CoreX screen without double-loading
-the bundle (consolidate the `build/admin/index.js` handle across the 5 product screens, or add a dedicated
-notification entry); (2) `ApprovedComponentInventory` + `EXPECTED_COUNTS` declaration for the drawer;
-(3) Playwright e2e for focus-trap/Escape/return (jsdom can't verify these and the repo has no React-render
-Jest harness). Then T016 `NotificationsScreen`, T017 toolbar entry, T018 Overview *Attention Required*
-card, T019 e2e; then preferences + retention (T020–T022; T014 preferences endpoints wait on T020), then
-Phase C Dashboard (T023–T025).
+**T015 slice 3 (global enqueue) — shipped. The bell now opens on every CoreX screen.** A dedicated
+`src/notification-ui` webpack entry (3.9 KiB, second build in corex-config's `build` script → `build/
+notification-ui`) is enqueued in `CorexAdminAssets::enqueue` on all CoreX screens; the bell mount was
+removed from the per-screen product bundle so the drawer mounts exactly once even where both bundles load.
+Depends on `corex-runtime` + `wp-api-fetch` (nonce auto-configured on admin). Case-safe dir (`notification-ui`,
+not colliding with the PHP `src/Notifications/` on case-insensitive filesystems). Verified live-enqueued on
+the Overview screen (`toplevel_page_corex-settings`); `CorexAdminAssetsTest` updated (5 pass); front 200,
+admin 302. Guards clean.
+
+**Next: finish T015** — (1) `ApprovedComponentInventory` + `EXPECTED_COUNTS` declaration for the drawer
+(confirm the spec-068 design file approves one first); (2) Playwright e2e for focus-trap/Escape/return
+(jsdom can't verify, and the repo has no React-render Jest harness). Then T016 `NotificationsScreen`, T017
+toolbar entry, T018 Overview *Attention Required* card, T019 e2e; then preferences + retention (T020–T022;
+T014 preferences endpoints wait on T020), then Phase C Dashboard (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
