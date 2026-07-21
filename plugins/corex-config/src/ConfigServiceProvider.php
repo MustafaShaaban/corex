@@ -217,6 +217,13 @@ final class ConfigServiceProvider extends ServiceProvider
         // ones. Kept as a singleton so every producer registers against the same instance.
         $this->container->singleton(\Corex\Notifications\NotificationProducerRegistry::class);
 
+        // Per-user notification preferences live in user meta (spec 072 FR-020) — per-user, low-volume,
+        // WordPress-native data, so no custom table.
+        $this->container->singleton(
+            \Corex\Notifications\NotificationPreferenceStore::class,
+            static fn (ContainerInterface $c): \Corex\Notifications\NotificationPreferenceStore => $c->make(\Corex\Config\Notifications\WpNotificationPreferenceStore::class),
+        );
+
         // Retention: the notification store as a PrunableStore, swept by the framework's first
         // recurring job (spec 072 FR-022). RetentionSweep is seeded with the stores it prunes.
         $this->container->singleton(

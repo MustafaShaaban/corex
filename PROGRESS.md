@@ -216,12 +216,20 @@ expired notifications are removed, unresolved conditions persist) seeds `Retenti
 that runs `RetentionSweep::apply()`. Verified live (cron booked; preview shows the 90-day notifications
 store; apply runs clean). 1 unit test + 216 unit/config + 3 foundation integration green.
 
-**Next: T020/T021 (preferences + channel policy), T019 (test-matrix gaps), then Phase C.** T020
-`WpNotificationPreferenceStore` — a new managed table (schema 3→4) + preferences UI (mandatory items
-non-disableable); unblocks T014's deferred preferences endpoints. T021 `NotificationChannelPolicy` — block
-email for the `email` category + mail-failure sources, dedup + per-window cap (loop prevention). T019 fills
-Jest/Playwright matrix gaps (99+ label, RTL/mobile/dark-light; core interactions already e2e-covered). Then
-Phase C Dashboard Command Center (T023–T025). Backend + REST + all US1/US2 surfaces + retention job are
+**T020 backend COMPLETE (preferences).** `NotificationPreference` VO (per-category in-app toggle; mandatory
+security/system/operations never mutable — enforced in the VO, not by what's stored),
+`NotificationPreferenceStore` interface + `WpNotificationPreferenceStore` on **user meta** (per-user,
+low-volume, WordPress-native — not a managed table; DECISIONS #152), and REST `GET`/`POST
+/notifications/preferences` — which **closes T014's deferred preferences endpoints**. 4 VO unit + 1
+integration test (mandatory never muted) green; route registers live. Preferences **UI** (a React panel on
+the screen) remains.
+
+**Next: T020 UI + T021 + T019, then Phase C.** T020 UI — a preferences panel/tab on the Notifications screen
+(category toggles; mandatory shown disabled + explained), POSTing to the endpoint. T021
+`NotificationChannelPolicy` impl — block email for the `email` category + mail-failure sources, dedup +
+per-window cap (loop prevention); becomes non-speculative once an email delivery channel exists (the
+producers already tag mail failures `email` for it). T019 Jest/Playwright matrix gaps. Then Phase C Dashboard
+Command Center (T023–T025). Backend + REST + all US1/US2 surfaces + retention job + preferences backend are
 shipped and verified.
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA

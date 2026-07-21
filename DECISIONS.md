@@ -2996,4 +2996,24 @@ approval and breaks the strict reconciliation); extend the spec-068 design file 
 the owner later wants CoreX-072 admin components tracked in a governed inventory, that is a new, spec-072-owned
 inventory -- not an edit to spec 068's.
 
+## #152 -- Spec 072 T020: notification preferences live in user meta, not a managed table
+
+Date: 2026-07-21
+
+Decision: `WpNotificationPreferenceStore` persists per-user category preferences in **user meta**
+(`corex_notification_preferences`), not in a new managed table -- despite T020's wording ("a new managed
+table, schema 3->4"). Only muted categories are stored; everything defaults to shown, and the mandatory
+categories (security / system / operations) are enforced by the `NotificationPreference` value object, never
+by what happens to be persisted.
+
+Why: preferences are small, per-user, low-volume, and WordPress-native -- exactly the case the constitution
+and wp-guard reserve for options/transients/user-meta ("simple persistent data via user meta, not a custom
+table; don't reinvent the platform"). A managed table here would add a schema version, a migration, and a
+join for data WordPress already stores per user for free. The notification *records* are high-volume and
+shared, so they earn their tables (spec 072 T008); a user's handful of category toggles do not.
+
+Alternatives considered: a `notification_preferences` managed table keyed by (user_id, category) with a
+schema 3->4 bump (rejected: reinvents user meta for no benefit -- no cross-user query needs it, and retention
+never prunes it); a single site option (rejected: preferences are per-user, not global).
+
 Status: Final.

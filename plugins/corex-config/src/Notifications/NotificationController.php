@@ -12,6 +12,9 @@ defined('ABSPATH') || exit;
 
 use Corex\Access\CorexAbility;
 use Corex\Http\ResponseEnvelope;
+use Corex\Notifications\NotificationCategory;
+use Corex\Notifications\NotificationPreference;
+use Corex\Notifications\NotificationPreferenceStore;
 use Corex\Notifications\NotificationQuery;
 use Corex\Notifications\NotificationService;
 use DateTimeImmutable;
@@ -28,8 +31,10 @@ use WP_REST_Response;
  */
 final class NotificationController
 {
-    public function __construct(private readonly NotificationService $notifications)
-    {
+    public function __construct(
+        private readonly NotificationService $notifications,
+        private readonly NotificationPreferenceStore $preferences,
+    ) {
     }
 
     public function register(): void
@@ -48,6 +53,18 @@ final class NotificationController
             'methods'             => 'POST',
             'callback'            => [$this, 'readAll'],
             'permission_callback' => [$this, 'canAct'],
+        ]);
+        register_rest_route('corex/v1', '/notifications/preferences', [
+            [
+                'methods'             => 'GET',
+                'callback'            => [$this, 'preferences'],
+                'permission_callback' => [$this, 'canRead'],
+            ],
+            [
+                'methods'             => 'POST',
+                'callback'            => [$this, 'savePreferences'],
+                'permission_callback' => [$this, 'canAct'],
+            ],
         ]);
         register_rest_route('corex/v1', '/notifications/(?P<id>\d+)', [
             'methods'             => 'GET',
@@ -145,6 +162,32 @@ final class NotificationController
     public function readAll(): WP_REST_Response
     {
         return $this->ok(['marked' => $this->notifications->markAllReadForCurrentActor()]);
+    }
+
+    public function preferences(): WP_REST_Response
+    {
+        $preference = $this->preferences->forUser(get_current_user_id());
+        $rows = array_map(
+            static fn (string $category): array => [
+                'category'  => $category,
+                'enabled'   => $preference->allowsInApp($category),
+                'mandatory' => $preference->isMandatory($category),
+            ],
+            NotificationCategory::all(),
+        );
+
+        return $this->ok(['preferences' => $rows]);
+    }
+
+    public function savePreferences(WP_REST_Request $request): WP_REST_Response
+    {
+        $categories = $request->get_param('categories');
+        $this->preferences->save(
+            get_current_user_id(),
+            NotificationPreference::fromMap(is_array($categories) ? $categories : []),
+        );
+
+        return $this->preferences();
     }
 
     public function resolve(WP_REST_Request $request): WP_REST_Response

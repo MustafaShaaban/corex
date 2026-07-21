@@ -16,6 +16,7 @@ use Corex\Config\Notifications\NotificationController;
 use Corex\Config\Notifications\NotificationServiceImpl;
 use Corex\Config\Notifications\NotificationTable;
 use Corex\Config\Notifications\NotificationUserStateTable;
+use Corex\Config\Notifications\WpNotificationPreferenceStore;
 use Corex\Config\Notifications\WpNotificationRepository;
 use Corex\Database\Schema\Migrator;
 use Corex\Notifications\Notification;
@@ -32,7 +33,7 @@ beforeEach(function () {
     $wpdb->query('DELETE FROM ' . $this->migrator->fullName(NotificationTable::NAME));
 
     $this->repo = new WpNotificationRepository($this->migrator);
-    (new NotificationController(new NotificationServiceImpl($this->repo)))->register();
+    (new NotificationController(new NotificationServiceImpl($this->repo), new WpNotificationPreferenceStore()))->register();
 
     $admins = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
     $this->adminId = (int) ($admins[0] ?? 0);
@@ -99,6 +100,31 @@ it('does not list or reveal a notification the actor may not see', function () {
 
     expect(restCall('GET', '/corex/v1/notifications')->get_data()['data']['total'])->toBe(0)
         ->and(restCall('GET', '/corex/v1/notifications/' . $stored->id)->get_status())->toBe(404);
+});
+
+it('reads and saves per-category preferences, never muting a mandatory category', function () {
+    delete_user_meta($this->adminId, 'corex_notification_preferences');
+
+    $initial = restCall('GET', '/corex/v1/notifications/preferences')->get_data();
+    expect($initial['ok'])->toBeTrue();
+    $security = array_values(array_filter(
+        $initial['data']['preferences'],
+        static fn (array $row): bool => $row['category'] === 'security',
+    ))[0];
+    expect($security['mandatory'])->toBeTrue()->and($security['enabled'])->toBeTrue();
+
+    // Try to mute jobs (allowed) and security (mandatory — must stay on).
+    $request = new WP_REST_Request('POST', '/corex/v1/notifications/preferences');
+    $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
+    $request->set_param('categories', ['jobs' => false, 'security' => false]);
+    $saved = rest_get_server()->dispatch($request)->get_data()['data']['preferences'];
+
+    $byCategory = [];
+    foreach ($saved as $row) {
+        $byCategory[$row['category']] = $row['enabled'];
+    }
+    expect($byCategory['jobs'])->toBeFalse()        // user muted it
+        ->and($byCategory['security'])->toBeTrue(); // mandatory — never muted
 });
 
 it('resolves a condition through the manage tier', function () {
