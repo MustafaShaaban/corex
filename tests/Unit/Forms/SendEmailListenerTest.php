@@ -1,7 +1,11 @@
 <?php
 
 /**
- * Unit tests for truthful submission notification outcomes with and without CoreX Mail.
+ * Unit tests for truthful legacy-form notification outcomes with and without CoreX Mail.
+ *
+ * The listener now delegates the transport ladder to NotificationDispatcher and returns a typed
+ * NotificationDelivery. The load-bearing correction: wp_mail acceptance is `accepted`, never
+ * `sent` (FR-015) — the previous code mislabelled it.
  *
  * @package Corex\Tests\Unit\Forms
  */
@@ -9,15 +13,23 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
-use Corex\Container\Container;
 use Corex\Forms\Listeners\SendEmailListener;
 use Corex\Forms\Submission\FormSubmittedEvent;
+use Corex\Forms\Submission\NotificationDispatcher;
 use Corex\Mail\AttemptingMailer;
-use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
 use Corex\Mail\MailResult;
 use Corex\Mail\RoutedMailer;
 use Corex\Support\Config\ConfigInterface;
+
+beforeEach(function () {
+    Functions\when('__')->returnArg();
+    Functions\when('get_bloginfo')->justReturn('CoreX Test');
+    Functions\when('wp_json_encode')->alias(static fn (mixed $d): string => (string) json_encode($d));
+    Functions\when('add_action')->justReturn(true);
+    Functions\when('remove_action')->justReturn(true);
+    Functions\when('get_option')->justReturn('admin@example.com');
+});
 
 function emailListenerConfig(): ConfigInterface
 {
@@ -39,13 +51,10 @@ function submittedEvent(): FormSubmittedEvent
     return new FormSubmittedEvent('contact', ['name' => 'Sam', 'message' => 'Hello']);
 }
 
-it('returns the result from a result-bearing CoreX mailer', function () {
-    Functions\when('get_bloginfo')->justReturn('CoreX Test');
-    $container = new Container();
-    $mailer    = new class implements AttemptingMailer {
+it('returns the captured outcome from a result-bearing CoreX mailer', function () {
+    $mailer = new class implements AttemptingMailer {
         public function send(MailRequest $request): void
         {
-            $this->attempt($request);
         }
 
         public function attempt(MailRequest $request): MailResult
@@ -61,16 +70,14 @@ it('returns the result from a result-bearing CoreX mailer', function () {
             );
         }
     };
-    $container->instance(Mailer::class, $mailer);
 
-    $result = (new SendEmailListener($container, emailListenerConfig()))->dispatch(submittedEvent());
+    $delivery = (new SendEmailListener(new NotificationDispatcher(null, $mailer), emailListenerConfig()))
+        ->dispatch(submittedEvent());
 
-    expect($result->state)->toBe(MailResult::STATE_CAPTURED);
+    expect($delivery->status)->toBe(MailResult::STATE_CAPTURED);
 });
 
-it('uses an active Email Studio route before the legacy template path', function () {
-    Functions\when('get_bloginfo')->justReturn('CoreX Test');
-    $container = new Container();
+it('uses an active Email Studio route before the wp_mail floor', function () {
     $router = new class implements RoutedMailer {
         /** @var list<array{trigger:string,context:array<string,mixed>}> */
         public array $calls = [];
@@ -90,22 +97,22 @@ it('uses an active Email Studio route before the legacy template path', function
             );
         }
     };
-    $container->instance(RoutedMailer::class, $router);
 
-    $result = (new SendEmailListener($container, emailListenerConfig()))->dispatch(submittedEvent());
+    $delivery = (new SendEmailListener(new NotificationDispatcher($router, null), emailListenerConfig()))
+        ->dispatch(submittedEvent());
 
-    expect($result->state)->toBe(MailResult::STATE_CAPTURED)
+    expect($delivery->status)->toBe(MailResult::STATE_CAPTURED)
         ->and($router->calls[0]['trigger'])->toBe('forms.contact.submitted')
         ->and($router->calls[0]['context']['submission']['name'])->toBe('Sam');
 });
 
-it('returns the real wp mail fallback outcome when CoreX Mail is absent', function () {
-    Functions\when('__')->returnArg();
-    Functions\when('get_bloginfo')->justReturn('CoreX Test');
+it('records wp_mail acceptance as accepted, never sent, when CoreX Mail is absent', function () {
     Functions\expect('wp_mail')->once()->andReturn(true);
 
-    $result = (new SendEmailListener(new Container(), emailListenerConfig()))->dispatch(submittedEvent());
+    $delivery = (new SendEmailListener(new NotificationDispatcher(null, null), emailListenerConfig()))
+        ->dispatch(submittedEvent());
 
-    expect($result->state)->toBe(MailResult::STATE_SENT)
-        ->and($result->provider)->toBe('wp-mail');
+    expect($delivery->status)->toBe(MailResult::STATE_ACCEPTED)
+        ->and($delivery->status)->not->toBe(MailResult::STATE_SENT)
+        ->and($delivery->provider)->toBe('wp-mail');
 });

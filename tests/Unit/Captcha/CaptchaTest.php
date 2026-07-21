@@ -12,6 +12,7 @@ use Brain\Monkey\Functions;
 use Corex\Captcha\CaptchaResolver;
 use Corex\Captcha\HoneypotCaptcha;
 use Corex\Captcha\NullCaptcha;
+use Corex\Captcha\RecaptchaV3Captcha;
 use Corex\Captcha\RemoteCaptcha;
 use Corex\Support\Config\ConfigInterface;
 
@@ -67,4 +68,11 @@ it('the resolver selects the configured driver', function () {
     expect((new CaptchaResolver(captchaConfig([])))->resolve())->toBeInstanceOf(NullCaptcha::class)
         ->and((new CaptchaResolver(captchaConfig(['captcha.driver' => 'honeypot'])))->resolve())->toBeInstanceOf(HoneypotCaptcha::class)
         ->and((new CaptchaResolver(captchaConfig(['captcha.driver' => 'turnstile', 'captcha.secret' => 's'])))->resolve())->toBeInstanceOf(RemoteCaptcha::class);
+});
+
+it('the resolver routes reCAPTCHA to the scored v3 driver, not the success-only remote driver', function () {
+    $driver = (new CaptchaResolver(captchaConfig(['captcha.driver' => 'recaptcha', 'captcha.secret' => 's'])))->resolve();
+
+    expect($driver)->toBeInstanceOf(RecaptchaV3Captcha::class)
+        ->and($driver)->not->toBeInstanceOf(RemoteCaptcha::class);
 });

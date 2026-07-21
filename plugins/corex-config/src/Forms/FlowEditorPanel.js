@@ -13,6 +13,7 @@ import { FormTab } from './tabs/FormTab.js';
 import { ValidationTab } from './tabs/ValidationTab.js';
 import { RoutingTab } from './tabs/RoutingTab.js';
 import { EmailsTab } from './tabs/EmailsTab.js';
+import { ProtectionTab } from './tabs/ProtectionTab.js';
 import { SuccessTab } from './tabs/SuccessTab.js';
 import { PreviewTab } from './tabs/PreviewTab.js';
 import { TestTab } from './tabs/TestTab.js';
@@ -51,6 +52,7 @@ export function FlowEditorPanel( { studio, onBack } ) {
 				{ stage === 'validation' ? <ValidationTab draft={ draft } rules={ extensions.validation_rules || [] } onChange={ ( value ) => changeConfiguration( 'validation', value ) } /> : null }
 				{ stage === 'routing' ? <RoutingTab routing={ draft.configuration.routing } targetTypes={ extensions.routing_targets || [] } onChange={ ( value ) => changeConfiguration( 'routing', value ) } /> : null }
 				{ stage === 'emails' ? <EmailsTab routes={ draft.configuration.email_routes || [] } templates={ extensions.email_templates || [] } onChange={ ( value ) => changeConfiguration( 'email_routes', value ) } /> : null }
+				{ stage === 'protection' ? <ProtectionTab protection={ draft.configuration.protection || {} } onChange={ ( value ) => changeConfiguration( 'protection', value ) } /> : null }
 				{ stage === 'success' ? <SuccessTab success={ draft.configuration.success || {} } stateTypes={ extensions.success_states || [] } onChange={ ( value ) => changeConfiguration( 'success', value ) } /> : null }
 				{ stage === 'preview' ? <PreviewTab draft={ draft } /> : null }
 				{ stage === 'test' ? <TestTab busy={ busy } result={ state.testResult } onRun={ studio.test } /> : null }

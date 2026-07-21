@@ -26,6 +26,7 @@ final class EmailStudioScreen
     public function __construct(
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
+        private readonly TransportAdvisory $advisory,
     ) {
     }
 
@@ -108,7 +109,35 @@ final class EmailStudioScreen
             echo '<div id="corex-email-studio-app" aria-live="polite"></div>';
         }
 
+        echo $this->transportAdvisory();
+
         echo $this->page->close();
+    }
+
+    /**
+     * The transport-boundary panel: who composes vs who delivers, plus any safe, evidence-based
+     * sender warnings. Escaped at output; every string comes from {@see TransportAdvisory}, which
+     * never reads a transport plugin's credentials.
+     */
+    private function transportAdvisory(): string
+    {
+        $result = $this->advisory->evaluate();
+
+        $items = '';
+        foreach ($result->notes() as $note) {
+            $items .= sprintf(
+                '<li class="corex-transport-advisory__note is-%s">%s</li>',
+                esc_attr($note['level']),
+                esc_html($note['message']),
+            );
+        }
+
+        return sprintf(
+            '<section class="corex-transport-advisory corex-surface" aria-label="%s"><h2>%s</h2><ul class="corex-transport-advisory__list">%s</ul></section>',
+            esc_attr__('Mail transport guidance', 'corex'),
+            esc_html__('Sending & transport', 'corex'),
+            $items,
+        );
     }
 
     private function emailActive(): bool

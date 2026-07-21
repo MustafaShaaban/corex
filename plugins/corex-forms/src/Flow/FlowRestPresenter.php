@@ -60,6 +60,7 @@ final class FlowRestPresenter
                 'validation' => $version->configuration->validation,
                 'routing' => $version->configuration->routing,
                 'email_routes' => $version->configuration->emailRoutes,
+                'protection' => $version->configuration->protection,
                 'success' => $version->configuration->success,
                 'placement_snapshot' => $version->configuration->placementSnapshot,
             ],

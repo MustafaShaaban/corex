@@ -10,6 +10,7 @@ use Brain\Monkey\Functions;
 use Corex\Forms\Block\FieldRenderer;
 use Corex\Forms\Block\FlowBlockRenderer;
 use Corex\Forms\Block\FormBlockRenderer;
+use Corex\Forms\Block\ProtectedFormRegistry;
 use Corex\Forms\FormRegistry;
 use Corex\Forms\Flow\Flow;
 use Corex\Forms\Flow\FlowConfiguration;
@@ -18,7 +19,9 @@ use Corex\Forms\Flow\FlowVersion;
 use Corex\Forms\Schema\SchemaExporter;
 use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Submission\FlowSchemaFactory;
+use Corex\Forms\Submission\FormChallengeContextFactory;
 use Corex\Forms\Validation\RuleRegistry;
+use Corex\Support\Config\ConfigInterface;
 use Corex\Tests\Fixtures\Forms\InMemoryFlowStore;
 
 function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED): FlowBlockRenderer
@@ -86,11 +89,25 @@ function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED): FlowBlockRend
 
     $resolver = new SchemaResolver(new RuleRegistry());
 
+    $config = new class implements ConfigInterface {
+        public function get(string $key, mixed $default = null): mixed
+        {
+            return $default; // no captcha configured — forms render unprotected
+        }
+
+        public function has(string $key): bool
+        {
+            return false;
+        }
+    };
+
     return new FlowBlockRenderer(
         $repository,
         new FlowSchemaFactory($resolver),
         new SchemaExporter(),
         new FieldRenderer(),
+        new FormChallengeContextFactory($config),
+        new ProtectedFormRegistry(),
     );
 }
 

@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Models\Model;
 use Corex\Repositories\PostRepository;
+use DateTimeImmutable;
 
 /**
  * Persists submissions through the data layer (Principle III: the repository is the
@@ -90,15 +91,30 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
         $this->writeMetadata($submissionId, $metadata);
     }
 
-    /** @param array<string,mixed> $entry */
-    public function appendTimeline(int $submissionId, array $entry): void
+    /**
+     * Append a timeline event in the one canonical shape the admin screens read
+     * (`{id, submission_id, stage, outcome, summary, created_at}`) — the same shape
+     * `Corex\Config\Submissions\SubmissionTimelineRepository` writes, so the pipeline's own
+     * events are no longer a foreign shape the UI has to special-case.
+     *
+     * @param array<string,mixed> $summary
+     */
+    public function appendTimeline(int $submissionId, string $stage, string $outcome, array $summary = []): void
     {
         if ($this->find($submissionId) === null) {
             throw new \DomainException(__('Submission was not found.', 'corex'));
         }
         $timeline = get_post_meta($submissionId, 'corex_submission_timeline', true);
         $timeline = is_array($timeline) ? $timeline : [];
-        $timeline[] = $entry;
+        $ids = array_map(static fn (mixed $event): int => is_array($event) ? (int) ($event['id'] ?? 0) : 0, $timeline);
+        $timeline[] = [
+            'id' => ($ids === [] ? 0 : max($ids)) + 1,
+            'submission_id' => $submissionId,
+            'stage' => sanitize_key($stage),
+            'outcome' => sanitize_key($outcome),
+            'summary' => $summary,
+            'created_at' => (new DateTimeImmutable('now'))->format(DATE_ATOM),
+        ];
         $this->fields->set($submissionId, 'corex_submission_timeline', $timeline);
     }
 
@@ -113,6 +129,7 @@ final class SubmissionRepository extends PostRepository implements SubmissionSto
             'spam' => 'corex_spam_json',
             'routing' => 'corex_routing_json',
             'email' => 'corex_email_json',
+            'notification_delivery' => 'corex_notification_delivery',
             'inbox' => 'corex_inbox_json',
         ];
         foreach ($map as $source => $metaKey) {

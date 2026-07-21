@@ -107,6 +107,7 @@ final class FlowRestInputMapper
             emailRoutes: (array) ($document['email_routes'] ?? []),
             success: (array) ($document['success'] ?? []),
             placementSnapshot: (array) ($document['placement_snapshot'] ?? []),
+            protection: FlowProtection::normalize($document['protection'] ?? []),
         );
     }
 

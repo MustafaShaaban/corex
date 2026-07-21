@@ -600,6 +600,7 @@ final class ConfigServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): EmailStudioScreen => new EmailStudioScreen(
                 $c->make(\Corex\Security\Admin\AdminGuard::class),
                 $c->make(\Corex\Admin\AdminPage::class),
+                $c->make(\Corex\Config\Email\TransportAdvisory::class),
             ),
         );
     }

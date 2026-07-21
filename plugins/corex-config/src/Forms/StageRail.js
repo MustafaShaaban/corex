@@ -5,6 +5,7 @@ const STAGES = [
 	[ 'validation', __( 'Validation', 'corex' ) ],
 	[ 'routing', __( 'Routing', 'corex' ) ],
 	[ 'emails', __( 'Emails', 'corex' ) ],
+	[ 'protection', __( 'Protection', 'corex' ) ],
 	[ 'success', __( 'Success', 'corex' ) ],
 	[ 'preview', __( 'Preview', 'corex' ) ],
 	[ 'test', __( 'Test', 'corex' ) ],

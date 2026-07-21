@@ -210,6 +210,42 @@
 	background: var(--corex-admin-error-soft);
 }
 
+/* Notification-delivery badge: icon + text so the state never relies on colour alone. */
+.corex-admin .corex-inbox__delivery {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-2xs);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+}
+
+.corex-admin .corex-inbox__delivery .dashicons {
+	inline-size: 1em;
+	block-size: 1em;
+	font-size: 1em;
+}
+
+.corex-admin .corex-inbox__delivery.is-success {
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-inbox__delivery.is-warning {
+	color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-inbox__delivery.is-info {
+	color: var(--corex-admin-info);
+}
+
+.corex-admin .corex-inbox__delivery.is-neutral {
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-inbox__delivery-detail p {
+	margin-block: var(--corex-admin-space-2xs) 0;
+}
+
 .corex-admin .corex-inbox__pagination,
 .corex-admin .corex-inbox__modal-actions {
 	display: flex;

@@ -176,9 +176,9 @@ it('adds captcha reference links + helper copy with safe external attributes', f
         ->toContain( 'https://developers.google.com/recaptcha/docs/v3#interpreting_the_score' )
         ->toContain( 'https://developers.google.com/recaptcha/docs/v3#actions' )
         ->toContain( 'Create reCAPTCHA keys' )
-        // practical helper copy for the v3 fields
-        ->toContain( '0.5 is a common starting point' )
-        ->toContain( 'contact_form or login' )
+        // practical helper copy for the v3 fields — corrected to the shipped default (spec 071)
+        ->toContain( 'Defaults to 0.3' )
+        ->toContain( 'corex_form_' )
         ->toContain( 'target="_blank"' )
         ->toContain( 'rel="noopener noreferrer"' );
 });
