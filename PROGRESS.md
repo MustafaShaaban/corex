@@ -20,15 +20,25 @@ release/v0.34.0) and pruned 23 stale merged remote branches on `origin`. `origin
 separate dependency track, and GitHub reports 18 vulnerability alerts worth a spec-056 pass). The
 spec-055 wip stash is preserved. Site healthy (front page 200).
 
-**Phase B (Notification Center, spec 072) — STARTED, early.** Branched `spec/072-...` off the
-committed `spec/071`; Environment Gate re-verified; `FOUNDATION_SCHEMA_VERSION` confirmed at `'2'`
-(must bump to `'3'` for the two new tables). **`specs/072-.../spec.md` authored** (stakeholder-first,
-7 user stories, FR-001..FR-026, SC-001..SC-008) — this is the design contract. The detailed
-implementation plan (B1–B7 contracts/persistence/access/bell+drawer/producers/preferences/REST + the
-Phase C Dashboard) is in the approved plan file. **Still to do for Phase B:** the rest of the Spec Kit
-artifacts (plan/research/data-model/contracts/quickstart/checklists/tasks), then implement via TDD +
-guards + a Phase-B gate. Phase C (Dashboard Command Center) follows. MFA excluded throughout. The
-`spec/072` work (spec.md + this PROGRESS note) is **uncommitted** WIP.
+**Phase B (Notification Center, spec 072) — foundation shipped, committed on `spec/072`.** Branched
+off committed `spec/071`; Environment Gate re-verified; `FOUNDATION_SCHEMA_VERSION` at `'2'` (bump to
+`'3'` pending, needed by the two new tables). Commit `21bc159`:
+- **Spec Kit:** `spec.md` (stakeholder-first, 7 user stories, FR-001..026, SC-001..008), `plan.md`
+  (constitution check + ordered workstreams), `data-model.md` (the two tables + VOs), `tasks.md`
+  (dependency-ordered, T003..T028). The B1–B7 + Phase C detail lives in the approved master plan.
+- **Value-object foundation (`Corex\Notifications\*`, 12 unit tests green):** NotificationSeverity/
+  Category/Status (closed, ranked vocabularies); **NotificationRecipient** — the single visibility
+  predicate `canBeSeenBy()` every read/count re-checks (user/users/ability/assigned/category_admins,
+  fail-closed, never a hard-coded WP role); NotificationAction (nav-only, ability-gated);
+  **Notification** (dedup-keyed occurrence merging, resolution ≠ user-dismissal, secret-free via
+  `assertNoSecretKeys`, array round-trip).
+
+**Next for Phase B (T007→):** the contracts (Store/Repository/Service/Producer/ChannelPolicy
+interfaces), then the two managed tables + `FOUNDATION_SCHEMA_VERSION` `2`→`3`, then
+`WpNotificationRepository` (copy `WpActivityRepository`), then access (MANAGE_NOTIFICATIONS +
+AREA_NOTIFICATIONS), producers (fed by Phase A's `NotificationDelivery` + Activity events), REST,
+the bell/drawer/screen/toolbar, preferences + retention (the framework's first recurring job), then
+Phase C (Dashboard). MFA excluded. `spec/072` is **not pushed** (local commits only) and has no PR yet.
 
 ---
 ## (previous, 2026-07-20b) -- Spec 071 US1 COMPLETE on `spec/071-form-delivery-and-recaptcha-reliability`.
