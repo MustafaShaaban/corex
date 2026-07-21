@@ -97,12 +97,20 @@ it (`forUser`) — export completion is personal, unlike the operational failure
 4 producer unit tests + 30 Notifications unit green; live end-to-end; front page 200. Guards clean.
 **Four producers register at boot:** `["forms.submissions","access.requests","jobs.failures","jobs.exports"]`.
 
-**Next for Phase B (T013 continued → then T014):** remaining producers, one slice each — submission
-**assigned**; Email Studio failure; Security lockout / hardening; Readiness blocker/cleared (each needs a
-domain event/hook added to its subsystem). Then REST `NotificationController` (T014), the
-bell/drawer/screen/toolbar (T015–T019), preferences + retention = the framework's first recurring job
-(T020–T022), then Phase C Dashboard (T023–T025). The 4 shipped producers are already enough real data to
-build and test T014 meaningfully.
+**T013 slice 5 (Login-lockout producer) — shipped.** `LoginLockoutEvent` dispatched from
+`LoginProtectionEnforcer` only on the transition *into* a lockout (decision reasonCode
+`threshold_exceeded`, not every failure nor an already-active refusal) via an optional `EventDispatcher`.
+`LoginLockoutNotificationProducer` publishes `security.lockout` (WARNING, `security` category) keyed by
+identity (`security.lockout:{identity}` → repeated lockouts of one account merge into one escalating
+signal) to `MANAGE_OPERATIONS`. Verified: 4 producer unit tests + 47 Security integration (enforcer's
+3-arg construction still valid) green; live end-to-end; front page 200. Guards clean. **Five producers
+register at boot:** `["forms.submissions","access.requests","jobs.failures","jobs.exports","security.lockouts"]`.
+
+**Next for Phase B (T013 continued → then T014):** remaining producers — submission **assigned**; Email
+Studio failure; Readiness blocker/cleared (each needs a domain event/hook added to its subsystem). Then
+REST `NotificationController` (T014), the bell/drawer/screen/toolbar (T015–T019), preferences + retention
+= the framework's first recurring job (T020–T022), then Phase C Dashboard (T023–T025). The 5 shipped
+producers are already ample real data to build and test T014 meaningfully.
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.

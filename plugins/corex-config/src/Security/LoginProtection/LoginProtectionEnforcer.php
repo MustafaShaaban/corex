@@ -10,6 +10,8 @@ namespace Corex\Config\Security\LoginProtection;
 
 defined('ABSPATH') || exit;
 
+use Corex\Events\EventDispatcher;
+use Corex\Security\LoginLockoutEvent;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use WP_Error;
@@ -26,6 +28,7 @@ final class LoginProtectionEnforcer
         private readonly LoginProtectionService $service,
         private readonly ClientIpResolver $ips,
         private readonly LoginProtectionSettings $settings,
+        private readonly ?EventDispatcher $events = null,
     ) {
     }
 
@@ -71,8 +74,15 @@ final class LoginProtectionEnforcer
         }
 
         $context = $this->context($username);
-        if ($context !== null) {
-            $this->service->recordFailure($context, new DateTimeImmutable('now'));
+        if ($context === null) {
+            return;
+        }
+
+        $decision = $this->service->recordFailure($context, new DateTimeImmutable('now'));
+        // Announce only the transition into a lockout — not every failure, and not an already-active
+        // lockout being re-refused (which carries reasonCode 'active_lockout').
+        if ($decision->reasonCode === 'threshold_exceeded' && $decision->lockedUntil !== null) {
+            $this->events?->dispatch(new LoginLockoutEvent($username, $context->clientIp, $decision->lockedUntil));
         }
     }
 
