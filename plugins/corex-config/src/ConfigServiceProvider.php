@@ -653,6 +653,7 @@ final class ConfigServiceProvider extends ServiceProvider
         ]);
         $this->container->make(AbilityCompatibility::class)->register();
         $this->registerNotificationProducers();
+        $this->container->make(\Corex\Config\Notifications\NotificationBell::class)->register();
         add_action('init', [$this->container->make(WpSubmissionExportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataImportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataExportStore::class), 'registerPostType']);

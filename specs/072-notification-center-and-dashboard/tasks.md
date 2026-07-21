@@ -50,7 +50,9 @@ description: "Task list for Spec 072 — Notification Center & Dashboard Command
   - [ ] **preferences** endpoints wait on T020 (`WpNotificationPreferenceStore`).
 
 ## Phase 6: Surfaces (B4)
-- [ ] **T015** [US2] `apply_filters('corex_admin_header_actions','')` in `AdminPage::open()`; `NotificationBell` renders the count (99+, true count in label); shell CSS + a real drawer component (focus trap, Escape, focus return) added to `ApprovedComponentInventory` with `EXPECTED_COUNTS` bumped.
+- [~] **T015** [US2] `apply_filters('corex_admin_header_actions','')` in `AdminPage::open()`; `NotificationBell` renders the count (99+, true count in label); shell CSS + a real drawer component (focus trap, Escape, focus return) added to `ApprovedComponentInventory` with `EXPECTED_COUNTS` bumped.
+  - [X] **Filter + bell + count** — `corex_admin_header_actions` filter added to `AdminPage::open()` (trusted-HTML region, escape-per-contributor like the admin bar); `NotificationBell` (server-rendered, keyboard-operable `<button>`, `data-corex-notification-bell` + dialog ARIA) shows the actor's real unread count via `GET`-equivalent service call — badge capped at `99+`, true count in the `aria-label` (FR-016). Registered on boot; renders live in the CoreX header. 4 unit tests green.
+  - [ ] **Drawer + shell CSS** — the React drawer (focus trap, Escape, focus return) consuming the REST API, token-based bell/badge/header CSS, `ApprovedComponentInventory` + `EXPECTED_COUNTS`, Jest + Playwright.
 - [ ] **T016** [US1] `NotificationsScreen` (slug `corex-notifications`) — views/filters, five view-states, bounded server-side filtering, bulk mark-read.
 - [ ] **T017** [US2] `NotificationToolbar` (`admin_bar_menu`) outside CoreX screens; never both bells; minimal front-end asset.
 - [ ] **T018** [US1] Overview *Attention Required* card (alongside Recent Activity, not replacing it).

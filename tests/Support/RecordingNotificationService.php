@@ -25,6 +25,9 @@ final class RecordingNotificationService implements NotificationService
     /** @var list<string> dedup keys passed to resolve() */
     public array $resolved = [];
 
+    /** Unread count returned to callers; set per test. */
+    public int $unreadCount = 0;
+
     public function publish(Notification $notification): Notification
     {
         $this->published[] = $notification;
@@ -46,7 +49,7 @@ final class RecordingNotificationService implements NotificationService
 
     public function unreadCountForCurrentActor(): int
     {
-        return 0;
+        return $this->unreadCount;
     }
 
     public function findForCurrentActor(int $notificationId): ?array

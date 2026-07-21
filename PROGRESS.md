@@ -150,11 +150,19 @@ live end-to-end; front page 200. Guards clean. **Eight producers register at boo
 access.requests, jobs.failures, jobs.exports, security.lockouts, submissions.assignments, email.failures,
 operations.readiness — the full FR-013 set.
 
-**Next for Phase B: T015–T019 surfaces** (bell in the admin shell header, drawer with focus-trap,
-`NotificationsScreen`, admin-toolbar entry, Overview *Attention Required* card) — the REST API they
-consume (T014) is live and integration-tested, and 8 producers feed real data. Then preferences +
-retention = the framework's first recurring job (T020–T022), then Phase C Dashboard (T023–T025). Note:
-T014 preferences endpoints still wait on T020.
+**T015 started — bell + header-actions filter shipped (drawer + CSS next).** `AdminPage::open()` now
+applies `corex_admin_header_actions` (trusted-HTML region, each contributor escapes its own content,
+like the WordPress admin bar). `NotificationBell` (corex-config) is a server-rendered, keyboard-operable
+`<button>` carrying `data-corex-notification-bell` + dialog ARIA (for the drawer to bind), showing the
+actor's real unread count — badge capped at `99+`, true count in the `aria-label` (FR-016). Registered on
+boot; verified rendering live in the CoreX header. 4 unit tests green; AdminPage's 22 tests unaffected
+(filter defaults empty). Guards clean.
+
+**Next: finish T015** — the React drawer (focus trap, Escape, focus return) consuming the live REST API,
+token-based bell/badge/header CSS, `ApprovedComponentInventory` + `EXPECTED_COUNTS`, Jest + Playwright.
+Then T016 `NotificationsScreen`, T017 toolbar entry, T018 Overview *Attention Required* card, T019 e2e.
+Then preferences + retention = the framework's first recurring job (T020–T022; T014 preferences endpoints
+wait on T020), then Phase C Dashboard (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
