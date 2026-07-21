@@ -51,8 +51,17 @@ above was invisible for exactly this reason: two bugs, stacked.
 - A non-JSON error body now reports its status ("The server returned an unexpected response
   (500).") instead of being indistinguishable from a dead network. `status: 0` now means exactly
   "nothing came back".
-- `failureMessage()` surfaces `details.fields`, which the controller already returned and the UI
-  discarded.
+- `details.fields`, which the controller already returned and the UI discarded, now survives.
+
+> **Corrected 2026-07-20 during the spec 071 artifact backfill.** This bullet originally read
+> "`failureMessage()` surfaces `details.fields`". There is no `failureMessage()` in
+> `corex-runtime.js` — the string `fields` does not appear in that file at all — so the claim named
+> a symbol that never existed and described a mechanism that never ran. What actually happens:
+> `normalise()` returns a valid envelope **verbatim** (`isEnvelope()`, L60-62), so the field errors
+> were never being transformed. They were being thrown away wholesale, because the rejection path
+> fell into the blanket catch and got `genericError()` instead. Routing it through `fromResponse()`
+> is the entire fix. Corrected in place rather than left standing, on the same reasoning 070
+> applied to 069.
 
 Note this screen *does* load `wp-api-fetch` (confirmed live: `hasApiFetch: true`), despite not
 declaring it — so the broken path was the one in play.
