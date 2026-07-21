@@ -90,11 +90,19 @@ module (implements `Corex\Events\Event`), dispatch it from that module's service
 publishes through `NotificationService`, register it in `registerNotificationProducers()`, TDD the
 producer against a recording fake, then live-verify boot→dispatch→row.
 
+**T013 slice 4 (Export-ready producer) — shipped.** `ExportReadyNotificationProducer` reuses
+`JobFinishedEvent` (no new plumbing): on a completed job whose kind ends `.export` it publishes
+`export.ready` (INFORMATION, `imports_exports` category, dedup `export.ready:{id}`) to the actor who ran
+it (`forUser`) — export completion is personal, unlike the operational failure notification. Verified:
+4 producer unit tests + 30 Notifications unit green; live end-to-end; front page 200. Guards clean.
+**Four producers register at boot:** `["forms.submissions","access.requests","jobs.failures","jobs.exports"]`.
+
 **Next for Phase B (T013 continued → then T014):** remaining producers, one slice each — submission
-**assigned**; **export-complete** (reuses `JobFinishedEvent` state=completed + export kind, no new
-plumbing); Email Studio failure; Security lockout / hardening; Readiness blocker/cleared. Then REST
-`NotificationController` (T014), the bell/drawer/screen/toolbar (T015–T019), preferences + retention =
-the framework's first recurring job (T020–T022), then Phase C Dashboard (T023–T025).
+**assigned**; Email Studio failure; Security lockout / hardening; Readiness blocker/cleared (each needs a
+domain event/hook added to its subsystem). Then REST `NotificationController` (T014), the
+bell/drawer/screen/toolbar (T015–T019), preferences + retention = the framework's first recurring job
+(T020–T022), then Phase C Dashboard (T023–T025). The 4 shipped producers are already enough real data to
+build and test T014 meaningfully.
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
