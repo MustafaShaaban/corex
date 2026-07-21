@@ -212,6 +212,10 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Notifications\NotificationRepository::class),
             ),
         );
+        // The dependency-aware boot seam for notification producers (spec 072 FR-014). Concrete
+        // producers add themselves to this registry at boot; register() wires up only the available
+        // ones. Kept as a singleton so every producer registers against the same instance.
+        $this->container->singleton(\Corex\Notifications\NotificationProducerRegistry::class);
 
         $this->container->singleton(
             CorexAbilityCatalog::class,
@@ -647,6 +651,7 @@ final class ConfigServiceProvider extends ServiceProvider
             $notificationUserStateTable->schema(),
         ]);
         $this->container->make(AbilityCompatibility::class)->register();
+        $this->container->make(\Corex\Notifications\NotificationProducerRegistry::class)->register();
         add_action('init', [$this->container->make(WpSubmissionExportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataImportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataExportStore::class), 'registerPostType']);
