@@ -204,11 +204,17 @@ views await a recipient/resolved filter on `NotificationQuery` (a later API exte
 never appear at once (verified live: added on the dashboard, skipped on `toplevel_page_corex-settings`). No
 admin bundle loaded. 3 unit tests green.
 
-**Next: T018–T019, then T020–T022, then Phase C.** T018 Overview *Attention Required* card (compact summary
-linking to the screen's filtered views, alongside Recent Activity — not replacing it). T019 Jest/Playwright
-matrix. Then preferences (`WpNotificationPreferenceStore`; unblocks T014's deferred preferences endpoints) +
-retention `PrunableStore` into a recurring job = the framework's first (T020–T022), then Phase C Dashboard
-Command Center (T023–T025).
+**T018 COMPLETE — Overview *Attention Required* card.** A compact card in the Overview secondary grid
+(`OverviewRenderer::attentionCard`) shows the actor's unread count + an honest empty state and links to the
+Notifications screen, reusing the one bounded `unreadCountForCurrentActor` (no new query). Recent Activity
+untouched (added alongside, per FR-019). Verified live; 16 Overview unit tests green.
+
+**Next: T019, then T020–T022, then Phase C.** T019 = the Jest/Playwright matrix (bell count, drawer
+open/close+focus, 99+ label, toolbar-not-doubled, RTL/mobile/dark/light) — much is already covered by the
+3 live e2e tests; fill the gaps. Then preferences (`WpNotificationPreferenceStore`; unblocks T014's deferred
+preferences endpoints) + retention `PrunableStore` into a recurring job = the framework's first (T020–T022),
+then Phase C Dashboard Command Center (T023–T025). Backend + REST + all four US1/US2 surfaces (bell, drawer,
+screen, toolbar, Overview card) are now shipped and verified.
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.

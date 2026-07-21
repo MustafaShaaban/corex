@@ -60,7 +60,7 @@ description: "Task list for Spec 072 — Notification Center & Dashboard Command
   - [X] **Screen CSS** — token-based styling for the filters, list, items, mark actions, and pager in the shell stylesheet (token-governance test green; every property already tokenized, no new tokens/raw values).
   - [ ] **Screen finish** — the named saved views (attention/assigned to me/system/updates/history) as tabbed filters + the "unavailable" fifth state; Playwright e2e.
 - [X] **T017** [US2] `NotificationToolbar` (`admin_bar_menu`) outside CoreX screens; never both bells; minimal front-end asset. **COMPLETE** — a single server-rendered admin-bar node (unread count, 99+ cap, true count in label, link to `corex-notifications`), gated on `MANAGE_NOTIFICATIONS` and shown only off CoreX screens (the shell bell owns those — verified live: added on dashboard, skipped on a CoreX screen). No admin bundle loaded. 3 unit tests green.
-- [ ] **T018** [US1] Overview *Attention Required* card (alongside Recent Activity, not replacing it).
+- [X] **T018** [US1] Overview *Attention Required* card (alongside Recent Activity, not replacing it). **COMPLETE** — a compact card in the Overview secondary grid showing the actor's unread count + an honest empty state, linking to the Notifications screen; reuses the one bounded `unreadCountForCurrentActor` (no new query); Recent Activity untouched. Verified live; 16 Overview unit tests green.
 - [ ] **T019** Jest + Playwright: bell count, drawer open/close+focus return, 99+ with true label, toolbar-not-doubled, RTL/mobile/dark/light.
 
 ## Phase 7: Preferences, retention, loop prevention (B6)
