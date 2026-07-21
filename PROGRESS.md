@@ -127,10 +127,22 @@ Submissions unit + 4 Submissions integration green; live end-to-end; front page 
 **Six producers register at boot:** forms.submissions, access.requests, jobs.failures, jobs.exports,
 security.lockouts, submissions.assignments.
 
-**Next for Phase B:** T013's last two producers (Email Studio failure, Readiness blocker/cleared) as
-independent slices, and/or **T015–T019 surfaces** (bell/drawer/screen/toolbar — the REST API they consume
-is now live and integration-tested). Then preferences + retention = the framework's first recurring job
-(T020–T022), then Phase C Dashboard (T023–T025).
+**T013 slice 7 (Email Studio failure producer) — shipped.** `EmailStudioDeliveryFailedEvent` dispatched
+from `EmailStudioService::dispatch` in the **corex-email addon** via an optional `EventDispatcher` (6→7
+ctor; factory + all test constructions pass 6 args, still valid) on any unsuccessful `MailResult` — a
+DRY `announce()` covers both return points. `EmailStudioFailureNotificationProducer` (corex-config)
+publishes `email.delivery_failed` (ERROR, `email` category, dedup by provider so an outage merges) to
+`MANAGE_EMAIL`, skipping test sends (consumer-side policy). Dependency-aware: registered unconditionally
+but inert when the addon is absent (isAvailable → class_exists on the addon event). Verified: 3 producer
+unit + 97 Notifications/Email unit + 12 Email/Mail integration green; live end-to-end (addon active →
+`email.failures` registers, dispatch → row → cleaned); front page 200. Guards clean. **Seven producers
+register at boot:** forms.submissions, access.requests, jobs.failures, jobs.exports, security.lockouts,
+submissions.assignments, email.failures.
+
+**Next for Phase B:** T013's **last producer** (Readiness blocker/cleared — needs a signal from the
+readiness/insights subsystem), then the **T015–T019 surfaces** (bell/drawer/screen/toolbar — the REST API
+they consume is live and integration-tested). Then preferences + retention = the framework's first
+recurring job (T020–T022), then Phase C Dashboard (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
