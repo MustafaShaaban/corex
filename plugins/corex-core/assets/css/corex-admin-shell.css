@@ -251,6 +251,59 @@ body.corex-admin-screen .corex-admin__shell {
 	font-size: var(--corex-admin-font-md);
 }
 
+/* Notification bell — the header-actions region on CoreX screens (spec 072 FR-016). */
+.corex-admin__header-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	flex-shrink: 0;
+}
+
+.corex-notification-bell {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: 2.5rem;
+	block-size: 2.5rem;
+	padding: 0;
+	color: var(--corex-admin-text-muted);
+	background: transparent;
+	border: var(--corex-admin-border-width) solid transparent;
+	border-radius: var(--corex-admin-radius-md);
+	cursor: pointer;
+	transition: color 120ms ease, background-color 120ms ease;
+}
+
+.corex-notification-bell:hover {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+}
+
+.corex-notification-bell__icon {
+	display: inline-flex;
+}
+
+.corex-notification-bell__icon svg {
+	inline-size: 1.25rem;
+	block-size: 1.25rem;
+}
+
+.corex-notification-bell__badge {
+	position: absolute;
+	inset-block-start: 0.2rem;
+	inset-inline-end: 0.2rem;
+	min-inline-size: 1.1rem;
+	padding-inline: 0.3rem;
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action);
+	border-radius: var(--corex-admin-radius-pill);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 700;
+	line-height: 1.1rem;
+	text-align: center;
+}
+
 .corex-admin__content {
 	padding: var(--corex-admin-space-xl);
 }
