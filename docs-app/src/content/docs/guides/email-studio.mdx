@@ -64,3 +64,20 @@ mutated.
 All Email Studio REST reads require `manage_options`. Writes require both that capability and a valid WordPress REST
 nonce. Private templates, captures, routes, and attempts are stored as non-public WordPress records and are not
 exposed on the front end.
+
+## Sending and transport
+
+The Email Studio screen shows a **Sending & transport** panel explaining the boundary between CoreX and your mail
+transport:
+
+- CoreX **composes** each message — From name, From address, Reply-To, and body — and hands it to WordPress via
+  `wp_mail()`. It owns those headers through **CoreX → Settings → Mail**.
+- An SMTP plugin such as **FluentSMTP**, when installed, **transports** the message. Its SMTP credentials stay owned by
+  that plugin; CoreX never reads, stores, or requires them.
+- A transport plugin's **Force From Name / Force From Email** settings can override the headers CoreX set. If mail
+  arrives from an unexpected sender, check the transport plugin first.
+- A transport **accepting** a message does not prove it reached an inbox.
+
+The panel raises a specific warning only where a reliable, non-sensitive signal exists — a registered `wp_mail_from`
+filter (a forced-From setting), or a configured From address on a different domain from the site. Where no such signal
+exists, it shows general guidance rather than a fabricated "detected" state.

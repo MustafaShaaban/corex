@@ -9,7 +9,23 @@ Optional add-on; requires `corex-core`.
 |---|---|
 | `none` (default) | Always passes (the form honeypot + throttle still guard). |
 | `honeypot` | Passes when the hidden field is empty; fails when filled. |
-| `recaptcha` / `turnstile` / `hcaptcha` | Posts the token to the provider; passes only on a confirmed `success`. **Fail-closed.** |
+| `recaptcha` | **reCAPTCHA v3** — scored and typed. Verifies `success`, an exact hostname allowlist, the form's server-derived action, token age, one-time use, and a score threshold. **Fail-closed.** |
+| `turnstile` / `hcaptcha` | Posts the token to the provider; passes only on a confirmed `success`. **Fail-closed.** |
+
+### reCAPTCHA v3
+
+`recaptcha` resolves to `RecaptchaV3Captcha`, which returns a typed `Corex\Security\ChallengeVerification`
+(via the `Corex\Security\VerifyingChallenge` seam) rather than a bare boolean, so a below-threshold score,
+an action mismatch, a hostname mismatch, an expired token, or a replay are each reported distinctly. The
+verification runs fail-closed and checks, in order: token present → provider reachable → response parseable
+→ `success` → hostname (exact allowlist, never substring) → action (server-derived, `corex_form_<slug>` by
+default) → age → score → one-time use (replay is checked last, so only a fully valid token is ever recorded).
+
+Settings (**CoreX → Settings → Captcha**): `captcha.site_key`, `captcha.secret`, `captcha.score_threshold`
+(default **0.3**), `captcha.allowed_hostnames`, and an optional global `captcha.action`. The client script
+loads only on pages with a protected form and requests a fresh token per submission. Only protected CoreX
+forms are covered; the honeypot always guards. The **site key** may reach the browser; the **secret never
+does**.
 
 ## Use it
 

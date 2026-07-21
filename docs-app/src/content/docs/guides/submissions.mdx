@@ -29,6 +29,22 @@ Select up to 100 visible rows, then preview Mark read, Assign, Mark spam, or Arc
 the exact selected IDs, and their update timestamps; it expires after five minutes and can be applied once. If any row
 changes or becomes inaccessible, the whole action stops before mutation rather than silently applying a partial result.
 
+## Notification delivery
+
+Every row shows the notification outcome of its submission, and the detail drawer repeats it with a safe reason and the
+time it was attempted. The states are distinguished by text and icon, never colour alone:
+
+- **Notification accepted** — the mail path accepted the message for delivery. This is *not* proof it reached an inbox.
+- **Notification captured** — a development capture stored it instead of sending externally.
+- **Notification queued** — a real queue accepted the job; delivery has not completed.
+- **Notification failed** — an attempted delivery failed. A resend may be available.
+- **Notification rejected** — routing, policy, or configuration prevented an attempt.
+- **No notification** — none was required or configured for this form.
+- **Delivery unavailable** — the submission predates delivery tracking; its outcome is genuinely unknown.
+
+A saved submission with a failed notification is still saved and still readable — the failure is surfaced, never hidden.
+The timeline records a **notification** event alongside the submission event, so the outcome is visible in the history.
+
 ## Reply and inspect delivery
 
 When the submission contains a valid email address and Email Studio is active, the drawer can send a reply. A related
