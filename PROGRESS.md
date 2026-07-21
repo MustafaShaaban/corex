@@ -198,12 +198,17 @@ Submissions / Security / System — each a bounded REST filter) + a severity ref
 Playwright e2e (3 tests green live: bell/drawer + screen tab-switching). Assigned-to-me / updates / history
 views await a recipient/resolved filter on `NotificationQuery` (a later API extension, noted).
 
-**Next: T017–T019, then T020–T022, then Phase C.** T017 admin-toolbar entry (non-CoreX screens; the shell
-bell and toolbar entry must never both show — gate on the CoreX-screen check). T018 Overview *Attention
-Required* card (compact summary linking to the screen's filtered views, alongside Recent Activity). T019
-Jest/Playwright matrix. Then preferences (`WpNotificationPreferenceStore`; unblocks T014's deferred
-preferences endpoints) + retention `PrunableStore` into a recurring job = the framework's first (T020–T022),
-then Phase C Dashboard Command Center (T023–T025).
+**T017 COMPLETE — admin-toolbar notification entry.** `NotificationToolbar` adds a single server-rendered
+`admin_bar_menu` node (unread count, 99+ cap, true count in label, link to `corex-notifications`), gated on
+`MANAGE_NOTIFICATIONS` and shown only *off* CoreX screens — the shell header bell owns those, so the two
+never appear at once (verified live: added on the dashboard, skipped on `toplevel_page_corex-settings`). No
+admin bundle loaded. 3 unit tests green.
+
+**Next: T018–T019, then T020–T022, then Phase C.** T018 Overview *Attention Required* card (compact summary
+linking to the screen's filtered views, alongside Recent Activity — not replacing it). T019 Jest/Playwright
+matrix. Then preferences (`WpNotificationPreferenceStore`; unblocks T014's deferred preferences endpoints) +
+retention `PrunableStore` into a recurring job = the framework's first (T020–T022), then Phase C Dashboard
+Command Center (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
