@@ -58,3 +58,18 @@ test( 'focus is trapped inside the open drawer', async ( { page } ) => {
 		expect( inside ).toBe( true );
 	}
 } );
+
+test( 'the Notifications screen renders its views and switches the active tab', async ( {
+	page,
+} ) => {
+	await page.goto( '/wp-admin/admin.php?page=corex-notifications' );
+
+	const views = page.locator( '.corex-notifications-screen__views' );
+	await expect( views ).toBeVisible();
+
+	const attention = page.locator( '.corex-notifications-screen__view', {
+		hasText: 'Requires attention',
+	} );
+	await attention.click();
+	await expect( attention ).toHaveAttribute( 'aria-current', 'true' );
+} );

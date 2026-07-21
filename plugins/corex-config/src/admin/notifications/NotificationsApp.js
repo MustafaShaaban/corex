@@ -1,16 +1,24 @@
 /**
  * NotificationsApp — the full CoreX → Notifications screen (spec 072 US1, FR-018).
  *
- * The bounded, filtered center: a paginated list of the actor's notifications with an unread-only
- * filter and a severity filter, per-item mark-read, and a bulk mark-all. It consumes the same live
- * REST boundary as the header drawer, with honest loading / error / empty states. Advanced saved
- * views (assigned / system / history) build on this list.
+ * The bounded, filtered center: named views (tabs) over the actor's notifications, each mapping to a
+ * server-side filter, plus a severity refine, per-item mark-read, and a bulk mark-all. It consumes
+ * the same live REST boundary as the header drawer, with honest loading / error / empty states.
  */
-import { useCallback, useEffect, useState } from '@wordpress/element';
+import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 
 const SEVERITIES = [ 'critical', 'error', 'warning', 'action', 'information', 'success' ];
+
+/** Named views map to the bounded query the REST boundary supports (category / unread_only). */
+const VIEWS = [
+	{ id: 'inbox', label: __( 'Inbox', 'corex' ), params: {} },
+	{ id: 'attention', label: __( 'Requires attention', 'corex' ), params: { unread_only: '1' } },
+	{ id: 'submissions', label: __( 'Submissions', 'corex' ), params: { category: 'submissions' } },
+	{ id: 'security', label: __( 'Security', 'corex' ), params: { category: 'security' } },
+	{ id: 'system', label: __( 'System', 'corex' ), params: { category: 'system' } },
+];
 
 export default function NotificationsApp() {
 	const [ status, setStatus ] = useState( 'loading' );
@@ -18,18 +26,21 @@ export default function NotificationsApp() {
 	const [ total, setTotal ] = useState( 0 );
 	const [ page, setPage ] = useState( 1 );
 	const [ perPage ] = useState( 20 );
-	const [ unreadOnly, setUnreadOnly ] = useState( false );
+	const [ view, setView ] = useState( 'inbox' );
 	const [ severity, setSeverity ] = useState( '' );
+
+	const activeView = useMemo(
+		() => VIEWS.find( ( candidate ) => candidate.id === view ) ?? VIEWS[ 0 ],
+		[ view ]
+	);
 
 	const load = useCallback( () => {
 		setStatus( 'loading' );
 		const query = new URLSearchParams( {
 			page: String( page ),
 			per_page: String( perPage ),
+			...activeView.params,
 		} );
-		if ( unreadOnly ) {
-			query.set( 'unread_only', '1' );
-		}
 		if ( severity ) {
 			query.set( 'severity', severity );
 		}
@@ -40,7 +51,7 @@ export default function NotificationsApp() {
 				setStatus( 'ready' );
 			} )
 			.catch( () => setStatus( 'error' ) );
-	}, [ page, perPage, unreadOnly, severity ] );
+	}, [ page, perPage, activeView, severity ] );
 
 	useEffect( () => {
 		load();
@@ -67,22 +78,36 @@ export default function NotificationsApp() {
 			.catch( () => {} );
 	}, [ load ] );
 
+	const chooseView = useCallback( ( id ) => {
+		setPage( 1 );
+		setView( id );
+	}, [] );
+
 	const pages = Math.max( 1, Math.ceil( total / perPage ) );
 
 	return (
 		<div className="corex-notifications-screen">
+			<nav
+				className="corex-notifications-screen__views"
+				aria-label={ __( 'Notification views', 'corex' ) }
+			>
+				{ VIEWS.map( ( candidate ) => (
+					<button
+						key={ candidate.id }
+						type="button"
+						className={
+							'corex-notifications-screen__view' +
+							( candidate.id === view ? ' is-active' : '' )
+						}
+						aria-current={ candidate.id === view ? 'true' : undefined }
+						onClick={ () => chooseView( candidate.id ) }
+					>
+						{ candidate.label }
+					</button>
+				) ) }
+			</nav>
+
 			<div className="corex-notifications-screen__filters">
-				<label className="corex-notifications-screen__filter">
-					<input
-						type="checkbox"
-						checked={ unreadOnly }
-						onChange={ ( event ) => {
-							setPage( 1 );
-							setUnreadOnly( event.target.checked );
-						} }
-					/>
-					{ __( 'Unread only', 'corex' ) }
-				</label>
 				<label className="corex-notifications-screen__filter">
 					{ __( 'Severity', 'corex' ) }
 					<select
@@ -167,7 +192,6 @@ export default function NotificationsApp() {
 						{ __( 'Previous', 'corex' ) }
 					</button>
 					<span>
-						{ /* translators: 1: current page, 2: total pages. */ }
 						{ __( 'Page', 'corex' ) } { page } / { pages }
 					</span>
 					<button

@@ -193,11 +193,17 @@ server-side via `NotificationQuery`), per-item mark-read, bulk mark-all, honest 
 states. Verified: build compiles; menu registers + screen renders live (admin); 164 config + 3 foundation
 integration green; front 200. The shell bell + drawer also appear on this screen.
 
-**Next: finish T016** — token-based screen CSS; the named saved views (attention / assigned to me / system
-/ updates / history) as tabbed filters + the "unavailable" fifth state; Playwright e2e. Then T017
-admin-toolbar entry (non-CoreX screens; never both bells at once), T018 Overview *Attention Required* card,
-T019 Jest/Playwright matrix. Then preferences + retention = the framework's first recurring job (T020–T022;
-T014 preferences endpoints wait on T020), then Phase C Dashboard (T023–T025).
+**T016 COMPLETE.** The Notifications screen now has tabbed saved views (Inbox / Requires attention /
+Submissions / Security / System — each a bounded REST filter) + a severity refine, token CSS, and
+Playwright e2e (3 tests green live: bell/drawer + screen tab-switching). Assigned-to-me / updates / history
+views await a recipient/resolved filter on `NotificationQuery` (a later API extension, noted).
+
+**Next: T017–T019, then T020–T022, then Phase C.** T017 admin-toolbar entry (non-CoreX screens; the shell
+bell and toolbar entry must never both show — gate on the CoreX-screen check). T018 Overview *Attention
+Required* card (compact summary linking to the screen's filtered views, alongside Recent Activity). T019
+Jest/Playwright matrix. Then preferences (`WpNotificationPreferenceStore`; unblocks T014's deferred
+preferences endpoints) + retention `PrunableStore` into a recurring job = the framework's first (T020–T022),
+then Phase C Dashboard Command Center (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.

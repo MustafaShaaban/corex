@@ -401,6 +401,30 @@ body.corex-admin-screen .corex-admin__shell {
 }
 
 /* Notifications screen — the full filtered center (spec 072 FR-018). */
+.corex-notifications-screen__views {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs);
+	margin-block-end: var(--corex-admin-space-md);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-notifications-screen__view {
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text-muted);
+	background: transparent;
+	border: 0;
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.corex-notifications-screen__view.is-active {
+	color: var(--corex-admin-action);
+	box-shadow: inset 0 -0.125rem 0 0 var(--corex-admin-action); /* corex-token-allow: active tab underline */
+}
+
 .corex-notifications-screen__filters {
 	display: flex;
 	align-items: center;
