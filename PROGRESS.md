@@ -229,12 +229,20 @@ tab on the Notifications screen: per-category in-app toggles, mandatory categori
 each change POSTs the full map and re-reads the authoritative result. Token CSS; build compiles; Playwright
 e2e extended (the tab shows the panel with `security` disabled) — all 3 notification e2e green live.
 
-**Next: T021 + T019, then Phase C.** T021 `NotificationChannelPolicy` impl — block email for the `email`
-category + mail-failure sources, dedup + per-window cap (loop prevention); still speculative until an email
-delivery channel exists (the producers already tag mail failures `email` for it). T019 Jest/Playwright
-matrix gaps. Then Phase C Dashboard Command Center (T023–T025). Remaining after that: assigned-to-me/updates/
-history views (need a recipient/resolved filter on `NotificationQuery`). Backend + REST + all US1/US2
-surfaces + retention job + full preferences (backend + UI) are shipped and verified.
+**T023 COMPLETE — Dashboard Command Center widget (Phase C started).** `CommandCenterWidget` registers on
+`wp_dashboard_setup` (dashboard/normal/core), gated on `MANAGE_ADMIN`/`manage_options`; server-renders the
+operations mode, the `unreadCountForCurrentActor` attention count, and the readiness blocker count — all
+escaped, with three navigation-only links (Operations & Security, Notifications). Local checks only, no
+remote calls (FR-015); WP handles Screen Options. Verified live (registered at dashboard/normal/core;
+renders 3 nav links); 164 config + 3 foundation green; front 200.
+
+**Next: T024/T025 (Phase C finish), then the loose ends.** T024 opt-in widgets + settings (Development-only
+rules; never register for users with no data). T025 Dashboard Jest/Playwright + the explicit no-remote-call
+assertion. Then the remaining loose ends: T021 `NotificationChannelPolicy` (speculative until an email
+delivery channel exists), T019 Jest/Playwright matrix gaps, and the assigned-to-me/updates/history screen
+views (need a recipient/resolved filter on `NotificationQuery`). Everything through T023 is shipped and
+verified: the entire Notification Center (backend, REST, all surfaces, retention job, preferences) plus the
+Dashboard command-center widget.
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
