@@ -32,7 +32,7 @@ description: "Task list for Spec 072 — Notification Center & Dashboard Command
 - [X] **T010** [US1] Implement `WpNotificationRepository` (copy `WpActivityRepository` discipline) + `NotificationServiceImpl`.
 
 ## Phase 4: Access (B3)
-- [ ] **T011** [US3] Add `CorexAbility::MANAGE_NOTIFICATIONS` + `notifications` group to the catalog; `AREA_NOTIFICATIONS`; `AdminPage::requestAbilityFor` section key. Update the ability-coverage test.
+- [X] **T011** [US3] Add `CorexAbility::MANAGE_NOTIFICATIONS` + `notifications` group to the catalog; `AREA_NOTIFICATIONS`; `AdminPage::requestAbilityFor` section key. Update the ability-coverage test. (35 Access unit tests green; admin inherits via MANAGE_ADMIN.)
 
 ## Phase 5: Producers + REST (B5/B7)
 - [ ] **T012** [US4] Producer registry + dependency-aware registration. Failing tests per producer.

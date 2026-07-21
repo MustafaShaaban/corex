@@ -328,6 +328,8 @@ final class AdminPage
             'corex-data-models'         => CorexAbility::MANAGE_DATA,
             'operations-security'       => CorexAbility::MANAGE_OPERATIONS,
             'corex-operations-security' => CorexAbility::MANAGE_OPERATIONS,
+            'notifications'             => CorexAbility::MANAGE_NOTIFICATIONS,
+            'corex-notifications'       => CorexAbility::MANAGE_NOTIFICATIONS,
             'access'                    => CorexAbility::MANAGE_ACCESS,
             'corex-access'              => CorexAbility::MANAGE_ACCESS,
             'blog-pro'                  => CorexAbility::MANAGE_BLOG,

@@ -105,6 +105,7 @@ final class CorexAbilityCatalog
             CorexAbility::MANAGE_BLOG,
             CorexAbility::MANAGE_OPERATIONS,
             CorexAbility::RUN_DANGEROUS_ACTIONS,
+            CorexAbility::MANAGE_NOTIFICATIONS,
             CorexAbility::MANAGE_SETUP,
             CorexAbility::MANAGE_SETTINGS,
         ];
@@ -219,6 +220,17 @@ final class CorexAbilityCatalog
                 [],
                 [],
                 ['operations.dangerous'],
+            ),
+            self::ability(
+                CorexAbility::MANAGE_NOTIFICATIONS,
+                'Manage notifications',
+                'Review, resolve, and configure CoreX notifications.',
+                CorexAbility::GROUP_NOTIFICATIONS,
+                CorexAbility::RISK_SENSITIVE,
+                false,
+                [],
+                ['corex-notifications'],
+                ['notifications.resolve', 'notifications.configure'],
             ),
             self::ability(
                 CorexAbility::MANAGE_SETUP,

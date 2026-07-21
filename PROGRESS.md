@@ -40,11 +40,19 @@ page 200). Two commits:
   the PHP-side visibility filter every read applies (FR-002/003). `NotificationServiceImpl` resolves
   the current WP actor. Guards clean (wp-guard, clean-code-guard).
 
-**Next for Phase B (T011→):** access — add `CorexAbility::MANAGE_NOTIFICATIONS` + `notifications` group,
-`AREA_NOTIFICATIONS`, `AdminPage::requestAbilityFor` key, update the ability-coverage test (T011). Then
-producers fed by Phase A's `NotificationDelivery` + Activity events (T012–T013), REST
-`NotificationController` (T014), the bell/drawer/screen/toolbar (T015–T019), preferences + retention =
-the framework's first recurring job (T020–T022), then Phase C Dashboard (T023–T025).
+**T011 (Access) — done.** `CorexAbility::MANAGE_NOTIFICATIONS` (`corex_manage_notifications`, SENSITIVE,
+group `notifications`) added to the catalog after operations, in `$allAreaAbilities` so `MANAGE_ADMIN`
+implies it and `AbilityCompatibility` grants it to every `manage_options` holder; `AREA_NOTIFICATIONS`
+on `ActivityEvent`; `AdminPage::requestAbilityFor` maps `notifications`/`corex-notifications`. Coverage
+test updated (group list + admin-inherits-it assertion). Verified: 35 Access unit tests green;
+`AccessMatrix` enumerates the catalog dynamically so it picks the row up with no assertion break; live
+admin resolves `current_user_can('corex_manage_notifications') === true`; front page 200. Guards clean.
+
+**Next for Phase B (T012→):** producers fed by Phase A's `NotificationDelivery` + Activity events —
+producer registry + dependency-aware registration, failing tests first (T012), then the concrete
+producers (T013). Then REST `NotificationController` (T014), the bell/drawer/screen/toolbar (T015–T019),
+preferences + retention = the framework's first recurring job (T020–T022), then Phase C Dashboard
+(T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.

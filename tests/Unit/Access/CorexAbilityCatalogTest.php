@@ -25,6 +25,7 @@ it('defines every approved product ability group with unique corex keys', functi
         CorexAbility::GROUP_EMAIL,
         CorexAbility::GROUP_BLOG,
         CorexAbility::GROUP_OPERATIONS,
+        CorexAbility::GROUP_NOTIFICATIONS,
         CorexAbility::GROUP_SETUP,
         CorexAbility::GROUP_SETTINGS,
     ])->and(count($keys))->toBe(count(array_unique($keys)));
@@ -41,7 +42,7 @@ it('marks critical access abilities and resolves declared implications', functio
         ->and($admin->risk)->toBe(CorexAbility::RISK_CRITICAL)
         ->and($admin->locked)->toBeTrue()
         ->and($catalog->expanded([CorexAbility::MANAGE_ADMIN]))
-        ->toContain(CorexAbility::MANAGE_FORMS, CorexAbility::MANAGE_ACCESS, CorexAbility::MANAGE_SETTINGS);
+        ->toContain(CorexAbility::MANAGE_FORMS, CorexAbility::MANAGE_ACCESS, CorexAbility::MANAGE_SETTINGS, CorexAbility::MANAGE_NOTIFICATIONS);
 });
 
 it('rejects duplicate and malformed ability definitions', function () {
