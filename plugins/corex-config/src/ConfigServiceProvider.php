@@ -651,7 +651,7 @@ final class ConfigServiceProvider extends ServiceProvider
             $notificationUserStateTable->schema(),
         ]);
         $this->container->make(AbilityCompatibility::class)->register();
-        $this->container->make(\Corex\Notifications\NotificationProducerRegistry::class)->register();
+        $this->registerNotificationProducers();
         add_action('init', [$this->container->make(WpSubmissionExportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataImportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataExportStore::class), 'registerPostType']);
@@ -709,6 +709,18 @@ final class ConfigServiceProvider extends ServiceProvider
             $this->container->make(InsightsController::class)->register();
             $this->container->make(BlogProController::class)->register();
         });
+    }
+
+    /**
+     * Contribute the concrete notification producers, then wire the available ones. Each producer is
+     * dependency-aware (spec 072 FR-014): a producer whose module is absent registers nothing. New
+     * producers are added here as their subsystems gain a signal to consume.
+     */
+    private function registerNotificationProducers(): void
+    {
+        $registry = $this->container->make(\Corex\Notifications\NotificationProducerRegistry::class);
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\SubmissionNotificationProducer::class));
+        $registry->register();
     }
 
     /** @param list<\Corex\Database\Schema\Table> $schemas */

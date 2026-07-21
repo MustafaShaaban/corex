@@ -48,11 +48,28 @@ test updated (group list + admin-inherits-it assertion). Verified: 35 Access uni
 `AccessMatrix` enumerates the catalog dynamically so it picks the row up with no assertion break; live
 admin resolves `current_user_can('corex_manage_notifications') === true`; front page 200. Guards clean.
 
-**Next for Phase B (T012→):** producers fed by Phase A's `NotificationDelivery` + Activity events —
-producer registry + dependency-aware registration, failing tests first (T012), then the concrete
-producers (T013). Then REST `NotificationController` (T014), the bell/drawer/screen/toolbar (T015–T019),
-preferences + retention = the framework's first recurring job (T020–T022), then Phase C Dashboard
-(T023–T025).
+**T012 (Producer registry) — done.** `Corex\Notifications\NotificationProducerRegistry` — availability-
+gated (FR-014), idempotent; wired as a container singleton and registered in `ConfigServiceProvider`
+boot via `registerNotificationProducers()`. 2 unit tests.
+
+**T013 (Producers) — IN PROGRESS: first slice (Submission producer) shipped.** The codebase emits almost
+no domain events, so each producer needs a signal added to its subsystem — delivered as independent
+slices. Slice 1 (the marquee Phase-A integration):
+- `SubmissionProcessedEvent` (new forms domain event) dispatched from `FlowVisitorSubmissionService`
+  after a stored visitor submission, carrying Phase A's typed `NotificationDelivery`.
+- `SubmissionNotificationProducer` (`plugins/corex-config/src/Notifications/Producers/`) publishes
+  `submission.new` (severity ACTION, occurrence-merged per form via dedup `submission.new:{slug}`,
+  targeted at `MANAGE_SUBMISSIONS`) and — only on a genuine delivery failure — `submission.email_failed`
+  (severity ERROR, `email` category so T021's channel policy keeps it off email = FR-021 loop guard).
+- Verified: 4 producer unit tests + 20 Notifications unit + 22 Forms integration green; **live
+  end-to-end** (boot → dispatch → producer → service → repo → DB created both rows, cleaned up); front
+  page 200. Guards clean.
+
+**Next for Phase B (T013 continued → then T014):** the remaining producers, one slice each (submission
+**assigned**; Email Studio failure; Job failure / export-complete; Access request; Security lockout /
+hardening; Readiness blocker/cleared) — each needs a domain event or hook added to its subsystem. Then
+REST `NotificationController` (T014), the bell/drawer/screen/toolbar (T015–T019), preferences +
+retention = the framework's first recurring job (T020–T022), then Phase C Dashboard (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.

@@ -35,8 +35,10 @@ description: "Task list for Spec 072 — Notification Center & Dashboard Command
 - [X] **T011** [US3] Add `CorexAbility::MANAGE_NOTIFICATIONS` + `notifications` group to the catalog; `AREA_NOTIFICATIONS`; `AdminPage::requestAbilityFor` section key. Update the ability-coverage test. (35 Access unit tests green; admin inherits via MANAGE_ADMIN.)
 
 ## Phase 5: Producers + REST (B5/B7)
-- [ ] **T012** [US4] Producer registry + dependency-aware registration. Failing tests per producer.
-- [ ] **T013** [US4] Implement producers: Submission (new/assigned + Phase A email-failure), Email Studio failure, Job failure/export-complete, Access request, Security lockout/hardening, Readiness blocker/cleared. Dedup keys per spec.
+- [X] **T012** [US4] Producer registry + dependency-aware registration. Failing tests per producer. (`NotificationProducerRegistry` — availability-gated, idempotent; wired into ConfigServiceProvider boot; 2 unit tests green.)
+- [~] **T013** [US4] Implement producers: Submission (new/assigned + Phase A email-failure), Email Studio failure, Job failure/export-complete, Access request, Security lockout/hardening, Readiness blocker/cleared. Dedup keys per spec.
+  - [X] **Submission producer** — `SubmissionProcessedEvent` (new forms domain event, dispatched from `FlowVisitorSubmissionService` after a stored submission, carries Phase A's `NotificationDelivery`); `SubmissionNotificationProducer` publishes `submission.new` (occurrence-merged per form → `MANAGE_SUBMISSIONS`) and, on genuine delivery failure, `submission.email_failed` in the `email` category (so T021's channel policy blocks re-emailing it). 4 unit tests + live end-to-end verified.
+  - [ ] Remaining producers: submission **assigned**; Email Studio failure; Job failure / export-complete; Access request; Security lockout / hardening; Readiness blocker/cleared. Each needs a signal from its subsystem (most emit no domain event yet) — one slice each.
 - [ ] **T014** [US1] `NotificationController` (REST corex/v1/notifications): list, counts, read/unread, dismiss, snooze, resolve, preferences, grouped detail. Two-tier gate; bounded pagination; envelope. Failing tests first.
 
 ## Phase 6: Surfaces (B4)
