@@ -4,7 +4,34 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-20b) -- Spec 071 US1 COMPLETE on `spec/071-form-delivery-and-recaptcha-reliability`.
+## RESUME HERE (2026-07-21) -- Phase A shipped + repo cleaned; Phase B (Notification Center) started on `spec/072-notification-center-and-dashboard`.
+
+**Phase A (spec 071) is committed, pushed, and PR'd.** Working tree was 79 uncommitted files; now
+three logical commits on `spec/071` (`docs(070)` backfill · `feat(071)` implementation · `docs(071)`
+guides+artifacts), stacked on `spec/070`. Both branches pushed to `origin`:
+- **PR #117** — spec 070 (base `main`): transport error fidelity + hidden-admin styling + its
+  backfilled Spec Kit artifacts. **Open, not merged.**
+- **PR #118** — spec 071 (base `spec/070`, stacked): Phase A. Auto-retargets to `main` when #117
+  merges. **Open, not merged.** Review #117 first.
+
+**Repo cleanup done (owner-authorized):** deleted 4 merged local branches (develop, fix/067, fix/069,
+release/v0.34.0) and pruned 23 stale merged remote branches on `origin`. `origin` now holds only
+`main`, `develop`, `spec/070`, `spec/071`, and the **13 Dependabot** branches (left untouched — a
+separate dependency track, and GitHub reports 18 vulnerability alerts worth a spec-056 pass). The
+spec-055 wip stash is preserved. Site healthy (front page 200).
+
+**Phase B (Notification Center, spec 072) — STARTED, early.** Branched `spec/072-...` off the
+committed `spec/071`; Environment Gate re-verified; `FOUNDATION_SCHEMA_VERSION` confirmed at `'2'`
+(must bump to `'3'` for the two new tables). **`specs/072-.../spec.md` authored** (stakeholder-first,
+7 user stories, FR-001..FR-026, SC-001..SC-008) — this is the design contract. The detailed
+implementation plan (B1–B7 contracts/persistence/access/bell+drawer/producers/preferences/REST + the
+Phase C Dashboard) is in the approved plan file. **Still to do for Phase B:** the rest of the Spec Kit
+artifacts (plan/research/data-model/contracts/quickstart/checklists/tasks), then implement via TDD +
+guards + a Phase-B gate. Phase C (Dashboard Command Center) follows. MFA excluded throughout. The
+`spec/072` work (spec.md + this PROGRESS note) is **uncommitted** WIP.
+
+---
+## (previous, 2026-07-20b) -- Spec 071 US1 COMPLETE on `spec/071-form-delivery-and-recaptcha-reliability`.
 
 **Branch** `spec/071-form-delivery-and-recaptcha-reliability`, cut from the unpushed spec-070 tip
 `f9c5656` (070 is local-only, 1 ahead of `origin/main`, not yet merged). This is Phase A of a larger
