@@ -209,12 +209,20 @@ admin bundle loaded. 3 unit tests green.
 Notifications screen, reusing the one bounded `unreadCountForCurrentActor` (no new query). Recent Activity
 untouched (added alongside, per FR-019). Verified live; 16 Overview unit tests green.
 
-**Next: T019, then T020–T022, then Phase C.** T019 = the Jest/Playwright matrix (bell count, drawer
-open/close+focus, 99+ label, toolbar-not-doubled, RTL/mobile/dark/light) — much is already covered by the
-3 live e2e tests; fill the gaps. Then preferences (`WpNotificationPreferenceStore`; unblocks T014's deferred
-preferences endpoints) + retention `PrunableStore` into a recurring job = the framework's first (T020–T022),
-then Phase C Dashboard Command Center (T023–T025). Backend + REST + all four US1/US2 surfaces (bell, drawer,
-screen, toolbar, Overview card) are now shipped and verified.
+**T022 COMPLETE — retention + the framework's first recurring job.** `NotificationRetention`
+(PrunableStore, 90-day window, delegates to the repository's bounded `pruneOlderThan` — only resolved/
+expired notifications are removed, unresolved conditions persist) seeds `RetentionSweep` in the container;
+`RetentionScheduler` books a daily `corex_retention_sweep` WP-Cron event (idempotent via `wp_next_scheduled`)
+that runs `RetentionSweep::apply()`. Verified live (cron booked; preview shows the 90-day notifications
+store; apply runs clean). 1 unit test + 216 unit/config + 3 foundation integration green.
+
+**Next: T020/T021 (preferences + channel policy), T019 (test-matrix gaps), then Phase C.** T020
+`WpNotificationPreferenceStore` — a new managed table (schema 3→4) + preferences UI (mandatory items
+non-disableable); unblocks T014's deferred preferences endpoints. T021 `NotificationChannelPolicy` — block
+email for the `email` category + mail-failure sources, dedup + per-window cap (loop prevention). T019 fills
+Jest/Playwright matrix gaps (99+ label, RTL/mobile/dark-light; core interactions already e2e-covered). Then
+Phase C Dashboard Command Center (T023–T025). Backend + REST + all US1/US2 surfaces + retention job are
+shipped and verified.
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.

@@ -217,6 +217,22 @@ final class ConfigServiceProvider extends ServiceProvider
         // ones. Kept as a singleton so every producer registers against the same instance.
         $this->container->singleton(\Corex\Notifications\NotificationProducerRegistry::class);
 
+        // Retention: the notification store as a PrunableStore, swept by the framework's first
+        // recurring job (spec 072 FR-022). RetentionSweep is seeded with the stores it prunes.
+        $this->container->singleton(
+            \Corex\Config\Retention\NotificationRetention::class,
+            static fn (ContainerInterface $c): \Corex\Config\Retention\NotificationRetention => new \Corex\Config\Retention\NotificationRetention(
+                $c->make(\Corex\Notifications\NotificationRepository::class),
+            ),
+        );
+        $this->container->singleton(
+            \Corex\Config\Retention\RetentionSweep::class,
+            static fn (ContainerInterface $c): \Corex\Config\Retention\RetentionSweep => new \Corex\Config\Retention\RetentionSweep([
+                $c->make(\Corex\Config\Retention\NotificationRetention::class),
+            ]),
+        );
+        $this->container->singleton(\Corex\Config\Retention\RetentionScheduler::class);
+
         $this->container->singleton(
             CorexAbilityCatalog::class,
             static fn (): CorexAbilityCatalog => CorexAbilityCatalog::defaults(),
@@ -655,6 +671,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->registerNotificationProducers();
         $this->container->make(\Corex\Config\Notifications\NotificationBell::class)->register();
         $this->container->make(\Corex\Config\Notifications\NotificationToolbar::class)->register();
+        $this->container->make(\Corex\Config\Retention\RetentionScheduler::class)->register();
         add_action('init', [$this->container->make(WpSubmissionExportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataImportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataExportStore::class), 'registerPostType']);
