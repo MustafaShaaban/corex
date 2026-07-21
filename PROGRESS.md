@@ -139,10 +139,22 @@ unit + 97 Notifications/Email unit + 12 Email/Mail integration green; live end-t
 register at boot:** forms.submissions, access.requests, jobs.failures, jobs.exports, security.lockouts,
 submissions.assignments, email.failures.
 
-**Next for Phase B:** T013's **last producer** (Readiness blocker/cleared — needs a signal from the
-readiness/insights subsystem), then the **T015–T019 surfaces** (bell/drawer/screen/toolbar — the REST API
-they consume is live and integration-tested). Then preferences + retention = the framework's first
-recurring job (T020–T022), then Phase C Dashboard (T023–T025).
+**T013 slice 8 (Readiness producer) — shipped. T013 is now COMPLETE.** `ReadinessEvaluatedEvent`
+dispatched from `ProductionReadinessSnapshotFactory::fromCurrentSite` via an optional `EventDispatcher`
+(1→2 ctor; the checks are local so it is safe on the render path, FR-015). `ReadinessNotificationProducer`
+reconciles the whole snapshot each evaluation — blocking checks publish `readiness.blocker` (WARNING,
+dedup `readiness.blocker:{key}` so recurrence merges/reopens), non-blocking checks resolve theirs
+(FR-010 condition lifecycle), idempotent — to `MANAGE_OPERATIONS`. The shared `RecordingNotificationService`
+gained resolve-tracking for the test. Verified: 4 producer unit + 76 Notifications/Operations unit green;
+live end-to-end; front page 200. Guards clean. **Eight producers register at boot:** forms.submissions,
+access.requests, jobs.failures, jobs.exports, security.lockouts, submissions.assignments, email.failures,
+operations.readiness — the full FR-013 set.
+
+**Next for Phase B: T015–T019 surfaces** (bell in the admin shell header, drawer with focus-trap,
+`NotificationsScreen`, admin-toolbar entry, Overview *Attention Required* card) — the REST API they
+consume (T014) is live and integration-tested, and 8 producers feed real data. Then preferences +
+retention = the framework's first recurring job (T020–T022), then Phase C Dashboard (T023–T025). Note:
+T014 preferences endpoints still wait on T020.
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.

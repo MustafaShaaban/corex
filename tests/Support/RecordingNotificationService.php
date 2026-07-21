@@ -22,6 +22,9 @@ final class RecordingNotificationService implements NotificationService
     /** @var list<Notification> */
     public array $published = [];
 
+    /** @var list<string> dedup keys passed to resolve() */
+    public array $resolved = [];
+
     public function publish(Notification $notification): Notification
     {
         $this->published[] = $notification;
@@ -31,6 +34,8 @@ final class RecordingNotificationService implements NotificationService
 
     public function resolve(string $dedupKey, string $reason): int
     {
+        $this->resolved[] = $dedupKey;
+
         return 0;
     }
 

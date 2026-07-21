@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Config\Security\HardeningChecks;
 use Corex\Config\Security\HardeningFacts;
+use Corex\Events\EventDispatcher;
 use DateTimeImmutable;
 
 /**
@@ -19,15 +20,17 @@ use DateTimeImmutable;
  */
 final class ProductionReadinessSnapshotFactory
 {
-    public function __construct(private readonly HardeningChecks $hardening)
-    {
+    public function __construct(
+        private readonly HardeningChecks $hardening,
+        private readonly ?EventDispatcher $events = null,
+    ) {
     }
 
     public function fromCurrentSite(DateTimeImmutable $now): ReadinessSnapshot
     {
         $checkedAt = $now->format(DATE_ATOM);
 
-        return new ReadinessSnapshot(array_map(
+        $snapshot = new ReadinessSnapshot(array_map(
             static fn (array $check): array => [
                 'key'            => $check['key'],
                 'label'          => $check['label'],
@@ -43,5 +46,11 @@ final class ProductionReadinessSnapshotFactory
             ],
             $this->hardening->checks(HardeningFacts::gather()),
         ));
+
+        // Announce the evaluation so the Notification Center can reconcile readiness conditions. The
+        // checks are local, so this is safe on the render path (FR-015).
+        $this->events?->dispatch(new ReadinessEvaluatedEvent($snapshot));
+
+        return $snapshot;
     }
 }

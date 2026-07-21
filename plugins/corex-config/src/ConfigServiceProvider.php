@@ -730,6 +730,7 @@ final class ConfigServiceProvider extends ServiceProvider
         // Registered unconditionally; its isAvailable() (class_exists on the addon event) keeps it inert
         // when the Email Studio addon is absent, exactly like every other dependency-aware producer.
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\EmailStudioFailureNotificationProducer::class));
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\ReadinessNotificationProducer::class));
         $registry->register();
     }
 
