@@ -253,11 +253,15 @@ broke `MaintenanceModeTest`) — the integration suite is now fully green.
 card, full preferences, retention recurring job), the Dashboard Command Center widget (no-remote-call
 guaranteed), and the operations guide.
 
+**Pushed + PR'd.** `spec/072` is pushed to `origin`; **PR #119** is OPEN and **MERGEABLE**, based on
+`spec/071-form-delivery-and-recaptcha-reliability` (stacked — auto-retargets to `main` as 070→071 merge).
+Blocked only on human review + the stack merge order (PR #117 spec-070 → #118 spec-071 → #119 spec-072).
+
 **Remaining — all optional / deferred, none blocking:** T024 opt-in widgets + Development-only rules; T021
 `NotificationChannelPolicy` (speculative until an email delivery channel exists — the producers already tag
 mail failures `email` for it); T019/T026 Jest/Playwright + performance gaps (core interactions already
 e2e-covered); the assigned-to-me/updates/history screen views (need a recipient/resolved filter on
-`NotificationQuery`). The branch is ready to push and open a PR.
+`NotificationQuery`).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
