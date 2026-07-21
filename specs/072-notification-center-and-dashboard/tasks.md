@@ -73,7 +73,7 @@ description: "Task list for Spec 072 — Notification Center & Dashboard Command
 ## Phase 8: Dashboard (Phase C)
 - [X] **T023** [US6] `CommandCenterWidget` (id `corex_command_center`) — site state, attention (canonical query), security snapshot, navigation-only actions; server-rendered, no remote calls; Screen Options respected. **COMPLETE** — registers on `wp_dashboard_setup` (dashboard/normal/core), gated on `MANAGE_ADMIN`/`manage_options`; renders operations mode + `unreadCountForCurrentActor` attention + readiness blocker count, all escaped, with three navigation-only links; only local checks (no remote — FR-015); WP handles Screen Options for a registered widget. Verified live (registered + renders, 3 nav links); 164 config + 3 foundation green.
 - [ ] **T024** [US7] Optional opt-in widgets + settings; Development-only rules; never register for users with no data.
-- [ ] **T025** Dashboard Jest/Playwright + no-remote-call assertion.
+- [X] **T025** Dashboard Jest/Playwright + no-remote-call assertion. **COMPLETE (core)** — `CommandCenterWidgetTest` (integration, real WP): registers the widget, renders site-state/attention/readiness with three navigation-only links, and — the key FR-015 guard — asserts **no outbound HTTP request** is made while rendering (via a `pre_http_request` filter that records and blocks). The widget is server-rendered PHP (no JS), so no Jest is needed; a Playwright dashboard snapshot can be added with T024's opt-in widgets.
 
 ## Phase 9: Performance, docs, gate
 - [ ] **T026** Performance tests: 10k notifications — unread count, drawer, Dashboard, filtered center within budget.
