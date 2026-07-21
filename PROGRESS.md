@@ -241,18 +241,23 @@ renders 3 nav links); 164 config + 3 foundation green; front 200.
 **no outbound HTTP** during render (FR-015) via a `pre_http_request` guard. Server-rendered PHP, so no Jest
 needed. 3 tests green.
 
-**T027 COMPLETE — documentation.** `docs/en/03-operations/notifications.md`: the surfaces, the producer table,
-the REST API, preferences, retention/privacy, the Dashboard Command Center, and a developer "adding a producer"
-section. Every referenced ability, producer type, endpoint, meta key, retention window, and cron cadence
-verified against source (docs-guard); auto-discovered by the docs-app.
+**T027 (docs) + T028 (gate) COMPLETE.** Docs: `docs/en/03-operations/notifications.md` (surfaces, producer
+table, REST API, preferences, retention/privacy, Dashboard widget, "adding a producer") — every reference
+verified against source (docs-guard). **Final gate:** full unit **1417 passed** (8 pre-existing unrelated
+failures), full integration **185 passed / 0 failed**, 3 Playwright e2e green live, front 200. Fixed a
+test-isolation leak my `CommandCenterWidgetTest` introduced (a lingering admin screen from `set_current_screen`
+broke `MaintenanceModeTest`) — the integration suite is now fully green.
 
-**Next: the loose ends (all optional/deferred).** T024 opt-in widgets + Development-only rules. T021
-`NotificationChannelPolicy` (still speculative until an email delivery channel exists). T019/T026
-Jest/Playwright + performance gaps (core interactions already e2e-covered). Assigned-to-me/updates/history
-screen views (need a recipient/resolved filter on `NotificationQuery`). **Everything substantive in spec 072
-is shipped, verified, and documented:** the entire Notification Center (backend, REST,
-bell/drawer/screen/toolbar/Overview-card, retention recurring job, full preferences), the Dashboard Command
-Center widget with its no-remote-call guarantee, and the operations guide.
+**Spec 072 is functionally complete and gated.** Everything substantive ships: the entire Notification Center
+(contracts, store, service, 8 producers, REST with the two-tier gate, bell/drawer/screen/toolbar/Overview
+card, full preferences, retention recurring job), the Dashboard Command Center widget (no-remote-call
+guaranteed), and the operations guide.
+
+**Remaining — all optional / deferred, none blocking:** T024 opt-in widgets + Development-only rules; T021
+`NotificationChannelPolicy` (speculative until an email delivery channel exists — the producers already tag
+mail failures `email` for it); T019/T026 Jest/Playwright + performance gaps (core interactions already
+e2e-covered); the assigned-to-me/updates/history screen views (need a recipient/resolved filter on
+`NotificationQuery`). The branch is ready to push and open a PR.
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.

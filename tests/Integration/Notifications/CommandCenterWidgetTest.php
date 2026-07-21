@@ -19,6 +19,13 @@ beforeEach(function () {
     $this->widget = Corex\Boot::app()->container()->make(CommandCenterWidget::class);
 });
 
+afterEach(function () {
+    // The registration test sets an admin screen (`dashboard`); restore a front-end screen so a later
+    // test's is_admin() is not left true (which would, e.g., make MaintenanceGuard stop blocking).
+    set_current_screen('front');
+    wp_set_current_user(0);
+});
+
 it('registers a dashboard widget for an administrator', function () {
     require_once ABSPATH . 'wp-admin/includes/dashboard.php';
     set_current_screen('dashboard');
