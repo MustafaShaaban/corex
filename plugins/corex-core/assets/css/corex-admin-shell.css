@@ -400,6 +400,87 @@ body.corex-admin-screen .corex-admin__shell {
 	align-self: flex-start;
 }
 
+/* Notifications screen — the full filtered center (spec 072 FR-018). */
+.corex-notifications-screen__filters {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-notifications-screen__filter {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-notifications-screen__mark-all {
+	margin-inline-start: auto;
+	color: var(--corex-admin-action);
+	background: transparent;
+	border: 0;
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.corex-notifications-screen__state {
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-notifications-screen__list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-notifications-screen__item {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-notifications-screen__item-title {
+	margin: 0 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-notifications-screen__item-body {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-notifications-screen__mark {
+	color: var(--corex-admin-action);
+	background: transparent;
+	border: 0;
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.corex-notifications-screen__pager {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-md);
+	margin-block-start: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
 .corex-admin__content {
 	padding: var(--corex-admin-space-xl);
 }

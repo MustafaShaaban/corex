@@ -57,7 +57,8 @@ description: "Task list for Spec 072 — Notification Center & Dashboard Command
   - [ ] **Drawer finish** — `ApprovedComponentInventory` + `EXPECTED_COUNTS` declaration (confirm the spec-068 design file approves a drawer first); Playwright e2e for focus-trap/Escape/return (jsdom can't verify, and this repo has no React-render Jest harness).
 - [~] **T016** [US1] `NotificationsScreen` (slug `corex-notifications`) — views/filters, five view-states, bounded server-side filtering, bulk mark-read.
   - [X] **Screen + list app** — PHP `NotificationsScreen` (menu under CoreX, slug `corex-notifications`, gated on `MANAGE_NOTIFICATIONS`, renders the shell + `#corex-notifications-app`); React `NotificationsApp` mounted from `admin/index.js` — paginated list from `GET /notifications`, unread-only + severity filters (bounded server-side via `NotificationQuery`), per-item mark-read, bulk mark-all, loading/error/empty/list states. Build compiles; menu + render verified live; 164 config + 3 foundation tests green.
-  - [ ] **Screen finish** — token-based screen CSS; the named saved views (attention/assigned to me/system/updates/history) as the fifth "unavailable" state and tabbed filters; Playwright e2e.
+  - [X] **Screen CSS** — token-based styling for the filters, list, items, mark actions, and pager in the shell stylesheet (token-governance test green; every property already tokenized, no new tokens/raw values).
+  - [ ] **Screen finish** — the named saved views (attention/assigned to me/system/updates/history) as tabbed filters + the "unavailable" fifth state; Playwright e2e.
 - [ ] **T017** [US2] `NotificationToolbar` (`admin_bar_menu`) outside CoreX screens; never both bells; minimal front-end asset.
 - [ ] **T018** [US1] Overview *Attention Required* card (alongside Recent Activity, not replacing it).
 - [ ] **T019** Jest + Playwright: bell count, drawer open/close+focus return, 99+ with true label, toolbar-not-doubled, RTL/mobile/dark/light.
