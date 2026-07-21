@@ -72,4 +72,16 @@ test( 'the Notifications screen renders its views and switches the active tab', 
 	} );
 	await attention.click();
 	await expect( attention ).toHaveAttribute( 'aria-current', 'true' );
+
+	// The Preferences tab swaps the list for the per-category toggle panel, with mandatory
+	// categories (security) rendered disabled so a user can never mute a required notification.
+	await page
+		.locator( '.corex-notifications-screen__view', { hasText: 'Preferences' } )
+		.click();
+	const prefs = page.locator( '.corex-notifications-prefs' );
+	await expect( prefs ).toBeVisible();
+	await expect(
+		prefs.locator( '.corex-notifications-prefs__row', { hasText: 'security' } )
+			.locator( 'input[type="checkbox"]' )
+	).toBeDisabled();
 } );

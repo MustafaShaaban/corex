@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import PreferencesPanel from './PreferencesPanel.js';
 
 const SEVERITIES = [ 'critical', 'error', 'warning', 'action', 'information', 'success' ];
 
@@ -35,6 +36,9 @@ export default function NotificationsApp() {
 	);
 
 	const load = useCallback( () => {
+		if ( view === 'preferences' ) {
+			return; // the preferences panel owns its own data
+		}
 		setStatus( 'loading' );
 		const query = new URLSearchParams( {
 			page: String( page ),
@@ -51,7 +55,7 @@ export default function NotificationsApp() {
 				setStatus( 'ready' );
 			} )
 			.catch( () => setStatus( 'error' ) );
-	}, [ page, perPage, activeView, severity ] );
+	}, [ view, page, perPage, activeView, severity ] );
 
 	useEffect( () => {
 		load();
@@ -91,22 +95,27 @@ export default function NotificationsApp() {
 				className="corex-notifications-screen__views"
 				aria-label={ __( 'Notification views', 'corex' ) }
 			>
-				{ VIEWS.map( ( candidate ) => (
-					<button
-						key={ candidate.id }
-						type="button"
-						className={
-							'corex-notifications-screen__view' +
-							( candidate.id === view ? ' is-active' : '' )
-						}
-						aria-current={ candidate.id === view ? 'true' : undefined }
-						onClick={ () => chooseView( candidate.id ) }
-					>
-						{ candidate.label }
-					</button>
-				) ) }
+				{ [ ...VIEWS, { id: 'preferences', label: __( 'Preferences', 'corex' ) } ].map(
+					( candidate ) => (
+						<button
+							key={ candidate.id }
+							type="button"
+							className={
+								'corex-notifications-screen__view' +
+								( candidate.id === view ? ' is-active' : '' )
+							}
+							aria-current={ candidate.id === view ? 'true' : undefined }
+							onClick={ () => chooseView( candidate.id ) }
+						>
+							{ candidate.label }
+						</button>
+					)
+				) }
 			</nav>
 
+			{ view === 'preferences' && <PreferencesPanel /> }
+
+			{ view !== 'preferences' && ( <>
 			<div className="corex-notifications-screen__filters">
 				<label className="corex-notifications-screen__filter">
 					{ __( 'Severity', 'corex' ) }
@@ -203,6 +212,7 @@ export default function NotificationsApp() {
 					</button>
 				</nav>
 			) }
+			</> ) }
 		</div>
 	);
 }

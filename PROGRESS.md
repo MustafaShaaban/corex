@@ -224,13 +224,17 @@ low-volume, WordPress-native — not a managed table; DECISIONS #152), and REST 
 integration test (mandatory never muted) green; route registers live. Preferences **UI** (a React panel on
 the screen) remains.
 
-**Next: T020 UI + T021 + T019, then Phase C.** T020 UI — a preferences panel/tab on the Notifications screen
-(category toggles; mandatory shown disabled + explained), POSTing to the endpoint. T021
-`NotificationChannelPolicy` impl — block email for the `email` category + mail-failure sources, dedup +
-per-window cap (loop prevention); becomes non-speculative once an email delivery channel exists (the
-producers already tag mail failures `email` for it). T019 Jest/Playwright matrix gaps. Then Phase C Dashboard
-Command Center (T023–T025). Backend + REST + all US1/US2 surfaces + retention job + preferences backend are
-shipped and verified.
+**T020 COMPLETE (preferences backend + UI).** `PreferencesPanel` React component behind a **Preferences**
+tab on the Notifications screen: per-category in-app toggles, mandatory categories disabled + explained,
+each change POSTs the full map and re-reads the authoritative result. Token CSS; build compiles; Playwright
+e2e extended (the tab shows the panel with `security` disabled) — all 3 notification e2e green live.
+
+**Next: T021 + T019, then Phase C.** T021 `NotificationChannelPolicy` impl — block email for the `email`
+category + mail-failure sources, dedup + per-window cap (loop prevention); still speculative until an email
+delivery channel exists (the producers already tag mail failures `email` for it). T019 Jest/Playwright
+matrix gaps. Then Phase C Dashboard Command Center (T023–T025). Remaining after that: assigned-to-me/updates/
+history views (need a recipient/resolved filter on `NotificationQuery`). Backend + REST + all US1/US2
+surfaces + retention job + full preferences (backend + UI) are shipped and verified.
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.

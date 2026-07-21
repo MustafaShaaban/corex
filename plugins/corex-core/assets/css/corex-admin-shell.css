@@ -505,6 +505,38 @@ body.corex-admin-screen .corex-admin__shell {
 	font-size: var(--corex-admin-font-sm);
 }
 
+.corex-notifications-prefs {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-notifications-prefs__row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-notifications-prefs__label {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+}
+
+.corex-notifications-prefs__note {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
 .corex-admin__content {
 	padding: var(--corex-admin-space-xl);
 }
