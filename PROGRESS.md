@@ -4,7 +4,7 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-21) -- Phase A shipped + repo cleaned; Phase B (Notification Center) started on `spec/072-notification-center-and-dashboard`.
+## RESUME HERE (2026-07-21) -- Phase A shipped + repo cleaned; Phase B (Notification Center) persistence store green (T003–T010) on `spec/072-notification-center-and-dashboard`.
 
 **Phase A (spec 071) is committed, pushed, and PR'd.** Working tree was 79 uncommitted files; now
 three logical commits on `spec/071` (`docs(070)` backfill · `feat(071)` implementation · `docs(071)`
@@ -20,25 +20,34 @@ release/v0.34.0) and pruned 23 stale merged remote branches on `origin`. `origin
 separate dependency track, and GitHub reports 18 vulnerability alerts worth a spec-056 pass). The
 spec-055 wip stash is preserved. Site healthy (front page 200).
 
-**Phase B (Notification Center, spec 072) — foundation shipped, committed on `spec/072`.** Branched
-off committed `spec/071`; Environment Gate re-verified; `FOUNDATION_SCHEMA_VERSION` at `'2'` (bump to
-`'3'` pending, needed by the two new tables). Commit `21bc159`:
-- **Spec Kit:** `spec.md` (stakeholder-first, 7 user stories, FR-001..026, SC-001..008), `plan.md`
-  (constitution check + ordered workstreams), `data-model.md` (the two tables + VOs), `tasks.md`
-  (dependency-ordered, T003..T028). The B1–B7 + Phase C detail lives in the approved master plan.
-- **Value-object foundation (`Corex\Notifications\*`, 12 unit tests green):** NotificationSeverity/
-  Category/Status (closed, ranked vocabularies); **NotificationRecipient** — the single visibility
-  predicate `canBeSeenBy()` every read/count re-checks (user/users/ability/assigned/category_admins,
-  fail-closed, never a hard-coded WP role); NotificationAction (nav-only, ability-gated);
-  **Notification** (dedup-keyed occurrence merging, resolution ≠ user-dismissal, secret-free via
-  `assertNoSecretKeys`, array round-trip).
+**Phase B (Notification Center, spec 072) — foundation + persistence store shipped on `spec/072`.**
+Branched off committed `spec/071`; Environment Gate re-verified. `FOUNDATION_SCHEMA_VERSION` now `'3'`
+(the two new tables); verified applied live on corex.local (`cx_corex_notifications` present, front
+page 200). Two commits:
+- **`21bc159` — Spec Kit + value objects (T003–T006, 12 unit tests):** `spec.md`/`plan.md`/
+  `data-model.md`/`tasks.md`. `Corex\Notifications\*` VOs — NotificationSeverity/Category/Status
+  (closed, ranked); **NotificationRecipient** — the single `canBeSeenBy()` predicate every read/count
+  re-checks (user/users/ability/assigned/category_admins, fail-closed, never a hard-coded WP role);
+  NotificationAction (nav-only, ability-gated); **Notification** (dedup-keyed occurrence merging,
+  resolution ≠ user-dismissal, secret-free via `assertNoSecretKeys`).
+- **`032d980` — persistence store + contracts (T007–T010, +2 unit + 9 integration, all green):**
+  contracts `NotificationRepository`/`Service`/`Producer`/`ChannelPolicy` + `NotificationQuery` VO
+  (page-size clamped, filters allowlist-validated, FR-026). `NotificationTable` +
+  `NotificationUserStateTable` (dedup-unique record + per-user private state) registered as
+  ManagedTables; schema `2`→`3`. **`WpNotificationRepository`** mirrors `WpActivityRepository`
+  discipline (prepared statements, UTC, bounded 500-row candidate scan, select-then-delete prune) and
+  adds the dedup-keyed upsert with occurrence-merge + recurrence-reopen, the per-user state join, and
+  the PHP-side visibility filter every read applies (FR-002/003). `NotificationServiceImpl` resolves
+  the current WP actor. Guards clean (wp-guard, clean-code-guard).
 
-**Next for Phase B (T007→):** the contracts (Store/Repository/Service/Producer/ChannelPolicy
-interfaces), then the two managed tables + `FOUNDATION_SCHEMA_VERSION` `2`→`3`, then
-`WpNotificationRepository` (copy `WpActivityRepository`), then access (MANAGE_NOTIFICATIONS +
-AREA_NOTIFICATIONS), producers (fed by Phase A's `NotificationDelivery` + Activity events), REST,
-the bell/drawer/screen/toolbar, preferences + retention (the framework's first recurring job), then
-Phase C (Dashboard). MFA excluded. `spec/072` is **not pushed** (local commits only) and has no PR yet.
+**Next for Phase B (T011→):** access — add `CorexAbility::MANAGE_NOTIFICATIONS` + `notifications` group,
+`AREA_NOTIFICATIONS`, `AdminPage::requestAbilityFor` key, update the ability-coverage test (T011). Then
+producers fed by Phase A's `NotificationDelivery` + Activity events (T012–T013), REST
+`NotificationController` (T014), the bell/drawer/screen/toolbar (T015–T019), preferences + retention =
+the framework's first recurring job (T020–T022), then Phase C Dashboard (T023–T025).
+**Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
+`upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
+excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
 
 ---
 ## (previous, 2026-07-20b) -- Spec 071 US1 COMPLETE on `spec/071-form-delivery-and-recaptcha-reliability`.
