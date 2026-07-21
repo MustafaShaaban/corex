@@ -16,20 +16,20 @@ description: "Task list for Spec 072 — Notification Center & Dashboard Command
 ---
 
 ## Phase 1: Setup
-- [ ] **T001** Environment Gate (done 2026-07-21: plugins active, schema at '2'). Baseline suite counts.
-- [ ] **T002** [P] Confirm guard skills installed.
+- [X] **T001** Environment Gate (done 2026-07-21: plugins active, schema at '2'). Baseline suite counts.
+- [X] **T002** [P] Confirm guard skills installed.
 
 ## Phase 2: Foundation — value objects + contracts (B1) 🎯 blocks everything
-- [ ] **T003** [US1] Failing Pest unit tests for `NotificationSeverity`, `NotificationCategory`, `NotificationStatus` (closed vocabularies, reject out-of-vocabulary).
-- [ ] **T004** [US3] Failing Pest unit tests for `NotificationRecipient::canBeSeenBy` — user/users/ability/assigned/category_admins; unauthorized sees nothing.
-- [ ] **T005** [US1] Failing Pest unit tests for `Notification` — construction, `withOccurrence`, `resolved`, `toArray`/`fromArray`, `assertNoSecretKeys` rejects tokens/credentials.
-- [ ] **T006** [US1] Implement `Corex\Notifications\` value objects: `NotificationId`, `NotificationSeverity`, `NotificationCategory`, `NotificationStatus`, `NotificationRecipient`, `NotificationAction`, `Notification`, `NotificationPreference`.
-- [ ] **T007** [US1] Contracts (interfaces): `NotificationStore`, `NotificationRepository`, `NotificationService`, `NotificationPreferenceStore`, `NotificationPresenter`, `NotificationProducer`, `NotificationChannelPolicy`, `NotificationQuery`, `NotificationPage`.
+- [X] **T003** [US1] Failing Pest unit tests for `NotificationSeverity`, `NotificationCategory`, `NotificationStatus` (closed vocabularies, reject out-of-vocabulary).
+- [X] **T004** [US3] Failing Pest unit tests for `NotificationRecipient::canBeSeenBy` — user/users/ability/assigned/category_admins; unauthorized sees nothing.
+- [X] **T005** [US1] Failing Pest unit tests for `Notification` — construction, `withOccurrence`, `resolved`, `toArray`/`fromArray`, `assertNoSecretKeys` rejects tokens/credentials.
+- [X] **T006** [US1] Implement `Corex\Notifications\` value objects: `NotificationId`, `NotificationSeverity`, `NotificationCategory`, `NotificationStatus`, `NotificationRecipient`, `NotificationAction`, `Notification`, `NotificationPreference`.
+- [X] **T007** [US1] Contracts (interfaces): `NotificationRepository`, `NotificationService`, `NotificationProducer`, `NotificationChannelPolicy`; `NotificationQuery` value object. (Store/PreferenceStore/Presenter/Page deferred until their consumers land.)
 
 ## Phase 3: Persistence (B2)
-- [ ] **T008** [US1] `NotificationTable` + `NotificationUserStateTable` (copy `ActivityTable`); register `ManagedTable`s; bump `FOUNDATION_SCHEMA_VERSION` '2'→'3'; add to `installFoundationSchema`.
-- [ ] **T009** [US1] Failing integration tests for `WpNotificationRepository`: upsert-by-dedup increments occurrences; visibility-filtered `queryForActor`; unread count; per-user mark/dismiss/snooze; resolve/reopen; prune. Real WP + real tables.
-- [ ] **T010** [US1] Implement `WpNotificationRepository` (copy `WpActivityRepository` discipline) + `NotificationServiceImpl`.
+- [X] **T008** [US1] `NotificationTable` + `NotificationUserStateTable` (copy `ActivityTable`); register `ManagedTable`s; bump `FOUNDATION_SCHEMA_VERSION` '2'→'3'; add to `installFoundationSchema`.
+- [X] **T009** [US1] Failing integration tests for `WpNotificationRepository`: upsert-by-dedup increments occurrences; visibility-filtered `queryForActor`; unread count; per-user mark/dismiss/snooze; resolve/reopen; prune. Real WP + real tables. (9 passing.)
+- [X] **T010** [US1] Implement `WpNotificationRepository` (copy `WpActivityRepository` discipline) + `NotificationServiceImpl`.
 
 ## Phase 4: Access (B3)
 - [ ] **T011** [US3] Add `CorexAbility::MANAGE_NOTIFICATIONS` + `notifications` group to the catalog; `AREA_NOTIFICATIONS`; `AdminPage::requestAbilityFor` section key. Update the ability-coverage test.

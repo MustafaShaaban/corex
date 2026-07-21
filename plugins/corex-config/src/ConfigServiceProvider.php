@@ -159,7 +159,7 @@ use Corex\Mail\UnavailableSubmissionEmailGateway;
 final class ConfigServiceProvider extends ServiceProvider
 {
     private const FOUNDATION_SCHEMA_OPTION  = 'corex_product_foundation_schema_version';
-    private const FOUNDATION_SCHEMA_VERSION = '2';
+    private const FOUNDATION_SCHEMA_VERSION = '3';
 
     public function register(): void
     {
@@ -187,6 +187,8 @@ final class ConfigServiceProvider extends ServiceProvider
         // The shared append-only activity stream (spec 068) is the authoritative audit source for
         // every CoreX product area. Persistence remains behind the core repository contract.
         $this->container->singleton(ActivityTable::class);
+        $this->container->singleton(\Corex\Config\Notifications\NotificationTable::class);
+        $this->container->singleton(\Corex\Config\Notifications\NotificationUserStateTable::class);
         $this->container->singleton(ActivityController::class);
         $this->container->singleton(WpActivityRepository::class);
         $this->container->singleton(
@@ -197,6 +199,17 @@ final class ConfigServiceProvider extends ServiceProvider
             ActivityService::class,
             static fn (ContainerInterface $c): ActivityService => new ActivityService(
                 $c->make(ActivityRepository::class),
+            ),
+        );
+        $this->container->singleton(\Corex\Config\Notifications\WpNotificationRepository::class);
+        $this->container->singleton(
+            \Corex\Notifications\NotificationRepository::class,
+            static fn (ContainerInterface $c): \Corex\Notifications\NotificationRepository => $c->make(\Corex\Config\Notifications\WpNotificationRepository::class),
+        );
+        $this->container->singleton(
+            \Corex\Notifications\NotificationService::class,
+            static fn (ContainerInterface $c): \Corex\Notifications\NotificationService => new \Corex\Config\Notifications\NotificationServiceImpl(
+                $c->make(\Corex\Notifications\NotificationRepository::class),
             ),
         );
 
@@ -617,15 +630,21 @@ final class ConfigServiceProvider extends ServiceProvider
         $jobTable = $this->container->make(JobTable::class);
         $loginAttemptTable = $this->container->make(\Corex\Config\Security\LoginProtection\LoginAttemptTable::class);
         $readingEventTable = $this->container->make(ReadingEventTable::class);
+        $notificationTable = $this->container->make(\Corex\Config\Notifications\NotificationTable::class);
+        $notificationUserStateTable = $this->container->make(\Corex\Config\Notifications\NotificationUserStateTable::class);
         $this->container->make(ManagedTables::class)->register($jobTable->managed());
         $this->container->make(ManagedTables::class)->register($loginAttemptTable->managed());
         $this->container->make(ManagedTables::class)->register($readingEventTable->managed());
+        $this->container->make(ManagedTables::class)->register($notificationTable->managed());
+        $this->container->make(ManagedTables::class)->register($notificationUserStateTable->managed());
         $this->installFoundationSchema([
             $activityTable->schema(),
             ...$accessTables->schemas(),
             $jobTable->schema(),
             $loginAttemptTable->schema(),
             $readingEventTable->schema(),
+            $notificationTable->schema(),
+            $notificationUserStateTable->schema(),
         ]);
         $this->container->make(AbilityCompatibility::class)->register();
         add_action('init', [$this->container->make(WpSubmissionExportStore::class), 'registerPostType']);

@@ -157,3 +157,28 @@ it('offers a direct action as navigation only, gated on an optional ability', fu
     expect($action->url)->toBe('admin.php?page=corex-submissions')
         ->and($action->ability)->toBe('corex_manage_submissions');
 });
+
+// ---- bounded query ----
+
+it('clamps the page size so no caller can request an unbounded result', function () {
+    $huge = \Corex\Notifications\NotificationQuery::fromRequest([], page: 1, perPage: 9999);
+    $zero = \Corex\Notifications\NotificationQuery::fromRequest([], page: 0, perPage: 0);
+
+    expect($huge->perPage)->toBe(\Corex\Notifications\NotificationQuery::MAX_PER_PAGE)
+        ->and($zero->perPage)->toBe(1)
+        ->and($zero->page)->toBe(1);
+});
+
+it('drops unknown filter values rather than defaulting them', function () {
+    $q = \Corex\Notifications\NotificationQuery::fromRequest([
+        'category' => 'not-a-category',
+        'severity' => 'warning',
+        'status'   => 'nonsense',
+        'source_module' => 'forms',
+    ]);
+
+    expect($q->category)->toBeNull()          // invalid → dropped
+        ->and($q->severity)->toBe('warning')  // valid → kept
+        ->and($q->status)->toBeNull()
+        ->and($q->sourceModule)->toBe('forms');
+});
