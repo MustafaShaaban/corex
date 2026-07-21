@@ -253,6 +253,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(AccessUserDirectory::class),
                 $c->make(ActivityService::class),
                 $c->has(\Corex\Mail\RoutedMailer::class) ? $c->make(\Corex\Mail\RoutedMailer::class) : null,
+                $c->make(\Corex\Events\EventDispatcher::class),
             ),
         );
         $this->container->singleton(AbilityCompatibility::class);
@@ -720,6 +721,7 @@ final class ConfigServiceProvider extends ServiceProvider
     {
         $registry = $this->container->make(\Corex\Notifications\NotificationProducerRegistry::class);
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\SubmissionNotificationProducer::class));
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\AccessRequestNotificationProducer::class));
         $registry->register();
     }
 

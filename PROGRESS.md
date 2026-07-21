@@ -65,11 +65,20 @@ slices. Slice 1 (the marquee Phase-A integration):
   end-to-end** (boot → dispatch → producer → service → repo → DB created both rows, cleaned up); front
   page 200. Guards clean.
 
+**T013 slice 2 (Access request producer) — shipped.** `AccessRequestedEvent` dispatched from
+`AccessService::requestAccess` via a new optional `EventDispatcher` (mirroring its existing optional
+`RoutedMailer` output — constructor 7→8, both call sites updated, `AccessServiceTest`'s 7-arg
+construction still valid). `AccessRequestNotificationProducer` publishes `access.request` (ACTION,
+`access` category, unique dedup `access.request:{id}` — each request individually decided, never merged
+→ `MANAGE_ACCESS`). Verified: 3 producer unit tests + 58 Notifications/Access unit + 3 Access
+integration green; live end-to-end (dispatch → row created → cleaned); front page 200. Guards clean.
+Two producers now register at boot: `["forms.submissions","access.requests"]`.
+
 **Next for Phase B (T013 continued → then T014):** the remaining producers, one slice each (submission
-**assigned**; Email Studio failure; Job failure / export-complete; Access request; Security lockout /
-hardening; Readiness blocker/cleared) — each needs a domain event or hook added to its subsystem. Then
-REST `NotificationController` (T014), the bell/drawer/screen/toolbar (T015–T019), preferences +
-retention = the framework's first recurring job (T020–T022), then Phase C Dashboard (T023–T025).
+**assigned**; Email Studio failure; Job failure / export-complete; Security lockout / hardening;
+Readiness blocker/cleared) — each needs a domain event or hook added to its subsystem. Then REST
+`NotificationController` (T014), the bell/drawer/screen/toolbar (T015–T019), preferences + retention =
+the framework's first recurring job (T020–T022), then Phase C Dashboard (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.
