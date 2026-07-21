@@ -709,6 +709,7 @@ final class ConfigServiceProvider extends ServiceProvider
             $this->container->make(DataManagementController::class)->register();
             $this->container->make(InsightsController::class)->register();
             $this->container->make(BlogProController::class)->register();
+            $this->container->make(\Corex\Config\Notifications\NotificationController::class)->register();
         });
     }
 

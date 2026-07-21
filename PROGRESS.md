@@ -106,11 +106,22 @@ signal) to `MANAGE_OPERATIONS`. Verified: 4 producer unit tests + 47 Security in
 3-arg construction still valid) green; live end-to-end; front page 200. Guards clean. **Five producers
 register at boot:** `["forms.submissions","access.requests","jobs.failures","jobs.exports","security.lockouts"]`.
 
-**Next for Phase B (T013 continued → then T014):** remaining producers — submission **assigned**; Email
-Studio failure; Readiness blocker/cleared (each needs a domain event/hook added to its subsystem). Then
-REST `NotificationController` (T014), the bell/drawer/screen/toolbar (T015–T019), preferences + retention
-= the framework's first recurring job (T020–T022), then Phase C Dashboard (T023–T025). The 5 shipped
-producers are already ample real data to build and test T014 meaningfully.
+**T014 (REST `NotificationController`) — core shipped.** `corex/v1/notifications`: `GET` list (bounded,
+filtered via `NotificationQuery`), `/count`, `GET /{id}` (grouped detail), `POST {id}/read|unread|
+dismiss|snooze`, `POST /read-all`, `POST {id}/resolve`. **Two-tier gate:** read/own-action = signed-in
+user + REST nonce (the service re-checks visibility so one user can't touch another's); manage =
+`MANAGE_NOTIFICATIONS` + nonce (resolve). Every response enveloped. To support it, `NotificationService`
+gained `findForCurrentActor` + `mark{Read,Unread}/dismiss/snooze/markAllReadForCurrentActor` + `resolveById`,
+`WpNotificationRepository` gained `findForActor`, and a shared `tests/Support/RecordingNotificationService`
+double was extracted (the interface expansion broke the 5 producer-test fakes — now all use the double).
+Verified: 4 REST integration tests (list/count, nonce-gated read 403-without/200-with, visibility 404,
+manage-tier resolve) + 9 repo integration + full unit (1394 pass / 8 pre-existing) green; 9 routes
+register live; front page 200. Guards clean. **preferences** endpoints deferred to T020.
+
+**Next for Phase B:** T013's remaining producers (submission **assigned**, Email Studio failure, Readiness)
+as independent slices, and/or **T015–T019 surfaces** (bell/drawer/screen/toolbar — the REST API they
+consume is now live). Then preferences + retention = the framework's first recurring job (T020–T022),
+then Phase C Dashboard (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.

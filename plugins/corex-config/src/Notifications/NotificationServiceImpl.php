@@ -59,6 +59,64 @@ final class NotificationServiceImpl implements NotificationService
         return $this->repository->unreadCountForActor($actorId, $this->actorCan());
     }
 
+    public function findForCurrentActor(int $notificationId): ?array
+    {
+        $actorId = get_current_user_id();
+        if ($actorId < 1) {
+            return null;
+        }
+
+        return $this->repository->findForActor($notificationId, $actorId, $this->actorCan());
+    }
+
+    public function markReadForCurrentActor(int $notificationId): bool
+    {
+        $actorId = get_current_user_id();
+
+        return $actorId >= 1 && $this->repository->markRead($notificationId, $actorId);
+    }
+
+    public function markUnreadForCurrentActor(int $notificationId): bool
+    {
+        $actorId = get_current_user_id();
+
+        return $actorId >= 1 && $this->repository->markUnread($notificationId, $actorId);
+    }
+
+    public function dismissForCurrentActor(int $notificationId): bool
+    {
+        $actorId = get_current_user_id();
+
+        return $actorId >= 1 && $this->repository->dismiss($notificationId, $actorId);
+    }
+
+    public function snoozeForCurrentActor(int $notificationId, DateTimeImmutable $until): bool
+    {
+        $actorId = get_current_user_id();
+
+        return $actorId >= 1 && $this->repository->snooze($notificationId, $actorId, $until);
+    }
+
+    public function markAllReadForCurrentActor(): int
+    {
+        $actorId = get_current_user_id();
+        if ($actorId < 1) {
+            return 0;
+        }
+
+        return $this->repository->markAllVisibleRead($actorId, $this->actorCan());
+    }
+
+    public function resolveById(int $notificationId, string $reason): bool
+    {
+        $notification = $this->repository->find($notificationId);
+        if ($notification === null) {
+            return false;
+        }
+
+        return $this->repository->resolveByDedupKey($notification->dedupKey, $reason, new DateTimeImmutable('now')) > 0;
+    }
+
     /** @return callable(string):bool */
     private function actorCan(): callable
     {

@@ -106,6 +106,16 @@ final class WpNotificationRepository implements NotificationRepository
         return is_array($row) ? $this->hydrate($row) : null;
     }
 
+    public function findForActor(int $id, int $actorId, callable $userCan): ?array
+    {
+        $notification = $this->find($id);
+        if ($notification === null || ! $notification->recipient->canBeSeenBy($actorId, $userCan)) {
+            return null;
+        }
+
+        return $this->present($notification, $this->stateFor([(int) $notification->id], $actorId));
+    }
+
     public function queryForActor(NotificationQuery $query, int $actorId, callable $userCan): array
     {
         $candidates = $this->candidates($query);

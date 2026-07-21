@@ -29,6 +29,14 @@ interface NotificationRepository
     public function find(int $id): ?Notification;
 
     /**
+     * One notification presented for the actor, or null if absent or the actor may not see it.
+     *
+     * @param callable(string):bool $userCan
+     * @return array<string,mixed>|null
+     */
+    public function findForActor(int $id, int $actorId, callable $userCan): ?array;
+
+    /**
      * A bounded, visibility-filtered page for the actor.
      *
      * @param callable(string):bool $userCan

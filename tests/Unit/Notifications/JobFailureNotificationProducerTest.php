@@ -17,10 +17,9 @@ use Corex\Config\Notifications\Producers\JobFailureNotificationProducer;
 use Corex\Events\ListenerProvider;
 use Corex\Jobs\BoundedJob;
 use Corex\Jobs\JobFinishedEvent;
-use Corex\Notifications\Notification;
 use Corex\Notifications\NotificationCategory;
-use Corex\Notifications\NotificationQuery;
 use Corex\Notifications\NotificationService;
+use Corex\Tests\Support\RecordingNotificationService;
 
 beforeEach(function () {
     Functions\stubTranslationFunctions();
@@ -29,32 +28,7 @@ beforeEach(function () {
 /** A NotificationService that records every published notification. */
 function jobRecordingService(): NotificationService
 {
-    return new class implements NotificationService {
-        /** @var list<Notification> */
-        public array $published = [];
-
-        public function publish(Notification $notification): Notification
-        {
-            $this->published[] = $notification;
-
-            return $notification->withId(count($this->published));
-        }
-
-        public function resolve(string $dedupKey, string $reason): int
-        {
-            return 0;
-        }
-
-        public function forCurrentActor(NotificationQuery $query): array
-        {
-            return ['items' => [], 'total' => 0, 'page' => 1, 'per_page' => 20];
-        }
-
-        public function unreadCountForCurrentActor(): int
-        {
-            return 0;
-        }
-    };
+    return new RecordingNotificationService();
 }
 
 function fireJobFinished(NotificationService $service, JobFinishedEvent $event): NotificationService
