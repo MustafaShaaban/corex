@@ -722,6 +722,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $registry = $this->container->make(\Corex\Notifications\NotificationProducerRegistry::class);
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\SubmissionNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\AccessRequestNotificationProducer::class));
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\JobFailureNotificationProducer::class));
         $registry->register();
     }
 

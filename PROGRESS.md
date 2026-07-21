@@ -74,9 +74,25 @@ construction still valid). `AccessRequestNotificationProducer` publishes `access
 integration green; live end-to-end (dispatch → row created → cleaned); front page 200. Guards clean.
 Two producers now register at boot: `["forms.submissions","access.requests"]`.
 
-**Next for Phase B (T013 continued → then T014):** the remaining producers, one slice each (submission
-**assigned**; Email Studio failure; Job failure / export-complete; Security lockout / hardening;
-Readiness blocker/cleared) — each needs a domain event or hook added to its subsystem. Then REST
+**T013 slice 3 (Job failure producer) — shipped.** `JobFinishedEvent` dispatched from `JobRunner` at
+every terminal state via a DRY `persist()` helper (EventDispatcher auto-injected — the container
+resolves the non-builtin typed param before its null default, so the nullable is test-only).
+`JobFailureNotificationProducer` publishes `job.failed` (ERROR, `jobs` category, dedup
+`job.failed:{id}` → `MANAGE_OPERATIONS`) on failure only; the raw job error summary is deliberately
+kept off the notification (no secret-free guarantee, unlike Phase A's MailResult) — a unit test asserts
+a password-bearing sample never reaches it. Verified: 3 producer unit tests + 34 Notifications/Jobs
+unit + 4 Jobs integration green; live end-to-end; front page 200. Guards clean. Three producers now
+register at boot: `["forms.submissions","access.requests","jobs.failures"]`.
+
+**Producer pattern is now established & repeatable** (used 3×): add a domain `*Event` in the source
+module (implements `Corex\Events\Event`), dispatch it from that module's service via an injected/optional
+`EventDispatcher`, add a `*NotificationProducer` in `corex-config/.../Producers/` that listens and
+publishes through `NotificationService`, register it in `registerNotificationProducers()`, TDD the
+producer against a recording fake, then live-verify boot→dispatch→row.
+
+**Next for Phase B (T013 continued → then T014):** remaining producers, one slice each — submission
+**assigned**; **export-complete** (reuses `JobFinishedEvent` state=completed + export kind, no new
+plumbing); Email Studio failure; Security lockout / hardening; Readiness blocker/cleared. Then REST
 `NotificationController` (T014), the bell/drawer/screen/toolbar (T015–T019), preferences + retention =
 the framework's first recurring job (T020–T022), then Phase C Dashboard (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
