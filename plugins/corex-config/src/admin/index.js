@@ -7,6 +7,21 @@ import '../DataModels/index.js';
 import AccessWorkspace from '../access/AccessWorkspace.js';
 import BlogProApp from '../blog/BlogProApp.js';
 import SecurityCenter from '../Security/SecurityCenter.js';
+import NotificationCenter from './components/NotificationCenter.js';
+
+// The notification bell is server-rendered in the shell header; enhance it with the drawer wherever
+// it appears. A no-op when the header (and its bell) is absent.
+const notificationBell = document.querySelector( '[data-corex-notification-bell]' );
+if ( notificationBell && notificationBell.parentNode ) {
+	const drawerMount = document.createElement( 'div' );
+	notificationBell.parentNode.appendChild( drawerMount );
+	const app = <NotificationCenter bell={ notificationBell } />;
+	if ( typeof createRoot === 'function' ) {
+		createRoot( drawerMount ).render( app );
+	} else {
+		render( app, drawerMount );
+	}
+}
 
 // The `corex-data-app` mount is gone: the standalone Data screen rendered the same DataExplorer as
 // the Data Models Records tab, so the screen was retired and its address redirects there. The

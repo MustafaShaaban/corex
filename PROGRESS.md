@@ -158,11 +158,23 @@ actor's real unread count — badge capped at `99+`, true count in the `aria-lab
 boot; verified rendering live in the CoreX header. 4 unit tests green; AdminPage's 22 tests unaffected
 (filter defaults empty). Guards clean.
 
-**Next: finish T015** — the React drawer (focus trap, Escape, focus return) consuming the live REST API,
-token-based bell/badge/header CSS, `ApprovedComponentInventory` + `EXPECTED_COUNTS`, Jest + Playwright.
-Then T016 `NotificationsScreen`, T017 toolbar entry, T018 Overview *Attention Required* card, T019 e2e.
-Then preferences + retention = the framework's first recurring job (T020–T022; T014 preferences endpoints
-wait on T020), then Phase C Dashboard (T023–T025).
+**T015 slice 2 (drawer component + CSS) — shipped.** `NotificationDrawer` (React/`@wordpress/element`,
+`plugins/corex-config/src/admin/components/`) — role=dialog, aria-modal, **focus trap** (Tab cycles in
+the panel), **Escape** closes, **focus return** to the bell via the `NotificationCenter` controller —
+consumes the live REST API (`GET /notifications`, `POST {id}/read`, `/read-all`) with honest loading/
+error/empty/list states. Mounted from `admin/index.js` onto `[data-corex-notification-bell]`; token-based
+drawer CSS added to the shell stylesheet (token-governance test green; used a raw scrim value via
+`corex-token-allow`, no invented tokens). `wp-scripts build` compiles clean (153 KiB). The bundle is
+enqueued per-product-screen today, so the drawer is interactive on those screens now; the bell renders
++ counts everywhere. Build output is gitignored (CI rebuilds from the committed source). Front page 200.
+
+**Next: finish T015** — (1) global enqueue so the bell opens on *every* CoreX screen without double-loading
+the bundle (consolidate the `build/admin/index.js` handle across the 5 product screens, or add a dedicated
+notification entry); (2) `ApprovedComponentInventory` + `EXPECTED_COUNTS` declaration for the drawer;
+(3) Playwright e2e for focus-trap/Escape/return (jsdom can't verify these and the repo has no React-render
+Jest harness). Then T016 `NotificationsScreen`, T017 toolbar entry, T018 Overview *Attention Required*
+card, T019 e2e; then preferences + retention (T020–T022; T014 preferences endpoints wait on T020), then
+Phase C Dashboard (T023–T025).
 **Tracked note:** `reopenByDedupKey` has no caller yet (recurrence-reopen is inline in
 `upsertByDedupKey`) — decide at T014 whether an explicit reopen endpoint needs it or drop it. MFA
 excluded throughout. `spec/072` is **not pushed** (local commits only) and has no PR yet.

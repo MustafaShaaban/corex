@@ -304,6 +304,102 @@ body.corex-admin-screen .corex-admin__shell {
 	text-align: center;
 }
 
+/* Notification drawer — the panel the bell opens (spec 072 FR-016). */
+.corex-notification-drawer__backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	background: rgba(0, 0, 0, 0.4); /* corex-token-allow: modal scrim */
+}
+
+.corex-notification-drawer__panel {
+	position: fixed;
+	inset-block: 0;
+	inset-inline-end: 0;
+	z-index: 100001;
+	display: flex;
+	flex-direction: column;
+	inline-size: min(24rem, 100%);
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border-inline-start-width: var(--corex-admin-border-width);
+	border-inline-start-style: solid;
+	border-inline-start-color: var(--corex-admin-border);
+	box-shadow: var(--corex-admin-shadow-lg, none); /* corex-token-allow: optional elevation */
+	overflow-y: auto;
+}
+
+.corex-notification-drawer__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-block-end: var(--corex-admin-space-md);
+}
+
+.corex-notification-drawer__title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-lg);
+	font-weight: 700;
+}
+
+.corex-notification-drawer__close {
+	color: var(--corex-admin-text-muted);
+	background: transparent;
+	border: 0;
+	font-size: var(--corex-admin-font-lg);
+	cursor: pointer;
+}
+
+.corex-notification-drawer__state {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-notification-drawer__list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-notification-drawer__item {
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-notification-drawer__item-title {
+	margin: 0 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-notification-drawer__item-body {
+	margin: 0 0 var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-notification-drawer__mark,
+.corex-notification-drawer__mark-all {
+	color: var(--corex-admin-action);
+	background: transparent;
+	border: 0;
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.corex-notification-drawer__mark-all {
+	margin-block-start: var(--corex-admin-space-md);
+	align-self: flex-start;
+}
+
 .corex-admin__content {
 	padding: var(--corex-admin-space-xl);
 }
