@@ -15,6 +15,7 @@ use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Notifications\NotificationQuery;
 use Corex\Notifications\NotificationService;
+use Corex\Notifications\NotificationStatus;
 use Corex\Support\Config\ConfigInterface;
 
 /**
@@ -45,14 +46,6 @@ final class OptionalDashboardWidgets
     /** How many notifications the attention widget lists — bounded, like every other read (FR-026). */
     private const ATTENTION_LIMIT = 5;
 
-    /**
-     * How many unresolved notifications to look at to find those the actor has not read.
-     *
-     * `unread_only` on the query means "unresolved" at the storage layer; whether *this* actor has
-     * read one is per-user state carried on each presented item. So the widget scans a bounded page
-     * and filters, rather than trusting the flag to mean something it does not.
-     */
-    private const ATTENTION_SCAN = 25;
 
     public function __construct(
         private readonly ?NotificationService $notifications = null,
@@ -153,28 +146,21 @@ final class OptionalDashboardWidgets
     }
 
     /**
-     * The actor's unread, undismissed notifications, newest first, capped at ATTENTION_LIMIT.
+     * The actor's unread notifications, newest first, capped at ATTENTION_LIMIT.
      *
-     * `forCurrentActor()` returns an envelope — {items, total, page, per_page} — not a bare list, so
-     * the items must be taken out of it; iterating the envelope itself would walk its scalar keys.
+     * Asks for the derived per-user status rather than `unread_only`, which means "unresolved" and
+     * would list items this actor has already read. `forCurrentActor()` returns an envelope —
+     * {items, total, page, per_page} — not a bare list, so the items must be taken out of it.
      *
      * @return list<array<string,mixed>>
      */
     private function unreadForActor(): array
     {
         $page = $this->notifications?->forCurrentActor(
-            NotificationQuery::fromRequest(['unread_only' => true], 1, self::ATTENTION_SCAN)
+            NotificationQuery::fromRequest(['status' => NotificationStatus::UNREAD], 1, self::ATTENTION_LIMIT)
         );
 
-        $items = is_array($page['items'] ?? null) ? $page['items'] : [];
-
-        $unread = array_values(array_filter($items, static function (array $item): bool {
-            $state = is_array($item['user_state'] ?? null) ? $item['user_state'] : [];
-
-            return ($state['read'] ?? false) === false && ($state['dismissed'] ?? false) === false;
-        }));
-
-        return array_slice($unread, 0, self::ATTENTION_LIMIT);
+        return is_array($page['items'] ?? null) ? array_values($page['items']) : [];
     }
 
     /** Whether this actor has anything for the widget to show (FR-025). */

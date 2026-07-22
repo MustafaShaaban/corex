@@ -84,6 +84,48 @@ it('returns a user-targeted notification to that user only, never to others', fu
         ->and($theirs['total'])->toBe(0);   // FR-003: not visible, not counted
 });
 
+it('filters by the per-user status instead of ignoring the filter', function () {
+    // NotificationQuery::$status was accepted at the REST boundary, validated, and then never used
+    // by any read — `?status=read` returned everything with a 200. These assertions fail if the
+    // filter is dropped again.
+    $unread = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'status.unread:1'));
+    $read   = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'status.read:1'));
+    $this->repo->markRead((int) $read->id, 7);
+
+    $readOnly = $this->repo->queryForActor(
+        NotificationQuery::fromRequest(['status' => 'read']),
+        7,
+        $this->allow,
+    );
+    $unreadOnly = $this->repo->queryForActor(
+        NotificationQuery::fromRequest(['status' => 'unread']),
+        7,
+        $this->allow,
+    );
+
+    expect($readOnly['total'])->toBe(1)
+        ->and($readOnly['items'][0]['id'])->toBe($read->id)
+        ->and($unreadOnly['total'])->toBe(1)
+        ->and($unreadOnly['items'][0]['id'])->toBe($unread->id)
+        // The derived status travels with each item so consumers need not re-derive it.
+        ->and($readOnly['items'][0]['user_state']['status'])->toBe('read')
+        ->and($unreadOnly['items'][0]['user_state']['status'])->toBe('unread');
+});
+
+it('reports a resolved condition as resolved even for a user who never read it', function () {
+    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'status.resolved:1'));
+    $this->repo->resolveByDedupKey('status.resolved:1', 'condition cleared', new DateTimeImmutable('now'));
+
+    $resolved = $this->repo->queryForActor(
+        NotificationQuery::fromRequest(['status' => 'resolved']),
+        7,
+        $this->allow,
+    );
+
+    expect($resolved['total'])->toBe(1)
+        ->and($resolved['items'][0]['id'])->toBe($stored->id);
+});
+
 it('does not leak an ability-targeted notification to a user lacking the ability', function () {
     $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forAbility('corex_manage_email'), 'mail.provider.failure:default'));
 

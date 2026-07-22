@@ -14,6 +14,7 @@ use Corex\Database\Schema\Migrator;
 use Corex\Notifications\Notification;
 use Corex\Notifications\NotificationQuery;
 use Corex\Notifications\NotificationRepository;
+use Corex\Notifications\NotificationStatus;
 use DateTimeImmutable;
 use DateTimeZone;
 use RuntimeException;
@@ -123,6 +124,20 @@ final class WpNotificationRepository implements NotificationRepository
             $candidates,
             fn (Notification $n): bool => $n->recipient->canBeSeenBy($actorId, $userCan),
         ));
+
+        // A status filter is per-user, so it cannot be a WHERE clause on the shared record — it needs
+        // this actor's state row. Applied before pagination so `total` and the page agree; the state
+        // read is bounded by the same MAX_CANDIDATES cap the candidate scan already enforces.
+        if ($query->status !== null) {
+            $allState = $this->stateFor(
+                array_map(static fn (Notification $n): int => (int) $n->id, $visible),
+                $actorId,
+            );
+            $visible = array_values(array_filter(
+                $visible,
+                fn (Notification $n): bool => $this->statusOf($n, $allState) === $query->status,
+            ));
+        }
 
         $total = count($visible);
         $offset = ($query->page - 1) * $query->perPage;
@@ -372,9 +387,27 @@ final class WpNotificationRepository implements NotificationRepository
             'read' => $s !== null && $s['read_at'] !== null,
             'dismissed' => $s !== null && $s['dismissed_at'] !== null,
             'snoozed_until' => $s['snoozed_until'] ?? null,
+            // The single derived status, so a consumer never has to re-implement the precedence
+            // between resolved / expired / dismissed / snoozed / read.
+            'status' => $this->statusOf($notification, $state),
         ];
 
         return $data;
+    }
+
+    /**
+     * This actor's status for one notification.
+     *
+     * @param array<int,array<string,?string>> $state
+     */
+    private function statusOf(Notification $notification, array $state): string
+    {
+        return NotificationStatus::derive(
+            $notification->resolvedAt?->format('Y-m-d H:i:s'),
+            $notification->expiresAt?->format('Y-m-d H:i:s'),
+            $state[(int) $notification->id] ?? [],
+            new DateTimeImmutable('now'),
+        );
     }
 
     /** @param array<string,mixed> $row */
