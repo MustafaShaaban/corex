@@ -39,7 +39,6 @@ const { STORAGE_STATE } = require( './global-setup' );
 const CANNOT_RUN_ON_A_FRESH_INSTALL = new RegExp(
 	[
 		// Need declared data sources and records.
-		'redirects the retired Data address to the Records tab',
 		'queries source records, opens detail, and queues a declared export',
 		'renders every Data workflow from declared source capabilities',
 		// Both need the account page its beforeAll builds, which does not come up on a fresh
