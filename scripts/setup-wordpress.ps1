@@ -71,13 +71,24 @@ if (-not (Test-Path (Join-Path $WpPath 'wp-load.php'))) {
 # --- 2. wp-config.php ---
 if (-not (Test-Path (Join-Path $WpPath 'wp-config.php'))) {
     Write-Host "Creating wp-config.php ..."
-    @"
-define( 'WP_DEBUG', true );
-define( 'WP_DEBUG_LOG', true );
-define( 'WP_DEBUG_DISPLAY', false );
-"@ | & wp config create --path="$WpPath" --dbname="$DbName" --dbuser="$DbUser" `
-        --dbpass="$DbPass" --dbhost="$DbHost" --dbprefix="$DbPrefix" --locale=en_US --extra-php
+    & wp config create --path="$WpPath" --dbname="$DbName" --dbuser="$DbUser" `
+        --dbpass="$DbPass" --dbhost="$DbHost" --dbprefix="$DbPrefix" --locale=en_US
     if ($LASTEXITCODE -ne 0) { Fail "wp config create failed." }
+
+    # Set the debug constants with WP-CLI rather than piping a here-string into --extra-php.
+    # PowerShell 5.1 prepends a UTF-8 BOM when it pipes to a native command, so that here-string
+    # arrived as "<U+FEFF>define( 'WP_DEBUG', true );" and landed verbatim in wp-config.php.
+    # `wp config create` still exited 0 — the file was written, just corrupt — so the guard above
+    # passed and the run died later at `wp core install` with "Call to undefined function define()".
+    # Every fresh clone hit this; existing installs did not, because the file was already there.
+    foreach ($const in @(
+        @{ Name = 'WP_DEBUG';         Value = 'true'  },
+        @{ Name = 'WP_DEBUG_LOG';     Value = 'true'  },
+        @{ Name = 'WP_DEBUG_DISPLAY'; Value = 'false' }
+    )) {
+        & wp config set $const.Name $const.Value --raw --type=constant --path="$WpPath" | Out-Null
+        if ($LASTEXITCODE -ne 0) { Fail ("Could not set {0} in wp-config.php." -f $const.Name) }
+    }
 } else {
     Write-Host "wp-config.php already present."
 }
@@ -125,10 +136,24 @@ if (Test-Path $addonsRoot) {
         ForEach-Object { Set-Junction (Join-Path $pluginsDir $_.Name) $_.FullName }
 }
 
-# --- 6. Activate theme + plugins (WP resolves "Requires Plugins" order) ---
+# --- 6. Activate theme + plugins ---
+# corex-core FIRST. corex-blocks and corex-config declare "Requires Plugins: corex-core", and WP-CLI
+# activates in the order it is given — an alphabetical list puts both ahead of what they depend on
+# and WP-CLI reports "Only activated 2 of 4 plugins". The previous comment here claimed WordPress
+# resolved that order; it does not. This went unnoticed because a re-run activates whatever failed
+# the first time and the exit code was never checked, so a clean run looked identical to a repaired
+# one. CI on a fresh install is where it finally showed (PR #120).
 & wp theme activate corex --path="$WpPath" | Out-Null
-$pluginSlugs = (Get-ChildItem (Join-Path $Root 'plugins') -Directory).Name
-& wp plugin activate @pluginSlugs --path="$WpPath" | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "Could not activate the Corex theme." }
+
+& wp plugin activate corex-core --path="$WpPath" | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "Could not activate corex-core, which every other plugin requires." }
+
+# Then everything else that was junctioned above, add-ons included. The integration suite resolves
+# add-on services from the container, so a site with only plugins/* active is not the environment
+# those tests assume.
+& wp plugin activate --all --path="$WpPath" | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "Could not activate every Corex plugin - see 'wp plugin list --path=$WpPath'." }
 
 # --- 7. Verify (the constitution's Environment Gate) ---
 Write-Host "`n== Verification ==" -ForegroundColor Cyan

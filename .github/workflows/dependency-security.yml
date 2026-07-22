@@ -1,8 +1,9 @@
 name: Dependency Security
 
 on:
+  # Unfiltered by base for the same reason as ci.yml; the paths filter below still keeps this to
+  # PRs that actually touch a manifest or the policy.
   pull_request:
-    branches: [main, develop]
     paths:
       - package.json
       - package-lock.json

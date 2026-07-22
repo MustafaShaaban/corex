@@ -3,8 +3,11 @@ name: CI
 on:
   push:
     branches: [main, develop]
+  # Every pull request, whatever its base. Filtering to [main, develop] meant a stacked PR — one
+  # whose base is another feature branch — never ran CI at all, and GitHub renders "no checks" the
+  # same way it renders "all checks passed". Spec 072's stack sat queued for merge that way with
+  # eight real unit failures in it (DECISIONS #153).
   pull_request:
-    branches: [main, develop]
 
 permissions:
   contents: read
@@ -38,9 +41,186 @@ jobs:
       - name: Headless unit tests (Pest)
         run: composer test
 
+  js:
+    name: JS unit tests (Jest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Covers the block/admin JS *and* the generated-artifact contracts — the token inventory
+      # test regenerates from source and fails if a committed artifact drifted. Nothing in CI ran
+      # this suite before, which is how a stale inventory survived spec 072's CSS additions
+      # unnoticed while the gate reported every suite green.
+      - name: JS unit tests (Jest)
+        run: npm run test:js
+
+  # The integration suite boots the framework inside a real WordPress (tests/bootstrap-integration
+  # requires ./wp/wp-load.php), so CI has to provision one. This mirrors scripts/setup-wordpress.ps1
+  # — the documented local setup — step for step, with symlinks where that script uses junctions.
+  integration:
+    name: Integration tests (real WordPress)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: corex
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/provision-wordpress
+
+      - name: Integration tests (Pest, real WordPress)
+        run: composer test:integration
+
+  # The Playwright specs assert contracts nothing else can: the drawer's focus trap, Escape
+  # returning focus to the bell, the RTL flip, and that the toolbar entry and header bell never
+  # appear together. They needed a served site, so they only ever ran on a developer's machine.
+  e2e:
+    name: Browser tests (Playwright)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: corex
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/provision-wordpress
+        with:
+          # Must match how the site is served below, or WordPress redirects away from it.
+          site-url: http://127.0.0.1:8080
+
+      # Fixtures the browser specs need but a fresh install has no reason to contain. Each one
+      # removed from the exclusion list in tests/e2e/playwright.config.js is seeded here.
+      - name: Seed browser-test fixtures
+        run: |
+          # /contact/ carrying the registered contact form. corex/form with no flowId or flowSlug
+          # falls through to the registry form named by formSlug, which defaults to "contact".
+          wp post create --path=wp --post_type=page --post_status=publish \
+            --post_title=Contact --post_name=contact --post_content='<!-- wp:corex/form /-->'
+
+          # Stored submissions, for the Submissions inbox and the Data source-records spec. Shape
+          # taken from WpSubmissionsReader: private posts, the form slug in corex_form_slug, one
+          # corex_field_* per field, and no corex_is_test flag (test rows are filtered out).
+          for i in 1 2 3; do
+            id=$(wp post create --path=wp --post_type=corex_submission --post_status=private \
+              --post_title="Contact submission ${i}" --porcelain)
+            wp post meta set "$id" corex_form_slug contact --path=wp
+            wp post meta set "$id" corex_field_name "Fixture ${i}" --path=wp
+            wp post meta set "$id" corex_field_email "fixture${i}@example.com" --path=wp
+            wp post meta set "$id" corex_field_message "Seeded for CI run ${i}." --path=wp
+          done
+
+          # Turn off the editor welcome guide. It overlays the inserter the first time a user opens
+          # the block editor and then stays dismissed, so without this the first editor spec fails
+          # however long it waits while every later one passes — which is exactly what CI showed.
+          wp user meta update admin wp_persisted_preferences \
+            '{"core/edit-post":{"welcomeGuide":false},"core/edit-site":{"welcomeGuide":false},"core":{"welcomeGuide":false}}' \
+            --format=json --path=wp
+
+          wp post list --path=wp --post_type=page --fields=post_name,post_status
+          wp post list --path=wp --post_type=corex_submission --post_status=private --fields=ID,post_title
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      # The admin bundles are gitignored, so the drawer does not exist until they are built.
+      - name: Build the admin bundles
+        run: npm run build
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+
+      # nginx + php-fpm rather than `php -S`. The built-in server could not bring the block editor
+      # up at all — the editor element never appeared, with no console error and nothing 404ing, so
+      # it was not a missing asset or a starved worker pool. A real server also gives proper rewrite
+      # routing instead of the built-in server's blanket index.php fallback.
+      - name: Serve WordPress
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx php8.3-fpm
+          sudo tee /etc/nginx/sites-available/default > /dev/null <<NGINX
+          server {
+            listen 8080 default_server;
+            root ${GITHUB_WORKSPACE}/wp;
+            index index.php;
+            location / { try_files \$uri \$uri/ /index.php?\$args; }
+            location ~ \.php\$ {
+              include snippets/fastcgi-php.conf;
+              fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+              fastcgi_read_timeout 120;
+            }
+          }
+          NGINX
+          # nginx runs as www-data and has to traverse the runner's home to reach the workspace.
+          chmod o+x /home/runner /home/runner/work "${GITHUB_WORKSPACE}" || true
+          sudo systemctl start php8.3-fpm
+          sudo nginx -t
+          sudo systemctl restart nginx
+          for _ in $(seq 1 30); do
+            if curl -sf -o /dev/null http://127.0.0.1:8080/; then echo "site up"; exit 0; fi
+            sleep 1
+          done
+          echo "site never came up"
+          sudo tail -50 /var/log/nginx/error.log || true
+          exit 1
+
+      # COREX_E2E_FRESH_INSTALL skips the specs that assume a site with content already in it —
+      # published posts, built forms, stored submissions. See the list in tests/e2e/playwright.config.js;
+      # seeding those fixtures here is the next step, and until then a red suite from missing content
+      # would be noise rather than signal.
+      - name: Playwright specs
+        env:
+          COREX_BASE_URL: http://127.0.0.1:8080
+          COREX_ADMIN_USER: admin
+          COREX_ADMIN_PASS: changeme
+          COREX_E2E_FRESH_INSTALL: '1'
+        run: npm run test:e2e
+
+      - name: Upload the report when the browser tests fail
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
 # Not yet wired here (tracked in CONTRIBUTING.md):
-#   - Integration tests (composer test:integration) need a WordPress + MySQL service
-#     (wp-env) provisioned in CI; run locally against ./wp for now.
 #   - The guard gates (clean-code/wp/test/docs) are run by the coding agent on each diff
 #     per the constitution; a CI shim can enforce them once a runner exists.
 #   - PHPCS (WordPress-Extra) + ESLint (@wordpress) once their configs are added.
