@@ -297,8 +297,29 @@ read as "no failures" when it actually meant "never tested"). Fixed at the sourc
 deliberately scoped; dependency-security keeps its `paths` filter). Its own CI proves it: **CI green (35s) +
 CodeQL green**, and all three workflows triggered on the PR. `Validate dependency advisories` fails there —
 **pre-existing, not caused by this change**: Dependabot PR #115, which predates it, shows the same failure.
-That check is the repo's real advisory backlog (24 alerts) and is non-required (`mergeStateStatus` UNSTABLE,
-still MERGEABLE) — but it now surfaces on more PRs, so **the backlog is worth a spec-056 pass**.
+That check is the repo's real advisory backlog and is non-required (`mergeStateStatus` UNSTABLE, still
+MERGEABLE) — and it is now **fixed by PR #121** (below), after which #120 goes clean too.
+
+**Advisory backlog cleared — PR #121 (`fix/056-advisory-backlog`, base `main`, opened 2026-07-22), spec 056's
+long-planned pass, all three gates GREEN + `mergeStateStatus` CLEAN.** 49 findings (npm-root 42 / npm-docs 7,
+25 unbounded + 1 metadata mismatch) → **21, every one bounded**. Followed spec 056's own order:
+- **P1 fix what is compatible** — `npm audit fix` (never `--force`; US1 scenario 3 forbids forced
+  downgrades) at root + docs-app cleared **28 findings**; lockfiles only, no `package.json` touched.
+- **P2 bound the rest** — the 8 with no compatible fix got full-schema exceptions (exposure, reason, control,
+  owner, review date, upstream trigger): `adm-zip`/`linkify-it` (npm's only "fix" is
+  `@wordpress/scripts@19.2.4` — a *downgrade* from the pinned `^32.4.1`), `webpack-dev-server` ×2 (localhost
+  dev server; `@wordpress/scripts` pins the vulnerable range), and `astro` ×3 + `sharp` (docs site is a
+  static build — no SSR, so the XSS paths have no attacker-controlled source; sharp runs only over repo
+  images at build time).
+- **P3 isolate majors** — the astro fix is `astro@7.1.3` (major) and was **left alone**; it belongs to the
+  held Astro 7 migration (PRs #60/#111), and every exception's `upstreamTrigger` points at it.
+- Also removed **4 stale exceptions** (`@babel/core`, `http-proxy-middleware`, `@opentelemetry/core`,
+  `js-yaml`) whose advisories no longer exist — the verifier fails stale entries so accepted risk cannot
+  outlive its finding.
+- Toolchain re-verified against the lockfile churn: **Jest 55 suites / 294 tests**, every wp-scripts webpack
+  build compiles, **docs-app 284 pages**, PHP **1291 passed**.
+- ⚠️ **The 8 new entries are risk acceptances and need a maintainer's sign-off**, not just a green check —
+  the exposure analysis is written into each entry for review.
 
 **Correction to the record:** the "8 pre-existing unrelated failures" this file and T028 previously reported
 were **not** pre-existing and **not** unrelated — `main` has none of them; the stack introduced all eight.
