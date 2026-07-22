@@ -126,6 +126,25 @@ it('reports a resolved condition as resolved even for a user who never read it',
         ->and($resolved['items'][0]['id'])->toBe($stored->id);
 });
 
+it('narrows "assigned to me" to notifications that name the actor, not everything they can see', function () {
+    // Both are visible to user 7 (who holds every ability here); only one is theirs personally.
+    $mine = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'assigned.mine:1'));
+    $this->repo->upsertByDedupKey(
+        makeNotification(NotificationRecipient::forAbility('corex_manage_submissions'), 'assigned.broadcast:1')
+    );
+
+    $all      = $this->repo->queryForActor(NotificationQuery::fromRequest([]), 7, $this->allow);
+    $assigned = $this->repo->queryForActor(
+        NotificationQuery::fromRequest(['assigned_to_me' => true]),
+        7,
+        $this->allow,
+    );
+
+    expect($all['total'])->toBe(2)
+        ->and($assigned['total'])->toBe(1)
+        ->and($assigned['items'][0]['id'])->toBe($mine->id);
+});
+
 it('does not leak an ability-targeted notification to a user lacking the ability', function () {
     $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forAbility('corex_manage_email'), 'mail.provider.failure:default'));
 

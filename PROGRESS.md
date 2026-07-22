@@ -346,6 +346,26 @@ every dashboard load just to decide not to appear. Both widgets reuse canonical 
 PRODUCTION, present in DEVELOPMENT; render nav-only; site restored exactly); front 200. wp-guard clean — the
 guard pass itself caught the eager-`hasData()` query and an implicit render-callback ternary.
 
+**Latent T014 defect fixed + the saved views completed (2026-07-22).** Chasing an "unread" bug in the new
+Attention widget led to the root cause: **`NotificationQuery::$status` was accepted by the REST list endpoint,
+validated against the vocabulary, documented as "a per-user status filter" — and never read by any query**
+(`grep status WpNotificationRepository` returned nothing). `?status=read` returned everything with a 200.
+`NotificationStatus` likewise called itself "derived from the record plus the user's state row" while nothing
+derived it. Now: **`NotificationStatus::derive()`** owns the precedence (resolved ▸ expired ▸ dismissed ▸
+unelapsed snooze ▸ read/unread — resolution is a fact about the record and outranks any one user's state,
+FR-010), `queryForActor()` applies the filter from the actor's own state *before* pagination so `total` and
+the page agree, and every presented item carries `user_state.status`. Both call sites then **lost** their
+hand-rolled copies — the widget and drawer just ask for `status=unread`. Also fixed: the drawer refetched
+unfiltered while its own mark-read removed items, so read items reappeared on reopen and it disagreed with
+the bell beside it.
+
+**That unblocked FR-018's remaining saved views, which now all ship:** Inbox / Requires attention / **Assigned
+to me** / Submissions / Security / System / **Updates** / **History** / Preferences. History = `status=resolved`;
+Updates = `severity=information`; Assigned to me = a new `assigned_to_me` filter backed by
+`NotificationRecipient::targetsUserDirectly()`, narrower than `canBeSeenBy()` on purpose so the view is not
+just the inbox again for any ability holder. Verified: **1448 unit / 195 integration, 0 failed**; 6 e2e green
+(now asserting every named view renders and History raises no error state); front 200.
+
 **Remaining — optional / deferred, none blocking:** T021
 `NotificationChannelPolicy` (speculative until an email delivery channel exists — the producers already tag
 mail failures `email` for it); the assigned-to-me/updates/history screen views (need a recipient/resolved

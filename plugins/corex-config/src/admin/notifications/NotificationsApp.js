@@ -12,13 +12,47 @@ import PreferencesPanel from './PreferencesPanel.js';
 
 const SEVERITIES = [ 'critical', 'error', 'warning', 'action', 'information', 'success' ];
 
-/** Named views map to the bounded query the REST boundary supports (category / unread_only). */
+/**
+ * The saved views FR-018 names, each a bounded server-side filter — no client-side slicing.
+ *
+ * "Requires attention" uses the derived per-user status rather than `unread_only`, which means
+ * unresolved and would keep showing items this actor already read. "History" is the resolved
+ * archive; "Updates" is the informational stream, i.e. the things that are worth knowing but ask
+ * nothing of you.
+ */
 const VIEWS = [
 	{ id: 'inbox', label: __( 'Inbox', 'corex' ), params: {} },
-	{ id: 'attention', label: __( 'Requires attention', 'corex' ), params: { unread_only: '1' } },
-	{ id: 'submissions', label: __( 'Submissions', 'corex' ), params: { category: 'submissions' } },
-	{ id: 'security', label: __( 'Security', 'corex' ), params: { category: 'security' } },
+	{
+		id: 'attention',
+		label: __( 'Requires attention', 'corex' ),
+		params: { status: 'unread' },
+	},
+	{
+		id: 'assigned',
+		label: __( 'Assigned to me', 'corex' ),
+		params: { assigned_to_me: '1' },
+	},
+	{
+		id: 'submissions',
+		label: __( 'Submissions', 'corex' ),
+		params: { category: 'submissions' },
+	},
+	{
+		id: 'security',
+		label: __( 'Security', 'corex' ),
+		params: { category: 'security' },
+	},
 	{ id: 'system', label: __( 'System', 'corex' ), params: { category: 'system' } },
+	{
+		id: 'updates',
+		label: __( 'Updates', 'corex' ),
+		params: { severity: 'information' },
+	},
+	{
+		id: 'history',
+		label: __( 'History', 'corex' ),
+		params: { status: 'resolved' },
+	},
 ];
 
 export default function NotificationsApp() {

@@ -87,6 +87,22 @@ final class NotificationRecipient
         };
     }
 
+    /**
+     * Whether this notification names `$userId` personally, rather than reaching them through an
+     * ability they happen to hold.
+     *
+     * Narrower than {@see canBeSeenBy()} on purpose: an ability-targeted notification is visible to
+     * every holder of that ability but is nobody's personally, so the "assigned to me" view must not
+     * use visibility as its filter or it would just repeat the inbox for any manager.
+     */
+    public function targetsUserDirectly(int $userId): bool
+    {
+        return match ($this->kind) {
+            self::KIND_USER, self::KIND_USERS, self::KIND_ASSIGNED => in_array($userId, $this->userIds, true),
+            default => false,
+        };
+    }
+
     /** @return array<string,mixed> */
     public function toArray(): array
     {

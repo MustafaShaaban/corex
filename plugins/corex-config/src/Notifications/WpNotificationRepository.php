@@ -125,6 +125,15 @@ final class WpNotificationRepository implements NotificationRepository
             fn (Notification $n): bool => $n->recipient->canBeSeenBy($actorId, $userCan),
         ));
 
+        // "Assigned to me" is narrower than visibility: it keeps only what names this actor, never
+        // what they can merely see through an ability (FR-018).
+        if ($query->assignedToMe) {
+            $visible = array_values(array_filter(
+                $visible,
+                static fn (Notification $n): bool => $n->recipient->targetsUserDirectly($actorId),
+            ));
+        }
+
         // A status filter is per-user, so it cannot be a WHERE clause on the shared record — it needs
         // this actor's state row. Applied before pagination so `total` and the page agree; the state
         // read is bounded by the same MAX_CANDIDATES cap the candidate scan already enforces.

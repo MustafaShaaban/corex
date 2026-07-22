@@ -32,6 +32,10 @@ final class NotificationQuery
      *                               `$status = NotificationStatus::UNREAD` when you mean the actor's
      *                               unread items; the misreading of this flag has already produced
      *                               two defects (the Attention widget and the drawer).
+     * @param bool        $assignedToMe Restricts to notifications that name the actor personally
+     *                               (see NotificationRecipient::targetsUserDirectly) rather than
+     *                               ones they can merely see through an ability. Actor-scoped, so
+     *                               like `$status` it is applied by the actor-scoped read.
      */
     private function __construct(
         public readonly ?string $category,
@@ -39,6 +43,7 @@ final class NotificationQuery
         public readonly ?string $status,
         public readonly ?string $sourceModule,
         public readonly bool $unreadOnly,
+        public readonly bool $assignedToMe,
         public readonly int $page,
         public readonly int $perPage,
     ) {
@@ -53,6 +58,7 @@ final class NotificationQuery
             status: self::validEnum($filters['status'] ?? null, NotificationStatus::all()),
             sourceModule: self::nonEmptyString($filters['source_module'] ?? null),
             unreadOnly: (bool) ($filters['unread_only'] ?? false),
+            assignedToMe: (bool) ($filters['assigned_to_me'] ?? false),
             page: max(1, $page),
             perPage: min(self::MAX_PER_PAGE, max(1, $perPage)),
         );

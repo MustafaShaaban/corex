@@ -177,6 +177,31 @@ test( 'the Notifications screen renders its views and switches the active tab', 
 	await attention.click();
 	await expect( attention ).toHaveAttribute( 'aria-current', 'true' );
 
+	// The full FR-018 set must be present — the three added last (assigned to me, updates,
+	// history) each depend on a real server-side filter, so a missing one means a filter regressed
+	// rather than only a label being absent.
+	for ( const label of [
+		'Inbox',
+		'Requires attention',
+		'Assigned to me',
+		'Updates',
+		'History',
+	] ) {
+		await expect(
+			page.locator( '.corex-notifications-screen__view', { hasText: label } )
+		).toBeVisible();
+	}
+
+	const history = page.locator( '.corex-notifications-screen__view', {
+		hasText: 'History',
+	} );
+	await history.click();
+	await expect( history ).toHaveAttribute( 'aria-current', 'true' );
+	// A view that errored would render the error state instead of a list/empty state.
+	await expect(
+		page.locator( '.corex-notifications-screen__state[role="alert"]' )
+	).toHaveCount( 0 );
+
 	// The Preferences tab swaps the list for the per-category toggle panel, with mandatory
 	// categories (security) rendered disabled so a user can never mute a required notification.
 	await page
