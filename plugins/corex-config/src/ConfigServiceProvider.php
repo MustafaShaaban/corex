@@ -680,6 +680,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Notifications\NotificationToolbar::class)->register();
         $this->container->make(\Corex\Config\Retention\RetentionScheduler::class)->register();
         $this->container->make(\Corex\Config\Notifications\CommandCenterWidget::class)->register();
+        $this->container->make(\Corex\Config\Notifications\OptionalDashboardWidgets::class)->register();
         add_action('init', [$this->container->make(WpSubmissionExportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataImportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataExportStore::class), 'registerPostType']);

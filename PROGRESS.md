@@ -327,7 +327,21 @@ DECISIONS #153. **Merging is now the only remaining step and needs the owner** �
 permission-gated in the agent environment, so #117 → #118 → #119 must be merged by hand (all three are green
 and mergeable).
 
-**Remaining — all optional / deferred, none blocking:** T024 opt-in widgets + Development-only rules; T021
+**T024 COMPLETE — optional opt-in Dashboard widgets (US7 closed).** `OptionalDashboardWidgets` (corex-config)
+declares a catalogue — `corex_attention` (the actor's own unread items, bounded to 5) and `corex_development`
+(mode + warnings, Development-only) — each entry naming its ability, its Development-only flag, and its render
+callback. FR-025's four conditions sit in one **pure** `shouldRegister()` (opt-in · ability · has-data · mode),
+the `LoginRouteGuard` idiom, so every rule is unit-testable without WordPress. Opt-in is the site option
+`corex_dashboard_optional_widgets`, **absent by default**; the stored value is intersected with the catalogue
+and unknown ids **fail closed**, so a hand-edited option cannot conjure a widget with no ability rule.
+`hasData()` is short-circuited behind opt-in + ability — a widget nobody enabled must not cost a query on
+every dashboard load just to decide not to appear. Both widgets reuse canonical services and are
+**navigation-only** (no forms, no buttons). Verified: 8 unit + 6 integration green; **full suites 1434 unit /
+192 integration, 0 failed**; live on corex.local (no opt-in ⇒ nothing; opted-in Development widget absent in
+PRODUCTION, present in DEVELOPMENT; render nav-only; site restored exactly); front 200. wp-guard clean — the
+guard pass itself caught the eager-`hasData()` query and an implicit render-callback ternary.
+
+**Remaining — optional / deferred, none blocking:** T021
 `NotificationChannelPolicy` (speculative until an email delivery channel exists — the producers already tag
 mail failures `email` for it); the assigned-to-me/updates/history screen views (need a recipient/resolved
 filter on `NotificationQuery` — an API extension, deliberately not smuggled into the screen work).
