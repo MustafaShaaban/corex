@@ -39,7 +39,6 @@ const { STORAGE_STATE } = require( './global-setup' );
 const CANNOT_RUN_ON_A_FRESH_INSTALL = new RegExp(
 	[
 		// Need the block editor (see above).
-		'the block editor loads with no console errors',
 		'creates publishes tests and submits a persisted flow without console errors',
 		'a corex block is recognised in the editor inserter',
 	]
