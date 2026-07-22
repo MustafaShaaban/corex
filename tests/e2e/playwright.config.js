@@ -41,8 +41,6 @@ const CANNOT_RUN_ON_A_FRESH_INSTALL = new RegExp(
 		// install — the second reported 0ms because the shared setup had already failed.
 		'the guest account block renders the sign-in, register, and recovery forms',
 		'the account surface does not scroll sideways at 375px',
-		// Needs login protection configured with a custom slug.
-		'the default login and admin endpoints 404 without leaking a diagnostic',
 		// Need stored submissions.
 		'filters works assigns notes bulk actions and audits personal-data exports',
 		'contains the Inbox at mobile tablet desktop wide and RTL viewports',

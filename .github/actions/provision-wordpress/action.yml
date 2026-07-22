@@ -40,6 +40,12 @@ runs:
         wp core install --path=wp --url='${{ inputs.site-url }}' --title=Corex \
           --admin_user=admin --admin_password=changeme --admin_email=admin@example.com \
           --skip-email
+        # Pretty permalinks, like any real site. A fresh install defaults to plain, and with plain
+        # permalinks WordPress ignores the path entirely — an address that does not exist comes back
+        # as the home page with a 200 instead of a 404, and the framework matches its custom login
+        # slug by query string rather than by path. Both change what the suites observe.
+        wp rewrite structure '/%postname%/' --path=wp
+        wp rewrite flush --path=wp
 
     # The monorepo IS the source; wp-content only points at it. Mirrors the junctions the local
     # setup script creates, with symlinks.
