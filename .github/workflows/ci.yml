@@ -137,6 +137,13 @@ jobs:
             wp post meta set "$id" corex_field_message "Seeded for CI run ${i}." --path=wp
           done
 
+          # Turn off the editor welcome guide. It overlays the inserter the first time a user opens
+          # the block editor and then stays dismissed, so without this the first editor spec fails
+          # however long it waits while every later one passes — which is exactly what CI showed.
+          wp user meta update admin wp_persisted_preferences \
+            '{"core/edit-post":{"welcomeGuide":false},"core/edit-site":{"welcomeGuide":false},"core":{"welcomeGuide":false}}' \
+            --format=json --path=wp
+
           wp post list --path=wp --post_type=page --fields=post_name,post_status
           wp post list --path=wp --post_type=corex_submission --post_status=private --fields=ID,post_title
 
