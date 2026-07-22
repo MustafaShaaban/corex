@@ -176,14 +176,42 @@ body.login.corex-login .wp-hide-pw .dashicons {
 	color: var(--corex-admin-text-muted);
 }
 
-/* Remember-me row + the brass custom checkbox. */
-body.login.corex-login .forgetmenot {
-	margin-block-end: var(--corex-admin-space-md);
+/*
+ * Remember-me row + the brass custom checkbox.
+ *
+ * A flex row rather than WordPress's inline default: the box and its label were touching, and the
+ * label's own line-height baseline-aligned them so the box sat low against the text. `gap` gives
+ * the separation and `align-items` centres the two regardless of how long the translated label
+ * runs. The block margins hold it off the password field above and the submit button below.
+ */
+/*
+ * Scoped through `#login form` deliberately, mirroring core's own selector. WordPress sets
+ * `#login form p { margin-bottom: 0 }` — an ID, so (1,0,2) — which silently beat a plain
+ * `body.login.corex-login .forgetmenot` (0,3,1) and dropped the bottom margin while letting the
+ * top one through. Matching its shape is what makes the block margin actually apply.
+ */
+body.login.corex-login #login form .forgetmenot {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	/* Core floats this left so its own layout can sit the submit button beside it. The CoreX login
+	   is a single column with a full-width button, so the float would only break the rhythm. */
+	float: none;
+	margin-block: var(--corex-admin-space-md) var(--corex-admin-space-lg);
+}
+
+body.login.corex-login #login form .forgetmenot label {
+	margin: 0;
+	line-height: 1.4;
 }
 
 body.login.corex-login input[type="checkbox"] {
 	inline-size: 1.1rem;
 	block-size: 1.1rem;
+	/* WordPress's login stylesheet puts its own margins on this; they fight the flex gap. */
+	margin: 0;
+	/* Never let a long translated label squeeze the box out of square. */
+	flex-shrink: 0;
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
 	border-radius: var(--corex-admin-radius-sm);
 	background: var(--corex-admin-surface);
@@ -221,6 +249,87 @@ body.login.corex-login a {
 body.login.corex-login #nav,
 body.login.corex-login #backtoblog {
 	text-align: center;
+}
+
+/*
+ * The language switcher WordPress prints at the foot of the login page (wp-login.php renders
+ * `.language-switcher > form#language-switcher` when more than one locale is installed; Polylang
+ * populates that same control). It had no rule here at all, so it kept the browser's default
+ * chrome while every field above it followed the theme.
+ *
+ * Deliberately still a native <select>, and this is a fourth boundary alongside the three in
+ * DECISIONS #141: CorexSelect is an admin-bundle component that depends on admin tokens, and
+ * wp-login.php loads no admin bundle — so the accessible listbox simply is not available here, and
+ * core owns this markup besides. `color-scheme` is the standards-based lever for the one thing CSS
+ * cannot reach, the OS-drawn option popup.
+ */
+body.login.corex-login .language-switcher {
+	margin-block-start: var(--corex-admin-space-lg);
+	text-align: center;
+}
+
+body.login.corex-login #language-switcher {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--corex-admin-space-sm);
+}
+
+body.login.corex-login #language-switcher label .dashicons {
+	color: var(--corex-admin-text-muted);
+}
+
+body.login.corex-login #language-switcher-locales {
+	appearance: none;
+
+	/* Same reset the shell applies: WordPress core sets `select { line-height: 2.71 }`, which
+	   inflates the control well past the sibling inputs' height. */
+	line-height: normal;
+	min-block-size: var(--corex-admin-control-height);
+	padding-block: 0;
+	padding-inline: var(--corex-admin-space-sm) var(--corex-admin-space-xl);
+	color: var(--corex-admin-text);
+	background-color: var(--corex-admin-login-field);
+	background-image: url(../icons/chevron-down.svg);
+	background-repeat: no-repeat;
+	background-position: right var(--corex-admin-space-sm) center;
+	background-size: 14px;
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+
+	/* Draws the option list in the page's scheme, not always light. */
+	color-scheme: light dark;
+}
+
+/*
+ * `background-position` has no logical equivalent, so the mirror is written out — exactly as
+ * `corex-admin-shell.css` does for `.corex-admin select`. Safe here because this stylesheet has no
+ * generated RTL build; do NOT copy it into one that does (in corex-forms the build strips the
+ * attribute selector, and the override then applies in both directions).
+ */
+[dir="rtl"] body.login.corex-login #language-switcher-locales {
+	background-position: left var(--corex-admin-space-sm) center;
+}
+
+body.login.corex-login #language-switcher-locales:focus {
+	border-color: var(--corex-admin-action);
+	box-shadow: 0 0 0 3px var(--corex-admin-action-subtle);
+	outline: none;
+}
+
+/* The "Change" submit beside it reads as a secondary control, not a second primary button. */
+body.login.corex-login #language-switcher .button {
+	min-block-size: var(--corex-admin-control-height);
+	color: var(--corex-admin-text);
+	background: transparent;
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+body.login.corex-login #language-switcher .button:hover,
+body.login.corex-login #language-switcher .button:focus {
+	color: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
 }
 
 body.login.corex-login :where(a, button, input):focus-visible {
