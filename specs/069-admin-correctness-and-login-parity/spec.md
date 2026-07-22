@@ -216,6 +216,17 @@ Measured on the real install after the emoji-shim fix: a genuinely absent page r
 
 **Why the rest cannot be closed by this work.** `wp_should_load_separate_core_block_assets()` returns `false` on `is_admin()` *before* its own filter runs, so no plugin can reach it, and whether the front-end styling pipeline registers at all is decided at `init` — while the request is still identified as an admin one. The only earlier moment available is before WordPress knows whether the visitor is signed in, so a fix there would have to treat *every* admin request as a front-end one, which would break the admin for the people entitled to use it. The response is a real "not found" page produced by the site's own routing; only its styling payload differs.
 
+> **Superseded by spec 070 — this analysis was wrong about the cause, and the consequence.**
+> The gate that actually emptied this response was `wp_common_block_scripts_and_styles()`, which
+> returns early on `is_admin()` and is hooked to `wp_enqueue_scripts` — long *after* `render404()`
+> runs on `wp_loaded`, so it was always reachable. 069 never identified it. The result was not
+> "fewer inline styles" but **no block CSS at all**, which on this block theme renders a visibly
+> unstyled page — reported by the owner on 2026-07-20. The 46,587-byte figure below was read as a
+> fingerprinting risk only; nobody connected it to a visual one. Fixed in spec 070: the hidden
+> admin now measures **79,711 B** against a 79,964 B control and is visually identical. The
+> `wp_should_load_separate_core_block_assets()` claim above is accurate and still stands — it is
+> why the two responses remain ~250 B apart rather than byte-identical.
+
 **What it costs.** Someone comparing the byte size of two "not found" responses can still infer that the admin address is handled specially, and therefore that a login is hidden somewhere. They do not learn where: the address itself is never disclosed.
 
 **Why it is still a large improvement.** What shipped before disclosed the custom address outright to anyone requesting `/login`, and answered the hidden endpoints with a 2,515-byte page that no real "not found" ever produces. Both are closed.

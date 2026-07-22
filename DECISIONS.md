@@ -2687,6 +2687,74 @@ enable it themselves and restore the exact prior value.
 
 Status: Both fixed. Integration suite is fully green (158/158) for the first time this session.
 
+## #143 -- Spec 070: a route's identity comes from its path, never its payload
+
+Context: saving an Email Studio template draft answered 404 for a template that plainly existed, and the UI
+showed only "Something went wrong. Please try again."
+
+Two independent defects, stacked, which is why neither was obvious.
+
+`WP_REST_Request::get_parameter_order()` resolves JSON body params and the query string *before* URL params.
+`saveDraft()` read `get_param('id')`, and the editor was posting the stored version's own `id` in the body --
+it built the draft as `{ ...EMPTY_DRAFT, ...latest }`, spreading the whole version record (`id`, `template_id`,
+`version`, `checksum`, `created_by`, `created_at`) into the payload. So a save aimed at template 3859 looked up
+version id 3860 as a template, found nothing, and 404'd. Only templates that already had a saved version could
+trigger it -- one with none uses `emptyDraft()`, which carries no `id`. That is why it looked intermittent.
+
+The message was lost separately. `corex-runtime.js` called `wp.apiFetch({ parse: false })` and assumed a
+non-2xx *resolves*; core's `parseAndThrowError()` rethrows the raw `Response`, so the `response.ok === false`
+branch was dead code and every 4xx/5xx fell into the blanket `.catch` and became a generic error. The server's
+"That email template was not found." never left the wire.
+
+Decision: fix both ends, and treat the param shadowing as a class rather than an instance. New
+`Corex\Http\RouteParam` reads `get_url_params()` directly, which nothing can shadow, applied to every
+route-captured identifier in `EmailStudioController`, `FlowController`, `SubmissionsController` and
+`DataManagementController` (24 `::int`, 1 `::string`). `source` in `DataManagementController` deliberately
+stays on `get_param()` -- `migrations()` reads it as a query filter on a route that captures no `source`, so
+converting it would have broken a working endpoint.
+
+Why record it: `get_param()` reads as the obvious accessor and is wrong for anything the route captured. Four
+controllers had the same latent trap and `get_url_params()` appeared nowhere in the codebase. The integration
+tests missed it because they set route ids with `set_param()`, which WordPress files under the *body* -- so the
+tests were modelling the exact mistake the production code made. They now use `set_url_params()`, which is what
+`WP_REST_Server::dispatch()` actually does.
+
+Status: Fixed and verified live -- the save returns 201 with a new version. 164/164 integration green.
+
+## #144 -- Spec 070: the hidden-admin 404 was unstyled, and 069 said that was impossible
+
+Context: the owner reported that a hidden `/wp-admin` "redirects to unstyled page". Spec 069 had recorded the
+same response as a documented, unfixable limitation.
+
+069's analysis named `wp_should_load_separate_core_block_assets()`, which does return on `is_admin()` before its
+own filter -- accurate, and it is why the two responses are still ~250 bytes apart. But it is not what emptied
+the page. That was `wp_common_block_scripts_and_styles()`, which opens
+`if ( is_admin() && ! wp_should_load_block_editor_scripts_and_styles() ) return;`. On a hidden admin 404 both
+hold, so the response got no per-block sheets, no monolithic `wp-block-library`, no `wp-block-library-theme`,
+and `enqueue_block_assets` never fired. `wp_enqueue_global_styles` has no such gate, so `theme.json` tokens
+still printed -- colours and custom properties, no block layout or appearance CSS. On a block theme with no
+`functions.php` and a metadata-only `style.css`, that renders as broken.
+
+It was always reachable: that gate is hooked to `wp_enqueue_scripts`, which fires during `wp_head()`, long
+after `render404()` runs on `wp_loaded`. `LoginRouteGuard::enqueueBlockStyles()` now fills it. Enqueuing
+directly rather than filtering `should_load_block_editor_scripts_and_styles` is deliberate -- that filter would
+also satisfy the block-*editor* branch and pull in editor assets a real front-end 404 never carries, widening
+the fingerprint in the other direction.
+
+Fixing it surfaced a second, older bug. `.corex-header__inner { max-inline-size: 100% }` has the same
+specificity as core's `.is-layout-constrained > :where(...)`, so which one won depended purely on stylesheet
+order. Inline block styles print later on a normal front-end request, so core won and the theme rule was
+already inert; when the sheet loads as a `<link>` instead -- which is what core does whenever on-demand block
+assets are off -- the order inverted and the header stretched edge to edge. The guard now applies to
+`.corex-header` only.
+
+Why record it: the 069 measurement (46,587 B vs 79,968 B) was read purely as a fingerprinting risk. A 42% gap
+in a rendered page is not a fingerprint, it is missing CSS, and nobody made that connection for a release. When
+a limitation is written down as impossible, it stops being re-examined -- so 069's spec was corrected in place
+rather than left standing with a newer document quietly disagreeing.
+
+Status: Fixed. 46,587 B -> 79,711 B against a 79,964 B control; computed font, layout and header geometry now
+match the genuine 404 exactly. e2e now asserts `wp-block-library` is present and the size gap stays under 5%.
 ## #154 -- CI runs every PR and the JS suite; "green" must name which suites ran
 
 Date: 2026-07-22

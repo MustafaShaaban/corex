@@ -37,9 +37,50 @@ const emptyDraft = ( layouts ) =>
 		  }
 		: { ...EMPTY_DRAFT };
 
+/**
+ * Project a stored version onto the editable draft shape.
+ *
+ * Spreading the version wholesale also carried its server-owned fields — `id`,
+ * `template_id`, `version`, `checksum`, `created_by`, `created_at` — and the draft is
+ * posted as the request body. WordPress resolves JSON body params *before* URL params
+ * (WP_REST_Request::get_parameter_order), so a body `id` shadows the route's own {id}:
+ * saving a draft for template 3859 looked up the version id instead and 404'd. Only the
+ * fields the form actually edits may travel back.
+ *
+ * @param {Object} version A stored template version.
+ * @return {Object} The editable draft fields, defaulted where the version is silent.
+ */
+const draftFrom = ( version ) =>
+	Object.fromEntries(
+		Object.keys( EMPTY_DRAFT ).map( ( key ) => [
+			key,
+			version[ key ] ?? EMPTY_DRAFT[ key ],
+		] )
+	);
+
 function formValues( event ) {
 	event.preventDefault();
 	return Object.fromEntries( new FormData( event.currentTarget ).entries() );
+}
+
+/**
+ * The operator-facing reason a request failed.
+ *
+ * A rejected draft answers with a summary *and* `details.fields` naming what is wrong with
+ * which field. Only the summary was ever read, so "The draft contains invalid or unsafe
+ * content." arrived with the actual reason still attached to the response and unseen.
+ *
+ * @param {Object} envelope The failed response envelope.
+ * @return {string} The summary, plus any per-field reasons the server supplied.
+ */
+function failureMessage( envelope ) {
+	const summary = envelope.message || __( 'The request failed.', 'corex' );
+	const fields = envelope.details && envelope.details.fields;
+	const reasons = fields ? Object.values( fields ).filter( Boolean ) : [];
+
+	return reasons.length > 0
+		? `${ summary } ${ reasons.join( ' ' ) }`
+		: summary;
 }
 
 function useStudioApi( config ) {
@@ -56,9 +97,7 @@ function useStudioApi( config ) {
 			if ( ! result.envelope.ok ) {
 				dispatch( {
 					type: 'failed',
-					message:
-						result.envelope.message ||
-						__( 'The request failed.', 'corex' ),
+					message: failureMessage( result.envelope ),
 				} );
 				return false;
 			}
@@ -86,9 +125,7 @@ function useStudioApi( config ) {
 			if ( ! result.envelope.ok ) {
 				dispatch( {
 					type: 'failed',
-					message:
-						result.envelope.message ||
-						__( 'The request failed.', 'corex' ),
+					message: failureMessage( result.envelope ),
 				} );
 				return null;
 			}
@@ -114,18 +151,14 @@ function useTemplateSelection( { config, layouts, dispatch } ) {
 			if ( ! result.envelope.ok ) {
 				dispatch( {
 					type: 'failed',
-					message:
-						result.envelope.message ||
-						__( 'The request failed.', 'corex' ),
+					message: failureMessage( result.envelope ),
 				} );
 				return;
 			}
 			const next = result.envelope.data;
 			const latest = next.versions[ next.versions.length - 1 ];
 			setDetail( next );
-			setDraft(
-				latest ? { ...EMPTY_DRAFT, ...latest } : emptyDraft( layouts )
-			);
+			setDraft( latest ? draftFrom( latest ) : emptyDraft( layouts ) );
 			setErrors( {} );
 		},
 		[ config.nonce, config.restUrl, dispatch, layouts ]
@@ -365,9 +398,7 @@ function useHealth( { config, state, dispatch, selection } ) {
 		if ( ! result.envelope.ok ) {
 			dispatch( {
 				type: 'failed',
-				message:
-					result.envelope.message ||
-					__( 'The request failed.', 'corex' ),
+				message: failureMessage( result.envelope ),
 			} );
 			return;
 		}

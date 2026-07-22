@@ -4,7 +4,39 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-20) -- Spec 069 MERGED to `main` (PR #107). Released as **v0.34.0**.
+## RESUME HERE (2026-07-20) -- Spec 070 IMPLEMENTATION-COMPLETE on `spec/070-transport-error-fidelity`.
+
+Two owner-reported defects against v0.34.0, both reproduced on `corex.local` before any code changed,
+and neither with the cause its symptom suggested. Full write-up:
+`specs/070-transport-error-fidelity-and-admin-style-parity/spec.md`.
+
+1. **Email Studio template save 404'd**, shown as "Something went wrong. Please try again."
+   Two stacked bugs. WordPress resolves JSON body params *before* URL params, and the editor was
+   posting the stored version's own `id` (it built the draft with `{ ...EMPTY_DRAFT, ...latest }`),
+   so the controller looked up version 3860 as a template and 404'd. The real message never
+   surfaced because `corex-runtime.js` assumed `wp.apiFetch({ parse: false })` *resolves* on a
+   non-2xx — core rethrows the raw Response, so every server error hit the blanket catch. Fixed at
+   both ends: new `Corex\Http\RouteParam` reads `get_url_params()` (unshadowable, applied across 4
+   controllers), and the transport now reads error responses. **Verified: save returns 201.**
+2. **Hidden `/wp-admin` rendered unstyled.** `wp_common_block_scripts_and_styles()` returns early on
+   `is_admin()`, so the 404 got no block CSS whatsoever — only `theme.json` tokens, which have no
+   such gate. Spec 069 called this unreachable; that is true of a *different* gate. This one is
+   hooked to `wp_enqueue_scripts`, long after `render404()` runs on `wp_loaded`.
+   **Verified: 46,587 B → 79,711 B against a 79,964 B control, visually identical.**
+   069's spec has been corrected in place rather than left standing.
+
+- **Verification:** 164/164 integration, 298/298 Jest, 8/8 security-access e2e. Guards clean
+  (wp-guard, clean-code-guard, test-guard). Lint on `corex-runtime.js`: 123 problems before → 114
+  after (file is intentionally buildless ES5; pre-existing).
+- **Next:** review and merge `spec/070-transport-error-fidelity`, then cut **v0.35.0**.
+- **Known, unrelated, still open:** recurring `Mail rejected: Illegal characters in the subject
+  field` in `debug.log`; `WP_DEBUG_DISPLAY` is `true` in `wp/wp-config.php`; a pre-existing PHP
+  segfault partway through the unit suite (identical with and without this work — 143 PASS blocks,
+  crash after `BootLoggerTest`, passes in isolation); `output/` is still untracked Playwright
+  evidence.
+
+---
+## (previous) Spec 069 MERGED to `main` (PR #107). Released as **v0.34.0**.
 
 - **PR #107 merged** to `main` (merge commit on `origin/main`), then cut `release/v0.34.0`: 16 version files
   bumped (4 plugin + 11 addon headers, 14 `*_VERSION` constants, `theme/style.css`) and the CHANGELOG written.

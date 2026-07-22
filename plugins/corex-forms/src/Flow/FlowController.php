@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Http\Middleware\Request;
 use Corex\Http\Middleware\Response;
+use Corex\Http\RouteParam;
 use DateTimeImmutable;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -80,7 +81,7 @@ final readonly class FlowController
     public function show(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->read($request, function () use ($request): Response {
-            $flow = $this->services->flows->get(absint($request->get_param('id')));
+            $flow = $this->services->flows->get(RouteParam::int($request));
             $versions = array_map($this->mapper->version(...), $this->services->flows->versions($flow->id));
 
             return Response::ok(['flow' => $this->mapper->flow($flow), 'versions' => $versions]);
@@ -90,7 +91,7 @@ final readonly class FlowController
     public function update(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->mutate($request, $this->mapper->updateShape(), function (Request $safe) use ($request): Response {
-            $flowId = absint($request->get_param('id'));
+            $flowId = RouteParam::int($request);
             $version = $this->services->flows->saveDraft($this->mapper->draftUpdate(
                 $flowId,
                 $safe->input,
@@ -108,7 +109,7 @@ final readonly class FlowController
     public function preview(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->read($request, function () use ($request): Response {
-            $version = $this->services->flows->preview(absint($request->get_param('id')));
+            $version = $this->services->flows->preview(RouteParam::int($request));
 
             return Response::ok(['version' => $this->mapper->version($version)]);
         });
@@ -133,7 +134,7 @@ final readonly class FlowController
     {
         return $this->gateway->mutate($request, $this->mapper->testShape(), function (Request $safe) use ($request): Response {
             $result = $this->services->tests->run(
-                absint($request->get_param('id')),
+                RouteParam::int($request),
                 (int) ($safe->input['expected_version'] ?? 0),
                 (array) ($safe->input['values'] ?? []),
             );
@@ -152,7 +153,7 @@ final readonly class FlowController
     {
         return $this->gateway->mutate($request, $this->mapper->transitionShape(), function (Request $safe) use ($request, $operation): Response {
             $command = $this->mapper->transition(
-                absint($request->get_param('id')),
+                RouteParam::int($request),
                 $safe->input,
                 get_current_user_id(),
                 new DateTimeImmutable('now'),

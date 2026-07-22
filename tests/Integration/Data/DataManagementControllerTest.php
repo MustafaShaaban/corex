@@ -136,7 +136,7 @@ it('registers every source mutation import export and migration route', function
 it('queries catalogs details and applies only a nonce-backed mutation preview', function () {
     $sources = $this->controller->sources(dataManagementRequest('GET', '/corex/v1/data/sources'));
     $index = dataManagementRequest('GET', '/corex/v1/data/rest-contacts'); $index->set_param('source', 'rest-contacts');
-    $detail = dataManagementRequest('GET', '/corex/v1/data/rest-contacts/1'); $detail->set_param('source', 'rest-contacts'); $detail->set_param('id', 1);
+    $detail = dataManagementRequest('GET', '/corex/v1/data/rest-contacts/1'); $detail->set_param('source', 'rest-contacts'); $detail->set_url_params(['id' => 1]);
     $previewRequest = dataManagementRequest('POST', '/corex/v1/data/rest-contacts/mutations/preview', [
         'operation' => 'update', 'record_ids' => [1], 'values' => ['status' => 'inactive'],
     ]); $previewRequest->set_param('source', 'rest-contacts');
@@ -182,10 +182,10 @@ it('creates and remaps an import report and previews migrations without applying
     $run = $created->get_data()['data']['import'];
     $remap = dataManagementRequest('PATCH', '/corex/v1/data/rest-contacts/imports/' . $run['id'], [
         'mapping' => ['extra' => ''], 'unknown_policy' => 'ignore',
-    ]); $remap->set_param('source', 'rest-contacts'); $remap->set_param('id', $run['id']);
+    ]); $remap->set_param('source', 'rest-contacts'); $remap->set_url_params(['id' => $run['id']]);
     $remapped = $this->controller->remapImport($remap)->get_data()['data']['import'];
     $report = dataManagementRequest('GET', '/corex/v1/data/rest-contacts/imports/' . $run['id'] . '/report');
-    $report->set_param('source', 'rest-contacts'); $report->set_param('id', $run['id']);
+    $report->set_param('source', 'rest-contacts'); $report->set_url_params(['id' => $run['id']]);
 
     $migration = dataManagementRequest('POST', '/corex/v1/data/migrations/preview', [
         'source' => 'rest-contacts', 'definition' => 'contacts-v2', 'action' => 'apply',

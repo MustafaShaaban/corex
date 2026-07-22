@@ -215,4 +215,100 @@ describe( 'Corex.api via wp.apiFetch (admin path)', () => {
 		expect( result.envelope.data ).toEqual( { n: 1 } );
 		delete window.wp;
 	} );
+
+	/**
+	 * With `parse: false` core does not resolve on a non-2xx — parseAndThrowError() rethrows
+	 * the raw Response. Every test above this one mocked a *resolve*, which is why a real
+	 * server error could reach the UI as "Something went wrong" for a whole release.
+	 */
+	const loadWithApiFetch = ( apiFetch ) => {
+		window.wp = { apiFetch, i18n: { __: ( s ) => s } };
+		jest.isolateModules( () => {
+			require( RUNTIME );
+		} );
+		return window.Corex;
+	};
+
+	const rejectingApiFetch = ( body, status, { nonJson = false } = {} ) =>
+		jest.fn( () =>
+			Promise.reject( {
+				ok: false,
+				status,
+				json: () =>
+					nonJson
+						? Promise.reject( new Error( 'not json' ) )
+						: Promise.resolve( body ),
+			} )
+		);
+
+	it( 'keeps the server message when apiFetch rejects with an error Response', async () => {
+		const runtime = loadWithApiFetch(
+			rejectingApiFetch(
+				{
+					ok: false,
+					code: 'email_template_not_found',
+					message: 'That email template was not found.',
+					details: {},
+				},
+				404
+			)
+		);
+
+		const result = await runtime.api.post( '/admin/templates/1/draft', {} );
+
+		expect( result.ok ).toBe( false );
+		expect( result.status ).toBe( 404 );
+		expect( result.envelope.code ).toBe( 'email_template_not_found' );
+		expect( result.envelope.message ).toBe(
+			'That email template was not found.'
+		);
+		delete window.wp;
+	} );
+
+	it( 'keeps field details from a rejected validation response', async () => {
+		const runtime = loadWithApiFetch(
+			rejectingApiFetch(
+				{
+					ok: false,
+					code: 'email_template_unsafe',
+					message: 'The draft contains invalid or unsafe content.',
+					details: { fields: { layout_id: 'Choose a layout.' } },
+				},
+				422
+			)
+		);
+
+		const result = await runtime.api.post( '/admin/x', {} );
+
+		expect( result.status ).toBe( 422 );
+		expect( result.envelope.details.fields ).toEqual( {
+			layout_id: 'Choose a layout.',
+		} );
+		delete window.wp;
+	} );
+
+	it( 'names the status when a rejected response carries no readable body', async () => {
+		const runtime = loadWithApiFetch(
+			rejectingApiFetch( null, 500, { nonJson: true } )
+		);
+
+		const result = await runtime.api.get( '/admin/x' );
+
+		expect( result.status ).toBe( 500 );
+		expect( result.envelope.message ).toContain( '500' );
+		delete window.wp;
+	} );
+
+	it( 'still reports a transport failure as status 0', async () => {
+		const runtime = loadWithApiFetch(
+			jest.fn( () => Promise.reject( new Error( 'offline' ) ) )
+		);
+
+		const result = await runtime.api.get( '/admin/x' );
+
+		expect( result.ok ).toBe( false );
+		expect( result.status ).toBe( 0 );
+		expect( result.envelope.code ).toBe( 'error' );
+		delete window.wp;
+	} );
 } );

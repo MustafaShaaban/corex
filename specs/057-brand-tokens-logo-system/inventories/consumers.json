@@ -9873,7 +9873,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 133, 185, 247, 274: border: var(--wp--custom--border--width--thin) solid transparent; | var(--wp--custom--border--width--thin) solid",
+      "selector_or_context": "lines 142, 194, 256, 283: border: var(--wp--custom--border--width--thin) solid transparent; | var(--wp--custom--border--width--thin) solid",
       "property": "--wp--custom--border--width--thin",
       "owner": "theme",
       "surface": "front-end",
@@ -9883,7 +9883,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 45, 151, 209, 294: var(--wp--custom--focus--color);",
+      "selector_or_context": "lines 45, 160, 218, 303: var(--wp--custom--focus--color);",
       "property": "--wp--custom--focus--color",
       "owner": "theme",
       "surface": "front-end",
@@ -9893,7 +9893,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 46, 152, 210, 295: outline-offset: var(--wp--custom--focus--offset);",
+      "selector_or_context": "lines 46, 161, 219, 304: outline-offset: var(--wp--custom--focus--offset);",
       "property": "--wp--custom--focus--offset",
       "owner": "theme",
       "surface": "front-end",
@@ -9903,7 +9903,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 44, 150, 208, 293: var(--wp--custom--focus--width) solid",
+      "selector_or_context": "lines 44, 159, 217, 302: var(--wp--custom--focus--width) solid",
       "property": "--wp--custom--focus--width",
       "owner": "theme",
       "surface": "front-end",
@@ -9913,7 +9913,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 19, 51, 244: min-block-size: var(--wp--custom--header--height); | scroll-margin-block-start: var(--wp--custom--header--height); | min-inline-size: var(--wp--custom--header--height);",
+      "selector_or_context": "lines 19, 51, 253: min-block-size: var(--wp--custom--header--height); | scroll-margin-block-start: var(--wp--custom--header--height); | min-inline-size: var(--wp--custom--header--height);",
       "property": "--wp--custom--header--height",
       "owner": "theme",
       "surface": "front-end",
@@ -9923,7 +9923,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 87, 109: background-color var(--wp--custom--motion--duration--base) | box-shadow var(--wp--custom--motion--duration--base)",
+      "selector_or_context": "lines 96, 118: background-color var(--wp--custom--motion--duration--base) | box-shadow var(--wp--custom--motion--duration--base)",
       "property": "--wp--custom--motion--duration--base",
       "owner": "theme",
       "surface": "front-end",
@@ -9933,7 +9933,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 88, 110: var(--wp--custom--motion--easing--standard);",
+      "selector_or_context": "lines 97, 119: var(--wp--custom--motion--easing--standard);",
       "property": "--wp--custom--motion--easing--standard",
       "owner": "theme",
       "surface": "front-end",
@@ -9943,7 +9943,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 187, 249: border-radius: var(--wp--custom--radius--md);",
+      "selector_or_context": "lines 196, 258: border-radius: var(--wp--custom--radius--md);",
       "property": "--wp--custom--radius--md",
       "owner": "theme",
       "surface": "front-end",
@@ -9953,7 +9953,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 134, 222: border-radius: var(--wp--custom--radius--sm);",
+      "selector_or_context": "lines 143, 231: border-radius: var(--wp--custom--radius--sm);",
       "property": "--wp--custom--radius--sm",
       "owner": "theme",
       "surface": "front-end",
@@ -9963,7 +9963,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 182, 243: z-index: var(--wp--custom--z--dropdown);",
+      "selector_or_context": "lines 191, 252: z-index: var(--wp--custom--z--dropdown);",
       "property": "--wp--custom--z--dropdown",
       "owner": "theme",
       "surface": "front-end",
@@ -9973,7 +9973,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 74, 97: z-index: var(--wp--custom--z--sticky);",
+      "selector_or_context": "lines 83, 106: z-index: var(--wp--custom--z--sticky);",
       "property": "--wp--custom--z--sticky",
       "owner": "theme",
       "surface": "front-end",
@@ -9983,7 +9983,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 223: background-color: var(--wp--preset--color--accent);",
+      "selector_or_context": "lines 232: background-color: var(--wp--preset--color--accent);",
       "property": "--wp--preset--color--accent",
       "owner": "theme",
       "surface": "front-end",
@@ -9993,7 +9993,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 186, 248, 275: var(--wp--preset--color--border);",
+      "selector_or_context": "lines 195, 257, 284: var(--wp--preset--color--border);",
       "property": "--wp--preset--color--border",
       "owner": "theme",
       "surface": "front-end",
@@ -10003,7 +10003,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 15, 259: color: var(--wp--preset--color--ink);",
+      "selector_or_context": "lines 15, 268: color: var(--wp--preset--color--ink);",
       "property": "--wp--preset--color--ink",
       "owner": "theme",
       "surface": "front-end",
@@ -10013,7 +10013,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 65, 228: color: var(--wp--preset--color--ink-soft);",
+      "selector_or_context": "lines 74, 237: color: var(--wp--preset--color--ink-soft);",
       "property": "--wp--preset--color--ink-soft",
       "owner": "theme",
       "surface": "front-end",
@@ -10023,7 +10023,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 224: color: var(--wp--preset--color--inverse);",
+      "selector_or_context": "lines 233: color: var(--wp--preset--color--inverse);",
       "property": "--wp--preset--color--inverse",
       "owner": "theme",
       "surface": "front-end",
@@ -10033,7 +10033,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 14, 79, 98: background-color: var(--wp--preset--color--surface);",
+      "selector_or_context": "lines 14, 88, 107: background-color: var(--wp--preset--color--surface);",
       "property": "--wp--preset--color--surface",
       "owner": "theme",
       "surface": "front-end",
@@ -10043,7 +10043,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 145, 258: background-color: var(--wp--preset--color--surface-alt);",
+      "selector_or_context": "lines 154, 267: background-color: var(--wp--preset--color--surface-alt);",
       "property": "--wp--preset--color--surface-alt",
       "owner": "theme",
       "surface": "front-end",
@@ -10053,7 +10053,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 183, 245: background-color: var(--wp--preset--color--surface-raised);",
+      "selector_or_context": "lines 192, 254: background-color: var(--wp--preset--color--surface-raised);",
       "property": "--wp--preset--color--surface-raised",
       "owner": "theme",
       "surface": "front-end",
@@ -10063,7 +10063,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 64: background-color: var(--wp--preset--color--surface-strong);",
+      "selector_or_context": "lines 73: background-color: var(--wp--preset--color--surface-strong);",
       "property": "--wp--preset--color--surface-strong",
       "owner": "theme",
       "surface": "front-end",
@@ -10073,7 +10073,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 36, 170, 199, 277: font-family: var(--wp--preset--font-family--body);",
+      "selector_or_context": "lines 36, 179, 208, 286: font-family: var(--wp--preset--font-family--body);",
       "property": "--wp--preset--font-family--body",
       "owner": "theme",
       "surface": "front-end",
@@ -10083,7 +10083,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 189, 251: box-shadow: var(--wp--preset--shadow--md);",
+      "selector_or_context": "lines 198, 260: box-shadow: var(--wp--preset--shadow--md);",
       "property": "--wp--preset--shadow--md",
       "owner": "theme",
       "surface": "front-end",
@@ -10093,7 +10093,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 80, 102: box-shadow: var(--wp--preset--shadow--sm);",
+      "selector_or_context": "lines 89, 111: box-shadow: var(--wp--preset--shadow--sm);",
       "property": "--wp--preset--shadow--sm",
       "owner": "theme",
       "surface": "front-end",
@@ -10103,7 +10103,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 66, 165, 180, 220, 221, 272, 285: padding-block: var(--wp--preset--spacing--20); | column-gap: var(--wp--preset--spacing--20); | inset-block-start: calc(100% + var(--wp--preset--spacing--20));",
+      "selector_or_context": "lines 75, 174, 189, 229, 230, 281, 294: padding-block: var(--wp--preset--spacing--20); | column-gap: var(--wp--preset--spacing--20); | inset-block-start: calc(100% + var(--wp--preset--spacing--20));",
       "property": "--wp--preset--spacing--20",
       "owner": "theme",
       "surface": "front-end",
@@ -10113,7 +10113,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 21, 26, 215: row-gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
+      "selector_or_context": "lines 21, 26, 224: row-gap: var(--wp--preset--spacing--30); | padding-block: var(--wp--preset--spacing--30);",
       "property": "--wp--preset--spacing--30",
       "owner": "theme",
       "surface": "front-end",
@@ -10123,7 +10123,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 20, 25, 188, 250, 271, 276, 284: column-gap: var(--wp--preset--spacing--40); | padding: var(--wp--preset--spacing--40); | padding-block-start: var(--wp--preset--spacing--40);",
+      "selector_or_context": "lines 20, 25, 197, 259, 280, 285, 293: column-gap: var(--wp--preset--spacing--40); | padding: var(--wp--preset--spacing--40); | padding-block-start: var(--wp--preset--spacing--40);",
       "property": "--wp--preset--spacing--40",
       "owner": "theme",
       "surface": "front-end",
@@ -10133,7 +10133,7 @@
     },
     {
       "path": "theme/assets/css/corex-navigation.css",
-      "selector_or_context": "lines 265, 266: column-gap: var(--wp--preset--spacing--50); | row-gap: var(--wp--preset--spacing--50);",
+      "selector_or_context": "lines 274, 275: column-gap: var(--wp--preset--spacing--50); | row-gap: var(--wp--preset--spacing--50);",
       "property": "--wp--preset--spacing--50",
       "owner": "theme",
       "surface": "front-end",

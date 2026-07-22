@@ -18,6 +18,7 @@ use Corex\Email\Message\EmailMessage;
 use Corex\Email\Routing\EmailRoute;
 use Corex\Email\Routing\EmailRouteRepository;
 use Corex\Http\ResponseEnvelope;
+use Corex\Http\RouteParam;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
@@ -154,7 +155,7 @@ final class EmailStudioController
 
     public function showTemplate(WP_REST_Request $request): WP_REST_Response
     {
-        $template = $this->templates->find(absint($request->get_param('id')));
+        $template = $this->templates->find(RouteParam::int($request));
         if ($template === null) {
             return $this->error('email_template_not_found', __('That email template was not found.', 'corex'), 404);
         }
@@ -167,7 +168,7 @@ final class EmailStudioController
 
     public function saveDraft(WP_REST_Request $request): WP_REST_Response
     {
-        $templateId = absint($request->get_param('id'));
+        $templateId = RouteParam::int($request);
         $template   = $this->templates->find($templateId);
         if ($template === null) {
             return $this->error('email_template_not_found', __('That email template was not found.', 'corex'), 404);
@@ -212,7 +213,7 @@ final class EmailStudioController
     {
         try {
             $template = $this->templates->activate(
-                absint($request->get_param('id')),
+                RouteParam::int($request),
                 absint($request->get_param('version')),
                 get_current_user_id(),
                 new DateTimeImmutable('now'),
@@ -322,7 +323,7 @@ final class EmailStudioController
 
     public function health(WP_REST_Request $request): WP_REST_Response
     {
-        $templateId = absint($request->get_param('id'));
+        $templateId = RouteParam::int($request);
         $number     = absint($request->get_param('version'));
         $template   = $this->templates->find($templateId);
         $version    = $number > 0
@@ -362,7 +363,7 @@ final class EmailStudioController
     {
         try {
             $result = $this->studio->resend(
-                (string) $request->get_param('attempt'),
+                RouteParam::string($request, 'attempt'),
                 $this->message($request),
                 $this->deliveryContext(Uuid::v4()),
             );
