@@ -9,7 +9,7 @@
         "start": "wp-scripts start --webpack-src-dir=src/admin --output-path=build/admin"
     },
     "dependencies": {
-        "@wordpress/components": "^36.1.0",
+        "@wordpress/components": "^37.0.0",
         "@wordpress/element": "^8.2.0",
         "@wordpress/i18n": "^6.23.0"
     }
