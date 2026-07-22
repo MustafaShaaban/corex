@@ -165,6 +165,24 @@ it('counts only unread, visible notifications for the actor', function () {
     expect($this->repo->unreadCountForActor(7, $this->allow))->toBe(0);
 });
 
+it('agrees with the unread view: a snoozed notification is neither counted nor listed', function () {
+    // The bell badge and the "Requires attention" list must not disagree. The count used to exclude
+    // only read/dismissed while the list derives a full status, so a snoozed item was counted but
+    // not listed — a badge promising items the screen would not show, and an optional widget that
+    // could register on the count and then render "all caught up".
+    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'snoozed.count:1'));
+    $this->repo->snooze((int) $stored->id, 7, new DateTimeImmutable('+1 day'));
+
+    $listed = $this->repo->queryForActor(
+        NotificationQuery::fromRequest(['status' => 'unread']),
+        7,
+        $this->allow,
+    );
+
+    expect($this->repo->unreadCountForActor(7, $this->allow))->toBe(0)
+        ->and($listed['total'])->toBe(0);
+});
+
 it('keeps per-user read state private to each user', function () {
     $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUsers([7, 8])));
 

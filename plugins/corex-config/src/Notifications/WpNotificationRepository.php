@@ -163,7 +163,10 @@ final class WpNotificationRepository implements NotificationRepository
 
     public function unreadCountForActor(int $actorId, callable $userCan): int
     {
-        // Unread = visible, not resolved, and no read/dismissed state row for this user.
+        // Unread = visible, and NotificationStatus::UNREAD once the actor's own state is applied.
+        // Deliberately the same derivation the `status=unread` list uses: if the badge counted
+        // anything the list would not show — a snoozed item, say — it would promise work the screen
+        // then refuses to display.
         $candidates = $this->candidates(NotificationQuery::fromRequest(['unread_only' => true], 1, self::MAX_CANDIDATES));
         $ids = array_map(static fn (Notification $n): int => (int) $n->id, $candidates);
         $state = $this->stateFor($ids, $actorId);
@@ -173,8 +176,7 @@ final class WpNotificationRepository implements NotificationRepository
             if (! $n->recipient->canBeSeenBy($actorId, $userCan)) {
                 continue;
             }
-            $s = $state[(int) $n->id] ?? null;
-            if ($s === null || ($s['read_at'] === null && $s['dismissed_at'] === null)) {
+            if ($this->statusOf($n, $state) === NotificationStatus::UNREAD) {
                 $count++;
             }
         }
