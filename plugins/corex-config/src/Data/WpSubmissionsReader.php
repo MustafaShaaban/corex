@@ -402,6 +402,11 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         if ($query->flowId > 0) {
             $clauses[] = ['key' => 'corex_flow_id', 'value' => $query->flowId, 'compare' => '=', 'type' => 'NUMERIC'];
         }
+        // A form registered in code has no flow row, so its submissions carry only the slug. Same
+        // key the records explorer already filters on.
+        if ($query->formSlug !== '') {
+            $clauses[] = ['key' => 'corex_form_slug', 'value' => $query->formSlug, 'compare' => '='];
+        }
         if ($query->status !== '') {
             $clauses[] = $this->statusClause($query->status);
         }

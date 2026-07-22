@@ -132,12 +132,19 @@ function FormFilter( { flows, value, update } ) {
 		     the data explorer keys the same list by slug instead. The owner picks a name either
 		     way; they used to have to know the number.
 
+		     A form registered in code has no flow row, so it arrives with id 0 and is identified
+		     by slug instead; it is sent as `slug:<slug>` so the inbox matches corex_form_slug.
+		     Sending 0 would read as "all forms" and silently ignore the choice.
+
 		     aria-label because a <label> wrapping a control names it from the label's whole
 		     subtree, and an embedded control contributes its VALUE — so this would announce as
 		     "Form All forms" and rename itself every time the selection changed. */ }
 		<CorexSelect label={ __( 'Form', 'corex' ) } value={ value }
 			options={ [ { value: '', label: __( 'All forms', 'corex' ) },
-				...flows.map( ( flow ) => ( { value: String( flow.id ), label: flow.name } ) ) ] }
+				...flows.map( ( flow ) => ( {
+					value: flow.id > 0 ? String( flow.id ) : `slug:${ flow.slug }`,
+					label: flow.name,
+				} ) ) ] }
 			onChange={ ( flow ) => update( 'flow', flow ) } block />
 	</div>;
 }
