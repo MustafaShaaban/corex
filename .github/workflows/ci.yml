@@ -41,6 +41,28 @@ jobs:
       - name: Headless unit tests (Pest)
         run: composer test
 
+  js:
+    name: JS unit tests (Jest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Covers the block/admin JS *and* the generated-artifact contracts — the token inventory
+      # test regenerates from source and fails if a committed artifact drifted. Nothing in CI ran
+      # this suite before, which is how a stale inventory survived spec 072's CSS additions
+      # unnoticed while the gate reported every suite green.
+      - name: JS unit tests (Jest)
+        run: npm run test:js
+
 # Not yet wired here (tracked in CONTRIBUTING.md):
 #   - Integration tests (composer test:integration) need a WordPress + MySQL service
 #     (wp-env) provisioned in CI; run locally against ./wp for now.
