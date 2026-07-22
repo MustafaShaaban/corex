@@ -338,8 +338,10 @@ final class CliServiceProvider extends ServiceProvider
     }
 
     /**
-     * The framework files that carry a version header or `COREX_*_VERSION` constant, stamped
-     * together by `wp corex version` so the headers never drift from the release tag (spec 036).
+     * The framework files that carry a version header, a `COREX_*_VERSION` constant, or the docs
+     * site's exported `CURRENT_VERSION`, stamped together by `wp corex version` so none of them
+     * drifts from the release tag (spec 036). Missing candidates are filtered out, so a checkout
+     * without the docs site still stamps everything else.
      *
      * @return list<string>
      */
@@ -351,6 +353,7 @@ final class CliServiceProvider extends ServiceProvider
             $root . '/plugins/corex-forms/corex-forms.php',
             $root . '/plugins/corex-config/corex-config.php',
             $root . '/theme/style.css',
+            $root . '/docs-app/src/version.ts',
         ];
 
         foreach (glob($root . '/addons/*/*.php') ?: [] as $addonFile) {
