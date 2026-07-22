@@ -20,9 +20,25 @@ export default function NotificationDrawer( { open, onClose } ) {
 
 	const load = useCallback( () => {
 		setStatus( 'loading' );
-		apiFetch( { path: '/corex/v1/notifications?per_page=15' } )
+		// `unread_only` is an *unresolved* filter at the storage layer; whether this actor has read
+		// an item is per-user state on the item itself. Both are needed: without the second filter
+		// the drawer contradicts itself — marking an item read removes it from the list, then
+		// reopening the drawer fetches it straight back — and it disagrees with the bell, which
+		// counts unread. Scan a bounded page and keep the newest unread ones.
+		apiFetch( {
+			path: '/corex/v1/notifications?unread_only=1&per_page=25',
+		} )
 			.then( ( response ) => {
-				setItems( response?.data?.items ?? [] );
+				const all = response?.data?.items ?? [];
+				setItems(
+					all
+						.filter(
+							( item ) =>
+								! item?.user_state?.read &&
+								! item?.user_state?.dismissed
+						)
+						.slice( 0, 15 )
+				);
 				setStatus( 'ready' );
 			} )
 			.catch( () => setStatus( 'error' ) );
