@@ -38,6 +38,10 @@ const { STORAGE_STATE } = require( './global-setup' );
  */
 const CANNOT_RUN_ON_A_FRESH_INSTALL = new RegExp(
 	[
+		// Genuinely needs data: it walks every declared source looking for one that returns rows,
+		// and asserts it found one (`expect( fixture ).not.toBeNull()`). A fresh install has no
+		// rows in any source. Its siblings pass, so this is the record requirement, not the screen.
+		'queries source records, opens detail, and queues a declared export',
 		// Needs stored submissions to filter, assign and export.
 		'filters works assigns notes bulk actions and audits personal-data exports',
 		// Need the block editor (see above).
