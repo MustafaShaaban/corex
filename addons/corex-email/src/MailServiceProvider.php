@@ -178,6 +178,7 @@ final class MailServiceProvider extends ServiceProvider
                     $c->make(MailDriver::class),
                     $c->make(EmailTemplateService::class),
                     'wp-mail',
+                    $c->make(\Corex\Events\EventDispatcher::class),
                 );
             },
         );

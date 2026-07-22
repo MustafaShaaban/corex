@@ -69,9 +69,36 @@ final class OverviewRenderer
             . $this->dataSourcesCard($data['dataSources'])
             . '</div></div>'
             . '<div class="corex-overview__grid corex-overview__grid--secondary">'
+            . $this->attentionCard()
             . $this->integrationsCard($data['integrations'])
             . $this->activityCard()
             . '</div></div>';
+    }
+
+    /**
+     * A compact "Attention required" summary of the actor's unread notifications, linking to the
+     * center (spec 072 FR-019). It sits alongside Recent Activity, never replacing it, and reads the
+     * one bounded count the Notification Center already exposes — no new query of its own.
+     */
+    private function attentionCard(): string
+    {
+        $count = $this->container->make(\Corex\Notifications\NotificationService::class)
+            ->unreadCountForCurrentActor();
+        $note  = $count > 0
+            ? _n(
+                'unread notification needs your attention.',
+                'unread notifications need your attention.',
+                $count,
+                'corex',
+            )
+            : __('Nothing needs your attention right now.', 'corex');
+
+        return '<section class="corex-surface corex-overview__card corex-overview__card--compact">'
+            . '<header class="corex-overview__card-head"><h2>' . esc_html__('Attention required', 'corex') . '</h2></header>'
+            . '<p class="corex-overview__big">' . esc_html((string) $count) . '</p>'
+            . '<p class="corex-overview__muted">' . esc_html($note) . '</p>'
+            . '<p><a href="' . esc_url(admin_url('admin.php?page=corex-notifications')) . '">'
+            . esc_html__('Open Notifications', 'corex') . '</a></p></section>';
     }
 
     /**

@@ -26,6 +26,7 @@ final class CorexAbility
     public const MANAGE_EMAIL          = 'corex_manage_email';
     public const MANAGE_BLOG           = 'corex_manage_blog';
     public const MANAGE_OPERATIONS     = 'corex_manage_operations';
+    public const MANAGE_NOTIFICATIONS  = 'corex_manage_notifications';
     public const RUN_DANGEROUS_ACTIONS = 'corex_run_dangerous_actions';
     public const MANAGE_SETUP          = 'corex_manage_setup';
     public const MANAGE_SETTINGS       = 'corex_manage_settings';
@@ -38,6 +39,7 @@ final class CorexAbility
     public const GROUP_EMAIL       = 'email-studio';
     public const GROUP_BLOG        = 'blog-pro';
     public const GROUP_OPERATIONS  = 'operations-security';
+    public const GROUP_NOTIFICATIONS = 'notifications';
     public const GROUP_SETUP       = 'setup-wizard';
     public const GROUP_SETTINGS    = 'settings';
 
@@ -55,6 +57,7 @@ final class CorexAbility
         self::GROUP_EMAIL,
         self::GROUP_BLOG,
         self::GROUP_OPERATIONS,
+        self::GROUP_NOTIFICATIONS,
         self::GROUP_SETUP,
         self::GROUP_SETTINGS,
     ];

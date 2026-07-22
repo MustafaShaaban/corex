@@ -5,7 +5,7 @@
     "description": "Corex Config — admin screens (the Corex → Data DataViews app).",
     "license": "GPL-2.0-or-later",
     "scripts": {
-        "build": "wp-scripts build --webpack-src-dir=src/admin --output-path=build/admin",
+        "build": "wp-scripts build --webpack-src-dir=src/admin --output-path=build/admin && wp-scripts build --webpack-src-dir=src/notification-ui --output-path=build/notification-ui",
         "start": "wp-scripts start --webpack-src-dir=src/admin --output-path=build/admin"
     },
     "dependencies": {

@@ -251,6 +251,292 @@ body.corex-admin-screen .corex-admin__shell {
 	font-size: var(--corex-admin-font-md);
 }
 
+/* Notification bell — the header-actions region on CoreX screens (spec 072 FR-016). */
+.corex-admin__header-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	flex-shrink: 0;
+}
+
+.corex-notification-bell {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: 2.5rem;
+	block-size: 2.5rem;
+	padding: 0;
+	color: var(--corex-admin-text-muted);
+	background: transparent;
+	border: var(--corex-admin-border-width) solid transparent;
+	border-radius: var(--corex-admin-radius-md);
+	cursor: pointer;
+	transition: color 120ms ease, background-color 120ms ease;
+}
+
+.corex-notification-bell:hover {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+}
+
+.corex-notification-bell__icon {
+	display: inline-flex;
+}
+
+.corex-notification-bell__icon svg {
+	inline-size: 1.25rem;
+	block-size: 1.25rem;
+}
+
+.corex-notification-bell__badge {
+	position: absolute;
+	inset-block-start: 0.2rem;
+	inset-inline-end: 0.2rem;
+	min-inline-size: 1.1rem;
+	padding-inline: 0.3rem;
+	color: var(--corex-admin-action-ink);
+	background: var(--corex-admin-action);
+	border-radius: var(--corex-admin-radius-pill);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 700;
+	line-height: 1.1rem;
+	text-align: center;
+}
+
+/* Notification drawer — the panel the bell opens (spec 072 FR-016). */
+.corex-notification-drawer__backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	background: rgba(0, 0, 0, 0.4); /* corex-token-allow: modal scrim */
+}
+
+.corex-notification-drawer__panel {
+	position: fixed;
+	inset-block: 0;
+	inset-inline-end: 0;
+	z-index: 100001;
+	display: flex;
+	flex-direction: column;
+	inline-size: min(24rem, 100%);
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border-inline-start-width: var(--corex-admin-border-width);
+	border-inline-start-style: solid;
+	border-inline-start-color: var(--corex-admin-border);
+	box-shadow: var(--corex-admin-shadow-lg, none); /* corex-token-allow: optional elevation */
+	overflow-y: auto;
+}
+
+.corex-notification-drawer__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-block-end: var(--corex-admin-space-md);
+}
+
+.corex-notification-drawer__title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-lg);
+	font-weight: 700;
+}
+
+.corex-notification-drawer__close {
+	color: var(--corex-admin-text-muted);
+	background: transparent;
+	border: 0;
+	font-size: var(--corex-admin-font-lg);
+	cursor: pointer;
+}
+
+.corex-notification-drawer__state {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-notification-drawer__list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-notification-drawer__item {
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-notification-drawer__item-title {
+	margin: 0 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-notification-drawer__item-body {
+	margin: 0 0 var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-notification-drawer__mark,
+.corex-notification-drawer__mark-all {
+	color: var(--corex-admin-action);
+	background: transparent;
+	border: 0;
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.corex-notification-drawer__mark-all {
+	margin-block-start: var(--corex-admin-space-md);
+	align-self: flex-start;
+}
+
+/* Notifications screen — the full filtered center (spec 072 FR-018). */
+.corex-notifications-screen__views {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs);
+	margin-block-end: var(--corex-admin-space-md);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-notifications-screen__view {
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text-muted);
+	background: transparent;
+	border: 0;
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.corex-notifications-screen__view.is-active {
+	color: var(--corex-admin-action);
+	box-shadow: inset 0 -0.125rem 0 0 var(--corex-admin-action); /* corex-token-allow: active tab underline */
+}
+
+.corex-notifications-screen__filters {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-notifications-screen__filter {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-notifications-screen__mark-all {
+	margin-inline-start: auto;
+	color: var(--corex-admin-action);
+	background: transparent;
+	border: 0;
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.corex-notifications-screen__state {
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-notifications-screen__list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-notifications-screen__item {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-notifications-screen__item-title {
+	margin: 0 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-notifications-screen__item-body {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-notifications-screen__mark {
+	color: var(--corex-admin-action);
+	background: transparent;
+	border: 0;
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.corex-notifications-screen__pager {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-md);
+	margin-block-start: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-notifications-prefs {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-notifications-prefs__row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-notifications-prefs__label {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+}
+
+.corex-notifications-prefs__note {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
 .corex-admin__content {
 	padding: var(--corex-admin-space-xl);
 }

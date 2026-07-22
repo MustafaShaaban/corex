@@ -34,17 +34,23 @@ final class AdminPage
             ? ' data-corex-theme="' . esc_attr($appearance) . '"'
             : '';
 
+        // Shell header actions (e.g. the notification bell) are contributed as trusted CoreX HTML —
+        // each contributor escapes its own dynamic content, exactly like the WordPress admin bar.
+        $actions = (string) apply_filters('corex_admin_header_actions', '');
+        $actionsHtml = $actions === '' ? '' : '<div class="corex-admin__header-actions">' . $actions . '</div>';
+
         return sprintf(
             '<div class="wrap corex-admin corex-admin--%1$s"' . $themeAttr . '><div class="corex-admin__shell">%2$s'
             . '<main class="corex-admin__main" aria-labelledby="corex-page-title">'
             . '<header class="corex-admin__header"><div class="corex-admin__heading">'
             . '<p class="corex-admin__eyebrow">%3$s</p><h1 id="corex-page-title">%4$s</h1>%5$s'
-            . '</div></header><div class="corex-admin__content">',
+            . '</div>%6$s</header><div class="corex-admin__content">',
             esc_attr($section),
             $this->rail($section),
             esc_html($breadcrumb),
             esc_html($title),
             $descriptionHtml,
+            $actionsHtml,
         );
     }
 
@@ -328,6 +334,8 @@ final class AdminPage
             'corex-data-models'         => CorexAbility::MANAGE_DATA,
             'operations-security'       => CorexAbility::MANAGE_OPERATIONS,
             'corex-operations-security' => CorexAbility::MANAGE_OPERATIONS,
+            'notifications'             => CorexAbility::MANAGE_NOTIFICATIONS,
+            'corex-notifications'       => CorexAbility::MANAGE_NOTIFICATIONS,
             'access'                    => CorexAbility::MANAGE_ACCESS,
             'corex-access'              => CorexAbility::MANAGE_ACCESS,
             'blog-pro'                  => CorexAbility::MANAGE_BLOG,

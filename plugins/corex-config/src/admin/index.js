@@ -10,6 +10,20 @@ import '../DataModels/index.js';
 import AccessWorkspace from '../Access/AccessWorkspace.js';
 import BlogProApp from '../Blog/BlogProApp.js';
 import SecurityCenter from '../Security/SecurityCenter.js';
+import NotificationsApp from './notifications/NotificationsApp.js';
+
+// The notification bell is enhanced by its own entry (src/notification-ui), enqueued on every CoreX
+// screen — not here, so the drawer mounts exactly once even on screens that also load this bundle.
+
+const notificationsMount = document.getElementById( 'corex-notifications-app' );
+if ( notificationsMount ) {
+	const app = <NotificationsApp />;
+	if ( typeof createRoot === 'function' ) {
+		createRoot( notificationsMount ).render( app );
+	} else {
+		render( app, notificationsMount );
+	}
+}
 
 // The `corex-data-app` mount is gone: the standalone Data screen rendered the same DataExplorer as
 // the Data Models Records tab, so the screen was retired and its address redirects there. The

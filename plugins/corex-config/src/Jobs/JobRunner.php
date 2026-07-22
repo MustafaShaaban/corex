@@ -10,8 +10,10 @@ namespace Corex\Config\Jobs;
 
 defined('ABSPATH') || exit;
 
+use Corex\Events\EventDispatcher;
 use Corex\Jobs\BoundedJob;
 use Corex\Jobs\JobDispatcher;
+use Corex\Jobs\JobFinishedEvent;
 use Corex\Jobs\JobHandlerRegistry;
 use Corex\Jobs\JobRepository;
 use DateTimeImmutable;
@@ -28,6 +30,7 @@ final class JobRunner
         private readonly JobRepository $jobs,
         private readonly JobHandlerRegistry $handlers,
         private readonly JobDispatcher $dispatcher,
+        private readonly ?EventDispatcher $events = null,
     ) {
     }
 
@@ -52,20 +55,36 @@ final class JobRunner
 
         $handler = $this->handlers->find($job->kind);
         if ($handler === null) {
-            $this->jobs->save($job->fail(__('No handler is registered for this job kind.', 'corex'), $now));
+            $this->persist($job->fail(__('No handler is registered for this job kind.', 'corex'), $now));
 
             return;
         }
 
         try {
             $job = $handler->handle($job, self::BATCH_SIZE);
-            $this->jobs->save($job);
+            $this->persist($job);
 
             if (! $job->terminal()) {
                 $this->dispatcher->dispatch($job);
             }
         } catch (Throwable $exception) {
-            $this->jobs->save($job->fail($exception->getMessage(), new DateTimeImmutable('now')));
+            $this->persist($job->fail($exception->getMessage(), new DateTimeImmutable('now')));
+        }
+    }
+
+    /** Save the job and, if it has reached a terminal state, announce it for downstream reactions. */
+    private function persist(BoundedJob $job): void
+    {
+        $this->jobs->save($job);
+
+        if ($job->terminal()) {
+            $this->events?->dispatch(new JobFinishedEvent(
+                jobId: $job->id,
+                kind: $job->kind,
+                actorId: $job->actorId,
+                state: $job->state,
+                errorSummary: $job->errorSummary,
+            ));
         }
     }
 }

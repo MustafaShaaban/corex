@@ -17,6 +17,7 @@ use Corex\Email\Delivery\EmailAttempt;
 use Corex\Email\Delivery\EmailAttemptRepository;
 use Corex\Email\Driver\MailDriver;
 use Corex\Email\Message\EmailMessage;
+use Corex\Events\EventDispatcher;
 use Corex\Mail\MailResult;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
@@ -36,6 +37,7 @@ final class EmailStudioService
         private readonly MailDriver $providerDriver,
         private readonly EmailTemplateService $templates,
         private readonly string $providerName,
+        private readonly ?EventDispatcher $events = null,
     ) {
     }
 
@@ -130,7 +132,7 @@ final class EmailStudioService
     ): MailResult {
         $recipients = $this->validRecipients($message);
         if ($recipients === []) {
-            return $this->missingRecipientResult($delivery, $metadata);
+            return $this->announce($this->missingRecipientResult($delivery, $metadata), $metadata);
         }
 
         $decision = $this->policy->evaluate(
@@ -146,7 +148,27 @@ final class EmailStudioService
             new EmailAttemptContext($message, $delivery, $metadata, $outcome),
         );
 
-        return $this->mailResult($attempt, $outcome);
+        return $this->announce($this->mailResult($attempt, $outcome), $metadata);
+    }
+
+    /**
+     * Emit a failure event so the Notification Center can react (spec 072). The event fires for every
+     * unsuccessful delivery; whether a particular source (a test send, say) becomes a notification is
+     * the consumer's policy, not this service's.
+     */
+    private function announce(MailResult $result, EmailDispatchMetadata $metadata): MailResult
+    {
+        if ($this->events !== null && ! $result->successful()) {
+            $this->events->dispatch(new EmailStudioDeliveryFailedEvent(
+                attemptId: $result->attemptId,
+                provider: (string) $result->provider,
+                safeReason: $result->message,
+                source: $metadata->source,
+                retryable: $result->retryable,
+            ));
+        }
+
+        return $result;
     }
 
     /** @return list<string> */

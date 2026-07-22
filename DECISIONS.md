@@ -2997,4 +2997,82 @@ still need a provisioned WordPress -- that gap is real and stated here rather th
 Consequence for reports: "full unit 1448 passed / 0 failed, integration 197/0, JS 306/0, e2e 6/0" is a
 verification claim; "all tests pass" is not, because it hides which suites were skipped.
 
+## #151 -- Spec 072 T015: the notification drawer is NOT added to the spec-068 ApprovedComponentInventory
+
+Date: 2026-07-21
+
+Decision: The `NotificationDrawer`/bell are verified by a Playwright e2e (`tests/e2e/notification-center.spec.js`)
+for their accessibility contract, and are NOT declared in `addons/corex-ui/src/ApprovedComponentInventory.php`,
+despite spec 072 `tasks.md` (T015) calling for it. That inventory strictly reconciles against the spec-068
+design file `Corex Blocks & Components.dc.html` -- its test asserts exactly 77 approved components
+(33/8/13/23 per category). The notification drawer is a spec-072 runtime component that the spec-068 design
+file does not approve.
+
+Why: adding the drawer would force `expectedCounts()` and the `->toHaveCount(77)` total to 79 and claim a
+design approval that does not exist -- the precise dishonesty that inventory test guards against. The
+inventory's job is "the framework never claims a component the approved design didn't", not "every runtime
+widget is listed". Forcing the entry would either break the count reconciliation or require editing the
+spec-068 design source, which is out of spec-072 scope. The drawer's real, harder-to-fake guarantee -- focus
+trap, Escape, focus-return, aria-modal -- is proven by the live browser e2e instead, which is stronger
+verification than an inventory row.
+
+Alternatives considered: add the entry and bump the counts to 79 (rejected: falsely asserts spec-068 design
+approval and breaks the strict reconciliation); extend the spec-068 design file to include the drawer
+(rejected: out of scope for spec 072, and the design file is the source of truth for spec 068, not 072). If
+the owner later wants CoreX-072 admin components tracked in a governed inventory, that is a new, spec-072-owned
+inventory -- not an edit to spec 068's.
+
+## #152 -- Spec 072 T020: notification preferences live in user meta, not a managed table
+
+Date: 2026-07-21
+
+Decision: `WpNotificationPreferenceStore` persists per-user category preferences in **user meta**
+(`corex_notification_preferences`), not in a new managed table -- despite T020's wording ("a new managed
+table, schema 3->4"). Only muted categories are stored; everything defaults to shown, and the mandatory
+categories (security / system / operations) are enforced by the `NotificationPreference` value object, never
+by what happens to be persisted.
+
+Why: preferences are small, per-user, low-volume, and WordPress-native -- exactly the case the constitution
+and wp-guard reserve for options/transients/user-meta ("simple persistent data via user meta, not a custom
+table; don't reinvent the platform"). A managed table here would add a schema version, a migration, and a
+join for data WordPress already stores per user for free. The notification *records* are high-volume and
+shared, so they earn their tables (spec 072 T008); a user's handful of category toggles do not.
+
+Alternatives considered: a `notification_preferences` managed table keyed by (user_id, category) with a
+schema 3->4 bump (rejected: reinvents user meta for no benefit -- no cross-user query needs it, and retention
+never prunes it); a single site option (rejected: preferences are per-user, not global).
+
+Status: Final.
+
+## #153 -- The 070/071/072 stack was never tested by CI, and its "pre-existing" failures were its own
+
+Date: 2026-07-22
+
+Decision: stacked PRs must be verified with a full local suite run on each branch before they are queued
+for merge, and the CI trigger's blind spot is treated as a known gap rather than assumed coverage.
+
+Why: `.github/workflows/ci.yml` triggers only on `pull_request: branches: [main, develop]`. PR #118 targeted
+`spec/070` and PR #119 targeted `spec/071`, so **neither ever ran CI** -- `gh run list` for those branches
+returns empty, and their status rollups were empty, which reads as "no failures" rather than "never tested".
+The one branch CI did test (#117, base `main`) failed.
+
+What that hid: eight unit failures that earlier gate notes recorded as "8 pre-existing unrelated failures
+(Email mock-ordering, Security emoji-shim, Theme SCSS)". They were not pre-existing and not unrelated --
+every one was introduced by this stack, and `main` has none of them:
+- **Security (1)** -- spec 070 added `restoreBlockStyles()` to `dropAdminContext()`, which registers a hook
+  unconditionally. A spec-069 test asserted `Functions\expect('add_action')->never()` -- a blanket
+  expectation that forbids the method ever hooking anything again, rather than the emoji-specific claim its
+  name made. Scoped it with `->with(...)`, and added the test `restoreBlockStyles()` never had.
+- **Email (6)** -- spec 071's new `TokenReplayGuardTest` stubs `wp_salt`. Brain Monkey defines a stubbed
+  function into the global namespace **permanently** (PHP cannot undefine one), so
+  `function_exists('wp_salt')` in `EmailAttemptRepository::recipientHash()` stays true for the rest of the
+  process, and every later unstubbed call throws. Those tests had only ever passed by taking the fallback
+  branch -- i.e. by suite order. Fixed by stubbing `wp_salt` where the code path needs it.
+- **Theme (1)** -- spec 071 added a raw `font-size: 1em` that token governance rejects; it now carries the
+  repo's documented `corex-token-allow` escape hatch, like the `inline-size`/`block-size` beside it.
+
+Result: 070 = 1292/0, 071 = 1370/0, 072 = 1426/0 unit; 072 integration 186/0. Lesson recorded because the
+failure mode was *reporting*, not code: an empty check-rollup on a stacked PR is not evidence of green, and
+"pre-existing" is a claim that must be verified against the base branch before it is written down.
+
 Status: Final.

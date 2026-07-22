@@ -36,6 +36,7 @@ final class ActivityEvent
     public const AREA_SETTINGS    = 'settings';
     public const AREA_OPERATIONS  = 'operations';
     public const AREA_SECURITY    = 'security';
+    public const AREA_NOTIFICATIONS = 'notifications';
     public const AREA_ACCESS      = 'access';
     public const AREA_THEME       = 'theme';
     public const AREA_DOCS        = 'docs';

@@ -159,7 +159,7 @@ use Corex\Mail\UnavailableSubmissionEmailGateway;
 final class ConfigServiceProvider extends ServiceProvider
 {
     private const FOUNDATION_SCHEMA_OPTION  = 'corex_product_foundation_schema_version';
-    private const FOUNDATION_SCHEMA_VERSION = '2';
+    private const FOUNDATION_SCHEMA_VERSION = '3';
 
     public function register(): void
     {
@@ -187,6 +187,8 @@ final class ConfigServiceProvider extends ServiceProvider
         // The shared append-only activity stream (spec 068) is the authoritative audit source for
         // every CoreX product area. Persistence remains behind the core repository contract.
         $this->container->singleton(ActivityTable::class);
+        $this->container->singleton(\Corex\Config\Notifications\NotificationTable::class);
+        $this->container->singleton(\Corex\Config\Notifications\NotificationUserStateTable::class);
         $this->container->singleton(ActivityController::class);
         $this->container->singleton(WpActivityRepository::class);
         $this->container->singleton(
@@ -199,6 +201,44 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(ActivityRepository::class),
             ),
         );
+        $this->container->singleton(\Corex\Config\Notifications\WpNotificationRepository::class);
+        $this->container->singleton(
+            \Corex\Notifications\NotificationRepository::class,
+            static fn (ContainerInterface $c): \Corex\Notifications\NotificationRepository => $c->make(\Corex\Config\Notifications\WpNotificationRepository::class),
+        );
+        $this->container->singleton(
+            \Corex\Notifications\NotificationService::class,
+            static fn (ContainerInterface $c): \Corex\Notifications\NotificationService => new \Corex\Config\Notifications\NotificationServiceImpl(
+                $c->make(\Corex\Notifications\NotificationRepository::class),
+            ),
+        );
+        // The dependency-aware boot seam for notification producers (spec 072 FR-014). Concrete
+        // producers add themselves to this registry at boot; register() wires up only the available
+        // ones. Kept as a singleton so every producer registers against the same instance.
+        $this->container->singleton(\Corex\Notifications\NotificationProducerRegistry::class);
+
+        // Per-user notification preferences live in user meta (spec 072 FR-020) — per-user, low-volume,
+        // WordPress-native data, so no custom table.
+        $this->container->singleton(
+            \Corex\Notifications\NotificationPreferenceStore::class,
+            static fn (ContainerInterface $c): \Corex\Notifications\NotificationPreferenceStore => $c->make(\Corex\Config\Notifications\WpNotificationPreferenceStore::class),
+        );
+
+        // Retention: the notification store as a PrunableStore, swept by the framework's first
+        // recurring job (spec 072 FR-022). RetentionSweep is seeded with the stores it prunes.
+        $this->container->singleton(
+            \Corex\Config\Retention\NotificationRetention::class,
+            static fn (ContainerInterface $c): \Corex\Config\Retention\NotificationRetention => new \Corex\Config\Retention\NotificationRetention(
+                $c->make(\Corex\Notifications\NotificationRepository::class),
+            ),
+        );
+        $this->container->singleton(
+            \Corex\Config\Retention\RetentionSweep::class,
+            static fn (ContainerInterface $c): \Corex\Config\Retention\RetentionSweep => new \Corex\Config\Retention\RetentionSweep([
+                $c->make(\Corex\Config\Retention\NotificationRetention::class),
+            ]),
+        );
+        $this->container->singleton(\Corex\Config\Retention\RetentionScheduler::class);
 
         $this->container->singleton(
             CorexAbilityCatalog::class,
@@ -236,6 +276,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(AccessUserDirectory::class),
                 $c->make(ActivityService::class),
                 $c->has(\Corex\Mail\RoutedMailer::class) ? $c->make(\Corex\Mail\RoutedMailer::class) : null,
+                $c->make(\Corex\Events\EventDispatcher::class),
             ),
         );
         $this->container->singleton(AbilityCompatibility::class);
@@ -617,17 +658,29 @@ final class ConfigServiceProvider extends ServiceProvider
         $jobTable = $this->container->make(JobTable::class);
         $loginAttemptTable = $this->container->make(\Corex\Config\Security\LoginProtection\LoginAttemptTable::class);
         $readingEventTable = $this->container->make(ReadingEventTable::class);
+        $notificationTable = $this->container->make(\Corex\Config\Notifications\NotificationTable::class);
+        $notificationUserStateTable = $this->container->make(\Corex\Config\Notifications\NotificationUserStateTable::class);
         $this->container->make(ManagedTables::class)->register($jobTable->managed());
         $this->container->make(ManagedTables::class)->register($loginAttemptTable->managed());
         $this->container->make(ManagedTables::class)->register($readingEventTable->managed());
+        $this->container->make(ManagedTables::class)->register($notificationTable->managed());
+        $this->container->make(ManagedTables::class)->register($notificationUserStateTable->managed());
         $this->installFoundationSchema([
             $activityTable->schema(),
             ...$accessTables->schemas(),
             $jobTable->schema(),
             $loginAttemptTable->schema(),
             $readingEventTable->schema(),
+            $notificationTable->schema(),
+            $notificationUserStateTable->schema(),
         ]);
         $this->container->make(AbilityCompatibility::class)->register();
+        $this->registerNotificationProducers();
+        $this->container->make(\Corex\Config\Notifications\NotificationBell::class)->register();
+        $this->container->make(\Corex\Config\Notifications\NotificationToolbar::class)->register();
+        $this->container->make(\Corex\Config\Retention\RetentionScheduler::class)->register();
+        $this->container->make(\Corex\Config\Notifications\CommandCenterWidget::class)->register();
+        $this->container->make(\Corex\Config\Notifications\OptionalDashboardWidgets::class)->register();
         add_action('init', [$this->container->make(WpSubmissionExportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataImportStore::class), 'registerPostType']);
         add_action('init', [$this->container->make(WpDataExportStore::class), 'registerPostType']);
@@ -675,6 +728,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(KitActivationNotice::class)->register();
         $this->container->make(DataAdminScreen::class)->register();
         $this->container->make(InsightsScreen::class)->register();
+        $this->container->make(\Corex\Config\Notifications\NotificationsScreen::class)->register();
         $this->container->make(OptionPageScreen::class)->register();
         $this->container->make(\Corex\Config\Data\DataExportController::class)->register(); // CSV export (spec 045)
 
@@ -684,7 +738,29 @@ final class ConfigServiceProvider extends ServiceProvider
             $this->container->make(DataManagementController::class)->register();
             $this->container->make(InsightsController::class)->register();
             $this->container->make(BlogProController::class)->register();
+            $this->container->make(\Corex\Config\Notifications\NotificationController::class)->register();
         });
+    }
+
+    /**
+     * Contribute the concrete notification producers, then wire the available ones. Each producer is
+     * dependency-aware (spec 072 FR-014): a producer whose module is absent registers nothing. New
+     * producers are added here as their subsystems gain a signal to consume.
+     */
+    private function registerNotificationProducers(): void
+    {
+        $registry = $this->container->make(\Corex\Notifications\NotificationProducerRegistry::class);
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\SubmissionNotificationProducer::class));
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\AccessRequestNotificationProducer::class));
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\JobFailureNotificationProducer::class));
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\ExportReadyNotificationProducer::class));
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\LoginLockoutNotificationProducer::class));
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\SubmissionAssignedNotificationProducer::class));
+        // Registered unconditionally; its isAvailable() (class_exists on the addon event) keeps it inert
+        // when the Email Studio addon is absent, exactly like every other dependency-aware producer.
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\EmailStudioFailureNotificationProducer::class));
+        $registry->add($this->container->make(\Corex\Config\Notifications\Producers\ReadinessNotificationProducer::class));
+        $registry->register();
     }
 
     /** @param list<\Corex\Database\Schema\Table> $schemas */

@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Access\AccessChangePreview;
 use Corex\Access\AccessPolicy;
+use Corex\Access\AccessRequestedEvent;
 use Corex\Access\AccessRequestStore;
 use Corex\Access\AccessUserDirectory;
 use Corex\Access\CorexAbility;
@@ -19,6 +20,7 @@ use Corex\Access\CorexAbilityCatalog;
 use Corex\Access\RoleAbilityStore;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
+use Corex\Events\EventDispatcher;
 use Corex\Operations\Confirmation;
 use Corex\Operations\OperationResult;
 use Corex\Mail\RoutedMailer;
@@ -42,6 +44,7 @@ final class AccessService
         private readonly AccessUserDirectory $users,
         private readonly ActivityService $activity,
         private readonly ?RoutedMailer $notifications = null,
+        private readonly ?EventDispatcher $events = null,
     ) {
     }
 
@@ -186,6 +189,15 @@ final class AccessService
                 'email' => $this->users->emailAddress($requesterId),
             ],
         ]);
+
+        // Surface the pending request in the Notification Center, independently of the email channel.
+        $this->events?->dispatch(new AccessRequestedEvent(
+            requestId: $requestId,
+            requesterId: $requesterId,
+            requesterName: $this->users->displayName($requesterId),
+            abilityKey: $abilityKey,
+            areaKey: $areaKey,
+        ));
 
         return new OperationResult(
             operationId: Uuid::v4(),

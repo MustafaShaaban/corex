@@ -6,8 +6,58 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **A Notification Center: CoreX can now tell you what needs your attention.** The framework already recorded
+  what happened — activity, jobs, access grants, email attempts — but nothing said *this needs you*. A failed
+  email, a submission assigned to you, a job that died or a readiness blocker left no signal you could act on;
+  you found out by stumbling onto it. Notifications are recipient-aware and resolvable, deliberately not a
+  second activity log: activity is the durable record of what happened, a notification is a targeted nudge for
+  specific people. Eight producers feed it — new and assigned submissions, notification-email failure, Email
+  Studio delivery failure, job failure, export ready, access request, login lockout, and readiness blockers —
+  each publishing through one service rather than reaching into another module's tables. Repeat occurrences of
+  the same condition merge into a single escalating item by dedup key instead of a hundred rows, a resolved
+  condition reopens if it recurs, and one user dismissing a shared notification never resolves it for everyone
+  else. Every read re-checks a single visibility predicate (`NotificationRecipient::canBeSeenBy`), so losing an
+  ability stops you seeing what it granted; recipients are targetable by user, ability, assignment or category
+  administrators, never by hard-coded WordPress roles.
+- **Where it appears.** A keyboard-operable bell in the CoreX header on every screen, showing your real unread
+  count and opening a focus-trapped drawer that returns focus where it came from; a full `CoreX →
+  Notifications` screen with saved views (Inbox, Requires attention, Assigned to me, Submissions, Security,
+  System, Updates, History) each a bounded server-side filter; an admin-toolbar entry off CoreX screens, which
+  never appears at the same time as the header bell; and an *Attention Required* card on Overview beside Recent
+  Activity. Access is governed by a new **Manage notifications** ability, which administrators inherit.
+- **Per-category preferences, with a floor.** You can mute categories you do not want in-app, but security,
+  system and operations are mandatory and cannot be switched off — enforced in the value object rather than by
+  whatever happens to be stored, so a hand-edited record cannot silence them either. Preferences live in user
+  meta rather than a managed table (DECISIONS #152).
+- **The framework's first recurring job.** A daily WP-Cron retention sweep prunes notifications older than 90
+  days, and only ones already resolved or expired — an unresolved condition is never pruned out from under you.
+  Permanent audit evidence stays in Activity, not in unbounded notification history.
+- **A Command Center on the WordPress dashboard.** Site operating state, your attention count and the readiness
+  blocker count, each a navigation link into CoreX and never an action. It runs local checks only: rendering it
+  makes no outbound HTTP request, which is asserted by a test rather than assumed. Two further widgets —
+  *Attention* and a Development-only one — are opt-in under `CoreX → Settings → Dashboard`, are never registered
+  for someone with no data to show, and the Development widget never appears outside Development.
+- **`GET /corex/v1/notifications` and its two-tier gate.** Reading and acting on your own notifications needs a
+  signed-in user and a REST nonce; resolving a shared condition additionally needs Manage notifications. The
+  service re-checks visibility on every call, so one user can never touch another's.
+
 ### Fixed
 
+- **A notification filter that was advertised and never applied.** `GET /notifications?status=read` was accepted
+  at the REST boundary, validated against the status vocabulary, documented as a per-user status filter — and
+  then ignored by every read, returning everything with a `200` and no indication the filter had done nothing.
+  `NotificationStatus` likewise described itself as derived from the record plus the user's state row while
+  nothing derived it, leaving each consumer to invent the precedence. There is now one derivation
+  (`NotificationStatus::derive`) with the collisions pinned by tests — resolved outranks expired, which outranks
+  a dismissal, then an unelapsed snooze, then read — the actor-scoped read applies it before pagination so the
+  total and the page agree, and every item carries its derived status so nothing re-implements it. Two surfaces
+  had been compensating for the gap: the drawer refetched unfiltered while its own mark-read removed items, so
+  anything you read reappeared when you reopened it, and it disagreed with the bell beside it; and the unread
+  count excluded only read and dismissed items while the list also excluded snoozed ones, so the badge could
+  promise work the screen refused to show. Both now ask for the same derived status. "Mark all as read" was also
+  marking snoozed items read, silently cancelling a reminder you had deliberately set.
 - **Editing an email template no longer fails with "Something went wrong."** Two defects stacked. WordPress
   resolves a request's JSON body before its URL parameters, and the editor was posting the stored version's own
   `id` alongside the fields it edits — so a save aimed at one template looked up a *version* id as if it were a
