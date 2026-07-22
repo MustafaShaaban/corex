@@ -38,13 +38,6 @@ const { STORAGE_STATE } = require( './global-setup' );
  */
 const CANNOT_RUN_ON_A_FRESH_INSTALL = new RegExp(
 	[
-		// Need declared data sources and records.
-		'queries source records, opens detail, and queues a declared export',
-		'renders every Data workflow from declared source capabilities',
-		// Both need the account page its beforeAll builds, which does not come up on a fresh
-		// install — the second reported 0ms because the shared setup had already failed.
-		'the guest account block renders the sign-in, register, and recovery forms',
-		'the account surface does not scroll sideways at 375px',
 		// Needs stored submissions to filter, assign and export.
 		'filters works assigns notes bulk actions and audits personal-data exports',
 		// Need the block editor (see above).
