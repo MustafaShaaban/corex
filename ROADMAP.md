@@ -39,8 +39,9 @@ Approved design work moves from design inventory to a focused handoff, then to a
 - **Done:** the core framework foundations, stable-client readiness work, Spec 056 dependency/security remediation,
   CI and CodeQL verification, GitHub branch-protection review, and the repository-side design inventory/handoff
   structure.
-- **Active now:** nothing. Spec 069 shipped in **v0.34.0**; specs 070–072 shipped in **v0.35.0**
-  (2026-07-22). No feature spec is open, and the next one is an owner decision — see §17.
+- **Active now:** nothing. Spec 069 shipped in **v0.34.0**; specs 070–072 shipped in **v0.35.0**, followed by
+  the **v0.35.1** correction release (all 2026-07-22). No feature spec is open, and the next one is an owner
+  decision — see §17.
 - **Verification baseline (v0.35.0):** CI gates **four** suites on every pull request — PHP unit, JS, integration
   against a WordPress it provisions itself, and Playwright in a browser. Before this release only the PHP unit
   job ran, and only on PRs based on `main`/`develop`, so a stacked PR was never checked at all. Local counts on
@@ -463,8 +464,9 @@ Nothing is authorized by appearing here (§16). Listed so the choice is informed
 - **The three excluded browser specs.** Two block-editor specs trade a first-open failure between them, and one
   flow-builder spec times out mid-interaction; each carries its ruled-out causes in
   `tests/e2e/playwright.config.js`. Real coverage gaps, already diagnosed down to "needs fresh eyes".
-- **`wp corex version` completeness.** It stamps 16 files but not `docs-app/src/version.ts`, which was bumped by
-  hand for v0.35.0 — a release can ship with the docs site advertising the previous version and nothing catches it.
+- ~~**`wp corex version` completeness.**~~ Closed by PR #126 in **v0.35.1** — the command now stamps 17 files
+  including `docs-app/src/version.ts`, so a release can no longer ship with the docs site advertising the
+  previous version.
 - **M3/M4 product tracks** (§6–§7), which remain the substantive product direction and are the only items here
   that would be a *feature* spec rather than remediation.
 

@@ -4,7 +4,24 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-22) -- **v0.35.0 RELEASED. All five open PRs merged; `main` green on four CI suites.**
+## RESUME HERE (2026-07-22) -- **v0.35.1 RELEASED** (correction release, tag `v0.35.1` = `ec6b48e`, on GitHub + Azure).
+
+Three fixes, no new capability: issue **#114** (a form registered in code through `FormRegistry` could be
+listed but not filtered — the filter was built only from DB flows and the inbox matched `corex_flow_id`,
+which those submissions do not carry), the login screen's remember-me row + language selector (PR #123),
+and **`wp corex version` now reaching `docs-app/src/version.ts`** (PR #126). That last one closes the gap
+flagged during the v0.35.0 release: the command stamped 16 files and missed the one that tells the docs
+site which version it describes, so a release could ship with the documentation advertising the previous
+version and nothing catching it — v0.35.0 did. **It stamps 17 files now, and v0.35.1 is the first release
+stamped entirely by the command with nothing bumped by hand.**
+
+Gate: all five CI checks green on PR #127 (PHP unit, JS, integration, Playwright, CodeQL). Locally
+**unit 1453** (6304 assertions), **JS 306** (57 suites).
+
+**Nothing is in flight.** The next spec remains the owner decision described below.
+
+---
+## (previous, 2026-07-22) -- **v0.35.0 RELEASED. All five open PRs merged; `main` green on four CI suites.**
 
 **Merged, in this order** (each verified green before the next): **#121** dependency advisory remediation →
 **#120** CI on every PR + integration + browser suites → **#117** spec 070 → **#118** spec 071 → **#119**
@@ -44,9 +61,9 @@ and `upstream`/Azure — `main` is `1eb5093` on both):
 **Still open, recorded not forgotten:** three browser specs excluded with evidence (two block-editor
 first-open, one flow-builder — see `tests/e2e/playwright.config.js`); the next spec is now an **owner
 decision** between the candidates in ROADMAP.md §17 (cheapest first: the Astro 7 migration whose four
-bounded exceptions expire 2026-09-30, `wp corex version` not reaching `docs-app/src/version.ts`, the three
-excluded browser specs; M3/M4 are the only real feature direction); `develop` is ~40 commits behind `main`
-and effectively retired; T021 (`NotificationChannelPolicy`) deliberately unbuilt.
+bounded exceptions expire 2026-09-30, then the three excluded browser specs; M3/M4 are the only real
+feature direction — the `docs-app/src/version.ts` item was closed by PR #126 in v0.35.1); `develop` is ~40
+commits behind `main` and effectively retired; T021 (`NotificationChannelPolicy`) deliberately unbuilt.
 
 ---
 ## (previous, 2026-07-22) -- Spec 072 (Notification Center & Command Center) COMPLETE + gated on `spec/072-notification-center-and-dashboard`; **PR #119 open, blocked only on human review + the 070→071→072 stack merge**. Everything below is the build log for that branch.
