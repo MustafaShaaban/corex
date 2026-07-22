@@ -124,7 +124,21 @@ jobs:
           # falls through to the registry form named by formSlug, which defaults to "contact".
           wp post create --path=wp --post_type=page --post_status=publish \
             --post_title=Contact --post_name=contact --post_content='<!-- wp:corex/form /-->'
+
+          # Stored submissions, for the Submissions inbox and the Data source-records spec. Shape
+          # taken from WpSubmissionsReader: private posts, the form slug in corex_form_slug, one
+          # corex_field_* per field, and no corex_is_test flag (test rows are filtered out).
+          for i in 1 2 3; do
+            id=$(wp post create --path=wp --post_type=corex_submission --post_status=private \
+              --post_title="Contact submission ${i}" --porcelain)
+            wp post meta set "$id" corex_form_slug contact --path=wp
+            wp post meta set "$id" corex_field_name "Fixture ${i}" --path=wp
+            wp post meta set "$id" corex_field_email "fixture${i}@example.com" --path=wp
+            wp post meta set "$id" corex_field_message "Seeded for CI run ${i}." --path=wp
+          done
+
           wp post list --path=wp --post_type=page --fields=post_name,post_status
+          wp post list --path=wp --post_type=corex_submission --post_status=private --fields=ID,post_title
 
       - name: Set up Node
         uses: actions/setup-node@v6
