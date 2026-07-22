@@ -16,9 +16,17 @@ test( 'the block editor loads with no console errors', async ( { page } ) => {
 	// `networkidle` is unreliable here — the editor keeps connections open (heartbeat),
 	// so it may never idle. Wait for a concrete interactive signal instead: the editor
 	// toolbar's inserter toggle being visible means the editor hydrated.
+	// Explicit timeout: this is the first spec to open the editor, so it pays the cold cost —
+	// assets uncached, OPcache empty. smoke.spec.js asserts the same locator and passes because it
+	// runs later against a warm one. The default 5s expect timeout is what fails here, not the
+	// editor; the test's own 60s budget still bounds it.
 	await expect(
-		page.getByRole( 'button', { name: /block inserter|toggle block inserter|add block/i } ).first()
-	).toBeVisible();
+		page
+			.getByRole( 'button', {
+				name: /block inserter|toggle block inserter|add block/i,
+			} )
+			.first()
+	).toBeVisible( { timeout: 30_000 } );
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
