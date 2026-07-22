@@ -275,6 +275,28 @@ a browser would need 100+ seeded rows to learn nothing new. `lint-js` clean (als
 lint errors the file carried). Task list reconciled: T014's preferences sub-item, T015 "drawer finish", and
 T016 "screen finish" were all completed earlier but left unticked — now closed with their real resolutions.
 
+**STACK CI REPAIRED (2026-07-22) — the whole 070→071→072 stack is now green.** PR #117's CI was **failing**
+and its merge state BLOCKED; #118 and #119 had **never run CI at all** (`.github/workflows/ci.yml` triggers
+only on PRs targeting `main`/`develop`, and those two target their parent branches — an empty check-rollup
+read as "no failures" when it actually meant "never tested"). Fixed at the source branch of each defect:
+- **`spec/070` (e8294f5)** — `LoginRouteGuardTest`'s blanket `expect('add_action')->never()` was invalidated
+  by spec 070's own `restoreBlockStyles()`. Scoped the expectation to the emoji hook it was always about,
+  and added the test `restoreBlockStyles()` shipped without (mutation-verified: removing the production call
+  fails the new test). **1292 passed / 0 failed.** CI on #117 now green (27s), merge state clear.
+- **`spec/071` (ff4f989)** — six Email tests died on `wp_salt is not defined nor mocked`: Brain Monkey
+  defines a stub into the global namespace *permanently*, so spec 071's new `TokenReplayGuardTest` stub made
+  `function_exists('wp_salt')` true forever and `EmailAttemptRepository::recipientHash()` blew up in every
+  later test. They had only passed by suite order. Plus one token-governance violation (`font-size: 1em` on
+  a dashicon → documented `corex-token-allow`). **1370 passed / 0 failed.**
+- **`spec/072` (3b1667f)** — merged 071 down. **Unit 1426 passed / 0 failed; integration 186 passed / 0
+  failed; 6 e2e green.**
+
+**Correction to the record:** the "8 pre-existing unrelated failures" this file and T028 previously reported
+were **not** pre-existing and **not** unrelated — `main` has none of them; the stack introduced all eight.
+DECISIONS #153. **Merging is now the only remaining step and needs the owner** — the merge command is
+permission-gated in the agent environment, so #117 → #118 → #119 must be merged by hand (all three are green
+and mergeable).
+
 **Remaining — all optional / deferred, none blocking:** T024 opt-in widgets + Development-only rules; T021
 `NotificationChannelPolicy` (speculative until an email delivery channel exists — the producers already tag
 mail failures `email` for it); the assigned-to-me/updates/history screen views (need a recipient/resolved

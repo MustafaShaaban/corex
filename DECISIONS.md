@@ -3017,3 +3017,36 @@ schema 3->4 bump (rejected: reinvents user meta for no benefit -- no cross-user 
 never prunes it); a single site option (rejected: preferences are per-user, not global).
 
 Status: Final.
+
+## #153 -- The 070/071/072 stack was never tested by CI, and its "pre-existing" failures were its own
+
+Date: 2026-07-22
+
+Decision: stacked PRs must be verified with a full local suite run on each branch before they are queued
+for merge, and the CI trigger's blind spot is treated as a known gap rather than assumed coverage.
+
+Why: `.github/workflows/ci.yml` triggers only on `pull_request: branches: [main, develop]`. PR #118 targeted
+`spec/070` and PR #119 targeted `spec/071`, so **neither ever ran CI** -- `gh run list` for those branches
+returns empty, and their status rollups were empty, which reads as "no failures" rather than "never tested".
+The one branch CI did test (#117, base `main`) failed.
+
+What that hid: eight unit failures that earlier gate notes recorded as "8 pre-existing unrelated failures
+(Email mock-ordering, Security emoji-shim, Theme SCSS)". They were not pre-existing and not unrelated --
+every one was introduced by this stack, and `main` has none of them:
+- **Security (1)** -- spec 070 added `restoreBlockStyles()` to `dropAdminContext()`, which registers a hook
+  unconditionally. A spec-069 test asserted `Functions\expect('add_action')->never()` -- a blanket
+  expectation that forbids the method ever hooking anything again, rather than the emoji-specific claim its
+  name made. Scoped it with `->with(...)`, and added the test `restoreBlockStyles()` never had.
+- **Email (6)** -- spec 071's new `TokenReplayGuardTest` stubs `wp_salt`. Brain Monkey defines a stubbed
+  function into the global namespace **permanently** (PHP cannot undefine one), so
+  `function_exists('wp_salt')` in `EmailAttemptRepository::recipientHash()` stays true for the rest of the
+  process, and every later unstubbed call throws. Those tests had only ever passed by taking the fallback
+  branch -- i.e. by suite order. Fixed by stubbing `wp_salt` where the code path needs it.
+- **Theme (1)** -- spec 071 added a raw `font-size: 1em` that token governance rejects; it now carries the
+  repo's documented `corex-token-allow` escape hatch, like the `inline-size`/`block-size` beside it.
+
+Result: 070 = 1292/0, 071 = 1370/0, 072 = 1426/0 unit; 072 integration 186/0. Lesson recorded because the
+failure mode was *reporting*, not code: an empty check-rollup on a stacked PR is not evidence of green, and
+"pre-existing" is a claim that must be verified against the base branch before it is written down.
+
+Status: Final.
