@@ -17,7 +17,11 @@ test( 'the block editor loads with no console errors', async ( { page } ) => {
 	// so it may never idle. Wait for a concrete interactive signal instead: the editor
 	// toolbar's inserter toggle being visible means the editor hydrated.
 	await expect(
-		page.getByRole( 'button', { name: /block inserter|toggle block inserter|add block/i } ).first()
+		page
+			.getByRole( 'button', {
+				name: /block inserter|toggle block inserter|add block/i,
+			} )
+			.first()
 	).toBeVisible();
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );

@@ -17,9 +17,20 @@ use Corex\Config\Security\LoginProtection\WpLoginAttemptStore;
 
 beforeEach(function () {
     $this->previousLoginSettings = get_option(LoginProtectionSettingsStore::OPTION, null);
+
+    // LoginRouteGuard matches the custom slug by PATH under pretty permalinks and by QUERY STRING
+    // under plain ones, so these tests silently depended on whatever the host site had configured:
+    // they passed on a dev install with pretty permalinks and failed on a fresh WordPress, which is
+    // what CI provisions. Pin it — the subject here is the break-glass, not the permalink mode.
+    $this->previousPermalinks = get_option('permalink_structure');
+    update_option('permalink_structure', '/%postname%/');
 });
 
 afterEach(function () {
+    if (property_exists($this, 'previousPermalinks')) {
+        update_option('permalink_structure', $this->previousPermalinks);
+    }
+
     if (! property_exists($this, 'previousLoginSettings')) {
         return;
     }
