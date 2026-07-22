@@ -37,8 +37,10 @@ const CANNOT_RUN_ON_A_FRESH_INSTALL = new RegExp(
 		'redirects the retired Data address to the Records tab',
 		'queries source records, opens detail, and queues a declared export',
 		'renders every Data workflow from declared source capabilities',
-		// Needs a page carrying the guest-account block.
+		// Both need the account page its beforeAll builds, which does not come up on a fresh
+		// install — the second reported 0ms because the shared setup had already failed.
 		'the guest account block renders the sign-in, register, and recovery forms',
+		'the account surface does not scroll sideways at 375px',
 		// Needs login protection configured with a custom slug.
 		'the default login and admin endpoints 404 without leaking a diagnostic',
 		// Need stored submissions.
