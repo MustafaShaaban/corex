@@ -291,11 +291,15 @@ read as "no failures" when it actually meant "never tested"). Fixed at the sourc
 - **`spec/072` (3b1667f)** — merged 071 down. **Unit 1426 passed / 0 failed; integration 186 passed / 0
   failed; 6 e2e green.**
 
-**CI now gates three suites, and the local provisioner was broken for fresh clones — all on PR #120.**
+**CI now gates FOUR suites, and the local provisioner was broken for fresh clones — all on PR #120.**
+Final state, all green in one run: **PHP unit 1291 · JS 240 (38 suites) · integration 158 · browser 42**.
 Beyond the trigger fix below, that branch adds a **`js` job** (`npm run test:js`, which *nothing* in CI ran —
 that is how a stale committed token-inventory artifact survived spec 072's CSS additions while the gate
-reported every suite green) and an **`integration` job** that provisions MySQL 8 + WordPress and runs the
-**real-WordPress suite in CI for the first time**. Getting it green took three rounds, each exposing a genuine
+reported every suite green), an **`integration` job** that provisions MySQL 8 + WordPress and runs the
+**real-WordPress suite in CI for the first time**, and a **`browser` job** running Playwright against that
+site served by **nginx + php-fpm**. Provisioning lives in the composite action
+`.github/actions/provision-wordpress`, shared by both WordPress jobs so they cannot drift, mirroring
+`scripts/setup-wordpress.ps1`. Getting it green took three rounds, each exposing a genuine
 defect rather than a workflow typo:
 - **Plugin activation order** — `corex-blocks`/`corex-config` declare `Requires Plugins: corex-core` and WP-CLI
   activates in the order given, so an alphabetical list fails ("Only activated 2 of 4"). The same bug was in
@@ -317,6 +321,26 @@ exists. Now uses `wp config set --raw --type=constant` (no pipe), activates `cor
 checks `$LASTEXITCODE` on every must-succeed step. Re-verified end to end: **15/15 plugins active on a clean
 install**, scratch DB and directory removed, live site still 200. `tests/bootstrap-integration.php` also now
 **exits 1** when `./wp` is absent instead of running the suite against no WordPress at all. DECISIONS #154.
+
+**The browser job also exposed a Linux-only build break and a pile of wrong assumptions — mine.**
+`npm run build` failed on any case-sensitive filesystem: `src/admin/index.js` imported `../access/` and
+`../blog/` while the committed directories are `Access` and `Blog`, so **no non-Windows contributor could
+build the admin bundle**. Nobody noticed because the build only ever ran on Windows. Then the browser suite
+went **19 → 42** passing, mostly by fixing the *site* rather than seeding fixtures: the CI install defaulted
+to **plain permalinks**, under which WordPress ignores the path — every URL served the home page (200, never
+404) and `/wp-json/` did not resolve. Five specs I had excluded as "needs seeded content" were collateral from
+that one setting, and one had been *passing against the home page*. Only two genuinely needed fixtures
+(a `/contact/` page; three `corex_submission` rows). **Lesson recorded in `tests/e2e/playwright.config.js`:
+read the failing assertion before seeding anything.**
+
+**Three browser specs stay excluded, with evidence rather than guesses.** Two block-editor specs trade the
+failure — whichever opens the editor *first* fails to see the inserter, and excluding one hands that slot to
+the other (demonstrated both ways). A captured trace rules out console errors, failed requests, `php -S` vs
+nginx, worker starvation and the welcome-guide modal; the editor header renders just after the assertion
+gives up, yet budgets of 30s/45s/120s/150s all fail and the largest destabilised neighbouring specs. The
+flow-builder spec times out mid-interaction and is *not* shown to be environmental — possibly a real slow
+path. Also noted: `trace: 'retain-on-failure'` is opt-in behind `COREX_E2E_TRACE`, because recording every
+test reproducibly broke a timing-sensitive spec.
 
 **The CI gap itself is fixed — PR #120 (`fix/ci-run-on-every-pr`, base `main`, opened 2026-07-22).** Drops the
 `branches: [main, develop]` filter from the `pull_request` trigger in `ci.yml`, `codeql.yml`, and
