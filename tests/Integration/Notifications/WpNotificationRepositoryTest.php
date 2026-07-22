@@ -183,6 +183,27 @@ it('agrees with the unread view: a snoozed notification is neither counted nor l
         ->and($listed['total'])->toBe(0);
 });
 
+it('marks all read without trampling a snooze the user deliberately set', function () {
+    // "Mark all as read" is offered from surfaces that show only unread items. Marking a snoozed
+    // item read would silently cancel its resurfacing — the user asked to be reminded later, not to
+    // have it filed away — so the sweep must touch only what is actually unread.
+    $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'sweep.unread:1'));
+    $snoozed = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'sweep.snoozed:1'));
+    $this->repo->snooze((int) $snoozed->id, 7, new DateTimeImmutable('+1 day'));
+
+    $marked = $this->repo->markAllVisibleRead(7, $this->allow);
+
+    $stillSnoozed = $this->repo->queryForActor(
+        NotificationQuery::fromRequest(['status' => 'snoozed']),
+        7,
+        $this->allow,
+    );
+
+    expect($marked)->toBe(1)                                            // only the unread one
+        ->and($this->repo->unreadCountForActor(7, $this->allow))->toBe(0) // badge still clears
+        ->and($stillSnoozed['total'])->toBe(1);                          // snooze survives
+});
+
 it('keeps per-user read state private to each user', function () {
     $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUsers([7, 8])));
 

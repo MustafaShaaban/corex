@@ -197,8 +197,19 @@ final class WpNotificationRepository implements NotificationRepository
     public function markAllVisibleRead(int $actorId, callable $userCan): int
     {
         $candidates = $this->candidates(NotificationQuery::fromRequest([], 1, self::MAX_CANDIDATES));
+        // Only what is actually unread. Marking a snoozed item read would silently cancel the
+        // reminder the user asked for, and marking an already-read, dismissed, or resolved one
+        // achieves nothing — the surfaces that offer this action show unread items, so its effect
+        // should match what they show.
+        $state = $this->stateFor(
+            array_map(static fn (Notification $n): int => (int) $n->id, $candidates),
+            $actorId,
+        );
         $marked = 0;
         foreach ($candidates as $n) {
+            if ($this->statusOf($n, $state) !== NotificationStatus::UNREAD) {
+                continue;
+            }
             if ($n->recipient->canBeSeenBy($actorId, $userCan) && $this->markRead((int) $n->id, $actorId)) {
                 $marked++;
             }
