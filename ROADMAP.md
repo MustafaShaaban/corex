@@ -39,12 +39,14 @@ Approved design work moves from design inventory to a focused handoff, then to a
 - **Done:** the core framework foundations, stable-client readiness work, Spec 056 dependency/security remediation,
   CI and CodeQL verification, GitHub branch-protection review, and the repository-side design inventory/handoff
   structure.
-- **Active now:** M2 — Spec 057 is **implementation-complete (T001-T090)**: canonical tokens, accessible
-  modes/typography/RTL, the four-file font package, the approved Core X logo package, the brand-override validator,
-  the scoped `--corex-admin-*` admin adapter, and the design-system/branding documentation. Full `composer test`
-  661 pass, `test:js` 97 pass, build + docs-app build + `verify:dependencies` PASS. M0 remains closed (v0.27.0).
-- **Next:** PR #54 review (it is ready to mark ready-for-review); collect the env-gated wp-env/browser evidence
-  when Docker + a compatible browser runtime are available. No asset or code blockers remain.
+- **Active now:** nothing. Spec 069 shipped in **v0.34.0**; specs 070–072 shipped in **v0.35.0**
+  (2026-07-22). No feature spec is open, and the next one is an owner decision — see §17.
+- **Verification baseline (v0.35.0):** CI gates **four** suites on every pull request — PHP unit, JS, integration
+  against a WordPress it provisions itself, and Playwright in a browser. Before this release only the PHP unit
+  job ran, and only on PRs based on `main`/`develop`, so a stacked PR was never checked at all. Local counts on
+  `main`: unit 1452, JS 306. **CI is the authority for integration and browser runs**: a long-lived dev install
+  accumulates state a freshly provisioned one does not, which is why two Forms integration specs fail locally
+  and pass in CI.
 - **Blocked:** M3 cannot enter engineering without an approved navigation handoff and the reviewed M2 token
   contract. M4 cannot start until the minimum M2/M3 foundations and selected M5 components are ready.
 - **Not authorized:** roadmap presence does not authorize implementation, Pro work, builders, or bulk spec creation.
@@ -395,7 +397,14 @@ These items require later validation and dedicated specs. They must not leak int
 
 ## 17. Current and next recommended specs
 
-> **Active direction (2026-07-03, owner correction): Spec 068 — Product Functional Completion.**
+> **Status (2026-07-22): no spec is active.** Spec 068's completion audit passed, and specs 069–072 have
+> shipped in v0.34.0/v0.35.0. The standing rule below still governs everything built since — the approved
+> current design is the functional contract, and a required control may not remain a placeholder — but it is
+> no longer an *active direction*, because there is nothing open under it. Choosing the next spec is an owner
+> decision; candidates are listed at the end of this section.
+>
+> **Superseded framing, kept because the rule it states still applies (2026-07-03, owner correction):
+> Spec 068 — Product Functional Completion.**
 > The approved current design is the functional contract. A required current control may not remain sample,
 > planned, future, reference-only, read-only, placeholder-only, or dead. An absent optional dependency may gate its
 > dependent behavior only with a working install/activate/connect path. Spec 068 supersedes the earlier Spec
@@ -425,6 +434,39 @@ Create and implement one reviewed spec at a time:
    Playwright specs (not code regressions) — see `specs/068-admin-product-functional-completion/evidence.md`
    §Final Verification and Decision #138. Source: `specs/068-admin-product-functional-completion/`.
 
+6. **Spec 069 - Admin correctness and login-hiding parity** — done, released in **v0.34.0**. Login hiding stopped
+   announcing itself, the Insights/Overview grids gained one column rhythm, and every admin selection control
+   became `CorexSelect` (DECISIONS #141). Source: `specs/069-*/`.
+7. **Spec 070 - Transport error fidelity and hidden-admin style parity** — done, merged via PR #117, released in
+   **v0.35.0**. Route identity now comes from the path rather than the payload, error responses reach the screen
+   instead of being replaced by a generic message, and a hidden `/wp-admin` renders the theme's 404 properly
+   styled. Source: `specs/070-*/`.
+8. **Spec 071 - Form delivery reliability and reCAPTCHA v3** — done, merged via PR #118, released in **v0.35.0**.
+   Source: `specs/071-*/`.
+9. **Spec 072 - Notification Center and Dashboard Command Center** — done, merged via PR #119, released in
+   **v0.35.0**. Eight producers, a recipient-aware store with per-user state, REST with a two-tier gate, the
+   header bell/drawer, the full FR-018 saved views, per-category preferences, the framework's first recurring
+   job, and the Dashboard Command Center. **T021 (`NotificationChannelPolicy`) is deliberately unbuilt** — it
+   guards an email-notification loop, and no email delivery channel for notifications exists to guard yet.
+   Source: `specs/072-*/`.
+
+### Candidates for the next spec — owner decision
+
+Nothing is authorized by appearing here (§16). Listed so the choice is informed, roughly by cost:
+
+- **Astro 7 migration for `docs-app`.** The original blocker is gone: `@astrojs/starlight@0.41.3` peers
+  `astro ^7`, and astro 7.1.3 builds the docs to the same 284 pages with no config change. It is held only by a
+  packaging question — regenerating `docs-app/package-lock.json` makes npm expand the `corex-framework`
+  `file:..` workspace root into the docs tree, taking npm-docs from 5 advisories to 17. Resolving that also
+  retires four of the bounded exceptions in `.github/dependency-security-policy.json`, whose review dates fall
+  2026-09-30.
+- **The three excluded browser specs.** Two block-editor specs trade a first-open failure between them, and one
+  flow-builder spec times out mid-interaction; each carries its ruled-out causes in
+  `tests/e2e/playwright.config.js`. Real coverage gaps, already diagnosed down to "needs fresh eyes".
+- **`wp corex version` completeness.** It stamps 16 files but not `docs-app/src/version.ts`, which was bumped by
+  hand for v0.35.0 — a release can ship with the docs site advertising the previous version and nothing catches it.
+- **M3/M4 product tracks** (§6–§7), which remain the substantive product direction and are the only items here
+  that would be a *feature* spec rather than remediation.
+
 Spec number 056 remains unavailable. Specs 066 and 067 are historical branch/decision identifiers without durable
-feature directories; do not reuse them. Spec 068 is the active product contract and authorizes only the work
-explicitly traced in its reviewed tasks.
+feature directories; do not reuse them.
