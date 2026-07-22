@@ -291,6 +291,15 @@ read as "no failures" when it actually meant "never tested"). Fixed at the sourc
 - **`spec/072` (3b1667f)** — merged 071 down. **Unit 1426 passed / 0 failed; integration 186 passed / 0
   failed; 6 e2e green.**
 
+**The CI gap itself is fixed — PR #120 (`fix/ci-run-on-every-pr`, base `main`, opened 2026-07-22).** Drops the
+`branches: [main, develop]` filter from the `pull_request` trigger in `ci.yml`, `codeql.yml`, and
+`dependency-security.yml`, so every PR runs the gates whatever its base (`docs.yml`/`e2e.yml` stay
+deliberately scoped; dependency-security keeps its `paths` filter). Its own CI proves it: **CI green (35s) +
+CodeQL green**, and all three workflows triggered on the PR. `Validate dependency advisories` fails there —
+**pre-existing, not caused by this change**: Dependabot PR #115, which predates it, shows the same failure.
+That check is the repo's real advisory backlog (24 alerts) and is non-required (`mergeStateStatus` UNSTABLE,
+still MERGEABLE) — but it now surfaces on more PRs, so **the backlog is worth a spec-056 pass**.
+
 **Correction to the record:** the "8 pre-existing unrelated failures" this file and T028 previously reported
 were **not** pre-existing and **not** unrelated — `main` has none of them; the stack introduced all eight.
 DECISIONS #153. **Merging is now the only remaining step and needs the owner** — the merge command is
