@@ -125,10 +125,24 @@ if (Test-Path $addonsRoot) {
         ForEach-Object { Set-Junction (Join-Path $pluginsDir $_.Name) $_.FullName }
 }
 
-# --- 6. Activate theme + plugins (WP resolves "Requires Plugins" order) ---
+# --- 6. Activate theme + plugins ---
+# corex-core FIRST. corex-blocks and corex-config declare "Requires Plugins: corex-core", and WP-CLI
+# activates in the order it is given — an alphabetical list puts both ahead of what they depend on
+# and WP-CLI reports "Only activated 2 of 4 plugins". The previous comment here claimed WordPress
+# resolved that order; it does not. This went unnoticed because a re-run activates whatever failed
+# the first time and the exit code was never checked, so a clean run looked identical to a repaired
+# one. CI on a fresh install is where it finally showed (PR #120).
 & wp theme activate corex --path="$WpPath" | Out-Null
-$pluginSlugs = (Get-ChildItem (Join-Path $Root 'plugins') -Directory).Name
-& wp plugin activate @pluginSlugs --path="$WpPath" | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "Could not activate the Corex theme." }
+
+& wp plugin activate corex-core --path="$WpPath" | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "Could not activate corex-core, which every other plugin requires." }
+
+# Then everything else that was junctioned above, add-ons included. The integration suite resolves
+# add-on services from the container, so a site with only plugins/* active is not the environment
+# those tests assume.
+& wp plugin activate --all --path="$WpPath" | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "Could not activate every Corex plugin - see 'wp plugin list --path=$WpPath'." }
 
 # --- 7. Verify (the constitution's Environment Gate) ---
 Write-Host "`n== Verification ==" -ForegroundColor Cyan
