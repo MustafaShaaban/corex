@@ -38,11 +38,6 @@ const { STORAGE_STATE } = require( './global-setup' );
  * which matches every title and would silently skip the entire suite while reporting green.
  */
 const CANNOT_RUN_ON_A_FRESH_INSTALL = [
-	// Runs first alphabetically, so it pays the cold cost of the very first editor load and still
-	// exceeded a 30s assertion budget on nginx. The editor itself is fine: smoke.spec.js asserts
-	// the identical inserter locator later, against a warm editor, and passes. Not worth inflating
-	// timeouts further for a signal that spec already provides.
-	'the block editor loads with no console errors',
 	// The flow builder times out mid-interaction (locator.click, 60s) even on nginx, where the
 	// block editor itself now works. Not diagnosed further — unlike the editor specs, this one has
 	// not been shown to be environmental, so it may be a real slow path worth its own look.
