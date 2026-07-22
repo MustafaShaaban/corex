@@ -128,9 +128,11 @@ jobs:
           # activates in the order it is given — alphabetically that puts corex-blocks and
           # corex-config ahead of corex-core, and both refuse with an unmet requirement.
           wp plugin activate corex-core --path=wp
-          wp plugin activate \
-            $(ls -d plugins/*/ | xargs -n1 basename | grep -vx 'corex-core' | tr '\n' ' ') \
-            --path=wp
+          # Then everything else that was linked, add-ons included. The local script activates only
+          # plugins/*, but a long-lived dev install has the add-ons switched on too, and the
+          # integration suite resolves their services from the container — without them the Bookings,
+          # Careers, Newsletter and Profile tests fail on BindingResolutionException.
+          wp plugin activate --all --path=wp
           wp plugin list --path=wp --status=active --field=name
 
       - name: Integration tests (Pest, real WordPress)
