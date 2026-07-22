@@ -10,8 +10,8 @@ consistently across the admin. Every read is scoped to the current user: you onl
   visually at `99+`, with the true count in its accessible label). It is keyboard operable and opens a drawer.
 - **The drawer** — opens from the bell: a modal dialog listing your notifications, with per-item *Mark read* and a
   *Mark all as read*. It traps focus while open, closes on `Escape`, and returns focus to the bell.
-- **The Notifications screen** (`CoreX → Notifications`) — the full center, with saved views (Inbox, Requires
-  attention, Submissions, Security, System), a severity filter, pagination, and a Preferences tab.
+- **The Notifications screen** (`CoreX → Notifications`) — the full center, with the saved views below, a
+  severity filter, pagination, and a Preferences tab.
 - **The admin-toolbar entry** — on non-CoreX screens (and the front end), the WordPress toolbar carries a
   *Notifications* entry with your unread count. It never appears at the same time as the header bell — on a CoreX
   screen the bell owns that surface.
@@ -21,6 +21,27 @@ consistently across the admin. Every read is scoped to the current user: you onl
 Access to the full Notifications screen requires the **Manage notifications** ability
 (`corex_manage_notifications`). Administrators hold it automatically; grant it to others through
 `CoreX → Access & Abilities`.
+
+### Saved views
+
+Each view is a bounded server-side filter — the screen never fetches everything and narrows it in the browser.
+
+| View | Shows |
+| --- | --- |
+| **Inbox** | Everything you can see. |
+| **Requires attention** | Only what *you* have not read yet. |
+| **Assigned to me** | Only notifications that name you personally — the assignee of a submission, or a message addressed to you. Things you can see because you hold an ability are not "yours", so they stay out. |
+| **Submissions** · **Security** · **System** | One category each. |
+| **Updates** | The informational stream: worth knowing, asks nothing of you. |
+| **History** | Conditions that have been resolved — the archive, not the audit log. Permanent evidence lives in Activity. |
+| **Preferences** | Your per-category toggles (see below). |
+
+Two distinctions are easy to miss and worth stating plainly:
+
+- **Read is yours; resolved is everyone's.** Marking something read changes only your copy. Resolving a
+  condition ends it for every recipient, and needs **Manage notifications**.
+- **Dismissed is not resolved.** Hiding a shared notification hides it for you alone — it never resolves the
+  underlying condition for anyone else.
 
 ## What produces notifications
 
@@ -48,7 +69,17 @@ All routes live under `corex/v1/notifications` and return the standard `{ ok, me
 require you to be signed in; mutations additionally require a REST nonce; resolving a shared condition requires
 **Manage notifications**.
 
-- `GET /notifications` — your bounded, filtered list (`page`, `per_page`, `category`, `severity`, `unread_only`).
+- `GET /notifications` — your bounded, filtered list. Filters: `page`, `per_page`, `category`, `severity`,
+  `source_module`, `status`, `assigned_to_me`, `unread_only`. Unknown filter values are dropped rather than
+  guessed at, and `per_page` is clamped.
+  - `status` is your **derived per-user status** — one of `unread`, `read`, `snoozed`, `dismissed`,
+    `resolved`, `expired` — resolved from the shared record plus your own state, in that order of precedence
+    (a resolved condition reads as `resolved` however you left your copy). Each returned item also carries it
+    as `user_state.status`, so a client never has to re-derive it.
+  - `assigned_to_me=1` narrows to notifications that name you personally, not ones you can see through an
+    ability.
+  - `unread_only=1` is **not** the same as `status=unread`: it means the *condition* is unresolved, which
+    includes items you have already read. Prefer `status=unread` when you mean your own unread items.
 - `GET /notifications/count` — your unread count.
 - `GET /notifications/{id}` — one notification, or `404` if it is not yours to see.
 - `POST /notifications/{id}/read` · `/unread` · `/dismiss` · `/snooze` — per-user state.
