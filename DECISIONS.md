@@ -2970,5 +2970,31 @@ Alternatives considered: version the timeline shape and migrate stored rows (rej
 read is cheaper and lossless); detect FluentSMTP by its version constant to name it specifically
 (rejected: borderline reliance on an internal, and unnecessary -- the filter signal is enough and
 FluentSMTP is named only as the common example in guidance, not as a detected fact).
+## #154 -- CI runs every PR and the JS suite; "green" must name which suites ran
+
+Date: 2026-07-22
+
+Decision: `.github/workflows/ci.yml` runs on every pull request regardless of base, and runs the JS unit
+suite as its own job. A completion claim must state which suites were run and their counts, not that
+"everything is green".
+
+Why: three separate reporting failures surfaced in one session, each with healthy code behind it.
+1. Eight unit failures across the 070/071/072 stack were recorded as "8 pre-existing unrelated failures".
+   `main` had none of them; the stack introduced all eight (DECISIONS #153).
+2. PRs #118 and #119 targeted feature branches, and the workflow filtered `pull_request` to
+   `[main, develop]`, so neither ever ran CI. GitHub renders an empty check-rollup almost identically to
+   a passing one, so "no failing checks" read as "checks passed" when it meant "never tested".
+3. `tests/token-inventory.test.js` regenerates its artifacts from source and fails on drift -- a good
+   guard that **nothing in CI ever invoked**. Spec 072's CSS additions left the committed inventory
+   stale, and the branch gate still reported every suite green, because the JS suite was not among the
+   suites it ran.
+
+In all three the tests were adequate and the summary was not. The mitigations are therefore mechanical
+rather than procedural: unfiltered `pull_request` triggers so a stacked PR cannot skip the gates, and a
+`js` job so a suite cannot be silently omitted. Integration and Playwright remain environment-gated and
+still need a provisioned WordPress -- that gap is real and stated here rather than papered over.
+
+Consequence for reports: "full unit 1448 passed / 0 failed, integration 197/0, JS 306/0, e2e 6/0" is a
+verification claim; "all tests pass" is not, because it hides which suites were skipped.
 
 Status: Final.

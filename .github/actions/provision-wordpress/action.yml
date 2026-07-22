@@ -1,0 +1,76 @@
+name: Provision WordPress
+description: >-
+  Install WordPress and wire the monorepo into it, the way scripts/setup-wordpress.ps1 does
+  locally — so the integration and browser jobs test the same environment a contributor has.
+
+inputs:
+  site-url:
+    description: The URL WordPress is installed at. Must match how the site is actually served.
+    required: false
+    default: http://localhost
+  php-version:
+    description: PHP version to set up.
+    required: false
+    default: '8.3'
+
+runs:
+  using: composite
+  steps:
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ inputs.php-version }}
+        extensions: mysqli, zip, gd
+        tools: composer:v2, wp-cli
+        coverage: none
+
+    - name: Install PHP dependencies
+      shell: bash
+      run: composer install --prefer-dist --no-progress
+
+    - name: Download WordPress
+      shell: bash
+      run: wp core download --path=wp --version=latest
+
+    - name: Configure and install WordPress
+      shell: bash
+      run: |
+        wp config create --path=wp --dbname=corex --dbuser=root --dbpass=root \
+          --dbhost=127.0.0.1 --dbprefix=cx_ --skip-check
+        wp core install --path=wp --url='${{ inputs.site-url }}' --title=Corex \
+          --admin_user=admin --admin_password=changeme --admin_email=admin@example.com \
+          --skip-email
+        # Pretty permalinks, like any real site. A fresh install defaults to plain, and with plain
+        # permalinks WordPress ignores the path entirely — an address that does not exist comes back
+        # as the home page with a 200 instead of a 404, and the framework matches its custom login
+        # slug by query string rather than by path. Both change what the suites observe.
+        wp rewrite structure '/%postname%/' --path=wp
+        wp rewrite flush --path=wp
+
+    # The monorepo IS the source; wp-content only points at it. Mirrors the junctions the local
+    # setup script creates, with symlinks.
+    - name: Link the monorepo into wp-content
+      shell: bash
+      run: |
+        ln -sfn "$PWD/theme" wp/wp-content/themes/corex
+        for dir in plugins/*/; do
+          ln -sfn "$PWD/${dir%/}" "wp/wp-content/plugins/$(basename "$dir")"
+        done
+        # Add-ons are plugin-shaped packages; link the ones carrying a top-level PHP file.
+        for dir in addons/*/; do
+          if compgen -G "${dir}*.php" > /dev/null; then
+            ln -sfn "$PWD/${dir%/}" "wp/wp-content/plugins/$(basename "$dir")"
+          fi
+        done
+
+    - name: Activate the theme and plugins
+      shell: bash
+      run: |
+        wp theme activate corex --path=wp
+        # corex-core first: the others declare "Requires Plugins: corex-core", and WP-CLI activates
+        # in the order given, so an alphabetical list fails with "Only activated 2 of 4 plugins".
+        wp plugin activate corex-core --path=wp
+        # Then everything linked, add-ons included — the suites resolve add-on services from the
+        # container, and a site with only plugins/* active is not the environment they assume.
+        wp plugin activate --all --path=wp
+        wp plugin list --path=wp --status=active --field=name

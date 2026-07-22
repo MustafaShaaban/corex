@@ -24,9 +24,14 @@ function collectConsoleErrors( page ) {
 			return;
 		}
 		const text = msg.text();
-		if ( ! ALLOW_LIST.some( ( re ) => re.test( text ) ) ) {
-			errors.push( text );
+		if ( ALLOW_LIST.some( ( re ) => re.test( text ) ) ) {
+			return;
 		}
+		// Record where it came from. "Failed to load resource: 404" names no resource on its own,
+		// which makes a failure report unactionable — you know something 404s, not what. Filtering
+		// still happens on the raw text so the allow-list keeps matching.
+		const { url } = msg.location();
+		errors.push( url ? `${ text }  <- ${ url }` : text );
 	} );
 
 	page.on( 'pageerror', ( err ) => errors.push( err.message ) );
