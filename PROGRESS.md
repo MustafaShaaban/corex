@@ -291,6 +291,33 @@ read as "no failures" when it actually meant "never tested"). Fixed at the sourc
 - **`spec/072` (3b1667f)** — merged 071 down. **Unit 1426 passed / 0 failed; integration 186 passed / 0
   failed; 6 e2e green.**
 
+**CI now gates three suites, and the local provisioner was broken for fresh clones — all on PR #120.**
+Beyond the trigger fix below, that branch adds a **`js` job** (`npm run test:js`, which *nothing* in CI ran —
+that is how a stale committed token-inventory artifact survived spec 072's CSS additions while the gate
+reported every suite green) and an **`integration` job** that provisions MySQL 8 + WordPress and runs the
+**real-WordPress suite in CI for the first time**. Getting it green took three rounds, each exposing a genuine
+defect rather than a workflow typo:
+- **Plugin activation order** — `corex-blocks`/`corex-config` declare `Requires Plugins: corex-core` and WP-CLI
+  activates in the order given, so an alphabetical list fails ("Only activated 2 of 4"). The same bug was in
+  `scripts/setup-wordpress.ps1`, whose comment claimed WordPress resolves the order; it does not.
+- **Add-ons were never activated** — the suite resolves add-on services from the container, so Bookings,
+  Careers, Newsletter and Profile died on `BindingResolutionException`. Now `wp plugin activate --all`.
+- **`LoginRecoveryTest` read ambient config as setup** — the guard matches the slug by *path* under pretty
+  permalinks and by *query string* under plain ones, and the test asserted path behaviour without setting the
+  option. It passed on a dev install and failed on fresh WordPress; it now pins and restores
+  `permalink_structure`. **A latent test bug only a clean environment could reveal.**
+
+**`scripts/setup-wordpress.ps1` could never have worked on a fresh clone.** Verified by *running* it against an
+isolated install (`-WpDir wp-verify -DbName corex_setup_verify` — the safe way to test provisioning without
+touching corex.local): it piped a here-string into `wp config create --extra-php`, and **PowerShell 5.1 prepends
+a UTF-8 BOM when piping to a native command**, so `wp-config.php` received `<U+FEFF>define(...)`. `config create`
+still exited 0, so the script's guard passed and the run died three steps later at `wp core install` with "Call
+to undefined function define()". Existing installs never saw it — the script skips config creation when the file
+exists. Now uses `wp config set --raw --type=constant` (no pipe), activates `corex-core` first, then `--all`, and
+checks `$LASTEXITCODE` on every must-succeed step. Re-verified end to end: **15/15 plugins active on a clean
+install**, scratch DB and directory removed, live site still 200. `tests/bootstrap-integration.php` also now
+**exits 1** when `./wp` is absent instead of running the suite against no WordPress at all. DECISIONS #154.
+
 **The CI gap itself is fixed — PR #120 (`fix/ci-run-on-every-pr`, base `main`, opened 2026-07-22).** Drops the
 `branches: [main, develop]` filter from the `pull_request` trigger in `ci.yml`, `codeql.yml`, and
 `dependency-security.yml`, so every PR runs the gates whatever its base (`docs.yml`/`e2e.yml` stay
