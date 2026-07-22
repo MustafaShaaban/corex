@@ -71,13 +71,24 @@ if (-not (Test-Path (Join-Path $WpPath 'wp-load.php'))) {
 # --- 2. wp-config.php ---
 if (-not (Test-Path (Join-Path $WpPath 'wp-config.php'))) {
     Write-Host "Creating wp-config.php ..."
-    @"
-define( 'WP_DEBUG', true );
-define( 'WP_DEBUG_LOG', true );
-define( 'WP_DEBUG_DISPLAY', false );
-"@ | & wp config create --path="$WpPath" --dbname="$DbName" --dbuser="$DbUser" `
-        --dbpass="$DbPass" --dbhost="$DbHost" --dbprefix="$DbPrefix" --locale=en_US --extra-php
+    & wp config create --path="$WpPath" --dbname="$DbName" --dbuser="$DbUser" `
+        --dbpass="$DbPass" --dbhost="$DbHost" --dbprefix="$DbPrefix" --locale=en_US
     if ($LASTEXITCODE -ne 0) { Fail "wp config create failed." }
+
+    # Set the debug constants with WP-CLI rather than piping a here-string into --extra-php.
+    # PowerShell 5.1 prepends a UTF-8 BOM when it pipes to a native command, so that here-string
+    # arrived as "<U+FEFF>define( 'WP_DEBUG', true );" and landed verbatim in wp-config.php.
+    # `wp config create` still exited 0 — the file was written, just corrupt — so the guard above
+    # passed and the run died later at `wp core install` with "Call to undefined function define()".
+    # Every fresh clone hit this; existing installs did not, because the file was already there.
+    foreach ($const in @(
+        @{ Name = 'WP_DEBUG';         Value = 'true'  },
+        @{ Name = 'WP_DEBUG_LOG';     Value = 'true'  },
+        @{ Name = 'WP_DEBUG_DISPLAY'; Value = 'false' }
+    )) {
+        & wp config set $const.Name $const.Value --raw --type=constant --path="$WpPath" | Out-Null
+        if ($LASTEXITCODE -ne 0) { Fail ("Could not set {0} in wp-config.php." -f $const.Name) }
+    }
 } else {
     Write-Host "wp-config.php already present."
 }
