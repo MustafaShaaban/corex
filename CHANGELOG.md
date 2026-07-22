@@ -4,6 +4,42 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [0.35.1] — 2026-07-22
+
+A correction release. Three fixes, no new capability: a form filter that could not filter the forms a
+developer registers in code, two rough edges on the login screen, and a release command that could not
+reach the one file telling the documentation site which version it describes.
+
+### Fixed
+
+- **A form registered in code could be listed but not filtered**
+  ([#114](https://github.com/MustafaShaaban/corex/issues/114)). The form filter on the
+  Submissions Inbox and the Data explorer was built only from database flows, so a form registered through
+  `FormRegistry` never appeared in it — and because the inbox matched `corex_flow_id`, which those
+  submissions do not carry, it could not have been filtered even if it had. A site that registers its forms
+  in code saw an empty dropdown above a list of submissions it could not narrow. Sites can now append their
+  own entries through the `corex_submission_filter_options` filter, where `id => 0` means "this form has no
+  flow row, match it by `corex_form_slug`", and both screens accept `slug:<form-slug>` alongside a numeric
+  id. Injected entries are re-normalised rather than trusted: an entry with neither an id nor a slug cannot
+  be matched by either screen, so it is dropped instead of rendering a row that filters to nothing. A
+  filtered export honours a code-form selection too — it previously cast the value to an integer, quietly
+  covering every form rather than the one that was asked for.
+- **The login screen's remember-me row and language selector.** The checkbox sat flush against its label and
+  tight under the password field; it is a spaced, vertically centred row now. Scoped deliberately through
+  `#login form`, because WordPress sets `#login form p { margin-bottom: 0 }` — an ID selector that silently
+  beat a class-only CoreX rule and dropped the bottom margin while letting the top one through. The language
+  dropdown WordPress prints at the foot of the page (the control Polylang populates, when it is installed)
+  had no rule at all and kept the browser's default chrome while every control above it followed the theme;
+  it now matches the text inputs in height, border, radius and focus ring, and mirrors correctly in RTL. It
+  stays a native `<select>` on purpose — a fourth boundary alongside the three in DECISIONS #141, since
+  `wp-login.php` loads no admin bundle and `CorexSelect` does not exist there.
+- **`wp corex version` now stamps the documentation site.** It covered 16 files and missed
+  `docs-app/src/version.ts`, which declares its version in TypeScript rather than a plugin header or a
+  `COREX_*_VERSION` constant, so neither existing pattern matched it. The failure was quiet — the release
+  completes, every header is correct, and the docs site advertises the previous version with nothing to
+  catch it. v0.35.0 shipped that way and was corrected by hand. The command stamps **17** files as of this
+  release, and this is the first release stamped entirely by it.
+
 ## [0.35.0] — 2026-07-22
 
 Spec 072 — the Notification Center and the Dashboard Command Center, plus the release where continuous

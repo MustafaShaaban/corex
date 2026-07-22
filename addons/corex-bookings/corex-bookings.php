@@ -3,7 +3,7 @@
  * Plugin Name:       Corex Bookings
  * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       Request a call with a company leader — a secured request form that stores the request and notifies the leader + confirms the visitor. Built on Custom Tables, Mail, and Captcha.
- * Version:           0.35.0
+ * Version:           0.35.1
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
@@ -22,7 +22,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_BOOKINGS_VERSION')) {
-    define('COREX_BOOKINGS_VERSION', '0.35.0');
+    define('COREX_BOOKINGS_VERSION', '0.35.1');
 }
 
 (static function (): void {
