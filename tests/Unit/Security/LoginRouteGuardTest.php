@@ -143,8 +143,26 @@ it('leaves the emoji shim alone when it is not registered', function () {
     $guard = new LoginRouteGuard(routePolicy());
 
     Functions\when('has_action')->justReturn(false);
-    Functions\expect('add_action')->never();
+    // Scoped to the shim's own hook on purpose. A blanket ->never() was accurate when the shim was
+    // the only thing dropAdminContext() hooked, but it silently also forbade every later addition
+    // to that method — which is exactly how restoreBlockStyles() broke this test rather than a
+    // test of its own catching a real regression.
+    Functions\expect('add_action')->never()->with('admin_print_styles', 'print_emoji_styles');
     Functions\expect('remove_action')->once()->with('template_redirect', '_wp_admin_bar_init', 0);
+
+    $guard->dropAdminContext();
+});
+
+it('restores the block styles core withholds from an admin request', function () {
+    // wp_common_block_scripts_and_styles() returns early on is_admin(), so a hidden /wp-admin 404
+    // rendered with theme.json colours but no block layout or appearance CSS — a visibly broken
+    // page. This hook is the repair, and it was shipped untested: nothing asserted it existed,
+    // which is why the blanket add_action expectation above went unnoticed.
+    $guard = new LoginRouteGuard(routePolicy());
+
+    Functions\when('has_action')->justReturn(false);
+    Functions\when('remove_action')->justReturn(true);
+    Functions\expect('add_action')->once()->with('wp_enqueue_scripts', [$guard, 'enqueueBlockStyles'], 20);
 
     $guard->dropAdminContext();
 });
