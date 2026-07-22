@@ -124,7 +124,13 @@ jobs:
       - name: Activate the theme and plugins
         run: |
           wp theme activate corex --path=wp
-          wp plugin activate $(ls -d plugins/*/ | xargs -n1 basename | tr '\n' ' ') --path=wp
+          # corex-core first. The others declare "Requires Plugins: corex-core", and WP-CLI
+          # activates in the order it is given — alphabetically that puts corex-blocks and
+          # corex-config ahead of corex-core, and both refuse with an unmet requirement.
+          wp plugin activate corex-core --path=wp
+          wp plugin activate \
+            $(ls -d plugins/*/ | xargs -n1 basename | grep -vx 'corex-core' | tr '\n' ' ') \
+            --path=wp
           wp plugin list --path=wp --status=active --field=name
 
       - name: Integration tests (Pest, real WordPress)
