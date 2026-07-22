@@ -85,9 +85,12 @@ module.exports = defineConfig( {
 	use: {
 		baseURL: process.env.COREX_BASE_URL || 'http://corex.local',
 		storageState: STORAGE_STATE,
-		// 'on-first-retry' produces nothing when retries are 0, which is how a CI failure came back
-		// with no trace to look at. Retain on failure instead — the workflow uploads test-results.
-		trace: 'retain-on-failure',
+		// Opt-in, because it is not free: 'retain-on-failure' records every test and then discards
+		// the passes, and that overhead alone was enough to make email-studio's console-error sweep
+		// fail reproducibly — a spec that passes without it. Default stays 'on-first-retry'.
+		// Set COREX_E2E_TRACE=1 to capture traces when diagnosing (the workflow uploads
+		// test-results on failure); note that doing so may itself perturb timing-sensitive specs.
+		trace: process.env.COREX_E2E_TRACE ? 'retain-on-failure' : 'on-first-retry',
 	},
 	projects: [
 		{ name: 'chromium', use: { ...devices[ 'Desktop Chrome' ] } },
