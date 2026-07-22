@@ -27,35 +27,34 @@ const { STORAGE_STATE } = require( './global-setup' );
  *   - the block editor: Gutenberg never becomes interactive under PHP's built-in server (raising
  *     PHP_CLI_SERVER_WORKERS from 4 to 12 changed nothing, so it is not throughput).
  *
- * Treat every reason below as a hypothesis until CI disproves it. This list was originally longer
- * and several entries were wrong: three tests were blamed on missing content when the real cause
- * was that the CI site had plain permalinks, so every path served the home page. Fixing the site
- * recovered them — /hello-world/ and the Inbox viewport check needed nothing seeded at all, and
- * the contact-form test had been passing against the wrong page entirely. Before seeding anything,
- * read the failing assertion.
+ * Treat every reason here as a hypothesis until CI disproves it. This list was once eleven entries
+ * and most were wrong: tests blamed on missing content actually failed because the CI site had
+ * plain permalinks, so every path served the home page and /wp-json/ did not resolve. Fixing the
+ * site recovered them, and one spec had been *passing* against the home page. The last three were
+ * blamed on the block editor, which turned out to be true — but only checked by re-running it.
+ * Before seeding anything, read the failing assertion.
  *
- * Removing an entry means seeding its fixtures — or serving the site properly — in the CI job.
+ * Empty is the goal, and is handled: an empty list means no exclusions, NOT `new RegExp('')`,
+ * which matches every title and would silently skip the entire suite while reporting green.
  */
-const CANNOT_RUN_ON_A_FRESH_INSTALL = new RegExp(
-	[
-		// Need the block editor (see above). Confirmed rather than assumed: re-running this one
-		// with the URL-reporting collector produced NO console errors at all — the editor element
-		// simply never appears. So nothing is 404ing and no script is throwing; Gutenberg just does
-		// not come up under php -S. Recovering these three needs a real web server, not a fixture.
-		'the block editor loads with no console errors',
-		'creates publishes tests and submits a persisted flow without console errors',
-		'a corex block is recognised in the editor inserter',
-	]
-		.map( ( title ) => title.replace( /[.*+?^${}()|[\]\\]/g, '\\$&' ) )
-		.join( '|' )
-);
+const CANNOT_RUN_ON_A_FRESH_INSTALL = [];
+
+const freshInstallExclusions = () => {
+	if ( ! process.env.COREX_E2E_FRESH_INSTALL || CANNOT_RUN_ON_A_FRESH_INSTALL.length === 0 ) {
+		return undefined;
+	}
+
+	return new RegExp(
+		CANNOT_RUN_ON_A_FRESH_INSTALL.map( ( title ) =>
+			title.replace( /[.*+?^${}()|[\]\\]/g, '\\$&' )
+		).join( '|' )
+	);
+};
 
 module.exports = defineConfig( {
 	testDir: '.',
 	// Unset locally, so a developer always runs the whole suite against their real install.
-	grepInvert: process.env.COREX_E2E_FRESH_INSTALL
-		? CANNOT_RUN_ON_A_FRESH_INSTALL
-		: undefined,
+	grepInvert: freshInstallExclusions(),
 	// The block editor is a heavy React app; on a cold OPcache / loaded box it can take a
 	// while to become interactive. 60s gives headroom without masking a real hang.
 	timeout: 60_000,

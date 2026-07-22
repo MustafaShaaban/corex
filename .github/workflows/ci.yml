@@ -156,18 +156,39 @@ jobs:
       - name: Install the browser
         run: npx playwright install --with-deps chromium
 
-      # PHP_CLI_SERVER_WORKERS: the built-in server is single-threaded, and a WordPress admin page
-      # that issues a loopback request to itself would deadlock against a one-worker server. The
-      # block editor is the demanding case — it opens many parallel REST calls while loading, and
-      # starved it out at four workers.
+      # nginx + php-fpm rather than `php -S`. The built-in server could not bring the block editor
+      # up at all — the editor element never appeared, with no console error and nothing 404ing, so
+      # it was not a missing asset or a starved worker pool. A real server also gives proper rewrite
+      # routing instead of the built-in server's blanket index.php fallback.
       - name: Serve WordPress
         run: |
-          PHP_CLI_SERVER_WORKERS=12 php -S 127.0.0.1:8080 -t wp > /tmp/php-server.log 2>&1 &
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx php8.3-fpm
+          sudo tee /etc/nginx/sites-available/default > /dev/null <<NGINX
+          server {
+            listen 8080 default_server;
+            root ${GITHUB_WORKSPACE}/wp;
+            index index.php;
+            location / { try_files \$uri \$uri/ /index.php?\$args; }
+            location ~ \.php\$ {
+              include snippets/fastcgi-php.conf;
+              fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+              fastcgi_read_timeout 120;
+            }
+          }
+          NGINX
+          # nginx runs as www-data and has to traverse the runner's home to reach the workspace.
+          chmod o+x /home/runner /home/runner/work "${GITHUB_WORKSPACE}" || true
+          sudo systemctl start php8.3-fpm
+          sudo nginx -t
+          sudo systemctl restart nginx
           for _ in $(seq 1 30); do
             if curl -sf -o /dev/null http://127.0.0.1:8080/; then echo "site up"; exit 0; fi
             sleep 1
           done
-          echo "site never came up"; cat /tmp/php-server.log; exit 1
+          echo "site never came up"
+          sudo tail -50 /var/log/nginx/error.log || true
+          exit 1
 
       # COREX_E2E_FRESH_INSTALL skips the specs that assume a site with content already in it —
       # published posts, built forms, stored submissions. See the list in tests/e2e/playwright.config.js;
