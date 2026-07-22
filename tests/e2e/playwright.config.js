@@ -22,10 +22,17 @@ const { STORAGE_STATE } = require( './global-setup' );
  * coverage — security-access.spec.js has one environment-dependent test and a dozen good ones.
  *
  * Two causes, both environmental rather than defects:
- *   - seeded content: published posts, built forms, stored submissions, declared data sources —
- *     these assume a developer install that has been used;
+ *   - missing fixtures: stored submissions, declared data sources — these assume a developer
+ *     install that has been used;
  *   - the block editor: Gutenberg never becomes interactive under PHP's built-in server (raising
  *     PHP_CLI_SERVER_WORKERS from 4 to 12 changed nothing, so it is not throughput).
+ *
+ * Treat every reason below as a hypothesis until CI disproves it. This list was originally longer
+ * and several entries were wrong: three tests were blamed on missing content when the real cause
+ * was that the CI site had plain permalinks, so every path served the home page. Fixing the site
+ * recovered them — /hello-world/ and the Inbox viewport check needed nothing seeded at all, and
+ * the contact-form test had been passing against the wrong page entirely. Before seeding anything,
+ * read the failing assertion.
  *
  * Removing an entry means seeding its fixtures — or serving the site properly — in the CI job.
  */
