@@ -116,6 +116,16 @@ jobs:
           # Must match how the site is served below, or WordPress redirects away from it.
           site-url: http://127.0.0.1:8080
 
+      # Fixtures the browser specs need but a fresh install has no reason to contain. Each one
+      # removed from the exclusion list in tests/e2e/playwright.config.js is seeded here.
+      - name: Seed browser-test fixtures
+        run: |
+          # /contact/ carrying the registered contact form. corex/form with no flowId or flowSlug
+          # falls through to the registry form named by formSlug, which defaults to "contact".
+          wp post create --path=wp --post_type=page --post_status=publish \
+            --post_title=Contact --post_name=contact --post_content='<!-- wp:corex/form /-->'
+          wp post list --path=wp --post_type=page --fields=post_name,post_status
+
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
