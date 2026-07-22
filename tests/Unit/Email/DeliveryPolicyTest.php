@@ -20,6 +20,11 @@ use Corex\Email\Studio\EmailStudioStore;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
+    // EmailAttemptRepository::recipientHash() probes function_exists('wp_salt'). Brain Monkey
+    // defines a stubbed function into the global namespace permanently — PHP cannot undefine it —
+    // so once any earlier test in the process stubs wp_salt, the probe is true here forever and an
+    // unstubbed call throws. Stub it rather than depend on suite order for the fallback branch.
+    Functions\when('wp_salt')->justReturn('unit-test-salt');
 });
 
 function deliveryPolicyStore(): EmailStudioStore

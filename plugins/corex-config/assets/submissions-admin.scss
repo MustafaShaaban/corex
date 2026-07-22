@@ -223,7 +223,7 @@
 .corex-admin .corex-inbox__delivery .dashicons {
 	inline-size: 1em;
 	block-size: 1em;
-	font-size: 1em;
+	font-size: 1em; /* corex-token-allow: icon glyph scales with its label, not a design size */
 }
 
 .corex-admin .corex-inbox__delivery.is-success {

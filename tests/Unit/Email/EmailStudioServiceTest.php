@@ -33,6 +33,9 @@ use Corex\Support\Config\ConfigInterface;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
+    // See DeliveryPolicyTest: function_exists('wp_salt') is unreliable across a Brain Monkey suite
+    // once any test has stubbed it, so this path must stub it explicitly rather than rely on order.
+    Functions\when('wp_salt')->justReturn('unit-test-salt');
 });
 
 function emailStudioServiceStore(): EmailStudioStore
