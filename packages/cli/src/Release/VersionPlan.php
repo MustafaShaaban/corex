@@ -12,15 +12,23 @@ use InvalidArgumentException;
 
 /**
  * Computes how to stamp a target version across the framework — purely. Given a valid semver and a
- * map of `path => contents`, it rewrites two things in each file: the first header `Version:` line
- * (plugin/theme headers) and every `COREX_*_VERSION` constant. It returns only the files whose
- * contents actually change, so applying the plan is idempotent and a dry-run is exact. The CLI
- * `VersionCommand` reads the files, calls {@see plan()}, and writes (or previews) the results.
+ * map of `path => contents`, it rewrites three things in each file: the first header `Version:` line
+ * (plugin/theme headers), every `COREX_*_VERSION` constant, and the documentation site's exported
+ * `CURRENT_VERSION`. It returns only the files whose contents actually change, so applying the plan
+ * is idempotent and a dry-run is exact. The CLI `VersionCommand` reads the files, calls {@see
+ * plan()}, and writes (or previews) the results.
  */
 final class VersionPlan
 {
     private const HEADER_PATTERN   = '/^(\s*(?:\*\s*)?Version:\s*)\S.*$/m';
     private const CONSTANT_PATTERN = "/(COREX_[A-Z0-9_]*VERSION'\s*,\s*')[^']*(')/";
+
+    /**
+     * The docs site states the framework version in TypeScript rather than a PHP header, so it needs
+     * its own pattern. Without it the docs published alongside a release advertise the previous
+     * version, and nothing catches it — v0.35.0 shipped that way and was corrected by hand.
+     */
+    private const TS_EXPORT_PATTERN = "/(export const CURRENT_VERSION\s*=\s*')[^']*(')/";
 
     /**
      * A semver `x.y.z`, optionally with a `-prerelease` and/or `+build` suffix.
@@ -57,7 +65,8 @@ final class VersionPlan
     private function stamp(string $version, string $contents): string
     {
         $contents = preg_replace(self::HEADER_PATTERN, '${1}' . $version, $contents, 1) ?? $contents;
+        $contents = preg_replace(self::CONSTANT_PATTERN, '${1}' . $version . '${2}', $contents) ?? $contents;
 
-        return preg_replace(self::CONSTANT_PATTERN, '${1}' . $version . '${2}', $contents) ?? $contents;
+        return preg_replace(self::TS_EXPORT_PATTERN, '${1}' . $version . '${2}', $contents) ?? $contents;
     }
 }

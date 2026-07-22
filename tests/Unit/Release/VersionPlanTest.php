@@ -55,6 +55,23 @@ it('only returns files that actually change (idempotent when already aligned)', 
         ->and($after)->not->toHaveKey('unrelated.php');
 });
 
+it('stamps the docs site so published docs cannot advertise the previous release', function () {
+    // v0.35.0 shipped with the docs site still saying 0.34.0 because this file was outside the
+    // command's reach and had to be bumped by hand. Verbatim shape of docs-app/src/version.ts.
+    $before = <<<'TS'
+        export const CURRENT_VERSION = '0.35.0';
+
+        /** Where older releases and their notes live (real, published history). */
+        export const RELEASES_URL = 'https://github.com/MustafaShaaban/corex/releases';
+        TS;
+
+    $after = (new VersionPlan())->plan('0.36.0', ['version.ts' => $before]);
+
+    expect($after['version.ts'])->toContain("export const CURRENT_VERSION = '0.36.0';")
+        // The neighbouring export is a URL, not a version — it must survive untouched.
+        ->and($after['version.ts'])->toContain('https://github.com/MustafaShaaban/corex/releases');
+});
+
 it('rewrites only the first (header) Version line, not later prose', function () {
     $before = " * Version: 0.1.0\nChangelog: Version: 0.1.0 was the first release.\n";
 
