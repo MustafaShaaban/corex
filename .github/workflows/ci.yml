@@ -63,9 +63,74 @@ jobs:
       - name: JS unit tests (Jest)
         run: npm run test:js
 
+  # The integration suite boots the framework inside a real WordPress (tests/bootstrap-integration
+  # requires ./wp/wp-load.php), so CI has to provision one. This mirrors scripts/setup-wordpress.ps1
+  # — the documented local setup — step for step, with symlinks where that script uses junctions.
+  integration:
+    name: Integration tests (real WordPress)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: corex
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, zip
+          tools: composer:v2, wp-cli
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Download WordPress
+        run: wp core download --path=wp --version=latest
+
+      - name: Configure and install WordPress
+        run: |
+          wp config create --path=wp --dbname=corex --dbuser=root --dbpass=root \
+            --dbhost=127.0.0.1 --dbprefix=cx_ --skip-check
+          wp core install --path=wp --url=http://localhost --title=Corex \
+            --admin_user=admin --admin_password=changeme --admin_email=admin@example.com \
+            --skip-email
+
+      # Same mapping the local script makes: the monorepo IS the source, wp-content only points at it.
+      - name: Link the monorepo into wp-content
+        run: |
+          ln -sfn "$PWD/theme" wp/wp-content/themes/corex
+          for dir in plugins/*/; do
+            ln -sfn "$PWD/${dir%/}" "wp/wp-content/plugins/$(basename "$dir")"
+          done
+          # Add-ons are plugin-shaped packages; link the ones carrying a top-level PHP file.
+          for dir in addons/*/; do
+            if compgen -G "${dir}*.php" > /dev/null; then
+              ln -sfn "$PWD/${dir%/}" "wp/wp-content/plugins/$(basename "$dir")"
+            fi
+          done
+
+      - name: Activate the theme and plugins
+        run: |
+          wp theme activate corex --path=wp
+          wp plugin activate $(ls -d plugins/*/ | xargs -n1 basename | tr '\n' ' ') --path=wp
+          wp plugin list --path=wp --status=active --field=name
+
+      - name: Integration tests (Pest, real WordPress)
+        run: composer test:integration
+
 # Not yet wired here (tracked in CONTRIBUTING.md):
-#   - Integration tests (composer test:integration) need a WordPress + MySQL service
-#     (wp-env) provisioned in CI; run locally against ./wp for now.
 #   - The guard gates (clean-code/wp/test/docs) are run by the coding agent on each diff
 #     per the constitution; a CI shim can enforce them once a runner exists.
 #   - PHPCS (WordPress-Extra) + ESLint (@wordpress) once their configs are added.
