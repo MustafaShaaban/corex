@@ -254,12 +254,28 @@ final readonly class SubmissionsController
 
         return [
             'search' => sanitize_text_field((string) ($value['search'] ?? '')),
-            'flow' => absint($value['flow'] ?? 0),
+            // Not absint(): `flow` may be `slug:<form-slug>` for a form registered in code, and
+            // absint() would flatten that to 0 — so a filtered export would quietly cover every
+            // form instead of the one that was chosen. SubmissionInboxQuery validates both shapes.
+            'flow' => $this->flowFilter($value['flow'] ?? 0),
             'status' => sanitize_key((string) ($value['status'] ?? '')),
             'owner' => sanitize_text_field((string) ($value['owner'] ?? '')),
             'date_from' => sanitize_text_field((string) ($value['date_from'] ?? '')),
             'date_to' => sanitize_text_field((string) ($value['date_to'] ?? '')),
         ];
+    }
+
+    /** Either a flow id or `slug:<form-slug>`; anything else narrows to nothing. */
+    private function flowFilter(mixed $value): string
+    {
+        $value = trim((string) (is_scalar($value) ? $value : ''));
+
+        if (str_starts_with($value, SubmissionInboxQuery::SLUG_PREFIX)) {
+            return SubmissionInboxQuery::SLUG_PREFIX
+                . sanitize_key(substr($value, strlen(SubmissionInboxQuery::SLUG_PREFIX)));
+        }
+
+        return (string) absint($value);
     }
 
     /** @return array<string,mixed> */

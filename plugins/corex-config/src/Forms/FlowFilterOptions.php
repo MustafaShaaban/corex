@@ -53,11 +53,63 @@ final class FlowFilterOptions
                 'slug' => $flow->slug,
             ], $flows->all());
 
+            /**
+             * Filters the forms offered by the submissions and records filters.
+             *
+             * Only builder flows live in the database, so a form registered in code through
+             * `Corex\Forms\FormRegistry` has no row here and never appeared in the filter — its
+             * submissions were listed but could not be narrowed to. Append entries with `id => 0`
+             * to say "there is no flow row; match this by `corex_form_slug` instead".
+             *
+             * @param list<array{id:int,name:string,slug:string}> $options
+             */
+            $options = apply_filters('corex_submission_filter_options', $options);
+
+            $options = self::normalize(is_array($options) ? $options : []);
+
             usort($options, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 
             return array_values($options);
         } catch (Throwable) {
             return [];
         }
+    }
+
+    /**
+     * Force injected entries into the shape both screens rely on.
+     *
+     * A filter is an open door: anything can come back through it. The screens key on `id` and
+     * `slug` and render `name`, so an entry missing one of those would render a nameless row or a
+     * filter that silently matches nothing. Entries without a usable slug and without a flow id
+     * cannot be matched by either screen, so they are dropped rather than shown.
+     *
+     * @param array<mixed> $options
+     * @return list<array{id:int,name:string,slug:string}>
+     */
+    private static function normalize(array $options): array
+    {
+        $clean = [];
+
+        foreach ($options as $option) {
+            if (! is_array($option)) {
+                continue;
+            }
+
+            $id   = (int) ($option['id'] ?? 0);
+            $slug = sanitize_key((string) ($option['slug'] ?? ''));
+            $name = trim((string) ($option['name'] ?? ''));
+
+            if ($id < 1 && $slug === '') {
+                continue;
+            }
+
+            $clean[] = [
+                'id' => max(0, $id),
+                'name' => $name !== '' ? $name : $slug,
+                'slug' => $slug,
+            ];
+        }
+
+        return $clean;
     }
 }
