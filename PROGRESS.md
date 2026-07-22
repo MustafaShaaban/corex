@@ -27,10 +27,26 @@ bumped by hand — worth folding into `VersionCommand` next time. CHANGELOG cut 
 `[0.35.0]` with Added / Changed / Fixed covering the Notification Center, the CI expansion, the Linux-only
 build break, the fresh-clone setup failures, and the dependency policy.
 
+**After the release, two more PRs merged to `main`** (both green on all five checks, both pushed to `origin`
+and `upstream`/Azure — `main` is `1eb5093` on both):
+- **#123** — issue **#114** (a code-registered form could be listed but not filtered: the filter was built
+  only from DB flows, and the inbox matched `corex_flow_id`, which those submissions do not carry) plus two
+  login-screen fixes. Adds the `corex_submission_filter_options` filter with `id: 0` meaning "match by
+  `corex_form_slug`", `slug:<form-slug>` parsing in `SubmissionInboxQuery`, and the matching meta clause.
+  Login: the remember-me row is a flex row with token spacing — scoped through `#login form` because core's
+  `#login form p { margin-bottom: 0 }` is an ID at (1,0,2) and silently beat a class-only rule — and core's
+  language switcher (the control Polylang fills) now matches the text inputs. That select stays native: a
+  **fourth boundary** alongside DECISIONS #141's three, since `wp-login.php` loads no admin bundle, so
+  `CorexSelect` does not exist there.
+- **#124** — `ROADMAP.md` refreshed: specs 069–072 added, §17's "active direction: Spec 068" banner retired,
+  and a candidates list for the next spec. **This closes the "no defined next feature" blocker below.**
+
 **Still open, recorded not forgotten:** three browser specs excluded with evidence (two block-editor
-first-open, one flow-builder — see `tests/e2e/playwright.config.js`); `ROADMAP.md` is stale by four specs
-(no 069–072) so there is no defined next feature; `develop` is ~40 commits behind `main` and effectively
-retired; T021 (`NotificationChannelPolicy`) deliberately unbuilt.
+first-open, one flow-builder — see `tests/e2e/playwright.config.js`); the next spec is now an **owner
+decision** between the candidates in ROADMAP.md §17 (cheapest first: the Astro 7 migration whose four
+bounded exceptions expire 2026-09-30, `wp corex version` not reaching `docs-app/src/version.ts`, the three
+excluded browser specs; M3/M4 are the only real feature direction); `develop` is ~40 commits behind `main`
+and effectively retired; T021 (`NotificationChannelPolicy`) deliberately unbuilt.
 
 ---
 ## (previous, 2026-07-22) -- Spec 072 (Notification Center & Command Center) COMPLETE + gated on `spec/072-notification-center-and-dashboard`; **PR #119 open, blocked only on human review + the 070→071→072 stack merge**. Everything below is the build log for that branch.
