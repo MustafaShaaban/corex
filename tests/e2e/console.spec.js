@@ -1,7 +1,7 @@
-﻿/**
- * Corex E2E â€” console-error sweep (spec 052, US2). Fails if a console *error* (not a
+/**
+ * Corex E2E — console-error sweep (spec 052, US2). Fails if a console *error* (not a
  * warning) is emitted while loading the block editor, a Corex admin screen, or a front-end
- * page with Corex blocks â€” so a JS/asset regression (a 404 asset, a bad block registration,
+ * page with Corex blocks — so a JS/asset regression (a 404 asset, a bad block registration,
  * an item-20 block error) fails CI instead of hiding.
  *
  * ENVIRONMENT-GATED: needs wp-env up + `npx playwright install`. Runs in the e2e workflow.
@@ -10,16 +10,17 @@ const { test, expect } = require( '@playwright/test' );
 const { collectConsoleErrors } = require( './helpers' );
 
 test( 'the block editor loads with no console errors', async ( { page } ) => {
-	// First spec in the suite to open the block editor, so it pays whatever the first open costs.
-	// A generous but finite budget; if this times out again, suspect something blocking the editor
-	// UI rather than slowness â€” a 120s wait already failed once while later specs passed instantly,
-	// which turned out to be the welcome-guide modal (now disabled during CI provisioning).
-	test.setTimeout( 90_000 );
+	// First spec in the suite to open the block editor, so it pays the whole cold cost. A trace of
+	// a failing CI run settled what that is: no console errors, no failed requests, and the editor
+	// header — "Block Inserter" among 25 buttons — present in a snapshot captured just after the
+	// assertion gave up. It renders; it is only slower than a default budget on the very first
+	// open. Excluding this spec does not help: the next one to open the editor inherits the cost.
+	test.setTimeout( 180_000 );
 
 	const errors = collectConsoleErrors( page );
 
 	await page.goto( '/wp-admin/post-new.php?post_type=page' );
-	// `networkidle` is unreliable here â€” the editor keeps connections open (heartbeat),
+	// `networkidle` is unreliable here — the editor keeps connections open (heartbeat),
 	// so it may never idle. Wait for a concrete interactive signal instead: the editor
 	// toolbar's inserter toggle being visible means the editor hydrated.
 	await expect(
@@ -28,7 +29,7 @@ test( 'the block editor loads with no console errors', async ( { page } ) => {
 				name: /block inserter|toggle block inserter|add block/i,
 			} )
 			.first()
-	).toBeVisible( { timeout: 45_000 } );
+	).toBeVisible( { timeout: 150_000 } );
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );

@@ -38,18 +38,6 @@ const { STORAGE_STATE } = require( './global-setup' );
  * which matches every title and would silently skip the entire suite while reporting green.
  */
 const CANNOT_RUN_ON_A_FRESH_INSTALL = [
-	// TRACE PROBE: temporarily un-excluded to capture a trace of the first-open failure.
-	// Undiagnosed, and deliberately not guessed at again. Whichever spec opens the block editor
-	// FIRST fails to see the inserter; every later one sees it immediately. Ruled out by testing:
-	// php -S (nginx behaves the same), worker starvation (4 -> 12 changed nothing), the assertion
-	// budget (5s, 30s, 45s and 120s all fail), and the welcome-guide modal (disabling the persisted
-	// preference changed nothing). The editor itself works — smoke.spec.js clicks that very
-	// inserter and passes when it is not the first — so what is lost is the editor's console-error
-	// sweep and its inserter check, not editor functionality. Worth a proper look with a trace.
-	//
-	// Both must go together: excluding only one hands the first-open slot to the other, which then
-	// fails in its place. That was demonstrated twice, in both directions.
-	'a corex block is recognised in the editor inserter',
 	// The flow builder times out mid-interaction (locator.click, 60s) even on nginx, where the
 	// block editor itself now works. Not diagnosed further — unlike the editor specs, this one has
 	// not been shown to be environmental, so it may be a real slow path worth its own look.
