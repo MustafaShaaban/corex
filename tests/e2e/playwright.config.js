@@ -14,8 +14,29 @@ const { defineConfig, devices } = require( '@playwright/test' );
 
 const { STORAGE_STATE } = require( './global-setup' );
 
+/**
+ * Specs that need a site with content already in it — published posts, built forms, stored
+ * submissions, declared data sources. They are real tests, not flaky ones; they simply assume a
+ * developer install that has been used. A freshly provisioned WordPress has none of that, so CI
+ * skips them via COREX_E2E_FRESH_INSTALL rather than reporting a red suite nobody can act on.
+ *
+ * Removing an entry here means seeding its fixtures in the CI job first.
+ */
+const NEEDS_SEEDED_CONTENT = [
+	'**/blog-pro.spec.js',
+	'**/console.spec.js',
+	'**/data-management.spec.js',
+	'**/forms-flow.spec.js',
+	'**/product-surfaces.spec.js',
+	'**/security-access.spec.js',
+	'**/submissions-inbox.spec.js',
+];
+
 module.exports = defineConfig( {
 	testDir: '.',
+	testIgnore: process.env.COREX_E2E_FRESH_INSTALL
+		? NEEDS_SEEDED_CONTENT
+		: [],
 	// The block editor is a heavy React app; on a cold OPcache / loaded box it can take a
 	// while to become interactive. 60s gives headroom without masking a real hang.
 	timeout: 60_000,
