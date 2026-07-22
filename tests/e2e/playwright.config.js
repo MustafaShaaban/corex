@@ -31,8 +31,6 @@ const { STORAGE_STATE } = require( './global-setup' );
  */
 const CANNOT_RUN_ON_A_FRESH_INSTALL = new RegExp(
 	[
-		// Needs published blog content.
-		'single post exposes share, newsletter, and comment surfaces',
 		// Need declared data sources and records.
 		'redirects the retired Data address to the Records tab',
 		'queries source records, opens detail, and queues a declared export',
@@ -41,9 +39,8 @@ const CANNOT_RUN_ON_A_FRESH_INSTALL = new RegExp(
 		// install — the second reported 0ms because the shared setup had already failed.
 		'the guest account block renders the sign-in, register, and recovery forms',
 		'the account surface does not scroll sideways at 375px',
-		// Need stored submissions.
+		// Needs stored submissions to filter, assign and export.
 		'filters works assigns notes bulk actions and audits personal-data exports',
-		'contains the Inbox at mobile tablet desktop wide and RTL viewports',
 		// Need the block editor (see above).
 		'the block editor loads with no console errors',
 		'creates publishes tests and submits a persisted flow without console errors',
