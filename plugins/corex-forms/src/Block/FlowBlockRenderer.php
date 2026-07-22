@@ -12,10 +12,13 @@ defined('ABSPATH') || exit;
 
 use Corex\Blocks\BlockRenderer;
 use Corex\Forms\Flow\Flow;
+use Corex\Forms\Flow\FlowProtection;
 use Corex\Forms\Flow\FlowRepository;
 use Corex\Forms\Flow\FlowVersion;
 use Corex\Forms\Schema\SchemaExporter;
+use Corex\Forms\Submission\CaptchaAction;
 use Corex\Forms\Submission\FlowSchemaFactory;
+use Corex\Forms\Submission\FormChallengeContextFactory;
 use Corex\Forms\Submission\FormSubmissionService;
 
 /**
@@ -30,6 +33,8 @@ final readonly class FlowBlockRenderer implements BlockRenderer
         private FlowSchemaFactory $schemas,
         private SchemaExporter $exporter,
         private FieldRenderer $fields,
+        private FormChallengeContextFactory $challenge,
+        private ProtectedFormRegistry $protectedForms,
     ) {
     }
 
@@ -95,7 +100,8 @@ final readonly class FlowBlockRenderer implements BlockRenderer
             . ' data-corex-flow-version="%7$d" data-corex-endpoint="%8$s" data-corex-nonce="%9$s"'
             . ' data-corex-success="%10$s" data-corex-success-config="%11$s" data-corex-error="%12$s" data-corex-schema="%13$s">'
             . '%14$s<input type="text" name="%15$s" class="corex-form__hp" tabindex="-1" autocomplete="off" aria-hidden="true" value="" />'
-            . '<button type="submit" class="corex-form__submit">%16$s</button>'
+            . '%16$s'
+            . '<button type="submit" class="corex-form__submit">%17$s</button>'
             . '<p class="corex-form__status" role="status" aria-live="polite"></p></form></section>',
             esc_attr($variant),
             esc_attr($flow->name),
@@ -112,7 +118,33 @@ final readonly class FlowBlockRenderer implements BlockRenderer
             esc_attr((string) wp_json_encode($this->exporter->toArray($schema))),
             $fields,
             esc_attr(FormSubmissionService::HONEYPOT_KEY),
+            $this->captchaField($flow, $version),
             esc_html($submitLabel !== '' ? $submitLabel : $this->defaultSubmitLabel($variant)),
+        );
+    }
+
+    /**
+     * The captcha token field, rendered only when this form is captcha-protected and a provider
+     * is configured. Declaring the form into the registry is what triggers the footer script
+     * enqueue — a page with no protected form therefore loads no provider script at all (FR-001).
+     * The field is left empty; the client script fills it with a fresh token at submit time.
+     */
+    private function captchaField(Flow $flow, FlowVersion $version): string
+    {
+        $protection = FlowProtection::normalize($version->configuration->protection);
+        if (! $this->challenge->isProtected($protection)) {
+            return '';
+        }
+
+        $action = CaptchaAction::forFlow(
+            $flow->slug,
+            isset($protection['action']) ? (string) $protection['action'] : null,
+        );
+        $this->protectedForms->declare($flow->slug, $action);
+
+        return sprintf(
+            '<input type="hidden" name="captcha_token" value="" class="corex-form__captcha-token" data-corex-captcha-action="%s" />',
+            esc_attr($action),
         );
     }
 

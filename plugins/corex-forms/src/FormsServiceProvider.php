@@ -17,6 +17,7 @@ use Corex\Events\ListenerProvider;
 use Corex\Foundation\ServiceProvider;
 use Corex\Forms\Block\FormBlockRenderer;
 use Corex\Forms\Block\FlowBlockRenderer;
+use Corex\Forms\Block\ProtectedFormRegistry;
 use Corex\Forms\Forms\ContactForm;
 use Corex\Forms\Flow\FlowRepository;
 use Corex\Forms\Flow\FlowService;
@@ -41,7 +42,9 @@ use Corex\Forms\Routing\RoutingService;
 use Corex\Forms\Submission\FormSubmissionService;
 use Corex\Forms\Submission\FormSubmissionPipeline;
 use Corex\Forms\Submission\FlowEmailSender;
+use Corex\Forms\Submission\NotificationDispatcher;
 use Corex\Forms\Submission\FlowEmailAddressResolver;
+use Corex\Forms\Submission\FormChallengeContextFactory;
 use Corex\Forms\Submission\FlowSchemaFactory;
 use Corex\Forms\Submission\FlowTestService;
 use Corex\Forms\Submission\FlowSubmissionController;
@@ -61,6 +64,7 @@ use Corex\Forms\Validation\RuleRegistry;
 use Corex\Forms\Validation\Validator;
 use Corex\Forms\Success\SuccessStateRegistry;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Mail\Mailer;
 use Corex\Mail\RoutedMailer;
 use Corex\Mail\MailTemplateCatalog;
 use Corex\Security\ChallengeVerifier;
@@ -124,9 +128,16 @@ final class FormsServiceProvider extends ServiceProvider
         $this->container->singleton(FlowEmailAddressResolver::class);
         $this->container->singleton(ValidationStage::class);
         $this->container->singleton(
+            FormChallengeContextFactory::class,
+            static fn (ContainerInterface $c): FormChallengeContextFactory => new FormChallengeContextFactory(
+                $c->make(ConfigInterface::class),
+            ),
+        );
+        $this->container->singleton(
             ProtectionStage::class,
             static fn (ContainerInterface $c): ProtectionStage => new ProtectionStage(
                 $c->has(ChallengeVerifier::class) ? $c->make(ChallengeVerifier::class) : null,
+                $c->make(FormChallengeContextFactory::class),
             ),
         );
         $this->container->singleton(StorageStage::class);
@@ -136,6 +147,15 @@ final class FormsServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): FlowEmailSender => new FlowEmailSender(
                 $c->has(RoutedMailer::class) ? $c->make(RoutedMailer::class) : null,
                 $c->make(FlowEmailAddressResolver::class),
+            ),
+        );
+        // The shared detect-and-defer ladder: its optional mailers are resolved conditionally so a
+        // site without CoreX Mail still reaches the wp_mail() floor (FR-017).
+        $this->container->singleton(
+            NotificationDispatcher::class,
+            static fn (ContainerInterface $c): NotificationDispatcher => new NotificationDispatcher(
+                $c->has(RoutedMailer::class) ? $c->make(RoutedMailer::class) : null,
+                $c->has(Mailer::class) ? $c->make(Mailer::class) : null,
             ),
         );
         $this->container->singleton(EmailStage::class);
@@ -164,11 +184,17 @@ final class FormsServiceProvider extends ServiceProvider
         $this->container->singleton(StoreSubmissionListener::class);
         $this->container->singleton(
             SendEmailListener::class,
-            static fn (ContainerInterface $c): SendEmailListener => new SendEmailListener($c, $c->make(ConfigInterface::class)),
+            static fn (ContainerInterface $c): SendEmailListener => new SendEmailListener(
+                $c->make(NotificationDispatcher::class),
+                $c->make(ConfigInterface::class),
+            ),
         );
         $this->container->singleton(FormSubmissionService::class);
         $this->container->singleton(SubmitController::class);
         $this->container->singleton(FormsListController::class);
+        // Request-scoped: one registry per page render, shared between the renderer that declares
+        // protected forms and the captcha asset controller that reads them at footer time.
+        $this->container->singleton(ProtectedFormRegistry::class);
         $this->container->singleton(FlowBlockRenderer::class);
         $this->container->singleton(FormBlockRenderer::class);
     }
@@ -245,7 +271,17 @@ final class FormsServiceProvider extends ServiceProvider
                 }
 
                 $registered[$listenerId] = true;
-                $provider->listen(FormSubmittedEvent::class, $this->container->make($listenerId));
+                // Register lazily: the listener (and its whole mail dependency graph, including the
+                // optional Email Studio router) is built only when a submission fires the event —
+                // at request time, after `init` — never eagerly at boot, which would load the mail
+                // stack's translations too early. Listeners are singletons, so this builds once.
+                $container = $this->container;
+                $provider->listen(
+                    FormSubmittedEvent::class,
+                    static function (object $event) use ($container, $listenerId): void {
+                        ($container->make($listenerId))($event);
+                    },
+                );
             }
         }
     }

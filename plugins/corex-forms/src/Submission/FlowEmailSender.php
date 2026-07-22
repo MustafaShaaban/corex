@@ -29,6 +29,15 @@ final readonly class FlowEmailSender
      * @param array<string,mixed> $binding
      * @param array<string,mixed> $context
      */
+    /**
+     * Whether CoreX Mail's routed transport is available. When false, the flow has no Email Studio
+     * to route through and the pipeline falls back to the wp_mail() floor instead (FR-017).
+     */
+    public function canRoute(): bool
+    {
+        return $this->mailer !== null;
+    }
+
     public function send(array $binding, string $flowSlug, array $context): ?MailResult
     {
         if ($this->mailer === null) {

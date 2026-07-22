@@ -13,9 +13,14 @@ defined('ABSPATH') || exit;
 use Corex\Support\Config\ConfigInterface;
 
 /**
- * Selects the configured captcha driver and supplies its secret from the Config
- * engine (`captcha.driver`, `captcha.secret`). Switching provider is configuration,
- * not code. Unknown/absent driver → NullCaptcha (the honeypot still guards).
+ * Selects the configured captcha driver and supplies its secret from the Config engine
+ * (`captcha.driver`, `captcha.secret`). Switching provider is configuration, not code.
+ * Unknown/absent driver → NullCaptcha (the honeypot still guards).
+ *
+ * `recaptcha` resolves to the scored v3 driver ({@see RecaptchaV3Captcha}); `turnstile` and
+ * `hcaptcha` keep the simpler `success`-only {@see RemoteCaptcha}. The v3 driver's stateful
+ * collaborator — the replay guard — is injected rather than constructed here, so this resolver
+ * stays a thin factory over configuration.
  */
 final class CaptchaResolver
 {
@@ -25,8 +30,16 @@ final class CaptchaResolver
         'hcaptcha'  => 'https://hcaptcha.com/siteverify',
     ];
 
-    public function __construct(private readonly ConfigInterface $config)
-    {
+    private TokenReplayGuard $replay;
+
+    public function __construct(
+        private readonly ConfigInterface $config,
+        ?TokenReplayGuard $replay = null,
+    ) {
+        // Defaulted so existing one-argument callers keep working; the service provider passes
+        // the container-bound guard. The guard is a stateless-by-construction utility (its state
+        // lives in transients), so a default instance is behaviourally identical.
+        $this->replay = $replay ?? new TokenReplayGuard();
     }
 
     /**
@@ -41,13 +54,12 @@ final class CaptchaResolver
     public function resolve(): Captcha
     {
         $driver = (string) $this->config->get('captcha.driver', 'none');
+        $secret = (string) $this->config->get('captcha.secret', '');
 
         return match ($driver) {
             'honeypot' => new HoneypotCaptcha(),
-            'recaptcha', 'turnstile', 'hcaptcha' => new RemoteCaptcha(
-                self::ENDPOINTS[$driver],
-                (string) $this->config->get('captcha.secret', ''),
-            ),
+            'recaptcha' => new RecaptchaV3Captcha(self::ENDPOINTS['recaptcha'], $secret, $this->replay),
+            'turnstile', 'hcaptcha' => new RemoteCaptcha(self::ENDPOINTS[$driver], $secret),
             default => new NullCaptcha(),
         };
     }

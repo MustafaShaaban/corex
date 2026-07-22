@@ -26,6 +26,8 @@ final readonly class FlowConfiguration
      * @param array<string,mixed>       $emailRoutes
      * @param array<string,mixed>       $success
      * @param array<string,mixed>       $placementSnapshot
+     * @param array<string,mixed>       $protection Spam-protection expectations: captcha (inherit|on|off),
+     *                                              action (?string), threshold (?float). Empty = inherit all.
      */
     public function __construct(
         public array $schema,
@@ -34,6 +36,7 @@ final readonly class FlowConfiguration
         public array $emailRoutes,
         public array $success,
         public array $placementSnapshot,
+        public array $protection = [],
     ) {
     }
 
@@ -48,6 +51,13 @@ final readonly class FlowConfiguration
             'success' => $this->success,
             'placement_snapshot' => $this->placementSnapshot,
         ];
+
+        // Only include protection once a form actually declares it, so every version published
+        // before this field existed keeps the exact checksum it already stored. A new key in the
+        // canonical document would otherwise re-hash every version on every live site at once.
+        if ($this->protection !== []) {
+            $document['protection'] = $this->protection;
+        }
 
         return hash('sha256', json_encode($this->canonical($document), JSON_THROW_ON_ERROR));
     }

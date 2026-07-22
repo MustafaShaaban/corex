@@ -4,7 +4,126 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-20) -- Spec 070 IMPLEMENTATION-COMPLETE on `spec/070-transport-error-fidelity`.
+## RESUME HERE (2026-07-20b) -- Spec 071 US1 COMPLETE on `spec/071-form-delivery-and-recaptcha-reliability`.
+
+**Branch** `spec/071-form-delivery-and-recaptcha-reliability`, cut from the unpushed spec-070 tip
+`f9c5656` (070 is local-only, 1 ahead of `origin/main`, not yet merged). This is Phase A of a larger
+three-phase goal (Form Delivery reliability → Notification Center → Dashboard Command Center). **MFA
+and its whole family are explicitly out of scope by owner instruction, in every phase.**
+
+**Spec Kit artifacts written first** (learning from 070's gap): `specs/071-.../` has spec, plan,
+research, data-model, contracts, quickstart, checklists, tasks, evidence. 070's missing artifacts were
+**backfilled** (plan/tasks/checklists) and logged as `DECISIONS.md` #145 — `docs-guard` caught a false
+claim in 070's own spec.md while doing so (a `failureMessage()` that never existed), now corrected in
+place.
+
+**What Phase A US1 fixes — a live regression, not a feature.** Selecting reCAPTCHA in settings
+rejected *every* real submission: the form rendered no `captcha_token` field and no provider script,
+so the always-empty token failed closed. `RemoteCaptcha` also never read `score`/`action`, so the
+threshold and action settings were inert — there was no reCAPTCHA v3 at all.
+
+**Done and verified (US1):**
+- `Corex\Security\VerifyingChallenge` + `ChallengeVerification` + `ChallengeContext` — a typed verdict
+  that can carry a score, extending the boolean `ChallengeVerifier` without breaking it (DECISIONS #146).
+- `RecaptchaV3Captcha` — nine fail-closed checks in order: token → transport → parse → success →
+  hostname (exact allowlist) → action (server-derived) → expiry → score → **replay last** (so only
+  valid tokens are recorded; score-rejected tokens stay retryable). `TokenReplayGuard` is transient +
+  HMAC-fingerprint, TTL-bounded, no new table/job.
+- `CaptchaAction` (in corex-forms, not the add-on — DECISIONS #147) derives the action from the flow
+  slug; the *same* function stamps the form and computes the server expectation, so browser and server
+  cannot disagree (FR-004).
+- Per-form `protection` config on `FlowConfiguration`, checksum-neutral when empty so every published
+  version keeps its stored hash (DECISIONS #148). `FlowProtection::normalize` at both serialisation
+  boundaries; round-trips proven by 15/15 Forms integration tests.
+- Conditional loading: `ProtectedFormRegistry` (render-time) + `CaptchaAssetController` (`wp_footer`) —
+  the provider script loads only on pages with a protected form, once, site-key only (secret never
+  leaves the server). `corex-captcha-v3.js` fetches a **fresh token per submit** (never at load),
+  locks double-submit, and shows a recoverable, translated error on failure.
+- `ProtectionStage` rewritten: typed path when the driver supports it, legacy boolean otherwise;
+  honeypot + throttle untouched; typed outcome + effective threshold persisted to `spam` metadata.
+
+**WS3 — truthful delivery outcome + wp_mail fallback — also DONE (2026-07-20b).** The other P1 core.
+- `NotificationDelivery` — a typed, redacting outcome reusing the canonical `MailResult` vocabulary
+  plus `not_attempted`/`unavailable`/`rejected`. `wp_mail()` true → `accepted`, **never** `sent`
+  (FR-015). `NotificationDispatcher` — the shared RoutedMailer → AttemptingMailer → Mailer →
+  `wp_mail()` ladder, extracted from the legacy listener and **added to the flow path**, which had no
+  floor: with CoreX Mail inactive a builder-form submission used to save and send *nothing*, silently.
+- `EmailStage` rewired: routed (CoreX Mail active) path preserved exactly, plus a wp_mail fallback and
+  a headline `corex_notification_delivery` projection an admin can read. `SendEmailListener` now
+  delegates to the dispatcher (removing the duplicated ladder and fixing its own wp_mail→`sent` bug).
+- **A regression I introduced and fixed:** wiring the dispatcher made `SendEmailListener` resolve the
+  Email Studio `RoutedMailer` *at boot* (loading mail translations before `init`). Fixed by
+  registering the forms event listeners **lazily** — built on first dispatch, not at boot — which also
+  lightens boot. Caught by a front-page log-delta check; now zero new log lines. DECISIONS #149.
+
+- **Verification (US1 + WS3):** 163/163 unit (Captcha+Forms+new Security), 23/23 Forms+Submissions
+  integration (routed *and* legacy paths preserved; the delivery projection asserted end-to-end in
+  `FlowLifecycleTest`), 303/303 Jest, JS lint clean, `php -l` clean, front page 200 with zero new log
+  lines. **Guards clean:** wp-guard, clean-code-guard (each with one finding fixed). Evidence:
+  `specs/071-.../evidence.md`.
+- **Pre-existing, not mine:** `LoginRouteGuardTest` "emoji shim" fails in isolation (mock-state leak
+  from spec 070) — reproduced with my edits *stashed*, so it predates this branch. Flagged, not absorbed.
+
+**WS4 (timeline + inbox surfacing) + captcha settings — also DONE (2026-07-20b).**
+- Unified the submission-timeline onto the one canonical shape the admin reads (`TimelineStage` +
+  `SubmissionRepository::appendTimeline`), added a `notification` timeline event carrying the delivery
+  status, and hydrate legacy `{kind,state,occurred_at}` rows on read (`WpSubmissionsReader`).
+- Surfaced delivery in the Submissions inbox: a `delivery` projection on every row (honest
+  `unavailable` for legacy), and a React `DeliveryBadge` (text + dashicon + accessible name, tone
+  tokens, never colour-alone) in the list column and detail, across all seven states.
+- Corrected the captcha settings: threshold help now states the shipped 0.3 default, action help
+  explains per-form `corex_form_<slug>` derivation, added a hostname-allowlist field.
+- **Verification:** 327 unit (Forms+Captcha+Security+Config), 23 Forms+Submissions integration,
+  303/303 Jest (token inventory regenerated for the new CSS tokens), CSS lint clean, config bundle
+  builds. DECISIONS #149 covers WS3; WS4/settings need no new decision.
+
+**WS5 (FluentSMTP transport advisory) — also DONE (2026-07-20b).** `TransportAdvisory` +
+`TransportAdvisoryResult` read only public signals (configured From-domain vs site host,
+`has_filter('wp_mail_from')`/`wp_mail_from_name`) — never a transport plugin's tables or credentials
+(FR-027), and never a fabricated "detected" where no evidence exists (FR-029). Surfaced as a
+"Sending & transport" panel on the Email Studio screen. 6/6 unit; boot clean; token inventory
+regenerated. Guidance: CoreX composes via wp_mail(), a transport (e.g. FluentSMTP) delivers,
+acceptance ≠ inbox delivery, SMTP credentials stay owned by the transport plugin.
+
+**US4 (per-form Protection panel) — also DONE (2026-07-21).** A **Protection** tab in the flow
+builder (`ProtectionTab.js` + `StageRail`/`FlowEditorPanel` wiring) lets an author set captcha
+mode (inherit/on/off) + optional action/threshold overrides, via `CorexSelect` (never a native
+select). Sparse storage keeps an all-inherit form checksum-neutral; the field round-trips through the
+editor and the REST presenter/mapper. `protectionTab.test.js` 3/3, `PerFormProtectionTest` 4/4; JS +
+CSS lint clean; bundle builds; boot clean.
+
+**PHASE A IS COMPLETE AND GATE-GREEN (2026-07-21).** US1 · WS3 · WS4 · WS5 · US4 · captcha settings ·
+docs — all implemented, tested, documented, and verified over the full diff.
+
+**Phase A gate results** (full detail in `specs/071-.../evidence.md`):
+- Composer valid; `php -l` clean; `git diff --check` clean (CRLF-only warnings).
+- **Full integration 166/168** — the 2 failures are `LoginUrlRewritingTest` (spec-070 login-hiding),
+  **proven pre-existing** (reproduced with my changes stashed). **Full Jest 306/306, 57 suites.**
+- `composer test` hits the **pre-existing order-dependent segfault** (spec 070 §Out of scope,
+  reproduced identically with my changes stashed); every suite passes in isolation.
+- CSS lint clean; full build exit 0; `verify:dependencies` shows 27 **pre-existing** advisories
+  (no dependency-manifest change by me — spec 056's track).
+- **Playwright 7/7** (submissions-inbox + forms-flow + console) — the inbox (new DeliveryBadge) and
+  builder (new Protection tab) render at mobile/tablet/desktop/wide **+ RTL**, no console errors.
+- **All guards clean:** wp-guard, clean-code-guard, docs-guard, test-guard (one redundant test
+  merged), ui-ux-pro-max (one raw `3px` → `--corex-admin-state-border` token).
+- **Deferred, env-gated:** T004/T018/T028/T040 — a live reCAPTCHA-v3 **token** E2E needs a real dev
+  site key on `corex.local`; the existing E2E specs don't use captcha so they pass without one, and
+  the server-side verification is exhaustively unit-tested (28 captcha cases). Provide a key to add it.
+- The inherited `Illegal characters in the subject field` warning is **not** surfaced or caused by
+  this work (subjects are built via `sprintf(__('New "%s" form submission'))`); it remains open.
+
+Nothing committed, pushed, or merged. **Phase B (Notification Center) may now begin**, gated on this
+green Phase A. Two
+spec-070 login-hiding integration tests fail **pre-existing** (reproduced with my changes stashed):
+`LoginRouteGuardTest` emoji-shim, `LoginUrlRewritingTest` multisite welcome-email — flagged for a
+separate fix, not absorbed. Phases B (Notification Center) and C (Dashboard) follow, gated on the
+Phase A gate passing.
+
+**Nothing committed, pushed, or merged** — working tree changes only, as instructed.
+
+---
+## (previous) Spec 070 IMPLEMENTATION-COMPLETE on `spec/070-transport-error-fidelity`.
 
 Two owner-reported defects against v0.34.0, both reproduced on `corex.local` before any code changed,
 and neither with the cause its symptom suggested. Full write-up:

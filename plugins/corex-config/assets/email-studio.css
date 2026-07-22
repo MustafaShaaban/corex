@@ -428,3 +428,31 @@
 		transition: none;
 	}
 }
+
+/* Transport-boundary advisory: who composes vs who delivers (spec 071 WS5). */
+.corex-admin .corex-transport-advisory {
+	margin-block-start: var(--corex-admin-space-lg);
+	padding: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-transport-advisory__list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-transport-advisory__note {
+	padding-inline-start: var(--corex-admin-space-sm);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-transport-advisory__note.is-warning {
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-transport-advisory__note.is-info {
+	border-inline-start-color: var(--corex-admin-info);
+}

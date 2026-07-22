@@ -44,8 +44,14 @@ validation → protection → storage → routing → email → inbox → timeli
 ```
 
 The REST boundary applies nonce verification, a flow-shaped sanitizer, and throttling first. The protection stage
-records honeypot/captcha/spam evidence. Each stage returns a traceable state and message. A failure stops later stages,
-preserves already-committed safe state, and identifies whether retry is appropriate; it never reports false success.
+records honeypot/captcha/spam evidence — when a reCAPTCHA v3 provider is configured and the form is protected (its
+per-form **Protection** setting), it verifies a fresh per-submission token against the form's server-derived action, an
+exact hostname allowlist, token age, one-time use, and a score threshold, and stores the typed outcome. The email stage
+routes through CoreX Mail when active and falls back to `wp_mail()` otherwise, always recording a typed
+**notification-delivery** outcome (`accepted`/`captured`/`queued`/`failed`/`rejected`/`not attempted`) — a saved
+submission is never lost to a mail failure, and `wp_mail()` acceptance is recorded as *accepted*, never *sent*. Each
+stage returns a traceable state and message. A failure stops later stages, preserves already-committed safe state, and
+identifies whether retry is appropriate; it never reports false success.
 
 Stored `corex_submission` records include the flow/version identity, field values, test marker, consent snapshot, UTM
 and hidden metadata, spam result, routing result, email result, Inbox assignment, and timeline entry. Marked tests use

@@ -526,7 +526,8 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
             'spam' => $this->metaArray($meta, 'corex_spam_json'),
             'related_emails' => $this->metaArray($meta, 'corex_email_json'),
             'notes' => $notes,
-            'timeline' => $this->metaArray($meta, 'corex_submission_timeline'),
+            'timeline' => $this->timelineEvents($meta),
+            'delivery' => $this->deliveryProjection($meta),
             'retention_state' => (string) ($this->metaValue($meta, 'corex_retention_state') ?: 'active'),
             'exported_at' => $this->nullableMeta($meta, 'corex_exported_at'),
             'created_at' => (string) $post->post_date_gmt,
@@ -603,6 +604,65 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         $ids = array_map(static fn (array $note): int => (int) ($note['id'] ?? 0), $notes);
 
         return $ids === [] ? 1 : max($ids) + 1;
+    }
+
+    /**
+     * The timeline in one canonical shape. Events written by earlier versions used the pipeline's
+     * old `{kind, state, occurred_at}` form; they are hydrated here rather than dropped, so a legacy
+     * submission's history still reads correctly.
+     *
+     * @param array<string,list<mixed>> $meta
+     * @return list<array<string,mixed>>
+     */
+    private function timelineEvents(array $meta): array
+    {
+        $events = $this->metaArray($meta, 'corex_submission_timeline');
+
+        return array_values(array_map(
+            function (mixed $event): array {
+                if (! is_array($event)) {
+                    return [];
+                }
+                if (! isset($event['stage']) && isset($event['kind'])) {
+                    return [
+                        'id' => (int) ($event['id'] ?? 0),
+                        'submission_id' => (int) ($event['submission_id'] ?? 0),
+                        'stage' => 'submitted',
+                        'outcome' => (string) ($event['state'] ?? 'success'),
+                        'summary' => ['kind' => (string) $event['kind']],
+                        'created_at' => (string) ($event['occurred_at'] ?? ($event['created_at'] ?? '')),
+                    ];
+                }
+
+                return $event;
+            },
+            $events,
+        ));
+    }
+
+    /**
+     * The notification-delivery projection, or an honest "unavailable" for a submission saved before
+     * delivery was tracked — never presented as successful (FR-018).
+     *
+     * @param array<string,list<mixed>> $meta
+     * @return array<string,mixed>
+     */
+    private function deliveryProjection(array $meta): array
+    {
+        $delivery = $this->metaArray($meta, 'corex_notification_delivery');
+        if (! isset($delivery['status'])) {
+            return [
+                'status' => 'unavailable',
+                'attempt_id' => null,
+                'provider' => null,
+                'attempted_at' => null,
+                'retryable' => false,
+                'safe_reason' => '',
+                'reason_code' => 'unavailable',
+            ];
+        }
+
+        return $delivery;
     }
 
     private function appendRetentionEvent(int $submissionId, string $state): void

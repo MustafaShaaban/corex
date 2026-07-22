@@ -48,11 +48,37 @@ Email bindings cover submitter confirmation, team notification, and administrato
 Studio template and map recipients/reply-to values from the submission. Delivery still follows Email Studio's environment
 policy, so Development captures mail and Production requires an explicitly ready provider.
 
+## Spam protection (reCAPTCHA v3)
+
+Protection is set per form on the **Protection** tab: leave it on the site default, or force it on or off for this
+form. When a reCAPTCHA v3 provider is configured (**CoreX → Settings → Captcha**) and a form is protected, the provider
+script loads **only on pages that actually contain that form** — a page with no protected form makes no request to the
+provider. Each submission fetches a **fresh token at submit time**, and the server verifies it against the form's own
+expected action, an allowed-hostname list, the token's age, one-time use, and a score threshold.
+
+The score threshold defaults to **0.3** — conservative for ordinary low-traffic sites. Watch real traffic before
+raising it; a higher threshold rejects more legitimate visitors. A form may override the global threshold and action on
+its Protection tab; when it declares neither, its action derives deterministically from the flow slug
+(`corex_form_<slug>`) so two forms never share one by accident. The honeypot and rate limiter always run — reCAPTCHA is
+an added layer, not a replacement — and the secret key never reaches the browser. If a form has no provider configured,
+it still works; only the honeypot guards it.
+
 ## Stored evidence
 
 Each accepted submission records its flow and version, submitted values, hidden and UTM metadata, consent snapshot, spam
-evidence, resolved route, email outcome, Inbox assignment, test marker, and timeline. If a later stage fails, committed
-safe state remains available with the retryable outcome instead of being relabeled as success.
+evidence (including the effective captcha threshold and outcome), resolved route, a typed **notification-delivery**
+outcome, Inbox assignment, test marker, and timeline. The delivery outcome is one of *accepted*, *captured*, *queued*,
+*failed*, *rejected*, or *not attempted* — a submission saved before a mail problem is never relabeled as sent, and a
+submission saved before delivery tracking existed reads as *unavailable*, never as success. The submission is always
+saved **before** its notification is attempted, so a mail failure can never lose an enquiry.
+
+## What CoreX Forms covers
+
+This pipeline covers submissions made through the official CoreX Forms interfaces: visual flows, CoreX form blocks,
+code-registered forms that use the CoreX Forms contracts, and the Bookings/Profile integrations built on them. It does
+**not** cover third-party form plugins, custom PHP that bypasses CoreX, direct `wp_mail()` calls made outside the
+pipeline, or the WordPress login form. A transport accepting a message is never proof it reached an inbox — see
+[Email Studio](/guides/email-studio/#sending-and-transport).
 
 For code-defined compatibility forms and low-level API details, see [Create a form](/guides/forms/) and the
 [frontend runtime](/guides/frontend-runtime/).

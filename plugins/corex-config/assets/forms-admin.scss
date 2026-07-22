@@ -322,3 +322,19 @@
 		transition-duration: 0s;
 	}
 }
+
+/* Per-form Protection tab: mode + override stack (spec 071 US4). */
+.corex-admin .corex-flow-editor__protection {
+	display: grid;
+	gap: var(--corex-admin-space-md);
+	max-inline-size: 32rem;
+}
+
+.corex-admin .corex-flow-editor__protection .corex-field {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-flow-editor__protection .corex-field small {
+	color: var(--corex-admin-text-muted);
+}

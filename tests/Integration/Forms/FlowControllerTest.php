@@ -151,7 +151,9 @@ it('creates updates publishes and reads an immutable flow through REST', functio
         ->and(get_post_meta($tested->get_data()['data']['submission_id'], 'corex_utm_json', true))->toBe([])
         ->and(get_post_meta($tested->get_data()['data']['submission_id'], 'corex_spam_json', true)['honeypot'])->toBe('passed')
         ->and(get_post_meta($tested->get_data()['data']['submission_id'], 'corex_routing_json', true)['target_type'])->toBe('flow_owner')
-        ->and(get_post_meta($tested->get_data()['data']['submission_id'], 'corex_submission_timeline', true))->toHaveCount(1)
+        // Two canonical timeline events now: the submission, plus its notification outcome (spec 071 WS4).
+        ->and(get_post_meta($tested->get_data()['data']['submission_id'], 'corex_submission_timeline', true))->toHaveCount(2)
+        ->and(get_post_meta($tested->get_data()['data']['submission_id'], 'corex_submission_timeline', true)[1]['stage'])->toBe('notification')
         ->and($found->get_data()['data']['versions'])->toHaveCount(2)
         ->and($found->get_data()['data']['flow']['published_version'])->toBe(2);
 });
