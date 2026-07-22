@@ -3,8 +3,8 @@ name: CodeQL
 on:
   push:
     branches: [main, develop]
+  # Unfiltered for the same reason as ci.yml: a stacked PR must not reach main unscanned.
   pull_request:
-    branches: [main, develop]
   schedule:
     - cron: '20 4 * * 1'
   workflow_dispatch:

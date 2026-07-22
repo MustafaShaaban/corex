@@ -3,8 +3,11 @@ name: CI
 on:
   push:
     branches: [main, develop]
+  # Every pull request, whatever its base. Filtering to [main, develop] meant a stacked PR — one
+  # whose base is another feature branch — never ran CI at all, and GitHub renders "no checks" the
+  # same way it renders "all checks passed". Spec 072's stack sat queued for merge that way with
+  # eight real unit failures in it (DECISIONS #153).
   pull_request:
-    branches: [main, develop]
 
 permissions:
   contents: read
