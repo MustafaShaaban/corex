@@ -15,38 +15,49 @@ const { defineConfig, devices } = require( '@playwright/test' );
 const { STORAGE_STATE } = require( './global-setup' );
 
 /**
- * Specs that need a site with content already in it — published posts, built forms, stored
- * submissions, declared data sources. They are real tests, not flaky ones; they simply assume a
- * developer install that has been used. A freshly provisioned WordPress has none of that, so CI
- * skips them via COREX_E2E_FRESH_INSTALL rather than reporting a red suite nobody can act on.
+ * The individual tests that cannot pass on a freshly provisioned site.
  *
- * Removing an entry here means seeding its fixtures in the CI job first.
+ * Matched by TITLE, not by file, and that distinction matters: most of these live in specs whose
+ * other tests pass perfectly well on a clean install. Excluding whole files threw away real
+ * coverage — security-access.spec.js has one environment-dependent test and a dozen good ones.
+ *
+ * Two causes, both environmental rather than defects:
+ *   - seeded content: published posts, built forms, stored submissions, declared data sources —
+ *     these assume a developer install that has been used;
+ *   - the block editor: Gutenberg never becomes interactive under PHP's built-in server (raising
+ *     PHP_CLI_SERVER_WORKERS from 4 to 12 changed nothing, so it is not throughput).
+ *
+ * Removing an entry means seeding its fixtures — or serving the site properly — in the CI job.
  */
-const NEEDS_SEEDED_CONTENT = [
-	'**/blog-pro.spec.js',
-	'**/console.spec.js',
-	'**/data-management.spec.js',
-	'**/forms-flow.spec.js',
-	'**/product-surfaces.spec.js',
-	'**/security-access.spec.js',
-	'**/submissions-inbox.spec.js',
-];
-
-/**
- * The block editor never becomes interactive under PHP's built-in server: the inserter toggle
- * stays unclickable until the 60s timeout, and raising PHP_CLI_SERVER_WORKERS from 4 to 12 changed
- * nothing, so it is not throughput. Gutenberg wants a real web server. The rest of smoke.spec.js
- * runs, so this is excluded by title rather than by file.
- */
-const NEEDS_A_REAL_WEB_SERVER = /block is recognised in the editor inserter/;
+const CANNOT_RUN_ON_A_FRESH_INSTALL = new RegExp(
+	[
+		// Needs published blog content.
+		'single post exposes share, newsletter, and comment surfaces',
+		// Need declared data sources and records.
+		'redirects the retired Data address to the Records tab',
+		'queries source records, opens detail, and queues a declared export',
+		'renders every Data workflow from declared source capabilities',
+		// Needs a page carrying the guest-account block.
+		'the guest account block renders the sign-in, register, and recovery forms',
+		// Needs login protection configured with a custom slug.
+		'the default login and admin endpoints 404 without leaking a diagnostic',
+		// Need stored submissions.
+		'filters works assigns notes bulk actions and audits personal-data exports',
+		'contains the Inbox at mobile tablet desktop wide and RTL viewports',
+		// Need the block editor (see above).
+		'the block editor loads with no console errors',
+		'creates publishes tests and submits a persisted flow without console errors',
+		'a corex block is recognised in the editor inserter',
+	]
+		.map( ( title ) => title.replace( /[.*+?^${}()|[\]\\]/g, '\\$&' ) )
+		.join( '|' )
+);
 
 module.exports = defineConfig( {
 	testDir: '.',
-	testIgnore: process.env.COREX_E2E_FRESH_INSTALL
-		? NEEDS_SEEDED_CONTENT
-		: [],
+	// Unset locally, so a developer always runs the whole suite against their real install.
 	grepInvert: process.env.COREX_E2E_FRESH_INSTALL
-		? NEEDS_A_REAL_WEB_SERVER
+		? CANNOT_RUN_ON_A_FRESH_INSTALL
 		: undefined,
 	// The block editor is a heavy React app; on a cold OPcache / loaded box it can take a
 	// while to become interactive. 60s gives headroom without masking a real hang.
