@@ -15,6 +15,17 @@ declare(strict_types=1);
 use Corex\Config\Notifications\OptionalDashboardWidgets;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
+use Corex\Config\Settings\SettingsStore;
+
+/**
+ * Opt a widget in exactly the way the settings screen does — writing the option the Config engine
+ * reads — so this exercises the real path rather than a test-only door.
+ */
+function optInToWidget(string $widgetId, bool $on): void
+{
+    $key = OptionalDashboardWidgets::catalogue()[$widgetId]['configKey'];
+    (new SettingsStore())->save($key, $on ? '1' : '');
+}
 
 /** Register onto a clean dashboard and return the ids that landed on it. */
 function registeredDashboardIds(OptionalDashboardWidgets $widgets): array
@@ -39,7 +50,10 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    delete_option(OptionalDashboardWidgets::OPTION);
+    foreach (OptionalDashboardWidgets::catalogue() as $definition) {
+        delete_option((new SettingsStore())->optionName($definition['configKey']));
+    }
+
     $this->modes->set($this->wasMode, get_current_user_id());
     // Leave a front-end screen behind: a lingering admin screen leaks into later tests.
     set_current_screen('front');
@@ -47,15 +61,13 @@ afterEach(function () {
 });
 
 it('registers nothing on a dashboard that opted into nothing', function () {
-    delete_option(OptionalDashboardWidgets::OPTION);
-
     expect(registeredDashboardIds($this->widgets))
         ->not->toContain(OptionalDashboardWidgets::ATTENTION)
         ->not->toContain(OptionalDashboardWidgets::DEVELOPMENT);
 });
 
 it('keeps an opted-in Development widget off a Production dashboard', function () {
-    update_option(OptionalDashboardWidgets::OPTION, [OptionalDashboardWidgets::DEVELOPMENT]);
+    optInToWidget(OptionalDashboardWidgets::DEVELOPMENT, true);
     $this->modes->set(OperationsMode::PRODUCTION, get_current_user_id());
 
     expect(registeredDashboardIds($this->widgets))
@@ -63,19 +75,21 @@ it('keeps an opted-in Development widget off a Production dashboard', function (
 });
 
 it('registers the opted-in Development widget once the site is in Development', function () {
-    update_option(OptionalDashboardWidgets::OPTION, [OptionalDashboardWidgets::DEVELOPMENT]);
+    optInToWidget(OptionalDashboardWidgets::DEVELOPMENT, true);
     $this->modes->set(OperationsMode::DEVELOPMENT, get_current_user_id());
 
     expect(registeredDashboardIds($this->widgets))
         ->toContain(OptionalDashboardWidgets::DEVELOPMENT);
 });
 
-it('ignores an id in the option that is not a declared widget', function () {
-    // A stale or hand-edited option must not conjure a widget with no ability rule attached.
-    update_option(OptionalDashboardWidgets::OPTION, ['corex_not_a_widget']);
+it('treats an unchecked setting as off rather than as merely absent', function () {
+    // The settings form saves an unchecked box as '' — that must read as off, exactly like a key
+    // that was never written, so re-saving the form can never silently enable a widget.
+    optInToWidget(OptionalDashboardWidgets::DEVELOPMENT, false);
     $this->modes->set(OperationsMode::DEVELOPMENT, get_current_user_id());
 
-    expect(registeredDashboardIds($this->widgets))->not->toContain('corex_not_a_widget');
+    expect(registeredDashboardIds($this->widgets))
+        ->not->toContain(OptionalDashboardWidgets::DEVELOPMENT);
 });
 
 it('renders the Development widget with navigation-only links and no fatal', function () {

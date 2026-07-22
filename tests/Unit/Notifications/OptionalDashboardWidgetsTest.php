@@ -16,6 +16,7 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Config\Notifications\OptionalDashboardWidgets;
 use Corex\Config\Operations\OperationsMode;
+use Corex\Config\Settings\SettingsRegistry;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -115,6 +116,24 @@ it('declares an ability for every catalogued widget', function () {
             ->and($id)->toStartWith('corex_')
             // A render callback that does not exist fails silently in WordPress — the widget
             // registers and then draws nothing — so the catalogue must only name real methods.
-            ->and(method_exists(OptionalDashboardWidgets::class, $definition['render']))->toBeTrue();
+            ->and(method_exists(OptionalDashboardWidgets::class, $definition['render']))->toBeTrue()
+            ->and($definition['configKey'])->toStartWith('dashboard.widgets.');
+    }
+});
+
+it('declares every widget as a togglable setting so it can actually be opted into', function () {
+    // US7's independent test is "enable an optional widget in settings". A widget whose config key
+    // no section declares would be opt-in in name only — unreachable without editing the database.
+    $declared = [];
+
+    foreach ((new SettingsRegistry())->sections() as $section) {
+        foreach ($section['fields'] as $key => $field) {
+            $declared[$key] = $field['type'] ?? '';
+        }
+    }
+
+    foreach (OptionalDashboardWidgets::catalogue() as $definition) {
+        expect($declared)->toHaveKey($definition['configKey'])
+            ->and($declared[$definition['configKey']])->toBe('checkbox');
     }
 });

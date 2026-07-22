@@ -256,6 +256,24 @@ final class SettingsRegistry implements FieldSections
                     ],
                 ],
             ],
+            // The optional Dashboard widgets (spec 072 US7 / FR-025). Opt-in by definition, so every
+            // field here defaults to off; the Command Center widget is not listed because it is
+            // registered for everyone with CoreX visibility (FR-023) and is not optional.
+            'dashboard' => [
+                'title'  => 'Dashboard',
+                'fields' => [
+                    'dashboard.widgets.attention' => [
+                        'label' => 'Attention widget',
+                        'type'  => 'checkbox',
+                        'help'  => 'Lists your unread CoreX notifications on the WordPress dashboard. Hidden automatically when you have none.',
+                    ],
+                    'dashboard.widgets.development' => [
+                        'label' => 'Development widget',
+                        'type'  => 'checkbox',
+                        'help'  => 'Shows the operating mode and its warnings. Only ever appears while the site is in Development.',
+                    ],
+                ],
+            ],
             // Advanced is a read-only system-diagnostics read-out (spec 068 T203). Destructive resets
             // live behind their own typed-confirmation surfaces (Operations & Security, Setup Wizard);
             // this section never fabricates a value. Operations, Data Sources, and Design Tokens keep

@@ -34,7 +34,9 @@ it('renders the real sections as ARIA tabs in the fixed order', function () {
 
     preg_match_all('/data-corex-tab="([a-z]+)"/', $html, $matches);
 
-    expect($matches[1])->toBe(['brand', 'mail', 'forms', 'captcha', 'media', 'insights', 'advanced'])
+    // 'dashboard' carries the spec-072 optional-widget toggles; Advanced stays last as the
+    // read-only diagnostics catch-all.
+    expect($matches[1])->toBe(['brand', 'mail', 'forms', 'captcha', 'media', 'insights', 'dashboard', 'advanced'])
         ->and($html)->toContain('role="tablist"')
         ->toContain('role="tab"')
         ->toContain('role="tabpanel"')

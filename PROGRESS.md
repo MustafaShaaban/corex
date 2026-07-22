@@ -331,9 +331,14 @@ and mergeable).
 declares a catalogue — `corex_attention` (the actor's own unread items, bounded to 5) and `corex_development`
 (mode + warnings, Development-only) — each entry naming its ability, its Development-only flag, and its render
 callback. FR-025's four conditions sit in one **pure** `shouldRegister()` (opt-in · ability · has-data · mode),
-the `LoginRouteGuard` idiom, so every rule is unit-testable without WordPress. Opt-in is the site option
-`corex_dashboard_optional_widgets`, **absent by default**; the stored value is intersected with the catalogue
-and unknown ids **fail closed**, so a hand-edited option cannot conjure a widget with no ability rule.
+the `LoginRouteGuard` idiom, so every rule is unit-testable without WordPress. **The opt-in is a real
+setting** — US7's independent test is literally "enable an optional widget in settings" — so each entry names
+a Config dot-key (`dashboard.widgets.*`) declared as a checkbox in a new **Dashboard** tab of
+`SettingsRegistry`; the settings form saves it to the option the Config engine already reads
+(`dashboard.widgets.attention` → `corex_dashboard_widgets_attention`). One mechanism, no bespoke option. A
+unit test asserts every catalogued widget is declared as a togglable checkbox — a widget with no setting
+would be opt-in in name only — and unknown ids **fail closed**. `SettingsTabsTest`'s pinned tab order was
+updated for the new real section (Advanced stays last).
 `hasData()` is short-circuited behind opt-in + ability — a widget nobody enabled must not cost a query on
 every dashboard load just to decide not to appear. Both widgets reuse canonical services and are
 **navigation-only** (no forms, no buttons). Verified: 8 unit + 6 integration green; **full suites 1434 unit /

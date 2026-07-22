@@ -15,6 +15,7 @@ use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Notifications\NotificationQuery;
 use Corex\Notifications\NotificationService;
+use Corex\Support\Config\ConfigInterface;
 
 /**
  * The optional, opt-in Dashboard widgets (spec 072 US7, T024).
@@ -41,9 +42,6 @@ final class OptionalDashboardWidgets
     /** The current operating mode and its warnings, for a site that is not live yet. */
     public const DEVELOPMENT = 'corex_development';
 
-    /** Site option holding the enabled widget ids. Absent/empty means every optional widget is off. */
-    public const OPTION = 'corex_dashboard_optional_widgets';
-
     /** How many notifications the attention widget lists — bounded, like every other read (FR-026). */
     private const ATTENTION_LIMIT = 5;
 
@@ -51,6 +49,7 @@ final class OptionalDashboardWidgets
         private readonly ?NotificationService $notifications = null,
         private readonly ?OperationsMode $mode = null,
         private readonly ?OperationsModeStore $modeStore = null,
+        private readonly ?ConfigInterface $config = null,
     ) {
     }
 
@@ -58,7 +57,7 @@ final class OptionalDashboardWidgets
      * The declared widgets. Each entry states the ability it needs and whether it is Development-only,
      * so {@see shouldRegister()} has a rule to enforce for every id it accepts.
      *
-     * @return array<string,array{title:string,ability:string,developmentOnly:bool,render:string}>
+     * @return array<string,array{title:string,ability:string,developmentOnly:bool,render:string,configKey:string}>
      */
     public static function catalogue(): array
     {
@@ -68,12 +67,14 @@ final class OptionalDashboardWidgets
                 'ability'         => CorexAbility::MANAGE_NOTIFICATIONS,
                 'developmentOnly' => false,
                 'render'          => 'renderAttention',
+                'configKey'       => 'dashboard.widgets.attention',
             ],
             self::DEVELOPMENT => [
                 'title'           => __('CoreX Development', 'corex'),
                 'ability'         => CorexAbility::MANAGE_OPERATIONS,
                 'developmentOnly' => true,
                 'render'          => 'renderDevelopment',
+                'configKey'       => 'dashboard.widgets.development',
             ],
         ];
     }
@@ -111,11 +112,10 @@ final class OptionalDashboardWidgets
     /** WordPress owns Screen Options for anything registered here, so a user can still hide one. */
     public function add(): void
     {
-        $enabled = $this->enabledIds();
-        $mode    = $this->modeStore?->current() ?? OperationsMode::PRODUCTION;
+        $mode = $this->modeStore?->current() ?? OperationsMode::PRODUCTION;
 
         foreach (self::catalogue() as $id => $definition) {
-            $optedIn = in_array($id, $enabled, true);
+            $optedIn = $this->isEnabled($definition['configKey']);
             // Short-circuited deliberately: hasData() costs a bounded query, and a widget nobody
             // opted into — the default for every site — must not spend one on every dashboard load
             // just to decide not to appear.
@@ -131,24 +131,16 @@ final class OptionalDashboardWidgets
     }
 
     /**
-     * The opted-in widget ids.
+     * Whether the site opted into this widget.
      *
-     * @return list<string>
+     * Read through Config rather than a bespoke option so the toggle is an ordinary CoreX setting:
+     * SettingsRegistry declares it, the settings form saves it to the option the Config engine
+     * already reads (`dashboard.widgets.attention` → `corex_dashboard_widgets_attention`), and there
+     * is no second place for the value to live. Absent means off — opt-in, not opt-out.
      */
-    private function enabledIds(): array
+    private function isEnabled(string $configKey): bool
     {
-        $stored = get_option(self::OPTION, []);
-
-        if (! is_array($stored)) {
-            return [];
-        }
-
-        // Only ids this class actually declares — a stale or hand-edited option cannot conjure a
-        // widget that has no ability rule attached to it.
-        return array_values(array_intersect(
-            array_map('strval', $stored),
-            array_keys(self::catalogue())
-        ));
+        return (string) ($this->config?->get($configKey, '') ?? '') === '1';
     }
 
     /** Whether this actor has anything for the widget to show (FR-025). */
