@@ -12,10 +12,13 @@
 
 declare(strict_types=1);
 
+use Corex\Config\Notifications\NotificationTable;
+use Corex\Config\Notifications\NotificationUserStateTable;
 use Corex\Config\Notifications\OptionalDashboardWidgets;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Config\Settings\SettingsStore;
+use Corex\Database\Schema\Migrator;
 
 /**
  * Opt a widget in exactly the way the settings screen does — writing the option the Config engine
@@ -52,6 +55,20 @@ beforeEach(function () {
 afterEach(function () {
     foreach (OptionalDashboardWidgets::catalogue() as $definition) {
         delete_option((new SettingsStore())->optionName($definition['configKey']));
+    }
+
+    // Remove this test's seeded notifications. Without it every run leaves an unread row behind,
+    // and those accumulate into the next run's widget output — which is exactly how this test first
+    // failed against itself.
+    global $wpdb;
+    $migrator = new Migrator();
+    $table    = $migrator->fullName(NotificationTable::NAME);
+    $ids      = $wpdb->get_col("SELECT id FROM {$table} WHERE dedup_key LIKE 'widget.test:%'");
+
+    if ($ids !== []) {
+        $list = implode(',', array_map('intval', $ids));
+        $wpdb->query("DELETE FROM " . $migrator->fullName(NotificationUserStateTable::NAME) . " WHERE notification_id IN ({$list})");
+        $wpdb->query("DELETE FROM {$table} WHERE id IN ({$list})");
     }
 
     $this->modes->set($this->wasMode, get_current_user_id());
@@ -104,12 +121,46 @@ it('renders the Development widget with navigation-only links and no fatal', fun
         ->and($html)->not->toContain('<button');
 });
 
-it('renders the attention widget without querying for itself', function () {
-    // Reuses NotificationService::forCurrentActor — the same bounded read the screen and drawer use.
-    // With nothing unread it must still render an honest line rather than fatal on an empty result.
+it('lists a real unread notification and drops it once the actor reads it', function () {
+    // The earlier version of this test asserted only that the output was non-empty, and passed while
+    // the widget was iterating the {items,total,page,per_page} envelope and emitting empty <li>s.
+    // Seeding a real notification is what makes the assertion mean anything.
+    $service = Corex\Boot::app()->container()->make(Corex\Notifications\NotificationService::class);
+    $actorId = get_current_user_id();
+    // Unique per run: a fixed title would collide with rows this test left behind on earlier runs,
+    // which stay unread and would keep appearing after this run's notification is marked read.
+    $title   = 'Widget test ' . uniqid('', false);
+
+    $stored = $service->publish(Corex\Notifications\Notification::create(
+        type: 'submission.new',
+        category: Corex\Notifications\NotificationCategory::SUBMISSIONS,
+        severity: Corex\Notifications\NotificationSeverity::ACTION,
+        sourceModule: 'forms',
+        titleKey: 'notifications.submission.new.title',
+        messageKey: 'notifications.submission.new.body',
+        rendered: ['title' => $title, 'body' => 'Seeded by the widget test'],
+        dedupKey: 'widget.test:' . $title,
+        recipient: Corex\Notifications\NotificationRecipient::forUser($actorId),
+        occurredAt: new DateTimeImmutable('now'),
+    ));
+
     ob_start();
     $this->widgets->renderAttention();
-    $html = (string) ob_get_clean();
+    $unreadHtml = (string) ob_get_clean();
 
-    expect($html)->not->toBe('');
+    // The empty-<li> check is the envelope bug's exact signature: iterating {items,total,page,
+    // per_page} produced list items with no title in them.
+    expect($unreadHtml)->toContain($title)
+        ->and($unreadHtml)->not->toContain('<li></li>')
+        ->and(substr_count($unreadHtml, '<li>'))->toBeGreaterThan(0);
+
+    // Per-user read state, not resolution: the item is still unresolved, but it is no longer this
+    // actor's problem, so "Attention" must stop showing it.
+    $service->markReadForCurrentActor((int) $stored->id);
+
+    ob_start();
+    $this->widgets->renderAttention();
+    $readHtml = (string) ob_get_clean();
+
+    expect($readHtml)->not->toContain($title);
 });

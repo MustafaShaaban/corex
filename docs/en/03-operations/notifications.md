@@ -85,6 +85,31 @@ summary of three things, each a navigation-only link into CoreX — never an act
 
 It runs only local checks: rendering the widget never makes an outbound network request.
 
+## Optional Dashboard widgets
+
+The Command Center appears for everyone with CoreX visibility. Everything else is off until you ask for it.
+Turn the optional widgets on under **CoreX → Settings → Dashboard**:
+
+| Widget | Setting | Shows | Appears when |
+| --- | --- | --- | --- |
+| **CoreX Attention** | Attention widget | Your unread CoreX notifications, newest first (up to five) | You have at least one unread notification |
+| **CoreX Development** | Development widget | The operating mode and its warnings | The site is in **Development** |
+
+Four conditions must all hold before an optional widget is added to your dashboard:
+
+1. **It is switched on** in Settings. An unchecked box and a setting that was never saved mean the same
+   thing — off.
+2. **You hold the ability it declares** — `corex_manage_notifications` for Attention,
+   `corex_manage_operations` for Development. Administrators inherit both.
+3. **You have something to see.** A widget with no data for you is not registered at all, rather than
+   added and left empty.
+4. **The mode allows it.** The Development widget appears only in Development — not in Staging, which is a
+   rehearsal for production and should look like one, and not in Maintenance.
+
+Both widgets read the same services as their full CoreX screens, make no remote calls, and offer links
+only — no widget switches a mode, deletes, approves, or migrates anything. Because they are ordinary
+dashboard widgets, WordPress's own **Screen Options** can still hide one per user.
+
 ## For developers: adding a producer
 
 A producer is any class implementing `Corex\Notifications\NotificationProducer`:

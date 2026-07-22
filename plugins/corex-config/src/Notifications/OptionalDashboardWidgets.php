@@ -45,6 +45,15 @@ final class OptionalDashboardWidgets
     /** How many notifications the attention widget lists — bounded, like every other read (FR-026). */
     private const ATTENTION_LIMIT = 5;
 
+    /**
+     * How many unresolved notifications to look at to find those the actor has not read.
+     *
+     * `unread_only` on the query means "unresolved" at the storage layer; whether *this* actor has
+     * read one is per-user state carried on each presented item. So the widget scans a bounded page
+     * and filters, rather than trusting the flag to mean something it does not.
+     */
+    private const ATTENTION_SCAN = 25;
+
     public function __construct(
         private readonly ?NotificationService $notifications = null,
         private readonly ?OperationsMode $mode = null,
@@ -143,6 +152,31 @@ final class OptionalDashboardWidgets
         return (string) ($this->config?->get($configKey, '') ?? '') === '1';
     }
 
+    /**
+     * The actor's unread, undismissed notifications, newest first, capped at ATTENTION_LIMIT.
+     *
+     * `forCurrentActor()` returns an envelope — {items, total, page, per_page} — not a bare list, so
+     * the items must be taken out of it; iterating the envelope itself would walk its scalar keys.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function unreadForActor(): array
+    {
+        $page = $this->notifications?->forCurrentActor(
+            NotificationQuery::fromRequest(['unread_only' => true], 1, self::ATTENTION_SCAN)
+        );
+
+        $items = is_array($page['items'] ?? null) ? $page['items'] : [];
+
+        $unread = array_values(array_filter($items, static function (array $item): bool {
+            $state = is_array($item['user_state'] ?? null) ? $item['user_state'] : [];
+
+            return ($state['read'] ?? false) === false && ($state['dismissed'] ?? false) === false;
+        }));
+
+        return array_slice($unread, 0, self::ATTENTION_LIMIT);
+    }
+
     /** Whether this actor has anything for the widget to show (FR-025). */
     private function hasData(string $widgetId): bool
     {
@@ -157,9 +191,7 @@ final class OptionalDashboardWidgets
 
     public function renderAttention(): void
     {
-        $items = $this->notifications?->forCurrentActor(
-            NotificationQuery::fromRequest(['unread_only' => true], 1, self::ATTENTION_LIMIT)
-        ) ?? [];
+        $items = $this->unreadForActor();
 
         if ($items === []) {
             // Only reachable if everything was read between registration and render.
