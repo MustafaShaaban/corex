@@ -98,3 +98,6 @@ tests/e2e/clip/
 tests/e2e/cur/
 tests/e2e/final/
 tests/e2e/fix*/
+
+# Ad-hoc screenshot/scratch output from local Playwright runs.
+output/

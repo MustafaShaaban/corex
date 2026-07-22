@@ -4,7 +4,36 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-22) -- Spec 072 (Notification Center & Command Center) COMPLETE + gated on `spec/072-notification-center-and-dashboard`; **PR #119 open, blocked only on human review + the 070→071→072 stack merge**. Everything below is the build log for that branch.
+## RESUME HERE (2026-07-22) -- **v0.35.0 RELEASED. All five open PRs merged; `main` green on four CI suites.**
+
+**Merged, in this order** (each verified green before the next): **#121** dependency advisory remediation →
+**#120** CI on every PR + integration + browser suites → **#117** spec 070 → **#118** spec 071 → **#119**
+spec 072. `develop` was not involved; feature branches PR straight to `main`. Order mattered: #121 cleared the
+advisory gate that was holding #120 UNSTABLE, and merging #120 second meant the three stack PRs were judged by
+the new four-suite CI as they retargeted — which is the first time any of them had been tested by anything but
+the PHP unit job. All three passed on a freshly provisioned install. `DECISIONS.md` conflicted on every stack
+merge (each branch appends entries); resolved by keeping both sides, so #143–#154 are all present.
+
+**`main` CI: four jobs green** — PHP unit 1291 · JS 240 (38 suites) · integration 158 · browser 42.
+Locally on the dev site the unit suite is **1448/0**, but the integration suite is **order-flaky** there
+(Pest randomises order; different tests fail per run — Forms flow specs one run, the dashboard widget the
+next). CI is the authority and provisions fresh; the local failures are accumulated dev-site state, most
+likely the ~20 real contact-form submissions the e2e suite has posted into `corex.local` during this work.
+**Worth cleaning the local dev DB before trusting a local integration run.**
+
+**Released v0.35.0** on `release/v0.35.0`: `wp corex version 0.35.0 --path=wp` stamped **16** files (4 plugins,
+11 add-ons, `theme/style.css`). Note `docs-app/src/version.ts` is **not** covered by that command and was
+bumped by hand — worth folding into `VersionCommand` next time. CHANGELOG cut from `[Unreleased]` to
+`[0.35.0]` with Added / Changed / Fixed covering the Notification Center, the CI expansion, the Linux-only
+build break, the fresh-clone setup failures, and the dependency policy.
+
+**Still open, recorded not forgotten:** three browser specs excluded with evidence (two block-editor
+first-open, one flow-builder — see `tests/e2e/playwright.config.js`); `ROADMAP.md` is stale by four specs
+(no 069–072) so there is no defined next feature; `develop` is ~40 commits behind `main` and effectively
+retired; T021 (`NotificationChannelPolicy`) deliberately unbuilt.
+
+---
+## (previous, 2026-07-22) -- Spec 072 (Notification Center & Command Center) COMPLETE + gated on `spec/072-notification-center-and-dashboard`; **PR #119 open, blocked only on human review + the 070→071→072 stack merge**. Everything below is the build log for that branch.
 
 **Phase A (spec 071) is committed, pushed, and PR'd.** Working tree was 79 uncommitted files; now
 three logical commits on `spec/071` (`docs(070)` backfill · `feat(071)` implementation · `docs(071)`

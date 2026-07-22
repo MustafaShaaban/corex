@@ -3,7 +3,7 @@
  * Plugin Name:       Corex Profile
  * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       Front-office accounts for Corex — login, registration, forgot/reset password, profile, notifications, and active-session management, layered over WordPress authentication. Keeps the front office separate from wp-admin and preserves lockout-safe recovery. Presentation lives in the theme; this add-on owns the account logic.
- * Version:           0.34.0
+ * Version:           0.35.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
@@ -22,7 +22,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_PROFILE_VERSION')) {
-    define('COREX_PROFILE_VERSION', '0.34.0');
+    define('COREX_PROFILE_VERSION', '0.35.0');
 }
 
 (static function (): void {

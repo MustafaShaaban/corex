@@ -3,7 +3,7 @@
  * Plugin Name:       Corex Config
  * Plugin URI:        https://github.com/bseit/corex
  * Description:       Corex settings + environment layer — admin settings UI, .env resolution, feature flags, GTM, and security headers. Business-logic-free.
- * Version:           0.34.0
+ * Version:           0.35.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
@@ -24,7 +24,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_CONFIG_VERSION')) {
-    define('COREX_CONFIG_VERSION', '0.34.0');
+    define('COREX_CONFIG_VERSION', '0.35.0');
 }
 if (! defined('COREX_CONFIG_FILE')) {
     define('COREX_CONFIG_FILE', __FILE__);
