@@ -32,11 +32,22 @@ const NEEDS_SEEDED_CONTENT = [
 	'**/submissions-inbox.spec.js',
 ];
 
+/**
+ * The block editor never becomes interactive under PHP's built-in server: the inserter toggle
+ * stays unclickable until the 60s timeout, and raising PHP_CLI_SERVER_WORKERS from 4 to 12 changed
+ * nothing, so it is not throughput. Gutenberg wants a real web server. The rest of smoke.spec.js
+ * runs, so this is excluded by title rather than by file.
+ */
+const NEEDS_A_REAL_WEB_SERVER = /block is recognised in the editor inserter/;
+
 module.exports = defineConfig( {
 	testDir: '.',
 	testIgnore: process.env.COREX_E2E_FRESH_INSTALL
 		? NEEDS_SEEDED_CONTENT
 		: [],
+	grepInvert: process.env.COREX_E2E_FRESH_INSTALL
+		? NEEDS_A_REAL_WEB_SERVER
+		: undefined,
 	// The block editor is a heavy React app; on a cold OPcache / loaded box it can take a
 	// while to become interactive. 60s gives headroom without masking a real hang.
 	timeout: 60_000,
