@@ -404,7 +404,14 @@ final class SettingsForm
      */
     private function select(string $name, array $options, string $value, bool $disabled = false): string
     {
-        $html = sprintf('<select id="%1$s" name="%1$s"%2$s>', esc_attr($name), $this->disabledAttr($disabled));
+        // `data-corex-select` opts this into the approved CoreX control (DECISIONS #141); the
+        // upgrade script is already enqueued on every CoreX screen by CorexAdminAssets. Without it
+        // the Settings dropdowns were the last ones in the admin still drawing an OS menu.
+        $html = sprintf(
+            '<select id="%1$s" name="%1$s" data-corex-select%2$s>',
+            esc_attr($name),
+            $this->disabledAttr($disabled),
+        );
 
         foreach ($options as $optionValue => $label) {
             $html .= sprintf(

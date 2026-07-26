@@ -78,6 +78,21 @@ it('adds no node for a user who cannot manage notifications', function () {
     expect($bar->nodes)->toBeEmpty();
 });
 
+it('states the count once, in the badge, not twice in the same node', function () {
+    // The visible label used to be the counted phrasing as well, so the toolbar entry rendered
+    // "Notifications, 7 unread 7" — the same number beside itself. The counted wording belongs to
+    // the accessible title only.
+    Functions\when('is_user_logged_in')->justReturn(true);
+    Functions\when('current_user_can')->justReturn(true);
+    $bar = fakeAdminBar();
+
+    toolbarFor(7)->addNode($bar);
+
+    expect($bar->nodes[0]['title'])->not->toContain('unread')
+        ->and(substr_count((string) $bar->nodes[0]['title'], '7'))->toBe(1)
+        ->and($bar->nodes[0]['meta']['title'])->toContain('unread');
+});
+
 it('caps the visible count at 99+ while keeping the true count in the label', function () {
     Functions\when('is_user_logged_in')->justReturn(true);
     Functions\when('current_user_can')->justReturn(true);

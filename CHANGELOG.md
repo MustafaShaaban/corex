@@ -4,6 +4,48 @@ All notable changes to Corex are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/) (pre-1.0: the API may still move).
 
+## [Unreleased]
+
+Spec 073 — an admin polish and correctness pass. No new capability; each change makes an existing admin
+surface tell the truth.
+
+### Fixed
+
+- **The Data Models screen lost its icons.** It alone rendered an empty notification bell and dropped its
+  brand mark and rail glyphs, because it echoed the shell through `wp_kses_post()`, whose allowed-tags list
+  excludes `<svg>`. The CoreX admin chrome is already escaped at the point each dynamic value is interpolated,
+  so filtering it again removed correct output rather than adding safety; the screen now echoes it directly,
+  as every other CoreX screen does (DECISIONS #155).
+- **Operations & Security showed two mode controls and a badge that could lie.** A client-side "mode preview"
+  (target-mode selector, a *Type PRODUCTION* box, a maintenance checkbox) sat above the real, nonce- and
+  capability-gated server form and applied nothing. The "Production readiness" badge read its blocker count
+  from that preview, which reported zero for every mode but Production — so the header could say **Ready**
+  while blockers were listed directly beneath it. The inert preview is gone, the server form is the only mode
+  control, and the badge reads the readiness snapshot it was always describing (DECISIONS #156).
+- **A submission's answers rendered as em dashes in the record detail modal.** The modal read fields off the
+  top level of the record, but a submission nests every answer under `fields`, so the submitted content — the
+  reason for opening the record — never appeared. The record is now authoritative over its own content
+  (declared fields, then the nested pairs, then anything undeclared it still carries), and flat table records
+  are unchanged.
+- **The notification toolbar entry stated its count twice** ("Notifications, 7 unread 7"). The visible label
+  is the plain word now, the count lives in the badge, and the counted phrasing stays on the accessible title.
+
+### Added
+
+- **A state filter on the Add-ons screen.** Mutually exclusive, exhaustive All / Active / Inactive / Not
+  installed buckets keyed on the same status that prints each card's badge, rendered as the shared CoreX tab
+  strip with a real count on each tab, a distinct "no add-ons in this view" state, and a fallback to All for an
+  unknown filter so a bad query string cannot render an empty grid that reads as "no add-ons".
+
+### Changed
+
+- **The Settings dropdowns and the Notifications severity filter are the approved CoreX control** rather than
+  native `<select>` elements the OS draws its menu for (DECISIONS #141), and the severity filter shows
+  translated labels instead of raw English keys.
+- **Un-styled admin prose has a consistent baseline rhythm.** Zero-specificity `:where()` rules give
+  paragraphs, headings, and lists a tokenized baseline margin that any component rule still overrides, so the
+  same element is no longer spaced differently depending on the screen it appears on.
+
 ## [0.35.1] — 2026-07-22
 
 A correction release. Three fixes, no new capability: a form filter that could not filter the forms a

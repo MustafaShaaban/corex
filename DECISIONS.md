@@ -3076,3 +3076,38 @@ failure mode was *reporting*, not code: an empty check-rollup on a stacked PR is
 "pre-existing" is a claim that must be verified against the base branch before it is written down.
 
 Status: Final.
+
+## #155 — CoreX admin shell chrome is echoed directly, never re-filtered through `wp_kses_post()`
+Date: 2026-07-26
+Decision: A CoreX screen echoes the return value of `AdminPage::open()`/`close()`/`state()`/`tabs()`/
+`permissionDenied()` directly. It must not wrap that markup in `wp_kses_post()` (spec 073, `DataModelsScreen`).
+Why: `AdminPage` escapes every dynamic value at the point it interpolates it (`esc_attr`/`esc_html`/`esc_url`),
+and its header/rail contributors escape their own inline-SVG content — the same discipline the WordPress admin
+bar uses. Its output is therefore trusted, already-escaped chrome, not request data. `wp_kses_post()`'s allowed-
+tags list excludes `<svg>`, so re-filtering that markup silently deleted every inline glyph on the Data Models
+screen (brand mark, rail icons, an empty notification bell) — it removed correct output rather than adding
+safety. Escaping belongs at interpolation, once; a second blanket filter over trusted chrome is a defect.
+Alternatives considered: extend the kses allowed tags to include `svg` and its children (rejected: a large,
+attribute-sensitive allowlist to maintain, applied to markup that is already escaped and needs no filtering);
+render icons as `<img>`/mask CSS only (rejected: the shell already uses inline SVG deliberately, and the other
+screens render it correctly without kses). Scope: trusted CoreX chrome only — request/user data is still
+escaped/sanitized at its own boundary.
+Status: Final.
+
+## #156 — The Production-readiness badge reads the readiness snapshot, not a target-mode preview
+Date: 2026-07-26
+Decision: Operations & Security shows one mode control — the nonce- and capability-gated server form
+(`OperationsSecurityScreen::modeCard()`). The client "mode preview" (target-mode selector, typed-PRODUCTION
+box, maintenance checkbox) and the `modeActionState` derivation are removed; the readiness badge reads
+`state.readiness.blockingCount` directly (spec 073).
+Why: the preview applied nothing — the real mode change is the server form on the same page — so the page
+carried the same controls twice, one inert, which the "no dead/inert control" rule (Spec 068 / ROADMAP §17)
+forbids. And `modeActionState` reported zero blockers for every mode except Production, so the badge said
+**Ready** over blockers that were listed directly beneath it unless the preview happened to be set to
+Production. The badge was always describing production readiness; it now reads that snapshot, so the header and
+the list beneath it can no longer disagree.
+Alternatives considered: keep the preview but wire it to apply the mode client-side (rejected: duplicates the
+gated server form and moves a security-sensitive action off its nonce); keep `modeActionState` but fix its
+per-mode zeroing (rejected: it existed only to serve the removed preview — deleting it removes the divergence
+at the source). CorexSelect dropdown changes in the same spec defer to #141 and are not re-decided here.
+Status: Final.

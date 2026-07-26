@@ -8,9 +8,23 @@
 import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import CorexSelect from '../components/CorexSelect.js';
 import PreferencesPanel from './PreferencesPanel.js';
 
-const SEVERITIES = [ 'critical', 'error', 'warning', 'action', 'information', 'success' ];
+/**
+ * The severity refine, as CorexSelect takes them (DECISIONS #141 — a native <select> draws its open
+ * menu through the OS, which no CSS can reach). Labels are translated rather than printing the raw
+ * severity key, which showed an English identifier on an otherwise translated screen.
+ */
+const SEVERITY_OPTIONS = [
+	{ value: '', label: __( 'All severities', 'corex' ) },
+	{ value: 'critical', label: __( 'Critical', 'corex' ) },
+	{ value: 'error', label: __( 'Error', 'corex' ) },
+	{ value: 'warning', label: __( 'Warning', 'corex' ) },
+	{ value: 'action', label: __( 'Action', 'corex' ) },
+	{ value: 'information', label: __( 'Information', 'corex' ) },
+	{ value: 'success', label: __( 'Success', 'corex' ) },
+];
 
 /**
  * The saved views FR-018 names, each a bounded server-side filter — no client-side slicing.
@@ -151,23 +165,17 @@ export default function NotificationsApp() {
 
 			{ view !== 'preferences' && ( <>
 			<div className="corex-notifications-screen__filters">
-				<label className="corex-notifications-screen__filter">
-					{ __( 'Severity', 'corex' ) }
-					<select
+				<div className="corex-notifications-screen__filter">
+					<CorexSelect
+						label={ __( 'Severity', 'corex' ) }
 						value={ severity }
-						onChange={ ( event ) => {
+						options={ SEVERITY_OPTIONS }
+						onChange={ ( next ) => {
 							setPage( 1 );
-							setSeverity( event.target.value );
+							setSeverity( next );
 						} }
-					>
-						<option value="">{ __( 'All', 'corex' ) }</option>
-						{ SEVERITIES.map( ( level ) => (
-							<option key={ level } value={ level }>
-								{ level }
-							</option>
-						) ) }
-					</select>
-				</label>
+					/>
+				</div>
 				<button
 					type="button"
 					className="corex-notifications-screen__mark-all"

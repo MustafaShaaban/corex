@@ -1,21 +1,12 @@
 import { useReducer } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
-import CorexSelect from '../admin/components/CorexSelect.js';
 import {
 	buildLoginPolicyPayload,
 	initialSecurityState,
 	lockoutSummary,
-	modeActionState,
 	securityEndpoint,
 	securityReducer,
 } from './securityCenterState.js';
-
-const MODES = [
-	{ value: 'development', label: __( 'Development', 'corex' ) },
-	{ value: 'staging', label: __( 'Staging', 'corex' ) },
-	{ value: 'production', label: __( 'Production', 'corex' ) },
-	{ value: 'maintenance', label: __( 'Maintenance', 'corex' ) },
-];
 
 export default function SecurityCenter( { config = {} } ) {
 	const [ state, dispatch ] = useReducer(
@@ -24,17 +15,12 @@ export default function SecurityCenter( { config = {} } ) {
 		( initial ) =>
 			securityReducer( initial, { type: 'loaded', payload: config } )
 	);
-	const action = modeActionState( state );
 	const lockouts = lockoutSummary( state.lockouts );
 	const policyPayload = buildLoginPolicyPayload( state.loginPolicy );
 
 	return (
 		<div className="corex-security" data-testid="corex-security-center">
-			<LaunchChecklist
-				state={ state }
-				action={ action }
-				dispatch={ dispatch }
-			/>
+			<LaunchChecklist state={ state } />
 			<LoginPolicy
 				policy={ state.loginPolicy }
 				policyPayload={ policyPayload }
@@ -59,7 +45,25 @@ export default function SecurityCenter( { config = {} } ) {
 	);
 }
 
-function LaunchChecklist( { state, action, dispatch } ) {
+/**
+ * Production readiness — evidence, not a control.
+ *
+ * It used to carry a target-mode selector, a "Type PRODUCTION" box and a maintenance confirmation,
+ * none of which applied anything: the real, nonce- and capability-gated mode form is rendered by
+ * OperationsSecurityScreen::modeCard() further down the same page. Two identical sets of controls,
+ * one inert, sat one above the other.
+ *
+ * Removing them also fixes what they hid. The blocker badge read its count from `modeActionState`,
+ * which reports zero for every mode except production — so the header claimed "Ready" while real
+ * blockers were listed directly beneath it, unless you happened to pick Production in the preview.
+ * It now reads the readiness snapshot itself, which is what it was always describing.
+ *
+ * @param {Object} root0       Props.
+ * @param {Object} root0.state The security-center state.
+ */
+function LaunchChecklist( { state } ) {
+	const blockingCount = state.readiness?.blockingCount || 0;
+
 	return (
 		<section className="corex-surface corex-security__panel">
 			<header className="corex-security__head">
@@ -69,16 +73,12 @@ function LaunchChecklist( { state, action, dispatch } ) {
 					</p>
 					<h2>{ __( 'Production readiness', 'corex' ) }</h2>
 				</div>
-				<span
-					className={
-						action.blockingCount > 0 ? 'is-warning' : 'is-ready'
-					}
-				>
-					{ action.blockingCount > 0
+				<span className={ blockingCount > 0 ? 'is-warning' : 'is-ready' }>
+					{ blockingCount > 0
 						? sprintf(
 								/* translators: %d: number of blocking readiness checks. */
 								__( '%d blocker(s)', 'corex' ),
-								action.blockingCount
+								blockingCount
 						  )
 						: __( 'Ready', 'corex' ) }
 				</span>
@@ -91,71 +91,6 @@ function LaunchChecklist( { state, action, dispatch } ) {
 					</li>
 				) ) }
 			</ul>
-			<div
-				className="corex-security__mode-preview"
-				role="group"
-				aria-label={ __( 'Mode change preview', 'corex' ) }
-			>
-				<div className="corex-field">
-					<span>{ __( 'Target mode', 'corex' ) }</span>
-					<CorexSelect
-						label={ __( 'Target mode', 'corex' ) }
-						value={ state.selectedMode }
-						options={ MODES }
-						onChange={ ( mode ) =>
-							dispatch( { type: 'selectMode', mode } )
-						}
-						block
-					/>
-				</div>
-				{ state.selectedMode === 'production' && (
-					<div
-						className="corex-security__modal"
-						role="dialog"
-						aria-label={ __( 'Production confirmation', 'corex' ) }
-					>
-						<label>
-							{ __( 'Type PRODUCTION', 'corex' ) }
-							<input
-								type="text"
-								value={ state.productionPhrase }
-								onChange={ ( event ) =>
-									dispatch( {
-										type: 'setProductionPhrase',
-										phrase: event.target.value,
-									} )
-								}
-							/>
-						</label>
-						<p>
-							{ action.ready
-								? __( 'Typed confirmation is ready.', 'corex' )
-								: __(
-										'Production requires the exact phrase before the server form can apply it.',
-										'corex'
-								  ) }
-						</p>
-					</div>
-				) }
-				{ state.selectedMode === 'maintenance' && (
-					<label className="corex-security__confirm">
-						<input
-							type="checkbox"
-							checked={ state.maintenanceConfirmed }
-							onChange={ ( event ) =>
-								dispatch( {
-									type: 'setMaintenanceConfirmed',
-									confirmed: event.target.checked,
-								} )
-							}
-						/>
-						{ __(
-							'I understand Maintenance affects real visitors.',
-							'corex'
-						) }
-					</label>
-				) }
-			</div>
 		</section>
 	);
 }

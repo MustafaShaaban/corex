@@ -65,19 +65,29 @@ final class DataModelsScreen
         );
     }
 
+    /**
+     * The shell is echoed directly, as every other CoreX screen does.
+     *
+     * It used to pass through `wp_kses_post()`, which silently deleted every inline `<svg>` in the
+     * chrome — `svg` is not in the allowed post tags. This screen alone lost the CoreX brand mark,
+     * the rail icons and the notification bell's glyph, leaving an empty bell button that read as a
+     * missing icon. AdminPage escapes each dynamic value at the point it interpolates it
+     * (`esc_attr`/`esc_html`/`esc_url`), so the markup it returns is trusted CoreX chrome and
+     * filtering it again removes correct output rather than adding safety.
+     */
     public function render(): void
     {
         if (! $this->authorized()) {
-            echo wp_kses_post($this->page->permissionDenied('data-models'));
+            echo $this->page->permissionDenied('data-models');
 
             return;
         }
 
-        echo wp_kses_post($this->page->open(
+        echo $this->page->open(
             'data-models',
             __('CoreX Data', 'corex'),
             __('Browse records and inspect schemas, then run capability-backed import, export, and migration workflows.', 'corex'),
-        ) . '<div id="corex-data-models-app"></div>' . $this->page->close());
+        ) . '<div id="corex-data-models-app"></div>' . $this->page->close();
     }
 
     /** Either ability opens the screen; which tabs appear is decided per ability. */

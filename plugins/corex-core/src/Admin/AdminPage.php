@@ -111,6 +111,7 @@ final class AdminPage
             // this screen's Records tab — and its address redirects here.
             'corex-data-models'         => ['data', 'data-models'],
             'corex-operations-security' => ['security', 'operations-security'],
+            'corex-notifications'       => ['notifications', 'notifications'],
             'corex-access'              => ['access', 'access'],
             'corex-blog-pro'            => ['blog', 'blog-pro'],
             'corex-insights'            => ['insights', 'insights'],
@@ -140,6 +141,7 @@ final class AdminPage
             'corex-email-studio'        => __('Email Studio', 'corex'),
             'corex-data-models'         => __('Data', 'corex'),
             'corex-operations-security' => __('Operations & Security', 'corex'),
+            'corex-notifications'       => __('Notifications', 'corex'),
             'corex-access'              => __('Access & Abilities', 'corex'),
             'corex-blog-pro'            => __('Blog Pro', 'corex'),
             'corex-insights'            => __('Insights', 'corex'),
@@ -167,6 +169,7 @@ final class AdminPage
             'submissions' => __('Submissions', 'corex'),
             'email' => __('Email Studio', 'corex'),
             'operations-security' => __('Operations & Security', 'corex'),
+            'notifications' => __('Notifications', 'corex'),
             'access' => __('Access & Abilities', 'corex'),
             'blog-pro' => __('Blog Pro', 'corex'),
             'settings' => __('Settings', 'corex'),

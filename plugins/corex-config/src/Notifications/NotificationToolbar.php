@@ -50,8 +50,12 @@ final class NotificationToolbar
 
         $bar->add_node([
             'id'    => 'corex-notifications',
+            // The visible label stays the plain word and the count lives in the badge beside it.
+            // Using the counted label here as well rendered "Notifications, 7 unread 7" — the same
+            // number twice in one node. The counted phrasing is still what assistive technology
+            // and the tooltip get, through `meta.title`.
             'title' => '<span class="ab-icon dashicons dashicons-bell" aria-hidden="true"></span>'
-                . '<span class="ab-label">' . esc_html($this->label($count)) . '</span>' . $badge,
+                . '<span class="ab-label">' . esc_html(__('Notifications', 'corex')) . '</span>' . $badge,
             'href'  => admin_url('admin.php?page=corex-notifications'),
             'meta'  => ['title' => $this->label($count)],
         ]);

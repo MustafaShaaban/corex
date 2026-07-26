@@ -101,6 +101,11 @@ final class AddonsScreen
         $this->renderSummary($views);
         $this->renderGuidance();
 
+        $filter   = $this->currentFilter();
+        $filtered = $this->catalog->filter($views, $filter);
+
+        echo $this->filterTabs($views, $filter);
+
         echo '<div class="corex-addons__grid">';
 
         if ($views === []) {
@@ -109,13 +114,73 @@ final class AddonsScreen
                 __('No add-ons registered', 'corex'),
                 __('Installed CoreX add-on packages will appear here.', 'corex'),
             );
+        } elseif ($filtered === []) {
+            // The catalog is not empty — this filter is. Saying so, rather than reusing the
+            // "no add-ons registered" copy, keeps the two situations distinguishable.
+            echo $this->page->state(
+                'empty',
+                __('No add-ons in this view', 'corex'),
+                __('Every add-on is in another state. Choose "All" to see the full catalog.', 'corex'),
+            );
         }
 
-        foreach ($views as $view) {
+        foreach ($filtered as $view) {
             $this->renderRow($view, $state);
         }
 
         echo '</div>' . $this->page->close();
+    }
+
+    /**
+     * The requested filter, or "all". Validated against the known filters so an arbitrary query
+     * string cannot produce an empty grid that looks like a site with no add-ons.
+     */
+    private function currentFilter(): string
+    {
+        // `tab` rather than `filter`: that is the query arg the shared AdminPage::tabs() strip
+        // emits, and inventing a second name for the same idea would need a second tab renderer.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view selection, changes nothing.
+        $requested = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : '';
+
+        $known = [
+            AddonCatalogService::FILTER_ACTIVE,
+            AddonCatalogService::FILTER_INACTIVE,
+            AddonCatalogService::FILTER_NOT_INSTALLED,
+        ];
+
+        return in_array($requested, $known, true) ? $requested : AddonCatalogService::FILTER_ALL;
+    }
+
+    /**
+     * The state filter, rendered with the shared CoreX tab strip so it looks and behaves like every
+     * other multi-view screen. A plain query-arg link: it works without JavaScript and the view can
+     * be bookmarked or shared. Each tab carries its real count, so an empty bucket is visible
+     * before it is clicked.
+     *
+     * @param list<AddonView> $views
+     */
+    private function filterTabs(array $views, string $active): string
+    {
+        $counts = $this->catalog->counts($views);
+
+        $labels = [
+            AddonCatalogService::FILTER_ALL           => __('All', 'corex'),
+            AddonCatalogService::FILTER_ACTIVE        => __('Active', 'corex'),
+            AddonCatalogService::FILTER_INACTIVE      => __('Inactive', 'corex'),
+            AddonCatalogService::FILTER_NOT_INSTALLED => __('Not installed', 'corex'),
+        ];
+
+        $tabs = [];
+        foreach ($labels as $key => $label) {
+            $tabs[$key] = sprintf(
+                /* translators: 1: filter name, e.g. "Active". 2: how many add-ons it shows. */
+                __('%1$s (%2$d)', 'corex'),
+                $label,
+                $counts[$key] ?? 0,
+            );
+        }
+
+        return $this->page->tabs('corex-addons', $tabs, $active, __('Add-on state', 'corex'));
     }
 
     /**
