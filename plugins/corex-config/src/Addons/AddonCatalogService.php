@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Corex\Config\Addons;
 
+use Corex\Foundation\AddonStatus;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -19,6 +21,64 @@ defined('ABSPATH') || exit;
  */
 final class AddonCatalogService
 {
+    public const FILTER_ALL           = 'all';
+    public const FILTER_ACTIVE        = 'active';
+    public const FILTER_INACTIVE      = 'inactive';
+    public const FILTER_NOT_INSTALLED = 'not-installed';
+
+    /**
+     * Narrows the catalog to one state so the grid can be scanned. The buckets are mutually
+     * exclusive and cover every view, and they are keyed on {@see AddonView::status()} — the same
+     * resolution that prints the badge on each card, so filtering by "Active" returns exactly the
+     * cards badged Active and nothing that merely looks like it.
+     *
+     * "Inactive" is deliberately *installed but not running*, which is a state an admin can act on
+     * (toggle it, satisfy a dependency, turn on a flag). A package that is not on disk is a
+     * different problem with a different fix, so it gets its own bucket instead of being blurred
+     * into this one.
+     *
+     * @param list<AddonView> $views
+     *
+     * @return list<AddonView>
+     */
+    public function filter(array $views, string $filter): array
+    {
+        if ($filter === self::FILTER_ALL) {
+            return array_values($views);
+        }
+
+        return array_values(array_filter($views, static function (AddonView $view) use ($filter): bool {
+            $running = $view->status() === AddonStatus::Active;
+
+            return match ($filter) {
+                self::FILTER_ACTIVE        => $running,
+                self::FILTER_INACTIVE      => $view->installed && ! $running,
+                self::FILTER_NOT_INSTALLED => ! $view->installed,
+                // An unknown filter must not silently hide add-ons; show everything.
+                default => true,
+            };
+        }));
+    }
+
+    /**
+     * How many add-ons each filter would show, so a filter control can carry a real number and an
+     * admin can see a bucket is empty before clicking into it.
+     *
+     * @param list<AddonView> $views
+     *
+     * @return array<string,int> filter key => count
+     */
+    public function counts(array $views): array
+    {
+        $counts = [];
+
+        foreach ([self::FILTER_ALL, self::FILTER_ACTIVE, self::FILTER_INACTIVE, self::FILTER_NOT_INSTALLED] as $filter) {
+            $counts[$filter] = count($this->filter($views, $filter));
+        }
+
+        return $counts;
+    }
+
     /**
      * @param list<AddonView> $views
      *
