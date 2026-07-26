@@ -2,7 +2,6 @@ import {
 	buildLoginPolicyPayload,
 	initialSecurityState,
 	lockoutSummary,
-	modeActionState,
 	normalizeLoginPolicy,
 	normalizeReadiness,
 	securityEndpoint,
@@ -44,41 +43,6 @@ describe( 'Operations & Security client state', () => {
 		expect( normalized.blockingKeys ).toEqual( [ 'auth_salts' ] );
 		expect( normalized.blockingCount ).toBe( 1 );
 		expect( normalized.checks[ 0 ].blocking ).toBe( false );
-	} );
-
-	it( 'requires typed PRODUCTION for launch and a checkbox for Maintenance', () => {
-		let state = securityReducer( initialSecurityState(), {
-			type: 'loaded',
-			payload: { mode: 'staging', readiness },
-		} );
-
-		state = securityReducer( state, {
-			type: 'selectMode',
-			mode: 'production',
-		} );
-		expect( modeActionState( state ) ).toMatchObject( {
-			requiresPhrase: true,
-			requiredPhrase: 'PRODUCTION',
-			ready: false,
-			blockingCount: 1,
-		} );
-
-		state = securityReducer( state, {
-			type: 'setProductionPhrase',
-			phrase: 'PRODUCTION',
-		} );
-		expect( modeActionState( state ).ready ).toBe( true );
-
-		state = securityReducer( state, {
-			type: 'selectMode',
-			mode: 'maintenance',
-		} );
-		expect( modeActionState( state ).ready ).toBe( false );
-		state = securityReducer( state, {
-			type: 'setMaintenanceConfirmed',
-			confirmed: true,
-		} );
-		expect( modeActionState( state ).ready ).toBe( true );
 	} );
 
 	it( 'normalizes and serializes login policy edits without raw credential fields', () => {

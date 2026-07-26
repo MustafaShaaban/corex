@@ -110,10 +110,12 @@ final class OperationsSecurityScreen
 
         echo $this->statusNotice();
         echo '<div id="corex-security-app" aria-live="polite"></div>';
+        // The real, nonce-gated mode control follows the readiness checklist the app renders, so the
+        // evidence is read before the action it gates. The app used to also render a mode selector
+        // of its own that applied nothing; it is gone, and this is the only one on the page.
         echo $this->modeCard();
         echo $this->checksCard($checks, $warnings);
         echo $this->auditCard();
-        echo $this->deferralNote();
         echo $this->page->close();
     }
 
@@ -260,22 +262,6 @@ final class OperationsSecurityScreen
     private function statusLabel(string $status): string
     {
         return $status === HardeningChecks::PASS ? __('Pass', 'corex') : __('Review', 'corex');
-    }
-
-    /**
-     * Recovery note for the implemented login-protection foundation: custom login routing, failed-login
-     * rate limiting, and the CLI reset command are all real; WordPress core files are never renamed.
-     */
-    private function deferralNote(): string
-    {
-        return '<div class="corex-opsec__note corex-surface">'
-            . '<p class="corex-opsec__note-title">' . esc_html__('Login recovery', 'corex') . '</p>'
-            . '<p class="corex-opsec__note-text">'
-            . esc_html__(
-                'Custom login routing and failed-login lockouts use a reversible recovery path: run wp corex security reset-login to restore the default login URL and release active lockouts. CoreX never renames WordPress core files.',
-                'corex',
-            )
-            . '</p></div>';
     }
 
     /**
