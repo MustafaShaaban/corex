@@ -53,14 +53,15 @@ test( 'renders launch checklist login policy lockouts recovery and activity with
 	await expect( page.getByRole( 'heading', { name: 'Recovery' } ) ).toBeVisible();
 	await expect( page.getByRole( 'heading', { name: 'Security activity' } ) ).toBeVisible();
 
-	// Mode is a CorexSelect now (spec 069): an in-DOM listbox, not a native <select>, because a
-	// native popup is OS-drawn and its dark-mode highlight cannot be styled. selectOption() only
-	// drives real <select> elements, so this is opened and picked the way a person would.
-	await page.getByRole( 'combobox', { name: 'Target mode' } ).click();
-	await page.getByRole( 'option', { name: 'Production' } ).click();
-	await expect( page.getByRole( 'dialog', { name: 'Production confirmation' } ) ).toBeVisible();
-	await page.getByLabel( 'Type PRODUCTION' ).fill( 'PRODUCTION' );
-	await expect( page.getByText( 'Typed confirmation is ready.' ) ).toBeVisible();
+	// The real mode control is the nonce-gated server form below the readiness evidence (spec 073).
+	// The client-side "mode preview" that used to live in the checklist — a "Target mode" selector,
+	// a typed-PRODUCTION box and a maintenance confirmation that applied nothing — was removed, so
+	// assert it is gone (like the "Mark command reviewed" button below) and that the real form's
+	// controls render instead. This test does not submit the form: applying a mode mutates the
+	// site, which is exactly why the inert preview existed and why a render check must not drive it.
+	await expect( page.getByRole( 'combobox', { name: 'Target mode' } ) ).toHaveCount( 0 );
+	await expect( page.locator( '.corex-opsec__mode-form' ) ).toBeVisible();
+	await expect( page.getByRole( 'button', { name: 'Apply mode' } ) ).toBeVisible();
 
 	// Recovery shows the command and nothing else (spec 069). It used to carry a "Mark command
 	// reviewed" button that flipped a label and did nothing else — and this spec asserted that it
