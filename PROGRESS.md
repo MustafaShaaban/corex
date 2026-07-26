@@ -4,7 +4,40 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-22) -- **v0.35.1 RELEASED** (correction release, tag `v0.35.1` = `ec6b48e`, on GitHub + Azure).
+## RESUME HERE (2026-07-26) -- **Spec 073 (Admin polish & correctness) CHECKPOINTED on `spec/073-admin-polish-and-correctness`.** Committed locally, verified, guarded. Not pushed / no PR yet — that is the next decision.
+
+An admin correctness pass, found as uncommitted WIP and brought to Definition of Done this session. Seven
+truthful-surface fixes, no new capability:
+- **Add-ons state filter** — `AddonCatalogService::filter()`/`counts()`: mutually exclusive, exhaustive
+  All/Active/Inactive/Not-installed buckets keyed on the same `status()` that prints the badge; rendered as
+  the shared `AdminPage::tabs()` strip with real counts, a distinct empty-view state, and an unknown-`tab`
+  fallback to All.
+- **Data Models SVG loss** — `DataModelsScreen::render()` stopped passing trusted, escaped-at-interpolation
+  chrome through `wp_kses_post()`, which was deleting every inline `<svg>` (brand mark, rail icons, an empty
+  bell) on that one screen. (DECISIONS #155.)
+- **Operations & Security** — removed the inert client mode preview + `modeActionState`; the nonce-/cap-gated
+  server `modeCard()` is the only mode control, and the readiness badge now reads the readiness snapshot, so
+  it can no longer say "Ready" over listed blockers. (DECISIONS #156.)
+- **Record detail modal** — new `recordRows.js` makes the record authoritative over its content (declared →
+  nested `fields` → undeclared), fixing submissions whose answers (nested under `fields`) all rendered as em
+  dashes.
+- **CorexSelect** — Settings dropdowns (`data-corex-select`) and the Notifications severity filter, with
+  translated severity labels (DECISIONS #141).
+- **Toolbar count** — the admin-bar entry states its unread count once (badge), not twice; counted phrasing
+  stays on the accessible `meta.title`.
+- **Admin rhythm** — zero-specificity `:where()` baseline margins for un-styled prose/headings/lists + a
+  `.corex-state` margin + a notifications nav icon.
+
+Gate (local, this session): **unit 1457/0** (6315 assertions) · **JS 311/0** (58 suites). Guards clean on the
+diff (`wp-guard`, `clean-code-guard`, `test-guard`). `scripts/generate-token-inventory.mjs` reproduces the
+committed `057/inventories/*.json` with no further diff. Integration is CI's authority (order-flaky locally)
+and was not run locally. Spec artifacts written at `specs/073-admin-polish-and-correctness/`.
+
+**Next:** owner decides whether to push `spec/073-*` and open a PR (CI will run the four suites, including the
+integration + browser jobs this checkpoint deliberately left to CI). Then the §17 next-spec choice stands.
+
+---
+## (previous, 2026-07-22) -- **v0.35.1 RELEASED** (correction release, tag `v0.35.1` = `ec6b48e`, on GitHub + Azure).
 
 Three fixes, no new capability: issue **#114** (a form registered in code through `FormRegistry` could be
 listed but not filtered — the filter was built only from DB flows and the inbox matched `corex_flow_id`,
