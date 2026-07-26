@@ -211,6 +211,12 @@ body.corex-admin-screen .corex-admin__shell {
 	mask-image: url(../icons/nav-mail.svg);
 }
 
+/* The header bell's glyph, so rail entry and bell read as one place. */
+.corex-admin__nav-icon--notifications {
+	-webkit-mask-image: url(../icons/nav-notifications.svg);
+	mask-image: url(../icons/nav-notifications.svg);
+}
+
 .corex-admin__header {
 	display: flex;
 	align-items: flex-start;
@@ -539,6 +545,29 @@ body.corex-admin-screen .corex-admin__shell {
 
 .corex-admin__content {
 	padding: var(--corex-admin-space-xl);
+}
+
+/* Baseline vertical rhythm for text that no component styles.
+   Measured across the screens, prose was falling back to browser
+   defaults — paragraphs at 14px/14px on Operations & Security and
+   Access, 13px on Insights, an h2 at 16.9px — sitting beside
+   tokenized text at 0/8px, so the same element was spaced
+   differently depending on the screen it appeared on.
+   `:where()` is deliberate: zero specificity, so this only ever
+   replaces the user-agent default and every component rule still
+   wins. A plain `> * + *` flow rule here would have been wrong —
+   the top-level blocks already sit at a consistent 24px on every
+   multi-block screen, and it would have doubled them. */
+.corex-admin__content :where(p) {
+	margin-block: 0 var(--corex-admin-space-sm);
+}
+
+.corex-admin__content :where(h2, h3, h4, h5, h6) {
+	margin-block: var(--corex-admin-space-lg) var(--corex-admin-space-sm);
+}
+
+.corex-admin__content :where(ul, ol, dl) {
+	margin-block: 0 var(--corex-admin-space-sm);
 }
 
 .corex-admin h1,
@@ -937,6 +966,18 @@ body.corex-admin-screen .corex-admin__shell {
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
 	border-radius: var(--corex-admin-radius-md);
+}
+
+/* Alerts and empty states carry padding but no outer margin, so one
+   placed between two sections touched both. Scoped to a direct child
+   of the content area: inside a grid or a card the parent's gap
+   already spaces it, and a margin there would double it. */
+.corex-admin__content > .corex-state {
+	margin-block: var(--corex-admin-space-md);
+}
+
+.corex-admin__content > .corex-state:first-child {
+	margin-block-start: 0;
 }
 
 .corex-admin .corex-state .dashicons {
