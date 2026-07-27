@@ -57,7 +57,7 @@
 - [x] T031 `EditorialPanel.js` — current state, native status alongside it, and the transition form
       (assignee, due date, scheduled date, note) built with `buildTransitionPayload`.
 - [x] T032 Submit to `POST /blog/editorial/{id}/transition`; update in place via `transitioned`.
-- [ ] T033 [RED→GREEN] `tests/Integration/Blog/EditorialTransitionTest.php`: round-trip, denial for an
+- [x] T033 [RED→GREEN] `tests/Integration/Blog/EditorialTransitionTest.php`: round-trip, denial for an
       actor without the capability, rejection of an invalid transition.
 
 ## Phase D — Moderation queue (FR-3)
@@ -69,24 +69,25 @@
       review, so "unapprove" has nothing to act on.
 - [x] T042 A distinct, positive empty state. The queue is already bounded at 50 by
       `CommentModerationService::queue()`; confirm, do not re-bound.
-- [ ] T043 [RED→GREEN] `tests/Integration/Blog/CommentModerationTest.php`: round-trip and denial.
+- [x] T043 [RED→GREEN] `tests/Integration/Blog/CommentModerationTest.php`: round-trip and denial.
 
 ## Phase E — Analytics and sharing (FR-4, FR-5)
 
-- [ ] T050 [RED] Jest: "no data yet" and zero render differently; the engagement rate
+- [x] T050 [RED] Jest: "no data yet" and zero render differently; the engagement rate
       `normalizeAnalytics` derives is displayed; the period and the post are named.
-- [ ] T051 `AnalyticsPanel.js` — the six metrics, honest about absence.
-- [ ] T052 Top posts and the chart series `normalizeAnalytics` already shapes are rendered **or** the
-      fields are deleted from the normalizer and its tests. Shaping data nobody displays is the same
-      dead-code defect in a different place.
-- [ ] T053 `SharingPanel.js` — translated target labels; `buildShareClickPayload` →
-      `POST /blog/share-click` → `shareRecorded`. If recording a click from the admin screen means
-      nothing, remove the control and say so in DECISIONS instead of shipping a button that lies.
+- [x] T051 `AnalyticsPanel.js` — the six metrics, honest about absence.
+- [x] T052 **Deleted.** No server path has ever sent `chart` or `top_posts`, so both were permanently
+      empty; rendering them would need analytics capability §10 excludes.
+- [x] T053 **Read-only, and the payload builder deleted.** `/blog/share-click` records that a
+      *visitor* shared a post; only the visitor-facing surface (§10 excludes it) can honestly claim
+      that. Firing it from admin would write analytics nobody generated. Targets render as translated
+      labels; `buildShareClickPayload` and the `shareRecorded` case are gone.
 
 ## Phase F — Dead-export sweep (DoD item 6)
 
-- [ ] T060 Grep every `blogProState.js` export for a caller in the running app. Delete what has none,
-      with its tests. Record the deletions.
+- [x] T060 Done. Every remaining export has a source caller (blogEndpoint 1, normalizeAnalytics 1,
+      buildTransitionPayload 2, initialBlogState 1, blogReducer 1) and every reducer case
+      (`loaded`, `transitioned`, `commentModerated`, `error`) is dispatched.
 
 ## Phase G — Close
 
