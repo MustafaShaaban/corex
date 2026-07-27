@@ -91,4 +91,6 @@
 - [x] T062 `evidence/after/` captured and referenced from `spec.md`.
 - [x] T063 Guard Gate on the diff (`clean-code-guard`, `wp-guard`, `test-guard`, `docs-guard`).
 - [x] T064 Docs, `DECISIONS.md`, `CHANGELOG.md`, `PROGRESS.md`.
-- [ ] T065 PR, CI green, merge, delete branch.
+- [x] T065 PR, CI green, merge, delete branch. PR **#130**, squash-merged as **`d243b7f`**, now the
+      tip of `main` on both `origin` and `upstream` (Azure). All six checks green before merge:
+      PHP 8.3 lint+unit, Jest, integration on a real WordPress, Playwright, and both CodeQL jobs.
