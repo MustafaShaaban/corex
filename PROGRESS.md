@@ -4,6 +4,63 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-27) -- **Spec 076 (Admin Date & Time Foundation) implemented on `spec/076-admin-datetime-foundation`, PR open.**
+
+Every date in the CoreX admin now comes from one contract. The audit that opened the spec found the
+product was not merely inconsistent — it was **wrong**:
+
+- **Six surfaces rendered dates in the reader's own browser timezone and locale.** Measured: the
+  Forms flow list showed the same three records **nine hours apart** — `7/10/2026, 2:43:19 PM` to a
+  UTC browser, `7/10/2026, 11:43:19 PM` to a Tokyo one. Two colleagues, one event, two answers,
+  neither told which zone they were reading.
+- **Six more printed the stored ISO string to the screen.** The Submission Inbox date column read
+  `2026-07-27 08:53:15`, five rows of five.
+- **The three server-side surfaces that were timezone-correct still disagreed with each other**,
+  each building its format from the site's own `date_format`/`time_format` — and one falling back
+  to raw `format('c')` when `wp_date()` returned empty.
+
+Now: `27 July 2026 at 8:53 AM`, identical in every browser timezone, on every surface. Zero
+machine-shaped strings remain in operator-facing text.
+
+**The design decision worth knowing (DECISIONS #165): PHP owns the words.** The browser receives
+month names, meridiem markers and the format *patterns* already translated, and interprets the same
+pattern string the server does. `Intl` is used only for numeric arithmetic in the site's timezone.
+The alternative — `Intl` for everything — gets the timezone right and the words wrong, because it
+reads CLDR while WordPress reads the translation files, and in Arabic those disagree (`أغسطس`
+against `آب`). Two dictionaries cannot be reconciled by testing.
+
+Parity is a committed fixture (`tests/Fixtures/datetime-parity.json`) read by **both** suites and
+compared against the same expected strings — 16 instants including both Cairo DST transitions and
+the year/month rollovers taken at 22:30 UTC, where a formatter reading UTC parts and labelling them
+local lands on the wrong *date*. Verified load-bearing by breaking it.
+
+**Owner-confirmed departure (DECISIONS #166): CoreX admin dates no longer follow Settings → General.**
+A per-site format and a guaranteed server/browser match are mutually exclusive. The format stays
+fully translatable; the front end and the rest of wp-admin are unaffected.
+
+**Three findings worth carrying forward:**
+
+1. **My own evidence tool produced two confident wrong answers before it produced a right one.**
+   First it probed the wrong table column and reported "no defect found" on a screen printing raw
+   timestamps. Then it flagged the *server-rendered* Overview as following the browser timezone —
+   the two passes were reading different events, because visiting those screens writes activity. A
+   tool that looks in the wrong place is worse than no tool. Both are recorded in `076/tasks.md`.
+2. **Widening the parity fixture found a bug both implementations shared.** `'2026'` is all digits,
+   so both read it as 2026 *seconds* — a January 1970 date. A year arriving in a timestamp field
+   and rendering as one. Fixed in both, with a 2000-01-01 floor for bare integers (DECISIONS #167).
+3. **`wp_insert_post` silently reclassifies a future-dated post** from `publish` to `future`, so an
+   ordering fixture dated 2028 vanished from a `post_status => 'publish'` query. Three of five rows
+   missing, with no error. Worth remembering for any test that dates its own fixtures.
+
+Gate: **ESLint 0** · **stylelint 0** · **Jest 48 suites / 381 tests** · **Pest unit 1556** (6590
+assertions) · **Pest integration 276** (1065) · **Playwright `admin-datetime.spec.js` 13/13** against
+the real local WordPress, covering RTL, 375 px and 200 % zoom. Guards clean (`wp-guard`,
+`clean-code-guard`, `test-guard`, `docs-guard`). Token inventory reproduces.
+
+**Next:** PR review and merge for 076, then **Spec 077 — Operations & Security UX and Safety
+Completion** from a fresh branch off the merged `main`.
+
+---
 ## RESUME HERE (2026-07-27) -- **`fix/ci-lint-gate-and-rtl-overflow`: both linters now gate CI. The 1px RTL overflow was never ours.**
 
 Closes carry-forward items 1 and 2 from the v0.36.0 entry below. Branch is

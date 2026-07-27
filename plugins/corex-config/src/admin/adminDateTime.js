@@ -39,14 +39,31 @@ function config() {
 	return raw;
 }
 
+/** 2000-01-01 and 2100-01-01, the range `Instant::EARLIEST_UNIX`/`LATEST` uses on the server. */
+const EARLIEST_UNIX = 946684800;
+const LATEST_UNIX = 4102444800;
+
+/**
+ * Whether a bare number is credible as a Unix timestamp CoreX wrote.
+ *
+ * The floor is 2000 rather than 0 because `'2026'` is all digits: read as seconds it is a date in
+ * January 1970 — the exact fabrication FR-018 forbids, arriving as valid-looking input. Below 2000
+ * a bare integer is a year, an ID, or a count that reached the wrong field.
+ *
+ * @param {number} seconds The candidate value.
+ * @return {boolean} Whether to treat it as a timestamp.
+ */
+function isPlausibleUnix( seconds ) {
+	return seconds >= EARLIEST_UNIX && seconds <= LATEST_UNIX;
+}
+
 /**
  * Turn any stored or transported timestamp into a Date, or into null.
  *
- * Mirrors `Instant::parse` deliberately, including its two surprising rules: a non-positive integer
- * is an absence rather than 1970, and a relative expression is not a date. `new Date( 'now' )` is
- * invalid in JS where PHP would have parsed it, but `new Date( '' )` and `new Date( null )` are
- * not — `new Date( null )` is the epoch, which is exactly the fabricated date this must never
- * produce.
+ * Mirrors `Instant::parse` deliberately, including its surprising rules: a bare integer below 2000
+ * is an absence rather than a 1970 date, a truncated value is not completed, and a relative
+ * expression is not a date. `new Date( null )` is the epoch and `new Date( '2026-08' )` is a valid
+ * 1 August — both are exactly the fabricated dates this must never produce.
  *
  * @param {number|string|Date|null} value A timestamp in any shape CoreX stores.
  * @return {Date|null} The instant, or null when the value names none.
@@ -61,7 +78,7 @@ export function toInstant( value ) {
 	}
 
 	if ( typeof value === 'number' ) {
-		return value > 0 ? new Date( value * 1000 ) : null;
+		return isPlausibleUnix( value ) ? new Date( value * 1000 ) : null;
 	}
 
 	const text = String( value ).trim();
@@ -72,7 +89,7 @@ export function toInstant( value ) {
 
 	if ( /^-?\d+$/.test( text ) ) {
 		const seconds = Number.parseInt( text, 10 );
-		return seconds > 0 ? new Date( seconds * 1000 ) : null;
+		return isPlausibleUnix( seconds ) ? new Date( seconds * 1000 ) : null;
 	}
 
 	// A naive 'Y-m-d H:i:s' was written by gmdate() and is therefore UTC. Left to the engine it
@@ -87,6 +104,18 @@ export function toInstant( value ) {
 				naive[ 5 ]
 			}:${ naive[ 6 ] || '00' }Z`
 		);
+	}
+
+	// The same "does this actually name a date" guard `Instant::parse` applies, and it is here for
+	// the same reason: the engine accepts more than a timestamp. `new Date( '2026-08' )` is a valid
+	// 1 August, so a truncated value would render as a real date on one side of the product and as
+	// an absence on the other — precisely the divergence the parity fixture exists to prevent, and
+	// precisely the kind that a fixture only catches if the case is IN it. It is now.
+	if (
+		! /\d{4}-\d{2}-\d{2}/.test( text ) &&
+		! /^\d{8}T?\d{6}/.test( text )
+	) {
+		return null;
 	}
 
 	const parsed = new Date( text );

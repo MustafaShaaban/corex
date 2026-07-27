@@ -183,6 +183,12 @@
 		{ "name": "null", "value": null },
 		{ "name": "empty string", "value": "" },
 		{ "name": "zero is an absence, not 1970", "value": 0 },
-		{ "name": "malformed", "value": "not-a-date" }
+		{ "name": "malformed", "value": "not-a-date" },
+		{ "name": "a negative sentinel", "value": -1 },
+		{ "name": "a partial date", "value": "2026-08" },
+		{ "name": "a year alone", "value": "2026" },
+		{ "name": "out of range", "value": "2026-13-45T99:99:99Z" },
+		{ "name": "a JSON null that became a string", "value": "null" },
+		{ "name": "a relative expression PHP would parse", "value": "now" }
 	]
 }

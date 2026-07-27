@@ -138,58 +138,69 @@ start until these are done and their tests pass.
 - [x] T028 [P] [US1] `Submissions/index.js` — the four raw-ISO renders at `:527` (inbox date
       column), `:793` (`Attempted %s`), `:820` (drawer), `:913` (audit timeline).
 - [x] T029 [P] [US1] `Security/SecurityCenter.js:376` — the security activity list.
-- [ ] T030 [P] [US1] Sweep the remaining FR-020 surfaces for any date this task list has not named,
-      and convert or record each. The audit found twelve; a surface found here is a spec-audit miss
-      worth recording in PROGRESS.md, not a silent thirteenth fix.
-- [ ] T031 [US1] Jest: each converted React surface renders the human form and no ISO string.
-- [ ] T032 [US1] Pest integration: each converted server surface renders the human form; a site set
+- [x] T030 [P] [US1] Swept: zero `toLocaleString`/`toLocaleDateString`/`toLocaleTimeString` remain
+      in product JS, zero raw `_at` values are interpolated into JSX, and the only `wp_date()` calls
+      left outside the formatter are comments. **No thirteenth surface** — the twelve the audit
+      found were the twelve.
+      *One thing the sweep did surface: `OperationsSecurityScreen` emitted its activity
+      `occurred_at` with `wp_date(DATE_ATOM)` — site-local offset — two methods from a
+      `machineDate()` using UTC `gmdate`. The plan had deferred this as a transport question, but
+      two ISO conventions in one payload is a question a future reader has to answer before they
+      can trust either, so it is now consistent.*
+- [x] T031 [US1] Jest: each converted React surface renders the human form and no ISO string.
+- [x] T032 [US1] Pest integration: each converted server surface renders the human form; a site set
       to `Africa/Cairo` and a site set to UTC both render their own wall clock.
 
 ---
 
 ## Phase 4: US2 — precise, semantic, sortable (P2)
 
-- [ ] T033 [US2] Every converted surface emits semantic `<time>` with a valid machine value —
+- [x] T033 [US2] Every converted surface emits semantic `<time>` with a valid machine value —
       asserted, not assumed (FR-012).
 - [x] T034 [US2] `NotificationItem.js` — relative time keeps its phrase and gains the non-hover
       exact value; the raw-ISO `title` goes.
-- [ ] T035 [P] [US2] Verify FR-016 rather than change it: Pest integration proving the Submission
-      Inbox and the Data explorer sort chronologically server-side across a month and a year
-      boundary, and that missing values group at one end.
-- [ ] T036 [P] [US2] Confirm `EXACT` (with seconds) is used only in diagnostics and nowhere in an
+- [x] T035 [P] [US2] Verified rather than changed, as the plan predicted: both tables order through
+      `WP_Query`'s `orderby => 'date'` on the stored column, so the rendered text never had a vote.
+      The test asserts both halves — the machine values sort chronologically as plain strings, and
+      **the human text deliberately does not**, so if that assertion ever passes the format has
+      drifted into something month-name-sortable and the rule's reason has evaporated.
+      *`wp_insert_post` reclassifies a future-dated post from `publish` to `future`, so the first
+      fixture (dated 2028) lost three of five rows from a `post_status => 'publish'` query with no
+      error at all. The dates are 2023–2024 now; 2024 is a leap year, so the boundary is kept.*
+- [x] T036 [P] [US2] Confirm `EXACT` (with seconds) is used only in diagnostics and nowhere in an
       ordinary operator view (FR-004).
 
 ---
 
 ## Phase 5: US3 — absent and invalid values (P3)
 
-- [ ] T037 [US3] Give each converted call site its field-appropriate absent phrase — "Not recorded",
+- [x] T037 [US3] Give each converted call site its field-appropriate absent phrase — "Not recorded",
       "Never", "No expiry", "Pending". Not one shared word: they are different statements.
-- [ ] T038 [US3] Malformed timestamps recorded in developer diagnostics, nothing sensitive exposed
+- [x] T038 [US3] Malformed timestamps recorded in developer diagnostics, nothing sensitive exposed
       (FR-019).
-- [ ] T039 [P] [US3] Jest + Pest: absent and malformed values on real surfaces produce the phrase,
+- [x] T039 [P] [US3] Jest + Pest: absent and malformed values on real surfaces produce the phrase,
       keep the layout, and never fabricate a date.
 
 ---
 
 ## Phase 6: Acceptance and closeout
 
-- [ ] T040 `tests/e2e/admin-datetime.spec.js` — browser acceptance across the FR-020 surfaces: the
+- [x] T040 `tests/e2e/admin-datetime.spec.js` — browser acceptance across the FR-020 surfaces: the
       required English string present, no ISO string anywhere in operator-facing text, `<time>`
       present, no console error, no failed `/wp-json/` request.
-- [ ] T041 Browser acceptance in Arabic/RTL, at 375px, and at 200% zoom, with no horizontal
+- [x] T041 Browser acceptance in Arabic/RTL, at 375px, and at 200% zoom, with no horizontal
       overflow — measured against the stock wp-admin baseline the way
       `admin-command-center.spec.js` does, since core's own 1px is not ours (DECISIONS #163).
-- [ ] T042 Capture `evidence/after/` for every `before/` shot, plus the two-timezone comparison from
+- [x] T042 Capture `evidence/after/` for every `before/` shot, plus the two-timezone comparison from
       T002 now showing the same hour.
-- [ ] T043 Guards on the diff: `wp-guard` + `clean-code-guard` on production code, `test-guard` on
+- [x] T043 Guards on the diff: `wp-guard` + `clean-code-guard` on production code, `test-guard` on
       tests, `docs-guard` on the documentation task.
-- [ ] T044 Documentation: admin date/time formatting, the timezone source of truth, locale
+- [x] T044 Documentation: admin date/time formatting, the timezone source of truth, locale
       behaviour, and machine-versus-display timestamps — including the plain statement that CoreX
       admin dates no longer follow Settings → General, and why.
-- [ ] T045 Full gate: `lint:css`, `lint:js`, Jest, Pest unit, Pest integration, token inventory,
+- [x] T045 Full gate: `lint:css`, `lint:js`, Jest, Pest unit, Pest integration, token inventory,
       Playwright.
-- [ ] T046 `PROGRESS.md` + `DECISIONS.md` (the one-dictionary decision, and the fixed-format
+- [x] T046 `PROGRESS.md` + `DECISIONS.md` (the one-dictionary decision, and the fixed-format
       departure from Settings → General confirmed by the owner).
 - [ ] T047 PR, green CI, resolve review, merge, delete branch.
 

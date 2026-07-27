@@ -418,7 +418,14 @@ final class OperationsSecurityScreen
                 'kind' => 'operations.mode.changed',
                 'label' => $label,
                 'tone' => 'info',
-                'occurred_at' => $entry['time'] > 0 ? wp_date(DATE_ATOM, (int) $entry['time']) : '',
+                // `gmdate`, not `wp_date`: both name the same instant, but `wp_date(DATE_ATOM)`
+                // writes it with the site's offset while every other machine value in CoreX —
+                // including `machineDate()` two methods up, and the whole persistence layer — is
+                // UTC. Two conventions in one payload is a question a future reader has to answer
+                // before they can trust either.
+                'occurred_at' => $entry['time'] > 0
+                    ? gmdate(DATE_ATOM, (int) $entry['time'])
+                    : '',
             ];
         }, $this->store->history(8));
     }

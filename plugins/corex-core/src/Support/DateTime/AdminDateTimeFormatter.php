@@ -260,26 +260,41 @@ final class AdminDateTimeFormatter implements AdminDateTime
     }
 
     /**
+     * The relative phrases, resolved for the browser.
+     *
+     * Resolved through `_n()` rather than written as separate `__()` strings, so the browser's
+     * copy shares the *same* msgid pair as `relative()` above. Two `__()` calls would have created
+     * a second, singular-only entry for every phrase — the same English words appearing twice in
+     * the translation file, translatable to two different things, with only the JS ever showing
+     * one of them.
+     *
+     * A two-form payload is what the browser formatter can consume; a locale with more plural
+     * forms is served correctly on the server and approximately in the browser. Widening that is
+     * a change to the client contract, not a string change, so it is not smuggled in here.
+     *
      * @return array<string, mixed>
      */
     private function relativeStrings(): array
     {
         return [
             'justNow' => __('Just now', 'corex'),
-            /* translators: %d: number of minutes. */
             'minutes' => [
-                'one'   => __('%d minute ago', 'corex'),
-                'other' => __('%d minutes ago', 'corex'),
+                /* translators: %d: number of minutes. */
+                'one' => _n('%d minute ago', '%d minutes ago', 1, 'corex'),
+                /* translators: %d: number of minutes. */
+                'other' => _n('%d minute ago', '%d minutes ago', 2, 'corex'),
             ],
-            /* translators: %d: number of hours. */
             'hours' => [
-                'one'   => __('%d hour ago', 'corex'),
-                'other' => __('%d hours ago', 'corex'),
+                /* translators: %d: number of hours. */
+                'one' => _n('%d hour ago', '%d hours ago', 1, 'corex'),
+                /* translators: %d: number of hours. */
+                'other' => _n('%d hour ago', '%d hours ago', 2, 'corex'),
             ],
-            /* translators: %d: number of days. */
             'days' => [
-                'one'   => __('%d day ago', 'corex'),
-                'other' => __('%d days ago', 'corex'),
+                /* translators: %d: number of days. */
+                'one' => _n('%d day ago', '%d days ago', 1, 'corex'),
+                /* translators: %d: number of days. */
+                'other' => _n('%d day ago', '%d days ago', 2, 'corex'),
             ],
         ];
     }

@@ -44,6 +44,18 @@ final class Instant
     private const LATEST   = 4102444800;  // 2100-01-01
 
     /**
+     * The floor for a value written as a bare integer.
+     *
+     * Higher than `EARLIEST` on purpose. A four-digit string like `'2026'` is all digits, so it
+     * parses as a Unix timestamp — 2026 seconds after the epoch, a date in January 1970. That is
+     * the exact fabrication FR-018 forbids, arriving through the front door. A bare integer below
+     * 2000 is not a timestamp anything in this product wrote; it is a year, an ID, or a count that
+     * reached the wrong field. A *written-out* date stays governed by `EARLIEST`, because a spelled
+     * date is a statement.
+     */
+    private const EARLIEST_UNIX = 946684800; // 2000-01-01
+
+    /**
      * @param int|string|DateTimeImmutable|null $value A stored or transported timestamp.
      * @return DateTimeImmutable|null The instant it names, or null when it names none.
      */
@@ -89,7 +101,7 @@ final class Instant
      */
     private static function fromUnix(int $seconds): ?DateTimeImmutable
     {
-        if ($seconds <= 0 || $seconds > self::LATEST) {
+        if ($seconds < self::EARLIEST_UNIX || $seconds > self::LATEST) {
             return null;
         }
 

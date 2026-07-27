@@ -3260,3 +3260,52 @@ Alternatives considered: a separate `lint` job (rejected: a second `npm ci` on e
 relaxing the rules that failed rather than fixing the code (rejected — with one recorded exception: nothing was
 silenced, `jsx-a11y/label-has-associated-control` was satisfied by giving 25 controls real `for`/`id` pairs).
 Status: Final.
+
+## #165 — One dictionary: PHP owns the localized words, the browser composes with them
+Date: 2026-07-27
+Decision: The browser half of the CoreX date contract (`adminDateTime.js`) never translates a date. Month
+names, meridiem markers and the **format patterns themselves** arrive already translated from PHP through one
+localized payload, and the browser interprets the same pattern string the server does. `Intl` is used only to
+extract numeric calendar parts in the site's timezone.
+Why: FR-001 requires server and browser output to be character-identical. `Intl.DateTimeFormat` with the site
+timezone and locale gets the timezone right and the *words* wrong — it reads CLDR while WordPress reads the
+`corex` translation files, and in Arabic those disagree (`أغسطس` against `آب`). Two implementations reading two
+dictionaries cannot be reconciled by testing; they can only be reconciled by having one dictionary. Shipping the
+pattern too means a translator who reorders `j F Y`, or writes the connector as `%2$s — %1$s`, reorders both
+sides at once — which is why the connector is a `sprintf` pattern rather than `\a\t` escaped inside a date
+format, a trap for any translator who does not know `a` means meridiem and `t` means days-in-month.
+Alternatives considered: `Intl` for everything (rejected: the Arabic divergence above); the server pre-formatting
+every date into the payload (rejected: relative time and freshly-created records have no server render to carry).
+Scope: proven by `tests/Fixtures/datetime-parity.json` — 16 instants read by both suites and compared against
+the same expected strings, including both Cairo DST transitions. Verified load-bearing by breaking it.
+Status: Final.
+
+## #166 — CoreX admin dates do not follow Settings → General
+Date: 2026-07-27
+Decision: CoreX admin screens render dates in one fixed presentation — `1 August 2026 at 10:20 PM` in English —
+rather than in the site's configured `date_format`/`time_format`. Owner-confirmed.
+Why: a per-site format and a guaranteed server/browser match are mutually exclusive, and the previous behaviour
+demonstrated it: three server-side surfaces built their format from those options and produced
+`July 27, 2026 8:53 am`, which no browser-side renderer was ever going to reproduce. The format is still fully
+translatable — `j F Y`, `g:i A` and the connector are `_x()` strings — so a locale changes it once for both
+sides. The front end and the rest of wp-admin are unaffected.
+Alternatives considered: honour Settings → General and drop the parity requirement (rejected by the owner: the
+required presentation is fixed, and two colleagues reading different times for one event was the defect).
+Status: Final.
+
+## #167 — A value that is not credibly a timestamp is an absence, not a date
+Date: 2026-07-27
+Decision: `Instant` (and its JS mirror) refuse: a non-positive integer, a bare integer below 2000-01-01, a
+truncated date such as `2026-08`, and a relative expression such as `now` or `+1 day`. All render the calling
+field's absent phrase.
+Why: each of these parses into a *convincing* date, which is the dangerous kind of wrong. `0` becomes
+1 January 1970. `'2026'` is all digits, so read as seconds it becomes a January 1970 date — a year arriving in a
+timestamp field and rendering as one. `new DateTimeImmutable('2026-08')` is a valid 1 August, and
+`new Date('2026-08')` agrees. `'now'` renders as today and looks exactly like a working feature. FR-018 forbids
+`Invalid Date`, `NaN` and the epoch; these are the same failure wearing better clothes.
+The asymmetry is deliberate: integer `0` is an absence but `'1969-07-20T20:17:00Z'` still parses, because a
+written-out date is a statement and a sentinel integer is not.
+Scope: the `'2026'` case was found by widening the parity fixture's absent list, not by review — both
+implementations had it, identically wrong. The centralised rule replaces a hand-written `$entry['time'] > 0`
+guard that `OperationsSecurityScreen` already applied at one call site out of many.
+Status: Final.

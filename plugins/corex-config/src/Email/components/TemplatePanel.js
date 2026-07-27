@@ -48,7 +48,13 @@ function TemplateRail( { templates, selectedId, busy, onCreate, onSelect } ) {
 								{ template.subject ||
 									__( 'No draft subject', 'corex' ) }
 							</span>
-							<CorexTime value={ template.updated_at } />
+							{ /* "Never edited" rather than the generic "Not recorded": a template
+							     with no update time has not been touched since it was created,
+							     which is a fact about the template, not a gap in the record. */ }
+							<CorexTime
+								value={ template.updated_at }
+								absent={ __( 'Never edited', 'corex' ) }
+							/>
 							<span>{ template.status }</span>
 						</button>
 					</li>

@@ -98,3 +98,28 @@ it('still reads a written-out pre-epoch date, because a stated date is not an ab
     // somebody saying a date out loud.
     expect(Instant::parse('1969-07-20T20:17:00Z')?->format('Y'))->toBe('1969');
 });
+
+it('refuses a bare integer too small to be a timestamp this product wrote', function ($value) {
+    // Found by widening the parity fixture: '2026' is all digits, so it parsed as 2026 SECONDS —
+    // a date in January 1970, which is the exact fabrication FR-018 forbids arriving through the
+    // front door. Below 2000 a bare integer is a year, an ID, or a count in the wrong field.
+    expect(Instant::parse($value))->toBeNull();
+})->with([
+    'a year read as seconds'  => '2026',
+    'a year as an integer'    => 2026,
+    'a record ID'             => 17321,
+    'just before the floor'   => 946684799,
+]);
+
+it('accepts a bare integer from 2000 onward', function () {
+    expect(Instant::parse(946684800)?->format('Y'))->toBe('2000');
+});
+
+it('refuses a truncated date rather than completing it', function ($value) {
+    // `new DateTimeImmutable('2026-08')` is a valid 1 August. A truncated stored value must not
+    // become a confident date on either side of the product.
+    expect(Instant::parse($value))->toBeNull();
+})->with([
+    'year and month' => '2026-08',
+    'year alone'     => '2026-',
+]);
