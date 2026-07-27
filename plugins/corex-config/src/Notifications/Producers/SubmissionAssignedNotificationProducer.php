@@ -69,8 +69,8 @@ final class SubmissionAssignedNotificationProducer implements NotificationProduc
             titleKey: 'notifications.submission.assigned.title',
             messageKey: 'notifications.submission.assigned.body',
             rendered: [
-                'title' => __('A submission was assigned to you', 'corex'),
-                'body'  => __('You have been assigned a form submission to review.', 'corex'),
+                'title' => __('A submission needs your reply', 'corex'),
+                'body'  => __('It was assigned to you in the Submission Inbox.', 'corex'),
             ],
             dedupKey: 'submission.assigned:' . $event->submissionId . ':' . $event->assigneeKey,
             recipient: NotificationRecipient::forUser((int) $event->assigneeKey),

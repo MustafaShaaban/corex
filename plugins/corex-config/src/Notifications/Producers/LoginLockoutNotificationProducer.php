@@ -64,11 +64,14 @@ final class LoginLockoutNotificationProducer implements NotificationProducer
             titleKey: 'notifications.security.lockout.title',
             messageKey: 'notifications.security.lockout.body',
             rendered: [
-                'title' => __('Sign-in lockout triggered', 'corex'),
-                'body'  => sprintf(
-                    /* translators: 1: the locked account identity, 2: the client IP address. */
-                    __('Repeated failed sign-ins locked out “%1$s” from %2$s.', 'corex'),
+                'title' => sprintf(
+                    /* translators: %s: the locked account identity. */
+                    __('Repeated login failures locked out “%s”', 'corex'),
                     $event->identity,
+                ),
+                'body'  => sprintf(
+                    /* translators: %s: the client IP address. */
+                    __('The attempts came from %s. Review them in Operations & Security.', 'corex'),
                     $event->clientIp,
                 ),
             ],

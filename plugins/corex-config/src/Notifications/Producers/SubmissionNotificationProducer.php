@@ -76,13 +76,16 @@ final class SubmissionNotificationProducer implements NotificationProducer
             sourceModule: 'forms',
             titleKey: 'notifications.submission.new.title',
             messageKey: 'notifications.submission.new.body',
+            // The form's name in the title, because with several forms on a site "New form
+            // submission" is the same sentence every time and identifies nothing (spec 074).
+            // Occurrences are deduplicated per form, so the count on the item says how many.
             rendered: [
-                'title' => __('New form submission', 'corex'),
-                'body'  => sprintf(
+                'title' => sprintf(
                     /* translators: %s: the form slug. */
-                    __('A visitor submitted the “%s” form.', 'corex'),
+                    __('New submission on “%s”', 'corex'),
                     $event->flowSlug,
                 ),
+                'body'  => __('Open the Submission Inbox to read and assign it.', 'corex'),
             ],
             dedupKey: 'submission.new:' . $event->flowSlug,
             recipient: NotificationRecipient::forAbility(CorexAbility::MANAGE_SUBMISSIONS),

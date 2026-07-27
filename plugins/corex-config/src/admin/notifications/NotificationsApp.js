@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import CorexSelect from '../components/CorexSelect.js';
+import NotificationItem from './NotificationItem.js';
 import PreferencesPanel from './PreferencesPanel.js';
 
 /**
@@ -27,46 +28,49 @@ const SEVERITY_OPTIONS = [
 ];
 
 /**
- * The saved views FR-018 names, each a bounded server-side filter — no client-side slicing.
+ * Three views, each a bounded server-side filter — no client-side slicing.
  *
- * "Requires attention" uses the derived per-user status rather than `unread_only`, which means
- * unresolved and would keep showing items this actor already read. "History" is the resolved
- * archive; "Updates" is the informational stream, i.e. the things that are worth knowing but ask
- * nothing of you.
+ * This replaces the eight saved views v0.35.0 shipped (DECISIONS: spec 074). Two problems with
+ * those: "Requires attention" filtered on the actor's *unread* state, so reading a production
+ * readiness blocker took it off the attention list while the blocker was still true; and
+ * Submissions / Security / System / Assigned-to-me were tabs competing with the real question —
+ * does this still need me? Those four are filters now, which is what they always were.
  */
 const VIEWS = [
-	{ id: 'inbox', label: __( 'Inbox', 'corex' ), params: {} },
 	{
-		id: 'attention',
-		label: __( 'Requires attention', 'corex' ),
-		params: { status: 'unread' },
+		id: 'action_needed',
+		label: __( 'Action needed', 'corex' ),
+		params: { view: 'action_needed' },
+		empty: __( 'Nothing needs you right now.', 'corex' ),
 	},
-	{
-		id: 'assigned',
-		label: __( 'Assigned to me', 'corex' ),
-		params: { assigned_to_me: '1' },
-	},
-	{
-		id: 'submissions',
-		label: __( 'Submissions', 'corex' ),
-		params: { category: 'submissions' },
-	},
-	{
-		id: 'security',
-		label: __( 'Security', 'corex' ),
-		params: { category: 'security' },
-	},
-	{ id: 'system', label: __( 'System', 'corex' ), params: { category: 'system' } },
 	{
 		id: 'updates',
 		label: __( 'Updates', 'corex' ),
-		params: { severity: 'information' },
+		params: { view: 'updates' },
+		empty: __( 'No updates to report.', 'corex' ),
 	},
 	{
 		id: 'history',
 		label: __( 'History', 'corex' ),
-		params: { status: 'resolved' },
+		params: { view: 'history' },
+		empty: __( 'Nothing has been resolved or dismissed yet.', 'corex' ),
 	},
+];
+
+/** The old tabs, as the filters they always were. */
+const CATEGORY_OPTIONS = [
+	{ value: '', label: __( 'All categories', 'corex' ) },
+	{ value: 'submissions', label: __( 'Submissions', 'corex' ) },
+	{ value: 'email', label: __( 'Email', 'corex' ) },
+	{ value: 'jobs', label: __( 'Jobs', 'corex' ) },
+	{ value: 'security', label: __( 'Security', 'corex' ) },
+	{ value: 'access', label: __( 'Access', 'corex' ) },
+	{ value: 'operations', label: __( 'Operations', 'corex' ) },
+	{ value: 'readiness', label: __( 'Readiness', 'corex' ) },
+	{ value: 'imports_exports', label: __( 'Imports and exports', 'corex' ) },
+	{ value: 'editorial', label: __( 'Editorial', 'corex' ) },
+	{ value: 'setup', label: __( 'Setup', 'corex' ) },
+	{ value: 'system', label: __( 'System', 'corex' ) },
 ];
 
 export default function NotificationsApp() {
@@ -75,8 +79,11 @@ export default function NotificationsApp() {
 	const [ total, setTotal ] = useState( 0 );
 	const [ page, setPage ] = useState( 1 );
 	const [ perPage ] = useState( 20 );
-	const [ view, setView ] = useState( 'inbox' );
+	const [ view, setView ] = useState( 'action_needed' );
 	const [ severity, setSeverity ] = useState( '' );
+	const [ category, setCategory ] = useState( '' );
+	const [ assignedToMe, setAssignedToMe ] = useState( false );
+	const [ error, setError ] = useState( '' );
 
 	const activeView = useMemo(
 		() => VIEWS.find( ( candidate ) => candidate.id === view ) ?? VIEWS[ 0 ],
@@ -96,6 +103,12 @@ export default function NotificationsApp() {
 		if ( severity ) {
 			query.set( 'severity', severity );
 		}
+		if ( category ) {
+			query.set( 'category', category );
+		}
+		if ( assignedToMe ) {
+			query.set( 'assigned_to_me', '1' );
+		}
 		apiFetch( { path: `/corex/v1/notifications?${ query.toString() }` } )
 			.then( ( response ) => {
 				setItems( response?.data?.items ?? [] );
@@ -103,22 +116,51 @@ export default function NotificationsApp() {
 				setStatus( 'ready' );
 			} )
 			.catch( () => setStatus( 'error' ) );
-	}, [ view, page, perPage, activeView, severity ] );
+	}, [ view, page, perPage, activeView, severity, category, assignedToMe ] );
 
 	useEffect( () => {
 		load();
 	}, [ load ] );
 
-	const markRead = useCallback(
-		( id ) => {
+	/**
+	 * Every per-item control goes through one call, so a new one cannot arrive half-wired.
+	 *
+	 * `read` was the only action the screen used; `unread`, `dismiss`, `snooze`, and `resolve` have
+	 * been registered on the REST controller since v0.35.0 with nothing calling them.
+	 */
+	const act = useCallback(
+		( id, action, body ) => {
+			setError( '' );
 			apiFetch( {
-				path: `/corex/v1/notifications/${ id }/read`,
+				path: `/corex/v1/notifications/${ id }/${ action }`,
 				method: 'POST',
+				...( body ? { data: body } : {} ),
 			} )
 				.then( load )
-				.catch( () => {} );
+				.catch( ( failure ) =>
+					setError(
+						failure?.message ||
+							__( 'That action could not be completed.', 'corex' )
+					)
+				);
 		},
 		[ load ]
+	);
+
+	const itemActions = useMemo(
+		() => ( {
+			markRead: ( id ) => act( id, 'read' ),
+			markUnread: ( id ) => act( id, 'unread' ),
+			dismiss: ( id ) => act( id, 'dismiss' ),
+			// A day is the snooze the store already understands; the control says so rather than
+			// leaving the person to guess how long "snooze" lasts.
+			snooze: ( id ) =>
+				act( id, 'snooze', {
+					snoozed_until: new Date( Date.now() + 86400000 ).toISOString(),
+				} ),
+			resolve: ( id ) => act( id, 'resolve', { reason: 'manual' } ),
+		} ),
+		[ act ]
 	);
 
 	const markAllRead = useCallback( () => {
@@ -176,6 +218,28 @@ export default function NotificationsApp() {
 						} }
 					/>
 				</div>
+				<div className="corex-notifications-screen__filter">
+					<CorexSelect
+						label={ __( 'Category', 'corex' ) }
+						value={ category }
+						options={ CATEGORY_OPTIONS }
+						onChange={ ( next ) => {
+							setPage( 1 );
+							setCategory( next );
+						} }
+					/>
+				</div>
+				<label className="corex-notifications-screen__toggle">
+					<input
+						type="checkbox"
+						checked={ assignedToMe }
+						onChange={ ( event ) => {
+							setPage( 1 );
+							setAssignedToMe( event.target.checked );
+						} }
+					/>
+					{ __( 'Assigned to me', 'corex' ) }
+				</label>
 				<button
 					type="button"
 					className="corex-notifications-screen__mark-all"
@@ -197,34 +261,19 @@ export default function NotificationsApp() {
 			) }
 			{ status === 'ready' && items.length === 0 && (
 				<p className="corex-notifications-screen__state">
-					{ __( 'Nothing here — you’re all caught up.', 'corex' ) }
+					{ activeView.empty }
+				</p>
+			) }
+			{ error && (
+				<p className="corex-notifications-screen__state" role="alert">
+					{ error }
 				</p>
 			) }
 			{ status === 'ready' && items.length > 0 && (
 				<ul className="corex-notifications-screen__list">
 					{ items.map( ( item ) => (
-						<li
-							key={ item.id }
-							className="corex-notifications-screen__item"
-							data-severity={ item.severity }
-						>
-							<div className="corex-notifications-screen__item-main">
-								<p className="corex-notifications-screen__item-title">
-									{ item.rendered?.title ?? '' }
-								</p>
-								<p className="corex-notifications-screen__item-body">
-									{ item.rendered?.body ?? '' }
-								</p>
-							</div>
-							{ ! item.user_state?.read && (
-								<button
-									type="button"
-									className="corex-notifications-screen__mark"
-									onClick={ () => markRead( item.id ) }
-								>
-									{ __( 'Mark read', 'corex' ) }
-								</button>
-							) }
+						<li key={ item.id } className="corex-notifications-screen__item">
+							<NotificationItem item={ item } actions={ itemActions } />
 						</li>
 					) ) }
 				</ul>

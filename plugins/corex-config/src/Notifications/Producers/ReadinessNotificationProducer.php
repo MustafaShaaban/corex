@@ -82,10 +82,13 @@ final class ReadinessNotificationProducer implements NotificationProducer
             sourceModule: 'operations',
             titleKey: 'notifications.readiness.blocker.title',
             messageKey: 'notifications.readiness.blocker.body',
+            // "Readiness blocker: HTTPS" named a category and a subject and asked nothing. The
+            // check's own label already says what is wrong; leading with it, and saying what it
+            // stops, is the difference between a log line and something you can act on.
             rendered: [
                 'title' => sprintf(
-                    /* translators: %s: the readiness check label. */
-                    __('Readiness blocker: %s', 'corex'),
+                    /* translators: %s: the readiness check label, e.g. "HTTPS". */
+                    __('%s is not ready for production', 'corex'),
                     $check['label'],
                 ),
                 'body' => $check['summary'],

@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import NotificationItem from '../notifications/NotificationItem.js';
 
 const FOCUSABLE =
 	'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -147,25 +148,19 @@ export default function NotificationDrawer( { open, onClose } ) {
 				{ status === 'ready' && items.length > 0 && (
 					<>
 						<ul className="corex-notification-drawer__list">
+							{ /* The same component the full screen renders (spec 074, FR-4.9). The drawer
+							     used to show its own shorter version of the same record, so what a
+							     notification appeared to want from you depended on where you looked.
+							     `compact` drops the secondary controls — the drawer is a glance, and
+							     dismiss/snooze/resolve belong where you can see what you are acting
+							     on — but every fact about the item is the same one. */ }
 							{ items.map( ( item ) => (
-								<li
-									key={ item.id }
-									className="corex-notification-drawer__item"
-									data-severity={ item.severity }
-								>
-									<p className="corex-notification-drawer__item-title">
-										{ item.rendered?.title ?? '' }
-									</p>
-									<p className="corex-notification-drawer__item-body">
-										{ item.rendered?.body ?? '' }
-									</p>
-									<button
-										type="button"
-										className="corex-notification-drawer__mark"
-										onClick={ () => markRead( item.id ) }
-									>
-										{ __( 'Mark read', 'corex' ) }
-									</button>
+								<li key={ item.id } className="corex-notification-drawer__item">
+									<NotificationItem
+										item={ item }
+										compact
+										actions={ { markRead } }
+									/>
 								</li>
 							) ) }
 						</ul>
