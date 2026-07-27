@@ -40,41 +40,47 @@ else in this spec asks the registry, so the registry has to be right first.
 
 ## Phase 2: The store
 
-- [ ] T006 `CacheStore` contract: get, put, has, forget, remember, forgetNamespace, isPersistent.
-- [ ] T007 `WordPressCacheStore` — object cache when WordPress is using one, transients otherwise.
+- [x] T006 `CacheStore` contract: get, put, has, forget, remember, forgetNamespace, isPersistent.
+- [x] T007 `WordPressCacheStore` — object cache when WordPress is using one, transients otherwise.
       Both are WordPress mechanisms; shared hosting is the normal path, not a fallback (FR-007).
-- [ ] T008 `ArrayCacheStore` for deterministic tests.
-- [ ] T009 `CacheManager` over the store and the registry, with namespaced keys (FR-008).
-- [ ] T010 [P] Pest: reads, writes, expiry, namespace invalidation, and `remember()` regenerating
+- [x] T008 `ArrayCacheStore` for deterministic tests.
+- [x] T009 `CacheManager` over the store and the registry, with namespaced keys (FR-008).
+- [x] T010 [P] Pest: reads, writes, expiry, namespace invalidation, and `remember()` regenerating
       once under concurrent misses.
-- [ ] T011 [P] Pest: a failing store degrades to a miss and never throws (FR-009).
+- [x] T011 [P] Pest: a failing store degrades to a miss and never throws (FR-009).
 
 ---
 
 ## Phase 3: Scoped clearing that reports what it did
 
-- [ ] T012 `CacheScope` allow-list and `CacheOutcome` (cleared / skipped / unsupported / failed,
+- [x] T012 `CacheScope` allow-list and `CacheOutcome` (cleared / skipped / unsupported / failed,
       each with a reason).
-- [ ] T013 `CacheManager::clear( $scope )` walking declared entries — **never a pattern delete**, so
+- [x] T013 `CacheManager::clear( $scope )` walking declared entries — **never a pattern delete**, so
       no future scope can widen into security state (plan §1).
-- [ ] T014 [P] Pest: the default scope clears both safe-cache entries and leaves the other six.
-- [ ] T015 [P] Pest: **after every scope in turn**, a throttle counter and a spent-captcha token are
+- [x] T014 [P] Pest: the default scope clears both safe-cache entries and leaves the other six.
+- [x] T015 [P] Pest: **after every scope in turn**, a throttle counter and a spent-captcha token are
       still present and still effective (FR-003, SC-002).
-- [ ] T016 [P] Pest: no scope removes a submission, audit entry, notification, access request or
+- [x] T016 [P] Pest: no scope removes a submission, audit entry, notification, access request or
       history row (FR-003, SC-003).
-- [ ] T017 The `object` scope requires explicit opt-in, because `wp_cache_flush()` hits every other
-      plugin on the site (FR-011).
+- [x] T017 The `object` scope requires explicit opt-in — and is **refused outright** on a site using
+      a persistent object cache, which the plan did not anticipate. With one installed, WordPress
+      keeps transients IN that cache, so `wp_cache_flush()` would delete `corex_throttle_*` and
+      `corex_captcha_seen_*` as collateral: not by walking them, not by matching them, but by
+      emptying the place they live. FR-003 says no cache operation may remove security state, and
+      removing it indirectly is still removing it. CoreX declines and names `wp cache flush` as the
+      operator's own route, which is WordPress's operation with WordPress's consequences rather than
+      CoreX claiming the result was safe.
 
 ---
 
 ## Phase 4: The command line
 
-- [ ] T018 `wp corex cache:status` — every layer and its real state.
-- [ ] T019 `wp corex cache:doctor` — secret-free diagnostics (FR-019).
-- [ ] T020 `wp corex cache:clear [--scope=] [--yes]` replacing the four-line command that deleted
+- [x] T018 `wp corex cache:status` — every layer and its real state.
+- [x] T019 `wp corex cache:doctor` — secret-free diagnostics (FR-019).
+- [x] T020 `wp corex cache:clear [--scope=] [--yes]` replacing the four-line command that deleted
       one transient, reporting cleared/skipped/unsupported/failed with meaningful exit codes
       (FR-010/012/013).
-- [ ] T021 [P] Pest: an unsupported scope is refused, not silently ignored; the report names each
+- [x] T021 [P] Pest: an unsupported scope is refused, not silently ignored; the report names each
       outcome; nothing claims to clear a browser cache (FR-014).
 
 ---

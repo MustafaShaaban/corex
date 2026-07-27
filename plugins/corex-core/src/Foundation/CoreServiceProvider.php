@@ -65,6 +65,21 @@ final class CoreServiceProvider extends ServiceProvider
             ),
         );
 
+        // The cache contract (spec 078). The registry is a singleton because it is the authority on
+        // what may be cleared, and two of those in one request could disagree.
+        $this->container->singleton(\Corex\Cache\CacheRegistry::class);
+        $this->container->singleton(
+            \Corex\Cache\CacheStore::class,
+            static fn (): \Corex\Cache\WordPressCacheStore => new \Corex\Cache\WordPressCacheStore(),
+        );
+        $this->container->singleton(
+            \Corex\Cache\CacheManager::class,
+            static fn (ContainerInterface $container): \Corex\Cache\CacheManager => new \Corex\Cache\CacheManager(
+                $container->make(\Corex\Cache\CacheStore::class),
+                $container->make(\Corex\Cache\CacheRegistry::class),
+            ),
+        );
+
         // How every CoreX admin surface presents a date (spec 076). Bound to the interface so a
         // screen depends on "a way to present a date" rather than on wp_date().
         $this->container->singleton(
