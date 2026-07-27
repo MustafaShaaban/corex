@@ -4,6 +4,86 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-27) -- **`fix/ci-lint-gate-and-rtl-overflow`: both linters now gate CI. The 1px RTL overflow was never ours.**
+
+Closes carry-forward items 1 and 2 from the v0.36.0 entry below. Branch is
+`fix/ci-lint-gate-and-rtl-overflow`, off `main` at `a52a5f4`.
+
+**1. Nothing ran a linter in CI, and `lint:js` could not have run if it had.** `wp-scripts lint-js`
+with no project config lints `.` under the WordPress default flat config, whose only global ignores
+are `build`, `node_modules` and `vendor` — so it walked the whole WordPress install at `wp/` and the
+generated bundle at `dist/`, and never terminated. That, not policy, is why only `lint:css` (which
+has had `.stylelintignore` all along) could ever have been gated. `eslint.config.js` now scopes
+ESLint to the same tree stylelint sees.
+
+Then the debt behind the gate: **2589 ESLint problems → 0**, in four passes — the mechanical
+`--fix`, then 305 → 141 → 0 by hand. Nothing was silenced; one rule's requirements were met rather
+than relaxed (DECISIONS **#164**). What the last 141 actually were, because they were not all
+formatting:
+
+- **25 `jsx-a11y/label-has-associated-control`** — real WCAG 2.2 AA defects. Every one was a
+  `<label>` wrapping its control, which the WordPress config rejects (`assert: 'htmlFor'`) because
+  implicit association is not announced by every assistive technology WordPress supports. All 25
+  now carry `for`/`id` pairs, keyed off `useId` (the pattern `CorexSelect` already used) or off a
+  value that is already unique in scope — a field uuid, an event name, a category.
+- **21 missing translator comments**, all present but placed above the JSX element instead of above
+  the `__()`/`_n()` call, so no translator would ever have seen them; plus 7 that were simply absent.
+- **2 `@wordpress/i18n-no-variables`** — `corex-runtime.js` and `captcha-admin.js` each wrapped
+  `wp.i18n.__` in a `t( text )` / `translate( text )` helper. Every string routed through those
+  wrappers was **invisible to `wp i18n make-pot`**: 10 runtime validation and error messages, and 4
+  captcha ones, none of which could ever have been translated. Binding the real function as `__`
+  instead of wrapping a call around it makes the literals extractable at every call site, and keeps
+  the buildless identity fallback. `corex-captcha-admin` was also never passed to
+  `wp_set_script_translations()`, so even an extracted string had nowhere to come from.
+- The rest: 65 JSDoc types, 5 nested ternaries, 4 view-entry expression statements, 3
+  assigned-before-an-early-return variables, 2 `eqeqeq`, 2 `no-global-active-element` (the
+  notification drawer trapped focus against the *global* `document`, not the panel's own), 1
+  `no-undef`, 1 `prefer-const`, 1 `useMemo` dependency that changed on every render.
+
+One behaviour change, deliberate and flagged: the **Team block's editor photo was an `<img>` with a
+click handler** — unreachable by keyboard, so a photo could not be replaced without a mouse. The
+image is now a preview and the picker opens from a real button, matching Hero and Gallery.
+
+**2. The 1px RTL overflow is WordPress core's, not CoreX's.** Reproduced first, as planned — and the
+reproduction is what changed the answer. At 375px with `dir=rtl`, wp-admin's own **Dashboard,
+Settings and Plugins** screens scroll by the same 1px, with no CoreX CSS on the page. Hiding
+`#wpadminbar` takes all of them, and every CoreX screen, to 0. The cause is core's visually-hidden
+admin-bar chrome (`position:absolute; margin:-1px; width:1px`, no inset), whose static position in
+RTL sits a pixel outside the inline edge. **The reading in the v0.36.0 entry was right; the
+attribution was wrong.** No CoreX rule can remove it without overriding core admin chrome site-wide,
+so nothing in `corex-admin-shell.css` changed (an override was tried and reverted — DECISIONS
+**#163**).
+
+What shipped instead is the assertion that entry asked for, in the only form that is true: **no
+CoreX route scrolls sideways any further than stock wp-admin**, across all 12 routes × 4 widths ×
+LTR/RTL, with the baseline measured per viewport rather than assumed. It was verified by making it
+fail — `min-inline-size: 120vw` on `.corex-admin` trips it — before it was trusted.
+
+**3. Jest was reading a tree nobody meant it to.** It excluded `wp/` and `docs-app/` but not
+`dist/`, so **17 of 62 suites were duplicates running against the generated bundle**. That is why
+the v0.36.0 gate below records 385 tests across 62 suites while CI, where `dist/` is git-ignored and
+absent, runs 331 across 45. Same exclusion as the linters now.
+
+Gate: **ESLint 0** · **stylelint 0** · **Jest 45 suites / 331 tests, 0 failures** · **Pest unit
+1521/0 (6555 assertions)** · Playwright `admin-command-center.spec.js` **5/5** against the real
+local WordPress. (Pest needs `-d memory_limit=1G -d xdebug.mode=off` on this Windows box; with
+xdebug loaded and the default 128M it segfaults in teardown — pre-existing, unrelated to the branch,
+and not a factor on CI's Linux runners.)
+
+**Two things for the owner, neither blocking:**
+
+1. **Branch protection requires exactly one check** — `Lint + headless tests (PHP 8.3)`. The other
+   five (JS, integration, Playwright, CodeQL) run on every PR and are read as required by
+   convention, not by enforcement. "All six green" is a habit, not a gate.
+2. **`EmailsTab` prints raw event slugs** (`submitter_confirmation`, `team_notification`,
+   `admin_failure`) as `<legend>` text — the same untranslated-slug defect spec 075 fixed in Blog
+   Pro. Found while fixing that file's labels; left alone rather than silently widened into.
+
+**Next:** open the PR for this branch, get CI green (its own run is the proof the new lint steps
+pass on a real PR), merge, delete the branch. Then **Spec 076 — CoreX Admin Date & Time
+Foundation**, from a fresh branch off the merged `main`.
+
+---
 ## RESUME HERE (2026-07-27) -- **Spec 074 MERGED (`d243b7f`). Spec 075 IMPLEMENTED on `spec/075-blog-pro-functional-completion`.**
 
 **Spec 074** shipped via PR **#130**, squash-merged as **`d243b7f`**, on `origin` and `upstream`

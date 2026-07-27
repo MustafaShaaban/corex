@@ -3218,3 +3218,45 @@ still be green and the next reader would still believe them).
 Scope: the routes themselves are untouched — `/blog/share-click` stays for the visitor-facing spec that will
 own it. This is about the admin client's exports, not the API surface.
 Status: Final.
+
+## #163 — The 1px RTL admin overflow is WordPress core's, and is asserted comparatively
+Date: 2026-07-27
+Decision: The horizontal overflow PROGRESS.md recorded as "the CoreX admin shell overflows by 1px in RTL at
+375px on every CoreX screen" is **not a CoreX defect and is not fixed in CoreX**. The browser assertion added
+in its place is comparative: no CoreX route may scroll sideways any further than stock wp-admin already does
+(`tests/e2e/admin-command-center.spec.js`).
+Why: measured against the real local install at 375px with `dir=rtl`, wp-admin's own Dashboard, Settings and
+Plugins screens scroll by exactly the same 1px, with no CoreX CSS on the page. Hiding `#wpadminbar` takes every
+one of those screens — and every CoreX screen — to 0px. The cause is core's visually-hidden admin-bar chrome:
+`position:absolute; margin:-1px; width:1px` with no inset, whose static position in RTL sits one pixel outside
+the inline edge, and left-of-origin content extends `scrollWidth` in RTL where it does not in LTR. The reading
+in PROGRESS.md was correct; the attribution was not.
+Alternatives considered: override the offending core elements from `corex-admin-shell.css` (tried, then
+reverted — an `inset-inline-end: 0 !important` on `.a11y-speak-region` does move that element back inside the
+viewport, but the admin bar still contributes the same pixel, so the override bought no observable change while
+adding an `!important` against core's inline styles); put `overflow-x: clip` on `body.corex-admin-screen`
+(rejected: that hides genuine CoreX layout bugs rather than fixing them, which is the defect this branch exists
+to stop); assert `scrollWidth <= clientWidth` outright (rejected: cannot pass, for a pixel CoreX does not cause).
+Scope: the comparative assertion is a real gate, not a weakened one — injecting `min-inline-size: 120vw` into
+`.corex-admin` makes it fail, which is how it was verified before it was trusted.
+Status: Final.
+
+## #164 — Both linters gate CI, and the tooling looks at one tree
+Date: 2026-07-27
+Decision: `lint:css` and `lint:js` run in CI, as steps of the existing `js` job rather than a job of their own.
+`eslint.config.js` scopes ESLint to CoreX source, and `jest.config.js` now excludes `dist/` and `build/` for the
+same reason the linters do.
+Why: nothing ran either linter in CI, which is how spec 074 introduced 44 stylelint errors that had to be found
+by hand and how ESLint accumulated 2589 problems. `lint:js` could not have been gated even if someone had
+tried: `wp-scripts lint-js` with no project config lints `.` under the WordPress default flat config, whose only
+global ignores are `build`, `node_modules` and `vendor` — so it walked the full WordPress install at `wp/` and
+the generated bundle at `dist/`, and never finished. `@wordpress/*` imports are declared as build-time externals
+(`import/core-modules`) because `dependency-extraction-webpack-plugin` rewrites them to the `window.wp.*`
+globals WordPress already serves; installing them would be the actual mistake, since a bundled copy would shadow
+the version the host runs. Jest had the same blind spot in reverse: it *included* `dist/`, so 17 suites ran
+twice against generated copies, and the local suite count (62 suites / 385 tests) disagreed with CI's (45 / 331)
+purely because `dist/` is git-ignored and never exists there.
+Alternatives considered: a separate `lint` job (rejected: a second `npm ci` on every PR to say the same thing);
+relaxing the rules that failed rather than fixing the code (rejected — with one recorded exception: nothing was
+silenced, `jsx-a11y/label-has-associated-control` was satisfied by giving 25 controls real `for`/`id` pairs).
+Status: Final.
