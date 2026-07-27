@@ -1,0 +1,188 @@
+{
+	"_comment": [
+		"Spec 076 parity fixture. The single input to both the Pest and the Jest date suites.",
+		"",
+		"Its job is to make FR-001 — server and browser produce identical output — fail loudly if",
+		"either implementation is changed alone. Every case here was chosen because it distinguishes",
+		"a correct implementation from a plausible wrong one:",
+		"",
+		"  - the required example, so the owner's format is pinned by a test and not by memory;",
+		"  - midnight and noon, which is where 12-hour clocks produce '0:00 AM' and bare '12:00';",
+		"  - both Cairo DST transitions, one hour either side, which a formatter using a fixed",
+		"    offset passes for the wrong reason and only fails here;",
+		"  - the year and month rollovers taken at 22:30 UTC, so a formatter reading UTC parts and",
+		"    labelling them local lands on the wrong DATE, not merely the wrong hour;",
+		"  - a leap day;",
+		"  - the four stored shapes, which must all resolve to one moment.",
+		"",
+		"`site` names the timezone WordPress is configured with for that case. `expected` is English."
+	],
+	"cases": [
+		{
+			"name": "the required format",
+			"value": "2026-08-01T19:20:00Z",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "1 August 2026 at 10:20 PM",
+				"date": "1 August 2026",
+				"time": "10:20 PM"
+			}
+		},
+		{
+			"name": "midnight is 12 AM, never 0 AM",
+			"value": "2026-08-01T21:00:00Z",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "2 August 2026 at 12:00 AM",
+				"date": "2 August 2026",
+				"time": "12:00 AM"
+			}
+		},
+		{
+			"name": "noon is 12 PM, never a bare 12:00",
+			"value": "2026-08-01T09:00:00Z",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "1 August 2026 at 12:00 PM",
+				"date": "1 August 2026",
+				"time": "12:00 PM"
+			}
+		},
+		{
+			"name": "an early morning hour drops its leading zero",
+			"value": "2026-08-01T04:05:00Z",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "1 August 2026 at 7:05 AM",
+				"date": "1 August 2026",
+				"time": "7:05 AM"
+			}
+		},
+		{
+			"name": "one hour before Cairo springs forward",
+			"value": "2026-04-23T21:00:00Z",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "23 April 2026 at 11:00 PM",
+				"date": "23 April 2026",
+				"time": "11:00 PM"
+			}
+		},
+		{
+			"name": "after Cairo springs forward",
+			"value": "2026-04-23T22:30:00Z",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "24 April 2026 at 1:30 AM",
+				"date": "24 April 2026",
+				"time": "1:30 AM"
+			}
+		},
+		{
+			"name": "before Cairo falls back",
+			"value": "2026-10-29T20:00:00Z",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "29 October 2026 at 11:00 PM",
+				"date": "29 October 2026",
+				"time": "11:00 PM"
+			}
+		},
+		{
+			"name": "after Cairo falls back",
+			"value": "2026-10-29T22:00:00Z",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "30 October 2026 at 12:00 AM",
+				"date": "30 October 2026",
+				"time": "12:00 AM"
+			}
+		},
+		{
+			"name": "the year rolls over in the site zone, not in UTC",
+			"value": "2026-12-31T22:30:00Z",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "1 January 2027 at 12:30 AM",
+				"date": "1 January 2027",
+				"time": "12:30 AM"
+			}
+		},
+		{
+			"name": "the month rolls over in the site zone",
+			"value": "2026-07-31T22:30:00Z",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "1 August 2026 at 1:30 AM",
+				"date": "1 August 2026",
+				"time": "1:30 AM"
+			}
+		},
+		{
+			"name": "a leap day",
+			"value": "2028-02-29T12:00:00Z",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "29 February 2028 at 2:00 PM",
+				"date": "29 February 2028",
+				"time": "2:00 PM"
+			}
+		},
+		{
+			"name": "a site that really is UTC",
+			"value": "2026-08-01T19:20:00Z",
+			"site": "UTC",
+			"expected": {
+				"full": "1 August 2026 at 7:20 PM",
+				"date": "1 August 2026",
+				"time": "7:20 PM"
+			}
+		},
+		{
+			"name": "a negative offset zone",
+			"value": "2026-08-01T19:20:00Z",
+			"site": "America/New_York",
+			"expected": {
+				"full": "1 August 2026 at 3:20 PM",
+				"date": "1 August 2026",
+				"time": "3:20 PM"
+			}
+		},
+		{
+			"name": "a stored naive datetime is UTC, because gmdate wrote it",
+			"value": "2026-08-01 19:20:00",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "1 August 2026 at 10:20 PM",
+				"date": "1 August 2026",
+				"time": "10:20 PM"
+			}
+		},
+		{
+			"name": "a stored unix integer",
+			"value": 1785612000,
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "1 August 2026 at 10:20 PM",
+				"date": "1 August 2026",
+				"time": "10:20 PM"
+			}
+		},
+		{
+			"name": "a stored ISO string carrying its own offset",
+			"value": "2026-08-01T21:20:00+02:00",
+			"site": "Africa/Cairo",
+			"expected": {
+				"full": "1 August 2026 at 10:20 PM",
+				"date": "1 August 2026",
+				"time": "10:20 PM"
+			}
+		}
+	],
+	"absent": [
+		{ "name": "null", "value": null },
+		{ "name": "empty string", "value": "" },
+		{ "name": "zero is an absence, not 1970", "value": 0 },
+		{ "name": "malformed", "value": "not-a-date" }
+	]
+}

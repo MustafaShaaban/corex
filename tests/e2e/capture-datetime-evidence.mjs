@@ -20,7 +20,8 @@ import path from 'node:path';
 
 const BASE_URL = process.env.COREX_BASE_URL || 'http://corex.local';
 const STORAGE_STATE = path.join( 'tests', 'e2e', '.auth', 'admin.json' );
-const OUT_DIR = process.argv[ 2 ] || 'specs/076-admin-datetime-foundation/evidence/before';
+const OUT_DIR =
+	process.argv[ 2 ] || 'specs/076-admin-datetime-foundation/evidence/before';
 
 /**
  * Where a date is rendered today, and the selector that holds it.
@@ -127,7 +128,11 @@ async function readAll( timezoneId ) {
 const utc = await readAll( 'UTC' );
 const tokyo = await readAll( 'Asia/Tokyo' );
 
-const report = { capturedAt: new Date().toISOString(), baseUrl: BASE_URL, surfaces: {} };
+const report = {
+	capturedAt: new Date().toISOString(),
+	baseUrl: BASE_URL,
+	surfaces: {},
+};
 
 for ( const surface of SURFACES ) {
 	const inUtc = utc[ surface.name ] || [];
@@ -169,5 +174,7 @@ for ( const [ name, data ] of Object.entries( report.surfaces ) ) {
 			flags ? ` — ${ flags }` : ''
 		}`
 	);
-	data.rendered.slice( 0, 2 ).forEach( ( text ) => console.log( `      "${ text }"` ) );
+	data.rendered
+		.slice( 0, 2 )
+		.forEach( ( text ) => console.log( `      "${ text }"` ) );
 }

@@ -214,6 +214,14 @@ presentation one, and changing a wire format inside a presentation spec is how s
 
 ## Complexity Tracking
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| A static accessor alongside the injected service (IV) | Server-rendered screens format dates inside `foreach` loops in view code that has no container access and no constructor to inject into. | Threading the presenter through every renderer's constructor was tried on paper first: it touches ~9 renderers to deliver one method call each, and the view code still has to hold a reference it uses once per row. The service stays the real implementation and stays injected wherever a constructor exists; the accessor resolves *from the container* rather than constructing, so there is still exactly one instance and it is still replaceable in tests. |
+**No violations.** The one entry planned here turned out not to be one.
+
+The static accessor for view code was written up as an exception to constitution IV (everything
+injected). It is not: the framework already sanctions exactly this under **FR-008a**, and already
+ships two of them — `Corex\Support\Facades\Config` and `Corex\Support\Facades\Corex`, both of which
+resolve from the container rather than constructing. `Facades\AdminDate` follows that established
+boundary verbatim, so there is one shared instance, it is still replaceable in a test, and screens
+with a constructor still inject `AdminDateTime` directly.
+
+Recorded rather than deleted, because the plan claimed a violation before checking whether the
+convention already existed — and the answer was in `src/Support/Facades/` the whole time.

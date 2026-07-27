@@ -185,7 +185,12 @@ final class ConfigServiceProvider extends ServiceProvider
         );
 
         $this->container->singleton(AdminBranding::class);
-        $this->container->singleton(CorexAdminAssets::class);
+        $this->container->singleton(
+            CorexAdminAssets::class,
+            static fn ($c): CorexAdminAssets => new CorexAdminAssets(
+                $c->make(\Corex\Support\DateTime\AdminDateTime::class),
+            ),
+        );
 
         // The shared append-only activity stream (spec 068) is the authoritative audit source for
         // every CoreX product area. Persistence remains behind the core repository contract.

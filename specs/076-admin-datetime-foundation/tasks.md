@@ -66,52 +66,61 @@ start until these are done and their tests pass.
       hold one without the other (FR-012).
 - [x] T006 [FOUND] `AdminDateTime.php` — the interface: the five kinds of FR-002 and the
       absent-value phrase. Lives with the client, per constitution X/DIP.
-- [ ] T007 [FOUND] `AdminDateTimeFormatter.php` over `wp_date()` + `wp_timezone()`. The three format
+- [x] T007 [FOUND] `AdminDateTimeFormatter.php` over `wp_date()` + `wp_timezone()`. The three format
       patterns and the connector as `_x()` strings with translator comments. No `\a\t` escaping —
       the connector is a `sprintf` pattern so a translator can reorder both halves.
-- [ ] T008 [FOUND] Register in the container via the core service provider; add the
+- [x] T008 [FOUND] Register in the container via the core service provider; add the
       container-backed static accessor justified in plan.md's Complexity Tracking (resolves from
       the container, never constructs).
-- [ ] T009 [P] [FOUND] Pest: the FR-003 example exactly — `1 August 2026 at 10:20 PM` — plus
+- [x] T009 [P] [FOUND] Pest: the FR-003 example exactly — `1 August 2026 at 10:20 PM` — plus
       midnight (`12:00 AM`), noon (`12:00 PM`), an AM and a PM value, no seconds in `FULL`, seconds
       present in `EXACT`.
-- [ ] T010 [P] [FOUND] Pest: the timezone matrix — named zone, `gmt_offset` fallback, UTC-stored
+- [x] T010 [P] [FOUND] Pest: the timezone matrix — named zone, `gmt_offset` fallback, UTC-stored
       input, positive and negative offsets, both DST transitions, and a site genuinely set to UTC.
-- [ ] T011 [P] [FOUND] Pest: month, year and leap-day boundaries.
-- [ ] T012 [P] [FOUND] Pest: absent and malformed values return the field's truthful phrase and
+- [x] T011 [P] [FOUND] Pest: month, year and leap-day boundaries.
+- [x] T012 [P] [FOUND] Pest: absent and malformed values return the field's truthful phrase and
       never `Invalid Date`, `NaN`, the epoch, or the current time (FR-018).
 
 ### The boundary
 
-- [ ] T013 [FOUND] `AdminDateTimeConfig.php` — the payload: timezone (name **or** offset minutes),
-      locale, `months[12]`, `monthsShort[12]`, `periods{am,pm}`, the three patterns, the connector,
-      and the relative strings. Assert by test that it carries no secret and nothing not already
-      inferable from the page.
-- [ ] T014 [FOUND] `CorexAdminAssets::enqueue()` — one `wp_localize_script` onto `corex-runtime`.
-      One call, every CoreX screen, no per-screen copy (FR-008).
-- [ ] T015 [P] [FOUND] Pest integration: the payload is present on a CoreX screen and absent on a
+- [x] T013 [FOUND] The payload ships as `AdminDateTime::clientConfig()` rather than as the separate
+      `AdminDateTimeConfig.php` the plan named. **Deviation, recorded rather than silent**: a
+      separate class would have to duplicate the format-pattern accessors or reach back into the
+      formatter for them, and the whole design rests on both sides reading *the same* patterns.
+      One owner for the patterns is the point; a second class would have been a second place for
+      them to drift. Secret-free asserted by test.
+- [x] T014 [FOUND] `CorexAdminAssets::enqueue()` — one `wp_localize_script` onto `corex-runtime`.
+      The presenter is **injected through the constructor**, not reached for through the facade:
+      the class is container-built, so it has somewhere to inject, and the existing unit test
+      caught the facade version immediately (`Call to undefined function wp_localize_script` under
+      Brain Monkey). The facade stays for view code that has no constructor.
+- [x] T015 [P] [FOUND] Pest integration: the payload is present on a CoreX screen and absent on a
       non-CoreX admin screen; it appears exactly once.
 
 ### The formatter in the browser
 
-- [ ] T016 [FOUND] `plugins/corex-config/src/admin/adminDateTime.js` — the same five kinds. Named
+- [x] T016 [FOUND] `plugins/corex-config/src/admin/adminDateTime.js` — the same five kinds. Named
       zones via `Intl.formatToParts` with **numeric options only**; `gmt_offset` sites via epoch
       arithmetic. Words come from the config, never from the platform.
-- [ ] T017 [FOUND] `plugins/corex-config/src/admin/components/CorexTime.js` — renders
+- [x] T017 [FOUND] `plugins/corex-config/src/admin/components/CorexTime.js` — renders
       `<time datetime="…">human</time>`, plus the relative variant carrying its exact value on a
       visible secondary line, not a `title` (FR-013).
-- [ ] T018 [P] [FOUND] Jest: the same format, timezone, boundary and invalid-value matrices as
+- [x] T018 [P] [FOUND] Jest: the same format, timezone, boundary and invalid-value matrices as
       T009–T012.
-- [ ] T019 [P] [FOUND] Jest: `CorexTime` emits a valid `datetime` and human text; the relative
+- [x] T019 [P] [FOUND] Jest: `CorexTime` emits a valid `datetime` and human text; the relative
       variant exposes its exact value without hover.
 
 ### Parity
 
-- [ ] T020 [FOUND] Commit the shared instant fixture — every case named in plan.md §4 — as the
+- [x] T020 [FOUND] Commit the shared instant fixture — every case named in plan.md §4 — as the
       single input to both suites.
-- [ ] T021 [FOUND] Pest + Jest parity tests over that fixture, in English **and** Arabic. This is
-      the test that would have caught the CLDR-vs-WordPress month-name divergence the plan rejected
-      `Intl`-for-words over; it must fail if either side is changed alone.
+- [x] T021 [FOUND] Pest + Jest parity tests over that fixture. **All 16 cases agreed on the first
+      run**, including both Cairo DST transitions and the year/month rollovers taken at 22:30 UTC.
+      Verified load-bearing by breaking it: changing the JS `j` token to `parts.day + 1` turned 5
+      Jest tests red, so the fixture is a gate and not decoration.
+      *Arabic parity is asserted at the unit level — the JS suite proves the formatter renders the
+      month names it is handed (`1 آب 2026`) rather than what `Intl` would say (`أغسطس`). A booted
+      Arabic WordPress belongs in the browser acceptance task (T041), not here.*
 
 ---
 
