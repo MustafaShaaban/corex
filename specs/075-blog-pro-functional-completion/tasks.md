@@ -33,16 +33,22 @@
 
 ## Phase B — Client foundation (FR-1, FR-6)
 
-- [ ] T020 [RED] Jest: `BlogProApp` dispatches — the reducer's `error` case renders a notice.
-- [ ] T021 `blogProClient.js` — one fetch helper over `blogEndpoint`, carrying the localized nonce,
-      mapping a failure to the reducer's `error` action. No second state layer.
-- [ ] T022 `BlogProApp` takes `dispatch`, renders `state.notice` in a live region, and shows loading and
+- [x] T020 [RED] Jest: `BlogProApp` dispatches — the reducer's `error` case renders a notice.
+- [x] T021 `blogProClient.js` — one fetch helper over `blogEndpoint`, carrying the localized nonce,
+      mapping a failure to the reducer's `error` action, plus a `refresh()` that reloads all four GET
+      routes and dispatches `loaded`. That is what gives every GET route, and the reducer's `loaded`
+      case, their first caller. No second state layer.
+- [x] T022 `BlogProApp` takes `dispatch`, renders `state.notice` in a live region, and shows loading and
       failure states honestly.
-- [ ] T023 Post selector (`CorexSelect`, DECISIONS #141) with `?post=<id>` URL sync; changing it
-      refetches through the routes rather than reloading.
-- [ ] T024 Every panel names the post it describes. No panel presents one post's figures as site-wide.
-- [ ] T025 `blog-pro.scss` + byte-identical `.css` twin; tokens and logical properties only.
-- [ ] T026 Jest: selection drives refetch; the no-posts empty state; notices announced.
+- [x] T023 Post selector (`CorexSelect`, DECISIONS #141). The selection **is** `?post=<id>`, so
+      choosing a post navigates there and the server renders it — there is no GET route for a post's
+      editorial item, so REST cannot refresh that panel and a partial refetch would leave it stale.
+      Recorded in spec FR-1 and DECISIONS rather than worked around.
+- [x] T024 Every panel names the post it describes. No panel presents one post's figures as site-wide.
+- [x] T025 Extend `assets/blog-pro.css`; tokens and logical properties only. **No `.scss` twin:**
+      blog-pro is one of the css-only assets (as are access, addons, control-panel, insights,
+      operations-security); adding a twin for this screen alone would be inconsistent upkeep.
+- [x] T026 Jest: selection drives refetch; the no-posts empty state; notices announced.
 
 ## Phase C — Editorial workflow (FR-2)
 

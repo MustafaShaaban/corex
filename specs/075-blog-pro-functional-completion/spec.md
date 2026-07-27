@@ -87,9 +87,16 @@ after clicking (Spec 074, DECISIONS #159).
 ### FR-1 · A named, chosen subject
 
 - The screen presents a **post selector**; every panel states which post it is describing.
-- The selection is reflected in the URL (`?post=<id>`) so a view can be linked and reloaded.
-- Changing the selection refetches analytics, editorial state, comments, and share controls through the
-  existing routes — not by reloading the page.
+- The selection **is** the URL (`?post=<id>`), so a view can be linked, bookmarked, and reloaded, and
+  choosing a post navigates there. The server already renders the whole payload for the selected post,
+  and it is the only thing that can: **there is no GET route for a post's editorial item** — the seven
+  routes expose analytics, share controls, comments, and authors, but editorial state only comes back
+  from `POST .../transition`. Refetching four of the five panels over REST and leaving the fifth stale
+  would be worse than a page load, and adding a route is out of plan. This is recorded rather than
+  worked around.
+- **After a mutation**, the screen refreshes from the GET routes in place rather than navigating —
+  which is what gives `/blog/analytics`, `/blog/comments`, `/blog/authors`, and `/blog/share-controls`
+  their first callers, and the reducer's `loaded` case its first caller too.
 - With no posts at all, the screen says so once, plainly, and offers the action that fixes it.
 - **No panel may present a single post's figures as a site-wide total.** Either the panel names its
   post, or it aggregates honestly.
