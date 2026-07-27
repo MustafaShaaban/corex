@@ -57,16 +57,18 @@ reproduces. Browser acceptance clean in RTL, 360 px, and 200 % zoom, with no con
    contains itself rather than that the document does not scroll. Worth its own small spec.
 3. **The token-consumer contract earned its keep**: it caught a real constitution violation
    mid-implementation (`flex: 1 1 16rem`, a hardcoded size). Trust it over a passing eye.
+4. **A stale `tasks.md`, and a browser spec nobody re-ran, both cost real time.** 074's checkboxes sat
+   unticked through four commits of finished work; 074 *and* 075 each found a Playwright spec still
+   asserting a surface the same spec had removed — not passing-but-blind, actually broken. Tick tasks
+   against verified artifacts as they land, and re-run any spec whose surface changed.
 
-**Both PRs are open and green, awaiting the owner's merge** — `gh pr merge` is blocked for the agent
-by the permission classifier:
+**#131** (074 tracking closeout) merged as **`5a28501`**. **#132** carries Spec 075 — this branch —
+and conflicted on `PROGRESS.md` and `ROADMAP.md` as expected for a stack; both resolved by keeping
+each side's substance rather than one side wholesale.
 
-- **#131** — 074 tracking closeout (docs only).
-- **#132** — Spec 075, all six checks green. Stacked on #131, so `PROGRESS.md` will conflict on the
-  second merge; keep both sides, as with every previous stack.
-
-**Next:** merge #131 then #132, then the **v0.36.0** release (`wp corex version 0.36.0 --path=wp`
-stamps 17 files; cut `[Unreleased]` — which now covers 073, 074 and 075 — to `[0.36.0]`).
+**Next:** the **v0.36.0** release. `wp corex version 0.36.0 --path=wp` stamps 17 files (including
+`docs-app/src/version.ts` since v0.35.1); cut `[Unreleased]` — which covers 073, 074 and 075 — to
+`[0.36.0]`.
 ---
 ## (previous, 2026-07-26) -- **Spec 073 (Admin polish & correctness) MERGED via PR #129 (`9b5939f`).**
 

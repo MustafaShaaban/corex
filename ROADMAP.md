@@ -398,9 +398,9 @@ These items require later validation and dedicated specs. They must not leak int
 
 ## 17. Current and next recommended specs
 
-> **Status (2026-07-27): Spec 074 is implemented and in review; Spec 075 is next.** All five FRs are
-> built and gated — unit 1507, integration 219, JS 363, Playwright 58, all green — with browser
-> acceptance captured in `specs/074-*/evidence/after/`. Decisions #157–#160 record what it settled.
+> **Status (2026-07-27): Spec 074 is merged; Spec 075 is active.** 074 shipped via PR **#130**
+> (`d243b7f`) with all six CI checks green — all five FRs built and gated (unit 1507, integration 219,
+> JS 363, Playwright 58), browser acceptance in `specs/074-*/evidence/after/`, decisions #157–#160.
 > Spec 068's completion audit passed;
 > specs 069–072 shipped in v0.34.0/v0.35.0 and spec 073 shipped via PR #129 (`9b5939f`). An owner
 > product-completion review then found four defects that survived 073 — code-registered forms are not
@@ -460,14 +460,14 @@ Create and implement one reviewed spec at a time:
     fixes: the Add-ons state filter, the Data Models inline-SVG loss, the inert Operations mode preview, the
     record-detail em-dash bug, `CorexSelect` on the remaining dropdowns, the doubled toolbar count, and the
     admin prose rhythm baseline. Source: `specs/073-*/`.
-11. **Spec 074 - Core admin truthfulness and integration closure** — **implemented, in review**. A unified form
+11. **Spec 074 - Core admin truthfulness and integration closure** — done, merged via PR **#130** (`d243b7f`). A unified form
     catalog so a form registered in `FormRegistry` is discoverable everywhere without a site-specific filter hook;
     capability-aware Data Models tabs plus `corex_subscribers` as the first genuinely import- and
     migration-capable managed model; the Submission Inbox heading rhythm; a Notifications action center that
     separates *read* from *resolved* and collapses eight saved views to three; and a capability summary that
     answers "what can this site do" where the question is asked. Decisions #157–#160. Source:
     `specs/074-core-admin-truthfulness-and-integration-closure/`.
-12. **Spec 075 - Blog Pro functional completion** — **implemented**, PR pending. Blog Pro's services and REST
+12. **Spec 075 - Blog Pro functional completion** — done, merged via PR **#132**. Blog Pro's services and REST
     existed but its React screen was a read-only reference dashboard that called `useReducer` and discarded
     the dispatch, leaving the whole client state module unreachable and all seven routes without a caller.
     It is now a workspace: choose the post (the choice is the URL), move it through review with a note, and
