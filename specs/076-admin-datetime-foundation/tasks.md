@@ -26,13 +26,20 @@ read — never against "I wrote the code". A stale `tasks.md` cost real time twi
 **Purpose**: capture what is wrong now, so the change is provable and the spec's baseline counts are
 defensible rather than remembered.
 
-- [ ] T001 [FOUND] Capture `evidence/before/` on the real local install: the Submission Inbox date
-      column, the submission drawer and audit timeline, Email Studio logs, the Forms flow list, the
-      security activity list, and a notification item — each showing its raw ISO or browser-locale
-      value. Both LTR and RTL.
-- [ ] T002 [FOUND] Record the browser-timezone defect specifically: same record, same moment, two
-      browser timezones, two different displayed hours. This is SC-003's baseline and the one
-      finding a screenshot alone does not show.
+- [x] T001 [FOUND] Capture `evidence/before/` on the real local install via
+      `tests/e2e/capture-datetime-evidence.mjs`. **Confirmed: the Submission Inbox renders raw SQL
+      datetimes to the operator** — `2026-07-27 08:53:15`, five of five rows flagged machine-shaped.
+      Overview renders `July 27, 2026 8:53 am` (the site's `date_format`/`time_format`, not the
+      required form). Notifications render relative-only with the exact value reachable solely by
+      hover.
+      *The first run of the probe aimed at the wrong table column and reported zero machine-shaped
+      values. That is worth recording: an evidence tool that looks in the wrong place produces a
+      confident "no defect found", which is more dangerous than no evidence at all. The selector now
+      counts from the end of the row.*
+- [x] T002 [FOUND] Two-timezone comparison captured. The Forms flow list renders the **same three
+      records nine hours apart** depending on the reader's browser — `7/10/2026, 2:43:19 PM` in UTC
+      against `7/10/2026, 11:43:19 PM` in `Asia/Tokyo` — in browser-locale `M/D/YYYY` with seconds.
+      This is SC-003's baseline, and it is the finding a screenshot alone cannot show.
 
 ---
 
@@ -43,17 +50,21 @@ start until these are done and their tests pass.
 
 ### The instant
 
-- [ ] T003 [FOUND] `plugins/corex-core/src/Support/DateTime/Instant.php` — parse `int`,
-      `'Y-m-d H:i:s'`, ISO with `Z`, and ISO with an offset into `DateTimeImmutable|null`. Returns
-      null for empty and malformed input; never throws, never guesses.
-- [ ] T004 [P] [FOUND] Pest: the parse matrix — every accepted shape resolves to the same instant;
-      empty, malformed, and out-of-range each return null.
+- [x] T003 [FOUND] `plugins/corex-core/src/Support/DateTime/Instant.php`. Two rules emerged from
+      writing the tests rather than from the plan: a **non-positive integer is an absence, not
+      1970** (which is the rule `OperationsSecurityScreen` already applies by hand with
+      `$entry['time'] > 0`, centralised here); and **relative expressions are refused** — PHP parses
+      `'now'` and `'+1 day'` into real dates, so a corrupt value of `'now'` would render as today
+      and look exactly like a working feature.
+- [x] T004 [P] [FOUND] Pest: **28 assertions passing**. Includes the asymmetry the rules above
+      create — integer `0` is absent, but `'1969-07-20T20:17:00Z'` still parses, because a stated
+      date is not an absence.
 
 ### The value object and the contract
 
-- [ ] T005 [FOUND] `Formatted.php` — `human`, `machine`, `isPresent`. Immutable; a caller cannot
+- [x] T005 [FOUND] `Formatted.php` — `human`, `machine`, `isPresent`. Immutable; a caller cannot
       hold one without the other (FR-012).
-- [ ] T006 [FOUND] `AdminDateTime.php` — the interface: the five kinds of FR-002 and the
+- [x] T006 [FOUND] `AdminDateTime.php` — the interface: the five kinds of FR-002 and the
       absent-value phrase. Lives with the client, per constitution X/DIP.
 - [ ] T007 [FOUND] `AdminDateTimeFormatter.php` over `wp_date()` + `wp_timezone()`. The three format
       patterns and the connector as `_x()` strings with translator comments. No `\a\t` escaping —
