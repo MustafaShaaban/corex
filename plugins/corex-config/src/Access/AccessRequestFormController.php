@@ -61,8 +61,31 @@ final class AccessRequestFormController
      */
     public function handle(): void
     {
-        if (! $this->guard->verifiedPost(self::NONCE, self::ACTION, self::CAPABILITY)) {
+        $destination = $this->decide();
+
+        if ($destination === null) {
             $this->refuse();
+        }
+
+        wp_safe_redirect($destination);
+        exit;
+    }
+
+    /**
+     * Everything the submission decides, with nothing that ends the request.
+     *
+     * Split from {@see handle()} because `exit` cannot be caught: a test driving the whole handler
+     * takes the test runner down with it, so the decisions would go unproven and the only honest
+     * coverage would be a browser. Here each decision is an ordinary return value, and `handle()`
+     * is two WordPress calls that Playwright exercises for real.
+     *
+     * @return string|null Where to send the browser, or null when the submission is refused
+     *                     outright — no session, or no valid nonce.
+     */
+    public function decide(): ?string
+    {
+        if (! $this->guard->verifiedPost(self::NONCE, self::ACTION, self::CAPABILITY)) {
+            return null;
         }
 
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified above.
@@ -74,22 +97,25 @@ final class AccessRequestFormController
         if ($slug === null) {
             // No CoreX screen answers to this section, so there is nowhere to send them back to and
             // nothing coherent to request. Nothing is created.
-            wp_safe_redirect(admin_url());
-            exit;
+            return admin_url();
         }
 
+        // The screen they came from. It re-renders its designed 403 and, once a pending request
+        // exists, shows the confirmation in place of the form.
+        $screen  = admin_url('admin.php?page=' . $slug);
         $ability = AdminPage::requestAbilityFor($section);
         $userId  = get_current_user_id();
 
         if (trim($reason) === '') {
             $this->flash->store($userId, AccessRequestSurfaceState::PROBLEM_INVALID, $reason);
-            $this->back($slug);
+
+            return $screen;
         }
 
         // Server-side, so a second tab, a double-click and a replayed POST are all covered. A
         // disabled button covers none of them.
         if ($this->service->pendingRequestFor($userId, $ability) !== null) {
-            $this->back($slug);
+            return $screen;
         }
 
         $now = new DateTimeImmutable('now');
@@ -100,26 +126,14 @@ final class AccessRequestFormController
             // The service refused the details themselves — an over-long reason is the reachable
             // case. The typed text comes back with the form so it is not lost.
             $this->flash->store($userId, AccessRequestSurfaceState::PROBLEM_INVALID, $reason);
-            $this->back($slug);
         } catch (Throwable $failure) {
             // Anything else is ours, not theirs. They get a reference; the detail goes to the log.
             $reference = strtoupper(substr(md5(uniqid('', true)), 0, 8));
             $this->flash->store($userId, AccessRequestSurfaceState::PROBLEM_FAILED, $reason, $reference);
             $this->log($reference, $failure);
-            $this->back($slug);
         }
 
-        $this->back($slug);
-    }
-
-    /**
-     * The screen they came from. It re-renders its designed 403 and, because a pending request now
-     * exists, shows the confirmation in place of the form.
-     */
-    private function back(string $slug): never
-    {
-        wp_safe_redirect(admin_url('admin.php?page=' . $slug));
-        exit;
+        return $screen;
     }
 
     private function refuse(): never

@@ -289,6 +289,7 @@ final class ConfigServiceProvider extends ServiceProvider
         );
         $this->container->singleton(AbilityCompatibility::class);
         $this->container->singleton(RolePluginCompatibility::class);
+        $this->container->singleton(\Corex\Config\Access\PendingAccessRequests::class);
         $this->container->singleton(AccessController::class);
 
         // Spec 079: the denied surface renders its own state — already requested, or the form,

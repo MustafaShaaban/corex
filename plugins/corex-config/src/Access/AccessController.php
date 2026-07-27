@@ -27,6 +27,7 @@ final class AccessController
     public function __construct(
         private readonly AccessService $service,
         private readonly CorexAbilityCatalog $catalog,
+        private readonly PendingAccessRequests $pending,
     ) {
     }
 
@@ -125,7 +126,7 @@ final class AccessController
             return $this->createRequest($request);
         }
 
-        return $this->ok(['requests' => []]);
+        return $this->ok(['requests' => $this->pending->all()]);
     }
 
     public function createRequest(WP_REST_Request $request): WP_REST_Response

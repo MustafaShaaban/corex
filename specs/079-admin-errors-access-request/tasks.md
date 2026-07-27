@@ -45,21 +45,38 @@ generalisation from becoming a regression.
 
 ## Phase 3 — Prove the fix (US1)
 
-- [ ] **T020** Unit: the controller's decisions — invalid ability, empty reason, duplicate, service
+- [x] **T020** Unit: the controller's decisions — invalid ability, empty reason, duplicate, service
       exception. Real value objects, no mocked state (test-guard Rule 8).
-- [ ] **T021** Integration (real WordPress): submitting creates exactly one request; submitting twice
+- [x] **T021** Integration (real WordPress): submitting creates exactly one request; submitting twice
       creates one; the denied surface then shows the pending state read from the database.
-- [ ] **T022** Playwright as a real subscriber: submit → the browser stays in wp-admin, the URL is
+- [x] **T022** Playwright as a real subscriber: submit → the browser stays in wp-admin, the URL is
       not `/wp-json/`, the page shows a confirmation, and refresh creates no second request.
       **This test must fail against `main`.** Verify that it does before trusting it.
-- [ ] **T023** Assert no internal field (`operation_id`, `state`, `affected_ids`, `audit_event_id`)
+- [x] **T023** Assert no internal field (`operation_id`, `state`, `affected_ids`, `audit_event_id`)
       appears in any rendered page.
+
+## Phase 3b — The other half of the workflow (found mid-build, P1)
+
+Not in the original plan. Found while writing the browser test's cleanup: the cleanup could not be
+written, because the route it needed returns an empty array by construction.
+
+- [x] **T024** `PendingAccessRequests` presenter — one shape for both the screen and the API, so
+      they cannot disagree about what a pending request is.
+- [x] **T025** `AccessController::requests()` returns real pending requests instead of `[]`.
+- [x] **T026** `AccessScreen` localizes real pending requests instead of `[]`.
+- [x] **T027** `AccessRequestsPanel` — requester, ability, when (spec 076), reason, and working
+      Approve / Deny calling the decision route that already existed.
+- [x] **T028** A waiting card on the Overview tab, because the panel lives inside Role matrix and a
+      workflow that needs somebody to open the right tab is a workflow that stalls. Renders nothing
+      when nobody is waiting.
+- [x] **T029** Browser coverage of the whole loop: request → administrator sees it → deny → the
+      requester's screen offers the form again.
 
 ## Phase 4 — The boundary holds (US3, P1)
 
 Written before Phase 5, because Phase 5 is what would break it.
 
-- [ ] **T030** Integration: `POST /corex/v1/access/requests` still answers JSON, unchanged status,
+- [x] **T030** Integration: `POST /corex/v1/access/requests` still answers JSON, unchanged status,
       for anonymous / insufficient / valid callers.
 - [ ] **T031** Integration: no CoreX code path converts an AJAX, cron, WP-CLI or feed response to HTML.
 - [ ] **T032** A test that fails if a global `wp_die_handler` filter is ever added — the specific
@@ -115,6 +132,34 @@ Recorded as they happen, including mistakes, per the working guide.
   The lesson generalises the one this project keeps re-learning: a check verified from one vantage
   point is not verified. Four cases — {administrator, subscriber} x {real page, fake page} — is the
   smallest honest matrix, and three of them pass with the wrong implementation.
+- **T024–T029 (the bigger half)** — `AccessRequestStore::pending()` had **no production caller**.
+  The REST list route returned a hardcoded `[]`, the Access screen localized a hardcoded `[]`, and
+  the panel that rendered them printed a sentence about the plumbing and no controls. So an access
+  request was written, audited and notified, and then no surface in the product ever read the table
+  — while the denied screen told the requester an administrator would review it.
+  `evidence/before/requests-go-nowhere.md`.
+
+  It was found by trying to write a test fixture, not by reading the code: the browser spec needed
+  to clear pending requests between runs, and the only route that could do that returns nothing by
+  construction. A test that needs a capability the product claims to have is a good way to discover
+  it does not.
+
+  This is the more serious half of the spec. The original defect made a successful request *look*
+  like a failure; this one made it *be* one. Fixing only the requester's side would have delivered
+  people into that silence more convincingly than before.
+- **T029** — Chromium in headless stops ticking `requestAnimationFrame` on the Access screen after
+  a same-document tab navigation, and Playwright's actionability check waits on two animation
+  frames — so a click that follows the Overview link hangs on a paint quirk rather than on the
+  product. Established by measuring rAF directly on five screens and both navigation paths before
+  changing the test, rather than reaching for `force: true`, which would have hidden it. The test
+  asserts the link's href and opens the tab directly.
+- **T022** — the first cleanup helper swallowed a failed request and returned. It therefore did
+  nothing, silently, and the suite failed two tests for a reason nothing reported. Rewritten to
+  assert the nonce exists and the list returns 200. A cleanup that can fail quietly is worse than
+  no cleanup.
+- **T016** — `--corex-admin-space-3xs` does not exist. Stylelint accepts any `var()`, so a typo'd
+  token lints clean and renders as nothing. Caught by listing the defined tokens rather than by
+  trusting the linter.
 - **T002** — the destination problem: the requester cannot open any CoreX screen, so a "request
   status" page would deny them again. The answer is to make the denied surface itself state-aware,
   which also removes the need for a flash on the success path entirely.

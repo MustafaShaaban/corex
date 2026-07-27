@@ -34,6 +34,7 @@ final class AccessScreen
         private readonly AccessMatrix $matrix,
         private readonly AccessAuditLog $audit,
         private readonly RoleAbilityStore $roleAbilities,
+        private readonly PendingAccessRequests $pending,
     ) {
     }
 
@@ -83,7 +84,7 @@ final class AccessScreen
             'restUrl' => esc_url_raw(rest_url('corex/v1/access')),
             'nonce' => wp_create_nonce('wp_rest'),
             'matrix' => $this->matrix->editableCorexMatrix($this->editableRoles(), $this->roleEffects(), $this->activePlugins()),
-            'requests' => [],
+            'requests' => $this->pending->all(),
             'audit' => $this->audit->entries(),
         ]);
         wp_set_script_translations('corex-access', 'corex');
@@ -149,11 +150,46 @@ final class AccessScreen
         $roles = $this->roles();
 
         return $this->conflictNotice()
+            . $this->waitingCard()
             . $this->roleCards($this->matrix->roleSummaries($roles, $this->userCounts()))
             . $this->groupsCard()
             . $this->requirementsCard()
             . $this->currentUserCard()
             . $this->deferralNote();
+    }
+
+    /**
+     * People waiting, on the tab an administrator actually lands on (spec 079).
+     *
+     * The panel that decides requests lives inside Role matrix, so without this a pending request
+     * is two clicks away and nothing says it is there — a workflow that depends on somebody
+     * happening to open the right tab is a workflow that stalls. Renders nothing when nobody is
+     * waiting: an empty state on the landing tab would be furniture.
+     */
+    private function waitingCard(): string
+    {
+        $waiting = count($this->pending->all());
+        if ($waiting === 0) {
+            return '';
+        }
+
+        return '<section class="corex-surface corex-access__waiting">'
+            . '<h2 class="corex-access__waiting-title">'
+            . sprintf(
+                /* translators: %d: how many people are waiting for access. */
+                esc_html(_n(
+                    '%d person is waiting for access',
+                    '%d people are waiting for access',
+                    $waiting,
+                    'corex',
+                )),
+                (int) $waiting,
+            )
+            . '</h2><p class="corex-access__muted">'
+            . esc_html__('Each request names who asked, what they asked for and why. Approving one grants the ability immediately.', 'corex')
+            . '</p><a class="button button-primary" href="'
+            . esc_url(admin_url('admin.php?page=corex-access&tab=matrix')) . '">'
+            . esc_html__('Review requests', 'corex') . '</a></section>';
     }
 
     /**

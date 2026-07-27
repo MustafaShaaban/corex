@@ -84,8 +84,6 @@ final class AccessDeniedGate
      */
     private function isDenial(string $page): bool
     {
-        $parent = get_admin_page_parent();
-
         if (isset($GLOBALS['_wp_menu_nopriv'][$page])) {
             return true;
         }
@@ -96,7 +94,17 @@ final class AccessDeniedGate
             }
         }
 
-        return isset($GLOBALS['_registered_pages'][get_plugin_page_hookname($page, $parent)]);
+        // The slug is matched as the segment after `_page_` rather than by rebuilding the hook name
+        // with `get_plugin_page_hookname()`. That function derives the prefix from
+        // `$admin_page_hooks`, which is only fully populated inside a real admin request — so
+        // reconstructing the key would make this answer depend on how the process was started.
+        foreach (array_keys((array) ($GLOBALS['_registered_pages'] ?? [])) as $hookname) {
+            if (str_ends_with((string) $hookname, '_page_' . $page)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
