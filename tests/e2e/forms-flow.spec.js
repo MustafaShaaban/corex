@@ -13,7 +13,42 @@ test.beforeEach( async ( { page } ) => {
 	await expect(
 		page.getByRole( 'heading', { name: 'CoreX Forms & Flows' } )
 	).toBeVisible();
-	await expect( page.getByText( 'Loading flows…' ) ).toBeHidden();
+	// Wait for the catalog to have settled, not merely for a loading string to vanish. Code forms
+	// render from localised data with no request, so rows exist before the flows have arrived —
+	// waiting on a row proved nothing, and waiting on the loading text passed before it appeared.
+	await expect( page.locator( '.corex-flow-list__catalog' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
+} );
+
+test( 'lists code-registered forms in the catalog as read-only definitions', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+
+	// `contact` is the framework's own form, registered through FormRegistry rather than stored as
+	// a flow. Before spec 074 the screen named after forms did not list it at all.
+	const row = page.locator( '.corex-flow-list__row.is-read-only', { hasText: 'contact' } );
+	await expect( row ).toBeVisible();
+	await expect( row.getByText( 'Defined in code' ) ).toBeVisible();
+
+	const disclose = row.getByRole( 'button' );
+	await expect( disclose ).toHaveAttribute( 'aria-expanded', 'false' );
+	await disclose.click();
+	await expect( disclose ).toHaveAttribute( 'aria-expanded', 'true' );
+
+	// A real definition, not a stub: the fields, their rules, and a route to the submissions.
+	await expect( row.getByRole( 'table', { name: 'Field definitions' } ) ).toBeVisible();
+	await expect( row.getByRole( 'rowheader', { name: /Email/ } ) ).toBeVisible();
+	await expect(
+		row.getByText( 'the visual builder cannot change it', { exact: false } )
+	).toBeVisible();
+
+	const submissions = row.getByRole( 'link', { name: 'View submissions for this form' } );
+	await expect( submissions ).toHaveAttribute( 'href', /corex_form=slug%3Acontact|corex_form=slug:contact/ );
+
+	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
 
 test( 'creates publishes tests and submits a persisted flow without console errors', async ( {

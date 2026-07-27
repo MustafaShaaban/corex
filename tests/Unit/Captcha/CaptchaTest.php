@@ -70,6 +70,20 @@ it('the resolver selects the configured driver', function () {
         ->and((new CaptchaResolver(captchaConfig(['captcha.driver' => 'turnstile', 'captcha.secret' => 's'])))->resolve())->toBeInstanceOf(RemoteCaptcha::class);
 });
 
+it('the resolver treats a key driver with no secret as not configured', function () {
+    // Picking a provider in Settings and not pasting the keys used to build a live driver with an
+    // empty secret, which rejects every verification — so every form on the site silently stopped
+    // accepting submissions, reported only as "Submission protection rejected the request."
+    // Half-configured is not configured: the honeypot still guards, and the diagnostic (which has
+    // always classified this as `missing_keys`) is where the operator is told to finish the setup.
+    foreach (['recaptcha', 'turnstile', 'hcaptcha'] as $driver) {
+        expect((new CaptchaResolver(captchaConfig(['captcha.driver' => $driver])))->resolve())
+            ->toBeInstanceOf(NullCaptcha::class)
+            ->and((new CaptchaResolver(captchaConfig(['captcha.driver' => $driver, 'captcha.secret' => '   '])))->resolve())
+            ->toBeInstanceOf(NullCaptcha::class);
+    }
+});
+
 it('the resolver routes reCAPTCHA to the scored v3 driver, not the success-only remote driver', function () {
     $driver = (new CaptchaResolver(captchaConfig(['captcha.driver' => 'recaptcha', 'captcha.secret' => 's'])))->resolve();
 

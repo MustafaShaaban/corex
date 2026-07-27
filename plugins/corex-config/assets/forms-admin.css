@@ -141,6 +141,79 @@
 	text-transform: uppercase;
 }
 
+/* Where a form came from, said in words. A form that cannot be edited here has to explain
+   itself, and a colour alone would not survive a screen reader or a monochrome display. */
+.corex-admin .corex-flow-list__source {
+	justify-self: start;
+	padding: 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-muted);
+	background: var(--corex-admin-surface-alt);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	border-radius: var(--corex-admin-radius-pill);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-flow-list__source.is-visual_flow {
+	color: var(--corex-admin-action);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-flow-list__row.is-read-only > button {
+	border-style: dashed;
+}
+
+.corex-admin .corex-flow-list__disclose {
+	justify-self: end;
+	color: var(--corex-admin-action);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 700;
+}
+
+.corex-admin .corex-flow-list__detail {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	margin-block-start: var(--corex-admin-space-xs);
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-flow-list__explains {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-flow-list__fields {
+	inline-size: 100%;
+	border-collapse: collapse;
+}
+
+.corex-admin .corex-flow-list__fields caption {
+	margin-block-end: var(--corex-admin-space-xs);
+	color: var(--corex-admin-text);
+	font-weight: 700;
+	text-align: start;
+}
+
+.corex-admin .corex-flow-list__fields :where(th, td) {
+	padding: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	text-align: start;
+	vertical-align: top;
+}
+
+.corex-admin .corex-flow-list__fields tbody th {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	font-weight: 600;
+}
+
+.corex-admin .corex-flow-list__validation {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
 .corex-admin .corex-flow-editor__toolbar {
 	padding: var(--corex-admin-space-lg);
 	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action);

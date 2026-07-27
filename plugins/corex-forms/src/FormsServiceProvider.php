@@ -18,6 +18,8 @@ use Corex\Foundation\ServiceProvider;
 use Corex\Forms\Block\FormBlockRenderer;
 use Corex\Forms\Block\FlowBlockRenderer;
 use Corex\Forms\Block\ProtectedFormRegistry;
+use Corex\Forms\Catalog\FormCatalog;
+use Corex\Forms\Catalog\SubmissionCounts;
 use Corex\Forms\Forms\ContactForm;
 use Corex\Forms\Flow\FlowRepository;
 use Corex\Forms\Flow\FlowService;
@@ -123,6 +125,20 @@ final class FormsServiceProvider extends ServiceProvider
         // Submission lifecycle — autowired from the bindings above plus the core
         // event seam, data layer, and middleware pipeline.
         $this->container->singleton(FormRegistry::class);
+
+        // The one list of every form CoreX knows about, whatever its source (spec 074, FR-1).
+        // Bound here rather than in corex-config because both of its inputs live in this plugin;
+        // the submission counter is optional, so a consumer that has none still gets a catalog —
+        // it just reports each count as unavailable rather than inventing a zero.
+        $this->container->singleton(
+            FormCatalog::class,
+            static fn (ContainerInterface $c): FormCatalog => new FormCatalog(
+                $c->make(FlowRepository::class),
+                $c->make(FormRegistry::class),
+                $c->has(SubmissionCounts::class) ? $c->make(SubmissionCounts::class) : null,
+            ),
+        );
+
         $this->container->singleton(SubmissionRepository::class);
         $this->container->singleton(FlowSchemaFactory::class);
         $this->container->singleton(FlowEmailAddressResolver::class);

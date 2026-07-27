@@ -11,8 +11,8 @@ namespace Corex\Config\Forms;
 defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
-use Corex\Forms\Flow\Flow;
-use Corex\Forms\Flow\FlowRepository;
+use Corex\Forms\Catalog\FormCatalog;
+use Corex\Forms\Catalog\FormCatalogEntry;
 use Throwable;
 
 /**
@@ -21,9 +21,14 @@ use Throwable;
  * Submissions asked for a raw numeric flow ID and Records for a typed slug — neither of which
  * anyone knows or should have to. This supplies the real names for both screens.
  *
- * Forms is an optional add-on (Principle IX), so it is resolved lazily inside a try/catch and an
- * absent one yields an empty list rather than a fatal — the screens still work, they just cannot
- * offer the filter. Same shape as InsightWidgetFacts uses for the same reason.
+ * It reads the {@see FormCatalog}, so a form registered in code appears here the moment it is
+ * registered. It used to read the flow table alone, which meant the framework's own `contact` form
+ * — a code form — could receive submissions the filter could not narrow to, and every site had to
+ * patch a CoreX filter to list its own forms.
+ *
+ * Forms is an optional add-on (Principle IX), so the catalog is resolved lazily inside a try/catch
+ * and an absent one yields an empty list rather than a fatal — the screens still work, they just
+ * cannot offer the filter.
  */
 final class FlowFilterOptions
 {
@@ -32,34 +37,37 @@ final class FlowFilterOptions
     }
 
     /**
-     * Every flow, as the two screens need to key on it.
+     * Every form, as the two screens need to key on it.
      *
      * Both id and slug are returned because the screens filter on different stored keys — the
      * submissions inbox matches `corex_flow_id`, the data explorer matches `corex_form_slug` —
-     * and conflating them yields a filter that silently matches nothing.
+     * and conflating them yields a filter that silently matches nothing. A form with no flow row
+     * carries `id => 0`, which both screens read as "match this by slug instead".
      *
      * @return list<array{id:int,name:string,slug:string}>
      */
     public function all(): array
     {
         try {
-            /** @var FlowRepository $flows */
-            $flows = $this->container->make(FlowRepository::class);
+            /** @var FormCatalog $catalog */
+            $catalog = $this->container->make(FormCatalog::class);
 
-            $options = array_map(static fn (Flow $flow): array => [
-                'id' => $flow->id,
-                // Fall back to the slug rather than render a nameless row.
-                'name' => $flow->name !== '' ? $flow->name : $flow->slug,
-                'slug' => $flow->slug,
-            ], $flows->all());
+            $options = array_map(static fn (FormCatalogEntry $entry): array => [
+                'id' => $entry->flowId ?? 0,
+                'name' => $entry->label,
+                'slug' => $entry->slug,
+            ], $catalog->all());
 
             /**
              * Filters the forms offered by the submissions and records filters.
              *
-             * Only builder flows live in the database, so a form registered in code through
-             * `Corex\Forms\FormRegistry` has no row here and never appeared in the filter — its
-             * submissions were listed but could not be narrowed to. Append entries with `id => 0`
-             * to say "there is no flow row; match this by `corex_form_slug` instead".
+             * Discovery is now the framework's job — visual flows, `Corex\Forms\FormRegistry`
+             * forms, and anything a `FormCatalogProvider` contributes are already here. This
+             * filter remains for the cases the catalog cannot see, and for backward compatibility
+             * with sites that added entries before the catalog existed. It is applied *after* the
+             * merge, so an entry it adds for a form CoreX already found is deduplicated by slug
+             * rather than listed twice. Use `id => 0` to say "there is no flow row; match this by
+             * `corex_form_slug` instead".
              *
              * @param list<array{id:int,name:string,slug:string}> $options
              */
@@ -76,12 +84,16 @@ final class FlowFilterOptions
     }
 
     /**
-     * Force injected entries into the shape both screens rely on.
+     * Force injected entries into the shape both screens rely on, and keep one row per form.
      *
      * A filter is an open door: anything can come back through it. The screens key on `id` and
      * `slug` and render `name`, so an entry missing one of those would render a nameless row or a
      * filter that silently matches nothing. Entries without a usable slug and without a flow id
      * cannot be matched by either screen, so they are dropped rather than shown.
+     *
+     * Deduplication is by slug, first entry winning, because the catalog runs before the filter:
+     * a site that still injects its own copy of a form CoreX now discovers gets one row, not two,
+     * and the catalog's richer version is the one that survives.
      *
      * @param array<mixed> $options
      * @return list<array{id:int,name:string,slug:string}>
@@ -89,6 +101,7 @@ final class FlowFilterOptions
     private static function normalize(array $options): array
     {
         $clean = [];
+        $seen  = [];
 
         foreach ($options as $option) {
             if (! is_array($option)) {
@@ -103,7 +116,16 @@ final class FlowFilterOptions
                 continue;
             }
 
-            $clean[] = [
+            // A slugless flow can only be keyed by its id; give it a distinct dedup key so two
+            // different flows cannot collapse into one row.
+            $key = $slug !== '' ? 'slug:' . $slug : 'id:' . $id;
+
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $clean[]    = [
                 'id' => max(0, $id),
                 'name' => $name !== '' ? $name : $slug,
                 'slug' => $slug,

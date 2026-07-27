@@ -8,7 +8,7 @@ import {
 import { Button, Modal, Spinner } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
-import { buildExportPayload, toggleSubmission } from './inbox.js';
+import { buildExportPayload, inboxFiltersFromUrl, toggleSubmission } from './inbox.js';
 import { useInbox } from './useInbox.js';
 
 const config = window.corexSubmissions || { restUrl: '', nonce: '', flows: [] };
@@ -68,10 +68,11 @@ function exportScopes( selectedCount ) {
 }
 
 function App() {
-	const [ filters, setFilters ] = useState( {
+	const [ filters, setFilters ] = useState( () => ( {
 		search: '', flow: '', status: '', owner: '', dateFrom: '', dateTo: '',
 		includeTest: false, page: 1, perPage: 25,
-	} );
+		...inboxFiltersFromUrl( typeof window === 'undefined' ? '' : window.location.href ),
+	} ) );
 	const inbox = useInbox( config, filters );
 	const [ bulkAction, setBulkAction ] = useState( 'mark_read' );
 	const [ bulkOwner, setBulkOwner ] = useState( { owner_type: 'user', owner_key: '' } );
@@ -111,10 +112,15 @@ function App() {
 }
 
 function InboxHeader( { total, onExport } ) {
+	// The three lines are one stack, so their spacing is the stack's job. They used to be loose
+	// children of a bare <div> whose only separation came from a margin on each <p>, which is why
+	// the eyebrow, the title, and the count read as one compressed block.
 	return <header className="corex-inbox__header">
-		<div><p className="corex-inbox__eyebrow">{ __( 'Team workspace', 'corex' ) }</p>
-		<h2>{ __( 'Submission Inbox', 'corex' ) }</h2>
-		<p>{ sprintf( _n( '%d accessible submission', '%d accessible submissions', total, 'corex' ), total ) }</p></div>
+		<div className="corex-inbox__heading">
+			<p className="corex-inbox__eyebrow">{ __( 'Team workspace', 'corex' ) }</p>
+			<h2>{ __( 'Submission Inbox', 'corex' ) }</h2>
+			<p className="corex-inbox__count">{ sprintf( _n( '%d accessible submission', '%d accessible submissions', total, 'corex' ), total ) }</p>
+		</div>
 		<Button variant="primary" onClick={ onExport }>{ __( 'Export', 'corex' ) }</Button>
 	</header>;
 }

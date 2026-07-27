@@ -79,6 +79,32 @@ export function inboxReducer( state, action ) {
 	}
 }
 
+/**
+ * The filters the inbox should open with, read from the address it was opened at.
+ *
+ * Forms & Flows links to "the submissions for this form", and a link that lands on an unfiltered
+ * inbox is a control that does nothing. `corex_form` carries either a numeric flow id or
+ * `slug:<slug>` for a form registered in code — the same two shapes the form filter itself sends,
+ * so a deep link and a picked filter cannot mean different things.
+ *
+ * @param {string} url The current address.
+ * @return {Object} Filter overrides to merge into the initial state.
+ */
+export function inboxFiltersFromUrl( url ) {
+	let form = '';
+	try {
+		form = new URL( String( url ), 'http://localhost' ).searchParams.get( 'corex_form' ) || '';
+	} catch {
+		return {};
+	}
+
+	if ( ! /^(\d+|slug:[a-z0-9_-]+)$/i.test( form ) ) {
+		return {};
+	}
+
+	return { flow: form };
+}
+
 export function buildInboxUrl( base, filters ) {
 	const params = new URLSearchParams();
 	const values = [

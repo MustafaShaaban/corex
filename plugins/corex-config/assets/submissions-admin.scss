@@ -27,12 +27,33 @@
 	color: var(--corex-admin-text-muted);
 }
 
+/* The eyebrow, the title, and the count are one stack, so the stack owns their rhythm.
+   Per-element margins produced a compressed block that also collapsed differently once a
+   translation wrapped a line; a grid gap cannot collapse and does not care how tall a line is. */
+.corex-admin .corex-inbox__heading {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	min-inline-size: 0;
+}
+
+/* Zeroed because the gap above is now the only source of separation — leaving both would add
+   the two together and reintroduce the drift this fixes. */
+.corex-admin .corex-inbox__heading > p {
+	margin-block: 0;
+}
+
 .corex-admin .corex-inbox__eyebrow {
 	color: var(--corex-admin-action);
 	font-size: var(--corex-admin-font-xs);
 	font-weight: 700;
 	letter-spacing: var(--corex-admin-letter-wide);
+	line-height: var(--corex-admin-line-tight);
 	text-transform: uppercase;
+}
+
+.corex-admin .corex-inbox__count {
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-tight);
 }
 
 .corex-admin .corex-inbox__notice {
@@ -109,6 +130,11 @@
 }
 
 .corex-admin .corex-inbox__table-wrap {
+	/* A grid item's automatic minimum size is its content's, so `overflow-x: auto` alone did not
+	   stop the wide table stretching this container past the viewport — it just gave it a
+	   scrollbar it was too wide to need. Visible in RTL at narrow widths, where the overflow runs
+	   off the start edge and the page itself scrolls sideways. */
+	min-inline-size: 0;
 	overflow-x: auto;
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-md);

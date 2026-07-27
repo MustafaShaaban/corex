@@ -27,6 +27,23 @@ it('mounts the localized REST client only when CoreX Forms is active', function 
         ->and($screen)->toContain('wp_set_script_translations');
 });
 
+it('hands the screen every form CoreX knows about, not only the flow table', function () {
+    // The defect this closes: Forms & Flows listed database flows and nothing else, so the
+    // framework's own `contact` form — registered in code — was absent from the forms screen.
+    $screen = formsFlowSource('plugins/corex-config/src/Forms/FormsFlowsScreen.php');
+    $list   = formsFlowSource('plugins/corex-config/src/Forms/FlowList.js');
+
+    expect($screen)->toContain('FormCatalog')
+        ->and($screen)->toContain("'catalog' => \$this->catalog()")
+        ->and($screen)->toContain("'submissionsUrl'")
+        ->and($list)->toContain('catalogRows')
+        // A code form is shown as a real definition, with a plain reason it cannot be edited here.
+        ->and($list)->toContain('Field definitions')
+        ->and($list)->toContain('the visual builder cannot change it')
+        ->and($list)->toContain('View submissions for this form')
+        ->and($list)->not->toContain('coming soon');
+});
+
 it('wires authoring lifecycle preview and marked-test controls to real client commands', function () {
     $hook = formsFlowSource('plugins/corex-config/src/Forms/useFlows.js');
     $editor = formsFlowSource('plugins/corex-config/src/Forms/FlowEditorPanel.js');

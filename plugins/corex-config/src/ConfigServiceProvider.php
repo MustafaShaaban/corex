@@ -345,6 +345,12 @@ final class ConfigServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): \Corex\Config\Forms\FlowFilterOptions =>
                 new \Corex\Config\Forms\FlowFilterOptions($c),
         );
+        // Supplies the form catalog with real submission counts. corex-config owns the WordPress
+        // data boundary, so the query lives here and corex-forms only knows the contract.
+        $this->container->singleton(
+            \Corex\Forms\Catalog\SubmissionCounts::class,
+            static fn (): \Corex\Forms\Catalog\SubmissionCounts => new \Corex\Config\Forms\WpSubmissionCounts(),
+        );
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginAttemptTable::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore::class);
         $this->container->bind(
@@ -393,6 +399,7 @@ final class ConfigServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): FormsFlowsScreen => new FormsFlowsScreen(
                 $c->make(\Corex\Security\Admin\AdminGuard::class),
                 $c->make(\Corex\Admin\AdminPage::class),
+                $c,
             ),
         );
 

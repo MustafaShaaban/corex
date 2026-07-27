@@ -56,7 +56,7 @@ final class OverviewModel
             'forms'        => [
                 'count' => max(0, $facts['formsCount']),
                 'flows' => max(0, $facts['flowsCount'] ?? 0),
-                'note'  => __('Registered code forms and versioned visitor flows.', 'corex'),
+                'note'  => __('Every form CoreX knows about — visual flows and forms registered in code.', 'corex'),
             ],
         ];
     }
