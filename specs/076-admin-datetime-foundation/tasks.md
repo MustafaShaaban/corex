@@ -1,0 +1,193 @@
+---
+
+description: "Task list for Spec 076 — CoreX Admin Date & Time Foundation"
+---
+
+# Tasks: CoreX Admin Date & Time Foundation
+
+**Input**: [spec.md](spec.md), [plan.md](plan.md)
+
+**Tests**: REQUIRED. Every implementation task owes its test task, per the constitution's Definition
+of Done.
+
+**Ticking rule** (learned the expensive way in 074, recorded in PROGRESS.md): a box is ticked
+against a verified artifact — a passing test, a captured screenshot, a command whose output was
+read — never against "I wrote the code". A stale `tasks.md` cost real time twice.
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]** — can run in parallel (different files, no dependency)
+- **[Story]** — US1 / US2 / US3 from spec.md, or FOUND for the shared foundation
+
+---
+
+## Phase 1: Evidence before code
+
+**Purpose**: capture what is wrong now, so the change is provable and the spec's baseline counts are
+defensible rather than remembered.
+
+- [ ] T001 [FOUND] Capture `evidence/before/` on the real local install: the Submission Inbox date
+      column, the submission drawer and audit timeline, Email Studio logs, the Forms flow list, the
+      security activity list, and a notification item — each showing its raw ISO or browser-locale
+      value. Both LTR and RTL.
+- [ ] T002 [FOUND] Record the browser-timezone defect specifically: same record, same moment, two
+      browser timezones, two different displayed hours. This is SC-003's baseline and the one
+      finding a screenshot alone does not show.
+
+---
+
+## Phase 2: Foundational — the contract (blocks every user story)
+
+**Purpose**: the presenter, the formatter, and the boundary between them. Nothing in US1–US3 can
+start until these are done and their tests pass.
+
+### The instant
+
+- [ ] T003 [FOUND] `plugins/corex-core/src/Support/DateTime/Instant.php` — parse `int`,
+      `'Y-m-d H:i:s'`, ISO with `Z`, and ISO with an offset into `DateTimeImmutable|null`. Returns
+      null for empty and malformed input; never throws, never guesses.
+- [ ] T004 [P] [FOUND] Pest: the parse matrix — every accepted shape resolves to the same instant;
+      empty, malformed, and out-of-range each return null.
+
+### The value object and the contract
+
+- [ ] T005 [FOUND] `Formatted.php` — `human`, `machine`, `isPresent`. Immutable; a caller cannot
+      hold one without the other (FR-012).
+- [ ] T006 [FOUND] `AdminDateTime.php` — the interface: the five kinds of FR-002 and the
+      absent-value phrase. Lives with the client, per constitution X/DIP.
+- [ ] T007 [FOUND] `AdminDateTimeFormatter.php` over `wp_date()` + `wp_timezone()`. The three format
+      patterns and the connector as `_x()` strings with translator comments. No `\a\t` escaping —
+      the connector is a `sprintf` pattern so a translator can reorder both halves.
+- [ ] T008 [FOUND] Register in the container via the core service provider; add the
+      container-backed static accessor justified in plan.md's Complexity Tracking (resolves from
+      the container, never constructs).
+- [ ] T009 [P] [FOUND] Pest: the FR-003 example exactly — `1 August 2026 at 10:20 PM` — plus
+      midnight (`12:00 AM`), noon (`12:00 PM`), an AM and a PM value, no seconds in `FULL`, seconds
+      present in `EXACT`.
+- [ ] T010 [P] [FOUND] Pest: the timezone matrix — named zone, `gmt_offset` fallback, UTC-stored
+      input, positive and negative offsets, both DST transitions, and a site genuinely set to UTC.
+- [ ] T011 [P] [FOUND] Pest: month, year and leap-day boundaries.
+- [ ] T012 [P] [FOUND] Pest: absent and malformed values return the field's truthful phrase and
+      never `Invalid Date`, `NaN`, the epoch, or the current time (FR-018).
+
+### The boundary
+
+- [ ] T013 [FOUND] `AdminDateTimeConfig.php` — the payload: timezone (name **or** offset minutes),
+      locale, `months[12]`, `monthsShort[12]`, `periods{am,pm}`, the three patterns, the connector,
+      and the relative strings. Assert by test that it carries no secret and nothing not already
+      inferable from the page.
+- [ ] T014 [FOUND] `CorexAdminAssets::enqueue()` — one `wp_localize_script` onto `corex-runtime`.
+      One call, every CoreX screen, no per-screen copy (FR-008).
+- [ ] T015 [P] [FOUND] Pest integration: the payload is present on a CoreX screen and absent on a
+      non-CoreX admin screen; it appears exactly once.
+
+### The formatter in the browser
+
+- [ ] T016 [FOUND] `plugins/corex-config/src/admin/adminDateTime.js` — the same five kinds. Named
+      zones via `Intl.formatToParts` with **numeric options only**; `gmt_offset` sites via epoch
+      arithmetic. Words come from the config, never from the platform.
+- [ ] T017 [FOUND] `plugins/corex-config/src/admin/components/CorexTime.js` — renders
+      `<time datetime="…">human</time>`, plus the relative variant carrying its exact value on a
+      visible secondary line, not a `title` (FR-013).
+- [ ] T018 [P] [FOUND] Jest: the same format, timezone, boundary and invalid-value matrices as
+      T009–T012.
+- [ ] T019 [P] [FOUND] Jest: `CorexTime` emits a valid `datetime` and human text; the relative
+      variant exposes its exact value without hover.
+
+### Parity
+
+- [ ] T020 [FOUND] Commit the shared instant fixture — every case named in plan.md §4 — as the
+      single input to both suites.
+- [ ] T021 [FOUND] Pest + Jest parity tests over that fixture, in English **and** Arabic. This is
+      the test that would have caught the CLDR-vs-WordPress month-name divergence the plan rejected
+      `Intl`-for-words over; it must fail if either side is changed alone.
+
+---
+
+## Phase 3: US1 — an operator reads a date and knows what it means (P1)
+
+- [ ] T022 [US1] `OverviewRenderer.php:255` — presenter instead of
+      `get_option('date_format') . ' ' . get_option('time_format')`.
+- [ ] T023 [US1] `OperationsSecurityScreen.php:222` and `:332` — presenter; the `format('c')`
+      fallback that could emit raw ISO to a screen is deleted.
+- [ ] T024 [P] [US1] `Blog/ModerationPanel.js:36` — `CorexTime` instead of `toLocaleString()`.
+- [ ] T025 [P] [US1] `Email/components/LogsPanel.js:82` and `:154` — `CorexTime`.
+- [ ] T026 [P] [US1] `Email/components/OverviewPanel.js:83` and `TemplatePanel.js:53` — `CorexTime`.
+- [ ] T027 [P] [US1] `Forms/FlowList.js:153` — `CorexTime`; the existing `<time dateTime>` wrapper
+      is already right and keeps its machine value.
+- [ ] T028 [P] [US1] `Submissions/index.js` — the four raw-ISO renders at `:527` (inbox date
+      column), `:793` (`Attempted %s`), `:820` (drawer), `:913` (audit timeline).
+- [ ] T029 [P] [US1] `Security/SecurityCenter.js:376` — the security activity list.
+- [ ] T030 [P] [US1] Sweep the remaining FR-020 surfaces for any date this task list has not named,
+      and convert or record each. The audit found twelve; a surface found here is a spec-audit miss
+      worth recording in PROGRESS.md, not a silent thirteenth fix.
+- [ ] T031 [US1] Jest: each converted React surface renders the human form and no ISO string.
+- [ ] T032 [US1] Pest integration: each converted server surface renders the human form; a site set
+      to `Africa/Cairo` and a site set to UTC both render their own wall clock.
+
+---
+
+## Phase 4: US2 — precise, semantic, sortable (P2)
+
+- [ ] T033 [US2] Every converted surface emits semantic `<time>` with a valid machine value —
+      asserted, not assumed (FR-012).
+- [ ] T034 [US2] `NotificationItem.js` — relative time keeps its phrase and gains the non-hover
+      exact value; the raw-ISO `title` goes.
+- [ ] T035 [P] [US2] Verify FR-016 rather than change it: Pest integration proving the Submission
+      Inbox and the Data explorer sort chronologically server-side across a month and a year
+      boundary, and that missing values group at one end.
+- [ ] T036 [P] [US2] Confirm `EXACT` (with seconds) is used only in diagnostics and nowhere in an
+      ordinary operator view (FR-004).
+
+---
+
+## Phase 5: US3 — absent and invalid values (P3)
+
+- [ ] T037 [US3] Give each converted call site its field-appropriate absent phrase — "Not recorded",
+      "Never", "No expiry", "Pending". Not one shared word: they are different statements.
+- [ ] T038 [US3] Malformed timestamps recorded in developer diagnostics, nothing sensitive exposed
+      (FR-019).
+- [ ] T039 [P] [US3] Jest + Pest: absent and malformed values on real surfaces produce the phrase,
+      keep the layout, and never fabricate a date.
+
+---
+
+## Phase 6: Acceptance and closeout
+
+- [ ] T040 `tests/e2e/admin-datetime.spec.js` — browser acceptance across the FR-020 surfaces: the
+      required English string present, no ISO string anywhere in operator-facing text, `<time>`
+      present, no console error, no failed `/wp-json/` request.
+- [ ] T041 Browser acceptance in Arabic/RTL, at 375px, and at 200% zoom, with no horizontal
+      overflow — measured against the stock wp-admin baseline the way
+      `admin-command-center.spec.js` does, since core's own 1px is not ours (DECISIONS #163).
+- [ ] T042 Capture `evidence/after/` for every `before/` shot, plus the two-timezone comparison from
+      T002 now showing the same hour.
+- [ ] T043 Guards on the diff: `wp-guard` + `clean-code-guard` on production code, `test-guard` on
+      tests, `docs-guard` on the documentation task.
+- [ ] T044 Documentation: admin date/time formatting, the timezone source of truth, locale
+      behaviour, and machine-versus-display timestamps — including the plain statement that CoreX
+      admin dates no longer follow Settings → General, and why.
+- [ ] T045 Full gate: `lint:css`, `lint:js`, Jest, Pest unit, Pest integration, token inventory,
+      Playwright.
+- [ ] T046 `PROGRESS.md` + `DECISIONS.md` (the one-dictionary decision, and the fixed-format
+      departure from Settings → General confirmed by the owner).
+- [ ] T047 PR, green CI, resolve review, merge, delete branch.
+
+---
+
+## Dependencies
+
+- Phase 2 blocks Phases 3–5 entirely. Nothing converts before the contract passes its tests.
+- T020–T021 (parity) block T024–T029: converting a surface before parity is proven risks converting
+  it twice.
+- Phase 6 depends on 3–5.
+- `[P]` tasks within a phase touch different files and may run together.
+
+## Out of scope, deliberately
+
+- Storage and REST shapes (FR-014/15). `OperationsSecurityScreen.php:406` emits
+  `wp_date( DATE_ATOM, … )` where the rest of the codebase uses UTC `gmdate` — a real inconsistency,
+  recorded in plan.md, and a transport question rather than a presentation one.
+- The front office.
+- Relative time on new surfaces. It stays where it already is; this spec makes it correct, not
+  more widespread.
