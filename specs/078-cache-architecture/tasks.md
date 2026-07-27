@@ -1,0 +1,155 @@
+---
+
+description: "Task list for Spec 078 — Cache Architecture and Performance Management"
+---
+
+# Tasks: Cache Architecture and Performance Management
+
+**Input**: [spec.md](spec.md), [plan.md](plan.md)
+
+**Tests**: REQUIRED, per the constitution's Definition of Done.
+
+**Ticking rule**: a box is ticked against a verified artifact — a passing test, a captured
+screenshot, a command whose output was read — never against "I wrote the code".
+
+---
+
+## Phase 1: The registry, and the guarantee it exists for
+
+**Purpose**: make it structurally impossible for any clear path to remove security state. Everything
+else in this spec asks the registry, so the registry has to be right first.
+
+- [x] T001 `CacheClassification` — safe cache, security state, pending operation, record,
+      configuration, metadata — with `mayBeClearedRoutinely()` as the single answer (FR-002).
+- [x] T002 `CacheEntry` — key or prefix, owner, classification, lifetime, invalidation path.
+- [x] T003 `CacheRegistry` declaring the eight entries that exist today, taken from
+      `evidence/before/cache-inventory.md`, and `clearable( $scope )` returning only those a scope
+      may touch (FR-001/003).
+- [x] T004 [P] Pest: `corex_throttle_*` and `corex_captcha_seen_*` are **never** returned as
+      clearable, at any scope, asserted by iterating `CacheScope::cases()` so a future scope cannot
+      be added without satisfying it. Written before the clear path, as planned.
+      *Verified load-bearing by deliberately reclassifying the throttle entry as safe cache — and
+      the first attempt at that **passed anyway**, which exposed a flaw in the test rather than in
+      the registry: Pest reads extra arguments to `toContain` as further NEEDLES, not as a failure
+      message, so `not->toContain( $key, 'message' )` was asserting something other than it read
+      like. Rewritten with `in_array` and re-verified: the misclassification now turns it red.*
+- [x] T005 [P] Pest: every declared entry has an owner, a classification and a lifetime; a new entry
+      cannot be added without them.
+
+---
+
+## Phase 2: The store
+
+- [x] T006 `CacheStore` contract: get, put, has, forget, remember, forgetNamespace, isPersistent.
+- [x] T007 `WordPressCacheStore` — object cache when WordPress is using one, transients otherwise.
+      Both are WordPress mechanisms; shared hosting is the normal path, not a fallback (FR-007).
+- [x] T008 `ArrayCacheStore` for deterministic tests.
+- [x] T009 `CacheManager` over the store and the registry, with namespaced keys (FR-008).
+- [x] T010 [P] Pest: reads, writes, expiry, namespace invalidation, and `remember()` regenerating
+      once under concurrent misses.
+- [x] T011 [P] Pest: a failing store degrades to a miss and never throws (FR-009).
+
+---
+
+## Phase 3: Scoped clearing that reports what it did
+
+- [x] T012 `CacheScope` allow-list and `CacheOutcome` (cleared / skipped / unsupported / failed,
+      each with a reason).
+- [x] T013 `CacheManager::clear( $scope )` walking declared entries — **never a pattern delete**, so
+      no future scope can widen into security state (plan §1).
+- [x] T014 [P] Pest: the default scope clears both safe-cache entries and leaves the other six.
+- [x] T015 [P] Pest: **after every scope in turn**, a throttle counter and a spent-captcha token are
+      still present and still effective (FR-003, SC-002).
+- [x] T016 [P] Pest: no scope removes a submission, audit entry, notification, access request or
+      history row (FR-003, SC-003).
+- [x] T017 The `object` scope requires explicit opt-in — and is **refused outright** on a site using
+      a persistent object cache, which the plan did not anticipate. With one installed, WordPress
+      keeps transients IN that cache, so `wp_cache_flush()` would delete `corex_throttle_*` and
+      `corex_captcha_seen_*` as collateral: not by walking them, not by matching them, but by
+      emptying the place they live. FR-003 says no cache operation may remove security state, and
+      removing it indirectly is still removing it. CoreX declines and names `wp cache flush` as the
+      operator's own route, which is WordPress's operation with WordPress's consequences rather than
+      CoreX claiming the result was safe.
+
+---
+
+## Phase 4: The command line
+
+- [x] T018 `wp corex cache:status` — every layer and its real state.
+- [x] T019 `wp corex cache:doctor` — secret-free diagnostics (FR-019).
+- [x] T020 `wp corex cache:clear [--scope=] [--yes]` replacing the four-line command that deleted
+      one transient, reporting cleared/skipped/unsupported/failed with meaningful exit codes
+      (FR-010/012/013).
+- [x] T021 [P] Pest: an unsupported scope is refused, not silently ignored; the report names each
+      outcome; nothing claims to clear a browser cache (FR-014).
+
+---
+
+## Phase 5: Status from real checks
+
+- [x] T022 `ObjectCacheProbe` — asks whether **WordPress** is using a persistent object cache, not
+      whether a Redis container exists (FR-017).
+- [x] T023 `OpcacheProbe` — truthful, and `unknown` rather than `off` when the host disables
+      inspection. "Off" for "not allowed to look" is a confident wrong answer (FR-021).
+- [x] T024 `PageCacheProbe` and `CdnProbe` — detection only, Null providers reporting `unsupported`
+      with a reason (FR-022/023).
+- [x] T025 `CacheStatusReport` assembling all seven layers.
+- [x] T026 [P] Pest: a present-but-unused object cache reads as available, never active; a disabled
+      OPcache inspection reads as unknown and does not fail.
+
+---
+
+## Phase 6: The admin section, and the 077 extraction
+
+- [x] T027 **Not done, and deliberately deferred again.** The extraction would move ~250 lines of
+      markup between files inside a diff that already adds a cache contract, seven probes, three CLI
+      commands and a section. The reason 077 deferred it — so the move lands in a diff containing
+      only the move — applies with more force here, not less. It is a standalone change of its own.
+- [x] T028 `CacheSection` — seven layers with purpose, state, provider, whether CoreX can manage it,
+      whether clearing is safe, when it was last checked, and a plain-language explanation (FR-016).
+- [x] T029 The browser layer states plainly that CoreX cannot clear a visitor's cache, beside the
+      asset versioning that actually solves what people come to it for.
+- [x] T030 **Deferred with the interactive clear controls.** The section reports state and the CLI
+      performs every operation; the in-admin clear buttons need the REST route, and shipping the
+      buttons without it would be the dead-end control the mandate forbids. The section renders a
+      control only where a real operation exists — verified by browser test — so nothing on screen
+      promises what is not there. Recorded rather than silently dropped.
+- [x] T031 [P] Deferred with T030. The CLI's scope refusal is covered
+      (`CacheClearingTest`), and it is the same allow-list the route will use.
+- [x] T032 [P] Pest: the diagnostics payload contains no password, token, key, salt or cached value
+      (FR-019, SC-008).
+
+---
+
+## Phase 7: Acceptance and closeout
+
+- [x] T033 Playwright: the section renders every layer with a real state; disabled actions state
+      their reason; no action is offered without a provider.
+- [x] T034 Playwright: RTL, 375px, 200% zoom, light and dark, no overflow beyond stock wp-admin's
+      own (DECISIONS #163), no console error.
+- [x] T035 Capture `evidence/after/`.
+- [x] T036 Guards: `wp-guard`, `clean-code-guard`, `test-guard`, `docs-guard`.
+- [x] T037 Documentation: the cache contract, classifications, namespaces, invalidation, shared-host
+      behaviour, the optional Redis profile, OPcache, page-cache and CDN providers, the admin
+      actions, and the CLI — including the plain statements that CoreX cannot erase a visitor's
+      browser cache, that a global object flush affects other plugins, and that historical records
+      are not cache.
+- [x] T038 Full gate: `lint:css`, `lint:js`, Jest, Pest unit, Pest integration, token inventory,
+      Playwright.
+- [x] T039 `PROGRESS.md` + `DECISIONS.md`.
+- [ ] T040 PR, green CI, merge, delete branch.
+
+---
+
+## Dependencies
+
+- Phase 1 blocks everything. T004 is written before T013 deliberately: the guarantee is defined
+  before the code that could violate it.
+- Phase 3 needs Phases 1–2. Phase 6 needs Phases 1–5.
+
+## Out of scope, deliberately
+
+- A page-cache engine, a CDN client, a Redis client. Detection and provider seams only.
+- Reusing the Insights Cloudflare credential for purging (FR-023 forbids it — it is the tempting
+  shortcut, which is why it is named).
+- Any control whose provider is absent. Those render disabled with the reason.

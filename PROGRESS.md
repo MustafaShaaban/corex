@@ -4,6 +4,49 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **Spec 078 (Cache Architecture) implemented on `spec/078-cache-architecture`.**
+
+076 merged as `3765cf2`, 077 as `f32de72` — both on GitHub and Azure.
+
+**What 078 found before writing anything.** `wp corex cache:clear` was four lines that deleted one
+transient and printed "success". Thirteen cache call sites exist across seven files. And the obvious
+fix was dangerous: a sweep of `corex_*` transients — the natural reading of "clear CoreX's caches" —
+would have deleted every rate-limit counter (`ThrottleMiddleware`) and every spent-captcha record
+(`TokenReplayGuard`), because **both security controls are stored as transients**. Three more entries
+are pending confirmation tokens for imports, migrations and bulk actions.
+
+So classification came first and everything asks it. **Nothing in the feature deletes by pattern**:
+`clear()` walks declared entries and skips what classification forbids, so a scope cannot widen into
+security state — a `DELETE ... LIKE 'corex_%'` is not refactorable into the design (DECISIONS #171).
+
+**Four findings worth carrying forward:**
+
+1. **A test that could not fail.** Misclassifying the throttle entry to prove the guarantee was
+   load-bearing left the headline assertion **green** — Pest reads extra arguments to `toContain` as
+   further *needles*, not as a failure message, so `not->toContain( $key, 'message' )` asserted
+   something other than it read like. Rewritten with `in_array`. The test looked entirely reasonable.
+2. **A gap the plan missed, found by a failure for the wrong reason.** An assertion failed on the
+   `runtime` scope over a type change (a transient read back after a flush comes from MySQL as `"5"`
+   rather than int `5`). Asking why exposed the real problem: on a site **with** a persistent object
+   cache, WordPress keeps transients *in* it, so `wp_cache_flush()` deletes the throttle and captcha
+   keys as collateral. CoreX now refuses that scope there and names `wp cache flush` as the
+   operator's own route (DECISIONS #172).
+3. **Presence is not use.** The object-cache layer reports `active` only when
+   `wp_using_ext_object_cache()` is true. OPcache reports `unknown` rather than `off` where a host
+   disables inspection (DECISIONS #173).
+4. **`ProductActivityCoverageTest` fails on this developer install and passes on a clean one** — it
+   queries page 1 of 100 activity events and this install has far more. Data-dependent, not a
+   regression; verified by running it with the branch stashed. Worth fixing eventually.
+
+Gate: **ESLint 0** · **stylelint 0** · **Pest unit 1593** (6731 assertions) · **Pest integration
+311/312** (the twelfth being #4 above) · **Playwright `cache-performance.spec.js` 6/6** on the real
+install. DECISIONS **#171–#173**.
+
+**Next:** open the 078 PR, merge, then **Spec 079 — Unified Admin Error and Access Request
+Experience**, whose mandatory defect is the Access Request form POSTing a browser straight at a REST
+endpoint and rendering raw JSON.
+
+---
 ## RESUME HERE (2026-07-27) -- **Spec 077 (Operations & Security) implemented on `spec/077-operations-security-completion`.**
 
 Spec 076 merged as **`3765cf2`** (GitHub + Azure). 077 is the next PR.

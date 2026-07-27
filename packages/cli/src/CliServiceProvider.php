@@ -10,6 +10,8 @@ namespace Corex\Cli;
 
 defined('ABSPATH') || exit;
 
+use Corex\Cache\CacheManager;
+use Corex\Cache\CacheScope;
 use Corex\Cli\Commands\DocsCommand;
 use Corex\Cli\Commands\DoctorCommand;
 use Corex\Cli\Commands\MakeCommand;
@@ -189,11 +191,102 @@ final class CliServiceProvider extends ServiceProvider
             },
         );
 
+        // Cache management (spec 078). What this replaces deleted one transient and printed
+        // "success" — a message that read as "your caches are cleared" while seven of the eight
+        // things CoreX caches were untouched.
+        $cache = $this->container->make(CacheManager::class);
+
+        WP_CLI::add_command(
+            'corex cache:status',
+            static function () use ($cache): void {
+                WP_CLI::log('Store: ' . $cache->store()->describe());
+                WP_CLI::log('');
+                WP_CLI::log('Declared cache entries:');
+
+                foreach ($cache->registry()->all() as $entry) {
+                    WP_CLI::log(sprintf(
+                        '  %-34s %-18s %s',
+                        $entry->key . ($entry->isPrefix ? '*' : ''),
+                        $entry->classification->value,
+                        $entry->isRoutinelyClearable() ? 'clearable' : 'protected',
+                    ));
+                }
+            },
+        );
+
+        WP_CLI::add_command(
+            'corex cache:doctor',
+            static function () use ($cache): void {
+                // Deliberately says what CoreX cannot do as well as what it can — the two most
+                // common cache questions have answers CoreX does not control.
+                WP_CLI::log('Store:            ' . $cache->store()->describe());
+                WP_CLI::log('Survives request: ' . ($cache->store()->isPersistent() ? 'yes' : 'no'));
+                WP_CLI::log('Object cache:     ' . (
+                    function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache()
+                        ? 'persistent (WordPress is using one)'
+                        : 'none (transients in the options table)'
+                ));
+                WP_CLI::log('OPcache:          ' . (
+                    function_exists('opcache_get_status') ? 'inspectable' : 'not inspectable on this host'
+                ));
+                WP_CLI::log('');
+                WP_CLI::log('CoreX cannot clear a visitor\'s browser cache. Asset versioning is what');
+                WP_CLI::log('makes browsers fetch updated files.');
+                WP_CLI::log('Protected from every clear scope:');
+
+                foreach ($cache->registry()->protected() as $entry) {
+                    WP_CLI::log('  ' . $entry->key . '* — ' . $entry->classification->value);
+                }
+            },
+        );
+
         WP_CLI::add_command(
             'corex cache:clear',
-            static function (): void {
-                delete_transient('corex_asset_manifest');
-                WP_CLI::success('Corex asset cache cleared.');
+            static function (array $args, array $assoc) use ($cache): void {
+                $requested = isset($assoc['scope']) ? (string) $assoc['scope'] : CacheScope::Corex->value;
+                $scope     = CacheScope::tryFromName($requested);
+
+                // Refused, not interpreted. A scope decides what gets removed, so guessing at an
+                // unrecognised one is the last thing this should do.
+                if ($scope === null) {
+                    WP_CLI::error(sprintf(
+                        'Unknown scope "%s". Available: %s',
+                        $requested,
+                        implode(', ', CacheScope::names()),
+                    ));
+                }
+
+                $confirmed = ! empty($assoc['yes']);
+
+                if ($scope->requiresExplicitConfirmation() && ! $confirmed) {
+                    WP_CLI::error(sprintf(
+                        'The "%s" scope reaches beyond CoreX. Re-run with --yes if that is what you intend.',
+                        $scope->value,
+                    ));
+                }
+
+                $outcome = $cache->clear($scope, $confirmed);
+
+                foreach ($outcome->cleared as $what) {
+                    WP_CLI::log('cleared:     ' . $what);
+                }
+                foreach ($outcome->skipped as $what => $why) {
+                    WP_CLI::log('skipped:     ' . $what . ' — ' . $why);
+                }
+                foreach ($outcome->unsupported as $what => $why) {
+                    WP_CLI::log('unsupported: ' . $what . ' — ' . $why);
+                }
+                foreach ($outcome->failed as $what => $why) {
+                    WP_CLI::warning('failed:      ' . $what . ' — ' . $why);
+                }
+
+                // A failure is a non-zero exit, so a deploy script can tell. "Nothing needed
+                // clearing" is a success — it is the desired state, reached early.
+                if ($outcome->hasFailures()) {
+                    WP_CLI::error($outcome->summary());
+                }
+
+                WP_CLI::success($outcome->summary());
             },
         );
 

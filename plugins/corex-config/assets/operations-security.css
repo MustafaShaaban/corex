@@ -410,3 +410,83 @@
 .corex-admin .corex-security__lockouts li.is-expired {
 	color: var(--corex-admin-text-muted);
 }
+
+/* Cache & Performance (spec 078). One row per layer: what it is, what it is
+   doing, and either a real control or the reason there is not one. */
+.corex-admin .corex-cache__layers {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	margin: var(--corex-admin-space-md) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-cache__layer {
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+/* State by class AND by its printed label — never colour alone. */
+.corex-admin .corex-cache__layer.is-active {
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-cache__layer.is-degraded,
+.corex-admin .corex-cache__layer.is-error {
+	border-inline-start-color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-cache__layer.is-unknown {
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-cache__layer-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-cache__layer-name {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-cache__layer-state {
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-cache__layer-purpose,
+.corex-admin .corex-cache__layer-detail {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-cache__layer-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	margin: var(--corex-admin-space-sm) 0 0;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-xs);
+}
+
+/* Pushed to the end so the row reads label, then evidence, then action. */
+.corex-admin .corex-cache__action,
+.corex-admin .corex-cache__no-action {
+	margin-inline-start: auto;
+}
+
+.corex-admin .corex-cache__no-action {
+	font-style: italic;
+}

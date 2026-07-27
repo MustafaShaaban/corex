@@ -42,12 +42,15 @@ it('offers every section and no others', function () {
     $sections = new ReflectionMethod($this->screen, 'sections');
     $sections->setAccessible(true);
 
+    // `cache` joins the list in spec 078. It was deliberately absent from 077 so it could arrive
+    // with something in it rather than as a heading promising cache management.
     expect(array_keys($sections->invoke($this->screen)))->toBe([
         'overview',
         'environment',
         'login',
         'hardening',
         'activity',
+        'cache',
     ]);
 });
 
