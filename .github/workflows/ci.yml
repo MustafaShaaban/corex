@@ -42,7 +42,7 @@ jobs:
         run: composer test
 
   js:
-    name: JS unit tests (Jest)
+    name: Lint + JS unit tests (Jest)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -55,6 +55,21 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Both linters run here rather than in a job of their own: this job already has the Node
+      # install they need, and a separate job would pay for a second `npm ci` on every PR to say
+      # the same thing. They run BEFORE Jest so a formatting failure is reported as a formatting
+      # failure rather than as a red test job.
+      #
+      # Neither was gated until now, which is how spec 074 introduced 44 stylelint errors that had
+      # to be found by hand, and how `lint:js` accumulated 2589 problems: `wp-scripts lint-js` with
+      # no project config walked `wp/` and `dist/` — tens of thousands of files that are not ours —
+      # and never finished, so it could not be gated at all until eslint.config.js scoped it.
+      - name: Lint styles
+        run: npm run lint:css
+
+      - name: Lint JavaScript
+        run: npm run lint:js
 
       # Covers the block/admin JS *and* the generated-artifact contracts — the token inventory
       # test regenerates from source and fails if a committed artifact drifted. Nothing in CI ran
