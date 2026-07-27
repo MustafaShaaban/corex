@@ -107,6 +107,38 @@ final class OperationsSecurityScreen
         );
     }
 
+    /**
+     * The screen's sections, in the order an operator meets them.
+     *
+     * An allow-list rather than a free `?tab=`: an unrecognised value falls back to the overview
+     * rather than rendering nothing, and nothing here can be reached that is not listed.
+     *
+     * Spec 078 adds `cache` to this list. It is deliberately absent now — an empty section that
+     * promises cache management and delivers a heading would be exactly the dead end the product
+     * mandate forbids.
+     *
+     * @return array<string, string>
+     */
+    private function sections(): array
+    {
+        return [
+            'overview'  => __('Overview', 'corex'),
+            'environment' => __('Environment & Maintenance', 'corex'),
+            'login'     => __('Login Protection', 'corex'),
+            'hardening' => __('Hardening', 'corex'),
+            'activity'  => __('Activity', 'corex'),
+        ];
+    }
+
+    /** The section asked for, when it is one we have. Otherwise the overview. */
+    private function activeSection(): string
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state.
+        $requested = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : '';
+
+        return array_key_exists($requested, $this->sections()) ? $requested : 'overview';
+    }
+
     public function render(): void
     {
         if (! $this->guard->authorized()) {
@@ -117,6 +149,7 @@ final class OperationsSecurityScreen
 
         $checks   = $this->checks->checks($this->facts());
         $warnings = $this->checks->warnings($checks);
+        $active   = $this->activeSection();
 
         echo $this->page->open(
             'operations-security',
@@ -124,15 +157,192 @@ final class OperationsSecurityScreen
             __('The operating mode, WordPress hardening status, and security posture for this site.', 'corex'),
         );
 
+        // Links, not an ARIA tablist. `AdminPage::tabs()` renders `?tab=` anchors with
+        // `aria-current="page"`, which means the address reflects the section, Back and Forward
+        // work, a redirect can land on the right one, and every bit of it works with JavaScript
+        // off — none of which a tablist gives without writing focus management first.
+        echo $this->page->tabs(
+            'corex-operations-security',
+            $this->sections(),
+            $active,
+            __('Operations sections', 'corex'),
+        );
+
         echo $this->statusNotice();
-        echo '<div id="corex-security-app" aria-live="polite"></div>';
-        // The real, nonce-gated mode control follows the readiness checklist the app renders, so the
-        // evidence is read before the action it gates. The app used to also render a mode selector
-        // of its own that applied nothing; it is gone, and this is the only one on the page.
-        echo $this->modeCard();
-        echo $this->checksCard($checks, $warnings);
-        echo $this->auditCard();
+        echo '<div class="corex-opsec__sections">';
+        echo $this->section($active, $checks, $warnings);
+        echo '</div>';
         echo $this->page->close();
+    }
+
+    /**
+     * One section's content. Each is a real surface with real state — none renders empty.
+     *
+     * The React island moves with its section rather than mounting once for the whole screen: its
+     * panels belong to three different sections now, so the mount node names the section and the
+     * app renders only that section's panels. One app, one state module, three homes.
+     *
+     * @param list<array<string,mixed>> $checks
+     */
+    private function section(string $active, array $checks, int $warnings): string
+    {
+        return match ($active) {
+            'environment' => $this->securityApp('environment') . $this->modeCard() . $this->auditCard(),
+            'login'       => $this->securityApp('login'),
+            'hardening'   => $this->checksCard($checks, $warnings),
+            'activity'    => $this->securityApp('activity'),
+            default       => $this->overviewCard($checks, $warnings),
+        };
+    }
+
+    /** The React mount, told which section it is standing in. */
+    private function securityApp(string $section): string
+    {
+        return '<div id="corex-security-app" aria-live="polite" data-section="'
+            . esc_attr($section) . '"></div>';
+    }
+
+    /**
+     * The overview: everything an operator needs to decide whether to look further (FR-005).
+     *
+     * Every value is read, never assumed — and each links to the section that owns it, so this
+     * summarises rather than duplicating. The environment and the mode appear together here because
+     * this is the first place someone looks to answer "is this site live", and the two answers to
+     * that question have to be visible at the same time.
+     *
+     * @param list<array<string,mixed>> $checks
+     */
+    private function overviewCard(array $checks, int $warnings): string
+    {
+        $current  = $this->store->current();
+        $env      = $this->modes->describe($current);
+        $snapshot = $this->readiness->fromCurrentSite(new DateTimeImmutable('now'));
+        $blockers = count($snapshot->blockingKeys());
+        $policy   = $this->loginSettings->current();
+        $lockouts = $this->lockouts->recentLockouts(new DateTimeImmutable('now'));
+        $active   = 0;
+        $now      = new DateTimeImmutable('now');
+        foreach ($lockouts as $record) {
+            if ($record->lockedUntil !== null && $record->lockedUntil > $now) {
+                $active++;
+            }
+        }
+
+        $rows = [
+            [
+                __('Operations mode', 'corex'),
+                $env['label'],
+                'environment',
+            ],
+            [
+                __('WordPress environment', 'corex'),
+                $this->environmentType(),
+                'environment',
+            ],
+            [
+                __('Production readiness', 'corex'),
+                $blockers === 0
+                    ? __('No blockers', 'corex')
+                    : sprintf(
+                        /* translators: %d: number of blocking readiness checks. */
+                        _n('%d blocker', '%d blockers', $blockers, 'corex'),
+                        $blockers,
+                    ),
+                'environment',
+            ],
+            [
+                __('Maintenance', 'corex'),
+                $current === OperationsMode::MAINTENANCE
+                    ? __('Visitors see the maintenance page', 'corex')
+                    : __('Off', 'corex'),
+                'environment',
+            ],
+            [
+                __('Login protection', 'corex'),
+                $policy->enabled ? __('On', 'corex') : __('Off', 'corex'),
+                'login',
+            ],
+            [
+                __('Default login endpoints', 'corex'),
+                $policy->blockDefaultEndpoints
+                    ? __('Hidden', 'corex')
+                    : __('Reachable', 'corex'),
+                'login',
+            ],
+            [
+                __('Active lockouts', 'corex'),
+                (string) $active,
+                'login',
+            ],
+            [
+                __('Hardening warnings', 'corex'),
+                (string) $warnings,
+                'hardening',
+            ],
+        ];
+
+        $items = '';
+        foreach ($rows as [$label, $value, $section]) {
+            $items .= '<li class="corex-opsec__summary-item">'
+                . '<span class="corex-opsec__summary-label">' . esc_html($label) . '</span>'
+                . '<span class="corex-opsec__summary-value">' . esc_html($value) . '</span>'
+                . '<a class="corex-opsec__summary-link" href="' . esc_url($this->sectionUrl($section)) . '">'
+                . esc_html__('Open', 'corex') . '</a></li>';
+        }
+
+        return '<section class="corex-surface corex-opsec__summary">'
+            . '<p class="corex-admin__eyebrow">' . esc_html__('AT A GLANCE', 'corex') . '</p>'
+            . '<h2>' . esc_html__('Operations summary', 'corex') . '</h2>'
+            . $this->environmentConflictNotice()
+            . '<ul class="corex-opsec__summary-list">' . $items . '</ul>'
+            . '</section>';
+    }
+
+    private function sectionUrl(string $section): string
+    {
+        return add_query_arg(
+            ['page' => 'corex-operations-security', 'tab' => $section],
+            admin_url('admin.php'),
+        );
+    }
+
+    /** What the host and configuration declare, which CoreX reads and never writes. */
+    private function environmentType(): string
+    {
+        return function_exists('wp_get_environment_type')
+            ? (string) wp_get_environment_type()
+            : '';
+    }
+
+    /**
+     * Said out loud when the declared mode and the WordPress environment disagree (FR-014).
+     *
+     * Only when the mode was actually **declared**: a site that has merely inherited its mode from
+     * `wp_get_environment_type()` cannot conflict with it, and warning there would be noise on
+     * every fresh install.
+     *
+     * The wording is careful not to imply CoreX can change the environment. It cannot, and saying
+     * otherwise would invite someone to try to fix a hosting setting from this screen.
+     */
+    private function environmentConflictNotice(): string
+    {
+        $environment = $this->environmentType();
+        $mode        = $this->store->current();
+
+        if (! $this->store->isDeclared() || $environment === '' || $environment === $mode) {
+            return '';
+        }
+
+        return $this->page->state(
+            'warning',
+            __('Environment and mode differ', 'corex'),
+            sprintf(
+                /* translators: 1: WordPress environment type, 2: declared CoreX operations mode. */
+                __('WordPress reports this as a %1$s environment, while CoreX is set to %2$s. Both are shown because they mean different things: the environment is declared by your hosting or wp-config.php, and the CoreX mode is what you have told CoreX about how this site should behave. Changing the mode here does not change the environment.', 'corex'),
+                $environment,
+                $mode,
+            ),
+        );
     }
 
     /** A PRG success/error notice after a mode change (read-only query args; no state change here). */

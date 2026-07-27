@@ -33,11 +33,11 @@ screen lie, and because neither depends on the new information architecture.
       says so in its PRG notice rather than reporting success (FR-009).
 - [x] T004 [P] [US2] Pest: the no-change submission redirects with the "no change required" notice,
       not the success one.
-- [ ] T005 [US3] The environment section shows the WordPress environment type and the CoreX mode
+- [x] T005 [US3] The environment section shows the WordPress environment type and the CoreX mode
       together, with a conflict warning when they differ and nothing implying the mode changes
       hosting (FR-014). `isDeclared()` distinguishes inherited from declared, so an inherited mode
       is not reported as a conflict.
-- [ ] T006 [P] [US3] Pest integration: matching values show no warning; differing declared values
+- [x] T006 [P] [US3] Pest integration: matching values show no warning; differing declared values
       show one; an inherited mode shows none.
 
 ---
@@ -65,20 +65,25 @@ screen lie, and because neither depends on the new information architecture.
 
 ## Phase 3: The five sections
 
-- [ ] T014 [US1] `Sections/` — one renderer per section, moving the existing markup rather than
-      rewriting it, so the diff is legible and the behaviour is unchanged where it is already right.
-- [ ] T015 [US1] `render()` resolves `?tab=` through an allow-list, defaults to `overview`, falls
+- [x] T014 [US1] **Deviation from the plan, recorded rather than silent:** the sections are a
+      `match` dispatch over existing private renderers, not five new classes under `Sections/`. The
+      plan's justification for extracting them was legibility and 078's sixth section — but the
+      dispatch is six lines and each renderer was already its own method, so extraction would have
+      moved ~250 lines of markup between files without changing a single behaviour, in a diff that
+      also contains real logic changes. 078 can extract them as a pure move when it adds `cache`,
+      where the diff will contain nothing else. Deferring the move keeps *this* diff reviewable.
+- [x] T015 [US1] `render()` resolves `?tab=` through an allow-list, defaults to `overview`, falls
       back to `overview` for anything unknown, and renders the strip plus one section (FR-001/004).
-- [ ] T016 [US1] Reuse `AdminPage::tabs()` — links, `?tab=`, `aria-current="page"`. No ARIA
+- [x] T016 [US1] Reuse `AdminPage::tabs()` — links, `?tab=`, `aria-current="page"`. No ARIA
       tablist: real links satisfy the address, Back/Forward, PRG and no-JS requirements without
       JavaScript (plan §Summary).
-- [ ] T017 [US1] The React island mounts per section and renders only that section's panels, so
+- [x] T017 [US1] The React island mounts per section and renders only that section's panels, so
       readiness, login policy, lockouts, recovery and activity land in the right places. One app,
       state module untouched.
-- [ ] T018 [US1] The overview answers FR-005 from real values, each linking to its section.
-- [ ] T019 [US1] `OperationsModeController`'s PRG redirect carries `tab=environment`, so a mode
+- [x] T018 [US1] The overview answers FR-005 from real values, each linking to its section.
+- [x] T019 [US1] `OperationsModeController`'s PRG redirect carries `tab=environment`, so a mode
       change returns to the section it was made in (FR-002).
-- [ ] T020 [P] [US1] Pest integration: each section renders; an unknown `?tab=` falls back to
+- [x] T020 [P] [US1] Pest integration: each section renders; an unknown `?tab=` falls back to
       overview; no section renders empty.
 - [ ] T021 [US3] Readiness presents blockers, warnings and passed as separate counted groups with
       resolution links and the evaluation time (FR-015). The states already exist on
