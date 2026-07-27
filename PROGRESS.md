@@ -63,8 +63,30 @@ passing-but-blind, it was broken, since `Requires attention` no longer exists to
 Gate at this point: **unit 1507/0** (6470 assertions) · **integration 219/0** (900) · **JS 363/0**
 (60 suites) · **Playwright 58/0** against the real `corex.local`.
 
-**Next:** Phase F close-out — browser acceptance evidence (T061/T062), `DECISIONS.md` /
-`CHANGELOG.md` (T064), then the PR (T065).
+**Phase F is done too, so all of Spec 074 is implemented and documented.**
+
+- **T061/T062 — browser acceptance on the real install.** `evidence/after/` re-captured for the two
+  surfaces this spec changed, plus RTL, 360 px, and 200 % zoom for each. **No horizontal overflow** in
+  any of the six conditions (`scrollWidth === clientWidth` at 1440 RTL, 360, and 720@2×), and RTL
+  mirrors from logical properties alone. A separate probe confirmed **no console error, uncaught JS
+  error, failed `/wp-json/` request, or blank React mount** on Data Models, Data → Import, Data →
+  Migrations, Notifications, Forms & Flows, or Submissions. Referenced from `spec.md` §9.
+- **T064 — records.** `DECISIONS.md` **#157–#160** (read-vs-resolved as a modelling rule; eight views
+  collapse to three; hide rather than refuse a control the actor may not use; capability summarised
+  where the question is asked, with secret-shaped facts dropped rather than redacted). `CHANGELOG.md`
+  `[Unreleased]` now covers 073 **and** 074. `ROADMAP.md` §17 updated.
+- **Real docs drift found and fixed.** `docs/en/03-operations/notifications.md` still documented the
+  retired **Inbox / Requires attention / Assigned to me** tabs and described the drawer as offering only
+  *Mark read*. Rewritten onto the three views, and the `view` REST parameter — which the screen has been
+  sending but the docs never mentioned — is documented, with every listed filter checked against
+  `NotificationController::index()`.
+
+Final gate: **unit 1507/0** (6470 assertions) · **integration 219/0** (900) · **JS 363/0** (60 suites) ·
+**Playwright 58/0** · stylelint clean on every file the branch touches · token inventory reproduces ·
+guards clean (`wp-guard`, `clean-code-guard`, `test-guard`, `docs-guard`).
+
+**Next:** open the PR for 074 and let CI confirm; then **Spec 075 — Blog Pro Functional Completion**,
+then the **v0.36.0** release.
 
 ---
 ## (previous, 2026-07-26) -- **Spec 073 (Admin polish & correctness) MERGED via PR #129 (`9b5939f`).**

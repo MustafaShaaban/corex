@@ -264,7 +264,39 @@ unauthorised resolve · drawer ↔ screen parity · keyboard navigation · scree
 7. No placeholder, "coming soon", dead-end tab, or non-functional control remains in the touched
    areas.
 
-## 9. Explicit exclusions
+## 9. Evidence
+
+Captured on the real install (`corex.local`) with `tests/e2e/render-admin.mjs`, dark and light at
+1440×900 unless noted. `evidence/before/` is the state at the 073 merge (`9b5939f`).
+
+**The four defects, before and after**
+
+| Defect | Before | After |
+| --- | --- | --- |
+| D1 · code-registered forms invisible | `before/forms-dark.png` | `after/forms-dark.png`, `after/forms-light.png` |
+| D2 · Import / Migrations dead ends | `before/data-import-dark.png`, `before/data-migrations-dark.png` | `after/data-import-dryrun-dark.png`, `after/data-import-committed-dark.png`, `after/data-migration-preview-dark.png`, `after/data-migration-queued-dark.png`, `after/data-migration-history-dark.png` |
+| D3 · inbox heading collision | `before/submissions-dark.png` | `after/inbox-heading-dark.png`, `after/submissions-dark.png` |
+| D4 · read conflated with resolved | `before/notifications-dark.png` | `after/notifications-dark.png`, `after/notification-item-dark.png` |
+
+**FR-5 · capability diagnostics** — `after/data-models-dark.png`, `after/data-models-light.png`.
+The panel shows the two live gaps on this install (a captcha driver selected with no keys, no update
+endpoint), the code-registered `contact` form discovered with **no filter hook present** (FR-1), and
+`corex_subscribers` as the one model declaring Read · Write · Import · Export · Migrations · Rollback
+(FR-3).
+
+**Browser acceptance (DoD item 4)** — RTL, 360 px, and 200 % zoom for both surfaces this spec
+changed: `after/{data-models,notifications}-{rtl,narrow,zoom200}.png`.
+
+- **No horizontal overflow** in any of the six conditions; `scrollWidth` equals `clientWidth` at
+  1440 (RTL), 360, and 720@2× on both screens.
+- **RTL mirrors from logical properties alone** — the gap accent edge, the capability lists, and the
+  notification item's leading edge all flip with no direction-specific rule. (The rail artefact at
+  the top of `data-models-rtl.png` is the capture tool setting `dir` after load, not a layout
+  defect; the asserted RTL behaviour is in `tests/e2e/notification-center.spec.js`.)
+- **No console error, uncaught JavaScript error, failed `/wp-json/` request, or blank React mount**
+  on Data Models, Data → Import, Data → Migrations, Notifications, Forms & Flows, or Submissions.
+
+## 10. Explicit exclusions
 
 - **Company Site Kit** — not started, not extended.
 - **Client or company website work** — prohibited; no recommendation to begin one.

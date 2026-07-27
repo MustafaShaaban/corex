@@ -3111,3 +3111,72 @@ gated server form and moves a security-sensitive action off its nonce); keep `mo
 per-mode zeroing (rejected: it existed only to serve the removed preview — deleting it removes the divergence
 at the source). CorexSelect dropdown changes in the same spec defer to #141 and are not re-decided here.
 Status: Final.
+
+## #157 — Read is a fact about the person; needing action is a fact about the condition
+Date: 2026-07-27
+Decision: A notification's view membership is derived on the server from its *status* and *severity*
+(`NotificationView::of()`), never from whether the actor has read it. `read` and `resolved` are separate
+fields with separate controls. Snoozing moves an item to **Updates**, not History, and it returns on its own
+when the snooze elapses (spec 074, FR-4.1/FR-4.3).
+Why: v0.35.0's "Requires attention" filtered on the actor's unread state, so opening a production-readiness
+blocker took it off the attention list while the blocker was still true. That is the whole defect: reading is
+something you did, not something that happened to the condition. Deriving the view once on the server means
+the screen and the drawer cannot drift into disagreeing about what still needs somebody — the drawer used to
+show a shorter, differently-worded version of the same record.
+Alternatives considered: keep read-as-attention and add a separate "unresolved" filter (rejected: leaves the
+default view lying, and the default is what people act on); derive the view in the client from the raw fields
+(rejected: two consumers, two implementations, one eventual divergence — which is the bug being fixed).
+Enforcement: the derivation is covered by `tests/Unit/Notifications/NotificationViewTest.php`, and the
+rendered consequence by `notificationItem.test.js`, whose read-vs-resolved spec was mutation-checked —
+reintroducing `needs_action && ! read` fails that test and no other.
+Status: Final.
+
+## #158 — The eight saved notification views collapse to three; the rest were always filters
+Date: 2026-07-27
+Decision: The Notifications screen offers **Action needed · Updates · History**, plus Preferences. Inbox,
+Requires attention, Assigned to me, Submissions, Security, and System are gone as tabs; category, severity,
+and assignment are refines that apply within whichever view is active (spec 074, FR-4.2).
+Why: those tabs competed with the only question the screen exists to answer — does this still need me?
+Submissions/Security/System were category filters wearing tab clothing, and "Assigned to me" is an axis that
+is useful *inside* Action needed, not instead of it. Three views map one-to-one onto the three states a
+condition can be in, so the IA carries the model rather than a menu of saved searches.
+Alternatives considered: keep the tabs and re-point "Requires attention" at the derived status (rejected:
+fixes the lie but keeps five near-duplicate lists); make the views user-configurable (rejected: YAGNI, and it
+would re-admit the drift the fixed set removes).
+Enforcement: `tests/e2e/notification-center.spec.js` asserts the retired tabs are **absent** — every other
+assertion in that file would still pass after a revert, so the absence is the guard.
+Status: Final.
+
+## #159 — A control the actor may not use is hidden, not shown and refused
+Date: 2026-07-27
+Decision: "Mark resolved" renders only when the record's `can_resolve` is true, which is the same ability
+(`MANAGE_NOTIFICATIONS`) the REST route's own permission callback enforces. The same rule governs the Data
+workspace tabs: `allowedTabs()` requires the permission **and** an eligible source (spec 074, FR-4.6/FR-3).
+Why: offering a control that answers with a permission error teaches people the product is broken rather than
+that they lack an ability. Deriving the flag from the same ability the route enforces means the two cannot
+disagree — if they ever did, the UI would be lying about what it can do.
+Alternatives considered: render disabled with a tooltip (rejected: a disabled control still advertises a
+capability this actor does not have, and tooltips are not reliably reachable); let the route refuse and show
+the error (rejected: that is the behaviour being removed).
+Status: Final.
+
+## #160 — Capability is summarised where the question is asked, and a secret-shaped fact is dropped, not redacted
+Date: 2026-07-27
+Decision: `CapabilityReport` (pure) + `CapabilityFacts` (the WordPress boundary) render a read-only summary
+beneath the Data Models catalog: registered forms and where each came from, per-model capabilities, add-on
+state, wired notification producers, and configuration that is selected but unfinished. Any fact carrying a
+credential-shaped key is **dropped entirely**, and summaries are stripped of file paths and stack frames
+(spec 074, FR-5).
+Why: capability was only discoverable by walking into it — you learned a model could not be imported into by
+opening Import and reading a sentence about adapters, and that a captcha driver had no keys when forms quietly
+stopped accepting submissions. The summary sits under the Models catalog because that is where the question
+arises, and every gap links to the screen that fixes it rather than fixing it in place. Dropping rather than
+redacting is deliberate: a redaction still tells a reader *where to look*, and diagnostics are exactly what
+gets screenshotted into a support thread.
+Alternatives considered: a full Capability Inspector / System Map screen (deferred — ROADMAP §17 candidate;
+this spec closes the truthfulness gap, not the tooling ambition); redact secret values in place (rejected per
+above); resolve the facts inside the pure reporter (rejected: it would make the summary untestable without
+WordPress and able to invent state).
+Scope: `AddonManager::state()`/`isInstalled()` moved off `AddonsScreen` for this — "which add-ons are running"
+is a fact about the site, not about that screen, and two derivations would be two chances to disagree.
+Status: Final.

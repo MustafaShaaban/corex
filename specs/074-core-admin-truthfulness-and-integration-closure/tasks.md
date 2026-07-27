@@ -85,10 +85,10 @@
 
 ## Phase F — Close
 
-- [ ] T060 Full gate: PHP lint, Pest unit, integration, Jest, builds, CSS lint, guards, token
+- [x] T060 Full gate: PHP lint, Pest unit, integration, Jest, builds, CSS lint, guards, token
       inventory, Playwright, CodeQL.
-- [ ] T061 Browser acceptance: dark/light, LTR/RTL, desktop/narrow, keyboard, 200% zoom.
-- [ ] T062 `evidence/after/` captured and referenced from `spec.md`.
-- [ ] T063 Guard Gate on the diff (`clean-code-guard`, `wp-guard`, `test-guard`, `docs-guard`).
-- [ ] T064 Docs, `DECISIONS.md`, `CHANGELOG.md`, `PROGRESS.md`.
+- [x] T061 Browser acceptance: dark/light, LTR/RTL, desktop/narrow, keyboard, 200% zoom.
+- [x] T062 `evidence/after/` captured and referenced from `spec.md`.
+- [x] T063 Guard Gate on the diff (`clean-code-guard`, `wp-guard`, `test-guard`, `docs-guard`).
+- [x] T064 Docs, `DECISIONS.md`, `CHANGELOG.md`, `PROGRESS.md`.
 - [ ] T065 PR, CI green, merge, delete branch.
