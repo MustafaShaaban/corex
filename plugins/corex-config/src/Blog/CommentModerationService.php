@@ -68,7 +68,21 @@ final class CommentModerationService
             firstComment: $this->firstComment($comment),
             likelySpam: $this->likelySpam((string) $comment->comment_content),
             heldForReview: (string) $comment->comment_approved === '0',
+            content: (string) $comment->comment_content,
+            submittedAt: $this->submittedAt($comment),
         );
+    }
+
+    /** The GMT timestamp as ATOM, so the client formats it in the reader's locale and zone. */
+    private function submittedAt(\WP_Comment $comment): string
+    {
+        $gmt = (string) $comment->comment_date_gmt;
+
+        if ($gmt === '' || $gmt === '0000-00-00 00:00:00') {
+            return '';
+        }
+
+        return str_replace(' ', 'T', $gmt) . '+00:00';
     }
 
     private function setStatus(CommentModerationRequest $request, string $nativeStatus, string $state): CommentModerationResult

@@ -98,7 +98,14 @@ after clicking (Spec 074, DECISIONS #159).
 
 - The six states (`draft`, `ready_for_review`, `needs_changes`, `approved`, `scheduled`, `published`)
   render as **translated labels**, never raw slugs.
-- Only transitions the service actually permits from the current state are offered.
+- Every state **except the one the post is already in** is offered.
+
+  This is what the service actually does, and the spec follows it rather than inventing a workflow.
+  `EditorialWorkflowService::transition()` has **no transition graph**: it accepts any of the six states
+  from any other and maps it to a native status. Its one genuine constraint is that `scheduled` requires
+  a schedule timestamp, or it throws. Building a graph here would be new domain logic, which §10 and the
+  plan's *Out of plan* both forbid — so the UI offers what the service accepts, and the schedule field
+  becomes required when *Scheduled* is chosen.
 - A transition may carry an assignee, a due date, a scheduled date, and a note — the fields
   `buildTransitionPayload` already builds — and is submitted to
   `POST /blog/editorial/{id}/transition`.
@@ -111,8 +118,10 @@ after clicking (Spec 074, DECISIONS #159).
 
 - Each queued comment shows its author, its content, when it arrived, and its state as a translated
   label.
-- Approve / unapprove / spam / trash post to `/blog/comments/{id}/moderate` and update in place through
-  the reducer's `commentModerated` case.
+- **Approve / spam / trash** post to `/blog/comments/{id}/moderate` and update in place through the
+  reducer's `commentModerated` case. Those three, and no others: `CommentModerationService::queue()`
+  returns only comments held for review, so "unapprove" has nothing to act on, and the service's `edit`
+  and `reply` actions are excluded by §10. The queue is already bounded at 50 by the service.
 - A moderator who lacks `moderate_comments` sees the queue without the controls.
 - The empty queue is a distinct, positive state, not an absence.
 
