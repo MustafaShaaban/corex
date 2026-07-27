@@ -1,9 +1,43 @@
-import { useReducer } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+/**
+ * Blog Pro — the editorial workspace (spec 075).
+ *
+ * What this replaces: a screen that rendered five cards of raw values and offered not one control.
+ * It called `useReducer` and discarded the dispatch, so `blogProState.js` — the reducer's outcome
+ * cases, the payload builders, the endpoint helper — was unreachable while fully covered by tests,
+ * and the seven REST routes had no caller in the product at all.
+ *
+ * Two things it now refuses to do:
+ *
+ * 1. **Imply a total it does not have.** Every panel is about one post, and says which. The old
+ *    screen computed everything for `$posts[0]` and titled it "First-party reading signals", which
+ *    reads as the whole site.
+ * 2. **Print a slug.** States arrive as `{ key, label }` from the server, which owns the vocabulary
+ *    (spec 075, FR-2).
+ */
+import { useCallback, useReducer, useState } from '@wordpress/element';
+import { __, _n, sprintf } from '@wordpress/i18n';
+import CorexSelect from '../admin/components/CorexSelect.js';
+import EditorialPanel from './EditorialPanel.js';
+import ModerationPanel from './ModerationPanel.js';
+import { loadBlogData, moderateComment, transitionPost } from './blogProClient.js';
 import { blogReducer, initialBlogState, normalizeAnalytics } from './blogProState.js';
 
+/** Seconds, said the way a person would say them. */
+function readingTime( seconds ) {
+	if ( seconds < 60 ) {
+		/* translators: %d: a number of seconds. */
+		return sprintf( _n( '%d second', '%d seconds', seconds, 'corex' ), seconds );
+	}
+
+	const minutes = Math.round( seconds / 60 );
+
+	/* translators: %d: a number of minutes. */
+	return sprintf( _n( '%d minute', '%d minutes', minutes, 'corex' ), minutes );
+}
+
 export default function BlogProApp( { config = {} } ) {
-	const [ state ] = useReducer( blogReducer, {
+	const posts = Array.isArray( config.posts ) ? config.posts : [];
+	const [ state, dispatch ] = useReducer( blogReducer, {
 		...initialBlogState(),
 		status: 'ready',
 		analytics: normalizeAnalytics( config.analytics || {} ),
@@ -12,74 +46,249 @@ export default function BlogProApp( { config = {} } ) {
 		authors: Array.isArray( config.authors ) ? config.authors : [],
 		shareControls: Array.isArray( config.shareControls ) ? config.shareControls : [],
 	} );
-	const posts = Array.isArray( config.posts ) ? config.posts : [];
+	const [ busy, setBusy ] = useState( false );
+
+	const hasAnalytics = Boolean( config.analytics?.has_data );
+	const selectedPost = config.selectedPost || null;
+
+	/**
+	 * Pull the server's answer back after something changed.
+	 *
+	 * The reducer's `loaded` case had no caller either; this is it.
+	 */
+	const refresh = useCallback( async () => {
+		setBusy( true );
+		try {
+			const payload = await loadBlogData( config, config.selectedPostId );
+			dispatch( { type: 'loaded', payload } );
+		} catch ( failure ) {
+			dispatch( { type: 'error', message: failure.message } );
+		} finally {
+			setBusy( false );
+		}
+	}, [ config ] );
+
+	/**
+	 * Move the post, then pull everything else back.
+	 *
+	 * The transition's own response carries the new editorial item — nothing else can, since no GET
+	 * route returns one — so `transitioned` takes it directly and the refresh fills in the panels the
+	 * move may also have changed.
+	 */
+	const applyTransition = useCallback(
+		async ( payload ) => {
+			setBusy( true );
+			try {
+				const editorial = await transitionPost( config, config.selectedPostId, payload );
+				dispatch( { type: 'transitioned', editorial } );
+				await refresh();
+			} catch ( failure ) {
+				dispatch( { type: 'error', message: failure.message } );
+			} finally {
+				setBusy( false );
+			}
+		},
+		[ config, refresh ]
+	);
+
+	const applyModeration = useCallback(
+		async ( commentId, action ) => {
+			setBusy( true );
+			try {
+				const result = await moderateComment( config, commentId, action );
+				dispatch( {
+					type: 'commentModerated',
+					commentId,
+					state: result?.state ?? action,
+				} );
+				// The server decides what is left in the queue — a trashed comment leaves it
+				// entirely, which a local edit of one row cannot express.
+				await refresh();
+			} catch ( failure ) {
+				dispatch( { type: 'error', message: failure.message } );
+			} finally {
+				setBusy( false );
+			}
+		},
+		[ config, refresh ]
+	);
+
+	/**
+	 * Choosing a post *is* navigating to it.
+	 *
+	 * The URL is the selection, so a view can be linked and reloaded, and the server renders the whole
+	 * payload for it — which it alone can do, since no GET route returns a post's editorial item
+	 * (spec 075, FR-1).
+	 */
+	const choosePost = useCallback( ( id ) => {
+		const url = new URL( window.location.href );
+		url.searchParams.set( 'post', String( id ) );
+		window.location.assign( url.toString() );
+	}, [] );
+
+	if ( posts.length === 0 ) {
+		return (
+			<div className="corex-blog-pro-app">
+				<p className="corex-blog-pro__empty">
+					{ __(
+						'Create a WordPress post to start using Blog Pro workflows.',
+						'corex'
+					) }
+				</p>
+			</div>
+		);
+	}
 
 	return (
 		<div className="corex-blog-pro-app">
+			<div className="corex-blog-pro__subject">
+				<div className="corex-blog-pro__chooser" data-corex-blog-post-selector>
+					<CorexSelect
+						label={ __( 'Post', 'corex' ) }
+						value={ String( config.selectedPostId || '' ) }
+						options={ posts.map( ( post ) => ( {
+							value: String( post.id ),
+							label: post.title || __( 'Untitled post', 'corex' ),
+						} ) ) }
+						onChange={ ( next ) => choosePost( next ) }
+					/>
+				</div>
+				<p className="corex-blog-pro__subject-meta">
+					{ selectedPost?.status_label }
+					{ ' · ' }
+					{ sprintf(
+						/* translators: %d: number of days the figures cover. */
+						_n(
+							'Figures cover the last %d day',
+							'Figures cover the last %d days',
+							config.periodDays || 30,
+							'corex'
+						),
+						config.periodDays || 30
+					) }
+				</p>
+				<button
+					type="button"
+					className="corex-blog-pro__refresh"
+					data-corex-blog-refresh
+					onClick={ refresh }
+					disabled={ busy }
+				>
+					{ busy ? __( 'Refreshing…', 'corex' ) : __( 'Refresh', 'corex' ) }
+				</button>
+			</div>
+
+			{ /* The notice the reducer has always built and nothing has ever shown. */ }
+			{ state.notice ? (
+				<p
+					className={ `corex-blog-pro__notice is-${ state.notice.tone }` }
+					role={ state.notice.tone === 'error' ? 'alert' : 'status' }
+				>
+					{ state.notice.message }
+				</p>
+			) : null }
+
 			<section className="corex-blog-pro__panel">
-				<div>
-					<p className="corex-blog-pro__eyebrow">{ __( 'Analytics', 'corex' ) }</p>
-					<h2>{ __( 'First-party reading signals', 'corex' ) }</h2>
-				</div>
-				<div className="corex-blog-pro__stats">
-					<Metric label={ __( 'Views', 'corex' ) } value={ state.analytics.cards.views } />
-					<Metric label={ __( 'Reads', 'corex' ) } value={ state.analytics.cards.reads } />
-					<Metric label={ __( 'Share clicks', 'corex' ) } value={ state.analytics.cards.shareClicks } />
-					<Metric label={ __( 'Avg. read seconds', 'corex' ) } value={ state.analytics.cards.averageReadSeconds } />
-				</div>
+				<h2>
+					{ sprintf(
+						/* translators: %s: the post title. */
+						__( 'Reading signals for “%s”', 'corex' ),
+						selectedPost?.title || __( 'this post', 'corex' )
+					) }
+				</h2>
+
+				{ hasAnalytics ? (
+					<div className="corex-blog-pro__stats">
+						<Metric label={ __( 'Views', 'corex' ) } value={ state.analytics.cards.views } />
+						<Metric label={ __( 'Reads', 'corex' ) } value={ state.analytics.cards.reads } />
+						<Metric
+							label={ __( 'Share clicks', 'corex' ) }
+							value={ state.analytics.cards.shareClicks }
+						/>
+						<Metric
+							label={ __( 'Unique visitors', 'corex' ) }
+							value={ state.analytics.cards.uniqueVisitors }
+						/>
+						<Metric
+							label={ __( 'Average read time', 'corex' ) }
+							value={ readingTime( state.analytics.cards.averageReadSeconds ) }
+						/>
+						<Metric
+							label={ __( 'Read rate', 'corex' ) }
+							/* translators: %s: a percentage, e.g. 36.7. */
+							value={ sprintf( __( '%s%%', 'corex' ), state.analytics.cards.engagement ) }
+						/>
+					</div>
+				) : (
+					// Not the same as zero: a zero says nobody read it, this says nothing has been
+					// recorded at all. The old panel showed four large zeros for both (FR-4).
+					<p className="corex-blog-pro__empty">
+						{ __(
+							'No reading data yet — CoreX has not recorded a visit to this post in this period.',
+							'corex'
+						) }
+					</p>
+				) }
 			</section>
 
 			<section className="corex-blog-pro__grid">
-				<Card title={ __( 'Native posts', 'corex' ) }>
-					{ posts.length === 0 ? (
-						<p>{ __( 'Create a WordPress post to start using Blog Pro workflows.', 'corex' ) }</p>
-					) : (
-						<ul>
-							{ posts.map( ( post ) => (
-								<li key={ post.id }>
-									<span>{ post.title || __( 'Untitled post', 'corex' ) }</span>
-									<code>{ post.status }</code>
-								</li>
-							) ) }
-						</ul>
-					) }
-				</Card>
-
 				<Card title={ __( 'Editorial workflow', 'corex' ) }>
-					{ state.editorial ? (
-						<dl>
-							<dt>{ __( 'CoreX state', 'corex' ) }</dt>
-							<dd>{ state.editorial.editorial_state }</dd>
-							<dt>{ __( 'Native status', 'corex' ) }</dt>
-							<dd>{ state.editorial.native_status }</dd>
-						</dl>
-					) : (
-						<p>{ __( 'No editable native post is selected.', 'corex' ) }</p>
-					) }
+					<EditorialPanel
+						editorial={ state.editorial }
+						busy={ busy }
+						onTransition={ applyTransition }
+					/>
 				</Card>
 
-				<Card title={ __( 'Moderation queue', 'corex' ) }>
-					<List
-						empty={ __( 'No comments are waiting for review.', 'corex' ) }
-						items={ state.comments }
-						renderItem={ ( comment ) => `${ comment.author || __( 'Anonymous', 'corex' ) } · ${ comment.state }` }
+				<Card
+					title={ sprintf(
+						/* translators: %d: number of comments awaiting review. */
+						_n(
+							'%d comment awaiting review',
+							'%d comments awaiting review',
+							state.comments.length,
+							'corex'
+						),
+						state.comments.length
+					) }
+				>
+					<ModerationPanel
+						comments={ state.comments }
+						busy={ busy }
+						onModerate={ applyModeration }
 					/>
 				</Card>
 
 				<Card title={ __( 'Authors', 'corex' ) }>
-					<List
-						empty={ __( 'No authors have published posts yet.', 'corex' ) }
-						items={ state.authors }
-						renderItem={ ( author ) => `${ author.name } · ${ author.post_count || 0 }` }
-					/>
+					<ul className="corex-blog-pro__list">
+						{ state.authors.map( ( author, index ) => (
+							<li key={ author.id || author.name || index }>
+								<strong>{ author.name }</strong>
+								<span>
+									{ sprintf(
+										/* translators: %d: number of published posts. */
+										_n(
+											'%d published post',
+											'%d published posts',
+											Number( author.post_count ) || 0,
+											'corex'
+										),
+										Number( author.post_count ) || 0
+									) }
+								</span>
+							</li>
+						) ) }
+					</ul>
 				</Card>
 
 				<Card title={ __( 'Sharing', 'corex' ) }>
-					<List
-						empty={ __( 'No share controls are configured.', 'corex' ) }
-						items={ state.shareControls }
-						renderItem={ ( control ) => `${ control.label } · ${ control.target }` }
-					/>
+					<ul className="corex-blog-pro__list">
+						{ state.shareControls.map( ( control ) => (
+							<li key={ control.target }>
+								<strong>{ control.label }</strong>
+							</li>
+						) ) }
+					</ul>
 				</Card>
 			</section>
 		</div>
@@ -101,19 +310,5 @@ function Card( { title, children } ) {
 			<h3>{ title }</h3>
 			{ children }
 		</div>
-	);
-}
-
-function List( { empty, items, renderItem } ) {
-	if ( items.length === 0 ) {
-		return <p>{ empty }</p>;
-	}
-
-	return (
-		<ul>
-			{ items.map( ( item, index ) => (
-				<li key={ item.id || item.comment_id || item.target || item.name || index }>{ renderItem( item ) }</li>
-			) ) }
-		</ul>
 	);
 }

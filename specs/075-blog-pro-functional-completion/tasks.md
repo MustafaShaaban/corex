@@ -1,0 +1,105 @@
+# Spec 075 — Tasks
+
+> Tick a box only against a verified artifact. Spec 074's `tasks.md` sat stale through four commits of
+> finished work and let a browser spec go on asserting an IA that had been removed; that cost real time.
+
+## Phase 0 — Open
+
+- [x] T001 Capture `evidence/before/` on the real install (`blog-pro-{dark,light}.png`).
+- [x] T002 Write `spec.md` + `checklists/requirements.md`; point `.specify/feature.json` at 075.
+- [x] T003 Write `plan.md`.
+- [x] T004 `ROADMAP.md` §17: 074 merged, 075 active.
+
+## Phase A — Server payload (FR-1, FR-2, FR-3, FR-4)
+
+- [x] T010 [RED] `tests/Unit/Blog/BlogProLabelsTest.php`: every editorial state and comment state maps
+      to a translated label; an unknown key falls back to the raw key rather than an empty string.
+- [x] T011 `Corex\Config\Blog\BlogProLabels` — pure map, no WordPress beyond `__()`.
+- [x] T012 [RED] `tests/Unit/Blog/EditorialTransitionsTest.php`: every state except the current one is
+      offered; `scheduled` is flagged as requiring a timestamp; an unknown current state still offers
+      all six rather than nothing.
+- [x] T013 `Corex\Config\Blog\EditorialTransitions` — a pure derivation of the above.
+      **`EditorialWorkflowService` is not changed:** it has no transition graph, and adding one would be
+      new domain logic this spec forbids itself.
+- [x] T014 [RED] `tests/Unit/Blog/BlogAnalyticsHasDataTest.php`: a post with no reading events reports
+      `has_data: false`; a post with events summing to zero reports `has_data: true`.
+- [x] T015 `BlogAnalyticsAggregate`/`BlogAnalyticsService` carry `has_data`, derived from the aggregate
+      already computed — no extra query.
+- [x] T016 Per-item permission flags (`can_moderate`, `can_transition`) on the comment and editorial
+      payloads, derived from the same capability the route enforces (DECISIONS #159).
+- [x] T017 `BlogProScreen::clientConfig()` stops hard-coding `$posts[0]`: it honours `?post=<id>`,
+      validates it, falls back to the newest post, and states which post it selected.
+- [x] T018 `BlogProController` returns labels and flags on every route the screen consumes.
+
+## Phase B — Client foundation (FR-1, FR-6)
+
+- [x] T020 [RED] Jest: `BlogProApp` dispatches — the reducer's `error` case renders a notice.
+- [x] T021 `blogProClient.js` — one fetch helper over `blogEndpoint`, carrying the localized nonce,
+      mapping a failure to the reducer's `error` action, plus a `refresh()` that reloads all four GET
+      routes and dispatches `loaded`. That is what gives every GET route, and the reducer's `loaded`
+      case, their first caller. No second state layer.
+- [x] T022 `BlogProApp` takes `dispatch`, renders `state.notice` in a live region, and shows loading and
+      failure states honestly.
+- [x] T023 Post selector (`CorexSelect`, DECISIONS #141). The selection **is** `?post=<id>`, so
+      choosing a post navigates there and the server renders it — there is no GET route for a post's
+      editorial item, so REST cannot refresh that panel and a partial refetch would leave it stale.
+      Recorded in spec FR-1 and DECISIONS rather than worked around.
+- [x] T024 Every panel names the post it describes. No panel presents one post's figures as site-wide.
+- [x] T025 Extend `assets/blog-pro.css`; tokens and logical properties only. **No `.scss` twin:**
+      blog-pro is one of the css-only assets (as are access, addons, control-panel, insights,
+      operations-security); adding a twin for this screen alone would be inconsistent upkeep.
+- [x] T026 Jest: selection drives refetch; the no-posts empty state; notices announced.
+
+## Phase C — Editorial workflow (FR-2)
+
+- [x] T030 [RED] Jest: the six states render translated labels, never slugs; only permitted transitions
+      are offered; a denied transition surfaces the server's message.
+- [x] T031 `EditorialPanel.js` — current state, native status alongside it, and the transition form
+      (assignee, due date, scheduled date, note) built with `buildTransitionPayload`.
+- [x] T032 Submit to `POST /blog/editorial/{id}/transition`; update in place via `transitioned`.
+- [x] T033 [RED→GREEN] `tests/Integration/Blog/EditorialTransitionTest.php`: round-trip, denial for an
+      actor without the capability, rejection of an invalid transition.
+
+## Phase D — Moderation queue (FR-3)
+
+- [x] T040 [RED] Jest: a queued comment shows author, content, arrival time, and a translated state;
+      the three actions are hidden from an actor without `moderate_comments`.
+- [x] T041 `ModerationPanel.js` — approve / spam / trash to `POST /blog/comments/{id}/moderate`,
+      updating via `commentModerated`. Three actions, not four: the queue holds only comments awaiting
+      review, so "unapprove" has nothing to act on.
+- [x] T042 A distinct, positive empty state. The queue is already bounded at 50 by
+      `CommentModerationService::queue()`; confirm, do not re-bound.
+- [x] T043 [RED→GREEN] `tests/Integration/Blog/CommentModerationTest.php`: round-trip and denial.
+
+## Phase E — Analytics and sharing (FR-4, FR-5)
+
+- [x] T050 [RED] Jest: "no data yet" and zero render differently; the engagement rate
+      `normalizeAnalytics` derives is displayed; the period and the post are named.
+- [x] T051 `AnalyticsPanel.js` — the six metrics, honest about absence.
+- [x] T052 **Deleted.** No server path has ever sent `chart` or `top_posts`, so both were permanently
+      empty; rendering them would need analytics capability §10 excludes.
+- [x] T053 **Read-only, and the payload builder deleted.** `/blog/share-click` records that a
+      *visitor* shared a post; only the visitor-facing surface (§10 excludes it) can honestly claim
+      that. Firing it from admin would write analytics nobody generated. Targets render as translated
+      labels; `buildShareClickPayload` and the `shareRecorded` case are gone.
+
+## Phase F — Dead-export sweep (DoD item 6)
+
+- [x] T060 Done. Every remaining export has a source caller (blogEndpoint 1, normalizeAnalytics 1,
+      buildTransitionPayload 2, initialBlogState 1, blogReducer 1) and every reducer case
+      (`loaded`, `transitioned`, `commentModerated`, `error`) is dispatched.
+
+## Phase G — Close
+
+- [x] T070 Full gate: PHP lint, Pest unit, integration, Jest, builds, CSS lint, guards, token
+      inventory, Playwright, CodeQL.
+- [x] T071 Playwright: select a post and watch every panel follow it; a transition; a moderation; the
+      empty states; RTL and 200% zoom with no overflow.
+- [x] T072 Browser acceptance: dark/light, LTR/RTL, desktop/narrow, keyboard, 200% zoom; no console
+      error, failed REST call, uncaught JS error, or blank mount.
+- [x] T073 `evidence/after/` captured and referenced from `spec.md`.
+- [x] T074 Guard Gate on the diff (`clean-code-guard`, `wp-guard`, `test-guard`, `docs-guard`).
+- [x] T075 Docs, `DECISIONS.md`, `CHANGELOG.md`, `PROGRESS.md`, `ROADMAP.md`.
+- [x] T076 PR **#132** opened, **all six CI checks green** (PHP 8.3 lint+unit, Jest, integration on a
+      real WordPress, Playwright, both CodeQL). Merge and branch deletion are the owner's to run —
+      `gh pr merge` is blocked for this agent by the permission classifier.

@@ -104,6 +104,9 @@ final class BlogAnalyticsService
             shareClicks: $shareClicks,
             uniqueVisitors: count($visitorHashes),
             averageReadSeconds: $readSeconds === [] ? 0 : (int) round(array_sum($readSeconds) / count($readSeconds)),
+            // Derived from the events already in hand, so this costs nothing extra. Deliberately not
+            // `$views > 0` — a share click with no view is still something having happened here.
+            hasData: $events !== [],
         );
     }
 

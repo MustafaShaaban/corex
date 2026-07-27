@@ -4,51 +4,71 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-27) -- **Spec 074 MERGED via PR #130 (`d243b7f`). Nothing is in flight.**
+## RESUME HERE (2026-07-27) -- **Spec 074 MERGED (`d243b7f`). Spec 075 IMPLEMENTED on `spec/075-blog-pro-functional-completion`.**
 
-`main` is **`d243b7f`** on both `origin` and `upstream` (Azure); the feature branch is deleted. All six
-CI checks were green before the merge: PHP 8.3 lint+unit, Jest, integration on a real WordPress,
-Playwright, and both CodeQL jobs. Every task in `specs/074-*/tasks.md` is closed.
+**Spec 074** shipped via PR **#130**, squash-merged as **`d243b7f`**, on `origin` and `upstream`
+(Azure), with all six CI checks green. Five FRs: framework-wide form discovery
+(`Corex\Forms\Catalog\FormCatalog`) · truthful Data Models with `corex_subscribers` as the first
+genuinely import/migration-capable model · the Submission Inbox heading stack · a notification action
+center that separates *read* from *resolved* · the "What this site can do" capability summary.
+DECISIONS **#157–#160**. A tracking-only follow-up sits in PR **#131** (green, awaiting merge).
 
-**What 074 was.** An owner product-completion review found four defects that survived 073, plus the
-absence of any surface that would have made them visible. All five FRs shipped:
+**Spec 075 — Blog Pro functional completion: all seven phases done.** Blog Pro had a complete, tested
+back end and a front end that used almost none of it. Four defects, all in `specs/075-*/evidence/before/`:
 
-- **FR-1 · code-registered forms are discoverable framework-wide.** `Corex\Forms\Catalog\FormCatalog`
-  merges visual flows, `FormRegistry` forms, and `FormCatalogProvider` contributions, deduped by slug.
-  The legacy `corex_submission_filter_options` filter still applies **after** the merge, so an entry it
-  adds for a form CoreX already found is deduplicated rather than listed twice. v0.35.1 had made such
-  forms *filterable once injected*; the framework now finds them.
-- **FR-2 · the Submission Inbox heading is one stack** with a token grid gap, which cannot collapse.
-- **FR-3 · Data Models tell the truth.** `ManagedTable` can declare writable fields, import aliases,
-  validation, and a migration path; `TableDataSource` derives capabilities from that declaration and
-  implements the write/migration interfaces only when declared. `corex_subscribers` is the first model
-  to declare them. A tab appears only when the actor may open it **and** an eligible source exists.
-- **FR-4 · the notification action center.** View membership is derived on the server from status and
-  severity, **never** from whether you have read it. Eight saved views collapse to Action needed ·
-  Updates · History (+ Preferences); category, severity, and assignment became the filters they always
-  were. One shared item for the screen and the drawer.
-- **FR-5 · "What this site can do"** under the Models catalog — what is registered, what each part
-  supports, what is selected but unfinished, each gap linking to the screen that fixes it.
+1. `BlogProScreen.php:102` hard-coded `$posts[0]`, so every panel described whichever post sorted first
+   and **named it nowhere**, under a heading that read as a site-wide total.
+2. `BlogProApp.js` called `useReducer` and **discarded the dispatch**, so all of `blogProState.js` was
+   unreachable from the running app while fully covered by tests — a green suite over code no user could
+   run.
+3. The screen localized `restUrl` and `nonce` and never used them, so **all seven REST routes had no
+   caller in the product**.
+4. Raw slugs (`published`, `publish`) and strings assembled outside the i18n system.
 
-Decisions **#157–#160**. Evidence in `specs/074-*/evidence/after/`, indexed from `spec.md` §9.
+Three findings were **recorded rather than worked around**, each a place the obvious move would have
+been to invent something:
 
-**Two things worth carrying forward:**
+- **`EditorialWorkflowService` has no transition graph.** It accepts any state from any other; its one
+  real constraint is that `scheduled` without a timestamp throws. The panel offers every state but the
+  current one and asks for the date up front (DECISIONS #161).
+- **There is no `GET` route for a post's editorial item.** Selection therefore cannot refetch over REST
+  without leaving that panel stale, so the selection *is* `?post=<id>` — which FR-1 wanted anyway for
+  linkability — and the GET routes serve post-mutation refresh, finally giving all four of them, and the
+  reducer's `loaded` case, a caller.
+- **Two exports could not be given an honest caller and were deleted** with their tests:
+  `buildShareClickPayload`/`shareRecorded` (a share click claims a *visitor* shared the post; only the
+  front end can claim that) and `normalizeAnalytics`'s `chart`/`topPosts` (no server path has ever sent
+  either). DoD item 6 — no dead export remains — verified by sweep (DECISIONS #162).
 
-1. **`lint:css` and `lint:js` are NOT in CI.** CI runs PHP `-l`, Pest unit, Jest, Pest integration,
-   Playwright, and CodeQL — nothing else. This branch had silently introduced **44 stylelint errors**
-   before they were found and cleared by hand. **38 pre-existing stylelint errors remain** (in
-   `theme/assets/css/corex-navigation.css`, `plugins/corex-core/assets/css/corex-admin-login.css`, and
-   two long-standing lines in `corex-admin-shell.css`), plus repo-wide prettier debt — 239 problems in
-   `plugins/corex-config/src/DataModels` alone at the 073 baseline. **Owner decision open:** add the
-   linters to CI, and/or give the backlog its own cleanup spec. Without it this will drift again.
-2. **A stale `tasks.md` cost real time.** 074's checkboxes sat unticked through four commits of
-   finished work, and `tests/e2e/notification-center.spec.js` was left asserting an IA the same spec
-   had removed — not passing-but-blind, actually broken, because it clicked a tab that no longer
-   existed. Tick tasks against verified artifacts as they land, and re-run a spec whose surface changed.
+Gate: **unit 1521/0** (6555 assertions) · **integration 225/0** (917) · **JS 385/0** (62 suites) ·
+**Playwright 6/6** on `blog-pro` · stylelint clean on `blog-pro.css` · bundles build · token inventory
+reproduces. Browser acceptance clean in RTL, 360 px, and 200 % zoom, with no console error, failed
+`/wp-json/` request, uncaught JS error, or blank mount.
 
-**Next:** **Spec 075 — Blog Pro Functional Completion** (Blog Pro's services and REST exist, but its
-React screen is still a read-only reference dashboard), then the **v0.36.0** release.
+**Three things worth carrying forward:**
 
+1. **No linter runs in CI.** `.github/workflows/ci.yml` gates PHP `-l`, Pest unit, Jest, Pest
+   integration, Playwright, and CodeQL — `lint:css` and `lint:js` are not among them. Spec 074 silently
+   introduced 44 stylelint errors before they were caught by hand. **38 pre-existing errors remain**
+   (`theme/assets/css/corex-navigation.css`, `plugins/corex-core/assets/css/corex-admin-login.css`, two
+   lines in `corex-admin-shell.css`) plus repo-wide prettier debt. **Owner decision still open.**
+2. **The CoreX admin shell overflows by 1 px in RTL at 375 px on every CoreX screen** — including
+   `corex-settings` and `corex-addons`, which 075 never touches. Browser specs assert that a *workspace*
+   contains itself rather than that the document does not scroll. Worth its own small spec.
+3. **The token-consumer contract earned its keep**: it caught a real constitution violation
+   mid-implementation (`flex: 1 1 16rem`, a hardcoded size). Trust it over a passing eye.
+4. **A stale `tasks.md`, and a browser spec nobody re-ran, both cost real time.** 074's checkboxes sat
+   unticked through four commits of finished work; 074 *and* 075 each found a Playwright spec still
+   asserting a surface the same spec had removed — not passing-but-blind, actually broken. Tick tasks
+   against verified artifacts as they land, and re-run any spec whose surface changed.
+
+**#131** (074 tracking closeout) merged as **`5a28501`**. **#132** carries Spec 075 — this branch —
+and conflicted on `PROGRESS.md` and `ROADMAP.md` as expected for a stack; both resolved by keeping
+each side's substance rather than one side wholesale.
+
+**Next:** the **v0.36.0** release. `wp corex version 0.36.0 --path=wp` stamps 17 files (including
+`docs-app/src/version.ts` since v0.35.1); cut `[Unreleased]` — which covers 073, 074 and 075 — to
+`[0.36.0]`.
 ---
 ## (previous, 2026-07-26) -- **Spec 073 (Admin polish & correctness) MERGED via PR #129 (`9b5939f`).**
 

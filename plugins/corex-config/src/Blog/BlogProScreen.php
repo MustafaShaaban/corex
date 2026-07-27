@@ -23,6 +23,14 @@ final class BlogProScreen
 {
     private string $hook = '';
 
+    /**
+     * The analytics window, in days.
+     *
+     * Named because the panel has to state it: "1,204 views" means nothing without "in the last 30
+     * days", and the old panel showed the number alone (spec 075, FR-4).
+     */
+    private const PERIOD_DAYS = 30;
+
     public function __construct(
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
@@ -99,19 +107,64 @@ final class BlogProScreen
     private function clientConfig(): array
     {
         $posts = $this->posts();
-        $selectedPostId = (int) ($posts[0]['id'] ?? 0);
+        $selectedPostId = $this->selectedPostId($posts);
 
         return [
             'restUrl' => esc_url_raw(rest_url('corex/v1')),
             'nonce' => wp_create_nonce('wp_rest'),
             'posts' => $posts,
             'selectedPostId' => $selectedPostId,
-            'analytics' => $selectedPostId > 0 ? $this->analytics($selectedPostId) : [],
+            // Which post every panel below is describing. The screen used to compute all of this for
+            // whichever post sorted first and name it nowhere, so four large numbers under
+            // "First-party reading signals" read as a site-wide total (spec 075, D1/FR-1).
+            'selectedPost' => $this->postSummary($posts, $selectedPostId),
+            'periodDays' => self::PERIOD_DAYS,
+            'analytics' => $selectedPostId > 0 ? $this->analytics($selectedPostId) : null,
             'editorial' => $selectedPostId > 0 ? $this->editorial($selectedPostId) : null,
             'comments' => $selectedPostId > 0 ? array_map($this->comment(...), $this->services->comments->queue($selectedPostId)) : [],
             'authors' => $this->authors(),
             'shareControls' => $selectedPostId > 0 ? $this->shareControls($selectedPostId) : [],
+            // What this actor may do, from the same capabilities the REST routes enforce, so a control
+            // is hidden rather than shown and refused (DECISIONS #159).
+            'can' => [
+                'moderate' => current_user_can('moderate_comments'),
+                'publish' => current_user_can('publish_posts'),
+            ],
         ];
+    }
+
+    /**
+     * The post the screen is about: `?post=<id>` when it names one we actually listed, else the newest.
+     *
+     * Validated against the list rather than trusted, so a stale or hand-typed id falls back to
+     * something real instead of rendering a screen full of empty panels about nothing.
+     *
+     * @param list<array{id:int,title:string,status:string,permalink:string}> $posts
+     */
+    private function selectedPostId(array $posts): int
+    {
+        $requested = isset($_GET['post']) ? absint(wp_unslash($_GET['post'])) : 0;
+
+        if ($requested > 0 && in_array($requested, array_column($posts, 'id'), true)) {
+            return $requested;
+        }
+
+        return (int) ($posts[0]['id'] ?? 0);
+    }
+
+    /**
+     * @param  list<array{id:int,title:string,status:string,permalink:string}> $posts
+     * @return array<string,mixed>|null
+     */
+    private function postSummary(array $posts, int $selectedPostId): ?array
+    {
+        foreach ($posts as $post) {
+            if ($post['id'] === $selectedPostId) {
+                return [...$post, 'status_label' => BlogProLabels::nativeStatus($post['status'])];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -148,6 +201,9 @@ final class BlogProScreen
             'share_clicks' => $aggregate->shareClicks,
             'unique_visitors' => $aggregate->uniqueVisitors,
             'average_read_seconds' => $aggregate->averageReadSeconds,
+            // Whether analytics saw this post at all. Without it a zero is ambiguous between "nobody
+            // opened it" and "we have never seen it", which are opposite problems (spec 075, FR-4).
+            'has_data' => $aggregate->hasData,
         ];
     }
 
@@ -162,13 +218,7 @@ final class BlogProScreen
             return [];
         }
 
-        return [
-            'post_id' => $item->postId,
-            'editorial_state' => $item->editorialState,
-            'native_status' => $item->nativeStatus,
-            'assignee_id' => $item->assigneeId,
-            'due_at' => $item->dueAt?->format(DATE_ATOM),
-        ];
+        return BlogProPresenter::editorialItem($item);
     }
 
     /**
@@ -196,15 +246,7 @@ final class BlogProScreen
      */
     private function comment(CommentModerationItem $comment): array
     {
-        return [
-            'comment_id' => $comment->commentId,
-            'post_id' => $comment->postId,
-            'author' => $comment->author,
-            'state' => $comment->state,
-            'first_comment' => $comment->firstComment,
-            'likely_spam' => $comment->likelySpam,
-            'held_for_review' => $comment->heldForReview,
-        ];
+        return BlogProPresenter::commentItem($comment);
     }
 
     /**
@@ -214,6 +256,6 @@ final class BlogProScreen
     {
         $until = new DateTimeImmutable('+1 day');
 
-        return [$until->modify('-30 days'), $until];
+        return [$until->modify('-' . self::PERIOD_DAYS . ' days'), $until];
     }
 }

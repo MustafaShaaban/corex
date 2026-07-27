@@ -212,14 +212,7 @@ final class BlogProController
      */
     private function editorialItem(EditorialItem $item): array
     {
-        return [
-            'post_id' => $item->postId,
-            'editorial_state' => $item->editorialState,
-            'native_status' => $item->nativeStatus,
-            'assignee_id' => $item->assigneeId,
-            'due_at' => $item->dueAt?->format(DATE_ATOM),
-            'scheduled_at' => $item->scheduledAt?->format(DATE_ATOM),
-        ];
+        return BlogProPresenter::editorialItem($item);
     }
 
     /**
@@ -227,15 +220,7 @@ final class BlogProController
      */
     private function commentItem(CommentModerationItem $comment): array
     {
-        return [
-            'comment_id' => $comment->commentId,
-            'post_id' => $comment->postId,
-            'author' => $comment->author,
-            'state' => $comment->state,
-            'first_comment' => $comment->firstComment,
-            'likely_spam' => $comment->likelySpam,
-            'held_for_review' => $comment->heldForReview,
-        ];
+        return BlogProPresenter::commentItem($comment);
     }
 
     /**

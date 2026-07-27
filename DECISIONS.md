@@ -3180,3 +3180,41 @@ WordPress and able to invent state).
 Scope: `AddonManager::state()`/`isInstalled()` moved off `AddonsScreen` for this — "which add-ons are running"
 is a fact about the site, not about that screen, and two derivations would be two chances to disagree.
 Status: Final.
+
+## #161 — Blog Pro's screen offers what the services support, and nothing they cannot honestly do
+Date: 2026-07-27
+Decision: Blog Pro's React screen wires the existing services and REST routes into a working editorial
+workspace (spec 075). It adds **no** service, route, table, or state-machine rule. Where a requirement appeared
+to need one, the constraint is recorded instead: `EditorialWorkflowService` has **no transition graph**, so the
+panel offers every state but the current one rather than implying a rule the service does not enforce; and the
+moderation queue offers **approve / spam / trash** only, because `queue()` returns just comments held for
+review, so "unapprove" has nothing to act on.
+Why: the screen was a read-only reference dashboard over a complete back end — `BlogProApp` called
+`useReducer` and discarded the dispatch, so the whole client state module was unreachable while fully covered
+by tests, and all seven routes had no caller in the product. Inventing domain rules to fill the UI would have
+made the screen confidently wrong, which is the defect Spec 074 spent itself removing.
+Alternatives considered: build a real transition graph (rejected: new domain logic, and the owner has not
+decided what the graph should be); add a `GET /blog/editorial/{id}` so selection could refetch without a page
+load (rejected: out of plan — instead the selection *is* `?post=<id>` and the server renders it, which FR-1
+wanted anyway for linkability).
+Status: Final.
+
+## #162 — Unreachable code with passing tests is deleted, not carried
+Date: 2026-07-27
+Decision: Spec 075's Definition of Done item 6 — "no dead export remains in `blogProState.js`" — was enforced
+literally. `buildShareClickPayload` and the reducer's `shareRecorded` case are **deleted**, as are the `chart`
+and `topPosts` branches of `normalizeAnalytics`, along with their tests.
+Why: `POST /blog/share-click` records that a *visitor* shared a post; the only caller that could honestly make
+that claim is the visitor-facing surface, which spec 075 §10 excludes. Firing it from the admin screen would
+have written analytics nobody generated — a control reporting a click that never happened is worse than no
+control. Separately, no server path has ever sent `chart` or `top_posts`: `BlogAnalyticsService::aggregate()`
+returns one post's counts for one window, so both branches were permanently empty, and rendering them would
+need analytics capability §10 excludes. Shaping data that never arrives is the same defect as a reducer nothing
+dispatches to, only quieter — and a green suite over unreachable code is precisely what let Blog Pro sit
+unfinished through two releases.
+Alternatives considered: keep them for the future front-end spec (rejected: that spec can add what it needs,
+and dead code with passing tests reads as working software); mark them `@deprecated` (rejected: the tests would
+still be green and the next reader would still believe them).
+Scope: the routes themselves are untouched — `/blog/share-click` stays for the visitor-facing spec that will
+own it. This is about the admin client's exports, not the API surface.
+Status: Final.

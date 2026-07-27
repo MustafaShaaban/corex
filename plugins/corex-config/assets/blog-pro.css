@@ -123,10 +123,164 @@
 	border-block-end: 0;
 }
 
+/* The subject bar (spec 075, FR-1). Every panel below is about one post, so
+   the screen says which one before it says anything else — it used to compute
+   everything for whichever post sorted first and name it nowhere. */
+.corex-admin .corex-blog-pro__subject {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-md);
+	margin-block-end: var(--corex-admin-space-lg);
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-blog-pro__chooser {
+	min-inline-size: 0;
+	flex: 1 1 auto;
+}
+
+.corex-admin .corex-blog-pro__subject-meta {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-blog-pro__refresh {
+	margin-inline-start: auto;
+}
+
+/* The outcome of whatever you just did. The reducer has always built this and
+   nothing ever showed it, so a failed action was silent (spec 075, FR-6). */
+.corex-admin .corex-blog-pro__notice {
+	margin-block: 0 var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action);
+	border-radius: var(--corex-admin-radius-sm);
+	background: var(--corex-admin-surface-alt);
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-blog-pro__notice.is-error {
+	border-inline-start-color: var(--corex-admin-error);
+}
+
+.corex-admin .corex-blog-pro__notice.is-success {
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+/* Said in words rather than left as an absent number, so "nothing recorded"
+   reads differently from a zero (spec 075, FR-4). */
+.corex-admin .corex-blog-pro__empty {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-blog-pro__list,
+.corex-admin .corex-blog-pro__facts {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+/* stylelint-disable-next-line no-descending-specificity */
+.corex-admin .corex-blog-pro__list li {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	min-inline-size: 0;
+	padding-block: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-blog-pro__list li:last-child {
+	border-block-end: 0;
+}
+
+.corex-admin .corex-blog-pro__list strong {
+	color: var(--corex-admin-text);
+}
+
+/* The controls this screen never had (spec 075, FR-2/FR-3). */
+.corex-admin .corex-blog-pro__form {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	margin-block-start: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-blog-pro__field {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-blog-pro__field small {
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-blog-pro__queue {
+	display: grid;
+	gap: var(--corex-admin-space-md);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-blog-pro__comment {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-blog-pro__comment-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--corex-admin-space-xs);
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-blog-pro__comment-body {
+	margin: 0;
+	color: var(--corex-admin-text);
+}
+
+/* A word, so the signal survives a monochrome display or a screen reader. */
+.corex-admin .corex-blog-pro__flag {
+	padding-inline: var(--corex-admin-space-2xs);
+	color: var(--corex-admin-warning);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-pill);
+}
+
+.corex-admin .corex-blog-pro__comment-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs);
+	margin: var(--corex-admin-space-2xs) 0 0;
+}
+
 @media (max-width: 720px) { /* corex-token-allow: responsive breakpoint */
 	.corex-admin .corex-blog-pro__card li,
+	.corex-admin .corex-blog-pro__list li,
 	.corex-admin .corex-blog-pro__card dl {
 		display: block;
+	}
+
+	.corex-admin .corex-blog-pro__refresh {
+		margin-inline-start: 0;
 	}
 
 	.corex-admin .corex-blog-pro__card code,

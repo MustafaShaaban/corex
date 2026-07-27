@@ -15,6 +15,12 @@ defined('ABSPATH') || exit;
  */
 final readonly class CommentModerationItem
 {
+    /**
+     * @param string $content     What the comment actually says. A moderation queue that shows only an
+     *                            author and a state cannot be moderated from — you have to open each
+     *                            comment somewhere else to decide (spec 075, FR-3).
+     * @param string $submittedAt When it arrived, ATOM. Order and age are most of the judgement.
+     */
     public function __construct(
         public int $commentId,
         public int $postId,
@@ -23,6 +29,8 @@ final readonly class CommentModerationItem
         public bool $firstComment,
         public bool $likelySpam,
         public bool $heldForReview,
+        public string $content = '',
+        public string $submittedAt = '',
     ) {
     }
 }

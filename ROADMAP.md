@@ -467,8 +467,13 @@ Create and implement one reviewed spec at a time:
     separates *read* from *resolved* and collapses eight saved views to three; and a capability summary that
     answers "what can this site do" where the question is asked. Decisions #157–#160. Source:
     `specs/074-core-admin-truthfulness-and-integration-closure/`.
-12. **Spec 075 - Blog Pro functional completion** — **active**. Blog Pro's services and REST exist but
-    its React screen is a read-only reference dashboard; this turns it into a working editorial workspace.
+12. **Spec 075 - Blog Pro functional completion** — done, merged via PR **#132**. Blog Pro's services and REST
+    existed but its React screen was a read-only reference dashboard that called `useReducer` and discarded
+    the dispatch, leaving the whole client state module unreachable and all seven routes without a caller.
+    It is now a workspace: choose the post (the choice is the URL), move it through review with a note, and
+    approve/spam/trash the comments waiting on it — with "no data yet" distinguished from zero, and two
+    exports deleted rather than wired to something that could not honestly call them. Decisions #161–#162.
+    Source: `specs/075-blog-pro-functional-completion/`.
 
 ### Candidates for a later spec — owner decision
 

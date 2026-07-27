@@ -976,25 +976,39 @@
       "context": "lines 315, 347: background: var(--corex-admin-warning-soft);"
     },
     {
+      "legacy_property": "--corex-admin-action",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/blog-pro.css",
+      "context": "lines 161: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action);"
+    },
+    {
       "legacy_property": "--corex-admin-border",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 12: border: var(--corex-admin-border-width) solid var(--corex-admin-border);"
+      "context": "lines 12, 137: border: var(--corex-admin-border-width) solid var(--corex-admin-border);"
     },
     {
       "legacy_property": "--corex-admin-border-soft",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 57, 118: border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+      "context": "lines 57, 118, 198: border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
     },
     {
       "legacy_property": "--corex-admin-border-width",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 12, 57, 118: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+      "context": "lines 12, 57, 118, 137, 198, 264: border: var(--corex-admin-border-width) solid var(--corex-admin-border); | border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft); | border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);"
+    },
+    {
+      "legacy_property": "--corex-admin-error",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/blog-pro.css",
+      "context": "lines 168: border-inline-start-color: var(--corex-admin-error);"
     },
     {
       "legacy_property": "--corex-admin-font-2xl",
@@ -1029,14 +1043,14 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 93: font-size: var(--corex-admin-font-sm);"
+      "context": "lines 93, 149, 180, 200, 222: font-size: var(--corex-admin-font-sm);"
     },
     {
       "legacy_property": "--corex-admin-font-xs",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 28, 66: font-size: var(--corex-admin-font-xs);"
+      "context": "lines 28, 66, 252: font-size: var(--corex-admin-font-xs);"
     },
     {
       "legacy_property": "--corex-admin-info",
@@ -1071,7 +1085,21 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 58: border-radius: var(--corex-admin-radius-md);"
+      "context": "lines 58, 138: border-radius: var(--corex-admin-radius-md);"
+    },
+    {
+      "legacy_property": "--corex-admin-radius-pill",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/blog-pro.css",
+      "context": "lines 265: border-radius: var(--corex-admin-radius-pill);"
+    },
+    {
+      "legacy_property": "--corex-admin-radius-sm",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/blog-pro.css",
+      "context": "lines 162, 242: border-radius: var(--corex-admin-radius-sm);"
     },
     {
       "legacy_property": "--corex-admin-shadow-sm",
@@ -1085,70 +1113,77 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 25, 135: margin: 0 0 var(--corex-admin-space-2xs); | margin-block-start: var(--corex-admin-space-2xs);"
+      "context": "lines 25, 220, 239, 262, 272, 289: margin: 0 0 var(--corex-admin-space-2xs); | gap: var(--corex-admin-space-2xs); | padding-inline: var(--corex-admin-space-2xs);"
     },
     {
       "legacy_property": "--corex-admin-space-lg",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 5, 10: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg);"
+      "context": "lines 5, 10, 134: gap: var(--corex-admin-space-lg); | padding: var(--corex-admin-space-lg); | margin-block-end: var(--corex-admin-space-lg);"
     },
     {
       "legacy_property": "--corex-admin-space-md",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 20, 43, 55, 85, 99: gap: var(--corex-admin-space-md); | padding: var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md);"
+      "context": "lines 20, 43, 55, 85, 99, 133, 135, 159, 160, 215, 231, 240: gap: var(--corex-admin-space-md); | padding: var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md);"
     },
     {
       "legacy_property": "--corex-admin-space-sm",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 116: gap: var(--corex-admin-space-sm);"
+      "context": "lines 116, 160, 195, 214: gap: var(--corex-admin-space-sm); | padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);"
     },
     {
       "legacy_property": "--corex-admin-space-xs",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 73, 99, 106, 117: margin-block-start: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md); | gap: var(--corex-admin-space-xs);"
+      "context": "lines 73, 99, 106, 117, 197, 249, 271: margin-block-start: var(--corex-admin-space-xs); | gap: var(--corex-admin-space-xs) var(--corex-admin-space-md); | gap: var(--corex-admin-space-xs);"
     },
     {
       "legacy_property": "--corex-admin-state-border",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 21: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);"
+      "context": "lines 21, 161: border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info); | border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-action);"
+    },
+    {
+      "legacy_property": "--corex-admin-success",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/blog-pro.css",
+      "context": "lines 172: border-inline-start-color: var(--corex-admin-success);"
     },
     {
       "legacy_property": "--corex-admin-surface",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 11: background: var(--corex-admin-surface);"
+      "context": "lines 11, 136: background: var(--corex-admin-surface);"
     },
     {
       "legacy_property": "--corex-admin-surface-alt",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 56: background: var(--corex-admin-surface-alt);"
+      "context": "lines 56, 163, 241: background: var(--corex-admin-surface-alt);"
     },
     {
       "legacy_property": "--corex-admin-text",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 36, 74, 119: color: var(--corex-admin-text);"
+      "context": "lines 36, 74, 119, 164, 208, 257: color: var(--corex-admin-text);"
     },
     {
       "legacy_property": "--corex-admin-text-muted",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
-      "context": "lines 92: color: var(--corex-admin-text-muted);"
+      "context": "lines 92, 148, 179, 199, 221, 226, 251: color: var(--corex-admin-text-muted);"
     },
     {
       "legacy_property": "--corex-admin-text-subtle",
@@ -1156,6 +1191,13 @@
       "resolution": "raw-allowance",
       "path": "plugins/corex-config/assets/blog-pro.css",
       "context": "lines 64: color: var(--corex-admin-text-subtle);"
+    },
+    {
+      "legacy_property": "--corex-admin-warning",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/blog-pro.css",
+      "context": "lines 263, 264: color: var(--corex-admin-warning); | border: var(--corex-admin-border-width) solid var(--corex-admin-warning);"
     },
     {
       "legacy_property": "--corex-admin-action",
