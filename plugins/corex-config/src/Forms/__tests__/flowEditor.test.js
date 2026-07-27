@@ -18,7 +18,12 @@ const draftFixture = () => ( {
 	configuration: {
 		schema: [
 			{ uuid: 'field-name', key: 'name', label: 'Name', type: 'text' },
-			{ uuid: 'field-email', key: 'email', label: 'Email', type: 'email' },
+			{
+				uuid: 'field-email',
+				key: 'email',
+				label: 'Email',
+				type: 'email',
+			},
 		],
 		validation: { email: [ 'required', 'email' ] },
 		routing: { rules: [], fallback: { type: 'flow_owner', config: {} } },
@@ -34,7 +39,12 @@ describe( 'flow editor state', () => {
 			flows: [],
 			extensions: null,
 		} );
-		expect( normalizeFlowPayload( { flows: [ { id: 1 } ], extensions: { field_types: [] } } ) ).toEqual( {
+		expect(
+			normalizeFlowPayload( {
+				flows: [ { id: 1 } ],
+				extensions: { field_types: [] },
+			} )
+		).toEqual( {
 			flows: [ { id: 1 } ],
 			extensions: { field_types: [] },
 		} );
@@ -42,21 +52,39 @@ describe( 'flow editor state', () => {
 
 	it( 'moves through load selection draft mutation and failure immutably', () => {
 		const loading = flowReducer( initialFlowState, { type: 'load' } );
-		const loaded = flowReducer( loading, { type: 'loaded', payload: { flows: [ { id: 7 } ] } } );
+		const loaded = flowReducer( loading, {
+			type: 'loaded',
+			payload: { flows: [ { id: 7 } ] },
+		} );
 		const draft = draftFixture();
-		const selected = flowReducer( loaded, { type: 'selected', payload: draft } );
+		const selected = flowReducer( loaded, {
+			type: 'selected',
+			payload: draft,
+		} );
 		const changed = flowReducer( selected, {
 			type: 'draft_changed',
-			payload: { ...draft, configuration: { ...draft.configuration, success: { type: 'inline', message: 'Updated' } } },
+			payload: {
+				...draft,
+				configuration: {
+					...draft.configuration,
+					success: { type: 'inline', message: 'Updated' },
+				},
+			},
 		} );
-		const failed = flowReducer( changed, { type: 'failed', message: 'Conflict' } );
+		const failed = flowReducer( changed, {
+			type: 'failed',
+			message: 'Conflict',
+		} );
 
 		expect( loading.status ).toBe( 'loading' );
 		expect( loaded.flows ).toEqual( [ { id: 7 } ] );
 		expect( selected.selected ).toBe( 7 );
 		expect( changed.draft.configuration.success.message ).toBe( 'Updated' );
 		expect( selected.draft.configuration.success.message ).toBe( 'Thanks' );
-		expect( failed ).toMatchObject( { status: 'error', message: 'Conflict' } );
+		expect( failed ).toMatchObject( {
+			status: 'error',
+			message: 'Conflict',
+		} );
 	} );
 } );
 
@@ -94,15 +122,15 @@ describe( 'flow field editing', () => {
 		const moved = moveField( original, 'field-email', 'up' );
 		const removed = removeField( moved, 'field-name' );
 
-		expect( moved.configuration.schema.map( ( field ) => field.uuid ) ).toEqual( [
-			'field-email',
-			'field-name',
-		] );
-		expect( removed.configuration.schema.map( ( field ) => field.uuid ) ).toEqual( [ 'field-email' ] );
-		expect( original.configuration.schema.map( ( field ) => field.uuid ) ).toEqual( [
-			'field-name',
-			'field-email',
-		] );
+		expect(
+			moved.configuration.schema.map( ( field ) => field.uuid )
+		).toEqual( [ 'field-email', 'field-name' ] );
+		expect(
+			removed.configuration.schema.map( ( field ) => field.uuid )
+		).toEqual( [ 'field-email' ] );
+		expect(
+			original.configuration.schema.map( ( field ) => field.uuid )
+		).toEqual( [ 'field-name', 'field-email' ] );
 	} );
 } );
 
@@ -119,21 +147,32 @@ describe( 'flow editor contracts', () => {
 
 	it( 'builds only declared flow endpoints', () => {
 		expect( flowEndpoint( '/corex/v1/flows' ) ).toBe( '/corex/v1/flows' );
-		expect( flowEndpoint( '/corex/v1/flows/', 7 ) ).toBe( '/corex/v1/flows/7' );
-		expect( flowEndpoint( '/corex/v1/flows/', 7, 'publish' ) ).toBe( '/corex/v1/flows/7/publish' );
-		expect( () => flowEndpoint( '/corex/v1/flows', 7, 'delete' ) ).toThrow( 'Unknown flow action' );
+		expect( flowEndpoint( '/corex/v1/flows/', 7 ) ).toBe(
+			'/corex/v1/flows/7'
+		);
+		expect( flowEndpoint( '/corex/v1/flows/', 7, 'publish' ) ).toBe(
+			'/corex/v1/flows/7/publish'
+		);
+		expect( () => flowEndpoint( '/corex/v1/flows', 7, 'delete' ) ).toThrow(
+			'Unknown flow action'
+		);
 	} );
 
 	it( 'builds encoded server filters and selects the current immutable draft', () => {
-		expect( buildFlowListUrl( '/corex/v1/flows', 'sales & support', 'draft' ) ).toBe(
-			'/corex/v1/flows?search=sales+%26+support&state=draft'
-		);
-		expect( draftFromDetail( {
-			flow: { id: 7, current_draft_version: 2 },
-			versions: [
-				{ version_number: 1, configuration: { schema: [] } },
-				{ version_number: 2, configuration: { schema: [ { uuid: 'current' } ] } },
-			],
-		} ).configuration.schema ).toEqual( [ { uuid: 'current' } ] );
+		expect(
+			buildFlowListUrl( '/corex/v1/flows', 'sales & support', 'draft' )
+		).toBe( '/corex/v1/flows?search=sales+%26+support&state=draft' );
+		expect(
+			draftFromDetail( {
+				flow: { id: 7, current_draft_version: 2 },
+				versions: [
+					{ version_number: 1, configuration: { schema: [] } },
+					{
+						version_number: 2,
+						configuration: { schema: [ { uuid: 'current' } ] },
+					},
+				],
+			} ).configuration.schema
+		).toEqual( [ { uuid: 'current' } ] );
 	} );
 } );

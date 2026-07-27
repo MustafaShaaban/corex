@@ -21,6 +21,9 @@ function engagement( reads, views ) {
  * permanently empty, and displaying them would have needed analytics capability spec 075 §10 excludes.
  * Shaping data that never arrives is the same dead-code defect as a reducer nothing dispatches to,
  * just quieter, so they are gone rather than carried (spec 075, T052).
+ *
+ * @param {Object} payload The `/blog/analytics` response body.
+ * @return {Object} The card values the screen renders.
  */
 export function normalizeAnalytics( payload = {} ) {
 	const views = numberValue( payload.views );
@@ -68,21 +71,31 @@ export function blogReducer( state, action ) {
 				status: 'ready',
 				analytics: normalizeAnalytics( action.payload?.analytics ),
 				editorial: action.payload?.editorial || null,
-				comments: Array.isArray( action.payload?.comments ) ? action.payload.comments : [],
-				authors: Array.isArray( action.payload?.authors ) ? action.payload.authors : [],
-				shareControls: Array.isArray( action.payload?.shareControls ) ? action.payload.shareControls : [],
+				comments: Array.isArray( action.payload?.comments )
+					? action.payload.comments
+					: [],
+				authors: Array.isArray( action.payload?.authors )
+					? action.payload.authors
+					: [],
+				shareControls: Array.isArray( action.payload?.shareControls )
+					? action.payload.shareControls
+					: [],
 			};
 		case 'transitioned':
 			return {
 				...state,
 				editorial: action.editorial,
-				notice: { tone: 'success', message: 'Editorial state updated.' },
+				notice: {
+					tone: 'success',
+					message: 'Editorial state updated.',
+				},
 			};
 		case 'commentModerated':
 			return {
 				...state,
 				comments: state.comments.map( ( comment ) =>
-					numberValue( comment.comment_id ) === numberValue( action.commentId )
+					numberValue( comment.comment_id ) ===
+					numberValue( action.commentId )
 						? { ...comment, state: action.state }
 						: comment
 				),
@@ -96,7 +109,10 @@ export function blogReducer( state, action ) {
 		case 'error':
 			return {
 				...state,
-				notice: { tone: 'error', message: action.message || 'Blog update failed.' },
+				notice: {
+					tone: 'error',
+					message: action.message || 'Blog update failed.',
+				},
 			};
 		default:
 			return state;

@@ -12,16 +12,23 @@
  * throws — arrives as `requires_schedule`, so the field is required here instead of failing at the
  * server with a message nobody can act on.
  */
-import { useState } from '@wordpress/element';
+import { useId, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import { buildTransitionPayload } from './blogProState.js';
 
-export default function EditorialPanel( { editorial, busy = false, onTransition } ) {
+export default function EditorialPanel( {
+	editorial,
+	busy = false,
+	onTransition,
+} ) {
 	const [ target, setTarget ] = useState( '' );
 	const [ note, setNote ] = useState( '' );
 	const [ scheduledAt, setScheduledAt ] = useState( '' );
 	const [ dueAt, setDueAt ] = useState( '' );
+	// Each control is named by its own `for`/`id` pair rather than by being wrapped: a
+	// wrapping <label> is not announced by every assistive technology WordPress supports.
+	const fieldId = useId();
 
 	if ( ! editorial ) {
 		return (
@@ -31,8 +38,11 @@ export default function EditorialPanel( { editorial, busy = false, onTransition 
 		);
 	}
 
-	const transitions = Array.isArray( editorial.transitions ) ? editorial.transitions : [];
-	const chosen = transitions.find( ( option ) => option.key === target ) || null;
+	const transitions = Array.isArray( editorial.transitions )
+		? editorial.transitions
+		: [];
+	const chosen =
+		transitions.find( ( option ) => option.key === target ) || null;
 	const needsSchedule = Boolean( chosen?.requires_schedule );
 	const ready = target !== '' && ( ! needsSchedule || scheduledAt !== '' );
 
@@ -43,7 +53,12 @@ export default function EditorialPanel( { editorial, busy = false, onTransition 
 		}
 
 		onTransition(
-			buildTransitionPayload( { state: target, note, scheduledAt, dueAt } )
+			buildTransitionPayload( {
+				state: target,
+				note,
+				scheduledAt,
+				dueAt,
+			} )
 		);
 	};
 
@@ -62,7 +77,10 @@ export default function EditorialPanel( { editorial, busy = false, onTransition 
 			     (DECISIONS #159). */ }
 			{ ! editorial.can_transition ? (
 				<p className="corex-blog-pro__empty">
-					{ __( 'You do not have permission to move this post.', 'corex' ) }
+					{ __(
+						'You do not have permission to move this post.',
+						'corex'
+					) }
 				</p>
 			) : (
 				<form className="corex-blog-pro__form" onSubmit={ submit }>
@@ -70,7 +88,10 @@ export default function EditorialPanel( { editorial, busy = false, onTransition 
 						label={ __( 'Move to', 'corex' ) }
 						value={ target }
 						options={ [
-							{ value: '', label: __( 'Choose a state…', 'corex' ) },
+							{
+								value: '',
+								label: __( 'Choose a state…', 'corex' ),
+							},
 							...transitions.map( ( option ) => ( {
 								value: option.key,
 								label: option.label,
@@ -80,40 +101,64 @@ export default function EditorialPanel( { editorial, busy = false, onTransition 
 					/>
 
 					{ needsSchedule ? (
-						<label className="corex-blog-pro__field">
+						<label
+							className="corex-blog-pro__field"
+							htmlFor={ `${ fieldId }-scheduled-at` }
+						>
 							<span>{ __( 'Publish at', 'corex' ) }</span>
 							<input
+								id={ `${ fieldId }-scheduled-at` }
 								type="datetime-local"
 								required
 								value={ scheduledAt }
-								onChange={ ( event ) => setScheduledAt( event.target.value ) }
+								onChange={ ( event ) =>
+									setScheduledAt( event.target.value )
+								}
 							/>
 							<small>
 								{ sprintf(
 									/* translators: %s: the chosen state, e.g. Scheduled. */
-									__( '%s needs a date before CoreX can apply it.', 'corex' ),
+									__(
+										'%s needs a date before CoreX can apply it.',
+										'corex'
+									),
 									chosen.label
 								) }
 							</small>
 						</label>
 					) : null }
 
-					<label className="corex-blog-pro__field">
+					<label
+						className="corex-blog-pro__field"
+						htmlFor={ `${ fieldId }-due-at` }
+					>
 						<span>{ __( 'Due by (optional)', 'corex' ) }</span>
 						<input
+							id={ `${ fieldId }-due-at` }
 							type="date"
 							value={ dueAt }
-							onChange={ ( event ) => setDueAt( event.target.value ) }
+							onChange={ ( event ) =>
+								setDueAt( event.target.value )
+							}
 						/>
 					</label>
 
-					<label className="corex-blog-pro__field">
+					<label
+						className="corex-blog-pro__field"
+						htmlFor={ `${ fieldId }-note` }
+					>
 						<span>{ __( 'Note (optional)', 'corex' ) }</span>
 						<textarea
+							id={ `${ fieldId }-note` }
 							rows="2"
 							value={ note }
-							onChange={ ( event ) => setNote( event.target.value ) }
-							placeholder={ __( 'What still needs doing?', 'corex' ) }
+							onChange={ ( event ) =>
+								setNote( event.target.value )
+							}
+							placeholder={ __(
+								'What still needs doing?',
+								'corex'
+							) }
 						/>
 					</label>
 
@@ -123,7 +168,9 @@ export default function EditorialPanel( { editorial, busy = false, onTransition 
 						data-corex-blog-transition
 						disabled={ ! ready || busy }
 					>
-						{ busy ? __( 'Applying…', 'corex' ) : __( 'Apply', 'corex' ) }
+						{ busy
+							? __( 'Applying…', 'corex' )
+							: __( 'Apply', 'corex' ) }
 					</button>
 				</form>
 			) }

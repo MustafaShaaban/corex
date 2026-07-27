@@ -135,7 +135,10 @@ function TargetSelect( { target, targetTypes, onChange } ) {
 			<CorexSelect
 				label={ __( 'Routing target type', 'corex' ) }
 				value={ target.type }
-				options={ targetTypes.map( ( type ) => ( { value: type, label: type } ) ) }
+				options={ targetTypes.map( ( type ) => ( {
+					value: type,
+					label: type,
+				} ) ) }
 				onChange={ ( type ) => onChange( { type, config: {} } ) }
 			/>
 			<input

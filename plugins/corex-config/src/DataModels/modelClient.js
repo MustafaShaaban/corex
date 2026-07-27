@@ -24,12 +24,19 @@ export const DATA_MODEL_TABS = [
 	{ key: 'migrations', ability: 'models', operation: 'migrations' },
 ];
 
-/** The tabs this user may open AND that some source can actually satisfy. */
+/**
+ * The tabs this user may open AND that some source can actually satisfy.
+ *
+ * @param {Object} abilities CoreX abilities for the current user, keyed by ability.
+ * @param {Array}  sources   Catalog entries from DataSourceService::describe().
+ * @return {Array} The subset of DATA_MODEL_TABS that is genuinely reachable.
+ */
 export function allowedTabs( abilities = {}, sources = [] ) {
 	return DATA_MODEL_TABS.filter(
 		( tab ) =>
 			abilities[ tab.ability ] === true &&
-			( ! tab.operation || actionSources( sources, tab.operation ).length > 0 )
+			( ! tab.operation ||
+				actionSources( sources, tab.operation ).length > 0 )
 	);
 }
 
@@ -39,6 +46,11 @@ export function allowedTabs( abilities = {}, sources = [] ) {
  * Falling back rather than rendering an empty shell matters because the Data screen's old address
  * redirects here with ?tab=records — a user who kept `data` but never had `models` must land on
  * something, and so must anyone following a link to a tab that no longer has an eligible source.
+ *
+ * @param {string} requested The tab asked for, from the URL.
+ * @param {Object} abilities CoreX abilities for the current user, keyed by ability.
+ * @param {Array}  sources   Catalog entries from DataSourceService::describe().
+ * @return {string} The tab key to render, or '' when none is available.
  */
 export function resolveTab( requested, abilities = {}, sources = [] ) {
 	const allowed = allowedTabs( abilities, sources );
@@ -46,14 +58,26 @@ export function resolveTab( requested, abilities = {}, sources = [] ) {
 		return '';
 	}
 
-	return allowed.some( ( tab ) => tab.key === requested ) ? requested : allowed[ 0 ].key;
+	return allowed.some( ( tab ) => tab.key === requested )
+		? requested
+		: allowed[ 0 ].key;
 }
 
-/** Read the tab out of a URL so a view can be linked to and shared. */
+/**
+ * Read the tab out of a URL so a view can be linked to and shared.
+ *
+ * @param {string} url       The address to read `?tab=` from.
+ * @param {Object} abilities CoreX abilities for the current user, keyed by ability.
+ * @param {Array}  sources   Catalog entries from DataSourceService::describe().
+ * @return {string} The tab key to render, or '' when none is available.
+ */
 export function tabFromUrl( url, abilities = {}, sources = [] ) {
 	let requested = '';
 	try {
-		requested = new URL( String( url ), 'http://localhost' ).searchParams.get( 'tab' ) || '';
+		requested =
+			new URL( String( url ), 'http://localhost' ).searchParams.get(
+				'tab'
+			) || '';
 	} catch {
 		requested = '';
 	}
@@ -62,24 +86,32 @@ export function tabFromUrl( url, abilities = {}, sources = [] ) {
 }
 
 export function actionSources( sources, action ) {
-	return ( Array.isArray( sources ) ? sources : [] ).filter(
-		( source ) => Boolean( source?.actions?.[ action ]?.visible )
+	return ( Array.isArray( sources ) ? sources : [] ).filter( ( source ) =>
+		Boolean( source?.actions?.[ action ]?.visible )
 	);
 }
 
 export function importSummary( run ) {
-	const accepted = Array.isArray( run?.accepted_rows ) ? run.accepted_rows.length : 0;
-	const rejected = Array.isArray( run?.rejected_rows ) ? run.rejected_rows.length : 0;
+	const accepted = Array.isArray( run?.accepted_rows )
+		? run.accepted_rows.length
+		: 0;
+	const rejected = Array.isArray( run?.rejected_rows )
+		? run.rejected_rows.length
+		: 0;
 	return {
 		accepted,
 		rejected,
 		total: accepted + rejected,
-		unknown: Array.isArray( run?.unknown_columns ) ? run.unknown_columns : [],
+		unknown: Array.isArray( run?.unknown_columns )
+			? run.unknown_columns
+			: [],
 	};
 }
 
 export function migrationState( run ) {
-	if ( ! run ) return 'pending';
+	if ( ! run ) {
+		return 'pending';
+	}
 	return run.state === 'rolled_back' ? 'rolled-back' : run.state;
 }
 
@@ -105,26 +137,92 @@ export function capabilitySummary( source ) {
 
 	return [
 		can( 'read' )
-			? entry( 'read', true, __( 'Readable', 'corex' ), __( 'You can browse and search these records.', 'corex' ) )
-			: entry( 'read', false, __( 'Not readable', 'corex' ), __( 'This model does not expose its records for browsing.', 'corex' ) ),
+			? entry(
+					'read',
+					true,
+					__( 'Readable', 'corex' ),
+					__( 'You can browse and search these records.', 'corex' )
+			  )
+			: entry(
+					'read',
+					false,
+					__( 'Not readable', 'corex' ),
+					__(
+						'This model does not expose its records for browsing.',
+						'corex'
+					)
+			  ),
 		can( 'create' ) || can( 'update' )
-			? entry( 'write', true, __( 'Editable', 'corex' ), __( 'Records can be added and changed from CoreX.', 'corex' ) )
-			: entry( 'write', false, __( 'Read-only', 'corex' ), __( 'Records are written by the feature that owns them, not by hand.', 'corex' ) ),
+			? entry(
+					'write',
+					true,
+					__( 'Editable', 'corex' ),
+					__(
+						'Records can be added and changed from CoreX.',
+						'corex'
+					)
+			  )
+			: entry(
+					'write',
+					false,
+					__( 'Read-only', 'corex' ),
+					__(
+						'Records are written by the feature that owns them, not by hand.',
+						'corex'
+					)
+			  ),
 		can( 'import_dry_run' )
-			? entry( 'import', true, __( 'Importable', 'corex' ), __( 'You can bring records in from a CSV, with a dry run first.', 'corex' ) )
-			: entry( 'import', false, __( 'No import', 'corex' ), __( 'This model does not accept imported records.', 'corex' ) ),
+			? entry(
+					'import',
+					true,
+					__( 'Importable', 'corex' ),
+					__(
+						'You can bring records in from a CSV, with a dry run first.',
+						'corex'
+					)
+			  )
+			: entry(
+					'import',
+					false,
+					__( 'No import', 'corex' ),
+					__(
+						'This model does not accept imported records.',
+						'corex'
+					)
+			  ),
 		can( 'export_csv' )
-			? entry( 'export', true, __( 'Exportable', 'corex' ), __( 'You can download these records as a CSV.', 'corex' ) )
-			: entry( 'export', false, __( 'No export', 'corex' ), __( 'This model cannot be exported.', 'corex' ) ),
+			? entry(
+					'export',
+					true,
+					__( 'Exportable', 'corex' ),
+					__( 'You can download these records as a CSV.', 'corex' )
+			  )
+			: entry(
+					'export',
+					false,
+					__( 'No export', 'corex' ),
+					__( 'This model cannot be exported.', 'corex' )
+			  ),
 		can( 'migrations' )
 			? entry(
 					'migrations',
 					true,
 					__( 'Has migrations', 'corex' ),
 					can( 'rollback' )
-						? __( 'Ships schema changes you can preview, apply, and roll back.', 'corex' )
-						: __( 'Ships schema changes you can preview and apply. They cannot be undone.', 'corex' )
+						? __(
+								'Ships schema changes you can preview, apply, and roll back.',
+								'corex'
+						  )
+						: __(
+								'Ships schema changes you can preview and apply. They cannot be undone.',
+								'corex'
+						  )
 			  )
-			: entry( 'migrations', false, __( 'No migrations', 'corex' ), __( 'This model ships no schema changes.', 'corex' ) ),
+			: entry(
+					'migrations',
+					false,
+					__( 'No migrations', 'corex' ),
+					__( 'This model ships no schema changes.', 'corex' )
+			  ),
 	];
 }

@@ -16,7 +16,12 @@ const LIFECYCLE_STATES = [
 	{ value: 'expired', label: __( 'Expired', 'corex' ) },
 ];
 
-/** Translated state names, so the row never prints a raw English identifier. */
+/**
+ * Translated state names, so the row never prints a raw English identifier.
+ *
+ * @param {string} state The stored lifecycle key.
+ * @return {string} Its translated name, or the key when it is not one we know.
+ */
 function stateLabel( state ) {
 	const labels = {
 		draft: __( 'Draft', 'corex' ),
@@ -30,7 +35,12 @@ function stateLabel( state ) {
 	return labels[ state ] || state;
 }
 
-/** Where a form came from, said in words rather than left to a colour. */
+/**
+ * Where a form came from, said in words rather than left to a colour.
+ *
+ * @param {string} source The catalog source key.
+ * @return {string} A translated description of where the form is defined.
+ */
 function sourceLabel( source ) {
 	if ( source === SOURCE_CODE_FORM ) {
 		return __( 'Defined in code', 'corex' );
@@ -51,7 +61,10 @@ function NewFlowForm( { busy, ownerId, onCreate } ) {
 			name: form.get( 'name' ),
 			description: form.get( 'description' ),
 			ownerId,
-			successMessage: __( 'Thank you. Your submission was received.', 'corex' ),
+			successMessage: __(
+				'Thank you. Your submission was received.',
+				'corex'
+			),
 		} );
 		if ( created ) {
 			event.currentTarget.reset();
@@ -68,7 +81,12 @@ function NewFlowForm( { busy, ownerId, onCreate } ) {
 				</label>
 				<label htmlFor="corex-flow-slug">
 					{ __( 'Slug', 'corex' ) }
-					<input id="corex-flow-slug" name="slug" pattern="[a-z][a-z0-9-]*" required />
+					<input
+						id="corex-flow-slug"
+						name="slug"
+						pattern="[a-z][a-z0-9-]*"
+						required
+					/>
 				</label>
 				<label htmlFor="corex-flow-description">
 					{ __( 'Description', 'corex' ) }
@@ -82,7 +100,13 @@ function NewFlowForm( { busy, ownerId, onCreate } ) {
 	);
 }
 
-/** The shared cells, so an editable and a read-only row read as the same kind of thing. */
+/**
+ * The shared cells, so an editable and a read-only row read as the same kind of thing.
+ *
+ * @param {Object} props     Component props.
+ * @param {Object} props.row One catalog row.
+ * @return {Element}The identity, source and state cells.
+ */
 function RowSummary( { row } ) {
 	return (
 		<>
@@ -92,7 +116,9 @@ function RowSummary( { row } ) {
 				{ /* The badge belongs with the name: it says what kind of thing this row is,
 				     which is the first question a mixed list raises. Keeping it out of its own
 				     column also keeps the grid at five tracks, so nothing runs off the card. */ }
-				<span className={ `corex-flow-list__source is-${ row.source }` }>
+				<span
+					className={ `corex-flow-list__source is-${ row.source }` }
+				>
 					{ sourceLabel( row.source ) }
 				</span>
 			</span>
@@ -113,9 +139,15 @@ function RowSummary( { row } ) {
 function FlowRow( { row, busy, onSelect } ) {
 	return (
 		<li className="corex-flow-list__row is-editable">
-			<button type="button" disabled={ busy } onClick={ () => onSelect( row.id ) }>
+			<button
+				type="button"
+				disabled={ busy }
+				onClick={ () => onSelect( row.id ) }
+			>
 				<RowSummary row={ row } />
-				<span>{ row.routingTarget || __( 'No fallback', 'corex' ) }</span>
+				<span>
+					{ row.routingTarget || __( 'No fallback', 'corex' ) }
+				</span>
 				{ row.updatedAt ? (
 					<time dateTime={ row.updatedAt }>
 						{ new Date( row.updatedAt ).toLocaleString() }
@@ -131,12 +163,19 @@ function FlowRow( { row, busy, onSelect } ) {
 /**
  * A form that lives in code. It is a real definition, not a stub — its fields, its validation, and
  * a route to its submissions — with one plain sentence saying why the builder cannot open it.
+ *
+ * @param {Object} props                The component props.
+ * @param {Object} props.row            One catalog row for a code-registered form.
+ * @param {string} props.submissionsUrl The inbox address to filter by this form's slug.
+ * @return {Element}The row, with its expandable definition panel.
  */
 function CodeFormRow( { row, submissionsUrl } ) {
 	const [ open, setOpen ] = useState( false );
 	const panelId = `corex-form-detail-${ row.slug }`;
 	const filterUrl = submissionsUrl
-		? `${ submissionsUrl }&corex_form=slug:${ encodeURIComponent( row.slug ) }`
+		? `${ submissionsUrl }&corex_form=slug:${ encodeURIComponent(
+				row.slug
+		  ) }`
 		: '';
 
 	return (
@@ -153,12 +192,19 @@ function CodeFormRow( { row, submissionsUrl } ) {
 						? __( 'Submission count unavailable', 'corex' )
 						: sprintf(
 								/* translators: %d: Number of submissions received by a form. */
-								_n( '%d submission', '%d submissions', row.submissionCount, 'corex' ),
+								_n(
+									'%d submission',
+									'%d submissions',
+									row.submissionCount,
+									'corex'
+								),
 								row.submissionCount
 						  ) }
 				</span>
 				<span className="corex-flow-list__disclose">
-					{ open ? __( 'Hide details', 'corex' ) : __( 'Show details', 'corex' ) }
+					{ open
+						? __( 'Hide details', 'corex' )
+						: __( 'Show details', 'corex' ) }
 				</span>
 			</button>
 			{ open && (
@@ -176,12 +222,20 @@ function CodeFormRow( { row, submissionsUrl } ) {
 					</p>
 					{ row.fields.length > 0 ? (
 						<table className="corex-flow-list__fields">
-							<caption>{ __( 'Field definitions', 'corex' ) }</caption>
+							<caption>
+								{ __( 'Field definitions', 'corex' ) }
+							</caption>
 							<thead>
 								<tr>
-									<th scope="col">{ __( 'Field', 'corex' ) }</th>
-									<th scope="col">{ __( 'Type', 'corex' ) }</th>
-									<th scope="col">{ __( 'Validation', 'corex' ) }</th>
+									<th scope="col">
+										{ __( 'Field', 'corex' ) }
+									</th>
+									<th scope="col">
+										{ __( 'Type', 'corex' ) }
+									</th>
+									<th scope="col">
+										{ __( 'Validation', 'corex' ) }
+									</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -211,14 +265,19 @@ function CodeFormRow( { row, submissionsUrl } ) {
 					) }
 					{ row.validationSummary ? (
 						<p className="corex-flow-list__validation">
-							<strong>{ __( 'Validation summary', 'corex' ) }</strong>{ ' ' }
+							<strong>
+								{ __( 'Validation summary', 'corex' ) }
+							</strong>{ ' ' }
 							{ row.validationSummary }
 						</p>
 					) : null }
 					{ filterUrl ? (
 						<p>
 							<a className="button" href={ filterUrl }>
-								{ __( 'View submissions for this form', 'corex' ) }
+								{ __(
+									'View submissions for this form',
+									'corex'
+								) }
 							</a>
 						</p>
 					) : null }
@@ -260,7 +319,11 @@ export function FlowList( {
 
 	return (
 		<div className="corex-flow-list">
-			<NewFlowForm busy={ busy } ownerId={ ownerId } onCreate={ onCreate } />
+			<NewFlowForm
+				busy={ busy }
+				ownerId={ ownerId }
+				onCreate={ onCreate }
+			/>
 			<section
 				className="corex-surface corex-flow-list__catalog"
 				data-status={ busy ? 'loading' : 'ready' }
@@ -286,14 +349,19 @@ export function FlowList( {
 								  ) }
 						</p>
 					</div>
-					<form className="corex-flow-list__filters" onSubmit={ filter }>
+					<form
+						className="corex-flow-list__filters"
+						onSubmit={ filter }
+					>
 						<label htmlFor="corex-flow-search">
 							{ __( 'Search forms', 'corex' ) }
 							<input
 								id="corex-flow-search"
 								type="search"
 								value={ search }
-								onChange={ ( event ) => setSearch( event.target.value ) }
+								onChange={ ( event ) =>
+									setSearch( event.target.value )
+								}
 							/>
 						</label>
 						<div className="corex-field">
@@ -306,7 +374,11 @@ export function FlowList( {
 								onChange={ setLifecycle }
 							/>
 						</div>
-						<button type="submit" className="button" disabled={ busy }>
+						<button
+							type="submit"
+							className="button"
+							disabled={ busy }
+						>
 							{ __( 'Apply filters', 'corex' ) }
 						</button>
 					</form>
@@ -315,7 +387,9 @@ export function FlowList( {
 				     forms render from localised data with no request at all, so gating the
 				     loading state on an empty list meant the flows half could load with no
 				     indication that anything was still coming. */ }
-				{ busy ? <p role="status">{ __( 'Loading forms…', 'corex' ) }</p> : null }
+				{ busy ? (
+					<p role="status">{ __( 'Loading forms…', 'corex' ) }</p>
+				) : null }
 				{ ! busy && rows.length === 0 ? (
 					<p>{ __( 'No forms match this view.', 'corex' ) }</p>
 				) : null }

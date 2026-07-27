@@ -61,6 +61,9 @@ function sourceLabel( module ) {
  * Relative time is what you want at a glance; the exact value is what you want when you are working
  * out whether two things happened together, so `<time datetime>` carries it for both a hovering
  * mouse and a screen reader.
+ *
+ * @param {string} iso The stored timestamp.
+ * @return {string} The age in words, or '' when the timestamp cannot be parsed.
  */
 function relativeTime( iso ) {
 	const then = Date.parse( iso );
@@ -68,28 +71,44 @@ function relativeTime( iso ) {
 		return '';
 	}
 
+	// Each unit is derived where it is first needed: the earlier version computed all four up
+	// front, so three of them were always thrown away.
 	const seconds = Math.max( 0, Math.round( ( Date.now() - then ) / 1000 ) );
-	const minutes = Math.round( seconds / 60 );
-	const hours = Math.round( minutes / 60 );
-	const days = Math.round( hours / 24 );
-
 	if ( seconds < 60 ) {
 		return __( 'Just now', 'corex' );
 	}
+
+	const minutes = Math.round( seconds / 60 );
 	if ( minutes < 60 ) {
-		/* translators: %d: number of minutes. */
-		return sprintf( _n( '%d minute ago', '%d minutes ago', minutes, 'corex' ), minutes );
+		return sprintf(
+			/* translators: %d: number of minutes. */
+			_n( '%d minute ago', '%d minutes ago', minutes, 'corex' ),
+			minutes
+		);
 	}
+	const hours = Math.round( minutes / 60 );
 	if ( hours < 24 ) {
-		/* translators: %d: number of hours. */
-		return sprintf( _n( '%d hour ago', '%d hours ago', hours, 'corex' ), hours );
+		return sprintf(
+			/* translators: %d: number of hours. */
+			_n( '%d hour ago', '%d hours ago', hours, 'corex' ),
+			hours
+		);
 	}
 
-	/* translators: %d: number of days. */
-	return sprintf( _n( '%d day ago', '%d days ago', days, 'corex' ), days );
+	const days = Math.round( hours / 24 );
+	return sprintf(
+		/* translators: %d: number of days. */
+		_n( '%d day ago', '%d days ago', days, 'corex' ),
+		days
+	);
 }
 
-/** The state of the condition, in words. Never conflated with whether it has been read. */
+/**
+ * The state of the condition, in words. Never conflated with whether it has been read.
+ *
+ * @param {Object} item One notification row.
+ * @return {string} The translated condition state.
+ */
 function conditionLabel( item ) {
 	const status = item.user_state?.status;
 
@@ -111,13 +130,19 @@ function conditionLabel( item ) {
 		: __( 'No action needed', 'corex' );
 }
 
-export default function NotificationItem( { item, actions = {}, compact = false } ) {
+export default function NotificationItem( {
+	item,
+	actions = {},
+	compact = false,
+} ) {
 	const severity = item.severity || 'information';
 	const state = item.user_state || {};
 	const occurrences = Number( item.occurrences ) || 1;
 	const icon = CATEGORY_ICONS[ item.category ] || 'notifications';
 	const canResolve = Boolean( item.can_resolve );
-	const closed = [ 'resolved', 'dismissed', 'expired' ].includes( state.status );
+	const closed = [ 'resolved', 'dismissed', 'expired' ].includes(
+		state.status
+	);
 
 	return (
 		<article
@@ -137,18 +162,26 @@ export default function NotificationItem( { item, actions = {}, compact = false 
 			/>
 
 			<div className="corex-notification__body">
-				<p className="corex-notification__title">{ item.rendered?.title ?? '' }</p>
-				<p className="corex-notification__text">{ item.rendered?.body ?? '' }</p>
+				<p className="corex-notification__title">
+					{ item.rendered?.title ?? '' }
+				</p>
+				<p className="corex-notification__text">
+					{ item.rendered?.body ?? '' }
+				</p>
 
 				<p className="corex-notification__meta">
-					<span className={ `corex-notification__severity is-${ severity }` }>
+					<span
+						className={ `corex-notification__severity is-${ severity }` }
+					>
 						{ SEVERITY_LABELS[ severity ] || severity }
 					</span>
 					<span className="corex-notification__source">
 						{ sourceLabel( item.source_module ) }
 					</span>
 					{ item.environment ? (
-						<span className="corex-notification__environment">{ item.environment }</span>
+						<span className="corex-notification__environment">
+							{ item.environment }
+						</span>
 					) : null }
 					<time
 						className="corex-notification__time"
@@ -161,42 +194,66 @@ export default function NotificationItem( { item, actions = {}, compact = false 
 						<span className="corex-notification__occurrences">
 							{ sprintf(
 								/* translators: %d: how many times this condition has occurred. */
-								_n( '%d time', '%d times', occurrences, 'corex' ),
+								_n(
+									'%d time',
+									'%d times',
+									occurrences,
+									'corex'
+								),
 								occurrences
 							) }
 						</span>
 					) : null }
-					<span className="corex-notification__condition">{ conditionLabel( item ) }</span>
+					<span className="corex-notification__condition">
+						{ conditionLabel( item ) }
+					</span>
 					{ ! state.read ? (
-						<span className="corex-notification__unread">{ __( 'Unread', 'corex' ) }</span>
+						<span className="corex-notification__unread">
+							{ __( 'Unread', 'corex' ) }
+						</span>
 					) : null }
 				</p>
 			</div>
 
 			<div className="corex-notification__actions">
 				{ item.action?.url ? (
-					<a className="button button-primary" href={ item.action.url }>
+					<a
+						className="button button-primary"
+						href={ item.action.url }
+					>
 						{ item.action.label || __( 'Open', 'corex' ) }
 					</a>
 				) : null }
 
 				{ ! compact && actions.markRead && ! state.read ? (
-					<button type="button" onClick={ () => actions.markRead( item.id ) }>
+					<button
+						type="button"
+						onClick={ () => actions.markRead( item.id ) }
+					>
 						{ __( 'Mark read', 'corex' ) }
 					</button>
 				) : null }
 				{ ! compact && actions.markUnread && state.read && ! closed ? (
-					<button type="button" onClick={ () => actions.markUnread( item.id ) }>
+					<button
+						type="button"
+						onClick={ () => actions.markUnread( item.id ) }
+					>
 						{ __( 'Mark unread', 'corex' ) }
 					</button>
 				) : null }
 				{ ! compact && actions.snooze && ! closed ? (
-					<button type="button" onClick={ () => actions.snooze( item.id ) }>
+					<button
+						type="button"
+						onClick={ () => actions.snooze( item.id ) }
+					>
 						{ __( 'Snooze for a day', 'corex' ) }
 					</button>
 				) : null }
 				{ ! compact && actions.dismiss && ! closed ? (
-					<button type="button" onClick={ () => actions.dismiss( item.id ) }>
+					<button
+						type="button"
+						onClick={ () => actions.dismiss( item.id ) }
+					>
 						{ __( 'Dismiss', 'corex' ) }
 					</button>
 				) : null }

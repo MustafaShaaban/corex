@@ -93,7 +93,10 @@ export function inboxReducer( state, action ) {
 export function inboxFiltersFromUrl( url ) {
 	let form = '';
 	try {
-		form = new URL( String( url ), 'http://localhost' ).searchParams.get( 'corex_form' ) || '';
+		form =
+			new URL( String( url ), 'http://localhost' ).searchParams.get(
+				'corex_form'
+			) || '';
 	} catch {
 		return {};
 	}
@@ -165,7 +168,9 @@ export function buildExportPayload( options ) {
 		scope: options.scope,
 		selected_ids:
 			options.scope === 'selected'
-				? [ ...options.selectedIds ].map( Number ).sort( ( a, b ) => a - b )
+				? [ ...options.selectedIds ]
+						.map( Number )
+						.sort( ( a, b ) => a - b )
 				: [],
 		columns: [ ...options.columns ],
 		query: options.scope === 'filtered' ? { ...options.filters } : {},

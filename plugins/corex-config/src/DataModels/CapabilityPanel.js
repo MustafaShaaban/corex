@@ -36,7 +36,9 @@ function Section( { title, description, children } ) {
 	return (
 		<section className="corex-capability__section">
 			<h3>{ title }</h3>
-			{ description ? <p className="corex-capability__lede">{ description }</p> : null }
+			{ description ? (
+				<p className="corex-capability__lede">{ description }</p>
+			) : null }
 			{ children }
 		</section>
 	);
@@ -66,7 +68,10 @@ export default function CapabilityPanel( { report } ) {
 				title={ __( 'Needs finishing', 'corex' ) }
 				description={
 					hasGaps
-						? __( 'These are configured far enough to look done, and are not.', 'corex' )
+						? __(
+								'These are configured far enough to look done, and are not.',
+								'corex'
+						  )
 						: undefined
 				}
 			>
@@ -76,8 +81,12 @@ export default function CapabilityPanel( { report } ) {
 							<li key={ gap.key }>
 								<p>{ gap.summary }</p>
 								{ gap.action_url ? (
-									<a className="button" href={ gap.action_url }>
-										{ gap.action_label || __( 'Fix it', 'corex' ) }
+									<a
+										className="button"
+										href={ gap.action_url }
+									>
+										{ gap.action_label ||
+											__( 'Fix it', 'corex' ) }
 									</a>
 								) : null }
 							</li>
@@ -98,14 +107,19 @@ export default function CapabilityPanel( { report } ) {
 				) }
 			>
 				{ forms.total === 0 ? (
-					<p className="corex-capability__ok">{ __( 'No forms are registered.', 'corex' ) }</p>
+					<p className="corex-capability__ok">
+						{ __( 'No forms are registered.', 'corex' ) }
+					</p>
 				) : (
 					<ul className="corex-capability__list">
 						{ forms.items.map( ( form ) => (
 							<li key={ form.slug }>
 								<strong>{ form.label }</strong>
 								<code>{ form.slug }</code>
-								<span>{ SOURCE_LABELS[ form.source ] || form.source }</span>
+								<span>
+									{ SOURCE_LABELS[ form.source ] ||
+										form.source }
+								</span>
 								<span>
 									{ form.active
 										? __( 'Accepting submissions', 'corex' )
@@ -120,7 +134,12 @@ export default function CapabilityPanel( { report } ) {
 			<Section
 				title={ sprintf(
 					/* translators: %d: number of registered data models. */
-					_n( '%d data model', '%d data models', models.total, 'corex' ),
+					_n(
+						'%d data model',
+						'%d data models',
+						models.total,
+						'corex'
+					),
 					models.total
 				) }
 			>
@@ -132,7 +151,11 @@ export default function CapabilityPanel( { report } ) {
 							<span>
 								{ model.can.length
 									? model.can
-											.map( ( key ) => CAPABILITY_LABELS[ key ] || key )
+											.map(
+												( key ) =>
+													CAPABILITY_LABELS[ key ] ||
+													key
+											)
 											.join( ' · ' )
 									: __( 'Nothing supported', 'corex' ) }
 							</span>
@@ -157,7 +180,10 @@ export default function CapabilityPanel( { report } ) {
 				<p className="corex-capability__counts">
 					{ sprintf(
 						/* translators: 1: active add-ons, 2: installed but inactive, 3: not installed. */
-						__( '%1$d active · %2$d installed but off · %3$d not installed', 'corex' ),
+						__(
+							'%1$d active · %2$d installed but off · %3$d not installed',
+							'corex'
+						),
 						addons.active,
 						addons.inactive,
 						addons.not_installed
@@ -167,7 +193,9 @@ export default function CapabilityPanel( { report } ) {
 					{ addons.items.map( ( addon ) => (
 						<li key={ addon.slug }>
 							<strong>{ addon.label }</strong>
-							<span>{ ADDON_STATES[ addon.state ] || addon.state }</span>
+							<span>
+								{ ADDON_STATES[ addon.state ] || addon.state }
+							</span>
 						</li>
 					) ) }
 				</ul>
@@ -182,7 +210,10 @@ export default function CapabilityPanel( { report } ) {
 			>
 				{ producers.total === 0 ? (
 					<p className="corex-capability__ok">
-						{ __( 'No producers are wired on this site.', 'corex' ) }
+						{ __(
+							'No producers are wired on this site.',
+							'corex'
+						) }
 					</p>
 				) : (
 					<ul className="corex-capability__tags">

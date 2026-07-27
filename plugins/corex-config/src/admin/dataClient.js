@@ -18,7 +18,7 @@ function appendQuery( params, query ) {
 		}
 	} );
 	Object.entries( query.filters || {} ).forEach( ( [ key, value ] ) => {
-		if ( value !== '' && value != null ) {
+		if ( value !== '' && value !== null && value !== undefined ) {
 			params.set( `filters[${ key }]`, String( value ) );
 		}
 	} );
@@ -150,10 +150,16 @@ export function dataReducer( state, action ) {
 			return initialDataState( action.sourceKey );
 		case 'query': {
 			const patch = action.patch || {};
-			const onlyPage = Object.keys( patch ).every( ( key ) => key === 'page' );
+			const onlyPage = Object.keys( patch ).every(
+				( key ) => key === 'page'
+			);
 			return {
 				...state,
-				query: { ...state.query, ...patch, page: onlyPage ? patch.page : 1 },
+				query: {
+					...state.query,
+					...patch,
+					page: onlyPage ? patch.page : 1,
+				},
 				selected: [],
 			};
 		}
@@ -168,7 +174,10 @@ export function dataReducer( state, action ) {
 				selected: [],
 			};
 		case 'select':
-			return { ...state, selected: toggleSelection( state.selected, action.id ) };
+			return {
+				...state,
+				selected: toggleSelection( state.selected, action.id ),
+			};
 		case 'select-all':
 			return {
 				...state,

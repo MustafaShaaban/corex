@@ -17,8 +17,17 @@ import { blogEndpoint } from './blogProState.js';
  *
  * The controller answers `{ ok, message, data }`, so a 200 can still carry a refusal — a failure that
  * only checks the HTTP status would report success and render nothing.
+ *
+ * @param {{restUrl: string, nonce: string}} config           The localized REST base and nonce.
+ * @param {string}                           path             Route path below the CoreX namespace.
+ * @param {Object}                           [options]        Request options.
+ * @param {string}                           [options.method] HTTP method; defaults to GET.
+ * @param {Object}                           [options.data]   JSON body, for the write routes.
+ * @return {Promise<Object>} The envelope's `data`.
  */
-export async function blogRequest( config, path, { method = 'GET', data } = {} ) {
+export async function blogRequest( config, path, options = {} ) {
+	const { method = 'GET', data } = options;
+
 	const response = await fetch( blogEndpoint( config.restUrl, path ), {
 		method,
 		credentials: 'same-origin',
@@ -33,7 +42,8 @@ export async function blogRequest( config, path, { method = 'GET', data } = {} )
 
 	if ( ! response.ok || envelope?.ok === false ) {
 		throw new Error(
-			envelope?.message || __( 'CoreX could not reach Blog Pro.', 'corex' )
+			envelope?.message ||
+				__( 'CoreX could not reach Blog Pro.', 'corex' )
 		);
 	}
 
@@ -45,6 +55,11 @@ export async function blogRequest( config, path, { method = 'GET', data } = {} )
  *
  * The response carries the updated item, which matters here: no GET route returns a post's editorial
  * state, so this is the only way the panel ever learns its new one (spec 075, FR-1).
+ *
+ * @param {{restUrl: string, nonce: string}} config  The localized REST base and nonce.
+ * @param {number}                           postId  The post being moved.
+ * @param {Object}                           payload The transition, from `buildTransitionPayload`.
+ * @return {Promise<Object>} The updated editorial item.
  */
 export function transitionPost( config, postId, payload ) {
 	return blogRequest( config, `blog/editorial/${ postId }/transition`, {
@@ -53,7 +68,14 @@ export function transitionPost( config, postId, payload ) {
 	} );
 }
 
-/** Approve, spam, or trash one queued comment. */
+/**
+ * Approve, spam, or trash one queued comment.
+ *
+ * @param {{restUrl: string, nonce: string}} config    The localized REST base and nonce.
+ * @param {number}                           commentId The comment being moderated.
+ * @param {string}                           action    approve, spam, or trash.
+ * @return {Promise<Object>} The moderation result.
+ */
 export function moderateComment( config, commentId, action ) {
 	return blogRequest( config, `blog/comments/${ commentId }/moderate`, {
 		method: 'POST',
@@ -72,6 +94,10 @@ export function moderateComment( config, commentId, action ) {
  *
  * These four calls are what finally give `/blog/analytics`, `/blog/comments`, `/blog/authors`, and
  * `/blog/share-controls` a caller in the product.
+ *
+ * @param {{restUrl: string, nonce: string}} config The localized REST base and nonce.
+ * @param {number}                           postId The selected post.
+ * @return {Promise<Object>} Analytics, comments, authors and share controls for that post.
  */
 export async function loadBlogData( config, postId ) {
 	const query = `?post_id=${ encodeURIComponent( postId ) }`;

@@ -20,7 +20,10 @@ function mockFetch( body, { ok = true, status = 200, nonJson = false } = {} ) {
 		Promise.resolve( {
 			ok,
 			status,
-			json: () => ( nonJson ? Promise.reject( new Error( 'not json' ) ) : Promise.resolve( body ) ),
+			json: () =>
+				nonJson
+					? Promise.reject( new Error( 'not json' ) )
+					: Promise.resolve( body ),
 		} )
 	);
 }
@@ -43,7 +46,13 @@ function makeForm( schema ) {
 	return document.querySelector( '.corex-form' );
 }
 
-const EMAIL_REQUIRED = [ { name: 'email', required: true, rules: [ { rule: 'required' }, { rule: 'email' } ] } ];
+const EMAIL_REQUIRED = [
+	{
+		name: 'email',
+		required: true,
+		rules: [ { rule: 'required' }, { rule: 'email' } ],
+	},
+];
 
 beforeEach( () => {
 	document.body.innerHTML = '';
@@ -68,7 +77,16 @@ describe( 'Corex.api', () => {
 	} );
 
 	it( 'passes through a real envelope unchanged', async () => {
-		mockFetch( { ok: false, code: 'validation_failed', message: 'no', errors: { email: 'required' }, details: {} }, { ok: false, status: 422 } );
+		mockFetch(
+			{
+				ok: false,
+				code: 'validation_failed',
+				message: 'no',
+				errors: { email: 'required' },
+				details: {},
+			},
+			{ ok: false, status: 422 }
+		);
 		const result = await window.Corex.api.post( '/x', {} );
 		expect( result.envelope.code ).toBe( 'validation_failed' );
 		expect( result.envelope.errors ).toEqual( { email: 'required' } );
@@ -83,7 +101,9 @@ describe( 'Corex.api', () => {
 
 	it( 'supports PATCH mutations through the shared request contract', async () => {
 		mockFetch( { ok: true, message: '', data: { version: 2 } } );
-		const result = await window.Corex.api.patch( '/x/7', { expected_version: 1 } );
+		const result = await window.Corex.api.patch( '/x/7', {
+			expected_version: 1,
+		} );
 		const init = global.fetch.mock.calls[ 0 ][ 1 ];
 
 		expect( init.method ).toBe( 'PATCH' );
@@ -92,7 +112,9 @@ describe( 'Corex.api', () => {
 	} );
 
 	it( 'resolves a network failure to an error result and never throws', async () => {
-		global.fetch = jest.fn( () => Promise.reject( new Error( 'offline' ) ) );
+		global.fetch = jest.fn( () =>
+			Promise.reject( new Error( 'offline' ) )
+		);
 		const result = await window.Corex.api.get( '/x' );
 		expect( result.ok ).toBe( false );
 		expect( result.envelope.ok ).toBe( false );
@@ -113,12 +135,22 @@ describe( 'Corex.forms.bind', () => {
 		const form = makeForm( EMAIL_REQUIRED );
 		window.Corex.forms.bind( form );
 
-		form.dispatchEvent( new Event( 'submit', { cancelable: true, bubbles: true } ) );
+		form.dispatchEvent(
+			new Event( 'submit', { cancelable: true, bubbles: true } )
+		);
 		await flush();
 
 		expect( global.fetch ).not.toHaveBeenCalled();
-		expect( form.querySelector( '[data-corex-field="email"] .corex-form__error' ).textContent ).not.toBe( '' );
-		expect( form.querySelector( 'input[name="email"]' ).getAttribute( 'aria-invalid' ) ).toBe( 'true' );
+		expect(
+			form.querySelector(
+				'[data-corex-field="email"] .corex-form__error'
+			).textContent
+		).not.toBe( '' );
+		expect(
+			form
+				.querySelector( 'input[name="email"]' )
+				.getAttribute( 'aria-invalid' )
+		).toBe( 'true' );
 	} );
 
 	it( 'submits once on valid input, resets, and fires corex:form:success', async () => {
@@ -129,29 +161,47 @@ describe( 'Corex.forms.bind', () => {
 		form.addEventListener( 'corex:form:success', success );
 		window.Corex.forms.bind( form );
 
-		form.dispatchEvent( new Event( 'submit', { cancelable: true, bubbles: true } ) );
+		form.dispatchEvent(
+			new Event( 'submit', { cancelable: true, bubbles: true } )
+		);
 		await flush();
 
 		expect( global.fetch ).toHaveBeenCalledTimes( 1 );
 		expect( success ).toHaveBeenCalledTimes( 1 );
-		expect( form.querySelector( '.corex-form__status' ).textContent ).toBe( 'Thanks!' );
+		expect( form.querySelector( '.corex-form__status' ).textContent ).toBe(
+			'Thanks!'
+		);
 	} );
 
 	it( 'honors the published flow success definition returned by the visitor endpoint', async () => {
-		mockFetch( { ok: true, message: '', data: { success: { type: 'inline', message: 'Flow complete.' } } } );
+		mockFetch( {
+			ok: true,
+			message: '',
+			data: { success: { type: 'inline', message: 'Flow complete.' } },
+		} );
 		const form = makeForm( EMAIL_REQUIRED );
 		form.querySelector( 'input[name="email"]' ).value = 'a@b.com';
 		window.Corex.forms.bind( form );
 
-		form.dispatchEvent( new Event( 'submit', { cancelable: true, bubbles: true } ) );
+		form.dispatchEvent(
+			new Event( 'submit', { cancelable: true, bubbles: true } )
+		);
 		await flush();
 
-		expect( form.querySelector( '.corex-form__status' ).textContent ).toBe( 'Flow complete.' );
+		expect( form.querySelector( '.corex-form__status' ).textContent ).toBe(
+			'Flow complete.'
+		);
 	} );
 
 	it( 'renders server envelope errors and fires corex:form:error', async () => {
 		mockFetch(
-			{ ok: false, code: 'validation_failed', message: 'Check fields', errors: { email: 'email' }, details: {} },
+			{
+				ok: false,
+				code: 'validation_failed',
+				message: 'Check fields',
+				errors: { email: 'email' },
+				details: {},
+			},
 			{ ok: false, status: 422 }
 		);
 		const form = makeForm( EMAIL_REQUIRED );
@@ -160,11 +210,17 @@ describe( 'Corex.forms.bind', () => {
 		form.addEventListener( 'corex:form:error', onError );
 		window.Corex.forms.bind( form );
 
-		form.dispatchEvent( new Event( 'submit', { cancelable: true, bubbles: true } ) );
+		form.dispatchEvent(
+			new Event( 'submit', { cancelable: true, bubbles: true } )
+		);
 		await flush();
 
 		expect( onError ).toHaveBeenCalledTimes( 1 );
-		expect( form.querySelector( '[data-corex-field="email"] .corex-form__error' ).textContent ).not.toBe( '' );
+		expect(
+			form.querySelector(
+				'[data-corex-field="email"] .corex-form__error'
+			).textContent
+		).not.toBe( '' );
 	} );
 
 	it( 'is idempotent — binding twice does not double-submit', async () => {
@@ -174,7 +230,9 @@ describe( 'Corex.forms.bind', () => {
 		window.Corex.forms.bind( form );
 		window.Corex.forms.bind( form );
 
-		form.dispatchEvent( new Event( 'submit', { cancelable: true, bubbles: true } ) );
+		form.dispatchEvent(
+			new Event( 'submit', { cancelable: true, bubbles: true } )
+		);
 		await flush();
 
 		expect( global.fetch ).toHaveBeenCalledTimes( 1 );
@@ -200,14 +258,22 @@ describe( 'Corex.loading', () => {
 describe( 'Corex.api via wp.apiFetch (admin path)', () => {
 	it( 'uses wp.apiFetch when present and normalises the response', async () => {
 		const apiFetch = jest.fn( () =>
-			Promise.resolve( { ok: true, status: 200, json: () => Promise.resolve( { ok: true, message: 'ok', data: { n: 1 } } ) } )
+			Promise.resolve( {
+				ok: true,
+				status: 200,
+				json: () =>
+					Promise.resolve( {
+						ok: true,
+						message: 'ok',
+						data: { n: 1 },
+					} ),
+			} )
 		);
 		window.wp = { apiFetch, i18n: { __: ( s ) => s } };
-		let runtime;
 		jest.isolateModules( () => {
 			require( RUNTIME );
 		} );
-		runtime = window.Corex;
+		const runtime = window.Corex;
 
 		const result = await runtime.api.get( '/admin', { nonce: 'x' } );
 
@@ -220,6 +286,9 @@ describe( 'Corex.api via wp.apiFetch (admin path)', () => {
 	 * With `parse: false` core does not resolve on a non-2xx — parseAndThrowError() rethrows
 	 * the raw Response. Every test above this one mocked a *resolve*, which is why a real
 	 * server error could reach the UI as "Something went wrong" for a whole release.
+	 *
+	 * @param {Function} apiFetch The `wp.apiFetch` stub this run should see.
+	 * @return {Object} The freshly loaded `window.Corex`.
 	 */
 	const loadWithApiFetch = ( apiFetch ) => {
 		window.wp = { apiFetch, i18n: { __: ( s ) => s } };

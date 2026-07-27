@@ -9,19 +9,21 @@ import { useBlockProps, RichText } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
-registerBlockType( metadata.name, {
-	edit: ( { attributes, setAttributes } ) => {
-		const blockProps = useBlockProps( { className: 'corex-badge' } );
+function Edit( { attributes, setAttributes } ) {
+	const blockProps = useBlockProps( { className: 'corex-badge' } );
 
-		return (
-			<RichText
-				{ ...blockProps }
-				tagName="span"
-				value={ attributes.label }
-				onChange={ ( label ) => setAttributes( { label } ) }
-				placeholder={ __( 'Badge', 'corex' ) }
-			/>
-		);
-	},
+	return (
+		<RichText
+			{ ...blockProps }
+			tagName="span"
+			value={ attributes.label }
+			onChange={ ( label ) => setAttributes( { label } ) }
+			placeholder={ __( 'Badge', 'corex' ) }
+		/>
+	);
+}
+
+registerBlockType( metadata.name, {
+	edit: Edit,
 	save: () => null,
 } );

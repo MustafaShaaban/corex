@@ -33,14 +33,17 @@ export default function PreferencesPanel() {
 			// Send the full map so the server has the whole picture; it re-enforces mandatory rules.
 			const categories = {};
 			rows.forEach( ( row ) => {
-				categories[ row.category ] = row.category === category ? enabled : row.enabled;
+				categories[ row.category ] =
+					row.category === category ? enabled : row.enabled;
 			} );
 			apiFetch( {
 				path: '/corex/v1/notifications/preferences',
 				method: 'POST',
 				data: { categories },
 			} )
-				.then( ( response ) => setRows( response?.data?.preferences ?? [] ) )
+				.then( ( response ) =>
+					setRows( response?.data?.preferences ?? [] )
+				)
 				.catch( () => {} );
 		},
 		[ rows ]
@@ -64,9 +67,18 @@ export default function PreferencesPanel() {
 	return (
 		<ul className="corex-notifications-prefs">
 			{ rows.map( ( row ) => (
-				<li key={ row.category } className="corex-notifications-prefs__row">
-					<label className="corex-notifications-prefs__label">
+				<li
+					key={ row.category }
+					className="corex-notifications-prefs__row"
+				>
+					{ /* The category names the control, so the label points at it by `for`
+					     rather than wrapping it. */ }
+					<label
+						className="corex-notifications-prefs__label"
+						htmlFor={ `corex-notification-pref-${ row.category }` }
+					>
 						<input
+							id={ `corex-notification-pref-${ row.category }` }
 							type="checkbox"
 							checked={ row.enabled }
 							disabled={ row.mandatory }
@@ -80,7 +92,10 @@ export default function PreferencesPanel() {
 					</label>
 					{ row.mandatory && (
 						<span className="corex-notifications-prefs__note">
-							{ __( 'Always on — required notifications.', 'corex' ) }
+							{ __(
+								'Always on — required notifications.',
+								'corex'
+							) }
 						</span>
 					) }
 				</li>

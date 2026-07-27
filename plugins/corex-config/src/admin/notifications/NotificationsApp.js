@@ -86,7 +86,8 @@ export default function NotificationsApp() {
 	const [ error, setError ] = useState( '' );
 
 	const activeView = useMemo(
-		() => VIEWS.find( ( candidate ) => candidate.id === view ) ?? VIEWS[ 0 ],
+		() =>
+			VIEWS.find( ( candidate ) => candidate.id === view ) ?? VIEWS[ 0 ],
 		[ view ]
 	);
 
@@ -156,7 +157,9 @@ export default function NotificationsApp() {
 			// leaving the person to guess how long "snooze" lasts.
 			snooze: ( id ) =>
 				act( id, 'snooze', {
-					snoozed_until: new Date( Date.now() + 86400000 ).toISOString(),
+					snoozed_until: new Date(
+						Date.now() + 86400000
+					).toISOString(),
 				} ),
 			resolve: ( id ) => act( id, 'resolve', { reason: 'manual' } ),
 		} ),
@@ -185,125 +188,155 @@ export default function NotificationsApp() {
 				className="corex-notifications-screen__views"
 				aria-label={ __( 'Notification views', 'corex' ) }
 			>
-				{ [ ...VIEWS, { id: 'preferences', label: __( 'Preferences', 'corex' ) } ].map(
-					( candidate ) => (
-						<button
-							key={ candidate.id }
-							type="button"
-							className={
-								'corex-notifications-screen__view' +
-								( candidate.id === view ? ' is-active' : '' )
-							}
-							aria-current={ candidate.id === view ? 'true' : undefined }
-							onClick={ () => chooseView( candidate.id ) }
-						>
-							{ candidate.label }
-						</button>
-					)
-				) }
+				{ [
+					...VIEWS,
+					{ id: 'preferences', label: __( 'Preferences', 'corex' ) },
+				].map( ( candidate ) => (
+					<button
+						key={ candidate.id }
+						type="button"
+						className={
+							'corex-notifications-screen__view' +
+							( candidate.id === view ? ' is-active' : '' )
+						}
+						aria-current={
+							candidate.id === view ? 'true' : undefined
+						}
+						onClick={ () => chooseView( candidate.id ) }
+					>
+						{ candidate.label }
+					</button>
+				) ) }
 			</nav>
 
 			{ view === 'preferences' && <PreferencesPanel /> }
 
-			{ view !== 'preferences' && ( <>
-			<div className="corex-notifications-screen__filters">
-				<div className="corex-notifications-screen__filter">
-					<CorexSelect
-						label={ __( 'Severity', 'corex' ) }
-						value={ severity }
-						options={ SEVERITY_OPTIONS }
-						onChange={ ( next ) => {
-							setPage( 1 );
-							setSeverity( next );
-						} }
-					/>
-				</div>
-				<div className="corex-notifications-screen__filter">
-					<CorexSelect
-						label={ __( 'Category', 'corex' ) }
-						value={ category }
-						options={ CATEGORY_OPTIONS }
-						onChange={ ( next ) => {
-							setPage( 1 );
-							setCategory( next );
-						} }
-					/>
-				</div>
-				<label className="corex-notifications-screen__toggle">
-					<input
-						type="checkbox"
-						checked={ assignedToMe }
-						onChange={ ( event ) => {
-							setPage( 1 );
-							setAssignedToMe( event.target.checked );
-						} }
-					/>
-					{ __( 'Assigned to me', 'corex' ) }
-				</label>
-				<button
-					type="button"
-					className="corex-notifications-screen__mark-all"
-					onClick={ markAllRead }
-				>
-					{ __( 'Mark all as read', 'corex' ) }
-				</button>
-			</div>
+			{ view !== 'preferences' && (
+				<>
+					<div className="corex-notifications-screen__filters">
+						<div className="corex-notifications-screen__filter">
+							<CorexSelect
+								label={ __( 'Severity', 'corex' ) }
+								value={ severity }
+								options={ SEVERITY_OPTIONS }
+								onChange={ ( next ) => {
+									setPage( 1 );
+									setSeverity( next );
+								} }
+							/>
+						</div>
+						<div className="corex-notifications-screen__filter">
+							<CorexSelect
+								label={ __( 'Category', 'corex' ) }
+								value={ category }
+								options={ CATEGORY_OPTIONS }
+								onChange={ ( next ) => {
+									setPage( 1 );
+									setCategory( next );
+								} }
+							/>
+						</div>
+						{ /* One screen-level control, so a stable id names it; the label points
+						     at it by `for` rather than wrapping it. */ }
+						<label
+							className="corex-notifications-screen__toggle"
+							htmlFor="corex-notifications-assigned-to-me"
+						>
+							<input
+								id="corex-notifications-assigned-to-me"
+								type="checkbox"
+								checked={ assignedToMe }
+								onChange={ ( event ) => {
+									setPage( 1 );
+									setAssignedToMe( event.target.checked );
+								} }
+							/>
+							{ __( 'Assigned to me', 'corex' ) }
+						</label>
+						<button
+							type="button"
+							className="corex-notifications-screen__mark-all"
+							onClick={ markAllRead }
+						>
+							{ __( 'Mark all as read', 'corex' ) }
+						</button>
+					</div>
 
-			{ status === 'loading' && (
-				<p className="corex-notifications-screen__state">
-					{ __( 'Loading notifications…', 'corex' ) }
-				</p>
-			) }
-			{ status === 'error' && (
-				<p className="corex-notifications-screen__state" role="alert">
-					{ __( 'Notifications could not be loaded.', 'corex' ) }
-				</p>
-			) }
-			{ status === 'ready' && items.length === 0 && (
-				<p className="corex-notifications-screen__state">
-					{ activeView.empty }
-				</p>
-			) }
-			{ error && (
-				<p className="corex-notifications-screen__state" role="alert">
-					{ error }
-				</p>
-			) }
-			{ status === 'ready' && items.length > 0 && (
-				<ul className="corex-notifications-screen__list">
-					{ items.map( ( item ) => (
-						<li key={ item.id } className="corex-notifications-screen__item">
-							<NotificationItem item={ item } actions={ itemActions } />
-						</li>
-					) ) }
-				</ul>
-			) }
+					{ status === 'loading' && (
+						<p className="corex-notifications-screen__state">
+							{ __( 'Loading notifications…', 'corex' ) }
+						</p>
+					) }
+					{ status === 'error' && (
+						<p
+							className="corex-notifications-screen__state"
+							role="alert"
+						>
+							{ __(
+								'Notifications could not be loaded.',
+								'corex'
+							) }
+						</p>
+					) }
+					{ status === 'ready' && items.length === 0 && (
+						<p className="corex-notifications-screen__state">
+							{ activeView.empty }
+						</p>
+					) }
+					{ error && (
+						<p
+							className="corex-notifications-screen__state"
+							role="alert"
+						>
+							{ error }
+						</p>
+					) }
+					{ status === 'ready' && items.length > 0 && (
+						<ul className="corex-notifications-screen__list">
+							{ items.map( ( item ) => (
+								<li
+									key={ item.id }
+									className="corex-notifications-screen__item"
+								>
+									<NotificationItem
+										item={ item }
+										actions={ itemActions }
+									/>
+								</li>
+							) ) }
+						</ul>
+					) }
 
-			{ status === 'ready' && pages > 1 && (
-				<nav
-					className="corex-notifications-screen__pager"
-					aria-label={ __( 'Notifications pages', 'corex' ) }
-				>
-					<button
-						type="button"
-						disabled={ page <= 1 }
-						onClick={ () => setPage( ( current ) => current - 1 ) }
-					>
-						{ __( 'Previous', 'corex' ) }
-					</button>
-					<span>
-						{ __( 'Page', 'corex' ) } { page } / { pages }
-					</span>
-					<button
-						type="button"
-						disabled={ page >= pages }
-						onClick={ () => setPage( ( current ) => current + 1 ) }
-					>
-						{ __( 'Next', 'corex' ) }
-					</button>
-				</nav>
+					{ status === 'ready' && pages > 1 && (
+						<nav
+							className="corex-notifications-screen__pager"
+							aria-label={ __( 'Notifications pages', 'corex' ) }
+						>
+							<button
+								type="button"
+								disabled={ page <= 1 }
+								onClick={ () =>
+									setPage( ( current ) => current - 1 )
+								}
+							>
+								{ __( 'Previous', 'corex' ) }
+							</button>
+							<span>
+								{ __( 'Page', 'corex' ) } { page } / { pages }
+							</span>
+							<button
+								type="button"
+								disabled={ page >= pages }
+								onClick={ () =>
+									setPage( ( current ) => current + 1 )
+								}
+							>
+								{ __( 'Next', 'corex' ) }
+							</button>
+						</nav>
+					) }
+				</>
 			) }
-			</> ) }
 		</div>
 	);
 }

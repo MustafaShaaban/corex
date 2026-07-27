@@ -20,7 +20,12 @@ const ACTIONS = [
 	{ key: 'trash', label: __( 'Move to trash', 'corex' ), destructive: true },
 ];
 
-/** The arrival time, in the reader's own locale — ordering and age are most of the judgement. */
+/**
+ * The arrival time, in the reader's own locale — ordering and age are most of the judgement.
+ *
+ * @param {string} iso The stored timestamp.
+ * @return {string} A readable arrival time, or '' when it cannot be parsed.
+ */
 function arrived( iso ) {
 	const parsed = Date.parse( iso );
 
@@ -31,7 +36,11 @@ function arrived( iso ) {
 	return new Date( parsed ).toLocaleString();
 }
 
-export default function ModerationPanel( { comments = [], busy = false, onModerate } ) {
+export default function ModerationPanel( {
+	comments = [],
+	busy = false,
+	onModerate,
+} ) {
 	if ( comments.length === 0 ) {
 		// A positive state, not an absence: nothing is waiting, which is the good outcome.
 		return (
@@ -44,9 +53,14 @@ export default function ModerationPanel( { comments = [], busy = false, onModera
 	return (
 		<ul className="corex-blog-pro__queue">
 			{ comments.map( ( comment ) => (
-				<li key={ comment.comment_id } className="corex-blog-pro__comment">
+				<li
+					key={ comment.comment_id }
+					className="corex-blog-pro__comment"
+				>
 					<p className="corex-blog-pro__comment-meta">
-						<strong>{ comment.author || __( 'Anonymous', 'corex' ) }</strong>
+						<strong>
+							{ comment.author || __( 'Anonymous', 'corex' ) }
+						</strong>
 						<span>{ comment.state_label }</span>
 						{ comment.submitted_at ? (
 							<time dateTime={ comment.submitted_at }>
@@ -60,12 +74,17 @@ export default function ModerationPanel( { comments = [], busy = false, onModera
 						) : null }
 						{ comment.first_comment ? (
 							<span className="corex-blog-pro__flag">
-								{ __( 'First comment from this person', 'corex' ) }
+								{ __(
+									'First comment from this person',
+									'corex'
+								) }
 							</span>
 						) : null }
 					</p>
 
-					<p className="corex-blog-pro__comment-body">{ comment.content }</p>
+					<p className="corex-blog-pro__comment-body">
+						{ comment.content }
+					</p>
 
 					{ /* Hidden rather than shown and refused, from the same capability the route
 					     enforces (DECISIONS #159). */ }
@@ -75,10 +94,19 @@ export default function ModerationPanel( { comments = [], busy = false, onModera
 								<button
 									key={ action.key }
 									type="button"
-									className={ action.destructive ? 'is-destructive' : '' }
+									className={
+										action.destructive
+											? 'is-destructive'
+											: ''
+									}
 									data-corex-blog-moderate={ action.key }
 									disabled={ busy }
-									onClick={ () => onModerate( comment.comment_id, action.key ) }
+									onClick={ () =>
+										onModerate(
+											comment.comment_id,
+											action.key
+										)
+									}
 								>
 									{ action.label }
 								</button>

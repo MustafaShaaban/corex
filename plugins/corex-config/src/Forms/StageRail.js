@@ -13,7 +13,10 @@ const STAGES = [
 
 export function StageRail( { active, statuses, onChange } ) {
 	return (
-		<nav className="corex-flow-editor__stages" aria-label={ __( 'Flow stages', 'corex' ) }>
+		<nav
+			className="corex-flow-editor__stages"
+			aria-label={ __( 'Flow stages', 'corex' ) }
+		>
 			{ STAGES.map( ( [ key, label ], index ) => (
 				<button
 					key={ key }

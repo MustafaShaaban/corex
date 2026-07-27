@@ -19,20 +19,39 @@ import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import EditorialPanel from './EditorialPanel.js';
 import ModerationPanel from './ModerationPanel.js';
-import { loadBlogData, moderateComment, transitionPost } from './blogProClient.js';
-import { blogReducer, initialBlogState, normalizeAnalytics } from './blogProState.js';
+import {
+	loadBlogData,
+	moderateComment,
+	transitionPost,
+} from './blogProClient.js';
+import {
+	blogReducer,
+	initialBlogState,
+	normalizeAnalytics,
+} from './blogProState.js';
 
-/** Seconds, said the way a person would say them. */
+/**
+ * Seconds, said the way a person would say them.
+ *
+ * @param {number} seconds An average read time.
+ * @return {string} That duration in translated words.
+ */
 function readingTime( seconds ) {
 	if ( seconds < 60 ) {
-		/* translators: %d: a number of seconds. */
-		return sprintf( _n( '%d second', '%d seconds', seconds, 'corex' ), seconds );
+		return sprintf(
+			/* translators: %d: a number of seconds. */
+			_n( '%d second', '%d seconds', seconds, 'corex' ),
+			seconds
+		);
 	}
 
 	const minutes = Math.round( seconds / 60 );
 
-	/* translators: %d: a number of minutes. */
-	return sprintf( _n( '%d minute', '%d minutes', minutes, 'corex' ), minutes );
+	return sprintf(
+		/* translators: %d: a number of minutes. */
+		_n( '%d minute', '%d minutes', minutes, 'corex' ),
+		minutes
+	);
 }
 
 export default function BlogProApp( { config = {} } ) {
@@ -44,7 +63,9 @@ export default function BlogProApp( { config = {} } ) {
 		editorial: config.editorial || null,
 		comments: Array.isArray( config.comments ) ? config.comments : [],
 		authors: Array.isArray( config.authors ) ? config.authors : [],
-		shareControls: Array.isArray( config.shareControls ) ? config.shareControls : [],
+		shareControls: Array.isArray( config.shareControls )
+			? config.shareControls
+			: [],
 	} );
 	const [ busy, setBusy ] = useState( false );
 
@@ -79,7 +100,11 @@ export default function BlogProApp( { config = {} } ) {
 		async ( payload ) => {
 			setBusy( true );
 			try {
-				const editorial = await transitionPost( config, config.selectedPostId, payload );
+				const editorial = await transitionPost(
+					config,
+					config.selectedPostId,
+					payload
+				);
 				dispatch( { type: 'transitioned', editorial } );
 				await refresh();
 			} catch ( failure ) {
@@ -95,7 +120,11 @@ export default function BlogProApp( { config = {} } ) {
 		async ( commentId, action ) => {
 			setBusy( true );
 			try {
-				const result = await moderateComment( config, commentId, action );
+				const result = await moderateComment(
+					config,
+					commentId,
+					action
+				);
 				dispatch( {
 					type: 'commentModerated',
 					commentId,
@@ -142,7 +171,10 @@ export default function BlogProApp( { config = {} } ) {
 	return (
 		<div className="corex-blog-pro-app">
 			<div className="corex-blog-pro__subject">
-				<div className="corex-blog-pro__chooser" data-corex-blog-post-selector>
+				<div
+					className="corex-blog-pro__chooser"
+					data-corex-blog-post-selector
+				>
 					<CorexSelect
 						label={ __( 'Post', 'corex' ) }
 						value={ String( config.selectedPostId || '' ) }
@@ -174,7 +206,9 @@ export default function BlogProApp( { config = {} } ) {
 					onClick={ refresh }
 					disabled={ busy }
 				>
-					{ busy ? __( 'Refreshing…', 'corex' ) : __( 'Refresh', 'corex' ) }
+					{ busy
+						? __( 'Refreshing…', 'corex' )
+						: __( 'Refresh', 'corex' ) }
 				</button>
 			</div>
 
@@ -199,8 +233,14 @@ export default function BlogProApp( { config = {} } ) {
 
 				{ hasAnalytics ? (
 					<div className="corex-blog-pro__stats">
-						<Metric label={ __( 'Views', 'corex' ) } value={ state.analytics.cards.views } />
-						<Metric label={ __( 'Reads', 'corex' ) } value={ state.analytics.cards.reads } />
+						<Metric
+							label={ __( 'Views', 'corex' ) }
+							value={ state.analytics.cards.views }
+						/>
+						<Metric
+							label={ __( 'Reads', 'corex' ) }
+							value={ state.analytics.cards.reads }
+						/>
 						<Metric
 							label={ __( 'Share clicks', 'corex' ) }
 							value={ state.analytics.cards.shareClicks }
@@ -211,12 +251,17 @@ export default function BlogProApp( { config = {} } ) {
 						/>
 						<Metric
 							label={ __( 'Average read time', 'corex' ) }
-							value={ readingTime( state.analytics.cards.averageReadSeconds ) }
+							value={ readingTime(
+								state.analytics.cards.averageReadSeconds
+							) }
 						/>
 						<Metric
 							label={ __( 'Read rate', 'corex' ) }
-							/* translators: %s: a percentage, e.g. 36.7. */
-							value={ sprintf( __( '%s%%', 'corex' ), state.analytics.cards.engagement ) }
+							value={ sprintf(
+								/* translators: %s: a percentage, e.g. 36.7. */
+								__( '%s%%', 'corex' ),
+								state.analytics.cards.engagement
+							) }
 						/>
 					</div>
 				) : (

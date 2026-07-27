@@ -7,7 +7,9 @@
 ( function () {
 	function bind() {
 		if ( window.Corex && window.Corex.forms ) {
-			document.querySelectorAll( '.corex-form' ).forEach( window.Corex.forms.bind );
+			document
+				.querySelectorAll( '.corex-form' )
+				.forEach( window.Corex.forms.bind );
 		}
 	}
 

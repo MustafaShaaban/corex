@@ -14,8 +14,8 @@ function historyLabel( run ) {
 		failed: __( 'Failed', 'corex' ),
 		'rolled-back': __( 'Rolled back', 'corex' ),
 	};
-	/* translators: 1: migration ID, 2: definition key, 3: state. */
 	return sprintf(
+		/* translators: 1: migration ID, 2: definition key, 3: state. */
 		__( '#%1$d · %2$s · %3$s', 'corex' ),
 		run.id,
 		run.definition.key,
@@ -24,7 +24,10 @@ function historyLabel( run ) {
 }
 
 export default function MigrationsPanel( { config, sources } ) {
-	const candidates = useMemo( () => actionSources( sources, 'migrations' ), [ sources ] );
+	const candidates = useMemo(
+		() => actionSources( sources, 'migrations' ),
+		[ sources ]
+	);
 	const [ sourceKey, setSourceKey ] = useState( candidates[ 0 ]?.key || '' );
 	const [ plans, setPlans ] = useState( [] );
 	const [ history, setHistory ] = useState( [] );
@@ -33,79 +36,230 @@ export default function MigrationsPanel( { config, sources } ) {
 	const [ busy, setBusy ] = useState( false );
 
 	const load = useCallback( async () => {
-		if ( ! sourceKey ) return;
+		if ( ! sourceKey ) {
+			return;
+		}
 		try {
-			const url = `${ dataEndpoint( config.restUrl, '', 'migrations' ) }?source=${ encodeURIComponent( sourceKey ) }`;
+			const url = `${ dataEndpoint(
+				config.restUrl,
+				'',
+				'migrations'
+			) }?source=${ encodeURIComponent( sourceKey ) }`;
 			const payload = await dataModelsApi( config, 'get', url );
 			setPlans( payload.migrations || [] );
 			setHistory( payload.history || [] );
-		} catch ( error ) { setNotice( error.message ); }
+		} catch ( error ) {
+			setNotice( error.message );
+		}
 	}, [ config, sourceKey ] );
 
-	useEffect( () => { load(); }, [ load ] );
+	useEffect( () => {
+		load();
+	}, [ load ] );
 
 	const previewApply = async ( definition ) => {
 		setBusy( true );
 		try {
-			const payload = await dataModelsApi( config, 'post', dataEndpoint( config.restUrl, '', 'migration-preview' ), {
-				source: sourceKey, definition, action: 'apply',
-			} );
+			const payload = await dataModelsApi(
+				config,
+				'post',
+				dataEndpoint( config.restUrl, '', 'migration-preview' ),
+				{
+					source: sourceKey,
+					definition,
+					action: 'apply',
+				}
+			);
 			setPreview( payload.preview );
-		} catch ( error ) { setNotice( error.message ); }
-		finally { setBusy( false ); }
+		} catch ( error ) {
+			setNotice( error.message );
+		} finally {
+			setBusy( false );
+		}
 	};
 	const previewRollback = async ( run ) => {
 		setBusy( true );
 		try {
-			const payload = await dataModelsApi( config, 'post', dataEndpoint( config.restUrl, '', 'migration-rollback', run.id ), {} );
+			const payload = await dataModelsApi(
+				config,
+				'post',
+				dataEndpoint(
+					config.restUrl,
+					'',
+					'migration-rollback',
+					run.id
+				),
+				{}
+			);
 			setPreview( payload.preview );
-		} catch ( error ) { setNotice( error.message ); }
-		finally { setBusy( false ); }
+		} catch ( error ) {
+			setNotice( error.message );
+		} finally {
+			setBusy( false );
+		}
 	};
 	const confirm = async () => {
 		setBusy( true );
 		try {
-			const endpoint = preview.action === 'rollback'
-				? dataEndpoint( config.restUrl, '', 'migration-rollback', preview.run_id )
-				: dataEndpoint( config.restUrl, '', 'migration-apply' );
-			await dataModelsApi( config, 'post', endpoint, { token: preview.token } );
+			const endpoint =
+				preview.action === 'rollback'
+					? dataEndpoint(
+							config.restUrl,
+							'',
+							'migration-rollback',
+							preview.run_id
+					  )
+					: dataEndpoint( config.restUrl, '', 'migration-apply' );
+			await dataModelsApi( config, 'post', endpoint, {
+				token: preview.token,
+			} );
 			setPreview( null );
-			setNotice( preview.action === 'rollback' ? __( 'Rollback queued.', 'corex' ) : __( 'Migration queued after snapshot.', 'corex' ) );
+			setNotice(
+				preview.action === 'rollback'
+					? __( 'Rollback queued.', 'corex' )
+					: __( 'Migration queued after snapshot.', 'corex' )
+			);
 			await load();
-		} catch ( error ) { setNotice( error.message ); }
-		finally { setBusy( false ); }
+		} catch ( error ) {
+			setNotice( error.message );
+		} finally {
+			setBusy( false );
+		}
 	};
 
 	// A backstop, not the normal path: the tab is hidden when no model ships schema changes.
 	if ( ! candidates.length ) {
-		return <p className="corex-data-models__empty">{ __( 'No model on this site ships schema changes right now. The Models tab lists what each model supports.', 'corex' ) }</p>;
+		return (
+			<p className="corex-data-models__empty">
+				{ __(
+					'No model on this site ships schema changes right now. The Models tab lists what each model supports.',
+					'corex'
+				) }
+			</p>
+		);
 	}
 
-	return <section className="corex-surface corex-data-models__workspace">
-		<header><h2>{ __( 'Migrations', 'corex' ) }</h2><p>{ __( 'Every apply copies the table first, and a rollback puts that copy back — schema and rows together. Anything written after the migration is not in the copy, so a rollback discards it.', 'corex' ) }</p></header>
-		<SourceSelect sources={ candidates } value={ sourceKey } onChange={ ( key ) => { setSourceKey( key ); setPreview( null ); } } />
-		{ notice && <p role="status">{ notice }</p> }
-		<div className="corex-data-models__migration-list">{ plans.map( ( plan ) => <article key={ plan.key }>
-			<h3>{ plan.description }</h3><code>{ plan.key } · { plan.version }</code>
-			<ol>{ plan.plan.map( ( step ) => <li key={ step }>{ step }</li> ) }</ol>
-			<p>{ plan.transactional ? __( 'Transactional', 'corex' ) : __( 'Non-transactional', 'corex' ) } · { plan.rollback_supported ? __( 'Rollback supported', 'corex' ) : __( 'No rollback', 'corex' ) }</p>
-			<Button variant="primary" disabled={ busy } onClick={ () => previewApply( plan.key ) }>{ __( 'Preview migration', 'corex' ) }</Button>
-		</article> ) }</div>
-		<div className="corex-data-models__history-head"><h3>{ __( 'Migration history', 'corex' ) }</h3>
-			<Button variant="secondary" onClick={ load } disabled={ busy }>{ __( 'Refresh', 'corex' ) }</Button></div>
-		{ history.length ? <ul className="corex-data-models__history">{ history.map( ( run ) => <li key={ run.id }>
-			<span>{ historyLabel( run ) }</span>
-			{ run.state === 'applied' && run.definition.rollback_supported && <Button variant="link" isDestructive
-				onClick={ () => previewRollback( run ) }>{ __( 'Preview rollback', 'corex' ) }</Button> }
-		</li> ) }</ul> : <p>{ __( 'No migration runs yet.', 'corex' ) }</p> }
-		{ preview && <Modal title={ preview.action === 'rollback' ? __( 'Confirm rollback', 'corex' ) : __( 'Confirm migration', 'corex' ) }
-			onRequestClose={ () => setPreview( null ) }>
-			{ preview.production_warning && <p className="corex-data-models__warning">{ __( 'Production warning: this changes stored schema. Review the exact plan before queueing.', 'corex' ) }</p> }
-			<ol>{ preview.definition.plan.map( ( step ) => <li key={ step }>{ step }</li> ) }</ol>
-			<div className="corex-data__dialog-actions"><Button variant="tertiary" onClick={ () => setPreview( null ) }>{ __( 'Cancel', 'corex' ) }</Button>
-				<Button variant="primary" isDestructive={ preview.action === 'rollback' } isBusy={ busy } disabled={ busy } onClick={ confirm }>
-					{ preview.action === 'rollback' ? __( 'Queue rollback', 'corex' ) : __( 'Snapshot and queue', 'corex' ) }
-				</Button></div>
-		</Modal> }
-	</section>;
+	return (
+		<section className="corex-surface corex-data-models__workspace">
+			<header>
+				<h2>{ __( 'Migrations', 'corex' ) }</h2>
+				<p>
+					{ __(
+						'Every apply copies the table first, and a rollback puts that copy back — schema and rows together. Anything written after the migration is not in the copy, so a rollback discards it.',
+						'corex'
+					) }
+				</p>
+			</header>
+			<SourceSelect
+				sources={ candidates }
+				value={ sourceKey }
+				onChange={ ( key ) => {
+					setSourceKey( key );
+					setPreview( null );
+				} }
+			/>
+			{ notice && <p role="status">{ notice }</p> }
+			<div className="corex-data-models__migration-list">
+				{ plans.map( ( plan ) => (
+					<article key={ plan.key }>
+						<h3>{ plan.description }</h3>
+						<code>
+							{ plan.key } · { plan.version }
+						</code>
+						<ol>
+							{ plan.plan.map( ( step ) => (
+								<li key={ step }>{ step }</li>
+							) ) }
+						</ol>
+						<p>
+							{ plan.transactional
+								? __( 'Transactional', 'corex' )
+								: __( 'Non-transactional', 'corex' ) }{ ' ' }
+							·{ ' ' }
+							{ plan.rollback_supported
+								? __( 'Rollback supported', 'corex' )
+								: __( 'No rollback', 'corex' ) }
+						</p>
+						<Button
+							variant="primary"
+							disabled={ busy }
+							onClick={ () => previewApply( plan.key ) }
+						>
+							{ __( 'Preview migration', 'corex' ) }
+						</Button>
+					</article>
+				) ) }
+			</div>
+			<div className="corex-data-models__history-head">
+				<h3>{ __( 'Migration history', 'corex' ) }</h3>
+				<Button variant="secondary" onClick={ load } disabled={ busy }>
+					{ __( 'Refresh', 'corex' ) }
+				</Button>
+			</div>
+			{ history.length ? (
+				<ul className="corex-data-models__history">
+					{ history.map( ( run ) => (
+						<li key={ run.id }>
+							<span>{ historyLabel( run ) }</span>
+							{ run.state === 'applied' &&
+								run.definition.rollback_supported && (
+									<Button
+										variant="link"
+										isDestructive
+										onClick={ () => previewRollback( run ) }
+									>
+										{ __( 'Preview rollback', 'corex' ) }
+									</Button>
+								) }
+						</li>
+					) ) }
+				</ul>
+			) : (
+				<p>{ __( 'No migration runs yet.', 'corex' ) }</p>
+			) }
+			{ preview && (
+				<Modal
+					title={
+						preview.action === 'rollback'
+							? __( 'Confirm rollback', 'corex' )
+							: __( 'Confirm migration', 'corex' )
+					}
+					onRequestClose={ () => setPreview( null ) }
+				>
+					{ preview.production_warning && (
+						<p className="corex-data-models__warning">
+							{ __(
+								'Production warning: this changes stored schema. Review the exact plan before queueing.',
+								'corex'
+							) }
+						</p>
+					) }
+					<ol>
+						{ preview.definition.plan.map( ( step ) => (
+							<li key={ step }>{ step }</li>
+						) ) }
+					</ol>
+					<div className="corex-data__dialog-actions">
+						<Button
+							variant="tertiary"
+							onClick={ () => setPreview( null ) }
+						>
+							{ __( 'Cancel', 'corex' ) }
+						</Button>
+						<Button
+							variant="primary"
+							isDestructive={ preview.action === 'rollback' }
+							isBusy={ busy }
+							disabled={ busy }
+							onClick={ confirm }
+						>
+							{ preview.action === 'rollback'
+								? __( 'Queue rollback', 'corex' )
+								: __( 'Snapshot and queue', 'corex' ) }
+						</Button>
+					</div>
+				</Modal>
+			) }
+		</section>
+	);
 }

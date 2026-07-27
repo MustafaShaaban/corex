@@ -32,27 +32,36 @@
 		};
 	}
 
-	function translate( text ) {
-		return window.wp && window.wp.i18n ? window.wp.i18n.__( text, 'corex' ) : text;
-	}
+	/*
+	 * `corex-runtime`, this script's dependency, depends on `wp-i18n`, so `wp.i18n.__` is
+	 * there in WordPress; the identity fallback covers the buildless/test cases. Binding the
+	 * real function instead of wrapping a call around it is what lets `wp i18n make-pot` see
+	 * the literals at the call sites below.
+	 */
+	const __ =
+		window.wp && window.wp.i18n && typeof window.wp.i18n.__ === 'function'
+			? window.wp.i18n.__
+			: function ( text ) {
+					return text;
+			  };
 
 	function init() {
-		var config = window.corexCaptcha;
-		var anchor = document.getElementById( 'captcha.secret' );
+		const config = window.corexCaptcha;
+		const anchor = document.getElementById( 'captcha.secret' );
 
 		if ( ! config || ! anchor || ! window.Corex || ! window.Corex.api ) {
 			return;
 		}
 
-		var wrap = document.createElement( 'p' );
+		const wrap = document.createElement( 'p' );
 		wrap.className = 'corex-captcha-test';
 
-		var button = document.createElement( 'button' );
+		const button = document.createElement( 'button' );
 		button.type = 'button';
 		button.className = 'button corex-captcha-test__button';
-		button.textContent = translate( 'Test verification' );
+		button.textContent = __( 'Test verification', 'corex' );
 
-		var result = document.createElement( 'span' );
+		const result = document.createElement( 'span' );
 		result.className = 'corex-captcha-test__result';
 		result.setAttribute( 'role', 'status' );
 		result.setAttribute( 'aria-live', 'polite' );
@@ -64,17 +73,28 @@
 		button.addEventListener( 'click', function () {
 			button.disabled = true;
 			result.className = 'corex-captcha-test__result';
-			result.textContent = translate( 'Testing…' );
+			result.textContent = __( 'Testing…', 'corex' );
 
 			window.Corex.api
-				.post( testEndpoint( config.restUrl ), {}, { nonce: config.nonce } )
+				.post(
+					testEndpoint( config.restUrl ),
+					{},
+					{ nonce: config.nonce }
+				)
 				.then( function ( res ) {
-					var view = resultFromEnvelope( res && res.envelope );
-					result.textContent = view.message || translate( 'No response from the provider.' );
-					result.className = 'corex-captcha-test__result is-' + ( view.ok ? 'ok' : 'error' );
+					const view = resultFromEnvelope( res && res.envelope );
+					result.textContent =
+						view.message ||
+						__( 'No response from the provider.', 'corex' );
+					result.className =
+						'corex-captcha-test__result is-' +
+						( view.ok ? 'ok' : 'error' );
 				} )
 				.catch( function () {
-					result.textContent = translate( 'The test request failed. Check your connection and try again.' );
+					result.textContent = __(
+						'The test request failed. Check your connection and try again.',
+						'corex'
+					);
 					result.className = 'corex-captcha-test__result is-error';
 				} )
 				.then( function () {
@@ -93,6 +113,9 @@
 
 	// Exported for unit tests (no effect in the browser, where there is no CommonJS module).
 	if ( typeof module !== 'undefined' && module.exports ) {
-		module.exports = { testEndpoint: testEndpoint, resultFromEnvelope: resultFromEnvelope };
+		module.exports = {
+			testEndpoint,
+			resultFromEnvelope,
+		};
 	}
 } )();

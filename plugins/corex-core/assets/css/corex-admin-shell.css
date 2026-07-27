@@ -257,7 +257,8 @@ body.corex-admin-screen .corex-admin__shell {
 	font-size: var(--corex-admin-font-md);
 }
 
-/* Notification bell — the header-actions region on CoreX screens (spec 072 FR-016). */
+/* Notification bell — the header-actions region on CoreX screens
+   (spec 072 FR-016). */
 .corex-admin__header-actions {
 	display: flex;
 	align-items: center;
@@ -297,17 +298,26 @@ body.corex-admin-screen .corex-admin__shell {
 
 .corex-notification-bell__badge {
 	position: absolute;
+
+	/* The count is centred by the box itself. This used to be
+	   `line-height: 1.1rem` doing double duty as the badge's height and its
+	   vertical centring — a length on line-height, which the token rules
+	   disallow because it does not scale with the text it is setting. An
+	   explicit block-size plus flex centring says the same thing directly and
+	   holds the pill square for a single digit. */
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	inset-block-start: 0.2rem;
 	inset-inline-end: 0.2rem;
 	min-inline-size: 1.1rem;
+	block-size: 1.1rem;
 	padding-inline: 0.3rem;
 	color: var(--corex-admin-action-ink);
 	background: var(--corex-admin-action);
 	border-radius: var(--corex-admin-radius-pill);
 	font-size: var(--corex-admin-font-xs);
 	font-weight: 700;
-	line-height: 1.1rem;
-	text-align: center;
 }
 
 /* Notification drawer — the panel the bell opens (spec 072 FR-016). */

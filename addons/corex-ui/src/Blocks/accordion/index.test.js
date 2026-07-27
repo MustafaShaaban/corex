@@ -9,16 +9,26 @@ const RichTextMock = () => null;
 const ButtonMock = ( { children, onClick } ) => ( { onClick, children } );
 
 jest.mock( './style.scss', () => ( {} ), { virtual: true } );
-jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), { virtual: true } );
-jest.mock( '@wordpress/block-editor', () => ( {
-	useBlockProps: ( props ) => props || {},
-	RichText: RichTextMock,
-	InspectorControls: ( { children } ) => children,
-} ), { virtual: true } );
-jest.mock( '@wordpress/components', () => ( {
-	PanelBody: ( { children } ) => children,
-	Button: ButtonMock,
-} ), { virtual: true } );
+jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), {
+	virtual: true,
+} );
+jest.mock(
+	'@wordpress/block-editor',
+	() => ( {
+		useBlockProps: ( props ) => props || {},
+		RichText: RichTextMock,
+		InspectorControls: ( { children } ) => children,
+	} ),
+	{ virtual: true }
+);
+jest.mock(
+	'@wordpress/components',
+	() => ( {
+		PanelBody: ( { children } ) => children,
+		Button: ButtonMock,
+	} ),
+	{ virtual: true }
+);
 jest.mock( '@wordpress/i18n', () => ( { __: ( s ) => s } ), { virtual: true } );
 
 import './index.js';
@@ -28,8 +38,12 @@ function collect( node, type, out = [] ) {
 		node.forEach( ( n ) => collect( n, type, out ) );
 		return out;
 	}
-	if ( ! node || typeof node !== 'object' ) return out;
-	if ( node.type === type ) out.push( node );
+	if ( ! node || typeof node !== 'object' ) {
+		return out;
+	}
+	if ( node.type === type ) {
+		out.push( node );
+	}
 	collect( node.props && node.props.children, type, out );
 	return out;
 }
@@ -44,7 +58,12 @@ describe( 'accordion block — inline editing', () => {
 
 	test( 'renders title + content RichText per panel', () => {
 		const element = config.edit( {
-			attributes: { items: [ { title: 'Q1', content: 'A1' }, { title: 'Q2', content: 'A2' } ] },
+			attributes: {
+				items: [
+					{ title: 'Q1', content: 'A1' },
+					{ title: 'Q2', content: 'A2' },
+				],
+			},
 			setAttributes: jest.fn(),
 		} );
 		expect( collect( element, RichTextMock ).length ).toBe( 4 ); // 2 panels × (title + content)
@@ -52,9 +71,16 @@ describe( 'accordion block — inline editing', () => {
 
 	test( 'Add panel appends an empty item', () => {
 		const setAttributes = jest.fn();
-		const element = config.edit( { attributes: { items: [] }, setAttributes } );
-		const addBtn = collect( element, ButtonMock ).find( ( b ) => b.props.children === 'Add panel' );
+		const element = config.edit( {
+			attributes: { items: [] },
+			setAttributes,
+		} );
+		const addBtn = collect( element, ButtonMock ).find(
+			( b ) => b.props.children === 'Add panel'
+		);
 		addBtn.props.onClick();
-		expect( setAttributes ).toHaveBeenCalledWith( { items: [ { title: '', content: '' } ] } );
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			items: [ { title: '', content: '' } ],
+		} );
 	} );
 } );

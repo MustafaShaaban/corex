@@ -27,7 +27,9 @@ test( 'the block editor loads with no console errors', async ( { page } ) => {
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
 
-test( 'the Corex settings screen loads with no console errors', async ( { page } ) => {
+test( 'the Corex settings screen loads with no console errors', async ( {
+	page,
+} ) => {
 	const errors = collectConsoleErrors( page );
 
 	await page.goto( '/wp-admin/admin.php?page=corex-settings' );

@@ -10,34 +10,41 @@ import ServerSideRender from '@wordpress/server-side-render';
 import metadata from './block.json';
 import './style.scss';
 
-registerBlockType( metadata.name, {
-	edit: ( { attributes, setAttributes } ) => {
-		const blockProps = useBlockProps();
+function Edit( { attributes, setAttributes } ) {
+	const blockProps = useBlockProps();
 
-		return (
-			<div { ...blockProps }>
-				<InspectorControls>
-					<PanelBody title={ __( 'Modal', 'corex' ) }>
-						<TextControl
-							label={ __( 'Title', 'corex' ) }
-							value={ attributes.title }
-							onChange={ ( title ) => setAttributes( { title } ) }
-						/>
-						<TextControl
-							label={ __( 'Trigger label', 'corex' ) }
-							value={ attributes.triggerLabel }
-							onChange={ ( triggerLabel ) => setAttributes( { triggerLabel } ) }
-						/>
-						<TextareaControl
-							label={ __( 'Content', 'corex' ) }
-							value={ attributes.content }
-							onChange={ ( content ) => setAttributes( { content } ) }
-						/>
-					</PanelBody>
-				</InspectorControls>
-				<ServerSideRender block={ metadata.name } attributes={ attributes } />
-			</div>
-		);
-	},
+	return (
+		<div { ...blockProps }>
+			<InspectorControls>
+				<PanelBody title={ __( 'Modal', 'corex' ) }>
+					<TextControl
+						label={ __( 'Title', 'corex' ) }
+						value={ attributes.title }
+						onChange={ ( title ) => setAttributes( { title } ) }
+					/>
+					<TextControl
+						label={ __( 'Trigger label', 'corex' ) }
+						value={ attributes.triggerLabel }
+						onChange={ ( triggerLabel ) =>
+							setAttributes( { triggerLabel } )
+						}
+					/>
+					<TextareaControl
+						label={ __( 'Content', 'corex' ) }
+						value={ attributes.content }
+						onChange={ ( content ) => setAttributes( { content } ) }
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<ServerSideRender
+				block={ metadata.name }
+				attributes={ attributes }
+			/>
+		</div>
+	);
+}
+
+registerBlockType( metadata.name, {
+	edit: Edit,
 	save: () => null,
 } );
