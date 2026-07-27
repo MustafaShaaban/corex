@@ -26,7 +26,32 @@ only as the description of what 073 contained.
 Spec artifacts: `specs/074-core-admin-truthfulness-and-integration-closure/`. Spec **075 — Blog Pro
 Functional Completion** follows it, then the **v0.36.0** release.
 
-**Next:** finish Spec 074's tasks, run the full gate, open the PR.
+**Phases A–E are implemented** across four commits: `74f30e3` (framework-wide form discovery),
+`d7275e0` (truthful Data Models + a real import path), `5649859` (read separated from resolved,
+notification actions finished), and `0075340` (FR-5 capability summary). `tasks.md` had been left
+stale — every checkbox from T010 to T052 is now ticked against verified artifacts rather than
+assumption.
+
+That last commit also cleared **44 stylelint errors this branch had introduced** (comment rewraps
+plus the file's own `no-descending-specificity` pragma for disjoint component scopes) and
+regenerated the 057 token inventories, which had drifted from the CSS line numbers and were failing
+the Jest suite. Note stylelint and eslint are **not** CI-gated — CI runs PHP `-l`, Pest unit, Jest,
+Pest integration, Playwright, and CodeQL — so both had accumulated debt unnoticed. 38 stylelint
+errors remain, all pre-existing in `theme/assets/css/corex-navigation.css` and
+`plugins/corex-core/assets/css/corex-admin-login.css` plus two long-standing lines in
+`corex-admin-shell.css`; no file this branch touches has one.
+
+Gate as of `0075340`: **unit 1507/0** (6470 assertions) · **integration 219/0** (900) · **JS 331/0**
+(59 suites). Guards clean on the diff (`wp-guard`, `clean-code-guard`, `test-guard`). The local
+integration suite did *not* show the order-flakiness recorded during v0.35.0.
+
+**One functional gap is left — T047.** `NotificationItem.js` and the read-vs-resolved status
+derivation have **no Jest coverage at all**; the only Phase D test is
+`tests/Unit/Notifications/NotificationViewTest.php`, and `tests/e2e/notification-center.spec.js`
+predates the four-view IA it is supposed to exercise.
+
+**Next:** close T047, then Phase F — Playwright, browser acceptance (T061), `DECISIONS.md` /
+`CHANGELOG.md` (T064), and the PR.
 
 ---
 ## (previous, 2026-07-26) -- **Spec 073 (Admin polish & correctness) MERGED via PR #129 (`9b5939f`).**
