@@ -383,7 +383,6 @@ body.corex-admin-screen .corex-admin__shell {
 }
 
 .corex-notification-drawer__item {
-	padding: var(--corex-admin-space-md);
 	background: var(--corex-admin-surface);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-md);

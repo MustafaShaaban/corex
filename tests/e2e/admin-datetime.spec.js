@@ -131,24 +131,40 @@ test.describe( 'dates an operator can read', () => {
 	test( 'the same record reads the same in a different browser timezone', async ( {
 		browser,
 	} ) => {
-		// SC-003, and the reason this spec exists. Before spec 076 the flow list rendered these
+		// SC-003, and the reason this spec exists: before spec 076 these surfaces rendered the same
 		// records nine hours apart depending on who was looking.
+		//
+		// Read from the Submission Inbox rather than the flow list, which is where the defect was
+		// originally measured. The inbox is the surface CI seeds (three submissions, in the
+		// workflow's fixture step), so this assertion runs everywhere instead of being excluded on
+		// a fresh install — and its date column is where the raw timestamps actually were.
 		const read = async ( timezoneId ) => {
 			const context = await browser.newContext( {
 				storageState: require( './global-setup' ).STORAGE_STATE,
 				timezoneId,
 			} );
 			const page = await context.newPage();
-			await page.goto( '/wp-admin/admin.php?page=corex-forms' );
-			// Waiting for the shell is not enough: it is server-rendered and visible before the
-			// React flow list mounts, so reading here found zero dates and the comparison passed
-			// vacuously against an empty list.
+			await page.goto( '/wp-admin/admin.php?page=corex-submissions' );
+
+			// Waiting for the shell is not enough — it is server-rendered and visible before the
+			// React table mounts, so reading immediately finds zero dates and the comparison
+			// passes vacuously against two empty lists.
+			//
+			// Bounded, and with its own message: an open-ended waitFor turns "this site has no
+			// submissions" into "the test timed out after 60 seconds", which says nothing about
+			// why. This says it in ten.
 			await page
-				.locator( '.corex-admin time' )
+				.locator( '.corex-inbox__table tbody tr td:last-child time' )
 				.first()
-				.waitFor( { state: 'attached' } );
+				.waitFor( { state: 'attached', timeout: 10_000 } )
+				.catch( () => {
+					throw new Error(
+						`No dated submission rows rendered in ${ timezoneId }. The inbox needs at least one submission; CI seeds three in the "Seed browser-test fixtures" step.`
+					);
+				} );
+
 			const times = await page
-				.locator( '.corex-admin time' )
+				.locator( '.corex-inbox__table tbody tr td:last-child time' )
 				.allInnerTexts();
 			await context.close();
 			return times;
