@@ -21,6 +21,7 @@ use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginUrl;
 use Corex\Security\Admin\AdminGuard;
+use Corex\Cache\Status\CacheStatusReport;
 use Corex\Support\DateTime\AdminDateTime;
 use DateTimeImmutable;
 
@@ -46,6 +47,7 @@ final class OperationsSecurityScreen
         private readonly LoginLockoutReader $lockouts,
         private readonly AdminDateTime $dateTime,
         private readonly ModeDisclosure $disclosure,
+        private readonly CacheStatusReport $cacheStatus,
     ) {
     }
 
@@ -113,9 +115,9 @@ final class OperationsSecurityScreen
      * An allow-list rather than a free `?tab=`: an unrecognised value falls back to the overview
      * rather than rendering nothing, and nothing here can be reached that is not listed.
      *
-     * Spec 078 adds `cache` to this list. It is deliberately absent now — an empty section that
-     * promises cache management and delivers a heading would be exactly the dead end the product
-     * mandate forbids.
+     * `cache` was deliberately absent until spec 078 had something to put in it: a section
+     * promising cache management and delivering a heading would have been exactly the dead end the
+     * product mandate forbids.
      *
      * @return array<string, string>
      */
@@ -127,6 +129,7 @@ final class OperationsSecurityScreen
             'login'     => __('Login Protection', 'corex'),
             'hardening' => __('Hardening', 'corex'),
             'activity'  => __('Activity', 'corex'),
+            'cache'     => __('Cache & Performance', 'corex'),
         ];
     }
 
@@ -191,8 +194,63 @@ final class OperationsSecurityScreen
             'login'       => $this->securityApp('login'),
             'hardening'   => $this->checksCard($checks, $warnings),
             'activity'    => $this->securityApp('activity'),
+            'cache'       => $this->cacheCard(),
             default       => $this->overviewCard($checks, $warnings),
         };
+    }
+
+
+    /**
+     * Cache & Performance (spec 078, FR-016).
+     *
+     * Every layer, its real state, and — where CoreX can act — a control that performs a real
+     * operation. Where it cannot, the reason is on screen rather than a disabled button with no
+     * explanation, because "why is this greyed out" is the question a disabled control always asks
+     * and rarely answers.
+     */
+    private function cacheCard(): string
+    {
+        $rows = '';
+
+        foreach ($this->cacheStatus->layers() as $layer) {
+            $checked = $this->dateTime->format(
+                $layer->checkedAt,
+                AdminDateTime::FULL,
+                __('Not checked', 'corex'),
+            );
+
+            $action = $layer->manageable && $layer->safeToClear
+                ? '<button type="button" class="button corex-cache__action" data-corex-cache-clear="'
+                    . esc_attr($layer->key) . '">' . esc_html__('Clear', 'corex') . '</button>'
+                : '<span class="corex-cache__no-action">' . esc_html__('No action here', 'corex') . '</span>';
+
+            $rows .= '<li class="corex-cache__layer is-' . esc_attr($layer->state->value) . '">'
+                . '<div class="corex-cache__layer-head">'
+                . '<span class="corex-cache__layer-name">' . esc_html($layer->name) . '</span>'
+                . '<span class="corex-cache__layer-state">' . esc_html($layer->state->label()) . '</span>'
+                . '</div>'
+                . '<p class="corex-cache__layer-purpose">' . esc_html($layer->purpose) . '</p>'
+                . ($layer->detail !== ''
+                    ? '<p class="corex-cache__layer-detail">' . esc_html($layer->detail) . '</p>'
+                    : '')
+                . '<p class="corex-cache__layer-meta">'
+                . ($layer->provider !== ''
+                    ? '<span>' . esc_html($layer->provider) . '</span>'
+                    : '')
+                . '<span>' . esc_html__('Checked', 'corex') . ' ' . $checked->toHtml() . '</span>'
+                . $action
+                . '</p>'
+                . '</li>';
+        }
+
+        return '<section class="corex-surface corex-cache">'
+            . '<p class="corex-admin__eyebrow">' . esc_html__('CACHE & PERFORMANCE', 'corex') . '</p>'
+            . '<h2>' . esc_html__('What is caching on this site', 'corex') . '</h2>'
+            . '<p class="corex-opsec__detail">'
+            . esc_html__('Each layer is checked rather than assumed. CoreX’s own caches are safe to clear; rate limits and pending confirmations are never removed by a cache action.', 'corex')
+            . '</p>'
+            . '<ul class="corex-cache__layers">' . $rows . '</ul>'
+            . '</section>';
     }
 
     /** The React mount, told which section it is standing in. */

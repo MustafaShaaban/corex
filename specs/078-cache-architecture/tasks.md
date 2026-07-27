@@ -87,14 +87,14 @@ else in this spec asks the registry, so the registry has to be right first.
 
 ## Phase 5: Status from real checks
 
-- [ ] T022 `ObjectCacheProbe` — asks whether **WordPress** is using a persistent object cache, not
+- [x] T022 `ObjectCacheProbe` — asks whether **WordPress** is using a persistent object cache, not
       whether a Redis container exists (FR-017).
-- [ ] T023 `OpcacheProbe` — truthful, and `unknown` rather than `off` when the host disables
+- [x] T023 `OpcacheProbe` — truthful, and `unknown` rather than `off` when the host disables
       inspection. "Off" for "not allowed to look" is a confident wrong answer (FR-021).
-- [ ] T024 `PageCacheProbe` and `CdnProbe` — detection only, Null providers reporting `unsupported`
+- [x] T024 `PageCacheProbe` and `CdnProbe` — detection only, Null providers reporting `unsupported`
       with a reason (FR-022/023).
-- [ ] T025 `CacheStatusReport` assembling all seven layers.
-- [ ] T026 [P] Pest: a present-but-unused object cache reads as available, never active; a disabled
+- [x] T025 `CacheStatusReport` assembling all seven layers.
+- [x] T026 [P] Pest: a present-but-unused object cache reads as available, never active; a disabled
       OPcache inspection reads as unknown and does not fail.
 
 ---
@@ -103,9 +103,9 @@ else in this spec asks the registry, so the registry has to be right first.
 
 - [ ] T027 Move the five existing section renderers into `Sections/` — a pure move, no markup or
       behaviour change. `OperationsSectionsTest` must pass **untouched**, which is what proves it.
-- [ ] T028 `CacheSection` — seven layers with purpose, state, provider, whether CoreX can manage it,
+- [x] T028 `CacheSection` — seven layers with purpose, state, provider, whether CoreX can manage it,
       whether clearing is safe, when it was last checked, and a plain-language explanation (FR-016).
-- [ ] T029 The browser layer states plainly that CoreX cannot clear a visitor's cache, beside the
+- [x] T029 The browser layer states plainly that CoreX cannot clear a visitor's cache, beside the
       asset versioning that actually solves what people come to it for.
 - [ ] T030 `CacheController` — nonce, capability, allow-listed scope, confirmation for broad scopes,
       real result, audit entry with actor/time/scope/environment/provider/outcome (FR-018).
@@ -122,7 +122,7 @@ else in this spec asks the registry, so the registry has to be right first.
       their reason; no action is offered without a provider.
 - [ ] T034 Playwright: RTL, 375px, 200% zoom, light and dark, no overflow beyond stock wp-admin's
       own (DECISIONS #163), no console error.
-- [ ] T035 Capture `evidence/after/`.
+- [x] T035 Capture `evidence/after/`.
 - [ ] T036 Guards: `wp-guard`, `clean-code-guard`, `test-guard`, `docs-guard`.
 - [ ] T037 Documentation: the cache contract, classifications, namespaces, invalidation, shared-host
       behaviour, the optional Redis profile, OPcache, page-cache and CDN providers, the admin
