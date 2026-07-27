@@ -58,7 +58,15 @@ reproduces. Browser acceptance clean in RTL, 360 px, and 200 % zoom, with no con
 3. **The token-consumer contract earned its keep**: it caught a real constitution violation
    mid-implementation (`flex: 1 1 16rem`, a hardcoded size). Trust it over a passing eye.
 
-**Next:** open the 075 PR, merge #131, then the **v0.36.0** release.
+**Both PRs are open and green, awaiting the owner's merge** — `gh pr merge` is blocked for the agent
+by the permission classifier:
+
+- **#131** — 074 tracking closeout (docs only).
+- **#132** — Spec 075, all six checks green. Stacked on #131, so `PROGRESS.md` will conflict on the
+  second merge; keep both sides, as with every previous stack.
+
+**Next:** merge #131 then #132, then the **v0.36.0** release (`wp corex version 0.36.0 --path=wp`
+stamps 17 files; cut `[Unreleased]` — which now covers 073, 074 and 075 — to `[0.36.0]`).
 ---
 ## (previous, 2026-07-26) -- **Spec 073 (Admin polish & correctness) MERGED via PR #129 (`9b5939f`).**
 

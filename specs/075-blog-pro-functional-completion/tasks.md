@@ -100,4 +100,6 @@
 - [x] T073 `evidence/after/` captured and referenced from `spec.md`.
 - [x] T074 Guard Gate on the diff (`clean-code-guard`, `wp-guard`, `test-guard`, `docs-guard`).
 - [x] T075 Docs, `DECISIONS.md`, `CHANGELOG.md`, `PROGRESS.md`, `ROADMAP.md`.
-- [ ] T076 PR, CI green, merge, delete branch.
+- [x] T076 PR **#132** opened, **all six CI checks green** (PHP 8.3 lint+unit, Jest, integration on a
+      real WordPress, Playwright, both CodeQL). Merge and branch deletion are the owner's to run —
+      `gh pr merge` is blocked for this agent by the permission classifier.
