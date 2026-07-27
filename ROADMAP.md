@@ -398,11 +398,14 @@ These items require later validation and dedicated specs. They must not leak int
 
 ## 17. Current and next recommended specs
 
-> **Status (2026-07-22): no spec is active.** Spec 068's completion audit passed, and specs 069–072 have
-> shipped in v0.34.0/v0.35.0. The standing rule below still governs everything built since — the approved
-> current design is the functional contract, and a required control may not remain a placeholder — but it is
-> no longer an *active direction*, because there is nothing open under it. Choosing the next spec is an owner
-> decision; candidates are listed at the end of this section.
+> **Status (2026-07-27): Spec 074 is active, Spec 075 is queued.** Spec 068's completion audit passed;
+> specs 069–072 shipped in v0.34.0/v0.35.0 and spec 073 shipped via PR #129 (`9b5939f`). An owner
+> product-completion review then found four defects that survived 073 — code-registered forms are not
+> discoverable framework-wide, the Data Import/Migrations tabs are dead ends no registered source can
+> satisfy, the Submission Inbox heading has no layout-level spacing, and Notifications conflate *read*
+> with *resolved* — plus Blog Pro still being a read-only reference UI. Those are the two authorised
+> specs below. The standing rule still governs: the approved current design is the functional contract,
+> and a required control may not remain a placeholder.
 >
 > **Superseded framing, kept because the rule it states still applies (2026-07-03, owner correction):
 > Spec 068 — Product Functional Completion.**
@@ -450,10 +453,26 @@ Create and implement one reviewed spec at a time:
    job, and the Dashboard Command Center. **T021 (`NotificationChannelPolicy`) is deliberately unbuilt** — it
    guards an email-notification loop, and no email delivery channel for notifications exists to guard yet.
    Source: `specs/072-*/`.
+10. **Spec 073 - Admin polish and correctness** — done, merged via PR **#129** (`9b5939f`). Seven truthful-surface
+    fixes: the Add-ons state filter, the Data Models inline-SVG loss, the inert Operations mode preview, the
+    record-detail em-dash bug, `CorexSelect` on the remaining dropdowns, the doubled toolbar count, and the
+    admin prose rhythm baseline. Source: `specs/073-*/`.
+11. **Spec 074 - Core admin truthfulness and integration closure** — **active**. A unified form catalog so a form
+    registered in `FormRegistry` is discoverable everywhere without a site-specific filter hook; capability-aware
+    Data Models tabs plus the first genuinely import- and migration-capable managed model; the Submission Inbox
+    heading rhythm; and a Notifications action center that separates *read* from *resolved*. Source:
+    `specs/074-core-admin-truthfulness-and-integration-closure/`.
+12. **Spec 075 - Blog Pro functional completion** — **queued behind 074**. Blog Pro's services and REST exist but
+    its React screen is a read-only reference dashboard; this turns it into a working editorial workspace.
 
-### Candidates for the next spec — owner decision
+### Candidates for a later spec — owner decision
 
 Nothing is authorized by appearing here (§16). Listed so the choice is informed, roughly by cost:
+
+- **Capability Inspector / System Map.** Spec 074 adds a bounded capability summary to the Models screen
+  (what is registered, what it can do, what is missing, where to act). A full cross-module system map — every
+  provider, seam, job, and integration with live health — is the natural successor and is deliberately *not*
+  in 074's scope.
 
 - **Astro 7 migration for `docs-app`.** The original blocker is gone: `@astrojs/starlight@0.41.3` peers
   `astro ^7`, and astro 7.1.3 builds the docs to the same 284 pages with no config change. It is held only by a

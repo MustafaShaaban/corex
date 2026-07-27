@@ -4,9 +4,34 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-26) -- **Spec 073 (Admin polish & correctness) CHECKPOINTED on `spec/073-admin-polish-and-correctness`.** Committed locally, verified, guarded. Not pushed / no PR yet — that is the next decision.
+## RESUME HERE (2026-07-27) -- **Spec 074 (Core admin truthfulness & integration closure) IN PROGRESS on `spec/074-core-admin-truthfulness`.**
 
-An admin correctness pass, found as uncommitted WIP and brought to Definition of Done this session. Seven
+Spec 073 is **merged and closed** — PR **#129**, merge commit **`9b5939f`**, now the tip of `main`. The
+2026-07-26 "checkpointed / not pushed" note below was written before the push and is superseded; it is kept
+only as the description of what 073 contained.
+
+**Now in flight — Spec 074**, a product-completion closure pass over four defects that survived 073:
+1. **Code-registered forms are invisible framework-wide.** `FlowFilterOptions::all()` reads `FlowRepository`
+   only; a form registered through `Corex\Forms\FormRegistry` reaches the filters *only* if the site adds a
+   `corex_submission_filter_options` hook, and Forms & Flows never lists it at all. Issue #114's fix made
+   custom forms *filterable once injected*; it did not give the framework discovery.
+2. **Data → Import and Data → Migrations are permanent dead ends.** Every registered source declares
+   `import_dry_run`/`migrations` false, so both tabs can only ever print "No registered model provides an
+   import adapter."
+3. **Submission Inbox heading lines collide** — the eyebrow/title/count stack has no layout-level spacing.
+4. **Notifications under-communicate** — the record carries category, severity, source, environment,
+   occurrence count and resolution state; the screen shows title, body and "Mark read", and treats *read* as
+   though it meant *resolved*.
+
+Spec artifacts: `specs/074-core-admin-truthfulness-and-integration-closure/`. Spec **075 — Blog Pro
+Functional Completion** follows it, then the **v0.36.0** release.
+
+**Next:** finish Spec 074's tasks, run the full gate, open the PR.
+
+---
+## (previous, 2026-07-26) -- **Spec 073 (Admin polish & correctness) MERGED via PR #129 (`9b5939f`).**
+
+An admin correctness pass, found as uncommitted WIP and brought to Definition of Done. Seven
 truthful-surface fixes, no new capability:
 - **Add-ons state filter** — `AddonCatalogService::filter()`/`counts()`: mutually exclusive, exhaustive
   All/Active/Inactive/Not-installed buckets keyed on the same `status()` that prints the badge; rendered as
@@ -28,13 +53,10 @@ truthful-surface fixes, no new capability:
 - **Admin rhythm** — zero-specificity `:where()` baseline margins for un-styled prose/headings/lists + a
   `.corex-state` margin + a notifications nav icon.
 
-Gate (local, this session): **unit 1457/0** (6315 assertions) · **JS 311/0** (58 suites). Guards clean on the
-diff (`wp-guard`, `clean-code-guard`, `test-guard`). `scripts/generate-token-inventory.mjs` reproduces the
-committed `057/inventories/*.json` with no further diff. Integration is CI's authority (order-flaky locally)
-and was not run locally. Spec artifacts written at `specs/073-admin-polish-and-correctness/`.
-
-**Next:** owner decides whether to push `spec/073-*` and open a PR (CI will run the four suites, including the
-integration + browser jobs this checkpoint deliberately left to CI). Then the §17 next-spec choice stands.
+Gate: **unit 1457/0** (6315 assertions) · **JS 311/0** (58 suites) locally, then all required checks green on
+PR #129. Guards clean on the diff (`wp-guard`, `clean-code-guard`, `test-guard`).
+`scripts/generate-token-inventory.mjs` reproduces the committed `057/inventories/*.json` with no further
+diff. Spec artifacts at `specs/073-admin-polish-and-correctness/`.
 
 ---
 ## (previous, 2026-07-22) -- **v0.35.1 RELEASED** (correction release, tag `v0.35.1` = `ec6b48e`, on GitHub + Azure).
