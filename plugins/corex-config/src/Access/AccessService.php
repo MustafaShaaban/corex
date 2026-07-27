@@ -138,6 +138,19 @@ final class AccessService
         );
     }
 
+    /**
+     * The requester's own open request for this ability, or null.
+     *
+     * Lives here rather than in the controller because "is this a duplicate" is a decision about
+     * access requests, and both the browser form and any future caller must get the same answer.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function pendingRequestFor(int $requesterId, string $abilityKey): ?array
+    {
+        return $this->requests->pendingFor($requesterId, $abilityKey, null);
+    }
+
     public function requestAccess(
         int $requesterId,
         ?string $abilityKey,

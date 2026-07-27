@@ -31,17 +31,17 @@ generalisation from becoming a regression.
 
 ## Phase 2 — The request has somewhere to go (US1, P1) — THE FIX
 
-- [ ] **T010** `AccessRequestStore::pendingFor()` + `AccessRequestRepository` implementation:
+- [x] **T010** `AccessRequestStore::pendingFor()` + `AccessRequestRepository` implementation:
       the open request for a requester and ability/area, or none. Prepared statement, no interpolation.
-- [ ] **T011** `PendingAccessRequest` value object (core) + `PendingAccessRequestReader` interface.
-- [ ] **T012** `AccessRequestFlash` — user-bound, single-use, short-lived, non-sensitive.
-- [ ] **T013** `AccessRequestFormController` — `admin_post_corex_access_request`, `AdminGuard`,
+- [x] **T011** `PendingAccessRequest` value object (core) + `PendingAccessRequestReader` interface.
+- [x] **T012** `AccessRequestFlash` — user-bound, single-use, short-lived, non-sensitive.
+- [x] **T013** `AccessRequestFormController` — `admin_post_corex_access_request`, `AdminGuard`,
       allow-listed ability, duplicate refusal, `AccessService::requestAccess()`, PRG, `exit`.
-- [ ] **T014** `AdminPage::deniedBody()` renders form / pending / validation-failed / service-failed.
+- [x] **T014** `AdminPage::deniedBody()` renders form / pending / validation-failed / service-failed.
       Dates through `AdminDate`. Form posts to `admin-post.php`.
-- [ ] **T015** Bind `AdminPage` explicitly in `ConfigServiceProvider` with the reader; register the
+- [x] **T015** Bind `AdminPage` explicitly in `ConfigServiceProvider` with the reader; register the
       controller.
-- [ ] **T016** CSS for the pending and error states, tokens only, logical properties.
+- [x] **T016** CSS for the pending and error states, tokens only, logical properties.
 
 ## Phase 3 — Prove the fix (US1)
 
@@ -69,7 +69,7 @@ Written before Phase 5, because Phase 5 is what would break it.
 
 - [ ] **T040** `AdminError`, `AdminErrorKind`, `AdminErrorPresenter`.
 - [ ] **T041** Convert the four existing hand-written error call sites. Separate commit from the fix.
-- [ ] **T042** Cover the gap T003 finds, if it is real.
+- [x] **T042** Cover the gap T003 finds, if it is real.
 - [ ] **T043** Unit: no error presentation emits a path, exception, SQL, nonce or internal id.
 
 ## Phase 6 — React failure states (US4, P2)
@@ -95,6 +95,26 @@ Recorded as they happen, including mistakes, per the working guide.
 - **T001** — the defect is a *successful* operation with no confirmation, not a failure with a bad
   page. Writing the spec from the brief alone would have produced a friendly error page and left
   the real hole open.
+- **T010** — `prepare()` casts a null argument to the empty string, so the duplicate-guard query
+  could not use a `%s` placeholder for the unused half of the ability/area pair: an area request
+  would never have matched itself and the guard would have passed every time, silently. Each side
+  is a literal `IS NULL` or a real placeholder, never a placeholder holding null.
+- **T015** — constructing the new controller at boot made WordPress report
+  `_load_textdomain_just_in_time` on **every** admin page: the graph reaches a translated string
+  before `init`. `AccessController` is already resolved lazily inside `rest_api_init` for the same
+  reason, so the browser half is resolved inside its `admin_post` action. Found by bisecting the
+  working tree against a stash, not by reading it.
+- **T042 (twice wrong before right)** — the first implementation asked `$_registered_pages` whether
+  a `corex-` page exists. It reported **every real CoreX screen as missing to exactly the people
+  this gate exists for**: `add_submenu_page()` records a page the viewer may not open in
+  `$_wp_submenu_nopriv` and returns *before* reaching `$_registered_pages`, so registration is not
+  viewer-independent. Caught because the live check covered a subscriber on a real page, not only
+  an administrator on a fake one. The fix reads the same two globals, in the same order, as
+  WordPress's own `user_can_access_admin_page()`.
+
+  The lesson generalises the one this project keeps re-learning: a check verified from one vantage
+  point is not verified. Four cases — {administrator, subscriber} x {real page, fake page} — is the
+  smallest honest matrix, and three of them pass with the wrong implementation.
 - **T002** — the destination problem: the requester cannot open any CoreX screen, so a "request
   status" page would deny them again. The answer is to make the denied surface itself state-aware,
   which also removes the need for a flash on the success path entirely.

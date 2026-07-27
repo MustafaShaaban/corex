@@ -10,13 +10,32 @@ namespace Corex\Admin;
 
 defined('ABSPATH') || exit;
 
+use Corex\Access\AccessRequestSurfaceState;
 use Corex\Access\CorexAbility;
+use Corex\Support\Facades\AdminDate;
 
 /**
  * Shared, presentation-only markup for CoreX-owned wp-admin pages.
  */
 final class AdminPage
 {
+    /**
+     * Read once and consumed, so `false` means "not looked at yet" and `null` means "looked, and
+     * there was nothing". Two renders of the surface in one request would otherwise show the error
+     * on the first and a blank field on the second.
+     *
+     * @var array{problem:string,reason:string,reference:string}|null|false
+     */
+    private array|null|false $problem = false;
+
+    /**
+     * Null on a CoreX install without the config plugin, and in unit tests. The surface then
+     * renders exactly what it rendered before spec 079 — the plain form — rather than failing.
+     */
+    public function __construct(private readonly ?AccessRequestSurfaceState $requestState = null)
+    {
+    }
+
     public function open(string $section, string $title, string $description = '', string $crumbSuffix = ''): string
     {
         $descriptionHtml = $description === ''
@@ -88,20 +107,20 @@ final class AdminPage
     }
 
     /**
-     * The rail entries, built from the live CoreX submenu (`$submenu['corex-settings']`) so the
-     * inner rail can never disagree with the WordPress submenu — every registered CoreX page
-     * (including Insights and the gated Setup Wizard, and any declarative option page) appears,
-     * in the same order, with its matching icon. Falls back to the known core pages when no admin
-     * menu context exists (e.g. unit tests).
+     * slug => [icon mask, section key matching open()'s $active]. Every registered CoreX screen
+     * (including the Spec 063 screens) has a distinct icon and a correct active section — no generic
+     * option-page fallback for a real screen, and no dead entry point (spec 064).
      *
-     * @return list<array{0:string,1:string,2:string,3:bool}> [slug, icon, label, isActive]
+     * One map, read both ways: the rail turns a slug into an icon and an active state, and
+     * {@see pageSlugForSection()} turns a section back into the address it came from. Two maps
+     * would drift, and the direction that drifts silently is the redirect — a wrong icon is
+     * visible, a wrong destination is a dead end.
+     *
+     * @return array<string,array{0:string,1:string}>
      */
-    private function railItems(string $active): array
+    private static function sectionMeta(): array
     {
-        // slug => [icon mask, section key matching open()'s $active]. Every registered CoreX screen
-        // (including the Spec 063 screens) has a distinct icon and a correct active section — no generic
-        // option-page fallback for a real screen, and no dead entry point (spec 064).
-        $meta = [
+        return [
             'corex-settings'            => ['overview', 'overview'],
             'corex-addons'              => ['addons', 'addons'],
             'corex-forms'               => ['forms', 'forms'],
@@ -118,6 +137,39 @@ final class AdminPage
             'corex-setup'               => ['setup', 'setup'],
             'corex-settings-config'     => ['settings', 'settings'],
         ];
+    }
+
+    /**
+     * The admin page slug a section belongs to, or null when the section is not a CoreX screen.
+     *
+     * Returning null rather than a fallback slug is deliberate: this answers "where did this person
+     * come from", and the only honest answer for an unknown section is "nowhere I know of". A
+     * caller that guessed `corex-settings` would send someone who was refused one screen to a
+     * different screen they may also be refused from.
+     */
+    public static function pageSlugForSection(string $section): ?string
+    {
+        foreach (self::sectionMeta() as $slug => [, $sectionKey]) {
+            if ($section === $slug || $section === $sectionKey) {
+                return $slug;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The rail entries, built from the live CoreX submenu (`$submenu['corex-settings']`) so the
+     * inner rail can never disagree with the WordPress submenu — every registered CoreX page
+     * (including Insights and the gated Setup Wizard, and any declarative option page) appears,
+     * in the same order, with its matching icon. Falls back to the known core pages when no admin
+     * menu context exists (e.g. unit tests).
+     *
+     * @return list<array{0:string,1:string,2:string,3:bool}> [slug, icon, label, isActive]
+     */
+    private function railItems(string $active): array
+    {
+        $meta = self::sectionMeta();
 
         $items = [];
         global $submenu;
@@ -284,10 +336,15 @@ final class AdminPage
         return '<section class="corex-denied">' . $this->deniedBody($section) . '</section>';
     }
 
+    /**
+     * The lock mark, the explanation, the way back — then whichever request state applies.
+     *
+     * The shared half is not split into four render methods, tempting as the line count makes it:
+     * it is byte-identical in every state, and four copies is how three of them fall behind while
+     * one is updated.
+     */
     private function deniedBody(string $section): string
     {
-        $ability = $this->requestAbilityFor($section);
-
         return '<span class="corex-denied__icon" aria-hidden="true">'
             . '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
             . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
@@ -302,22 +359,116 @@ final class AdminPage
             . '</p><div class="corex-denied__actions">'
             . '<a class="button button-primary" href="' . esc_url(admin_url()) . '">'
             . esc_html__('Back to Dashboard', 'corex') . '</a>'
-            . '</div><form class="corex-denied__request" method="post" action="'
-            . esc_url(rest_url('corex/v1/access/requests')) . '">'
-            . '<input type="hidden" name="_wpnonce" value="' . esc_attr(wp_create_nonce('wp_rest')) . '" />'
-            . '<input type="hidden" name="ability" value="' . esc_attr($ability) . '" />'
-            . '<label for="corex-denied-request-reason">' . esc_html__('Why do you need access?', 'corex') . '</label>'
-            . '<textarea id="corex-denied-request-reason" name="reason" rows="3" maxlength="2000" required>'
-            . '</textarea><button type="submit" class="button">'
-            . esc_html__('Request access', 'corex') . '</button></form>'
-            . '<p class="corex-denied__reason">'
-            . esc_html__('Your request is tracked in CoreX Access & Abilities so an administrator can approve or deny it.', 'corex')
-            . '</p><p class="corex-denied__meta">'
+            . '</div>'
+            . $this->requestState($section)
+            . '<p class="corex-denied__meta">'
             . esc_html__('Denied attempts are recorded in the access audit log.', 'corex')
             . '</p>';
     }
 
-    private function requestAbilityFor(string $section): string
+    /**
+     * One of four: the request already sent, or the form — plain, with a validation error, or with
+     * a failure notice.
+     *
+     * "Already sent" is read from stored state rather than from a redirect flag, so it survives a
+     * refresh, a bookmark and tomorrow, and cannot be conjured by editing the URL.
+     */
+    private function requestState(string $section): string
+    {
+        $pending = $this->requestState?->pendingForCurrentUser(self::requestAbilityFor($section));
+
+        if ($pending !== null) {
+            $sent = AdminDate::full($pending->requestedAt);
+
+            return '<div class="corex-denied__sent">'
+                . '<p class="corex-denied__sent-title">'
+                . esc_html__('Your request has been sent', 'corex') . '</p>'
+                . '<p class="corex-denied__sent-detail">'
+                . sprintf(
+                    /* translators: %s: when the access request was sent, e.g. "1 August 2026 at 10:20 PM". */
+                    esc_html__('Sent %s. An administrator has been notified and can approve or deny it.', 'corex'),
+                    $sent->toHtml('corex-denied__sent-when'),
+                )
+                . '</p></div>';
+        }
+
+        $problem = $this->requestProblem();
+
+        return $this->requestForm($section, $problem)
+            . '<p class="corex-denied__reason">'
+            . esc_html__('Your request is tracked in CoreX Access & Abilities so an administrator can approve or deny it.', 'corex')
+            . '</p>';
+    }
+
+    /**
+     * @param array{problem:string,reason:string,reference:string}|null $problem
+     */
+    private function requestForm(string $section, ?array $problem): string
+    {
+        $failed  = $problem !== null && $problem['problem'] === AccessRequestSurfaceState::PROBLEM_FAILED;
+        $invalid = $problem !== null && $problem['problem'] === AccessRequestSurfaceState::PROBLEM_INVALID;
+
+        $notice = '';
+        if ($failed) {
+            $notice = '<p class="corex-denied__error" role="alert">'
+                . sprintf(
+                    /* translators: %s: a short reference code an administrator can search for. */
+                    esc_html__('CoreX could not send that request. Nothing was recorded, so it is safe to try again. Reference %s.', 'corex'),
+                    '<code>' . esc_html($problem['reference']) . '</code>',
+                )
+                . '</p>';
+        }
+
+        $fieldError = $invalid
+            ? '<p class="corex-denied__field-error" id="corex-denied-request-error" role="alert">'
+                . esc_html__('Tell the administrator why you need access — a request with no reason cannot be judged.', 'corex')
+                . '</p>'
+            : '';
+
+        return $notice
+            . '<form class="corex-denied__request" method="post" action="'
+            . esc_url(admin_url('admin-post.php')) . '">'
+            . '<input type="hidden" name="action" value="corex_access_request" />'
+            . '<input type="hidden" name="corex_access_request_nonce" value="'
+            . esc_attr(wp_create_nonce('corex_access_request')) . '" />'
+            // The section, not the ability: the browser says which screen refused it and the
+            // server decides what that screen requires. A posted ability key would let anyone
+            // request anything from anywhere, indistinguishably from a real request.
+            . '<input type="hidden" name="corex_section" value="' . esc_attr($section) . '" />'
+            . '<label for="corex-denied-request-reason">' . esc_html__('Why do you need access?', 'corex') . '</label>'
+            . $fieldError
+            . '<textarea id="corex-denied-request-reason" name="reason" rows="3" maxlength="2000" required'
+            . ($invalid ? ' autofocus aria-invalid="true" aria-describedby="corex-denied-request-error"' : '')
+            . '>' . esc_textarea($problem['reason'] ?? '') . '</textarea>'
+            . '<button type="submit" class="button">'
+            . esc_html__('Request access', 'corex') . '</button></form>';
+    }
+
+    /**
+     * Read once per render, because taking it deletes it — calling this twice would show the error
+     * on the first form and a blank one on the second.
+     *
+     * @return array{problem:string,reason:string,reference:string}|null
+     */
+    private function requestProblem(): ?array
+    {
+        if ($this->problem === false) {
+            $this->problem = $this->requestState?->problemForCurrentUser();
+        }
+
+        return $this->problem;
+    }
+
+    /**
+     * The CoreX ability an access request from this section should ask for.
+     *
+     * Public and static because the submission handler resolves it from the posted section rather
+     * than trusting a posted ability. The browser says which screen it was refused from; the server
+     * decides what that screen requires. A client-supplied ability key would let anyone request any
+     * ability from any screen, and the request would be indistinguishable from a legitimate one in
+     * the approval queue.
+     */
+    public static function requestAbilityFor(string $section): string
     {
         return [
             'overview'                  => CorexAbility::MANAGE_ADMIN,

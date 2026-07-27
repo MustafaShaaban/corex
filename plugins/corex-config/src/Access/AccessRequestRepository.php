@@ -111,6 +111,38 @@ final class AccessRequestRepository implements AccessRequestStore
         return array_map($this->hydrate(...), is_array($rows) ? $rows : []);
     }
 
+    public function pendingFor(int $requesterId, ?string $abilityKey, ?string $areaKey): ?array
+    {
+        global $wpdb;
+
+        // The unused half of the pair is NULL in the table, and NULL is not matched by `= %s`:
+        // prepare() casts a null argument to the empty string, so a placeholder would compare
+        // against '' and never match. Each side is therefore either a literal `IS NULL` or a real
+        // placeholder — never a placeholder holding null. Both fragments are constants; only the
+        // values are bound.
+        $sql  = 'SELECT * FROM ' . $this->table() . ' WHERE requester_id = %d';
+        $args = [$requesterId];
+
+        foreach (['ability_key' => $abilityKey, 'area_key' => $areaKey] as $column => $value) {
+            if ($value === null) {
+                $sql .= ' AND ' . $column . ' IS NULL';
+
+                continue;
+            }
+
+            $sql   .= ' AND ' . $column . ' = %s';
+            $args[] = $value;
+        }
+
+        $sql   .= ' AND state = %s AND expires_at > %s ORDER BY created_at DESC, id DESC LIMIT 1';
+        $args[] = 'pending';
+        $args[] = gmdate('Y-m-d H:i:s');
+
+        $row = $wpdb->get_row($wpdb->prepare($sql, $args), ARRAY_A);
+
+        return is_array($row) ? $this->hydrate($row) : null;
+    }
+
     /** @param array<string,mixed> $row @return array<string,mixed> */
     private function hydrate(array $row): array
     {

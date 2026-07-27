@@ -291,6 +291,27 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(RolePluginCompatibility::class);
         $this->container->singleton(AccessController::class);
 
+        // Spec 079: the denied surface renders its own state — already requested, or the form,
+        // plain or carrying the last submission's problem. AdminPage lives in corex-core and is
+        // resolved by several screens through the container, so the reader is bound onto it here
+        // rather than passed at each call site.
+        $this->container->singleton(\Corex\Config\Access\AccessRequestFlash::class);
+        $this->container->singleton(
+            \Corex\Access\AccessRequestSurfaceState::class,
+            static fn (ContainerInterface $c): \Corex\Access\AccessRequestSurfaceState
+                => new \Corex\Config\Access\CurrentUserAccessRequests(
+                    $c->make(AccessRequestStore::class),
+                    $c->make(\Corex\Config\Access\AccessRequestFlash::class),
+                ),
+        );
+        $this->container->singleton(
+            \Corex\Admin\AdminPage::class,
+            static fn (ContainerInterface $c): \Corex\Admin\AdminPage => new \Corex\Admin\AdminPage(
+                $c->make(\Corex\Access\AccessRequestSurfaceState::class),
+            ),
+        );
+        $this->container->singleton(\Corex\Config\Access\AccessRequestFormController::class);
+
         $this->container->singleton(JobTable::class);
         $this->container->singleton(WpJobRepository::class);
         $this->container->singleton(
@@ -735,6 +756,17 @@ final class ConfigServiceProvider extends ServiceProvider
         add_action('rest_api_init', function (): void {
             $this->container->make(AccessController::class)->register();
         });
+        // Spec 079: the browser's half of the same endpoint. Resolved when the action fires, for
+        // the same reason AccessController is resolved inside rest_api_init — building this graph
+        // at plugin-load time reaches a translated string before `init` and WordPress reports
+        // `_load_textdomain_just_in_time` on every admin page. A handler for one specific POST has
+        // no business being constructed on page loads that will never reach it.
+        add_action(
+            'admin_post_' . \Corex\Config\Access\AccessRequestFormController::ACTION,
+            function (): void {
+                $this->container->make(\Corex\Config\Access\AccessRequestFormController::class)->handle();
+            },
+        );
 
         $this->container->make(AdminBranding::class)->register();
         $this->container->make(CorexAdminAssets::class)->register();
