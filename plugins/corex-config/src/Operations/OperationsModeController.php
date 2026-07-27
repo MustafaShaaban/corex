@@ -78,8 +78,18 @@ final class OperationsModeController
             return;
         }
 
+        // Asked before applying, because `set()` deliberately makes a no-change indistinguishable
+        // from a change in its return value — both answer "what is the mode now". The operator
+        // needs the other answer: whether anything happened.
+        $wasAlreadyInForce = $this->store->current() === $this->modes->normalize($mode)
+            && $this->store->isDeclared();
+
         $applied = $this->store->set($mode, get_current_user_id());
-        $this->redirect('saved', $applied);
+
+        // "Saved" over a change that did not happen is a small lie with a real cost: it teaches the
+        // operator that the notice means nothing, on the one screen where a notice has to mean
+        // something.
+        $this->redirect($wasAlreadyInForce ? 'unchanged' : 'saved', $applied);
     }
 
     private function handleProductionLaunch(): void

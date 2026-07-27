@@ -50,11 +50,28 @@ final class OperationsModeStore
     /**
      * Persist a new mode and append an audit entry. Returns the normalised mode actually stored.
      * Caller is responsible for the capability + nonce gate.
+     *
+     * **A no-change is not a change.** Re-applying the mode already in force writes nothing and
+     * logs nothing: the history exists to answer "when did this site go live, and who did it", and
+     * a log containing `development → development` rows stops being able to.
+     *
+     * The guard lives here rather than in the controller because the invariant belongs to the log.
+     * A controller-side check would protect the one caller that goes through it and leave every
+     * other caller — a future CLI command, a migration, a test — free to write a fiction.
+     *
+     * Declaring the mode the site has merely *inherited* is a real change and is still recorded:
+     * it moves the site from following `wp_get_environment_type()` to stating its own position,
+     * which is exactly the transition an operator later wants to find in this log. Hence the
+     * `isDeclared()` term rather than a bare `$from === $to`.
      */
     public function set(string $mode, int $userId): string
     {
         $from = $this->current();
         $to   = $this->modes->normalize($mode);
+
+        if ($from === $to && $this->isDeclared()) {
+            return $to;
+        }
 
         update_option(self::OPTION, $to, false);
         $this->appendLog($from, $to, $userId);

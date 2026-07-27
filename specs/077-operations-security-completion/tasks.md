@@ -19,14 +19,19 @@ screenshot, a command whose output was read — never against "I wrote the code"
 **Purpose**: these are defects, not layout. They are first because they are the ones that make the
 screen lie, and because neither depends on the new information architecture.
 
-- [ ] T001 [US2] `OperationsModeStore::set()` returns early when `$from === $to` — no
-      `update_option`, no log entry (FR-009). The guard lives in the store because the invariant is
-      about the log: *the history records changes*.
-- [ ] T002 [P] [US2] Pest: re-applying the current mode writes no option and appends no history;
+- [x] T001 [US2] `OperationsModeStore::set()` returns early when the mode is already in force —
+      no `update_option`, no log entry (FR-009). The guard lives in the store because the invariant
+      is about the log: *the history records changes*.
+      *The condition is `$from === $to && $this->isDeclared()`, not a bare `$from === $to`.
+      Declaring the mode a site has merely INHERITED from `wp_get_environment_type()` is a real
+      change — it moves the site from following the environment to stating its own position, which
+      is exactly the transition an operator later looks for in this log. The bare comparison would
+      have silently swallowed it.*
+- [x] T002 [P] [US2] Pest: re-applying the current mode writes no option and appends no history;
       a real change still does both. Reproduces the `development → development` row first.
-- [ ] T003 [US2] `OperationsModeController` distinguishes applied from already-in-that-mode, and
+- [x] T003 [US2] `OperationsModeController` distinguishes applied from already-in-that-mode, and
       says so in its PRG notice rather than reporting success (FR-009).
-- [ ] T004 [P] [US2] Pest: the no-change submission redirects with the "no change required" notice,
+- [x] T004 [P] [US2] Pest: the no-change submission redirects with the "no change required" notice,
       not the success one.
 - [ ] T005 [US3] The environment section shows the WordPress environment type and the CoreX mode
       together, with a conflict warning when they differ and nothing implying the mode changes

@@ -132,6 +132,10 @@ final class OperationsSecurityScreen
 
         [$tone, $message] = match ($status) {
             'saved'   => ['success', __('Operations mode updated.', 'corex')],
+            // Distinct from 'saved' on purpose: nothing was written and nothing was logged, and a
+            // success message over a change that did not happen teaches the operator that this
+            // notice means nothing — on the screen where it has to mean something.
+            'unchanged' => ['info', __('No change — the site was already in that mode.', 'corex')],
             'blocked' => ['error', __('Production launch is blocked by readiness checks. Resolve them, or type PRODUCTION to override intentionally.', 'corex')],
             'production_confirm' => ['warning', __('Production mode needs typed confirmation. Type PRODUCTION and try again.', 'corex')],
             'confirm' => ['warning', __('That mode needs confirmation — tick the confirmation box and try again.', 'corex')],
