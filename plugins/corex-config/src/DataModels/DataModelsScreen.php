@@ -41,6 +41,7 @@ final class DataModelsScreen
         private readonly AdminPage $page,
         private readonly DataSourceService $sources,
         private readonly FlowFilterOptions $flows,
+        private readonly CapabilityFacts $facts,
     ) {
     }
 
@@ -88,6 +89,25 @@ final class DataModelsScreen
             __('CoreX Data', 'corex'),
             __('Browse records and inspect schemas, then run capability-backed import, export, and migration workflows.', 'corex'),
         ) . '<div id="corex-data-models-app"></div>' . $this->page->close();
+    }
+
+    /**
+     * The capability summary shown under the Models catalog.
+     *
+     * Takes the catalog the screen has already resolved rather than asking for it again: it is the
+     * same answer for the same actor, and describing every source twice per render is work the
+     * screen has already done.
+     *
+     * Degrading is {@see CapabilityFacts}'s job, and it does it per source — a site missing the
+     * Forms module loses the forms section and keeps the rest. Catching again here would only turn
+     * that partial answer into an empty one, and hide a real defect while doing it.
+     *
+     * @param  list<array<string,mixed>> $sources
+     * @return array<string,mixed>
+     */
+    private function capabilityReport(array $sources): array
+    {
+        return (new CapabilityReport())->build($this->facts->gather($sources));
     }
 
     /** Either ability opens the screen; which tabs appear is decided per ability. */
@@ -141,10 +161,13 @@ final class DataModelsScreen
             ['corex-data'],
             ScreenAsset::version($base . '/assets/data-models.css'),
         );
+        $actorId = get_current_user_id();
+        $sources = $this->sources->catalog($actorId);
+
         wp_localize_script('corex-data-models', 'corexDataModels', [
             'restUrl' => esc_url_raw(rest_url('corex/v1/data')),
             'nonce' => wp_create_nonce('wp_rest'),
-            'sources' => $this->sources->catalog(get_current_user_id()),
+            'sources' => $sources,
             // Real form names for the records filter. NOTE: the explorer filters on the form SLUG
             // (meta corex_form_slug) while the submissions inbox filters on the flow ID
             // (meta corex_flow_id) — same list, different key.
@@ -155,6 +178,10 @@ final class DataModelsScreen
                 'data' => $this->guard->authorized(CorexAbility::MANAGE_DATA),
                 'models' => $this->guard->authorized(CorexAbility::MANAGE_DATA_MODELS),
             ],
+            // What is registered, what it can do, and what is half-configured (spec 074, FR-5).
+            // Shown alongside the models rather than on a screen of its own: the question it
+            // answers is the one the Models catalog raises.
+            'capabilities' => $this->capabilityReport($sources),
         ]);
         wp_set_script_translations('corex-data-models', 'corex');
     }

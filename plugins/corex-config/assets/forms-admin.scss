@@ -141,8 +141,9 @@
 	text-transform: uppercase;
 }
 
-/* Where a form came from, said in words. A form that cannot be edited here has to explain
-   itself, and a colour alone would not survive a screen reader or a monochrome display. */
+/* Where a form came from, said in words. A form that cannot be edited here
+   has to explain itself, and a colour alone would not survive a screen reader
+   or a monochrome display. */
 .corex-admin .corex-flow-list__source {
 	justify-self: start;
 	padding: 0 var(--corex-admin-space-xs);
@@ -158,6 +159,7 @@
 	border-color: var(--corex-admin-action);
 }
 
+/* stylelint-disable-next-line no-descending-specificity */
 .corex-admin .corex-flow-list__row.is-read-only > button {
 	border-style: dashed;
 }

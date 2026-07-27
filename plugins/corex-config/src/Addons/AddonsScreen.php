@@ -488,34 +488,19 @@ final class AddonsScreen
 
     /**
      * Whether an add-on's plugin file is present on disk.
+     *
+     * Kept as a public method on this screen because it is passed as a callable to
+     * `AddonManager::views()`; the derivation itself now lives on the manager, which is also where
+     * the capability summary reads it from.
      */
     public function isInstalled(string $slug): bool
     {
-        $addon = $this->registry->find($slug);
-
-        return $addon !== null && file_exists(WP_PLUGIN_DIR . '/' . $addon->pluginFile);
+        return $this->manager->isInstalled($slug);
     }
 
     private function state(): AddonState
     {
-        /** @var list<string> $active */
-        $active = (array) get_option('active_plugins', []);
-
-        $activeSlugs = [];
-        foreach ($this->registry->all() as $addon) {
-            if (in_array($addon->pluginFile, $active, true)) {
-                $activeSlugs[] = $addon->slug;
-            }
-        }
-
-        $enabledFlags = [];
-        foreach ($this->registry->all() as $addon) {
-            if ($addon->hasFlag() && get_option('corex_features_' . $addon->flag) === '1') {
-                $enabledFlags[] = (string) $addon->flag;
-            }
-        }
-
-        return new AddonState($activeSlugs, $enabledFlags);
+        return $this->manager->state();
     }
 
     private function statusLabel(AddonStatus $status): string
