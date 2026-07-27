@@ -3365,3 +3365,58 @@ at all; two obviously-should-pass tests caught it). Only rules whose pattern beg
 segment — `category/`, `author/`, a post type archive — actually claim a path, and the catch-all is
 already covered more precisely by the published-page check.
 Status: Final.
+
+## #171 — Cache is classified, and clearing walks declarations rather than matching patterns
+Date: 2026-07-28
+Decision: Every value CoreX caches is declared in `CacheRegistry` with an owner, a classification, a
+lifetime and an invalidation path. `CacheManager::clear()` iterates declared entries and skips those
+whose classification forbids removal. **No code path in this feature deletes by key pattern.**
+Why: `ThrottleMiddleware` stores rate-limit counters as `corex_throttle_*` transients and
+`TokenReplayGuard` stores spent captcha tokens as `corex_captcha_seen_*`. Both are security controls
+that look exactly like cache from the outside. The obvious implementation of "clear CoreX's caches"
+— a sweep of `corex_*` — would reset brute-force protection and re-open the replay window, silently,
+at the moment an operator is most likely to run it. A guard placed in the CLI would protect the CLI;
+a guard in the registry protects every caller that will ever clear a cache. A `DELETE ... LIKE
+'corex_%'` is not refactorable into this design, which is the point.
+Alternatives considered: a documented list of keys not to clear (rejected: FR-002 requires the
+classification in code, because the risk is a future contributor adding a prefix to a list, and a
+comment does not stop that while `mayBeClearedRoutinely()` returning false does); clearing by pattern
+with an exclusion list (rejected: the exclusion list is the thing that silently falls out of date).
+Scope: verified by tests that iterate `CacheScope::cases()`, so a scope added later cannot ship
+without satisfying them. Verified load-bearing by deliberately misclassifying the throttle entry.
+Status: Final.
+
+## #172 — CoreX refuses to flush a persistent object cache
+Date: 2026-07-28
+Decision: `wp corex cache:clear --scope=object` is refused outright on a site where WordPress is
+using a persistent object cache, with the reason stated and `wp cache flush` named as the operator's
+own route. Where there is no persistent object cache, it proceeds.
+Why: with a drop-in installed, WordPress stores transients **in** the object cache. `wp_cache_flush()`
+would therefore remove `corex_throttle_*` and `corex_captcha_seen_*` as collateral — not by walking
+them, not by matching them, but by emptying the place they live. FR-003 says no cache operation may
+remove security state, and removing it indirectly is still removing it. The registry guarantee
+cannot cover this case, because the operation does not go through the registry at all.
+Alternatives considered: preserve and restore the protected entries around the flush (rejected: the
+protected families are key *prefixes* and object caches cannot be enumerated, so they cannot be read
+back); warn and proceed (rejected: a warning that protection was removed is not the same as not
+removing it); drop the scope entirely (rejected: it is legitimate where nothing durable is lost).
+Scope: found by asking why a test failed for an unrelated reason on a site with no persistent object
+cache — the failure was a type artifact, and the question exposed what would happen on a site that
+had one.
+Status: Final.
+
+## #173 — Presence is not use, and "cannot look" is not "off"
+Date: 2026-07-28
+Decision: The object-cache layer reports `active` only when `wp_using_ext_object_cache()` is true,
+and `available` when a drop-in exists but WordPress is not using it. OPcache reports `unknown` — a
+distinct state — when the host disables `opcache_get_status()`.
+Why: a running Redis container is a fact about the server; whether WordPress uses it is the fact that
+affects the site, and reporting the first as the second tells an operator their site is faster than
+it is with no error to correct the impression. Equally, answering "off" because CoreX was not
+permitted to look would send someone to fix a problem that does not exist. Seven states exist rather
+than a boolean because every interesting case is in the middle.
+Scope: also why `manageable` and `safeToClear` are separate fields on a layer — CoreX *can* flush the
+object cache and it is not safe to; CoreX *cannot* purge a CDN where doing so would be perfectly
+safe. One flag would produce a control either missing when it should be present or dangerous when it
+looks routine.
+Status: Final.

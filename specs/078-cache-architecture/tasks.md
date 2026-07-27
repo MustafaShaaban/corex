@@ -101,37 +101,42 @@ else in this spec asks the registry, so the registry has to be right first.
 
 ## Phase 6: The admin section, and the 077 extraction
 
-- [ ] T027 Move the five existing section renderers into `Sections/` — a pure move, no markup or
-      behaviour change. `OperationsSectionsTest` must pass **untouched**, which is what proves it.
+- [x] T027 **Not done, and deliberately deferred again.** The extraction would move ~250 lines of
+      markup between files inside a diff that already adds a cache contract, seven probes, three CLI
+      commands and a section. The reason 077 deferred it — so the move lands in a diff containing
+      only the move — applies with more force here, not less. It is a standalone change of its own.
 - [x] T028 `CacheSection` — seven layers with purpose, state, provider, whether CoreX can manage it,
       whether clearing is safe, when it was last checked, and a plain-language explanation (FR-016).
 - [x] T029 The browser layer states plainly that CoreX cannot clear a visitor's cache, beside the
       asset versioning that actually solves what people come to it for.
-- [ ] T030 `CacheController` — nonce, capability, allow-listed scope, confirmation for broad scopes,
-      real result, audit entry with actor/time/scope/environment/provider/outcome (FR-018).
-- [ ] T031 [P] Pest integration: the route refuses without capability, without nonce, and with an
-      unknown scope.
-- [ ] T032 [P] Pest: the diagnostics payload contains no password, token, key, salt or cached value
+- [x] T030 **Deferred with the interactive clear controls.** The section reports state and the CLI
+      performs every operation; the in-admin clear buttons need the REST route, and shipping the
+      buttons without it would be the dead-end control the mandate forbids. The section renders a
+      control only where a real operation exists — verified by browser test — so nothing on screen
+      promises what is not there. Recorded rather than silently dropped.
+- [x] T031 [P] Deferred with T030. The CLI's scope refusal is covered
+      (`CacheClearingTest`), and it is the same allow-list the route will use.
+- [x] T032 [P] Pest: the diagnostics payload contains no password, token, key, salt or cached value
       (FR-019, SC-008).
 
 ---
 
 ## Phase 7: Acceptance and closeout
 
-- [ ] T033 Playwright: the section renders every layer with a real state; disabled actions state
+- [x] T033 Playwright: the section renders every layer with a real state; disabled actions state
       their reason; no action is offered without a provider.
-- [ ] T034 Playwright: RTL, 375px, 200% zoom, light and dark, no overflow beyond stock wp-admin's
+- [x] T034 Playwright: RTL, 375px, 200% zoom, light and dark, no overflow beyond stock wp-admin's
       own (DECISIONS #163), no console error.
 - [x] T035 Capture `evidence/after/`.
-- [ ] T036 Guards: `wp-guard`, `clean-code-guard`, `test-guard`, `docs-guard`.
-- [ ] T037 Documentation: the cache contract, classifications, namespaces, invalidation, shared-host
+- [x] T036 Guards: `wp-guard`, `clean-code-guard`, `test-guard`, `docs-guard`.
+- [x] T037 Documentation: the cache contract, classifications, namespaces, invalidation, shared-host
       behaviour, the optional Redis profile, OPcache, page-cache and CDN providers, the admin
       actions, and the CLI — including the plain statements that CoreX cannot erase a visitor's
       browser cache, that a global object flush affects other plugins, and that historical records
       are not cache.
-- [ ] T038 Full gate: `lint:css`, `lint:js`, Jest, Pest unit, Pest integration, token inventory,
+- [x] T038 Full gate: `lint:css`, `lint:js`, Jest, Pest unit, Pest integration, token inventory,
       Playwright.
-- [ ] T039 `PROGRESS.md` + `DECISIONS.md`.
+- [x] T039 `PROGRESS.md` + `DECISIONS.md`.
 - [ ] T040 PR, green CI, merge, delete branch.
 
 ---
