@@ -101,11 +101,12 @@ test.describe( 'Blog Pro admin workspace', () => {
 		// The claim under test is that *the workspace* contains itself, not that WP admin is
 		// perfect — the same framing tests/e2e/notification-center.spec.js uses for the drawer.
 		//
-		// Measured because it matters: the CoreX shell overflows the viewport by exactly 1px in RTL
-		// at 375px on **every** CoreX screen, including `corex-settings` and `corex-addons`, which
-		// this spec never touches. Asserting `scrollWidth <= clientWidth` on the document would make
-		// this spec fail for a framework-wide chrome defect it did not cause and cannot fix from
-		// here. Recorded in PROGRESS.md instead.
+		// Asserting `scrollWidth <= clientWidth` on the document would fail here for a pixel this
+		// spec neither causes nor can fix: at 375px in RTL the document scrolls by exactly 1px on
+		// every wp-admin screen, CoreX or not, from core's own admin-bar chrome. The document-level
+		// claim is made comparatively against stock wp-admin instead, once, for every CoreX route —
+		// see admin-command-center.spec.js, "no CoreX route scrolls sideways any further than stock
+		// wp-admin".
 		for ( const dir of [ 'ltr', 'rtl' ] ) {
 			await page
 				.locator( 'html' )

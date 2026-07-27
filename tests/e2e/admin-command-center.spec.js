@@ -107,3 +107,65 @@ test( 'every CoreX route highlights the correct rail item and breadcrumb', async
 		).toContainText( label );
 	}
 } );
+
+/**
+ * How far the document scrolls sideways, in CSS pixels. 0 when it does not.
+ *
+ * @param {import('@playwright/test').Page} page  The page to measure.
+ * @param {number}                          width Viewport width to measure at.
+ * @param {string}                          dir   'ltr' or 'rtl'.
+ * @return {Promise<number>} The horizontal overflow in CSS pixels.
+ */
+async function documentOverflow( page, width, dir ) {
+	await page
+		.locator( 'html' )
+		.evaluate( ( root, value ) => root.setAttribute( 'dir', value ), dir );
+	await page.setViewportSize( { width, height: 900 } );
+
+	return page.evaluate( () => {
+		const root = document.documentElement;
+		return Math.max( 0, root.scrollWidth - root.clientWidth );
+	} );
+}
+
+/*
+ * A CoreX screen may not scroll sideways any further than stock wp-admin already does.
+ *
+ * The absolute assertion — `scrollWidth <= clientWidth` — is the one you would reach for, and it
+ * is the one that cannot be made to pass. At 375px with dir=rtl, wp-admin's own Dashboard,
+ * Settings and Plugins screens scroll by exactly 1px, from core's visually-hidden admin-bar chrome
+ * (`#wpadminbar` items carrying the `position:absolute; margin:-1px; width:1px` recipe). Their
+ * static position in RTL sits one pixel outside the inline edge, and left-of-origin content
+ * extends scrollWidth in RTL where it does not in LTR. Hiding `#wpadminbar` takes every one of
+ * those screens — and every CoreX screen — to 0. Nothing in the CoreX shell contributes to it,
+ * and no CoreX rule can remove it without overriding core admin chrome site-wide.
+ *
+ * So the honest claim is the comparative one, and it is the one worth guarding: whatever core
+ * costs, CoreX adds nothing on top. That fails the moment a CoreX rule genuinely overflows, which
+ * is what this is for — and it does not fail for a pixel we did not cause and cannot fix.
+ *
+ * PROGRESS.md recorded this as "the CoreX admin shell overflows by 1px in RTL on every CoreX
+ * screen". Measured against stock wp-admin, that attribution was wrong; the reading was not.
+ */
+test( 'no CoreX route scrolls sideways any further than stock wp-admin', async ( {
+	page,
+} ) => {
+	for ( const dir of [ 'ltr', 'rtl' ] ) {
+		for ( const width of [ 375, 768, 1024, 1440 ] ) {
+			// The baseline is measured per viewport and per direction, not assumed — core's
+			// chrome changes at wp-admin's own breakpoints.
+			await page.goto( '/wp-admin/index.php' );
+			const baseline = await documentOverflow( page, width, dir );
+
+			for ( const [ slug ] of ROUTES ) {
+				await page.goto( `/wp-admin/admin.php?page=${ slug }` );
+				const actual = await documentOverflow( page, width, dir );
+
+				expect(
+					actual,
+					`${ slug } at ${ width }px (${ dir }): ${ actual }px of horizontal scroll against a wp-admin baseline of ${ baseline }px`
+				).toBeLessThanOrEqual( baseline );
+			}
+		}
+	}
+} );
