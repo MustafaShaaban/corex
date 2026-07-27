@@ -4,90 +4,61 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-27) -- **Spec 074 (Core admin truthfulness & integration closure) IN PROGRESS on `spec/074-core-admin-truthfulness`.**
+## RESUME HERE (2026-07-27) -- **Spec 074 MERGED (`d243b7f`). Spec 075 IMPLEMENTED on `spec/075-blog-pro-functional-completion`.**
 
-Spec 073 is **merged and closed** — PR **#129**, merge commit **`9b5939f`**, now the tip of `main`. The
-2026-07-26 "checkpointed / not pushed" note below was written before the push and is superseded; it is kept
-only as the description of what 073 contained.
+**Spec 074** shipped via PR **#130**, squash-merged as **`d243b7f`**, on `origin` and `upstream`
+(Azure), with all six CI checks green. Five FRs: framework-wide form discovery
+(`Corex\Forms\Catalog\FormCatalog`) · truthful Data Models with `corex_subscribers` as the first
+genuinely import/migration-capable model · the Submission Inbox heading stack · a notification action
+center that separates *read* from *resolved* · the "What this site can do" capability summary.
+DECISIONS **#157–#160**. A tracking-only follow-up sits in PR **#131** (green, awaiting merge).
 
-**Now in flight — Spec 074**, a product-completion closure pass over four defects that survived 073:
-1. **Code-registered forms are invisible framework-wide.** `FlowFilterOptions::all()` reads `FlowRepository`
-   only; a form registered through `Corex\Forms\FormRegistry` reaches the filters *only* if the site adds a
-   `corex_submission_filter_options` hook, and Forms & Flows never lists it at all. Issue #114's fix made
-   custom forms *filterable once injected*; it did not give the framework discovery.
-2. **Data → Import and Data → Migrations are permanent dead ends.** Every registered source declares
-   `import_dry_run`/`migrations` false, so both tabs can only ever print "No registered model provides an
-   import adapter."
-3. **Submission Inbox heading lines collide** — the eyebrow/title/count stack has no layout-level spacing.
-4. **Notifications under-communicate** — the record carries category, severity, source, environment,
-   occurrence count and resolution state; the screen shows title, body and "Mark read", and treats *read* as
-   though it meant *resolved*.
+**Spec 075 — Blog Pro functional completion: all seven phases done.** Blog Pro had a complete, tested
+back end and a front end that used almost none of it. Four defects, all in `specs/075-*/evidence/before/`:
 
-Spec artifacts: `specs/074-core-admin-truthfulness-and-integration-closure/`. Spec **075 — Blog Pro
-Functional Completion** follows it, then the **v0.36.0** release.
+1. `BlogProScreen.php:102` hard-coded `$posts[0]`, so every panel described whichever post sorted first
+   and **named it nowhere**, under a heading that read as a site-wide total.
+2. `BlogProApp.js` called `useReducer` and **discarded the dispatch**, so all of `blogProState.js` was
+   unreachable from the running app while fully covered by tests — a green suite over code no user could
+   run.
+3. The screen localized `restUrl` and `nonce` and never used them, so **all seven REST routes had no
+   caller in the product**.
+4. Raw slugs (`published`, `publish`) and strings assembled outside the i18n system.
 
-**Phases A–E are implemented** across four commits: `74f30e3` (framework-wide form discovery),
-`d7275e0` (truthful Data Models + a real import path), `5649859` (read separated from resolved,
-notification actions finished), and `0075340` (FR-5 capability summary). `tasks.md` had been left
-stale — every checkbox from T010 to T052 is now ticked against verified artifacts rather than
-assumption.
+Three findings were **recorded rather than worked around**, each a place the obvious move would have
+been to invent something:
 
-That last commit also cleared **44 stylelint errors this branch had introduced** (comment rewraps
-plus the file's own `no-descending-specificity` pragma for disjoint component scopes) and
-regenerated the 057 token inventories, which had drifted from the CSS line numbers and were failing
-the Jest suite. Note stylelint and eslint are **not** CI-gated — CI runs PHP `-l`, Pest unit, Jest,
-Pest integration, Playwright, and CodeQL — so both had accumulated debt unnoticed. 38 stylelint
-errors remain, all pre-existing in `theme/assets/css/corex-navigation.css` and
-`plugins/corex-core/assets/css/corex-admin-login.css` plus two long-standing lines in
-`corex-admin-shell.css`; no file this branch touches has one.
+- **`EditorialWorkflowService` has no transition graph.** It accepts any state from any other; its one
+  real constraint is that `scheduled` without a timestamp throws. The panel offers every state but the
+  current one and asks for the date up front (DECISIONS #161).
+- **There is no `GET` route for a post's editorial item.** Selection therefore cannot refetch over REST
+  without leaving that panel stale, so the selection *is* `?post=<id>` — which FR-1 wanted anyway for
+  linkability — and the GET routes serve post-mutation refresh, finally giving all four of them, and the
+  reducer's `loaded` case, a caller.
+- **Two exports could not be given an honest caller and were deleted** with their tests:
+  `buildShareClickPayload`/`shareRecorded` (a share click claims a *visitor* shared the post; only the
+  front end can claim that) and `normalizeAnalytics`'s `chart`/`topPosts` (no server path has ever sent
+  either). DoD item 6 — no dead export remains — verified by sweep (DECISIONS #162).
 
-Gate as of `0075340`: **unit 1507/0** (6470 assertions) · **integration 219/0** (900) · **JS 331/0**
-(59 suites). Guards clean on the diff (`wp-guard`, `clean-code-guard`, `test-guard`). The local
-integration suite did *not* show the order-flakiness recorded during v0.35.0.
+Gate: **unit 1521/0** (6555 assertions) · **integration 225/0** (917) · **JS 385/0** (62 suites) ·
+**Playwright 6/6** on `blog-pro` · stylelint clean on `blog-pro.css` · bundles build · token inventory
+reproduces. Browser acceptance clean in RTL, 360 px, and 200 % zoom, with no console error, failed
+`/wp-json/` request, uncaught JS error, or blank mount.
 
-**T047 is now closed too**, so **Phases A–E are complete**. Phase D had shipped its UI with no JS
-coverage at all and a browser spec still written against the retired five-tab IA — that spec was not
-passing-but-blind, it was broken, since `Requires attention` no longer exists to click.
+**Three things worth carrying forward:**
 
-- `plugins/corex-config/src/admin/notifications/__tests__/notificationItem.test.js` — 32 specs.
-  The flagship one was **mutation-checked**: reintroducing the v0.35.0 defect (`needs_action &&
-  ! read`) fails exactly that test and nothing else.
-- `tests/e2e/notification-center.spec.js` — rewritten onto the three views + Preferences, and it
-  now asserts the **retired tabs are absent**, which is what catches a silent revert. The negative
-  assertions are guarded by a positive one on the same selector first, so they cannot pass by
-  matching nothing.
-- Item content is deliberately **not** asserted in the browser: nothing seeds notification records
-  (see the CI "Seed browser-test fixtures" step), so any item-level claim would be testing whatever
-  the run happened to produce.
+1. **No linter runs in CI.** `.github/workflows/ci.yml` gates PHP `-l`, Pest unit, Jest, Pest
+   integration, Playwright, and CodeQL — `lint:css` and `lint:js` are not among them. Spec 074 silently
+   introduced 44 stylelint errors before they were caught by hand. **38 pre-existing errors remain**
+   (`theme/assets/css/corex-navigation.css`, `plugins/corex-core/assets/css/corex-admin-login.css`, two
+   lines in `corex-admin-shell.css`) plus repo-wide prettier debt. **Owner decision still open.**
+2. **The CoreX admin shell overflows by 1 px in RTL at 375 px on every CoreX screen** — including
+   `corex-settings` and `corex-addons`, which 075 never touches. Browser specs assert that a *workspace*
+   contains itself rather than that the document does not scroll. Worth its own small spec.
+3. **The token-consumer contract earned its keep**: it caught a real constitution violation
+   mid-implementation (`flex: 1 1 16rem`, a hardcoded size). Trust it over a passing eye.
 
-Gate at this point: **unit 1507/0** (6470 assertions) · **integration 219/0** (900) · **JS 363/0**
-(60 suites) · **Playwright 58/0** against the real `corex.local`.
-
-**Phase F is done too, so all of Spec 074 is implemented and documented.**
-
-- **T061/T062 — browser acceptance on the real install.** `evidence/after/` re-captured for the two
-  surfaces this spec changed, plus RTL, 360 px, and 200 % zoom for each. **No horizontal overflow** in
-  any of the six conditions (`scrollWidth === clientWidth` at 1440 RTL, 360, and 720@2×), and RTL
-  mirrors from logical properties alone. A separate probe confirmed **no console error, uncaught JS
-  error, failed `/wp-json/` request, or blank React mount** on Data Models, Data → Import, Data →
-  Migrations, Notifications, Forms & Flows, or Submissions. Referenced from `spec.md` §9.
-- **T064 — records.** `DECISIONS.md` **#157–#160** (read-vs-resolved as a modelling rule; eight views
-  collapse to three; hide rather than refuse a control the actor may not use; capability summarised
-  where the question is asked, with secret-shaped facts dropped rather than redacted). `CHANGELOG.md`
-  `[Unreleased]` now covers 073 **and** 074. `ROADMAP.md` §17 updated.
-- **Real docs drift found and fixed.** `docs/en/03-operations/notifications.md` still documented the
-  retired **Inbox / Requires attention / Assigned to me** tabs and described the drawer as offering only
-  *Mark read*. Rewritten onto the three views, and the `view` REST parameter — which the screen has been
-  sending but the docs never mentioned — is documented, with every listed filter checked against
-  `NotificationController::index()`.
-
-Final gate: **unit 1507/0** (6470 assertions) · **integration 219/0** (900) · **JS 363/0** (60 suites) ·
-**Playwright 58/0** · stylelint clean on every file the branch touches · token inventory reproduces ·
-guards clean (`wp-guard`, `clean-code-guard`, `test-guard`, `docs-guard`).
-
-**Next:** open the PR for 074 and let CI confirm; then **Spec 075 — Blog Pro Functional Completion**,
-then the **v0.36.0** release.
-
+**Next:** open the 075 PR, merge #131, then the **v0.36.0** release.
 ---
 ## (previous, 2026-07-26) -- **Spec 073 (Admin polish & correctness) MERGED via PR #129 (`9b5939f`).**
 

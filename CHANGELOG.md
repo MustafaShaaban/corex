@@ -6,12 +6,21 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Spec 073 — an admin polish and correctness pass — and Spec 074, which closes the gap between what the
-CoreX admin claimed and what it could actually do. Together: no invented capability, several surfaces
-that stop misreporting, and two workspaces that stop being dead ends.
+Spec 073 — an admin polish and correctness pass — Spec 074, which closes the gap between what the
+CoreX admin claimed and what it could actually do, and Spec 075, which turns Blog Pro from a read-only
+dashboard into a workspace you can act in. Together: no invented capability, several surfaces that stop
+misreporting, and three workspaces that stop being dead ends.
 
 ### Fixed
 
+- **Blog Pro looked like a workspace and was a poster.** Its services, seven REST routes, and client
+  state module were complete and tested; the screen used almost none of them. It rendered five
+  read-only cards, called `useReducer` and threw the dispatch away — so the entire client state module
+  was unreachable from the running app while its tests passed — and never called a single one of its
+  own routes. It also computed analytics, editorial state, comments and sharing for whichever post
+  sorted first and named that post nowhere, under a heading that read as a site-wide total. You can now
+  choose the post (and link to it), move it through review with a note, and approve, spam, or trash the
+  comments waiting on it (DECISIONS #161).
 - **Reading a notification was treated as dealing with it.** "Requires attention" filtered on your own
   unread state, so opening a production-readiness blocker took it off the attention list while the
   blocker was still true. Whether something still needs somebody is now derived from the record's status
@@ -52,6 +61,10 @@ that stop misreporting, and two workspaces that stop being dead ends.
 
 ### Added
 
+- **Blog Pro tells you when it has nothing to tell you.** "No reading data yet" is now a different
+  thing from a zero — a post nobody has opened and a post analytics has never seen called for opposite
+  reactions and looked identical. Every panel names the post and the period it covers, and the
+  editorial and comment states read as words instead of `ready_for_review` and `publish`.
 - **"What this site can do" — a capability summary under the Data Models catalog.** Everything CoreX has
   registered and where it came from, what each model supports, which add-ons are running, which
   notification producers are wired, and anything selected but unfinished — a captcha provider with no
@@ -70,6 +83,12 @@ that stop misreporting, and two workspaces that stop being dead ends.
 
 ### Changed
 
+- **Blog Pro's share-click recorder and its unused analytics shaping were removed rather than wired
+  up.** Recording a share click claims a *visitor* shared a post, and only the visitor-facing surface
+  can honestly claim that; firing it from an admin screen would have written analytics nobody
+  generated. The chart and top-posts shaping had no server sending it and never had. Both are gone
+  with their tests — code that cannot be reached but whose tests pass reads as working software
+  (DECISIONS #162).
 - **The Notifications screen offers three views instead of eight.** Action needed · Updates · History,
   plus Preferences. Inbox, Requires attention, Assigned to me, Submissions, Security, and System are gone
   as tabs — category, severity, and assignment are refines that apply within whichever view you are in,

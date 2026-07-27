@@ -226,7 +226,30 @@ its own suite still works is not in scope.
 - Reading events are already collected by the front end; this spec does not add collection.
 - A day is the analytics period granularity, matching what `BlogAnalyticsService::aggregate()` accepts.
 
-## 10. Explicit exclusions
+## 10. Evidence
+
+Captured on the real install (`corex.local`) with `tests/e2e/render-admin.mjs`, dark and light at
+1440×900. `evidence/before/` is the state at the 074 merge (`d243b7f`).
+
+| Defect | Before | After |
+| --- | --- | --- |
+| D1 · one arbitrary post, named nowhere | `before/blog-pro-dark.png` — "First-party reading signals" over four zeros | `after/blog-pro-dark.png` — a post selector, and "Reading signals for “…”" naming its subject and period |
+| D2 · the reducer wired to nothing | same — five read-only cards, no control | the transition form and moderation actions, dispatching through the reducer's own cases |
+| D3 · seven routes with no caller | — | five routes called from the product; the other two recorded in §11 |
+| D4 · raw slugs and concatenation | `published` / `publish`, `admin · 1`, `Facebook · facebook` | Published / Published, "admin — 1 published post", "Facebook" |
+
+**Browser acceptance (DoD item 4)** — `after/blog-pro-{rtl,narrow,zoom200}.png`. The workspace contains
+itself in all three conditions, and there is **no console error, uncaught JavaScript error, failed
+`/wp-json/` request, or blank React mount**.
+
+One finding recorded rather than fixed: the CoreX admin **shell** overflows the viewport by exactly
+1 px in RTL at 375 px on *every* CoreX screen — `corex-settings` and `corex-addons` included, which
+this spec never touches. `tests/e2e/blog-pro.spec.js` therefore asserts that the workspace contains
+itself rather than that the document does not scroll, the same framing
+`tests/e2e/notification-center.spec.js` uses for the drawer. It is a framework-wide chrome defect, not
+a 075 regression, and belongs to its own spec.
+
+## 11. Explicit exclusions
 
 - **No new analytics capability** — no funnels, cohorts, referrers, or retention. Present what is
   collected.

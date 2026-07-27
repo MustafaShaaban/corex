@@ -34,13 +34,35 @@ Each post carries an editorial state mapped onto native WordPress post statuses:
 Transitions use `wp_update_post()` and record the assignee, due date, scheduled timestamp, and author-written
 review notes. The post itself is never swapped for a custom model.
 
+There is deliberately **no transition graph**: any state may follow any other, because which moves make sense
+is an editorial decision, not a framework one. The screen therefore offers every state except the one the post
+is already in. The single constraint is that **Scheduled requires a date** — the workspace asks for it before
+it will submit, rather than letting the request fail server-side.
+
 ## Comments, authors, and sharing
 
-- **Moderation queue** — held, first-time, and likely-spam comments are classified and actioned
-  (approve, reply, edit, spam, trash) through the native WordPress comment APIs.
+- **Moderation queue** — comments held for review, each showing its text, author, arrival time, and whether
+  it is a first comment or looks like spam. The workspace offers **approve, mark as spam, and move to trash**;
+  the service also supports `reply` and `edit`, which the admin screen leaves to the native Comments screen.
+  Everything runs through the native WordPress comment APIs. Actions are hidden — not disabled — from anyone
+  without `moderate_comments`.
 - **Authors** — real author users with true published-post counts and first-party views/reads/engagement.
 - **Sharing** — option-backed X, Facebook, LinkedIn, and copy-link controls over native post URLs and titles.
-  Share clicks are logged through the consent-aware analytics service when enabled.
+  Share clicks are logged through the consent-aware analytics service when enabled. The admin workspace lists
+  the configured targets **read-only**: a share click records that a *visitor* shared the post, so only the
+  front end can honestly report one.
+
+## The admin workspace
+
+`CoreX → Blog Pro` works on **one post at a time**, and says which. Choose it from the selector; the choice is
+the URL (`?post=<id>`), so a view can be linked, bookmarked, and reloaded.
+
+Every panel is scoped to that post and states the period it covers — a count without a window means nothing.
+Analytics distinguishes **"no reading data yet"** from a genuine zero: a post nobody has opened and a post
+CoreX has never recorded a visit to are different problems, and a bare `0` cannot tell you which you have.
+
+Opening the screen needs `edit_posts`. Moving a post needs `edit_post` on it, and moderating needs
+`moderate_comments` — where you lack one, the control is not rendered rather than shown and refused.
 
 ## Native front end
 

@@ -91,13 +91,13 @@
 
 ## Phase G — Close
 
-- [ ] T070 Full gate: PHP lint, Pest unit, integration, Jest, builds, CSS lint, guards, token
+- [x] T070 Full gate: PHP lint, Pest unit, integration, Jest, builds, CSS lint, guards, token
       inventory, Playwright, CodeQL.
-- [ ] T071 Playwright: select a post and watch every panel follow it; a transition; a moderation; the
+- [x] T071 Playwright: select a post and watch every panel follow it; a transition; a moderation; the
       empty states; RTL and 200% zoom with no overflow.
-- [ ] T072 Browser acceptance: dark/light, LTR/RTL, desktop/narrow, keyboard, 200% zoom; no console
+- [x] T072 Browser acceptance: dark/light, LTR/RTL, desktop/narrow, keyboard, 200% zoom; no console
       error, failed REST call, uncaught JS error, or blank mount.
-- [ ] T073 `evidence/after/` captured and referenced from `spec.md`.
-- [ ] T074 Guard Gate on the diff (`clean-code-guard`, `wp-guard`, `test-guard`, `docs-guard`).
-- [ ] T075 Docs, `DECISIONS.md`, `CHANGELOG.md`, `PROGRESS.md`, `ROADMAP.md`.
+- [x] T073 `evidence/after/` captured and referenced from `spec.md`.
+- [x] T074 Guard Gate on the diff (`clean-code-guard`, `wp-guard`, `test-guard`, `docs-guard`).
+- [x] T075 Docs, `DECISIONS.md`, `CHANGELOG.md`, `PROGRESS.md`, `ROADMAP.md`.
 - [ ] T076 PR, CI green, merge, delete branch.
