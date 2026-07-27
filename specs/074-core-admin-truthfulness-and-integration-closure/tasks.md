@@ -68,11 +68,14 @@
       hiding what the actor may not do.
 - [x] T045 Rewrite the eight producers to outcome-first copy.
 - [x] T046 Category icons from the existing icon system.
-- [ ] T047 Jest + Playwright across every listed state, drawer↔screen parity, keyboard, SR names.
-      **Partly done.** `tests/e2e/notification-center.spec.js` exists but predates the four-view IA,
-      and `NotificationItem.js` / the status derivation have no Jest coverage at all — the only
-      Phase D test is `tests/Unit/Notifications/NotificationViewTest.php`. This is the one
-      functional gap left in 074.
+- [x] T047 Jest + Playwright across every listed state, drawer↔screen parity, keyboard, SR names.
+      32 Jest specs in `plugins/corex-config/src/admin/notifications/__tests__/notificationItem.test.js`
+      covering read-vs-resolved, the four closing statuses, control visibility by permission and by
+      closed state, drawer↔screen parity, the meta anatomy, and the relative-time boundaries.
+      `tests/e2e/notification-center.spec.js` rewritten off the retired five-tab IA onto the three
+      views + Preferences, and now asserts the retired tabs are *absent* — the guard against a
+      silent revert. Item content is deliberately not asserted in the browser: nothing seeds
+      notification records, so it would test whatever the run happened to produce.
 
 ## Phase E — Capability diagnostics (FR-5)
 

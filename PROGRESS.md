@@ -45,13 +45,26 @@ Gate as of `0075340`: **unit 1507/0** (6470 assertions) · **integration 219/0**
 (59 suites). Guards clean on the diff (`wp-guard`, `clean-code-guard`, `test-guard`). The local
 integration suite did *not* show the order-flakiness recorded during v0.35.0.
 
-**One functional gap is left — T047.** `NotificationItem.js` and the read-vs-resolved status
-derivation have **no Jest coverage at all**; the only Phase D test is
-`tests/Unit/Notifications/NotificationViewTest.php`, and `tests/e2e/notification-center.spec.js`
-predates the four-view IA it is supposed to exercise.
+**T047 is now closed too**, so **Phases A–E are complete**. Phase D had shipped its UI with no JS
+coverage at all and a browser spec still written against the retired five-tab IA — that spec was not
+passing-but-blind, it was broken, since `Requires attention` no longer exists to click.
 
-**Next:** close T047, then Phase F — Playwright, browser acceptance (T061), `DECISIONS.md` /
-`CHANGELOG.md` (T064), and the PR.
+- `plugins/corex-config/src/admin/notifications/__tests__/notificationItem.test.js` — 32 specs.
+  The flagship one was **mutation-checked**: reintroducing the v0.35.0 defect (`needs_action &&
+  ! read`) fails exactly that test and nothing else.
+- `tests/e2e/notification-center.spec.js` — rewritten onto the three views + Preferences, and it
+  now asserts the **retired tabs are absent**, which is what catches a silent revert. The negative
+  assertions are guarded by a positive one on the same selector first, so they cannot pass by
+  matching nothing.
+- Item content is deliberately **not** asserted in the browser: nothing seeds notification records
+  (see the CI "Seed browser-test fixtures" step), so any item-level claim would be testing whatever
+  the run happened to produce.
+
+Gate at this point: **unit 1507/0** (6470 assertions) · **integration 219/0** (900) · **JS 363/0**
+(60 suites) · **Playwright 58/0** against the real `corex.local`.
+
+**Next:** Phase F close-out — browser acceptance evidence (T061/T062), `DECISIONS.md` /
+`CHANGELOG.md` (T064), then the PR (T065).
 
 ---
 ## (previous, 2026-07-26) -- **Spec 073 (Admin polish & correctness) MERGED via PR #129 (`9b5939f`).**
