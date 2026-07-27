@@ -61,6 +61,28 @@
 		apply.setAttribute( 'aria-disabled', String( unchanged ) );
 	}
 
+	/**
+	 * The mode the server is already proposing, if it is not the one the select starts on.
+	 *
+	 * This exists because of a bug worth remembering. The first version synced from `select.value`
+	 * on load, which is the mode the site is IN — so arriving at `?mode=production`, where the
+	 * server had deliberately rendered the production block, the script immediately hid it again
+	 * and showed the current mode instead. That silently undid the whole no-JavaScript path: submit
+	 * Production, get redirected to the form that asks for the phrase, and watch the phrase field
+	 * vanish before you can type in it. A loop with no way out.
+	 *
+	 * The server's rendering is the instruction, so the selection follows it rather than the other
+	 * way round.
+	 *
+	 * @param {HTMLFormElement} form The mode form.
+	 * @return {string} The proposed mode, or '' when the server proposed nothing in particular.
+	 */
+	function serverProposed( form ) {
+		const visible = form.querySelector( '[data-mode]:not([hidden])' );
+
+		return visible ? visible.getAttribute( 'data-mode' ) : '';
+	}
+
 	function bind( form ) {
 		const select = form.querySelector( '[data-corex-mode-select]' );
 
@@ -72,6 +94,12 @@
 			show( form, select.value );
 			reflectNoOp( form, select.value );
 		};
+
+		const proposed = serverProposed( form );
+
+		if ( proposed && proposed !== select.value ) {
+			select.value = proposed;
+		}
 
 		select.addEventListener( 'change', sync );
 		sync();

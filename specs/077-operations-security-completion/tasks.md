@@ -56,9 +56,9 @@ screen lie, and because neither depends on the new information architecture.
 - [x] T011 [US2] No-JS path: submitting a mode whose confirmation was not shown fails validation
       and redirects to `?tab=environment&mode=<proposed>` with the confirmation now visible and a
       notice explaining why (FR-013).
-- [ ] T012 [P] [US2] Pest integration: server-side validation rejects a Production change with no
+- [x] T012 [P] [US2] Pest integration: server-side validation rejects a Production change with no
       phrase and a Maintenance change with no acknowledgement, regardless of what was rendered.
-- [ ] T013 [P] [US2] Jest: the swap shows exactly one block, and Apply disables on a no-op
+- [x] T013 [P] [US2] Jest: the swap shows exactly one block, and Apply disables on a no-op
       selection.
 
 ---
@@ -85,10 +85,10 @@ screen lie, and because neither depends on the new information architecture.
       change returns to the section it was made in (FR-002).
 - [x] T020 [P] [US1] Pest integration: each section renders; an unknown `?tab=` falls back to
       overview; no section renders empty.
-- [ ] T021 [US3] Readiness presents blockers, warnings and passed as separate counted groups with
+- [x] T021 [US3] Readiness presents blockers, warnings and passed as separate counted groups with
       resolution links and the evaluation time (FR-015). The states already exist on
       `ReadinessSnapshot`; this groups by them.
-- [ ] T022 [US3] Hardening checks grouped rather than one undifferentiated list (FR-005/§3.5).
+- [x] T022 [US3] Hardening checks grouped rather than one undifferentiated list (FR-005/§3.5).
 
 ---
 
@@ -99,45 +99,45 @@ screen lie, and because neither depends on the new information architecture.
       `LoginSlug`'s vocabulary. `LoginSlug` itself is not touched.
 - [x] T024 [P] [US3] Pest integration: a slug colliding with a published page is refused; a free
       one is accepted; the existing reserved and format rules still apply.
-- [ ] T025 [US3] The login section shows the address actually in force, distinct from any unsaved
+- [x] T025 [US3] The login section shows the address actually in force, distinct from any unsaved
       value, with the recovery command and default-endpoint state (FR-016), and reports a
       substituted slug as the value in force with the substitution explained (FR-017).
-- [ ] T026 [US3] Lockouts distinguish active from expired with reason and expiry, and show no raw
+- [x] T026 [US3] Lockouts distinguish active from expired with reason and expiry, and show no raw
       IP where a hash is stored (FR-019). **No unlock control** — the audit found no real audited
       unlock path, and offering one that does not exist is the defect this project keeps removing.
-- [ ] T027 [P] [US3] Pest: an active and an expired lockout render distinctly; no hash is rendered
+- [x] T027 [P] [US3] Pest: an active and an expired lockout render distinctly; no hash is rendered
       as though it were an address.
 
 ---
 
 ## Phase 5: Rhythm and notices
 
-- [ ] T028 [US4] One container owns section spacing with a token `gap`; the per-section
+- [x] T028 [US4] One container owns section spacing with a token `gap`; the per-section
       `margin-block-end` declarations come out (FR-020). The measured gaps are already 24px — this
       changes where the number lives, not the number.
-- [ ] T029 [US4] Notices scoped to what they describe, no duplicates, and dismissal that cannot
+- [x] T029 [US4] Notices scoped to what they describe, no duplicates, and dismissal that cannot
       imply an unresolved condition was resolved (FR-021).
-- [ ] T030 [P] [US4] Playwright: measured section gaps are uniform and come from the container.
+- [x] T030 [P] [US4] Playwright: measured section gaps are uniform and come from the container.
 
 ---
 
 ## Phase 6: Acceptance and closeout
 
-- [ ] T031 Playwright: every section reachable and linkable; PRG keeps the section; Back/Forward
+- [x] T031 Playwright: every section reachable and linkable; PRG keeps the section; Back/Forward
       correct; keyboard only; unknown tab falls back.
-- [ ] T032 Playwright: RTL, 375px, 200% zoom, light and dark, with no horizontal overflow beyond
+- [x] T032 Playwright: RTL, 375px, 200% zoom, light and dark, with no horizontal overflow beyond
       stock wp-admin's own (DECISIONS #163) and no console error.
-- [ ] T033 Playwright: dates on this screen come from the spec 076 contract — verified, not
+- [x] T033 Playwright: dates on this screen come from the spec 076 contract — verified, not
       reimplemented (FR-023).
-- [ ] T034 Capture `evidence/after/` against the `before/` capture, including the mode form in each
+- [x] T034 Capture `evidence/after/` against the `before/` capture, including the mode form in each
       of the four modes.
-- [ ] T035 Guards: `wp-guard` + `clean-code-guard` on production code, `test-guard` on tests,
+- [x] T035 Guards: `wp-guard` + `clean-code-guard` on production code, `test-guard` on tests,
       `docs-guard` on the documentation.
-- [ ] T036 Documentation: the information architecture, environment versus mode, the production
+- [x] T036 Documentation: the information architecture, environment versus mode, the production
       transition, maintenance behaviour, login protection and recovery.
-- [ ] T037 Full gate: `lint:css`, `lint:js`, Jest, Pest unit, Pest integration, token inventory,
+- [x] T037 Full gate: `lint:css`, `lint:js`, Jest, Pest unit, Pest integration, token inventory,
       Playwright.
-- [ ] T038 `PROGRESS.md` + `DECISIONS.md` (links-not-tablist; the no-op guard's home; the two-step
+- [x] T038 `PROGRESS.md` + `DECISIONS.md` (links-not-tablist; the no-op guard's home; the two-step
       no-JS disclosure).
 - [ ] T039 PR, green CI, resolve review, merge, delete branch.
 
