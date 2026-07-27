@@ -16,7 +16,16 @@ declare(strict_types=1);
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 
+/**
+ * The integration suite runs against a real developer install, so these options belong to somebody.
+ * The first version of this file deleted them in `afterEach` and left the site falling back to
+ * `wp_get_environment_type()` — it had been declared `development`, and the operator would have
+ * found it reading `production` with no idea why. Snapshot and restore, never delete.
+ */
 beforeEach(function () {
+    $this->savedMode = get_option('corex_operations_mode', null);
+    $this->savedLog  = get_option('corex_operations_mode_log', null);
+
     delete_option('corex_operations_mode');
     delete_option('corex_operations_mode_log');
 
@@ -24,9 +33,25 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    delete_option('corex_operations_mode');
-    delete_option('corex_operations_mode_log');
+    restoreOperationsOption('corex_operations_mode', $this->savedMode);
+    restoreOperationsOption('corex_operations_mode_log', $this->savedLog);
 });
+
+/**
+ * Put an option back exactly as it was, including "it did not exist".
+ *
+ * @param mixed $saved The value read before the test, or null when the option was absent.
+ */
+function restoreOperationsOption(string $key, mixed $saved): void
+{
+    if ($saved === null) {
+        delete_option($key);
+
+        return;
+    }
+
+    update_option($key, $saved, false);
+}
 
 it('records a real change', function () {
     $this->store->set('staging', 1);

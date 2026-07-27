@@ -16,15 +16,21 @@ declare(strict_types=1);
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 
+// Snapshot and restore rather than delete: the integration suite runs against a real developer
+// install, and these options are the site's declared operating state (see OperationsModeNoOpTest).
 beforeEach(function () {
+    $this->savedMode = get_option('corex_operations_mode', null);
+    $this->savedLog  = get_option('corex_operations_mode_log', null);
+
     delete_option('corex_operations_mode');
     delete_option('corex_operations_mode_log');
+
     $this->store = new OperationsModeStore(new OperationsMode());
 });
 
 afterEach(function () {
-    delete_option('corex_operations_mode');
-    delete_option('corex_operations_mode_log');
+    restoreOperationsOption('corex_operations_mode', $this->savedMode);
+    restoreOperationsOption('corex_operations_mode_log', $this->savedLog);
 });
 
 it('renders a distinct notice for a change that did not happen', function () {

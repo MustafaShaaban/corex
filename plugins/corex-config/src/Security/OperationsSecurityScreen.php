@@ -10,6 +10,7 @@ namespace Corex\Config\Security;
 
 use Corex\Admin\AdminPage;
 use Corex\Config\AdminUi\ScreenAsset;
+use Corex\Config\Operations\ModeDisclosure;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeController;
 use Corex\Config\Operations\OperationsModeStore;
@@ -44,6 +45,7 @@ final class OperationsSecurityScreen
         private readonly LoginProtectionSettingsStore $loginSettings,
         private readonly LoginLockoutReader $lockouts,
         private readonly AdminDateTime $dateTime,
+        private readonly ModeDisclosure $disclosure,
     ) {
     }
 
@@ -91,6 +93,18 @@ final class OperationsSecurityScreen
         );
         wp_localize_script('corex-operations-security', 'corexSecurity', $this->securityConfig());
         wp_set_script_translations('corex-operations-security', 'corex');
+
+        // The mode form's disclosure. Deliberately a separate, buildless file rather than part of
+        // the React bundle: the form it enhances is server-rendered, and it must keep working when
+        // this script does not load at all (FR-013). Tying it to the app would make a React failure
+        // a form failure.
+        wp_enqueue_script(
+            'corex-operations-mode',
+            plugins_url('assets/operations-mode.js', COREX_CONFIG_FILE),
+            [],
+            ScreenAsset::version(dirname(COREX_CONFIG_FILE) . '/assets/operations-mode.js'),
+            true,
+        );
     }
 
     public function render(): void
@@ -178,31 +192,114 @@ final class OperationsSecurityScreen
         $inherited = $declared ? '' :
             '<p class="corex-opsec__detail">' . esc_html__('Inherited from the WordPress environment type — declare a mode to override it.', 'corex') . '</p>';
 
-        $productionGate = $blockers === []
-            ? esc_html__('Production launch is ready. Type PRODUCTION to confirm the live-mode change.', 'corex')
-            : sprintf(
-                /* translators: %d: number of blocking readiness checks */
-                esc_html(_n('%d blocking readiness check must be resolved or intentionally overridden by typing PRODUCTION.', '%d blocking readiness checks must be resolved or intentionally overridden by typing PRODUCTION.', count($blockers), 'corex')),
-                count($blockers),
-            );
-
         return '<section class="corex-surface corex-opsec__env is-' . esc_attr($env['tone']) . '">'
             . '<p class="corex-admin__eyebrow">' . esc_html__('OPERATIONS MODE', 'corex') . '</p>'
             . '<h2>' . esc_html($env['label']) . '</h2>'
             . '<p class="corex-opsec__detail">' . esc_html($env['detail']) . '</p>' . $inherited
             . '<ul class="corex-opsec__warnings">' . $warnings . '</ul>'
-            . '<form class="corex-opsec__mode-form" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">'
+            . '<form class="corex-opsec__mode-form" method="post" action="' . esc_url(admin_url('admin-post.php')) . '"'
+            . ' data-corex-mode-form data-current-mode="' . esc_attr($current) . '">'
             . '<input type="hidden" name="action" value="' . esc_attr(OperationsModeController::ACTION) . '" />'
             . wp_nonce_field(OperationsModeController::ACTION, OperationsModeController::NONCE, true, false)
             . '<label class="corex-opsec__mode-label" for="corex-mode-select">' . esc_html__('Change mode', 'corex') . '</label>'
-            . '<select id="corex-mode-select" name="corex_mode" data-corex-select>' . $options . '</select>'
-            . '<label class="corex-opsec__mode-label" for="corex-production-confirm">' . esc_html__('Production confirmation', 'corex') . '</label>'
-            . '<input id="corex-production-confirm" type="text" name="corex_confirm_phrase" value="" autocomplete="off" placeholder="' . esc_attr__('Type PRODUCTION', 'corex') . '" />'
-            . '<p class="corex-opsec__detail">' . $productionGate . '</p>'
-            . '<label class="corex-opsec__mode-confirm"><input type="checkbox" name="corex_confirm" value="1" /> '
-            . esc_html__('I understand maintenance affects real visitors.', 'corex') . '</label>'
-            . '<button type="submit" class="button button-primary">' . esc_html__('Apply mode', 'corex') . '</button>'
+            // Both hooks: `data-corex-select` keeps the approved CoreX control (DECISIONS #141),
+            // and `data-corex-mode-select` is what the disclosure binds to. They compose because
+            // the upgrade keeps the native <select> as the submitted value and dispatches `change`
+            // on it — so a listener bound here still hears the custom control's selections.
+            . '<select id="corex-mode-select" name="corex_mode" data-corex-select data-corex-mode-select>'
+            . $options . '</select>'
+            . $this->modeBlocks($this->proposedMode($current), $blockers)
+            . '<button type="submit" class="button button-primary" data-corex-mode-apply>'
+            . esc_html__('Apply mode', 'corex') . '</button>'
             . '</form></section>';
+    }
+
+    /**
+     * The mode the form is currently offering to apply.
+     *
+     * `?mode=` when it names a real mode, otherwise whatever the site is in. The query argument is
+     * what makes the form work without JavaScript: a submission that fails for a missing
+     * confirmation redirects back proposing the same mode, and the confirmation it needs is then on
+     * screen. Read-only, so no nonce — it selects which description is visible and nothing else.
+     */
+    private function proposedMode(string $current): string
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state.
+        $requested = isset($_GET['mode']) ? sanitize_key(wp_unslash($_GET['mode'])) : '';
+
+        return $this->modes->isValid($requested) ? $requested : $current;
+    }
+
+    /**
+     * One block per mode: what it means, what follows from it, and the confirmation it needs.
+     *
+     * All four are rendered and three are hidden, rather than fetching the right one over REST when
+     * the selection changes. A fetch would add a route, a spinner and a failure mode to a form that
+     * has none of those, to save markup nobody is paying for.
+     *
+     * The inputs in hidden blocks are `disabled`, which is the part that matters: a disabled control
+     * is not submitted, so the server can never receive a confirmation belonging to a mode the
+     * operator did not choose. Hiding alone would still post the field.
+     *
+     * @param list<string> $blockers Readiness blockers, for the production block.
+     */
+    private function modeBlocks(string $proposed, array $blockers): string
+    {
+        $blocks = '';
+
+        foreach ($this->disclosure->describeAll() as $described) {
+            $mode     = $described['mode'];
+            $isActive = $mode === $proposed;
+            $inert    = $isActive ? '' : ' disabled';
+
+            $consequences = '';
+            foreach ($described['consequences'] as $consequence) {
+                $consequences .= '<li>' . esc_html($consequence) . '</li>';
+            }
+
+            $blocks .= '<div class="corex-opsec__mode-block" data-mode="' . esc_attr($mode) . '"'
+                . ($isActive ? '' : ' hidden') . '>'
+                . '<p class="corex-opsec__detail">' . esc_html($described['summary']) . '</p>'
+                . '<ul class="corex-opsec__mode-consequences">' . $consequences . '</ul>'
+                . $this->confirmationControl($described['confirmation'], $mode, $blockers, $inert)
+                . '</div>';
+        }
+
+        return $blocks;
+    }
+
+    /**
+     * The one confirmation this mode asks for — and nothing belonging to any other mode.
+     */
+    private function confirmationControl(
+        string $confirmation,
+        string $mode,
+        array $blockers,
+        string $inert,
+    ): string {
+        if ($confirmation === ModeDisclosure::CONFIRM_PHRASE) {
+            $gate = $blockers === []
+                ? esc_html__('Production launch is ready. Type PRODUCTION to confirm the live-mode change.', 'corex')
+                : sprintf(
+                    /* translators: %d: number of blocking readiness checks */
+                    esc_html(_n('%d blocking readiness check must be resolved or intentionally overridden by typing PRODUCTION.', '%d blocking readiness checks must be resolved or intentionally overridden by typing PRODUCTION.', count($blockers), 'corex')),
+                    count($blockers),
+                );
+
+            return '<label class="corex-opsec__mode-label" for="corex-production-confirm">'
+                . esc_html__('Production confirmation', 'corex') . '</label>'
+                . '<input id="corex-production-confirm" type="text" name="corex_confirm_phrase" value=""'
+                . ' autocomplete="off" placeholder="' . esc_attr__('Type PRODUCTION', 'corex') . '"' . $inert . ' />'
+                . '<p class="corex-opsec__detail">' . $gate . '</p>';
+        }
+
+        if ($confirmation === ModeDisclosure::CONFIRM_ACKNOWLEDGEMENT) {
+            return '<label class="corex-opsec__mode-confirm">'
+                . '<input type="checkbox" name="corex_confirm" value="1"' . $inert . ' /> '
+                . esc_html__('I understand maintenance affects real visitors.', 'corex') . '</label>';
+        }
+
+        return '';
     }
 
     /**

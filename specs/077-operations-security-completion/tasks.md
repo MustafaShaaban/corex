@@ -49,11 +49,11 @@ screen lie, and because neither depends on the new information architecture.
       WordPress and one answer drives the render, the client swap and the server validation.
 - [x] T008 [P] [US2] Pest unit: Production requires the typed phrase and not the acknowledgement;
       Maintenance the reverse; Development and Staging neither.
-- [ ] T009 [US2] The mode form renders all four blocks with the proposed mode's visible and the
+- [x] T009 [US2] The mode form renders all four blocks with the proposed mode's visible and the
       rest `hidden`; the proposed mode comes from `?mode=` when valid, else the current mode.
-- [ ] T010 [US2] `operations-mode.js` swaps the visible block on `change`, and disables Apply when
+- [x] T010 [US2] `operations-mode.js` swaps the visible block on `change`, and disables Apply when
       the selection equals the current mode (FR-008). Enqueued on this screen only.
-- [ ] T011 [US2] No-JS path: submitting a mode whose confirmation was not shown fails validation
+- [x] T011 [US2] No-JS path: submitting a mode whose confirmation was not shown fails validation
       and redirects to `?tab=environment&mode=<proposed>` with the confirmation now visible and a
       notice explaining why (FR-013).
 - [ ] T012 [P] [US2] Pest integration: server-side validation rejects a Production change with no
