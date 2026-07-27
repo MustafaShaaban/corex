@@ -1,5 +1,6 @@
 import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../../admin/components/CorexSelect.js';
+import CorexTime from '../../admin/components/CorexTime.js';
 import { Field } from './shared.js';
 
 function TemplateRail( { templates, selectedId, busy, onCreate, onSelect } ) {
@@ -47,11 +48,13 @@ function TemplateRail( { templates, selectedId, busy, onCreate, onSelect } ) {
 								{ template.subject ||
 									__( 'No draft subject', 'corex' ) }
 							</span>
-							<time>
-								{ new Date(
-									template.updated_at
-								).toLocaleString() }
-							</time>
+							{ /* "Never edited" rather than the generic "Not recorded": a template
+							     with no update time has not been touched since it was created,
+							     which is a fact about the template, not a gap in the record. */ }
+							<CorexTime
+								value={ template.updated_at }
+								absent={ __( 'Never edited', 'corex' ) }
+							/>
 							<span>{ template.status }</span>
 						</button>
 					</li>

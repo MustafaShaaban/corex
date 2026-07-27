@@ -9,6 +9,7 @@ import {
 import { Button, Modal, Spinner } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
+import CorexTime from '../admin/components/CorexTime.js';
 import {
 	buildExportPayload,
 	inboxFiltersFromUrl,
@@ -524,7 +525,12 @@ function InboxTable( { state, dispatch, open } ) {
 									? __( 'Unassigned', 'corex' )
 									: `${ item.owner_type }:${ item.owner_key }` }
 							</td>
-							<td>{ item.created_at || '' }</td>
+							<td>
+								<CorexTime
+									value={ item.created_at }
+									absent={ __( 'Not recorded', 'corex' ) }
+								/>
+							</td>
 						</tr>
 					) ) }
 				</tbody>
@@ -786,12 +792,11 @@ function DetailDrawer( { drawer, inbox } ) {
 					</p>
 				) }
 				{ record.delivery?.attempted_at && (
+					// The date is a <time> element rather than a string interpolated into the
+					// sentence, so it keeps its machine value. `sprintf` cannot carry markup.
 					<p className="corex-inbox__muted">
-						{ sprintf(
-							/* translators: %s: when delivery was last attempted. */
-							__( 'Attempted %s', 'corex' ),
-							record.delivery.attempted_at
-						) }
+						{ __( 'Attempted', 'corex' ) }{ ' ' }
+						<CorexTime value={ record.delivery.attempted_at } />
 					</p>
 				) }
 			</section>
@@ -817,7 +822,12 @@ function DetailDrawer( { drawer, inbox } ) {
 					{ ( record.notes || [] ).map( ( item ) => (
 						<li key={ item.id }>
 							<strong>#{ item.author_id }</strong> { item.body }
-							<small>{ item.created_at }</small>
+							<small>
+								<CorexTime
+									value={ item.created_at }
+									absent={ __( 'Not recorded', 'corex' ) }
+								/>
+							</small>
 						</li>
 					) ) }
 				</ul>
@@ -910,7 +920,12 @@ function DetailDrawer( { drawer, inbox } ) {
 							<strong>{ event.stage || event.kind }</strong>
 							<span>{ event.outcome || event.state }</span>
 							<small>
-								{ event.created_at || event.occurred_at }
+								<CorexTime
+									value={
+										event.created_at || event.occurred_at
+									}
+									absent={ __( 'Not recorded', 'corex' ) }
+								/>
 							</small>
 						</li>
 					) ) }

@@ -19,6 +19,8 @@ use Corex\Support\Config\Repository;
 use Corex\Support\Config\Sources\DefaultsSource;
 use Corex\Support\Config\Sources\DotenvSource;
 use Corex\Support\Config\Sources\OptionsSource;
+use Corex\Support\DateTime\AdminDateTime;
+use Corex\Support\DateTime\AdminDateTimeFormatter;
 use Corex\Update\UpdateChecker;
 use Corex\Update\UpdateService;
 
@@ -61,6 +63,13 @@ final class CoreServiceProvider extends ServiceProvider
             static fn (ContainerInterface $container): HealthModule => new HealthModule(
                 $container->make(ConfigInterface::class),
             ),
+        );
+
+        // How every CoreX admin surface presents a date (spec 076). Bound to the interface so a
+        // screen depends on "a way to present a date" rather than on wp_date().
+        $this->container->singleton(
+            AdminDateTime::class,
+            static fn (): AdminDateTimeFormatter => new AdminDateTimeFormatter(),
         );
 
         // Default kit-activation seam (spec 042): a Null Object so corex-config can always resolve

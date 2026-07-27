@@ -12,6 +12,10 @@ import { act } from 'react';
 
 import EditorialPanel from '../EditorialPanel.js';
 import ModerationPanel from '../ModerationPanel.js';
+import {
+	installDateTimeConfig,
+	removeDateTimeConfig,
+} from '../../../../../tests/Support/adminDateTimeConfig.js';
 
 const EDITORIAL = {
 	post_id: 7,
@@ -83,12 +87,16 @@ beforeAll( () => {
 } );
 
 beforeEach( () => {
+	// The moderation panel renders its arrival time through the shared contract, which reads the
+	// boundary payload every CoreX screen localizes (spec 076, FR-008).
+	installDateTimeConfig();
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
 	root = createRoot( container );
 } );
 
 afterEach( () => {
+	removeDateTimeConfig();
 	act( () => root.unmount() );
 	container.remove();
 } );
@@ -192,8 +200,10 @@ describe( 'ModerationPanel', () => {
 		expect( container.textContent ).toContain( 'This helped, thank you.' );
 		expect( container.textContent ).toContain( 'Ada' );
 		expect( container.textContent ).toContain( 'Awaiting review' );
+		// The canonical form of COMMENT.submitted_at ('2026-07-26T09:00:00+00:00'), which the
+		// shared contract emits identically on both sides of the product.
 		expect( find( 'time' ).getAttribute( 'datetime' ) ).toBe(
-			COMMENT.submitted_at
+			'2026-07-26T09:00:00+00:00'
 		);
 	} );
 

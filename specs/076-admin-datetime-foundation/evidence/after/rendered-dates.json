@@ -1,0 +1,104 @@
+{
+	"capturedAt": "2026-07-27T15:03:39.463Z",
+	"baseUrl": "http://corex.local",
+	"surfaces": {
+		"submissions-inbox": {
+			"rendered": [
+				"27 July 2026 at 3:01 PM",
+				"27 July 2026 at 2:52 PM",
+				"27 July 2026 at 2:48 PM",
+				"27 July 2026 at 8:53 AM",
+				"27 July 2026 at 8:53 AM"
+			],
+			"machineShaped": [],
+			"followsBrowserTimezone": false,
+			"inTokyo": [
+				"27 July 2026 at 3:01 PM",
+				"27 July 2026 at 2:52 PM",
+				"27 July 2026 at 2:48 PM",
+				"27 July 2026 at 8:53 AM",
+				"27 July 2026 at 8:53 AM"
+			]
+		},
+		"forms-flow-list": {
+			"rendered": [
+				"10 July 2026 at 2:43 PM",
+				"27 July 2026 at 12:29 AM",
+				"5 July 2026 at 12:04 AM"
+			],
+			"machineShaped": [],
+			"followsBrowserTimezone": false,
+			"inTokyo": [
+				"10 July 2026 at 2:43 PM",
+				"27 July 2026 at 12:29 AM",
+				"5 July 2026 at 12:04 AM"
+			]
+		},
+		"email-studio-logs": {
+			"rendered": [],
+			"machineShaped": [],
+			"followsBrowserTimezone": false,
+			"inTokyo": []
+		},
+		"operations-security-activity": {
+			"rendered": [
+				"Serve the site over HTTPS — install an SSL certificate and force it for admin.",
+				"Set DISALLOW_FILE_EDIT to true in wp-config.php to disable the in-admin code editor.",
+				"Set WP_DEBUG_DISPLAY to false so errors are logged, not shown to visitors.",
+				"Avoid a user named \"admin\" — it is the first username brute-force bots try.",
+				"Search engines are not discouraged from indexing this production site."
+			],
+			"machineShaped": [],
+			"followsBrowserTimezone": false,
+			"inTokyo": [
+				"Serve the site over HTTPS — install an SSL certificate and force it for admin.",
+				"Set DISALLOW_FILE_EDIT to true in wp-config.php to disable the in-admin code editor.",
+				"Set WP_DEBUG_DISPLAY to false so errors are logged, not shown to visitors.",
+				"Avoid a user named \"admin\" — it is the first username brute-force bots try.",
+				"Search engines are not discouraged from indexing this production site."
+			]
+		},
+		"notifications": {
+			"rendered": [
+				"Just now",
+				"Just now",
+				"Just now",
+				"Just now",
+				"2 minutes ago"
+			],
+			"machineShaped": [],
+			"followsBrowserTimezone": false,
+			"inTokyo": [
+				"Just now",
+				"Just now",
+				"Just now",
+				"Just now",
+				"2 minutes ago"
+			]
+		},
+		"overview": {
+			"rendered": [
+				"User #7 · submissions submission.export.queuedSubmission export #1730827 July 2026 at 3:01 PM",
+				"User #1 · data-models data.import.validatedData import #1719727 July 2026 at 3:01 PM",
+				"User #1 · data-models data.import.validatedData import #1719627 July 2026 at 3:01 PM",
+				"User #1 · data-models data.import.validatedData import #1719527 July 2026 at 3:01 PM",
+				"admin · data data.record.updatedrest-contacts27 July 2026 at 3:01 PM"
+			],
+			"machineShaped": [],
+			"followsBrowserTimezone": "not comparable (live feed)",
+			"inTokyo": [
+				"User #7 · submissions submission.export.queuedSubmission export #1730827 July 2026 at 3:01 PM",
+				"User #1 · data-models data.import.validatedData import #1719727 July 2026 at 3:01 PM",
+				"User #1 · data-models data.import.validatedData import #1719627 July 2026 at 3:01 PM",
+				"User #1 · data-models data.import.validatedData import #1719527 July 2026 at 3:01 PM",
+				"admin · data data.record.updatedrest-contacts27 July 2026 at 3:01 PM"
+			]
+		},
+		"blog-pro": {
+			"rendered": [],
+			"machineShaped": [],
+			"followsBrowserTimezone": false,
+			"inTokyo": []
+		}
+	}
+}

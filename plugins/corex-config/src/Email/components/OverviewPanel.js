@@ -1,4 +1,5 @@
 import { __, sprintf } from '@wordpress/i18n';
+import CorexTime from '../../admin/components/CorexTime.js';
 
 function deliveryDescription( delivery ) {
 	if (
@@ -77,11 +78,7 @@ function RecentTestSends( { attempts } ) {
 						<li key={ attempt.attempt_id }>
 							<strong>{ attempt.subject }</strong>
 							<span>{ attempt.state }</span>
-							<time>
-								{ new Date(
-									attempt.occurred_at
-								).toLocaleString() }
-							</time>
+							<CorexTime value={ attempt.occurred_at } />
 						</li>
 					) ) }
 				</ul>

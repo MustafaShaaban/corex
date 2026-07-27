@@ -20,6 +20,7 @@ use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginUrl;
 use Corex\Security\Admin\AdminGuard;
+use Corex\Support\DateTime\AdminDateTime;
 use DateTimeImmutable;
 
 defined('ABSPATH') || exit;
@@ -42,6 +43,7 @@ final class OperationsSecurityScreen
         private readonly ProductionReadinessSnapshotFactory $readiness,
         private readonly LoginProtectionSettingsStore $loginSettings,
         private readonly LoginLockoutReader $lockouts,
+        private readonly AdminDateTime $dateTime,
     ) {
     }
 
@@ -218,14 +220,19 @@ final class OperationsSecurityScreen
         foreach ($history as $entry) {
             $user = $entry['user'] > 0 ? get_userdata($entry['user']) : false;
             $who  = $user ? $user->display_name : __('system', 'corex');
-            $when = $entry['time'] > 0
-                ? wp_date((string) get_option('date_format') . ' ' . (string) get_option('time_format'), $entry['time'])
-                : '';
+            // The `> 0` guard is gone because `Instant` now owns that rule: a non-positive
+            // timestamp is an absence everywhere, not a check each call site remembers to make.
+            $when = $this->dateTime->format(
+                $entry['time'],
+                AdminDateTime::FULL,
+                __('Time not recorded', 'corex'),
+            );
 
             $rows .= '<li class="corex-opsec__audit-row">'
                 . '<span class="corex-opsec__audit-change"><code>' . esc_html($entry['from']) . '</code> &rarr; <code>'
                 . esc_html($entry['to']) . '</code></span>'
-                . '<span class="corex-opsec__audit-meta">' . esc_html($who) . ' · ' . esc_html($when) . '</span></li>';
+                . '<span class="corex-opsec__audit-meta">' . esc_html($who) . ' · '
+                . $when->toHtml() . '</span></li>';
         }
 
         return '<section class="corex-surface corex-opsec__audit">'
@@ -310,7 +317,7 @@ final class OperationsSecurityScreen
                 'account' => $this->accountName($record->userId),
                 'reason' => $record->reasonCode,
                 'active' => $lockedUntil !== null && $lockedUntil > $now,
-                'locked_until' => $lockedUntil === null ? '' : $this->formatDate($lockedUntil),
+                'locked_until' => $lockedUntil === null ? '' : $this->machineDate($lockedUntil),
             ];
         }, $this->lockouts->recentLockouts($now));
     }
@@ -327,10 +334,18 @@ final class OperationsSecurityScreen
         return $user === false ? '' : $user->user_login;
     }
 
-    private function formatDate(DateTimeImmutable $date): string
+    /**
+     * The canonical machine value for a lockout expiry, for the React app to present.
+     *
+     * This used to return a *display* string built from the site's date/time options, with
+     * `$date->format('c')` as its fallback — so when `wp_date()` returned an empty string the
+     * screen showed a raw ISO timestamp to the operator. Sending the canonical value and letting
+     * `CorexTime` render it means one formatter decides how a date looks, and the fallback path
+     * cannot produce a different answer from the happy path (FR-015).
+     */
+    private function machineDate(DateTimeImmutable $date): string
     {
-        return wp_date((string) get_option('date_format') . ' ' . (string) get_option('time_format'), $date->getTimestamp())
-            ?: $date->format('c');
+        return gmdate(DATE_ATOM, $date->getTimestamp());
     }
 
     /**
@@ -403,7 +418,14 @@ final class OperationsSecurityScreen
                 'kind' => 'operations.mode.changed',
                 'label' => $label,
                 'tone' => 'info',
-                'occurred_at' => $entry['time'] > 0 ? wp_date(DATE_ATOM, (int) $entry['time']) : '',
+                // `gmdate`, not `wp_date`: both name the same instant, but `wp_date(DATE_ATOM)`
+                // writes it with the site's offset while every other machine value in CoreX —
+                // including `machineDate()` two methods up, and the whole persistence layer — is
+                // UTC. Two conventions in one payload is a question a future reader has to answer
+                // before they can trust either.
+                'occurred_at' => $entry['time'] > 0
+                    ? gmdate(DATE_ATOM, (int) $entry['time'])
+                    : '',
             ];
         }, $this->store->history(8));
     }

@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Corex\Config\AdminUi;
 
+use Corex\Support\DateTime\AdminDateTime;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -29,6 +31,19 @@ final class CorexAdminAssets
      * submenu pages).
      */
     private const SCREEN_PATTERN = '#(?:^toplevel_page_corex-settings$|_page_corex-[a-z0-9-]+)#';
+
+    /**
+     * Injected rather than reached for through the facade: this class is built by the container
+     * (`ConfigServiceProvider`), so it has a constructor to inject into, and constitution IV wants
+     * the dependency visible here. `Facades\AdminDate` exists for view code that has no
+     * constructor — not for classes that do.
+     *
+     * Nullable so the enqueue still runs on a site where the binding is somehow absent: a missing
+     * date config should cost dates, not the whole admin shell.
+     */
+    public function __construct(private readonly ?AdminDateTime $dateTime = null)
+    {
+    }
 
     public function register(): void
     {
@@ -71,6 +86,26 @@ final class CorexAdminAssets
         }
 
         wp_enqueue_style('corex-admin-shell');
+
+        // The one date/time boundary (spec 076, FR-008).
+        //
+        // Attached to `corex-runtime` because all nine CoreX screen bundles already declare it as a
+        // dependency, so the payload is defined before any admin app runs — and because attaching
+        // it here means exactly one call for every screen. The shape this replaces is the one the
+        // codebase already has elsewhere: eight screens each localizing their own object
+        // (`corexAccess`, `corexBlogPro`, `corexDataModels`, …). Adding timezone and locale config
+        // to eight payloads is precisely the duplication FR-008 exists to prevent.
+        //
+        // It carries already-translated month names, meridiem markers and format patterns, because
+        // the browser must not translate dates itself: `Intl` reads CLDR while WordPress reads the
+        // translation files, and in Arabic those disagree. One dictionary, exported.
+        if ($this->dateTime !== null) {
+            wp_localize_script(
+                'corex-runtime',
+                'corexDateTime',
+                $this->dateTime->clientConfig(),
+            );
+        }
 
         // Upgrades any server-rendered select that opted in with data-corex-select. Loaded
         // alongside the shell so a screen only has to mark the control, not wire up a script.
