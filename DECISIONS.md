@@ -3309,3 +3309,59 @@ Scope: the `'2026'` case was found by widening the parity fixture's absent list,
 implementations had it, identically wrong. The centralised rule replaces a hand-written `$entry['time'] > 0`
 guard that `OperationsSecurityScreen` already applied at one call site out of many.
 Status: Final.
+
+## #168 — The screen's sections are links, not an ARIA tablist
+Date: 2026-07-27
+Decision: Operations & Security is divided by `AdminPage::tabs()` — ordinary `?tab=` anchors carrying
+`aria-current="page"` — rather than by a `role="tablist"` with in-page panels.
+Why: every behavioural requirement the sectioning had to meet is a property links already have. The
+address reflects the section, so a view can be bookmarked and shared; Back and Forward work; a
+Post/Redirect/Get can land on the section the form was submitted from; keyboard navigation is the
+browser's own; and all of it works with JavaScript disabled, which FR-013 requires. A tablist would
+have to reimplement each of those — `aria-selected`, roving tabindex, focus management, history
+entries — and still could not satisfy the no-JavaScript case without duplicating the server render.
+Alternatives considered: an ARIA tablist with client-side panels (rejected above); progressive
+disclosure within one column (rejected: it keeps the ~3,500px page the spec exists to break up).
+Scope: `AdminPage::tabs()` already existed and Add-ons already used it, so this is reuse rather than
+a new primitive. Spec 078 adds its Cache & Performance section to the same list.
+Status: Final.
+
+## #169 — Progressive disclosure degrades to a second step, never to a wrong form
+Date: 2026-07-27
+Decision: The mode form renders all four mode blocks with three `hidden` **and their inputs
+`disabled`**, showing the block for a *proposed* mode carried in `?mode=`, defaulting to the current
+one. JavaScript swaps blocks on change; without it, submitting a mode whose confirmation was not on
+screen redirects back proposing that mode with its confirmation shown.
+Why: the form is a plain server POST with no client behaviour, so "show only what this mode needs"
+had to work where the browser cannot react to the select. Disabling — not merely hiding — is what
+makes it safe: a hidden input is still submitted, so without it the server could receive a
+confirmation belonging to a mode nobody chose.
+Alternatives considered: fetch the right block over REST on change (rejected: adds a route, a
+spinner and a failure mode to a form that has none); render only the current mode's block and
+validate server-side alone (rejected: the operator would submit blind and be refused, with no way
+to see what was being asked).
+Scope: one bug worth recording, because only a browser test found it. The first implementation
+synced from `select.value` on load — the mode the site is IN — so arriving at `?mode=production`
+after a redirect, the script hid the production block the server had deliberately rendered and
+showed the current mode instead. That silently closed the no-JavaScript path *for JavaScript users*:
+submit Production, get redirected to the form that asks for the phrase, watch the phrase field
+disappear. The server's rendering is the instruction; the selection follows it.
+Status: Final.
+
+## #170 — A well-formed login address is not necessarily a free one
+Date: 2026-07-27
+Decision: `LoginSlug` keeps answering shape and reserved names, unchanged and still pure. A new
+`LoginSlugAvailability` answers whether anything already responds at that address — a published page
+or post of any public type, or a rewrite rule that claims the path by name. The settings controller
+asks both.
+Why: `about` passes every rule in `LoginSlug` and is one of the most common page slugs there is. The
+collision does not appear at save time; it appears later, as a login serving somebody's About page.
+The two classes stay separate because `LoginSlug` runs on `plugins_loaded` before translations
+exist, and its lack of a database dependency is why it has held since DECISIONS #140.
+Alternatives considered: running the slug against every registered rewrite pattern (implemented
+first, then removed — WordPress's page rule is the catch-all `(.?.+?)/?$`, which matches every path
+by design, so it answered "taken" for every slug and no custom login address could have been saved
+at all; two obviously-should-pass tests caught it). Only rules whose pattern begins with a literal
+segment — `category/`, `author/`, a post type archive — actually claim a path, and the catch-all is
+already covered more precisely by the published-page check.
+Status: Final.

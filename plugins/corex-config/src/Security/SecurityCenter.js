@@ -9,7 +9,20 @@ import {
 	securityReducer,
 } from './securityCenterState.js';
 
-export default function SecurityCenter( { config = {} } ) {
+/**
+ * Which panels belong to which section of the screen (spec 077, FR-001).
+ *
+ * `all` keeps the pre-077 behaviour — every panel in one mount — so the component stays usable
+ * outside the sectioned screen and its existing tests keep describing something real.
+ */
+const SECTION_PANELS = {
+	environment: [ 'readiness' ],
+	login: [ 'loginPolicy', 'lockouts', 'recovery' ],
+	activity: [ 'activity' ],
+	all: [ 'readiness', 'loginPolicy', 'lockouts', 'recovery', 'activity' ],
+};
+
+export default function SecurityCenter( { config = {}, section = 'all' } ) {
 	const [ state, dispatch ] = useReducer(
 		securityReducer,
 		initialSecurityState(),
@@ -18,22 +31,37 @@ export default function SecurityCenter( { config = {} } ) {
 	);
 	const lockouts = lockoutSummary( state.lockouts );
 	const policyPayload = buildLoginPolicyPayload( state.loginPolicy );
+	const panels = SECTION_PANELS[ section ] || SECTION_PANELS.all;
+	const shows = ( panel ) => panels.includes( panel );
 
 	return (
 		<div className="corex-security" data-testid="corex-security-center">
-			<LaunchChecklist state={ state } />
-			<LoginPolicy
-				policy={ state.loginPolicy }
-				policyPayload={ policyPayload }
-				dispatch={ dispatch }
-				config={ config }
-				saving={ state.status === 'saving' }
-			/>
-			<div className="corex-security__grid">
-				<Lockouts lockouts={ state.lockouts } summary={ lockouts } />
-				<Recovery config={ config } />
-				<Activity activity={ state.activity } />
-			</div>
+			{ shows( 'readiness' ) && <LaunchChecklist state={ state } /> }
+			{ shows( 'loginPolicy' ) && (
+				<LoginPolicy
+					policy={ state.loginPolicy }
+					policyPayload={ policyPayload }
+					dispatch={ dispatch }
+					config={ config }
+					saving={ state.status === 'saving' }
+				/>
+			) }
+			{ ( shows( 'lockouts' ) ||
+				shows( 'recovery' ) ||
+				shows( 'activity' ) ) && (
+				<div className="corex-security__grid">
+					{ shows( 'lockouts' ) && (
+						<Lockouts
+							lockouts={ state.lockouts }
+							summary={ lockouts }
+						/>
+					) }
+					{ shows( 'recovery' ) && <Recovery config={ config } /> }
+					{ shows( 'activity' ) && (
+						<Activity activity={ state.activity } />
+					) }
+				</div>
+			) }
 			{ state.notice && (
 				<p
 					className={ `corex-security__notice is-${ state.notice.tone }` }

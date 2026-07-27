@@ -1,9 +1,75 @@
 /* CoreX Operations & Security overview (spec 063, Phase 4). Real environment +
    real WordPress hardening checks. Tokens + logical properties only; scoped to
    this screen (Principle VI); status by class + text, never colour alone. */
+
+/* One container owns the rhythm between sections (spec 077, FR-020).
+
+   The sections used to space themselves, each carrying its own
+   `margin-block-end`. That produces the right number right up until it does
+   not: a margin can collapse against a neighbour, two adjacent sections can
+   disagree about the gap between them, and the last one leaves a margin under
+   the page with nothing below it. A gap on the container cannot do any of
+   those — the number lives in one place and applies between every pair.
+
+   The value is unchanged; only its home is. */
+.corex-admin .corex-opsec__sections {
+	display: grid;
+	gap: var(--corex-admin-space-lg);
+	align-content: start;
+}
+
 .corex-admin .corex-opsec__env {
-	margin-block-end: var(--corex-admin-space-lg);
 	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);
+}
+
+/* The at-a-glance summary: one row per fact, each linking to the section that
+   owns it. Wraps to a stack at narrow widths rather than squeezing three
+   columns into a phone. */
+.corex-admin .corex-opsec__summary-list {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	margin: var(--corex-admin-space-md) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-opsec__summary-item {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	align-items: baseline;
+	padding-block: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-opsec__summary-item:last-child {
+	border-block-end: 0;
+}
+
+.corex-admin .corex-opsec__summary-label {
+	flex: 1 1 12rem; /* corex-token-allow: label column basis */
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-opsec__summary-value {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-opsec__summary-link {
+	margin-inline-start: auto;
+	color: var(--corex-admin-action);
+	font-size: var(--corex-admin-font-sm);
+}
+
+/* The mode blocks. Only one is visible at a time; the rest are `hidden`,
+   which the browser already honours — no rule here should override that. */
+.corex-admin .corex-opsec__mode-consequences {
+	margin: var(--corex-admin-space-xs) 0 var(--corex-admin-space-sm);
+	padding-inline-start: var(--corex-admin-space-md);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
 }
 
 .corex-admin .corex-opsec__env.is-success {
@@ -22,10 +88,6 @@
 .corex-admin .corex-opsec__note-text {
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-sm);
-}
-
-.corex-admin .corex-opsec__checks {
-	margin-block-end: var(--corex-admin-space-lg);
 }
 
 .corex-admin .corex-opsec__checks-head {
@@ -176,7 +238,6 @@
 .corex-admin .corex-security {
 	display: grid;
 	gap: var(--corex-admin-space-lg);
-	margin-block-end: var(--corex-admin-space-lg);
 }
 
 .corex-admin .corex-security__grid {

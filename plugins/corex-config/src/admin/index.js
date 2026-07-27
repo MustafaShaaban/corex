@@ -53,7 +53,16 @@ if ( securityMount ) {
 		lockouts: [],
 		activity: [],
 	};
-	const app = <SecurityCenter config={ config } />;
+	// The screen is sectioned now (spec 077), and this app's panels belong to three different
+	// sections. The mount node says which one it is standing in; the app renders only those panels.
+	// One app and one state module rather than three, so a change to the security state still has
+	// one home.
+	const app = (
+		<SecurityCenter
+			config={ config }
+			section={ securityMount.dataset.section || 'all' }
+		/>
+	);
 	if ( typeof createRoot === 'function' ) {
 		createRoot( securityMount ).render( app );
 	} else {

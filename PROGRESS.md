@@ -4,6 +4,61 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-27) -- **Spec 077 (Operations & Security) implemented on `spec/077-operations-security-completion`.**
+
+Spec 076 merged as **`3765cf2`** (GitHub + Azure). 077 is the next PR.
+
+**The most useful thing 077 did was decide what not to do.** Four areas the brief described were
+already implemented, and specifying them again would have meant rewriting working code:
+`OperationsMode`/`OperationsModeStore` already distinguish CoreX mode from
+`wp_get_environment_type()`; `ReadinessSnapshot` already carries four states; `LoginSlug` already
+owns shape and reserved-name rules (written after DECISIONS #140 found two real lockout paths, and
+strict enough that URLs, query strings, fragments and traversal are already unreachable);
+`MaintenanceGuard` already serves a branded 503 and never intercepts admin, cron, AJAX or REST. Each
+is named with its class in `spec.md` so the claim is checkable.
+
+**What was actually wrong, reproduced before any code changed:**
+
+1. **The mode form showed every confirmation for every mode.** A site in **Development** rendered
+   the typed `PRODUCTION` field *and* the maintenance acknowledgement — captured in
+   `evidence/before/`. Being asked to acknowledge consequences that cannot occur teaches an operator
+   that confirmations are noise, which is the lesson that makes them dangerous when they are real.
+2. **Re-applying the mode you were already in was recorded as a change** and reported as saved.
+   `OperationsModeStore::set()` wrote and logged unconditionally, so `development → development`
+   appeared in the history an operator reads to answer "when did this go live".
+3. **Five unrelated areas in one ~3,577px column** with no hierarchy.
+
+**Now:** five linkable sections (967px each, 1,603px for Environment), the mode form asking only what
+the chosen mode needs, and a no-change saying so.
+
+**Three findings worth carrying forward:**
+
+1. **Only a browser test found the disclosure bug.** The client script first synced from
+   `select.value` on load — the mode the site is *in* — so arriving at `?mode=production` after the
+   no-JS redirect, it hid the production block the server had deliberately rendered. That closed the
+   no-JavaScript path *for JavaScript users*: submit Production, get sent to the form that asks for
+   the phrase, watch the field vanish. Unit tests could not see it (DECISIONS #169).
+2. **My first rewrite-collision check rejected every slug.** It ran the candidate against every
+   registered rewrite pattern, and WordPress's page rule is the catch-all `(.?.+?)/?$` — it matches
+   any path by design. No custom login address could have been saved at all. Two obviously-should-
+   pass tests caught it (DECISIONS #170).
+3. **The token-consumer contract caught a hardcoded `flex: 1 1 12rem`** in new CSS, exactly as it
+   caught one during 076. It earns its keep every time.
+
+Also fixed along the way: an integration test that deleted this install's declared operations mode
+and left it silently reading `production`. Both mode tests snapshot and restore now — the
+integration suite runs against a real site.
+
+Gate: **ESLint 0** · **stylelint 0** · **Jest 381** · **Pest unit 1573** (6625 assertions) ·
+**Pest integration 295** (1103) · **Playwright `operations-security.spec.js` 15/15** against the real
+local WordPress, covering RTL, 375px, 200% zoom, Back/Forward and the unknown-tab fallback. Token
+inventory reproduces. DECISIONS **#168–#170**.
+
+**Next:** open the 077 PR, get CI green, merge. Then **Spec 078 — Cache Architecture and Performance
+Management**, which adds its section to the architecture 077 established (and can extract the five
+section renderers into `Sections/` as a pure move while it is there).
+
+---
 ## RESUME HERE (2026-07-27) -- **Spec 076 (Admin Date & Time Foundation) implemented on `spec/076-admin-datetime-foundation`, PR open.**
 
 Every date in the CoreX admin now comes from one contract. The audit that opened the spec found the

@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettings;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginSlug;
+use Corex\Config\Security\LoginProtection\LoginSlugAvailability;
 use Corex\Config\Security\LoginProtection\LoginUrl;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -26,8 +27,10 @@ final class SecuritySettingsController
 {
     private const NAMESPACE = 'corex/v1';
 
-    public function __construct(private readonly LoginProtectionSettingsStore $store)
-    {
+    public function __construct(
+        private readonly LoginProtectionSettingsStore $store,
+        private readonly LoginSlugAvailability $availability = new LoginSlugAvailability(),
+    ) {
     }
 
     public function register(): void
@@ -125,7 +128,13 @@ final class SecuritySettingsController
         $body = is_array($body) ? $body : $request->get_body_params();
 
         $slug = $this->slugFrom($body);
-        $rejection = LoginSlug::rejectionReason($slug);
+
+        // Two questions, two answers. `LoginSlug` says whether the address is well-formed and not
+        // one WordPress reserves; `LoginSlugAvailability` says whether anything already answers
+        // there. A slug can pass every rule in the first and still collide with a published page —
+        // `about` is a good slug and a common page — and the pattern cannot see that.
+        $rejection = LoginSlug::rejectionReason($slug)
+            ?? $this->availability->rejectionReason($slug);
 
         // Refuse rather than let the store substitute a working address behind the owner's back:
         // they would leave believing the login is where they typed it. Nothing is written, so the
@@ -195,6 +204,14 @@ final class SecuritySettingsController
         return match ($reason) {
             LoginSlug::REASON_RESERVED => __(
                 'That login address is reserved by WordPress. Choose a different one.',
+                'corex',
+            ),
+            LoginSlugAvailability::REASON_TAKEN_BY_PAGE => __(
+                'A published page already uses that address. Choose a different one, or the login and that page would compete for the same URL.',
+                'corex',
+            ),
+            LoginSlugAvailability::REASON_TAKEN_BY_ROUTE => __(
+                'Something on this site already routes that address — a post type archive, a category base, or another plugin. Choose a different one.',
                 'corex',
             ),
             default => __(
