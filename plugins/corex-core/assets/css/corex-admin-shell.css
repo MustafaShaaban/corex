@@ -470,26 +470,136 @@ body.corex-admin-screen .corex-admin__shell {
 }
 
 .corex-notifications-screen__item {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: var(--corex-admin-space-md);
-	padding: var(--corex-admin-space-md);
+	padding: 0;
 	background: var(--corex-admin-surface-raised);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-md);
 }
 
-.corex-notifications-screen__item-title {
-	margin: 0 0 var(--corex-admin-space-xs);
+/* One notification, shared by the screen and the header drawer (spec 074).
+   Icon, then everything the record knows, then the controls this actor may
+   use. */
+.corex-notification {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-md);
+}
+
+/* An item that still needs somebody keeps a visible edge — reinforcing the
+   "Still needs action" label rather than replacing it, so the state survives
+   a monochrome display. */
+.corex-notification.needs-action {
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+	border-start-start-radius: var(--corex-admin-radius-sm);
+	border-end-start-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-notification[data-severity="critical"].needs-action,
+.corex-notification[data-severity="error"].needs-action {
+	border-inline-start-color: var(--corex-admin-error);
+}
+
+/* Sizing and colour only: the glyph itself comes from the
+   `.corex-admin__nav-icon--*` mask the element also carries, so the rail and
+   the notification list cannot show different marks for the same area of the
+   product. */
+.corex-notification__icon {
+	margin-block-start: var(--corex-admin-space-2xs);
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-notification.needs-action .corex-notification__icon {
+	color: var(--corex-admin-warning);
+}
+
+.corex-notification[data-severity="critical"] .corex-notification__icon,
+.corex-notification[data-severity="error"] .corex-notification__icon {
+	color: var(--corex-admin-error);
+}
+
+.corex-notification__body {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	min-inline-size: 0;
+}
+
+.corex-notification__title {
+	margin: 0;
 	color: var(--corex-admin-text);
 	font-weight: 600;
 }
 
-.corex-notifications-screen__item-body {
+.corex-notification__text {
 	margin: 0;
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-notification__meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-notification__severity {
+	padding: 0 var(--corex-admin-space-xs);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-pill);
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+.corex-notification__severity.is-critical,
+.corex-notification__severity.is-error {
+	color: var(--corex-admin-error);
+	border-color: var(--corex-admin-error);
+}
+
+.corex-notification__severity.is-warning,
+.corex-notification__severity.is-action {
+	color: var(--corex-admin-warning);
+	border-color: var(--corex-admin-warning);
+}
+
+.corex-notification__severity.is-success {
+	color: var(--corex-admin-success);
+	border-color: var(--corex-admin-success);
+}
+
+.corex-notification__unread {
+	color: var(--corex-admin-action);
+	font-weight: 700;
+}
+
+.corex-notification__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+	grid-column: 2;
+}
+
+.corex-notification__actions button {
+	color: var(--corex-admin-action);
+	background: transparent;
+	border: 0;
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.corex-notification__actions button.is-destructive {
+	color: var(--corex-admin-error);
+}
+
+.corex-notification__actions button:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
 }
 
 .corex-notifications-screen__mark {

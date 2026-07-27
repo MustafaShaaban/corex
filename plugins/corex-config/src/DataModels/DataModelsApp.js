@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import DataExplorer from '../admin/data/DataExplorer.js';
 import { normalizeCatalog } from '../admin/dataClient.js';
+import CapabilityPanel from './CapabilityPanel.js';
 import ExportPanel from './ExportPanel.js';
 import ImportPanel from './ImportPanel.js';
 import MigrationsPanel from './MigrationsPanel.js';
@@ -39,10 +40,16 @@ function syncTabToUrl( tab ) {
 
 export default function DataModelsApp( { config } ) {
 	const abilities = config.abilities || {};
-	const tabs = useMemo( () => allowedTabs( abilities ), [ abilities ] );
 	const sources = useMemo( () => normalizeCatalog( config.sources ), [ config.sources ] );
+	// Tabs depend on the sources as well as the abilities: a capability nothing can satisfy is
+	// hidden rather than shown as a dead end (spec 074, FR-3.1).
+	const tabs = useMemo( () => allowedTabs( abilities, sources ), [ abilities, sources ] );
 	const [ tab, setTab ] = useState( () =>
-		tabFromUrl( typeof window === 'undefined' ? '' : window.location.href, abilities )
+		tabFromUrl(
+			typeof window === 'undefined' ? '' : window.location.href,
+			abilities,
+			normalizeCatalog( config.sources )
+		)
 	);
 
 	const selectTab = useCallback( ( next ) => {
@@ -65,7 +72,10 @@ export default function DataModelsApp( { config } ) {
 				aria-current={ tab === item.key ? 'page' : undefined }
 				onClick={ () => selectTab( item.key ) }>{ tabLabel( item.key ) }</button> ) }
 		</nav>
-		{ tab === 'models' && <ModelsPanel sources={ sources } /> }
+		{ tab === 'models' && <>
+			<ModelsPanel sources={ sources } />
+			<CapabilityPanel report={ config.capabilities } />
+		</> }
 		{ tab === 'records' && <DataExplorer config={ config } /> }
 		{ tab === 'import' && <ImportPanel config={ config } sources={ sources } /> }
 		{ tab === 'export' && <ExportPanel config={ config } sources={ sources } /> }

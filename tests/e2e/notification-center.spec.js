@@ -1,9 +1,16 @@
 /**
- * Corex E2E — Notification Center bell + drawer (spec 072 US2, FR-016).
+ * Corex E2E — Notification Center bell + drawer (spec 072 US2, FR-016) and the screen's view
+ * structure (spec 074, FR-4.2).
  *
  * Verifies the accessibility contract that jsdom cannot: the server-rendered bell in the CoreX shell
  * header opens the drawer on click, the drawer is a modal dialog, Escape closes it AND returns focus
  * to the bell, and focus stays trapped inside the panel while it is open.
+ *
+ * The screen specs here assert **structure**, not item content: nothing seeds notification records,
+ * so an item-level assertion would be testing whatever the run happened to produce. What one
+ * notification says about itself — above all that reading it never changes whether it still needs
+ * action — is covered against a real DOM in
+ * `plugins/corex-config/src/admin/notifications/__tests__/notificationItem.test.js`.
  *
  * ENVIRONMENT-GATED: needs Apache up (http://corex.local), a built corex-config
  * (build/notification-ui), and `npx playwright install`. Uses the saved admin session.
@@ -163,59 +170,86 @@ test( 'opening the drawer adds no horizontal overflow at a mobile viewport', asy
 	expect( metrics.panelWidth ).toBeLessThanOrEqual( metrics.clientWidth );
 } );
 
-test( 'the Notifications screen renders its views and switches the active tab', async ( {
+const view = ( page, label ) =>
+	page.locator( '.corex-notifications-screen__view', { hasText: label } );
+
+test( 'the Notifications screen offers the three views and switches between them', async ( {
 	page,
 } ) => {
 	await page.goto( '/wp-admin/admin.php?page=corex-notifications' );
 
-	const views = page.locator( '.corex-notifications-screen__views' );
-	await expect( views ).toBeVisible();
+	await expect(
+		page.locator( '.corex-notifications-screen__views' )
+	).toBeVisible();
 
-	const attention = page.locator( '.corex-notifications-screen__view', {
-		hasText: 'Requires attention',
-	} );
-	await attention.click();
-	await expect( attention ).toHaveAttribute( 'aria-current', 'true' );
-
-	// The full FR-018 set must be present — the three added last (assigned to me, updates,
-	// history) each depend on a real server-side filter, so a missing one means a filter regressed
-	// rather than only a label being absent.
-	for ( const label of [
-		'Inbox',
-		'Requires attention',
-		'Assigned to me',
-		'Updates',
-		'History',
-	] ) {
-		await expect(
-			page.locator( '.corex-notifications-screen__view', { hasText: label } )
-		).toBeVisible();
+	// Each view is a bounded server-side filter, so a missing one means a filter regressed rather
+	// than only a label being absent.
+	for ( const label of [ 'Action needed', 'Updates', 'History', 'Preferences' ] ) {
+		await expect( view( page, label ) ).toBeVisible();
 	}
 
-	const history = page.locator( '.corex-notifications-screen__view', {
-		hasText: 'History',
-	} );
-	await history.click();
-	await expect( history ).toHaveAttribute( 'aria-current', 'true' );
-	// A view that errored would render the error state instead of a list/empty state.
-	await expect(
-		page.locator( '.corex-notifications-screen__state[role="alert"]' )
-	).toHaveCount( 0 );
+	for ( const label of [ 'Action needed', 'Updates', 'History' ] ) {
+		await view( page, label ).click();
+		await expect( view( page, label ) ).toHaveAttribute(
+			'aria-current',
+			'true'
+		);
+		// A view that errored renders the alert state instead of a list or an empty state, so this
+		// is what tells us the server-side filter behind the tab actually answered.
+		await expect(
+			page.locator( '.corex-notifications-screen__state[role="alert"]' )
+		).toHaveCount( 0 );
+	}
+} );
 
-	// The Preferences tab swaps the list for the per-category toggle panel, with mandatory
-	// categories (security) rendered disabled so a user can never mute a required notification.
-	await page
-		.locator( '.corex-notifications-screen__view', {
-			hasText: 'Preferences',
-		} )
-		.click();
+test( 'the retired tabs are gone, and the questions they asked are filters now', async ( {
+	page,
+} ) => {
+	// The point of spec 074's FR-4.2. "Requires attention" filtered on the actor's *unread* state,
+	// so reading a production readiness blocker took it off the attention list while the blocker
+	// was still true; Inbox / Assigned to me / Submissions / Security were tabs competing with the
+	// only real question — does this still need me? Asserting their absence is the regression
+	// guard: a revert would restore them, and every other assertion here would still pass.
+	await page.goto( '/wp-admin/admin.php?page=corex-notifications' );
+	await expect( view( page, 'Action needed' ) ).toBeVisible();
+
+	for ( const retired of [ 'Inbox', 'Requires attention', 'Assigned to me' ] ) {
+		await expect( view( page, retired ) ).toHaveCount( 0 );
+	}
+
+	// Assignment is a refine over whichever view you are in, not a place you go.
+	const assigned = page.locator( '.corex-notifications-screen__toggle' );
+	await expect( assigned ).toBeVisible();
+	await expect( assigned.locator( 'input[type="checkbox"]' ) ).not.toBeChecked();
+
+	// Severity and category are the other two refines. They are CorexSelect, not native <select>
+	// (DECISIONS #141), so they expose the combobox role rather than a listbox element.
+	for ( const label of [ 'Severity', 'Category' ] ) {
+		await expect(
+			page.locator(
+				`.corex-notifications-screen__filters [role="combobox"][aria-label="${ label }"]`
+			)
+		).toBeVisible();
+	}
+} );
+
+test( 'Preferences swaps the list for the per-category toggles', async ( {
+	page,
+} ) => {
+	await page.goto( '/wp-admin/admin.php?page=corex-notifications' );
+	await view( page, 'Preferences' ).click();
+
 	const prefs = page.locator( '.corex-notifications-prefs' );
 	await expect( prefs ).toBeVisible();
+	// The filters belong to the list views; Preferences is not a filtered list.
+	await expect(
+		page.locator( '.corex-notifications-screen__filters' )
+	).toHaveCount( 0 );
+
+	// Mandatory categories render disabled, so a user can never mute a required notification.
 	await expect(
 		prefs
-			.locator( '.corex-notifications-prefs__row', {
-				hasText: 'security',
-			} )
+			.locator( '.corex-notifications-prefs__row', { hasText: 'security' } )
 			.locator( 'input[type="checkbox"]' )
 	).toBeDisabled();
 } );

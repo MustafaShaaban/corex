@@ -60,6 +60,19 @@ final class JobRunner
             return;
         }
 
+        // Run as the person who queued the work.
+        //
+        // Handlers re-authorize before touching anything — DataSourceService requires that the
+        // acting user *is* the job's actor, which is the right rule — but cron and Action Scheduler
+        // run with no current user at all. Every queued job therefore failed the moment it reached
+        // its handler, with "The actor does not have permission for this data operation." The
+        // actor was authenticated when the job was queued and the id was recorded then; restoring
+        // it for the length of the step is what "run this on their behalf" has to mean.
+        $previousUser = get_current_user_id();
+        if ($job->actorId > 0 && $previousUser !== $job->actorId) {
+            wp_set_current_user($job->actorId);
+        }
+
         try {
             $job = $handler->handle($job, self::BATCH_SIZE);
             $this->persist($job);
@@ -69,6 +82,10 @@ final class JobRunner
             }
         } catch (Throwable $exception) {
             $this->persist($job->fail($exception->getMessage(), new DateTimeImmutable('now')));
+        } finally {
+            if ($job->actorId > 0 && $previousUser !== $job->actorId) {
+                wp_set_current_user($previousUser);
+            }
         }
     }
 

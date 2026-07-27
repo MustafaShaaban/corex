@@ -8,10 +8,11 @@ consistently across the admin. Every read is scoped to the current user: you onl
 
 - **The header bell** — on every CoreX screen, the shell header shows a bell with your real unread count (capped
   visually at `99+`, with the true count in its accessible label). It is keyboard operable and opens a drawer.
-- **The drawer** — opens from the bell: a modal dialog listing your notifications, with per-item *Mark read* and a
+- **The drawer** — opens from the bell: a modal dialog listing your notifications as the same items the full
+  screen shows, minus the management controls — a glance keeps each record's own primary action and
   *Mark all as read*. It traps focus while open, closes on `Escape`, and returns focus to the bell.
-- **The Notifications screen** (`CoreX → Notifications`) — the full center, with the saved views below, a
-  severity filter, pagination, and a Preferences tab.
+- **The Notifications screen** (`CoreX → Notifications`) — the full center: the three views below, severity and
+  category filters, an *assigned to me* toggle, pagination, and a Preferences tab.
 - **The admin-toolbar entry** — on non-CoreX screens (and the front end), the WordPress toolbar carries a
   *Notifications* entry with your unread count. It never appears at the same time as the header bell — on a CoreX
   screen the bell owns that surface.
@@ -22,26 +23,44 @@ Access to the full Notifications screen requires the **Manage notifications** ab
 (`corex_manage_notifications`). Administrators hold it automatically; grant it to others through
 `CoreX → Access & Abilities`.
 
-### Saved views
+### Views
 
-Each view is a bounded server-side filter — the screen never fetches everything and narrows it in the browser.
+Three views, one per state a condition can be in. Each is a bounded server-side filter — the screen never
+fetches everything and narrows it in the browser.
 
 | View | Shows |
 | --- | --- |
-| **Inbox** | Everything you can see. |
-| **Requires attention** | Only what *you* have not read yet. |
-| **Assigned to me** | Only notifications that name you personally — the assignee of a submission, or a message addressed to you. Things you can see because you hold an ability are not "yours", so they stay out. |
-| **Submissions** · **Security** · **System** | One category each. |
-| **Updates** | The informational stream: worth knowing, asks nothing of you. |
-| **History** | Conditions that have been resolved — the archive, not the audit log. Permanent evidence lives in Activity. |
+| **Action needed** | Conditions that are live and ask something of you: a demanding severity (critical, error, warning, action) or a record carrying its own primary action. |
+| **Updates** | Live, but asks nothing of you — the informational stream — plus anything you have snoozed. |
+| **History** | Over: resolved, dismissed, or expired. The archive, not the audit log; permanent evidence lives in Activity. |
 | **Preferences** | Your per-category toggles (see below). |
 
-Two distinctions are easy to miss and worth stating plainly:
+**Which view an item lands in never depends on whether you have read it.** That is the distinction the whole
+screen turns on: reading is something you did, not something that happened to the condition. A readiness
+blocker you have opened and not fixed stays in **Action needed**.
+
+Category, severity, and *assigned to me* are **filters**, applied within whichever view you are in — not
+views of their own. Assignment means notifications that name you personally (the assignee of a submission, or
+a message addressed to you); things you can see because you hold an ability are not "yours".
+
+Three more distinctions are easy to miss and worth stating plainly:
 
 - **Read is yours; resolved is everyone's.** Marking something read changes only your copy. Resolving a
-  condition ends it for every recipient, and needs **Manage notifications**.
+  condition ends it for every recipient, and needs **Manage notifications** — so the *Mark resolved* control
+  is hidden entirely from anyone without it, rather than shown and refused.
 - **Dismissed is not resolved.** Hiding a shared notification hides it for you alone — it never resolves the
   underlying condition for anyone else.
+- **Snoozed is "not now", not "done".** A snoozed item moves to **Updates**, not History, and returns to
+  **Action needed** on its own when the snooze elapses.
+
+### What one notification tells you
+
+Each item states what happened and, beneath it, everything the record already knows: its severity, the module
+it came from, the environment, when it last occurred, how many times, whether the condition is still live, and
+whether you have read it. Its controls are *Mark read* / *Mark unread*, *Snooze for a day*, *Dismiss*,
+*Mark resolved*, and the record's own primary action — with anything you may not do left out rather than
+disabled. The header drawer renders the same item with the management controls dropped, so the drawer and the
+screen cannot tell you different things about the same record.
 
 ## What produces notifications
 
@@ -69,9 +88,12 @@ All routes live under `corex/v1/notifications` and return the standard `{ ok, me
 require you to be signed in; mutations additionally require a REST nonce; resolving a shared condition requires
 **Manage notifications**.
 
-- `GET /notifications` — your bounded, filtered list. Filters: `page`, `per_page`, `category`, `severity`,
-  `source_module`, `status`, `assigned_to_me`, `unread_only`. Unknown filter values are dropped rather than
-  guessed at, and `per_page` is clamped.
+- `GET /notifications` — your bounded, filtered list. Filters: `page`, `per_page`, `view`, `category`,
+  `severity`, `source_module`, `status`, `assigned_to_me`, `unread_only`. Unknown filter values are dropped
+  rather than guessed at, and `per_page` is clamped.
+  - `view` is one of `action_needed`, `updates`, `history`, or omitted for any. It is derived from the
+    record's status and severity, **not** from whether you have read it, and each returned item carries its
+    own membership as `user_state.view`.
   - `status` is your **derived per-user status** — one of `unread`, `read`, `snoozed`, `dismissed`,
     `resolved`, `expired` — resolved from the shared record plus your own state, in that order of precedence
     (a resolved condition reads as `resolved` however you left your copy). Each returned item also carries it

@@ -36,6 +36,10 @@ final class NotificationQuery
      *                               (see NotificationRecipient::targetsUserDirectly) rather than
      *                               ones they can merely see through an ability. Actor-scoped, so
      *                               like `$status` it is applied by the actor-scoped read.
+     * @param string|null $view      One of NotificationView, or null for any. The named view an
+     *                               item belongs to — whether it still asks anything of this actor,
+     *                               which is *not* the same question as whether they have read it.
+     *                               Actor-scoped for the same reason `$status` is.
      */
     private function __construct(
         public readonly ?string $category,
@@ -46,6 +50,7 @@ final class NotificationQuery
         public readonly bool $assignedToMe,
         public readonly int $page,
         public readonly int $perPage,
+        public readonly ?string $view = null,
     ) {
     }
 
@@ -61,6 +66,7 @@ final class NotificationQuery
             assignedToMe: (bool) ($filters['assigned_to_me'] ?? false),
             page: max(1, $page),
             perPage: min(self::MAX_PER_PAGE, max(1, $perPage)),
+            view: self::validEnum($filters['view'] ?? null, NotificationView::all()),
         );
     }
 

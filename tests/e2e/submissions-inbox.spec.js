@@ -10,13 +10,31 @@ const FLOW_SLUG = 'corex-inbox-e2e';
 // where prior runs' fixtures accumulate.
 const EMAIL = `corex-inbox-e2e-${ Date.now() }@example.com`;
 
+/**
+ * The configuration the inbox fixture needs.
+ *
+ * `protection.captcha: 'off'` is load-bearing rather than incidental: this spec exercises the
+ * inbox, and on any site where a captcha driver *is* configured the protection stage judges an
+ * empty token and rejects every seeded submission. Opting the fixture out keeps the spec about
+ * the inbox on a bare CI site and on a real one alike.
+ */
+const FIXTURE_CONFIGURATION = {
+	schema: [ { uuid: 'email-field', key: 'email', label: 'Email', type: 'email', required: true } ],
+	validation: { email: [ 'required', 'email' ] },
+	routing: { rules: [], fallback: { type: 'flow_owner', config: {} } },
+	email_routes: [],
+	success: { type: 'inline', message: 'Received.' },
+	placement_snapshot: { type: 'block' },
+	protection: { captcha: 'off' },
+};
+
 async function seedSubmission( page ) {
 	await page.goto( '/wp-admin/admin.php?page=corex-forms' );
-	await expect( page.getByText( 'Loading flows…' ) ).toBeHidden();
+	await expect( page.getByText( 'Loading forms…' ) ).toBeHidden();
 	return page.evaluate( async ( fixture ) => {
 		const api = window.Corex.api;
 		const config = window.corexFlows;
-		let list = await api.get( `${ config.restUrl }?search=${ fixture.slug }`, {
+		const list = await api.get( `${ config.restUrl }?search=${ fixture.slug }`, {
 			nonce: config.nonce,
 		} );
 		let flow = list.envelope.data.flows.find( ( item ) => item.slug === fixture.slug );
@@ -28,26 +46,50 @@ async function seedSubmission( page ) {
 					name: 'Inbox E2E flow',
 					owner_id: config.ownerId,
 					placement_type: 'block',
-					configuration: {
-						schema: [ { uuid: 'email-field', key: 'email', label: 'Email', type: 'email', required: true } ],
-						validation: { email: [ 'required', 'email' ] },
-						routing: { rules: [], fallback: { type: 'flow_owner', config: {} } },
-						email_routes: [],
-						success: { type: 'inline', message: 'Received.' },
-						placement_snapshot: { type: 'block' },
-					},
+					configuration: fixture.configuration,
 				},
 				{ nonce: config.nonce }
 			);
 			flow = created.envelope.data.flow;
-			await api.post( `${ config.restUrl }/${ flow.id }/publish`, { expected_version: 1 }, { nonce: config.nonce } );
 		}
-		const detail = await api.get( `${ config.restUrl }/${ flow.id }`, { nonce: config.nonce } );
-		const version = detail.envelope.data.versions.at( -1 ).version_number;
+
+		// Bring an existing fixture back to the shape this spec needs, rather than trusting
+		// whatever state a previous run — or a person clicking around the builder — left it in.
+		// The old seed only configured and published a flow it had just created, so once this
+		// flow drifted, every test in the file failed permanently and told you nothing useful.
+		let detail = await api.get( `${ config.restUrl }/${ flow.id }`, { nonce: config.nonce } );
+		let latest = detail.envelope.data.versions.at( -1 );
+		const captchaOff = latest.configuration?.protection?.captcha === 'off';
+
+		if ( ! captchaOff ) {
+			await api.patch(
+				`${ config.restUrl }/${ flow.id }`,
+				{
+					expected_version: latest.version_number,
+					expected_checksum: latest.checksum,
+					configuration: fixture.configuration,
+				},
+				{ nonce: config.nonce }
+			);
+			detail = await api.get( `${ config.restUrl }/${ flow.id }`, { nonce: config.nonce } );
+			latest = detail.envelope.data.versions.at( -1 );
+		}
+
+		if ( detail.envelope.data.flow.state !== 'published'
+			|| detail.envelope.data.flow.published_version !== latest.version_number ) {
+			if ( detail.envelope.data.flow.state === 'published' ) {
+				await api.post( `${ config.restUrl }/${ flow.id }/unpublish`, { expected_version: latest.version_number }, { nonce: config.nonce } );
+			}
+			await api.post( `${ config.restUrl }/${ flow.id }/publish`, { expected_version: latest.version_number }, { nonce: config.nonce } );
+			detail = await api.get( `${ config.restUrl }/${ flow.id }`, { nonce: config.nonce } );
+			latest = detail.envelope.data.versions.at( -1 );
+		}
+
+		const version = latest.version_number;
 		const real = await api.post( `${ config.restUrl }/${ flow.id }/submit`, { email: fixture.email, utm_source: 'playwright' }, { nonce: config.nonce } );
 		const marked = await api.post( `${ config.restUrl }/${ flow.id }/test`, { expected_version: version, values: { email: 'marked-test@example.com' } }, { nonce: config.nonce } );
 		return { real, marked };
-	}, { slug: FLOW_SLUG, email: EMAIL } );
+	}, { slug: FLOW_SLUG, email: EMAIL, configuration: FIXTURE_CONFIGURATION } );
 }
 
 test.beforeEach( async ( { page } ) => {
@@ -59,10 +101,78 @@ test.beforeEach( async ( { page } ) => {
 	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
 } );
 
+/**
+ * The heading stack's rhythm (spec 074, FR-2).
+ *
+ * The eyebrow, the title, and the count used to be loose children of a bare div, separated only by
+ * a margin on each paragraph — so they rendered as one compressed block. They are a grid stack now,
+ * which is measured rather than eyeballed here because the failure mode is a few pixels, and
+ * because a translation that wraps or a doubled zoom is exactly where per-element margins drifted.
+ */
+async function headingGaps( page ) {
+	return page.evaluate( () => {
+		const box = ( selector ) => document.querySelector( selector )?.getBoundingClientRect();
+		const eyebrow = box( '.corex-inbox__eyebrow' );
+		const title = box( '.corex-inbox__header h2' );
+		const count = box( '.corex-inbox__count' );
+
+		return {
+			eyebrowToTitle: title.top - eyebrow.bottom,
+			titleToCount: count.top - title.bottom,
+			// 1px of tolerance: in RTL the browser rounds the scroll origin of the table's own
+			// scroll container, which reports a one-pixel document width with nothing actually
+			// outside the viewport. Anything wider than that is a real layout escape.
+			overflows:
+				document.documentElement.scrollWidth - document.documentElement.clientWidth > 1,
+		};
+	} );
+}
+
+test( 'spaces the inbox heading stack at every width, zoom, and direction', async ( { page } ) => {
+	const cases = [
+		{ name: 'desktop', width: 1440 },
+		{ name: 'narrow', width: 360 },
+		// 200% zoom is emulated as half the CSS viewport at twice the scale factor; the layout
+		// question is the same one — does the stack still separate when space runs out.
+		{ name: '200% zoom', width: 720 },
+	];
+
+	for ( const direction of [ 'ltr', 'rtl' ] ) {
+		await page.locator( 'html' ).evaluate( ( root, dir ) => root.setAttribute( 'dir', dir ), direction );
+
+		for ( const viewport of cases ) {
+			await page.setViewportSize( { width: viewport.width, height: 900 } );
+			const gaps = await headingGaps( page );
+			const where = `${ direction } @ ${ viewport.name }`;
+
+			expect( gaps.eyebrowToTitle, `eyebrow/title gap collapsed at ${ where }` ).toBeGreaterThanOrEqual( 4 );
+			expect( gaps.titleToCount, `title/count gap collapsed at ${ where }` ).toBeGreaterThanOrEqual( 4 );
+			// One stack, one rhythm: the two gaps come from the same grid gap, so a difference
+			// means a margin crept back in.
+			expect( Math.abs( gaps.eyebrowToTitle - gaps.titleToCount ), `uneven rhythm at ${ where }` ).toBeLessThanOrEqual( 1 );
+			expect( gaps.overflows, `horizontal overflow at ${ where }` ).toBe( false );
+		}
+	}
+
+	await page.locator( 'html' ).evaluate( ( root ) => root.setAttribute( 'dir', 'ltr' ) );
+} );
+
+test( 'opens pre-filtered when Forms & Flows links to one form’s submissions', async ( { page } ) => {
+	// The catalog's "View submissions for this form" link (spec 074, FR-1.9). A link that landed on
+	// an unfiltered inbox would be a control that does nothing.
+	await page.goto( '/wp-admin/admin.php?page=corex-submissions&corex_form=slug:contact' );
+	await expect( page.getByRole( 'heading', { name: 'Submission Inbox' } ) ).toBeVisible();
+	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+
+	await expect( page.getByRole( 'combobox', { name: 'Form' } ) ).toHaveText( /Contact/i );
+} );
+
 test( 'filters works assigns notes bulk actions and audits personal-data exports', async ( { page } ) => {
 	const errors = collectConsoleErrors( page );
 	await page.getByLabel( 'Search' ).fill( EMAIL );
-	await expect( page.getByText( EMAIL, { exact: true } ) ).toBeVisible();
+	// `.first()`: every test in this file seeds another submission under the same fixture email,
+	// so more than one row legitimately matches by the time the later tests run.
+	await expect( page.getByText( EMAIL, { exact: true } ).first() ).toBeVisible();
 	await expect( page.getByText( 'marked-test@example.com', { exact: true } ) ).toHaveCount( 0 );
 
 	// Scope to a single matching submission: the seeded fixture email can accumulate across

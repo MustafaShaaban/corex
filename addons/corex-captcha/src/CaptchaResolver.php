@@ -54,7 +54,16 @@ final class CaptchaResolver
     public function resolve(): Captcha
     {
         $driver = (string) $this->config->get('captcha.driver', 'none');
-        $secret = (string) $this->config->get('captcha.secret', '');
+        $secret = trim((string) $this->config->get('captcha.secret', ''));
+
+        // A key driver with no secret is *half* configured, and half configured is not configured.
+        // Building the real driver anyway meant every verification failed, so selecting a provider
+        // in Settings and not yet pasting the keys silently rejected every submission on the site
+        // behind a message that named none of that. The honeypot still guards; CaptchaDiagnostic
+        // already classifies this exact state as `missing_keys` and is where the operator is told.
+        if ($secret === '' && isset(self::ENDPOINTS[$driver])) {
+            return new NullCaptcha();
+        }
 
         return match ($driver) {
             'honeypot' => new HoneypotCaptcha(),

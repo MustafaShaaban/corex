@@ -3,7 +3,13 @@ import { FlowEditorPanel } from './FlowEditorPanel.js';
 import { FlowList } from './FlowList.js';
 import { useFlows } from './useFlows.js';
 
-const config = window.corexFlows || { restUrl: '', nonce: '', ownerId: 0 };
+const config = window.corexFlows || {
+	restUrl: '',
+	nonce: '',
+	ownerId: 0,
+	catalog: [],
+	submissionsUrl: '',
+};
 
 function App() {
 	const studio = useFlows( config );
@@ -21,6 +27,8 @@ function App() {
 			) : (
 				<FlowList
 					flows={ state.flows }
+					catalog={ config.catalog }
+					submissionsUrl={ config.submissionsUrl }
 					status={ state.status }
 					ownerId={ Number( config.ownerId ) }
 					onLoad={ studio.load }

@@ -69,7 +69,12 @@ export default function ImportPanel( { config, sources } ) {
 		} catch ( error ) { setStatus( error.message ); }
 	};
 
-	if ( ! candidates.length ) return <p className="corex-data-models__empty">{ __( 'No registered model provides an import adapter.', 'corex' ) }</p>;
+	// A backstop, not the normal path: the tab is hidden entirely when nothing here is importable
+	// (see allowedTabs), so this only shows if a model's capability changed while the page was
+	// open. Said in words a person can act on rather than in the word "adapter".
+	if ( ! candidates.length ) {
+		return <p className="corex-data-models__empty">{ __( 'No model on this site accepts imported records right now. The Models tab lists what each model supports.', 'corex' ) }</p>;
+	}
 
 	return <section className="corex-surface corex-data-models__workspace">
 		<header><h2>{ __( 'CSV import', 'corex' ) }</h2><p>{ __( 'Upload, map, dry-run, review rejections, then approve the exact accepted rows.', 'corex' ) }</p></header>

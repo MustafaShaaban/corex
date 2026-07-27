@@ -65,12 +65,17 @@ final class AccessRequestNotificationProducer implements NotificationProducer
             sourceModule: 'access',
             titleKey: 'notifications.access.request.title',
             messageKey: 'notifications.access.request.body',
+            // Who wants what, in the title, because that is the decision being asked for. "New
+            // access request" made every request identical until you opened it.
             rendered: [
-                'title' => __('New access request', 'corex'),
-                'body'  => sprintf(
-                    /* translators: 1: requester name, 2: requested ability or area key. */
-                    __('%1$s requested access to %2$s.', 'corex'),
+                'title' => sprintf(
+                    /* translators: %s: the name of the person requesting access. */
+                    __('%s is waiting for access', 'corex'),
                     $event->requesterName,
+                ),
+                'body'  => sprintf(
+                    /* translators: %s: the requested ability or area key. */
+                    __('They asked for %s. Approve or decline it in Access & Abilities.', 'corex'),
                     $target,
                 ),
             ],

@@ -19,8 +19,8 @@ use Corex\Config\Security\HardeningFacts;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
 use Corex\Container\ContainerInterface;
+use Corex\Forms\Catalog\FormCatalog;
 use Corex\Forms\Flow\FlowRepository;
-use Corex\Forms\FormRegistry;
 use Corex\Provisioning\KitProvisioner;
 
 defined('ABSPATH') || exit;
@@ -382,13 +382,20 @@ final class OverviewRenderer
         return false;
     }
 
+    /**
+     * Every form CoreX knows about, not just the ones registered in code.
+     *
+     * This counted `FormRegistry` alone, so a site whose forms were all visual flows saw a Forms &
+     * Flows card reading zero next to a pill saying it had flows. The catalog is the one list, so
+     * the headline number and the screen it links to now agree.
+     */
     private function formsCount(): int
     {
         try {
-            /** @var FormRegistry $registry */
-            $registry = $this->container->make(FormRegistry::class);
+            /** @var FormCatalog $catalog */
+            $catalog = $this->container->make(FormCatalog::class);
 
-            return count($registry->all());
+            return count($catalog->all());
         } catch (\Throwable) {
             return 0;
         }

@@ -283,6 +283,124 @@
 	border-radius: var(--corex-admin-radius-pill);
 }
 
+/* What a model can be used for, in plain language. The state is carried by
+   the words, never by the colour alone — the colour only reinforces what the
+   label already says. */
+.corex-admin .corex-data-models__capability-summary {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	margin: var(--corex-admin-space-md) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-data-models__capability-summary li {
+	display: grid;
+	grid-template-columns: minmax(8rem, auto) minmax(0, 1fr);
+	gap: var(--corex-admin-space-sm);
+	align-items: baseline;
+}
+
+.corex-admin .corex-data-models__capability-summary strong {
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-data-models__capability-summary li.is-unavailable strong,
+.corex-admin .corex-data-models__capability-summary li.is-unavailable span {
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-data-models__capability-summary li.is-available strong {
+	color: var(--corex-admin-success);
+}
+
+/* stylelint-disable-next-line no-descending-specificity */
+.corex-admin .corex-data-models__capability-summary span {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+/* The capability summary (spec 074, FR-5) — a read-only picture of what is
+   registered. */
+.corex-admin .corex-capability {
+	display: grid;
+	gap: var(--corex-admin-space-lg);
+	margin-block-start: var(--corex-admin-space-lg);
+	padding: var(--corex-admin-space-lg);
+}
+
+/* stylelint-disable-next-line no-descending-specificity */
+.corex-admin .corex-capability h2,
+.corex-admin .corex-capability h3 {
+	margin: 0;
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-capability__lede,
+.corex-admin .corex-capability__counts,
+.corex-admin .corex-capability__ok {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-capability__section {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-capability__list,
+.corex-admin .corex-capability__gaps,
+.corex-admin .corex-capability__tags {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-capability__tags {
+	grid-auto-flow: column;
+	grid-auto-columns: max-content;
+	justify-content: start;
+	overflow-x: auto;
+}
+
+.corex-admin .corex-capability__list li {
+	display: grid;
+	grid-template-columns: minmax(8rem, 1fr) minmax(6rem, auto) minmax(0, 1.4fr) minmax(0, auto);
+	gap: var(--corex-admin-space-sm);
+	align-items: baseline;
+	padding-block: var(--corex-admin-space-2xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	min-inline-size: 0;
+}
+
+/* stylelint-disable-next-line no-descending-specificity */
+.corex-admin .corex-capability__list strong {
+	color: var(--corex-admin-text);
+}
+
+/* A gap is the one thing here that asks something, so it gets an edge and a
+   real button. */
+.corex-admin .corex-capability__gaps li {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	justify-items: start;
+	padding: var(--corex-admin-space-md);
+	background: var(--corex-admin-surface-alt);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+/* stylelint-disable-next-line no-descending-specificity */
+.corex-admin .corex-capability__gaps p {
+	margin: 0;
+	color: var(--corex-admin-text);
+}
+
 .corex-admin .corex-data-models__access.is-allowed {
 	color: var(--corex-admin-success);
 }
@@ -374,5 +492,13 @@
 	.corex-admin .corex-data-models__card,
 	.corex-admin .corex-data-models__workspace {
 		padding: var(--corex-admin-space-md);
+	}
+
+	/* Label above explanation rather than beside it: two columns at this
+	   width leaves the explanation a few characters wide. */
+	.corex-admin .corex-data-models__capability-summary li,
+	.corex-admin .corex-capability__list li {
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--corex-admin-space-2xs);
 	}
 }

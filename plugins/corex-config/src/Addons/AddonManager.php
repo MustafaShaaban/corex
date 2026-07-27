@@ -77,6 +77,42 @@ final class AddonManager
      *
      * @return list<AddonView>
      */
+    /**
+     * The live add-on state, derived from the registry and WordPress's own active-plugin list.
+     *
+     * Lives here rather than on the Add-ons screen because it is a fact about the site, not about
+     * that screen — the capability summary needs the same answer, and two derivations of "which
+     * add-ons are running" would be two chances to disagree.
+     */
+    public function state(): AddonState
+    {
+        /** @var list<string> $active */
+        $active = (array) get_option('active_plugins', []);
+
+        $activeSlugs  = [];
+        $enabledFlags = [];
+
+        foreach ($this->registry->all() as $addon) {
+            if (in_array($addon->pluginFile, $active, true)) {
+                $activeSlugs[] = $addon->slug;
+            }
+
+            if ($addon->hasFlag() && get_option('corex_features_' . $addon->flag) === '1') {
+                $enabledFlags[] = (string) $addon->flag;
+            }
+        }
+
+        return new AddonState($activeSlugs, $enabledFlags);
+    }
+
+    /** Whether an add-on's plugin file is present on disk. */
+    public function isInstalled(string $slug): bool
+    {
+        $addon = $this->registry->find($slug);
+
+        return $addon !== null && file_exists(WP_PLUGIN_DIR . '/' . $addon->pluginFile);
+    }
+
     public function views(AddonState $state, callable $installed): array
     {
         $views = [];

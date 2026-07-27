@@ -12,12 +12,13 @@ defined('ABSPATH') || exit;
 
 use Corex\Captcha\Captcha;
 use Corex\Container\ContainerInterface;
+use Corex\Database\Schema\ManagedTables;
 use Corex\Database\Schema\Migrator;
-use Corex\Database\Schema\Table;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Foundation\ServiceProvider;
 use Corex\Mail\Mailer;
 use Corex\Newsletter\Subscriber\SubscriberRepository;
+use Corex\Newsletter\Subscriber\SubscriberTable;
 use Corex\Newsletter\Subscriber\SubscriberStore;
 use Corex\Newsletter\Subscriber\WpSubscriberStore;
 use Corex\Newsletter\Subscription\PublishNotifier;
@@ -84,10 +85,15 @@ final class NewsletterServiceProvider extends ServiceProvider
      */
     public function install(): void
     {
-        $this->container->make(Migrator::class)->create(
-            (new Table('subscribers'))
-                ->id()->string('email')->string('status', 20)->text('topics')->boolean('consent')->timestamps()
-        );
+        $table = new SubscriberTable();
+
+        $this->container->make(Migrator::class)->create($table->schema());
+
+        // Subscribers is the framework's reference writable model (spec 074): declaring it managed
+        // is what puts it in Corex → Data, and its declaration is what makes the Import and
+        // Migrations tabs reachable at all. Registered here rather than in corex-config because
+        // the add-on owns the table and therefore owns what may be done to it.
+        $this->container->make(ManagedTables::class)->register($table->managed());
 
         register_taxonomy('newsletter_topic', 'post', [
             'label'        => __('Newsletter Topics', 'corex'),

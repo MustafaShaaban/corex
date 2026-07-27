@@ -71,8 +71,8 @@ final class ExportReadyNotificationProducer implements NotificationProducer
             titleKey: 'notifications.export.ready.title',
             messageKey: 'notifications.export.ready.body',
             rendered: [
-                'title' => __('Your export is ready', 'corex'),
-                'body'  => __('The export you requested has finished and is ready to download.', 'corex'),
+                'title' => __('Your export is ready to download', 'corex'),
+                'body'  => __('It stays available until the export retention window ends.', 'corex'),
             ],
             dedupKey: 'export.ready:' . $event->jobId,
             recipient: NotificationRecipient::forUser($event->actorId),

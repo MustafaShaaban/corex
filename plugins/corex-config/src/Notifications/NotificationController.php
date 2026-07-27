@@ -110,6 +110,7 @@ final class NotificationController
                 'source_module' => $request->get_param('source_module'),
                 'unread_only'    => (bool) $request->get_param('unread_only'),
                 'assigned_to_me' => (bool) $request->get_param('assigned_to_me'),
+                'view'           => $request->get_param('view'),
             ],
             max(1, (int) ($request->get_param('page') ?: 1)),
             (int) ($request->get_param('per_page') ?: 20),

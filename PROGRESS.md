@@ -4,9 +4,94 @@
 > Updated at the end of every working session.
 
 ---
-## RESUME HERE (2026-07-26) -- **Spec 073 (Admin polish & correctness) CHECKPOINTED on `spec/073-admin-polish-and-correctness`.** Committed locally, verified, guarded. Not pushed / no PR yet — that is the next decision.
+## RESUME HERE (2026-07-27) -- **Spec 074 (Core admin truthfulness & integration closure) IN PROGRESS on `spec/074-core-admin-truthfulness`.**
 
-An admin correctness pass, found as uncommitted WIP and brought to Definition of Done this session. Seven
+Spec 073 is **merged and closed** — PR **#129**, merge commit **`9b5939f`**, now the tip of `main`. The
+2026-07-26 "checkpointed / not pushed" note below was written before the push and is superseded; it is kept
+only as the description of what 073 contained.
+
+**Now in flight — Spec 074**, a product-completion closure pass over four defects that survived 073:
+1. **Code-registered forms are invisible framework-wide.** `FlowFilterOptions::all()` reads `FlowRepository`
+   only; a form registered through `Corex\Forms\FormRegistry` reaches the filters *only* if the site adds a
+   `corex_submission_filter_options` hook, and Forms & Flows never lists it at all. Issue #114's fix made
+   custom forms *filterable once injected*; it did not give the framework discovery.
+2. **Data → Import and Data → Migrations are permanent dead ends.** Every registered source declares
+   `import_dry_run`/`migrations` false, so both tabs can only ever print "No registered model provides an
+   import adapter."
+3. **Submission Inbox heading lines collide** — the eyebrow/title/count stack has no layout-level spacing.
+4. **Notifications under-communicate** — the record carries category, severity, source, environment,
+   occurrence count and resolution state; the screen shows title, body and "Mark read", and treats *read* as
+   though it meant *resolved*.
+
+Spec artifacts: `specs/074-core-admin-truthfulness-and-integration-closure/`. Spec **075 — Blog Pro
+Functional Completion** follows it, then the **v0.36.0** release.
+
+**Phases A–E are implemented** across four commits: `74f30e3` (framework-wide form discovery),
+`d7275e0` (truthful Data Models + a real import path), `5649859` (read separated from resolved,
+notification actions finished), and `0075340` (FR-5 capability summary). `tasks.md` had been left
+stale — every checkbox from T010 to T052 is now ticked against verified artifacts rather than
+assumption.
+
+That last commit also cleared **44 stylelint errors this branch had introduced** (comment rewraps
+plus the file's own `no-descending-specificity` pragma for disjoint component scopes) and
+regenerated the 057 token inventories, which had drifted from the CSS line numbers and were failing
+the Jest suite. Note stylelint and eslint are **not** CI-gated — CI runs PHP `-l`, Pest unit, Jest,
+Pest integration, Playwright, and CodeQL — so both had accumulated debt unnoticed. 38 stylelint
+errors remain, all pre-existing in `theme/assets/css/corex-navigation.css` and
+`plugins/corex-core/assets/css/corex-admin-login.css` plus two long-standing lines in
+`corex-admin-shell.css`; no file this branch touches has one.
+
+Gate as of `0075340`: **unit 1507/0** (6470 assertions) · **integration 219/0** (900) · **JS 331/0**
+(59 suites). Guards clean on the diff (`wp-guard`, `clean-code-guard`, `test-guard`). The local
+integration suite did *not* show the order-flakiness recorded during v0.35.0.
+
+**T047 is now closed too**, so **Phases A–E are complete**. Phase D had shipped its UI with no JS
+coverage at all and a browser spec still written against the retired five-tab IA — that spec was not
+passing-but-blind, it was broken, since `Requires attention` no longer exists to click.
+
+- `plugins/corex-config/src/admin/notifications/__tests__/notificationItem.test.js` — 32 specs.
+  The flagship one was **mutation-checked**: reintroducing the v0.35.0 defect (`needs_action &&
+  ! read`) fails exactly that test and nothing else.
+- `tests/e2e/notification-center.spec.js` — rewritten onto the three views + Preferences, and it
+  now asserts the **retired tabs are absent**, which is what catches a silent revert. The negative
+  assertions are guarded by a positive one on the same selector first, so they cannot pass by
+  matching nothing.
+- Item content is deliberately **not** asserted in the browser: nothing seeds notification records
+  (see the CI "Seed browser-test fixtures" step), so any item-level claim would be testing whatever
+  the run happened to produce.
+
+Gate at this point: **unit 1507/0** (6470 assertions) · **integration 219/0** (900) · **JS 363/0**
+(60 suites) · **Playwright 58/0** against the real `corex.local`.
+
+**Phase F is done too, so all of Spec 074 is implemented and documented.**
+
+- **T061/T062 — browser acceptance on the real install.** `evidence/after/` re-captured for the two
+  surfaces this spec changed, plus RTL, 360 px, and 200 % zoom for each. **No horizontal overflow** in
+  any of the six conditions (`scrollWidth === clientWidth` at 1440 RTL, 360, and 720@2×), and RTL
+  mirrors from logical properties alone. A separate probe confirmed **no console error, uncaught JS
+  error, failed `/wp-json/` request, or blank React mount** on Data Models, Data → Import, Data →
+  Migrations, Notifications, Forms & Flows, or Submissions. Referenced from `spec.md` §9.
+- **T064 — records.** `DECISIONS.md` **#157–#160** (read-vs-resolved as a modelling rule; eight views
+  collapse to three; hide rather than refuse a control the actor may not use; capability summarised
+  where the question is asked, with secret-shaped facts dropped rather than redacted). `CHANGELOG.md`
+  `[Unreleased]` now covers 073 **and** 074. `ROADMAP.md` §17 updated.
+- **Real docs drift found and fixed.** `docs/en/03-operations/notifications.md` still documented the
+  retired **Inbox / Requires attention / Assigned to me** tabs and described the drawer as offering only
+  *Mark read*. Rewritten onto the three views, and the `view` REST parameter — which the screen has been
+  sending but the docs never mentioned — is documented, with every listed filter checked against
+  `NotificationController::index()`.
+
+Final gate: **unit 1507/0** (6470 assertions) · **integration 219/0** (900) · **JS 363/0** (60 suites) ·
+**Playwright 58/0** · stylelint clean on every file the branch touches · token inventory reproduces ·
+guards clean (`wp-guard`, `clean-code-guard`, `test-guard`, `docs-guard`).
+
+**Next:** open the PR for 074 and let CI confirm; then **Spec 075 — Blog Pro Functional Completion**,
+then the **v0.36.0** release.
+
+---
+## (previous, 2026-07-26) -- **Spec 073 (Admin polish & correctness) MERGED via PR #129 (`9b5939f`).**
+
+An admin correctness pass, found as uncommitted WIP and brought to Definition of Done. Seven
 truthful-surface fixes, no new capability:
 - **Add-ons state filter** — `AddonCatalogService::filter()`/`counts()`: mutually exclusive, exhaustive
   All/Active/Inactive/Not-installed buckets keyed on the same `status()` that prints the badge; rendered as
@@ -28,13 +113,10 @@ truthful-surface fixes, no new capability:
 - **Admin rhythm** — zero-specificity `:where()` baseline margins for un-styled prose/headings/lists + a
   `.corex-state` margin + a notifications nav icon.
 
-Gate (local, this session): **unit 1457/0** (6315 assertions) · **JS 311/0** (58 suites). Guards clean on the
-diff (`wp-guard`, `clean-code-guard`, `test-guard`). `scripts/generate-token-inventory.mjs` reproduces the
-committed `057/inventories/*.json` with no further diff. Integration is CI's authority (order-flaky locally)
-and was not run locally. Spec artifacts written at `specs/073-admin-polish-and-correctness/`.
-
-**Next:** owner decides whether to push `spec/073-*` and open a PR (CI will run the four suites, including the
-integration + browser jobs this checkpoint deliberately left to CI). Then the §17 next-spec choice stands.
+Gate: **unit 1457/0** (6315 assertions) · **JS 311/0** (58 suites) locally, then all required checks green on
+PR #129. Guards clean on the diff (`wp-guard`, `clean-code-guard`, `test-guard`).
+`scripts/generate-token-inventory.mjs` reproduces the committed `057/inventories/*.json` with no further
+diff. Spec artifacts at `specs/073-admin-polish-and-correctness/`.
 
 ---
 ## (previous, 2026-07-22) -- **v0.35.1 RELEASED** (correction release, tag `v0.35.1` = `ec6b48e`, on GitHub + Azure).

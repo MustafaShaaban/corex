@@ -58,6 +58,23 @@ final class JobFailureNotificationProducer implements NotificationProducer
         });
     }
 
+    /**
+     * The job kind said as the piece of work it is.
+     *
+     * An unknown kind falls back to its identifier rather than to a generic phrase: a slug somebody
+     * can search for beats "a background job" that names nothing.
+     */
+    private static function jobLabel(string $kind): string
+    {
+        return match ($kind) {
+            'data.export'         => __('Your data export', 'corex'),
+            'data.import'         => __('Your data import', 'corex'),
+            'data.migration'      => __('The schema migration', 'corex'),
+            'submissions.export'  => __('Your submissions export', 'corex'),
+            default               => $kind,
+        };
+    }
+
     private function failure(JobFinishedEvent $event): Notification
     {
         return Notification::create(
@@ -67,13 +84,18 @@ final class JobFailureNotificationProducer implements NotificationProducer
             sourceModule: 'jobs',
             titleKey: 'notifications.job.failed.title',
             messageKey: 'notifications.job.failed.body',
+            // Outcome first, and named: "Background job failed" made every failure look the same
+            // and told nobody which piece of work had stopped (spec 074, FR-4.7).
             rendered: [
-                'title' => __('Background job failed', 'corex'),
-                'body'  => sprintf(
-                    /* translators: %s: the job kind identifier. */
-                    __('A “%s” background job failed. Open the Jobs screen for details.', 'corex'),
-                    $event->kind,
+                'title' => sprintf(
+                    /* translators: %s: the human name of the job, e.g. "CSV export". */
+                    __('%s did not finish', 'corex'),
+                    self::jobLabel($event->kind),
                 ),
+                // Deliberately not the raw error summary: it is an unsanitised message from
+                // whatever failed and has been seen to carry connection strings and credentials.
+                // The reason belongs on the Operations screen, behind the ability that guards it.
+                'body'  => __('Open Operations to see what happened and retry it.', 'corex'),
             ],
             dedupKey: 'job.failed:' . $event->jobId,
             recipient: NotificationRecipient::forAbility(CorexAbility::MANAGE_OPERATIONS),

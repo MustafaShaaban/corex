@@ -6,11 +6,31 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Spec 073 — an admin polish and correctness pass. No new capability; each change makes an existing admin
-surface tell the truth.
+Spec 073 — an admin polish and correctness pass — and Spec 074, which closes the gap between what the
+CoreX admin claimed and what it could actually do. Together: no invented capability, several surfaces
+that stop misreporting, and two workspaces that stop being dead ends.
 
 ### Fixed
 
+- **Reading a notification was treated as dealing with it.** "Requires attention" filtered on your own
+  unread state, so opening a production-readiness blocker took it off the attention list while the
+  blocker was still true. Whether something still needs somebody is now derived from the record's status
+  and severity on the server, never from whether you have looked at it — and *read* and *resolved* are
+  separate things with separate controls (DECISIONS #157).
+- **A form registered in code was invisible to the framework.** Discovery read database flows only, so a
+  form registered through `Corex\Forms\FormRegistry` reached the submission filters only if the site
+  added a `corex_submission_filter_options` hook, and Forms & Flows never listed it at all. v0.35.1 made
+  such forms *filterable once injected*; the framework now **finds** them. The filter still applies, after
+  the merge, for anything the catalog cannot see.
+- **Data → Import and Data → Migrations were permanent dead ends.** Every registered source declared
+  `import_dry_run` and `migrations` false, so both tabs could only ever print "No registered model
+  provides an import adapter." Managed tables can now declare writable fields, import aliases, validation
+  and a migration path; `corex_subscribers` is the first to do so, with a real dry run → mapping →
+  rejections → commit → audit path and preview → apply → history → rollback. A tab appears only when the
+  actor may open it **and** an eligible source exists.
+- **The Submission Inbox heading lines collided.** The eyebrow, title, and count fought each other with
+  per-element margins that also collapsed differently once a translation wrapped a line. They are one
+  stack with a token grid gap now, which cannot collapse.
 - **The Data Models screen lost its icons.** It alone rendered an empty notification bell and dropped its
   brand mark and rail glyphs, because it echoed the shell through `wp_kses_post()`, whose allowed-tags list
   excludes `<svg>`. The CoreX admin chrome is already escaped at the point each dynamic value is interpolated,
@@ -32,6 +52,17 @@ surface tell the truth.
 
 ### Added
 
+- **"What this site can do" — a capability summary under the Data Models catalog.** Everything CoreX has
+  registered and where it came from, what each model supports, which add-ons are running, which
+  notification producers are wired, and anything selected but unfinished — a captcha provider with no
+  keys, or a missing update endpoint — each linking to the screen that fixes it. Capability used to be
+  discoverable only by walking into it. A fact carrying a credential-shaped key is dropped rather than
+  redacted, because a redaction still tells a reader where to look (DECISIONS #160).
+- **A notification says what it is, and what you can do about it.** The item now carries category,
+  severity, source module, environment, when it last happened, how many times, and whether the condition
+  is still live — with mark read, mark unread, snooze, dismiss, resolve, and its own primary action. It
+  used to show a title, a body, and "Mark read". The header drawer and the screen share one component, so
+  they can no longer tell different versions of the same record.
 - **A state filter on the Add-ons screen.** Mutually exclusive, exhaustive All / Active / Inactive / Not
   installed buckets keyed on the same status that prints each card's badge, rendered as the shared CoreX tab
   strip with a real count on each tab, a distinct "no add-ons in this view" state, and a fallback to All for an
@@ -39,6 +70,14 @@ surface tell the truth.
 
 ### Changed
 
+- **The Notifications screen offers three views instead of eight.** Action needed · Updates · History,
+  plus Preferences. Inbox, Requires attention, Assigned to me, Submissions, Security, and System are gone
+  as tabs — category, severity, and assignment are refines that apply within whichever view you are in,
+  which is what they always were. Snoozing moves an item to Updates rather than History, and it comes
+  back on its own when the snooze elapses (DECISIONS #158).
+- **A control you may not use is hidden rather than shown and refused.** "Mark resolved" appears only for
+  actors holding the same ability the REST route enforces, so the interface cannot advertise a capability
+  and then answer with a permission error (DECISIONS #159).
 - **The Settings dropdowns and the Notifications severity filter are the approved CoreX control** rather than
   native `<select>` elements the OS draws its menu for (DECISIONS #141), and the severity filter shows
   translated labels instead of raw English keys.

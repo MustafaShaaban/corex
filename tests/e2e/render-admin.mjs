@@ -37,6 +37,15 @@ const SCREENS = [
 	{ name: 'email-studio', url: '/wp-admin/admin.php?page=corex-email-studio' },
 	{ name: 'data', url: '/wp-admin/admin.php?page=corex-data' },
 	{ name: 'data-models', url: '/wp-admin/admin.php?page=corex-data-models' },
+	// The Data workspace tabs are linkable (`?tab=`), and each is its own surface with its own
+	// empty/unavailable state — capture them, or a tab that leads nowhere never shows up in evidence.
+	{ name: 'data-records', url: '/wp-admin/admin.php?page=corex-data-models&tab=records' },
+	{ name: 'data-import', url: '/wp-admin/admin.php?page=corex-data-models&tab=import' },
+	{ name: 'data-export', url: '/wp-admin/admin.php?page=corex-data-models&tab=export' },
+	{
+		name: 'data-migrations',
+		url: '/wp-admin/admin.php?page=corex-data-models&tab=migrations',
+	},
 	{ name: 'operations-security', url: '/wp-admin/admin.php?page=corex-operations-security' },
 	{ name: 'notifications', url: '/wp-admin/admin.php?page=corex-notifications' },
 	{ name: 'access', url: '/wp-admin/admin.php?page=corex-access' },
