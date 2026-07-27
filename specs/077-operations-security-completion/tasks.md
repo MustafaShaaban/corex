@@ -44,10 +44,10 @@ screen lie, and because neither depends on the new information architecture.
 
 ## Phase 2: Progressive disclosure in the mode form
 
-- [ ] T007 [US2] `ModeDisclosure` — per mode: meaning, warnings, and which confirmation is
+- [x] T007 [US2] `ModeDisclosure` — per mode: meaning, warnings, and which confirmation is
       required. Pure description, no capability or readiness logic, so it is unit-testable without
       WordPress and one answer drives the render, the client swap and the server validation.
-- [ ] T008 [P] [US2] Pest unit: Production requires the typed phrase and not the acknowledgement;
+- [x] T008 [P] [US2] Pest unit: Production requires the typed phrase and not the acknowledgement;
       Maintenance the reverse; Development and Staging neither.
 - [ ] T009 [US2] The mode form renders all four blocks with the proposed mode's visible and the
       rest `hidden`; the proposed mode comes from `?mode=` when valid, else the current mode.
