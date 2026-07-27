@@ -14,8 +14,10 @@ function fieldFilterLabel( fieldLabel ) {
  * corex_form_slug). The submissions inbox filters the same forms by numeric ID
  * (meta corex_flow_id) — the two are not interchangeable, and swapping them yields a filter that
  * silently matches nothing.
- * @param field
- * @param flows
+ *
+ * @param {Object} field One filter field descriptor.
+ * @param {Array}  flows The known forms, keyed by slug.
+ * @return {Array|null} Option list for that field, or null when it takes free text.
  */
 function choicesFor( field, flows ) {
 	if ( field.key !== 'form' || ! flows.length ) {

@@ -18,7 +18,9 @@ const LIFECYCLE_STATES = [
 
 /**
  * Translated state names, so the row never prints a raw English identifier.
- * @param state
+ *
+ * @param {string} state The stored lifecycle key.
+ * @return {string} Its translated name, or the key when it is not one we know.
  */
 function stateLabel( state ) {
 	const labels = {
@@ -35,7 +37,9 @@ function stateLabel( state ) {
 
 /**
  * Where a form came from, said in words rather than left to a colour.
- * @param source
+ *
+ * @param {string} source The catalog source key.
+ * @return {string} A translated description of where the form is defined.
  */
 function sourceLabel( source ) {
 	if ( source === SOURCE_CODE_FORM ) {
@@ -98,8 +102,10 @@ function NewFlowForm( { busy, ownerId, onCreate } ) {
 
 /**
  * The shared cells, so an editable and a read-only row read as the same kind of thing.
- * @param root0
- * @param root0.row
+ *
+ * @param {Object} props     Component props.
+ * @param {Object} props.row One catalog row.
+ * @return {Element}The identity, source and state cells.
  */
 function RowSummary( { row } ) {
 	return (
@@ -157,9 +163,11 @@ function FlowRow( { row, busy, onSelect } ) {
 /**
  * A form that lives in code. It is a real definition, not a stub — its fields, its validation, and
  * a route to its submissions — with one plain sentence saying why the builder cannot open it.
- * @param root0
- * @param root0.row
- * @param root0.submissionsUrl
+ *
+ * @param {Object} props                The component props.
+ * @param {Object} props.row            One catalog row for a code-registered form.
+ * @param {string} props.submissionsUrl The inbox address to filter by this form's slug.
+ * @return {Element}The row, with its expandable definition panel.
  */
 function CodeFormRow( { row, submissionsUrl } ) {
 	const [ open, setOpen ] = useState( false );

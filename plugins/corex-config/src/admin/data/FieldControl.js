@@ -11,10 +11,10 @@ export function writableFields( source ) {
 }
 
 export default function FieldControl( { field, value, onChange } ) {
-	/* translators: %s: personal-data classification. */
 	const help =
 		field.personal_data_class !== 'none'
 			? sprintf(
+					/* translators: %s: personal-data classification. */
 					__( 'Personal data: %s', 'corex' ),
 					field.personal_data_class
 			  )

@@ -84,8 +84,8 @@ const isForbidden = ( absPath ) => {
 /**
  * Compute the build plan: the list of {from, to, kind} copy operations + the manifest. Pure — no filesystem writes.
  *
- * @param {{repoRoot:string, distDir:string, client?:string|null, version?:string}} cfg
- * @return {{copies:Array<{from:string,to:string,kind:string}>, manifest:object, warnings:string[]}}
+ * @param {{repoRoot:string, distDir:string, client?:string|null, version?:string}} cfg The build inputs.
+ * @return {{copies:Array<{from:string,to:string,kind:string}>, manifest:object, warnings:string[]}} The plan.
  */
 export function buildPlan( cfg ) {
 	const { repoRoot, distDir, client = null } = cfg;
@@ -223,7 +223,9 @@ export function buildPlan( cfg ) {
 
 /**
  * Read COREX_CORE_VERSION from the core plugin header, for the manifest.
- * @param repoRoot
+ *
+ * @param {string} repoRoot The repository root to read the plugin from.
+ * @return {string} The version, or 'unknown' when it cannot be read.
  */
 function readCorexVersion( repoRoot ) {
 	try {
@@ -240,7 +242,9 @@ function readCorexVersion( repoRoot ) {
 
 /**
  * Filter for cpSync: skip dev-excluded names and any forbidden path.
- * @param src
+ *
+ * @param {string} src The source path cpSync is about to copy.
+ * @return {boolean} Whether it belongs in the bundle.
  */
 function copyFilter( src ) {
 	const name = basename( src );
@@ -255,12 +259,15 @@ function copyFilter( src ) {
 
 /**
  * Execute the plan. Writes nothing when dryRun is true.
- * @param plan
- * @param distDir
- * @param root0
- * @param root0.dryRun
+ *
+ * @param {Object}  plan             The plan from `buildPlan`.
+ * @param {string}  distDir          Where the bundle is written.
+ * @param {Object}  [options]        Execution options.
+ * @param {boolean} [options.dryRun] Report the work without doing it.
  */
-export function runBuild( plan, distDir, { dryRun = false } = {} ) {
+export function runBuild( plan, distDir, options = {} ) {
+	const { dryRun = false } = options;
+
 	if ( ! dryRun ) {
 		rmSync( distDir, { recursive: true, force: true } );
 		mkdirSync( distDir, { recursive: true } );
@@ -342,8 +349,8 @@ export function verifyDist( distDir ) {
  * For each theme under wp-content/themes, when it carries `assets/src/scss` (or `assets/src/js`) it must also
  * carry compiled `assets/css/*.css` (or `assets/js/*.js`). Themes with no asset sources are unaffected.
  *
- * @param  distDir
- * @return {string[]}
+ * @param {string} distDir The built bundle to check.
+ * @return {string[]} One message per theme that ships sources without their compiled output.
  */
 export function verifyClientAssets( distDir ) {
 	const errors = [];

@@ -18,7 +18,7 @@ function appendQuery( params, query ) {
 		}
 	} );
 	Object.entries( query.filters || {} ).forEach( ( [ key, value ] ) => {
-		if ( value !== '' && value != null ) {
+		if ( value !== '' && value !== null && value !== undefined ) {
 			params.set( `filters[${ key }]`, String( value ) );
 		}
 	} );

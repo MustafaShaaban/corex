@@ -32,11 +32,18 @@
 		};
 	}
 
-	function translate( text ) {
-		return window.wp && window.wp.i18n
-			? window.wp.i18n.__( text, 'corex' )
-			: text;
-	}
+	/*
+	 * `corex-runtime`, this script's dependency, depends on `wp-i18n`, so `wp.i18n.__` is
+	 * there in WordPress; the identity fallback covers the buildless/test cases. Binding the
+	 * real function instead of wrapping a call around it is what lets `wp i18n make-pot` see
+	 * the literals at the call sites below.
+	 */
+	const __ =
+		window.wp && window.wp.i18n && typeof window.wp.i18n.__ === 'function'
+			? window.wp.i18n.__
+			: function ( text ) {
+					return text;
+			  };
 
 	function init() {
 		const config = window.corexCaptcha;
@@ -52,7 +59,7 @@
 		const button = document.createElement( 'button' );
 		button.type = 'button';
 		button.className = 'button corex-captcha-test__button';
-		button.textContent = translate( 'Test verification' );
+		button.textContent = __( 'Test verification', 'corex' );
 
 		const result = document.createElement( 'span' );
 		result.className = 'corex-captcha-test__result';
@@ -66,7 +73,7 @@
 		button.addEventListener( 'click', function () {
 			button.disabled = true;
 			result.className = 'corex-captcha-test__result';
-			result.textContent = translate( 'Testing…' );
+			result.textContent = __( 'Testing…', 'corex' );
 
 			window.Corex.api
 				.post(
@@ -78,14 +85,15 @@
 					const view = resultFromEnvelope( res && res.envelope );
 					result.textContent =
 						view.message ||
-						translate( 'No response from the provider.' );
+						__( 'No response from the provider.', 'corex' );
 					result.className =
 						'corex-captcha-test__result is-' +
 						( view.ok ? 'ok' : 'error' );
 				} )
 				.catch( function () {
-					result.textContent = translate(
-						'The test request failed. Check your connection and try again.'
+					result.textContent = __(
+						'The test request failed. Check your connection and try again.',
+						'corex'
 					);
 					result.className = 'corex-captcha-test__result is-error';
 				} )

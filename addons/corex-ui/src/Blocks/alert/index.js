@@ -15,50 +15,50 @@ import { PanelBody, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
-registerBlockType( metadata.name, {
-	edit: ( { attributes, setAttributes } ) => {
-		const blockProps = useBlockProps( {
-			className: `corex-alert corex-alert--${ attributes.variant }`,
-		} );
+function Edit( { attributes, setAttributes } ) {
+	const blockProps = useBlockProps( {
+		className: `corex-alert corex-alert--${ attributes.variant }`,
+	} );
 
-		return (
-			<>
-				<InspectorControls>
-					<PanelBody title={ __( 'Alert', 'corex' ) }>
-						<SelectControl
-							label={ __( 'Variant', 'corex' ) }
-							value={ attributes.variant }
-							options={ [
-								{ label: __( 'Info', 'corex' ), value: 'info' },
-								{
-									label: __( 'Success', 'corex' ),
-									value: 'success',
-								},
-								{
-									label: __( 'Warning', 'corex' ),
-									value: 'warning',
-								},
-								{
-									label: __( 'Error', 'corex' ),
-									value: 'error',
-								},
-							] }
-							onChange={ ( variant ) =>
-								setAttributes( { variant } )
-							}
-						/>
-					</PanelBody>
-				</InspectorControls>
-				<div { ...blockProps } role="alert">
-					<RichText
-						tagName="span"
-						value={ attributes.message }
-						onChange={ ( message ) => setAttributes( { message } ) }
-						placeholder={ __( 'Alert message…', 'corex' ) }
+	return (
+		<>
+			<InspectorControls>
+				<PanelBody title={ __( 'Alert', 'corex' ) }>
+					<SelectControl
+						label={ __( 'Variant', 'corex' ) }
+						value={ attributes.variant }
+						options={ [
+							{ label: __( 'Info', 'corex' ), value: 'info' },
+							{
+								label: __( 'Success', 'corex' ),
+								value: 'success',
+							},
+							{
+								label: __( 'Warning', 'corex' ),
+								value: 'warning',
+							},
+							{
+								label: __( 'Error', 'corex' ),
+								value: 'error',
+							},
+						] }
+						onChange={ ( variant ) => setAttributes( { variant } ) }
 					/>
-				</div>
-			</>
-		);
-	},
+				</PanelBody>
+			</InspectorControls>
+			<div { ...blockProps } role="alert">
+				<RichText
+					tagName="span"
+					value={ attributes.message }
+					onChange={ ( message ) => setAttributes( { message } ) }
+					placeholder={ __( 'Alert message…', 'corex' ) }
+				/>
+			</div>
+		</>
+	);
+}
+
+registerBlockType( metadata.name, {
+	edit: Edit,
 	save: () => null,
 } );

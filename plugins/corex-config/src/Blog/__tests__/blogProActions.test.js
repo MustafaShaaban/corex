@@ -63,7 +63,8 @@ function click( node ) {
  * CorexSelect commits on `mousedown`, not `click` — it has to, or the button's own blur closes the
  * menu before the click lands. Driving the real control rather than the component's state is the
  * point: it is what proves the panel is wired to the approved control (DECISIONS #141).
- * @param label
+ *
+ * @param {string} label The option's visible text.
  */
 function choose( label ) {
 	click( find( '.corex-select__button' ) );

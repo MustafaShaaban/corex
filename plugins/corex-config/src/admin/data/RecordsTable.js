@@ -7,6 +7,34 @@ function recordSelectionLabel( recordId ) {
 	return sprintf( __( 'Select record %s', 'corex' ), recordId );
 }
 
+/**
+ * The `aria-sort` a header cell should carry.
+ *
+ * @param {Object}  query    The current query, with its `sort` and `dir`.
+ * @param {string}  columnId The column this header renders.
+ * @param {boolean} sortable Whether the field can be sorted on at all.
+ * @return {string|undefined} The ARIA value, or undefined when the column is not sortable.
+ */
+function ariaSortFor( query, columnId, sortable ) {
+	if ( ! sortable ) {
+		return undefined;
+	}
+	if ( query.sort !== columnId ) {
+		return 'none';
+	}
+	return query.dir === 'asc' ? 'ascending' : 'descending';
+}
+
+/**
+ * A cell with nothing in it prints an em dash rather than collapsing to nothing.
+ *
+ * @param {*} value One cell's value.
+ * @return {boolean} Whether there is nothing to show.
+ */
+function isBlank( value ) {
+	return value === '' || value === null || value === undefined;
+}
+
 export default function RecordsTable( { explorer, open } ) {
 	const { state } = explorer;
 	const all = allRowsSelected( state.selected, state.rows );
@@ -38,13 +66,11 @@ export default function RecordsTable( { explorer, open } ) {
 							const sortable = Boolean(
 								fields.get( column.id )?.sortable
 							);
-							const ariaSort = sortable
-								? state.query.sort === column.id
-									? state.query.dir === 'asc'
-										? 'ascending'
-										: 'descending'
-									: 'none'
-								: undefined;
+							const ariaSort = ariaSortFor(
+								state.query,
+								column.id,
+								sortable
+							);
 							return (
 								<th key={ column.id } aria-sort={ ariaSort }>
 									{ sortable ? (
@@ -101,8 +127,7 @@ export default function RecordsTable( { explorer, open } ) {
 							</td>
 							{ state.columns.map( ( column ) => (
 								<td key={ column.id }>
-									{ row[ column.id ] === '' ||
-									row[ column.id ] == null
+									{ isBlank( row[ column.id ] )
 										? '—'
 										: String( row[ column.id ] ) }
 								</td>

@@ -71,8 +71,14 @@ export default function PreferencesPanel() {
 					key={ row.category }
 					className="corex-notifications-prefs__row"
 				>
-					<label className="corex-notifications-prefs__label">
+					{ /* The category names the control, so the label points at it by `for`
+					     rather than wrapping it. */ }
+					<label
+						className="corex-notifications-prefs__label"
+						htmlFor={ `corex-notification-pref-${ row.category }` }
+					>
 						<input
+							id={ `corex-notification-pref-${ row.category }` }
 							type="checkbox"
 							checked={ row.enabled }
 							disabled={ row.mandatory }

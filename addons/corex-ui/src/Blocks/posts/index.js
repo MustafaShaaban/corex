@@ -13,30 +13,32 @@ import ServerSideRender from '@wordpress/server-side-render';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
-registerBlockType( metadata.name, {
-	edit: ( { attributes, setAttributes } ) => {
-		const blockProps = useBlockProps();
+function Edit( { attributes, setAttributes } ) {
+	const blockProps = useBlockProps();
 
-		return (
-			<div { ...blockProps }>
-				<InspectorControls>
-					<PanelBody title={ __( 'Posts', 'corex' ) }>
-						<RangeControl
-							__nextHasNoMarginBottom
-							label={ __( 'Number of posts', 'corex' ) }
-							min={ 1 }
-							max={ 12 }
-							value={ attributes.count }
-							onChange={ ( count ) => setAttributes( { count } ) }
-						/>
-					</PanelBody>
-				</InspectorControls>
-				<ServerSideRender
-					block={ metadata.name }
-					attributes={ attributes }
-				/>
-			</div>
-		);
-	},
+	return (
+		<div { ...blockProps }>
+			<InspectorControls>
+				<PanelBody title={ __( 'Posts', 'corex' ) }>
+					<RangeControl
+						__nextHasNoMarginBottom
+						label={ __( 'Number of posts', 'corex' ) }
+						min={ 1 }
+						max={ 12 }
+						value={ attributes.count }
+						onChange={ ( count ) => setAttributes( { count } ) }
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<ServerSideRender
+				block={ metadata.name }
+				attributes={ attributes }
+			/>
+		</div>
+	);
+}
+
+registerBlockType( metadata.name, {
+	edit: Edit,
 	save: () => null,
 } );

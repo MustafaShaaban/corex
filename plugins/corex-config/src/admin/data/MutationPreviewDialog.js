@@ -27,9 +27,9 @@ export default function MutationPreviewDialog( {
 			title={ __( 'Confirm data change', 'corex' ) }
 			onRequestClose={ close }
 		>
-			{ /* translators: 1: operation name, 2: affected record count. */ }
 			<p>
 				{ sprintf(
+					/* translators: 1: operation name, 2: affected record count. */
 					__(
 						'%1$s will affect %2$d record(s). Review the exact scope before applying.',
 						'corex'

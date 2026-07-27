@@ -17,8 +17,8 @@ function exportRunLabel( run ) {
 		queued: __( 'Queued', 'corex' ),
 		completed: __( 'Completed', 'corex' ),
 	};
-	/* translators: 1: export ID, 2: scope, 3: format, 4: state. */
 	return sprintf(
+		/* translators: 1: export ID, 2: scope, 3: format, 4: state. */
 		__( '#%1$d · %2$s · %3$s · %4$s', 'corex' ),
 		run.id,
 		scopes[ run.scope ] || run.scope,

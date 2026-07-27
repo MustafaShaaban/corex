@@ -2,6 +2,7 @@ import {
 	createRoot,
 	render,
 	useEffect,
+	useId,
 	useMemo,
 	useState,
 } from '@wordpress/element';
@@ -197,6 +198,7 @@ function InboxHeader( { total, onExport } ) {
 				<h2>{ __( 'Submission Inbox', 'corex' ) }</h2>
 				<p className="corex-inbox__count">
 					{ sprintf(
+						/* translators: %d: number of submissions this user may see. */
 						_n(
 							'%d accessible submission',
 							'%d accessible submissions',
@@ -256,14 +258,19 @@ function FormFilter( { flows, value, update } ) {
 }
 
 function Filters( { filters, update, flows } ) {
+	// Each control is named by its own `for`/`id` pair rather than by being wrapped: a
+	// wrapping <label> is not announced by every assistive technology WordPress supports.
+	const fieldId = useId();
+
 	return (
 		<section
 			className="corex-inbox__filters"
 			aria-label={ __( 'Submission filters', 'corex' ) }
 		>
-			<label className="is-wide">
+			<label className="is-wide" htmlFor={ `${ fieldId }-search` }>
 				<span>{ __( 'Search', 'corex' ) }</span>
 				<input
+					id={ `${ fieldId }-search` }
 					type="search"
 					value={ filters.search }
 					onChange={ ( event ) =>
@@ -293,9 +300,10 @@ function Filters( { filters, update, flows } ) {
 					block
 				/>
 			</div>
-			<label>
+			<label htmlFor={ `${ fieldId }-owner` }>
 				<span>{ __( 'Owner', 'corex' ) }</span>
 				<input
+					id={ `${ fieldId }-owner` }
 					value={ filters.owner }
 					onChange={ ( event ) =>
 						update( 'owner', event.target.value )
@@ -303,9 +311,10 @@ function Filters( { filters, update, flows } ) {
 					placeholder="team:sales"
 				/>
 			</label>
-			<label>
+			<label htmlFor={ `${ fieldId }-date-from` }>
 				<span>{ __( 'From', 'corex' ) }</span>
 				<input
+					id={ `${ fieldId }-date-from` }
 					type="date"
 					value={ filters.dateFrom }
 					onChange={ ( event ) =>
@@ -313,9 +322,10 @@ function Filters( { filters, update, flows } ) {
 					}
 				/>
 			</label>
-			<label>
+			<label htmlFor={ `${ fieldId }-date-to` }>
 				<span>{ __( 'To', 'corex' ) }</span>
 				<input
+					id={ `${ fieldId }-date-to` }
 					type="date"
 					value={ filters.dateTo }
 					onChange={ ( event ) =>
@@ -323,8 +333,9 @@ function Filters( { filters, update, flows } ) {
 					}
 				/>
 			</label>
-			<label className="is-check">
+			<label className="is-check" htmlFor={ `${ fieldId }-include-test` }>
 				<input
+					id={ `${ fieldId }-include-test` }
 					type="checkbox"
 					checked={ filters.includeTest }
 					onChange={ ( event ) =>
@@ -348,7 +359,11 @@ function BulkToolbar( props ) {
 			aria-label={ __( 'Bulk actions', 'corex' ) }
 		>
 			<strong>
-				{ sprintf( __( '%d selected', 'corex' ), props.count ) }
+				{ sprintf(
+					/* translators: %d: number of selected submissions. */
+					__( '%d selected', 'corex' ),
+					props.count
+				) }
 			</strong>
 			<CorexSelect
 				label={ __( 'Bulk action', 'corex' ) }
@@ -469,6 +484,7 @@ function InboxTable( { state, dispatch, open } ) {
 										} )
 									}
 									aria-label={ sprintf(
+										/* translators: %d: submission ID. */
 										__( 'Select submission %d', 'corex' ),
 										item.id
 									) }
@@ -611,6 +627,7 @@ function Pagination( { state, filters, update } ) {
 		>
 			<span>
 				{ sprintf(
+					/* translators: 1: current page, 2: total pages. */
 					__( 'Page %1$d of %2$d', 'corex' ),
 					filters.page,
 					pages
@@ -771,6 +788,7 @@ function DetailDrawer( { drawer, inbox } ) {
 				{ record.delivery?.attempted_at && (
 					<p className="corex-inbox__muted">
 						{ sprintf(
+							/* translators: %s: when delivery was last attempted. */
 							__( 'Attempted %s', 'corex' ),
 							record.delivery.attempted_at
 						) }
@@ -901,6 +919,7 @@ function DetailDrawer( { drawer, inbox } ) {
 			<footer>
 				<span>
 					{ sprintf(
+						/* translators: %d: the flow version this submission was made against. */
 						__( 'Version %d', 'corex' ),
 						record.flow_version_id || 0
 					) }
@@ -953,6 +972,7 @@ function ConfirmBulk( { preview, close, apply } ) {
 		>
 			<p>
 				{ sprintf(
+					/* translators: 1: bulk action name, 2: number of submissions affected. */
 					__( '%1$s will affect exactly %2$d submissions.', 'corex' ),
 					preview.action,
 					preview.count
@@ -982,6 +1002,9 @@ function ExportModal( { close, inbox, filters, selectedIds } ) {
 	const [ includeTest, setIncludeTest ] = useState( false );
 	const [ acknowledged, setAcknowledged ] = useState( false );
 	const [ history, setHistory ] = useState( [] );
+	// Each control is named by its own `for`/`id` pair rather than by being wrapped: a
+	// wrapping <label> is not announced by every assistive technology WordPress supports.
+	const fieldId = useId();
 	const personal = columns.some( ( item ) =>
 		[
 			'submitted_fields',
@@ -1015,20 +1038,26 @@ function ExportModal( { close, inbox, filters, selectedIds } ) {
 			onRequestClose={ close }
 			className="corex-inbox__export-modal"
 		>
-			<label>
-				{ __( 'Scope', 'corex' ) }
+			{ /* CorexSelect names its own button from `label`; a wrapping <label> would
+			     rename the control from its whole subtree on every selection. */ }
+			<div className="corex-field">
+				<span>{ __( 'Scope', 'corex' ) }</span>
 				<CorexSelect
 					label={ __( 'Scope', 'corex' ) }
 					value={ scope }
 					options={ exportScopes( selectedIds.length ) }
 					onChange={ setScope }
 				/>
-			</label>
+			</div>
 			<fieldset>
 				<legend>{ __( 'Columns', 'corex' ) }</legend>
 				{ choices.map( ( choice ) => (
-					<label key={ choice }>
+					<label
+						key={ choice }
+						htmlFor={ `${ fieldId }-column-${ choice }` }
+					>
 						<input
+							id={ `${ fieldId }-column-${ choice }` }
 							type="checkbox"
 							checked={ columns.includes( choice ) }
 							onChange={ () =>
@@ -1045,8 +1074,9 @@ function ExportModal( { close, inbox, filters, selectedIds } ) {
 					</label>
 				) ) }
 			</fieldset>
-			<label>
+			<label htmlFor={ `${ fieldId }-include-test` }>
 				<input
+					id={ `${ fieldId }-include-test` }
 					type="checkbox"
 					checked={ includeTest }
 					onChange={ ( e ) => setIncludeTest( e.target.checked ) }
@@ -1054,8 +1084,12 @@ function ExportModal( { close, inbox, filters, selectedIds } ) {
 				{ __( 'Include marked tests', 'corex' ) }
 			</label>
 			{ personal && (
-				<label className="corex-inbox__warning">
+				<label
+					className="corex-inbox__warning"
+					htmlFor={ `${ fieldId }-acknowledged` }
+				>
 					<input
+						id={ `${ fieldId }-acknowledged` }
 						type="checkbox"
 						checked={ acknowledged }
 						onChange={ ( e ) =>

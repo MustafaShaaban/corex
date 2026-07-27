@@ -1,4 +1,4 @@
-import { useReducer } from '@wordpress/element';
+import { useId, useReducer } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import {
 	buildLoginPolicyPayload,
@@ -104,6 +104,10 @@ function LoginPolicy( {
 	config = {},
 	saving = false,
 } ) {
+	// Each control is named by its own `for`/`id` pair rather than by being wrapped: a
+	// wrapping <label> is not announced by every assistive technology WordPress supports.
+	const fieldId = useId();
+
 	const save = async () => {
 		if ( ! window.Corex || ! window.Corex.api || ! config.restUrl ) {
 			dispatch( {
@@ -165,8 +169,9 @@ function LoginPolicy( {
 				</p>
 			) }
 			<div className="corex-security__policy">
-				<label>
+				<label htmlFor={ `${ fieldId }-enabled` }>
 					<input
+						id={ `${ fieldId }-enabled` }
 						type="checkbox"
 						checked={ policy.enabled }
 						onChange={ ( event ) =>
@@ -178,8 +183,9 @@ function LoginPolicy( {
 					/>
 					{ __( 'Enable failed-login protection', 'corex' ) }
 				</label>
-				<label>
+				<label htmlFor={ `${ fieldId }-block-default` }>
 					<input
+						id={ `${ fieldId }-block-default` }
 						type="checkbox"
 						checked={ policy.blockDefaultEndpoints }
 						onChange={ ( event ) =>
@@ -193,9 +199,10 @@ function LoginPolicy( {
 					/>
 					{ __( 'Hide wp-login.php and wp-admin', 'corex' ) }
 				</label>
-				<label>
+				<label htmlFor={ `${ fieldId }-custom-slug` }>
 					{ __( 'Custom login address', 'corex' ) }
 					<input
+						id={ `${ fieldId }-custom-slug` }
 						type="text"
 						value={ policy.customSlug }
 						onChange={ ( event ) =>
@@ -206,9 +213,10 @@ function LoginPolicy( {
 						}
 					/>
 				</label>
-				<label>
+				<label htmlFor={ `${ fieldId }-max-attempts` }>
 					{ __( 'Max attempts', 'corex' ) }
 					<input
+						id={ `${ fieldId }-max-attempts` }
 						type="number"
 						min="1"
 						max="50"
@@ -327,8 +335,10 @@ function Lockouts( { lockouts, summary } ) {
  * effect. Recovery necessarily runs from the CLI: it exists for the case where the admin cannot be
  * reached, so a button inside the admin could not perform it even in principle. Showing the command
  * is the honest whole of what this panel can do.
- * @param root0
- * @param root0.config
+ *
+ * @param {Object} props        Component props.
+ * @param {Object} props.config The localized security config.
+ * @return {Element} The recovery panel.
  */
 function Recovery( { config } ) {
 	const command = config.recoveryCommand || 'wp corex security reset-login';

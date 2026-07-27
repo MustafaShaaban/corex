@@ -32,7 +32,9 @@ const STORAGE_STATE = path.join( __dirname, '.auth', 'admin.json' );
 
 /**
  * Load a login form from whichever address actually serves one.
- * @param page
+ *
+ * @param {import('@playwright/test').Page} page The page to drive.
+ * @return {Promise<boolean>} Whether a login form was found.
  */
 async function openLoginForm( page ) {
 	for ( const loginPath of LOGIN_PATHS ) {

@@ -108,7 +108,12 @@ function tile(
 	const r = size * 0.24;
 	const showSigil = size >= 48;
 	const isCore = key === 'core';
-	let frac = size <= 23 ? 0.56 : showSigil ? 0.46 : 0.52;
+	let frac = 0.52;
+	if ( size <= 23 ) {
+		frac = 0.56;
+	} else if ( showSigil ) {
+		frac = 0.46;
+	}
 	const stroke = size <= 23 ? 2.5 : 2.1;
 	if ( isCore ) {
 		frac = showSigil ? 0.52 : 0.58;

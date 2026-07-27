@@ -22,7 +22,9 @@ const ACTIONS = [
 
 /**
  * The arrival time, in the reader's own locale — ordering and age are most of the judgement.
- * @param iso
+ *
+ * @param {string} iso The stored timestamp.
+ * @return {string} A readable arrival time, or '' when it cannot be parsed.
  */
 function arrived( iso ) {
 	const parsed = Date.parse( iso );

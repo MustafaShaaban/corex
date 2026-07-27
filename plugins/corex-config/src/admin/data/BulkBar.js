@@ -13,9 +13,9 @@ export default function BulkBar( { explorer, edit, exportRows } ) {
 			role="region"
 			aria-label={ __( 'Bulk actions', 'corex' ) }
 		>
-			{ /* translators: %d: selected record count. */ }
 			<strong>
 				{ sprintf(
+					/* translators: %d: selected record count. */
 					_n( '%d selected', '%d selected', count, 'corex' ),
 					count
 				) }

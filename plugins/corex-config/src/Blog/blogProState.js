@@ -21,7 +21,9 @@ function engagement( reads, views ) {
  * permanently empty, and displaying them would have needed analytics capability spec 075 §10 excludes.
  * Shaping data that never arrives is the same dead-code defect as a reducer nothing dispatches to,
  * just quieter, so they are gone rather than carried (spec 075, T052).
- * @param payload
+ *
+ * @param {Object} payload The `/blog/analytics` response body.
+ * @return {Object} The card values the screen renders.
  */
 export function normalizeAnalytics( payload = {} ) {
 	const views = numberValue( payload.views );

@@ -44,7 +44,7 @@ beforeEach( () => {
 		} ),
 	};
 	// requestSubmit is not implemented in jsdom; record that the primed submission fired.
-	HTMLFormElement.prototype.requestSubmit = jest.fn( function () {
+	window.HTMLFormElement.prototype.requestSubmit = jest.fn( function () {
 		this.dispatchEvent(
 			new Event( 'submit', { cancelable: true, bubbles: true } )
 		);

@@ -30,11 +30,15 @@ export function EmailsTab( { routes, templates, onChange } ) {
 			{ EVENTS.map( ( eventName ) => {
 				const binding =
 					routes.find( ( route ) => route.event === eventName ) || {};
+				// The event name is unique within the tab, so it names this binding's controls;
+				// each label points at its own control by `for` rather than wrapping it.
+				const fieldId = `corex-flow-emails-${ eventName }`;
 				return (
 					<fieldset key={ eventName }>
 						<legend>{ eventName }</legend>
-						<label>
+						<label htmlFor={ `${ fieldId }-enabled` }>
 							<input
+								id={ `${ fieldId }-enabled` }
 								type="checkbox"
 								checked={ Boolean( binding.enabled ) }
 								onChange={ ( event ) =>
@@ -73,9 +77,10 @@ export function EmailsTab( { routes, templates, onChange } ) {
 								block
 							/>
 						</div>
-						<label>
+						<label htmlFor={ `${ fieldId }-recipient` }>
 							{ __( 'Recipient mapping', 'corex' ) }
 							<input
+								id={ `${ fieldId }-recipient` }
 								value={ binding.recipient || '' }
 								onChange={ ( event ) =>
 									update( eventName, {
@@ -84,9 +89,10 @@ export function EmailsTab( { routes, templates, onChange } ) {
 								}
 							/>
 						</label>
-						<label>
+						<label htmlFor={ `${ fieldId }-reply-to` }>
 							{ __( 'Reply-to mapping', 'corex' ) }
 							<input
+								id={ `${ fieldId }-reply-to` }
 								value={ binding.reply_to || '' }
 								onChange={ ( event ) =>
 									update( eventName, {

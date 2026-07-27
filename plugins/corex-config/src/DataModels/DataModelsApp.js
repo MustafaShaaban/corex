@@ -27,7 +27,8 @@ function tabLabel( tab ) {
  * Tabs were component state only, so no view here could be linked to, bookmarked, or reopened —
  * and the retired Data screen redirects to ?tab=records, which needs this to land anywhere.
  * replaceState rather than pushState: switching tabs is not a navigation to walk back through.
- * @param tab
+ *
+ * @param {string} tab The tab key now visible.
  */
 function syncTabToUrl( tab ) {
 	if ( typeof window === 'undefined' || ! window.history?.replaceState ) {
@@ -40,7 +41,12 @@ function syncTabToUrl( tab ) {
 }
 
 export default function DataModelsApp( { config } ) {
-	const abilities = config.abilities || {};
+	// Memoised because `config.abilities || {}` is a fresh object on every render when the key is
+	// absent, which would make the tabs recompute forever.
+	const abilities = useMemo(
+		() => config.abilities || {},
+		[ config.abilities ]
+	);
 	const sources = useMemo(
 		() => normalizeCatalog( config.sources ),
 		[ config.sources ]

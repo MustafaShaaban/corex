@@ -103,6 +103,8 @@ final class CaptchaServiceProvider extends ServiceProvider
             true,
         );
 
+        wp_set_script_translations('corex-captcha-admin', 'corex');
+
         wp_localize_script('corex-captcha-admin', 'corexCaptcha', [
             'restUrl' => esc_url_raw(rest_url('corex/v1')),
             'nonce'   => wp_create_nonce('wp_rest'),

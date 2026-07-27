@@ -24,83 +24,83 @@ const toImage = ( media ) => ( {
 	caption: media.caption || '',
 } );
 
-registerBlockType( metadata.name, {
-	edit: ( { attributes, setAttributes } ) => {
-		const blockProps = useBlockProps( { className: 'corex-gallery' } );
-		const images = Array.isArray( attributes.images )
-			? attributes.images
-			: [];
+function Edit( { attributes, setAttributes } ) {
+	const blockProps = useBlockProps( { className: 'corex-gallery' } );
+	const images = Array.isArray( attributes.images ) ? attributes.images : [];
 
-		const setCaption = ( index, value ) =>
-			setAttributes( {
-				images: images.map( ( img, i ) =>
-					i === index ? { ...img, caption: value } : img
-				),
-			} );
-		const removeImage = ( index ) =>
-			setAttributes( {
-				images: images.filter( ( _img, i ) => i !== index ),
-			} );
+	const setCaption = ( index, value ) =>
+		setAttributes( {
+			images: images.map( ( img, i ) =>
+				i === index ? { ...img, caption: value } : img
+			),
+		} );
+	const removeImage = ( index ) =>
+		setAttributes( {
+			images: images.filter( ( _img, i ) => i !== index ),
+		} );
 
-		if ( images.length === 0 ) {
-			return (
-				<div { ...blockProps }>
-					<MediaPlaceholder
-						multiple
-						gallery
-						allowedTypes={ [ 'image' ] }
-						labels={ { title: __( 'Gallery', 'corex' ) } }
-						onSelect={ ( media ) =>
-							setAttributes( { images: media.map( toImage ) } )
-						}
-					/>
-				</div>
-			);
-		}
-
+	if ( images.length === 0 ) {
 		return (
 			<div { ...blockProps }>
-				{ images.map( ( img, index ) => (
-					<figure className="corex-gallery__item" key={ index }>
-						<img
-							className="corex-gallery__img"
-							src={ img.url }
-							alt={ img.alt || '' }
-						/>
-						<RichText
-							tagName="figcaption"
-							className="corex-gallery__caption"
-							value={ img.caption }
-							onChange={ ( v ) => setCaption( index, v ) }
-							placeholder={ __( 'Caption (optional)', 'corex' ) }
-						/>
-						<Button
-							isDestructive
-							variant="link"
-							onClick={ () => removeImage( index ) }
-						>
-							{ __( 'Remove', 'corex' ) }
-						</Button>
-					</figure>
-				) ) }
-				<MediaUploadCheck>
-					<MediaUpload
-						multiple
-						gallery
-						allowedTypes={ [ 'image' ] }
-						value={ images.map( ( img ) => img.id ) }
-						onSelect={ ( media ) =>
-							setAttributes( { images: media.map( toImage ) } )
-						}
-						render={ ( { open } ) => (
-							<Button variant="secondary" onClick={ open }>
-								{ __( 'Edit gallery', 'corex' ) }
-							</Button>
-						) }
-					/>
-				</MediaUploadCheck>
+				<MediaPlaceholder
+					multiple
+					gallery
+					allowedTypes={ [ 'image' ] }
+					labels={ { title: __( 'Gallery', 'corex' ) } }
+					onSelect={ ( media ) =>
+						setAttributes( { images: media.map( toImage ) } )
+					}
+				/>
 			</div>
 		);
-	},
+	}
+
+	return (
+		<div { ...blockProps }>
+			{ images.map( ( img, index ) => (
+				<figure className="corex-gallery__item" key={ index }>
+					<img
+						className="corex-gallery__img"
+						src={ img.url }
+						alt={ img.alt || '' }
+					/>
+					<RichText
+						tagName="figcaption"
+						className="corex-gallery__caption"
+						value={ img.caption }
+						onChange={ ( v ) => setCaption( index, v ) }
+						placeholder={ __( 'Caption (optional)', 'corex' ) }
+					/>
+					<Button
+						isDestructive
+						variant="link"
+						onClick={ () => removeImage( index ) }
+					>
+						{ __( 'Remove', 'corex' ) }
+					</Button>
+				</figure>
+			) ) }
+			<MediaUploadCheck>
+				<MediaUpload
+					multiple
+					gallery
+					allowedTypes={ [ 'image' ] }
+					value={ images.map( ( img ) => img.id ) }
+					onSelect={ ( media ) =>
+						setAttributes( { images: media.map( toImage ) } )
+					}
+					render={ ( { open } ) => (
+						<Button variant="secondary" onClick={ open }>
+							{ __( 'Edit gallery', 'corex' ) }
+						</Button>
+					) }
+				/>
+			</MediaUploadCheck>
+		</div>
+	);
+}
+
+registerBlockType( metadata.name, {
+	edit: Edit,
 	save: () => null,
 } );

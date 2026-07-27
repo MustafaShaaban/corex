@@ -32,4 +32,53 @@ module.exports = [
 		],
 	},
 	...wpScriptsConfig,
+
+	/*
+	 * `@wordpress/*` imports are build-time externals, not npm dependencies.
+	 *
+	 * `@wordpress/dependency-extraction-webpack-plugin` (part of the wp-scripts webpack config)
+	 * rewrites every one of them to the `window.wp.*` global WordPress already serves, and emits
+	 * the matching script handles into `*.asset.php` — for example
+	 * `plugins/corex-blocks/build/blocks/entity-field/index.asset.php`, whose dependency list is
+	 * `wp-block-editor`, `wp-blocks`, `wp-components`, `wp-i18n`, `wp-server-side-render`. They are
+	 * never bundled and never installed, which is why the workspace packages declare no runtime
+	 * dependencies at all. Resolving them from `node_modules` is therefore the wrong question:
+	 * installing them would be the actual mistake, because a bundled copy would shadow the version
+	 * the host WordPress runs.
+	 */
+	{
+		files: [ '**/*.js', '**/*.jsx' ],
+		rules: {
+			'import/no-unresolved': [ 'error', { ignore: [ '^@wordpress/' ] } ],
+			'import/no-extraneous-dependencies': [
+				'error',
+				{ peerDependencies: true, bundledDependencies: false },
+			],
+		},
+		settings: {
+			'import/core-modules': [
+				'@wordpress/api-fetch',
+				'@wordpress/block-editor',
+				'@wordpress/blocks',
+				'@wordpress/components',
+				'@wordpress/compose',
+				'@wordpress/data',
+				'@wordpress/element',
+				'@wordpress/i18n',
+				'@wordpress/server-side-render',
+				'@wordpress/url',
+			],
+		},
+	},
+
+	/*
+	 * The repository's own Node tooling. These are command-line scripts whose entire job is to
+	 * report to a terminal — `no-console` would be telling them not to have output.
+	 */
+	{
+		files: [ 'scripts/**/*.mjs', 'scripts/**/*.js' ],
+		rules: {
+			'no-console': 'off',
+		},
+	},
 ];

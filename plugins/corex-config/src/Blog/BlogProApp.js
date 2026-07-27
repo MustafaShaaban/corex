@@ -32,12 +32,14 @@ import {
 
 /**
  * Seconds, said the way a person would say them.
- * @param seconds
+ *
+ * @param {number} seconds An average read time.
+ * @return {string} That duration in translated words.
  */
 function readingTime( seconds ) {
 	if ( seconds < 60 ) {
-		/* translators: %d: a number of seconds. */
 		return sprintf(
+			/* translators: %d: a number of seconds. */
 			_n( '%d second', '%d seconds', seconds, 'corex' ),
 			seconds
 		);
@@ -45,8 +47,8 @@ function readingTime( seconds ) {
 
 	const minutes = Math.round( seconds / 60 );
 
-	/* translators: %d: a number of minutes. */
 	return sprintf(
+		/* translators: %d: a number of minutes. */
 		_n( '%d minute', '%d minutes', minutes, 'corex' ),
 		minutes
 	);
@@ -255,8 +257,8 @@ export default function BlogProApp( { config = {} } ) {
 						/>
 						<Metric
 							label={ __( 'Read rate', 'corex' ) }
-							/* translators: %s: a percentage, e.g. 36.7. */
 							value={ sprintf(
+								/* translators: %s: a percentage, e.g. 36.7. */
 								__( '%s%%', 'corex' ),
 								state.analytics.cards.engagement
 							) }

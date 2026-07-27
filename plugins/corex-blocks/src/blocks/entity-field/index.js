@@ -16,33 +16,35 @@ import ServerSideRender from '@wordpress/server-side-render';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
-registerBlockType( metadata.name, {
-	edit: ( { attributes, setAttributes } ) => {
-		const blockProps = useBlockProps();
+function Edit( { attributes, setAttributes } ) {
+	const blockProps = useBlockProps();
 
-		return (
-			<div { ...blockProps }>
-				<InspectorControls>
-					<PanelBody title={ __( 'Field', 'corex' ) }>
-						<TextControl
-							__nextHasNoMarginBottom
-							label={ __( 'Value', 'corex' ) }
-							value={ attributes.value || '' }
-							onChange={ ( value ) => setAttributes( { value } ) }
-							help={ __(
-								'Static value, or leave empty when bound to an entity field via Block Bindings.',
-								'corex'
-							) }
-						/>
-					</PanelBody>
-				</InspectorControls>
-				<ServerSideRender
-					block={ metadata.name }
-					attributes={ attributes }
-				/>
-			</div>
-		);
-	},
+	return (
+		<div { ...blockProps }>
+			<InspectorControls>
+				<PanelBody title={ __( 'Field', 'corex' ) }>
+					<TextControl
+						__nextHasNoMarginBottom
+						label={ __( 'Value', 'corex' ) }
+						value={ attributes.value || '' }
+						onChange={ ( value ) => setAttributes( { value } ) }
+						help={ __(
+							'Static value, or leave empty when bound to an entity field via Block Bindings.',
+							'corex'
+						) }
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<ServerSideRender
+				block={ metadata.name }
+				attributes={ attributes }
+			/>
+		</div>
+	);
+}
+
+registerBlockType( metadata.name, {
+	edit: Edit,
 	// Dynamic block: nothing is saved to post content; the server renders it.
 	save: () => null,
 } );

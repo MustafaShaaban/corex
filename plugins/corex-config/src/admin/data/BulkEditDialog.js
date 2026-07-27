@@ -15,9 +15,9 @@ export default function BulkEditDialog( { source, count, close, preview } ) {
 			title={ __( 'Bulk edit records', 'corex' ) }
 			onRequestClose={ close }
 		>
-			{ /* translators: %d: selected record count. */ }
 			<p>
 				{ sprintf(
+					/* translators: %d: selected record count. */
 					__(
 						'Change one field for %d selected record(s).',
 						'corex'

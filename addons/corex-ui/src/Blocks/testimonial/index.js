@@ -10,36 +10,38 @@ import { useBlockProps, RichText } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
-registerBlockType( metadata.name, {
-	edit: ( { attributes, setAttributes } ) => {
-		const blockProps = useBlockProps( { className: 'corex-testimonial' } );
-		const { quote, author, role } = attributes;
+function Edit( { attributes, setAttributes } ) {
+	const blockProps = useBlockProps( { className: 'corex-testimonial' } );
+	const { quote, author, role } = attributes;
 
-		return (
-			<figure { ...blockProps }>
+	return (
+		<figure { ...blockProps }>
+			<RichText
+				tagName="blockquote"
+				className="corex-testimonial__quote"
+				value={ quote }
+				onChange={ ( v ) => setAttributes( { quote: v } ) }
+				placeholder={ __( 'The testimonial quote…', 'corex' ) }
+			/>
+			<figcaption className="corex-testimonial__cite">
 				<RichText
-					tagName="blockquote"
-					className="corex-testimonial__quote"
-					value={ quote }
-					onChange={ ( v ) => setAttributes( { quote: v } ) }
-					placeholder={ __( 'The testimonial quote…', 'corex' ) }
+					tagName="span"
+					value={ author }
+					onChange={ ( v ) => setAttributes( { author: v } ) }
+					placeholder={ __( 'Author', 'corex' ) }
 				/>
-				<figcaption className="corex-testimonial__cite">
-					<RichText
-						tagName="span"
-						value={ author }
-						onChange={ ( v ) => setAttributes( { author: v } ) }
-						placeholder={ __( 'Author', 'corex' ) }
-					/>
-					<RichText
-						tagName="span"
-						value={ role }
-						onChange={ ( v ) => setAttributes( { role: v } ) }
-						placeholder={ __( 'Role (optional)', 'corex' ) }
-					/>
-				</figcaption>
-			</figure>
-		);
-	},
+				<RichText
+					tagName="span"
+					value={ role }
+					onChange={ ( v ) => setAttributes( { role: v } ) }
+					placeholder={ __( 'Role (optional)', 'corex' ) }
+				/>
+			</figcaption>
+		</figure>
+	);
+}
+
+registerBlockType( metadata.name, {
+	edit: Edit,
 	save: () => null,
 } );

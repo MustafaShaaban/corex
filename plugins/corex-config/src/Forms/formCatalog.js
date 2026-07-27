@@ -27,7 +27,9 @@ function asArray( value ) {
 
 /**
  * The live flow record, which is richer than the catalog entry for the same flow.
- * @param flow
+ *
+ * @param {Object} flow A flow row from the flows REST route.
+ * @return {Object} The list row for that flow.
  */
 function flowRow( flow ) {
 	return {
@@ -88,8 +90,10 @@ function matchesSearch( row, search ) {
  * Flows are filtered by lifecycle on the server, so only the rows added here need filtering.
  * A code form has no lifecycle, so it belongs in "all states" and nowhere else — asking for
  * drafts and being shown something that can never be a draft would be a lie.
- * @param row
- * @param lifecycle
+ *
+ * @param {Object} row       One list row.
+ * @param {string} lifecycle The requested lifecycle, or '' for all states.
+ * @return {boolean} Whether the row belongs in that filter.
  */
 function matchesLifecycle( row, lifecycle ) {
 	return ! lifecycle || row.state === lifecycle;
@@ -132,7 +136,9 @@ export function catalogRows( flows, entries, filters = {} ) {
 
 /**
  * How many of the rendered rows cannot be opened in the visual builder.
- * @param rows
+ *
+ * @param {Array} rows The rendered list rows.
+ * @return {number} How many of them are read-only.
  */
 export function readOnlyCount( rows ) {
 	return asArray( rows ).filter( ( row ) => ! row.editable ).length;

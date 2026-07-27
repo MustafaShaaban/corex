@@ -236,8 +236,14 @@ export default function NotificationsApp() {
 								} }
 							/>
 						</div>
-						<label className="corex-notifications-screen__toggle">
+						{ /* One screen-level control, so a stable id names it; the label points
+						     at it by `for` rather than wrapping it. */ }
+						<label
+							className="corex-notifications-screen__toggle"
+							htmlFor="corex-notifications-assigned-to-me"
+						>
 							<input
+								id="corex-notifications-assigned-to-me"
 								type="checkbox"
 								checked={ assignedToMe }
 								onChange={ ( event ) => {

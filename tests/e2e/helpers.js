@@ -15,7 +15,9 @@ const ALLOW_LIST = [
 /**
  * Attach console + pageerror listeners; returns the array of real errors (allow-list
  * filtered). Warnings are ignored — only errors fail the sweep (FR-004).
- * @param page
+ *
+ * @param {import('@playwright/test').Page} page The page to listen on.
+ * @return {Array} The collected errors, filled as the page runs.
  */
 function collectConsoleErrors( page ) {
 	const errors = [];

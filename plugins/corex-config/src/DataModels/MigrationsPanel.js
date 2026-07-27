@@ -14,8 +14,8 @@ function historyLabel( run ) {
 		failed: __( 'Failed', 'corex' ),
 		'rolled-back': __( 'Rolled back', 'corex' ),
 	};
-	/* translators: 1: migration ID, 2: definition key, 3: state. */
 	return sprintf(
+		/* translators: 1: migration ID, 2: definition key, 3: state. */
 		__( '#%1$d · %2$s · %3$s', 'corex' ),
 		run.id,
 		run.definition.key,

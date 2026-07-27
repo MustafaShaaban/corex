@@ -26,8 +26,10 @@ export const DATA_MODEL_TABS = [
 
 /**
  * The tabs this user may open AND that some source can actually satisfy.
- * @param abilities
- * @param sources
+ *
+ * @param {Object} abilities CoreX abilities for the current user, keyed by ability.
+ * @param {Array}  sources   Catalog entries from DataSourceService::describe().
+ * @return {Array} The subset of DATA_MODEL_TABS that is genuinely reachable.
  */
 export function allowedTabs( abilities = {}, sources = [] ) {
 	return DATA_MODEL_TABS.filter(
@@ -44,9 +46,11 @@ export function allowedTabs( abilities = {}, sources = [] ) {
  * Falling back rather than rendering an empty shell matters because the Data screen's old address
  * redirects here with ?tab=records — a user who kept `data` but never had `models` must land on
  * something, and so must anyone following a link to a tab that no longer has an eligible source.
- * @param requested
- * @param abilities
- * @param sources
+ *
+ * @param {string} requested The tab asked for, from the URL.
+ * @param {Object} abilities CoreX abilities for the current user, keyed by ability.
+ * @param {Array}  sources   Catalog entries from DataSourceService::describe().
+ * @return {string} The tab key to render, or '' when none is available.
  */
 export function resolveTab( requested, abilities = {}, sources = [] ) {
 	const allowed = allowedTabs( abilities, sources );
@@ -61,9 +65,11 @@ export function resolveTab( requested, abilities = {}, sources = [] ) {
 
 /**
  * Read the tab out of a URL so a view can be linked to and shared.
- * @param url
- * @param abilities
- * @param sources
+ *
+ * @param {string} url       The address to read `?tab=` from.
+ * @param {Object} abilities CoreX abilities for the current user, keyed by ability.
+ * @param {Array}  sources   Catalog entries from DataSourceService::describe().
+ * @return {string} The tab key to render, or '' when none is available.
  */
 export function tabFromUrl( url, abilities = {}, sources = [] ) {
 	let requested = '';

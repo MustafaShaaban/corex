@@ -46,8 +46,10 @@ import './index.js';
 
 /**
  * Depth-first search for an element whose `type` matches in a React element tree.
- * @param node
- * @param type
+ *
+ * @param {*} node The element (or subtree) to search.
+ * @param {*} type The element type to look for.
+ * @return {*} The first matching element, or null.
  */
 function findByType( node, type ) {
 	if ( ! node || typeof node !== 'object' ) {

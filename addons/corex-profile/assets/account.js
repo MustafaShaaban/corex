@@ -9,8 +9,9 @@
  * (the REST routes accept a normal POST), so the account remains usable.
  *
  * Config comes from the localized `window.corexAccount = { restUrl, nonce }`.
- * @param window
- * @param document
+ *
+ * @param {Window}   window   The browser window the account block lives in.
+ * @param {Document} document That window's document.
  */
 ( function ( window, document ) {
 	'use strict';
@@ -85,8 +86,11 @@
 			if ( ! el.name ) {
 				return;
 			}
-			data[ el.name ] =
-				el.type === 'checkbox' ? ( el.checked ? '1' : '' ) : el.value;
+			if ( el.type === 'checkbox' ) {
+				data[ el.name ] = el.checked ? '1' : '';
+				return;
+			}
+			data[ el.name ] = el.value;
 		} );
 		return data;
 	}

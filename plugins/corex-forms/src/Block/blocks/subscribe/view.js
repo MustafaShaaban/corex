@@ -5,6 +5,9 @@ function bind() {
 			.forEach( window.Corex.forms.bind );
 	}
 }
-document.readyState === 'loading'
-	? document.addEventListener( 'DOMContentLoaded', bind )
-	: bind();
+
+if ( document.readyState === 'loading' ) {
+	document.addEventListener( 'DOMContentLoaded', bind );
+} else {
+	bind();
+}

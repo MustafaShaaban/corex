@@ -25,8 +25,9 @@
  *
  * Exposed as `window.Corex.navigation = { init, destroy }` for testing; auto-inits on
  * DOMContentLoaded. Loaded only where a CoreX header/navigation renders (Principle VI).
- * @param window
- * @param document
+ *
+ * @param {Window}   window   The browser window the header lives in.
+ * @param {Document} document That window's document.
  */
 ( function ( window, document ) {
 	'use strict';

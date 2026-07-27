@@ -155,7 +155,9 @@ test.beforeEach( async ( { page } ) => {
  * a margin on each paragraph — so they rendered as one compressed block. They are a grid stack now,
  * which is measured rather than eyeballed here because the failure mode is a few pixels, and
  * because a translation that wraps or a doubled zoom is exactly where per-element margins drifted.
- * @param page
+ *
+ * @param {import('@playwright/test').Page} page The page showing the inbox.
+ * @return {Promise<Object>} The measured gaps between the stacked elements.
  */
 async function headingGaps( page ) {
 	return page.evaluate( () => {

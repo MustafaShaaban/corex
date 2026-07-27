@@ -1,4 +1,4 @@
-import { useMemo, useState } from '@wordpress/element';
+import { useId, useMemo, useState } from '@wordpress/element';
 import { Button, CheckboxControl } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import { dataEndpoint } from '../admin/dataClient.js';
@@ -18,6 +18,9 @@ export default function ImportPanel( { config, sources } ) {
 	const [ mappings, setMappings ] = useState( {} );
 	const [ acknowledged, setAcknowledged ] = useState( false );
 	const [ status, setStatus ] = useState( '' );
+	// The file input is named by its own `for`/`id` pair rather than by being wrapped: a
+	// wrapping <label> is not announced by every assistive technology WordPress supports.
+	const fileInputId = useId();
 	const source = sources.find( ( item ) => item.key === sourceKey );
 	const summary = importSummary( run );
 
@@ -162,9 +165,10 @@ export default function ImportPanel( { config, sources } ) {
 					setStatus( '' );
 				} }
 			/>
-			<label className="corex-data-models__file">
+			<label className="corex-data-models__file" htmlFor={ fileInputId }>
 				{ __( 'CSV file', 'corex' ) }
 				<input
+					id={ fileInputId }
 					type="file"
 					accept=".csv,text/csv"
 					onChange={ ( event ) =>
@@ -186,9 +190,9 @@ export default function ImportPanel( { config, sources } ) {
 			{ run && (
 				<div className="corex-data-models__run">
 					<h3>{ __( 'Dry-run evidence', 'corex' ) }</h3>
-					{ /* translators: 1: accepted rows, 2: rejected rows, 3: total rows. */ }
 					<p>
 						{ sprintf(
+							/* translators: 1: accepted rows, 2: rejected rows, 3: total rows. */
 							__(
 								'%1$d accepted · %2$d rejected · %3$d total',
 								'corex'
@@ -246,9 +250,9 @@ export default function ImportPanel( { config, sources } ) {
 								{ run.rejected_rows
 									.slice( 0, 20 )
 									.map( ( row ) => (
-										/* translators: 1: CSV line number, 2: rejection reason. */
 										<li key={ row.line }>
 											{ sprintf(
+												/* translators: 1: CSV line number, 2: rejection reason. */
 												__(
 													'Line %1$d: %2$s',
 													'corex'

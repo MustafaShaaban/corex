@@ -49,6 +49,12 @@ export function normalizeReadiness( snapshot = {} ) {
 }
 
 export function normalizeLoginPolicy( policy = {} ) {
+	// Either casing may carry the list, and only an actual array is usable — `find( Array.isArray )`
+	// says exactly that, where the nested conditional it replaces had to be read twice.
+	const proxies = [ policy.trustedProxies, policy.trusted_proxies ].find(
+		Array.isArray
+	);
+
 	return {
 		// Defaults mirror the server (LoginProtectionSettingsStore). They used to disagree —
 		// `enabled` defaulted to true here and false there, `windowSeconds` to 900 against 300 —
@@ -80,11 +86,7 @@ export function normalizeLoginPolicy( policy = {} ) {
 			60,
 			604800
 		),
-		trustedProxies: Array.isArray( policy.trustedProxies )
-			? policy.trustedProxies.map( String )
-			: Array.isArray( policy.trusted_proxies )
-			? policy.trusted_proxies.map( String )
-			: [],
+		trustedProxies: proxies ? proxies.map( String ) : [],
 		retentionDays: clampInteger(
 			policy.retentionDays ?? policy.retention_days,
 			30,

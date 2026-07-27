@@ -11,23 +11,28 @@
  *
  * Events on `document`: corex:request:start, corex:request:end.
  * Events on the form:    corex:form:success, corex:form:error.
- * @param window
- * @param document
+ *
+ * @param {Window}   window   The browser window the runtime attaches to.
+ * @param {Document} document That window's document.
  */
 ( function ( window, document ) {
 	'use strict';
 
 	const wp = window.wp || {};
 
-	/**
-	 * Translate via wp.i18n when present; identity fallback keeps it buildless.
-	 * @param text
+	/*
+	 * `wp-i18n` is a declared dependency of this script, so `wp.i18n.__` is there in
+	 * WordPress. The identity fallback is for the buildless cases the runtime also has to
+	 * survive — a page that loaded it directly, and the Jest suite. Binding the real
+	 * function rather than wrapping a call around it is what lets `wp i18n make-pot` see
+	 * the literals at every call site below; a `t( text )` wrapper hid all of them.
 	 */
-	function t( text ) {
-		return wp && wp.i18n && typeof wp.i18n.__ === 'function'
-			? wp.i18n.__( text, 'corex' )
-			: text;
-	}
+	const __ =
+		wp.i18n && typeof wp.i18n.__ === 'function'
+			? wp.i18n.__
+			: function ( text ) {
+					return text;
+			  };
 
 	function emit( target, name, detail ) {
 		target.dispatchEvent(
@@ -51,7 +56,9 @@
 		return {
 			ok: false,
 			code: 'error',
-			message: message || t( 'Something went wrong. Please try again.' ),
+			message:
+				message ||
+				__( 'Something went wrong. Please try again.', 'corex' ),
 			details: {},
 		};
 	}
@@ -60,17 +67,21 @@
 	 * Describe a failure that carried no message of its own — a blank 5xx, an HTML error
 	 * page, a proxy timeout. Naming the status is the difference between "the server broke"
 	 * and "the network broke", which are not the same problem to chase.
-	 * @param status
+	 *
+	 * @param {number} status The HTTP status of the failed response, 0 when there was none.
+	 * @return {string} A translated message naming the status, or '' when there is none.
 	 */
 	function statusMessage( status ) {
 		if ( ! status ) {
 			return ''; // No response at all — the caller's generic default is the honest one.
 		}
 		/* translators: %d: HTTP status code of the failed response. */
-		return t( 'The server returned an unexpected response (%d).' ).replace(
-			'%d',
-			String( status )
+		const template = __(
+			'The server returned an unexpected response (%d).',
+			'corex'
 		);
+
+		return template.replace( '%d', String( status ) );
 	}
 
 	function normalise( body, httpOk, status ) {
@@ -104,7 +115,9 @@
 
 	/**
 	 * A Response is only useful to us if we can read a status and a body off it.
-	 * @param value
+	 *
+	 * @param {*} value The thing a request handler resolved or rejected with.
+	 * @return {boolean} Whether it behaves like a Response.
 	 */
 	function isResponse( value ) {
 		return (
@@ -328,26 +341,22 @@
 				return null;
 			}
 			const limit = parseInt( ( params && params[ 0 ] ) || '0', 10 );
-			return isNumericValue( value )
-				? Number( value ) > limit
-					? 'max'
-					: null
-				: length( value ) > limit
-				? 'max'
-				: null;
+			const measured = isNumericValue( value )
+				? Number( value )
+				: length( value );
+
+			return measured > limit ? 'max' : null;
 		},
 		min( value, params ) {
 			if ( isEmpty( value ) ) {
 				return null;
 			}
 			const limit = parseInt( ( params && params[ 0 ] ) || '0', 10 );
-			return isNumericValue( value )
-				? Number( value ) < limit
-					? 'min'
-					: null
-				: length( value ) < limit
-				? 'min'
-				: null;
+			const measured = isNumericValue( value )
+				? Number( value )
+				: length( value );
+
+			return measured < limit ? 'min' : null;
 		},
 		numeric( value ) {
 			if ( isEmpty( value ) ) {
@@ -397,17 +406,17 @@
 	function messageFor( key ) {
 		switch ( key ) {
 			case 'required':
-				return t( 'This field is required.' );
+				return __( 'This field is required.', 'corex' );
 			case 'email':
-				return t( 'Enter a valid email address.' );
+				return __( 'Enter a valid email address.', 'corex' );
 			case 'numeric':
-				return t( 'Enter a number.' );
+				return __( 'Enter a number.', 'corex' );
 			case 'max':
-				return t( 'This value is too long.' );
+				return __( 'This value is too long.', 'corex' );
 			case 'min':
-				return t( 'This value is too short.' );
+				return __( 'This value is too short.', 'corex' );
 			default:
-				return t( 'Please check this field.' );
+				return __( 'Please check this field.', 'corex' );
 		}
 	}
 
@@ -496,7 +505,7 @@
 	function schemaOf( form ) {
 		try {
 			return JSON.parse( form.dataset.corexSchema || '[]' );
-		} catch ( e ) {
+		} catch {
 			return [];
 		}
 	}
@@ -505,7 +514,7 @@
 		let configured = {};
 		try {
 			configured = JSON.parse( form.dataset.corexSuccessConfig || '{}' );
-		} catch ( e ) {
+		} catch {
 			configured = {};
 		}
 		if (

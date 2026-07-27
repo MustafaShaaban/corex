@@ -12,7 +12,7 @@
  * throws — arrives as `requires_schedule`, so the field is required here instead of failing at the
  * server with a message nobody can act on.
  */
-import { useState } from '@wordpress/element';
+import { useId, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import { buildTransitionPayload } from './blogProState.js';
@@ -26,6 +26,9 @@ export default function EditorialPanel( {
 	const [ note, setNote ] = useState( '' );
 	const [ scheduledAt, setScheduledAt ] = useState( '' );
 	const [ dueAt, setDueAt ] = useState( '' );
+	// Each control is named by its own `for`/`id` pair rather than by being wrapped: a
+	// wrapping <label> is not announced by every assistive technology WordPress supports.
+	const fieldId = useId();
 
 	if ( ! editorial ) {
 		return (
@@ -98,9 +101,13 @@ export default function EditorialPanel( {
 					/>
 
 					{ needsSchedule ? (
-						<label className="corex-blog-pro__field">
+						<label
+							className="corex-blog-pro__field"
+							htmlFor={ `${ fieldId }-scheduled-at` }
+						>
 							<span>{ __( 'Publish at', 'corex' ) }</span>
 							<input
+								id={ `${ fieldId }-scheduled-at` }
 								type="datetime-local"
 								required
 								value={ scheduledAt }
@@ -121,9 +128,13 @@ export default function EditorialPanel( {
 						</label>
 					) : null }
 
-					<label className="corex-blog-pro__field">
+					<label
+						className="corex-blog-pro__field"
+						htmlFor={ `${ fieldId }-due-at` }
+					>
 						<span>{ __( 'Due by (optional)', 'corex' ) }</span>
 						<input
+							id={ `${ fieldId }-due-at` }
 							type="date"
 							value={ dueAt }
 							onChange={ ( event ) =>
@@ -132,9 +143,13 @@ export default function EditorialPanel( {
 						/>
 					</label>
 
-					<label className="corex-blog-pro__field">
+					<label
+						className="corex-blog-pro__field"
+						htmlFor={ `${ fieldId }-note` }
+					>
 						<span>{ __( 'Note (optional)', 'corex' ) }</span>
 						<textarea
+							id={ `${ fieldId }-note` }
 							rows="2"
 							value={ note }
 							onChange={ ( event ) =>

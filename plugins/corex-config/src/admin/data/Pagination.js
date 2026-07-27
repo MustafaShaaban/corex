@@ -25,9 +25,9 @@ export default function Pagination( { explorer } ) {
 			>
 				{ __( 'Previous', 'corex' ) }
 			</Button>
-			{ /* translators: 1: current page, 2: total pages. */ }
 			<span>
 				{ sprintf(
+					/* translators: 1: current page, 2: total pages. */
 					__( 'Page %1$d of %2$d', 'corex' ),
 					state.query.page,
 					pages

@@ -270,11 +270,10 @@ describe( 'Corex.api via wp.apiFetch (admin path)', () => {
 			} )
 		);
 		window.wp = { apiFetch, i18n: { __: ( s ) => s } };
-		let runtime;
 		jest.isolateModules( () => {
 			require( RUNTIME );
 		} );
-		runtime = window.Corex;
+		const runtime = window.Corex;
 
 		const result = await runtime.api.get( '/admin', { nonce: 'x' } );
 
@@ -287,7 +286,9 @@ describe( 'Corex.api via wp.apiFetch (admin path)', () => {
 	 * With `parse: false` core does not resolve on a non-2xx — parseAndThrowError() rethrows
 	 * the raw Response. Every test above this one mocked a *resolve*, which is why a real
 	 * server error could reach the UI as "Something went wrong" for a whole release.
-	 * @param apiFetch
+	 *
+	 * @param {Function} apiFetch The `wp.apiFetch` stub this run should see.
+	 * @return {Object} The freshly loaded `window.Corex`.
 	 */
 	const loadWithApiFetch = ( apiFetch ) => {
 		window.wp = { apiFetch, i18n: { __: ( s ) => s } };

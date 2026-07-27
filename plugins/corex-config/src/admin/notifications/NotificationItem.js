@@ -61,7 +61,9 @@ function sourceLabel( module ) {
  * Relative time is what you want at a glance; the exact value is what you want when you are working
  * out whether two things happened together, so `<time datetime>` carries it for both a hovering
  * mouse and a screen reader.
- * @param iso
+ *
+ * @param {string} iso The stored timestamp.
+ * @return {string} The age in words, or '' when the timestamp cannot be parsed.
  */
 function relativeTime( iso ) {
 	const then = Date.parse( iso );
@@ -69,36 +71,43 @@ function relativeTime( iso ) {
 		return '';
 	}
 
+	// Each unit is derived where it is first needed: the earlier version computed all four up
+	// front, so three of them were always thrown away.
 	const seconds = Math.max( 0, Math.round( ( Date.now() - then ) / 1000 ) );
-	const minutes = Math.round( seconds / 60 );
-	const hours = Math.round( minutes / 60 );
-	const days = Math.round( hours / 24 );
-
 	if ( seconds < 60 ) {
 		return __( 'Just now', 'corex' );
 	}
+
+	const minutes = Math.round( seconds / 60 );
 	if ( minutes < 60 ) {
-		/* translators: %d: number of minutes. */
 		return sprintf(
+			/* translators: %d: number of minutes. */
 			_n( '%d minute ago', '%d minutes ago', minutes, 'corex' ),
 			minutes
 		);
 	}
+	const hours = Math.round( minutes / 60 );
 	if ( hours < 24 ) {
-		/* translators: %d: number of hours. */
 		return sprintf(
+			/* translators: %d: number of hours. */
 			_n( '%d hour ago', '%d hours ago', hours, 'corex' ),
 			hours
 		);
 	}
 
-	/* translators: %d: number of days. */
-	return sprintf( _n( '%d day ago', '%d days ago', days, 'corex' ), days );
+	const days = Math.round( hours / 24 );
+	return sprintf(
+		/* translators: %d: number of days. */
+		_n( '%d day ago', '%d days ago', days, 'corex' ),
+		days
+	);
 }
 
 /**
  * The state of the condition, in words. Never conflated with whether it has been read.
- * @param item
+ *
+ * @param {Object} item One notification row.
+ * @return {string} The translated condition state.
  */
 function conditionLabel( item ) {
 	const status = item.user_state?.status;

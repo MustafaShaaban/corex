@@ -20,11 +20,16 @@ export function PreviewTab( { draft } ) {
 }
 
 function PreviewField( { field } ) {
+	// The field's own uuid names the control, so the label points at it by `for` rather than
+	// by wrapping it — the same association the front end renders (FieldRenderer.php).
+	const controlId = `corex-flow-preview-${ field.uuid }`;
+
 	if ( field.type === 'textarea' ) {
 		return (
-			<label>
+			<label htmlFor={ controlId }>
 				{ field.label }
 				<textarea
+					id={ controlId }
 					placeholder={ field.placeholder }
 					required={ field.required }
 				/>
@@ -39,9 +44,10 @@ function PreviewField( { field } ) {
 		// admin component here would preview something the site does not serve. It also has to
 		// support `multiple`, which the single-value admin control does not.
 		return (
-			<label>
+			<label htmlFor={ controlId }>
 				{ field.label }
 				<select
+					id={ controlId }
 					multiple={ field.type === 'multi-select' }
 					required={ field.required }
 				>
@@ -56,9 +62,10 @@ function PreviewField( { field } ) {
 	}
 
 	return (
-		<label>
+		<label htmlFor={ controlId }>
 			{ field.label }
 			<input
+				id={ controlId }
 				type={ inputType( field.type ) }
 				placeholder={ field.placeholder }
 				required={ field.required }

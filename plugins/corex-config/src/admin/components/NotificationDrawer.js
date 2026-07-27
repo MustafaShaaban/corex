@@ -68,10 +68,13 @@ export default function NotificationDrawer( { open, onClose } ) {
 			}
 			const first = nodes[ 0 ];
 			const last = nodes[ nodes.length - 1 ];
-			if ( event.shiftKey && document.activeElement === first ) {
+			// The panel's own document, not the global one: the drawer has to trap focus in
+			// whichever document it was actually mounted into.
+			const active = panel.ownerDocument.activeElement;
+			if ( event.shiftKey && active === first ) {
 				event.preventDefault();
 				last.focus();
-			} else if ( ! event.shiftKey && document.activeElement === last ) {
+			} else if ( ! event.shiftKey && active === last ) {
 				event.preventDefault();
 				first.focus();
 			}
