@@ -45,27 +45,40 @@ test( 'renders launch checklist login policy lockouts recovery and activity with
 	page,
 } ) => {
 	const errors = collectConsoleErrors( page );
-	await page.goto( '/wp-admin/admin.php?page=corex-operations-security' );
 
-	await expect(
-		page.getByRole( 'heading', { name: 'CoreX Operations & Security' } )
-	).toBeVisible();
-	await expect( page.getByTestId( 'corex-security-center' ) ).toBeVisible();
-	await expect(
-		page.getByRole( 'heading', { name: 'Production readiness' } )
-	).toBeVisible();
-	await expect(
-		page.getByRole( 'heading', { name: 'Protection settings' } )
-	).toBeVisible();
-	await expect(
-		page.getByRole( 'heading', { name: 'Lockouts' } )
-	).toBeVisible();
-	await expect(
-		page.getByRole( 'heading', { name: 'Recovery' } )
-	).toBeVisible();
-	await expect(
-		page.getByRole( 'heading', { name: 'Security activity' } )
-	).toBeVisible();
+	// Spec 077 gave this screen sections, and these panels no longer share one page — that is the
+	// point of the change, so this walks them rather than asserting they are all in one place.
+	// Each still has to be present, reachable, and free of console errors.
+	const panelsBySection = {
+		environment: [ 'Production readiness' ],
+		login: [ 'Protection settings', 'Lockouts', 'Recovery' ],
+		activity: [ 'Security activity' ],
+	};
+
+	for ( const [ section, headings ] of Object.entries( panelsBySection ) ) {
+		await page.goto(
+			`/wp-admin/admin.php?page=corex-operations-security&tab=${ section }`
+		);
+
+		await expect(
+			page.getByRole( 'heading', { name: 'CoreX Operations & Security' } )
+		).toBeVisible();
+		await expect(
+			page.getByTestId( 'corex-security-center' )
+		).toBeVisible();
+
+		for ( const heading of headings ) {
+			await expect(
+				page.getByRole( 'heading', { name: heading } ),
+				`${ heading } should be in the ${ section } section`
+			).toBeVisible();
+		}
+	}
+
+	// The mode form and recovery assertions below belong to their own sections.
+	await page.goto(
+		'/wp-admin/admin.php?page=corex-operations-security&tab=environment'
+	);
 
 	// The real mode control is the nonce-gated server form below the readiness evidence (spec 073).
 	// The client-side "mode preview" that used to live in the checklist — a "Target mode" selector,
@@ -87,6 +100,9 @@ test( 'renders launch checklist login policy lockouts recovery and activity with
 	// necessity: it exists for when the admin is unreachable, so no button here could perform it.
 	// Scoped to the panel's own code block: the command also appears in the login-policy warning,
 	// so an unscoped text match is ambiguous.
+	await page.goto(
+		'/wp-admin/admin.php?page=corex-operations-security&tab=login'
+	);
 	await expect(
 		page
 			.locator( '.corex-security__panel code', {
@@ -107,7 +123,9 @@ test( 'always says where the login is, and warns before hiding the default endpo
 	// The owner has to leave this screen knowing where to sign in — saving hides wp-login.php and
 	// wp-admin, and used to say nothing about what replaced them. The address reflects the SAVED
 	// settings, so it is shown whether protection is on or off: it is always true.
-	await page.goto( '/wp-admin/admin.php?page=corex-operations-security' );
+	await page.goto(
+		'/wp-admin/admin.php?page=corex-operations-security&tab=login'
+	);
 
 	await expect( page.getByText( 'Sign in at:' ) ).toBeVisible();
 	await expect(

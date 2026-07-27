@@ -163,18 +163,43 @@ test.describe( 'dates an operator can read', () => {
 					);
 				} );
 
-			const times = await page
+			// Keyed by the machine value, not read as a list. The inbox is a live feed — other
+			// specs in this suite create submissions — so the two passes do not necessarily see
+			// the same rows, and comparing two lists positionally would report a difference that
+			// is a new submission rather than a timezone leak. Keying asks the question that
+			// matters: for one instant, do both readers see the same words?
+			const byInstant = await page
 				.locator( '.corex-inbox__table tbody tr td:last-child time' )
-				.allInnerTexts();
+				.evaluateAll( ( nodes ) =>
+					Object.fromEntries(
+						nodes.map( ( node ) => [
+							node.getAttribute( 'datetime' ),
+							node.textContent.trim(),
+						] )
+					)
+				);
 			await context.close();
-			return times;
+			return byInstant;
 		};
 
 		const inUtc = await read( 'UTC' );
 		const inTokyo = await read( 'Asia/Tokyo' );
 
-		expect( inUtc.length ).toBeGreaterThan( 0 );
-		expect( inTokyo ).toEqual( inUtc );
+		const shared = Object.keys( inUtc ).filter( ( instant ) =>
+			Object.prototype.hasOwnProperty.call( inTokyo, instant )
+		);
+
+		expect(
+			shared.length,
+			'the two passes saw no record in common, so nothing was compared'
+		).toBeGreaterThan( 0 );
+
+		for ( const instant of shared ) {
+			expect(
+				inTokyo[ instant ],
+				`${ instant } read differently in Asia/Tokyo`
+			).toBe( inUtc[ instant ] );
+		}
 	} );
 } );
 
