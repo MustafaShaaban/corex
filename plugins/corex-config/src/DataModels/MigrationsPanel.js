@@ -76,10 +76,13 @@ export default function MigrationsPanel( { config, sources } ) {
 		finally { setBusy( false ); }
 	};
 
-	if ( ! candidates.length ) return <p className="corex-data-models__empty">{ __( 'No registered model provides a migration adapter.', 'corex' ) }</p>;
+	// A backstop, not the normal path: the tab is hidden when no model ships schema changes.
+	if ( ! candidates.length ) {
+		return <p className="corex-data-models__empty">{ __( 'No model on this site ships schema changes right now. The Models tab lists what each model supports.', 'corex' ) }</p>;
+	}
 
 	return <section className="corex-surface corex-data-models__workspace">
-		<header><h2>{ __( 'Migrations', 'corex' ) }</h2><p>{ __( 'Every apply snapshots first. Transaction and rollback support come from the model provider.', 'corex' ) }</p></header>
+		<header><h2>{ __( 'Migrations', 'corex' ) }</h2><p>{ __( 'Every apply copies the table first, and a rollback puts that copy back — schema and rows together. Anything written after the migration is not in the copy, so a rollback discards it.', 'corex' ) }</p></header>
 		<SourceSelect sources={ candidates } value={ sourceKey } onChange={ ( key ) => { setSourceKey( key ); setPreview( null ); } } />
 		{ notice && <p role="status">{ notice }</p> }
 		<div className="corex-data-models__migration-list">{ plans.map( ( plan ) => <article key={ plan.key }>

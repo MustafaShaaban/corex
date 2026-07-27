@@ -186,6 +186,40 @@ it('maps exact fields aliases and explicit columns while detecting personal data
         ->and($adapter->created)->toBe([]);
 });
 
+it('matches a human-written CSV header to its declared alias', function () {
+    // Aliases are declared as keys but exported by other systems as prose: "Email Address",
+    // "EMAIL-ADDRESS", "email address". Matching only the exact string made every declared alias
+    // useless against a real export, and every row was rejected as an unknown column.
+    [$service] = importService();
+
+    $run = $service->dryRun(importRequest([
+        'header' => ['Full Name', 'EMAIL ADDRESS', 'Status'],
+        'rows' => [['Ada Lovelace', 'ada@example.com', 'active']],
+        'mapping' => [],
+        'unknown_policy' => 'reject',
+    ]));
+
+    expect($run->unknownColumns)->toBe([])
+        ->and($run->acceptedRows)->toBe([[
+            'name' => 'Ada Lovelace', 'email' => 'ada@example.com', 'status' => 'active',
+        ]]);
+});
+
+it('still lets an explicit mapping override a header that would have matched an alias', function () {
+    [$service] = importService();
+
+    $run = $service->dryRun(importRequest([
+        // "Email Address" would fold to the `email` field; the explicit choice sends it to `name`
+        // instead, and `email` is filled from the column the person pointed at it.
+        'header' => ['Email Address', 'contact'],
+        'rows' => [['Ada Lovelace', 'ada@example.com']],
+        'mapping' => ['Email Address' => 'name', 'contact' => 'email'],
+        'unknown_policy' => 'reject',
+    ]));
+
+    expect($run->acceptedRows)->toBe([['name' => 'Ada Lovelace', 'email' => 'ada@example.com']]);
+});
+
 it('rejects unknown columns by policy and reports row-level validation reasons', function () {
     [$service] = importService();
     $unknown = $service->dryRun(importRequest(['unknown_policy' => 'reject']));

@@ -62,6 +62,9 @@ use Corex\Config\Data\SubmissionsSource;
 use Corex\Config\Data\TableDataSource;
 use Corex\Config\Data\WpSubmissionsReader;
 use Corex\Config\Data\WpTableDataReader;
+use Corex\Config\Data\WpTableDataWriter;
+use Corex\Config\Data\WritableTableDataSource;
+use Corex\Config\DataModels\WpMigrationTableRunner;
 use Corex\Config\Data\WpDataAccessPolicy;
 use Corex\Config\Data\WpDataMutationPreviewStore;
 use Corex\Config\DataModels\DataModelsCatalog;
@@ -433,10 +436,26 @@ final class ConfigServiceProvider extends ServiceProvider
             $registry->register(new SubmissionsSource($c->make(SubmissionsReader::class)));
 
             // Every table an app marked managed appears as its own source — no admin code (spec 038).
-            $reader = new WpTableDataReader($c->make(Migrator::class));
-            foreach ($c->make(ManagedTables::class)->all() as $table) {
-                $registry->register(new TableDataSource($table, $reader));
-            }
+            // A table that declared writable fields or migrations gets the source that can honour
+            // them; everything else stays read-only, which is the default and the safe answer for
+            // the audit and system tables that make up most of this list (spec 074).
+            //
+            // Deferred, because this registry is built while corex-config boots and an add-on
+            // declares its tables on `init` — building the sources here and now excluded every
+            // add-on model from the admin while leaving it visible to WP-CLI.
+            $registry->registerDeferred(static function () use ($c): array {
+                $migrator = $c->make(Migrator::class);
+                $reader   = new WpTableDataReader($migrator);
+                $writer   = new WpTableDataWriter($migrator);
+                $runner   = new WpMigrationTableRunner($migrator);
+
+                return array_map(
+                    static fn ($table) => $table->isWritable() || $table->supportsMigrations()
+                        ? new WritableTableDataSource($table, $reader, $writer, $runner)
+                        : new TableDataSource($table, $reader),
+                    $c->make(ManagedTables::class)->all(),
+                );
+            });
 
             return $registry;
         });

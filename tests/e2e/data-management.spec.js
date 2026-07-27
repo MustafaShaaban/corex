@@ -113,6 +113,34 @@ test( 'renders every Data workflow from declared source capabilities', async ( {
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
 
+test( 'never offers a workflow tab that leads to a dead end', async ( { page } ) => {
+	// Before spec 074, Import and Migrations were shown to anyone holding the models ability and
+	// could only ever say "No registered model provides an import adapter" — no shipped source
+	// declared either capability, and none could. A tab is only offered now when some model
+	// genuinely satisfies it, and the tab's panel must never be that sentence.
+	const errors = collectConsoleErrors( page );
+	await page.goto( '/wp-admin/admin.php?page=corex-data-models' );
+	await expect( page.locator( '.corex-data-models__card' ).first() ).toBeVisible();
+
+	const tabs = await page.locator( '.corex-data-models__tabs button' ).allInnerTexts();
+
+	for ( const tab of tabs ) {
+		await page.getByRole( 'button', { name: tab, exact: true } ).click();
+		await expect( page.locator( '.corex-data-models__empty' ) ).toHaveCount( 0 );
+	}
+
+	// Whatever the capability, the workflow never explains itself in the word "adapter".
+	await expect( page.getByText( 'adapter', { exact: false } ) ).toHaveCount( 0 );
+
+	// The Models catalog is where capability is explained, in words.
+	await page.getByRole( 'button', { name: 'Models', exact: true } ).click();
+	const summary = page.locator( '.corex-data-models__capability-summary' ).first();
+	await expect( summary ).toBeVisible();
+	await expect( summary ).toContainText( 'You can browse and search these records.' );
+
+	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
+} );
+
 test( 'contains Data at mobile, tablet, desktop, wide, and RTL viewports', async ( { page } ) => {
 	for ( const tab of [ 'records', 'models' ] ) {
 		await page.goto( `/wp-admin/admin.php?page=corex-data-models&tab=${ tab }` );

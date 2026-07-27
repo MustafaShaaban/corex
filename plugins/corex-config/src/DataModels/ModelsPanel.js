@@ -1,5 +1,6 @@
 import { useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
+import { capabilitySummary } from './modelClient.js';
 
 function actionLabel( action ) {
 	const labels = {
@@ -61,9 +62,24 @@ function ModelEntry( { source, open, onToggle } ) {
 								{ field.personal_data_class !== 'none' ? ` · ${ field.personal_data_class }` : '' }</td></tr> ) }</tbody>
 					</table>
 				</div>
-				<div className="corex-data-models__capabilities" aria-label={ __( 'Available actions', 'corex' ) }>
-					{ visibleActions.map( ( [ key ] ) => <span key={ key }>{ actionLabel( key ) }</span> ) }
-				</div>
+				{ /* What this model can be used for, said in words. This is where an unavailable
+				     capability is explained — the Import and Migrations tabs used to carry that
+				     job, and did it in a sentence about adapters that meant nothing to the person
+				     reading it (spec 074, FR-3.2/FR-3.3). */ }
+					<ul className="corex-data-models__capability-summary">
+						{ capabilitySummary( source ).map( ( capability ) => (
+							<li
+								key={ capability.key }
+								className={ capability.available ? 'is-available' : 'is-unavailable' }
+							>
+								<strong>{ capability.label }</strong>
+								<span>{ capability.explanation }</span>
+							</li>
+						) ) }
+					</ul>
+					<div className="corex-data-models__capabilities" aria-label={ __( 'Supported operations', 'corex' ) }>
+						{ visibleActions.map( ( [ key ] ) => <span key={ key }>{ actionLabel( key ) }</span> ) }
+					</div>
 			</div>
 		</details>
 	);

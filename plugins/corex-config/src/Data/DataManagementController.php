@@ -27,6 +27,15 @@ final readonly class DataManagementController
     public function register(): void
     {
         $this->route('/data/sources', 'GET', 'sources');
+        // The literal routes come first, before the `(?P<source>[\w-]+)` catch-all below.
+        // `migrations` matches that pattern, so registering it afterwards meant
+        // `GET /data/migrations` resolved to `index` with source="migrations" and answered with a
+        // record query instead of the migration catalog — the endpoint was unreachable, which is
+        // one reason the Migrations tab could never have worked even once a provider existed.
+        $this->route('/data/migrations', 'GET', 'migrations');
+        $this->route('/data/migrations/preview', 'POST', 'migrationPreview');
+        $this->route('/data/migrations/apply', 'POST', 'migrationApply');
+        $this->route('/data/migrations/(?P<run>\d+)/rollback', 'POST', 'migrationRollback');
         $this->route('/data/(?P<source>[\w-]+)', 'GET', 'index');
         $this->route('/data/(?P<source>[\w-]+)/(?P<id>\d+)', 'GET', 'show');
         $this->route('/data/(?P<source>[\w-]+)/mutations/preview', 'POST', 'mutationPreview');
@@ -39,10 +48,6 @@ final readonly class DataManagementController
         $this->route('/data/(?P<source>[\w-]+)/exports', 'POST', 'createExport');
         $this->route('/data/(?P<source>[\w-]+)/exports', 'GET', 'exports');
         $this->route('/data/(?P<source>[\w-]+)/exports/(?P<id>\d+)/download', 'GET', 'downloadExport');
-        $this->route('/data/migrations', 'GET', 'migrations');
-        $this->route('/data/migrations/preview', 'POST', 'migrationPreview');
-        $this->route('/data/migrations/apply', 'POST', 'migrationApply');
-        $this->route('/data/migrations/(?P<run>\d+)/rollback', 'POST', 'migrationRollback');
     }
 
     public function sources(WP_REST_Request $request): WP_REST_Response
@@ -294,7 +299,22 @@ final readonly class DataManagementController
     /** @return array<string,callable|string> */
     private function migrationShape(): array
     {
-        return ['source' => 'sanitize_key', 'definition' => 'sanitize_key', 'action' => 'sanitize_key', 'run_id' => 'absint'];
+        return [
+            'source' => 'sanitize_key',
+            // NOT sanitize_key: a migration key is documented as `[a-z][a-z0-9_.-]*` and the
+            // namespacing dot is the convention every declaration uses. sanitize_key strips dots,
+            // so `subscribers.index_lookups` arrived as `subscribersindex_lookups` and every
+            // preview failed with "The migration definition is unavailable."
+            'definition' => self::sanitizeDefinitionKey(...),
+            'action' => 'sanitize_key',
+            'run_id' => 'absint',
+        ];
+    }
+
+    /** The migration-key charset, matching {@see MigrationDefinition}'s own validation. */
+    private static function sanitizeDefinitionKey(mixed $value): string
+    {
+        return (string) preg_replace('/[^a-z0-9_.-]/', '', strtolower(trim((string) $value)));
     }
 
     /** @return list<int> */

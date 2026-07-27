@@ -283,6 +283,41 @@
 	border-radius: var(--corex-admin-radius-pill);
 }
 
+/* What a model can be used for, in plain language. The state is carried by the words, never by
+   the colour alone — the colour only reinforces what the label already says. */
+.corex-admin .corex-data-models__capability-summary {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	margin: var(--corex-admin-space-md) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-data-models__capability-summary li {
+	display: grid;
+	grid-template-columns: minmax(8rem, auto) minmax(0, 1fr);
+	gap: var(--corex-admin-space-sm);
+	align-items: baseline;
+}
+
+.corex-admin .corex-data-models__capability-summary strong {
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-data-models__capability-summary li.is-unavailable strong,
+.corex-admin .corex-data-models__capability-summary li.is-unavailable span {
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-data-models__capability-summary li.is-available strong {
+	color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-data-models__capability-summary span {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
 .corex-admin .corex-data-models__access.is-allowed {
 	color: var(--corex-admin-success);
 }
@@ -374,5 +409,12 @@
 	.corex-admin .corex-data-models__card,
 	.corex-admin .corex-data-models__workspace {
 		padding: var(--corex-admin-space-md);
+	}
+
+	/* Label above explanation rather than beside it: two columns at this width leaves the
+	   explanation a few characters wide. */
+	.corex-admin .corex-data-models__capability-summary li {
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--corex-admin-space-2xs);
 	}
 }

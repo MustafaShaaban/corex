@@ -39,10 +39,16 @@ function syncTabToUrl( tab ) {
 
 export default function DataModelsApp( { config } ) {
 	const abilities = config.abilities || {};
-	const tabs = useMemo( () => allowedTabs( abilities ), [ abilities ] );
 	const sources = useMemo( () => normalizeCatalog( config.sources ), [ config.sources ] );
+	// Tabs depend on the sources as well as the abilities: a capability nothing can satisfy is
+	// hidden rather than shown as a dead end (spec 074, FR-3.1).
+	const tabs = useMemo( () => allowedTabs( abilities, sources ), [ abilities, sources ] );
 	const [ tab, setTab ] = useState( () =>
-		tabFromUrl( typeof window === 'undefined' ? '' : window.location.href, abilities )
+		tabFromUrl(
+			typeof window === 'undefined' ? '' : window.location.href,
+			abilities,
+			normalizeCatalog( config.sources )
+		)
 	);
 
 	const selectTab = useCallback( ( next ) => {

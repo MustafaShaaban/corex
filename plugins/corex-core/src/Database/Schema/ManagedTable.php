@@ -41,9 +41,15 @@ final class ManagedTable
     private array $writable;
 
     /**
+     * This is an immutable declaration record, not a service: every parameter is a piece of the
+     * same statement about one table, and they are passed by name at the single call site each
+     * table has. (Deliberate exception to the four-argument ceiling, which exists to stop
+     * collaborator lists growing — there are no collaborators here.)
+     *
      * @param list<array{id:string,label:string}> $columns
      * @param list<array<string,mixed>>           $writableFields Empty (the default) means read-only.
      * @param list<array<string,mixed>>           $migrations     Empty (the default) means no migrations.
+     * @param array<string,scalar>                $insertDefaults Values for columns an import cannot write.
      */
     public function __construct(
         public readonly string $name,
@@ -53,6 +59,7 @@ final class ManagedTable
         array $writableFields = [],
         public readonly string $unknownColumns = self::UNKNOWN_REJECT,
         public readonly array $migrations = [],
+        public readonly array $insertDefaults = [],
     ) {
         if (! in_array($this->unknownColumns, self::UNKNOWN_POLICIES, true)) {
             throw new InvalidArgumentException('Managed table unknown-column policy is invalid.');
@@ -94,16 +101,38 @@ final class ManagedTable
         return array_map(static fn (array $c): string => $c['id'], $this->columns);
     }
 
+    /**
+     * The columns a create must set even though no one may import into them, and their values.
+     *
+     * A row created by import has to end up in the same shape the owning feature would have
+     * created — an imported newsletter subscriber with no `status` is in a state the double opt-in
+     * flow does not recognise, so it can never be confirmed and never be emailed. Defaults are the
+     * feature's answer to "what does a new row look like", kept separate from the writable fields
+     * precisely so an import still cannot choose them.
+     *
+     * @return array<string,scalar>
+     */
+    public function insertDefaults(): array
+    {
+        $columnIds = $this->columnIds();
+        $writable  = $this->writableFieldIds();
+        $defaults  = [];
+
+        foreach ($this->insertDefaults as $column => $value) {
+            $column = (string) $column;
+
+            if (in_array($column, $columnIds, true) && ! in_array($column, $writable, true)) {
+                $defaults[$column] = $value;
+            }
+        }
+
+        return $defaults;
+    }
+
     /** @return list<string> */
     public function writableFieldIds(): array
     {
         return array_map(static fn (array $field): string => $field['id'], $this->writable);
-    }
-
-    /** @return list<array{id:string,type:string,required:bool,aliases:list<string>,validation:array<string,mixed>}> */
-    public function writableFields(): array
-    {
-        return $this->writable;
     }
 
     /** @return array{id:string,type:string,required:bool,aliases:list<string>,validation:array<string,mixed>}|null */

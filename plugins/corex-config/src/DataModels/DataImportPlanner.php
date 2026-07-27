@@ -46,12 +46,29 @@ final class DataImportPlanner
         $aliases = [];
         foreach ($fields as $field) {
             $fieldMap[$field->key] = $field;
+            // Both the raw alias and its folded form, so a header matches whether it arrives as
+            // "email_address" or as "Email Address" — which is how every list export actually
+            // writes it. Declaring aliases would be pointless if only an exact match counted.
             foreach ($field->importAliases as $alias) {
                 $aliases[$alias] = $field->key;
+                $aliases[self::canonical($alias)] ??= $field->key;
             }
+            $aliases[self::canonical($field->key)] ??= $field->key;
         }
 
         return [$fieldMap, $aliases];
+    }
+
+    /**
+     * Fold a CSV header or alias to a comparable key: lowercase, separators unified, punctuation
+     * dropped. "Email Address", "email-address", and "EMAIL ADDRESS" all become "email_address".
+     */
+    private static function canonical(string $value): string
+    {
+        $value = strtolower(trim($value));
+        $value = (string) preg_replace('/[\s-]+/', '_', $value);
+
+        return (string) preg_replace('/[^a-z0-9_]/', '', $value);
     }
 
     /** @param array<string,DataField> $fields @param array<string,string> $aliases @return array{array<string,string>,list<string>} */
@@ -60,9 +77,11 @@ final class DataImportPlanner
         $mapping = [];
         $unknown = [];
         foreach ($request->header as $column) {
+            // An explicit mapping the person chose always wins; then an exact field or alias
+            // match; then the folded match that lets a human-written header find its field.
             $target = array_key_exists($column, $request->mapping)
                 ? $request->mapping[$column]
-                : ($fields[$column]->key ?? $aliases[$column] ?? '');
+                : ($fields[$column]->key ?? $aliases[$column] ?? $aliases[self::canonical($column)] ?? '');
             if ($target === '') {
                 $unknown[] = $column;
                 continue;
