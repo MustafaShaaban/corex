@@ -41,6 +41,27 @@ export async function blogRequest( config, path, { method = 'GET', data } = {} )
 }
 
 /**
+ * Move a post to another editorial state.
+ *
+ * The response carries the updated item, which matters here: no GET route returns a post's editorial
+ * state, so this is the only way the panel ever learns its new one (spec 075, FR-1).
+ */
+export function transitionPost( config, postId, payload ) {
+	return blogRequest( config, `blog/editorial/${ postId }/transition`, {
+		method: 'POST',
+		data: payload,
+	} );
+}
+
+/** Approve, spam, or trash one queued comment. */
+export function moderateComment( config, commentId, action ) {
+	return blogRequest( config, `blog/comments/${ commentId }/moderate`, {
+		method: 'POST',
+		data: { action },
+	} );
+}
+
+/**
  * Everything the screen shows for one post, refetched together.
  *
  * Called after a mutation rather than on selection: choosing a post navigates to `?post=<id>` and the

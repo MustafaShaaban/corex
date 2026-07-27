@@ -52,22 +52,22 @@
 
 ## Phase C — Editorial workflow (FR-2)
 
-- [ ] T030 [RED] Jest: the six states render translated labels, never slugs; only permitted transitions
+- [x] T030 [RED] Jest: the six states render translated labels, never slugs; only permitted transitions
       are offered; a denied transition surfaces the server's message.
-- [ ] T031 `EditorialPanel.js` — current state, native status alongside it, and the transition form
+- [x] T031 `EditorialPanel.js` — current state, native status alongside it, and the transition form
       (assignee, due date, scheduled date, note) built with `buildTransitionPayload`.
-- [ ] T032 Submit to `POST /blog/editorial/{id}/transition`; update in place via `transitioned`.
+- [x] T032 Submit to `POST /blog/editorial/{id}/transition`; update in place via `transitioned`.
 - [ ] T033 [RED→GREEN] `tests/Integration/Blog/EditorialTransitionTest.php`: round-trip, denial for an
       actor without the capability, rejection of an invalid transition.
 
 ## Phase D — Moderation queue (FR-3)
 
-- [ ] T040 [RED] Jest: a queued comment shows author, content, arrival time, and a translated state;
+- [x] T040 [RED] Jest: a queued comment shows author, content, arrival time, and a translated state;
       the three actions are hidden from an actor without `moderate_comments`.
-- [ ] T041 `ModerationPanel.js` — approve / spam / trash to `POST /blog/comments/{id}/moderate`,
+- [x] T041 `ModerationPanel.js` — approve / spam / trash to `POST /blog/comments/{id}/moderate`,
       updating via `commentModerated`. Three actions, not four: the queue holds only comments awaiting
       review, so "unapprove" has nothing to act on.
-- [ ] T042 A distinct, positive empty state. The queue is already bounded at 50 by
+- [x] T042 A distinct, positive empty state. The queue is already bounded at 50 by
       `CommentModerationService::queue()`; confirm, do not re-bound.
 - [ ] T043 [RED→GREEN] `tests/Integration/Blog/CommentModerationTest.php`: round-trip and denial.
 

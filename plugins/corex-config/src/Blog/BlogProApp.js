@@ -17,7 +17,9 @@
 import { useCallback, useReducer, useState } from '@wordpress/element';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
-import { loadBlogData } from './blogProClient.js';
+import EditorialPanel from './EditorialPanel.js';
+import ModerationPanel from './ModerationPanel.js';
+import { loadBlogData, moderateComment, transitionPost } from './blogProClient.js';
 import { blogReducer, initialBlogState, normalizeAnalytics } from './blogProState.js';
 
 /** Seconds, said the way a person would say them. */
@@ -65,6 +67,51 @@ export default function BlogProApp( { config = {} } ) {
 			setBusy( false );
 		}
 	}, [ config ] );
+
+	/**
+	 * Move the post, then pull everything else back.
+	 *
+	 * The transition's own response carries the new editorial item — nothing else can, since no GET
+	 * route returns one — so `transitioned` takes it directly and the refresh fills in the panels the
+	 * move may also have changed.
+	 */
+	const applyTransition = useCallback(
+		async ( payload ) => {
+			setBusy( true );
+			try {
+				const editorial = await transitionPost( config, config.selectedPostId, payload );
+				dispatch( { type: 'transitioned', editorial } );
+				await refresh();
+			} catch ( failure ) {
+				dispatch( { type: 'error', message: failure.message } );
+			} finally {
+				setBusy( false );
+			}
+		},
+		[ config, refresh ]
+	);
+
+	const applyModeration = useCallback(
+		async ( commentId, action ) => {
+			setBusy( true );
+			try {
+				const result = await moderateComment( config, commentId, action );
+				dispatch( {
+					type: 'commentModerated',
+					commentId,
+					state: result?.state ?? action,
+				} );
+				// The server decides what is left in the queue — a trashed comment leaves it
+				// entirely, which a local edit of one row cannot express.
+				await refresh();
+			} catch ( failure ) {
+				dispatch( { type: 'error', message: failure.message } );
+			} finally {
+				setBusy( false );
+			}
+		},
+		[ config, refresh ]
+	);
 
 	/**
 	 * Choosing a post *is* navigating to it.
@@ -186,18 +233,11 @@ export default function BlogProApp( { config = {} } ) {
 
 			<section className="corex-blog-pro__grid">
 				<Card title={ __( 'Editorial workflow', 'corex' ) }>
-					{ state.editorial ? (
-						<dl className="corex-blog-pro__facts">
-							<dt>{ __( 'CoreX state', 'corex' ) }</dt>
-							<dd>{ state.editorial.editorial_state_label }</dd>
-							<dt>{ __( 'WordPress status', 'corex' ) }</dt>
-							<dd>{ state.editorial.native_status_label }</dd>
-						</dl>
-					) : (
-						<p className="corex-blog-pro__empty">
-							{ __( 'This post has no editorial record yet.', 'corex' ) }
-						</p>
-					) }
+					<EditorialPanel
+						editorial={ state.editorial }
+						busy={ busy }
+						onTransition={ applyTransition }
+					/>
 				</Card>
 
 				<Card
@@ -212,20 +252,11 @@ export default function BlogProApp( { config = {} } ) {
 						state.comments.length
 					) }
 				>
-					{ state.comments.length === 0 ? (
-						<p className="corex-blog-pro__empty">
-							{ __( 'Nothing is waiting for you here.', 'corex' ) }
-						</p>
-					) : (
-						<ul className="corex-blog-pro__list">
-							{ state.comments.map( ( comment ) => (
-								<li key={ comment.comment_id }>
-									<strong>{ comment.author }</strong>
-									<span>{ comment.state_label }</span>
-								</li>
-							) ) }
-						</ul>
-					) }
+					<ModerationPanel
+						comments={ state.comments }
+						busy={ busy }
+						onModerate={ applyModeration }
+					/>
 				</Card>
 
 				<Card title={ __( 'Authors', 'corex' ) }>
