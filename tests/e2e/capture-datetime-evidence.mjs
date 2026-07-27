@@ -60,9 +60,15 @@ const SURFACES = [
 		probe: '.corex-notification-item time, .corex-notifications-screen time',
 	},
 	{
+		// A live activity feed: visiting these screens writes activity, so the two timezone
+		// passes read *different events* — the entries differ by ID and by nine minutes, which
+		// the comparison below would otherwise report as "follows the browser timezone" on a
+		// surface rendered entirely by the server. Marked volatile so the comparison is skipped
+		// and says so, rather than producing a confident wrong answer.
 		name: 'overview',
 		url: '/wp-admin/admin.php?page=corex-settings',
 		probe: '.corex-overview__activity li',
+		volatile: true,
 	},
 	{
 		name: 'blog-pro',
@@ -145,10 +151,14 @@ for ( const surface of SURFACES ) {
 		),
 		// The SC-003 baseline: a surface whose text changes with the READER's timezone is telling
 		// two operators two different things about one event.
-		followsBrowserTimezone:
-			inUtc.length > 0 &&
-			inUtc.length === inTokyo.length &&
-			inUtc.some( ( text, index ) => text !== inTokyo[ index ] ),
+		//
+		// Only meaningful when the two passes read the same records. A surface whose content
+		// changes between page loads is reported as unknown rather than guessed at.
+		followsBrowserTimezone: surface.volatile
+			? 'not comparable (live feed)'
+			: inUtc.length > 0 &&
+			  inUtc.length === inTokyo.length &&
+			  inUtc.some( ( text, index ) => text !== inTokyo[ index ] ),
 		inTokyo,
 	};
 }

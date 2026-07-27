@@ -22,6 +22,10 @@ import { createRoot } from '@wordpress/element';
 import { act } from 'react';
 
 import NotificationItem from '../NotificationItem.js';
+import {
+	installDateTimeConfig,
+	removeDateTimeConfig,
+} from '../../../../../../tests/Support/adminDateTimeConfig.js';
 
 /** Fixed so the relative-time assertions describe a clock rather than the day the suite runs. */
 const NOW = Date.parse( '2026-07-27T12:00:00.000Z' );
@@ -90,12 +94,17 @@ beforeAll( () => {
 
 beforeEach( () => {
 	jest.spyOn( Date, 'now' ).mockReturnValue( NOW );
+	// The item renders its date through the shared contract now, which reads the boundary payload
+	// `CorexAdminAssets` localizes onto every CoreX screen. Without it the component correctly
+	// says "not recorded" rather than inventing a date — right behaviour, confusing test failure.
+	installDateTimeConfig();
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
 	root = createRoot( container );
 } );
 
 afterEach( () => {
+	removeDateTimeConfig();
 	act( () => root.unmount() );
 	container.remove();
 	jest.restoreAllMocks();
@@ -389,10 +398,25 @@ describe( 'NotificationItem', () => {
 			mount();
 			const time = container.querySelector( '.corex-notification__time' );
 
+			// `+00:00` rather than the `.000Z` this asserted before spec 076. Both name the same
+			// instant, but the shared contract emits the same string PHP's `gmdate(DATE_ATOM)`
+			// does — the two halves of the product now agree character for character, which is
+			// the whole point of the parity fixture.
 			expect( time.getAttribute( 'datetime' ) ).toBe(
-				'2026-07-27T11:30:00.000Z'
+				'2026-07-27T11:30:00+00:00'
 			);
 			expect( time.textContent.trim() ).toBe( '30 minutes ago' );
+		} );
+
+		it( 'puts the exact date in text, not behind a hover', () => {
+			// The exact value used to live only in a `title` attribute, which a touch user cannot
+			// open and a screen reader does not reliably announce (spec 076, FR-013).
+			mount();
+
+			expect( textOf( '.corex-time__exact' ) ).toMatch(
+				/\d{1,2} \w+ \d{4} at \d{1,2}:\d{2} [AP]M/
+			);
+			expect( container.querySelector( '[title]' ) ).toBeNull();
 		} );
 
 		it.each( [
@@ -409,12 +433,18 @@ describe( 'NotificationItem', () => {
 			expect( textOf( '.corex-notification__time' ) ).toBe( expected );
 		} );
 
-		it( 'says nothing rather than NaN when the timestamp is unusable', () => {
+		it( 'says so plainly rather than NaN when the timestamp is unusable', () => {
+			// This asserted an empty string before spec 076. An empty cell is not an answer — it
+			// reads as a rendering bug and collapses the row it sits in (FR-018). The field now
+			// says which kind of nothing it means.
 			mount( {
 				item: notification( { latest_occurred_at: 'not-a-date' } ),
 			} );
 
-			expect( textOf( '.corex-notification__time' ) ).toBe( '' );
+			expect( textOf( '.corex-notification__time' ) ).toBe(
+				'Time not recorded'
+			);
+			expect( container.querySelector( 'time' ) ).toBeNull();
 		} );
 
 		it( 'renders an item whose body the server never filled without inventing one', () => {

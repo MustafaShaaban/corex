@@ -13,28 +13,13 @@
  * from: you would have to open every comment somewhere else to decide anything.
  */
 import { __ } from '@wordpress/i18n';
+import CorexTime from '../admin/components/CorexTime.js';
 
 const ACTIONS = [
 	{ key: 'approve', label: __( 'Approve', 'corex' ), destructive: false },
 	{ key: 'spam', label: __( 'Mark as spam', 'corex' ), destructive: true },
 	{ key: 'trash', label: __( 'Move to trash', 'corex' ), destructive: true },
 ];
-
-/**
- * The arrival time, in the reader's own locale — ordering and age are most of the judgement.
- *
- * @param {string} iso The stored timestamp.
- * @return {string} A readable arrival time, or '' when it cannot be parsed.
- */
-function arrived( iso ) {
-	const parsed = Date.parse( iso );
-
-	if ( Number.isNaN( parsed ) ) {
-		return '';
-	}
-
-	return new Date( parsed ).toLocaleString();
-}
 
 export default function ModerationPanel( {
 	comments = [],
@@ -63,9 +48,7 @@ export default function ModerationPanel( {
 						</strong>
 						<span>{ comment.state_label }</span>
 						{ comment.submitted_at ? (
-							<time dateTime={ comment.submitted_at }>
-								{ arrived( comment.submitted_at ) }
-							</time>
+							<CorexTime value={ comment.submitted_at } />
 						) : null }
 						{ comment.likely_spam ? (
 							<span className="corex-blog-pro__flag">

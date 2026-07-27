@@ -1,5 +1,6 @@
 import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../../admin/components/CorexSelect.js';
+import CorexTime from '../../admin/components/CorexTime.js';
 import { Field } from './shared.js';
 
 function TemplateRail( { templates, selectedId, busy, onCreate, onSelect } ) {
@@ -47,11 +48,7 @@ function TemplateRail( { templates, selectedId, busy, onCreate, onSelect } ) {
 								{ template.subject ||
 									__( 'No draft subject', 'corex' ) }
 							</span>
-							<time>
-								{ new Date(
-									template.updated_at
-								).toLocaleString() }
-							</time>
+							<CorexTime value={ template.updated_at } />
 							<span>{ template.status }</span>
 						</button>
 					</li>

@@ -126,18 +126,18 @@ start until these are done and their tests pass.
 
 ## Phase 3: US1 — an operator reads a date and knows what it means (P1)
 
-- [ ] T022 [US1] `OverviewRenderer.php:255` — presenter instead of
+- [x] T022 [US1] `OverviewRenderer.php:255` — presenter instead of
       `get_option('date_format') . ' ' . get_option('time_format')`.
-- [ ] T023 [US1] `OperationsSecurityScreen.php:222` and `:332` — presenter; the `format('c')`
+- [x] T023 [US1] `OperationsSecurityScreen.php:222` and `:332` — presenter; the `format('c')`
       fallback that could emit raw ISO to a screen is deleted.
-- [ ] T024 [P] [US1] `Blog/ModerationPanel.js:36` — `CorexTime` instead of `toLocaleString()`.
-- [ ] T025 [P] [US1] `Email/components/LogsPanel.js:82` and `:154` — `CorexTime`.
-- [ ] T026 [P] [US1] `Email/components/OverviewPanel.js:83` and `TemplatePanel.js:53` — `CorexTime`.
-- [ ] T027 [P] [US1] `Forms/FlowList.js:153` — `CorexTime`; the existing `<time dateTime>` wrapper
+- [x] T024 [P] [US1] `Blog/ModerationPanel.js:36` — `CorexTime` instead of `toLocaleString()`.
+- [x] T025 [P] [US1] `Email/components/LogsPanel.js:82` and `:154` — `CorexTime`.
+- [x] T026 [P] [US1] `Email/components/OverviewPanel.js:83` and `TemplatePanel.js:53` — `CorexTime`.
+- [x] T027 [P] [US1] `Forms/FlowList.js:153` — `CorexTime`; the existing `<time dateTime>` wrapper
       is already right and keeps its machine value.
-- [ ] T028 [P] [US1] `Submissions/index.js` — the four raw-ISO renders at `:527` (inbox date
+- [x] T028 [P] [US1] `Submissions/index.js` — the four raw-ISO renders at `:527` (inbox date
       column), `:793` (`Attempted %s`), `:820` (drawer), `:913` (audit timeline).
-- [ ] T029 [P] [US1] `Security/SecurityCenter.js:376` — the security activity list.
+- [x] T029 [P] [US1] `Security/SecurityCenter.js:376` — the security activity list.
 - [ ] T030 [P] [US1] Sweep the remaining FR-020 surfaces for any date this task list has not named,
       and convert or record each. The audit found twelve; a surface found here is a spec-audit miss
       worth recording in PROGRESS.md, not a silent thirteenth fix.
@@ -151,7 +151,7 @@ start until these are done and their tests pass.
 
 - [ ] T033 [US2] Every converted surface emits semantic `<time>` with a valid machine value —
       asserted, not assumed (FR-012).
-- [ ] T034 [US2] `NotificationItem.js` — relative time keeps its phrase and gains the non-hover
+- [x] T034 [US2] `NotificationItem.js` — relative time keeps its phrase and gains the non-hover
       exact value; the raw-ISO `title` goes.
 - [ ] T035 [P] [US2] Verify FR-016 rather than change it: Pest integration proving the Submission
       Inbox and the Data explorer sort chronologically server-side across a month and a year

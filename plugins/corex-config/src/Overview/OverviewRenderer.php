@@ -18,6 +18,7 @@ use Corex\Config\Security\HardeningChecks;
 use Corex\Config\Security\HardeningFacts;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
+use Corex\Support\DateTime\AdminDateTime;
 use Corex\Container\ContainerInterface;
 use Corex\Forms\Catalog\FormCatalog;
 use Corex\Forms\Flow\FlowRepository;
@@ -250,15 +251,27 @@ final class OverviewRenderer
                 . '</p></div></section>';
         }
 
+        // Resolved from the injected container, like every other collaborator this renderer uses
+        // (NotificationService, FormCatalog, FlowRepository, ActivityService above).
+        $dateTime = $this->container->make(AdminDateTime::class);
+
         $rows = '';
         foreach ($events as $event) {
-            $when = wp_date(get_option('date_format') . ' ' . get_option('time_format'), $event->occurredAt->getTimestamp());
+            // Was `wp_date(get_option('date_format') . ' ' . get_option('time_format'), …)`, which
+            // rendered whatever the site's settings happened to say — "July 27, 2026 8:53 am" here
+            // — and wrapped it in a <time> element carrying no `datetime` attribute at all. The
+            // presenter supplies both halves, so the markup is finally valid as well as legible.
+            $when = $dateTime->format(
+                $event->occurredAt->getTimestamp(),
+                AdminDateTime::FULL,
+                __('Not recorded', 'corex'),
+            );
             /* translators: 1: actor label, 2: activity area, 3: activity kind */
             $summary = sprintf(__('%1$s · %2$s %3$s', 'corex'), $event->actorLabel, $event->area, $event->kind);
             $rows   .= '<li class="corex-overview__event is-' . esc_attr($this->outcomeTone($event->outcome)) . '">'
                 . '<span class="corex-overview__event-summary">' . esc_html($summary) . '</span>'
                 . '<span class="corex-overview__event-target">' . esc_html($event->targetLabel) . '</span>'
-                . '<time class="corex-overview__event-time">' . esc_html((string) $when) . '</time></li>';
+                . $when->toHtml('corex-overview__event-time') . '</li>';
         }
 
         return $head

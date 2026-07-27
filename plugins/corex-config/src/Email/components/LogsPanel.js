@@ -1,5 +1,6 @@
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import CorexTime from '../../admin/components/CorexTime.js';
 import { Field } from './shared.js';
 
 function RetryEditor( { retry, busy, onResend, onCancel } ) {
@@ -79,7 +80,9 @@ function AttemptRow( { attempt, busy, onRetry } ) {
 				{ attempt.provider_event || __( 'No provider event', 'corex' ) }
 			</td>
 			<td>{ attempt.provider }</td>
-			<td>{ new Date( attempt.occurred_at ).toLocaleString() }</td>
+			<td>
+				<CorexTime value={ attempt.occurred_at } />
+			</td>
 			<td>
 				{ attempt.retryable ? (
 					<button
@@ -148,11 +151,7 @@ function CapturesList( { captures } ) {
 						<li key={ capture.capture_id }>
 							<strong>{ capture.subject }</strong>
 							<span>{ capture.to.join( ', ' ) }</span>
-							<time>
-								{ new Date(
-									capture.captured_at
-								).toLocaleString() }
-							</time>
+							<CorexTime value={ capture.captured_at } />
 						</li>
 					) ) }
 				</ul>

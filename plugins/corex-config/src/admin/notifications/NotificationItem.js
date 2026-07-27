@@ -10,6 +10,7 @@
  * The old item showed a title, a body, and a "Mark read" button.
  */
 import { __, _n, sprintf } from '@wordpress/i18n';
+import { CorexRelativeTime } from '../components/CorexTime.js';
 
 /** Severity said in words. Colour reinforces the label; it never carries the meaning alone. */
 const SEVERITY_LABELS = {
@@ -53,54 +54,6 @@ const SOURCE_LABELS = {
 
 function sourceLabel( module ) {
 	return SOURCE_LABELS[ module ] || module;
-}
-
-/**
- * "3 minutes ago" and friends, with the exact timestamp always available underneath.
- *
- * Relative time is what you want at a glance; the exact value is what you want when you are working
- * out whether two things happened together, so `<time datetime>` carries it for both a hovering
- * mouse and a screen reader.
- *
- * @param {string} iso The stored timestamp.
- * @return {string} The age in words, or '' when the timestamp cannot be parsed.
- */
-function relativeTime( iso ) {
-	const then = Date.parse( iso );
-	if ( Number.isNaN( then ) ) {
-		return '';
-	}
-
-	// Each unit is derived where it is first needed: the earlier version computed all four up
-	// front, so three of them were always thrown away.
-	const seconds = Math.max( 0, Math.round( ( Date.now() - then ) / 1000 ) );
-	if ( seconds < 60 ) {
-		return __( 'Just now', 'corex' );
-	}
-
-	const minutes = Math.round( seconds / 60 );
-	if ( minutes < 60 ) {
-		return sprintf(
-			/* translators: %d: number of minutes. */
-			_n( '%d minute ago', '%d minutes ago', minutes, 'corex' ),
-			minutes
-		);
-	}
-	const hours = Math.round( minutes / 60 );
-	if ( hours < 24 ) {
-		return sprintf(
-			/* translators: %d: number of hours. */
-			_n( '%d hour ago', '%d hours ago', hours, 'corex' ),
-			hours
-		);
-	}
-
-	const days = Math.round( hours / 24 );
-	return sprintf(
-		/* translators: %d: number of days. */
-		_n( '%d day ago', '%d days ago', days, 'corex' ),
-		days
-	);
 }
 
 /**
@@ -183,13 +136,17 @@ export default function NotificationItem( {
 							{ item.environment }
 						</span>
 					) : null }
-					<time
+					{ /*
+					   The exact value used to live only in a `title` attribute, alongside a
+					   `dateTime` holding the same raw ISO string. A title is not openable by
+					   touch and not reliably announced, so the one route to the precise moment
+					   was a mouse hover (FR-013). It is text now.
+					*/ }
+					<CorexRelativeTime
+						value={ item.latest_occurred_at }
 						className="corex-notification__time"
-						dateTime={ item.latest_occurred_at }
-						title={ item.latest_occurred_at }
-					>
-						{ relativeTime( item.latest_occurred_at ) }
-					</time>
+						absent={ __( 'Time not recorded', 'corex' ) }
+					/>
 					{ occurrences > 1 ? (
 						<span className="corex-notification__occurrences">
 							{ sprintf(

@@ -1,6 +1,7 @@
 import { useMemo, useState } from '@wordpress/element';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
+import CorexTime from '../admin/components/CorexTime.js';
 import {
 	catalogRows,
 	readOnlyCount,
@@ -148,13 +149,10 @@ function FlowRow( { row, busy, onSelect } ) {
 				<span>
 					{ row.routingTarget || __( 'No fallback', 'corex' ) }
 				</span>
-				{ row.updatedAt ? (
-					<time dateTime={ row.updatedAt }>
-						{ new Date( row.updatedAt ).toLocaleString() }
-					</time>
-				) : (
-					<span />
-				) }
+				<CorexTime
+					value={ row.updatedAt }
+					absent={ __( 'Never updated', 'corex' ) }
+				/>
 			</button>
 		</li>
 	);

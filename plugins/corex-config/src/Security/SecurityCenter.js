@@ -1,5 +1,6 @@
 import { useId, useReducer } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
+import CorexTime from '../admin/components/CorexTime.js';
 import {
 	buildLoginPolicyPayload,
 	initialSecurityState,
@@ -309,16 +310,15 @@ function Lockouts( { lockouts, summary } ) {
 							</span>
 							<small>
 								{ lockout.active
-									? sprintf(
-											/* translators: %s: date and time the lockout ends. */
-											__( 'Locked until %s', 'corex' ),
-											lockout.lockedUntil
-									  )
-									: sprintf(
-											/* translators: %s: date and time the lockout ended. */
-											__( 'Expired %s', 'corex' ),
-											lockout.lockedUntil
-									  ) }
+									? __( 'Locked until', 'corex' )
+									: __( 'Expired', 'corex' ) }{ ' ' }
+								<CorexTime
+									value={ lockout.lockedUntil }
+									absent={ __(
+										'no expiry recorded',
+										'corex'
+									) }
+								/>
 							</small>
 						</li>
 					) ) }
@@ -373,7 +373,15 @@ function Activity( { activity } ) {
 					{ activity.map( ( event ) => (
 						<li key={ event.id }>
 							<span>{ event.label }</span>
-							<small>{ event.occurredAt }</small>
+							<small>
+								<CorexTime
+									value={ event.occurredAt }
+									absent={ __(
+										'Time not recorded',
+										'corex'
+									) }
+								/>
+							</small>
 						</li>
 					) ) }
 				</ul>
