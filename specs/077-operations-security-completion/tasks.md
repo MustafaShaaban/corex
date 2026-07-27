@@ -94,10 +94,10 @@ screen lie, and because neither depends on the new information architecture.
 
 ## Phase 4: Login protection
 
-- [ ] T023 [US3] `LoginSlugAvailability` — the collisions `LoginSlug`'s pattern cannot see: a
+- [x] T023 [US3] `LoginSlugAvailability` — the collisions `LoginSlug`'s pattern cannot see: a
       published page at that path, an existing rewrite endpoint (FR-018). Typed reasons matching
       `LoginSlug`'s vocabulary. `LoginSlug` itself is not touched.
-- [ ] T024 [P] [US3] Pest integration: a slug colliding with a published page is refused; a free
+- [x] T024 [P] [US3] Pest integration: a slug colliding with a published page is refused; a free
       one is accepted; the existing reserved and format rules still apply.
 - [ ] T025 [US3] The login section shows the address actually in force, distinct from any unsaved
       value, with the recovery command and default-endpoint state (FR-016), and reports a
