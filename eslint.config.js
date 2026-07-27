@@ -7,7 +7,7 @@
  * generated shared-host bundle at `dist/`, so the default run walked tens of thousands of files
  * that are not ours and never terminated in practice — which is why `lint:js` was never gated in
  * CI while `lint:css` (which has `.stylelintignore`) always could be. The ignore list below is the
- * `.stylelintignore` list, so both linters see exactly the same tree.
+ * `.stylelintignore` list plus `docs-app/`, so both linters see very nearly the same tree.
  *
  * Providing any `eslint.config.*` makes wp-scripts stop passing its own `--config`, so the
  * WordPress defaults have to be re-exported here rather than inherited implicitly.
@@ -27,8 +27,15 @@ module.exports = [
 			'playwright-report/**',
 			'test-results/**',
 			'coverage/**',
-			// Astro's generated type shims.
-			'docs-app/.astro/**',
+			/*
+			 * The docs site is a separate npm project, not a workspace of this one: it has its
+			 * own `package.json` and its own `node_modules`, and the root `npm ci` deliberately
+			 * does not install them. Linting it from here therefore resolves imports against a
+			 * dependency tree that is present on a developer's machine and absent in CI — which
+			 * is exactly how it failed: `astro/config` and `@astrojs/starlight` are unresolvable
+			 * from the root install. It is linted by its own toolchain, from its own directory.
+			 */
+			'docs-app/**',
 		],
 	},
 	...wpScriptsConfig,

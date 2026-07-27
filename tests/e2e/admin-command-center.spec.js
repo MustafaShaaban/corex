@@ -108,24 +108,41 @@ test( 'every CoreX route highlights the correct rail item and breadcrumb', async
 	}
 } );
 
-/**
- * How far the document scrolls sideways, in CSS pixels. 0 when it does not.
- *
- * @param {import('@playwright/test').Page} page  The page to measure.
- * @param {number}                          width Viewport width to measure at.
- * @param {string}                          dir   'ltr' or 'rtl'.
- * @return {Promise<number>} The horizontal overflow in CSS pixels.
- */
-async function documentOverflow( page, width, dir ) {
-	await page
-		.locator( 'html' )
-		.evaluate( ( root, value ) => root.setAttribute( 'dir', value ), dir );
-	await page.setViewportSize( { width, height: 900 } );
+const OVERFLOW_WIDTHS = [ 375, 768, 1024, 1440 ];
+const OVERFLOW_DIRECTIONS = [ 'ltr', 'rtl' ];
 
-	return page.evaluate( () => {
-		const root = document.documentElement;
-		return Math.max( 0, root.scrollWidth - root.clientWidth );
-	} );
+/**
+ * How far the loaded page scrolls sideways at each width and direction, in CSS pixels.
+ *
+ * Measured on one page load: resizing and flipping `dir` re-run the cascade without a
+ * navigation, and reading `scrollWidth` forces the layout that makes the value current. The
+ * same approach as forms-flow.spec.js and data-management.spec.js — and the reason this test
+ * costs 13 navigations rather than 104, which is what put it over the 60s budget on CI.
+ *
+ * @param {import('@playwright/test').Page} page The already-loaded page to measure.
+ * @return {Promise<Object>} Overflow in px, keyed `<dir>@<width>`.
+ */
+async function overflowByViewport( page ) {
+	const measured = {};
+
+	for ( const dir of OVERFLOW_DIRECTIONS ) {
+		await page
+			.locator( 'html' )
+			.evaluate(
+				( root, value ) => root.setAttribute( 'dir', value ),
+				dir
+			);
+
+		for ( const width of OVERFLOW_WIDTHS ) {
+			await page.setViewportSize( { width, height: 900 } );
+			measured[ `${ dir }@${ width }px` ] = await page.evaluate( () => {
+				const root = document.documentElement;
+				return Math.max( 0, root.scrollWidth - root.clientWidth );
+			} );
+		}
+	}
+
+	return measured;
 }
 
 /*
@@ -150,22 +167,20 @@ async function documentOverflow( page, width, dir ) {
 test( 'no CoreX route scrolls sideways any further than stock wp-admin', async ( {
 	page,
 } ) => {
-	for ( const dir of [ 'ltr', 'rtl' ] ) {
-		for ( const width of [ 375, 768, 1024, 1440 ] ) {
-			// The baseline is measured per viewport and per direction, not assumed — core's
-			// chrome changes at wp-admin's own breakpoints.
-			await page.goto( '/wp-admin/index.php' );
-			const baseline = await documentOverflow( page, width, dir );
+	// Measured per viewport and per direction, not assumed — core's chrome changes at wp-admin's
+	// own breakpoints, so a single number would be the wrong baseline at three of the four widths.
+	await page.goto( '/wp-admin/index.php' );
+	const baseline = await overflowByViewport( page );
 
-			for ( const [ slug ] of ROUTES ) {
-				await page.goto( `/wp-admin/admin.php?page=${ slug }` );
-				const actual = await documentOverflow( page, width, dir );
+	for ( const [ slug ] of ROUTES ) {
+		await page.goto( `/wp-admin/admin.php?page=${ slug }` );
+		const actual = await overflowByViewport( page );
 
-				expect(
-					actual,
-					`${ slug } at ${ width }px (${ dir }): ${ actual }px of horizontal scroll against a wp-admin baseline of ${ baseline }px`
-				).toBeLessThanOrEqual( baseline );
-			}
+		for ( const viewport of Object.keys( baseline ) ) {
+			expect(
+				actual[ viewport ],
+				`${ slug } at ${ viewport }: ${ actual[ viewport ] }px of horizontal scroll against a wp-admin baseline of ${ baseline[ viewport ] }px`
+			).toBeLessThanOrEqual( baseline[ viewport ] );
 		}
 	}
 } );
