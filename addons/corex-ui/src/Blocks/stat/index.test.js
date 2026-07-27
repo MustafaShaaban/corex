@@ -12,12 +12,18 @@ import metadata from './block.json';
 const RichTextMock = () => null;
 
 jest.mock( './style.scss', () => ( {} ), { virtual: true } );
-jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), { virtual: true } );
-jest.mock( '@wordpress/block-editor', () => ( {
-	useBlockProps: ( props ) => props || {},
-	RichText: RichTextMock,
-	InspectorControls: ( { children } ) => children,
-} ), { virtual: true } );
+jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), {
+	virtual: true,
+} );
+jest.mock(
+	'@wordpress/block-editor',
+	() => ( {
+		useBlockProps: ( props ) => props || {},
+		RichText: RichTextMock,
+		InspectorControls: ( { children } ) => children,
+	} ),
+	{ virtual: true }
+);
 jest.mock( '@wordpress/i18n', () => ( { __: ( s ) => s } ), { virtual: true } );
 
 import './index.js';

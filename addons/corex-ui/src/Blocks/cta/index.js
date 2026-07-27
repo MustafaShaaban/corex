@@ -6,7 +6,11 @@
 import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps, RichText, URLInputButton } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	RichText,
+	URLInputButton,
+} from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
@@ -30,17 +34,27 @@ registerBlockType( metadata.name, {
 						className="corex-cta__text"
 						value={ text }
 						onChange={ ( v ) => setAttributes( { text: v } ) }
-						placeholder={ __( 'Supporting line (optional)', 'corex' ) }
+						placeholder={ __(
+							'Supporting line (optional)',
+							'corex'
+						) }
 					/>
 					<div className="corex-cta__button-edit">
 						<RichText
 							tagName="span"
 							className="corex-cta__button"
 							value={ ctaText }
-							onChange={ ( v ) => setAttributes( { ctaText: v } ) }
+							onChange={ ( v ) =>
+								setAttributes( { ctaText: v } )
+							}
 							placeholder={ __( 'Button label', 'corex' ) }
 						/>
-						<URLInputButton url={ ctaUrl } onChange={ ( url ) => setAttributes( { ctaUrl: url } ) } />
+						<URLInputButton
+							url={ ctaUrl }
+							onChange={ ( url ) =>
+								setAttributes( { ctaUrl: url } )
+							}
+						/>
 					</div>
 				</div>
 			</div>

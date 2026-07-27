@@ -27,14 +27,20 @@ const toImage = ( media ) => ( {
 registerBlockType( metadata.name, {
 	edit: ( { attributes, setAttributes } ) => {
 		const blockProps = useBlockProps( { className: 'corex-gallery' } );
-		const images = Array.isArray( attributes.images ) ? attributes.images : [];
+		const images = Array.isArray( attributes.images )
+			? attributes.images
+			: [];
 
 		const setCaption = ( index, value ) =>
 			setAttributes( {
-				images: images.map( ( img, i ) => ( i === index ? { ...img, caption: value } : img ) ),
+				images: images.map( ( img, i ) =>
+					i === index ? { ...img, caption: value } : img
+				),
 			} );
 		const removeImage = ( index ) =>
-			setAttributes( { images: images.filter( ( _img, i ) => i !== index ) } );
+			setAttributes( {
+				images: images.filter( ( _img, i ) => i !== index ),
+			} );
 
 		if ( images.length === 0 ) {
 			return (
@@ -44,7 +50,9 @@ registerBlockType( metadata.name, {
 						gallery
 						allowedTypes={ [ 'image' ] }
 						labels={ { title: __( 'Gallery', 'corex' ) } }
-						onSelect={ ( media ) => setAttributes( { images: media.map( toImage ) } ) }
+						onSelect={ ( media ) =>
+							setAttributes( { images: media.map( toImage ) } )
+						}
 					/>
 				</div>
 			);
@@ -54,7 +62,11 @@ registerBlockType( metadata.name, {
 			<div { ...blockProps }>
 				{ images.map( ( img, index ) => (
 					<figure className="corex-gallery__item" key={ index }>
-						<img className="corex-gallery__img" src={ img.url } alt={ img.alt || '' } />
+						<img
+							className="corex-gallery__img"
+							src={ img.url }
+							alt={ img.alt || '' }
+						/>
 						<RichText
 							tagName="figcaption"
 							className="corex-gallery__caption"
@@ -62,7 +74,11 @@ registerBlockType( metadata.name, {
 							onChange={ ( v ) => setCaption( index, v ) }
 							placeholder={ __( 'Caption (optional)', 'corex' ) }
 						/>
-						<Button isDestructive variant="link" onClick={ () => removeImage( index ) }>
+						<Button
+							isDestructive
+							variant="link"
+							onClick={ () => removeImage( index ) }
+						>
 							{ __( 'Remove', 'corex' ) }
 						</Button>
 					</figure>
@@ -73,7 +89,9 @@ registerBlockType( metadata.name, {
 						gallery
 						allowedTypes={ [ 'image' ] }
 						value={ images.map( ( img ) => img.id ) }
-						onSelect={ ( media ) => setAttributes( { images: media.map( toImage ) } ) }
+						onSelect={ ( media ) =>
+							setAttributes( { images: media.map( toImage ) } )
+						}
 						render={ ( { open } ) => (
 							<Button variant="secondary" onClick={ open }>
 								{ __( 'Edit gallery', 'corex' ) }

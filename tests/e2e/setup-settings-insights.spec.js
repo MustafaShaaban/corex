@@ -19,15 +19,23 @@ test( 'Insights renders the full designed widget set from real state', async ( {
 	// Two runnable providers (run-cards) + the five informational widgets.
 	await expect( page.locator( '.corex-insight-card' ) ).toHaveCount( 2 );
 	await expect( page.locator( '.corex-insight-widget' ) ).toHaveCount( 5 );
-	await expect( page.getByRole( 'heading', { name: 'Security events' } ) ).toBeVisible();
-	await expect( page.getByRole( 'heading', { name: 'Forms & Flows analytics' } ) ).toBeVisible();
+	await expect(
+		page.getByRole( 'heading', { name: 'Security events' } )
+	).toBeVisible();
+	await expect(
+		page.getByRole( 'heading', { name: 'Forms & Flows analytics' } )
+	).toBeVisible();
 	// No stale "Planned" widget.
-	await expect( page.getByText( 'Planned', { exact: true } ) ).toHaveCount( 0 );
+	await expect( page.getByText( 'Planned', { exact: true } ) ).toHaveCount(
+		0
+	);
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
 
-test( 'Insights lays its cards and widgets out on one shared grid', async ( { page } ) => {
+test( 'Insights lays its cards and widgets out on one shared grid', async ( {
+	page,
+} ) => {
 	// This spec used to assert element counts only, which is exactly why the broken layout passed
 	// CI for so long: the widgets were appended into a nested container that the outer grid then
 	// treated as ONE cell, so all five collapsed into a single narrow column beside the cards.
@@ -44,17 +52,28 @@ test( 'Insights lays its cards and widgets out on one shared grid', async ( { pa
 	const columns = await page
 		.locator( '#corex-insights-app > *' )
 		.evaluateAll( ( tiles ) => [
-			...new Set( tiles.map( ( tile ) => Math.round( tile.getBoundingClientRect().x ) ) ),
+			...new Set(
+				tiles.map( ( tile ) =>
+					Math.round( tile.getBoundingClientRect().x )
+				)
+			),
 		] );
-	expect( columns, `tile x offsets: ${ columns.join( ', ' ) }` ).toHaveLength( 2 );
+	expect( columns, `tile x offsets: ${ columns.join( ', ' ) }` ).toHaveLength(
+		2
+	);
 
 	// And they are real columns, not a stack: the widest tile cannot span the whole row.
 	const grid = await page.locator( '#corex-insights-app' ).boundingBox();
-	const tile = await page.locator( '.corex-insight-widget' ).first().boundingBox();
+	const tile = await page
+		.locator( '.corex-insight-widget' )
+		.first()
+		.boundingBox();
 	expect( tile.width ).toBeLessThan( grid.width * 0.75 );
 } );
 
-test( 'Insights orders its widgets by urgency, with nothing-to-show last', async ( { page } ) => {
+test( 'Insights orders its widgets by urgency, with nothing-to-show last', async ( {
+	page,
+} ) => {
 	// FR-027. The chip text carries the state, so DOM order plus chip text is the whole contract.
 	await page.goto( '/wp-admin/admin.php?page=corex-insights' );
 	await expect( page.locator( '.corex-insight-widget' ) ).toHaveCount( 5 );
@@ -89,16 +108,22 @@ test( 'Setup Wizard walks the nine-step flow with real kit and demo levels', asy
 
 	// The nine-step stepper mounted (JS took over from the server fallback).
 	await expect( page.locator( '.corex-setup__step' ) ).toHaveCount( 9 );
-	await expect( page.locator( '#corex-setup-app .corex-setup__panel' ) ).toBeVisible();
+	await expect(
+		page.locator( '#corex-setup-app .corex-setup__panel' )
+	).toBeVisible();
 
 	// Welcome → Brand → Kit: a real kit option is offered.
 	await page.locator( '#corex-setup-next' ).click();
 	await page.locator( '#corex-setup-next' ).click();
-	await expect( page.locator( 'input[name="corex-kit"]' ).first() ).toBeVisible();
+	await expect(
+		page.locator( 'input[name="corex-kit"]' ).first()
+	).toBeVisible();
 
 	// Kit → Demo: the three real demo levels.
 	await page.locator( '#corex-setup-next' ).click();
-	await expect( page.locator( 'input[name="corex-level"]' ) ).toHaveCount( 3 );
+	await expect( page.locator( 'input[name="corex-level"]' ) ).toHaveCount(
+		3
+	);
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
@@ -107,7 +132,9 @@ test( 'Settings renders the real sections including the Advanced diagnostics rea
 	page,
 } ) => {
 	const errors = collectConsoleErrors( page );
-	await page.goto( '/wp-admin/admin.php?page=corex-settings-config&corex_tab=advanced' );
+	await page.goto(
+		'/wp-admin/admin.php?page=corex-settings-config&corex_tab=advanced'
+	);
 	await expect(
 		page.getByRole( 'heading', { name: 'CoreX Settings' } )
 	).toBeVisible();
@@ -125,7 +152,11 @@ test( 'Settings renders the real sections including the Advanced diagnostics rea
 test( 'the three surfaces have no horizontal overflow at mobile width', async ( {
 	page,
 } ) => {
-	for ( const slug of [ 'corex-insights', 'corex-setup', 'corex-settings-config' ] ) {
+	for ( const slug of [
+		'corex-insights',
+		'corex-setup',
+		'corex-settings-config',
+	] ) {
 		await page.setViewportSize( { width: 375, height: 800 } );
 		await page.goto( `/wp-admin/admin.php?page=${ slug }` );
 		await page.waitForTimeout( 400 );

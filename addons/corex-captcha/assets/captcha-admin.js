@@ -33,26 +33,28 @@
 	}
 
 	function translate( text ) {
-		return window.wp && window.wp.i18n ? window.wp.i18n.__( text, 'corex' ) : text;
+		return window.wp && window.wp.i18n
+			? window.wp.i18n.__( text, 'corex' )
+			: text;
 	}
 
 	function init() {
-		var config = window.corexCaptcha;
-		var anchor = document.getElementById( 'captcha.secret' );
+		const config = window.corexCaptcha;
+		const anchor = document.getElementById( 'captcha.secret' );
 
 		if ( ! config || ! anchor || ! window.Corex || ! window.Corex.api ) {
 			return;
 		}
 
-		var wrap = document.createElement( 'p' );
+		const wrap = document.createElement( 'p' );
 		wrap.className = 'corex-captcha-test';
 
-		var button = document.createElement( 'button' );
+		const button = document.createElement( 'button' );
 		button.type = 'button';
 		button.className = 'button corex-captcha-test__button';
 		button.textContent = translate( 'Test verification' );
 
-		var result = document.createElement( 'span' );
+		const result = document.createElement( 'span' );
 		result.className = 'corex-captcha-test__result';
 		result.setAttribute( 'role', 'status' );
 		result.setAttribute( 'aria-live', 'polite' );
@@ -67,14 +69,24 @@
 			result.textContent = translate( 'Testing…' );
 
 			window.Corex.api
-				.post( testEndpoint( config.restUrl ), {}, { nonce: config.nonce } )
+				.post(
+					testEndpoint( config.restUrl ),
+					{},
+					{ nonce: config.nonce }
+				)
 				.then( function ( res ) {
-					var view = resultFromEnvelope( res && res.envelope );
-					result.textContent = view.message || translate( 'No response from the provider.' );
-					result.className = 'corex-captcha-test__result is-' + ( view.ok ? 'ok' : 'error' );
+					const view = resultFromEnvelope( res && res.envelope );
+					result.textContent =
+						view.message ||
+						translate( 'No response from the provider.' );
+					result.className =
+						'corex-captcha-test__result is-' +
+						( view.ok ? 'ok' : 'error' );
 				} )
 				.catch( function () {
-					result.textContent = translate( 'The test request failed. Check your connection and try again.' );
+					result.textContent = translate(
+						'The test request failed. Check your connection and try again.'
+					);
 					result.className = 'corex-captcha-test__result is-error';
 				} )
 				.then( function () {
@@ -93,6 +105,9 @@
 
 	// Exported for unit tests (no effect in the browser, where there is no CommonJS module).
 	if ( typeof module !== 'undefined' && module.exports ) {
-		module.exports = { testEndpoint: testEndpoint, resultFromEnvelope: resultFromEnvelope };
+		module.exports = {
+			testEndpoint,
+			resultFromEnvelope,
+		};
 	}
 } )();

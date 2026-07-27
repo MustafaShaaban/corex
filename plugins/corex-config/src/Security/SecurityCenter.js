@@ -73,7 +73,9 @@ function LaunchChecklist( { state } ) {
 					</p>
 					<h2>{ __( 'Production readiness', 'corex' ) }</h2>
 				</div>
-				<span className={ blockingCount > 0 ? 'is-warning' : 'is-ready' }>
+				<span
+					className={ blockingCount > 0 ? 'is-warning' : 'is-ready' }
+				>
 					{ blockingCount > 0
 						? sprintf(
 								/* translators: %d: number of blocking readiness checks. */

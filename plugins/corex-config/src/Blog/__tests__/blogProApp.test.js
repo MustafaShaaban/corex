@@ -17,8 +17,18 @@ import { act } from 'react';
 import BlogProApp from '../BlogProApp.js';
 
 const POSTS = [
-	{ id: 7, title: 'Launch week', status: 'publish', permalink: 'https://acme.test/launch' },
-	{ id: 9, title: 'Field notes', status: 'draft', permalink: 'https://acme.test/notes' },
+	{
+		id: 7,
+		title: 'Launch week',
+		status: 'publish',
+		permalink: 'https://acme.test/launch',
+	},
+	{
+		id: 9,
+		title: 'Field notes',
+		status: 'draft',
+		permalink: 'https://acme.test/notes',
+	},
 ];
 
 function config( overrides = {} ) {
@@ -44,8 +54,16 @@ function config( overrides = {} ) {
 			editorial_state_label: 'Ready for review',
 			native_status_label: 'Pending review',
 			transitions: [
-				{ key: 'approved', label: 'Approved', requires_schedule: false },
-				{ key: 'scheduled', label: 'Scheduled', requires_schedule: true },
+				{
+					key: 'approved',
+					label: 'Approved',
+					requires_schedule: false,
+				},
+				{
+					key: 'scheduled',
+					label: 'Scheduled',
+					requires_schedule: true,
+				},
 			],
 			can_transition: true,
 			assignee_id: 0,
@@ -53,7 +71,9 @@ function config( overrides = {} ) {
 		},
 		comments: [],
 		authors: [ { name: 'Ada', post_count: 3 } ],
-		shareControls: [ { target: 'facebook', label: 'Facebook', url: 'https://x.test' } ],
+		shareControls: [
+			{ target: 'facebook', label: 'Facebook', url: 'https://x.test' },
+		],
 		can: { moderate: true, publish: true },
 		...overrides,
 	};
@@ -158,7 +178,9 @@ describe( 'BlogProApp', () => {
 	describe( 'it tells you what happened', () => {
 		it( 'renders a notice in a live region when an action fails', async () => {
 			// The reducer's `error` case had no caller at all; neither did the notice it builds.
-			global.fetch = jest.fn( () => Promise.reject( new Error( 'Network is down' ) ) );
+			global.fetch = jest.fn( () =>
+				Promise.reject( new Error( 'Network is down' ) )
+			);
 			mount();
 
 			await act( async () => {

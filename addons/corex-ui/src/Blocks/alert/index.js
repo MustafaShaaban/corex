@@ -6,14 +6,20 @@
 import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps, RichText, InspectorControls } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	RichText,
+	InspectorControls,
+} from '@wordpress/block-editor';
 import { PanelBody, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
 registerBlockType( metadata.name, {
 	edit: ( { attributes, setAttributes } ) => {
-		const blockProps = useBlockProps( { className: `corex-alert corex-alert--${ attributes.variant }` } );
+		const blockProps = useBlockProps( {
+			className: `corex-alert corex-alert--${ attributes.variant }`,
+		} );
 
 		return (
 			<>
@@ -24,11 +30,22 @@ registerBlockType( metadata.name, {
 							value={ attributes.variant }
 							options={ [
 								{ label: __( 'Info', 'corex' ), value: 'info' },
-								{ label: __( 'Success', 'corex' ), value: 'success' },
-								{ label: __( 'Warning', 'corex' ), value: 'warning' },
-								{ label: __( 'Error', 'corex' ), value: 'error' },
+								{
+									label: __( 'Success', 'corex' ),
+									value: 'success',
+								},
+								{
+									label: __( 'Warning', 'corex' ),
+									value: 'warning',
+								},
+								{
+									label: __( 'Error', 'corex' ),
+									value: 'error',
+								},
 							] }
-							onChange={ ( variant ) => setAttributes( { variant } ) }
+							onChange={ ( variant ) =>
+								setAttributes( { variant } )
+							}
 						/>
 					</PanelBody>
 				</InspectorControls>

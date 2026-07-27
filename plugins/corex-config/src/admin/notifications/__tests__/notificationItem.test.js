@@ -60,7 +60,9 @@ let root;
 
 function mount( props = {} ) {
 	act( () => {
-		root.render( <NotificationItem item={ notification() } { ...props } /> );
+		root.render(
+			<NotificationItem item={ notification() } { ...props } />
+		);
 	} );
 }
 
@@ -69,11 +71,14 @@ const textOf = ( selector ) =>
 	container.querySelector( selector )?.textContent?.trim() ?? null;
 const buttons = () => [ ...container.querySelectorAll( 'button' ) ];
 const buttonNamed = ( name ) =>
-	buttons().find( ( candidate ) => candidate.textContent.trim() === name ) ?? null;
+	buttons().find( ( candidate ) => candidate.textContent.trim() === name ) ??
+	null;
 
 function click( element ) {
 	act( () => {
-		element.dispatchEvent( new window.MouseEvent( 'click', { bubbles: true } ) );
+		element.dispatchEvent(
+			new window.MouseEvent( 'click', { bubbles: true } )
+		);
 	} );
 }
 
@@ -103,14 +108,20 @@ describe( 'NotificationItem', () => {
 			// action is a fact about the condition. Only the unread badge may differ between these.
 			mount( {
 				item: notification( {
-					user_state: { read: true, status: 'read', needs_action: true },
+					user_state: {
+						read: true,
+						status: 'read',
+						needs_action: true,
+					},
 				} ),
 			} );
 
 			expect( textOf( '.corex-notification__condition' ) ).toBe(
 				'Still needs action'
 			);
-			expect( container.querySelector( '.corex-notification__unread' ) ).toBeNull();
+			expect(
+				container.querySelector( '.corex-notification__unread' )
+			).toBeNull();
 			expect( article().className ).toContain( 'needs-action' );
 			expect( article().className ).toContain( 'is-read' );
 		} );
@@ -129,11 +140,17 @@ describe( 'NotificationItem', () => {
 			mount( {
 				item: notification( {
 					severity: 'information',
-					user_state: { needs_action: false, read: false, status: 'unread' },
+					user_state: {
+						needs_action: false,
+						read: false,
+						status: 'unread',
+					},
 				} ),
 			} );
 
-			expect( textOf( '.corex-notification__condition' ) ).toBe( 'No action needed' );
+			expect( textOf( '.corex-notification__condition' ) ).toBe(
+				'No action needed'
+			);
 			expect( article().className ).not.toContain( 'needs-action' );
 		} );
 	} );
@@ -155,7 +172,9 @@ describe( 'NotificationItem', () => {
 					} ),
 				} );
 
-				expect( textOf( '.corex-notification__condition' ) ).toBe( label );
+				expect( textOf( '.corex-notification__condition' ) ).toBe(
+					label
+				);
 			}
 		);
 	} );
@@ -164,7 +183,11 @@ describe( 'NotificationItem', () => {
 		it( 'offers no way to change a condition that is already over', () => {
 			mount( {
 				item: notification( {
-					user_state: { status: 'resolved', read: true, needs_action: false },
+					user_state: {
+						status: 'resolved',
+						read: true,
+						needs_action: false,
+					},
 				} ),
 				actions: {
 					markRead: jest.fn(),
@@ -215,29 +238,39 @@ describe( 'NotificationItem', () => {
 			[ 'Snooze for a day', 'snooze' ],
 			[ 'Dismiss', 'dismiss' ],
 			[ 'Mark resolved', 'resolve' ],
-		] )( 'reports %s against the notification it belongs to', ( label, handler ) => {
-			const actions = {
-				markRead: jest.fn(),
-				snooze: jest.fn(),
-				dismiss: jest.fn(),
-				resolve: jest.fn(),
-			};
-			mount( { actions } );
+		] )(
+			'reports %s against the notification it belongs to',
+			( label, handler ) => {
+				const actions = {
+					markRead: jest.fn(),
+					snooze: jest.fn(),
+					dismiss: jest.fn(),
+					resolve: jest.fn(),
+				};
+				mount( { actions } );
 
-			click( buttonNamed( label ) );
+				click( buttonNamed( label ) );
 
-			expect( actions[ handler ] ).toHaveBeenCalledWith( 42 );
-		} );
+				expect( actions[ handler ] ).toHaveBeenCalledWith( 42 );
+			}
+		);
 
 		it( 'renders the primary action as a link to where the work is done', () => {
 			mount( {
 				item: notification( {
-					action: { url: 'https://acme.test/wp-admin/admin.php?page=corex-submissions', label: 'Open the inbox' },
+					action: {
+						url: 'https://acme.test/wp-admin/admin.php?page=corex-submissions',
+						label: 'Open the inbox',
+					},
 				} ),
 			} );
 
-			const link = container.querySelector( '.corex-notification__actions a' );
-			expect( link.getAttribute( 'href' ) ).toContain( 'page=corex-submissions' );
+			const link = container.querySelector(
+				'.corex-notification__actions a'
+			);
+			expect( link.getAttribute( 'href' ) ).toContain(
+				'page=corex-submissions'
+			);
 			expect( link.textContent.trim() ).toBe( 'Open the inbox' );
 		} );
 	} );
@@ -246,7 +279,11 @@ describe( 'NotificationItem', () => {
 		it( 'tells the drawer the same story as the screen, with only the controls dropped', () => {
 			// The drawer used to show a shorter, differently-worded version of the same record, so
 			// "what does this want from me" depended on where you were looking.
-			const actions = { markRead: jest.fn(), dismiss: jest.fn(), resolve: jest.fn() };
+			const actions = {
+				markRead: jest.fn(),
+				dismiss: jest.fn(),
+				resolve: jest.fn(),
+			};
 
 			mount( { actions } );
 			const full = textOf( '.corex-notification__body' );
@@ -254,7 +291,11 @@ describe( 'NotificationItem', () => {
 
 			act( () =>
 				root.render(
-					<NotificationItem item={ notification() } actions={ actions } compact />
+					<NotificationItem
+						item={ notification() }
+						actions={ actions }
+						compact
+					/>
 				)
 			);
 
@@ -265,13 +306,18 @@ describe( 'NotificationItem', () => {
 		it( 'keeps the primary action in the drawer, because that is the point of glancing', () => {
 			mount( {
 				item: notification( {
-					action: { url: 'https://acme.test/wp-admin/', label: 'Open the inbox' },
+					action: {
+						url: 'https://acme.test/wp-admin/',
+						label: 'Open the inbox',
+					},
 				} ),
 				actions: { markRead: jest.fn() },
 				compact: true,
 			} );
 
-			expect( container.querySelector( '.corex-notification__actions a' ) ).not.toBeNull();
+			expect(
+				container.querySelector( '.corex-notification__actions a' )
+			).not.toBeNull();
 			expect( buttons() ).toHaveLength( 0 );
 		} );
 	} );
@@ -280,18 +326,29 @@ describe( 'NotificationItem', () => {
 		it( 'states severity, source, and environment in words', () => {
 			mount();
 
-			expect( textOf( '.corex-notification__severity' ) ).toBe( 'Warning' );
+			expect( textOf( '.corex-notification__severity' ) ).toBe(
+				'Warning'
+			);
 			expect( textOf( '.corex-notification__source' ) ).toBe( 'Forms' );
-			expect( textOf( '.corex-notification__environment' ) ).toBe( 'production' );
+			expect( textOf( '.corex-notification__environment' ) ).toBe(
+				'production'
+			);
 		} );
 
 		it( 'falls back to the raw value rather than dropping an unknown severity or source', () => {
 			mount( {
-				item: notification( { severity: 'catastrophe', source_module: 'acme-addon' } ),
+				item: notification( {
+					severity: 'catastrophe',
+					source_module: 'acme-addon',
+				} ),
 			} );
 
-			expect( textOf( '.corex-notification__severity' ) ).toBe( 'catastrophe' );
-			expect( textOf( '.corex-notification__source' ) ).toBe( 'acme-addon' );
+			expect( textOf( '.corex-notification__severity' ) ).toBe(
+				'catastrophe'
+			);
+			expect( textOf( '.corex-notification__source' ) ).toBe(
+				'acme-addon'
+			);
 		} );
 
 		it.each( [
@@ -302,7 +359,9 @@ describe( 'NotificationItem', () => {
 			// One occurrence is the unremarkable case and saying "1 time" is noise.
 			mount( { item: notification( { occurrences } ) } );
 
-			expect( textOf( '.corex-notification__occurrences' ) ).toBe( expected );
+			expect( textOf( '.corex-notification__occurrences' ) ).toBe(
+				expected
+			);
 		} );
 
 		it( 'reuses the navigation glyph for the category and hides it from assistive tech', () => {
@@ -310,16 +369,18 @@ describe( 'NotificationItem', () => {
 			const icon = container.querySelector( '.corex-notification__icon' );
 
 			// The same mark that sits next to Submissions in the rail, so a glyph means one thing.
-			expect( icon.className ).toContain( 'corex-admin__nav-icon--submissions' );
+			expect( icon.className ).toContain(
+				'corex-admin__nav-icon--submissions'
+			);
 			expect( icon.getAttribute( 'aria-hidden' ) ).toBe( 'true' );
 		} );
 
 		it( 'falls back to the generic bell for a category with no glyph of its own', () => {
 			mount( { item: notification( { category: 'something-new' } ) } );
 
-			expect( container.querySelector( '.corex-notification__icon' ).className ).toContain(
-				'corex-admin__nav-icon--notifications'
-			);
+			expect(
+				container.querySelector( '.corex-notification__icon' ).className
+			).toContain( 'corex-admin__nav-icon--notifications' );
 		} );
 
 		it( 'carries the exact timestamp alongside the relative one', () => {
@@ -328,7 +389,9 @@ describe( 'NotificationItem', () => {
 			mount();
 			const time = container.querySelector( '.corex-notification__time' );
 
-			expect( time.getAttribute( 'datetime' ) ).toBe( '2026-07-27T11:30:00.000Z' );
+			expect( time.getAttribute( 'datetime' ) ).toBe(
+				'2026-07-27T11:30:00.000Z'
+			);
 			expect( time.textContent.trim() ).toBe( '30 minutes ago' );
 		} );
 
@@ -339,13 +402,17 @@ describe( 'NotificationItem', () => {
 			[ '2026-07-26T12:00:00.000Z', '1 day ago' ],
 			[ '2026-07-24T12:00:00.000Z', '3 days ago' ],
 		] )( 'describes %s as %s', ( occurredAt, expected ) => {
-			mount( { item: notification( { latest_occurred_at: occurredAt } ) } );
+			mount( {
+				item: notification( { latest_occurred_at: occurredAt } ),
+			} );
 
 			expect( textOf( '.corex-notification__time' ) ).toBe( expected );
 		} );
 
 		it( 'says nothing rather than NaN when the timestamp is unusable', () => {
-			mount( { item: notification( { latest_occurred_at: 'not-a-date' } ) } );
+			mount( {
+				item: notification( { latest_occurred_at: 'not-a-date' } ),
+			} );
 
 			expect( textOf( '.corex-notification__time' ) ).toBe( '' );
 		} );

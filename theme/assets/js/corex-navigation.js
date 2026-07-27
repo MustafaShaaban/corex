@@ -25,11 +25,13 @@
  *
  * Exposed as `window.Corex.navigation = { init, destroy }` for testing; auto-inits on
  * DOMContentLoaded. Loaded only where a CoreX header/navigation renders (Principle VI).
+ * @param window
+ * @param document
  */
 ( function ( window, document ) {
 	'use strict';
 
-	var SCROLL_THRESHOLD = 8;
+	const SCROLL_THRESHOLD = 8;
 
 	function megas( root ) {
 		return Array.prototype.slice.call(
@@ -41,12 +43,12 @@
 		return details.querySelector( 'summary' );
 	}
 
-	var bound = [];
+	let bound = [];
 
 	function init( root ) {
 		root = root || document;
 
-		var all = megas( root );
+		const all = megas( root );
 
 		all.forEach( function ( details ) {
 			function onToggle() {
@@ -63,7 +65,7 @@
 			function onKeydown( event ) {
 				if ( event.key === 'Escape' && details.open ) {
 					details.open = false;
-					var summary = summaryOf( details );
+					const summary = summaryOf( details );
 					if ( summary ) {
 						summary.focus();
 					}
@@ -73,9 +75,9 @@
 			details.addEventListener( 'toggle', onToggle );
 			details.addEventListener( 'keydown', onKeydown );
 			bound.push( {
-				details: details,
-				onToggle: onToggle,
-				onKeydown: onKeydown,
+				details,
+				onToggle,
+				onKeydown,
 			} );
 		} );
 
@@ -87,16 +89,16 @@
 			} );
 		}
 		document.addEventListener( 'click', onOutside );
-		bound.push( { document: true, onOutside: onOutside } );
+		bound.push( { document: true, onOutside } );
 
 		initHeaderState( root );
 		initSearch( root );
 	}
 
-	var headerCleanup = null;
+	let headerCleanup = null;
 
 	function initHeaderState( root ) {
-		var headers = root.querySelectorAll
+		const headers = root.querySelectorAll
 			? Array.prototype.slice.call(
 					root.querySelectorAll(
 						'.corex-header--transparent, .corex-header--sticky'
@@ -107,9 +109,10 @@
 			return;
 		}
 
-		var ticking = false;
+		let ticking = false;
 		function apply() {
-			var state = window.scrollY > SCROLL_THRESHOLD ? 'scrolled' : 'top';
+			const state =
+				window.scrollY > SCROLL_THRESHOLD ? 'scrolled' : 'top';
 			headers.forEach( function ( header ) {
 				header.setAttribute( 'data-corex-header-state', state );
 			} );
@@ -130,26 +133,28 @@
 	}
 
 	function panelFor( toggle, root ) {
-		var id = toggle.getAttribute( 'aria-controls' );
+		const id = toggle.getAttribute( 'aria-controls' );
 		if ( id ) {
-			var byId = document.getElementById( id );
+			const byId = document.getElementById( id );
 			if ( byId ) {
 				return byId;
 			}
 		}
-		var header = toggle.closest ? toggle.closest( '.corex-header' ) : root;
+		const header = toggle.closest
+			? toggle.closest( '.corex-header' )
+			: root;
 		return ( header || root ).querySelector( '[data-corex-search-panel]' );
 	}
 
 	function initSearch( root ) {
-		var toggles = root.querySelectorAll
+		const toggles = root.querySelectorAll
 			? Array.prototype.slice.call(
 					root.querySelectorAll( '[data-corex-search-toggle]' )
 			  )
 			: [];
 
 		toggles.forEach( function ( toggle ) {
-			var panel = panelFor( toggle, root );
+			const panel = panelFor( toggle, root );
 			if ( ! panel ) {
 				return;
 			}
@@ -158,7 +163,7 @@
 				toggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
 				if ( open ) {
 					panel.removeAttribute( 'hidden' );
-					var field = panel.querySelector(
+					const field = panel.querySelector(
 						'input, [href], button, select, textarea'
 					);
 					if ( field ) {
@@ -205,11 +210,11 @@
 			document.addEventListener( 'click', onOutsideSearch );
 			bound.push( {
 				search: true,
-				toggle: toggle,
-				panel: panel,
-				onToggleClick: onToggleClick,
-				onKeydown: onKeydown,
-				onOutsideSearch: onOutsideSearch,
+				toggle,
+				panel,
+				onToggleClick,
+				onKeydown,
+				onOutsideSearch,
 			} );
 		} );
 	}
@@ -240,7 +245,7 @@
 	}
 
 	window.Corex = window.Corex || {};
-	window.Corex.navigation = { init: init, destroy: destroy };
+	window.Corex.navigation = { init, destroy };
 
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', function () {

@@ -18,12 +18,18 @@ function App() {
 	return (
 		<div className="corex-flows-app">
 			{ state.message ? (
-				<div className={ `corex-flows-app__notice is-${ state.status }` } role={ state.status === 'error' ? 'alert' : 'status' }>
+				<div
+					className={ `corex-flows-app__notice is-${ state.status }` }
+					role={ state.status === 'error' ? 'alert' : 'status' }
+				>
 					{ state.message }
 				</div>
 			) : null }
 			{ state.draft && state.extensions ? (
-				<FlowEditorPanel studio={ studio } onBack={ () => studio.dispatch( { type: 'cleared' } ) } />
+				<FlowEditorPanel
+					studio={ studio }
+					onBack={ () => studio.dispatch( { type: 'cleared' } ) }
+				/>
 			) : (
 				<FlowList
 					flows={ state.flows }

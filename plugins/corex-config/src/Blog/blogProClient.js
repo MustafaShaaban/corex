@@ -17,8 +17,17 @@ import { blogEndpoint } from './blogProState.js';
  *
  * The controller answers `{ ok, message, data }`, so a 200 can still carry a refusal — a failure that
  * only checks the HTTP status would report success and render nothing.
+ * @param config
+ * @param path
+ * @param root0
+ * @param root0.method
+ * @param root0.data
  */
-export async function blogRequest( config, path, { method = 'GET', data } = {} ) {
+export async function blogRequest(
+	config,
+	path,
+	{ method = 'GET', data } = {}
+) {
 	const response = await fetch( blogEndpoint( config.restUrl, path ), {
 		method,
 		credentials: 'same-origin',
@@ -33,7 +42,8 @@ export async function blogRequest( config, path, { method = 'GET', data } = {} )
 
 	if ( ! response.ok || envelope?.ok === false ) {
 		throw new Error(
-			envelope?.message || __( 'CoreX could not reach Blog Pro.', 'corex' )
+			envelope?.message ||
+				__( 'CoreX could not reach Blog Pro.', 'corex' )
 		);
 	}
 
@@ -45,6 +55,9 @@ export async function blogRequest( config, path, { method = 'GET', data } = {} )
  *
  * The response carries the updated item, which matters here: no GET route returns a post's editorial
  * state, so this is the only way the panel ever learns its new one (spec 075, FR-1).
+ * @param config
+ * @param postId
+ * @param payload
  */
 export function transitionPost( config, postId, payload ) {
 	return blogRequest( config, `blog/editorial/${ postId }/transition`, {
@@ -53,7 +66,12 @@ export function transitionPost( config, postId, payload ) {
 	} );
 }
 
-/** Approve, spam, or trash one queued comment. */
+/**
+ * Approve, spam, or trash one queued comment.
+ * @param config
+ * @param commentId
+ * @param action
+ */
 export function moderateComment( config, commentId, action ) {
 	return blogRequest( config, `blog/comments/${ commentId }/moderate`, {
 		method: 'POST',
@@ -72,6 +90,8 @@ export function moderateComment( config, commentId, action ) {
  *
  * These four calls are what finally give `/blog/analytics`, `/blog/comments`, `/blog/authors`, and
  * `/blog/share-controls` a caller in the product.
+ * @param config
+ * @param postId
  */
 export async function loadBlogData( config, postId ) {
 	const query = `?post_id=${ encodeURIComponent( postId ) }`;

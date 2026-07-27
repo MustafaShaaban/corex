@@ -27,6 +27,7 @@ function tabLabel( tab ) {
  * Tabs were component state only, so no view here could be linked to, bookmarked, or reopened —
  * and the retired Data screen redirects to ?tab=records, which needs this to land anywhere.
  * replaceState rather than pushState: switching tabs is not a navigation to walk back through.
+ * @param tab
  */
 function syncTabToUrl( tab ) {
 	if ( typeof window === 'undefined' || ! window.history?.replaceState ) {
@@ -40,10 +41,16 @@ function syncTabToUrl( tab ) {
 
 export default function DataModelsApp( { config } ) {
 	const abilities = config.abilities || {};
-	const sources = useMemo( () => normalizeCatalog( config.sources ), [ config.sources ] );
+	const sources = useMemo(
+		() => normalizeCatalog( config.sources ),
+		[ config.sources ]
+	);
 	// Tabs depend on the sources as well as the abilities: a capability nothing can satisfy is
 	// hidden rather than shown as a dead end (spec 074, FR-3.1).
-	const tabs = useMemo( () => allowedTabs( abilities, sources ), [ abilities, sources ] );
+	const tabs = useMemo(
+		() => allowedTabs( abilities, sources ),
+		[ abilities, sources ]
+	);
 	const [ tab, setTab ] = useState( () =>
 		tabFromUrl(
 			typeof window === 'undefined' ? '' : window.location.href,
@@ -58,27 +65,52 @@ export default function DataModelsApp( { config } ) {
 	}, [] );
 
 	if ( tabs.length === 0 ) {
-		return <div className="corex-data-models__app">
-			<p className="corex-admin__description">
-				{ __( 'You do not have permission to view data models or records.', 'corex' ) }
-			</p>
-		</div>;
+		return (
+			<div className="corex-data-models__app">
+				<p className="corex-admin__description">
+					{ __(
+						'You do not have permission to view data models or records.',
+						'corex'
+					) }
+				</p>
+			</div>
+		);
 	}
 
-	return <div className="corex-data-models__app">
-		<nav className="corex-data-models__tabs" aria-label={ __( 'Data model sections', 'corex' ) }>
-			{ tabs.map( ( item ) => <button key={ item.key } type="button"
-				className={ tab === item.key ? 'is-active' : undefined }
-				aria-current={ tab === item.key ? 'page' : undefined }
-				onClick={ () => selectTab( item.key ) }>{ tabLabel( item.key ) }</button> ) }
-		</nav>
-		{ tab === 'models' && <>
-			<ModelsPanel sources={ sources } />
-			<CapabilityPanel report={ config.capabilities } />
-		</> }
-		{ tab === 'records' && <DataExplorer config={ config } /> }
-		{ tab === 'import' && <ImportPanel config={ config } sources={ sources } /> }
-		{ tab === 'export' && <ExportPanel config={ config } sources={ sources } /> }
-		{ tab === 'migrations' && <MigrationsPanel config={ config } sources={ sources } /> }
-	</div>;
+	return (
+		<div className="corex-data-models__app">
+			<nav
+				className="corex-data-models__tabs"
+				aria-label={ __( 'Data model sections', 'corex' ) }
+			>
+				{ tabs.map( ( item ) => (
+					<button
+						key={ item.key }
+						type="button"
+						className={ tab === item.key ? 'is-active' : undefined }
+						aria-current={ tab === item.key ? 'page' : undefined }
+						onClick={ () => selectTab( item.key ) }
+					>
+						{ tabLabel( item.key ) }
+					</button>
+				) ) }
+			</nav>
+			{ tab === 'models' && (
+				<>
+					<ModelsPanel sources={ sources } />
+					<CapabilityPanel report={ config.capabilities } />
+				</>
+			) }
+			{ tab === 'records' && <DataExplorer config={ config } /> }
+			{ tab === 'import' && (
+				<ImportPanel config={ config } sources={ sources } />
+			) }
+			{ tab === 'export' && (
+				<ExportPanel config={ config } sources={ sources } />
+			) }
+			{ tab === 'migrations' && (
+				<MigrationsPanel config={ config } sources={ sources } />
+			) }
+		</div>
+	);
 }

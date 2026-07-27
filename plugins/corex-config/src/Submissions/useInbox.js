@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useReducer } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import {
-	buildInboxUrl,
-	inboxReducer,
-	initialInboxState,
-} from './inbox.js';
+import { buildInboxUrl, inboxReducer, initialInboxState } from './inbox.js';
 
 function message( result ) {
-	return result.envelope.message || __( 'The Inbox request failed.', 'corex' );
+	return (
+		result.envelope.message || __( 'The Inbox request failed.', 'corex' )
+	);
 }
 
 export function useInbox( config, filters ) {
@@ -40,11 +38,17 @@ export function useInbox( config, filters ) {
 	const open = useCallback(
 		async ( id ) => {
 			dispatch( { type: 'detailLoading', id } );
-			const result = await window.Corex.api.get( `${ config.restUrl }/${ id }`, {
-				nonce: config.nonce,
-			} );
+			const result = await window.Corex.api.get(
+				`${ config.restUrl }/${ id }`,
+				{
+					nonce: config.nonce,
+				}
+			);
 			if ( ! result.envelope.ok ) {
-				dispatch( { type: 'detailFailed', message: message( result ) } );
+				dispatch( {
+					type: 'detailFailed',
+					message: message( result ),
+				} );
 				return null;
 			}
 			const record = result.envelope.data.submission;
@@ -94,27 +98,40 @@ export function useInbox( config, filters ) {
 		addNote: async ( id, data ) => {
 			const result = await mutate( `/${ id }/notes`, data );
 			if ( result ) {
-				await refreshRecord( id, __( 'Internal note added.', 'corex' ) );
+				await refreshRecord(
+					id,
+					__( 'Internal note added.', 'corex' )
+				);
 			}
 			return result;
 		},
 		reply: async ( id, data ) => {
 			const result = await mutate( `/${ id }/reply`, data );
 			if ( result ) {
-				await refreshRecord( id, __( 'Reply processed by Email Studio.', 'corex' ) );
+				await refreshRecord(
+					id,
+					__( 'Reply processed by Email Studio.', 'corex' )
+				);
 			}
 			return result;
 		},
 		resend: async ( id, attemptId ) => {
-			const result = await mutate( `/${ id }/resend`, { attempt_id: attemptId } );
+			const result = await mutate( `/${ id }/resend`, {
+				attempt_id: attemptId,
+			} );
 			if ( result ) {
-				await refreshRecord( id, __( 'Related email resent.', 'corex' ) );
+				await refreshRecord(
+					id,
+					__( 'Related email resent.', 'corex' )
+				);
 			}
 			return result;
 		},
 		log: ( id, attemptId ) =>
 			window.Corex.api.get(
-				`${ config.restUrl }/${ id }/email-log?attempt_id=${ encodeURIComponent(
+				`${
+					config.restUrl
+				}/${ id }/email-log?attempt_id=${ encodeURIComponent(
 					attemptId
 				) }`,
 				{ nonce: config.nonce }
@@ -139,8 +156,11 @@ export function useInbox( config, filters ) {
 				nonce: config.nonce,
 			} ),
 		downloadExport: ( id ) =>
-			window.Corex.api.get( `${ config.restUrl }/exports/${ id }/download`, {
-				nonce: config.nonce,
-			} ),
+			window.Corex.api.get(
+				`${ config.restUrl }/exports/${ id }/download`,
+				{
+					nonce: config.nonce,
+				}
+			),
 	};
 }

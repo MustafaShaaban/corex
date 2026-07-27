@@ -30,7 +30,7 @@ function buildMarkup( { slides = 3, autoplay = false } = {} ) {
 function setup( opts ) {
 	document.body.innerHTML = buildMarkup( opts );
 	jest.resetModules();
-	// eslint-disable-next-line global-require
+
 	require( './view.js' );
 }
 
@@ -56,21 +56,27 @@ describe( 'carousel view — controls', () => {
 		setup();
 		document.querySelector( '[data-corex-carousel-next]' ).click();
 		expect( scrollSpy ).toHaveBeenCalledTimes( 1 );
-		const slide = document.querySelectorAll( '.corex-carousel__slide' )[ 1 ];
+		const slide = document.querySelectorAll(
+			'.corex-carousel__slide'
+		)[ 1 ];
 		expect( scrollSpy.mock.instances[ 0 ] ).toBe( slide );
 	} );
 
 	test( 'Prev clamps at the first slide', () => {
 		setup();
 		document.querySelector( '[data-corex-carousel-prev]' ).click();
-		const first = document.querySelectorAll( '.corex-carousel__slide' )[ 0 ];
+		const first = document.querySelectorAll(
+			'.corex-carousel__slide'
+		)[ 0 ];
 		expect( scrollSpy.mock.instances[ 0 ] ).toBe( first );
 	} );
 
 	test( 'A dot scrolls straight to its slide', () => {
 		setup();
 		document.querySelectorAll( '[data-corex-carousel-goto]' )[ 2 ].click();
-		const third = document.querySelectorAll( '.corex-carousel__slide' )[ 2 ];
+		const third = document.querySelectorAll(
+			'.corex-carousel__slide'
+		)[ 2 ];
 		expect( scrollSpy.mock.instances[ 0 ] ).toBe( third );
 	} );
 } );

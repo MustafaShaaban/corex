@@ -7,14 +7,14 @@
 import { join } from 'node:path';
 import { verifyDist } from './build-shared-host-dist.mjs';
 
-const distDir = join(process.cwd(), 'dist');
-const result = verifyDist(distDir);
+const distDir = join( process.cwd(), 'dist' );
+const result = verifyDist( distDir );
 
-if (result.ok) {
-	console.log('verify-shared-host-dist: OK');
-	process.exit(0);
+if ( result.ok ) {
+	console.log( 'verify-shared-host-dist: OK' );
+	process.exit( 0 );
 }
 
-console.error('verify-shared-host-dist: FAILED');
-result.errors.forEach((e) => console.error('  - ' + e));
-process.exit(1);
+console.error( 'verify-shared-host-dist: FAILED' );
+result.errors.forEach( ( e ) => console.error( '  - ' + e ) );
+process.exit( 1 );

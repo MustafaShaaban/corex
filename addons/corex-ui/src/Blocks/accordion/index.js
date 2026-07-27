@@ -7,7 +7,11 @@
 import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps, RichText, InspectorControls } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	RichText,
+	InspectorControls,
+} from '@wordpress/block-editor';
 import { PanelBody, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
@@ -24,9 +28,13 @@ registerBlockType( metadata.name, {
 			setAttributes( { items: next } );
 		};
 		const addItem = () =>
-			setAttributes( { items: [ ...items, { title: '', content: '' } ] } );
+			setAttributes( {
+				items: [ ...items, { title: '', content: '' } ],
+			} );
 		const removeItem = ( index ) =>
-			setAttributes( { items: items.filter( ( _it, i ) => i !== index ) } );
+			setAttributes( {
+				items: items.filter( ( _it, i ) => i !== index ),
+			} );
 
 		return (
 			<div { ...blockProps }>
@@ -39,12 +47,18 @@ registerBlockType( metadata.name, {
 				</InspectorControls>
 
 				{ items.map( ( item, index ) => (
-					<details className="corex-accordion__item" key={ index } open>
+					<details
+						className="corex-accordion__item"
+						key={ index }
+						open
+					>
 						<summary className="corex-accordion__summary">
 							<RichText
 								tagName="span"
 								value={ item.title }
-								onChange={ ( v ) => setItem( index, 'title', v ) }
+								onChange={ ( v ) =>
+									setItem( index, 'title', v )
+								}
 								placeholder={ __( 'Panel title', 'corex' ) }
 							/>
 						</summary>
@@ -52,7 +66,9 @@ registerBlockType( metadata.name, {
 							<RichText
 								tagName="div"
 								value={ item.content }
-								onChange={ ( v ) => setItem( index, 'content', v ) }
+								onChange={ ( v ) =>
+									setItem( index, 'content', v )
+								}
 								placeholder={ __( 'Panel content', 'corex' ) }
 							/>
 							<Button

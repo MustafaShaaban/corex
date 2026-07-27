@@ -48,7 +48,8 @@ export default function NotificationDrawer( { open, onClose } ) {
 			return undefined;
 		}
 		const panel = panelRef.current;
-		const focusables = () => Array.from( panel.querySelectorAll( FOCUSABLE ) );
+		const focusables = () =>
+			Array.from( panel.querySelectorAll( FOCUSABLE ) );
 		( focusables()[ 0 ] || panel ).focus();
 
 		const onKeyDown = ( event ) => {
@@ -80,7 +81,10 @@ export default function NotificationDrawer( { open, onClose } ) {
 	}, [ open, onClose ] );
 
 	const markRead = useCallback( ( id ) => {
-		apiFetch( { path: `/corex/v1/notifications/${ id }/read`, method: 'POST' } )
+		apiFetch( {
+			path: `/corex/v1/notifications/${ id }/read`,
+			method: 'POST',
+		} )
 			.then( () =>
 				setItems( ( current ) =>
 					current.filter( ( item ) => item.id !== id )
@@ -133,7 +137,10 @@ export default function NotificationDrawer( { open, onClose } ) {
 					</p>
 				) }
 				{ status === 'error' && (
-					<p className="corex-notification-drawer__state" role="alert">
+					<p
+						className="corex-notification-drawer__state"
+						role="alert"
+					>
 						{ __(
 							'Notifications could not be loaded. Try again shortly.',
 							'corex'
@@ -155,7 +162,10 @@ export default function NotificationDrawer( { open, onClose } ) {
 							     dismiss/snooze/resolve belong where you can see what you are acting
 							     on — but every fact about the item is the same one. */ }
 							{ items.map( ( item ) => (
-								<li key={ item.id } className="corex-notification-drawer__item">
+								<li
+									key={ item.id }
+									className="corex-notification-drawer__item"
+								>
 									<NotificationItem
 										item={ item }
 										compact

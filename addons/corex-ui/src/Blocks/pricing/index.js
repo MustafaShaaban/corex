@@ -6,7 +6,11 @@
 import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps, RichText, InspectorControls } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	RichText,
+	InspectorControls,
+} from '@wordpress/block-editor';
 import { PanelBody, TextControl, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
@@ -21,9 +25,12 @@ registerBlockType( metadata.name, {
 			next[ index ] = value;
 			setAttributes( { features: next } );
 		};
-		const addFeature = () => setAttributes( { features: [ ...features, '' ] } );
+		const addFeature = () =>
+			setAttributes( { features: [ ...features, '' ] } );
 		const removeFeature = ( index ) =>
-			setAttributes( { features: features.filter( ( _f, i ) => i !== index ) } );
+			setAttributes( {
+				features: features.filter( ( _f, i ) => i !== index ),
+			} );
 
 		return (
 			<div { ...blockProps }>

@@ -35,19 +35,25 @@ test.describe( 'Blog Pro admin workspace', () => {
 
 		// The analytics heading quotes the same post the selector shows.
 		const subject = ( await selector.textContent() ).trim();
-		await expect( page.locator( '.corex-blog-pro__panel h2' ) ).toContainText(
-			subject
-		);
+		await expect(
+			page.locator( '.corex-blog-pro__panel h2' )
+		).toContainText( subject );
 		// And the period is stated, because a count without a window means nothing.
-		await expect( page.locator( '.corex-blog-pro__subject-meta' ) ).toContainText(
-			'30'
-		);
+		await expect(
+			page.locator( '.corex-blog-pro__subject-meta' )
+		).toContainText( '30' );
 
 		await expect( page.getByText( 'Editorial workflow' ) ).toBeVisible();
-		await expect( page.getByRole( 'heading', { name: 'Authors' } ) ).toBeVisible();
-		await expect( page.getByRole( 'heading', { name: 'Sharing' } ) ).toBeVisible();
+		await expect(
+			page.getByRole( 'heading', { name: 'Authors' } )
+		).toBeVisible();
+		await expect(
+			page.getByRole( 'heading', { name: 'Sharing' } )
+		).toBeVisible();
 
-		expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
+		expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual(
+			[]
+		);
 	} );
 
 	test( 'speaks in words, never in slugs', async ( { page } ) => {
@@ -84,10 +90,14 @@ test.describe( 'Blog Pro admin workspace', () => {
 		await expect(
 			page.locator( '[data-corex-blog-post-selector] [role="combobox"]' )
 		).toBeVisible();
-		await expect( page.locator( '.corex-blog-pro__panel h2' ) ).toBeVisible();
+		await expect(
+			page.locator( '.corex-blog-pro__panel h2' )
+		).toBeVisible();
 	} );
 
-	test( 'contains the workspace within the page, LTR and RTL', async ( { page } ) => {
+	test( 'contains the workspace within the page, LTR and RTL', async ( {
+		page,
+	} ) => {
 		// The claim under test is that *the workspace* contains itself, not that WP admin is
 		// perfect — the same framing tests/e2e/notification-center.spec.js uses for the drawer.
 		//
@@ -99,7 +109,10 @@ test.describe( 'Blog Pro admin workspace', () => {
 		for ( const dir of [ 'ltr', 'rtl' ] ) {
 			await page
 				.locator( 'html' )
-				.evaluate( ( root, value ) => root.setAttribute( 'dir', value ), dir );
+				.evaluate(
+					( root, value ) => root.setAttribute( 'dir', value ),
+					dir
+				);
 
 			for ( const width of [ 375, 768, 1024, 1440 ] ) {
 				await page.setViewportSize( { width, height: 900 } );
@@ -114,9 +127,10 @@ test.describe( 'Blog Pro admin workspace', () => {
 					);
 				} );
 
-				expect( fits, `workspace overflow at ${ width }px (${ dir })` ).toBe(
-					true
-				);
+				expect(
+					fits,
+					`workspace overflow at ${ width }px (${ dir })`
+				).toBe( true );
 			}
 		}
 	} );
@@ -129,13 +143,23 @@ test.describe( 'Native blog front end', () => {
 		const errors = collectConsoleErrors( page );
 		await page.goto( '/hello-world/' );
 
-		await expect( page.getByRole( 'heading', { name: 'Hello world!', level: 1 } ) ).toBeVisible();
+		await expect(
+			page.getByRole( 'heading', { name: 'Hello world!', level: 1 } )
+		).toBeVisible();
 		// Functional CoreX blocks resolve (require the active email/newsletter addons).
-		await expect( page.getByRole( 'button', { name: 'Copy link' } ) ).toBeVisible();
-		await expect( page.getByRole( 'button', { name: 'Subscribe' } ) ).toBeVisible();
+		await expect(
+			page.getByRole( 'button', { name: 'Copy link' } )
+		).toBeVisible();
+		await expect(
+			page.getByRole( 'button', { name: 'Subscribe' } )
+		).toBeVisible();
 		// Native comment thread + reply form.
-		await expect( page.locator( 'form.comment-form, #commentform' ) ).toBeVisible();
+		await expect(
+			page.locator( 'form.comment-form, #commentform' )
+		).toBeVisible();
 
-		expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
+		expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual(
+			[]
+		);
 	} );
 } );

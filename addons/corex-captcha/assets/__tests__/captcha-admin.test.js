@@ -12,10 +12,10 @@ const { testEndpoint, resultFromEnvelope } = require( '../captcha-admin.js' );
 describe( 'testEndpoint', () => {
 	it( 'builds the captcha test route from the REST base, with or without a trailing slash', () => {
 		expect( testEndpoint( 'https://x.test/wp-json/corex/v1' ) ).toBe(
-			'https://x.test/wp-json/corex/v1/captcha/test',
+			'https://x.test/wp-json/corex/v1/captcha/test'
 		);
 		expect( testEndpoint( 'https://x.test/wp-json/corex/v1/' ) ).toBe(
-			'https://x.test/wp-json/corex/v1/captcha/test',
+			'https://x.test/wp-json/corex/v1/captcha/test'
 		);
 	} );
 } );
@@ -28,20 +28,31 @@ describe( 'resultFromEnvelope', () => {
 			message: 'Add your captcha secret key.',
 			data: { secret: 'SHOULD-NEVER-LEAK', site_key: 'ALSO-NOT' },
 		} );
-		expect( view ).toEqual( { ok: false, message: 'Add your captcha secret key.' } );
+		expect( view ).toEqual( {
+			ok: false,
+			message: 'Add your captcha secret key.',
+		} );
 		expect( JSON.stringify( view ) ).not.toContain( 'SHOULD-NEVER-LEAK' );
 		expect( JSON.stringify( view ) ).not.toContain( 'ALSO-NOT' );
 	} );
 
 	it( 'treats a success envelope as ok', () => {
-		expect( resultFromEnvelope( { ok: true, message: 'Captcha verified.' } ) ).toEqual( {
+		expect(
+			resultFromEnvelope( { ok: true, message: 'Captcha verified.' } )
+		).toEqual( {
 			ok: true,
 			message: 'Captcha verified.',
 		} );
 	} );
 
 	it( 'falls back to an empty message on a malformed/absent envelope', () => {
-		expect( resultFromEnvelope( null ) ).toEqual( { ok: false, message: '' } );
-		expect( resultFromEnvelope( {} ) ).toEqual( { ok: false, message: '' } );
+		expect( resultFromEnvelope( null ) ).toEqual( {
+			ok: false,
+			message: '',
+		} );
+		expect( resultFromEnvelope( {} ) ).toEqual( {
+			ok: false,
+			message: '',
+		} );
 	} );
 } );

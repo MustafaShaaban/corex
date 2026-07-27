@@ -30,16 +30,22 @@ test( 'Overview projects real readiness, activity, and command-center counts', a
 } ) => {
 	const errors = collectConsoleErrors( page );
 	await page.goto( '/wp-admin/admin.php?page=corex-settings' );
-	await expect( page.getByRole( 'heading', { name: 'CoreX Overview' } ) ).toBeVisible();
+	await expect(
+		page.getByRole( 'heading', { name: 'CoreX Overview' } )
+	).toBeVisible();
 
 	// Real projections — no fabricated placeholders.
 	await expect( page.getByText( 'Launch readiness' ) ).toBeVisible();
 	await expect( page.locator( '.corex-overview__tile' ) ).toHaveCount( 4 );
 	await expect( page.getByText( 'Read-only' ) ).toHaveCount( 0 );
-	await expect( page.getByText( 'once event logging is available' ) ).toHaveCount( 0 );
+	await expect(
+		page.getByText( 'once event logging is available' )
+	).toHaveCount( 0 );
 	// The recent-activity card shows either real events or the honest empty state, never the
 	// old "logging not available" placeholder.
-	await expect( page.getByRole( 'heading', { name: 'Recent activity' } ) ).toBeVisible();
+	await expect(
+		page.getByRole( 'heading', { name: 'Recent activity' } )
+	).toBeVisible();
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
@@ -58,7 +64,9 @@ test( 'Overview tiles hold four evenly pitched columns', async ( { page } ) => {
 
 	const tiles = await page
 		.locator( '.corex-overview__tile' )
-		.evaluateAll( ( els ) => els.map( ( el ) => el.getBoundingClientRect().x ) );
+		.evaluateAll( ( els ) =>
+			els.map( ( el ) => el.getBoundingClientRect().x )
+		);
 
 	// One row of four: four distinct offsets, evenly pitched.
 	expect( new Set( tiles.map( Math.round ) ).size ).toBe( 4 );
@@ -68,10 +76,14 @@ test( 'Overview tiles hold four evenly pitched columns', async ( { page } ) => {
 	}
 } );
 
-test( 'Add-ons lists real packages with truthful summary counts', async ( { page } ) => {
+test( 'Add-ons lists real packages with truthful summary counts', async ( {
+	page,
+} ) => {
 	const errors = collectConsoleErrors( page );
 	await page.goto( '/wp-admin/admin.php?page=corex-addons' );
-	await expect( page.getByRole( 'heading', { name: 'CoreX Add-ons' } ) ).toBeVisible();
+	await expect(
+		page.getByRole( 'heading', { name: 'CoreX Add-ons' } )
+	).toBeVisible();
 
 	await expect( page.locator( '.corex-addon-card' ).first() ).toBeVisible();
 	// Updates are honestly untracked (no faked count), and real toggles are present.
@@ -90,6 +102,8 @@ test( 'every CoreX route highlights the correct rail item and breadcrumb', async
 		await expect( active, `${ slug } active rail item` ).toHaveCount( 1 );
 		await expect( active ).toHaveAttribute( 'aria-current', 'page' );
 		await expect( active ).toContainText( label );
-		await expect( page.locator( '.corex-admin__eyebrow' ).first() ).toContainText( label );
+		await expect(
+			page.locator( '.corex-admin__eyebrow' ).first()
+		).toContainText( label );
 	}
 } );

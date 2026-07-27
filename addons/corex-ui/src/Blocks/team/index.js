@@ -20,16 +20,27 @@ import metadata from './block.json';
 registerBlockType( metadata.name, {
 	edit: ( { attributes, setAttributes } ) => {
 		const blockProps = useBlockProps( { className: 'corex-team' } );
-		const members = Array.isArray( attributes.members ) ? attributes.members : [];
+		const members = Array.isArray( attributes.members )
+			? attributes.members
+			: [];
 
 		const setMember = ( index, key, value ) =>
 			setAttributes( {
-				members: members.map( ( m, i ) => ( i === index ? { ...m, [ key ]: value } : m ) ),
+				members: members.map( ( m, i ) =>
+					i === index ? { ...m, [ key ]: value } : m
+				),
 			} );
 		const addMember = () =>
-			setAttributes( { members: [ ...members, { name: '', role: '', image: {}, bio: '' } ] } );
+			setAttributes( {
+				members: [
+					...members,
+					{ name: '', role: '', image: {}, bio: '' },
+				],
+			} );
 		const removeMember = ( index ) =>
-			setAttributes( { members: members.filter( ( _m, i ) => i !== index ) } );
+			setAttributes( {
+				members: members.filter( ( _m, i ) => i !== index ),
+			} );
 
 		return (
 			<div { ...blockProps }>
@@ -63,7 +74,10 @@ registerBlockType( metadata.name, {
 											onClick={ open }
 										/>
 									) : (
-										<Button variant="secondary" onClick={ open }>
+										<Button
+											variant="secondary"
+											onClick={ open }
+										>
 											{ __( 'Add photo', 'corex' ) }
 										</Button>
 									)
@@ -75,24 +89,37 @@ registerBlockType( metadata.name, {
 								tagName="span"
 								className="corex-team__name"
 								value={ member.name }
-								onChange={ ( v ) => setMember( index, 'name', v ) }
+								onChange={ ( v ) =>
+									setMember( index, 'name', v )
+								}
 								placeholder={ __( 'Name', 'corex' ) }
 							/>
 							<RichText
 								tagName="span"
 								className="corex-team__role"
 								value={ member.role }
-								onChange={ ( v ) => setMember( index, 'role', v ) }
+								onChange={ ( v ) =>
+									setMember( index, 'role', v )
+								}
 								placeholder={ __( 'Role', 'corex' ) }
 							/>
 							<RichText
 								tagName="p"
 								className="corex-team__bio"
 								value={ member.bio }
-								onChange={ ( v ) => setMember( index, 'bio', v ) }
-								placeholder={ __( 'Short bio (optional)', 'corex' ) }
+								onChange={ ( v ) =>
+									setMember( index, 'bio', v )
+								}
+								placeholder={ __(
+									'Short bio (optional)',
+									'corex'
+								) }
 							/>
-							<Button isDestructive variant="link" onClick={ () => removeMember( index ) }>
+							<Button
+								isDestructive
+								variant="link"
+								onClick={ () => removeMember( index ) }
+							>
 								{ __( 'Remove member', 'corex' ) }
 							</Button>
 						</figcaption>

@@ -9,13 +9,15 @@
  * (the REST routes accept a normal POST), so the account remains usable.
  *
  * Config comes from the localized `window.corexAccount = { restUrl, nonce }`.
+ * @param window
+ * @param document
  */
 ( function ( window, document ) {
 	'use strict';
 
-	var cfg = window.corexAccount || {};
-	var i18n = cfg.i18n || {};
-	var ROUTES = {
+	const cfg = window.corexAccount || {};
+	const i18n = cfg.i18n || {};
+	const ROUTES = {
 		login: 'account/login',
 		register: 'account/register',
 		'reset-request': 'account/reset-request',
@@ -39,7 +41,7 @@
 	}
 
 	function status( message, ok ) {
-		var el = document.querySelector( '.corex-account__status' );
+		const el = document.querySelector( '.corex-account__status' );
 		if ( ! el ) {
 			return;
 		}
@@ -61,7 +63,7 @@
 			} )
 			.then( function ( res ) {
 				return res.json().then( function ( data ) {
-					return { ok: res.ok, data: data };
+					return { ok: res.ok, data };
 				} );
 			} );
 	}
@@ -78,7 +80,7 @@
 	}
 
 	function serialize( form ) {
-		var data = {};
+		const data = {};
 		Array.prototype.forEach.call( form.elements, function ( el ) {
 			if ( ! el.name ) {
 				return;
@@ -92,14 +94,14 @@
 	function onSubmit( form, token ) {
 		form.addEventListener( 'submit', function ( event ) {
 			event.preventDefault();
-			var kind = form.getAttribute( 'data-corex-account-form' );
-			var path = ROUTES[ kind ];
+			const kind = form.getAttribute( 'data-corex-account-form' );
+			const path = ROUTES[ kind ];
 			if ( ! path ) {
 				return;
 			}
 			status( '', true );
 			post( path, serialize( form ), token ).then( function ( out ) {
-				var msg = ( out.data && out.data.message ) || '';
+				const msg = ( out.data && out.data.message ) || '';
 				status( msg, out.ok );
 				if ( out.ok && kind === 'profile' ) {
 					loadSessions( token );
@@ -114,7 +116,7 @@
 	}
 
 	function loadSessions( token ) {
-		var list = document.querySelector(
+		const list = document.querySelector(
 			'[data-corex-account-session-list]'
 		);
 		if ( ! list ) {
@@ -123,7 +125,7 @@
 		get( 'account/sessions', token ).then( function ( data ) {
 			list.textContent = '';
 			( ( data && data.sessions ) || [] ).forEach( function ( s ) {
-				var li = document.createElement( 'li' );
+				const li = document.createElement( 'li' );
 				li.textContent =
 					( s.ua || i18n.session || 'Session' ) +
 					( s.current
@@ -135,7 +137,7 @@
 	}
 
 	function loadNotifications( token ) {
-		var list = document.querySelector(
+		const list = document.querySelector(
 			'[data-corex-account-notification-list]'
 		);
 		if ( ! list ) {
@@ -144,7 +146,7 @@
 		get( 'account/notifications', token ).then( function ( data ) {
 			list.textContent = '';
 			( ( data && data.notifications ) || [] ).forEach( function ( n ) {
-				var li = document.createElement( 'li' );
+				const li = document.createElement( 'li' );
 				li.textContent =
 					( n.kind || '' ) + ' · ' + ( n.occurredAt || '' );
 				list.appendChild( li );
@@ -157,10 +159,10 @@
 			document.querySelectorAll( '[data-corex-account-action]' ),
 			function ( btn ) {
 				btn.addEventListener( 'click', function () {
-					var action = btn.getAttribute(
+					const action = btn.getAttribute(
 						'data-corex-account-action'
 					);
-					var path =
+					const path =
 						action === 'revoke-all'
 							? 'account/sessions/revoke-all'
 							: 'account/sessions/revoke-others';
@@ -177,11 +179,11 @@
 	}
 
 	function init() {
-		var el = root();
+		const el = root();
 		if ( ! el ) {
 			return;
 		}
-		var token = nonce( el );
+		const token = nonce( el );
 
 		Array.prototype.forEach.call(
 			document.querySelectorAll( '[data-corex-account-form]' ),

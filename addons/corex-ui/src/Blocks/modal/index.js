@@ -26,16 +26,23 @@ registerBlockType( metadata.name, {
 						<TextControl
 							label={ __( 'Trigger label', 'corex' ) }
 							value={ attributes.triggerLabel }
-							onChange={ ( triggerLabel ) => setAttributes( { triggerLabel } ) }
+							onChange={ ( triggerLabel ) =>
+								setAttributes( { triggerLabel } )
+							}
 						/>
 						<TextareaControl
 							label={ __( 'Content', 'corex' ) }
 							value={ attributes.content }
-							onChange={ ( content ) => setAttributes( { content } ) }
+							onChange={ ( content ) =>
+								setAttributes( { content } )
+							}
 						/>
 					</PanelBody>
 				</InspectorControls>
-				<ServerSideRender block={ metadata.name } attributes={ attributes } />
+				<ServerSideRender
+					block={ metadata.name }
+					attributes={ attributes }
+				/>
 			</div>
 		);
 	},

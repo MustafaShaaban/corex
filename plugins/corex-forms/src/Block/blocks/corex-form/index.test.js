@@ -10,32 +10,65 @@ const SelectControlMock = () => null;
 const ServerSideRenderMock = () => null;
 
 jest.mock( './style.scss', () => ( {} ), { virtual: true } );
-jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), { virtual: true } );
-jest.mock( '@wordpress/block-editor', () => ( {
-	useBlockProps: ( props ) => props || {},
-	InspectorControls: ( { children } ) => children,
-} ), { virtual: true } );
-jest.mock( '@wordpress/components', () => ( {
-	PanelBody: ( { children } ) => children,
-	SelectControl: SelectControlMock,
-	TextControl: () => null,
-	TextareaControl: () => null,
-} ), { virtual: true } );
-jest.mock( '@wordpress/server-side-render', () => ServerSideRenderMock, { virtual: true } );
-jest.mock( '@wordpress/element', () => ( {
-	useState: ( init ) => [ init, jest.fn() ],
-	useEffect: ( fn ) => fn(),
-} ), { virtual: true } );
-jest.mock( '@wordpress/api-fetch', () => jest.fn( () => Promise.resolve( { data: { flows: [ { id: 7, name: 'Contact', state: 'published' } ] } } ) ), { virtual: true } );
+jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), {
+	virtual: true,
+} );
+jest.mock(
+	'@wordpress/block-editor',
+	() => ( {
+		useBlockProps: ( props ) => props || {},
+		InspectorControls: ( { children } ) => children,
+	} ),
+	{ virtual: true }
+);
+jest.mock(
+	'@wordpress/components',
+	() => ( {
+		PanelBody: ( { children } ) => children,
+		SelectControl: SelectControlMock,
+		TextControl: () => null,
+		TextareaControl: () => null,
+	} ),
+	{ virtual: true }
+);
+jest.mock( '@wordpress/server-side-render', () => ServerSideRenderMock, {
+	virtual: true,
+} );
+jest.mock(
+	'@wordpress/element',
+	() => ( {
+		useState: ( init ) => [ init, jest.fn() ],
+		useEffect: ( fn ) => fn(),
+	} ),
+	{ virtual: true }
+);
+jest.mock(
+	'@wordpress/api-fetch',
+	() =>
+		jest.fn( () =>
+			Promise.resolve( {
+				data: {
+					flows: [ { id: 7, name: 'Contact', state: 'published' } ],
+				},
+			} )
+		),
+	{ virtual: true }
+);
 jest.mock( '@wordpress/i18n', () => ( { __: ( s ) => s } ), { virtual: true } );
 
 import './index.js';
 
 function collect( node, type, out = [] ) {
-	if ( ! node || typeof node !== 'object' ) return out;
-	if ( node.type === type ) out.push( node );
+	if ( ! node || typeof node !== 'object' ) {
+		return out;
+	}
+	if ( node.type === type ) {
+		out.push( node );
+	}
 	const ch = node.props && node.props.children;
-	( Array.isArray( ch ) ? ch : [ ch ] ).forEach( ( c ) => collect( c, type, out ) );
+	( Array.isArray( ch ) ? ch : [ ch ] ).forEach( ( c ) =>
+		collect( c, type, out )
+	);
 	return out;
 }
 
@@ -48,9 +81,14 @@ describe( 'form block — form selector', () => {
 	} );
 
 	test( 'edit() defaults to published flows with source and record selectors', () => {
-		const element = config.edit( { attributes: { source: 'flow', flowId: 7 }, setAttributes: jest.fn() } );
+		const element = config.edit( {
+			attributes: { source: 'flow', flowId: 7 },
+			setAttributes: jest.fn(),
+		} );
 
-		expect( apiFetch ).toHaveBeenCalledWith( { path: '/corex/v1/flows?state=published' } );
+		expect( apiFetch ).toHaveBeenCalledWith( {
+			path: '/corex/v1/flows?state=published',
+		} );
 		expect( collect( element, SelectControlMock ).length ).toBe( 2 );
 	} );
 } );

@@ -40,15 +40,23 @@ registerBlockType( metadata.name, {
 							label={ __( 'Slide from', 'corex' ) }
 							value={ attributes.side }
 							options={ [
-								{ label: __( 'End (right in LTR)', 'corex' ), value: 'end' },
-								{ label: __( 'Start (left in LTR)', 'corex' ), value: 'start' },
+								{
+									label: __( 'End (right in LTR)', 'corex' ),
+									value: 'end',
+								},
+								{
+									label: __( 'Start (left in LTR)', 'corex' ),
+									value: 'start',
+								},
 							] }
 							onChange={ ( side ) => setAttributes( { side } ) }
 						/>
 						<TextareaControl
 							label={ __( 'Content', 'corex' ) }
 							value={ attributes.content }
-							onChange={ ( content ) => setAttributes( { content } ) }
+							onChange={ ( content ) =>
+								setAttributes( { content } )
+							}
 						/>
 					</PanelBody>
 				</InspectorControls>

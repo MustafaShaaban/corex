@@ -6,21 +6,30 @@
 import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps, RichText, InspectorControls } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	RichText,
+	InspectorControls,
+} from '@wordpress/block-editor';
 import { PanelBody, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
 registerBlockType( metadata.name, {
 	edit: ( { attributes, setAttributes } ) => {
-		const blockProps = useBlockProps( { className: 'corex-tabs is-editing' } );
+		const blockProps = useBlockProps( {
+			className: 'corex-tabs is-editing',
+		} );
 		const tabs = Array.isArray( attributes.tabs ) ? attributes.tabs : [];
 
 		const setTab = ( index, key, value ) =>
 			setAttributes( {
-				tabs: tabs.map( ( t, i ) => ( i === index ? { ...t, [ key ]: value } : t ) ),
+				tabs: tabs.map( ( t, i ) =>
+					i === index ? { ...t, [ key ]: value } : t
+				),
 			} );
-		const addTab = () => setAttributes( { tabs: [ ...tabs, { label: '', content: '' } ] } );
+		const addTab = () =>
+			setAttributes( { tabs: [ ...tabs, { label: '', content: '' } ] } );
 		const removeTab = ( index ) =>
 			setAttributes( { tabs: tabs.filter( ( _t, i ) => i !== index ) } );
 
@@ -47,10 +56,16 @@ registerBlockType( metadata.name, {
 							<RichText
 								tagName="div"
 								value={ tab.content }
-								onChange={ ( v ) => setTab( index, 'content', v ) }
+								onChange={ ( v ) =>
+									setTab( index, 'content', v )
+								}
 								placeholder={ __( 'Tab content', 'corex' ) }
 							/>
-							<Button isDestructive variant="link" onClick={ () => removeTab( index ) }>
+							<Button
+								isDestructive
+								variant="link"
+								onClick={ () => removeTab( index ) }
+							>
 								{ __( 'Remove tab', 'corex' ) }
 							</Button>
 						</div>

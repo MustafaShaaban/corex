@@ -23,9 +23,12 @@ export function useFlows( config ) {
 					buildFlowListUrl( config.restUrl, search, lifecycle ),
 					{ nonce: config.nonce }
 				),
-				window.Corex.api.get( `${ flowEndpoint( config.restUrl ) }/extensions`, {
-					nonce: config.nonce,
-				} ),
+				window.Corex.api.get(
+					`${ flowEndpoint( config.restUrl ) }/extensions`,
+					{
+						nonce: config.nonce,
+					}
+				),
 			] );
 			if ( ! list.envelope.ok || ! extensions.envelope.ok ) {
 				dispatch( {
@@ -64,7 +67,10 @@ export function useFlows( config ) {
 				? draftFromDetail( result.envelope.data )
 				: null;
 			if ( ! draft ) {
-				dispatch( { type: 'failed', message: failureMessage( result ) } );
+				dispatch( {
+					type: 'failed',
+					message: failureMessage( result ),
+				} );
 				return false;
 			}
 			dispatch( { type: 'selected', payload: draft } );

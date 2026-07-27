@@ -31,7 +31,11 @@ function setMegaDom() {
 beforeEach( () => {
 	delete window.Corex;
 	global.requestAnimationFrame = ( cb ) => setTimeout( cb, 0 );
-	Object.defineProperty( window, 'scrollY', { value: 0, configurable: true, writable: true } );
+	Object.defineProperty( window, 'scrollY', {
+		value: 0,
+		configurable: true,
+		writable: true,
+	} );
 } );
 
 const flush = () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
@@ -95,11 +99,17 @@ it( 'toggles the transparent header state on scroll', async () => {
 	const header = document.querySelector( '.corex-header--transparent' );
 	expect( header.getAttribute( 'data-corex-header-state' ) ).toBe( 'top' );
 
-	Object.defineProperty( window, 'scrollY', { value: 200, configurable: true, writable: true } );
+	Object.defineProperty( window, 'scrollY', {
+		value: 200,
+		configurable: true,
+		writable: true,
+	} );
 	window.dispatchEvent( new window.Event( 'scroll' ) );
 	await flush();
 
-	expect( header.getAttribute( 'data-corex-header-state' ) ).toBe( 'scrolled' );
+	expect( header.getAttribute( 'data-corex-header-state' ) ).toBe(
+		'scrolled'
+	);
 } );
 
 it( 'toggles a solid sticky header state on scroll too', async () => {
@@ -110,11 +120,17 @@ it( 'toggles a solid sticky header state on scroll too', async () => {
 	const header = document.querySelector( '.corex-header--sticky' );
 	expect( header.getAttribute( 'data-corex-header-state' ) ).toBe( 'top' );
 
-	Object.defineProperty( window, 'scrollY', { value: 200, configurable: true, writable: true } );
+	Object.defineProperty( window, 'scrollY', {
+		value: 200,
+		configurable: true,
+		writable: true,
+	} );
 	window.dispatchEvent( new window.Event( 'scroll' ) );
 	await flush();
 
-	expect( header.getAttribute( 'data-corex-header-state' ) ).toBe( 'scrolled' );
+	expect( header.getAttribute( 'data-corex-header-state' ) ).toBe(
+		'scrolled'
+	);
 } );
 
 function setSearchDom() {

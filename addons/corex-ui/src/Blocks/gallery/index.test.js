@@ -12,15 +12,23 @@ const MediaUploadMock = () => null;
 const MediaPlaceholderMock = () => null;
 
 jest.mock( './style.scss', () => ( {} ), { virtual: true } );
-jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), { virtual: true } );
-jest.mock( '@wordpress/block-editor', () => ( {
-	useBlockProps: ( props ) => props || {},
-	RichText: RichTextMock,
-	MediaUpload: MediaUploadMock,
-	MediaUploadCheck: ( { children } ) => children,
-	MediaPlaceholder: MediaPlaceholderMock,
-} ), { virtual: true } );
-jest.mock( '@wordpress/components', () => ( { Button: ButtonMock } ), { virtual: true } );
+jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), {
+	virtual: true,
+} );
+jest.mock(
+	'@wordpress/block-editor',
+	() => ( {
+		useBlockProps: ( props ) => props || {},
+		RichText: RichTextMock,
+		MediaUpload: MediaUploadMock,
+		MediaUploadCheck: ( { children } ) => children,
+		MediaPlaceholder: MediaPlaceholderMock,
+	} ),
+	{ virtual: true }
+);
+jest.mock( '@wordpress/components', () => ( { Button: ButtonMock } ), {
+	virtual: true,
+} );
 jest.mock( '@wordpress/i18n', () => ( { __: ( s ) => s } ), { virtual: true } );
 
 import './index.js';
@@ -30,8 +38,12 @@ function collect( node, type, out = [] ) {
 		node.forEach( ( n ) => collect( n, type, out ) );
 		return out;
 	}
-	if ( ! node || typeof node !== 'object' ) return out;
-	if ( node.type === type ) out.push( node );
+	if ( ! node || typeof node !== 'object' ) {
+		return out;
+	}
+	if ( node.type === type ) {
+		out.push( node );
+	}
 	collect( node.props && node.props.children, type, out );
 	return out;
 }
@@ -46,17 +58,29 @@ describe( 'gallery block', () => {
 
 	test( 'empty gallery: the placeholder select maps media to images[]', () => {
 		const setAttributes = jest.fn();
-		const element = config.edit( { attributes: { images: [] }, setAttributes } );
+		const element = config.edit( {
+			attributes: { images: [] },
+			setAttributes,
+		} );
 		const placeholder = collect( element, MediaPlaceholderMock )[ 0 ];
-		placeholder.props.onSelect( [ { id: 1, url: 'https://cdn/1.jpg', alt: 'One', caption: 'c' } ] );
+		placeholder.props.onSelect( [
+			{ id: 1, url: 'https://cdn/1.jpg', alt: 'One', caption: 'c' },
+		] );
 		expect( setAttributes ).toHaveBeenCalledWith( {
-			images: [ { id: 1, url: 'https://cdn/1.jpg', alt: 'One', caption: 'c' } ],
+			images: [
+				{ id: 1, url: 'https://cdn/1.jpg', alt: 'One', caption: 'c' },
+			],
 		} );
 	} );
 
 	test( 'populated gallery renders a caption RichText per image', () => {
 		const element = config.edit( {
-			attributes: { images: [ { id: 1, url: 'u1' }, { id: 2, url: 'u2' } ] },
+			attributes: {
+				images: [
+					{ id: 1, url: 'u1' },
+					{ id: 2, url: 'u2' },
+				],
+			},
 			setAttributes: jest.fn(),
 		} );
 		expect( collect( element, RichTextMock ).length ).toBe( 2 );

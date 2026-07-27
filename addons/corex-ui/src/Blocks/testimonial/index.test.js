@@ -8,21 +8,33 @@ import metadata from './block.json';
 const RichTextMock = () => null;
 
 jest.mock( './style.scss', () => ( {} ), { virtual: true } );
-jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), { virtual: true } );
-jest.mock( '@wordpress/block-editor', () => ( {
-	useBlockProps: ( props ) => props || {},
-	RichText: RichTextMock,
-	InspectorControls: ( { children } ) => children,
-} ), { virtual: true } );
+jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), {
+	virtual: true,
+} );
+jest.mock(
+	'@wordpress/block-editor',
+	() => ( {
+		useBlockProps: ( props ) => props || {},
+		RichText: RichTextMock,
+		InspectorControls: ( { children } ) => children,
+	} ),
+	{ virtual: true }
+);
 jest.mock( '@wordpress/i18n', () => ( { __: ( s ) => s } ), { virtual: true } );
 
 import './index.js';
 
 function collect( node, type, out = [] ) {
-	if ( ! node || typeof node !== 'object' ) return out;
-	if ( node.type === type ) out.push( node );
+	if ( ! node || typeof node !== 'object' ) {
+		return out;
+	}
+	if ( node.type === type ) {
+		out.push( node );
+	}
 	const ch = node.props && node.props.children;
-	( Array.isArray( ch ) ? ch : [ ch ] ).forEach( ( c ) => collect( c, type, out ) );
+	( Array.isArray( ch ) ? ch : [ ch ] ).forEach( ( c ) =>
+		collect( c, type, out )
+	);
 	return out;
 }
 

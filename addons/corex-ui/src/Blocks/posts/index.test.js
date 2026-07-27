@@ -17,23 +17,37 @@ const ServerSideRenderMock = () => null;
 // The @wordpress/* packages are webpack externals at build time (mapped to window.wp.*),
 // not installed in node_modules — so the mocks are virtual.
 jest.mock( './style.scss', () => ( {} ), { virtual: true } );
-jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), { virtual: true } );
-jest.mock( '@wordpress/block-editor', () => ( {
-	useBlockProps: () => ( {} ),
-	InspectorControls: ( { children } ) => children,
-} ), { virtual: true } );
-jest.mock( '@wordpress/components', () => ( {
-	PanelBody: ( { children } ) => children,
-	RangeControl: () => null,
-} ), { virtual: true } );
+jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), {
+	virtual: true,
+} );
+jest.mock(
+	'@wordpress/block-editor',
+	() => ( {
+		useBlockProps: () => ( {} ),
+		InspectorControls: ( { children } ) => children,
+	} ),
+	{ virtual: true }
+);
+jest.mock(
+	'@wordpress/components',
+	() => ( {
+		PanelBody: ( { children } ) => children,
+		RangeControl: () => null,
+	} ),
+	{ virtual: true }
+);
 jest.mock( '@wordpress/i18n', () => ( { __: ( s ) => s } ), { virtual: true } );
-jest.mock( '@wordpress/server-side-render', () => ServerSideRenderMock, { virtual: true } );
+jest.mock( '@wordpress/server-side-render', () => ServerSideRenderMock, {
+	virtual: true,
+} );
 
 // Importing the module runs registerBlockType at load time (the registration side effect).
 import './index.js';
 
 /**
  * Depth-first search for an element whose `type` matches in a React element tree.
+ * @param node
+ * @param type
  */
 function findByType( node, type ) {
 	if ( ! node || typeof node !== 'object' ) {
@@ -66,7 +80,10 @@ describe( 'posts block editor registration', () => {
 	} );
 
 	test( 'edit() previews the matching server render via ServerSideRender', () => {
-		const element = config.edit( { attributes: { count: 3 }, setAttributes: () => {} } );
+		const element = config.edit( {
+			attributes: { count: 3 },
+			setAttributes: () => {},
+		} );
 		const ssr = findByType( element, ServerSideRenderMock );
 
 		expect( ssr ).not.toBeNull();

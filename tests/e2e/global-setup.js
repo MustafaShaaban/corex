@@ -30,7 +30,10 @@ const LOGIN_PATHS = [
 
 const STORAGE_STATE = path.join( __dirname, '.auth', 'admin.json' );
 
-/** Load a login form from whichever address actually serves one. */
+/**
+ * Load a login form from whichever address actually serves one.
+ * @param page
+ */
 async function openLoginForm( page ) {
 	for ( const loginPath of LOGIN_PATHS ) {
 		await page.goto( loginPath ).catch( () => {} );

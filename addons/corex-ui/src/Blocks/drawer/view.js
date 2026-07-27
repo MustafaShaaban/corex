@@ -6,8 +6,8 @@
  */
 ( function () {
 	function wire( wrap ) {
-		var trigger = wrap.querySelector( '.corex-drawer__trigger' );
-		var dialog = wrap.querySelector( 'dialog.corex-drawer' );
+		const trigger = wrap.querySelector( '.corex-drawer__trigger' );
+		const dialog = wrap.querySelector( 'dialog.corex-drawer' );
 		if ( ! trigger || ! dialog ) {
 			return;
 		}
@@ -27,7 +27,7 @@
 			}
 		} );
 
-		var closeBtn = dialog.querySelector( '[data-corex-drawer-close]' );
+		const closeBtn = dialog.querySelector( '[data-corex-drawer-close]' );
 		if ( closeBtn ) {
 			closeBtn.addEventListener( 'click', function () {
 				close( dialog );
@@ -48,7 +48,7 @@
 	}
 
 	function init() {
-		var wraps = document.querySelectorAll( '.corex-drawer-wrap' );
+		const wraps = document.querySelectorAll( '.corex-drawer-wrap' );
 		Array.prototype.forEach.call( wraps, wire );
 	}
 

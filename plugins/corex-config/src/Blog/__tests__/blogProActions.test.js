@@ -50,7 +50,11 @@ function render( element ) {
 }
 
 function click( node ) {
-	act( () => node.dispatchEvent( new window.MouseEvent( 'click', { bubbles: true } ) ) );
+	act( () =>
+		node.dispatchEvent(
+			new window.MouseEvent( 'click', { bubbles: true } )
+		)
+	);
 }
 
 /**
@@ -59,6 +63,7 @@ function click( node ) {
  * CorexSelect commits on `mousedown`, not `click` — it has to, or the button's own blur closes the
  * menu before the click lands. Driving the real control rather than the component's state is the
  * point: it is what proves the panel is wired to the approved control (DECISIONS #141).
+ * @param label
  */
 function choose( label ) {
 	click( find( '.corex-select__button' ) );
@@ -66,7 +71,9 @@ function choose( label ) {
 		node.textContent.includes( label )
 	);
 	act( () =>
-		option.dispatchEvent( new window.MouseEvent( 'mousedown', { bubbles: true } ) )
+		option.dispatchEvent(
+			new window.MouseEvent( 'mousedown', { bubbles: true } )
+		)
 	);
 }
 
@@ -88,7 +95,12 @@ afterEach( () => {
 describe( 'EditorialPanel', () => {
 	it( 'shows the CoreX state and the WordPress status in words', () => {
 		// Both were printed as raw slugs on an otherwise translated screen.
-		render( <EditorialPanel editorial={ EDITORIAL } onTransition={ jest.fn() } /> );
+		render(
+			<EditorialPanel
+				editorial={ EDITORIAL }
+				onTransition={ jest.fn() }
+			/>
+		);
 
 		expect( container.textContent ).toContain( 'Ready for review' );
 		expect( container.textContent ).toContain( 'Pending review' );
@@ -109,14 +121,24 @@ describe( 'EditorialPanel', () => {
 	} );
 
 	it( 'will not submit until a destination is chosen', () => {
-		render( <EditorialPanel editorial={ EDITORIAL } onTransition={ jest.fn() } /> );
+		render(
+			<EditorialPanel
+				editorial={ EDITORIAL }
+				onTransition={ jest.fn() }
+			/>
+		);
 
 		expect( find( '[data-corex-blog-transition]' ).disabled ).toBe( true );
 	} );
 
 	it( 'sends the chosen state through the payload builder', () => {
 		const onTransition = jest.fn();
-		render( <EditorialPanel editorial={ EDITORIAL } onTransition={ onTransition } /> );
+		render(
+			<EditorialPanel
+				editorial={ EDITORIAL }
+				onTransition={ onTransition }
+			/>
+		);
 
 		// Drive the real CorexSelect rather than reaching into state.
 		choose( 'Approved' );
@@ -131,7 +153,12 @@ describe( 'EditorialPanel', () => {
 		// `EditorialWorkflowService::scheduledStatus()` throws without a timestamp. Failing there
 		// gives the person an exception; failing here gives them a field to fill in.
 		const onTransition = jest.fn();
-		render( <EditorialPanel editorial={ EDITORIAL } onTransition={ onTransition } /> );
+		render(
+			<EditorialPanel
+				editorial={ EDITORIAL }
+				onTransition={ onTransition }
+			/>
+		);
 
 		choose( 'Scheduled' );
 
@@ -143,7 +170,9 @@ describe( 'EditorialPanel', () => {
 	} );
 
 	it( 'says so when the post has no editorial record at all', () => {
-		render( <EditorialPanel editorial={ null } onTransition={ jest.fn() } /> );
+		render(
+			<EditorialPanel editorial={ null } onTransition={ jest.fn() } />
+		);
 
 		expect( container.textContent ).toContain( 'no editorial record' );
 	} );
@@ -152,26 +181,46 @@ describe( 'EditorialPanel', () => {
 describe( 'ModerationPanel', () => {
 	it( 'shows what the comment actually says, not just who wrote it', () => {
 		// A queue of author + state cannot be moderated from — you would open each comment elsewhere.
-		render( <ModerationPanel comments={ [ COMMENT ] } onModerate={ jest.fn() } /> );
+		render(
+			<ModerationPanel
+				comments={ [ COMMENT ] }
+				onModerate={ jest.fn() }
+			/>
+		);
 
 		expect( container.textContent ).toContain( 'This helped, thank you.' );
 		expect( container.textContent ).toContain( 'Ada' );
 		expect( container.textContent ).toContain( 'Awaiting review' );
-		expect( find( 'time' ).getAttribute( 'datetime' ) ).toBe( COMMENT.submitted_at );
+		expect( find( 'time' ).getAttribute( 'datetime' ) ).toBe(
+			COMMENT.submitted_at
+		);
 	} );
 
 	it( 'offers approve, spam, and trash — and nothing else', () => {
 		// Three, not five: the queue holds only comments awaiting review, so "unapprove" has nothing
 		// to act on, and edit/reply are excluded by spec 075 §10.
-		render( <ModerationPanel comments={ [ COMMENT ] } onModerate={ jest.fn() } /> );
+		render(
+			<ModerationPanel
+				comments={ [ COMMENT ] }
+				onModerate={ jest.fn() }
+			/>
+		);
 
-		expect( all( '[data-corex-blog-moderate]' ).map( ( b ) => b.dataset.corexBlogModerate ) )
-			.toEqual( [ 'approve', 'spam', 'trash' ] );
+		expect(
+			all( '[data-corex-blog-moderate]' ).map(
+				( b ) => b.dataset.corexBlogModerate
+			)
+		).toEqual( [ 'approve', 'spam', 'trash' ] );
 	} );
 
 	it( 'reports the action against the comment it belongs to', () => {
 		const onModerate = jest.fn();
-		render( <ModerationPanel comments={ [ COMMENT ] } onModerate={ onModerate } /> );
+		render(
+			<ModerationPanel
+				comments={ [ COMMENT ] }
+				onModerate={ onModerate }
+			/>
+		);
 
 		click( find( '[data-corex-blog-moderate="spam"]' ) );
 
@@ -200,12 +249,16 @@ describe( 'ModerationPanel', () => {
 		);
 
 		expect( container.textContent ).toContain( 'Looks like spam' );
-		expect( container.textContent ).toContain( 'First comment from this person' );
+		expect( container.textContent ).toContain(
+			'First comment from this person'
+		);
 	} );
 
 	it( 'treats an empty queue as the good outcome, not an absence', () => {
 		render( <ModerationPanel comments={ [] } onModerate={ jest.fn() } /> );
 
-		expect( container.textContent ).toContain( 'Nothing is waiting for you here.' );
+		expect( container.textContent ).toContain(
+			'Nothing is waiting for you here.'
+		);
 	} );
 } );

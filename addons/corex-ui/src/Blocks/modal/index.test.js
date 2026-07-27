@@ -10,18 +10,30 @@ import metadata from './block.json';
 const ServerSideRenderMock = () => null;
 
 jest.mock( './style.scss', () => ( {} ), { virtual: true } );
-jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), { virtual: true } );
-jest.mock( '@wordpress/block-editor', () => ( {
-	useBlockProps: () => ( {} ),
-	InspectorControls: ( { children } ) => children,
-} ), { virtual: true } );
-jest.mock( '@wordpress/components', () => ( {
-	PanelBody: ( { children } ) => children,
-	TextControl: () => null,
-	TextareaControl: () => null,
-} ), { virtual: true } );
+jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), {
+	virtual: true,
+} );
+jest.mock(
+	'@wordpress/block-editor',
+	() => ( {
+		useBlockProps: () => ( {} ),
+		InspectorControls: ( { children } ) => children,
+	} ),
+	{ virtual: true }
+);
+jest.mock(
+	'@wordpress/components',
+	() => ( {
+		PanelBody: ( { children } ) => children,
+		TextControl: () => null,
+		TextareaControl: () => null,
+	} ),
+	{ virtual: true }
+);
 jest.mock( '@wordpress/i18n', () => ( { __: ( s ) => s } ), { virtual: true } );
-jest.mock( '@wordpress/server-side-render', () => ServerSideRenderMock, { virtual: true } );
+jest.mock( '@wordpress/server-side-render', () => ServerSideRenderMock, {
+	virtual: true,
+} );
 
 import './index.js';
 
@@ -45,7 +57,10 @@ function findByType( node, type ) {
 
 describe( 'corex/modal block registration', () => {
 	it( 'registers under the block.json name', () => {
-		expect( registerBlockType ).toHaveBeenCalledWith( metadata.name, expect.any( Object ) );
+		expect( registerBlockType ).toHaveBeenCalledWith(
+			metadata.name,
+			expect.any( Object )
+		);
 	} );
 
 	it( 'saves nothing (server-rendered)', () => {
@@ -55,7 +70,10 @@ describe( 'corex/modal block registration', () => {
 
 	it( 'previews the server render via <ServerSideRender>', () => {
 		const settings = registerBlockType.mock.calls[ 0 ][ 1 ];
-		const tree = settings.edit( { attributes: { title: '', triggerLabel: '', content: '' }, setAttributes: () => {} } );
+		const tree = settings.edit( {
+			attributes: { title: '', triggerLabel: '', content: '' },
+			setAttributes: () => {},
+		} );
 		expect( findByType( tree, ServerSideRenderMock ) ).not.toBeNull();
 	} );
 } );

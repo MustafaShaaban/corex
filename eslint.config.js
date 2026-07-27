@@ -11,8 +11,6 @@
  *
  * Providing any `eslint.config.*` makes wp-scripts stop passing its own `--config`, so the
  * WordPress defaults have to be re-exported here rather than inherited implicitly.
- *
- * @package Corex
  */
 
 const wpScriptsConfig = require( '@wordpress/scripts/config/eslint.config.cjs' );
@@ -29,6 +27,8 @@ module.exports = [
 			'playwright-report/**',
 			'test-results/**',
 			'coverage/**',
+			// Astro's generated type shims.
+			'docs-app/.astro/**',
 		],
 	},
 	...wpScriptsConfig,

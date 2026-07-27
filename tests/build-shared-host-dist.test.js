@@ -4,7 +4,13 @@
  * the verifier accepts a good tree and rejects a bad one. Uses a tiny on-disk fixture (fast).
  */
 
-const { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } = require( 'node:fs' );
+const {
+	mkdtempSync,
+	mkdirSync,
+	writeFileSync,
+	existsSync,
+	rmSync,
+} = require( 'node:fs' );
 const { join } = require( 'node:path' );
 const { tmpdir } = require( 'node:os' );
 
@@ -18,7 +24,10 @@ function makeRepo() {
 		writeFileSync( abs, body );
 	};
 	// framework
-	write( 'plugins/corex-core/corex-core.php', "define('COREX_CORE_VERSION', '9.9.9');" );
+	write(
+		'plugins/corex-core/corex-core.php',
+		"define('COREX_CORE_VERSION', '9.9.9');"
+	);
 	write( 'addons/corex-ui/corex-ui.php' );
 	write( 'theme/style.css' );
 	write( 'vendor/autoload.php' );
@@ -40,12 +49,29 @@ function makeRepo() {
 it( 'plans framework plugins, theme, vendor, and the client site, with a typed manifest', () => {
 	const root = makeRepo();
 	const distDir = join( root, 'dist' );
-	const { copies, manifest } = mod.buildPlan( { repoRoot: root, distDir, client: 'acme' } );
+	const { copies, manifest } = mod.buildPlan( {
+		repoRoot: root,
+		distDir,
+		client: 'acme',
+	} );
 
 	const kinds = copies.map( ( c ) => c.kind );
-	expect( kinds ).toEqual( expect.arrayContaining( [ 'core', 'plugin', 'theme', 'client-plugin', 'client-theme', 'vendor' ] ) );
-	expect( manifest.plugins ).toEqual( expect.arrayContaining( [ 'corex-core', 'corex-ui', 'acme-site' ] ) );
-	expect( manifest.themes ).toEqual( expect.arrayContaining( [ 'corex', 'acme-theme' ] ) );
+	expect( kinds ).toEqual(
+		expect.arrayContaining( [
+			'core',
+			'plugin',
+			'theme',
+			'client-plugin',
+			'client-theme',
+			'vendor',
+		] )
+	);
+	expect( manifest.plugins ).toEqual(
+		expect.arrayContaining( [ 'corex-core', 'corex-ui', 'acme-site' ] )
+	);
+	expect( manifest.themes ).toEqual(
+		expect.arrayContaining( [ 'corex', 'acme-theme' ] )
+	);
 	expect( manifest.corex_version ).toBe( '9.9.9' );
 	expect( manifest.client ).toBe( 'acme' );
 	rmSync( root, { recursive: true, force: true } );
@@ -53,10 +79,18 @@ it( 'plans framework plugins, theme, vendor, and the client site, with a typed m
 
 it( 'never plans to copy wp-config.php or the symlinked wp/wp-content tree', () => {
 	const root = makeRepo();
-	const { copies } = mod.buildPlan( { repoRoot: root, distDir: join( root, 'dist' ), client: 'acme' } );
+	const { copies } = mod.buildPlan( {
+		repoRoot: root,
+		distDir: join( root, 'dist' ),
+		client: 'acme',
+	} );
 	const froms = copies.map( ( c ) => c.from.replace( /\\/g, '/' ) );
-	expect( froms.some( ( f ) => f.endsWith( 'wp-config.php' ) ) ).toBe( false );
-	expect( froms.some( ( f ) => f.includes( 'wp/wp-content' ) ) ).toBe( false );
+	expect( froms.some( ( f ) => f.endsWith( 'wp-config.php' ) ) ).toBe(
+		false
+	);
+	expect( froms.some( ( f ) => f.includes( 'wp/wp-content' ) ) ).toBe(
+		false
+	);
 	rmSync( root, { recursive: true, force: true } );
 } );
 
@@ -67,11 +101,23 @@ it( 'builds a tree that excludes node_modules/tests and passes verification', ()
 	mod.runBuild( plan, distDir, { dryRun: false } );
 
 	// forbidden dev/runtime paths excluded
-	expect( existsSync( join( distDir, 'wp-content/plugins/corex-core/node_modules' ) ) ).toBe( false );
-	expect( existsSync( join( distDir, 'wp-content/plugins/corex-core/tests' ) ) ).toBe( false );
+	expect(
+		existsSync(
+			join( distDir, 'wp-content/plugins/corex-core/node_modules' )
+		)
+	).toBe( false );
+	expect(
+		existsSync( join( distDir, 'wp-content/plugins/corex-core/tests' ) )
+	).toBe( false );
 	// real source present
-	expect( existsSync( join( distDir, 'wp-content/plugins/acme-site/acme-site.php' ) ) ).toBe( true );
-	expect( existsSync( join( distDir, 'wp-content/themes/acme-theme/style.css' ) ) ).toBe( true );
+	expect(
+		existsSync(
+			join( distDir, 'wp-content/plugins/acme-site/acme-site.php' )
+		)
+	).toBe( true );
+	expect(
+		existsSync( join( distDir, 'wp-content/themes/acme-theme/style.css' ) )
+	).toBe( true );
 	expect( existsSync( join( distDir, 'wp-admin/index.php' ) ) ).toBe( true );
 	expect( existsSync( join( distDir, 'corex-release.json' ) ) ).toBe( true );
 
@@ -86,7 +132,9 @@ it( 'verifier rejects a tree with a forbidden path or a missing manifest', () =>
 	mod.runBuild( plan, distDir, { dryRun: false } );
 
 	// inject a forbidden path
-	mkdirSync( join( distDir, 'wp-content/plugins/x/.git' ), { recursive: true } );
+	mkdirSync( join( distDir, 'wp-content/plugins/x/.git' ), {
+		recursive: true,
+	} );
 	writeFileSync( join( distDir, 'wp-content/plugins/x/.git/config' ), 'x' );
 	const bad = mod.verifyDist( distDir );
 	expect( bad.ok ).toBe( false );
@@ -99,13 +147,21 @@ it( 'fails verification when a client theme ships SCSS/JS source but no compiled
 	const dist = join( root, 'dist' );
 	const theme = join( dist, 'wp-content', 'themes', 'acme-theme' );
 	mkdirSync( join( theme, 'assets', 'src', 'scss' ), { recursive: true } );
-	writeFileSync( join( theme, 'assets', 'src', 'scss', 'main.scss' ), 'body{}' );
+	writeFileSync(
+		join( theme, 'assets', 'src', 'scss', 'main.scss' ),
+		'body{}'
+	);
 	mkdirSync( join( dist, 'wp-content', 'plugins' ), { recursive: true } );
-	writeFileSync( join( dist, 'corex-release.json' ), '{"plugins":[],"themes":["acme-theme"]}' );
+	writeFileSync(
+		join( dist, 'corex-release.json' ),
+		'{"plugins":[],"themes":["acme-theme"]}'
+	);
 
 	// SCSS source but no compiled assets/css → flagged
-	let errs = mod.verifyClientAssets( dist );
-	expect( errs.join( ' ' ) ).toMatch( /acme-theme.*SCSS source present but no compiled/ );
+	const errs = mod.verifyClientAssets( dist );
+	expect( errs.join( ' ' ) ).toMatch(
+		/acme-theme.*SCSS source present but no compiled/
+	);
 
 	// add the compiled CSS → passes
 	mkdirSync( join( theme, 'assets', 'css' ), { recursive: true } );

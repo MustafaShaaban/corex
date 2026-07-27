@@ -21,7 +21,8 @@ import metadata from './block.json';
 registerBlockType( metadata.name, {
 	edit: ( { attributes, setAttributes } ) => {
 		const blockProps = useBlockProps( { className: 'corex-hero' } );
-		const { eyebrow, title, subtitle, level, ctaText, ctaUrl, image } = attributes;
+		const { eyebrow, title, subtitle, level, ctaText, ctaUrl, image } =
+			attributes;
 		const tag = `h${ level || 2 }`;
 
 		return (
@@ -39,22 +40,39 @@ registerBlockType( metadata.name, {
 							<MediaUpload
 								onSelect={ ( media ) =>
 									setAttributes( {
-										image: { id: media.id, url: media.url, alt: media.alt || '' },
+										image: {
+											id: media.id,
+											url: media.url,
+											alt: media.alt || '',
+										},
 									} )
 								}
 								allowedTypes={ [ 'image' ] }
 								value={ image && image.id }
 								render={ ( { open } ) => (
-									<Button variant="secondary" onClick={ open }>
+									<Button
+										variant="secondary"
+										onClick={ open }
+									>
 										{ image && image.url
-											? __( 'Replace background', 'corex' )
-											: __( 'Add background image', 'corex' ) }
+											? __(
+													'Replace background',
+													'corex'
+											  )
+											: __(
+													'Add background image',
+													'corex'
+											  ) }
 									</Button>
 								) }
 							/>
 						</MediaUploadCheck>
 						{ image && image.url && (
-							<Button isDestructive variant="link" onClick={ () => setAttributes( { image: {} } ) }>
+							<Button
+								isDestructive
+								variant="link"
+								onClick={ () => setAttributes( { image: {} } ) }
+							>
 								{ __( 'Remove background', 'corex' ) }
 							</Button>
 						) }
@@ -62,7 +80,11 @@ registerBlockType( metadata.name, {
 				</InspectorControls>
 
 				{ image && image.url && (
-					<img className="corex-hero__bg" src={ image.url } alt={ image.alt || '' } />
+					<img
+						className="corex-hero__bg"
+						src={ image.url }
+						alt={ image.alt || '' }
+					/>
 				) }
 				<div className="corex-hero__inner">
 					<RichText
@@ -91,12 +113,16 @@ registerBlockType( metadata.name, {
 							tagName="span"
 							className="corex-hero__cta"
 							value={ ctaText }
-							onChange={ ( v ) => setAttributes( { ctaText: v } ) }
+							onChange={ ( v ) =>
+								setAttributes( { ctaText: v } )
+							}
 							placeholder={ __( 'Button label', 'corex' ) }
 						/>
 						<URLInputButton
 							url={ ctaUrl }
-							onChange={ ( url ) => setAttributes( { ctaUrl: url } ) }
+							onChange={ ( url ) =>
+								setAttributes( { ctaUrl: url } )
+							}
 						/>
 					</div>
 				</div>

@@ -60,7 +60,10 @@ const CANNOT_RUN_ON_A_FRESH_INSTALL = [
 ];
 
 const freshInstallExclusions = () => {
-	if ( ! process.env.COREX_E2E_FRESH_INSTALL || CANNOT_RUN_ON_A_FRESH_INSTALL.length === 0 ) {
+	if (
+		! process.env.COREX_E2E_FRESH_INSTALL ||
+		CANNOT_RUN_ON_A_FRESH_INSTALL.length === 0
+	) {
 		return undefined;
 	}
 
@@ -90,9 +93,9 @@ module.exports = defineConfig( {
 		// fail reproducibly — a spec that passes without it. Default stays 'on-first-retry'.
 		// Set COREX_E2E_TRACE=1 to capture traces when diagnosing (the workflow uploads
 		// test-results on failure); note that doing so may itself perturb timing-sensitive specs.
-		trace: process.env.COREX_E2E_TRACE ? 'retain-on-failure' : 'on-first-retry',
+		trace: process.env.COREX_E2E_TRACE
+			? 'retain-on-failure'
+			: 'on-first-retry',
 	},
-	projects: [
-		{ name: 'chromium', use: { ...devices[ 'Desktop Chrome' ] } },
-	],
+	projects: [ { name: 'chromium', use: { ...devices[ 'Desktop Chrome' ] } } ],
 } );

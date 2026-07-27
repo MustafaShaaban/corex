@@ -79,7 +79,9 @@ it( 'drops a key when its override is cleared, never persisting an empty string'
 		},
 	} );
 
-	const action = container.querySelector( 'input[type="text"], input:not([type])' );
+	const action = container.querySelector(
+		'input[type="text"], input:not([type])'
+	);
 	act( () => {
 		const setter = Object.getOwnPropertyDescriptor(
 			window.HTMLInputElement.prototype,

@@ -25,7 +25,10 @@ function asArray( value ) {
 	return Array.isArray( value ) ? value : [];
 }
 
-/** The live flow record, which is richer than the catalog entry for the same flow. */
+/**
+ * The live flow record, which is richer than the catalog entry for the same flow.
+ * @param flow
+ */
 function flowRow( flow ) {
 	return {
 		key: `flow-${ flow.id }`,
@@ -60,20 +63,24 @@ function catalogRow( entry ) {
 		validationSummary: entry.validation_summary || '',
 		// null means "nobody could measure it", which is not the same fact as zero.
 		submissionCount:
-			entry.submission_count === null || entry.submission_count === undefined
+			entry.submission_count === null ||
+			entry.submission_count === undefined
 				? null
 				: Number( entry.submission_count ),
 	};
 }
 
 function matchesSearch( row, search ) {
-	const term = String( search || '' ).trim().toLowerCase();
+	const term = String( search || '' )
+		.trim()
+		.toLowerCase();
 	if ( ! term ) {
 		return true;
 	}
 
 	return (
-		row.name.toLowerCase().includes( term ) || row.slug.toLowerCase().includes( term )
+		row.name.toLowerCase().includes( term ) ||
+		row.slug.toLowerCase().includes( term )
 	);
 }
 
@@ -81,6 +88,8 @@ function matchesSearch( row, search ) {
  * Flows are filtered by lifecycle on the server, so only the rows added here need filtering.
  * A code form has no lifecycle, so it belongs in "all states" and nowhere else — asking for
  * drafts and being shown something that can never be a draft would be a lie.
+ * @param row
+ * @param lifecycle
  */
 function matchesLifecycle( row, lifecycle ) {
 	return ! lifecycle || row.state === lifecycle;
@@ -90,9 +99,9 @@ function matchesLifecycle( row, lifecycle ) {
  * The catalog as the list renders it: live flow records first, then every form the flows do not
  * already account for, all sorted by name.
  *
- * @param {Array}  flows     Flow records from the REST client.
- * @param {Array}  entries   Catalog entries localised by the server.
- * @param {Object} filters   `{ search, lifecycle }` as the list's controls hold them.
+ * @param {Array}  flows   Flow records from the REST client.
+ * @param {Array}  entries Catalog entries localised by the server.
+ * @param {Object} filters `{ search, lifecycle }` as the list's controls hold them.
  * @return {Array} Rows.
  */
 export function catalogRows( flows, entries, filters = {} ) {
@@ -121,7 +130,10 @@ export function catalogRows( flows, entries, filters = {} ) {
 		.sort( ( a, b ) => a.name.localeCompare( b.name ) );
 }
 
-/** How many of the rendered rows cannot be opened in the visual builder. */
+/**
+ * How many of the rendered rows cannot be opened in the visual builder.
+ * @param rows
+ */
 export function readOnlyCount( rows ) {
 	return asArray( rows ).filter( ( row ) => ! row.editable ).length;
 }
