@@ -19,15 +19,21 @@ screenshot, a command whose output was read — never against "I wrote the code"
 **Purpose**: make it structurally impossible for any clear path to remove security state. Everything
 else in this spec asks the registry, so the registry has to be right first.
 
-- [ ] T001 `CacheClassification` — safe cache, security state, pending operation, record,
+- [x] T001 `CacheClassification` — safe cache, security state, pending operation, record,
       configuration, metadata — with `mayBeClearedRoutinely()` as the single answer (FR-002).
-- [ ] T002 `CacheEntry` — key or prefix, owner, classification, lifetime, invalidation path.
-- [ ] T003 `CacheRegistry` declaring the eight entries that exist today, taken from
+- [x] T002 `CacheEntry` — key or prefix, owner, classification, lifetime, invalidation path.
+- [x] T003 `CacheRegistry` declaring the eight entries that exist today, taken from
       `evidence/before/cache-inventory.md`, and `clearable( $scope )` returning only those a scope
       may touch (FR-001/003).
-- [ ] T004 [P] Pest: `corex_throttle_*` and `corex_captcha_seen_*` are **never** returned as
-      clearable, at any scope. This is the test the spec exists for — write it before the clear path.
-- [ ] T005 [P] Pest: every declared entry has an owner, a classification and a lifetime; a new entry
+- [x] T004 [P] Pest: `corex_throttle_*` and `corex_captcha_seen_*` are **never** returned as
+      clearable, at any scope, asserted by iterating `CacheScope::cases()` so a future scope cannot
+      be added without satisfying it. Written before the clear path, as planned.
+      *Verified load-bearing by deliberately reclassifying the throttle entry as safe cache — and
+      the first attempt at that **passed anyway**, which exposed a flaw in the test rather than in
+      the registry: Pest reads extra arguments to `toContain` as further NEEDLES, not as a failure
+      message, so `not->toContain( $key, 'message' )` was asserting something other than it read
+      like. Rewritten with `in_array` and re-verified: the misclassification now turns it red.*
+- [x] T005 [P] Pest: every declared entry has an owner, a classification and a lifetime; a new entry
       cannot be added without them.
 
 ---
