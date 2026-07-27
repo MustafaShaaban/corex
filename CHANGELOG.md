@@ -6,10 +6,15 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-Spec 073 — an admin polish and correctness pass — Spec 074, which closes the gap between what the
-CoreX admin claimed and what it could actually do, and Spec 075, which turns Blog Pro from a read-only
-dashboard into a workspace you can act in. Together: no invented capability, several surfaces that stop
-misreporting, and three workspaces that stop being dead ends.
+## [0.36.0] — 2026-07-27
+
+Three specs about the same thing: making the admin do what it looks like it does. Spec 073 was a polish
+and correctness pass, Spec 074 closed the gap between what the CoreX admin claimed and what it could
+actually do, and Spec 075 turned Blog Pro from a read-only dashboard into a workspace you can act in.
+
+No invented capability anywhere in the three. Several surfaces stop misreporting, three workspaces stop
+being dead ends, and where a requirement appeared to need a new service or route, the constraint was
+recorded instead — see DECISIONS #155–#162.
 
 ### Fixed
 
