@@ -6,7 +6,7 @@ multisite, headless, or AI-agent-driven — on one clean, documented, spec-first
 - **Target:** WordPress 7.0+, PHP 8.3+, FSE block themes.
 - **Namespace:** `Corex\` · **CLI:** `wp corex` · **CSS prefix:** `--corex-`.
 - **Stack:** Composer (PHP) + npm workspaces (JS), one monorepo.
-- **Status:** Actively developed; latest release **v0.38.0**. The engine, block/forms/config layers, CLI
+- **Status:** Actively developed; latest release **v0.38.1**. The engine, block/forms/config layers, CLI
   generators, site kits, and the docs app are implemented and unit-tested. The **CoreX admin design (spec 060,
   milestone M6) has landed** (merged via PR #59) and is render-verified dark + light: the real `wp-login.php`
   carries the CoreX login design, every CoreX admin screen uses the full-bleed designed shell, and Captcha settings
@@ -142,7 +142,7 @@ The rule hierarchy: **Role Gate** (where) → **Spec Kit** (what) → **Guard Ga
 Before starting a real client site, run the Spec 055 readiness report:
 
 ```bash
-wp corex readiness 0.38.0
+wp corex readiness 0.38.1
 ```
 
 It reports runtime gating, release metadata, CI/security controls, `make:site` validation, deployment profiles,
