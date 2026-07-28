@@ -8,9 +8,8 @@
  */
 const { test, expect } = require( '@playwright/test' );
 
-const SUBSCRIBER = process.env.COREX_REQUESTER_USER || 'corex-requester';
-const SUBSCRIBER_PASS =
-	process.env.COREX_REQUESTER_PASS || 'CorexE2E!requester1';
+const EDITOR = process.env.COREX_EDITOR_USER || 'corex-editor';
+const EDITOR_PASS = process.env.COREX_EDITOR_PASS || 'CorexE2E!editor1';
 
 /** Where a login form might be, in the order global-setup.js tries them (spec 069). */
 const LOGIN_PATHS = [
@@ -144,21 +143,36 @@ test.describe( 'Guides', () => {
 		browser,
 		baseURL,
 	} ) => {
-		const page = await signInAs(
-			browser,
-			baseURL,
-			SUBSCRIBER,
-			SUBSCRIBER_PASS
-		);
+		// An editor rather than a subscriber, for two reasons.
+		//
+		// The weaker one: `corex-requester` is signed in several times by
+		// `access-request.spec.js`, and login protection locks an account out after enough
+		// attempts from one address. Adding another sign-in here pushed that suite over the
+		// threshold and failed it in CI — a test in one file breaking a test in another, reported
+		// as "could not sign in" nowhere near the cause.
+		//
+		// The stronger one: an editor is the better assertion. A subscriber sees nothing, which
+		// a registry that returned nothing at all would also satisfy. An editor must see exactly
+		// the one guide whose capability they hold and none of the three they do not — so this
+		// fails both if gating is too tight and if it is too loose.
+		const page = await signInAs( browser, baseURL, EDITOR, EDITOR_PASS );
 
 		const response = await page.goto( GUIDES );
 
-		// The screen itself is open to anyone who can see the admin — refusing a subscriber the
-		// whole screen would refuse them help for the parts they can use. It is each guide that is
-		// gated, and this subscriber holds none of the capabilities they name.
+		// The screen itself is open to anyone who can see the admin — refusing an editor the whole
+		// screen would refuse them help for the parts they can use.
 		expect( response.status() ).toBe( 200 );
-		await expect( page.locator( '.corex-guides__guide' ) ).toHaveCount( 0 );
-		await expect( page.locator( '.corex-state' ) ).toBeVisible();
+
+		await expect( page.locator( '#guide-corex-publishing' ) ).toBeVisible();
+		await expect( page.locator( '.corex-guides__guide' ) ).toHaveCount( 1 );
+
+		for ( const gated of [
+			'#guide-corex-submissions',
+			'#guide-corex-email',
+			'#guide-corex-performance',
+		] ) {
+			await expect( page.locator( gated ) ).toHaveCount( 0 );
+		}
 
 		await page.context().close();
 	} );
