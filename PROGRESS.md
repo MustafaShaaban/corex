@@ -4,6 +4,63 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **v0.37.0 released.** Specs 076–079 shipped. Nothing in flight.
+
+`81bc773` on `main`, GitHub and Azure in sync, all four feature branches deleted.
+
+| Spec | PR | Merged as |
+|---|---|---|
+| 076 Admin Date & Time Foundation | #138 | `3765cf2` |
+| 077 Operations & Security completion | #140 | `f32de72` |
+| 078 Cache Architecture & Performance | #141 | `7fa8215` |
+| 079 Admin Errors & Access Requests | #143 | `81bc773` |
+
+**The thing worth carrying forward from all four: reproducing the defect first changed the work
+three times.**
+
+- **079** — what read as "a bad error page" was a *successful* access request rendered as an
+  operation envelope. Written from the brief alone, the fix would have been a friendlier error page,
+  leaving the real hole — no confirmation — open. Checking the second assumption found a CoreX
+  address with no screen behind it telling **administrators** they lacked `manage_options` at 403.
+  Writing a test fixture then found the biggest hole: `AccessRequestStore::pending()` had no
+  production caller, so requests landed in a table no surface read.
+- **078** — the obvious "clear CoreX's caches" is a `corex_*` transient sweep. On this codebase that
+  deletes every rate-limit counter and spent-captcha record, at exactly the moment an operator
+  reaches for it.
+- **077** — the mode form's JavaScript synced from `select.value` on load, hiding the server's
+  proposed block and closing the no-JavaScript path *for JavaScript users*.
+
+**Recurring lessons now recorded three times each:**
+
+1. **A test can be why a defect survives.** `AdminPageTest` asserted the access form's action must be
+   the REST route; fixing the bug failed the suite. In 078, Pest read a second argument to
+   `toContain` as another needle, so a deliberately-broken registry test passed.
+2. **One vantage point is not verification.** 079's first not-found check passed three of four cases
+   in the {administrator, subscriber} × {real page, fake page} matrix.
+3. **Comparing a live list across two page loads produces confident wrong answers.** Found three
+   times across 076–078.
+
+**Verified at release:** Pest unit 1593 · integration 325/326 · Jest 381 · Playwright 101 ·
+`lint:css` and `lint:js` clean · token inventory reproduces.
+
+The single integration failure is the pre-existing, data-dependent `ProductActivityCoverageTest`,
+confirmed by stashing.
+
+**Open, not owned by any merged spec:**
+
+- **`corex-access` overflows 1px in RTL at 375px** on every tab, measured before 079 — same class as
+  the one cleared for `corex-addons` and `corex-settings`, still open on a third screen.
+- **Five of the six CI checks are still not *required*** in branch protection; only
+  `Lint + headless tests (PHP 8.3)` is. Owner action — the repository settings are not reachable
+  from here.
+- **`EmailsTab` prints raw event slugs as `<legend>` text.**
+- **Two 078 deferrals**: the `Sections/` extraction and in-admin cache clear buttons (needs a route).
+- **13 open Dependabot PRs** (#82–#136), including the held Astro 7 and pinned `@wordpress/scripts`
+  bumps, which run through the dependency-advisory gate.
+
+**Next:** owner decision on the next spec. No CoreX work is in flight.
+
+---
 ## RESUME HERE (2026-07-28) -- **Spec 079 (Admin Errors & Access Requests) implemented on `spec/079-admin-errors-access-request`.**
 
 078 merged as `7fa8215` — on GitHub and Azure. Branch deleted.

@@ -398,17 +398,20 @@ These items require later validation and dedicated specs. They must not leak int
 
 ## 17. Current and next recommended specs
 
-> **Status (2026-07-27): Spec 074 is merged; Spec 075 is active.** 074 shipped via PR **#130**
-> (`d243b7f`) with all six CI checks green — all five FRs built and gated (unit 1507, integration 219,
-> JS 363, Playwright 58), browser acceptance in `specs/074-*/evidence/after/`, decisions #157–#160.
-> Spec 068's completion audit passed;
-> specs 069–072 shipped in v0.34.0/v0.35.0 and spec 073 shipped via PR #129 (`9b5939f`). An owner
-> product-completion review then found four defects that survived 073 — code-registered forms are not
-> discoverable framework-wide, the Data Import/Migrations tabs are dead ends no registered source can
-> satisfy, the Submission Inbox heading has no layout-level spacing, and Notifications conflate *read*
-> with *resolved* — plus Blog Pro still being a read-only reference UI. Those are the two authorised
-> specs below. The standing rule still governs: the approved current design is the functional contract,
-> and a required control may not remain a placeholder.
+> **Status (2026-07-28): specs 076–079 are merged and released as v0.37.0.** Four specs about
+> telling the truth on screen, each begun by reproducing the defect on a running install — which
+> changed the work three times. 076 gave the admin one date and time contract shared by PHP and
+> JavaScript (PR **#138**). 077 made every operations mode disclose what it will do before it does it
+> (PR **#140**, `f32de72`). 078 replaced a four-line cache command with a classified inventory that
+> **cannot** delete a security control, because `corex_throttle_*` and `corex_captcha_seen_*` are
+> rate-limit and captcha-replay state wearing a transient's clothes (PR **#141**, `7fa8215`). 079
+> fixed an access request that *succeeded* while showing the requester an operation envelope, and
+> then found the larger hole behind it: the request went into a table no product surface read
+> (PR **#143**, `81bc773`).
+>
+> Specs 069–072 shipped in v0.34.0/v0.35.0; 073–075 in v0.36.0. Nothing is in flight. The standing
+> rule still governs: the approved current design is the functional contract, and a required control
+> may not remain a placeholder.
 >
 > **Superseded framing, kept because the rule it states still applies (2026-07-03, owner correction):
 > Spec 068 — Product Functional Completion.**
@@ -474,6 +477,29 @@ Create and implement one reviewed spec at a time:
     approve/spam/trash the comments waiting on it — with "no data yet" distinguished from zero, and two
     exports deleted rather than wired to something that could not honestly call them. Decisions #161–#162.
     Source: `specs/075-blog-pro-functional-completion/`.
+13. **Spec 076 - Admin date & time foundation** — done, merged via PR **#138**. One formatting contract for the
+    whole admin, shared by PHP and JavaScript against a common fixture: site timezone as the single source of
+    truth, active WordPress locale, semantic `<time>` markup, relative times whose exact value is readable
+    rather than hover-only, and truthful fallbacks — a non-positive integer is an absence, not 1970.
+    Source: `specs/076-admin-datetime-foundation/`.
+14. **Spec 077 - Operations & security UX and safety completion** — done, merged via PR **#140** (`f32de72`).
+    Every operations mode discloses what changing to it will do and the confirmation it requires, before it is
+    applied; a no-op change stops reporting "Saved"; a login slug colliding with an existing page or route is
+    refused. The screen is sectioned, and the server's render is the instruction the no-JavaScript path follows.
+    Source: `specs/077-operations-security-completion/`.
+15. **Spec 078 - Cache architecture and performance management** — done, merged via PR **#141** (`7fa8215`).
+    Classification first, because the obvious implementation — a sweep of `corex_*` transients — would have
+    reset brute-force protection and re-opened the captcha replay window at exactly the moment an operator
+    reaches for it. Nothing in the feature deletes by pattern; clearing walks declared entries. Seven layers
+    reported from real checks, with "cannot look" distinguished from "off". Decisions #171–#173.
+    Source: `specs/078-cache-architecture/`.
+16. **Spec 079 - Unified admin error and access request experience** — done, merged via PR **#143** (`81bc773`).
+    The denied screen's form posted the browser at a REST endpoint, so asking for access rendered a JSON
+    document — and the request had *succeeded*, so this was a success displayed as an operation envelope.
+    Reproducing it found two worse things: a CoreX address with no screen behind it told administrators they
+    lacked `manage_options` at HTTP 403, and `AccessRequestStore::pending()` had no production caller at all,
+    so requests landed in a table no surface read. Decisions #174–#177.
+    Source: `specs/079-admin-errors-access-request/`.
 
 ### Candidates for a later spec — owner decision
 
