@@ -1,12 +1,12 @@
 <?php
 /**
  * Plugin Name:       Corex Core
- * Plugin URI:        https://github.com/bseit/corex
+ * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       The Corex MVC engine — self-booting core (Boot, PSR-11 container, controllers, services, repositories, events, abilities). Presentation-free.
  * Version:           0.38.1
  * Requires at least: 7.0
  * Requires PHP:      8.3
- * Update URI:        https://github.com/bseit/corex
+ * Update URI:        https://github.com/MustafaShaaban/corex
  * Author:            Mustafa Shaaban
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html

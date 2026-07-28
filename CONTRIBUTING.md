@@ -9,14 +9,17 @@ Per `COREX-FRAMEWORK.md` §19:
 
 | Branch | Purpose |
 |---|---|
-| `main` | Production-ready history only. Every merge is a tagged release. |
-| `develop` | Integration branch. Features merge here first. |
-| `feature/NNN-slug` | Short-lived work off `develop` (e.g. `feature/007-forms-engine`). |
-| `hotfix/slug` | Urgent fix off `main`; merged to both `main` and `develop`. |
+| `main` | The only long-lived branch. Releases are tagged from it. |
+| `spec/NNN-slug` | Short-lived work for one spec (e.g. `spec/087-guides-support-and-admin-controls`). |
+| `hotfix/slug` | Urgent fix off `main`, merged straight back. |
 
-- Branch features from `develop`; open a PR back into `develop` with a green pipeline.
-- Merge `develop` → `main` only at a stable release checkpoint, and **tag** it.
+- Branch from `main`, open a PR back into `main` with a green pipeline, squash-merge.
+- Tag a release from `main` when a set of specs is ready to ship, not on every merge.
 - Environments deploy from tags, never branches.
+
+> **This replaced a `develop` integration branch.** That branch no longer exists, and the
+> `feature/NNN-slug` naming went with it — work is named for the spec it implements, because the
+> spec is the durable artifact and the branch is not.
 
 ## Commit messages
 
@@ -63,9 +66,14 @@ composer test               # headless unit suite (Pest + Brain Monkey) — runs
 composer test:integration   # boots the real ./wp install (local; needs WordPress + MySQL)
 ```
 
-CI (`.github/workflows/ci.yml`) runs `composer validate`, a PHP lint, and the headless unit
-suite on every push/PR to `main` and `develop`. The integration suite needs a provisioned
-WordPress (wp-env) and is run locally for now.
+CI (`.github/workflows/ci.yml`) gates **four suites plus CodeQL** on every pull request: the headless
+PHP unit suite, the JavaScript suite, an integration suite against a WordPress it provisions itself,
+and Playwright in a real browser.
+
+**CI is the authority for the integration and browser runs.** A long-lived development install
+accumulates state a freshly provisioned one does not, which is why a handful of integration specs
+fail locally and pass in CI. If a suite fails only on your machine, check that before assuming a
+regression.
 
 ## Reviewing dependency changes
 

@@ -48,8 +48,8 @@ built from a clean release tag.
 ```json
 {
   "version":  "0.22.0",
-  "package":  "https://github.com/bseit/corex/releases/download/v0.22.0/corex-core.zip",
-  "url":      "https://github.com/bseit/corex/releases/tag/v0.22.0",
+  "package":  "https://github.com/MustafaShaaban/corex/releases/download/v0.22.0/corex-core.zip",
+  "url":      "https://github.com/MustafaShaaban/corex/releases/tag/v0.22.0",
   "requires": "7.0",
   "tested":   "7.0"
 }

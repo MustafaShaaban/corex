@@ -6,15 +6,22 @@ multisite, headless, or AI-agent-driven — on one clean, documented, spec-first
 - **Target:** WordPress 7.0+, PHP 8.3+, FSE block themes.
 - **Namespace:** `Corex\` · **CLI:** `wp corex` · **CSS prefix:** `--corex-`.
 - **Stack:** Composer (PHP) + npm workspaces (JS), one monorepo.
-- **Status:** Actively developed; latest release **v0.38.1**. The engine, block/forms/config layers, CLI
-  generators, site kits, and the docs app are implemented and unit-tested. The **CoreX admin design (spec 060,
-  milestone M6) has landed** (merged via PR #59) and is render-verified dark + light: the real `wp-login.php`
-  carries the CoreX login design, every CoreX admin screen uses the full-bleed designed shell, and Captcha settings
-  are provider-specific (None, Honeypot, reCAPTCHA, hCaptcha, Cloudflare Turnstile). See `PROGRESS.md` for the
-  authoritative, module-by-module status.
+- **License:** GPL-2.0-or-later.
 
-> This README is the public entry point. For where the project stands in detail (including any in-progress
-> tails), `PROGRESS.md` is the source of truth — not this file.
+## Status: v0.38.1, actively developed, honest about its gaps
+
+The foundation is stable and used: the engine, the block/forms/config layers, the admin product, the
+CLI generators, Corex Mail, and the docs site. Verification runs on every pull request — **1704 PHP
+unit tests, 356 integration tests against a WordPress that CI provisions itself, 431 JavaScript
+tests, and 120 browser tests**.
+
+Several add-ons are partial, one site kit is a reserved seam rather than a kit, and there are open
+dependency advisories and three excluded browser specs. None of that is hidden:
+
+### 👉 **[PROJECT-STATUS.md](PROJECT-STATUS.md) — what works, what is partial, what is not built**
+
+Every entry there names the file that records it, so you can check any line of it. Read that before
+adopting this for anything real. `ROADMAP.md` is the durable plan behind it.
 
 ## What's in the box
 
@@ -45,13 +52,29 @@ specs/              Spec Kit specs (constitution pointer → .specify/memory/).
 tests/              Pest (Unit, Integration), Jest, Playwright (e2e).
 ```
 
-## Read first (agents and humans)
+## How this repository records itself
 
-1. `specs/constitution.md` → `.specify/memory/constitution.md` — the non-negotiable rules.
-2. `PROGRESS.md` — current status and the recommended next step.
+If the file sizes look strange — `PROGRESS.md` at 420 KB, `DECISIONS.md` with 201 numbered entries,
+`specs/` with 86 directories — that is the working method, not debris left behind.
+
+| File | What it is |
+|---|---|
+| `specs/` | The reviewed contract for every feature, **written before its code**. Nothing non-trivial is built without one. |
+| `.specify/memory/constitution.md` | The non-negotiable rules. Where code and constitution disagree, the code is wrong. |
+| `DECISIONS.md` | Why anything non-obvious is the way it is — including the decisions that turned out wrong. |
+| `PROGRESS.md` | The running session log. Detailed and long; `PROJECT-STATUS.md` is the summary you want first. |
+| `CLAUDE.md` / `AGENTS.md` | Orientation for coding agents. |
+
+These are kept deliberately. Several defects this project has closed were found by reading what it
+had previously *claimed* about itself — a framework can describe a capability it does not have, and
+the written record is what makes that catchable.
+
+### Read first (agents and humans)
+
+1. `PROJECT-STATUS.md` — what is finished and what is not.
+2. `specs/constitution.md` → `.specify/memory/constitution.md` — the non-negotiable rules.
 3. `COREX-FRAMEWORK.md` (architecture) and `COREX-WORKING-GUIDE.md` (how we work).
    `COREX-EMAIL-ADDON.md` is the Corex Mail spec; `COREX-SPECKIT-START.md` the build order.
-   `CLAUDE.md` / `AGENTS.md` orient any coding agent.
 
 ## Start here: your first company site
 
@@ -163,6 +186,11 @@ The gate audits Composer, root npm, and docs-app npm together. New, changed, exp
 fail closed. Development-only exceptions live in `.github/dependency-security-policy.json` with exact dependency
 paths, compensating controls, review dates, and upstream removal triggers; high or critical shipped-runtime/CI
 findings cannot be excepted. See `SECURITY.md` for the policy and exit-code contract.
+
+**There are currently 24 bounded exceptions open**, mostly in the docs-site and build toolchains.
+They are governed rather than ignored, and they are listed with their blocker in
+[PROJECT-STATUS.md](PROJECT-STATUS.md), under *Known open items*. If you are evaluating this
+project, read that section.
 
 ## Contributing
 

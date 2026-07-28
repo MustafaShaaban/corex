@@ -4,6 +4,47 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **Spec 088: the repository now tells the truth about itself.**
+
+On `spec/088-public-release-readiness`, after spec 087 merged as PR #158.
+
+**The repository was already clean of what usually blocks going public** — no `sites/` tracked, no
+`.env` beyond the example, zero hits for the internal Azure org, a fully parameterised pipeline, and
+only labelled test fixtures where secrets would be. What was wrong is that it did not describe itself
+accurately to somebody who had never seen it.
+
+**One of the twelve stale URLs was a live bug.** `Update URI` is how WordPress decides where a
+plugin's update comes from, and four plugin headers pointed it at an organisation that does not
+publish releases. Eleven cosmetic, one functional, shipping in every installed copy (Decision #202).
+
+**`PROJECT-STATUS.md` is new** and is the thing to point people at: every module as stable / partial /
+planned, and every known gap citing the file that records it — the 24 bounded dependency exceptions,
+the three excluded browser specs with their ruled-out causes, the 1px RTL overflow, Arabic typography
+proved for layout but not type, GitHub Pages not enabled, five of six CI checks not required. Module
+descriptions were read from the source directories, not recalled (Decision #203).
+
+**ROADMAP was three releases stale** — it named v0.35.x above a §17 list running to spec 085.
+**README** led with spec 060 and sent a public reader to a 420 KB session log. **CONTRIBUTING**
+documented a `develop` branch that does not exist and a CI that runs one suite when it runs five.
+
+**The finding worth keeping: docs-guard caught three false numbers in the very documents arguing that
+this project's claims are checkable** — `specs/` has 86 directories not 40, DECISIONS has 201 entries
+not 200, PROGRESS is 420 KB not 424 KB. Same failure as the last four specs, one level up, in the
+prose instead of the code (Decision #204).
+
+**Verified:** Pest **1704** and Jest **431**, both *unchanged* — the point, since this spec claims to
+change no behaviour · `composer validate` clean · `php -l` clean across plugins/packages/addons ·
+docs-app builds **286 pages** · hygiene sweep clean (0 tracked files under `dist`, `wp`, `vendor`,
+`node_modules`, `output`, `test-results`, `sites/`).
+
+**Not done, deliberately:** the 24 dependency advisories (behaviour-changing upgrades under their own
+policy — listing them inside a docs diff is honest, fixing them inside one is not), GitHub Pages, and
+branch-protection required checks. The last two are owner actions on repository settings.
+
+**Next:** owner decision. The repository is announceable as-is; the open items are stated rather than
+hidden.
+
+---
 ## RESUME HERE (2026-07-28) -- **Spec 087: reaching a human, notifications that lead somewhere, controls you can see.**
 
 On `spec/087-guides-support-and-admin-controls`, after v0.38.1. Five owner-reported items, and the
