@@ -6,6 +6,60 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.37.0] — 2026-07-28
+
+Four specs about the same thing: telling the truth on screen. Spec 076 gave the admin one date and
+time contract, 077 made the Operations & Security screen say what it will actually do before it does
+it, 078 replaced a four-line cache command with a classified inventory that cannot delete a security
+control, and 079 fixed an access request that succeeded without anyone being able to tell.
+
+Each spec began by reproducing the defect on a running install. Three times that changed the work:
+what looked like a bad error page in 079 was a *successful* request rendered as an operation
+envelope; the "obvious" cache sweep in 078 would have reset brute-force protection; and a CoreX
+address that did not exist was telling administrators they lacked access.
+
+### Added
+
+- **Access requests reach the administrators who decide them.** Pending requests are listed for real,
+  naming who asked, for what, when and why, with working Approve and Deny. Previously
+  `AccessRequestStore::pending()` had no production caller: the REST route and the screen both
+  returned a hardcoded empty array, so a request was created, audited and notified — and no surface
+  ever read the table, while the denied screen promised a review. (Spec 079, DECISIONS #177)
+- **Cache & Performance**, reporting seven layers from real checks, with `wp corex cache:status`,
+  `cache:doctor` and scoped `cache:clear`. Every entry is classified, and clearing walks declarations
+  rather than matching patterns — a `DELETE … LIKE 'corex_%'` is not refactorable into the design.
+  (Spec 078, DECISIONS #171–#173)
+- **One admin date and time contract**, shared by PHP and JavaScript against a common fixture, with
+  semantic `<time>` markup, the site timezone as the single source of truth, and relative times whose
+  exact value is readable rather than hover-only. (Spec 076)
+- **Mode disclosure on Operations & Security**: every operations mode says what changing to it will
+  do, and the confirmation it requires, before it is applied. (Spec 077)
+
+### Fixed
+
+- **Requesting access no longer navigates the browser to a JSON document.** The form posted to
+  `rest_url('corex/v1/access/requests')`; submitting it rendered `operation_id`, `state`,
+  `affected_ids` and `audit_event_id`. The request *succeeded* — the person asking for help simply had
+  no way to know. It now posts to an admin endpoint calling the same service, and the confirmation is
+  read from stored state, so a refresh creates no second request and nothing can be faked in the URL.
+  The REST route is unchanged and still answers JSON. (Spec 079, DECISIONS #174–#175)
+- **A CoreX address with no screen behind it answered 403** and told the viewer — administrators
+  included — that their role lacked `manage_options`, then offered a form to request access to a
+  screen that does not exist. Now 404, with no capability sentence and no form. (Spec 079,
+  DECISIONS #176)
+- **`wp corex cache:clear` deleted one transient and reported success** for "Corex asset cache",
+  under a name that implies all of them. (Spec 078)
+- **A no-op operations-mode change reported "Saved".** It now says what happened. (Spec 077)
+- **A login slug colliding with an existing page or route was accepted.** (Spec 077)
+- **`lint:css` and `lint:js` now gate CI.** Their absence is how 44 stylelint errors entered
+  unnoticed; the 38 outstanding ones are cleared and ESLint is scoped so the run terminates.
+
+### Changed
+
+- `wp_cache_flush()` is refused on sites with a persistent object cache, because it would delete the
+  rate-limit counters and spent-captcha records that live there as transients. (DECISIONS #172)
+- Dates across the admin now read as dates rather than as ISO strings or raw integers.
+
 ## [0.36.0] — 2026-07-27
 
 Three specs about the same thing: making the admin do what it looks like it does. Spec 073 was a polish
