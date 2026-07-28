@@ -43,6 +43,13 @@ final class MailRequest
     public readonly ?string $from;
 
     /**
+     * Attachment ids to send with this message (spec 081, FR-010).
+     *
+     * @var list<int>
+     */
+    public readonly array $attachments;
+
+    /**
      * @param list<string>        $to
      * @param array<string,mixed> $context merge data for $templateName
      */
@@ -56,6 +63,7 @@ final class MailRequest
         ?string $requestId = null,
         ?string $parentAttemptId = null,
         ?string $from = null,
+        array $attachments = [],
     ) {
         $this->to              = $to;
         $this->templateName    = $templateName;
@@ -66,6 +74,10 @@ final class MailRequest
         $this->requestId       = $requestId ?? \Corex\Support\Uuid::v4();
         $this->parentAttemptId = $parentAttemptId;
         $this->from            = $from;
+        $this->attachments     = array_values(array_filter(
+            array_map('intval', $attachments),
+            static fn (int $id): bool => $id > 0,
+        ));
 
         foreach ([$this->requestId, $this->parentAttemptId] as $id) {
             if ($id !== null && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $id) !== 1) {

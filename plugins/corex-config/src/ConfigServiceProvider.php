@@ -667,6 +667,11 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Admin\Errors\AdminErrorPresenter::class);
         $this->container->singleton(\Corex\Admin\Errors\AdminDieHandler::class);
 
+        // The only way to read a file stored by AttachmentStore (spec 081). Bound here rather than
+        // in corex-forms or corex-careers because both of them — and any add-on that stores a file
+        // — need the same single route; two would be two capability checks to keep in step.
+        $this->container->singleton(\Corex\Security\Upload\AttachmentDelivery::class);
+
         // Blog Pro analytics (spec 068): consented first-party events persist only pseudonymous
         // visitor hashes and aggregate through this injected store.
         $this->container->singleton(ReadingEventTable::class);
@@ -796,6 +801,7 @@ final class ConfigServiceProvider extends ServiceProvider
         // the access-request form in it — is the one that answers. Everywhere else this catches the
         // refusal that used to reach WordPress's white box (spec 083).
         $this->container->make(\Corex\Admin\Errors\AdminDieHandler::class)->register();
+        $this->container->make(\Corex\Security\Upload\AttachmentDelivery::class)->register();
         $this->container->make(\Corex\Config\Access\AccessScreen::class)->register();
         $this->container->make(\Corex\Config\Blog\BlogProScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();

@@ -243,10 +243,10 @@ final class FormsServiceProvider extends ServiceProvider
         $this->container->singleton(
             FormSubmissionService::class,
             static fn (ContainerInterface $c): FormSubmissionService => new FormSubmissionService(
-                $c->make(FormRegistry::class),
-                $c->make(SchemaResolver::class),
-                $c->make(Validator::class),
-                $c->make(EventDispatcher::class),
+                $c->make(\Corex\Forms\FormRegistry::class),
+                $c->make(\Corex\Forms\Schema\SchemaResolver::class),
+                $c->make(\Corex\Forms\Validation\Validator::class),
+                $c->make(\Corex\Events\EventDispatcher::class),
                 $c->make(AttachmentStorage::class),
             ),
         );

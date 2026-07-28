@@ -4,6 +4,63 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **Spec 081: files end to end. Issue #138 closed; the repo is at zero open issues.**
+
+All four remaining items of #138 (6-9) are done, on `spec/081-forms-files-end-to-end`.
+
+**The framework had no upload handling at all.** A repo-wide search for `wp_handle_upload` found two
+comments describing one and no code. `UploadValidator`'s docblock claimed *"the boundary store
+re-checks the real MIME"* about a store nobody had written -- the sentence describing the defence was
+the only place the defence lived.
+
+**Three decisions worth carrying forward:**
+
+- **#192 - a protected file is protected by a capability check, not a deny file.** `.htaccess` is a
+  promise about server configuration CoreX cannot verify; nginx ignores it entirely. The deny rules
+  are defence in depth, `AttachmentDelivery` is the guarantee. Deliberately not signed URLs (a
+  bearer token in browser history and forwarded email) and not `X-Sendfile` (hands the file back to
+  the configuration we cannot trust). Verified on the running install: direct fetch **403**,
+  directory listing **403**.
+- **#193 - validate the descriptor, then store; never store then clean up.** The alternative is
+  correct only until somebody adds an early return between the two, and its failure is silent:
+  bytes in a protected directory with no record pointing at them, which no retention sweep can find.
+- **#194 - a file input's value is a lie.** `el.value` is `C:akepath
+ame.pdf`, so the file never
+  reached `collect()`; and `viaFetch` set `Content-Type: application/json` unconditionally, which
+  overrides the multipart boundary the browser generates. **Neither is mentioned in issue #138**, and
+  either alone made uploads impossible.
+
+**Two corrections to the issue's own file list**, found by reading rather than trusting: the
+hardcode is in `TableDataSource::schema()`, not `fields()`; and the React flattening is in
+`recordRows.js`, not `RecordDetail.js`.
+
+**`COREX-EMAIL-ADDON.md` now describes what exists.** It documented `attach()`, `attachMedia()`,
+`attachGenerated()` and an `AttachmentResolver` while `WpMailDriver` called `wp_mail()` with four
+arguments and could not send a file under any circumstances. `attachMedia()` and the resolver are
+built; the other two are recorded as not implemented, with the reason, rather than quietly deleted.
+
+**Two things caught by running rather than reasoning:**
+
+- `Table::managed()` does not exist -- I took it from an exploration summary. The integration suite
+  refused to boot, which is how it should fail. `managed()` lives on a table class; careers now has
+  `ApplicationTable`, mirroring `SubscriberTable`.
+- A container binding used `EventDispatcher::class` unimported inside `namespace Corex\Forms`, so it
+  resolved to `Corex\Forms\EventDispatcher` and 16 integration tests failed at once.
+
+**Deliberately not done:** multi-file per field (a different storage shape, render and validation
+story; no reported defect needs it), and a real HTTP upload in the integration suite --
+`wp_handle_upload()` refuses anything `is_uploaded_file()` rejects, which is every file a test
+process can create. Faking it would mean weakening the check in production to make a test pass.
+
+**Verified:** Pest unit **1654 passed**, integration **342/345**, Jest **421**, Playwright **111**,
+`lint:css` and `lint:js` clean, token inventory regenerated. The three integration failures are the
+pre-existing data-dependent ones `main` also produces.
+
+**Also fixed while here:** the spec 083 logout browser test matched the admin bar's hidden Log Out
+link, so it passed on any page that still had an admin bar -- including ones where the prompt was
+never reached. Scoped to `#error-page`, which is what WordPress's own `wp_die` handler renders.
+
+---
 ## RESUME HERE (2026-07-28) -- **Spec 085: three production issues closed. Only #138 remains open.**
 
 Specs 083 (`77524df`) and 084 (`e6ec188`) are merged; `main` is in sync on both remotes.

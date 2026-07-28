@@ -953,6 +953,26 @@ function DetailDrawer( { drawer, inbox } ) {
 	);
 }
 
+/**
+ * What `FieldValue` should be handed for one stored value.
+ *
+ * A described attachment goes through untouched so it renders as a link; anything else that is an
+ * object is still JSON, which is unlovely but honest — better than "[object Object]" and better
+ * than dropping a value nobody anticipated (#138 item 6).
+ *
+ * @param {*} item One stored value.
+ * @return {*} The value, or its JSON.
+ */
+function displayable( item ) {
+	if ( item !== null && typeof item === 'object' ) {
+		return typeof item.id === 'number' && 'missing' in item
+			? item
+			: JSON.stringify( item );
+	}
+
+	return item;
+}
+
 function DetailSection( { title, value } ) {
 	const entries = Object.entries( value || {} );
 	return (
@@ -968,13 +988,7 @@ function DetailSection( { title, value } ) {
 						<div key={ key }>
 							<dt>{ key }</dt>
 							<dd>
-								<FieldValue
-									value={
-										typeof item === 'object'
-											? JSON.stringify( item )
-											: item
-									}
-								/>
+								<FieldValue value={ displayable( item ) } />
 							</dd>
 						</div>
 					) ) }

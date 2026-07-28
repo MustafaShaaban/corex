@@ -310,10 +310,13 @@ test.describe( 'Admin refusals', () => {
 			'the logout confirmation is not an error and must not be branded as one'
 		).not.toContain( 'corex-standalone' );
 
-		// The confirming link, not the admin bar's — the prompt renders without an admin bar, so
-		// anything still offering `action=logout` here is the control the page exists for.
+		// Scoped to `#error-page`, which is the container WordPress's own wp_die handler renders.
+		// An unscoped `a[href*="action=logout"]` also matches the admin bar's hidden Log Out item,
+		// so it passed on any page that still had an admin bar — including the ones where the
+		// prompt had not been reached at all.
+		await expect( page.locator( '#wpadminbar' ) ).toHaveCount( 0 );
 		await expect(
-			page.locator( 'a[href*="action=logout"]' ).first()
+			page.locator( '#error-page a[href*="action=logout"]' ).first()
 		).toBeVisible();
 	} );
 

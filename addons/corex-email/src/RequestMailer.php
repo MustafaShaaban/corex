@@ -55,6 +55,10 @@ final class RequestMailer implements AttemptingMailer
             $builder->from($request->from);
         }
 
+        foreach ($request->attachments as $attachmentId) {
+            $builder->attachMedia($attachmentId);
+        }
+
         if ($request->replyTo !== null && $request->replyTo !== '') {
             $builder->replyTo($request->replyTo);
         }

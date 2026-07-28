@@ -24,7 +24,52 @@ import { __ } from '@wordpress/i18n';
  */
 const LINKABLE = /^https?:\/\/\S+$/i;
 
+/**
+ * A stored file, as `TableDataSource::describeAttachment()` sends it.
+ *
+ * @param {Object} value `{ id, name, url, missing }`.
+ * @return {boolean} Whether this value is a described attachment.
+ */
+function isAttachment( value ) {
+	return (
+		value !== null &&
+		typeof value === 'object' &&
+		typeof value.id === 'number' &&
+		'missing' in value
+	);
+}
+
 export default function FieldValue( { value } ) {
+	// An attachment id used to render as a bare integer — a file an operator could see the
+	// existence of and not open (#138 item 6). The server resolves it to a name and a
+	// capability-checked delivery address; this renders that.
+	if ( isAttachment( value ) ) {
+		if ( value.missing ) {
+			// Not an em dash. "Nobody uploaded anything" and "the file this record points at is
+			// gone" are different facts, and only one of them is somebody's problem.
+			return (
+				<span className="corex-field-value is-missing">
+					{ __( 'File missing', 'corex' ) }
+				</span>
+			);
+		}
+
+		return (
+			<a
+				className="corex-field-value corex-field-value--file"
+				href={ value.url }
+				target="_blank"
+				rel="noopener noreferrer"
+			>
+				{ value.name }
+				<span className="screen-reader-text">
+					{ ' ' }
+					{ __( '(opens in a new tab)', 'corex' ) }
+				</span>
+			</a>
+		);
+	}
+
 	const text = value === null || value === undefined ? '' : String( value );
 
 	if ( text.trim() === '' ) {

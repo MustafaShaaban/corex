@@ -16,6 +16,7 @@ use Corex\Captcha\Captcha;
 use Corex\Careers\Application\ApplicationRepository;
 use Corex\Careers\Application\ApplicationService;
 use Corex\Careers\Application\ApplicationStore;
+use Corex\Careers\Application\ApplicationTable;
 use Corex\Careers\Application\WpApplicationStore;
 use Corex\Careers\Block\JobProvider;
 use Corex\Careers\Block\WpJobProvider;
@@ -24,7 +25,6 @@ use Corex\Careers\Templates\NewApplicationTemplate;
 use Corex\Container\ContainerInterface;
 use Corex\Database\Schema\ManagedTables;
 use Corex\Database\Schema\Migrator;
-use Corex\Database\Schema\Table;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Foundation\ServiceProvider;
 use Corex\Mail\Mailer;
@@ -100,16 +100,14 @@ final class CareersServiceProvider extends ServiceProvider
             ]);
         }
 
-        $applications = (new Table('applications'))
-            ->id()->integer('job_id')->string('name')->string('email')->text('cover_letter')
-            ->integer('cv_attachment')->string('status', 20)->timestamps();
+        $applications = new ApplicationTable();
 
-        $this->container->make(Migrator::class)->create($applications);
+        $this->container->make(Migrator::class)->create($applications->schema());
 
         // Registered as managed, so applications are visible on the Data screen at all (#138 item
-        // 14). The table was created and migrated and never registered, so every application ever
-        // received was stored somewhere no admin surface reads — compounding the CV that was never
-        // stored in the first place.
+        // 14). The table was created and migrated and never registered, so every application a site
+        // received went somewhere no admin surface reads — compounding the CV that was never stored
+        // in the first place.
         $this->container->make(ManagedTables::class)->register($applications->managed());
 
         $registrar = $this->container->make(DynamicBlockRegistrar::class);

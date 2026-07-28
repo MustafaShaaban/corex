@@ -29,6 +29,15 @@ final class DataField
     public const TYPE_JSON     = 'json';
     public const TYPE_FORM     = 'form';
 
+    /**
+     * A stored file, held as a WordPress attachment id (spec 081, FR-007).
+     *
+     * The value in the row is an integer. It is not `TYPE_INTEGER` because nothing useful can be
+     * done with it as a number: an operator needs the file's name and a way to open it, and an
+     * admin surface that renders it as `4242` is the defect this type exists to fix.
+     */
+    public const TYPE_ATTACHMENT = 'attachment';
+
     public const PERSONAL_NONE       = 'none';
     public const PERSONAL_CONTACT    = 'contact';
     public const PERSONAL_IDENTITY   = 'identity';
@@ -52,6 +61,7 @@ final class DataField
         self::TYPE_SELECT,
         self::TYPE_JSON,
         self::TYPE_FORM,
+        self::TYPE_ATTACHMENT,
     ];
 
     private const PERSONAL_CLASSES = [

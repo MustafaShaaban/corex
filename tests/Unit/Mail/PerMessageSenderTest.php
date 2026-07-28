@@ -64,3 +64,38 @@ it('restores a queued message that carries no sender as carrying none', function
     // Not '' — an empty string would reach the driver as a request for a mailbox named nothing.
     expect($restored->from)->toBeNull();
 });
+
+/**
+ * Attachments (spec 081, #138 item 9).
+ *
+ * `COREX-EMAIL-ADDON.md` documented `attach()`, `attachMedia()`, `attachGenerated()` and an
+ * `AttachmentResolver` since the add-on was specified. None existed, `MailRequest` carried no
+ * attachments field, and `WpMailDriver` called `wp_mail()` with four arguments — so the framework
+ * could not send a file under any circumstances while its own documentation said it could.
+ */
+it('carries no attachments by default', function () {
+    expect((new MailRequest(['someone@example.test']))->attachments)->toBe([]);
+});
+
+it('keeps only real attachment ids', function () {
+    $request = new MailRequest(
+        ['someone@example.test'],
+        attachments: [42, 0, -1, '7', 'nonsense'],
+    );
+
+    // Ids only, and a list. A `0` reaching the resolver would be a lookup for post 0 on every
+    // send, and a string key would survive serialisation as something the driver cannot use.
+    expect($request->attachments)->toBe([42, 7]);
+});
+
+it('keeps its attachments across the queue', function () {
+    $restored = ActionSchedulerDispatcher::fromArray(
+        ActionSchedulerDispatcher::toArray(new MailRequest(
+            ['someone@example.test'],
+            templateName: 'invoice',
+            attachments: [42, 43],
+        )),
+    );
+
+    expect($restored->attachments)->toBe([42, 43]);
+});
