@@ -14,6 +14,13 @@ const REQUESTER_PASS =
 	process.env.COREX_REQUESTER_PASS || 'CorexE2E!requester1';
 const DENIED_SCREEN = '/wp-admin/admin.php?page=corex-forms';
 
+/** Where a login form might be, in the order global-setup.js tries them. */
+const LOGIN_PATHS = [
+	process.env.COREX_LOGIN_PATH,
+	'/wp-login.php',
+	'/corex-login/',
+].filter( Boolean );
+
 /** Fields the old JSON page exposed. None of them belongs on a page a person reads. */
 const INTERNAL_FIELDS = [
 	'operation_id',
@@ -43,7 +50,10 @@ async function clearPendingRequests( page ) {
 	const nonce = await page.evaluate(
 		() => window.corexAccess && window.corexAccess.nonce
 	);
-	expect( nonce, 'the Access screen must localize a REST nonce' ).toBeTruthy();
+	expect(
+		nonce,
+		'the Access screen must localize a REST nonce'
+	).toBeTruthy();
 
 	const listed = await page.request.get(
 		'/wp-json/corex/v1/access/requests',
@@ -54,7 +64,12 @@ async function clearPendingRequests( page ) {
 	expect( listed.status(), 'pending requests must be listable' ).toBe( 200 );
 
 	const body = await listed.json();
-	const pending = body?.data?.requests || [];
+	// Only this requester's. Other specs create access requests of their own, and a cleanup that
+	// denies everything pending would quietly break them — the same cross-file damage this file
+	// suffered when it assumed the first row in the panel was its own.
+	const pending = ( body?.data?.requests || [] ).filter(
+		( request ) => request.requester === REQUESTER
+	);
 
 	for ( const request of pending ) {
 		await page.request.post(
@@ -87,13 +102,38 @@ async function signInAsRequester( browser, baseURL ) {
 	} );
 	const page = await context.newPage();
 
-	await page.goto( '/wp-login.php' );
-	await page.fill( '#user_login', REQUESTER );
-	await page.fill( '#user_pass', REQUESTER_PASS );
-	await Promise.all( [
-		page.waitForNavigation(),
-		page.click( '#wp-submit' ),
-	] );
+	// The login page moves. `security-access.spec.js` turns login protection on, which makes
+	// /wp-login.php answer the theme's 404 like any missing address — the feature working, not a
+	// fault — and with ten workers that can happen while this file is running. `global-setup.js`
+	// copes the same way for the administrator session; without it, sign-in fails silently here
+	// and the failure surfaces several assertions later as a missing form.
+	let signedIn = false;
+	for ( const path of LOGIN_PATHS ) {
+		await page.goto( path ).catch( () => {} );
+
+		if (
+			! ( await page
+				.locator( '#user_login' )
+				.isVisible()
+				.catch( () => false ) )
+		) {
+			continue;
+		}
+
+		await page.fill( '#user_login', REQUESTER );
+		await page.fill( '#user_pass', REQUESTER_PASS );
+		await Promise.all( [
+			page.waitForNavigation(),
+			page.click( '#wp-submit' ),
+		] );
+		signedIn = ! page.url().includes( 'wp-login.php' );
+
+		if ( signedIn ) {
+			break;
+		}
+	}
+
+	expect( signedIn, `signed in as ${ REQUESTER }` ).toBe( true );
 
 	return page;
 }
@@ -231,7 +271,11 @@ test.describe( 'Access request', () => {
 		// link is still covered; what needs a real click is the decision.
 		await page.goto( '/wp-admin/admin.php?page=corex-access&tab=matrix' );
 
-		const request = page.locator( '.corex-access__request' ).first();
+		// The row for *this* requester. `.first()` was wrong: another spec creates its own access
+		// request, and whichever is newest wins the position.
+		const request = page
+			.locator( '.corex-access__request' )
+			.filter( { hasText: REQUESTER } );
 
 		await expect( request ).toBeVisible();
 		await expect( request ).toContainText( REQUESTER );
@@ -246,9 +290,7 @@ test.describe( 'Access request', () => {
 
 		// Gone from the panel only because the server recorded the decision — and gone from the
 		// requester's screen too, which is the proof it was a decision and not a UI state.
-		await expect( page.locator( '.corex-access__request' ) ).toHaveCount(
-			0
-		);
+		await expect( request ).toHaveCount( 0 );
 
 		await requester.reload();
 		await expect(
@@ -259,18 +301,17 @@ test.describe( 'Access request', () => {
 	} );
 
 	test( 'a CoreX address with no screen behind it is a 404, not a denial', async ( {
-		browser,
-		baseURL,
+		page,
 	} ) => {
-		const page = await signInAsRequester( browser, baseURL );
-
+		// As an administrator, which is the case the defect report named: it used to answer 403 and
+		// tell somebody who holds `manage_options` that their role does not, then offer a form to
+		// request access to a screen that does not exist. Using the shared admin session also keeps
+		// this assertion out of reach of the specs that move the login page and switch the site into
+		// maintenance while this file is running.
 		const response = await page.goto(
 			'/wp-admin/admin.php?page=corex-nonexistent'
 		);
 
-		// It used to answer 403 and tell whoever asked — administrators included — that their role
-		// lacked `manage_options`, then offer a form to request access to a screen that does not
-		// exist. Nothing was refused, so nothing is refused here.
 		expect( response.status() ).toBe( 404 );
 		await expect(
 			page.locator( 'form.corex-denied__request' )
@@ -278,8 +319,6 @@ test.describe( 'Access request', () => {
 		await expect( page.locator( 'body' ) ).not.toContainText(
 			'manage_options'
 		);
-
-		await page.context().close();
 	} );
 
 	test( 'the denied surface fits a 375px viewport in RTL without scrolling sideways', async ( {

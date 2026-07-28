@@ -2953,7 +2953,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 63, 429: font-size: var(--corex-admin-font-md);",
+      "selector_or_context": "lines 63, 429, 496: font-size: var(--corex-admin-font-md);",
       "property": "--corex-admin-font-md",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3053,7 +3053,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 32, 67, 83, 161, 272, 295, 367, 380, 435, 446, 476, 477: padding-block: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | gap: var(--corex-admin-space-2xs);",
+      "selector_or_context": "lines 32, 67, 83, 161, 272, 295, 367, 380, 435, 446, 476, 477, 489: padding-block: var(--corex-admin-space-2xs); | margin: var(--corex-admin-space-2xs) 0 0; | gap: var(--corex-admin-space-2xs);",
       "property": "--corex-admin-space-2xs",
       "owner": "config-plugin",
       "surface": "admin",
@@ -3073,7 +3073,7 @@
     },
     {
       "path": "plugins/corex-config/assets/access.css",
-      "selector_or_context": "lines 9, 18, 46, 92, 190, 191, 390, 417, 421: margin: 0 0 var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md);",
+      "selector_or_context": "lines 9, 18, 46, 92, 190, 191, 390, 417, 421, 490, 491: margin: 0 0 var(--corex-admin-space-md); | margin-block-end: var(--corex-admin-space-md); | gap: var(--corex-admin-space-md);",
       "property": "--corex-admin-space-md",
       "owner": "config-plugin",
       "surface": "admin",

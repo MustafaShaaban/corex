@@ -58,8 +58,39 @@ is stored through the Access workflow with:
 - a required reason;
 - a seven-day expiry.
 
-Administrators review requests in CoreX Access & Abilities. Approval grants the requested CoreX-owned ability; denial
-records the decision without granting access.
+### What the requester sees
+
+The form submits to a CoreX admin endpoint, which validates it, calls the Access service and redirects back to the
+screen they were refused from. They never leave wp-admin, and the browser is never sent to a REST endpoint.
+
+That screen then shows a confirmation naming when the request was sent, in place of the form. It is read from the
+stored request rather than from the redirect, so it survives a refresh, a bookmark and a return the next day — and
+refreshing creates no second request. Submitting again while one is open creates nothing: the duplicate is refused on
+the server, not by disabling a button.
+
+An empty or invalid reason returns them to the form with the field error shown and their text preserved. A failure on
+CoreX's side shows a short reference and says plainly that nothing was recorded, so retrying is safe. No error state
+shows an operation identifier, a stack trace, a path or a raw API payload.
+
+**The Access Request REST routes remain JSON APIs.** `POST /corex/v1/access/requests` and
+`POST /corex/v1/access/requests/<id>/decision` answer JSON with unchanged status codes, for scripts, integrations and
+the admin screen's own controls. The admin endpoint is a second door onto the same service, not a replacement for it,
+and nothing in CoreX inspects `Accept` to decide between HTML and JSON.
+
+### What the administrator sees
+
+Pending requests appear in **CoreX Access & Abilities → Role matrix**, each naming who asked, which ability they asked
+for, when, and why, with **Approve** and **Deny**. Approval grants the requested CoreX-owned ability immediately;
+denial records the decision without granting access. Both write an audit entry.
+
+Because that panel sits inside a tab, the screen's Overview says how many people are waiting and links straight to it.
+When nobody is waiting, it says nothing at all.
+
+### A CoreX address that does not exist
+
+`?page=corex-<something-that-is-not-a-screen>` answers **404**, with no capability explanation and no request form.
+Nothing was refused, so nothing is presented as a refusal — and there is no ability to request for a screen that does
+not exist. A registered CoreX screen the viewer may not open still answers 403 with the designed denied surface.
 
 Native WordPress capabilities and third-party role plugins remain compatibility inputs. CoreX-owned abilities are the
 only states edited by the CoreX Access workflow.
