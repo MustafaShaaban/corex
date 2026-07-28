@@ -3770,3 +3770,38 @@ change — every endpoint, test and theme currently expects JSON. `collect()` is
 `window.Corex.forms` so a theme reads a form the same way the runtime does; the two disagreeing is
 the class of bug the multi-select defect was.
 Status: Final.
+
+## #195 — A framework a site cannot safely reach is not extensible
+Date: 2026-07-28
+Decision: `Boot::booted()` is public, `Boot::boot()` fires a `corex_booted` action, and
+`Corex::onReady(callable)` is the documented way for a site plugin to reach the container. The
+guides documentation now tells sites to wrap their registration in it.
+Why: found by standing up a plugin that followed the published documentation exactly. CoreX boots on
+`plugins_loaded` at priority 10 and the site starter this framework *generates* boots there too, so
+which one WordPress runs first depends on the plugin's directory name. The loser called
+`Corex::make()`, reached `Boot::app()`, and got a `RuntimeException` — not a silent no-op but a
+fatal, on every request, taking the whole site down. And it could not be guarded against:
+`app()` throws rather than returning null, so `Boot::app() === null` — the check a developer
+naturally writes — *is* the crash.
+Scope: `onReady()` covers both orderings, so there is no ordering left for a caller to get wrong;
+that is the point, rather than documenting the hazard and expecting care. Perego had independently
+worked around it by deferring to `init`, which is evidence the trap is real and that the workaround
+is something each site has to discover for itself. Spec 084 shipped a registry whose deferred
+resolution solved the *registry* race while leaving the *boot* race open — solving half a problem
+and documenting the half that remained.
+Status: Final.
+
+## #196 — An acceptance matrix measures; it does not photograph
+Date: 2026-07-28
+Decision: `capture-denied-acceptance.mjs` asserts `scrollWidth <= clientWidth` in all 16 cells and
+exits non-zero on any overflow. Four corners are photographed for design review; the other twelve
+are measured only.
+Why: the defect this repository keeps meeting is a **one-pixel** horizontal overflow, still open on
+`corex-access`. No screenshot review has ever caught one, and asking a person to spot a pixel across
+sixteen images is asking them to fail. The screenshots are for judging whether it looks right; the
+measurement is for knowing whether it fits.
+Scope: the record states plainly what the RTL cells do *not* prove. They force `dir="rtl"` onto
+English strings, so trailing punctuation lands at the visual left — a property of the fixture, not
+the product. Recording that is what stops somebody later "fixing" correct code, and what makes clear
+that Arabic typography still needs an Arabic catalogue and its own pass.
+Status: Final.

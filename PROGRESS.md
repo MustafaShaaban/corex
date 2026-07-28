@@ -4,6 +4,58 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **Consumer validation against Perego, and 079 closed out.**
+
+On `spec/086-consumer-validation-and-079-closeout`, after v0.38.0.
+
+**Perego is a fork of this repository** with `sites/perego/` added, running CoreX v0.35.1. It had
+built exactly the parallel implementation issue #138 predicted: `PeregoCareersController` hand-rolls
+`wp_handle_upload`, its own MIME vetting and its own attachment insert, writing CVs to the **public
+uploads root**. v0.38.0 makes that deletable.
+
+**Standing up a plugin that followed our own published documentation found four defects. None was
+visible from the code.**
+
+1. **A site plugin following the guides doc takes the whole site down.** `Boot::app()` **throws**
+   when CoreX has not booted, and CoreX boots on `plugins_loaded` at priority 10 — the same hook and
+   priority as the site starter this framework generates. Which one WordPress runs first depends on
+   the plugin's **directory name**. And it could not be guarded: `app()` throws rather than
+   returning null, so `Boot::app() === null` — the check a developer naturally writes — *is* the
+   crash. Added `Boot::booted()`, a `corex_booted` action and `Corex::onReady()`. **Perego had
+   already worked around this by deferring to `init`** — a workaround a careful developer had to
+   discover.
+2. **A required file field could never be submitted.** `collect()` skipped file inputs, so
+   `required` saw nothing: the file was attached, the browser said it was missing, and no request
+   ever left. `collect()` and `validate()` each passed their own unit tests.
+3. **The `accept` attribute never worked.** It matched `'mime:'` on the declared string;
+   `SchemaResolver` parses rules into `['rule' => 'mime', ...]` long before the renderer sees them.
+   Silent — a picker with no filter still works.
+4. **The Data list showed `21848` where its own detail modal showed a link**, same column, same
+   table. `rows()` inlined its own copy of the shaping loop and missed the hydration.
+
+Plus the delivery route had no logged-out arm, so following a CV link while signed out hit
+`admin-post.php`'s generic invalid-action path — HTTP 400 and "Something went wrong".
+
+**Verified end to end on the running install:** real browser upload, stored in the protected
+directory, **403 on direct fetch**, private post, correct declared type, hydrated link in admin.
+
+**079 is closed.** T051 wired the Data explorer, the Submissions inbox and the Access requests panel
+to `CorexErrorState` at panel and action scale. T060 **measured** 16 cells — 375px/1280px ×
+LTR/RTL × light/dark × 100%/200% zoom — asserting no horizontal overflow rather than photographing
+it, because the defect this repo keeps meeting is a one-pixel overflow no screenshot review catches.
+None overflows. `evidence/after/acceptance-matrix.md` also records what the RTL cells do **not**
+prove: they force `dir="rtl"` onto English strings, so bidi punctuation artifacts belong to the
+fixture, not the product.
+
+**A test-hygiene finding worth acting on eventually:** the full browser suite failed twice on
+`access-request.spec.js` until **133 stuck pending access requests** were cleared. Its
+`clearPendingRequests` only clears the current requester's, so failed runs accumulate rows that
+later make the denied surface render its pending state instead of the form. Not fixed here.
+
+**Verified:** Pest unit **1656** - integration **349/352** - Jest **423** - Playwright **111** -
+lints clean - token inventory regenerated.
+
+---
 ## RESUME HERE (2026-07-28) -- **v0.38.0 released.** Specs 080-085 shipped. Zero open issues, zero open PRs.
 
 | Spec | PR | Merged as |

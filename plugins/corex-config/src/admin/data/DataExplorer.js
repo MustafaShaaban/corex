@@ -1,5 +1,6 @@
 import { useState } from '@wordpress/element';
-import { Button, Spinner } from '@wordpress/components';
+import CorexErrorState from '../components/CorexErrorState.js';
+import { Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { viewState } from '../dataClient.js';
 import BulkBar from './BulkBar.js';
@@ -89,12 +90,19 @@ export default function DataExplorer( { config } ) {
 							</p>
 						) }
 						{ stateKey === 'error' && (
-							<div className="corex-data__error" role="alert">
-								<p>{ explorer.state.error }</p>
-								<Button onClick={ explorer.reload }>
-									{ __( 'Retry', 'corex' ) }
-								</Button>
-							</div>
+							<CorexErrorState
+								scale="panel"
+								title={ __(
+									'These records could not be loaded',
+									'corex'
+								) }
+								message={ __(
+									'The request did not complete. Nothing has been changed.',
+									'corex'
+								) }
+								detail={ explorer.state.error }
+								onRetry={ explorer.reload }
+							/>
 						) }
 						{ stateKey === 'empty' && (
 							<p className="corex-data__empty">
