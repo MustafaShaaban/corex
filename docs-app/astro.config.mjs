@@ -69,6 +69,7 @@ export default defineConfig( {
 				{
 					label: 'Guides',
 					items: [
+						{ label: 'User guides', slug: 'guides/user-guides' },
 						{ label: 'Forms & Flows', slug: 'guides/forms-flows' },
 						{
 							label: 'Submissions Inbox',

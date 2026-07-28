@@ -191,6 +191,11 @@ body.corex-admin-screen .corex-admin__shell {
 	mask-image: url(../icons/nav-setup.svg);
 }
 
+.corex-admin__nav-icon--guides {
+	-webkit-mask-image: url(../icons/nav-guides.svg);
+	mask-image: url(../icons/nav-guides.svg);
+}
+
 .corex-admin__nav-icon--forms {
 	-webkit-mask-image: url(../icons/nav-forms.svg);
 	mask-image: url(../icons/nav-forms.svg);

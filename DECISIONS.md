@@ -3669,3 +3669,26 @@ declarations is what would drift; the ability, by contrast, comes from `requestA
 same resolution the submission handler performs, so the sentence and the queued request cannot
 disagree.
 Status: Final.
+
+## #189 — The user manual is a registry, not a document
+Date: 2026-07-28
+Decision: The dashboard user manual ships as `addons/corex-guides`, an add-on owning a public
+`GuideRegistry`. CoreX registers its own guides through it; a site plugin registers its own through
+the same API and they render on the same screen. Spec 082, which designed the manual as Markdown in
+a docs tree, is superseded.
+Why: a client's guide is about the client's site — their post types, their flows — so it ships with
+their plugin, versions with their plugin, and has to appear without anybody editing CoreX. A
+Markdown file in `docs-app/` can express CoreX's manual and can never express Perego's. 082 also
+left "where does the manual live" as an open decision and asked in its own US3 where somebody would
+look; for a person handed a finished site the answer is wp-admin, not a documentation website they
+were never told about.
+Scope: what 082 got right is kept — the content rules (name the control, state the expected result,
+warn before anything hard to undo) and the screenshot discipline (captured by a script driving the
+real admin, one regeneration command, loud failure on a missing screen). Registration is
+`registerDeferred()` rather than `register()` because CoreX and a site plugin both boot on
+`plugins_loaded` at priority 10 and the winner depends on the plugin's directory name; resolving on
+first read removes the race rather than documenting it. Sections order alphabetically by key, which
+is deliberate: a separate section-order registry would be a second thing to register, get wrong, and
+disagree about. Availability needs no `is_active()` check anywhere — an add-on registers its guides
+from its own provider, so an inactive add-on contributes nothing by construction.
+Status: Final.
