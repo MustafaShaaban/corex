@@ -449,6 +449,15 @@ final class CliServiceProvider extends ServiceProvider
             $root . '/plugins/corex-config/corex-config.php',
             $root . '/theme/style.css',
             $root . '/docs-app/src/version.ts',
+            // Stamped by hand until 0.39.0, which is how ROADMAP.md came to sit three releases
+            // behind a correct README. Each of these declares the *current* version in prose or in
+            // JSON; VersionPlan anchors to the exact sentence, so historical references elsewhere in
+            // the same files ("released as v0.38.1") are left alone.
+            $root . '/package.json',
+            $root . '/README.md',
+            $root . '/ROADMAP.md',
+            $root . '/PROJECT-STATUS.md',
+            $root . '/docs-app/src/content/docs/project-status.md',
         ];
 
         foreach (glob($root . '/addons/*/*.php') ?: [] as $addonFile) {

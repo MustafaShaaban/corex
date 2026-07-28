@@ -3,7 +3,7 @@ title: Project status
 description: What works, what is partial, and what is not built — with the file that records each one.
 ---
 
-**Version 0.38.1.** This page exists so you do not have to read the git history to find out what you
+**Version 0.39.0.** This page exists so you do not have to read the git history to find out what you
 are adopting. Everything below is traceable to something in the repository — a spec, a policy file, a
 test exclusion, a design inventory row.
 
