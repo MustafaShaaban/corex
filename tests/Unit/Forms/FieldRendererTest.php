@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Forms\Block\FieldRenderer;
+use Corex\Forms\Schema\FieldSchema;
 use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Validation\RuleRegistry;
 
@@ -130,4 +131,30 @@ it('emits whitelisted extra attributes but drops reserved and event-handler ones
         ->toContain('autocomplete="email"')
         ->not->toContain('onfocus')
         ->not->toContain('name="evil"');
+});
+
+/**
+ * `accept` is derived from the field's own `mime:` rule, so the file picker and the validator
+ * cannot disagree (spec 081).
+ *
+ * Driven through `renderField()` — and therefore through `SchemaResolver` — because that is where
+ * the bug was. The first implementation matched `str_starts_with($rule, 'mime:')` on the declared
+ * *string*, and the resolver had already parsed it into `['rule' => 'mime', 'params' => [...]]`, so
+ * it matched nothing. Silently: a picker with no filter still works, so there was no symptom.
+ * Building a `FieldSchema` by hand in the test would have reproduced my mistake, not the product's.
+ */
+it('derives the accept attribute from the resolved mime rule', function () {
+    $html = renderField('cv', [
+        'type'  => 'file',
+        'label' => 'Your CV',
+        'rules' => ['required', 'mime:application/pdf,image/png'],
+    ]);
+
+    expect($html)->toContain('accept="application/pdf,image/png"')
+        ->and($html)->toContain('type="file"');
+});
+
+it('omits accept when the field declares no mime rule', function () {
+    expect(renderField('cv', ['type' => 'file', 'rules' => ['required']]))
+        ->not->toContain('accept=');
 });

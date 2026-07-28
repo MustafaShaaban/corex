@@ -125,11 +125,16 @@ final class FieldRenderer
     private function acceptAttribute(FieldSchema $field): string
     {
         foreach ($field->rules as $rule) {
-            if (! str_starts_with($rule, 'mime:')) {
+            // A resolved rule is `['rule' => 'mime', 'params' => ['application/pdf']]`, not the
+            // `'mime:application/pdf'` string the form declared — `SchemaResolver` parses it before
+            // this ever sees it. The first version of this method matched on the string and
+            // therefore matched nothing, silently: a file picker with no filter still works, so
+            // there was no symptom to notice. Found by standing up a real consumer.
+            if (! is_array($rule) || ($rule['rule'] ?? '') !== 'mime') {
                 continue;
             }
 
-            $types = trim(substr($rule, 5));
+            $types = implode(',', array_map('strval', (array) ($rule['params'] ?? [])));
 
             return $types === '' ? '' : ' accept="' . esc_attr($types) . '"';
         }

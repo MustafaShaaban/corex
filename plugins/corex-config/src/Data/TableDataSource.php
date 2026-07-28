@@ -56,22 +56,22 @@ class TableDataSource implements QueryableDataSource, SchemaAwareDataSource, Cap
     /**
      * @return list<array<string,scalar>>
      */
+    /**
+     * The paged list.
+     *
+     * Shaped through {@see shapeRows()} like every other read path. It used to inline its own copy
+     * of the same loop, which is how it missed the attachment hydration `query()` and `record()`
+     * got: the Data screen's list showed `21848` where its detail modal showed a link, from the
+     * same column on the same table. Two loops that must agree are one loop.
+     */
     public function rows(int $page, int $perPage): array
     {
-        $columns = $this->table->columnIds();
-
-        return array_map(
-            function (array $record) use ($columns): array {
-                $row = ['id' => $record['id'] ?? 0];
-
-                foreach ($columns as $column) {
-                    $row[$column] = $record[$column] ?? '';
-                }
-
-                return $row;
-            },
-            $this->reader->page($this->table->name, $columns, max(1, $page), max(1, $perPage)),
-        );
+        return $this->shapeRows($this->reader->page(
+            $this->table->name,
+            $this->table->columnIds(),
+            max(1, $page),
+            max(1, $perPage),
+        ));
     }
 
     public function total(): int

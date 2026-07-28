@@ -29,10 +29,24 @@ From your service provider's `boot()`:
 use Corex\Guides\GuideRegistry;
 use Corex\Support\Facades\Corex;
 
-Corex::make( GuideRegistry::class )->registerDeferred(
-    static fn (): array => [ ( new ProjectsGuide() )->guide() ]
-);
+Corex::onReady( static function (): void {
+    Corex::make( GuideRegistry::class )->registerDeferred(
+        static fn (): array => [ ( new ProjectsGuide() )->guide() ]
+    );
+} );
 ```
+
+:::danger[Wrap it in `Corex::onReady()`]
+Calling `Corex::make()` directly from `plugins_loaded` is a coin flip that ends in a **white screen
+on the whole site**. Corex boots on `plugins_loaded` at priority 10, and the generated site starter
+boots there too — which one WordPress runs first depends on your plugin's *directory name*. The
+plugin that loses reaches `Boot::app()`, which **throws**.
+
+Nor can you guard it yourself: `Boot::app()` throws rather than returning null, so
+`if ( Boot::app() === null )` — the check you would naturally write — *is* the crash. Use
+`Corex::onReady()`, which runs immediately if Corex is up and waits for the `corex_booted` action if
+it is not. There is no ordering left to get wrong.
+:::
 
 ### Use `registerDeferred()`, not `register()`
 

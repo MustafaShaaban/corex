@@ -77,6 +77,34 @@ final class Boot
 
         self::$app = new Application($debug, providers: self::providersForState(self::runtimeState()));
         self::$app->boot();
+
+        /**
+         * Corex is up and every provider has booted.
+         *
+         * The signal a site plugin needs, and the reason it needs one: Corex boots on
+         * `plugins_loaded` at priority 10, and the generated site starter boots there too. Which
+         * one WordPress runs first depends on the plugin's directory name, and the plugin that
+         * loses reaches {@see Boot::app()} — which throws. Not "silently does nothing": a fatal, on
+         * every request, taking the whole site down.
+         *
+         * Use {@see \Corex\Support\Facades\Corex::onReady()} rather than this hook directly; it
+         * handles the case where Corex has already booted, which this action cannot.
+         *
+         * @param Application $app The booted application.
+         */
+        do_action('corex_booted', self::$app);
+    }
+
+    /**
+     * Whether Corex has booted and {@see app()} is safe to call.
+     *
+     * A site plugin had no way to ask. The obvious guard — `Boot::app() === null` — is itself the
+     * fatal, because `app()` throws rather than returning null, so the check written to prevent the
+     * crash *is* the crash.
+     */
+    public static function booted(): bool
+    {
+        return self::$booted && self::$app !== null;
     }
 
     public static function app(): Application
