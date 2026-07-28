@@ -3555,3 +3555,24 @@ which is what the new exceptions record with a stated control and a review date.
 Note: the paths in the first attempt were wrong because they were written from a probe truncated to
 three entries when the audit reported four. Read the whole list before encoding it in policy.
 Status: Final.
+
+## #183 — A fail-safe that cannot catch its own failure mode is not a fail-safe
+Date: 2026-07-28
+Decision: `WebpConverter::convertWithGd()` promotes an indexed-colour image to truecolour and
+refuses to call `imagewebp()` unless the image is truecolour by the time it gets there. The
+`catch (Throwable)` in `convert()` stays, but it is no longer what protects this path.
+Why: GD raises `Palette image not supported by webp` as an **E_ERROR**, which no `catch (Throwable)`
+can intercept — verified by reproduction, the process dies with the catch in place. The class
+documents itself as a "fail-safe boundary… never a fatal", and for the encoder it was neither. A
+palette PNG is what design tools export a flat-colour logo as, so the affected upload is routine;
+the reporter's 24-logo migration stopped on the first one. Because the conversion runs on
+`wp_generate_attachment_metadata`, the request that died was the upload itself.
+Scope: the general lesson is the reason this is written down. Where a library signals failure
+outside the exception system, safety has to be a **precondition** the caller can check, not a
+handler the caller hopes will fire. `imageistruecolor()` is that check here.
+Note: the explicit `imagealphablending(false)` / `imagesavealpha(true)` pair is kept but is *not*
+what fixes the fatal — on the GD build this was verified against, `imagewebp()` preserved alpha with
+or without it, for both promoted-palette and truecolour sources. The reporter saw transparency loss
+on theirs and GD builds differ, so it stays as a stated intent; it is deliberately not described as
+load-bearing, because measuring it here showed it was not.
+Status: Final.
