@@ -6,6 +6,93 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.38.0] — 2026-07-28
+
+Four specs, and the thread running through them is that a framework can describe a capability it
+does not have. Spec 083 completed an error experience whose unifying half was never built. Spec 084
+turned a planned documentation page into an add-on a client site extends. Spec 085 closed three
+production reports — and found that two of the eleven items no longer needed work. Spec 081 built
+file uploads, which the framework had documented and could not do.
+
+**Verification changed the work in every one of them.** #150's correction to an earlier issue was
+stale; #149's second defect had already been fixed; `Table::managed()` did not exist and the
+integration suite refused to boot rather than accepting it. The recurring lesson is now recorded
+three times: a reported defect is a hypothesis about a tree that has since moved.
+
+### Added
+
+- **Files, end to end.** A CoreX form can ask for a file, store it, show it and send it. Uploads land
+  in a protected directory as private attachments and are readable only through a capability-checked
+  route — the deny rules are defence in depth, not the guarantee, because `.htaccess` is a promise
+  about server configuration the framework cannot verify. A `file` field type, `mime:` and
+  `max_size:` rules that read the file rather than the browser's description of it, an attachment
+  `DataField` that renders as an openable link, and attachments through to `wp_mail()`'s fifth
+  argument, surviving the queue. (Spec 081, issue #138, DECISIONS #192–#194)
+- **Corex Guides** — an add-on that ships CoreX's own in-admin user guides *and* the registry any
+  site built on CoreX extends with guides for its own content types and flows. Registration is
+  deferred to first read, because CoreX and a site plugin both boot on `plugins_loaded` at priority
+  10 and the winner otherwise depends on the plugin's directory name. Guides gate on capability, and
+  an inactive add-on contributes nothing by construction. Includes contextual Help tabs — a
+  WordPress surface this repository had never used — and `wp corex make:guide`. (Spec 084,
+  DECISIONS #189; supersedes spec 082)
+- **A per-message sender.** `?string $from` threaded end to end, so a site with `info@`, `noreply@`
+  and `contact@` properly configured can actually send from all three: SMTP relays route on the From
+  address. Survives the queue, so an immediate and a queued message leave from the same mailbox.
+  (Spec 085, issue #150)
+- **A `phone` validation rule**, with a client mirror that matches the server exactly, plus the
+  missing `url` client mirror. Formatting characters are stripped before the pattern runs, so
+  `+20 101 699 9700` is not rejected for its spaces.
+
+### Fixed
+
+- **Every human-facing admin refusal is now a CoreX page.** Measured before the fix: nine of eleven
+  admin addresses rendered WordPress's white box to a real subscriber, including CoreX's own Careers
+  screen. Spec 079 shipped titled "Unified Admin Error and Access Request Experience" with the
+  unifying half unbuilt, and nothing caught it because the only browser test touching a refusal
+  visited the one URL that could not fail. (Spec 083, DECISIONS #187)
+- **The Data record detail modal, which had never displayed a value for any source.**
+  `useDataExplorer.detail()` unwrapped a `record` key the endpoint does not send. Spec 080 made it
+  *harder* to see: the modal went from rendering em dashes, which reads as broken, to rendering
+  "This record has no readable fields" — a sentence that reads as a true statement about the record.
+  (Spec 085, issue #149, DECISIONS #190)
+- **Silent data loss on every multi-value field.** A `<select multiple>` stored only its first
+  selected value. Both halves of the fix ship together, because sending the real list alone blanks
+  the field entirely — `sanitize_text_field()` returns `''` for an array. (Spec 085, issue #148,
+  DECISIONS #191)
+- **A validated CV that was thrown away.** `ApplicationService::apply()` took a fourth
+  `int $cvAttachmentId = 0` parameter no caller supplied, so `cv_attachment` was `0` on every
+  application ever submitted. The applications table was also created, migrated and never registered
+  as managed, so the rows went somewhere no admin surface reads. (Spec 081, issue #138 item 8)
+- **Client-side form validation was shadowed by the browser.** Rendered forms had no `novalidate`,
+  so a `required` field produced the native bubble and never the runtime's schema-mirrored
+  validation, its error markup or its `aria-invalid` handling. (Spec 085, issue #148)
+- **Validation messages could not be translated.** They resolved through `wp.i18n`, which needs a
+  built JS catalogue that nothing in this repository generates — so every message stayed English on
+  a translated site and nothing reported why. They now render into the form and go through the
+  site's existing `.mo`. (Spec 085, issue #148)
+- **A stored URL an operator could see and not open**, in the Data detail and the Submissions
+  drawer. Only absolute `http(s)` becomes a link; `javascript:` and `data:` stay inert text.
+  (Spec 085, issue #149)
+- **A denial that named the wrong capability.** The denied surface claimed `manage_options` on every
+  screen, which is false on Notifications, Submissions, Data Models and every option page — and a
+  unit test asserted the string was present, holding the falsehood in place. (Spec 083,
+  DECISIONS #188)
+- **A loading spinner that did not spin** on any theme not defining two non-standard custom
+  properties: an unresolved `var()` inside a shorthand makes CSS discard the whole declaration.
+  (Spec 085, issue #148)
+- **Errors that stayed on screen while being corrected**, and `corex:form:error` firing on the
+  server failure path but not the client one. (Spec 085, issue #148)
+
+### Changed
+
+- **`COREX-EMAIL-ADDON.md` describes what exists.** It documented `attach()`, `attachMedia()`,
+  `attachGenerated()` and an `AttachmentResolver` while `WpMailDriver` called `wp_mail()` with four
+  arguments and could not send a file at all. Two are now built; the other two are recorded as not
+  implemented, with the reason, rather than quietly deleted. (Spec 081)
+- **Spec 082 is superseded by 084.** A Markdown manual in a docs tree can express CoreX's own guide
+  and can never express a client's, which ships with the client's plugin. (DECISIONS #189)
+
+
 ## [0.37.0] — 2026-07-28
 
 Four specs about the same thing: telling the truth on screen. Spec 076 gave the admin one date and
