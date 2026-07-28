@@ -364,6 +364,33 @@
 			}
 			return isNumericValue( value ) ? null : 'numeric';
 		},
+		// `url` and `phone` exist server-side and had no client mirror, so a form declaring either
+		// round-tripped to a generic 422 with no field marked (#148 item 4).
+		//
+		// `max_words` is deliberately still absent: it has no server rule either, so no schema can
+		// emit it and a client arm would be unreachable code. That is a feature to add on both
+		// sides at once, not a mirror that is missing.
+		url( value ) {
+			if ( isEmpty( value ) ) {
+				return null;
+			}
+			try {
+				// The same question PHP's FILTER_VALIDATE_URL answers: is this an absolute URL.
+				return new URL( String( value ) ) ? null : 'url';
+			} catch {
+				return 'url';
+			}
+		},
+		phone( value ) {
+			if ( isEmpty( value ) ) {
+				return null;
+			}
+			// Mirrors Rules\Phone exactly, separators and all. A client rule that is stricter than
+			// the server's rejects what the server would accept; one that is looser is a promise
+			// the submit then breaks.
+			const digits = String( value ).replace( /[\s()\-.\u00A0]/g, '' );
+			return /^\+?[1-9]\d{1,14}$/.test( digits ) ? null : 'phone';
+		},
 	};
 
 	function validateField( field, value ) {
@@ -403,7 +430,37 @@
 		return errors;
 	}
 
-	function messageFor( key ) {
+	/**
+	 * The messages the server supplied for this form, if any.
+	 *
+	 * `wp.i18n` alone was a trap: it needs a built JS translation catalogue that nothing in this
+	 * repository generates, so every validation message stayed English on a translated site and
+	 * nothing reported why. A JSON map rendered into the form goes through the site's existing
+	 * `.mo` catalogue with nothing new to build (#148).
+	 *
+	 * @param {HTMLFormElement} form The form being validated.
+	 * @return {Object} Rule key => translated message.
+	 */
+	function serverMessages( form ) {
+		if ( ! form || ! form.dataset.corexMessages ) {
+			return {};
+		}
+		try {
+			const parsed = JSON.parse( form.dataset.corexMessages );
+			return parsed && typeof parsed === 'object' ? parsed : {};
+		} catch {
+			// A malformed attribute must not take validation down with it: the fallback table
+			// below still produces a usable, if untranslated, message.
+			return {};
+		}
+	}
+
+	function messageFor( key, form ) {
+		const supplied = serverMessages( form )[ key ];
+		if ( typeof supplied === 'string' && supplied !== '' ) {
+			return supplied;
+		}
+
 		switch ( key ) {
 			case 'required':
 				return __( 'This field is required.', 'corex' );
@@ -415,6 +472,15 @@
 				return __( 'This value is too long.', 'corex' );
 			case 'min':
 				return __( 'This value is too short.', 'corex' );
+			case 'url':
+				return __( 'Enter a valid web address.', 'corex' );
+			case 'phone':
+				return __( 'Enter a valid phone number.', 'corex' );
+			case 'pattern':
+				return __(
+					'This value is not in the expected format.',
+					'corex'
+				);
 			default:
 				return __( 'Please check this field.', 'corex' );
 		}
@@ -456,6 +522,23 @@
 				}
 				return;
 			}
+			// `<select multiple>` before `el.value`: on a multiple select that property is the
+			// FIRST selected option, so everything else the visitor picked was discarded before
+			// the request was built — silently, with a shorter answer stored than the one given.
+			// Observed live: three services selected, one stored (#148).
+			//
+			// This half only works with the matching arm in `SubmitController::sanitizeShape()`.
+			// Alone it is worse than the bug: `sanitize_text_field()` returns '' for an array, so
+			// sending the real list would blank the field entirely.
+			if ( el.multiple && el.selectedOptions ) {
+				data[ name ] = Array.prototype.map.call(
+					el.selectedOptions,
+					function ( option ) {
+						return option.value;
+					}
+				);
+				return;
+			}
 			data[ name ] = el.value;
 		} );
 		return data;
@@ -490,7 +573,7 @@
 			const message = wrapper.querySelector( '.corex-form__error' );
 			const control = wrapper.querySelector( 'input, textarea, select' );
 			if ( message ) {
-				message.textContent = messageFor( errors[ name ] );
+				message.textContent = messageFor( errors[ name ], form );
 			}
 			if ( control ) {
 				control.setAttribute( 'aria-invalid', 'true' );
@@ -583,6 +666,57 @@
 		} );
 	}
 
+	/**
+	 * Re-check a single control against its own schema entry, and clear or update just its message.
+	 *
+	 * @param {HTMLFormElement} form    The form.
+	 * @param {Element}         control The control that was blurred or edited.
+	 */
+	function revalidateField( form, control ) {
+		if ( ! control || ! control.name ) {
+			return;
+		}
+
+		const name =
+			control.name.slice( -2 ) === '[]'
+				? control.name.slice( 0, -2 )
+				: control.name;
+		const field = ( schemaOf( form ) || [] ).find( function ( entry ) {
+			return entry.name === name;
+		} );
+		if ( ! field ) {
+			return;
+		}
+
+		const wrapper = fieldWrapper( form, name );
+		if ( ! wrapper ) {
+			return;
+		}
+
+		const values = collect( form );
+		const error = validateField(
+			field,
+			Object.prototype.hasOwnProperty.call( values, name )
+				? values[ name ]
+				: null
+		);
+
+		const message = wrapper.querySelector( '.corex-form__error' );
+		if ( message ) {
+			message.textContent = error ? messageFor( error, form ) : '';
+		}
+
+		wrapper
+			.querySelectorAll( 'input, textarea, select' )
+			.forEach( function ( el ) {
+				if ( error ) {
+					el.setAttribute( 'aria-invalid', 'true' );
+				} else {
+					el.removeAttribute( 'aria-invalid' );
+				}
+			} );
+	}
+
 	function onSubmit( form, event ) {
 		event.preventDefault();
 		clearErrors( form );
@@ -591,6 +725,19 @@
 		if ( Object.keys( errors ).length > 0 ) {
 			showErrors( form, errors );
 			notices.status( form, form.dataset.corexError, 'error' );
+			// The server branch emitted `corex:form:error` and this one did not, so a theme
+			// listening for it got half the failures and had no way to tell "no error" from "an
+			// error the runtime chose not to announce". On a site whose status paragraph is a
+			// visually-hidden live region and whose visual channel is a toast, that meant client
+			// validation produced no visible feedback at all (#148).
+			//
+			// `fields` carries the names, because the other thing a listener needs is somewhere to
+			// scroll — `showErrors()` focuses the first control and cannot when it is hidden,
+			// which is normal on a site that replaces a control with its own UI.
+			emit( form, 'corex:form:error', {
+				errors,
+				fields: Object.keys( errors ),
+			} );
 			return; // client error → no request leaves the browser
 		}
 		submit( form );
@@ -605,8 +752,41 @@
 			form.addEventListener( 'submit', function ( event ) {
 				onSubmit( form, event );
 			} );
+
+			// Re-check one field as it is corrected. Without this an error stood on screen while
+			// the visitor fixed it and could only be cleared by submitting again — which, if
+			// anything else was still wrong, re-rendered every error (#148).
+			//
+			// Single-field on purpose: `clearErrors`/`showErrors` are whole-form, and running
+			// them here would blank a neighbour's message mid-typing.
+			//
+			// `blur` needs capture because it does not bubble. `input`/`change` only act on a
+			// field already marked invalid — nagging from the first keystroke is worse than
+			// saying nothing, but leaving a message up after it stops being true is worse still.
+			form.addEventListener(
+				'blur',
+				function ( event ) {
+					revalidateField( form, event.target );
+				},
+				true
+			);
+			[ 'input', 'change' ].forEach( function ( type ) {
+				form.addEventListener( type, function ( event ) {
+					if (
+						event.target &&
+						event.target.getAttribute &&
+						event.target.getAttribute( 'aria-invalid' ) === 'true'
+					) {
+						revalidateField( form, event.target );
+					}
+				} );
+			} );
 		},
 		validate,
+		// Exposed so a theme reads a form the same way the runtime does. Without it the two can
+		// disagree about what a form contains — which is exactly the class of bug item 1 was: a
+		// multi-select that the runtime read as one value and the visitor had answered with three.
+		collect,
 	};
 
 	function autoBind() {

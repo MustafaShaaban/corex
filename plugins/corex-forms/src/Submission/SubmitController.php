@@ -100,11 +100,40 @@ final class SubmitController
             $shape[$name] = match ($field->type) {
                 'email'    => 'sanitize_email',
                 'textarea' => 'sanitize_textarea_field',
+                'multi-select' => self::sanitizeList(...),
                 default    => 'sanitize_text_field',
             };
         }
 
         return $shape;
+    }
+
+    /**
+     * Sanitize a value that may legitimately be a list (#148 item 1).
+     *
+     * Every arm above maps to a scalar sanitizer, and `sanitize_text_field()` returns `''` for an
+     * array — so before this, a `<select multiple>` had two possible outcomes and both were wrong:
+     * the runtime sent only the first selection and one value was stored, or the runtime sent the
+     * real list and the field was blanked entirely. The browser fix and this one only make sense
+     * shipped together.
+     *
+     * A scalar still passes through, so a multi-select with one selection, or a schema whose
+     * control was swapped for a single select, behaves exactly as before.
+     *
+     * @return list<string>|string
+     */
+    private static function sanitizeList(mixed $value): array|string
+    {
+        if (! is_array($value)) {
+            return sanitize_text_field((string) $value);
+        }
+
+        // Values only. A list is what a multi-select submits; preserving submitted keys would let
+        // a caller shape the stored array, and nothing downstream reads them.
+        return array_values(array_map(
+            static fn (mixed $item): string => sanitize_text_field(is_scalar($item) ? (string) $item : ''),
+            $value,
+        ));
     }
 
     /**

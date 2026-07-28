@@ -4,6 +4,62 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **Spec 085: three production issues closed. Only #138 remains open.**
+
+Specs 083 (`77524df`) and 084 (`e6ec188`) are merged; `main` is in sync on both remotes.
+
+**Four issues were open, not one.** #148, #149 and #150 were all filed the same day from building
+two production forms and a three-mailbox transactional setup on a bilingual EN/AR site. Eleven
+reported items between them.
+
+**Verification came first and changed the work twice** (DECISIONS #190):
+
+- **#150's "Correction to #138 item 3" is stale.** It says `reply()` still passes `null` for
+  reply-to; it calls `replyToAddress()`, added by spec 080. The reporter's own later comment on
+  #149 confirms it. Nothing was done about it.
+- **#149 item 1b was already fixed by spec 080** - `recordRows()` has the two-shape branch. Only
+  1a remained, and 1a is one line.
+
+**The most instructive finding: spec 080 made a bug harder to see.** `useDataExplorer.detail()`
+returned `payload.record`, and `DataController::show()` puts the record at the envelope root - so
+the Data detail modal has never displayed a field, for any source, on any install. Before 080 the
+symptom was a modal full of em dashes, which reads as broken. After it, the modal renders **"This
+record has no readable fields"** - a sentence that reads as a *true statement about the record*. **A
+better error message made an unrelated defect plausible.** The unit test passed throughout, because
+it calls `recordRows()` directly and skips the only layer that was broken.
+
+**The one where the obvious fix is worse than the bug** (DECISIONS #191): a `<select multiple>`
+stored only its first value. Sending the real list alone blanks the field entirely, because
+`sanitize_text_field()` returns `''` for an array. The browser half and the sanitizer half ship
+together, and the test asserts the *wrong* outcome explicitly, because that is the silent failure a
+future refactor would reintroduce.
+
+**Also fixed:** `novalidate` on both form renderers (the browser was shadowing the entire client
+validation layer); validation messages rendered as `data-corex-messages` so they go through the
+site's `.mo` with no build step, plus three server literals through `__()`; a `Phone` rule with
+`url`/`phone` client mirrors; errors that clear as a field is corrected; `inputmode`/`autocomplete`/
+`dir` (RTL correctness, not polish); `corex:form:error` on the client branch with field names; the
+spinner's border as longhands so a missing theme token costs the width and not the whole
+declaration; and `?string $from` threaded end to end through the mail stack, queue included.
+
+**Deliberately not done:** `max_words` in the client rule table. It has no server rule either, so no
+schema can emit it and a client arm would be unreachable code - a feature to add on both sides at
+once, not a mirror that is missing.
+
+**Verified:** Pest unit **1628 passed**, integration **337/340**, Jest **418**, Playwright **107**,
+lints clean, token inventory regenerated. The three integration failures are the pre-existing
+data-dependent ones `main` also produces.
+
+**CI caught something local runs could not, on 084:** `guides.spec.js` signed in as
+`corex-requester`, and `access-request.spec.js` signs in as the same user several times - login
+protection locked the account out and failed *that* suite. Fixed by asserting on an editor instead,
+which is also the better test: an editor must see exactly one guide and not the other three, so it
+fails if gating is too tight *or* too loose.
+
+**Still open: #138 items 6-9** (files end to end), which spec 081 is written for and which is the
+last open issue.
+
+---
 ## RESUME HERE (2026-07-28) -- **Spec 084 on `spec/084-guides-addon`: the user manual is a registry, not a document.**
 
 Spec 083 merged as `77524df`; `main` is in sync on both remotes.

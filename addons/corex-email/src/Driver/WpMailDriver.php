@@ -29,7 +29,7 @@ final class WpMailDriver implements MailDriver
     {
         $headers = ['Content-Type: text/html; charset=UTF-8'];
 
-        $from = $this->fromHeader();
+        $from = $this->fromHeader($message->from);
         if ($from !== '') {
             $headers[] = 'From: ' . $from;
         }
@@ -52,10 +52,26 @@ final class WpMailDriver implements MailDriver
         return wp_mail($message->to, $message->subject, $message->body, $headers);
     }
 
-    private function fromHeader(): string
+    /**
+     * The From header for one message.
+     *
+     * SMTP relays route on this address — in FluentSMTP and most relay plugins each configured
+     * mailbox is its own authenticated connection — so a site with three properly configured
+     * mailboxes could previously still send everything through one of them (#150).
+     *
+     * The message's own address wins when it carries one and it is a real address. An unusable
+     * value falls back to the configured sender rather than emitting a broken header: a message
+     * that arrives from the wrong mailbox is a smaller failure than one that does not arrive.
+     */
+    private function fromHeader(?string $messageFrom = null): string
     {
         $name    = sanitize_text_field((string) $this->config->get('mail.from.name', ''));
         $address = sanitize_email((string) $this->config->get('mail.from.address', ''));
+
+        $requested = $messageFrom === null ? '' : sanitize_email(trim($messageFrom));
+        if ($requested !== '' && is_email($requested) !== false) {
+            $address = $requested;
+        }
 
         if ($address === '') {
             return '';

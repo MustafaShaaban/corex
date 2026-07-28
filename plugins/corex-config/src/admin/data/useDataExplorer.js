@@ -177,11 +177,20 @@ export function useDataExplorer( config ) {
 	const detail = useCallback(
 		async ( recordId ) => {
 			try {
-				const payload = await request(
+				// `request()` has already unwrapped the envelope to `envelope.data`, and
+				// `DataController::show()` puts the record there directly — there is no `record`
+				// key to reach through. Unwrapping a second level returned `undefined` for every
+				// source, so the modal has never displayed a field (#149).
+				//
+				// Spec 080 made that harder to see rather than easier: before it, the symptom was a
+				// modal full of em dashes, which reads as broken. After it, `recordRows(undefined)`
+				// returns [] and the modal says "This record has no readable fields" — a sentence
+				// that reads as a true statement about the record. A better empty state made the
+				// bug more plausible.
+				return await request(
 					'get',
 					`${ config.restUrl }/${ state.sourceKey }/${ recordId }`
 				);
-				return payload.record;
 			} catch ( error ) {
 				dispatch( { type: 'error', message: error.message } );
 				return null;

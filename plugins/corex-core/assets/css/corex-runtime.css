@@ -17,11 +17,28 @@
 	inline-size: 1em;
 	block-size: 1em;
 	margin-inline-start: var(--wp--preset--spacing--20);
-	border: var(--wp--custom--focus--width) solid currentcolor;
+
+	/*
+	 * Longhands, not the `border` shorthand (#148 item 8).
+	 *
+	 * `--wp--custom--focus--width` comes from a theme's
+	 * theme.json and most themes do not define it — it is not
+	 * a standard WordPress preset. An unresolved var() inside
+	 * a shorthand makes CSS discard the WHOLE declaration, so
+	 * the spinner lost its style and its colour along with its
+	 * width: a 1em transparent box that does not spin, i.e. a
+	 * loading indicator that indicates nothing. As longhands,
+	 * a missing token costs only the width.
+	 */
+	border-width: var(--wp--custom--focus--width);
+	border-style: solid;
+	border-color: currentcolor;
 	border-block-start-color: transparent;
 	border-radius: 50%;
 	vertical-align: middle;
-	animation: corex-spin var(--wp--custom--motion--duration--slow) linear infinite;
+	animation:
+		corex-spin var(--wp--custom--motion--duration--slow, 0.8s) linear
+		infinite;
 }
 
 @keyframes corex-spin {
@@ -34,7 +51,7 @@
 @media (prefers-reduced-motion: reduce) {
 
 	.corex-spinner {
-		animation-duration: calc(var(--wp--custom--motion--duration--slow) * 4);
+		animation-duration: calc(var(--wp--custom--motion--duration--slow, 0.8s) * 4);
 	}
 }
 

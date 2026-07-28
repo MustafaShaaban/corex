@@ -10,6 +10,7 @@ import { Button, Modal, Spinner } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import CorexTime from '../admin/components/CorexTime.js';
+import FieldValue from '../admin/components/FieldValue.js';
 import {
 	buildExportPayload,
 	inboxFiltersFromUrl,
@@ -967,9 +968,13 @@ function DetailSection( { title, value } ) {
 						<div key={ key }>
 							<dt>{ key }</dt>
 							<dd>
-								{ typeof item === 'object'
-									? JSON.stringify( item )
-									: String( item ) }
+								<FieldValue
+									value={
+										typeof item === 'object'
+											? JSON.stringify( item )
+											: item
+									}
+								/>
 							</dd>
 						</div>
 					) ) }

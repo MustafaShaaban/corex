@@ -33,6 +33,16 @@ final class MailRequest
     public readonly ?string $parentAttemptId;
 
     /**
+     * The mailbox this message should leave from, or null for the site's configured sender (#150).
+     *
+     * A site's transactional mail is not one voice: `info@` for what a visitor should be able to
+     * reply to, `noreply@` for automated internal notices, `contact@` for an operator's manual
+     * reply. SMTP relays route on this address, so without a per-message seam a site with three
+     * properly configured mailboxes still sends everything through one.
+     */
+    public readonly ?string $from;
+
+    /**
      * @param list<string>        $to
      * @param array<string,mixed> $context merge data for $templateName
      */
@@ -45,6 +55,7 @@ final class MailRequest
         ?string $replyTo = null,
         ?string $requestId = null,
         ?string $parentAttemptId = null,
+        ?string $from = null,
     ) {
         $this->to              = $to;
         $this->templateName    = $templateName;
@@ -54,6 +65,7 @@ final class MailRequest
         $this->replyTo         = $replyTo;
         $this->requestId       = $requestId ?? \Corex\Support\Uuid::v4();
         $this->parentAttemptId = $parentAttemptId;
+        $this->from            = $from;
 
         foreach ([$this->requestId, $this->parentAttemptId] as $id) {
             if ($id !== null && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $id) !== 1) {
