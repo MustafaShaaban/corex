@@ -46,6 +46,7 @@ use Corex\Cli\Generators\ControllerGenerator;
 use Corex\Cli\Generators\GeneratorContext;
 use Corex\Cli\Generators\GeneratorEngine;
 use Corex\Cli\Generators\ModelGenerator;
+use Corex\Cli\Generators\GuideGenerator;
 use Corex\Cli\Generators\OptionPageGenerator;
 use Corex\Cli\Generators\RepositoryGenerator;
 use Corex\Cli\Generators\ServiceGenerator;
@@ -137,6 +138,7 @@ final class CliServiceProvider extends ServiceProvider
                 'controller'  => new ControllerGenerator(),
                 'service'     => new ServiceGenerator(),
                 'option-page' => new OptionPageGenerator(),
+                'guide'       => new GuideGenerator(),
             ],
             $this->container->make(BlockScaffolder::class),
             $this->container->make(GeneratorContext::class),
@@ -144,7 +146,7 @@ final class CliServiceProvider extends ServiceProvider
             $this->container->make(SiteScaffolder::class),
         );
 
-        foreach (['model', 'repository', 'controller', 'service', 'option-page', 'block', 'api-resource', 'site'] as $type) {
+        foreach (['model', 'repository', 'controller', 'service', 'option-page', 'guide', 'block', 'api-resource', 'site'] as $type) {
             WP_CLI::add_command(
                 "corex make:{$type}",
                 static function (array $args, array $assoc) use ($command, $type): void {

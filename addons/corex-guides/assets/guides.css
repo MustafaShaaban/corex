@@ -1,0 +1,144 @@
+/*
+ * The Guides screen (spec 084, FR-014).
+ *
+ * Tokens only, logical properties throughout, and nothing that assumes a
+ * reading direction — the guides are the surface most likely to be read in
+ * Arabic, because they are the surface written for people who are not
+ * developers.
+ */
+
+.corex-admin .corex-guides__search {
+	margin-block-end: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-guides__search-input {
+	inline-size: min(100%, 24rem);
+	min-block-size: var(--corex-admin-control-height);
+	padding: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+	font: inherit;
+}
+
+.corex-admin .corex-guides__search-input:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-admin .corex-guides__no-results {
+	margin-block-start: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-guides__section + .corex-guides__section {
+	margin-block-start: var(--corex-admin-space-2xl);
+}
+
+.corex-admin .corex-guides__section-title {
+	margin: 0 0 var(--corex-admin-space-md);
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-guides__list {
+	display: grid;
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-guides__guide {
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-guides__guide-title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-lg);
+}
+
+.corex-admin .corex-guides__guide-summary {
+	margin: var(--corex-admin-space-xs) 0 0;
+	max-inline-size: 68ch;
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-guides__guide-screen {
+	margin: var(--corex-admin-space-xs) 0 0;
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-guides__topic {
+	margin-block-start: var(--corex-admin-space-md);
+	padding-block-start: var(--corex-admin-space-md);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-guides__topic-title {
+	cursor: pointer;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-guides__topic-title:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-admin .corex-guides__topic-intro {
+	margin: var(--corex-admin-space-xs) 0 0;
+	max-inline-size: 68ch;
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-guides__steps {
+	margin: var(--corex-admin-space-md) 0 0;
+	padding-inline-start: var(--corex-admin-space-lg);
+	display: grid;
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-guides__step {
+	max-inline-size: 68ch;
+}
+
+.corex-admin .corex-guides__step-instruction {
+	margin: 0;
+	color: var(--corex-admin-text);
+}
+
+.corex-admin .corex-guides__step-result {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+/*
+ * Warnings render above the instruction they qualify, so the border sits on
+ * the start edge to tie the two together as one block rather than reading as
+ * a note attached to the step before.
+ */
+.corex-admin .corex-guides__step-warning {
+	margin: 0 0 var(--corex-admin-space-xs);
+	padding: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-sm);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-guides__shot {
+	display: block;
+	max-inline-size: 100%;
+	block-size: auto;
+	margin-block-start: var(--corex-admin-space-sm);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+}

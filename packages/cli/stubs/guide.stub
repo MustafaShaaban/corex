@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+defined('ABSPATH') || exit;
+
+use Corex\Guides\Guide;
+use Corex\Guides\GuideStep;
+use Corex\Guides\GuideTopic;
+
+/**
+ * {{ class }} — a user guide for this site. Register it with the GuideRegistry from a service
+ * provider's boot(), using registerDeferred() so it survives the plugin-load ordering:
+ *
+ *   Corex\Support\Facades\Corex::make(Corex\Guides\GuideRegistry::class)
+ *       ->registerDeferred(static fn (): array => [ (new {{ class }}())->guide() ]);
+ *
+ * Write for the person who was handed the finished site, not for yourself. Name the control they
+ * must find, and say what should happen — a step with no expected result leaves somebody stuck with
+ * no way to tell whether they are stuck.
+ */
+final class {{ class }}
+{
+    public function guide(): Guide
+    {
+        return Guide::for('{{ id }}', __('{{ title }}', 'corex'))
+            ->withSummary(__('What this guide helps somebody do, in one sentence.', 'corex'))
+            // Groups the guide on the Guides screen. Sections appear in key order.
+            ->inSection('content')
+            // The admin address this guide describes. Also puts it in that screen's Help tab.
+            ->onScreen('edit.php?post_type=post')
+            // Nobody without this capability is shown the guide — they could not follow it.
+            ->requiring('edit_posts')
+            ->withTopic(GuideTopic::for(
+                'first-task',
+                __('The first thing somebody wants to do', 'corex'),
+                __('Optional context, if the steps need any.', 'corex'),
+                [
+                    new GuideStep(
+                        __('Name the control they must find, and what to do with it.', 'corex'),
+                        __('Say what should happen, so they can tell it worked.', 'corex'),
+                    ),
+                    new GuideStep(
+                        __('The step that changes something.', 'corex'),
+                        __('What they will see afterwards.', 'corex'),
+                        warning: __('Say plainly what is hard to undo, before they do it.', 'corex'),
+                    ),
+                ],
+            ));
+    }
+}

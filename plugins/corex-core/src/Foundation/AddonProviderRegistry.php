@@ -14,6 +14,7 @@ use Corex\Bookings\BookingsServiceProvider;
 use Corex\Captcha\CaptchaServiceProvider;
 use Corex\Careers\CareersServiceProvider;
 use Corex\Email\MailServiceProvider;
+use Corex\Guides\GuidesServiceProvider;
 use Corex\Kit\KitServiceProvider;
 use Corex\Media\MediaServiceProvider;
 use Corex\Newsletter\NewsletterServiceProvider;
@@ -52,6 +53,11 @@ final class AddonProviderRegistry
                 'corex-newsletter',
                 NewsletterServiceProvider::class,
                 'corex-newsletter/corex-newsletter.php',
+            ),
+            new AddonProvider(
+                'corex-guides',
+                GuidesServiceProvider::class,
+                'corex-guides/corex-guides.php',
             ),
             new AddonProvider(
                 'corex-media',

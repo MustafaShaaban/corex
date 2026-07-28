@@ -4,10 +4,29 @@
 
 **Created**: 2026-07-28
 
-**Status**: Draft — specified, not implemented
+**Status**: **Superseded by [spec 084](../084-guides-addon/spec.md)** — never implemented.
 
 **Input**: Owner request — a step-by-step guide showing an end user how to use the CoreX dashboard,
 with real screenshots from the system.
+
+> ## Why this was superseded
+>
+> This spec designs a **manual**: Markdown in a docs tree, with the explicit assumption that "this
+> spec does not change any product code". Its own open decision #1 is which docs tree.
+>
+> The owner then asked for something this shape cannot become: an add-on that ships CoreX's guide
+> **and that a site built on CoreX extends with guides for its own post types and flows**. A
+> Markdown file in `docs-app/` can express CoreX's manual and can never express a client's — a
+> client's guide ships with the client's plugin and must appear without anybody editing CoreX.
+>
+> Spec 084 keeps everything about this document that was right: the content requirements
+> (FR-001–FR-005), and the screenshot discipline (FR-006–FR-010) — captured by a script driving the
+> real admin, one documented regeneration command, failing loudly on a missing screen. What it
+> changes is where the content lives and who is allowed to add to it.
+>
+> It also answers this spec's own US3, which says "the manual is where they would look — and the
+> spec must decide where that is". For somebody handed a finished site, that is wp-admin, not a
+> documentation website nobody told them about. See DECISIONS #189.
 
 ## Why this spec exists
 

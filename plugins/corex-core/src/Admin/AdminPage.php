@@ -135,6 +135,7 @@ final class AdminPage
             'corex-blog-pro'            => ['blog', 'blog-pro'],
             'corex-insights'            => ['insights', 'insights'],
             'corex-setup'               => ['setup', 'setup'],
+            'corex-guides'              => ['guides', 'guides'],
             'corex-settings-config'     => ['settings', 'settings'],
         ];
     }
@@ -197,12 +198,19 @@ final class AdminPage
             'corex-access'              => __('Access & Abilities', 'corex'),
             'corex-blog-pro'            => __('Blog Pro', 'corex'),
             'corex-insights'            => __('Insights', 'corex'),
+            'corex-guides'              => __('Guides', 'corex'),
             'corex-setup'               => __('Setup Wizard', 'corex'),
             'corex-settings-config'     => __('Settings', 'corex'),
         ];
 
+        // The fallback is not decoration. This is the second map keyed by the same slugs, which
+        // {@see sectionMeta()} warns about — and until spec 084 the lookup was unguarded, so adding
+        // a screen to `sectionMeta()` without also adding it here raised an undefined-index warning
+        // on every admin page that rendered the rail without a live `$submenu`. Titleising the slug
+        // is a worse label than a written one and an immeasurably better outcome than a warning.
         foreach ($meta as $slug => [$icon, $section]) {
-            $items[] = [$slug, $icon, $labels[$slug], $section === $active];
+            $label = $labels[$slug] ?? ucwords(str_replace('-', ' ', (string) preg_replace('/^corex-/', '', $slug)));
+            $items[] = [$slug, $icon, $label, $section === $active];
         }
 
         return $items;

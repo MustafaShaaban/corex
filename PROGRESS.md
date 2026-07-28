@@ -4,6 +4,66 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **Spec 084 on `spec/084-guides-addon`: the user manual is a registry, not a document.**
+
+Spec 083 merged as `77524df`; `main` is in sync on both remotes.
+
+**The owner's direction changed the shape, not just the location.** Spec 082 designed the manual as
+Markdown in a docs tree, with an explicit "this spec does not change any product code". The ask is
+an add-on that ships CoreX's guides **and that Perego extends with guides for its own post types and
+flows**. A Markdown file in `docs-app/` can express CoreX's manual and can never express a client's:
+a client's guide ships with the client's plugin and must appear without anybody editing CoreX. 082
+is superseded (DECISIONS #189); its content rules and screenshot discipline are kept intact.
+
+**What shipped:** `addons/corex-guides` — a `GuideRegistry`, a Guides screen, contextual Help tabs,
+four CoreX guides, `wp corex make:guide`, and the docs page.
+
+**The one hard part is boot ordering, and it is tested rather than argued about.** CoreX boots on
+`plugins_loaded` at priority 10; a site plugin following the generated starter boots on
+`plugins_loaded` at priority 10 too, so which wins depends on the plugin's *directory name*.
+`registerDeferred()` resolves on first read — an admin request, after every plugin has loaded. This
+is `DataRegistry`'s shape, copied deliberately: that class exists because the bug was already
+shipped once, with the newsletter table invisible in wp-admin while perfectly visible to WP-CLI.
+**Mutating away the `$resolved = false` reset fails one unit test and two integration tests**, so
+SC-001 is proven, not asserted.
+
+**Availability needs no `is_active()` check anywhere.** An add-on registers its guides from its own
+provider, so an inactive add-on contributes nothing by construction. Verified across three real
+roles: administrator sees four guides, editor sees one, subscriber sees none.
+
+**Three defects found by the work, none of them the feature:**
+
+- **`AdminPage::railItems()` holds a second map keyed by the same slugs as `sectionMeta()`** — the
+  exact drift `sectionMeta()`'s own docblock warns about — and the lookup was **unguarded**, so
+  adding a screen raised an undefined-index warning on every admin page rendering the rail without a
+  live `$submenu`. Label added; lookup made total.
+- **The Help tab never appeared**, because the address derivation emitted `edit.php?post_type=post`
+  where WordPress addresses the default type as plain `edit.php`. Correct-looking and matching
+  nothing; only the browser test caught it.
+- **`guides.css` used raw `outline: 2px`**, which the token-consumer contract rejects. Now the
+  `--corex-admin-focus-*` tokens.
+
+**Verified:** Pest unit **1630 passed**, integration **342/345**, Jest **388**, Playwright **111**,
+`lint:css` and `lint:js` clean, token inventory regenerated. The three integration failures
+(`ProductActivityCoverageTest`, `ProductDataPrivacyTest`, `SubmissionsControllerTest`) are
+pre-existing and data-dependent on this developer install — **`main` produces the same three**,
+confirmed by stashing. How many appear varies run to run, which is itself the tell.
+Guards run: `wp-guard`, `clean-code-guard`, `test-guard`, `docs-guard`; the last three changed the
+code (an uncalled `findTopic()` deleted, an unused `$number` parameter dropped, render helpers
+renamed to say they return markup, a missing import added to a docs sample, and a manual test
+restore moved into `afterEach` so a failing assertion cannot poison every later test).
+
+**No CI or dist edits were needed** — `.github/actions/provision-wordpress` links every `addons/*`
+carrying a top-level PHP file and runs `wp plugin activate --all`, and
+`scripts/build-shared-host-dist.mjs` copies every add-on folder. Both verified by reading them.
+
+**Note for the local install:** `wp/wp-content/plugins/corex-guides` is a **junction**, not a
+symlink — `New-Item -ItemType SymbolicLink` needs elevation on this machine. `corex-profile` is a
+real directory, a separate pre-existing drift.
+
+**Next:** PR for 084, then spec 081 to close issue #138.
+
+---
 ## RESUME HERE (2026-07-28) -- **Spec 083 on `spec/083-admin-error-surface`: every admin refusal is now a CoreX page.**
 
 Raised by the owner from a screenshot of WordPress's white box, with the note that *"the admin error

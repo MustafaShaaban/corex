@@ -49,6 +49,15 @@ final class AddonRegistry
                 tier: AddonTier::Optional,
             ),
             $this->addon(
+                'corex-guides',
+                'Corex Guides',
+                summary: 'In-admin user guides, extendable by the site.',
+                description: 'Ships the Corex guides for the admin, and the registry a client plugin extends with guides for its own content types and flows.',
+                provides: ['Guides screen', 'GuideRegistry public API', 'contextual help tabs'],
+                docsUrl: '/guides/user-guides/',
+                tier: AddonTier::Recommended,
+            ),
+            $this->addon(
                 'corex-captcha',
                 'Corex Captcha',
                 summary: 'Spam protection for Corex forms.',
