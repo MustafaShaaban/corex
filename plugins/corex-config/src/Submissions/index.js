@@ -10,6 +10,7 @@ import { Button, Modal, Spinner } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import CorexTime from '../admin/components/CorexTime.js';
+import CorexErrorState from '../admin/components/CorexErrorState.js';
 import FieldValue from '../admin/components/FieldValue.js';
 import {
 	buildExportPayload,
@@ -123,9 +124,11 @@ function App() {
 				</div>
 			) }
 			{ inbox.state.error && (
-				<div className="corex-inbox__notice is-error" role="alert">
-					{ inbox.state.error }
-				</div>
+				<CorexErrorState
+					scale="action"
+					message={ inbox.state.error }
+					onRetry={ inbox.load }
+				/>
 			) }
 			<Filters
 				filters={ filters }

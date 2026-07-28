@@ -248,3 +248,60 @@ describe( 'error signalling', () => {
 		);
 	} );
 } );
+
+describe( 'file fields', () => {
+	it( 'reports the chosen file name, so `required` can see it', () => {
+		const form = formWith( `
+			<div data-corex-field="cv">
+				<input type="file" name="cv" />
+				<span class="corex-form__error"></span>
+			</div>
+		` );
+
+		const input = form.querySelector( 'input[type="file"]' );
+
+		// Skipping file inputs entirely — the first implementation — made every REQUIRED file
+		// field fail client validation with the file sitting right there, and no request ever
+		// left the browser. Only an end-to-end upload found it; collect() and validate() each
+		// passed their own unit tests.
+		expect( window.Corex.forms.collect( form ).cv ).toBe( '' );
+
+		Object.defineProperty( input, 'files', {
+			value: [ { name: 'cv.pdf' } ],
+			configurable: true,
+		} );
+
+		expect( window.Corex.forms.collect( form ).cv ).toBe( 'cv.pdf' );
+	} );
+
+	it( 'passes required validation once a file is chosen', () => {
+		const form = formWith(
+			`<div data-corex-field="cv">
+				<input type="file" name="cv" />
+				<span class="corex-form__error"></span>
+			</div>`,
+			{
+				'data-corex-schema': JSON.stringify( [
+					{
+						name: 'cv',
+						required: true,
+						rules: [ { rule: 'required' } ],
+					},
+				] ),
+			}
+		);
+
+		const input = form.querySelector( 'input[type="file"]' );
+		Object.defineProperty( input, 'files', {
+			value: [ { name: 'cv.pdf' } ],
+			configurable: true,
+		} );
+
+		const errors = window.Corex.forms.validate(
+			JSON.parse( form.dataset.corexSchema ),
+			window.Corex.forms.collect( form )
+		);
+
+		expect( errors.cv ).toBeUndefined();
+	} );
+} );

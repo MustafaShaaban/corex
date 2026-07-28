@@ -34,6 +34,12 @@ final class AttachmentDelivery
     public function register(): void
     {
         add_action('admin_post_' . self::ACTION, [$this, 'serve']);
+
+        // The logged-out arm too. Without it `admin-post.php` has no handler for this action and
+        // falls through to its own generic "invalid action" die — so somebody who followed a link
+        // to a CV while signed out got HTTP 400 and "Something went wrong" instead of being told
+        // to sign in. Refusing was correct; the sentence was not.
+        add_action('admin_post_nopriv_' . self::ACTION, [$this, 'serve']);
     }
 
     /**
@@ -60,6 +66,14 @@ final class AttachmentDelivery
             || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), self::ACTION . '_' . $attachmentId)
         ) {
             wp_die(esc_html__('That link is no longer valid.', 'corex'), 403);
+        }
+
+        // Signed out is a different answer from not permitted, and the difference is actionable:
+        // 401 classifies as `Session`, whose page says "you've been signed out" and offers a way
+        // in. Telling somebody they lack permission when they simply are not logged in sends them
+        // to ask an administrator for access they may already have.
+        if (! is_user_logged_in()) {
+            wp_die(esc_html__('Sign in to open this file.', 'corex'), 401);
         }
 
         // The capability, not the nonce. A nonce proves the link came from us; it does not prove

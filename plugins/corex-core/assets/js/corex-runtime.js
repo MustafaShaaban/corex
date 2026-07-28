@@ -530,10 +530,15 @@
 				}
 				return;
 			}
-			// A file input's `value` is `C:\fakepath\name.pdf` — the browser's deliberate lie,
-			// and useless. The file itself only travels as FormData, so a form carrying one is
-			// collected differently; see `collectForRequest()` (spec 081).
+			// A file input's `value` is `C:\fakepath\name.pdf` — the browser's deliberate lie.
+			// Report the chosen file's NAME instead: the bytes travel as FormData
+			// (`collectForRequest()`), but `required` still has to be able to tell a chosen file
+			// from no file. Skipping the input entirely — the first attempt — made every required
+			// file field fail client validation with the file sitting right there, and no request
+			// ever left the browser (spec 081).
 			if ( el.type === 'file' ) {
+				data[ name ] =
+					el.files && el.files.length > 0 ? el.files[ 0 ].name : '';
 				return;
 			}
 			// `<select multiple>` before `el.value`: on a multiple select that property is the
@@ -669,8 +674,18 @@
 			return values;
 		}
 
+		const fileNames = files.map( function ( input ) {
+			return input.name;
+		} );
+
 		const body = new window.FormData();
 		Object.keys( values ).forEach( function ( name ) {
+			// The file fields' own entries are the File objects appended below. Appending the
+			// collected NAME as well would send the field twice — once as a string PHP would
+			// sanitize into the stored value, once as the upload.
+			if ( fileNames.indexOf( name ) !== -1 ) {
+				return;
+			}
 			const value = values[ name ];
 			if ( Array.isArray( value ) ) {
 				// Repeated keys, so PHP sees a list rather than the string "a,b".

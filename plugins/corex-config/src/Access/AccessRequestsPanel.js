@@ -11,6 +11,7 @@
  * on approval, records an audit event and notifies. Only the surface was missing.
  */
 import { useState } from '@wordpress/element';
+import CorexErrorState from '../admin/components/CorexErrorState.js';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexTime from '../admin/components/CorexTime.js';
 
@@ -75,11 +76,7 @@ export default function AccessRequestsPanel( { config } ) {
 		<section>
 			<h3>{ __( 'Access requests', 'corex' ) }</h3>
 
-			{ error && (
-				<p className="corex-access__error" role="alert">
-					{ error }
-				</p>
-			) }
+			{ error && <CorexErrorState scale="action" message={ error } /> }
 
 			{ requests.length === 0 ? (
 				<p className="corex-access__muted">

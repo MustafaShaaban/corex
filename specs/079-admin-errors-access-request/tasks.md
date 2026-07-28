@@ -105,14 +105,18 @@ Written before Phase 5, because Phase 5 is what would break it.
 ## Phase 6 — React failure states (US4, P2)
 
 - [x] **T050** *(spec 083)* `CorexErrorState` at field / action / panel / page scale.
-- [ ] **T051** Wire the existing React screens' failure paths to it. **Still open** — the component
-      exists and is tested; converting each screen's own failure path is separate work.
+- [x] **T051** *(spec 086)* The Data explorer, the Submissions inbox and the Access requests panel
+      render their failures through `CorexErrorState` — panel scale where a whole surface failed to
+      load, action scale where something the operator just did did not work.
 - [x] **T052** *(spec 083)* `plugins/corex-config/src/admin/components/__tests__/corexErrorState.test.js`.
 
 ## Phase 7 — Acceptance, evidence, close
 
-- [ ] **T060** Acceptance matrix on the running install: RTL, 375px, 200% zoom, light and dark, on
-      the denied surface in each of its four states. Screenshots to `evidence/after/`.
+- [x] **T060** *(spec 086)* 16 cells measured — 375px/1280px × LTR/RTL × light/dark × 100%/200%
+      text zoom — asserting no horizontal overflow, not merely photographing it. Four corners
+      captured. See `evidence/after/acceptance-matrix.md`, which also records what the RTL cells do
+      **not** prove: they force `dir="rtl"` onto English strings, so bidi punctuation artifacts are
+      the fixture's, not the product's.
 - [ ] **T061** Full gate: Pest unit + integration, Jest, Playwright, `lint:css`, `lint:js`, token
       inventory.
 - [ ] **T062** Guard Gate: `wp-guard`, `clean-code-guard`, `test-guard`, `docs-guard`.
