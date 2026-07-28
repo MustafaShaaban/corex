@@ -57,3 +57,39 @@ the schema.
 
 After defining a form, run `npm run build` so the block's `view.js`/`style.scss` compile.
 The rules are tested on both sides (`composer test` and `npm run test:js`).
+
+### Listeners belong to the form that declares them
+
+`Form::listeners()` returns the listener service ids for **that form's** submissions, and a concrete
+form may override it to add listeners or to remove them:
+
+```php
+final class ContactForm extends Form
+{
+    public string $slug = 'contact';
+
+    public function listeners(): array
+    {
+        // Store the submission, but send our own notification instead of the built-in one.
+        return [StoreSubmissionListener::class, MyBrandedNotification::class];
+    }
+}
+```
+
+Returning `[]` runs nothing. Only the submitted form's listeners run — a listener declared by one
+form never fires for another form's submission.
+
+Listeners are resolved when a submission arrives, not at boot, and each is a singleton: one shared
+by several forms is constructed once.
+
+A submission whose slug matches no registered `Form` — a flow defined in the database rather than in
+code — runs no listeners at all.
+
+### What the notification contains
+
+The built-in notification is HTML, because every CoreX mail transport declares
+`Content-Type: text/html`. Values are escaped and multi-line answers keep their line breaks.
+
+When the submission carries a valid email address in an `email`, `e-mail`, `email_address` or
+`reply_to` field, it becomes the message's `Reply-To`, so whoever receives the notification can
+answer the person who wrote in. If the form never asked for an address, no `Reply-To` is set.
