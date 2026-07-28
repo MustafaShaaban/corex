@@ -4,6 +4,49 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **v0.38.1 released.** One site-killing defect, three found beside it, and 079 closed.
+
+`211e710` merged as PR #156. Zero open issues, zero open PRs.
+
+**The one that mattered: a site plugin following our own published documentation could take the
+whole site down.** `Boot::app()` throws when CoreX has not booted, and CoreX boots on
+`plugins_loaded` at priority 10 — the same hook and priority as the site starter this framework
+*generates*. Which one WordPress runs first depends on the plugin's **directory name**. And it could
+not be guarded: `app()` throws rather than returning null, so `Boot::app() === null` is itself the
+crash.
+
+**Spec 084 caused this by solving half a problem.** Its registry deferred resolution to first read,
+which fixes the *registry* race — and left the *boot* race open, then documented the pattern that
+falls into it. `Corex::onReady()` removes the ordering rather than warning about it (DECISIONS #195).
+
+**All four defects were found by running, not reading, and every one had passing tests around it.**
+A required file field could never be submitted; the `accept` attribute never applied; the Data list
+rendered a stored file as `21848` while its own detail modal rendered a link. Unit tests passed on
+both sides of each.
+
+**Perego is a fork of this repository**, not a package consumer, on v0.35.1 — which is why its
+findings arrive as issues. It contains exactly the parallel implementation issue #138 predicted:
+`PeregoCareersController` hand-rolls `wp_handle_upload` and writes CVs to the **public uploads
+root**. v0.38.1 makes that deletable, and deleting it moves those CVs somewhere not world-readable.
+**Not done here** — it is a change in that repository.
+
+**Verified at release:** Pest unit **1656** - integration **349/352** - Jest **423** - Playwright
+**111** - lints clean - token inventory reproduces - dist builds and verifies - readiness **PASS**.
+
+**Open, and worth picking up:**
+
+- **`clearPendingRequests` in `access-request.spec.js` only clears the current requester's**, so
+  failed runs accumulate rows. The suite failed twice locally until **133** stuck pending requests
+  were cleared. Dev-install hygiene, no product impact, but it will cost somebody an hour.
+- **Perego's upgrade to v0.38.1** and the deletion of its parallel careers controller.
+- **Arabic typography for the denied surface.** The acceptance matrix proves layout, not type: it
+  forces `dir="rtl"` onto English strings, so bidi artifacts there belong to the fixture.
+- `corex-access` still overflows 1px in RTL at 375px.
+- Five of six CI checks are still not *required* in branch protection. Owner action.
+
+**Next:** owner decision. Nothing is in flight.
+
+---
 ## RESUME HERE (2026-07-28) -- **Consumer validation against Perego, and 079 closed out.**
 
 On `spec/086-consumer-validation-and-079-closeout`, after v0.38.0.
@@ -117,7 +160,7 @@ The three integration failures are the pre-existing, data-dependent `ProductActi
 
 All four remaining items of #138 (6-9) are done, on `spec/081-forms-files-end-to-end`.
 
-- **Release metadata:** the prepared release baseline is v0.38.0.
+- **Release metadata:** the prepared release baseline is v0.38.1.
 
 **The framework had no upload handling at all.** A repo-wide search for `wp_handle_upload` found two
 comments describing one and no code. `UploadValidator`'s docblock claimed *"the boundary store

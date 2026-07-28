@@ -6,6 +6,45 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.38.1] — 2026-07-28
+
+A patch release for one defect that is worse than the rest put together, plus three found alongside
+it. All four were found by standing up a plugin that followed this project's own published
+documentation, against the real site that reported the issues v0.38.0 closed.
+
+**None of them was visible from the code.** Every one had passing tests around it.
+
+### Fixed
+
+- **A site plugin following the guides documentation could take the whole site down.** `Boot::app()`
+  **throws** when Corex has not booted, and Corex boots on `plugins_loaded` at priority 10 — the same
+  hook and priority as the site starter this framework generates. Which one WordPress runs first
+  depends on the plugin's *directory name*, and the loser got a `RuntimeException` on every request.
+  It could not be guarded against either: `app()` throws rather than returning null, so
+  `Boot::app() === null` — the check a developer naturally writes — *is* the crash.
+  `Boot::booted()`, a `corex_booted` action and `Corex::onReady()` remove the race rather than
+  documenting it. (DECISIONS #195)
+- **A required file field could never be submitted.** The runtime skipped file inputs when collecting
+  values, so `required` saw nothing: the file was attached, the browser said it was missing, and no
+  request ever left. Both halves had passing unit tests; only an end-to-end upload found it.
+- **The `accept` attribute on a file field never applied.** It matched `mime:` against the declared
+  rule *string*, and the schema resolver parses rules into structures long before the renderer sees
+  them. Silent, because a file picker with no filter still works.
+- **The Data list rendered a stored file as a bare integer** while the detail modal for the same
+  column on the same table rendered it as a link. The paged-list path carried its own copy of the
+  row-shaping loop and missed the attachment hydration.
+- **Following a link to a stored file while signed out** reached `admin-post.php`'s generic
+  invalid-action path — HTTP 400 and "Something went wrong" — instead of being told to sign in. The
+  delivery route had no logged-out arm.
+
+### Changed
+
+- **Spec 079 is closed.** Its last two tasks shipped: the Data explorer, Submissions inbox and Access
+  requests panel render failures through `CorexErrorState`, and the denied surface has a real
+  acceptance matrix — 16 cells across 375px/1280px, LTR/RTL, light/dark and 100%/200% zoom, which
+  **measures** horizontal overflow rather than photographing it. None overflows. (DECISIONS #196)
+
+
 ## [0.38.0] — 2026-07-28
 
 Four specs, and the thread running through them is that a framework can describe a capability it
