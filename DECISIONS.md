@@ -3483,3 +3483,75 @@ clear pending requests between runs and the only route that could do it returns 
 construction. A test that needs a capability the product claims to have is a good way to find out it
 does not.
 Status: Final.
+
+## #178 — Dependency updates land as one deliberate refresh, not thirteen open PRs
+Date: 2026-07-28
+Decision: Dependabot's proposals are applied on a single branch, gated once, and merged as one
+commit. The individual PRs are then closed as superseded, each with a comment naming the commit
+that carries it.
+Why: thirteen PRs had accumulated, every one based on a `main` old enough that its CI ran against a
+four-check pipeline instead of six, and six of them reported a failure that was really staleness.
+Rebasing and merging them one at a time is thirteen rebases and thirteen CI runs to reach a state
+one run can prove. Closing them without applying anything is worse: Dependabot re-creates them
+within a week, which is exactly how the backlog formed.
+Scope: this is the *handling* policy. Whether a given bump is taken is decided per bump, on
+evidence — see #179–#181 for the three that were not.
+Status: Final.
+
+## #179 — @wordpress/scripts 33 and @wordpress/components 37 are taken; the tree is proven, not assumed
+Date: 2026-07-28
+Decision: both majors land. `@wordpress/scripts` 32.6.0 → 33.0.0 and `@wordpress/components`
+36.1.0 → 37.0.0.
+Why: each was attempted and measured rather than deferred for being a major. The block and admin
+builds compile, `lint:js` and `lint:css` are clean, and Jest is unchanged at 381/381. A major that
+passes every gate is not a risk being taken; it is a risk that was checked.
+Scope: `@wordpress/i18n` and `@wordpress/element` moved with them inside their existing ranges.
+Neither `@wordpress/components` nor `@wordpress/i18n` is declared in the root manifest — they belong
+to `plugins/corex-config/package.json`, which is why Dependabot's PRs for them looked rootless.
+Status: Final.
+
+## #180 — Pest stays on 2 because Pest 4 is right about 21 of our tests
+Date: 2026-07-28
+Decision: `pestphp/pest` is held below 3.0, with a Dependabot ignore and this entry.
+Why: Pest 4 installs cleanly and runs the entire suite — **1572 passing, 0 failing**. It fails only
+because it reports 21 tests as RISKY, and it is correct to: those tests exercise the boot logger and
+the block and event error paths, so the code under test deliberately writes diagnostics, and the
+tests let that output escape instead of asserting it. Pest 2 did not notice. The right fix is to
+assert the output — which improves the tests, since a test of a logger that never checks what was
+logged is barely a test — and that is a 21-test rewrite across several files.
+Scope: bundling that rewrite into a dependency refresh would mix a test-quality change into a
+lockfile change, and a revert of one would be a revert of the other. The migration is its own piece
+of work, and this entry is the head start: the affected files are `tests/Unit/Blocks/BlockMapTest`,
+`RenderDelegationTest`, `Events/EventDispatcherTest` and `Foundation/BootLoggerTest`.
+Status: Final — revisit as its own task.
+
+## #181 — Astro 7 is not blocked by Astro; it is blocked by `file:..`
+Date: 2026-07-28
+Decision: `astro` is held below 7 and `@astrojs/starlight` below 0.41, both by Dependabot ignore.
+Why: the framework side is ready and was verified on 2026-07-22 — starlight 0.41.3 peers astro
+^7.0.2, and the site builds to the same 284 pages with no config change. The blocker is packaging:
+`docs-app/package.json` declares `"corex-framework": "file:.."`, so npm cannot resolve the bump in
+place (ERESOLVE against the pinned lock), and regenerating `docs-app/package-lock.json` makes npm
+expand the framework root into the docs tree — the npm-docs audit then covers root's dev tooling and
+goes from 5 findings to 17.
+Scope: recording it here because the two are repeatedly confused. Nothing about Astro 7 needs
+waiting for; what needs deciding is whether docs-app keeps the `file:..` link at all. Until then the
+hold is honest and the ignore stops the PR returning weekly.
+Status: Final — revisit with the docs-app packaging decision.
+
+## #182 — The advisory gate was failing on `main`, and the path filter is why nobody saw it
+Date: 2026-07-28
+Decision: the policy is reconciled against the real tree and the gate passes for the first time —
+composer 0/0, npm-docs 6/6, npm-root 18/18.
+Why: `verify-dependency-security.mjs` was reporting FAIL on `main` before this branch existed: three
+`minimatch` entries whose recorded paths no longer matched the tree, plus two unbounded findings
+(`postcss` in docs, `brace-expansion` in root) with no exception at all. It went unnoticed because
+`.github/workflows/dependency-security.yml` is path-filtered to manifest and policy changes, so no
+ordinary PR runs it — the gate is only consulted by the PRs least likely to be looking for it.
+Scope: five of the six violations predate this work; one (`@opentelemetry/core`) arrived with
+`@wordpress/env` 11.11.0 and its bundled Sentry instrumentation. All are dev or build-time
+transitives under eslint, markdownlint-cli, rimraf and wp-env — none is in a distributed artifact,
+which is what the new exceptions record with a stated control and a review date.
+Note: the paths in the first attempt were wrong because they were written from a probe truncated to
+three entries when the audit reported four. Read the whole list before encoding it in policy.
+Status: Final.

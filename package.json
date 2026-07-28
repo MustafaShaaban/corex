@@ -2,7 +2,7 @@
     "name": "corex-framework",
     "version": "0.1.0",
     "private": true,
-    "description": "Corex \u2014 WordPress framework monorepo (npm workspaces root).",
+    "description": "Corex — WordPress framework monorepo (npm workspaces root).",
     "license": "GPL-2.0-or-later",
     "engines": {
         "node": ">=20"
@@ -31,8 +31,8 @@
         "env:stop": "wp-env stop"
     },
     "devDependencies": {
-        "@playwright/test": "^1.61.0",
-        "@wordpress/env": "^11.8.1",
-        "@wordpress/scripts": "^32.4.1"
+        "@playwright/test": "^1.62.0",
+        "@wordpress/env": "^11.11.0",
+        "@wordpress/scripts": "^33.0.0"
     }
 }

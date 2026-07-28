@@ -2,15 +2,15 @@
     "name": "@corex/config",
     "version": "0.1.0",
     "private": true,
-    "description": "Corex Config — admin screens (the Corex → Data DataViews app).",
+    "description": "Corex Config \u00e2\u20ac\u201d admin screens (the Corex \u00e2\u2020\u2019 Data DataViews app).",
     "license": "GPL-2.0-or-later",
     "scripts": {
         "build": "wp-scripts build --webpack-src-dir=src/admin --output-path=build/admin && wp-scripts build --webpack-src-dir=src/notification-ui --output-path=build/notification-ui",
         "start": "wp-scripts start --webpack-src-dir=src/admin --output-path=build/admin"
     },
     "dependencies": {
-        "@wordpress/components": "^36.1.0",
-        "@wordpress/element": "^8.2.0",
-        "@wordpress/i18n": "^6.23.0"
+        "@wordpress/components": "^37.0.0",
+        "@wordpress/element": "^8.3.0",
+        "@wordpress/i18n": "^6.24.0"
     }
 }

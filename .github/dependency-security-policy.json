@@ -51,6 +51,39 @@
     },
     {
       "ecosystem": "npm-docs",
+      "advisoryId": "GHSA-g7r4-m6w7-qqqr",
+      "package": "esbuild",
+      "paths": [
+        "node_modules/esbuild"
+      ],
+      "severityCeiling": "low",
+      "exposure": "local-dev-server",
+      "reason": "The advisory affects the Windows development server; the published docs are static build output and do not include the server.",
+      "control": "Bind the docs development server to loopback, do not expose it to untrusted networks, and stop it after local use.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-09-30",
+      "upstreamTrigger": "Remove when the supported Astro/Vite line resolves esbuild 0.28.1 or newer.",
+      "range": ">=0.27.3 <0.28.1",
+      "url": "https://github.com/advisories/GHSA-g7r4-m6w7-qqqr"
+    },
+    {
+      "ecosystem": "npm-docs",
+      "advisoryId": "GHSA-r28c-9q8g-f849",
+      "package": "postcss",
+      "paths": [
+        "node_modules/postcss"
+      ],
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "reason": "Path traversal in PostCSS's previous-source-map auto-loading: a crafted `sourceMappingURL` comment in a processed stylesheet can disclose an arbitrary .map file to whoever runs the build. docs-app processes only its own stylesheets and Starlight's, all of them in the repository or in a pinned dependency — no stylesheet from outside the tree is ever compiled, so no attacker chooses the comment.",
+      "control": "PostCSS runs inside `astro build` at documentation build time on a maintainer machine or a CI runner, never at request time: the site is static output. Disclosure would require an untrusted stylesheet to enter the build, which nothing in docs-app allows.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-10-31",
+      "upstreamTrigger": "Remove when astro/starlight resolve postcss > 8.5.17. Held behind the same blocker as the Astro 7 migration recorded on GHSA-4g3v-8h47-v7g6: docs-app cannot regenerate its lockfile without npm expanding the `corex-framework` file:.. root into the docs tree.",
+      "url": "https://github.com/advisories/GHSA-r28c-9q8g-f849"
+    },
+    {
+      "ecosystem": "npm-docs",
       "advisoryId": "GHSA-f88m-g3jw-g9cj",
       "package": "sharp",
       "paths": [
@@ -66,21 +99,54 @@
       "url": "https://github.com/advisories/GHSA-f88m-g3jw-g9cj"
     },
     {
-      "ecosystem": "npm-docs",
-      "advisoryId": "GHSA-g7r4-m6w7-qqqr",
-      "package": "esbuild",
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-8988-4f7v-96qf",
+      "package": "@opentelemetry/core",
       "paths": [
-        "node_modules/esbuild"
+        "node_modules/@opentelemetry/core"
       ],
-      "severityCeiling": "low",
+      "severityCeiling": "moderate",
       "exposure": "local-dev-server",
-      "reason": "The advisory affects the Windows development server; the published docs are static build output and do not include the server.",
-      "control": "Bind the docs development server to loopback, do not expose it to untrusted networks, and stop it after local use.",
+      "reason": "Arrives with @wordpress/env 11.11.0, which bundles @sentry/node and its OpenTelemetry instrumentation. @wordpress/env starts a local Docker WordPress for development; it is never installed on a server and never part of a build artifact. CoreX does not call OpenTelemetry, and no telemetry exporter is configured, so the instrumentation is loaded but inert.",
+      "control": "devDependency of the root workspace, used by `wp-env` on developer machines. The CI pipeline provisions WordPress directly (`.github/actions/provision-wordpress`) and does not run wp-env, so it is not exercised there either.",
       "owner": "Corex maintainers",
-      "reviewAfter": "2026-09-30",
-      "upstreamTrigger": "Remove when the supported Astro/Vite line resolves esbuild 0.28.1 or newer.",
-      "range": ">=0.27.3 <0.28.1",
-      "url": "https://github.com/advisories/GHSA-g7r4-m6w7-qqqr"
+      "reviewAfter": "2026-10-31",
+      "upstreamTrigger": "Remove when @wordpress/env ships @opentelemetry/core >= 2.8.0. New in this tree as of 2026-07-28: it appeared with the @wordpress/env 11.8.1 → 11.11.0 bump in the v0.37.x dependency refresh, and did not exist before it.",
+      "url": "https://github.com/advisories/GHSA-8988-4f7v-96qf"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-xcpc-8h2w-3j85",
+      "package": "adm-zip",
+      "paths": [
+        "node_modules/adm-zip"
+      ],
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "reason": "A crafted ZIP can force a 4GB allocation. adm-zip is reachable only through @wordpress/env and @wordpress/scripts, which unpack WordPress and plugin archives fetched from WordPress.org during local development and CI. No Corex runtime code unpacks an archive, so nothing here reaches a shipped WordPress site.",
+      "control": "The archives unpacked are release downloads from WordPress.org over TLS, not visitor-supplied uploads; a memory exhaustion in that path fails a local build or a CI job and cannot affect a served site.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-10-31",
+      "upstreamTrigger": "Remove when @wordpress/scripts ships a release whose dependency tree resolves this advisory. npm reports the only \"fix\" as @wordpress/scripts@19.2.4 — a downgrade from the pinned ^32.4.1 — which spec 056 US1 scenario 3 rejects without a reviewed migration.",
+      "url": "https://github.com/advisories/GHSA-xcpc-8h2w-3j85"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-mh99-v99m-4gvg",
+      "package": "brace-expansion",
+      "paths": [
+        "node_modules/@sentry/node/node_modules/brace-expansion",
+        "node_modules/brace-expansion",
+        "node_modules/rimraf/node_modules/brace-expansion"
+      ],
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "reason": "ReDoS in brace-expansion, reached through the same minimatch chain and nothing else: eslint, markdownlint-cli, rimraf and @wordpress/env's @sentry/node. It expands globs written in this repository's own configuration, never a value supplied by a request.",
+      "control": "devDependencies of the root workspace only. No node_modules is copied into `dist/`, so the package cannot reach a deployed site.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-10-31",
+      "upstreamTrigger": "Resolves with the minimatch chain above — the same four packages pin both. Tracked together deliberately: fixing one without the other leaves the ReDoS reachable.",
+      "url": "https://github.com/advisories/GHSA-mh99-v99m-4gvg"
     },
     {
       "ecosystem": "npm-root",
@@ -101,71 +167,19 @@
     },
     {
       "ecosystem": "npm-root",
-      "advisoryId": "GHSA-23c5-xmqv-rm74",
-      "package": "minimatch",
+      "advisoryId": "GHSA-v245-v573-v5vm",
+      "package": "linkify-it",
       "paths": [
-        "node_modules/markdownlint-cli/node_modules/minimatch"
+        "node_modules/linkify-it"
       ],
       "severityCeiling": "high",
       "exposure": "build-test-transitive",
-      "reason": "The affected matcher is reachable only through the repository Markdown linter and is not shipped to WordPress sites.",
-      "control": "Lint only reviewed repository files; pull-request CI uses a read-only token and receives no production secrets.",
+      "reason": "Quadratic-complexity DoS in the mailto: validator when scanning attacker-supplied text. linkify-it is reached only via markdown-it under the repository Markdown linter, which reads files already committed to this repository. Matches the existing bounded exception for GHSA-22p9-wv53-3rq4 on the same package and path.",
+      "control": "The linter runs only over reviewed repository Markdown; pull-request CI uses a read-only token and receives no production secrets. Nothing is shipped to sites.",
       "owner": "Corex maintainers",
-      "reviewAfter": "2026-09-30",
-      "upstreamTrigger": "Remove when the @wordpress/scripts Markdown lint path resolves minimatch 3.1.4 or newer.",
-      "range": "<3.1.4",
-      "url": "https://github.com/advisories/GHSA-23c5-xmqv-rm74"
-    },
-    {
-      "ecosystem": "npm-root",
-      "advisoryId": "GHSA-3ppc-4f35-3m26",
-      "package": "minimatch",
-      "paths": [
-        "node_modules/markdownlint-cli/node_modules/minimatch"
-      ],
-      "severityCeiling": "high",
-      "exposure": "build-test-transitive",
-      "reason": "The affected matcher is reachable only through the repository Markdown linter and is not shipped to WordPress sites.",
-      "control": "Lint only reviewed repository files; pull-request CI uses a read-only token and receives no production secrets.",
-      "owner": "Corex maintainers",
-      "reviewAfter": "2026-09-30",
-      "upstreamTrigger": "Remove when the @wordpress/scripts Markdown lint path resolves minimatch 3.1.3 or newer.",
-      "range": "<3.1.3",
-      "url": "https://github.com/advisories/GHSA-3ppc-4f35-3m26"
-    },
-    {
-      "ecosystem": "npm-root",
-      "advisoryId": "GHSA-4v9v-hfq4-rm2v",
-      "package": "webpack-dev-server",
-      "paths": [
-        "node_modules/webpack-dev-server"
-      ],
-      "severityCeiling": "moderate",
-      "exposure": "local-dev-server",
-      "reason": "The affected server is a local @wordpress/scripts development dependency and is absent from shipped plugin assets.",
-      "control": "Bind development servers to loopback, never expose them to untrusted networks, and avoid untrusted sites while they run.",
-      "owner": "Corex maintainers",
-      "reviewAfter": "2026-09-30",
-      "upstreamTrigger": "Remove when @wordpress/scripts provides webpack-dev-server 5.2.5 or newer.",
-      "range": "<=5.2.0",
-      "url": "https://github.com/advisories/GHSA-4v9v-hfq4-rm2v"
-    },
-    {
-      "ecosystem": "npm-root",
-      "advisoryId": "GHSA-5c6j-r48x-rmvq",
-      "package": "serialize-javascript",
-      "paths": [
-        "node_modules/serialize-javascript"
-      ],
-      "severityCeiling": "high",
-      "exposure": "build-test-transitive",
-      "reason": "The serializer is reached through copy-webpack-plugin with repository-controlled build configuration and assets, not runtime input.",
-      "control": "Build only reviewed repository source; pull-request CI uses a read-only token and receives no production secrets.",
-      "owner": "Corex maintainers",
-      "reviewAfter": "2026-09-30",
-      "upstreamTrigger": "Remove when the @wordpress/scripts copy-webpack-plugin path resolves serialize-javascript 7.0.5 or newer.",
-      "range": "<=7.0.2",
-      "url": "https://github.com/advisories/GHSA-5c6j-r48x-rmvq"
+      "reviewAfter": "2026-10-31",
+      "upstreamTrigger": "Remove when @wordpress/scripts ships a release whose dependency tree resolves this advisory. npm reports the only \"fix\" as @wordpress/scripts@19.2.4 — a downgrade from the pinned ^32.4.1 — which spec 056 US1 scenario 3 rejects without a reviewed migration.",
+      "url": "https://github.com/advisories/GHSA-v245-v573-v5vm"
     },
     {
       "ecosystem": "npm-root",
@@ -186,6 +200,134 @@
     },
     {
       "ecosystem": "npm-root",
+      "advisoryId": "GHSA-23c5-xmqv-rm74",
+      "package": "minimatch",
+      "paths": [
+        "node_modules/@sentry/node/node_modules/minimatch",
+        "node_modules/markdownlint-cli/node_modules/minimatch",
+        "node_modules/minimatch",
+        "node_modules/rimraf/node_modules/minimatch"
+      ],
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "reason": "ReDoS in minimatch's brace/glob expansion. Reached only by developer tooling: eslint and markdownlint-cli walk repository paths, and @sentry/node arrives through @wordpress/env, the local development server. None of the three is shipped in a plugin, add-on or theme build, and every pattern they expand is a repository path or a config glob authored in this repository — there is no attacker-controlled source.",
+      "control": "Not present in any distributed artifact: `dist/` is built from plugin/theme sources and contains no node_modules. The affected packages are devDependencies of the root workspace only, exercised on developer machines and CI runners.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-10-31",
+      "upstreamTrigger": "Remove when eslint, markdownlint-cli and @wordpress/env each resolve minimatch >= 3.1.4. `npm audit fix` cannot reach it without --force, which downgrades eslint. Re-checked 2026-07-28 during the v0.37.x dependency refresh; the @sentry/node path is new and arrives with @wordpress/env 11.11.0.",
+      "range": "<3.1.4",
+      "url": "https://github.com/advisories/GHSA-23c5-xmqv-rm74"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-3ppc-4f35-3m26",
+      "package": "minimatch",
+      "paths": [
+        "node_modules/@sentry/node/node_modules/minimatch",
+        "node_modules/markdownlint-cli/node_modules/minimatch",
+        "node_modules/minimatch",
+        "node_modules/rimraf/node_modules/minimatch"
+      ],
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "reason": "ReDoS in minimatch's brace/glob expansion. Reached only by developer tooling: eslint and markdownlint-cli walk repository paths, and @sentry/node arrives through @wordpress/env, the local development server. None of the three is shipped in a plugin, add-on or theme build, and every pattern they expand is a repository path or a config glob authored in this repository — there is no attacker-controlled source.",
+      "control": "Not present in any distributed artifact: `dist/` is built from plugin/theme sources and contains no node_modules. The affected packages are devDependencies of the root workspace only, exercised on developer machines and CI runners.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-10-31",
+      "upstreamTrigger": "Remove when eslint, markdownlint-cli and @wordpress/env each resolve minimatch >= 3.1.4. `npm audit fix` cannot reach it without --force, which downgrades eslint. Re-checked 2026-07-28 during the v0.37.x dependency refresh; the @sentry/node path is new and arrives with @wordpress/env 11.11.0.",
+      "range": "<3.1.3",
+      "url": "https://github.com/advisories/GHSA-3ppc-4f35-3m26"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-7r86-cg39-jmmj",
+      "package": "minimatch",
+      "paths": [
+        "node_modules/@sentry/node/node_modules/minimatch",
+        "node_modules/markdownlint-cli/node_modules/minimatch",
+        "node_modules/minimatch",
+        "node_modules/rimraf/node_modules/minimatch"
+      ],
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "reason": "ReDoS in minimatch's brace/glob expansion. Reached only by developer tooling: eslint and markdownlint-cli walk repository paths, and @sentry/node arrives through @wordpress/env, the local development server. None of the three is shipped in a plugin, add-on or theme build, and every pattern they expand is a repository path or a config glob authored in this repository — there is no attacker-controlled source.",
+      "control": "Not present in any distributed artifact: `dist/` is built from plugin/theme sources and contains no node_modules. The affected packages are devDependencies of the root workspace only, exercised on developer machines and CI runners.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-10-31",
+      "upstreamTrigger": "Remove when eslint, markdownlint-cli and @wordpress/env each resolve minimatch >= 3.1.4. `npm audit fix` cannot reach it without --force, which downgrades eslint. Re-checked 2026-07-28 during the v0.37.x dependency refresh; the @sentry/node path is new and arrives with @wordpress/env 11.11.0.",
+      "range": "<3.1.3",
+      "url": "https://github.com/advisories/GHSA-7r86-cg39-jmmj"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-5c6j-r48x-rmvq",
+      "package": "serialize-javascript",
+      "paths": [
+        "node_modules/serialize-javascript"
+      ],
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "reason": "The serializer is reached through copy-webpack-plugin with repository-controlled build configuration and assets, not runtime input.",
+      "control": "Build only reviewed repository source; pull-request CI uses a read-only token and receives no production secrets.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-09-30",
+      "upstreamTrigger": "Remove when the @wordpress/scripts copy-webpack-plugin path resolves serialize-javascript 7.0.5 or newer.",
+      "range": "<=7.0.2",
+      "url": "https://github.com/advisories/GHSA-5c6j-r48x-rmvq"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-qj8w-gfj5-8c6v",
+      "package": "serialize-javascript",
+      "paths": [
+        "node_modules/serialize-javascript"
+      ],
+      "severityCeiling": "moderate",
+      "exposure": "build-test-transitive",
+      "reason": "The serializer is reached through copy-webpack-plugin with repository-controlled build configuration and assets, not runtime input.",
+      "control": "Build only reviewed repository source; pull-request CI uses a read-only token and receives no production secrets.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-09-30",
+      "upstreamTrigger": "Remove when the @wordpress/scripts copy-webpack-plugin path resolves serialize-javascript 7.0.5 or newer.",
+      "range": ">=5.0.0 <7.0.5",
+      "url": "https://github.com/advisories/GHSA-qj8w-gfj5-8c6v"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-w5hq-g745-h8pq",
+      "package": "uuid",
+      "paths": [
+        "node_modules/uuid"
+      ],
+      "severityCeiling": "moderate",
+      "exposure": "local-dev-server",
+      "reason": "UUID is reached through sockjs in the local webpack development server and is absent from shipped assets.",
+      "control": "Bind development servers to loopback, do not expose sockjs to untrusted networks, and do not supply external UUID buffers.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-09-30",
+      "upstreamTrigger": "Remove when the @wordpress/scripts webpack-dev-server/sockjs path resolves uuid 11.1.1 or newer.",
+      "range": "<11.1.1",
+      "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-4v9v-hfq4-rm2v",
+      "package": "webpack-dev-server",
+      "paths": [
+        "node_modules/webpack-dev-server"
+      ],
+      "severityCeiling": "moderate",
+      "exposure": "local-dev-server",
+      "reason": "The affected server is a local @wordpress/scripts development dependency and is absent from shipped plugin assets.",
+      "control": "Bind development servers to loopback, never expose them to untrusted networks, and avoid untrusted sites while they run.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-09-30",
+      "upstreamTrigger": "Remove when @wordpress/scripts provides webpack-dev-server 5.2.5 or newer.",
+      "range": "<=5.2.0",
+      "url": "https://github.com/advisories/GHSA-4v9v-hfq4-rm2v"
+    },
+    {
+      "ecosystem": "npm-root",
       "advisoryId": "GHSA-79cf-xcqc-c78w",
       "package": "webpack-dev-server",
       "paths": [
@@ -200,23 +342,6 @@
       "upstreamTrigger": "Remove when @wordpress/scripts provides webpack-dev-server 5.2.5 or newer.",
       "range": "<=5.2.3",
       "url": "https://github.com/advisories/GHSA-79cf-xcqc-c78w"
-    },
-    {
-      "ecosystem": "npm-root",
-      "advisoryId": "GHSA-7r86-cg39-jmmj",
-      "package": "minimatch",
-      "paths": [
-        "node_modules/markdownlint-cli/node_modules/minimatch"
-      ],
-      "severityCeiling": "high",
-      "exposure": "build-test-transitive",
-      "reason": "The affected matcher is reachable only through the repository Markdown linter and is not shipped to WordPress sites.",
-      "control": "Lint only reviewed repository files; pull-request CI uses a read-only token and receives no production secrets.",
-      "owner": "Corex maintainers",
-      "reviewAfter": "2026-09-30",
-      "upstreamTrigger": "Remove when the @wordpress/scripts Markdown lint path resolves minimatch 3.1.3 or newer.",
-      "range": "<3.1.3",
-      "url": "https://github.com/advisories/GHSA-7r86-cg39-jmmj"
     },
     {
       "ecosystem": "npm-root",
@@ -283,72 +408,6 @@
       "upstreamTrigger": "Remove when @wordpress/scripts provides webpack-dev-server 5.2.5 or newer.",
       "range": "<5.2.5",
       "url": "https://github.com/advisories/GHSA-mx8g-39q3-5c79"
-    },
-    {
-      "ecosystem": "npm-root",
-      "advisoryId": "GHSA-qj8w-gfj5-8c6v",
-      "package": "serialize-javascript",
-      "paths": [
-        "node_modules/serialize-javascript"
-      ],
-      "severityCeiling": "moderate",
-      "exposure": "build-test-transitive",
-      "reason": "The serializer is reached through copy-webpack-plugin with repository-controlled build configuration and assets, not runtime input.",
-      "control": "Build only reviewed repository source; pull-request CI uses a read-only token and receives no production secrets.",
-      "owner": "Corex maintainers",
-      "reviewAfter": "2026-09-30",
-      "upstreamTrigger": "Remove when the @wordpress/scripts copy-webpack-plugin path resolves serialize-javascript 7.0.5 or newer.",
-      "range": ">=5.0.0 <7.0.5",
-      "url": "https://github.com/advisories/GHSA-qj8w-gfj5-8c6v"
-    },
-    {
-      "ecosystem": "npm-root",
-      "advisoryId": "GHSA-v245-v573-v5vm",
-      "package": "linkify-it",
-      "paths": [
-        "node_modules/linkify-it"
-      ],
-      "severityCeiling": "high",
-      "exposure": "build-test-transitive",
-      "reason": "Quadratic-complexity DoS in the mailto: validator when scanning attacker-supplied text. linkify-it is reached only via markdown-it under the repository Markdown linter, which reads files already committed to this repository. Matches the existing bounded exception for GHSA-22p9-wv53-3rq4 on the same package and path.",
-      "control": "The linter runs only over reviewed repository Markdown; pull-request CI uses a read-only token and receives no production secrets. Nothing is shipped to sites.",
-      "owner": "Corex maintainers",
-      "reviewAfter": "2026-10-31",
-      "upstreamTrigger": "Remove when @wordpress/scripts ships a release whose dependency tree resolves this advisory. npm reports the only \"fix\" as @wordpress/scripts@19.2.4 — a downgrade from the pinned ^32.4.1 — which spec 056 US1 scenario 3 rejects without a reviewed migration.",
-      "url": "https://github.com/advisories/GHSA-v245-v573-v5vm"
-    },
-    {
-      "ecosystem": "npm-root",
-      "advisoryId": "GHSA-w5hq-g745-h8pq",
-      "package": "uuid",
-      "paths": [
-        "node_modules/uuid"
-      ],
-      "severityCeiling": "moderate",
-      "exposure": "local-dev-server",
-      "reason": "UUID is reached through sockjs in the local webpack development server and is absent from shipped assets.",
-      "control": "Bind development servers to loopback, do not expose sockjs to untrusted networks, and do not supply external UUID buffers.",
-      "owner": "Corex maintainers",
-      "reviewAfter": "2026-09-30",
-      "upstreamTrigger": "Remove when the @wordpress/scripts webpack-dev-server/sockjs path resolves uuid 11.1.1 or newer.",
-      "range": "<11.1.1",
-      "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq"
-    },
-    {
-      "ecosystem": "npm-root",
-      "advisoryId": "GHSA-xcpc-8h2w-3j85",
-      "package": "adm-zip",
-      "paths": [
-        "node_modules/adm-zip"
-      ],
-      "severityCeiling": "high",
-      "exposure": "build-test-transitive",
-      "reason": "A crafted ZIP can force a 4GB allocation. adm-zip is reachable only through @wordpress/env and @wordpress/scripts, which unpack WordPress and plugin archives fetched from WordPress.org during local development and CI. No Corex runtime code unpacks an archive, so nothing here reaches a shipped WordPress site.",
-      "control": "The archives unpacked are release downloads from WordPress.org over TLS, not visitor-supplied uploads; a memory exhaustion in that path fails a local build or a CI job and cannot affect a served site.",
-      "owner": "Corex maintainers",
-      "reviewAfter": "2026-10-31",
-      "upstreamTrigger": "Remove when @wordpress/scripts ships a release whose dependency tree resolves this advisory. npm reports the only \"fix\" as @wordpress/scripts@19.2.4 — a downgrade from the pinned ^32.4.1 — which spec 056 US1 scenario 3 rejects without a reviewed migration.",
-      "url": "https://github.com/advisories/GHSA-xcpc-8h2w-3j85"
     }
   ]
 }
