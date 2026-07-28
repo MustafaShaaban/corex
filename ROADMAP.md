@@ -398,6 +398,14 @@ These items require later validation and dedicated specs. They must not leak int
 
 ## 17. Current and next recommended specs
 
+> **Status (2026-07-28): specs 080–085 are merged and released as v0.38.0**, taking the repository
+> to **zero open issues and zero open PRs**. The thread running through them is that a framework can
+> describe a capability it does not have: 083 completed an error experience whose unifying half was
+> never built, 084 turned a planned documentation page into an add-on a client site extends, 085
+> closed three production reports, and 081 built the file uploads the documentation already
+> promised. **Verification changed the work in every one of them** — two of eleven reported items
+> turned out to be already fixed, and `Table::managed()` did not exist at all.
+>
 > **Status (2026-07-28): specs 076–079 are merged and released as v0.37.0.** Four specs about
 > telling the truth on screen, each begun by reproducing the defect on a running install — which
 > changed the work three times. 076 gave the admin one date and time contract shared by PHP and
@@ -500,6 +508,27 @@ Create and implement one reviewed spec at a time:
     lacked `manage_options` at HTTP 403, and `AccessRequestStore::pending()` had no production caller at all,
     so requests landed in a table no surface read. Decisions #174–#177.
     Source: `specs/079-admin-errors-access-request/`.
+17. **Spec 083 - Every admin refusal is a CoreX page** — done, merged via PR **#151** (`77524df`).
+    Spec 079 shipped titled "unified admin error experience" with the unifying half unbuilt, and nothing
+    caught it because the only browser test touching a refusal visited the one URL that could not fail.
+    Measured first: nine of eleven admin addresses rendered WordPress's white box to a real subscriber,
+    including CoreX's own Careers screen. Decisions #187–#188.
+    Source: `specs/083-admin-error-surface/`.
+18. **Spec 084 - An extendable user-guide add-on** — done, merged via PR **#152** (`e6ec188`).
+    `addons/corex-guides` ships CoreX's own in-admin guides and the registry a client site extends with
+    guides for its own content types. Registration defers to first read, because CoreX and a site plugin
+    both boot on `plugins_loaded` at priority 10. Supersedes spec 082. Decision #189.
+    Source: `specs/084-guides-addon/`.
+19. **Spec 085 - Production findings from a live build** — done, merged via PR **#153** (`7439ddc`).
+    Issues #148, #149 and #150. Two of the eleven reported items needed no work, and the most instructive
+    finding was that spec 080's better empty state made an unrelated defect *harder* to see.
+    Decisions #190–#191.
+    Source: `specs/085-production-findings/`.
+20. **Spec 081 - Files, end to end** — done, merged via PR **#154** (`47d040d`). Issue #138 items 6–9.
+    The framework had no upload handling at all: a repo-wide search for `wp_handle_upload` found two
+    comments describing one and no code. A protected file is now protected by a capability check rather
+    than a deny file. Decisions #192–#194.
+    Source: `specs/081-forms-files-end-to-end/`.
 
 ### Candidates for a later spec — owner decision
 

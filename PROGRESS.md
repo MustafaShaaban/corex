@@ -4,9 +4,68 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **v0.38.0 released.** Specs 080-085 shipped. Zero open issues, zero open PRs.
+
+| Spec | PR | Merged as |
+|---|---|---|
+| 083 Every admin refusal is a CoreX page | #151 | `77524df` |
+| 084 An extendable user-guide add-on | #152 | `e6ec188` |
+| 085 Production findings from a live build | #153 | `7439ddc` |
+| 081 Files, end to end | #154 | `47d040d` |
+
+**The thread through all four: a framework can describe a capability it does not have.**
+
+- 079 shipped titled *"Unified Admin Error and Access Request Experience"* with the unifying half
+  unbuilt. 083 finished it.
+- `UploadValidator`'s docblock claimed *"the boundary store re-checks the real MIME"* about a store
+  nobody had written. 081 built it.
+- `COREX-EMAIL-ADDON.md` documented `attach()`, `attachMedia()`, `attachGenerated()` and an
+  `AttachmentResolver` while the driver called `wp_mail()` with four arguments.
+- `Block/FieldRenderer::INPUT_TYPES` had listed `'file'` since it was written, unreachable because
+  the registry rejected the type upstream.
+
+**Verification changed the work in every spec** (DECISIONS #190). Two of the eleven items reported
+in #148/#149/#150 needed no work: #150's correction was stale, and #149 item 1b was already fixed by
+spec 080. And `Table::managed()` did not exist -- taken from an exploration summary rather than the
+source; the integration suite refused to boot, which is how that should fail.
+
+**The finding most worth remembering: a good fix made a bug harder to see.** The Data detail modal
+had never displayed a value for any source. Before spec 080 it rendered em dashes, which reads as
+broken; after 080's better empty state it rendered *"This record has no readable fields"* -- a
+sentence that reads as a **true statement about the record**. A report's symptom ages faster than
+its cause.
+
+**Release housekeeping done properly this time.** `wp corex readiness` **passes**, for the first
+time in several releases: `README.md` had claimed v0.31.0 as the latest release since six releases
+ago, `PROGRESS.md` carried a v0.27.0 baseline, and the root `package.json` was still `0.1.0`. All
+three are aligned rather than excepted. `wp corex version 0.38.0` stamped **18 files** -- one more
+than v0.37.0, because `addons/corex-guides` is now in the release path.
+
+**Verified at release:** Pest unit **1654** - integration **342/345** - Jest **421** - Playwright
+**111** - `lint:css` and `lint:js` clean - token inventory reproduces - readiness PASS.
+
+The three integration failures are the pre-existing, data-dependent `ProductActivityCoverageTest`,
+`ProductDataPrivacyTest` and `SubmissionsControllerTest`, confirmed by stashing.
+
+**Open, not owned by any merged spec:**
+
+- **`corex-access` overflows 1px in RTL at 375px** -- still open on that third screen.
+- **Five of the six CI checks are still not *required*** in branch protection. Owner action; the
+  repository settings are not reachable from here.
+- **079's T051** (wiring each React screen's failure path to `CorexErrorState`) and **T060** (the
+  RTL / 375px / 200%-zoom acceptance matrix).
+- **`EmailsTab` prints raw event slugs as `<legend>` text.**
+- **Two 078 deferrals**: the `Sections/` extraction and in-admin cache clear buttons.
+- **Multi-file uploads per field**, deliberately out of scope for 081.
+
+**Next:** owner decision on the next spec. Nothing is in flight.
+
+---
 ## RESUME HERE (2026-07-28) -- **Spec 081: files end to end. Issue #138 closed; the repo is at zero open issues.**
 
 All four remaining items of #138 (6-9) are done, on `spec/081-forms-files-end-to-end`.
+
+- **Release metadata:** the prepared release baseline is v0.38.0.
 
 **The framework had no upload handling at all.** A repo-wide search for `wp_handle_upload` found two
 comments describing one and no code. `UploadValidator`'s docblock claimed *"the boundary store

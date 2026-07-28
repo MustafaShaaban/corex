@@ -1,6 +1,6 @@
 {
     "name": "corex-framework",
-    "version": "0.1.0",
+    "version": "0.38.0",
     "private": true,
     "description": "Corex — WordPress framework monorepo (npm workspaces root).",
     "license": "GPL-2.0-or-later",
