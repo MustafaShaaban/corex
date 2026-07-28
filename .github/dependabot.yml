@@ -1,3 +1,10 @@
+# Dependabot configuration.
+#
+# `ignore` entries below are deliberate holds, not neglect. Each one names a bump that was
+# attempted, failed for a stated reason, and would otherwise be re-proposed every week — which is
+# how a 13-PR backlog accumulated before the v0.37.x refresh. Every hold has a matching
+# DECISIONS.md entry saying what would lift it. Remove the ignore when that condition is met; do
+# not add one to silence a bump nobody has tried.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -11,6 +18,14 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # Pest 2 -> 4 installs and runs the whole suite (1572 passing, 0 failing), but Pest 4 treats
+      # output written during a test as RISKY, and 21 CoreX tests exercise the boot logger and the
+      # block/event error paths — code whose job is to emit a diagnostic. The check is correct and
+      # those tests should assert their output instead of letting it escape, which is a 21-test
+      # rewrite and its own piece of work. See DECISIONS #180.
+      - dependency-name: 'pestphp/pest'
+        versions: ['>=3.0.0']
 
   - package-ecosystem: npm
     directory: /
@@ -23,3 +38,16 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # Astro 7 itself is ready — verified 2026-07-22, starlight 0.41.3 peers astro ^7.0.2 and the
+      # site builds to the same 284 pages with no config change. It is held on a different problem:
+      # docs-app/package.json declares `corex-framework: file:..`, so npm cannot resolve the bump
+      # in place (ERESOLVE) and regenerating the lockfile expands the framework root into the docs
+      # tree, taking the npm-docs audit from 5 findings to 17. That needs deciding before the bump
+      # can land. See DECISIONS #181 and the GHSA-4g3v-8h47-v7g6 exception.
+      - dependency-name: 'astro'
+        versions: ['>=7.0.0']
+      # Coupled to the above: starlight 0.41.x peers astro ^7, so it cannot move while astro is
+      # pinned to 6. Lifting the astro hold lifts this one.
+      - dependency-name: '@astrojs/starlight'
+        versions: ['>=0.41.0']

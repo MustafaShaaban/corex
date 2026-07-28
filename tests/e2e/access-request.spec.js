@@ -122,8 +122,14 @@ async function signInAsRequester( browser, baseURL ) {
 
 		await page.fill( '#user_login', REQUESTER );
 		await page.fill( '#user_pass', REQUESTER_PASS );
+
+		// Bounded, and a timeout falls through to the next candidate rather than ending the test.
+		// An unbounded `waitForNavigation()` inside a loop whose whole purpose is to *try* an
+		// address spends the entire 60s test budget on the first one that half-answers — which is
+		// what it did under ten parallel workers, reported as a timeout in a helper rather than as
+		// "could not sign in".
 		await Promise.all( [
-			page.waitForNavigation(),
+			page.waitForNavigation( { timeout: 15000 } ).catch( () => {} ),
 			page.click( '#wp-submit' ),
 		] );
 		signedIn = ! page.url().includes( 'wp-login.php' );
