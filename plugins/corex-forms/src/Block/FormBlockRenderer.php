@@ -76,7 +76,8 @@ final class FormBlockRenderer implements BlockRenderer
         }
 
         return sprintf(
-            '<form class="corex-form" method="post" novalidate data-corex-form="%1$s" data-corex-endpoint="%2$s"'
+            '<form class="corex-form" method="post" novalidate enctype="multipart/form-data"'
+            . ' data-corex-form="%1$s" data-corex-endpoint="%2$s"'
             . ' data-corex-nonce="%3$s" data-corex-success="%4$s" data-corex-error="%5$s" data-corex-schema="%6$s"'
             . ' data-corex-messages="%10$s">'
             . '%7$s'

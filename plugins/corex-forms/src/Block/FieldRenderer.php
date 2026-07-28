@@ -109,8 +109,32 @@ final class FieldRenderer
             'phone' => ' inputmode="tel" autocomplete="tel" dir="ltr"',
             'email' => ' inputmode="email" autocomplete="email"',
             'url' => ' inputmode="url" dir="ltr"',
+            'file' => $this->acceptAttribute($field),
             default => '',
         };
+    }
+
+    /**
+     * `accept`, derived from the field's own `mime:` rule (spec 081).
+     *
+     * A hint, never a check: it filters the file picker's default view and a visitor can still
+     * choose "all files". The refusal that matters happens server-side, where
+     * {@see \Corex\Forms\Validation\Rules\MimeType} reads the bytes. Deriving it from the rule
+     * rather than a second setting means the picker and the validator cannot disagree.
+     */
+    private function acceptAttribute(FieldSchema $field): string
+    {
+        foreach ($field->rules as $rule) {
+            if (! str_starts_with($rule, 'mime:')) {
+                continue;
+            }
+
+            $types = trim(substr($rule, 5));
+
+            return $types === '' ? '' : ' accept="' . esc_attr($types) . '"';
+        }
+
+        return '';
     }
 
     private function textarea(string $id, FieldSchema $field): string
