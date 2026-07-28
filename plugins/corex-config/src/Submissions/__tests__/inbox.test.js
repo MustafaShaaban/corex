@@ -2,6 +2,7 @@ import {
 	initialInboxState,
 	inboxReducer,
 	buildInboxUrl,
+	inboxSubmissionFromUrl,
 	toggleSubmission,
 	normalizeInboxPage,
 	buildExportPayload,
@@ -116,5 +117,53 @@ describe( 'Submissions Inbox client state', () => {
 				filters: { status: 'closed' },
 			} ).query
 		).toEqual( { status: 'closed' } );
+	} );
+} );
+
+/**
+ * The deep link an assignment notification uses (spec 087, FR-014).
+ *
+ * Before this parameter existed, "a submission needs your reply" could only honestly link to the
+ * unfiltered inbox — handing somebody a list and asking them to find the row the notification was
+ * already holding.
+ */
+describe( 'opening the inbox on one submission', () => {
+	const base = 'https://acme.test/wp-admin/admin.php?page=corex-submissions';
+
+	it( 'reads the submission the address was sent to', () => {
+		expect(
+			inboxSubmissionFromUrl( `${ base }&corex_submission=42` )
+		).toBe( 42 );
+	} );
+
+	it( 'ignores anything that is not a submission id', () => {
+		expect( inboxSubmissionFromUrl( base ) ).toBe( 0 );
+		expect( inboxSubmissionFromUrl( `${ base }&corex_submission=` ) ).toBe(
+			0
+		);
+		expect(
+			inboxSubmissionFromUrl( `${ base }&corex_submission=abc` )
+		).toBe( 0 );
+		expect(
+			inboxSubmissionFromUrl( `${ base }&corex_submission=1;DROP` )
+		).toBe( 0 );
+		expect(
+			inboxSubmissionFromUrl( `${ base }&corex_submission=-4` )
+		).toBe( 0 );
+	} );
+
+	it( 'answers 0 rather than throwing on an address it cannot parse', () => {
+		expect( inboxSubmissionFromUrl( '' ) ).toBe( 0 );
+		expect( inboxSubmissionFromUrl( undefined ) ).toBe( 0 );
+	} );
+
+	/**
+	 * The two deep links are independent: a form filter and an opened detail can arrive together,
+	 * and neither may swallow the other.
+	 */
+	it( 'coexists with the form filter on the same address', () => {
+		const url = `${ base }&corex_form=7&corex_submission=42`;
+
+		expect( inboxSubmissionFromUrl( url ) ).toBe( 42 );
 	} );
 } );

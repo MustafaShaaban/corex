@@ -3,142 +3,15 @@
  */
 
 const { test, expect } = require( '@playwright/test' );
-const { collectConsoleErrors } = require( './helpers' );
+const { collectConsoleErrors, seedSubmission } = require( './helpers' );
 
 const FLOW_SLUG = 'corex-inbox-e2e';
 // Unique per run so the seeded submission is searchable to exactly one row on a shared site
 // where prior runs' fixtures accumulate.
 const EMAIL = `corex-inbox-e2e-${ Date.now() }@example.com`;
 
-/**
- * The configuration the inbox fixture needs.
- *
- * `protection.captcha: 'off'` is load-bearing rather than incidental: this spec exercises the
- * inbox, and on any site where a captcha driver *is* configured the protection stage judges an
- * empty token and rejects every seeded submission. Opting the fixture out keeps the spec about
- * the inbox on a bare CI site and on a real one alike.
- */
-const FIXTURE_CONFIGURATION = {
-	schema: [
-		{
-			uuid: 'email-field',
-			key: 'email',
-			label: 'Email',
-			type: 'email',
-			required: true,
-		},
-	],
-	validation: { email: [ 'required', 'email' ] },
-	routing: { rules: [], fallback: { type: 'flow_owner', config: {} } },
-	email_routes: [],
-	success: { type: 'inline', message: 'Received.' },
-	placement_snapshot: { type: 'block' },
-	protection: { captcha: 'off' },
-};
-
-async function seedSubmission( page ) {
-	await page.goto( '/wp-admin/admin.php?page=corex-forms' );
-	await expect( page.getByText( 'Loading forms…' ) ).toBeHidden();
-	return page.evaluate(
-		async ( fixture ) => {
-			const api = window.Corex.api;
-			const config = window.corexFlows;
-			const list = await api.get(
-				`${ config.restUrl }?search=${ fixture.slug }`,
-				{
-					nonce: config.nonce,
-				}
-			);
-			let flow = list.envelope.data.flows.find(
-				( item ) => item.slug === fixture.slug
-			);
-			if ( ! flow ) {
-				const created = await api.post(
-					config.restUrl,
-					{
-						slug: fixture.slug,
-						name: 'Inbox E2E flow',
-						owner_id: config.ownerId,
-						placement_type: 'block',
-						configuration: fixture.configuration,
-					},
-					{ nonce: config.nonce }
-				);
-				flow = created.envelope.data.flow;
-			}
-
-			// Bring an existing fixture back to the shape this spec needs, rather than trusting
-			// whatever state a previous run — or a person clicking around the builder — left it in.
-			// The old seed only configured and published a flow it had just created, so once this
-			// flow drifted, every test in the file failed permanently and told you nothing useful.
-			let detail = await api.get( `${ config.restUrl }/${ flow.id }`, {
-				nonce: config.nonce,
-			} );
-			let latest = detail.envelope.data.versions.at( -1 );
-			const captchaOff =
-				latest.configuration?.protection?.captcha === 'off';
-
-			if ( ! captchaOff ) {
-				await api.patch(
-					`${ config.restUrl }/${ flow.id }`,
-					{
-						expected_version: latest.version_number,
-						expected_checksum: latest.checksum,
-						configuration: fixture.configuration,
-					},
-					{ nonce: config.nonce }
-				);
-				detail = await api.get( `${ config.restUrl }/${ flow.id }`, {
-					nonce: config.nonce,
-				} );
-				latest = detail.envelope.data.versions.at( -1 );
-			}
-
-			if (
-				detail.envelope.data.flow.state !== 'published' ||
-				detail.envelope.data.flow.published_version !==
-					latest.version_number
-			) {
-				if ( detail.envelope.data.flow.state === 'published' ) {
-					await api.post(
-						`${ config.restUrl }/${ flow.id }/unpublish`,
-						{ expected_version: latest.version_number },
-						{ nonce: config.nonce }
-					);
-				}
-				await api.post(
-					`${ config.restUrl }/${ flow.id }/publish`,
-					{ expected_version: latest.version_number },
-					{ nonce: config.nonce }
-				);
-				detail = await api.get( `${ config.restUrl }/${ flow.id }`, {
-					nonce: config.nonce,
-				} );
-				latest = detail.envelope.data.versions.at( -1 );
-			}
-
-			const version = latest.version_number;
-			const real = await api.post(
-				`${ config.restUrl }/${ flow.id }/submit`,
-				{ email: fixture.email, utm_source: 'playwright' },
-				{ nonce: config.nonce }
-			);
-			const marked = await api.post(
-				`${ config.restUrl }/${ flow.id }/test`,
-				{
-					expected_version: version,
-					values: { email: 'marked-test@example.com' },
-				},
-				{ nonce: config.nonce }
-			);
-			return { real, marked };
-		},
-		{ slug: FLOW_SLUG, email: EMAIL, configuration: FIXTURE_CONFIGURATION }
-	);
-}
-
 test.beforeEach( async ( { page } ) => {
-	const seeded = await seedSubmission( page );
+	const seeded = await seedSubmission( page, FLOW_SLUG, EMAIL );
 	expect( seeded.real.envelope.ok ).toBe( true );
 	expect( seeded.marked.envelope.ok ).toBe( true );
 	await page.goto( '/wp-admin/admin.php?page=corex-submissions' );

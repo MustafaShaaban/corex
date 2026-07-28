@@ -165,3 +165,50 @@ cannot quietly stop matching your product.
 There is nothing to do. Register your guides from your own service provider, and a deactivated
 plugin registers nothing — so its guides are simply absent. No `is_active()` check, and no list of
 plugin slugs to keep in step with reality.
+
+## When the guides are not enough
+
+A reader who did not find their answer needs a person, not another page. The Guides screen ends with
+a **Still stuck?** panel: a category, a message, and their email, sent to the address the site owner
+configured.
+
+### Changing the address
+
+Two ways, and the second wins:
+
+1. **In code.** `addons/corex-guides/config/guides.php` — one line.
+
+   ```php
+   return [
+       'support' => [
+           'email'   => 'support@example.com',
+           'enabled' => true,
+       ],
+   ];
+   ```
+
+2. **In the admin.** *CoreX Settings → Guides → Support email*. This writes the
+   `corex_guides_support_email` option, which layers over the file, so a site owner can change it
+   without a deploy. Leave it blank to fall back to the shipped address.
+
+Setting **Offer the support form** to off removes the panel entirely. That is different from leaving
+the address blank: with the panel on and no deliverable address, the screen says support is not set
+up here rather than drawing a form that would discard what somebody typed.
+
+### How the message is sent
+
+Through Corex Mail when `addons/corex-email` is active, and through `wp_mail()` when it is not.
+Neither is required — a help form must not stop working because a site does not use the mail add-on.
+The reader's own address becomes the `Reply-To`, if it validates; if it does not, the header is
+dropped rather than passed through.
+
+The outcome is reported honestly. If the transport refuses the message, the panel says it did not
+send and gives the text back, rather than showing a confirmation for something nobody received.
+
+### What it will not do
+
+- **It does not retry.** One message per user per minute, enforced server-side, so a double-click or
+  a replayed POST does not arrive twice.
+- **It does not store anything.** The message is an email. If you want a record, route the address
+  to a shared inbox.
+- **It carries no attachments** — text, the sender, and the site URL.

@@ -15,6 +15,7 @@ use Corex\Events\ListenerProvider;
 use Corex\Forms\Submission\NotificationDelivery;
 use Corex\Forms\Submission\SubmissionProcessedEvent;
 use Corex\Notifications\Notification;
+use Corex\Notifications\NotificationAction;
 use Corex\Notifications\NotificationCategory;
 use Corex\Notifications\NotificationProducer;
 use Corex\Notifications\NotificationRecipient;
@@ -85,13 +86,30 @@ final class SubmissionNotificationProducer implements NotificationProducer
                     __('New submission on “%s”', 'corex'),
                     $event->flowSlug,
                 ),
-                'body'  => __('Open the Submission Inbox to read and assign it.', 'corex'),
+                // This used to read "Open the Submission Inbox to read and assign it" — an
+                // instruction to go somewhere, in a record that could have taken you there. The
+                // action below is that link, so the body says what is waiting instead of how to
+                // reach it (spec 087, FR-014).
+                'body'  => __('It is waiting in the inbox, unread and unassigned.', 'corex'),
             ],
             dedupKey: 'submission.new:' . $event->flowSlug,
             recipient: NotificationRecipient::forAbility(CorexAbility::MANAGE_SUBMISSIONS),
             occurredAt: new DateTimeImmutable('now'),
             sourceType: 'flow',
             sourceId: (string) $event->flowId,
+            // Deep-linked to this form's rows, not to the inbox at large: `corex_form` is the
+            // parameter the inbox already reads for exactly this ("Forms & Flows links to the
+            // submissions for this form" — inbox.js), so the link and the form filter cannot mean
+            // different things.
+            action: NotificationAction::to(
+                'notifications.submission.new.action',
+                add_query_arg(
+                    ['page' => 'corex-submissions', 'corex_form' => (string) $event->flowId],
+                    admin_url('admin.php'),
+                ),
+                CorexAbility::MANAGE_SUBMISSIONS,
+                __('Open the Submission Inbox', 'corex'),
+            ),
         );
     }
 
@@ -118,6 +136,17 @@ final class SubmissionNotificationProducer implements NotificationProducer
             sourceType: 'flow',
             sourceId: (string) $event->flowId,
             metadata: ['delivery_status' => $event->delivery->status, 'reason' => $event->delivery->safeReason],
+            // A failed notification email is diagnosed in Email Studio, which holds the attempt log
+            // and the route that was meant to carry it. Gated on MANAGE_EMAIL, not on the
+            // MANAGE_SUBMISSIONS this notification is addressed to: a submissions manager who
+            // cannot open Email Studio is told the mail failed and is not offered a door that would
+            // refuse them.
+            action: NotificationAction::to(
+                'notifications.submission.email_failed.action',
+                add_query_arg(['page' => 'corex-email-studio'], admin_url('admin.php')),
+                CorexAbility::MANAGE_EMAIL,
+                __('Open Email Studio', 'corex'),
+            ),
         );
     }
 

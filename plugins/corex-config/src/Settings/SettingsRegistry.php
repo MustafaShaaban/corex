@@ -274,6 +274,26 @@ final class SettingsRegistry implements FieldSections
                     ],
                 ],
             ],
+            // The Guides add-on's support contact (spec 087, FR-003). Declared here for the same
+            // reason the `captcha` section is: a Config dot-key is a string, and the screen that
+            // edits it does not have to be the plugin that reads it. The default lives in
+            // `addons/corex-guides/config/guides.php`; saving here writes the option that layers
+            // over it, so a blank field means "use the shipped address", not "no address".
+            'guides' => [
+                'title'  => 'Guides',
+                'fields' => [
+                    'guides.support.email' => [
+                        'label' => __('Support email', 'corex'),
+                        'type'  => 'email',
+                        'help'  => __('Where "Still stuck?" messages from the Guides screen are sent. Leave blank to use the address the add-on ships with.', 'corex'),
+                    ],
+                    'guides.support.enabled' => [
+                        'label' => __('Offer the support form', 'corex'),
+                        'type'  => 'checkbox',
+                        'help'  => __('Turn off to remove the contact panel from the Guides screen entirely.', 'corex'),
+                    ],
+                ],
+            ],
             // Advanced is a read-only system-diagnostics read-out (spec 068 T203). Destructive resets
             // live behind their own typed-confirmation surfaces (Operations & Security, Setup Wizard);
             // this section never fabricates a value. Operations, Data Sources, and Design Tokens keep

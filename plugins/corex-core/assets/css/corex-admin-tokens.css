@@ -96,6 +96,12 @@ body.corex-admin-screen {
 	--corex-admin-focus-width: 3px;
 	--corex-admin-focus-offset: 2px;
 	--corex-admin-control-height: 2.5rem;
+
+	/* The pointer target for a control with no label of its own — a dialog
+	   close, an icon button. WCAG 2.2 AA (2.5.8) asks for 24x24; this is the
+	   comfortable size, and a token is what stops the next icon button being
+	   sized by eye. */
+	--corex-admin-touch-target: 2.75rem;
 	--corex-admin-content-max: 92rem;
 	--corex-admin-measure: 68ch;
 	--corex-admin-page-min-height: calc(100vh - 7rem);

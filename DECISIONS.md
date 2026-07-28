@@ -3805,3 +3805,87 @@ English strings, so trailing punctuation lands at the visual left — a property
 the product. Recording that is what stops somebody later "fixing" correct code, and what makes clear
 that Arabic typography still needs an Arabic catalogue and its own pass.
 Status: Final.
+
+## #197 — A translation key is not a label, and both are carried
+Date: 2026-07-28
+Decision: `NotificationAction` gains an already-translated `label` beside `labelKey`, and
+`toArray()` emits both. The client reads `label`.
+Why: the server serialized `label_key` and the card read `item.action.label`, so every
+server-produced action fell through to a hardcoded "Open" and no authored label had ever been seen.
+The obvious fix — rename one side — is wrong: `labelKey` *is* a translation key, nothing in the
+pipeline resolves keys to strings, and renaming it would have made the payload claim to carry a
+label while carrying a key. Adding the resolved string is the honest shape; the key stays for a
+resolver that may exist one day.
+Scope: the Jest test that "covered" this fed `{ label: … }` — a payload shape the server has never
+sent — so it passed against fiction while every real notification was broken. It now builds its
+fixture from what `present()` actually emits. A fixture invented to match the component is not
+coverage of the component.
+Status: Final.
+
+## #198 — A permission the client is trusted to honour is not a permission
+Date: 2026-07-28
+Decision: `WpNotificationRepository::present()` omits an action from the payload entirely when the
+actor does not hold its declared `ability`, and derives `view` / `needs_action` from the action that
+survived that check.
+Why: `NotificationAction` had documented since spec 072 that "a link renders only when the actor
+passes the optional `ability`", and nothing enforced it — the whole action went out on the wire and
+the card rendered on `action.url` alone. Two consequences, and the second is the worse one: a viewer
+could be handed a link to a screen that would refuse them on arrival, and a row could be filed under
+"Action needed" on the strength of an action that viewer would never be offered.
+Scope: withheld rather than hidden. A payload the client is trusted to conceal is a disclosure with
+a style rule in front of it. Producers now name the ability the destination screen itself enforces —
+so the notification and the screen cannot disagree about who may go there.
+Status: Final.
+
+## #199 — CoreX answers wp-admin's focus ring instead of out-specifying it from inside `:where()`
+Date: 2026-07-28
+Decision: explicit `:focus` resets for `.button`, `.button-primary` and `.components-button`, each
+paired with a `:focus-visible` outline at matching specificity. The `:where()` rule stays as the
+floor for everything else.
+Why: the blue halo after every click was `.wp-core-ui .button:focus` at **(0,3,0)** beating
+`.corex-admin :where(a, button, …):focus-visible` at **(0,2,0)** — `:where()` contributes zero, so
+the rule meant to answer it never could. wp-admin paints on `:focus`, not `:focus-visible`, which is
+why a mouse click triggered it at all. CoreX's own `.button-primary:focus` had overridden the
+background, the border and the colour and never the `box-shadow`, so the ring survived underneath
+the brass button.
+Scope: both directions are asserted in a browser, because removing a click ring without keeping the
+keyboard one trades a cosmetic complaint for a WCAG 2.4.7 failure. Also added the missing base
+`.components-button` rule: only the variants were styled, so a `<Button>` with no variant kept
+Gutenberg's own `#1e1e1e` ink — invisible rather than unstyled on the dark surface, and the reason
+the submissions close X and the inbox pager could not be seen.
+Status: Final.
+
+## #200 — The Guides support form depends on no optional plugin
+Date: 2026-07-28
+Decision: `addons/corex-guides` ships its own two-rung `SupportMailer` — a nullable
+`Corex\Mail\Mailer` injected by the provider, falling back to `wp_mail()` — rather than importing
+`Corex\Forms\Submission\NotificationDispatcher`, which is the same ladder one plugin over.
+Why: `NotificationDispatcher` lives in `plugins/corex-forms` and `Mailer` is bound only by
+`addons/corex-email`. Both are optional, and Principle IX forbids either becoming a hard dependency.
+A help form is the last thing that should stop working because a site does not use forms.
+Scope: the cost is one small class. `NotificationDispatcher` depends only on core `Corex\Mail\*`
+seams and belongs in `corex-core`; promoting it is the right fix and is deliberately **not** in this
+spec, because it is a refactor across two plugins and this is a help form. Recorded here so the next
+person meets the decision rather than the duplication.
+Status: Final.
+
+## #201 — A test that cannot fail reports coverage it does not have
+Date: 2026-07-28
+Decision: every browser assertion in `tests/e2e/admin-controls.spec.js` was checked against the
+unfixed stylesheet before being kept, and the spec states which assertions reproduced a defect and
+which are only guards.
+Why: four of them passed against the broken CSS on the first attempt, for four different reasons,
+and each would have shipped as evidence of a fix it had not verified. The versioned stylesheet was
+served from cache, so the "before" run measured the "after" file. "The first visible button" on that
+screen is the notification bell — a control CoreX styles itself, which never had a WordPress ring to
+lose. `document.activeElement` after clicking the pager is `<body>`, which has no shadow, so the
+assertion measured the document. And the ring assertion was written as
+`shadow === 'none' || shadow.includes('inset')`, which accepts wp-admin's
+`rgb(56,88,233) 0 0 0 2px, rgb(255,255,255) 0 0 0 1px inset` — the exact broken value it existed to
+reject.
+Scope: the honest result is asymmetric and is recorded as such. Five assertions reproduce a defect
+and now pass; four are guards that were already green — the drawer close already cleared 3:1, the
+detail glyph was legible on a light surface because the defect was dark-only, and the keyboard ring
+had to keep working. Claiming nine verified fixes would have been the same category of error as the
+bugs this spec closes.
+Status: Final.

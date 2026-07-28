@@ -30,6 +30,23 @@ import {
 /** Fixed so the relative-time assertions describe a clock rather than the day the suite runs. */
 const NOW = Date.parse( '2026-07-27T12:00:00.000Z' );
 
+/**
+ * An action exactly as `WpNotificationRepository::present()` serialises one — all four fields,
+ * `label_key` and `label` both. Written as a factory so no test can quietly narrow it.
+ *
+ * @param {Object} overrides Fields to change for one case.
+ * @return {Object} One serialised action.
+ */
+function serverAction( overrides = {} ) {
+	return {
+		label_key: 'notifications.submission.new.action',
+		label: 'Open the Submission Inbox',
+		url: 'https://acme.test/wp-admin/admin.php?page=corex-submissions&corex_form=7',
+		ability: 'corex_manage_submissions',
+		...overrides,
+	};
+}
+
 function notification( overrides = {} ) {
 	const { user_state: userState, rendered, ...rest } = overrides;
 
@@ -264,15 +281,17 @@ describe( 'NotificationItem', () => {
 			}
 		);
 
+		/**
+		 * The payload here is the shape `WpNotificationRepository::present()` actually emits —
+		 * `label_key` *and* `label`, because the key is a translation key and nothing in the
+		 * pipeline resolves one.
+		 *
+		 * This test used to pass a bare `{ url, label }`, which the server had never sent, so it
+		 * went green while every real notification rendered a generic "Open" (spec 087, FR-010).
+		 * A fixture invented to match the component is not coverage of the component.
+		 */
 		it( 'renders the primary action as a link to where the work is done', () => {
-			mount( {
-				item: notification( {
-					action: {
-						url: 'https://acme.test/wp-admin/admin.php?page=corex-submissions',
-						label: 'Open the inbox',
-					},
-				} ),
-			} );
+			mount( { item: notification( { action: serverAction() } ) } );
 
 			const link = container.querySelector(
 				'.corex-notification__actions a'
@@ -280,7 +299,78 @@ describe( 'NotificationItem', () => {
 			expect( link.getAttribute( 'href' ) ).toContain(
 				'page=corex-submissions'
 			);
-			expect( link.textContent.trim() ).toBe( 'Open the inbox' );
+			expect( link.textContent.trim() ).toBe(
+				'Open the Submission Inbox'
+			);
+		} );
+
+		it( 'falls back to "Open" only when the action carries no label', () => {
+			mount( {
+				item: notification( {
+					action: { ...serverAction(), label: '' },
+				} ),
+			} );
+
+			expect(
+				container
+					.querySelector( '.corex-notification__actions a' )
+					.textContent.trim()
+			).toBe( 'Open' );
+		} );
+
+		/**
+		 * The title is the other way to the same place. Deliberately not the whole card: the card
+		 * holds Mark read, Snooze and Dismiss, and nesting controls inside a link is a trap for
+		 * both a pointer and a screen reader (FR-013).
+		 */
+		it( 'makes the title a second route to the same destination', () => {
+			mount( { item: notification( { action: serverAction() } ) } );
+
+			const titleLink = container.querySelector(
+				'.corex-notification__title a'
+			);
+			expect( titleLink.getAttribute( 'href' ) ).toBe(
+				serverAction().url
+			);
+			expect( titleLink.textContent.trim() ).toBe(
+				'A contact form submission was not delivered'
+			);
+			expect(
+				container.querySelectorAll( '.corex-notification__title a' )
+			).toHaveLength( 1 );
+		} );
+
+		it( 'never nests a control inside the title link', () => {
+			mount( {
+				item: notification( { action: serverAction() } ),
+				actions: { markRead: jest.fn(), dismiss: jest.fn() },
+			} );
+
+			expect(
+				container.querySelectorAll(
+					'.corex-notification__title a button'
+				)
+			).toHaveLength( 0 );
+			expect( buttons().length ).toBeGreaterThan( 0 );
+		} );
+
+		/**
+		 * A notification the viewer cannot act on arrives with no `action` at all — the server
+		 * withholds it rather than trusting the client to hide it. The title must then be plain
+		 * text, not a link to nowhere.
+		 */
+		it( 'leaves the title as text when there is no action', () => {
+			mount( { item: notification( { action: null } ) } );
+
+			expect(
+				container.querySelector( '.corex-notification__title a' )
+			).toBeNull();
+			expect(
+				container.querySelector( '.corex-notification__actions a' )
+			).toBeNull();
+			expect( textOf( '.corex-notification__title' ) ).toContain(
+				'A contact form submission was not delivered'
+			);
 		} );
 	} );
 

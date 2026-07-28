@@ -12,7 +12,9 @@ defined('ABSPATH') || exit;
 
 use Corex\Config\Submissions\SubmissionAssignedEvent;
 use Corex\Events\ListenerProvider;
+use Corex\Access\CorexAbility;
 use Corex\Notifications\Notification;
+use Corex\Notifications\NotificationAction;
 use Corex\Notifications\NotificationCategory;
 use Corex\Notifications\NotificationProducer;
 use Corex\Notifications\NotificationRecipient;
@@ -77,6 +79,21 @@ final class SubmissionAssignedNotificationProducer implements NotificationProduc
             occurredAt: new DateTimeImmutable('now'),
             sourceType: 'submission',
             sourceId: (string) $event->submissionId,
+            // Straight to the row that was assigned. `corex_submission` is the parameter the inbox
+            // opens a detail drawer from, so this lands on the submission rather than on a list the
+            // assignee then has to search (spec 087, FR-014).
+            action: NotificationAction::to(
+                'notifications.submission.assigned.action',
+                add_query_arg(
+                    [
+                        'page'             => 'corex-submissions',
+                        'corex_submission' => (string) $event->submissionId,
+                    ],
+                    admin_url('admin.php'),
+                ),
+                CorexAbility::MANAGE_SUBMISSIONS,
+                __('Open the submission', 'corex'),
+            ),
         );
     }
 }

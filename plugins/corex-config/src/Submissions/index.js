@@ -4,6 +4,7 @@ import {
 	useEffect,
 	useId,
 	useMemo,
+	useRef,
 	useState,
 } from '@wordpress/element';
 import { Button, Modal, Spinner } from '@wordpress/components';
@@ -15,6 +16,7 @@ import FieldValue from '../admin/components/FieldValue.js';
 import {
 	buildExportPayload,
 	inboxFiltersFromUrl,
+	inboxSubmissionFromUrl,
 	toggleSubmission,
 } from './inbox.js';
 import { useInbox } from './useInbox.js';
@@ -98,6 +100,22 @@ function App() {
 		),
 	} ) );
 	const inbox = useInbox( config, filters );
+	// A `corex_submission` in the address opens that row's detail once, on arrival. Deliberately not
+	// in the filter state above: this is where you were sent, not what you are filtering by, and
+	// re-running it on every filter change would reopen a drawer somebody had closed.
+	const deepLinked = useRef(
+		inboxSubmissionFromUrl(
+			typeof window === 'undefined' ? '' : window.location.href
+		)
+	);
+	const openDetail = inbox.open;
+	useEffect( () => {
+		if ( deepLinked.current ) {
+			const id = deepLinked.current;
+			deepLinked.current = 0;
+			openDetail( id );
+		}
+	}, [ openDetail ] );
 	const [ bulkAction, setBulkAction ] = useState( 'mark_read' );
 	const [ bulkOwner, setBulkOwner ] = useState( {
 		owner_type: 'user',

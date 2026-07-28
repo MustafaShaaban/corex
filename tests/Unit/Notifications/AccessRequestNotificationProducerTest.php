@@ -12,6 +12,7 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Tests\Support\AdminUrlStubs;
 use Corex\Access\AccessRequestedEvent;
 use Corex\Access\CorexAbility;
 use Corex\Config\Notifications\Producers\AccessRequestNotificationProducer;
@@ -22,6 +23,8 @@ use Corex\Tests\Support\RecordingNotificationService;
 
 beforeEach(function () {
     Functions\stubTranslationFunctions();
+    // Producers name a destination now, and building it calls WordPress (spec 087, FR-014).
+    AdminUrlStubs::install();
 });
 
 /** A NotificationService that records every published notification. */

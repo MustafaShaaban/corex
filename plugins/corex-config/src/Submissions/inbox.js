@@ -108,6 +108,33 @@ export function inboxFiltersFromUrl( url ) {
 	return { flow: form };
 }
 
+/**
+ * The one submission the inbox should open with its detail already showing, or 0.
+ *
+ * An assignment notification says "a submission needs your reply", and until this existed the only
+ * link it could honestly offer was the unfiltered inbox — which hands somebody a list and asks them
+ * to find the row the notification was already holding (spec 087, FR-014).
+ *
+ * Returns 0 rather than null for anything unparseable, so a caller tests one falsy value and a
+ * hand-edited address opens the plain inbox instead of an error.
+ *
+ * @param {string} url The current address.
+ * @return {number} The submission id to open, or 0.
+ */
+export function inboxSubmissionFromUrl( url ) {
+	let id = '';
+	try {
+		id =
+			new URL( String( url ), 'http://localhost' ).searchParams.get(
+				'corex_submission'
+			) || '';
+	} catch {
+		return 0;
+	}
+
+	return /^\d+$/.test( id ) ? Number( id ) : 0;
+}
+
 export function buildInboxUrl( base, filters ) {
 	const params = new URLSearchParams();
 	const values = [

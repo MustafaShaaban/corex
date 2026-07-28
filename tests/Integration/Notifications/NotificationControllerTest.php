@@ -134,3 +134,106 @@ it('resolves a condition through the manage tier', function () {
     expect($response->get_status())->toBe(200)
         ->and($this->repo->find($stored->id)->isResolved())->toBeTrue();
 });
+
+/**
+ * The snooze route, which had no coverage at all and did not work.
+ *
+ * The screen posted `snoozed_until` — the name of the database *column* — while the route reads
+ * `until`. `futureDate('')` returned null, so every snooze click answered 422 `invalid_snooze` and
+ * the control looked alive while doing nothing (spec 087, FR-015).
+ */
+it('snoozes a notification on the parameter the client actually sends', function () {
+    $stored = $this->repo->upsertByDedupKey(storeNotification(NotificationRecipient::forAbility(CorexAbility::MANAGE_SUBMISSIONS)));
+
+    $request = new WP_REST_Request('POST', '/corex/v1/notifications/' . $stored->id . '/snooze');
+    $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
+    $request->set_param('until', (new DateTimeImmutable('+1 day'))->format(DATE_ATOM));
+
+    $response = rest_get_server()->dispatch($request);
+
+    expect($response->get_status())->toBe(200)
+        ->and($response->get_data()['ok'])->toBeTrue();
+
+    $listed = restCall('GET', '/corex/v1/notifications')->get_data()['data']['items'][0];
+    expect($listed['user_state']['status'])->toBe('snoozed')
+        ->and($listed['user_state']['snoozed_until'])->not->toBeNull();
+});
+
+it('refuses a snooze with no date rather than silently doing nothing', function () {
+    $stored = $this->repo->upsertByDedupKey(storeNotification(NotificationRecipient::forAbility(CorexAbility::MANAGE_SUBMISSIONS)));
+
+    $response = restCall('POST', '/corex/v1/notifications/' . $stored->id . '/snooze', true);
+
+    expect($response->get_status())->toBe(422)
+        ->and($response->get_data()['code'])->toBe('invalid_snooze');
+});
+
+/**
+ * The ability gate NotificationAction has documented since spec 072 and nothing enforced: the whole
+ * action went out verbatim, so a viewer could be handed a link to a screen that would refuse them
+ * on arrival (spec 087, FR-011 / FR-012).
+ */
+it('withholds an action the actor may not use, and does not file it under needs-action', function () {
+    $note = Notification::create(
+        type: 'submission.new',
+        category: NotificationCategory::SUBMISSIONS,
+        // INFORMATION, not ACTION: a demanding severity needs action on its own merits, so it would
+        // mask the thing under test. With an undemanding one, the *only* reason this row could be
+        // filed under "needs action" is the link — which is exactly what must not happen when the
+        // link is withheld.
+        severity: NotificationSeverity::INFORMATION,
+        sourceModule: 'forms',
+        titleKey: 'notifications.submission.new.title',
+        messageKey: 'notifications.submission.new.body',
+        rendered: ['title' => 'New submission', 'body' => 'Contact form'],
+        dedupKey: 'submission.new:gated',
+        // Visible to anybody who can read, so the *recipient* is not what is being tested here.
+        recipient: NotificationRecipient::forAbility('read'),
+        occurredAt: new DateTimeImmutable('now'),
+        action: \Corex\Notifications\NotificationAction::to(
+            'notifications.submission.new.action',
+            admin_url('admin.php?page=corex-submissions'),
+            'corex_an_ability_nobody_holds',
+            'Open the Submission Inbox',
+        ),
+    );
+    $this->repo->upsertByDedupKey($note);
+
+    $item = restCall('GET', '/corex/v1/notifications')->get_data()['data']['items'][0];
+
+    expect($item)->not->toHaveKey('action')
+        ->and($item['user_state']['needs_action'])->toBeFalse()
+        ->and($item['user_state']['view'])->toBe('updates');
+});
+
+it('offers the action, with its label, to an actor who does hold the ability', function () {
+    $note = Notification::create(
+        type: 'submission.new',
+        category: NotificationCategory::SUBMISSIONS,
+        // The mirror of the test above, same undemanding severity: here the visible link is what
+        // puts the row in "action needed", which is the behaviour the withheld case must not get.
+        severity: NotificationSeverity::INFORMATION,
+        sourceModule: 'forms',
+        titleKey: 'notifications.submission.new.title',
+        messageKey: 'notifications.submission.new.body',
+        rendered: ['title' => 'New submission', 'body' => 'Contact form'],
+        dedupKey: 'submission.new:allowed',
+        recipient: NotificationRecipient::forAbility('read'),
+        occurredAt: new DateTimeImmutable('now'),
+        action: \Corex\Notifications\NotificationAction::to(
+            'notifications.submission.new.action',
+            admin_url('admin.php?page=corex-submissions'),
+            'manage_options',
+            'Open the Submission Inbox',
+        ),
+    );
+    $this->repo->upsertByDedupKey($note);
+
+    $item = restCall('GET', '/corex/v1/notifications')->get_data()['data']['items'][0];
+
+    // The label the author wrote, all the way through storage to the wire — this is the trip that
+    // used to lose it, leaving the client with a translation key it had no way to resolve.
+    expect($item['action']['label'])->toBe('Open the Submission Inbox')
+        ->and($item['action']['url'])->toContain('page=corex-submissions')
+        ->and($item['user_state']['needs_action'])->toBeTrue();
+});

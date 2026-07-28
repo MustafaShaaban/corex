@@ -12,6 +12,7 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Tests\Support\AdminUrlStubs;
 use Corex\Config\Notifications\Producers\SubmissionAssignedNotificationProducer;
 use Corex\Config\Submissions\SubmissionAssignedEvent;
 use Corex\Events\ListenerProvider;
@@ -21,6 +22,8 @@ use Corex\Tests\Support\RecordingNotificationService;
 
 beforeEach(function () {
     Functions\stubTranslationFunctions();
+    // Producers name a destination now, and building it calls WordPress (spec 087, FR-014).
+    AdminUrlStubs::install();
 });
 
 function fireAssignment(NotificationService $service, SubmissionAssignedEvent $event): NotificationService

@@ -11,6 +11,7 @@ namespace Corex\Guides;
 defined('ABSPATH') || exit;
 
 use Corex\Admin\AdminPage;
+use Corex\Guides\Support\SupportPanel;
 
 /**
  * The Guides screen: every available guide, grouped, searchable, in the Corex admin shell
@@ -31,6 +32,7 @@ final class GuidesScreen
     public function __construct(
         private readonly GuideRegistry $registry,
         private readonly AdminPage $page,
+        private readonly SupportPanel $support,
     ) {
     }
 
@@ -89,6 +91,10 @@ final class GuidesScreen
         );
 
         echo $grouped === [] ? $this->emptyStateHtml() : $this->searchFieldHtml() . $this->sectionsHtml($grouped); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- all branches return escaped markup.
+
+        // Last, and after the empty state too: "there are no guides for you here" is the strongest
+        // reason to want a person, not a weaker one (spec 087, FR-001).
+        echo $this->support->render(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SupportPanel returns escaped markup.
 
         echo $this->page->close(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- AdminPage returns escaped markup.
     }

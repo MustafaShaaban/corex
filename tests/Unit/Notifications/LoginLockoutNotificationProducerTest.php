@@ -13,6 +13,7 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Tests\Support\AdminUrlStubs;
 use Corex\Access\CorexAbility;
 use Corex\Config\Notifications\Producers\LoginLockoutNotificationProducer;
 use Corex\Events\ListenerProvider;
@@ -23,6 +24,8 @@ use Corex\Security\LoginLockoutEvent;
 
 beforeEach(function () {
     Functions\stubTranslationFunctions();
+    // Producers name a destination now, and building it calls WordPress (spec 087, FR-014).
+    AdminUrlStubs::install();
 });
 
 /** A NotificationService that records every published notification. */
