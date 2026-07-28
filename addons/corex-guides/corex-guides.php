@@ -3,7 +3,7 @@
  * Plugin Name:       Corex Guides
  * Plugin URI:        https://github.com/MustafaShaaban/corex
  * Description:       In-admin user guides, and the registry any site built on Corex extends to add its own. Ships Corex's guides for the admin dashboard; a client plugin registers guides for its own post types and flows through the same public API.
- * Version:           0.39.0
+ * Version:           0.40.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Requires Plugins:  corex-core
@@ -23,7 +23,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('COREX_GUIDES_VERSION')) {
-    define('COREX_GUIDES_VERSION', '0.39.0');
+    define('COREX_GUIDES_VERSION', '0.40.0');
 }
 
 if (! defined('COREX_GUIDES_FILE')) {

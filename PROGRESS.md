@@ -4,6 +4,44 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-29) -- **v0.40.0: every dependency advisory closed.**
+
+On `spec/089-dependency-advisories`, after v0.39.0. `PROJECT-STATUS.md` shipped listing 24 bounded
+exceptions as the largest known-open item. They are gone.
+
+**npm's "fix" was a downgrade, which is why they existed.** `npm audit` reported a fix available for
+all 64 root findings. For 37 it proposed `@wordpress/scripts@19.2.4` against an installed `^33.0.0`
+and `@wordpress/env@11.8.0` against `^11.11.0` — downgrades, forbidden by `CONTRIBUTING.md`. For the
+other 27 it said `fixAvailable: true` and `npm audit fix` moved none of them, because each was a
+transitive dependency its parent pinned below the patched version. The policy file had recorded all
+of this as "a pinned wp-scripts constraint" (Decision #206).
+
+**`overrides` closed them.** Nine added, **one backed out**: `minimatch@^10` removes the CommonJS
+default export `eslint-plugin-jsx-a11y` calls, and `lint:js` was the *only* check that caught it —
+the block build and all 431 Jest tests passed with the broken dependency in place. `minimatch` is
+now raised only inside `markdownlint-cli`, where the vulnerable nested copy actually was.
+
+**The Astro 7 migration landed as a side effect.** Its recorded blocker — regenerating the docs
+lockfile expands the workspace root into the docs tree and takes npm-docs from 5 findings to 17 — was
+a correct measurement whose conclusion had expired. It only hurts while the *root* is dirty. With
+root at zero the regenerated lockfile contains no `webpack`, `jest` or `eslint` at all. Two
+exceptions recorded as independent were one (Decision #207).
+
+**Verified:** `verify:dependencies` **PASS, 0 findings, 0 exceptions** across Composer, npm-root and
+npm-docs · Pest unit **1711** · integration **356** · Jest **431** · Playwright **120** · docs site
+**286 pages on Astro 7** · dist builds and verifies · all lints clean.
+
+**One flake seen and re-run:** `guides.spec.js` failed once on a `corex-editor` login under
+full-suite load, then passed on a clean re-run (120/120). Consistent with the accumulated-state
+test-hygiene item already recorded, not with the toolchain change — a dev-dependency override cannot
+affect a WordPress login.
+
+**Release metadata:** the prepared release baseline is v0.40.0.
+
+**Next:** owner decision. `PROJECT-STATUS.md`'s known-open list is now three browser specs, a 1px RTL
+overflow, and Arabic typography — no security items.
+
+---
 ## RESUME HERE (2026-07-29) -- **v0.39.0 released.** Specs 087 and 088 shipped.
 
 | Spec | PR | Merged as |
