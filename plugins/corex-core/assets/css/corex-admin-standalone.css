@@ -84,6 +84,34 @@
 	font-size: var(--corex-admin-font-md);
 }
 
+/*
+ * What the original caller said, kept below CoreX's own explanation
+ * (spec 083, FR-008).
+ *
+ * Start-aligned inside a centred card on purpose: this is the only part
+ * of the page that can be a sentence or two of somebody else's prose,
+ * sometimes carrying a link, and centred prose is harder to read the
+ * longer it gets. The start border marks it as quoted rather than ours.
+ */
+.corex-standalone__detail {
+	inline-size: 100%;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	border-inline-start: 2px solid var(--corex-admin-border-strong);
+	background: var(--corex-admin-surface-alt);
+	border-radius: var(--corex-admin-radius-sm);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	text-align: start;
+}
+
+.corex-standalone__detail p {
+	margin: 0;
+}
+
+.corex-standalone__detail p + p {
+	margin-block-start: var(--corex-admin-space-xs);
+}
+
 .corex-standalone__status {
 	display: inline-flex;
 	align-items: center;

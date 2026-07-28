@@ -342,6 +342,19 @@ final class AdminPage
      * The shared half is not split into four render methods, tempting as the line count makes it:
      * it is byte-identical in every state, and four copies is how three of them fall behind while
      * one is updated.
+     *
+     * **It no longer names the WordPress capability, because this page cannot know it.** Until spec
+     * 083 the explanation said "your role doesn't include `manage_options`" on every screen, which
+     * is false on `corex-notifications` (`corex_manage_notifications`), `corex-submissions`
+     * (`corex_manage_submissions`), `corex-data-models` and every `corex-page-*` option page — a
+     * false statement made at the moment somebody is trying to understand why they were stopped.
+     * The honest source is unavailable: `add_submenu_page()` records a refused page in
+     * `$_wp_submenu_nopriv` as a bare `true` and discards the capability, so by the time anything
+     * here runs the requirement is gone. Restating it from a second map in this file would put the
+     * screens' declaration and this sentence in two places, which is how it came to be wrong once
+     * already. What the page does know for certain is the ability a request from here asks for —
+     * {@see requestAbilityFor()} is the same resolution the submission handler performs — so that
+     * is what it names, framed as what will be requested rather than as what the role lacks.
      */
     private function deniedBody(string $section): string
     {
@@ -352,9 +365,9 @@ final class AdminPage
             . '<h2 class="corex-denied__title">' . esc_html__('You don’t have access to this area', 'corex') . '</h2>'
             . '<p class="corex-denied__text">'
             . sprintf(
-                /* translators: %s: the required WordPress capability. */
-                esc_html__('Your role doesn’t include the %s capability CoreX requires. Ask a site administrator to grant it through a roles plugin if you need this screen.', 'corex'),
-                '<code>manage_options</code>',
+                /* translators: %s: the CoreX ability an access request from this screen asks for. */
+                esc_html__('Your role doesn’t include the access this screen requires. A request from here asks a site administrator for %s.', 'corex'),
+                '<code>' . esc_html(self::requestAbilityFor($section)) . '</code>',
             )
             . '</p><div class="corex-denied__actions">'
             . '<a class="button button-primary" href="' . esc_url(admin_url()) . '">'

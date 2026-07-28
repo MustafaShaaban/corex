@@ -3629,3 +3629,43 @@ the operator typed". The logo URL must be absolute because an email client has n
 resolve a relative path against. This is a visible change to shipped behaviour, not a pure bug fix,
 and is recorded as such rather than presented as invisible.
 Status: Final.
+
+## #187 — The wp_die HTML handler is CoreX's, and the five machine handlers are not
+Date: 2026-07-28
+Decision: CoreX filters `wp_die_handler` and renders every human-facing admin refusal as a branded
+document. It subscribes to none of `wp_die_ajax_handler`, `wp_die_json_handler`,
+`wp_die_jsonp_handler`, `wp_die_xmlrpc_handler` or `wp_die_xml_handler`, and a test asserts that.
+This amends #174, which stated as part of a different decision that "no global `wp_die_handler`
+filter is installed".
+Why: #174's subject was the access-request form posting a browser at a REST route, and its finding —
+that content negotiation on one endpoint silently changes what every API consumer receives — still
+stands and is untouched here; no route changed. But the sentence was read as scope for spec 079's
+error work, and the result was measured before this decision was written: nine of eleven admin
+addresses still rendered WordPress's white box to a real subscriber, two of them screens CoreX
+itself registers (`specs/083-admin-error-surface/evidence/before/refusal-matrix.md`). A framework
+that owns the admin experience cannot own only the eleven percent of it reachable by
+`admin.php?page=corex-*`.
+Scope: the boundary is core's, not ours. `wp_die()` selects its handler by request type *before* any
+filter runs (`wp-includes/functions.php:3791-3849`), so a machine caller can never arrive on the
+branch CoreX filters — the safety is structural rather than a check we have to remember. Nothing
+inspects `Accept` anywhere. `wp-login.php` and front-end `wp_die()` are outside `is_admin()` and stay
+WordPress's, as does the logout confirmation, which reaches `wp_die()` at 403 but is a prompt.
+Status: Final.
+
+## #188 — A refusal names the ability it can ask for, not a capability it cannot know
+Date: 2026-07-28
+Decision: the denied surface no longer names a WordPress capability. It names the CoreX ability an
+access request from that screen resolves to, framed as what will be requested.
+Why: it said "your role doesn't include the `manage_options` capability" on every screen. That is
+false on `corex-notifications` (`corex_manage_notifications`), `corex-submissions`
+(`corex_manage_submissions`), `corex-data-models` and every `corex-page-*` option page — a false
+statement made at HTTP 403 to somebody trying to work out why they were stopped. A unit test
+asserted the string was present, so the assertion was holding the falsehood in place; it is the
+third time in this project a test has been the reason a defect survived.
+Scope: the true value is genuinely unavailable, not merely inconvenient — `add_submenu_page()`
+records a refused page in `$_wp_submenu_nopriv` as a bare `true` and discards the capability, so it
+is gone before any CoreX code runs. Restating it from a second map beside the screens' own
+declarations is what would drift; the ability, by contrast, comes from `requestAbilityFor()`, the
+same resolution the submission handler performs, so the sentence and the queued request cannot
+disagree.
+Status: Final.
