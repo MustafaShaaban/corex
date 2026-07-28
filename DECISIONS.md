@@ -3933,3 +3933,20 @@ is worth exactly as much as the verification, and the verification is what caugh
 paragraph promising entries the page did not contain, and a source type cited in an introduction and
 never used.
 Status: Final.
+
+## #205 — The release command now stamps everything its docblock already promised
+Date: 2026-07-29
+Decision: `wp corex version` also stamps `package.json`, `README.md`, `ROADMAP.md`,
+`PROJECT-STATUS.md` and the docs-site status mirror, using patterns anchored to the sentence that
+declares the *current* version.
+Why: the command's docblock said the version-bearing files are stamped together "so none of them
+drifts from the release tag", and five files carrying a version were outside its reach and bumped by
+hand. That is exactly how `ROADMAP.md` came to sit three releases behind a correct `README.md` — the
+drift spec 088 had just spent a session correcting by hand, caused by the tool whose purpose is to
+prevent it. Found while cutting the release that shipped 088.
+Scope: anchored patterns, not a bare version search. `ROADMAP.md` §17 and the entire `CHANGELOG.md`
+are statements about the past — "released as v0.38.1" is true and rewriting it would corrupt the
+record rather than update it. Seven tests cover this, one of them specifically the
+historical-reference case, and one asserting that a dependency pinned to the same version as the
+package root is left alone.
+Status: Final.

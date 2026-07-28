@@ -6,6 +6,92 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.39.0] — 2026-07-29
+
+Two specs. The first fixed five things an owner reported after using the admin; the second made the
+repository describe itself accurately enough to be handed to somebody who has never seen it.
+
+The thread through both: **four of the five reported defects sat behind code that reads correctly**,
+and the documentation pass then found three false numbers in the very files written to argue that
+this project's claims are checkable.
+
+### Added
+
+- **Contact support from the Guides screen.** A reader who did not find their answer can send a
+  category, a message and their email to the site's support address. The address ships in
+  `addons/corex-guides/config/guides.php` — one line — and is editable at *CoreX Settings → Guides*,
+  which layers over the file. Delivery goes through Corex Mail when it is active and `wp_mail()` when
+  it is not: a help form must not stop working because a site does not use the mail add-on.
+  (DECISIONS #200)
+- **`PROJECT-STATUS.md`** — every module as stable, partial or planned, and every known gap citing the
+  file that records it: the 24 bounded dependency exceptions, the three excluded browser specs with
+  their ruled-out causes, the 1px RTL overflow, Arabic typography proved for layout but not for type,
+  GitHub Pages not enabled, and five of six CI checks not required in branch protection. Mirrored into
+  the docs site **above** Getting Started, because somebody deciding whether to adopt a framework
+  should meet its limits before its tutorial. (DECISIONS #203)
+- **A `corex_submission` deep link** for the Submissions inbox, so an assignment notification opens
+  the row it is about rather than an unfiltered list.
+
+### Fixed
+
+- **Notification call-to-actions never worked, in three independent ways at once.** The server
+  serialized `label_key` while the card read `label`, so every authored label fell through to a
+  hardcoded "Open" — and the JavaScript test covering it fed a payload shape the server has never
+  sent. The `ability` gate documented since spec 072 was never enforced, so a viewer could be handed a
+  link to a screen that would refuse them on arrival. And **seven of eight producers set no action at
+  all**, writing the destination into their body text as prose. All eight now carry a real link, the
+  title is a second route to it, and the server withholds an action the viewer may not use rather
+  than trusting the client to hide it. (DECISIONS #197, #198)
+- **Every snooze click answered HTTP 422.** The client posted `snoozed_until` — the name of the
+  database column — while the route reads `until`, so `futureDate('')` returned null every time. A
+  dead control that looked alive, on a route with no test.
+- **Icon and pager buttons were invisible on the dark admin surface.** Only the `.components-button`
+  variants were styled, so a Gutenberg `<Button>` with no variant kept its own `#1e1e1e` ink — the
+  submissions detail close, its two Close buttons, and the inbox pager.
+- **A blue focus ring appeared after every mouse click.** `.wp-core-ui .button:focus` is specificity
+  (0,3,0) and fires on a mouse click; the CoreX rule meant to answer it sat inside `:where()` at
+  (0,2,0) and never could. Answered explicitly per family, with the keyboard focus ring preserved —
+  removing one without the other would trade a cosmetic complaint for a WCAG 2.4.7 failure.
+  (DECISIONS #199)
+- **The submission retention panel's eyebrow and title collided.** The markup emitted a bare `<div>`
+  where the inbox header emits `<div class="corex-inbox__heading">`; the grid that fixes it already
+  existed and simply never applied.
+- **Plugin `Update URI` headers pointed at a repository that does not publish releases.** Four plugin
+  headers, `composer.json` and `theme/style.css` named an organisation the release pipeline does not
+  use. `Update URI` is how WordPress decides where an update comes from, so this was a functional
+  defect shipping in every installed copy, not a documentation typo. (DECISIONS #202)
+- **`wp corex version` did not stamp everything it promised to.** Its own docblock said the
+  version-bearing files are stamped together "so none of them drifts from the release tag", while
+  `package.json`, `README.md`, `ROADMAP.md` and both status pages were bumped by hand — which is how
+  `ROADMAP.md` came to sit three releases behind a correct `README.md`. All five are stamped now, by
+  patterns anchored to the sentence that declares the *current* version, so historical references
+  ("released as v0.38.1") are left intact.
+
+### Changed
+
+- **`ROADMAP.md` describes the released version again**, with the real verification counts, specs
+  086–088 recorded, and a stated rule for which file wins when it and `PROJECT-STATUS.md` disagree.
+- **`README.md`** leads with current status and a link to `PROJECT-STATUS.md`, and explains what
+  `specs/`, `DECISIONS.md` and `PROGRESS.md` are — so the working record reads as a method rather
+  than as clutter.
+- **`CONTRIBUTING.md`** documents the branch model and CI that actually exist. It had described a
+  `develop` integration branch that does not exist, and a CI running one suite when it runs five.
+- The notification drawer's close control meets the WCAG 2.2 AA target size and carries the body ink
+  rather than a muted one, via a new `--corex-admin-touch-target` token.
+
+### Known open
+
+Listed rather than resolved, with sources, in `PROJECT-STATUS.md`: 24 bounded dependency exceptions
+(6 high severity), three browser specs excluded from a fresh-install run, a one-pixel RTL overflow on
+the access screen, and Arabic typography with layout proof but not type proof. Enabling GitHub Pages
+and marking the remaining CI checks required in branch protection are repository settings, not code.
+
+### Verification
+
+Pest unit **1711** · integration **356** · Jest **431** · Playwright **120** · CodeQL and the
+dependency-advisory gate green · docs site builds 286 pages.
+
+
 ## [0.38.1] — 2026-07-28
 
 A patch release for one defect that is worse than the rest put together, plus three found alongside

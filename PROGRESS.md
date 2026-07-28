@@ -4,6 +4,53 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-29) -- **v0.39.0 released.** Specs 087 and 088 shipped.
+
+| Spec | PR | Merged as |
+|---|---|---|
+| 087 Guides support, notification CTAs, admin controls | #158 | `66ab907` |
+| 088 Public release readiness | #159 | `91ae6b7` |
+
+**Release metadata:** the prepared release baseline is v0.39.0.
+
+**087 fixed five owner-reported items, four of which sat behind code that reads correctly.** The
+Guides add-on had no way to reach a person; the notification call-to-action existed end to end and was
+dark three ways at once; every snooze click answered 422; a Gutenberg `<Button>` with no variant was
+invisible on the dark surface; and the blue focus ring was a specificity loss to
+`.wp-core-ui .button:focus` at (0,3,0) against a CoreX rule inside `:where()` at (0,2,0).
+
+**088 made the repository describable.** `PROJECT-STATUS.md` is the file to hand somebody: every
+module as stable / partial / planned, every gap citing its source. One of the twelve stale repository
+URLs was a live bug — `Update URI` decides where WordPress fetches an update, and four plugin headers
+named an organisation that does not publish releases.
+
+**Cutting this release found one more.** `wp corex version` promised in its own docblock that the
+version-bearing files are stamped together "so none of them drifts from the release tag", while
+`package.json`, `README.md`, `ROADMAP.md` and both status pages were bumped by hand — which is
+precisely how `ROADMAP.md` came to sit three releases behind a correct `README.md`, the thing 088 had
+just finished fixing by hand. All five are stamped now, by patterns anchored to the sentence that
+declares the *current* version, so `ROADMAP.md` §17's "released as v0.38.1" and the whole changelog
+survive untouched. Seven tests cover it, including the historical-reference case.
+
+**Twice in two specs, the thing being fixed reappeared one level up.** 087's browser tests passed
+against the unfixed stylesheet; 088's docs-guard found three false numbers in the documents arguing
+this project's claims are checkable; and the release command that exists to prevent version drift was
+itself the source of the drift. Decisions #201, #204.
+
+**Verified at release:** Pest unit **1711** · integration **356** · Jest **431** · Playwright **120**
+· `php -l`, `lint:js`, `lint:css`, `composer validate` clean · dist builds and verifies · docs site
+builds 286 pages · readiness **PASS**.
+
+**Open, and stated rather than hidden** (all in `PROJECT-STATUS.md` with sources): 24 bounded
+dependency exceptions, 6 of them high severity · three browser specs excluded from a fresh-install
+run · a 1px RTL overflow on `corex-access` · Arabic typography proved for layout, not for type ·
+GitHub Pages not enabled · five of six CI checks not required in branch protection. The last two are
+repository settings, owner action.
+
+**Next:** owner decision. The repository is announceable. The dependency advisories are the one thing
+a security-minded adopter will check first, and they would make a clean spec 089.
+
+---
 ## RESUME HERE (2026-07-28) -- **Spec 088: the repository now tells the truth about itself.**
 
 On `spec/088-public-release-readiness`, after spec 087 merged as PR #158.
