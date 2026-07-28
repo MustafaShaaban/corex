@@ -60,9 +60,37 @@ final class SendEmailListener
                 __('New "%s" form submission', 'corex'),
                 $event->formSlug,
             ),
-            body: NotificationDispatcher::plainTextBody($event->values),
+            // HTML, because every CoreX transport sends `Content-Type: text/html` — the plain-text
+            // form arrived as one collapsed run (issue #138, item 4).
+            body: NotificationDispatcher::htmlBody($event->values),
+            // So the recipient can just hit Reply. The submitter's address was only readable inside
+            // the body, which makes answering a contact form a copy-and-paste job.
+            replyTo: self::submitterAddress($event->values),
         );
 
         return $this->dispatcher->dispatch('forms.' . $event->formSlug . '.submitted', $context, $request);
+    }
+
+    /**
+     * The submitter's address, if the submission carries one that is actually an address.
+     *
+     * Validated rather than trusted: the value reaches a mail header, and a header is exactly where
+     * an unvalidated string should not go. Returns null when there is nothing usable, which leaves
+     * the message with no Reply-To — the behaviour before this, and the right answer for a form
+     * that never asked for an email address.
+     *
+     * @param array<string,mixed> $values
+     */
+    private static function submitterAddress(array $values): ?string
+    {
+        foreach (['email', 'e-mail', 'email_address', 'reply_to'] as $field) {
+            $candidate = $values[$field] ?? null;
+
+            if (is_string($candidate) && is_email($candidate) !== false) {
+                return sanitize_email($candidate);
+            }
+        }
+
+        return null;
     }
 }
