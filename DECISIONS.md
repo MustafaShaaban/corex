@@ -3889,3 +3889,47 @@ detail glyph was legible on a light surface because the defect was dark-only, an
 had to keep working. Claiming nine verified fixes would have been the same category of error as the
 bugs this spec closes.
 Status: Final.
+
+## #202 — One repository URL, and the one that mattered was `Update URI`
+Date: 2026-07-28
+Decision: every repository reference — `composer.json`, `theme/style.css`, four plugin headers and
+two docs pages — now names `github.com/MustafaShaaban/corex`.
+Why: twelve references said `bseit/corex` while `docs-app` and the release links said
+`MustafaShaaban/corex`. Eleven of those are cosmetic. The twelfth is not: `Update URI` is how
+WordPress decides where a plugin's update comes from, so this was a functional defect shipping in
+every installed copy — and it had been there long enough to be invisible.
+Scope: found while auditing the repository for public release, not by a bug report, which is the
+argument for the audit. A URL that appears in a header is not documentation; it is configuration that
+happens to look like documentation.
+Status: Final.
+
+## #203 — A public repository states what it has not built
+Date: 2026-07-28
+Decision: `PROJECT-STATUS.md` at the repository root lists every module as stable, partial or
+planned, names what is missing for anything not stable, and cites the file that records each gap.
+Mirrored into the docs site as the second sidebar entry, above Getting Started.
+Why: the information already existed and was scattered across ROADMAP §15/§17, the
+"open, worth picking up" block in `PROGRESS.md`, 24 entries in
+`.github/dependency-security-policy.json`, and three exclusions in `tests/e2e/playwright.config.js`.
+A developer evaluating this cannot be asked to assemble that, and a project that leaves it assembled
+only in its own head reads as one that has not looked.
+Scope: placed *above* Getting Started deliberately. Somebody deciding whether to adopt a framework
+should meet its limits before its tutorial. The 24 dependency advisories are listed rather than
+resolved — fixing them is behaviour-changing upgrade work under its own policy and review dates, and
+burying that inside a documentation diff is the kind of thing this file exists to prevent.
+Status: Final.
+
+## #204 — The docs guard found three false numbers in the document announcing our accuracy
+Date: 2026-07-28
+Decision: recorded rather than quietly fixed.
+Why: `PROJECT-STATUS.md` and the rewritten `README.md` were written to argue that this project's
+claims are checkable. The docs-guard pass over them found that `specs/` holds 86 directories and not
+40, `DECISIONS.md` holds 201 entries and not 200, and `PROGRESS.md` is 420 KB and not 424 KB — three
+numbers written from a glance rather than from a count, inside the two files whose entire purpose is
+that they can be checked.
+Scope: this is the same failure the last four specs each closed one instance of, arriving one level
+up — in the documentation rather than in the code. It is written down because "we verified the docs"
+is worth exactly as much as the verification, and the verification is what caught it. Also removed: a
+paragraph promising entries the page did not contain, and a source type cited in an introduction and
+never used.
+Status: Final.

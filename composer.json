@@ -3,7 +3,7 @@
     "description": "Corex — a professional, Laravel-inspired WordPress framework (monorepo root).",
     "type": "project",
     "license": "GPL-2.0-or-later",
-    "homepage": "https://github.com/bseit/corex",
+    "homepage": "https://github.com/MustafaShaaban/corex",
     "require": {
         "php": ">=8.3",
         "psr/container": "^2.0",

@@ -1,12 +1,20 @@
 # Corex Product and Engineering Roadmap
 
-This roadmap is the durable, owner-friendly view of where Corex is, what must happen next, and what is intentionally deferred. It tracks milestones and dependencies rather than repeating completed Spec Kit history.
+**Currently released: v0.38.1.** This roadmap is the durable, owner-friendly view of where Corex is,
+what must happen next, and what is intentionally deferred. It tracks milestones and dependencies
+rather than repeating completed Spec Kit history.
+
+> **Looking for what is finished and what is not?** [`PROJECT-STATUS.md`](PROJECT-STATUS.md) is the
+> per-module summary, with every claim traced to the file that records it. This roadmap is the plan
+> behind it. If the two ever disagree, `PROJECT-STATUS.md` is describing the code and this file is
+> describing the intention — fix the one that is wrong rather than reading past it.
 
 ## 1. Roadmap purpose
 
 Corex uses distinct documents for distinct planning needs:
 
 - `ROADMAP.md` is the durable product and engineering roadmap: completed foundation, active milestones, dependencies, priorities, and future boundaries.
+- `PROJECT-STATUS.md` is the public, per-module state: stable / partial / planned, and what is missing.
 - `PROGRESS.md` is the immediate session/resume file: the latest verified state and one recommended next action.
 - `CHANGELOG.md` records actual released and unreleased product changes, not plans.
 - `DECISIONS.md` records important architectural and product decisions and their rationale, not task status.
@@ -39,15 +47,18 @@ Approved design work moves from design inventory to a focused handoff, then to a
 - **Done:** the core framework foundations, stable-client readiness work, Spec 056 dependency/security remediation,
   CI and CodeQL verification, GitHub branch-protection review, and the repository-side design inventory/handoff
   structure.
-- **Active now:** nothing. Spec 069 shipped in **v0.34.0**; specs 070–072 shipped in **v0.35.0**, followed by
-  the **v0.35.1** correction release (all 2026-07-22). No feature spec is open, and the next one is an owner
+- **Active now:** nothing. Specs 069–072 shipped in v0.34.0/v0.35.0; **080–086 shipped in v0.38.0 and
+  v0.38.1** (2026-07-28); **087** merged after it. No feature spec is open, and the next one is an owner
   decision — see §17.
-- **Verification baseline (v0.35.0):** CI gates **four** suites on every pull request — PHP unit, JS, integration
-  against a WordPress it provisions itself, and Playwright in a browser. Before this release only the PHP unit
-  job ran, and only on PRs based on `main`/`develop`, so a stacked PR was never checked at all. Local counts on
-  `main`: unit 1452, JS 306. **CI is the authority for integration and browser runs**: a long-lived dev install
-  accumulates state a freshly provisioned one does not, which is why two Forms integration specs fail locally
-  and pass in CI.
+- **Verification baseline (v0.38.1 + spec 087):** CI gates **four** suites on every pull request — PHP unit,
+  JS, integration against a WordPress it provisions itself, and Playwright in a browser, plus CodeQL. Counts
+  on `main`: **unit 1704, integration 356, JS 431, Playwright 120**. Before v0.35.0 only the PHP unit job ran,
+  and only on PRs based on `main`/`develop`, so a stacked PR was never checked at all.
+  **CI is the authority for integration and browser runs**: a long-lived dev install accumulates state a
+  freshly provisioned one does not, which is why three integration specs fail locally and pass in CI.
+- **Known open, and not hidden:** 24 bounded dependency exceptions, three browser specs excluded from a
+  fresh-install run, a 1px RTL overflow on `corex-access`, and Arabic typography proved for layout but not for
+  type. Each is listed with its source in [`PROJECT-STATUS.md`](PROJECT-STATUS.md).
 - **Blocked:** M3 cannot enter engineering without an approved navigation handoff and the reviewed M2 token
   contract. M4 cannot start until the minimum M2/M3 foundations and selected M5 components are ready.
 - **Not authorized:** roadmap presence does not authorize implementation, Pro work, builders, or bulk spec creation.
@@ -529,6 +540,25 @@ Create and implement one reviewed spec at a time:
     comments describing one and no code. A protected file is now protected by a capability check rather
     than a deny file. Decisions #192–#194.
     Source: `specs/081-forms-files-end-to-end/`.
+21. **Spec 086 - Consumer validation against a real fork** — done, merged via PR **#156** (`211e710`),
+    released as **v0.38.1**. Standing up a site plugin that followed the published documentation found four
+    defects, none visible from the code — including one where a site plugin following our own guides could
+    take the whole site down, because CoreX and the starter this framework *generates* both boot on
+    `plugins_loaded` at priority 10 and `Boot::app()` throws rather than returning null. Decisions #195–#196.
+    No durable spec directory; the branch identifier is retained so 086 is not reused.
+22. **Spec 087 - Reaching a human, notifications that lead somewhere, controls you can see** — done, merged
+    via PR **#158**. Five owner-reported items, four of which sat behind code that reads correctly: the Guides
+    add-on had no way to contact anybody; the notification call-to-action existed end to end and was dark three
+    ways at once (the server sent `label_key` while the client read `label`, the documented `ability` gate was
+    never enforced, and seven of eight producers set no action at all); every snooze click answered 422; a
+    `<Button>` with no variant kept Gutenberg's ink on the dark surface; and the blue focus ring was a
+    specificity loss to `.wp-core-ui .button:focus` at (0,3,0) against a CoreX rule inside `:where()` at
+    (0,2,0). Decisions #197–#201. Source: `specs/087-guides-support-and-admin-controls/`.
+23. **Spec 088 - Public release readiness** — this one. One canonical repository URL (the plugin `Update URI`
+    headers had been pointing update checks at an organisation that does not publish releases — a functional
+    defect shipping in every installed copy), a roadmap that matches the released version, and
+    `PROJECT-STATUS.md`: every module with a status, and every gap traced to the file that records it.
+    Source: `specs/088-public-release-readiness/`.
 
 ### Candidates for a later spec — owner decision
 
@@ -554,5 +584,5 @@ Nothing is authorized by appearing here (§16). Listed so the choice is informed
 - **M3/M4 product tracks** (§6–§7), which remain the substantive product direction and are the only items here
   that would be a *feature* spec rather than remediation.
 
-Spec number 056 remains unavailable. Specs 066 and 067 are historical branch/decision identifiers without durable
+Spec number 056 remains unavailable. Specs 066, 067 and **086** are historical branch/decision identifiers without durable
 feature directories; do not reuse them.

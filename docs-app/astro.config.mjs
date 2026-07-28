@@ -40,6 +40,9 @@ export default defineConfig( {
 			defaultLocale: 'en',
 			sidebar: [
 				{ label: 'Introduction', slug: 'index' },
+				// Second, deliberately: somebody evaluating this framework should meet what it does
+				// not do before they meet the getting-started path (spec 088).
+				{ label: 'Project status', slug: 'project-status' },
 				{
 					label: 'Getting Started',
 					items: [
