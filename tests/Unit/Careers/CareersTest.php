@@ -16,6 +16,8 @@ use Corex\Careers\Block\JobProvider;
 use Corex\Careers\Block\JobsRenderer;
 use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
+use Corex\Security\Upload\AttachmentResult;
+use Corex\Security\Upload\AttachmentStorage;
 use Corex\Security\Upload\UploadValidator;
 
 final class ArrayApplicationStore implements ApplicationStore
@@ -49,11 +51,43 @@ final class FakeCareersMailer implements Mailer
     }
 }
 
-function applicationService(ArrayApplicationStore $store, FakeCareersMailer $mailer): ApplicationService
+/**
+ * A store that records what it was asked to keep, and hands back an id.
+ *
+ * The real one moves bytes and talks to WordPress; what these tests are about is whether the
+ * service records the id it was given rather than the `0` it used to write (#138 item 8).
+ */
+final class RecordingAttachmentStore implements AttachmentStorage
 {
+    /** @var list<array<string,mixed>> */
+    public array $stored = [];
+
+    public function __construct(private readonly int $id = 4242)
+    {
+    }
+
+    public function store(array $file, string $context = ''): AttachmentResult
+    {
+        $this->stored[] = ['file' => $file, 'context' => $context];
+
+        return AttachmentResult::stored($this->id);
+    }
+
+    public function forget(int $attachmentId): bool
+    {
+        return true;
+    }
+}
+
+function applicationService(
+    ArrayApplicationStore $store,
+    FakeCareersMailer $mailer,
+    ?AttachmentStorage $attachments = null,
+): ApplicationService {
     return new ApplicationService(
         $store,
         new UploadValidator(['application/pdf' => ['pdf']], 2 * 1024 * 1024),
+        $attachments ?? new RecordingAttachmentStore(),
         $mailer,
         'hr@example.com',
     );
@@ -89,6 +123,57 @@ it('stores a valid application and notifies HR + the applicant', function () {
         ->and($mailer->sent)->toHaveCount(2)
         ->and($mailer->sent[0]->to)->toBe(['hr@example.com'])
         ->and($mailer->sent[1]->to)->toBe(['m@example.com']);
+});
+
+/**
+ * The defect itself (#138 item 8). `apply()` used to take a fourth `int $cvAttachmentId = 0`
+ * parameter that no caller supplied, so every application ever submitted recorded `0` — a CV that
+ * was validated and then dropped on the floor.
+ *
+ * The assertion is `not->toBe(0)` as well as the positive one, because `0` is what the bug wrote
+ * and what any future signature change would silently write again.
+ */
+it('records the attachment id the store returned, not zero', function () {
+    $store       = new ArrayApplicationStore();
+    $mailer      = new FakeCareersMailer();
+    $attachments = new RecordingAttachmentStore(4242);
+
+    $result = applicationService($store, $mailer, $attachments)
+        ->apply(7, ['name' => 'Mustafa', 'email' => 'm@example.com', 'cover_letter' => 'Hi'], validCv());
+
+    expect($store->rows[$result->id]['cv_attachment'])->toBe(4242)
+        ->and($store->rows[$result->id]['cv_attachment'])->not->toBe(0)
+        ->and($attachments->stored)->toHaveCount(1)
+        ->and($attachments->stored[0]['context'])->toBe('careers-cv');
+});
+
+/**
+ * A stored file with no row pointing at it is personal data nobody can find to delete, so the row
+ * is only written once the file is safely down.
+ */
+it('writes no application row when the CV could not be stored', function () {
+    $store  = new ArrayApplicationStore();
+    $mailer = new FakeCareersMailer();
+
+    $refusing = new class () implements AttachmentStorage {
+        public function store(array $file, string $context = ''): AttachmentResult
+        {
+            return AttachmentResult::refused('move_failed');
+        }
+
+        public function forget(int $attachmentId): bool
+        {
+            return true;
+        }
+    };
+
+    $result = applicationService($store, $mailer, $refusing)
+        ->apply(7, ['name' => 'Mustafa', 'email' => 'm@example.com', 'cover_letter' => 'Hi'], validCv());
+
+    expect($result->stored)->toBeFalse()
+        ->and($result->reason)->toBe('cv_move_failed')
+        ->and($store->rows)->toBe([])
+        ->and($mailer->sent)->toBe([]);
 });
 
 it('rejects an invalid field or a bad CV with zero side effects', function () {

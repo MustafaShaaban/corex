@@ -14,8 +14,16 @@ defined('ABSPATH') || exit;
  * Validates an uploaded file descriptor before it is stored (spec FR-001, FR-002):
  * no PHP upload error, non-empty, within the size cap, an allowed MIME type, and an
  * extension that matches that type. Pure — it operates on the descriptor only, never
- * a caller-supplied path (path-traversal safe). The boundary store (wp_handle_upload)
- * re-checks the real MIME as defense-in-depth.
+ * a caller-supplied path (path-traversal safe).
+ *
+ * **The MIME type checked here is the one the browser declared, and anybody can set it.** That is
+ * worth checking — it rejects honest mistakes cheaply, before anything touches disk — but it is not
+ * the check that decides. {@see AttachmentStore} reads the file's actual bytes through
+ * `wp_check_filetype_and_ext()` and refuses a file whose content disagrees with its name.
+ *
+ * Until spec 081 this docblock claimed that re-check happened at "the boundary store
+ * (wp_handle_upload)", and no such store existed anywhere in the framework — so the sentence
+ * describing the defence was the only place the defence lived.
  */
 final class UploadValidator
 {
