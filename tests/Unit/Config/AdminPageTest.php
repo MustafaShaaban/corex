@@ -9,7 +9,6 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
-use Corex\Access\CorexAbility;
 use Corex\Admin\AdminPage;
 
 beforeEach(function () {
@@ -19,6 +18,7 @@ beforeEach(function () {
     Functions\when('esc_html')->returnArg();
     Functions\when('esc_html__')->returnArg();
     Functions\when('esc_url')->returnArg();
+    Functions\when('esc_textarea')->returnArg();
     Functions\when('admin_url')->alias(static fn (string $path = ''): string => 'http://example.test/wp-admin/' . $path);
     Functions\when('rest_url')->alias(static fn (string $path = ''): string => 'http://example.test/wp-json/' . $path);
     Functions\when('wp_create_nonce')->alias(static fn (string $action): string => 'nonce-' . $action);
@@ -101,9 +101,18 @@ it('renders permission denied as the designed denied surface and publishes the a
         ->and($html)->toContain('Back to Dashboard')
         ->and($html)->toContain('Request access')
         ->and($html)->toContain('method="post"')
-        ->and($html)->toContain('http://example.test/wp-json/corex/v1/access/requests')
-        ->and($html)->toContain('name="_wpnonce" value="nonce-wp_rest"')
-        ->and($html)->toContain('name="ability" value="' . CorexAbility::MANAGE_SETTINGS . '"')
+        // Spec 079 reversed this assertion. It used to require the form to post to
+        // `rest_url('corex/v1/access/requests')`, which is precisely the defect: a browser form
+        // whose action is a REST endpoint navigates to a JSON document when submitted. The test
+        // held the defect in place, so it is worth saying plainly — a test can be the reason a bug
+        // survives review.
+        ->and($html)->toContain('http://example.test/wp-admin/admin-post.php')
+        ->and($html)->not->toContain('wp-json')
+        ->and($html)->toContain('name="corex_access_request_nonce" value="nonce-corex_access_request"')
+        // The section, not the ability: the server resolves what the screen requires, so a posted
+        // ability cannot ask for something the screen does not need.
+        ->and($html)->toContain('name="corex_section" value="settings"')
+        ->and($html)->not->toContain('name="ability"')
         ->and($html)->toContain('name="reason"')
         ->and($html)->not->toContain('disabled')
         ->and($html)->not->toContain('aria-disabled="true"')

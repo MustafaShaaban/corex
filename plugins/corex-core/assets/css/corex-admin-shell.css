@@ -1456,6 +1456,57 @@ body.corex-admin-screen .corex-admin__shell {
 	letter-spacing: var(--corex-admin-letter-wide);
 }
 
+/* Spec 079 — the three states the request area can be in besides
+   the plain form. "Sent" replaces the form entirely: offering
+   someone a second copy of a form they have already submitted is
+   how duplicate requests get made. */
+.corex-admin .corex-denied__sent {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	inline-size: min(100%, 34rem);
+	padding: var(--corex-admin-space-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-success);
+	border-radius: var(--corex-admin-radius-md);
+	background: var(--corex-admin-surface);
+	text-align: start;
+}
+
+.corex-admin .corex-denied__sent-title {
+	margin: 0;
+	color: var(--corex-admin-success);
+	font-weight: 600;
+}
+
+.corex-admin .corex-denied__sent-detail {
+	margin: 0;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-denied__error {
+	inline-size: min(100%, 34rem);
+	margin: 0;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-md);
+	background: var(--corex-admin-surface);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	text-align: start;
+}
+
+.corex-admin .corex-denied__field-error {
+	margin: 0;
+	color: var(--corex-admin-warning);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-denied__request [aria-invalid="true"] {
+	border-color: var(--corex-admin-warning);
+}
+
 /* Toast — transient confirmation (design: Blocks & Components, C / admin).
    Fixed to the block-end edge, token-only, logical properties (RTL-correct).
    Carries role="status" in markup so assistive tech announces it. Slides in

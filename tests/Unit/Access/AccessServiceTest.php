@@ -82,6 +82,22 @@ beforeEach(function () {
         {
             return array_values(array_filter($this->rows, static fn (array $row): bool => $row['state'] === 'pending'));
         }
+
+        public function pendingFor(int $requesterId, ?string $abilityKey, ?string $areaKey): ?array
+        {
+            foreach (array_reverse($this->rows, true) as $row) {
+                if (
+                    $row['state'] === 'pending'
+                    && $row['requesterId'] === $requesterId
+                    && $row['abilityKey'] === $abilityKey
+                    && $row['areaKey'] === $areaKey
+                ) {
+                    return $row;
+                }
+            }
+
+            return null;
+        }
     };
 
     $this->users = new class implements AccessUserDirectory {

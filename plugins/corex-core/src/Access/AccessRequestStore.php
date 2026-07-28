@@ -36,4 +36,15 @@ interface AccessRequestStore
 
     /** @return list<array<string,mixed>> */
     public function pending(): array;
+
+    /**
+     * The one open request this requester already has for this ability or area, if any.
+     *
+     * Exactly one of $abilityKey / $areaKey is non-null, matching what create() accepts — asking
+     * for "any pending request by this user" would suppress a legitimate second request for a
+     * different screen, which is a worse failure than showing the form twice.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function pendingFor(int $requesterId, ?string $abilityKey, ?string $areaKey): ?array;
 }

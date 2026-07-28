@@ -3420,3 +3420,66 @@ object cache and it is not safe to; CoreX *cannot* purge a CDN where doing so wo
 safe. One flag would produce a control either missing when it should be present or dangerous when it
 looks routine.
 Status: Final.
+
+## #174 — A browser form never posts to a REST route, and the REST route never becomes a page
+Date: 2026-07-28
+Decision: The denied screen's access-request form posts to a dedicated `admin_post` endpoint that
+calls the same `AccessService::requestAccess()` the REST route calls, then redirects. The REST route
+is unchanged and still answers JSON. Nothing in CoreX inspects `Accept` to choose between HTML and
+JSON, and no global `wp_die_handler` filter is installed.
+Why: the form's action was `rest_url('corex/v1/access/requests')`, so submitting navigated the
+browser to a JSON document — and the request *succeeded*, so a person asking for help was shown an
+operation envelope with no way to know anyone would see it. The tempting fix is content negotiation
+on the existing route: it makes the symptom disappear and silently changes what every API consumer
+receives. Two doors onto one service cannot drift; one door that behaves differently per caller can.
+Scope: the posted field is the **section**, not the ability — the browser says which screen refused
+it and the server decides what that screen requires, so nobody can request an arbitrary ability from
+an arbitrary screen and have it look legitimate in the queue.
+Status: Final.
+
+## #175 — The confirmation is read from stored state, not carried in the redirect
+Date: 2026-07-28
+Decision: After a successful request the redirect carries no arguments at all. The denied surface
+asks the database whether this user has an open request and renders the confirmation from that. Only
+the two failure paths use a flash, stored in a short-lived, single-use, user-bound transient — never
+a query string.
+Why: it makes refresh-safety, back-button safety, duplicate suppression and forgery resistance
+properties of the data model rather than of flash-message discipline. A `?sent=1` can be typed by
+anyone, is lost on a bookmark, and says nothing tomorrow. The reason text stays out of the query
+string because it is the requester's own words, and query strings are logged by the web server, kept
+in browser history and forwarded in `Referer`.
+Status: Final.
+
+## #176 — Not found is not denied
+Date: 2026-07-28
+Decision: `admin_page_access_denied` fires for two different causes, and CoreX distinguishes them
+using the same globals in the same order as WordPress's own `user_can_access_admin_page()`. A
+registered CoreX screen the viewer may not open answers 403 with the designed denied surface; a
+`corex-` address with no screen behind it answers 404, with no capability explanation and no request
+form.
+Why: matching the prefix alone told an administrator, at 403, that their role lacked
+`manage_options` — false, wrong status, and it offered them a form to request access to a screen
+with no ability behind it. Once the request workflow worked, that form would have created a real,
+auditable request nobody could ever grant.
+Scope: `$_registered_pages` alone is not the check. `add_submenu_page()` records a page the viewer
+may not open in `$_wp_submenu_nopriv` and returns before touching `$_registered_pages`, so
+registration is not viewer-independent — reading only that global reports every real CoreX screen as
+missing to exactly the people the gate exists for.
+Status: Final.
+
+## #177 — A workflow is not shipped until both ends of it work
+Date: 2026-07-28
+Decision: Pending access requests are listed by the REST route and the Access screen from
+`AccessRequestStore::pending()`, rendered with requester, ability, date and reason, and decided with
+Approve and Deny. The Access Overview names how many people are waiting and links to the panel, and
+renders nothing when nobody is.
+Why: the route returned a hardcoded `[]`, the screen localized a hardcoded `[]`, and `pending()` had
+no production caller — so a request was created, audited and notified, and then no surface in the
+product ever read the table, while the denied screen told the requester an administrator would
+review it. Fixing only the requester's side would have delivered people into that silence more
+convincingly than before, because the confirmation would have looked right.
+Scope: found by trying to write a test fixture, not by reading the code — the browser spec needed to
+clear pending requests between runs and the only route that could do it returns nothing by
+construction. A test that needs a capability the product claims to have is a good way to find out it
+does not.
+Status: Final.

@@ -1,5 +1,6 @@
 import { useReducer } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import AccessRequestsPanel from './AccessRequestsPanel.js';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import {
 	accessReducer,
@@ -126,20 +127,7 @@ export default function AccessWorkspace( { config } ) {
 				</table>
 			</div>
 			<div className="corex-access__panels">
-				<section>
-					<h3>{ __( 'Access requests', 'corex' ) }</h3>
-					<p className="corex-access__muted">
-						{ __(
-							'Pending request workflow is backed by the Access REST routes.',
-							'corex'
-						) }
-					</p>
-					<ul>
-						{ ( config?.requests || [] ).map( ( request ) => (
-							<li key={ request.id }>{ request.reason }</li>
-						) ) }
-					</ul>
-				</section>
+				<AccessRequestsPanel config={ config } />
 				<section>
 					<h3>{ __( 'Audit', 'corex' ) }</h3>
 					<p className="corex-access__muted">

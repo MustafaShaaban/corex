@@ -437,3 +437,61 @@
 	padding: 0;
 	list-style: none;
 }
+
+/* Spec 079 — a pending request an administrator can actually act on.
+   The panel used to render a bare list of reasons with nothing to
+   press, fed by a hardcoded empty array. */
+.corex-admin .corex-access__request {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	padding: var(--corex-admin-space-sm);
+	border:
+		var(--corex-admin-border-width) solid
+		var(--corex-admin-border-soft);
+	border-radius: var(--corex-admin-radius-sm);
+	background: var(--corex-admin-surface-raised);
+}
+
+.corex-admin .corex-access__request-who {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-access__request-when {
+	margin: 0;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-xs);
+}
+
+.corex-admin .corex-access__request-why {
+	margin: 0;
+	color: var(--corex-admin-text-subtle);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-access__request-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-2xs);
+	margin-block-start: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-access__error {
+	margin: 0 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-warning);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-access__waiting {
+	display: grid;
+	justify-items: start;
+	gap: var(--corex-admin-space-2xs);
+	margin-block-end: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-access__waiting-title {
+	margin: 0;
+	font-size: var(--corex-admin-font-md);
+}

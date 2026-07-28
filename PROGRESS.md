@@ -4,6 +4,64 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **Spec 079 (Admin Errors & Access Requests) implemented on `spec/079-admin-errors-access-request`.**
+
+078 merged as `7fa8215` — on GitHub and Azure. Branch deleted.
+
+**The defect 079 started from, reproduced as a real subscriber before any code was written.** The
+denied screen's "Request access" form had `action="…/wp-json/corex/v1/access/requests"`, so pressing
+the button navigated the browser to a JSON document showing `operation_id`, `state`, `affected_ids`
+and `audit_event_id`. Nothing was broken: the controller returned JSON because it is a REST
+endpoint, and the browser rendered what it was given. **And the request succeeded** — so this was a
+success displayed as an operation envelope, at the moment somebody was asking for help.
+
+**Two worse things were found by checking assumptions rather than trusting them.**
+
+1. **A CoreX page that does not exist told an administrator they lacked access.** `AccessDeniedGate`
+   matched the `corex-` prefix alone, so `?page=corex-nonexistent` answered **403** with *"your role
+   doesn't include the `manage_options` capability"* — false, wrong status, and it offered a form to
+   request access to a screen with no ability behind it, which the 079 fix would have made succeed.
+   Now 404, no capability sentence, no form.
+
+2. **Access requests went into a table no surface read.** `AccessRequestStore::pending()` had **no
+   production caller**: the REST list route returned a hardcoded `[]`, the Access screen localized a
+   hardcoded `[]`, and the panel printed a sentence about the plumbing with no controls — while the
+   denied screen told the requester an administrator would review it. Found while writing a browser
+   test's cleanup, which could not be written because the route it needed returns nothing by
+   construction. `AccessService::decideRequest()` was already complete; only the surface was missing.
+   This is the more serious half: the first defect made a successful request *look* like a failure;
+   this one made it *be* one.
+
+**Four findings worth carrying forward:**
+
+1. **A test was holding the defect in place.** `AdminPageTest` asserted the form's action *must* be
+   `rest_url('corex/v1/access/requests')`. Fixing the bug failed the suite. A test can be the reason
+   a defect survives review, and this one was.
+2. **One vantage point is not verification.** The first not-found check read `$_registered_pages` and
+   passed three of four cases — it reported every real CoreX screen as missing to exactly the people
+   the gate exists for, because `add_submenu_page()` records a page the viewer may not open in
+   `$_wp_submenu_nopriv` and returns *before* touching `$_registered_pages`. The matrix is
+   {administrator, subscriber} × {real page, fake page}.
+3. **`$wpdb->prepare()` casts a null argument to `''`.** The duplicate guard could not use a `%s`
+   placeholder for the unused half of the ability/area pair: an area request would never have matched
+   itself and the guard would have passed every time, silently.
+4. **Stylelint accepts any `var()`.** `--corex-admin-space-3xs` does not exist; it lints clean and
+   renders as nothing. Caught by listing the defined tokens, not by the linter.
+
+**Verified:** Pest unit 1593/1593 · integration 325/326 (the one failure is the pre-existing,
+data-dependent `ProductActivityCoverageTest`) · Jest 381/381 · Playwright **101/101** · `lint:css`
+and `lint:js` clean · token inventory regenerated. Acceptance matrix in
+`specs/079-admin-errors-access-request/evidence/after/acceptance.md` — every surface this spec adds
+measures 0 horizontal overflow at 375px RTL.
+
+**Carried forward, not folded in:** `corex-access` overflows the document by 1px in RTL at 375px on
+every tab, including Overview. Measured with this branch stashed, so it predates 079 — the same class
+the CI-lint/RTL branch cleared for `corex-addons` and `corex-settings`, still outstanding on a third
+screen.
+
+**Next:** open the 079 PR, merge on green, then the release (v0.37.0) covering specs 076–079.
+
+---
 ## RESUME HERE (2026-07-28) -- **Spec 078 (Cache Architecture) implemented on `spec/078-cache-architecture`.**
 
 076 merged as `3765cf2`, 077 as `f32de72` — both on GitHub and Azure.
