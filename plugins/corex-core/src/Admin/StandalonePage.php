@@ -131,10 +131,30 @@ final class StandalonePage
         return $tokens . "\n" . $this->read('css/corex-admin-standalone.css');
     }
 
+    /**
+     * A stylesheet this document cannot be read without.
+     *
+     * The empty-string fallback is kept — a 403 that renders unstyled is still better than a 403
+     * that fatals — but it is no longer silent. Every consumer of this class is a page shown when
+     * something has already gone wrong, and the failure it produces is a grey canvas with a white
+     * box on it: indistinguishable, to the person reporting it, from having no error page at all.
+     * Spec 083 exists because that description went unexamined for a release, so the one way this
+     * class can still produce it now says so where an operator will find it.
+     */
     private function read(string $relative): string
     {
         $file = $this->assetsPath . '/' . ltrim($relative, '/');
 
-        return is_file($file) ? (string) file_get_contents($file) : '';
+        if (! is_file($file)) {
+            // Written directly rather than through BootLogger, which needs the container: this class
+            // is deliberately constructible without one (see fromCore()), because the pages it
+            // renders are the ones served when the normal lifecycle did not complete. The line
+            // matches BootLogger's own format so both land the same way in the debug log.
+            error_log(sprintf('[Corex] WARNING: standalone admin stylesheet missing: %s', $file));
+
+            return '';
+        }
+
+        return (string) file_get_contents($file);
     }
 }

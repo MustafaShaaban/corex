@@ -97,7 +97,13 @@ it('renders permission denied as the designed denied surface and publishes the a
     expect($html)->toContain('corex-admin--settings')
         ->and($html)->toContain('Access denied')
         ->and($html)->toContain('corex-denied')
-        ->and($html)->toContain('manage_options')
+        // Spec 083 reversed this one too, for the same reason spec 079 reversed the action below.
+        // It required the copy to name `manage_options` — which the surface did on every screen,
+        // and which is false on `corex-notifications`, `corex-submissions` and `corex-data-models`.
+        // The assertion was holding a false statement in place at HTTP 403. What the page can know
+        // for certain is the ability a request from it asks for, so that is what it now names.
+        ->and($html)->toContain('corex_manage_settings')
+        ->and($html)->not->toContain('manage_options')
         ->and($html)->toContain('Back to Dashboard')
         ->and($html)->toContain('Request access')
         ->and($html)->toContain('method="post"')

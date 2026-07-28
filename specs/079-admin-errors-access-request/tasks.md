@@ -72,28 +72,42 @@ written, because the route it needed returns an empty array by construction.
 - [x] **T029** Browser coverage of the whole loop: request → administrator sees it → deny → the
       requester's screen offers the form again.
 
+> **Phases 4b–7 were left open when this spec shipped, and the spec was closed anyway.** Its title
+> claims a unified admin error experience; what merged was the access-request fix (US1) plus T042.
+> The consequence went unnoticed for a release, because the one browser test touching a refusal
+> visited the one URL that could not fail. **Spec 083 completes them** — the boxes below are ticked
+> where 083 did the work, and say so. Nothing here was done by 079.
+
 ## Phase 4 — The boundary holds (US3, P1)
 
 Written before Phase 5, because Phase 5 is what would break it.
 
 - [x] **T030** Integration: `POST /corex/v1/access/requests` still answers JSON, unchanged status,
       for anonymous / insufficient / valid callers.
-- [ ] **T031** Integration: no CoreX code path converts an AJAX, cron, WP-CLI or feed response to HTML.
-- [ ] **T032** A test that fails if a global `wp_die_handler` filter is ever added — the specific
-      shortcut this plan refused.
+- [x] **T031** *(spec 083)* Integration: no CoreX code path converts an AJAX, cron, WP-CLI or feed
+      response to HTML. → `tests/Integration/Admin/AdminDieBoundaryTest.php`.
+- [x] **T032** *(spec 083, inverted)* The filter this task existed to forbid is now installed
+      deliberately, and DECISIONS #187 records why with the measurement that changed the answer.
+      The test that replaces it asserts the boundary that actually matters: **no CoreX subscriber on
+      any of the five machine `wp_die_*_handler` filters.**
 
 ## Phase 5 — One error model (US2, P1)
 
-- [ ] **T040** `AdminError`, `AdminErrorKind`, `AdminErrorPresenter`.
-- [ ] **T041** Convert the four existing hand-written error call sites. Separate commit from the fix.
+- [x] **T040** *(spec 083)* `AdminError`, `AdminErrorKind`, `AdminErrorPresenter`, plus
+      `AdminErrorClassifier` and `AdminDieHandler`.
+- [x] **T041** *(spec 083, partly)* `AccessDeniedGate`'s denial renders through the presenter. The
+      other standalone call sites still use `StandalonePage::notice()`, which is the shared
+      short-notice helper rather than duplicated assembly — see the note on `notFound()`.
 - [x] **T042** Cover the gap T003 finds, if it is real.
-- [ ] **T043** Unit: no error presentation emits a path, exception, SQL, nonce or internal id.
+- [x] **T043** *(spec 083)* The presenter emits only CoreX copy plus an allow-listed quotation of
+      the caller's message; `tests/Unit/Admin/AdminErrorTest.php` covers the model.
 
 ## Phase 6 — React failure states (US4, P2)
 
-- [ ] **T050** `CorexErrorState` at field / action / panel / page scale.
-- [ ] **T051** Wire the existing React screens' failure paths to it.
-- [ ] **T052** Jest coverage for each scale.
+- [x] **T050** *(spec 083)* `CorexErrorState` at field / action / panel / page scale.
+- [ ] **T051** Wire the existing React screens' failure paths to it. **Still open** — the component
+      exists and is tested; converting each screen's own failure path is separate work.
+- [x] **T052** *(spec 083)* `plugins/corex-config/src/admin/components/__tests__/corexErrorState.test.js`.
 
 ## Phase 7 — Acceptance, evidence, close
 

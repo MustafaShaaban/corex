@@ -656,6 +656,17 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Access\AccessDeniedGate::class);
         $this->container->singleton(\Corex\Config\Access\AccessScreen::class);
 
+        // One admin error model for every refusal (spec 083). StandalonePage takes its asset paths
+        // from the core plugin file rather than autowiring two strings, so it is bound explicitly
+        // and everything downstream of it resolves on its own.
+        $this->container->singleton(
+            \Corex\Admin\StandalonePage::class,
+            static fn (): \Corex\Admin\StandalonePage => \Corex\Admin\StandalonePage::fromCore(),
+        );
+        $this->container->singleton(\Corex\Admin\Errors\AdminErrorClassifier::class);
+        $this->container->singleton(\Corex\Admin\Errors\AdminErrorPresenter::class);
+        $this->container->singleton(\Corex\Admin\Errors\AdminDieHandler::class);
+
         // Blog Pro analytics (spec 068): consented first-party events persist only pseudonymous
         // visitor hashes and aggregate through this injected store.
         $this->container->singleton(ReadingEventTable::class);
@@ -781,6 +792,10 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(OperationsSecurityScreen::class)->register();
         $this->container->make(\Corex\Config\Access\AccessAuditLog::class)->register();
         $this->container->make(\Corex\Config\Access\AccessDeniedGate::class)->register();
+        // Registered after the gate so that, on a CoreX page, the gate's richer surface — which has
+        // the access-request form in it — is the one that answers. Everywhere else this catches the
+        // refusal that used to reach WordPress's white box (spec 083).
+        $this->container->make(\Corex\Admin\Errors\AdminDieHandler::class)->register();
         $this->container->make(\Corex\Config\Access\AccessScreen::class)->register();
         $this->container->make(\Corex\Config\Blog\BlogProScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();

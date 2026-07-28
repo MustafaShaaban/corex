@@ -4,6 +4,75 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **Spec 083 on `spec/083-admin-error-surface`: every admin refusal is now a CoreX page.**
+
+Raised by the owner from a screenshot of WordPress's white box, with the note that *"the admin error
+pages still as it nothing changed"*. They were right, and the reason is worth recording plainly.
+
+**Spec 079 shipped under the title "Unified Admin Error and Access Request Experience" with the
+unifying half unbuilt.** Its own `tasks.md` had Phases 5, 6 and 7 unticked; `AdminError`,
+`AdminErrorPresenter` and `CorexErrorState` did not exist on disk. What merged was the
+access-request fix. The spec was closed anyway, and nothing caught it for a release.
+
+**Nothing caught it because the only browser test touching a refusal visited
+`admin.php?page=corex-forms` — the one URL `AccessDeniedGate` covers.** The single test guarding the
+feature was the single test that could not fail.
+
+**Measured before writing anything** (`specs/083-admin-error-surface/evidence/before/refusal-matrix.md`),
+signed in as a real subscriber: **nine of eleven admin addresses rendered WordPress's white box**,
+including `edit.php?post_type=corex_job` — a screen CoreX itself registers, which carries no `page`
+parameter and so could never match the gate's `corex-` prefix.
+
+**The reproduction also invalidated the test the spec inherited.** 079's SC-005 asserts that the
+sentence *"Sorry, you are not allowed to access this page."* is absent. WordPress has several
+refusal sentences — `users.php` says *"…not allowed to list users."*, `options.php` says *"…to manage
+options for this site."* — and all of them are translated. **That assertion already passed on
+`users.php`, and would pass site-wide in Arabic, with every refusal still a white box.** The
+replacement asserts positively that the response *is* a CoreX document, in both directions: every
+surface is opened by somebody who must be refused and by somebody who must not.
+
+**The fix is one filter, and the boundary is core's rather than ours.** `wp_die()` picks its handler
+by request type *before* any filter runs, so filtering `wp_die_handler` alone cannot reach a machine
+caller — REST, AJAX, JSONP, XML-RPC and feeds are structurally unreachable, not carefully avoided.
+This amends DECISIONS #174 (**#187**), whose subject was REST content negotiation, not presentation.
+
+**Three things found on the way that were not the reported bug:**
+
+- **The denial copy named `manage_options` on every screen** — false on `corex-notifications`,
+  `corex-submissions`, `corex-data-models` and every option page. **A unit test asserted the string
+  was present**, so the assertion was holding the falsehood in place. Third time in this project a
+  test has been the reason a defect survived. It now names the ability a request actually asks for,
+  because `add_submenu_page()` discards the capability and the true value is genuinely unavailable
+  (**#188**).
+- **`StandalonePage::read()` returned `''` for a missing stylesheet** — a second, silent route to
+  the same white box the owner reported.
+- **Classification cannot read the message.** Status code and upstream hook only; a translated
+  string is not a fact about what happened.
+
+**Two edge cases that would have broken things:** the logout confirmation reaches `wp_die()` at 403
+but is a prompt, not a refusal (guarded by the `check_admin_referer` marker *and* `is_admin()`); and
+`users.php` embeds its own `<h1>` in the message, so `wp_kses_post()` produced a page whose loudest
+heading belonged to WordPress — the quotation is allow-listed to inline tags plus `<a>`, `<p>`.
+
+**Verified:** Pest unit **1616 passed**, integration **339/340**, Jest **388**, Playwright **107**,
+`lint:css` and `lint:js` clean, token inventory regenerated. The one integration failure is the
+pre-existing data-dependent `ProductActivityCoverageTest`. Guards run: `wp-guard`,
+`clean-code-guard`, `test-guard` — the last two changed the code (one dead `card()` renderer deleted
+for having no caller, `AdminError`'s three seven-argument constructions collapsed to one, and the
+browser file's four sign-ins reduced to two after login protection locked the account out mid-suite).
+
+**Local gotcha worth knowing:** `composer test` at PHP's default `memory_limit=128M` dies partway
+through with exit 255 and **no summary line**, which reads like a hang, not a failure. Run
+`php -d memory_limit=1G ./vendor/bin/pest`. This predates spec 083 — confirmed by stashing.
+
+**Still open, deliberately:** 079's **T051** (wiring each existing React screen's failure path to
+`CorexErrorState` — the component and its tests exist; converting the screens is separate work) and
+**T060** (the RTL / 375px / 200%-zoom / light-dark acceptance matrix).
+
+**Next:** PR for 083, then the guides add-on (an extendable `addons/corex-guides`, superseding spec
+082's docs-only manual), then spec 081 to close issue #138.
+
+---
 ## RESUME HERE (2026-07-28) -- **Repository cleaned to zero; two Perego findings fixed.**
 
 `main` is the only branch on **both** remotes. **0 open PRs.** Issue #142 closed; #138 open for
