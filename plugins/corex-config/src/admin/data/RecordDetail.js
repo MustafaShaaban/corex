@@ -1,5 +1,6 @@
 import { Button, Modal } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import FieldValue from '../components/FieldValue.js';
 import recordRows from './recordRows.js';
 
 export default function RecordDetail( { explorer, record, close, edit } ) {
@@ -19,7 +20,9 @@ export default function RecordDetail( { explorer, record, close, edit } ) {
 					{ rows.map( ( row ) => (
 						<div key={ row.key } className="corex-data__field">
 							<dt>{ row.label }</dt>
-							<dd>{ row.value }</dd>
+							<dd>
+								<FieldValue value={ row.value } />
+							</dd>
 						</div>
 					) ) }
 				</dl>

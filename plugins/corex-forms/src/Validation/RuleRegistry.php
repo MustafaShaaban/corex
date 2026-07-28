@@ -15,6 +15,7 @@ use Corex\Forms\Validation\Rules\Max;
 use Corex\Forms\Validation\Rules\Min;
 use Corex\Forms\Validation\Rules\Numeric;
 use Corex\Forms\Validation\Rules\Pattern;
+use Corex\Forms\Validation\Rules\Phone;
 use Corex\Forms\Validation\Rules\Required;
 use Corex\Forms\Validation\Rules\Url;
 use InvalidArgumentException;
@@ -42,6 +43,7 @@ final class RuleRegistry
             'min_length' => new Min(),
             'numeric'  => new Numeric(),
             'url'      => new Url(),
+            'phone'    => new Phone(),
             'pattern'  => new Pattern(),
         ];
     }

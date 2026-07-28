@@ -96,9 +96,10 @@ final readonly class FlowBlockRenderer implements BlockRenderer
 
         return sprintf(
             '<section class="corex-flow corex-flow--%1$s" data-corex-flow-name="%2$s">%3$s%4$s'
-            . '<form class="corex-form" method="post" data-corex-form="%5$s" data-corex-flow="%6$d"'
+            . '<form class="corex-form" method="post" novalidate data-corex-form="%5$s" data-corex-flow="%6$d"'
             . ' data-corex-flow-version="%7$d" data-corex-endpoint="%8$s" data-corex-nonce="%9$s"'
-            . ' data-corex-success="%10$s" data-corex-success-config="%11$s" data-corex-error="%12$s" data-corex-schema="%13$s">'
+            . ' data-corex-success="%10$s" data-corex-success-config="%11$s" data-corex-error="%12$s" data-corex-schema="%13$s"'
+            . ' data-corex-messages="%18$s">'
             . '%14$s<input type="text" name="%15$s" class="corex-form__hp" tabindex="-1" autocomplete="off" aria-hidden="true" value="" />'
             . '%16$s'
             . '<button type="submit" class="corex-form__submit">%17$s</button>'
@@ -120,6 +121,7 @@ final readonly class FlowBlockRenderer implements BlockRenderer
             esc_attr(FormSubmissionService::HONEYPOT_KEY),
             $this->captchaField($flow, $version),
             esc_html($submitLabel !== '' ? $submitLabel : $this->defaultSubmitLabel($variant)),
+            esc_attr(ValidationMessages::toAttribute()),
         );
     }
 

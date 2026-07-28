@@ -56,18 +56,18 @@ final class FormSubmissionService
         $form = $this->forms->find($slug);
 
         if ($form === null) {
-            return Response::reject('Unknown form.', 404);
+            return Response::reject(__('Unknown form.', 'corex'), 404);
         }
 
         // A filled honeypot means a bot: reject silently, no dispatch, no side effect.
         if (isset($input[$honeypotKey]) && trim((string) $input[$honeypotKey]) !== '') {
-            return Response::reject('Submission rejected.', 422);
+            return Response::reject(__('Submission rejected.', 'corex'), 422);
         }
 
         $result = $this->validator->validate($this->resolver->resolve($form->fields()), $input);
 
         if (! $result->isValid()) {
-            return Response::reject('Validation failed.', 422, $result->errors);
+            return Response::reject(__('Validation failed.', 'corex'), 422, $result->errors);
         }
 
         $this->events->dispatch(new FormSubmittedEvent($slug, $result->values));

@@ -76,8 +76,9 @@ final class FormBlockRenderer implements BlockRenderer
         }
 
         return sprintf(
-            '<form class="corex-form" method="post" data-corex-form="%1$s" data-corex-endpoint="%2$s"'
-            . ' data-corex-nonce="%3$s" data-corex-success="%4$s" data-corex-error="%5$s" data-corex-schema="%6$s">'
+            '<form class="corex-form" method="post" novalidate data-corex-form="%1$s" data-corex-endpoint="%2$s"'
+            . ' data-corex-nonce="%3$s" data-corex-success="%4$s" data-corex-error="%5$s" data-corex-schema="%6$s"'
+            . ' data-corex-messages="%10$s">'
             . '%7$s'
             . '<input type="text" name="%8$s" class="corex-form__hp" tabindex="-1" autocomplete="off" aria-hidden="true" value="" />'
             . '<button type="submit" class="corex-form__submit">%9$s</button>'
@@ -92,6 +93,7 @@ final class FormBlockRenderer implements BlockRenderer
             $fields,
             esc_attr(FormSubmissionService::HONEYPOT_KEY),
             esc_html__('Send', 'corex'),
+            esc_attr(ValidationMessages::toAttribute()),
         );
     }
 }

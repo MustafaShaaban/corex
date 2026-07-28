@@ -77,17 +77,40 @@ final class FieldRenderer
         };
 
         return sprintf(
-            '<input id="%1$s" name="%2$s" type="%3$s" class="%4$s" aria-describedby="%5$s"%6$s%7$s%8$s%9$s />',
+            '<input id="%1$s" name="%2$s" type="%3$s" class="%4$s" aria-describedby="%5$s"%6$s%7$s%8$s%9$s%10$s />',
             esc_attr($id),
             esc_attr($field->name),
             esc_attr($type),
             esc_attr($this->controlClass($field)),
             esc_attr($this->describedBy($id, $field)),
+            $this->inputAffordances($field),
             $this->requiredAttr($field),
             $this->placeholderAttr($field),
             $this->valueAttr($field),
             $this->extraAttrs($field),
         );
+    }
+
+    /**
+     * Keyboard, autofill and direction for the field types where the browser needs telling
+     * (#148 item 6).
+     *
+     * `dir` is the correctness half, not a nicety. A phone number reads left-to-right in every
+     * locale, so on an RTL page an unmarked `tel` input puts the `+` on the wrong end and visibly
+     * reorders digit groups as the visitor types — the number they see is not the number they are
+     * entering. Same for a URL.
+     *
+     * `inputmode` and `autocomplete` are the affordances a bare `type="tel"` does not get on
+     * several mobile browsers: no numeric keypad, no autofill.
+     */
+    private function inputAffordances(FieldSchema $field): string
+    {
+        return match ($field->type) {
+            'phone' => ' inputmode="tel" autocomplete="tel" dir="ltr"',
+            'email' => ' inputmode="email" autocomplete="email"',
+            'url' => ' inputmode="url" dir="ltr"',
+            default => '',
+        };
     }
 
     private function textarea(string $id, FieldSchema $field): string

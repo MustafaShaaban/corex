@@ -3691,4 +3691,35 @@ first read removes the race rather than documenting it. Sections order alphabeti
 is deliberate: a separate section-order registry would be a second thing to register, get wrong, and
 disagree about. Availability needs no `is_active()` check anywhere — an add-on registers its guides
 from its own provider, so an inactive add-on contributes nothing by construction.
+## #190 — A reported defect is a hypothesis until the tree is read
+Date: 2026-07-28
+Decision: Every item in issues #148, #149 and #150 was re-verified against the current tree before
+any code was written. Two turned out not to need work: #150's "Correction to #138 item 3" (reply-to
+still null) is stale — `EmailStudioSubmissionGateway::reply()` calls `replyToAddress()`, and the
+reporter's own later comment on #149 says so — and #149 item 1b was already fixed by spec 080.
+Neither was "fixed" again.
+Why: this is the third round of production reports and the second time verification changed the
+work. Spec 080 found #138 item 2 already solved by spec 074 and would have added a second deferral
+mechanism beside a working one. A report is evidence that something looked broken to a careful
+person at a point in time; it is not a statement about the tree in front of you, particularly when
+the tree has moved since.
+Scope: the corollary matters as much. #149's own report shows the modal rendering em dashes, but on
+the current tree it renders "This record has no readable fields" — spec 080's better empty state
+made the same bug read as a true statement about the record instead of as a failure. **A fix that
+improves an error message can make an unrelated defect harder to see**, so a report's *symptom*
+ages faster than its *cause*.
+Status: Final.
+
+## #191 — Two halves of a data-loss fix ship together or not at all
+Date: 2026-07-28
+Decision: `collect()` reading `selectedOptions` and `sanitizeShape()` gaining a list arm are one
+change, in one commit, with one test file covering both.
+Why: a `<select multiple>` stored only its first selected value, because `el.value` on a multiple
+select is the first selected option. The obvious one-line fix — send the real list — makes it worse:
+every arm of `sanitizeShape()` maps to a scalar sanitizer and `sanitize_text_field()` returns `''`
+for an array, so the field is blanked entirely. Storing one of three answers is bad; storing none of
+them, indistinguishable in the inbox from a visitor who answered nothing, is worse.
+Scope: the test asserts the wrong outcome explicitly (`not->toBe('')`) rather than only the right
+one, because that is the failure a future refactor of the sanitize shape would reintroduce, and it
+is silent.
 Status: Final.

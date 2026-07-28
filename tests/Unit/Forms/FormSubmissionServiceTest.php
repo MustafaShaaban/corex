@@ -20,6 +20,7 @@ use Corex\Forms\Submission\FormSubmissionService;
 use Corex\Forms\Submission\FormSubmittedEvent;
 use Corex\Forms\Validation\RuleRegistry;
 use Corex\Forms\Validation\Validator;
+use Brain\Monkey\Functions;
 use Corex\Support\BootLogger;
 
 final class ContactTestForm extends Form
@@ -57,6 +58,14 @@ function submissionService(array &$dispatched): FormSubmissionService
         new EventDispatcher($provider, new BootLogger(debug: false)),
     );
 }
+
+/**
+ * The rejection reasons go through `__()` (#148 item 2) — they used to be bare literals, so a
+ * translated site got English at exactly the moment something had gone wrong.
+ */
+beforeEach(function () {
+    Functions\when('__')->returnArg();
+});
 
 it('rejects a filled honeypot and dispatches nothing', function () {
     $dispatched = [];

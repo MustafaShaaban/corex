@@ -29,6 +29,17 @@ final class EmailMessage
         public readonly string $subject,
         public readonly string $body,
         public readonly array $headers = [],
+        /**
+         * The mailbox this one message should be sent from, or null for the configured default
+         * (#150).
+         *
+         * Last, and nullable, so every existing positional caller is untouched — this is additive.
+         *
+         * The address only, never the display name. The name is the brand and is the same whichever
+         * mailbox a message leaves from; a per-message display name would be a different and more
+         * dangerous feature, since a sender name that varies per message is how a spoof reads.
+         */
+        public readonly ?string $from = null,
     ) {
     }
 }

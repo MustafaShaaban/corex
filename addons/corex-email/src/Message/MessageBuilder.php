@@ -33,6 +33,8 @@ final class MessageBuilder
     /** @var list<string> */
     private array $bcc = [];
     private ?string $replyTo = null;
+
+    private ?string $from = null;
     private ?string $subject = null;
     private ?string $body = null;
     private ?string $templateName = null;
@@ -84,6 +86,19 @@ final class MessageBuilder
     public function bcc(string|array $bcc): self
     {
         $this->bcc = array_merge($this->bcc, array_values((array) $bcc));
+
+        return $this;
+    }
+
+    /**
+     * Send this message from a specific mailbox rather than the configured default (#150).
+     *
+     * The address only — the display name stays configured, because the name is the brand and does
+     * not change with the mailbox.
+     */
+    public function from(string $address): self
+    {
+        $this->from = $address;
 
         return $this;
     }
@@ -153,6 +168,6 @@ final class MessageBuilder
     {
         $to = $this->resolver->resolve($this->recipients, new MailContext($this->context))['valid'];
 
-        return new EmailMessage($to, $this->cc, $this->bcc, $this->replyTo, $subject, $body);
+        return new EmailMessage($to, $this->cc, $this->bcc, $this->replyTo, $subject, $body, [], $this->from);
     }
 }

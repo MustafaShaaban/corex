@@ -60,6 +60,10 @@ final class ActionSchedulerDispatcher implements MailQueueDispatcher
             'subject'      => $request->subject,
             'body'         => $request->body,
             'replyTo'      => $request->replyTo,
+            // Without this a message sent immediately and the same message sent through the
+            // queue leave from different addresses — an inconsistency that is very hard to
+            // notice and very annoying to debug (#150).
+            'from'         => $request->from,
             'requestId'    => $request->requestId,
             'parentAttemptId' => $request->parentAttemptId,
         ];
@@ -77,6 +81,7 @@ final class ActionSchedulerDispatcher implements MailQueueDispatcher
             subject: isset($payload['subject']) ? (string) $payload['subject'] : null,
             body: isset($payload['body']) ? (string) $payload['body'] : null,
             replyTo: isset($payload['replyTo']) ? (string) $payload['replyTo'] : null,
+            from: isset($payload['from']) ? (string) $payload['from'] : null,
             requestId: isset($payload['requestId']) ? (string) $payload['requestId'] : null,
             parentAttemptId: isset($payload['parentAttemptId']) ? (string) $payload['parentAttemptId'] : null,
         );

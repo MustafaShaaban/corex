@@ -10063,7 +10063,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-runtime.css",
-      "selector_or_context": "lines 20: border: var(--wp--custom--focus--width) solid currentcolor;",
+      "selector_or_context": "lines 33: border-width: var(--wp--custom--focus--width);",
       "property": "--wp--custom--focus--width",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10073,7 +10073,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-runtime.css",
-      "selector_or_context": "lines 24, 37: animation: corex-spin var(--wp--custom--motion--duration--slow) linear infinite; | animation-duration: calc(var(--wp--custom--motion--duration--slow) * 4);",
+      "selector_or_context": "lines 40, 54: corex-spin var(--wp--custom--motion--duration--slow, 0.8s) linear | animation-duration: calc(var(--wp--custom--motion--duration--slow, 0.8s) * 4);",
       "property": "--wp--custom--motion--duration--slow",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10083,7 +10083,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-runtime.css",
-      "selector_or_context": "lines 46: color: var(--wp--preset--color--error);",
+      "selector_or_context": "lines 63: color: var(--wp--preset--color--error);",
       "property": "--wp--preset--color--error",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10093,7 +10093,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-runtime.css",
-      "selector_or_context": "lines 50: color: var(--wp--preset--color--success);",
+      "selector_or_context": "lines 67: color: var(--wp--preset--color--success);",
       "property": "--wp--preset--color--success",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10103,7 +10103,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-runtime.css",
-      "selector_or_context": "lines 59: background: var(--wp--preset--color--surface);",
+      "selector_or_context": "lines 76: background: var(--wp--preset--color--surface);",
       "property": "--wp--preset--color--surface",
       "owner": "core-plugin",
       "surface": "front-end",
@@ -10113,7 +10113,7 @@
     },
     {
       "path": "plugins/corex-core/assets/css/corex-runtime.css",
-      "selector_or_context": "lines 19, 42: margin-inline-start: var(--wp--preset--spacing--20); | margin-block-start: var(--wp--preset--spacing--20);",
+      "selector_or_context": "lines 19, 59: margin-inline-start: var(--wp--preset--spacing--20); | margin-block-start: var(--wp--preset--spacing--20);",
       "property": "--wp--preset--spacing--20",
       "owner": "core-plugin",
       "surface": "front-end",
