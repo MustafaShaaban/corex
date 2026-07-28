@@ -23,6 +23,9 @@ final class AccessRequestRepository implements AccessRequestStore
 {
     private const STATES = ['approved', 'denied', 'cancelled', 'expired'];
 
+    /** How many open requests one read returns. See {@see pending()}. */
+    private const PENDING_LIMIT = 100;
+
     public function __construct(private readonly Migrator $migrator)
     {
     }
@@ -102,10 +105,16 @@ final class AccessRequestRepository implements AccessRequestStore
     {
         global $wpdb;
 
+        // Capped, because spec 079 put this list on a rendered page. Open requests are naturally
+        // few — one per person per ability, expiring after seven days — but "naturally few" is a
+        // property of how people behave, not of the query, and this one has no other bound. A site
+        // with more waiting than fit here has a queue problem the page cannot solve by being longer.
         $rows = $wpdb->get_results($wpdb->prepare(
-            'SELECT * FROM ' . $this->table() . ' WHERE state = %s AND expires_at > %s ORDER BY created_at ASC, id ASC',
+            'SELECT * FROM ' . $this->table()
+            . ' WHERE state = %s AND expires_at > %s ORDER BY created_at ASC, id ASC LIMIT %d',
             'pending',
             gmdate('Y-m-d H:i:s'),
+            self::PENDING_LIMIT,
         ), ARRAY_A);
 
         return array_map($this->hydrate(...), is_array($rows) ? $rows : []);
