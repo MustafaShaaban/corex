@@ -14,6 +14,7 @@ use Corex\Access\AccessRequestedEvent;
 use Corex\Access\CorexAbility;
 use Corex\Events\ListenerProvider;
 use Corex\Notifications\Notification;
+use Corex\Notifications\NotificationAction;
 use Corex\Notifications\NotificationCategory;
 use Corex\Notifications\NotificationProducer;
 use Corex\Notifications\NotificationRecipient;
@@ -84,6 +85,12 @@ final class AccessRequestNotificationProducer implements NotificationProducer
             occurredAt: new DateTimeImmutable('now'),
             sourceType: 'access_request',
             sourceId: (string) $event->requestId,
+            action: NotificationAction::to(
+                'notifications.access.request.action',
+                add_query_arg(['page' => 'corex-access'], admin_url('admin.php')),
+                CorexAbility::MANAGE_ACCESS,
+                __('Open Access & Abilities', 'corex'),
+            ),
         ));
     }
 }

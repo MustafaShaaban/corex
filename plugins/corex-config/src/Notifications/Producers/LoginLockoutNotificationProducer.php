@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Access\CorexAbility;
 use Corex\Events\ListenerProvider;
 use Corex\Notifications\Notification;
+use Corex\Notifications\NotificationAction;
 use Corex\Notifications\NotificationCategory;
 use Corex\Notifications\NotificationProducer;
 use Corex\Notifications\NotificationRecipient;
@@ -81,6 +82,12 @@ final class LoginLockoutNotificationProducer implements NotificationProducer
             sourceType: 'login_identity',
             sourceId: $event->identity,
             metadata: ['client_ip' => $event->clientIp, 'locked_until' => $event->lockedUntil->format(DATE_ATOM)],
+            action: NotificationAction::to(
+                'notifications.security.lockout.action',
+                add_query_arg(['page' => 'corex-operations-security'], admin_url('admin.php')),
+                CorexAbility::MANAGE_OPERATIONS,
+                __('Review in Operations & Security', 'corex'),
+            ),
         );
     }
 }

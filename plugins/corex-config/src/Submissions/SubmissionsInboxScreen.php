@@ -128,7 +128,11 @@ final class SubmissionsInboxScreen
         $prune = $preview['willPrune'] ? $this->pruneForm() : '';
 
         return '<section class="corex-inbox-retention corex-surface">'
-            . '<header><div><p class="corex-inbox__eyebrow">' . esc_html__('Privacy operations', 'corex') . '</p>'
+            // The same heading class the inbox header uses, so the eyebrow and the title get the one
+            // grid rhythm rather than two. Without it the bare div fell through to the panel's
+            // generic paragraph margin and the two lines collided (spec 087, FR-020).
+            . '<header><div class="corex-inbox__heading"><p class="corex-inbox__eyebrow">'
+            . esc_html__('Privacy operations', 'corex') . '</p>'
             . '<h2>' . esc_html__('Submission retention', 'corex') . '</h2></div><span>' . esc_html($status) . '</span></header>'
             . '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">'
             . '<input type="hidden" name="action" value="' . esc_attr(RetentionController::SAVE_ACTION) . '" />'

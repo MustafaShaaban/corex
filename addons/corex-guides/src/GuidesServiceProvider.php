@@ -10,8 +10,12 @@ namespace Corex\Guides;
 
 defined('ABSPATH') || exit;
 
+use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Guides\Corex\CorexGuides;
+use Corex\Guides\Support\SupportMailer;
+use Corex\Guides\Support\SupportRequestController;
+use Corex\Mail\Mailer;
 
 /**
  * Boots the guide registry, Corex's own guides, and the surfaces that render them (spec 084).
@@ -31,6 +35,17 @@ final class GuidesServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->container->singleton(GuideRegistry::class);
+
+        // The Corex Mail seam if this install has one, and null if it does not. Resolved here rather
+        // than looked up inside SupportMailer, because a service that reaches into a container to
+        // find its own collaborators is not injected (Principle IV) — and because corex-email is
+        // optional, so `make(Mailer::class)` would be a hard dependency on an add-on (Principle IX).
+        $this->container->singleton(
+            SupportMailer::class,
+            static fn (ContainerInterface $c): SupportMailer => new SupportMailer(
+                $c->has(Mailer::class) ? $c->make(Mailer::class) : null,
+            ),
+        );
     }
 
     public function boot(): void
@@ -49,5 +64,12 @@ final class GuidesServiceProvider extends ServiceProvider
 
         $this->container->make(GuidesScreen::class)->register();
         $this->container->make(ContextualHelp::class)->register();
+
+        // Resolved inside the closure, not at boot: `admin-post.php` is the only request that ever
+        // fires this, and building the controller on every admin page load to answer a POST that
+        // does not come is work done for nothing.
+        add_action('admin_post_' . SupportRequestController::ACTION, function (): void {
+            $this->container->make(SupportRequestController::class)->handle();
+        });
     }
 }

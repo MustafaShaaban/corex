@@ -155,11 +155,12 @@ export default function NotificationsApp() {
 			dismiss: ( id ) => act( id, 'dismiss' ),
 			// A day is the snooze the store already understands; the control says so rather than
 			// leaving the person to guess how long "snooze" lasts.
+			// The parameter is `until` — the name the route reads. This sent `snoozed_until`, the
+			// name of the *column*, so `futureDate('')` returned null and every snooze answered
+			// 422 invalid_snooze. A dead control that looked alive (spec 087, FR-015).
 			snooze: ( id ) =>
 				act( id, 'snooze', {
-					snoozed_until: new Date(
-						Date.now() + 86400000
-					).toISOString(),
+					until: new Date( Date.now() + 86400000 ).toISOString(),
 				} ),
 			resolve: ( id ) => act( id, 'resolve', { reason: 'manual' } ),
 		} ),

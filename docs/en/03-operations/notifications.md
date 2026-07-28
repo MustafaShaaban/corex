@@ -62,6 +62,23 @@ whether you have read it. Its controls are *Mark read* / *Mark unread*, *Snooze 
 disabled. The header drawer renders the same item with the management controls dropped, so the drawer and the
 screen cannot tell you different things about the same record.
 
+### Going where a notification points
+
+A notification that is about somewhere carries the address. The **title is a link** and there is a button
+beside it; both go to the same place. A new submission opens the inbox already filtered to that form, an
+assignment opens the submission itself, a failed job opens Operations & Security. The card as a whole is
+deliberately *not* the click target — it holds Mark read, Snooze and Dismiss, and controls nested inside a link
+behave badly for both a pointer and a screen reader.
+
+**A link you are not offered is a link you could not have used.** Where an action names an ability, the server
+withholds the whole action from anyone who does not hold it, rather than sending it and trusting the screen to
+hide it — so a notification never hands you a door that will be shut when you reach it. The same applies to
+which tab it lands in: a record is filed under **Action needed** for a link only when that link is one you can
+actually follow.
+
+Not every notification has one. An export whose kind CoreX cannot place is announced without a link, because a
+link to the wrong screen is worse than the sentence that already says the file is ready.
+
 ## What produces notifications
 
 Producers turn framework events into notifications. Each is **dependency-aware** — a producer whose module is not

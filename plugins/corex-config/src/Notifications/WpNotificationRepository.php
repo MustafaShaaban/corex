@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Access\CorexAbility;
 use Corex\Database\Schema\Migrator;
 use Corex\Notifications\Notification;
+use Corex\Notifications\NotificationAction;
 use Corex\Notifications\NotificationQuery;
 use Corex\Notifications\NotificationRepository;
 use Corex\Notifications\NotificationStatus;
@@ -422,6 +423,19 @@ final class WpNotificationRepository implements NotificationRepository
         $s = $state[(int) $notification->id] ?? null;
         $data = $notification->toArray();
         $status = $this->statusOf($notification, $state);
+
+        // The action this actor may actually be offered. NotificationAction has documented since
+        // spec 072 (FR-012) that "a link renders only when the actor passes the optional ability",
+        // and nothing enforced it: the whole action went out verbatim and the client rendered on
+        // the URL alone, so a viewer could be handed a link to a screen that would refuse them on
+        // arrival. Withheld here rather than hidden in the client, because a payload the client is
+        // trusted to conceal is not a permission check (spec 087, FR-011).
+        $hasAction = $this->visibleAction($notification) !== null;
+
+        if (! $hasAction) {
+            unset($data['action']);
+        }
+
         $data['user_state'] = [
             'read' => $s !== null && $s['read_at'] !== null,
             'dismissed' => $s !== null && $s['dismissed_at'] !== null,
@@ -431,11 +445,13 @@ final class WpNotificationRepository implements NotificationRepository
             'status' => $status,
             // Which named view this item belongs to, decided once on the server. The screen and the
             // drawer both read it, so neither can drift into treating "read" as "dealt with".
-            'view' => NotificationView::of($status, $notification->severity, $notification->action !== null),
+            // Derived from the *visible* action so a row is never filed under "needs action" on the
+            // strength of an action it will not be offered (spec 087, FR-012).
+            'view' => NotificationView::of($status, $notification->severity, $hasAction),
             'needs_action' => NotificationView::needsAction(
                 $status,
                 $notification->severity,
-                $notification->action !== null,
+                $hasAction,
             ),
         ];
         // Whether this actor may end the condition for everyone, so the control is hidden rather
@@ -444,6 +460,28 @@ final class WpNotificationRepository implements NotificationRepository
         $data['can_resolve'] = current_user_can(CorexAbility::MANAGE_NOTIFICATIONS);
 
         return $data;
+    }
+
+    /**
+     * The action this actor may be offered, or null.
+     *
+     * An action with no declared ability is open to anybody who can see the notification at all —
+     * the recipient targeting has already decided that. An action that declares one is offered only
+     * to an actor who holds it.
+     */
+    private function visibleAction(Notification $notification): ?NotificationAction
+    {
+        $action = $notification->action;
+
+        if ($action === null) {
+            return null;
+        }
+
+        if ($action->ability !== null && $action->ability !== '' && ! current_user_can($action->ability)) {
+            return null;
+        }
+
+        return $action;
     }
 
     /**

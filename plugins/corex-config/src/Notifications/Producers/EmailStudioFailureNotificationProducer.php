@@ -14,6 +14,7 @@ use Corex\Access\CorexAbility;
 use Corex\Email\Studio\EmailStudioDeliveryFailedEvent;
 use Corex\Events\ListenerProvider;
 use Corex\Notifications\Notification;
+use Corex\Notifications\NotificationAction;
 use Corex\Notifications\NotificationCategory;
 use Corex\Notifications\NotificationProducer;
 use Corex\Notifications\NotificationRecipient;
@@ -81,6 +82,13 @@ final class EmailStudioFailureNotificationProducer implements NotificationProduc
             sourceType: 'email_attempt',
             sourceId: $event->attemptId,
             metadata: ['provider' => $event->provider, 'retryable' => $event->retryable],
+            // The body says "check the connection in Email Studio"; this is that (spec 087, FR-014).
+            action: NotificationAction::to(
+                'notifications.email.delivery_failed.action',
+                add_query_arg(['page' => 'corex-email-studio'], admin_url('admin.php')),
+                CorexAbility::MANAGE_EMAIL,
+                __('Open Email Studio', 'corex'),
+            ),
         );
     }
 }

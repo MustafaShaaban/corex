@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 1104,
+    "consumer_records": 1107,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -522,6 +522,7 @@
         "--corex-admin-font-sm",
         "--corex-admin-font-xs",
         "--corex-admin-letter-wide",
+        "--corex-admin-measure",
         "--corex-admin-radius-md",
         "--corex-admin-radius-pill",
         "--corex-admin-radius-sm",
@@ -530,6 +531,7 @@
         "--corex-admin-space-lg",
         "--corex-admin-space-md",
         "--corex-admin-space-sm",
+        "--corex-admin-space-xl",
         "--corex-admin-space-xs",
         "--corex-admin-state-border",
         "--corex-admin-success",
@@ -708,6 +710,7 @@
         "--corex-admin-text",
         "--corex-admin-text-muted",
         "--corex-admin-text-subtle",
+        "--corex-admin-touch-target",
         "--corex-admin-warning",
         "--corex-admin-warning-soft"
       ]

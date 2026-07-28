@@ -4,6 +4,61 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-28) -- **Spec 087: reaching a human, notifications that lead somewhere, controls you can see.**
+
+On `spec/087-guides-support-and-admin-controls`, after v0.38.1. Five owner-reported items, and the
+thread through them is the same one 085 and 086 recorded: **every defect was found by using the
+admin, and four of the five sat behind code that reads correctly.**
+
+**The Guides add-on was a dead end.** A grep across it for `wp_ajax|admin_post|register_rest_route|
+nonce` returned one hit, a `current_user_can`. Spec 084 built the registry so a *site* could add
+guides; it gave a *reader* no way to say the guides were not enough. There is now a "Still stuck?"
+panel, sending to a config key a developer changes in one line and a site owner changes in Settings.
+It depends on neither corex-forms nor corex-email (Decision #200).
+
+**The notification call-to-action existed end to end and was dark in three independent ways.** The
+server serialized `label_key` while the card read `label`, so every authored label fell through to a
+hardcoded "Open". The `ability` gate documented since spec 072 was never enforced — a viewer could be
+handed a link to a screen that would refuse them. And **seven of eight producers set no action at
+all**, writing the destination into their body text as prose instead. A fourth defect sat in the
+same component: **every snooze click answered 422**, because the client posted `snoozed_until` (the
+column) and the route reads `until`. Decisions #197–#198.
+
+**The invisible X and pager were one missing CSS rule.** `corex-admin-shell.css` styled
+`.components-button.is-primary/.is-secondary/.is-link/.is-destructive` and had no base
+`.components-button` rule, so a `<Button>` with no variant kept Gutenberg's `#1e1e1e` on the dark
+surface — invisible rather than unstyled.
+
+**The blue ring was a specificity loss, not a missing rule.** `.wp-core-ui .button:focus` is
+**(0,3,0)** and fires on a *mouse* click; the CoreX rule meant to answer it sits inside `:where()` at
+**(0,2,0)** and never could. Decision #199.
+
+**The retention heading needed one class.** `SubmissionsInboxScreen.php` emitted a bare `<div>` where
+the React header emits `<div class="corex-inbox__heading">`. The grid that fixes it already existed
+and simply never applied.
+
+**The most useful finding was in my own tests.** Four browser assertions passed against the *unfixed*
+stylesheet, for four different reasons — a cached versioned stylesheet, a selector that resolved to
+the notification bell, `document.activeElement` being `<body>` after a re-render, and a ring
+assertion written as `shadow === 'none' || shadow.includes('inset')`, which accepts wp-admin's
+`rgb(56,88,233) 0 0 0 2px, ... 1px inset` — the exact broken value it existed to reject. Each would
+have shipped as evidence of a fix it had not verified. Decision #201.
+
+**Verified against the unfixed tree, not only the fixed one:** 5 of the 9 browser assertions fail on
+the pre-change stylesheet and pass after; the other 4 are guards that were already green and are
+recorded as such, not counted as fixes.
+
+**Verified:** Pest unit **1704** (was 1656) · integration **353/356** (the same 3 fail identically on
+the unmodified tree — known local-install failures) · Jest **431** (was 423) · Playwright **120**
+(was 111) · `lint:js`, `lint:css` and `php -l` clean · token inventory regenerated · Guard Gate
+(wp-guard) run on the diff, two findings fixed: an unsanitized honeypot read, and a flash consumed
+before the panel decided whether it would render it.
+
+**Next:** spec 088 — public-release readiness. Canonical repo URL (**`MustafaShaaban/corex`**, owner
+decision taken; the plugin `Update URI` headers currently point at `bseit/corex`, which is a live
+functional bug), a ROADMAP that is two releases stale, a feature-status matrix, README, docs-app.
+
+---
 ## RESUME HERE (2026-07-28) -- **v0.38.1 released.** One site-killing defect, three found beside it, and 079 closed.
 
 `211e710` merged as PR #156. Zero open issues, zero open PRs.

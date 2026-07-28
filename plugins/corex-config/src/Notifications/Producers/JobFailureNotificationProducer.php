@@ -15,6 +15,7 @@ use Corex\Events\ListenerProvider;
 use Corex\Jobs\BoundedJob;
 use Corex\Jobs\JobFinishedEvent;
 use Corex\Notifications\Notification;
+use Corex\Notifications\NotificationAction;
 use Corex\Notifications\NotificationCategory;
 use Corex\Notifications\NotificationProducer;
 use Corex\Notifications\NotificationRecipient;
@@ -103,6 +104,15 @@ final class JobFailureNotificationProducer implements NotificationProducer
             sourceType: 'job',
             sourceId: (string) $event->jobId,
             metadata: ['job_kind' => $event->kind],
+            // The body deliberately withholds the reason and points at Operations instead, because
+            // the raw summary has been seen to carry credentials. That pointer is a link now, and
+            // it carries the same ability the screen enforces (spec 087, FR-014).
+            action: NotificationAction::to(
+                'notifications.job.failed.action',
+                add_query_arg(['page' => 'corex-operations-security'], admin_url('admin.php')),
+                CorexAbility::MANAGE_OPERATIONS,
+                __('Open Operations & Security', 'corex'),
+            ),
         );
     }
 }

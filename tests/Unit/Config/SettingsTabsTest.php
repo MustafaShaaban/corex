@@ -36,7 +36,7 @@ it('renders the real sections as ARIA tabs in the fixed order', function () {
 
     // 'dashboard' carries the spec-072 optional-widget toggles; Advanced stays last as the
     // read-only diagnostics catch-all.
-    expect($matches[1])->toBe(['brand', 'mail', 'forms', 'captcha', 'media', 'insights', 'dashboard', 'advanced'])
+    expect($matches[1])->toBe(['brand', 'mail', 'forms', 'captcha', 'media', 'insights', 'dashboard', 'guides', 'advanced'])
         ->and($html)->toContain('role="tablist"')
         ->toContain('role="tab"')
         ->toContain('role="tabpanel"')

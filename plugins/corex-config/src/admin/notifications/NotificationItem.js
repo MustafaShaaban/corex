@@ -115,8 +115,21 @@ export default function NotificationItem( {
 			/>
 
 			<div className="corex-notification__body">
+				{ /*
+				   The title is the way to the thing, when there is one. The button below says the
+				   same thing, but a title that names a place is what people reach for first, and
+				   the whole card is deliberately not the target: the card holds Mark read, Snooze
+				   and Dismiss, and nesting those inside a link is a trap for both a pointer and a
+				   screen reader (spec 087, FR-013).
+				*/ }
 				<p className="corex-notification__title">
-					{ item.rendered?.title ?? '' }
+					{ item.action?.url ? (
+						<a href={ item.action.url }>
+							{ item.rendered?.title ?? '' }
+						</a>
+					) : (
+						item.rendered?.title ?? ''
+					) }
 				</p>
 				<p className="corex-notification__text">
 					{ item.rendered?.body ?? '' }
@@ -173,6 +186,12 @@ export default function NotificationItem( {
 			</div>
 
 			<div className="corex-notification__actions">
+				{ /*
+				   `label` is the already-translated string; `label_key` beside it is a translation
+				   key nothing in this pipeline resolves. The server used to send only the key, so
+				   every server-produced action fell through to "Open" and the authored label was
+				   never seen. "Open" survives as the floor for an action that carries neither.
+				*/ }
 				{ item.action?.url ? (
 					<a
 						className="button button-primary"

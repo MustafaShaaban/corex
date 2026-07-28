@@ -365,12 +365,28 @@ body.corex-admin-screen .corex-admin__shell {
 	font-weight: 700;
 }
 
+/* A close control is not secondary information. This was
+   --corex-admin-text-muted with no box around it, which on the raised surface
+   read as a faint mark rather than a button, and gave a pointer target the
+   size of the glyph (spec 087, FR-017). */
 .corex-notification-drawer__close {
-	color: var(--corex-admin-text-muted);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-inline-size: var(--corex-admin-touch-target);
+	min-block-size: var(--corex-admin-touch-target);
+	color: var(--corex-admin-text);
 	background: transparent;
 	border: 0;
+	border-radius: var(--corex-admin-radius-sm);
 	font-size: var(--corex-admin-font-lg);
+	line-height: var(--corex-admin-line-tight);
 	cursor: pointer;
+}
+
+.corex-notification-drawer__close:hover {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
 }
 
 .corex-notification-drawer__state {
@@ -544,6 +560,23 @@ body.corex-admin-screen .corex-admin__shell {
 	font-weight: 600;
 }
 
+/* When a notification has a destination its title is the way there — the
+   button beside it says the same thing, and the title is what people reach
+   for first. It keeps the body's ink rather than the link colour: a list
+   where some titles are brass and some are not reads as two kinds of record
+   (spec 087, FR-013). */
+.corex-admin .corex-notification__title a,
+.corex-admin .corex-notification__title a:visited {
+	color: var(--corex-admin-text);
+	text-decoration: none;
+}
+
+.corex-admin .corex-notification__title a:hover,
+.corex-admin .corex-notification__title a:focus {
+	color: var(--corex-admin-link-hover);
+	text-decoration: underline;
+}
+
 .corex-notification__text {
 	margin: 0;
 	color: var(--corex-admin-text-muted);
@@ -633,6 +666,38 @@ body.corex-admin-screen .corex-admin__shell {
 	margin-block-start: var(--corex-admin-space-lg);
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-sm);
+}
+
+/* The pager renders plain <button> elements and the rule above styles only
+   the container, so Previous and Next arrived with raw user-agent chrome on
+   a dark surface (spec 087, FR-016). */
+/* stylelint-disable-next-line no-descending-specificity */
+.corex-notifications-screen__pager button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-block-size: var(--corex-admin-control-height);
+	padding-block: var(--corex-admin-space-xs);
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	font-family: var(--corex-admin-font-body);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+	line-height: var(--corex-admin-line-tight);
+	cursor: pointer;
+}
+
+.corex-notifications-screen__pager button:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-notifications-screen__pager button:hover:not(:disabled) {
+	background: var(--corex-admin-surface-alt);
+	border-color: var(--corex-admin-border-strong);
 }
 
 .corex-notifications-prefs {
@@ -764,6 +829,30 @@ body.corex-admin-screen .corex-admin__shell {
 	border-color: var(--corex-admin-border-strong);
 }
 
+/* wp-admin paints its focus ring on `:focus`, not `:focus-visible`, so it
+   fires on a mouse click — and `.wp-core-ui .button:focus` is (0,3,0) while
+   the CoreX rule meant to answer it sits inside `:where()` at (0,2,0) and
+   never won. The blue halo after every click is that, and it cannot be fixed
+   from inside `:where()`. Answered here at matching specificity; the outline
+   below restores the CoreX ring for the keyboard, which is who a focus ring
+   was ever for (spec 087, FR-018/FR-019). */
+.corex-admin .button:focus,
+.corex-admin .button-secondary:focus,
+.corex-admin button.button:focus,
+.corex-admin input.button:focus {
+	color: var(--corex-admin-text);
+	border-color: var(--corex-admin-border-strong);
+	box-shadow: none;
+}
+
+.corex-admin .button:focus-visible,
+.corex-admin .button-secondary:focus-visible,
+.corex-admin button.button:focus-visible,
+.corex-admin input.button:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
 .corex-admin .button-primary,
 .corex-admin button.button-primary,
 .corex-admin input.button-primary {
@@ -779,6 +868,18 @@ body.corex-admin-screen .corex-admin__shell {
 	color: var(--corex-admin-action-ink);
 	background: var(--corex-admin-action-hover);
 	border-color: var(--corex-admin-action-hover);
+
+	/* This rule already overrode wp-admin's focus background, border and
+	   colour, and never its box-shadow — so the blue ring survived
+	   underneath the brass button. */
+	box-shadow: none;
+}
+
+.corex-admin .button-primary:focus-visible,
+.corex-admin button.button-primary:focus-visible,
+.corex-admin input.button-primary:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
 }
 
 .corex-admin .button-link {
@@ -794,7 +895,42 @@ body.corex-admin-screen .corex-admin__shell {
 	color: var(--corex-admin-error);
 }
 
-/* Gutenberg @wordpress/components buttons used by the Data screen. */
+/* Gutenberg @wordpress/components buttons, used by the Data screen, the
+   Submissions inbox and the notification screens.
+
+   Only the variants below were styled, so a <Button> with no variant kept
+   Gutenberg's own #1e1e1e ink — which on the dark CoreX surface is very
+   nearly the background. That is what made the Submissions detail close X,
+   its two Close buttons and the inbox pager invisible rather than merely
+   unstyled (spec 087, FR-016). The variant rules that follow are more
+   specific and still win wherever they apply. */
+.corex-admin .components-button {
+	color: var(--corex-admin-text);
+}
+
+/* An icon-only button draws a dashicon SVG that takes its `fill` from
+   Gutenberg, not from `color` — so setting the ink above is not on its own
+   enough to make the X appear. */
+.corex-admin .components-button svg {
+	fill: currentcolor;
+}
+
+.corex-admin .components-button:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+/* Same fight as `.button` above, against
+   `.components-button:focus:not(:active)` (0,3,0). */
+.corex-admin .components-button:focus:not(:active) {
+	box-shadow: none;
+}
+
+.corex-admin .components-button:hover:not(:disabled) {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+}
+
 .corex-admin .components-button.is-primary {
 	color: var(--corex-admin-action-ink);
 	background: var(--corex-admin-action);
@@ -819,12 +955,23 @@ body.corex-admin-screen .corex-admin__shell {
 	box-shadow: inset 0 0 0 var(--corex-admin-border-width) var(--corex-admin-border-strong);
 }
 
+/* This variant draws its border with an inset shadow, so the blanket
+   `box-shadow: none` above would erase the border along with the ring.
+   Restated at the specificity the reset has to be undone at. */
+.corex-admin .components-button.is-secondary:focus:not(:active) {
+	box-shadow: inset 0 0 0 var(--corex-admin-border-width) var(--corex-admin-border);
+}
+
 .corex-admin .components-button.is-link {
 	color: var(--corex-admin-link);
 }
 
+/* Stated explicitly because the base hover above now gives an unvarianted
+   button a surface, and a button styled as a link must not grow a box under
+   the pointer. */
 .corex-admin .components-button.is-link:hover:not(:disabled) {
 	color: var(--corex-admin-link-hover);
+	background: transparent;
 }
 
 .corex-admin .components-button.is-destructive,

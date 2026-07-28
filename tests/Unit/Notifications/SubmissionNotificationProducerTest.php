@@ -13,6 +13,7 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Tests\Support\AdminUrlStubs;
 use Corex\Access\CorexAbility;
 use Corex\Config\Notifications\Producers\SubmissionNotificationProducer;
 use Corex\Events\ListenerProvider;
@@ -27,6 +28,8 @@ beforeEach(function () {
     // The producer renders user-facing strings through __(); stub the WP translation functions so
     // the unit suite stays headless (this single file run does not rely on another test defining them).
     Functions\stubTranslationFunctions();
+    // Producers name a destination now, and building it calls WordPress (spec 087, FR-014).
+    AdminUrlStubs::install();
 });
 
 /** A NotificationService that records every published notification. */

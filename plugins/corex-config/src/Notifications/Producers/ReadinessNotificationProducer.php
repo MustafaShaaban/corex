@@ -104,6 +104,13 @@ final class ReadinessNotificationProducer implements NotificationProducer
 
     private function resolutionAction(string $url): ?NotificationAction
     {
-        return $url === '' ? null : NotificationAction::to('notifications.readiness.resolve', $url);
+        // The label is passed as a string, not only as a key: nothing resolves keys, so this action
+        // rendered as a generic "Open" from the day it was written (spec 087, FR-010).
+        return $url === '' ? null : NotificationAction::to(
+            'notifications.readiness.resolve',
+            $url,
+            CorexAbility::MANAGE_OPERATIONS,
+            __('Fix this check', 'corex'),
+        );
     }
 }
