@@ -24,6 +24,10 @@ use Corex\Support\Config\ConfigInterface;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
+    Functions\when('esc_html')->returnArg();
+    Functions\when('esc_html__')->returnArg();
+    Functions\when('is_email')->alias(static fn (string $v): string|false => str_contains($v, '@') ? $v : false);
+    Functions\when('sanitize_email')->returnArg();
     Functions\when('get_bloginfo')->justReturn('CoreX Test');
     Functions\when('wp_json_encode')->alias(static fn (mixed $d): string => (string) json_encode($d));
     Functions\when('add_action')->justReturn(true);

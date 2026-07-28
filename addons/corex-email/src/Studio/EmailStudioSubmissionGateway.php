@@ -11,6 +11,7 @@ namespace Corex\Email\Studio;
 defined('ABSPATH') || exit;
 
 use Corex\Email\Message\EmailMessage;
+use Corex\Email\Template\Layout;
 use Corex\Mail\MailResult;
 use Corex\Mail\SubmissionEmailGateway;
 use Corex\Support\Config\ConfigInterface;
@@ -27,15 +28,52 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
         private EmailStudioService $studio,
         private EmailTemplateService $templates,
         private ConfigInterface $config,
+        private Layout $layout,
     ) {
     }
 
+    /**
+     * An operator's manual reply from the Submissions inbox.
+     *
+     * The operator's text used to be the *entire* message body, and `replyTo` was hard-coded null —
+     * while {@see resend()} directly below looked up the template version and layout and rendered
+     * through them. So every automated email a site sent was branded and every manual reply arrived
+     * unstyled on the client's default background, ignoring the configured reply-to. Reported from
+     * a real build (issue #138, item 3).
+     *
+     * The body is wrapped in the same brand `Layout` the rest of the stack uses. It is not run
+     * through a template: there is no template for "whatever the operator typed", and inventing one
+     * would put a placeholder between the operator and their own words.
+     */
     public function reply(string $recipient, string $subject, string $htmlBody): MailResult
     {
         return $this->studio->send(
-            new EmailMessage([$recipient], [], [], null, $subject, $htmlBody),
+            new EmailMessage(
+                [$recipient],
+                [],
+                [],
+                $this->replyToAddress(),
+                $subject,
+                $this->layout->wrap($subject, $htmlBody),
+            ),
             $this->deliveryContext(),
         );
+    }
+
+    /**
+     * The configured reply-to, or null.
+     *
+     * Validated before it reaches a header. Null when nothing is configured, which is what the
+     * message carried before — the difference is that it is now the answer to a question rather
+     * than a hard-coded constant.
+     */
+    private function replyToAddress(): ?string
+    {
+        $configured = trim((string) $this->config->get('mail.reply_to', ''));
+
+        return $configured !== '' && is_email($configured) !== false
+            ? sanitize_email($configured)
+            : null;
     }
 
     public function resend(string $attemptId, string $recipient, array $context): MailResult

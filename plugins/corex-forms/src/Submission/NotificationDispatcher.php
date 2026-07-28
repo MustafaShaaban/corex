@@ -109,10 +109,51 @@ final readonly class NotificationDispatcher
     {
         $lines = [];
         foreach ($values as $name => $value) {
-            $lines[] = sprintf('%s: %s', $name, is_array($value) ? (string) wp_json_encode($value) : (string) $value);
+            $lines[] = sprintf('%s: %s', $name, self::scalarize($value));
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * The same answers, marked up, for the transports that declare `text/html`.
+     *
+     * {@see plainTextBody()} separates fields with newlines, and every CoreX mail transport sets
+     * `Content-Type: text/html`. HTML collapses whitespace, so the notification arrived as one
+     * unbroken run of text — every field on a single line, in an email whose header promised
+     * markup. Reported from a real build (issue #138, item 4).
+     *
+     * Kept as a second method rather than a change to the first: a genuinely plain-text transport
+     * would still want the plain-text form, and silently returning HTML from a method named
+     * `plainTextBody` is how the mismatch happened in the first place.
+     *
+     * @param array<string,mixed> $values
+     */
+    public static function htmlBody(array $values): string
+    {
+        $rows = '';
+        foreach ($values as $name => $value) {
+            $rows .= sprintf(
+                '<tr><th align="left" style="padding:4px 12px 4px 0;vertical-align:top">%s</th>'
+                . '<td style="padding:4px 0;vertical-align:top">%s</td></tr>',
+                esc_html(self::humanize((string) $name)),
+                nl2br(esc_html(self::scalarize($value))),
+            );
+        }
+
+        return $rows === ''
+            ? '<p>' . esc_html__('The submission contained no fields.', 'corex') . '</p>'
+            : '<table role="presentation" cellpadding="0" cellspacing="0">' . $rows . '</table>';
+    }
+
+    private static function humanize(string $name): string
+    {
+        return ucfirst(str_replace(['-', '_'], ' ', $name));
+    }
+
+    private static function scalarize(mixed $value): string
+    {
+        return is_array($value) ? (string) wp_json_encode($value) : (string) $value;
     }
 
     private function safeFailure(string $raw): string

@@ -3576,3 +3576,56 @@ or without it, for both promoted-palette and truecolour sources. The reporter sa
 on theirs and GD builds differ, so it stays as a stated intent; it is deliberately not described as
 load-bearing, because measuring it here showed it was not.
 Status: Final.
+
+## #184 — A form's listeners are resolved per submission, not registered per site
+Date: 2026-07-28
+Decision: `FormsServiceProvider` registers **one** listener on `FormSubmittedEvent`, which resolves
+the submitted form by slug and runs that form's list. It no longer walks every form at boot
+registering each distinct listener id once.
+Why: the old registration produced a **global** list. Deduplication was across all forms, so as soon
+as any form declared a listener, that listener ran for every submission on the site.
+`Form::listeners()` documents itself as overridable, and overriding it to *remove* a listener was a
+no-op, because some other form had already registered it — a site replacing the built-in
+notification with its own sent two emails per submission, with no way to stop it. Found on a real
+build, not by reading the code (issue #138, item 1).
+Scope: laziness is preserved deliberately — the listener graph reaches the mail stack, and building
+it at boot loads translations before `init`. A slug matching no registered `Form` (a database-defined
+flow) runs nothing, which is the correct answer; falling back to "every listener" would be the same
+bug wearing a different hat.
+Note: only two of the four tests covering this fail against the old code. The removal and
+unknown-slug cases pass under it too, because the fixture forms register after boot and the old
+boot-time sweep never saw them. Two-of-four green is not partial success here; it is the shape of the
+defect.
+Status: Final.
+
+## #185 — A body sent as text/html is written as HTML
+Date: 2026-07-28
+Decision: `NotificationDispatcher::htmlBody()` is added **beside** `plainTextBody()`, and the
+submission notification uses it. The plain-text builder stays.
+Why: every CoreX transport sets `Content-Type: text/html`, and the notification body was built by
+joining `label: value` lines with newlines. HTML collapses whitespace, so the whole submission
+arrived as one unbroken run — in an email whose own header promised markup. Replacing
+`plainTextBody()` in place was rejected: a genuinely plain-text transport still wants it, and
+silently returning HTML from a method named for plain text is how the mismatch arose.
+Scope: the notification also now carries `Reply-To` from the submission, validated with `is_email()`
+before it reaches a header. `MailRequest` has accepted `replyTo` all along and `WpMailDriver` has
+always emitted it — the missing piece was one argument, not a feature. No usable address means no
+header, which is the previous behaviour and the right answer for a form that never asked for one.
+Status: Final.
+
+## #186 — A manual reply is the same product as an automated one
+Date: 2026-07-28
+Decision: `EmailStudioSubmissionGateway::reply()` wraps the operator's HTML in the brand `Layout` and
+uses the configured reply-to. `MailServiceProvider::brand()` supplies a `logo` — the theme's custom
+logo, falling back to the site icon, both absolute.
+Why: `reply()` sent the operator's raw textarea content as the entire message body with `replyTo`
+hard-coded to `null`, while `resend()` immediately below it looked up the template version and layout
+and rendered through them. So a site's automated email was branded and its human reply was not, from
+the same screen. Separately, `Layout::wrap()` has always had an `<img>` branch for `$brand['logo']`
+and nothing anywhere wrote that key, so the branch was unreachable and every framework email was
+text-branded.
+Scope: the reply is deliberately **not** run through a template — there is no template for "whatever
+the operator typed". The logo URL must be absolute because an email client has no page context to
+resolve a relative path against. This is a visible change to shipped behaviour, not a pure bug fix,
+and is recorded as such rather than presented as invisible.
+Status: Final.

@@ -307,8 +307,36 @@ final class MailServiceProvider extends ServiceProvider
         return [
             'name'  => (string) get_bloginfo('name'),
             'color' => $color,
+            'logo'  => self::brandLogo(),
             'dir'   => is_rtl() ? 'rtl' : 'ltr',
         ];
+    }
+
+    /**
+     * An absolute URL for the site's mark, or an empty string.
+     *
+     * {@see Layout::wrap()} has always rendered an `<img>` when this is set and fallen back to the
+     * site name in bold when it is not — but nothing ever set it, so the image branch could not
+     * execute and every framework-rendered email was text-branded (issue #138, item 5).
+     *
+     * The theme's custom logo first, because that is the mark a site owner chose for the site;
+     * the site icon second, because a site that set one has still expressed a preference. Both
+     * WordPress functions return absolute URLs, which matters more here than anywhere else: an
+     * email client has no page context and cannot resolve a relative path.
+     */
+    private static function brandLogo(): string
+    {
+        $customLogoId = (int) get_theme_mod('custom_logo');
+
+        if ($customLogoId > 0) {
+            $logo = wp_get_attachment_image_url($customLogoId, 'medium');
+
+            if (is_string($logo) && $logo !== '') {
+                return $logo;
+            }
+        }
+
+        return (string) get_site_icon_url(180);
     }
 
     /** @return array<string,mixed> */
