@@ -40,6 +40,15 @@ final class EmailMessage
          * dangerous feature, since a sender name that varies per message is how a spoof reads.
          */
         public readonly ?string $from = null,
+        /**
+         * Attachment ids, resolved to paths at the driver (spec 081, FR-010).
+         *
+         * Ids rather than paths, all the way through: a message that carried a path could carry
+         * one a request supplied, and `wp_mail()` would happily read it.
+         *
+         * @var list<int>
+         */
+        public readonly array $attachments = [],
     ) {
     }
 }

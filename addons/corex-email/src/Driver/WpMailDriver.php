@@ -10,6 +10,7 @@ namespace Corex\Email\Driver;
 
 defined('ABSPATH') || exit;
 
+use Corex\Email\Message\AttachmentResolver;
 use Corex\Email\Message\EmailMessage;
 use Corex\Support\Config\ConfigInterface;
 
@@ -21,8 +22,11 @@ use Corex\Support\Config\ConfigInterface;
  */
 final class WpMailDriver implements MailDriver
 {
-    public function __construct(private readonly ConfigInterface $config)
-    {
+    public function __construct(
+        private readonly ConfigInterface $config,
+        // Defaulted so every existing construction site keeps working; the resolver is stateless.
+        private readonly AttachmentResolver $attachments = new AttachmentResolver(),
+    ) {
     }
 
     public function send(EmailMessage $message): bool
@@ -49,7 +53,15 @@ final class WpMailDriver implements MailDriver
             $headers[] = 'Bcc: ' . $bcc;
         }
 
-        return wp_mail($message->to, $message->subject, $message->body, $headers);
+        // The fifth argument. `wp_mail()` has always taken `$attachments` and this driver has
+        // always passed four, so the mail stack could not send a file at all (spec 081, FR-010).
+        return wp_mail(
+            $message->to,
+            $message->subject,
+            $message->body,
+            $headers,
+            $this->attachments->resolve($message->attachments),
+        );
     }
 
     /**

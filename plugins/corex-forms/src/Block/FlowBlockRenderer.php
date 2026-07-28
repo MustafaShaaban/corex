@@ -96,7 +96,8 @@ final readonly class FlowBlockRenderer implements BlockRenderer
 
         return sprintf(
             '<section class="corex-flow corex-flow--%1$s" data-corex-flow-name="%2$s">%3$s%4$s'
-            . '<form class="corex-form" method="post" novalidate data-corex-form="%5$s" data-corex-flow="%6$d"'
+            . '<form class="corex-form" method="post" novalidate enctype="multipart/form-data"'
+            . ' data-corex-form="%5$s" data-corex-flow="%6$d"'
             . ' data-corex-flow-version="%7$d" data-corex-endpoint="%8$s" data-corex-nonce="%9$s"'
             . ' data-corex-success="%10$s" data-corex-success-config="%11$s" data-corex-error="%12$s" data-corex-schema="%13$s"'
             . ' data-corex-messages="%18$s">'

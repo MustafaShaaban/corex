@@ -35,6 +35,9 @@ final class MessageBuilder
     private ?string $replyTo = null;
 
     private ?string $from = null;
+
+    /** @var list<int> */
+    private array $attachments = [];
     private ?string $subject = null;
     private ?string $body = null;
     private ?string $templateName = null;
@@ -99,6 +102,23 @@ final class MessageBuilder
     public function from(string $address): self
     {
         $this->from = $address;
+
+        return $this;
+    }
+
+    /**
+     * Attach a file from the media library by id (spec 081).
+     *
+     * Named `attachMedia()` because `COREX-EMAIL-ADDON.md` has documented that name since the
+     * add-on was specified. `attach()` and `attachGenerated()` are documented too and are
+     * deliberately absent: `attach()` implied a path, and a framework-generated file has no id
+     * until something stores it — at which point this method is what you want.
+     */
+    public function attachMedia(int $attachmentId): self
+    {
+        if ($attachmentId > 0) {
+            $this->attachments[] = $attachmentId;
+        }
 
         return $this;
     }
@@ -168,6 +188,16 @@ final class MessageBuilder
     {
         $to = $this->resolver->resolve($this->recipients, new MailContext($this->context))['valid'];
 
-        return new EmailMessage($to, $this->cc, $this->bcc, $this->replyTo, $subject, $body, [], $this->from);
+        return new EmailMessage(
+            $to,
+            $this->cc,
+            $this->bcc,
+            $this->replyTo,
+            $subject,
+            $body,
+            [],
+            $this->from,
+            $this->attachments,
+        );
     }
 }

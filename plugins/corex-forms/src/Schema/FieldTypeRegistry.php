@@ -78,6 +78,9 @@ final class FieldTypeRegistry
             'time' => $standard,
             'url' => $standard,
             'hidden' => $standard,
+            // No default value: a browser will not accept one for a file input, and offering the
+            // setting would be a control that silently does nothing (spec 081, FR-001).
+            'file' => ['options' => false, 'default_value' => false],
             'consent' => $choices,
             'rating' => $standard,
             'step' => ['options' => false, 'default_value' => false],

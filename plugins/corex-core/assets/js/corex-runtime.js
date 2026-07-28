@@ -189,8 +189,16 @@
 			signal: controller ? controller.signal : undefined,
 		};
 		if ( data !== undefined && method !== 'GET' ) {
-			headers[ 'Content-Type' ] = 'application/json';
-			init.body = JSON.stringify( data );
+			// FormData carries its own multipart Content-Type, including a boundary the browser
+			// generates. Setting the header by hand — as this unconditionally did — produces a
+			// body the server cannot parse, so a file upload could not work through this path at
+			// all (spec 081).
+			if ( window.FormData && data instanceof window.FormData ) {
+				init.body = data;
+			} else {
+				headers[ 'Content-Type' ] = 'application/json';
+				init.body = JSON.stringify( data );
+			}
 		}
 
 		return window.fetch( url, init ).then( function ( response ) {
@@ -522,6 +530,12 @@
 				}
 				return;
 			}
+			// A file input's `value` is `C:\fakepath\name.pdf` — the browser's deliberate lie,
+			// and useless. The file itself only travels as FormData, so a form carrying one is
+			// collected differently; see `collectForRequest()` (spec 081).
+			if ( el.type === 'file' ) {
+				return;
+			}
 			// `<select multiple>` before `el.value`: on a multiple select that property is the
 			// FIRST selected option, so everything else the visitor picked was discarded before
 			// the request was built — silently, with a shorter answer stored than the one given.
@@ -632,6 +646,52 @@
 		);
 	}
 
+	/**
+	 * What actually goes on the wire: a plain object, or FormData when the form has a file.
+	 *
+	 * Only forms that carry a file pay the multipart cost. Every other form keeps sending JSON,
+	 * which is what the endpoints, the tests and the themes already expect — switching everything
+	 * to FormData would have been a smaller diff and a much larger change.
+	 *
+	 * @param {HTMLFormElement} form The form being submitted.
+	 * @return {Object|FormData} The request body.
+	 */
+	function collectForRequest( form ) {
+		const values = collect( form );
+		const files = Array.prototype.filter.call(
+			form.querySelectorAll( 'input[type="file"][name]' ),
+			function ( input ) {
+				return input.files && input.files.length > 0;
+			}
+		);
+
+		if ( files.length === 0 || ! window.FormData ) {
+			return values;
+		}
+
+		const body = new window.FormData();
+		Object.keys( values ).forEach( function ( name ) {
+			const value = values[ name ];
+			if ( Array.isArray( value ) ) {
+				// Repeated keys, so PHP sees a list rather than the string "a,b".
+				value.forEach( function ( item ) {
+					body.append( name + '[]', item );
+				} );
+				return;
+			}
+			body.append(
+				name,
+				value === null || value === undefined ? '' : value
+			);
+		} );
+
+		files.forEach( function ( input ) {
+			body.append( input.name, input.files[ 0 ] );
+		} );
+
+		return body;
+	}
+
 	function submit( form ) {
 		if ( form.dataset.corexBusy === '1' ) {
 			return; // dedupe concurrent submits
@@ -641,7 +701,7 @@
 		const submitEl = form.querySelector( '[type="submit"]' );
 		const token = loading.start( form, submitEl );
 
-		api.post( form.dataset.corexEndpoint, collect( form ), {
+		api.post( form.dataset.corexEndpoint, collectForRequest( form ), {
 			nonce: form.dataset.corexNonce,
 		} ).then( function ( result ) {
 			loading.stop( token );

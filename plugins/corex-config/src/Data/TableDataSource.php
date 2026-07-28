@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Access\CorexAbility;
 use Corex\Data\DataField;
+use Corex\Security\Upload\AttachmentDelivery;
 use Corex\Data\DataSourceCapabilities;
 
 /**
@@ -100,10 +101,27 @@ class TableDataSource implements QueryableDataSource, SchemaAwareDataSource, Cap
         return $record === null ? null : $this->shapeRow($record);
     }
 
+    /**
+     * The importable shape of this source.
+     *
+     * The type used to be hardcoded to text for every column, so a table that declared an
+     * attachment column described itself as holding text and every surface downstream rendered the
+     * id as a number (#138 item 6). It reads the declared type now, through the same allow-list
+     * `fields()` uses, so the two cannot disagree about what a column is.
+     */
     public function schema(): array
     {
+        $writable = $this->writesDeclared();
+
         return array_map(
-            static fn (array $column): array => ['name' => $column['label'], 'type' => DataField::TYPE_TEXT],
+            function (array $column) use ($writable): array {
+                $declared = $writable ? $this->table->writableField($column['id']) : null;
+
+                return [
+                    'name' => $column['label'],
+                    'type' => self::fieldType($declared['type'] ?? DataField::TYPE_TEXT),
+                ];
+            },
             $this->table->displayColumns(),
         );
     }
@@ -232,6 +250,7 @@ class TableDataSource implements QueryableDataSource, SchemaAwareDataSource, Cap
             DataField::TYPE_DATETIME,
             DataField::TYPE_SELECT,
             DataField::TYPE_JSON,
+            DataField::TYPE_ATTACHMENT,
         ], true) ? $type : DataField::TYPE_TEXT;
     }
 
@@ -241,14 +260,68 @@ class TableDataSource implements QueryableDataSource, SchemaAwareDataSource, Cap
         return array_map($this->shapeRow(...), $records);
     }
 
-    /** @param array<string,scalar> $record @return array<string,scalar> */
+    /** @param array<string,scalar> $record @return array<string,mixed> */
     private function shapeRow(array $record): array
     {
+        $attachments = $this->attachmentColumns();
+
         $row = ['id' => $record['id'] ?? 0];
         foreach ($this->table->columnIds() as $column) {
-            $row[$column] = $record[$column] ?? '';
+            $value = $record[$column] ?? '';
+
+            $row[$column] = in_array($column, $attachments, true)
+                ? self::describeAttachment((int) $value)
+                : $value;
         }
 
         return $row;
+    }
+
+    /**
+     * @return list<string> the ids of columns this table declares as attachments
+     */
+    private function attachmentColumns(): array
+    {
+        $columns = [];
+
+        foreach ($this->fields() as $field) {
+            if ($field->type === DataField::TYPE_ATTACHMENT) {
+                $columns[] = $field->key;
+            }
+        }
+
+        return $columns;
+    }
+
+    /**
+     * A stored file, described well enough for an admin surface to render it.
+     *
+     * Resolved here rather than in the browser: the row already goes over the wire, and a React
+     * component fetching a name per attachment would turn one list request into one per row.
+     *
+     * A missing attachment reports itself as missing rather than as absent. An id that no longer
+     * resolves means a file was deleted out from under a record, and an operator seeing an em dash
+     * would read that as "nobody uploaded anything" (FR-008).
+     *
+     * @return array{id:int,name:string,url:string,missing:bool}|string
+     */
+    private static function describeAttachment(int $attachmentId): array|string
+    {
+        if ($attachmentId <= 0) {
+            return '';
+        }
+
+        $path = get_attached_file($attachmentId);
+
+        if ($path === false || $path === '') {
+            return ['id' => $attachmentId, 'name' => '', 'url' => '', 'missing' => true];
+        }
+
+        return [
+            'id'      => $attachmentId,
+            'name'    => basename((string) $path),
+            'url'     => AttachmentDelivery::url($attachmentId),
+            'missing' => false,
+        ];
     }
 }

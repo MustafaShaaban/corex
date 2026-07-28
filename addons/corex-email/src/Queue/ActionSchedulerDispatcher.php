@@ -64,6 +64,7 @@ final class ActionSchedulerDispatcher implements MailQueueDispatcher
             // queue leave from different addresses — an inconsistency that is very hard to
             // notice and very annoying to debug (#150).
             'from'         => $request->from,
+            'attachments'  => $request->attachments,
             'requestId'    => $request->requestId,
             'parentAttemptId' => $request->parentAttemptId,
         ];
@@ -82,6 +83,7 @@ final class ActionSchedulerDispatcher implements MailQueueDispatcher
             body: isset($payload['body']) ? (string) $payload['body'] : null,
             replyTo: isset($payload['replyTo']) ? (string) $payload['replyTo'] : null,
             from: isset($payload['from']) ? (string) $payload['from'] : null,
+            attachments: is_array($payload['attachments'] ?? null) ? $payload['attachments'] : [],
             requestId: isset($payload['requestId']) ? (string) $payload['requestId'] : null,
             parentAttemptId: isset($payload['parentAttemptId']) ? (string) $payload['parentAttemptId'] : null,
         );

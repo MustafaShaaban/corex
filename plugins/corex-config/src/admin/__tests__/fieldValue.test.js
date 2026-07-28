@@ -74,3 +74,42 @@ it( 'renders a number as text without trying to link it', () => {
 	expect( container.textContent ).toBe( '42' );
 	expect( container.querySelector( 'a' ) ).toBeNull();
 } );
+
+describe( 'a stored file', () => {
+	it( 'links to the delivery route, by name', () => {
+		const container = render( {
+			id: 4242,
+			name: 'cv.pdf',
+			url: 'https://example.test/wp-admin/admin-post.php?action=corex_attachment&id=4242',
+			missing: false,
+		} );
+
+		const link = container.querySelector( 'a' );
+
+		// Before this, a stored file rendered as the bare integer 4242 — an operator could see
+		// that something had been uploaded and had no way to open it (#138 item 6).
+		expect( link.textContent ).toContain( 'cv.pdf' );
+		expect( link.getAttribute( 'href' ) ).toContain( 'corex_attachment' );
+		expect( link.getAttribute( 'rel' ) ).toBe( 'noopener noreferrer' );
+	} );
+
+	it( 'says a file is missing rather than showing an em dash', () => {
+		const container = render( {
+			id: 4242,
+			name: '',
+			url: '',
+			missing: true,
+		} );
+
+		// "Nobody uploaded anything" and "the file this record points at is gone" are different
+		// facts, and only one of them is somebody's problem.
+		expect( container.textContent ).not.toBe( '—' );
+		expect( container.querySelector( 'a' ) ).toBeNull();
+	} );
+
+	it( 'does not treat an arbitrary object as an attachment', () => {
+		const container = render( { id: 'not-a-number', name: 'x' } );
+
+		expect( container.querySelector( 'a' ) ).toBeNull();
+	} );
+} );

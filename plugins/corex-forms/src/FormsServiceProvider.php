@@ -70,6 +70,9 @@ use Corex\Mail\Mailer;
 use Corex\Mail\RoutedMailer;
 use Corex\Mail\MailTemplateCatalog;
 use Corex\Security\ChallengeVerifier;
+use Corex\Security\Upload\AttachmentStorage;
+use Corex\Security\Upload\AttachmentStore;
+use Corex\Security\Upload\UploadValidator;
 
 /**
  * Boots the forms engine: binds the headless cores (schema resolver, validator,
@@ -79,6 +82,27 @@ use Corex\Security\ChallengeVerifier;
  */
 final class FormsServiceProvider extends ServiceProvider
 {
+    /**
+     * What a form may accept when its own field does not narrow it (spec 081).
+     *
+     * Documents and images, nothing executable. A framework whose default upload policy accepted
+     * whatever the server's mime map allowed would be handing every site a file-drop endpoint it
+     * did not ask for, and the first person to notice would be whoever found the webshell.
+     *
+     * @var array<string,list<string>>
+     */
+    private const UPLOAD_TYPES = [
+        'application/pdf' => ['pdf'],
+        'image/jpeg' => ['jpg', 'jpeg'],
+        'image/png' => ['png'],
+        'image/webp' => ['webp'],
+        'application/msword' => ['doc'],
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => ['docx'],
+    ];
+
+    /** 10 MB. A form that needs more says so with `max_size:`. */
+    private const UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+
     public function register(): void
     {
         $this->container->singleton(RuleRegistry::class);
@@ -205,7 +229,27 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(ConfigInterface::class),
             ),
         );
-        $this->container->singleton(FormSubmissionService::class);
+        // The attachment store is built here rather than autowired: it needs an UploadValidator,
+        // and that needs an allow-list and a size cap, which are policy rather than dependencies.
+        // The defaults are deliberately narrow — a form declaring `mime:` widens them per field,
+        // and a framework that accepted anything by default would be handing every site an upload
+        // endpoint they did not ask for (spec 081).
+        $this->container->singleton(
+            AttachmentStorage::class,
+            static fn (): AttachmentStorage => new AttachmentStore(
+                new UploadValidator(self::UPLOAD_TYPES, self::UPLOAD_MAX_BYTES),
+            ),
+        );
+        $this->container->singleton(
+            FormSubmissionService::class,
+            static fn (ContainerInterface $c): FormSubmissionService => new FormSubmissionService(
+                $c->make(\Corex\Forms\FormRegistry::class),
+                $c->make(\Corex\Forms\Schema\SchemaResolver::class),
+                $c->make(\Corex\Forms\Validation\Validator::class),
+                $c->make(\Corex\Events\EventDispatcher::class),
+                $c->make(AttachmentStorage::class),
+            ),
+        );
         $this->container->singleton(SubmitController::class);
         $this->container->singleton(FormsListController::class);
         // Request-scoped: one registry per page render, shared between the renderer that declares

@@ -30,6 +30,10 @@ it('registers every required built-in field type in design order', function () {
         'time',
         'url',
         'hidden',
+        // Spec 081. `Block/FieldRenderer::INPUT_TYPES` has listed 'file' since it was written, and
+        // the registry rejected the type upstream — so the framework read as though uploads were
+        // supported and a form declaring one could not exist.
+        'file',
         'consent',
         'rating',
         'step',

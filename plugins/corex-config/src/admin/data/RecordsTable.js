@@ -1,6 +1,7 @@
 import { Button } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import { allRowsSelected, toggleSort } from '../dataClient.js';
+import FieldValue from '../components/FieldValue.js';
 
 function recordSelectionLabel( recordId ) {
 	/* translators: %s: record identifier. */
@@ -23,16 +24,6 @@ function ariaSortFor( query, columnId, sortable ) {
 		return 'none';
 	}
 	return query.dir === 'asc' ? 'ascending' : 'descending';
-}
-
-/**
- * A cell with nothing in it prints an em dash rather than collapsing to nothing.
- *
- * @param {*} value One cell's value.
- * @return {boolean} Whether there is nothing to show.
- */
-function isBlank( value ) {
-	return value === '' || value === null || value === undefined;
 }
 
 export default function RecordsTable( { explorer, open } ) {
@@ -127,9 +118,7 @@ export default function RecordsTable( { explorer, open } ) {
 							</td>
 							{ state.columns.map( ( column ) => (
 								<td key={ column.id }>
-									{ isBlank( row[ column.id ] )
-										? '—'
-										: String( row[ column.id ] ) }
+									<FieldValue value={ row[ column.id ] } />
 								</td>
 							) ) }
 							<td className="corex-data__row-actions">

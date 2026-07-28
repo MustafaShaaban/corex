@@ -34,7 +34,7 @@ function humanize( key ) {
  * tells a reader nothing; empty and absent values become an em dash.
  *
  * @param {*} value The raw value.
- * @return {string} The display string.
+ * @return {string|Object} The display string, or a described attachment untouched.
  */
 function display( value ) {
 	if ( value === null || value === undefined || value === '' ) {
@@ -46,6 +46,13 @@ function display( value ) {
 	}
 
 	if ( typeof value === 'object' ) {
+		// A described attachment is passed through untouched for `FieldValue` to render as a link.
+		// JSON.stringify()ing it here is what turned a stored file into `{"id":4242,...}` on the
+		// screen — worse than the bare integer it replaced (#138 item 6).
+		if ( typeof value.id === 'number' && 'missing' in value ) {
+			return value;
+		}
+
 		return JSON.stringify( value );
 	}
 

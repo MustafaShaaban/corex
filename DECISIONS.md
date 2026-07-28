@@ -3723,3 +3723,50 @@ Scope: the test asserts the wrong outcome explicitly (`not->toBe('')`) rather th
 one, because that is the failure a future refactor of the sanitize shape would reintroduce, and it
 is silent.
 Status: Final.
+
+## #192 — A protected file is protected by a capability check, not by a deny file
+Date: 2026-07-28
+Decision: uploads land in `uploads/corex-private/` with Apache and IIS deny rules, and the only way
+to read one is `AttachmentDelivery` — an `admin-post` route that verifies a nonce and then
+`current_user_can()` before reading a byte. The deny files are defence in depth; the route is the
+guarantee.
+Why: a `.htaccess` is a promise about server configuration that CoreX cannot verify. nginx ignores
+it entirely, and plenty of hosts disable `AllowOverride`. Shipping only deny rules would mean the
+protection of somebody's CV depended on a file the framework writes and never checks the effect of.
+Scope: deliberately not signed URLs with an expiry — a signed URL is a bearer token that ends up in
+browser history, a referrer header and a forwarded email, and the viewer is already logged in, so
+asking who they are is cheaper and does not leak. Deliberately not `X-Sendfile`/`X-Accel-Redirect`,
+which are faster and hand the file back to the web-server configuration this exists because we
+cannot trust. `Content-Disposition: attachment` always, so a visitor-supplied SVG cannot execute on
+the admin's own origin. The route refuses any id it did not itself store (`_corex_protected`), or it
+would be a general file reader.
+Status: Final.
+
+## #193 — Validate the descriptor, then store; never store, then clean up
+Date: 2026-07-28
+Decision: `FormSubmissionService` validates uploaded descriptors in place — `mime` and `max_size`
+read the temporary file — and only stores once the whole submission has passed. A form with two file
+fields whose second upload fails gives the first one back.
+Why: FR-005 says a refused submission leaves no stored file. The alternative — store first, delete on
+rejection — is correct only for as long as nobody adds an early return between the two, and the
+failure it produces is silent: bytes in a protected directory with no record pointing at them, which
+no retention sweep can find because nothing knows they are there.
+Scope: the same ordering in `ApplicationService`, where the row is written only after the file is
+down. A row pointing at an id that does not resolve is indistinguishable, later, from the `0` that
+issue #138 item 8 was about.
+Status: Final.
+
+## #194 — A file input's value is a lie, and Content-Type must not be set for FormData
+Date: 2026-07-28
+Decision: `corex-runtime.js` skips file inputs in `collect()` and switches the request body to
+`FormData` only when the form actually carries a file; every other form keeps sending JSON.
+Why: two independent reasons uploads could not work, neither mentioned in issue #138. `el.value` for
+a file input is `C:\fakepath\name.pdf` — the browser's deliberate lie — so the file never reached
+`collect()` at all. And `viaFetch` set `Content-Type: application/json` unconditionally, which
+overrides the multipart boundary the browser generates and produces a body the server cannot parse.
+Scope: scoped to forms that carry a file because this is a build-free asset enqueued on every page
+with a form, and switching everything to FormData would have been a smaller diff and a much larger
+change — every endpoint, test and theme currently expects JSON. `collect()` is now exposed on
+`window.Corex.forms` so a theme reads a form the same way the runtime does; the two disagreeing is
+the class of bug the multi-select defect was.
+Status: Final.
