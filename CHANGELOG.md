@@ -6,6 +6,48 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.40.0] — 2026-07-29
+
+Every dependency advisory closed. The policy file that held **24 bounded exceptions** now holds none,
+and `npm run verify:dependencies` passes across Composer, the root npm workspace and the docs site.
+
+### Security
+
+- **Root npm workspace: 64 advisories → 0.** Every vulnerable package was a *transitive* dependency
+  whose parent pinned it below the patched version, which is why `npm audit fix` moved none of them.
+  What npm proposed instead was a **downgrade** — `@wordpress/scripts@19.2.4` against an installed
+  `^33.0.0`, and `@wordpress/env@11.8.0` against `^11.11.0` — and `CONTRIBUTING.md` forbids applying a
+  suggested downgrade. The fix is npm `overrides`, which raises a transitive dependency without
+  touching its parent: `brace-expansion`, `serialize-javascript`, `uuid`, `webpack-dev-server`,
+  `@opentelemetry/core`, `markdown-it`, `linkify-it`, `adm-zip`, and a scoped
+  `markdownlint-cli → minimatch` for one nested copy on an old v3 line. (DECISIONS #206)
+- **Docs site npm workspace: 7 advisories → 0**, via the Astro 7 migration below.
+
+### Changed
+
+- **`docs-app` runs on `astro@7.1.5` and `@astrojs/starlight@0.41.5`**, building the same 286 pages
+  with no configuration change. This had been recorded as blocked by a packaging question —
+  regenerating `docs-app/package-lock.json` expands the `corex-framework "file:.."` workspace root
+  into the docs tree, which was measured at taking npm-docs from 5 findings to 17. That was only ever
+  true while the *root* tooling was dirty: with the root at zero there is nothing for the expansion to
+  drag in. The two exception groups had been recorded as independent and were not.
+
+### Fixed
+
+- One override was **backed out**: raising `minimatch` to `^10.2.6` removes its CommonJS default
+  export, which `eslint-plugin-jsx-a11y` calls — `lint:js` died with
+  `TypeError: (0, _minimatch.default) is not a function`. The block build and the whole Jest suite
+  passed with it in place; only the linter caught it. `minimatch` is instead raised only inside
+  `markdownlint-cli`, where the vulnerable copy actually was, and stays on the v3 line its parent
+  expects.
+
+### Verification
+
+Pest unit **1711** · integration **356** · Jest **431** · Playwright **120** · `verify:dependencies`
+PASS with 0 findings and 0 exceptions · docs site 286 pages on Astro 7 · dist builds and verifies ·
+all lints clean.
+
+
 ## [0.39.0] — 2026-07-29
 
 Two specs. The first fixed five things an owner reported after using the admin; the second made the

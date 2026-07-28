@@ -3,7 +3,7 @@ title: Project status
 description: What works, what is partial, and what is not built — with the file that records each one.
 ---
 
-**Version 0.39.0.** This page exists so you do not have to read the git history to find out what you
+**Version 0.40.0.** This page exists so you do not have to read the git history to find out what you
 are adopting. Everything below is traceable to something in the repository — a spec, a policy file, a
 test exclusion, a design inventory row.
 
@@ -48,9 +48,10 @@ Three statuses, and they mean specific things:
 
 ## Known open items
 
-- **24 bounded dependency exceptions**, mostly in the docs-site and build toolchains. Governed by
-  `.github/dependency-security-policy.json` with a reason and review date each. Four are unblocked
-  only by the Astro 7 migration, itself held by a lockfile packaging question.
+No dependency advisories are open: `.github/dependency-security-policy.json` holds zero exceptions and
+`npm run verify:dependencies` passes across all three ecosystems. The 24 that stood at v0.39.0 were
+closed in v0.40.0.
+
 - **Three browser specs excluded from a fresh-install run.** Two block-editor specs trade a
   first-open failure between them; a third, the flow builder, has not been shown to be environmental
   and may be a real slow path. Recorded with their ruled-out causes in

@@ -1,6 +1,6 @@
 # Corex Product and Engineering Roadmap
 
-**Currently released: v0.39.0.** This roadmap is the durable, owner-friendly view of where Corex is,
+**Currently released: v0.40.0.** This roadmap is the durable, owner-friendly view of where Corex is,
 what must happen next, and what is intentionally deferred. It tracks milestones and dependencies
 rather than repeating completed Spec Kit history.
 
@@ -56,9 +56,10 @@ Approved design work moves from design inventory to a focused handoff, then to a
   and only on PRs based on `main`/`develop`, so a stacked PR was never checked at all.
   **CI is the authority for integration and browser runs**: a long-lived dev install accumulates state a
   freshly provisioned one does not, which is why three integration specs fail locally and pass in CI.
-- **Known open, and not hidden:** 24 bounded dependency exceptions, three browser specs excluded from a
-  fresh-install run, a 1px RTL overflow on `corex-access`, and Arabic typography proved for layout but not for
-  type. Each is listed with its source in [`PROJECT-STATUS.md`](PROJECT-STATUS.md).
+- **Known open, and not hidden:** three browser specs excluded from a fresh-install run, a 1px RTL overflow
+  on `corex-access`, and Arabic typography proved for layout but not for type. Each is listed with its source
+  in [`PROJECT-STATUS.md`](PROJECT-STATUS.md). The 24 bounded dependency exceptions that stood here were
+  closed by spec 089; the policy file now holds none.
 - **Blocked:** M3 cannot enter engineering without an approved navigation handoff and the reviewed M2 token
   contract. M4 cannot start until the minimum M2/M3 foundations and selected M5 components are ready.
 - **Not authorized:** roadmap presence does not authorize implementation, Pro work, builders, or bulk spec creation.
@@ -569,18 +570,19 @@ Nothing is authorized by appearing here (§16). Listed so the choice is informed
   provider, seam, job, and integration with live health — is the natural successor and is deliberately *not*
   in 074's scope.
 
-- **Astro 7 migration for `docs-app`.** The original blocker is gone: `@astrojs/starlight@0.41.3` peers
-  `astro ^7`, and astro 7.1.3 builds the docs to the same 284 pages with no config change. It is held only by a
-  packaging question — regenerating `docs-app/package-lock.json` makes npm expand the `corex-framework`
-  `file:..` workspace root into the docs tree, taking npm-docs from 5 advisories to 17. Resolving that also
-  retires four of the bounded exceptions in `.github/dependency-security-policy.json`, whose review dates fall
-  2026-09-30.
+- ~~**Astro 7 migration for `docs-app`.**~~ Done in spec 089 — `astro@7.1.5` + `@astrojs/starlight@0.41.5`,
+  286 pages, no config change. The packaging question that held it turned out not to be independent: expanding
+  the `corex-framework` `file:..` workspace root into the docs tree only mattered while the *root* tooling was
+  dirty, so fixing the root removed the blocker. The regenerated lockfile contains no root dev tooling at all.
 - **The three excluded browser specs.** Two block-editor specs trade a first-open failure between them, and one
   flow-builder spec times out mid-interaction; each carries its ruled-out causes in
   `tests/e2e/playwright.config.js`. Real coverage gaps, already diagnosed down to "needs fresh eyes".
-- ~~**`wp corex version` completeness.**~~ Closed by PR #126 in **v0.35.1** — the command now stamps 17 files
-  including `docs-app/src/version.ts`, so a release can no longer ship with the docs site advertising the
-  previous version.
+- ~~**`wp corex version` completeness.**~~ Closed twice. PR #126 in **v0.35.1** brought `docs-app/src/version.ts`
+  into reach; cutting **v0.39.0** found that `package.json`, `README.md`, `ROADMAP.md` and both status pages were
+  still stamped by hand — which is how this file came to sit three releases behind a correct README. All are
+  stamped now (DECISIONS #205).
+- ~~**The 24 bounded dependency exceptions.**~~ Closed by spec 089. The policy file holds none, and
+  `verify:dependencies` passes across Composer, npm-root and npm-docs.
 - **M3/M4 product tracks** (§6–§7), which remain the substantive product direction and are the only items here
   that would be a *feature* spec rather than remediation.
 

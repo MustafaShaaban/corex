@@ -8,15 +8,15 @@ multisite, headless, or AI-agent-driven — on one clean, documented, spec-first
 - **Stack:** Composer (PHP) + npm workspaces (JS), one monorepo.
 - **License:** GPL-2.0-or-later.
 
-## Status: v0.39.0, actively developed, honest about its gaps
+## Status: v0.40.0, actively developed, honest about its gaps
 
 The foundation is stable and used: the engine, the block/forms/config layers, the admin product, the
 CLI generators, Corex Mail, and the docs site. Verification runs on every pull request — **1704 PHP
 unit tests, 356 integration tests against a WordPress that CI provisions itself, 431 JavaScript
 tests, and 120 browser tests**.
 
-Several add-ons are partial, one site kit is a reserved seam rather than a kit, and there are open
-dependency advisories and three excluded browser specs. None of that is hidden:
+Several add-ons are partial, one site kit is a reserved seam rather than a kit, and three browser
+specs are excluded from a fresh-install run. None of that is hidden:
 
 ### 👉 **[PROJECT-STATUS.md](PROJECT-STATUS.md) — what works, what is partial, what is not built**
 
@@ -165,7 +165,7 @@ The rule hierarchy: **Role Gate** (where) → **Spec Kit** (what) → **Guard Ga
 Before starting a real client site, run the Spec 055 readiness report:
 
 ```bash
-wp corex readiness 0.39.0
+wp corex readiness 0.40.0
 ```
 
 It reports runtime gating, release metadata, CI/security controls, `make:site` validation, deployment profiles,
@@ -187,10 +187,8 @@ fail closed. Development-only exceptions live in `.github/dependency-security-po
 paths, compensating controls, review dates, and upstream removal triggers; high or critical shipped-runtime/CI
 findings cannot be excepted. See `SECURITY.md` for the policy and exit-code contract.
 
-**There are currently 24 bounded exceptions open**, mostly in the docs-site and build toolchains.
-They are governed rather than ignored, and they are listed with their blocker in
-[PROJECT-STATUS.md](PROJECT-STATUS.md), under *Known open items*. If you are evaluating this
-project, read that section.
+**There are currently no open exceptions.** The 24 that stood at v0.39.0 were closed in v0.40.0 —
+see [PROJECT-STATUS.md](PROJECT-STATUS.md), under *Known open items*, for how.
 
 ## Contributing
 

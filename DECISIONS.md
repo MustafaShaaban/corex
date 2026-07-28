@@ -3950,3 +3950,37 @@ record rather than update it. Seven tests cover this, one of them specifically t
 historical-reference case, and one asserting that a dependency pinned to the same version as the
 package root is left alone.
 Status: Final.
+
+## #206 — `overrides`, because npm's "fix" was a downgrade
+Date: 2026-07-29
+Decision: the 24 bounded dependency exceptions are closed with npm `overrides` raising transitive
+dependencies in place, not by taking the upgrade `npm audit` proposed.
+Why: `npm audit` reported a fix available for every finding. For 37 of them the "fix" was
+`@wordpress/scripts@19.2.4` against an installed `^33.0.0`, and `@wordpress/env@11.8.0` against
+`^11.11.0` — **downgrades**, which `CONTRIBUTING.md` forbids. For the other 27 it reported
+`fixAvailable: true` and `npm audit fix` moved none of them, because each was a transitive dependency
+its parent pinned below the patched version. Neither of npm's two suggestions was usable, which is
+the precise reason the exceptions existed — and the policy file had recorded it only as "a pinned
+wp-scripts constraint".
+Scope: `overrides` is the mechanism for exactly this and is neither `--force` nor a downgrade. One
+override was backed out: `minimatch@^10` removes the CommonJS default export `eslint-plugin-jsx-a11y`
+calls, and `lint:js` was the only check that caught it — the block build and all 431 Jest tests
+passed with the broken linter dependency in place. That is why an override has to be proven by the
+parent's own tooling rather than by the advisory count going down.
+Status: Final.
+
+## #207 — Two exceptions recorded as independent were one
+Date: 2026-07-29
+Decision: the Astro 7 migration landed as a consequence of clearing the root workspace, not as
+separate work.
+Why: the docs-site exceptions were held by a measured, specific packaging problem — regenerating
+`docs-app/package-lock.json` makes npm expand the `corex-framework "file:.."` workspace root into the
+docs tree, taking npm-docs from 5 findings to 17. That measurement was correct and its conclusion
+was time-limited: the expansion only hurts while the root tooling is dirty. With the root at zero
+there is nothing for it to drag in, and the regenerated lockfile contains no `webpack`, `jest` or
+`eslint` at all.
+Scope: worth recording because the policy file described the two groups as independent blockers with
+separate review dates, and the cheapest route to closing six of them was to fix eighteen others
+first. A blocker measured once stays in the record as a fact long after it has stopped being one;
+re-measuring before believing it is the actual lesson.
+Status: Final.

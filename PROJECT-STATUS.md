@@ -1,6 +1,6 @@
 # Corex — what works, what is partial, what is not built
 
-**Version 0.39.0** · updated 2026-07-29
+**Version 0.40.0** · updated 2026-07-29
 
 This page exists so you do not have to read the git history to find out what you are adopting.
 Everything below is traceable to something in this repository — a spec, a policy file, a test
@@ -57,18 +57,21 @@ the same reason — so the next such gap is found by a reader, not by a customer
 Each of these is recorded somewhere in the repository already. The source is the point — you can
 verify every one.
 
-### Dependency advisories — 24 bounded exceptions
+### Dependency advisories — none open
 
-`.github/dependency-security-policy.json` holds 24 entries under a documented exception gate, mostly
-in the docs-site and build toolchains (`astro`, `esbuild`, `postcss`, `webpack-dev-server`,
-`minimatch`, `serialize-javascript`, `markdown-it`, and others). Four of them are unblocked only by
-the Astro 7 migration, which is itself held by a packaging question: regenerating
-`docs-app/package-lock.json` makes npm expand the `file:..` workspace root into the docs tree, taking
-that lockfile from 5 advisories to 17.
+`.github/dependency-security-policy.json` holds **zero exceptions**, and
+`npm run verify:dependencies` reports PASS with no findings across Composer, the root npm workspace
+and the docs-site npm workspace.
 
-**These are open.** They are governed rather than ignored — the policy file carries a reason and a
-review date for each — but a public reader should know they exist before adopting.
-*Source: `.github/dependency-security-policy.json`, `ROADMAP.md` §17.*
+This was 24 bounded exceptions as recently as v0.39.0. Closing them needed `overrides` rather than
+`npm audit fix`: every vulnerable package was a *transitive* one whose parent pinned it below the
+patched version, and what npm proposed instead was a **downgrade** of `@wordpress/scripts` from 33 to
+19 — which `CONTRIBUTING.md` forbids. The docs-site half was recorded as blocked by a lockfile
+question that turned out to depend on the root being clean, so fixing the root unblocked it and the
+Astro 7 migration landed with it. (Spec 089, DECISIONS #206)
+
+The gate fails closed on any unbounded finding, so an empty list is a state that is checked on every
+pull request, not a claim.
 
 ### Three browser specs are excluded from a fresh-install run
 
