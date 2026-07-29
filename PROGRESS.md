@@ -4,6 +4,42 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-29) -- **The documentation site is published.**
+
+<https://mustafashaaban.github.io/corex/> · spec 090, merged as PR #162.
+
+`.github/workflows/docs.yml` had regenerated the class reference and built the site on every push to
+`main` since spec 022, then uploaded it as an artifact nothing served. Its own trailing comment had
+described the missing half for several releases.
+
+**Enabling the setting alone would have published a broken site.** A GitHub project page is served
+from a repository subpath, and `astro.config.mjs` had neither `site` nor `base` — without `base`
+every internal link, asset URL and the Pagefind index resolves to the domain root, so the site 404s
+on itself. The build had also been warning that the sitemap integration was skipping, because `site`
+was unset. Three changes, not one: the Astro config (both values env-overridable so the same build
+still serves a dedicated domain or the local WAMP vhost), the workflow (Pages permissions, a `pages`
+concurrency group that does not cancel in flight, `upload-pages-artifact`, a `deploy-pages` job gated
+on the build), and the repository setting.
+
+**Checked before merging, not after:** the `github-pages` environment carries a custom branch policy,
+and a policy without `main` in it rejects the deploy while the workflow still reports green. `main`
+was allowed.
+
+**Verified after merging, because a green workflow is not a site that loads.** Run `30410411129`,
+both jobs success, then six URLs: the root, a deep page, a hashed asset (proving `base`), the
+Pagefind index, the sitemap, and a reference page generated from source — all 200.
+
+Also corrected: `README.md` still claimed 1704 unit tests against an actual 1711. Prose counts sit
+outside `wp corex version`'s reach, which is worth remembering the next time one drifts.
+
+**`PROJECT-STATUS.md`'s known-open list is now three items** — three excluded browser specs, a 1px
+RTL overflow on `corex-access`, and Arabic typography proved for layout but not type. No security
+items, no documentation gaps.
+
+**Next:** owner decision. Two repository settings remain owner-only (five of six CI checks are not
+*required* in branch protection), and `upstream/main` — the Azure remote — is 5 commits behind.
+
+---
 ## RESUME HERE (2026-07-29) -- **v0.40.0: every dependency advisory closed.**
 
 On `spec/089-dependency-advisories`, after v0.39.0. `PROJECT-STATUS.md` shipped listing 24 bounded

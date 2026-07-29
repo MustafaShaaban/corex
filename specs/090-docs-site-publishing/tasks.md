@@ -11,10 +11,20 @@
 - [x] T009 Remove the "GitHub Pages is not enabled" item from both status pages
 - [x] T010 Point `README.md` and `docs/en/05-deployment/ci-cd.md` at the live URL
 - [x] T011 Correct the stale unit-test count in `README.md` (1704 → 1711)
-- [ ] T012 Confirm the first deployment succeeds after merge — **only verifiable on `main`**
+- [x] T012 Confirm the first deployment succeeds after merge — **done, run `30410411129`**
 
-## Note
+## T012, verified
 
-T012 cannot be closed from a branch: `deploy-pages` runs on `main` and there is no way to prove the
-deployment works without merging. Left open rather than assumed, and it is the one claim in this spec
-not yet verified.
+`deploy-pages` runs only on `main`, so this could not be closed from the branch and was left unchecked
+rather than assumed. Run `30410411129` — *Regenerate reference + build docs site: success*, *Publish
+to GitHub Pages: success* — and then the site itself, because a green workflow is not the same fact
+as a site that loads:
+
+| Checked | Result |
+|---|---|
+| `/corex/` | 200 |
+| `/corex/project-status/` | 200 |
+| `/corex/_astro/print.*.css` | 200 — the `base` is right, which is what would have broken without it |
+| `/corex/pagefind/pagefind.js` | 200 — search index reachable |
+| `/corex/sitemap-index.xml` | 200 — the integration that used to warn |
+| `/corex/reference/core/boot/` | 200 — a page generated from source, not authored |
