@@ -156,9 +156,9 @@ test.describe( 'Guides', () => {
 		// as "could not sign in" nowhere near the cause.
 		//
 		// The stronger one: an editor is the better assertion. A subscriber sees nothing, which
-		// a registry that returned nothing at all would also satisfy. An editor must see exactly
-		// the one guide whose capability they hold and none of the three they do not — so this
-		// fails both if gating is too tight and if it is too loose.
+		// a registry that returned nothing at all would also satisfy. An editor must see the
+		// guides whose capabilities they hold and none of the ones they do not — so this fails
+		// both if gating is too tight and if it is too loose.
 		const page = await signInAs( browser, baseURL, EDITOR, EDITOR_PASS );
 
 		const response = await page.goto( GUIDES );
@@ -167,13 +167,30 @@ test.describe( 'Guides', () => {
 		// screen would refuse them help for the parts they can use.
 		expect( response.status() ).toBe( 200 );
 
-		await expect( page.locator( '#guide-corex-publishing' ) ).toBeVisible();
-		await expect( page.locator( '.corex-guides__guide' ) ).toHaveCount( 1 );
+		// Named, not counted. This asserted `toHaveCount( 1 )` until spec 094 added six guides,
+		// and the failure it then produced said "expected 1, received 3" — which is a true
+		// statement about a number and says nothing about whether gating works. Both halves are
+		// now spelled out, so the message names the guide that leaked or vanished.
+		for ( const visible of [
+			// Orientation is gated on `read` deliberately: the reader who needs "what is this"
+			// most is the one with the fewest permissions.
+			'#guide-corex-orientation',
+			'#guide-corex-publishing',
+		] ) {
+			await expect( page.locator( visible ) ).toBeVisible();
+		}
 
+		// `corex-forms-flows` is deliberately absent from this list. The `editor` *role* holds no
+		// CoreX abilities, but a long-lived development install accumulates grants — the fixture
+		// user here has `corex_manage_forms` from an earlier run of the Access specs, so the guide
+		// correctly shows for them and asserting its absence would fail on install state rather
+		// than on gating. Every capability below is one no grant in this repo hands an editor.
 		for ( const gated of [
 			'#guide-corex-submissions',
 			'#guide-corex-email',
 			'#guide-corex-performance',
+			'#guide-corex-settings',
+			'#guide-corex-setup',
 		] ) {
 			await expect( page.locator( gated ) ).toHaveCount( 0 );
 		}
