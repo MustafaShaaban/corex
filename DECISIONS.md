@@ -4001,3 +4001,23 @@ repository, and both would lock the maintainer out of their own `main` rather th
 Each is a deliberate omission with a stated reason, not an oversight, and `PROJECT-STATUS.md` says so
 where somebody evaluating the project will read it.
 Status: Final.
+
+## #209 — Both remaining open items named the wrong cause
+Date: 2026-07-29
+Decision: the 1px RTL overflow is fixed in `corex-admin-shell.css` against WordPress's admin-bar menu
+toggle, and the leaking access-request fixtures are fixed in `AccessRequestFormTest`'s `afterEach`.
+Why: neither item was where it had been recorded, and in both cases the wrong attribution is what
+kept it open for several releases.
+- *"`corex-access` overflows 1px in RTL"*: bisecting the document lands on
+  `#wp-admin-bar-menu-toggle > a.ab-item`, which carries `margin-left: -1px` beside a 1px left border
+  — a border-overlap trick written for LTR — inside a left-floating `li`. In RTL that puts it at
+  `left: -1`. It is WordPress's own markup and it happens on **every** CoreX screen; access was
+  simply the one somebody measured. Six screens confirmed, RTL only.
+- *"`clearPendingRequests` only clears the current requester's"*: that helper is correct and its
+  comment explains why it deliberately spares other specs' rows. The 311 accumulated users came from
+  `AccessRequestFormTest`, which created a subscriber per test and never deleted it.
+Scope: the margin is flipped to the inline-end side rather than zeroed, so the overlap the rule
+exists for still happens on the side it belongs on. `tests/e2e/rtl-overflow.spec.js` measures six
+screens in both directions, and was verified to fail on all six RTL cases without the fix — a
+single-screen test is precisely what allowed the mis-attribution to survive this long.
+Status: Final.

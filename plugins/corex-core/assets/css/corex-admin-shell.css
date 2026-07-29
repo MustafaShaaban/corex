@@ -1909,3 +1909,25 @@ body.corex-admin-screen .corex-admin__shell {
 		transition: none;
 	}
 }
+
+/* The 1px RTL overflow, which was not where it was recorded.
+ *
+ * This project carried "corex-access overflows 1px in RTL at 375px" as an
+ * open item across several releases. Bisecting the document finds the source
+ * is neither the access screen nor any CoreX markup: it is WordPress's own
+ * admin-bar menu toggle.
+ *
+ * `#wp-admin-bar-menu-toggle .ab-item` carries `margin-left: -1px` beside a
+ * 1px left border — a border-overlap trick written for LTR — and its parent
+ * `li` floats left. In an RTL document that lands the anchor at `left: -1`,
+ * and one pixel outside the viewport is one pixel of document scroll. It
+ * happens on *every* CoreX admin screen in RTL; access was simply the screen
+ * somebody happened to measure.
+ *
+ * Flipped rather than zeroed, so the overlap the rule exists for still
+ * happens — on the side it belongs on in this direction.
+ */
+[dir="rtl"] #wpadminbar #wp-admin-bar-menu-toggle .ab-item {
+	margin-inline-start: 0;
+	margin-inline-end: -1px;
+}

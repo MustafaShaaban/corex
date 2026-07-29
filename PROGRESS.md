@@ -4,6 +4,46 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-29) -- **Spec 091: both remaining open items named the wrong cause.**
+
+On `spec/091-rtl-overflow`, after v0.40.0. The last two entries in `PROJECT-STATUS.md`'s *Known open
+items* that were concrete enough to act on. **Neither was where it had been recorded**, and in both
+cases the wrong attribution is what kept it open across several releases.
+
+**"`corex-access` overflows 1px in RTL at 375px" is not the access screen and not CoreX markup.**
+Bisecting the document walks to `#wp-admin-bar-menu-toggle > a.ab-item` at `left: -1`. It carries
+`margin-left: -1px` beside a 1px left border — a border-overlap trick WordPress writes for LTR —
+inside an `li` that floats left. In RTL that lands it one pixel outside the viewport, and one pixel
+outside the viewport is one pixel of document scroll. It happens on **every** CoreX admin screen;
+access was simply the one somebody measured. Flipped to the inline-end side rather than zeroed, so
+the overlap the rule exists for still happens on the side it belongs on.
+
+**"`clearPendingRequests` only clears the current requester's" is not the cause either.** That helper
+is correct, and its comment explains why it deliberately spares other specs' rows. The 311 stuck
+`corex-079-requester-*` users came from `AccessRequestFormTest`, which created a subscriber in
+`beforeEach` and never deleted it — each leaving a pending access request, and the denied surface
+renders its *pending* state when one exists.
+
+**The test is written the way the finding says it should be.** `tests/e2e/rtl-overflow.spec.js`
+measures six screens in both directions — 12 cells — and was verified to fail on **all six** RTL
+cases without the fix. A single-screen test is precisely what let this survive mis-attributed.
+
+**Verified:** Pest **1711** · Jest **431** · 12/12 overflow cells, 6 failing without the fix ·
+`AccessRequestFormTest` 10/10 with the fixture count unchanged across a run that would previously
+have grown it by ten · lints clean.
+
+**Not done, deliberately:** the 311 fixture users already on this development install. Repository
+state is fixed; that install is not repository state, and deleting user accounts on somebody's
+environment is not a spec's call. The command is in `PROJECT-STATUS.md`.
+
+**Also blocked:** pushing `main` to `upstream` (the Azure remote, 7 commits behind) was refused by
+the permission gate. It is a clean fast-forward — `upstream/main` is an ancestor of `origin/main` —
+and needs the owner to run it or to allow the action.
+
+**Known open is now two items**, both needing investigation rather than a fix: the three excluded
+browser specs, and Arabic typography proved for layout but not type.
+
+---
 ## RESUME HERE (2026-07-29) -- **The documentation site is published.**
 
 <https://mustafashaaban.github.io/corex/> · spec 090, merged as PR #162.

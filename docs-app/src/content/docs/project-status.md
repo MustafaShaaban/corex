@@ -60,7 +60,6 @@ request pending forever.
   first-open failure between them; a third, the flow builder, has not been shown to be environmental
   and may be a real slow path. Recorded with their ruled-out causes in
   `tests/e2e/playwright.config.js`.
-- **A one-pixel RTL overflow** on the access screen at 375px.
 - **Arabic typography has layout proof, not type proof.** The RTL matrix forces `dir="rtl"` onto
   English strings, so bidi artifacts in those cells belong to the fixture.
 

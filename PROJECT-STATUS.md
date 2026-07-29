@@ -70,11 +70,6 @@ The editor itself works; `smoke.spec.js` clicks that inserter successfully whene
 These are real coverage gaps, diagnosed down to "needs fresh eyes".
 *Source: `tests/e2e/playwright.config.js`, `CANNOT_RUN_ON_A_FRESH_INSTALL`.*
 
-### A one-pixel RTL overflow on the access screen
-
-`corex-access` overflows horizontally by 1px in RTL at 375px. Measured, reproducible, open.
-*Source: `PROGRESS.md`.*
-
 ### Arabic typography has layout proof, not type proof
 
 The RTL acceptance matrix forces `dir="rtl"` onto English strings, so it proves the layout holds and
@@ -82,12 +77,20 @@ proves nothing about Arabic typography. Bidi artifacts visible in those cells be
 not the product. An Arabic catalogue and its own pass are still owed.
 *Source: `specs/079-admin-errors-access-request/evidence/after/acceptance-matrix.md`, DECISIONS #196.*
 
-### Test-suite hygiene
+### Development installs may hold leaked test fixtures
 
-`clearPendingRequests` in `access-request.spec.js` clears only the current requester's rows, so failed
-runs accumulate. A local suite failed twice until 133 stuck pending requests were cleared. No product
-impact; it will cost somebody an hour.
-*Source: `PROGRESS.md`.*
+`AccessRequestFormTest` used to create a subscriber per test and never delete it. Fixed in spec 091,
+but an install that ran the suite before that still holds them — 311 on the one where this was found.
+Each carries a pending access request, and the denied surface renders its *pending* state when one
+exists, so enough of them make `access-request.spec.js` find a confirmation where it expects a form.
+
+Repository state is correct; this is only about installs that predate the fix:
+
+```bash
+wp user list --field=user_login | grep '^corex-079-requester-' | xargs -r -n1 wp user delete --yes
+```
+
+*Source: `specs/091-rtl-overflow-and-fixture-leak/`.*
 
 ## Closed, and worth knowing were closed
 
