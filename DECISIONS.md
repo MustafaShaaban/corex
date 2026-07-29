@@ -4052,3 +4052,31 @@ Scope: `hasConfiguredBase()` kept, with its docblock corrected — it no longer 
 from "raw source" but *whose* site, which is what a team hosting their own needs. Two tests asserted
 the old contract; both updated rather than deleted.
 Status: Final.
+
+## #214 — The guide a reader needs first is gated lowest
+Date: 2026-07-29
+Decision: `OrientationGuide` requires `read`, not a CoreX ability, and sorts first.
+Why: every other guide answers "how do I do X" and assumes the reader already knows which screen
+they want. Somebody handed a finished site meets thirteen unfamiliar menu words. Gating that
+explanation behind `manage_options` would withhold it from precisely the person who needs it — a
+contributor with two capabilities is *more* lost than an administrator, not less.
+Scope: it documents the menu rather than any one screen, so it has no ability to inherit. The guides
+it points at stay individually gated, so naming a screen in the orientation costs nothing: a reader
+who cannot open Submissions still learns what Submissions is, and simply finds no guide for it.
+Status: Final.
+
+## #215 — The settings guide is asserted against the registry, on labels
+Date: 2026-07-29
+Decision: `SettingsGuideCoverageTest` fails when any field in `SettingsRegistry::sections()` is not
+named in the guide, matching on the field's **label**.
+Why: "every single input described" is a promise that decays the first time somebody adds a field,
+and it decays silently — the guide still renders, the field still saves, and nothing says the two
+disagree. On labels rather than keys because a reader looks for "Company name"; `brand.company_name`
+appears nowhere they can see, so a guide passing a key check could still be useless to them.
+Scope: it earned itself on the first run, failing on `captcha.action` and `media.webp.min_saving`
+where the prose had dropped the parenthetical part of a label — "Minimum size saving" against the
+screen's "Minimum size saving (%)". Small, and exactly the drift that makes a reader think a guide
+describes a different screen. The related browser test was changed the same way: it asserted
+`toHaveCount( 1 )` and reported "expected 1, received 3", a true statement about a number that says
+nothing about whether gating works. Both now name what they mean.
+Status: Final.
