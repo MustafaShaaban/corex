@@ -34,15 +34,25 @@ use WP_Error;
  */
 final class SupportMailer
 {
-    public function __construct(private readonly ?Mailer $mailer = null)
-    {
+    /**
+     * @param ?Mailer $mailer       Bound only by `addons/corex-email`; null on installs without it.
+     * @param ?string $templateName The registered template to render through, or null to send the
+     *                              plain-text body even on the Mailer rung. The provider passes a
+     *                              name only when it could actually register the template, so a
+     *                              site with a bound Mailer but no template never asks the renderer
+     *                              for one that does not exist.
+     */
+    public function __construct(
+        private readonly ?Mailer $mailer = null,
+        private readonly ?string $templateName = null,
+    ) {
     }
 
     /**
-     * @param string $recipient Where the message goes. Already validated by {@see SupportSettings}.
-     * @param string $replyTo   The sender's own address, or '' when they have none on file.
+     * @param string         $recipient Where it goes. Already validated by {@see SupportSettings}.
+     * @param SupportMessage $message   The message and the context that makes it answerable.
      */
-    public function send(string $recipient, string $subject, string $body, string $replyTo = ''): SupportDelivery
+    public function send(string $recipient, SupportMessage $message): SupportDelivery
     {
         if (! is_email($recipient)) {
             return SupportDelivery::failed(SupportDelivery::REASON_NO_RECIPIENT);
@@ -51,20 +61,25 @@ final class SupportMailer
         // An address that will not validate is dropped rather than passed on: a malformed Reply-To
         // header is a header-injection surface, and losing the reply address is better than
         // refusing to deliver the message at all.
-        $replyTo = is_email($replyTo) ? $replyTo : '';
-
-        $request = new MailRequest(
-            to: [$recipient],
-            subject: $subject,
-            body: $body,
-            replyTo: $replyTo !== '' ? $replyTo : null,
-        );
+        $replyTo = is_email($message->replyTo) ? $message->replyTo : '';
+        $subject = $message->subject();
 
         if ($this->mailer !== null) {
-            return $this->viaMailer($request);
+            // The branded template, because this rung's driver stamps `text/html` on everything —
+            // which is why the plain text below used to arrive as one run-on paragraph here.
+            return $this->viaMailer(new MailRequest(
+                to: [$recipient],
+                templateName: $this->templateName,
+                context: $message->context(),
+                subject: $subject,
+                body: $message->plainText(),
+                replyTo: $replyTo !== '' ? $replyTo : null,
+            ));
         }
 
-        return $this->viaWpMail($recipient, $subject, $body, $replyTo);
+        // The floor sends no `Content-Type`, so the client reads it as `text/plain` and the line
+        // breaks are real. Plain text is the right rendering here, not a fallback that looks worse.
+        return $this->viaWpMail($recipient, $subject, $message->plainText(), $replyTo);
     }
 
     private function viaMailer(MailRequest $request): SupportDelivery

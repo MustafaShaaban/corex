@@ -44,9 +44,6 @@ final class SupportRequestController
 
     private const THROTTLE_PREFIX = 'corex_guides_support_sent_';
 
-    /** How much of the message is carried, in characters. Beyond this it is an attachment, not a note. */
-    private const MAX_MESSAGE = 4000;
-
     /**
      * What somebody can be asking about. Keys, not free text, so the subject line is predictable
      * and nothing the sender types can shape the email's own structure.
@@ -160,12 +157,7 @@ final class SupportRequestController
             return $screen;
         }
 
-        $delivery = $this->mailer->send(
-            $this->settings->recipient(),
-            $this->subject($category),
-            $this->body($category, $message, $from),
-            $from,
-        );
+        $delivery = $this->mailer->send($this->settings->recipient(), $this->message($category, $message, $from));
 
         if (! $delivery->sent) {
             // The typed text comes back with the form. Losing somebody's words because a mail
@@ -181,41 +173,25 @@ final class SupportRequestController
         return $screen;
     }
 
-    private function subject(string $category): string
-    {
-        return sprintf(
-            /* translators: 1: the site name, 2: what the message is about. */
-            __('[%1$s] Guides support: %2$s', 'corex'),
-            wp_specialchars_decode((string) get_bloginfo('name'), ENT_QUOTES),
-            self::categoryLabel($category),
-        );
-    }
-
     /**
-     * The message, plus the context that makes it answerable: who sent it and from which site.
-     * Deliberately plain text — this goes to a person's inbox, not to a rendering surface.
+     * The message, as the parts both renderings read from.
+     *
+     * Composing the body here was fine while there was one rendering. There are two now — branded
+     * HTML through Corex Mail, plain text through `wp_mail()` — and assembling the same fields
+     * twice is how they drift (spec 093).
      */
-    private function body(string $category, string $message, string $from): string
+    private function message(string $category, string $message, string $from): SupportMessage
     {
         $user = wp_get_current_user();
 
-        $lines = [
-            __('A CoreX Guides reader sent this from the admin.', 'corex'),
-            '',
-            /* translators: %s: what the message is about, e.g. "A suggestion". */
-            sprintf(__('About: %s', 'corex'), self::categoryLabel($category)),
-            /* translators: %s: the sender's display name. */
-            sprintf(__('From: %s', 'corex'), $user->display_name !== '' ? $user->display_name : __('a signed-in user', 'corex')),
-            /* translators: %s: the sender's email address. */
-            sprintf(__('Reply to: %s', 'corex'), $from !== '' ? $from : __('no address given', 'corex')),
-            /* translators: %s: the site's home URL. */
-            sprintf(__('Site: %s', 'corex'), home_url()),
-            '',
-            __('Message:', 'corex'),
-            mb_substr($message, 0, self::MAX_MESSAGE),
-        ];
-
-        return implode("\n", $lines);
+        return new SupportMessage(
+            categoryLabel: self::categoryLabel($category),
+            message: $message,
+            replyTo: $from,
+            senderName: (string) $user->display_name,
+            siteName: wp_specialchars_decode((string) get_bloginfo('name'), ENT_QUOTES),
+            siteUrl: home_url(),
+        );
     }
 
     private function throttled(int $userId): bool
