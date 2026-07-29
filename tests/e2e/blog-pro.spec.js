@@ -43,7 +43,15 @@ test.describe( 'Blog Pro admin workspace', () => {
 			page.locator( '.corex-blog-pro__subject-meta' )
 		).toContainText( '30' );
 
-		await expect( page.getByText( 'Editorial workflow' ) ).toBeVisible();
+		// Scoped to the screen's own content, not the whole document. Unscoped, this matched twice
+		// once spec 096 gave Blog Pro a contextual Help tab — the guide for this screen naturally
+		// uses this screen's vocabulary, so its summary contains the same words the panel does.
+		// That is the guide working, and the assertion was reaching outside what it meant to test.
+		await expect(
+			page
+				.locator( '.corex-admin__content' )
+				.getByText( 'Editorial workflow' )
+		).toBeVisible();
 		await expect(
 			page.getByRole( 'heading', { name: 'Authors' } )
 		).toBeVisible();

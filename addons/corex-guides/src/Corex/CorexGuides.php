@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Guides\Corex\Guides\EverydayScreenGuides;
 use Corex\Guides\Corex\Guides\OrientationGuide;
 use Corex\Guides\Corex\Guides\SettingsGuide;
+use Corex\Guides\Corex\Guides\SpecialistScreenGuides;
 use Corex\Guides\Guide;
 use Corex\Guides\GuideScreenshot;
 use Corex\Guides\GuideStep;
@@ -30,10 +31,10 @@ use Corex\Guides\GuideTopic;
  * inbox is never shown instructions for it. Registered through the same public seam a site plugin
  * uses, so the seam is exercised by the framework and cannot rot unnoticed.
  *
- * Spec 094 widened this from four guides to ten. The guides added there live one file each under
- * `Guides/` rather than in this one — ten guides inline would be a file nobody reads to change one
- * step. This class is now the composition point and the four original guides; anything new goes in
- * its own file.
+ * Spec 094 widened this from four guides to ten, and spec 096 to sixteen — every CoreX admin screen.
+ * The guides added there live under `Guides/` rather than in this one: sixteen inline would be a
+ * file nobody reads to change one step. This class is now the composition point and the four
+ * original guides; anything new goes in its own file.
  *
  * @see \Corex\Guides\GuideRegistry
  */
@@ -50,6 +51,7 @@ final class CorexGuides
             OrientationGuide::guide(),
             SettingsGuide::guide(),
             ...EverydayScreenGuides::all(),
+            ...SpecialistScreenGuides::all(),
             self::submissions(),
             self::publishing(),
             self::email(),
