@@ -11,6 +11,7 @@ namespace Corex\Guides\Corex\Guides;
 defined('ABSPATH') || exit;
 
 use Corex\Guides\Guide;
+use Corex\Guides\GuideScreenshot;
 use Corex\Guides\GuideStep;
 use Corex\Guides\GuideTopic;
 
@@ -59,6 +60,7 @@ final class SpecialistScreenGuides
                     new GuideStep(
                         __('In the CoreX menu, choose Access & Abilities, then the Role matrix tab.', 'corex'),
                         __('A grid of every CoreX ability against every role on the site.', 'corex'),
+                        screenshot: new GuideScreenshot('access', __('Access and Abilities, showing the role matrix.', 'corex')),
                     ),
                     new GuideStep(
                         __('Find the ability by what it lets somebody do, not by its name.', 'corex'),
@@ -119,6 +121,7 @@ final class SpecialistScreenGuides
                     new GuideStep(
                         __('Open the Environment & Maintenance tab.', 'corex'),
                         __('The current mode is shown with the evidence behind it, not just a label.', 'corex'),
+                        screenshot: new GuideScreenshot('operations-security', __('Operations and Security, showing the operating mode.', 'corex')),
                     ),
                     new GuideStep(
                         __('Choose the mode you want and read what it says before confirming.', 'corex'),
@@ -187,6 +190,7 @@ final class SpecialistScreenGuides
                     new GuideStep(
                         __('Open Data, then the Records tab, and pick a source on the left.', 'corex'),
                         __('The table fills with that source, and the address bar updates so you can bookmark or share the view.', 'corex'),
+                        screenshot: new GuideScreenshot('data-models', __('The Data screen with its source list and records table.', 'corex')),
                     ),
                     new GuideStep(
                         __('Narrow it with the query bar, then open a row.', 'corex'),
@@ -248,6 +252,7 @@ final class SpecialistScreenGuides
                     new GuideStep(
                         __('Select the bell, or open Notifications from the menu.', 'corex'),
                         __('Each notification says what happened, how serious it is, where it came from, and how many times it has occurred.', 'corex'),
+                        screenshot: new GuideScreenshot('notifications', __('The Notifications screen.', 'corex')),
                     ),
                     new GuideStep(
                         __('Follow the title or the button to go where it is about.', 'corex'),
@@ -293,6 +298,7 @@ final class SpecialistScreenGuides
                     new GuideStep(
                         __('Open Blog Pro and choose the post you are working on.', 'corex'),
                         __('The choice is in the address, so you can send somebody a link to the exact post.', 'corex'),
+                        screenshot: new GuideScreenshot('blog-pro', __('Blog Pro, showing the editorial workspace.', 'corex')),
                     ),
                     new GuideStep(
                         __('Move it to the next stage, leaving a note.', 'corex'),
@@ -340,6 +346,7 @@ final class SpecialistScreenGuides
                     new GuideStep(
                         __('Open Insights and choose Run check on the card you want.', 'corex'),
                         __('The result replaces the card, with what was measured and when.', 'corex'),
+                        screenshot: new GuideScreenshot('insights', __('The Insights screen with its two check cards.', 'corex')),
                     ),
                     new GuideStep(
                         __('If a check says it could not run, read why.', 'corex'),

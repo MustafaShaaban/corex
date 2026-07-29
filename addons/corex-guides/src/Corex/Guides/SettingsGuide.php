@@ -11,6 +11,7 @@ namespace Corex\Guides\Corex\Guides;
 defined('ABSPATH') || exit;
 
 use Corex\Guides\Guide;
+use Corex\Guides\GuideScreenshot;
 use Corex\Guides\GuideStep;
 use Corex\Guides\GuideTopic;
 
@@ -64,6 +65,7 @@ final class SettingsGuide
                 new GuideStep(
                     __('Notice the tabs across the top: Brand, Mail, Forms, Captcha, Media, Insights, Dashboard, Guides, Advanced.', 'corex'),
                     __('Each is a separate section. Saving applies to the whole screen, not only the tab you are looking at.', 'corex'),
+                    screenshot: new GuideScreenshot('settings', __('The CoreX Settings screen, showing its section tabs.', 'corex')),
                 ),
                 new GuideStep(
                     __('Leave a password field blank unless you are changing it.', 'corex'),

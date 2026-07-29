@@ -11,6 +11,7 @@ namespace Corex\Guides\Corex\Guides;
 defined('ABSPATH') || exit;
 
 use Corex\Guides\Guide;
+use Corex\Guides\GuideScreenshot;
 use Corex\Guides\GuideStep;
 use Corex\Guides\GuideTopic;
 
@@ -54,6 +55,7 @@ final class EverydayScreenGuides
                     new GuideStep(
                         __('In the CoreX menu, choose Overview.', 'corex'),
                         __('The screen opens with the site\'s current state: what is set up, what is not, and anything that needs attention.', 'corex'),
+                        screenshot: new GuideScreenshot('overview', __('The Overview screen reporting the current state of the site.', 'corex')),
                     ),
                     new GuideStep(
                         __('Read anything marked as needing attention first.', 'corex'),
@@ -83,6 +85,7 @@ final class EverydayScreenGuides
                     new GuideStep(
                         __('In the CoreX menu, choose Add-ons.', 'corex'),
                         __('Every add-on is listed with its real state: Active, Inactive, Not installed, or a reason it cannot run.', 'corex'),
+                        screenshot: new GuideScreenshot('addons', __('The Add-ons screen listing each add-on with its real status.', 'corex')),
                     ),
                     new GuideStep(
                         __('Read the status on any card that is not simply Active or Inactive.', 'corex'),
@@ -189,6 +192,7 @@ final class EverydayScreenGuides
                     new GuideStep(
                         __('In the CoreX menu, choose Setup Wizard.', 'corex'),
                         __('It opens on Welcome, with the remaining steps listed and your progress marked.', 'corex'),
+                        screenshot: new GuideScreenshot('setup-wizard', __('The Setup Wizard on its first step.', 'corex')),
                     ),
                     new GuideStep(
                         __('Fill in the Brand step.', 'corex'),

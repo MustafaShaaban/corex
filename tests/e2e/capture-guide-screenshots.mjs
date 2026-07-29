@@ -42,6 +42,71 @@ const SHOTS = [
 		url: '/wp-admin/admin.php?page=corex-email-studio&tab=delivery',
 		probe: '.corex-admin__content',
 	},
+
+	// One shot per admin screen (spec 097). Not one per topic: 40 topics would mean 40 images to
+	// keep true, and a screenshot that has drifted is worse than none — it teaches a control that
+	// is not there. A screen-level shot answers "am I in the right place", which is what a reader
+	// following a guide actually needs, and stays true for far longer.
+	{
+		id: 'overview',
+		url: '/wp-admin/admin.php?page=corex-settings',
+		probe: '.corex-admin__content',
+	},
+	{
+		id: 'settings',
+		url: '/wp-admin/admin.php?page=corex-settings-config',
+		probe: '.corex-admin__content',
+	},
+	{
+		id: 'addons',
+		url: '/wp-admin/admin.php?page=corex-addons',
+		probe: '.corex-admin__content',
+	},
+	{
+		id: 'forms-flows',
+		url: '/wp-admin/admin.php?page=corex-forms',
+		probe: '.corex-admin__content',
+	},
+	{
+		id: 'access',
+		url: '/wp-admin/admin.php?page=corex-access',
+		probe: '.corex-admin__content',
+	},
+	{
+		id: 'operations-security',
+		url: '/wp-admin/admin.php?page=corex-operations-security',
+		probe: '.corex-admin__content',
+	},
+	{
+		id: 'data-models',
+		url: '/wp-admin/admin.php?page=corex-data-models',
+		probe: '.corex-admin__content',
+	},
+	{
+		id: 'notifications',
+		url: '/wp-admin/admin.php?page=corex-notifications',
+		probe: '.corex-admin__content',
+	},
+	{
+		id: 'blog-pro',
+		url: '/wp-admin/admin.php?page=corex-blog-pro',
+		probe: '.corex-admin__content',
+	},
+	{
+		id: 'insights',
+		url: '/wp-admin/admin.php?page=corex-insights',
+		probe: '.corex-admin__content',
+	},
+	{
+		id: 'setup-wizard',
+		url: '/wp-admin/admin.php?page=corex-setup',
+		probe: '.corex-admin__content',
+	},
+	{
+		id: 'guides-screen',
+		url: '/wp-admin/admin.php?page=corex-guides',
+		probe: '.corex-admin__content',
+	},
 ];
 
 if ( ! existsSync( STORAGE_STATE ) ) {

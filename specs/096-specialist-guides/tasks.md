@@ -7,9 +7,15 @@
 - [x] T005 Verify all 16 guides resolve with the right sections and capabilities
 - [x] T006 Suites green
 
-## The one gap left in the guides
+- [x] T007 Screenshots — one per screen, captured and wired
 
-**Screenshots** — two images for 40 topics. The capture script fails loudly on any id it cannot
-produce, so a half-finished set breaks it for everybody; guides render fine without them, because a
-missing file is omitted rather than shown broken. It is now the only thing between this and a
-complete in-admin manual.
+## On the screenshots
+
+**One shot per screen, not one per topic.** Forty images would be forty things to keep true, and a
+screenshot that has drifted is worse than none: it teaches a control that is not there. A
+screen-level shot answers "am I in the right place", which is what somebody following a guide
+actually needs, and stays true across far more change.
+
+Twelve new captures, all produced without a single failure — the script exits non-zero for any id it
+cannot take, so a clean run is the evidence that every URL and probe is real. Verified separately
+that every wired capture id has a file on disk.
