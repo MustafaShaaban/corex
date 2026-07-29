@@ -8,7 +8,11 @@
  */
 const { test, expect } = require( '@playwright/test' );
 
-const EDITOR = process.env.COREX_EDITOR_USER || 'corex-editor';
+// This file's *own* editor, not the one admin-errors.spec.js uses (spec 095). CoreX locks an
+// account out after repeated logins from one address — correctly — and two spec files sharing one
+// fixture trip it between them from a CI runner's single IP. The failure then lands in whichever
+// file runs second, reported as "could not sign in", nowhere near the cause.
+const EDITOR = process.env.COREX_GUIDES_EDITOR_USER || 'corex-guides-editor';
 const EDITOR_PASS = process.env.COREX_EDITOR_PASS || 'CorexE2E!editor1';
 
 /** Where a login form might be, in the order global-setup.js tries them (spec 069). */
