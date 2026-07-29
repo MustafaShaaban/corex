@@ -4021,3 +4021,34 @@ exists for still happens on the side it belongs on. `tests/e2e/rtl-overflow.spec
 screens in both directions, and was verified to fail on all six RTL cases without the fix — a
 single-screen test is precisely what allowed the mis-attribution to survive this long.
 Status: Final.
+
+## #210 — The base is applied at build time, not typed into 84 links
+Date: 2026-07-29
+Decision: a `rehypeBaseLinks` plugin in `docs-app/astro.config.mjs` prefixes root-absolute hrefs with
+`base`; `tests/docs-links.test.js` asserts the built output; the CI Jest job builds the docs so that
+test cannot skip.
+Why: spec 090 added `base` and Astro rewrote what it owns — assets, and Starlight's `slug:` sidebar —
+leaving 84 hand-written markdown links resolving off the base path. `dist/index.html` shipped
+`href="/corex/project-status/"` from the sidebar and `href="/project-status/"` from the body, on one
+page. Hardcoding `/corex/` into the content would have fixed the symptom while making
+`COREX_DOCS_BASE` decorative and leaving the next author free to reintroduce it.
+Scope: **the test is the deliverable; the rewrite is what makes it pass.** Spec 090 verified the
+deployment against six URLs and every one was a form Astro rewrites — a real check that sampled only
+the working half. It was confirmed failing (29 files) before the fix and passing after, because a
+link test that has never failed proves nothing. The CI step matters as much: the test skips when
+`docs-app/dist` is absent, which is right locally and worthless in CI, and a silently skipped check
+is the condition that published 85 broken links.
+Status: Final.
+
+## #211 — Admin docs links point at the docs site, not at its Markdown source
+Date: 2026-07-29
+Decision: `DocsUrl`'s fallback is `https://mustafashaaban.github.io/corex` instead of a GitHub `blob`
+URL into `docs-app/src/content/docs`.
+Why: the GitHub fallback was correct when written — it guaranteed an absolute URL at a time when no
+site existed, and an absolute URL is the load-bearing part (a relative one resolves against the
+*client's* domain in wp-admin). A site has existed since v0.40.0, and until now an operator clicking
+"Documentation" was handed raw Markdown with the front matter showing.
+Scope: `hasConfiguredBase()` kept, with its docblock corrected — it no longer distinguishes "a site"
+from "raw source" but *whose* site, which is what a team hosting their own needs. Two tests asserted
+the old contract; both updated rather than deleted.
+Status: Final.

@@ -71,6 +71,17 @@ jobs:
       - name: Lint JavaScript
         run: npm run lint:js
 
+      # The docs site is built here so `tests/docs-links.test.js` has something to check. That test
+      # skips itself when `docs-app/dist` is absent — right for a developer who has never built the
+      # docs, and useless in CI, where a silently skipped link check is how 85 broken links reached
+      # production in the first place (spec 092). `docs.yml` builds too, but only on push to main,
+      # which is after the merge that would publish them.
+      - name: Build the docs site
+        working-directory: docs-app
+        run: |
+          npm ci
+          npm run build
+
       # Covers the block/admin JS *and* the generated-artifact contracts — the token inventory
       # test regenerates from source and fails if a committed artifact drifted. Nothing in CI ran
       # this suite before, which is how a stale inventory survived spec 072's CSS additions

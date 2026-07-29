@@ -90,11 +90,15 @@ it('renders the documentation link as an absolute docs-site URL, not a client-re
         ->not->toContain('href="/guides/media/"');
 });
 
-it('falls back to an absolute GitHub docs URL when no docs base is configured', function () {
+it('falls back to the published docs site when no docs base is configured', function () {
     $markup = metaMarkup(addonsScreenWithDocsBase(''), 'corex-media');
 
+    // The framework's own site, not a GitHub blob URL into the Markdown source — an operator who
+    // clicks "Documentation" wants a page, not front matter. The point the test has always made
+    // still holds: the raw relative path must never reach the href, because in wp-admin it would
+    // resolve against the client's domain.
     expect($markup)
-        ->toContain('href="https://github.com/')
+        ->toContain('href="https://mustafashaaban.github.io/corex/guides/media/"')
         ->not->toContain('href="/guides/media/"');
 });
 

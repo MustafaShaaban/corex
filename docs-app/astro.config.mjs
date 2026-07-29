@@ -25,9 +25,70 @@ import starlight from '@astrojs/starlight';
 const site = process.env.COREX_DOCS_SITE || 'https://mustafashaaban.github.io';
 const base = process.env.COREX_DOCS_BASE || '/corex';
 
+/** `base` without a trailing slash, so joining never produces `//`. */
+const basePrefix = base.replace( /\/$/, '' );
+
+/**
+ * Prefix root-absolute links in authored content with `base`.
+ *
+ * Astro rewrites what it owns — asset URLs, and Starlight's sidebar, which is declared with `slug:`.
+ * It does **not** touch a hand-written `[Getting Started](/getting-started/overview/)`, so v0.40.0
+ * published a site where 85 such links resolved off the base path and 404'd. The sidebar and the
+ * body of `index.html` disagreed about the same page.
+ *
+ * Done here rather than by rewriting 84 links to `/corex/…` because `base` is deliberately
+ * env-overridable (`COREX_DOCS_BASE`) — hardcoding it into the content would make that override a
+ * lie, and would leave the next author free to reintroduce the bug. `tests/docs-links.test.js` is
+ * what proves this actually ran.
+ *
+ * @return {(tree: object) => void} A rehype transformer.
+ */
+function rehypeBaseLinks() {
+	const attributes = [ 'href', 'src' ];
+
+	/** @param {object} node One hast node. */
+	const visit = ( node ) => {
+		if ( node.type === 'element' && node.properties ) {
+			for ( const attribute of attributes ) {
+				const value = node.properties[ attribute ];
+
+				if ( typeof value !== 'string' || ! value.startsWith( '/' ) ) {
+					continue;
+				}
+				// `//host/path` is protocol-relative and already absolute; prefixing it would
+				// rewrite somebody else's domain into a path on ours.
+				if ( value.startsWith( '//' ) ) {
+					continue;
+				}
+				// Idempotent: a link an author already wrote with the base must not gain a second.
+				if (
+					value === basePrefix ||
+					value.startsWith( `${ basePrefix }/` )
+				) {
+					continue;
+				}
+
+				node.properties[ attribute ] = `${ basePrefix }${ value }`;
+			}
+		}
+
+		for ( const child of node.children || [] ) {
+			visit( child );
+		}
+	};
+
+	return ( tree ) => visit( tree );
+}
+
 export default defineConfig( {
 	site,
 	base,
+	markdown: {
+		// Applies to `.md` and to the markdown content of `.mdx`. A raw `<a href="/x">` written as
+		// JSX in an MDX file is not markdown and would not be rewritten — there are none today, and
+		// the link test is what keeps it that way.
+		rehypePlugins: [ rehypeBaseLinks ],
+	},
 	integrations: [
 		starlight( {
 			title: 'Corex',
