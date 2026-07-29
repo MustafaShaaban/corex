@@ -16,6 +16,14 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one in flight: a half-applied Pages deploy
+# serves a site whose assets and pages come from different builds.
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -49,6 +57,8 @@ jobs:
           npm ci
           npm run build
 
+      # Kept alongside the Pages artifact: a downloadable build is what lets somebody
+      # inspect or self-host the site without a Pages deployment (docs/en/05-deployment).
       - name: Upload the built site
         uses: actions/upload-artifact@v7
         with:
@@ -56,6 +66,19 @@ jobs:
           path: docs-app/dist
           if-no-files-found: error
 
-# To publish to GitHub Pages: in the repo, Settings → Pages → Source: "GitHub Actions";
-# then add `pages: write` and `id-token: write` to `permissions` above and append a deploy
-# job that runs `actions/upload-pages-artifact@v3` (path: docs-app/dist) + `actions/deploy-pages@v4`.
+      - name: Upload the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-app/dist
+
+  deploy:
+    name: Publish to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

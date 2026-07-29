@@ -10,12 +10,24 @@ import starlight from '@astrojs/starlight';
 //
 // Apache (WAMP): build, then point a vhost `docs.corex.local` at `docs-app/dist`
 // (DocumentRoot), or browse the repo path http://localhost/corex/docs-app/dist/.
-// `base` stays '/' so the build moves to a dedicated public site unchanged — for the
-// repo-subpath URL above, set `base: '/corex/docs-app/dist'` before building.
+//
+// Published at https://mustafashaaban.github.io/corex/ by `.github/workflows/docs.yml`.
+// A GitHub project page is served from a repository subpath, so `base` is not optional
+// there: without it every internal link, asset and Pagefind index URL resolves to the
+// domain root and the site 404s on itself.
+//
+// Both are overridable so the same build serves somewhere else unchanged — set
+// COREX_DOCS_SITE and COREX_DOCS_BASE for a dedicated domain (`base: '/'`), or for the
+// local repo-subpath URL above.
 //
 // Search is Pagefind (bundled with Starlight): instant, fuzzy, keyboard-driven, and
 // fully client-side — it indexes every page + heading at build time, no server needed.
+const site = process.env.COREX_DOCS_SITE || 'https://mustafashaaban.github.io';
+const base = process.env.COREX_DOCS_BASE || '/corex';
+
 export default defineConfig( {
+	site,
+	base,
 	integrations: [
 		starlight( {
 			title: 'Corex',

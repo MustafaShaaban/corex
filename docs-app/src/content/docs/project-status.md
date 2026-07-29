@@ -59,8 +59,6 @@ closed in v0.40.0.
 - **A one-pixel RTL overflow** on the access screen at 375px.
 - **Arabic typography has layout proof, not type proof.** The RTL matrix forces `dir="rtl"` onto
   English strings, so bidi artifacts in those cells belong to the fixture.
-- **GitHub Pages is not enabled.** The workflow builds and uploads these docs; publishing is a
-  repository setting.
 
 ## Deliberately not built
 
