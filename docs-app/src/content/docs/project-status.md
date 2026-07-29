@@ -52,6 +52,10 @@ No dependency advisories are open: `.github/dependency-security-policy.json` hol
 `npm run verify:dependencies` passes across all three ecosystems. The 24 that stood at v0.39.0 were
 closed in v0.40.0.
 
+All six checks that run on every pull request are **required** on `main`. `dependency-security` is
+deliberately not required — it is paths-filtered, and a required check that never runs leaves a pull
+request pending forever.
+
 - **Three browser specs excluded from a fresh-install run.** Two block-editor specs trade a
   first-open failure between them; a third, the flow builder, has not been shown to be environmental
   and may be a real slow path. Recorded with their ruled-out causes in

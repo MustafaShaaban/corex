@@ -57,22 +57,6 @@ the same reason — so the next such gap is found by a reader, not by a customer
 Each of these is recorded somewhere in the repository already. The source is the point — you can
 verify every one.
 
-### Dependency advisories — none open
-
-`.github/dependency-security-policy.json` holds **zero exceptions**, and
-`npm run verify:dependencies` reports PASS with no findings across Composer, the root npm workspace
-and the docs-site npm workspace.
-
-This was 24 bounded exceptions as recently as v0.39.0. Closing them needed `overrides` rather than
-`npm audit fix`: every vulnerable package was a *transitive* one whose parent pinned it below the
-patched version, and what npm proposed instead was a **downgrade** of `@wordpress/scripts` from 33 to
-19 — which `CONTRIBUTING.md` forbids. The docs-site half was recorded as blocked by a lockfile
-question that turned out to depend on the root being clean, so fixing the root unblocked it and the
-Astro 7 migration landed with it. (Spec 089, DECISIONS #206)
-
-The gate fails closed on any unbounded finding, so an empty list is a state that is checked on every
-pull request, not a claim.
-
 ### Three browser specs are excluded from a fresh-install run
 
 Two block-editor specs trade a failure between them: whichever opens the editor *first* fails to see
@@ -105,11 +89,41 @@ runs accumulate. A local suite failed twice until 133 stuck pending requests wer
 impact; it will cost somebody an hour.
 *Source: `PROGRESS.md`.*
 
-### Branch protection does not require every check
+## Closed, and worth knowing were closed
 
-Five of six CI checks are not marked *required* in branch protection. All six run on every PR; five
-of them cannot block a merge.
-*Source: `PROGRESS.md`. Owner action, not a code change.*
+Two entries stood under *Known open items* in v0.39.0 and no longer do. They are kept, briefly,
+because "was this ever a problem, and how was it dealt with" is a fair question to ask of a project
+you are evaluating.
+
+### Dependency advisories — none open
+
+`.github/dependency-security-policy.json` holds **zero exceptions**, and
+`npm run verify:dependencies` reports PASS with no findings across Composer, the root npm workspace
+and the docs-site npm workspace.
+
+This was 24 bounded exceptions as recently as v0.39.0. Closing them needed `overrides` rather than
+`npm audit fix`: every vulnerable package was a *transitive* one whose parent pinned it below the
+patched version, and what npm proposed instead was a **downgrade** of `@wordpress/scripts` from 33 to
+19 — which `CONTRIBUTING.md` forbids. The docs-site half was recorded as blocked by a lockfile
+question that turned out to depend on the root being clean, so fixing the root unblocked it and the
+Astro 7 migration landed with it. (Spec 089, DECISIONS #206)
+
+The gate fails closed on any unbounded finding, so an empty list is a state that is checked on every
+pull request, not a claim.
+
+### Branch protection
+
+All six checks that run on every pull request are **required** on `main`: the PHP unit suite, the
+JavaScript suite, integration against a provisioned WordPress, Playwright, and both CodeQL contexts.
+Force-pushes and branch deletion are blocked.
+
+Two things are deliberately *not* set, and the reasons matter more than the settings:
+
+- **`dependency-security` is not required**, because it is paths-filtered — it runs only on pull
+  requests that touch a manifest, a lockfile or the policy. A required check that does not run leaves
+  a pull request pending forever, so requiring it would block every change that touches no dependency.
+- **Reviews are not required and admins are not enforced.** This is a single-maintainer repository;
+  both would lock the maintainer out of their own `main` rather than add a reviewer.
 
 ## Deliberately not built
 
