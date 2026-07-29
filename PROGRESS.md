@@ -4,6 +4,47 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-29) -- **v0.41.0 released.** Specs 092-096 shipped.
+
+| Spec | PR | What |
+|---|---|---|
+| 092 Docs link base | #166 | 85 broken links, and the link test that should have existed |
+| 093 Support email template | #167 | Broken before it was unstyled |
+| 094 Comprehensive guides | #168 | 4 guides to 10; all 42 settings fields |
+| 095 Browser fixture users | #169 | A shared login blocking two unrelated PRs |
+| 096 Specialist guides | #170 | Every screen documented; 16 guides, 40 topics, 14 screenshots |
+
+**Release metadata:** the prepared release baseline is v0.41.0.
+
+**Three defect reports opened all five, and two were worse than reported.** Seven broken doc links
+were 85. A support email that needed a design was already arriving as one run-on paragraph, because
+Corex Mail's driver stamps `text/html` on everything and the body was newline-joined plain text.
+
+**The repeated lesson this release is about tests, not code.** v0.40.0's docs verification checked
+six URLs and every one was a form Astro rewrites — a real check that sampled only the working half.
+A settings coverage test failed on its own first run. Two browser assertions turned out broader than
+their intent and only said so when the page legitimately changed: one counted guides instead of
+naming them, the other matched text across the whole document including a Help tab. And a shared
+fixture login took down a PR that changed no browser test at all — with the prediction already
+written in a comment beside it.
+
+**The stamper widening from v0.39.0 paid for itself again:** `wp corex version 0.41.0` stamped 23
+files including `README.md`, `ROADMAP.md` and both status pages. No hand-patching, no drift.
+
+**Verified at release:** Pest unit **1722** · integration **356** · Jest **433** · Playwright **132**
+· docs **286 pages** · dependency gate PASS 0/0 · readiness PASS · lints clean.
+
+**Open, and stated in `PROJECT-STATUS.md`:** three browser specs excluded from a fresh-install run,
+Arabic typography proved for layout but not type, and development installs predating spec 091 may
+hold leaked fixture users. No security items.
+
+**One design question outstanding:** the support email is a navy shell rule around a brass card,
+because `Layout` injects `theme.json`'s `primary` while the brass lives only in the admin tokens. The
+fix is migrating the brass into `theme.json` — the direction `design/handoffs/brand-foundation.md`
+already approves — not a special case in one add-on's template.
+
+---
+---
 ## RESUME HERE (2026-07-29) -- **Spec 092: the published docs site had 85 broken links.**
 
 On `spec/092-docs-link-base`, after v0.40.0. Owner reported seven 404s; there were **85, across 29

@@ -6,6 +6,72 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.41.0] — 2026-07-29
+
+Five specs, opened by three defect reports. The thread through them: **two of the three were worse
+than reported, and the third had been broken since before anybody looked at its design.**
+
+### Fixed
+
+- **The published documentation site had 85 broken links, not the seven reported.** v0.40.0 gave
+  `docs-app` a `base` because a GitHub project page serves from a repository subpath. Astro rewrote
+  what it owns — asset URLs, and Starlight's `slug:` sidebar — and left every hand-written markdown
+  link alone. `dist/index.html` shipped `href="/corex/project-status/"` from the sidebar and
+  `href="/project-status/"` from the body, on the same page. Applied at build time rather than typed
+  into 84 links, so `COREX_DOCS_BASE` stays a real override. (DECISIONS #210)
+- **The Guides support email arrived as one run-on paragraph.** Its body was `"
+"`-joined plain
+  text, which is right for `wp_mail()` — and Corex Mail's driver stamps `Content-Type: text/html` on
+  every message, so on any site with that add-on active the newlines collapsed. The rendering now
+  follows the transport. (DECISIONS #212)
+- **Admin "Documentation" links opened raw Markdown.** `DocsUrl` fell back to a GitHub `blob` URL
+  into the docs source — correct when written, because no published site existed. It now resolves to
+  the site. (DECISIONS #211)
+
+### Added
+
+- **A documentation link test**, asserting the *built* output. This is the deliverable of spec 092;
+  the rewrite is what makes it pass. v0.40.0's own verification checked six URLs and every one was a
+  form Astro rewrites — a real check that sampled only the working half. The CI job now builds the
+  docs, because a link check that silently skips is the condition that published 85 broken links.
+- **A branded support email** carrying the CoreX admin brass, replacing the plain-text body on the
+  Corex Mail path. Degrades to plain text where that add-on is absent (Principle IX). (DECISIONS #213)
+- **The in-admin guide now covers every CoreX admin screen** — **16 guides, 40 topics, 14
+  screenshots**, up from 4 guides, 6 topics and 2 screenshots.
+  - An orientation guide for somebody who has never seen the framework, gated on `read`: a
+    contributor with two capabilities is *more* lost than an administrator, not less. (DECISIONS #214)
+  - Every one of the **42 settings fields**, plus the three things the screen cannot say about
+    itself — a password field that looks empty may already be set, six captcha fields appear and
+    disappear with the driver, and Advanced stores nothing.
+  - The six specialist screens, written for somebody who was *sent* there: read is not resolved,
+    clear the cache layer you mean rather than everything, an export of personal data is personal
+    data.
+  - **One screenshot per screen, not per topic.** Forty images would be forty things to keep true,
+    and a drifted screenshot is worse than none — it teaches a control that is not there.
+- **A coverage test binding the settings guide to the registry**, matching on the field's *label*
+  because that is the string on the screen. It failed on its first run, on two fields whose
+  parenthetical suffix the prose had dropped. (DECISIONS #215)
+
+### Changed
+
+- **One fixture user per browser spec that signs in.** `admin-errors.spec.js` and `guides.spec.js`
+  both signed in as `corex-editor`; CoreX locks an account out after repeated logins from one
+  address, and from a CI runner every spec shares one IP. The failure landed in whichever file ran
+  second, as "could not sign in", and took down a pull request that changed no browser test at all.
+  `guides.spec.js` already carried a comment predicting exactly this about a different user — the
+  diagnosis was right and the remedy had never been generalised. **The lockout policy is untouched**:
+  it is the product working, and turning it down to suit the suite would remove a real protection
+  from the thing under test.
+- Two browser assertions were **broader than their intent** and only said so when the page
+  legitimately changed: one counted guides instead of naming them, the other matched text across the
+  whole document including a contextual Help tab. Both are now scoped to what they mean.
+
+### Verification
+
+Pest unit **1722** · integration **356** · Jest **433** · Playwright **132** · docs site **286
+pages** · dependency gate PASS with 0 findings and 0 exceptions · all lints clean.
+
+
 ## [0.40.0] — 2026-07-29
 
 Every dependency advisory closed. The policy file that held **24 bounded exceptions** now holds none,
