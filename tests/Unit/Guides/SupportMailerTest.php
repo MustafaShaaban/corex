@@ -15,6 +15,7 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Guides\Support\SupportDelivery;
 use Corex\Guides\Support\SupportMailer;
+use Corex\Guides\Support\SupportMessage;
 use Corex\Mail\AttemptingMailer;
 use Corex\Mail\MailRequest;
 use Corex\Mail\MailResult;
@@ -29,6 +30,23 @@ beforeEach(function () {
     Functions\when('add_action')->justReturn(true);
     Functions\when('remove_action')->justReturn(true);
 });
+
+/**
+ * One support message. The mailer's job is choosing a transport and a rendering, so the message is
+ * a fixture here rather than the thing under test — {@see SupportRequestTemplateTest} covers what it
+ * renders to.
+ */
+function supportFixture(string $replyTo = '', string $message = 'B'): SupportMessage
+{
+    return new SupportMessage(
+        categoryLabel: 'A question',
+        message: $message,
+        replyTo: $replyTo,
+        senderName: 'Reader',
+        siteName: 'Example Site',
+        siteUrl: 'https://example.test',
+    );
+}
 
 /** A plain Mailer: best-effort and void by contract, so it records rather than reports. */
 function recordingMailer(): Mailer
@@ -82,9 +100,7 @@ it('falls through to wp_mail when no mailer is bound', function () {
 
     $delivery = (new SupportMailer())->send(
         'support@example.test',
-        'Subject',
-        'Body',
-        'reader@example.test',
+        supportFixture('reader@example.test'),
     );
 
     expect($delivery->sent)->toBeTrue()
@@ -99,7 +115,7 @@ it('falls through to wp_mail when no mailer is bound', function () {
 it('reports a wp_mail refusal as not sent', function () {
     Functions\when('wp_mail')->justReturn(false);
 
-    $delivery = (new SupportMailer())->send('support@example.test', 'S', 'B');
+    $delivery = (new SupportMailer())->send('support@example.test', supportFixture());
 
     expect($delivery->sent)->toBeFalse()
         ->and($delivery->reason)->toBe(SupportDelivery::REASON_TRANSPORT);
@@ -109,7 +125,7 @@ it('prefers a bound mailer over wp_mail', function () {
     Functions\when('wp_mail')->justReturn(false);
     $mailer = recordingMailer();
 
-    $delivery = (new SupportMailer($mailer))->send('support@example.test', 'S', 'B', 'reader@example.test');
+    $delivery = (new SupportMailer($mailer))->send('support@example.test', supportFixture('reader@example.test'));
 
     expect($delivery->sent)->toBeTrue()
         ->and($mailer->sent)->toHaveCount(1)
@@ -118,7 +134,7 @@ it('prefers a bound mailer over wp_mail', function () {
 });
 
 it('keeps the real result when the bound mailer reports one', function (string $state, bool $sent) {
-    $delivery = (new SupportMailer(attemptingMailer($state)))->send('support@example.test', 'S', 'B');
+    $delivery = (new SupportMailer(attemptingMailer($state)))->send('support@example.test', supportFixture());
 
     expect($delivery->sent)->toBe($sent);
 })->with([
@@ -140,9 +156,7 @@ it('drops a reply address that would not validate rather than passing it into a 
 
     (new SupportMailer($mailer))->send(
         'support@example.test',
-        'S',
-        'B',
-        "reader@example.test\r\nBcc: everyone@example.test",
+        supportFixture("reader@example.test\r\nBcc: everyone@example.test"),
     );
 
     expect($mailer->sent[0]->replyTo)->toBeNull();
@@ -151,7 +165,7 @@ it('drops a reply address that would not validate rather than passing it into a 
 it('refuses outright when there is no recipient to send to', function () {
     $mailer = recordingMailer();
 
-    $delivery = (new SupportMailer($mailer))->send('', 'S', 'B');
+    $delivery = (new SupportMailer($mailer))->send('', supportFixture());
 
     expect($delivery->sent)->toBeFalse()
         ->and($delivery->reason)->toBe(SupportDelivery::REASON_NO_RECIPIENT)
@@ -170,8 +184,63 @@ it('survives a mailer that throws despite its contract', function () {
         }
     };
 
-    $delivery = (new SupportMailer($thrower))->send('support@example.test', 'S', 'B');
+    $delivery = (new SupportMailer($thrower))->send('support@example.test', supportFixture());
 
     expect($delivery->sent)->toBeFalse()
         ->and($delivery->reason)->toBe(SupportDelivery::REASON_TRANSPORT);
+});
+
+/**
+ * The behaviour spec 093 exists for.
+ *
+ * `WpMailDriver` stamps `Content-Type: text/html` on everything, so the `"\n"`-joined plain text
+ * this used to send through Corex Mail arrived as one run-on paragraph. The floor is the opposite —
+ * `wp_mail()` with no Content-Type is read as `text/plain`, where those newlines are real. So the
+ * rendering has to follow the transport, not be one string for both.
+ */
+it('renders through the template on the mailer rung and as plain text on the floor', function () {
+    $mailer = recordingMailer();
+
+    (new SupportMailer($mailer, 'corex-guides-support'))->send(
+        'support@example.test',
+        supportFixture('reader@example.test'),
+    );
+
+    expect($mailer->sent[0]->templateName)->toBe('corex-guides-support')
+        ->and($mailer->sent[0]->context)->toHaveKey('support')
+        ->and($mailer->sent[0]->context['support']['message'])->toBe('B');
+});
+
+/**
+ * A template name is passed only when the provider could actually register it. Asking the renderer
+ * for a template that is not there yields an *empty message*, silently — so a bound mailer with no
+ * template must keep sending the plain-text body rather than nothing at all.
+ */
+it('sends the plain-text body when no template is available, even with a mailer bound', function () {
+    $mailer = recordingMailer();
+
+    (new SupportMailer($mailer))->send('support@example.test', supportFixture());
+
+    expect($mailer->sent[0]->templateName)->toBeNull()
+        ->and($mailer->sent[0]->body)->toContain('A CoreX Guides reader sent this from the admin.');
+});
+
+/**
+ * The floor never names a template, whatever the provider decided — `wp_mail()` cannot render one.
+ */
+it('always sends plain text through the wp_mail floor', function () {
+    $sent = [];
+    Functions\when('wp_mail')->alias(static function (...$args) use (&$sent): bool {
+        $sent[] = $args;
+
+        return true;
+    });
+
+    (new SupportMailer(null, 'corex-guides-support'))->send(
+        'support@example.test',
+        supportFixture(),
+    );
+
+    expect($sent[0][2])->toContain('About: A question')
+        ->and($sent[0][2])->toContain("\n");
 });

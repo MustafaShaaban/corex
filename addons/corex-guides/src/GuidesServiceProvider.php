@@ -13,8 +13,10 @@ defined('ABSPATH') || exit;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Guides\Corex\CorexGuides;
+use Corex\Email\Template\TemplateRegistry;
 use Corex\Guides\Support\SupportMailer;
 use Corex\Guides\Support\SupportRequestController;
+use Corex\Guides\Support\SupportRequestTemplate;
 use Corex\Mail\Mailer;
 
 /**
@@ -44,8 +46,24 @@ final class GuidesServiceProvider extends ServiceProvider
             SupportMailer::class,
             static fn (ContainerInterface $c): SupportMailer => new SupportMailer(
                 $c->has(Mailer::class) ? $c->make(Mailer::class) : null,
+                // Resolved when SupportMailer is first built — inside the `admin_post` closure,
+                // long after boot — so this reflects whether the template was actually registered
+                // below rather than the order two providers happened to register in.
+                self::supportsTemplate($c) ? SupportRequestTemplate::NAME : null,
             ),
         );
+    }
+
+    /**
+     * Whether this install can render the branded support template.
+     *
+     * `SupportRequestTemplate` **extends a Corex Mail class**, so merely naming it where that add-on
+     * is absent fatals on the missing parent — hence `class_exists()` on the registry, which is
+     * cheap and settles it before the autoloader is asked for the subclass.
+     */
+    private static function supportsTemplate(ContainerInterface $container): bool
+    {
+        return class_exists(TemplateRegistry::class) && $container->has(TemplateRegistry::class);
     }
 
     public function boot(): void
@@ -57,6 +75,15 @@ final class GuidesServiceProvider extends ServiceProvider
         $this->container->make(GuideRegistry::class)->registerDeferred(
             static fn (): array => CorexGuides::all(),
         );
+
+        // In `boot()`, because every provider has registered by now — including Corex Mail's, which
+        // binds the registry. Doing it in `register()` would depend on which of two providers ran
+        // first, and doing it inside the SupportMailer factory (as this first did) hides a side
+        // effect in a lazy binding: the template was never registered at all unless something
+        // happened to resolve the mailer.
+        if (self::supportsTemplate($this->container)) {
+            $this->container->make(TemplateRegistry::class)->register(new SupportRequestTemplate());
+        }
 
         if (! is_admin()) {
             return;

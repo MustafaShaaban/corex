@@ -4051,4 +4051,33 @@ site existed, and an absolute URL is the load-bearing part (a relative one resol
 Scope: `hasConfiguredBase()` kept, with its docblock corrected — it no longer distinguishes "a site"
 from "raw source" but *whose* site, which is what a team hosting their own needs. Two tests asserted
 the old contract; both updated rather than deleted.
+## #212 — The support email's rendering follows its transport
+Date: 2026-07-29
+Decision: `SupportMailer` sends a registered HTML template through the Corex Mail rung and plain text
+through the `wp_mail()` floor, both composed from one `SupportMessage`.
+Why: spec 087 sent one `"\n"`-joined plain-text body to both, with a docblock arguing plain text was
+deliberate. That was right about `wp_mail()`, which sends no `Content-Type`. It was wrong about the
+other rung: `WpMailDriver` stamps `text/html` on every message, so on any site with Corex Mail active
+— most of them — the newlines collapsed into one run-on paragraph. **The email was broken before it
+was unstyled**; the design is what the HTML rendering is for.
+Scope: `SupportMessage` exists so the parts are assembled once. Two renderings built from the same
+fields separately is how they drift, and the drift would be invisible — both emails still arrive.
+Status: Final.
+
+## #213 — The email palette is literal, and Layout's rule still stands
+Date: 2026-07-29
+Decision: `SupportEmailPalette` holds the admin's light-mode tokens as literal hex values.
+Why: `Layout`'s docblock forbids exactly this — *"never design tokens — the brand values are
+injected, not hardcoded"* — and it is right, for `Layout`, which wraps every site's mail and must
+carry no opinion. Two things make it inapplicable to a template body. An email cannot read
+`--corex-admin-*` (custom properties are not supported across mail clients), so a token must become a
+literal somewhere; the only question is whether in one named place or scattered through markup. And
+the brass identity is not in the brand pipeline at all — `Layout`'s injected accent is `theme.json`'s
+`primary`, navy — so "use the CoreX design" and "inject the brand colour" name different colours.
+Scope: the visible result is a **navy shell rule around a brass-edged card**, and that is stated in
+the spec rather than hidden. Overriding `Layout` from one add-on's template would make one message
+lie about the site's brand. If the two should match, the fix is migrating the brass into
+`theme.json` — the direction `design/handoffs/brand-foundation.md` already approves — not a
+special case here. Light values, not dark: dark-mode email support is unreliable, and dark-on-dark in
+a client that ignores it is worse than light everywhere.
 Status: Final.
