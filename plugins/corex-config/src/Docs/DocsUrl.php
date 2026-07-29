@@ -31,11 +31,16 @@ defined('ABSPATH') || exit;
 final class DocsUrl
 {
     /**
-     * The framework's canonical docs source. Relative docs paths map predictably to the
-     * docs-app content tree (`/guides/media/` → `…/docs-app/src/content/docs/guides/media.md`),
-     * so this is a reliable fallback when no docs host is configured.
+     * The framework's published documentation site, and the default when no host is configured.
+     *
+     * This used to be a GitHub `blob` URL into `docs-app/src/content/docs`, which sent an operator
+     * looking for help to raw Markdown with the front matter showing. That was the right answer
+     * only while no site existed; one has been published since v0.40.0 (spec 090), and a relative
+     * docs path maps onto it directly — `/guides/media/` is a page there.
+     *
+     * Note the `/corex` segment: it is a GitHub *project* page, served from a repository subpath.
      */
-    private const GITHUB_DOCS_SOURCE = 'https://github.com/MustafaShaaban/corex/blob/main/docs-app/src/content/docs';
+    private const PUBLISHED_DOCS_SITE = 'https://mustafashaaban.github.io/corex';
 
     public function __construct(private readonly ConfigInterface $config)
     {
@@ -63,14 +68,18 @@ final class DocsUrl
             return rtrim($base, '/') . '/' . ltrim($path, '/');
         }
 
-        // No docs host configured: map to the GitHub source file so the link is absolute and
-        // never resolves against the active (client) WordPress domain.
-        return self::GITHUB_DOCS_SOURCE . '/' . trim($path, '/') . '.md';
+        // No docs host configured: the framework's own published site, so the link is absolute and
+        // never resolves against the active (client) WordPress domain. The trailing slash matches
+        // how the site actually serves its pages.
+        return self::PUBLISHED_DOCS_SITE . '/' . trim($path, '/') . '/';
     }
 
     /**
-     * Whether a docs host is explicitly configured (vs. the GitHub fallback). Lets the UI choose
-     * helpful copy ("opens the docs site" vs "opens the docs source on GitHub").
+     * Whether this site names its own docs host, rather than falling back to the framework's.
+     *
+     * Both answers now produce a real documentation site, so this no longer distinguishes "a site"
+     * from "raw source" — it distinguishes *whose* site, which is what a team hosting their own
+     * needs to know.
      */
     public function hasConfiguredBase(): bool
     {

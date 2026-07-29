@@ -4,7 +4,7 @@
  * Docs URL resolver contract (company-site readiness, Part 4). Admin "Documentation" links must
  * resolve to an absolute URL — never a relative path that the browser would resolve against the
  * active (client) WordPress domain. With a configured docs base the path is appended to it; with
- * none, it falls back to the framework's canonical docs source on GitHub. A `corex_docs_base_url`
+ * none, it falls back to the framework's published documentation site. A `corex_docs_base_url`
  * filter overrides the configured value.
  *
  * @package Corex\Tests\Unit\Config
@@ -56,13 +56,14 @@ it('normalises slashes between the base and the path', function () {
         ->toBe('http://docs.corex.local/guides/media/');
 });
 
-it('falls back to the GitHub docs source when no base is configured', function () {
+it('falls back to the published docs site when no base is configured', function () {
     // Never a relative path (which would resolve against the client site) — always absolute.
     $url = docsUrl('')->resolve('/guides/media/');
 
-    expect($url)
-        ->toStartWith('https://github.com/')
-        ->toEndWith('/docs-app/src/content/docs/guides/media.md');
+    // A page on the site, not a GitHub blob URL into the Markdown source, which is what an
+    // operator following an admin "Documentation" link used to be handed. The `/corex` segment is
+    // load-bearing: it is a GitHub *project* page, served from a repository subpath.
+    expect($url)->toBe('https://mustafashaaban.github.io/corex/guides/media/');
 });
 
 it('never returns a path that resolves against the active site', function () {

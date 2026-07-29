@@ -4,6 +4,47 @@
 > Updated at the end of every working session.
 
 ---
+## RESUME HERE (2026-07-29) -- **Spec 092: the published docs site had 85 broken links.**
+
+On `spec/092-docs-link-base`, after v0.40.0. Owner reported seven 404s; there were **85, across 29
+files**.
+
+**Spec 090 added `base` and only half the site got it.** Astro rewrites what it owns — asset URLs,
+and Starlight's sidebar, which is declared with `slug:`. It does not touch a hand-written
+`[Getting Started](/getting-started/overview/)`. `dist/index.html` shipped
+`href="/corex/project-status/"` from the sidebar and `href="/project-status/"` from the body, on the
+same page.
+
+**Nothing checked, and that is the actual defect.** Spec 090 verified the deploy against six URLs and
+every one was a form Astro rewrites — a real check that sampled only the working half. So the test is
+the deliverable here and the rewrite is what makes it pass: `tests/docs-links.test.js` walks
+`docs-app/dist`, and was **confirmed failing on 29 files before the fix**. A link test that has never
+failed proves nothing.
+
+**The CI step matters as much as the test.** It skips itself when `docs-app/dist` is absent — right
+for a developer who has never built the docs, worthless in CI. The Jest job now builds the site, so a
+silently skipped link check cannot happen again. `docs.yml` builds too, but only on push to `main`,
+which is after the merge that would publish the breakage.
+
+**Applied at build time, not typed into 84 links** — hardcoding `/corex/` would have made
+`COREX_DOCS_BASE` decorative and left the next author free to reintroduce it. One link *is* literal:
+`index.mdx`'s hero action is frontmatter, never reaches rehype, and Starlight does not prefix it
+either. Commented as the exception. (Decisions #210)
+
+**Also:** `DocsUrl` fell back to a GitHub `blob` URL, so an operator clicking "Documentation" in
+wp-admin got raw Markdown with the front matter showing. It now points at the published site.
+Correct when written — no site existed then. (Decision #211)
+
+**Verified:** the seven reported URLs all carry `/corex/` in the new build · 286 pages · Jest **433**
+(2 new) · Pest **1711** · lints and `php -l` clean · two tests that asserted the old `DocsUrl`
+contract updated rather than deleted.
+
+**Open:** T008 — that the URLs return 200 **after deploy**. `docs.yml` runs on `main`, so it cannot
+be checked from a branch. Same shape as spec 090's T012.
+
+**Next:** spec 093 (branded support email), then 094 (the comprehensive in-admin guide).
+
+---
 ## RESUME HERE (2026-07-29) -- **Spec 091: both remaining open items named the wrong cause.**
 
 On `spec/091-rtl-overflow`, after v0.40.0. The last two entries in `PROJECT-STATUS.md`'s *Known open
