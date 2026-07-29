@@ -11,7 +11,7 @@ multisite, headless, or AI-agent-driven — on one clean, documented, spec-first
 ## Status: v0.40.0, actively developed, honest about its gaps
 
 The foundation is stable and used: the engine, the block/forms/config layers, the admin product, the
-CLI generators, Corex Mail, and the docs site. Verification runs on every pull request — **1704 PHP
+CLI generators, Corex Mail, and the docs site. Verification runs on every pull request — **1711 PHP
 unit tests, 356 integration tests against a WordPress that CI provisions itself, 431 JavaScript
 tests, and 120 browser tests**.
 
@@ -121,15 +121,20 @@ Verify the environment before building: `wp theme list` shows `corex`; `wp plugi
 
 ## Documentation
 
-The docs-app is **optional** — a searchable team docs site, not required to run Corex or to start a site. Read
-the docs whichever way suits you:
+### 📖 **<https://mustafashaaban.github.io/corex/>**
+
+Published from `main` on every change by `.github/workflows/docs.yml`, which regenerates the class
+reference from source first so it cannot drift from the code.
+
+Running it yourself is **optional** — the site is a convenience, not a requirement for Corex or for
+starting a site. Read the docs whichever way suits you:
 
 - **No docs app:** read `README.md`, `docs/en/**`, and the docs-app Markdown sources in the repo / on GitHub.
 - **Team guide (dev server):** `cd docs-app && npm install && npm run dev` (→ http://localhost:4321).
 - **Static WAMP vhost:** `cd docs-app && npm run build`, then point an Apache vhost `docs.corex.local` at
   `docs-app/dist`. Tell the admin where docs live via the `docs.base_url` config key (or the
   `corex_docs_base_url` filter) so Add-ons → Documentation links target your docs site; with none configured
-  they open the docs source on GitHub.
+  they open the published site above.
 - **Bilingual handbook:** `docs/en/` and `docs/ar/` (getting started, team workflow, deployment, cookbooks).
 - **API reference:** generated from source via `wp corex docs:generate`.
 

@@ -24,7 +24,7 @@ Corex separates **two** automated pipelines, and it matters which is which:
 A third workflow, **Docs** ([`.github/workflows/docs.yml`](../../../.github/workflows/docs.yml)), runs on push
 to `main`: it regenerates the per-class reference from source (`composer docs:generate`, a headless equivalent
 of `wp corex docs:generate` that needs no WordPress) and builds the docs site, so the published reference can
-never drift from the code. Enable GitHub Pages to publish the built artifact (see the comment in that file).
+never drift from the code, then publishes it to GitHub Pages at <https://mustafashaaban.github.io/corex/>.
 
 ## Pipeline stages
 

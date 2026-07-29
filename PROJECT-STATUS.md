@@ -105,12 +105,6 @@ runs accumulate. A local suite failed twice until 133 stuck pending requests wer
 impact; it will cost somebody an hour.
 *Source: `PROGRESS.md`.*
 
-### GitHub Pages is not enabled
-
-`.github/workflows/docs.yml` regenerates the class reference and builds the docs site on every push
-to `main`, then uploads the result as an artifact. Publishing is a repository setting, and it is off.
-*Source: `.github/workflows/docs.yml`.*
-
 ### Branch protection does not require every check
 
 Five of six CI checks are not marked *required* in branch protection. All six run on every PR; five
