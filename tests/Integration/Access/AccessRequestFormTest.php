@@ -74,6 +74,35 @@ beforeEach(function () {
     ));
 });
 
+/**
+ * Delete the subscriber this test invented, and the request it left behind.
+ *
+ * Without this, every run of this file leaked one `corex-079-requester-*` user with a pending
+ * access request attached — **311 of them** on the development install by the time anybody
+ * counted. That is not tidiness: the denied surface renders its *pending* state when a request
+ * exists, so accumulated fixtures eventually make `access-request.spec.js` find a confirmation
+ * where it expects a form, and the browser suite fails for a reason nothing in it reports.
+ *
+ * The open item recorded this as `clearPendingRequests` clearing only the current requester's
+ * rows. That helper is correct — it deliberately spares other specs' requests. The rows were
+ * arriving from here.
+ */
+afterEach(function () {
+    if (! isset($this->requester) || $this->requester < 1) {
+        return;
+    }
+
+    // Back to nobody first: deleting the user you are currently authenticated as leaves the
+    // request with a current user that no longer exists.
+    wp_set_current_user(0);
+
+    if (! function_exists('wp_delete_user')) {
+        require_once ABSPATH . 'wp-admin/includes/user.php';
+    }
+
+    wp_delete_user($this->requester);
+});
+
 it('creates one request and sends the browser back to the screen, not to the REST route', function () {
     $destination = submitAccessRequest($this->controller, ($this->body)());
 
