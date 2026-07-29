@@ -3984,3 +3984,20 @@ separate review dates, and the cheapest route to closing six of them was to fix 
 first. A blocker measured once stays in the record as a fact long after it has stopped being one;
 re-measuring before believing it is the actual lesson.
 Status: Final.
+
+## #208 — Every check that always runs is required; the one that does not is not
+Date: 2026-07-29
+Decision: `main` requires all six pull-request checks — PHP unit, JavaScript, integration, Playwright
+and both CodeQL contexts. `dependency-security` is deliberately **not** required. Reviews are not
+required and admins are not enforced.
+Why: five of the six ran on every pull request and could not block a merge, which is the state
+DECISIONS #153 already recorded the cost of — GitHub renders "no checks" the same way it renders "all
+checks passed", and a stack once sat queued for merge with eight real failures in it.
+Scope: `dependency-security.yml` is paths-filtered to manifests, lockfiles and the policy. A required
+check that does not run leaves a pull request pending **forever**, so requiring it would block every
+change that touches no dependency — the check would be enforcing on absence rather than on failure.
+Reviews and `enforce_admins` are off for the same class of reason: this is a single-maintainer
+repository, and both would lock the maintainer out of their own `main` rather than add a reviewer.
+Each is a deliberate omission with a stated reason, not an oversight, and `PROJECT-STATUS.md` says so
+where somebody evaluating the project will read it.
+Status: Final.
