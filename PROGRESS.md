@@ -22,12 +22,14 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release:** v0.40.0 — tag `v0.40.0`, reachable from `main`.
+- **Latest published release: v0.41.0** — tag `v0.41.0`, reachable from `main`, published at
+  <https://github.com/MustafaShaaban/corex/releases/tag/v0.41.0>.
 - **`main` is green** on all six required checks: PHP unit, JavaScript + both linters, integration
   against a WordPress that CI provisions itself, Playwright, and both CodeQL contexts.
-- **Verified on the most recent `main` run:** Pest unit **1727** · integration **356** · Jest **442**
-  across 54 suites · Playwright **141** on a fresh install (144 locally; three specs are excluded
-  from a fresh-install run, see below) · dependency gate PASS with 0 findings and 0 exceptions.
+- **Verified at v0.41.0:** Pest unit **1727** · integration **356** · Jest **442** across 54 suites ·
+  Playwright **141** on a fresh install (144 locally; three specs are excluded from a fresh-install
+  run, see below) · docs site **286 pages** with links asserted against the built output ·
+  dependency gate PASS with 0 findings and 0 exceptions · `wp corex readiness 0.41.0` PASS.
 
 **CI is the authority for the integration and browser suites.** A long-lived development install
 accumulates rows a freshly provisioned one does not, which is why three integration specs fail
@@ -35,11 +37,7 @@ locally and pass in CI. Check a claim against a CI run, not against your machine
 
 ## In flight
 
-- **v0.41.0 is being cut.** Every file is stamped to `0.41.0` and `CHANGELOG.md` carries its entry,
-  but **no `v0.41.0` tag and no GitHub release exist yet** — so nothing here calls it released, and
-  `tests/repo-hygiene.test.js` fails the build if anything does. The tag is cut from the merge
-  commit of the release pull request, the GitHub release is published from that tag, and this
-  section is then replaced with the published baseline.
+Nothing. No open feature spec, no open pull request, no release in preparation.
 
 ## Next
 
