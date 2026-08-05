@@ -6,6 +6,115 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.41.0] — 2026-08-05
+
+Eight specs, opened by three defect reports and one look at what the repository was claiming about
+itself. The thread through them: **a claim nobody checks stops being true, and the checking is the
+deliverable.**
+
+### Removed
+
+- **The WordPress contextual Help tab, from every CoreX admin screen.** Spec 084 had filled it with
+  guides, reasoning that a panel on every admin screen was a surface standing empty. Fair reading,
+  wrong surface: the panel belongs to wp-admin, and a CoreX screen is a full-bleed product built to
+  hide wp-admin — so it opened *above* the shell and pushed the whole product down the page.
+  Unregistered rather than hidden with CSS, on `admin_head` at `PHP_INT_MAX`, which is the last point
+  that beats the render and the first that is later than every point at which help can be
+  registered — including by core or by a plugin CoreX has never heard of. It lives in `corex-config`,
+  so deactivating the optional Guides add-on cannot hand the tab back. (Spec 097, DECISIONS #216)
+- **`.github/workflows/e2e.yml`**, which had failed every night for at least a week and could never
+  have passed: no `COREX_BASE_URL`, no admin credentials, no seeded fixtures. `ci.yml`'s browser job
+  supersedes it in every dimension and is required on `main`. A red that is always red carries no
+  information. (Spec 099, DECISIONS #219)
+
+### Fixed
+
+- **Three CoreX admin surfaces overran their own shell, and `overflow: clip` hid it.** The two
+  browser failures blocking this release read as unrelated — a click that "intercepts pointer events"
+  for sixty seconds, and a boolean overflow assertion at one width. They were one mistake in three
+  places: a CSS length written as a preference and read by the engine as a floor. The Forms catalog
+  row carried 37rem of track minimums, so it was clipped out of existence and
+  `document.elementFromPoint()` at the button's own centre returned the wrapper — **the control was
+  not there**. Blog Pro's `auto-fit` grid could not drop to one column, and `.corex-select` could not
+  fit a toolbar narrower than its own minimum. Fixed with `minmax(0, …)` and `min(Xrem, 100%)`;
+  neither assertion was changed. (Spec 097, DECISIONS #217)
+- **The Guides screen introduced itself as "Corex / Framework".** The breadcrumb map never learned the
+  `guides` section, so the one screen somebody opens *because they are lost* had the wrong name on it.
+  Found by widening the browser route matrix from twelve routes to all fourteen. (Spec 097)
+- **Two high advisories**, both transitive, both closed by an override rather than an exception:
+  `brace-expansion` below 5.0.9 (DoS bypassing the CVE-2026-14257 mitigation) and `fast-uri` below
+  3.1.5 (host confusion via a backslash authority introducer).
+- **A fixture the repository silently refused to track.** `.gitignore` carried `tests/e2e/fix*/` for
+  spec 060's throwaway render output, and that glob swallowed `tests/e2e/fixtures/`. `git add` said
+  nothing and the commit looked complete; CI found it.
+
+### Added
+
+- **`tests/repo-hygiene.test.js`** — nine checks, asserted against what git actually *tracks* rather
+  than against the working tree. It fails on a tracked generated directory, archive, raw design
+  export, editor artifact or key; on root Markdown outside the canonical set; on a prose version
+  statement disagreeing with `package.json`; on a reworded sentence the release stamper anchors to;
+  and on **any document announcing a release for which no tag exists**. That last one was not
+  hypothetical. (Spec 098, DECISIONS #218)
+- **`tests/e2e/admin-help-tab.spec.js`** — twelve browser tests asserting absence across all fourteen
+  CoreX routes, in light and dark, LTR and RTL, at four widths and at 200% zoom, including that
+  forcing core's own wrapper visible by script still reveals no panel, that native WordPress screens
+  keep their Help tab, and that a **client-registered** guide still appears. Deliberately not skipped
+  when its fixture is missing: a browser check that opts out when its fixture is absent reports green
+  for the one condition it exists to catch.
+- **`scripts/sync-project-status.mjs`** — the docs-site status page is now generated from
+  `PROJECT-STATUS.md` and held to it by a test, instead of being a hand-written second copy that was
+  62 lines against the source's 123.
+- **`screenshot: 'only-on-failure'`** in the Playwright config. It costs nothing on a passing run, and
+  its absence is why this release's two layout failures arrived as a boolean and a timeout with no
+  picture of the screen.
+
+### Changed
+
+- **`PROGRESS.md`: 4,589 lines → 68.** Forty stacked `RESUME HERE` blocks, append-only, of which only
+  the top was ever read. Each root document now answers exactly one question and none answers
+  another's; `README.md` carries the table. `ROADMAP.md` gave up a foundation table three releases
+  stale and ~190 lines narrating merged specs. `DECISIONS.md` was deliberately **not** trimmed — it is
+  the one file whose value is cumulative. (Spec 098, DECISIONS #218)
+- **The four `COREX-*.md` working documents moved to `docs/internal/`**, leaving the root to the
+  canonical set. This required a PATCH amendment to the constitution (1.2.1 → 1.2.2), whose
+  source-of-truth hierarchy named `COREX-FRAMEWORK.md` by its old path, and 29 live files repointed.
+  `specs/`, `CHANGELOG.md` and `DECISIONS.md` were not rewritten: what they say was true when written.
+- **`@wordpress/components` 37 → 38 and `@wordpress/scripts` 33 → 34**, plus `@wordpress/i18n`,
+  `@wordpress/env`, `@playwright/test` and two GitHub Actions. Seven of eight open Dependabot pull
+  requests consolidated into one. Both majors were tested against the build, Jest, both linters and
+  the full Playwright suite in a real browser, because **a green advisory check proves an advisory is
+  closed, not that the software still works**. (Spec 099, DECISIONS #220)
+- **The precedence between the four instruction files** is stated once, in `AGENTS.md`, and referenced
+  rather than restated by the others.
+
+### Earlier in this release
+
+Specs 092–096 merged before the work above and are part of v0.41.0:
+
+- **The published docs site had 85 broken links, not the seven reported.** v0.40.0 gave `docs-app` a
+  `base`; Astro rewrote what it owns and left every hand-written markdown link alone. Applied at build
+  time rather than typed into 84 links, with a test asserting the **built** output. (Spec 092)
+- **The support email was broken before it was unstyled** — a newline-joined plain-text body stamped
+  `Content-Type: text/html` by Corex Mail's driver, arriving as one run-on paragraph. The rendering
+  now follows the transport. (Spec 093)
+- **The in-admin guide went from 4 guides to 16**, 40 topics and 14 screenshots — every CoreX admin
+  screen, all 42 settings fields, and an orientation guide gated on `read` because a contributor with
+  two capabilities is *more* lost than an administrator. (Specs 094, 096)
+- **One fixture user per browser spec that signs in.** Two spec files sharing one editor tripped
+  CoreX's own login lockout from the CI runner's single address, and the failure landed in whichever
+  file ran second as "could not sign in", nowhere near the cause. The lockout policy is untouched:
+  it is the product working. (Spec 095)
+
+### Verification
+
+Pest unit **1727** · integration **356** · Jest **442** across 54 suites · Playwright **144** locally,
+**141** on a fresh install · docs site **286 pages** with links checked against the built output ·
+dependency gate **PASS**, 0 findings and 0 exceptions across Composer, npm-root and npm-docs ·
+`wp corex readiness 0.41.0` PASS · dist builds and verifies · `composer validate --strict`, both
+linters and `git diff --check` clean.
+
+
 ## [0.40.0] — 2026-07-29
 
 Every dependency advisory closed. The policy file that held **24 bounded exceptions** now holds none,

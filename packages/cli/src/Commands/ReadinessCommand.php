@@ -39,7 +39,6 @@ final class ReadinessCommand
         'CHANGELOG.md',
         'PROGRESS.md',
         '.github/workflows/ci.yml',
-        '.github/workflows/e2e.yml',
         '.github/workflows/docs.yml',
         '.github/CODEOWNERS',
         '.github/dependabot.yml',

@@ -8,7 +8,7 @@ multisite, headless, or AI-agent-driven — on one clean, documented, spec-first
 - **Stack:** Composer (PHP) + npm workspaces (JS), one monorepo.
 - **License:** GPL-2.0-or-later.
 
-## Status: v0.40.0, actively developed, honest about its gaps
+## Status: v0.41.0, actively developed, honest about its gaps
 
 The foundation is stable and used: the engine, the block/forms/config layers, the admin product, the
 CLI generators, Corex Mail, and the docs site. Every pull request runs the PHP unit suite, the
@@ -177,7 +177,7 @@ The rule hierarchy: **Role Gate** (where) → **Spec Kit** (what) → **Guard Ga
 Before starting a real client site, run the Spec 055 readiness report:
 
 ```bash
-wp corex readiness 0.40.0
+wp corex readiness 0.41.0
 ```
 
 It reports runtime gating, release metadata, CI/security controls, `make:site` validation, deployment profiles,

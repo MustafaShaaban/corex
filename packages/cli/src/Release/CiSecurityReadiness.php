@@ -19,8 +19,12 @@ final class CiSecurityReadiness
      * @var list<string>
      */
     private const REPO_FILE_CONTROLS = [
+        // The browser suite is a job inside `ci.yml`, not a workflow of its own. There was a separate
+        // `e2e.yml` and this list expected it; spec 099 deleted it because it had failed every night
+        // for a week and could never have passed — no base URL, no credentials, no fixtures — while
+        // `ci.yml`'s Playwright job runs on every pull request and is required on `main`. A readiness
+        // check that still asked for the file would report a WARNING for a control that got stronger.
         '.github/workflows/ci.yml' => 'CI workflow',
-        '.github/workflows/e2e.yml' => 'E2E workflow',
         '.github/workflows/docs.yml' => 'docs workflow',
         'SECURITY.md' => 'security policy',
         'CONTRIBUTING.md' => 'contributing guide',
