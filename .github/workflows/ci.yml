@@ -89,6 +89,11 @@ jobs:
           tools: composer:v2
           coverage: none
 
+      # `scripts/generate-docs.php` requires `vendor/autoload.php` — it reflects over the real
+      # classes rather than parsing the files as text, which is what makes the reference accurate.
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress
+
       - name: Generate the class reference
         run: composer docs:generate
 
