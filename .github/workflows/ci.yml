@@ -76,6 +76,27 @@ jobs:
       # docs, and useless in CI, where a silently skipped link check is how 85 broken links reached
       # production in the first place (spec 092). `docs.yml` builds too, but only on push to main,
       # which is after the merge that would publish them.
+      #
+      # The class reference is generated first, and that is the point. Without it this step built
+      # **55 pages while `docs.yml` publishes 922** — so the link check ran over six per cent of the
+      # site and reported green for the other ninety-four. That is spec 092's defect exactly: a real
+      # check sampling only the half that works. It needs PHP, which this job otherwise does not
+      # have, and that is the whole reason it was missing.
+      - name: Set up PHP for the reference generator
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      # `scripts/generate-docs.php` requires `vendor/autoload.php` — it reflects over the real
+      # classes rather than parsing the files as text, which is what makes the reference accurate.
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Generate the class reference
+        run: composer docs:generate
+
       - name: Build the docs site
         working-directory: docs-app
         run: |

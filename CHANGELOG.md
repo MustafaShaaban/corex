@@ -109,7 +109,8 @@ Specs 092–096 merged before the work above and are part of v0.41.0:
 ### Verification
 
 Pest unit **1727** · integration **356** · Jest **442** across 54 suites · Playwright **144** locally,
-**141** on a fresh install · docs site **286 pages** with links checked against the built output ·
+**141** on a fresh install · docs site **922 pages** (54 authored + 868 generated class reference)
+with links checked against the built output ·
 dependency gate **PASS**, 0 findings and 0 exceptions across Composer, npm-root and npm-docs ·
 `wp corex readiness 0.41.0` PASS · dist builds and verifies · `composer validate --strict`, both
 linters and `git diff --check` clean.
