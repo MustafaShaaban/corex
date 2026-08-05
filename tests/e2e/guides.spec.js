@@ -125,22 +125,27 @@ test.describe( 'Guides', () => {
 		).toHaveCount( 0 );
 	} );
 
-	test( 'a guide reaches the screen it describes, through the Help tab', async ( {
+	test( 'a guide reaches the screen it describes, by linking to it', async ( {
 		page,
 	} ) => {
-		// WordPress's contextual help is used nowhere else in this repo, so this asserts the whole
-		// mechanism: the tab exists, it is ours, and it links back to the full guide.
-		await page.goto( '/wp-admin/edit.php' );
+		// This asserted the contextual Help tab until spec 097 took that surface off CoreX admin.
+		// The address a guide declares with `onScreen()` survived the removal, because it was always
+		// the better half of the idea: the Guides screen renders it as a link, so somebody who has
+		// just read the steps is one click from doing them.
+		//
+		// The publishing guide declares `edit.php`, which is where its steps are carried out.
+		await page.goto( GUIDES );
 
-		await page.locator( '#contextual-help-link' ).click();
+		const link = page.locator(
+			'#guide-corex-publishing .corex-guides__guide-screen a'
+		);
+		await expect( link ).toBeVisible();
+		await expect( link ).toHaveAttribute( 'href', /\/wp-admin\/edit\.php/ );
 
-		const tab = page.locator( '#tab-link-corex-guide-corex-publishing' );
-		await expect( tab ).toBeVisible();
-
-		await tab.locator( 'a' ).click();
+		await link.click();
 		await expect(
-			page.locator( '#tab-panel-corex-guide-corex-publishing' )
-		).toContainText( 'Read the full guide' );
+			page.getByRole( 'heading', { name: 'Posts', exact: true } )
+		).toBeVisible();
 	} );
 
 	test( 'somebody who cannot use a feature is not given instructions for it', async ( {

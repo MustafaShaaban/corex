@@ -33,7 +33,8 @@ final class {{ class }}
             ->withSummary(__('What this guide helps somebody do, in one sentence.', 'corex'))
             // Groups the guide on the Guides screen. Sections appear in key order.
             ->inSection('content')
-            // The admin address this guide describes. Also puts it in that screen's Help tab.
+            // The admin address this guide describes. The Guides screen renders it as a link
+            // straight to that screen. Omit it for a guide that is not about one screen.
             ->onScreen('edit.php?post_type=post')
             // Nobody without this capability is shown the guide — they could not follow it.
             ->requiring('edit_posts')

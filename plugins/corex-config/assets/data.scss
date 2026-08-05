@@ -266,7 +266,10 @@
 
 .corex-admin .corex-data__search {
 	flex: 1 1 12rem; /* corex-token-allow: functional toolbar basis */
-	min-inline-size: 11rem;
+
+	/* Yields to a container narrower than the floor, for the same reason
+	   `.corex-select` does (spec 097). */
+	min-inline-size: min(11rem, 100%);
 	max-inline-size: 26rem;
 }
 

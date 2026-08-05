@@ -3,10 +3,9 @@ title: User guides
 description: Ship in-admin user guides with your site, using the same registry Corex uses for its own.
 ---
 
-Corex Guides puts a **Guides** screen in the admin and a Help tab on the screens your guides
-describe. Corex registers its own guides through it — reading and answering messages, publishing a
-post, checking whether an email was sent — and your site registers its own through exactly the same
-public API.
+Corex Guides puts a **Guides** screen in the admin. Corex registers its own guides through it —
+reading and answering messages, publishing a post, checking whether an email was sent — and your site
+registers its own through exactly the same public API.
 
 This matters because a client's guide is about the client's site. It documents their post types and
 their flows, it ships with their plugin, and it must survive a Corex upgrade without anybody editing
@@ -61,11 +60,10 @@ your folder.
 which is an admin request — long after every plugin has loaded. There is no race left to lose.
 
 :::caution[Keep the factory cheap]
-It runs on **every admin page load**, not just on the Guides screen — Corex reads the registry on
-`current_screen` to work out whether the page has a help tab. Building `Guide` objects costs
-nothing, so that is free. A factory that queries the database or reads a file would put that cost on
-every page in wp-admin. If your guide content really has to come from storage, cache it yourself:
-the registry does not, because it cannot know how long your data stays fresh.
+Building `Guide` objects costs nothing, so a factory that does only that is free. One that queries
+the database or reads a file puts that cost on the request. If your guide content really has to come
+from storage, cache it yourself: the registry does not, because it cannot know how long your data
+stays fresh.
 :::
 
 ## Write the guide
@@ -103,7 +101,7 @@ Guide::for( 'projects', __( 'Managing projects', 'perego' ) )
 | Method | Effect |
 | --- | --- |
 | `inSection()` | Groups the guide on the Guides screen. Sections appear in **key order**, alphabetically — that is the only lever you have over where your section lands. |
-| `onScreen()` | The admin address the guide describes. Also puts the guide in that screen's **Help tab**. Use the address WordPress itself uses: `edit.php` for posts, `edit.php?post_type=…` for anything else. |
+| `onScreen()` | The admin address the guide describes. The Guides screen renders it as a link straight to that screen, so a reader who has finished the steps is one click from doing them. Use the address WordPress itself uses: `edit.php` for posts, `edit.php?post_type=…` for anything else. |
 | `requiring()` | The capability a reader needs. Anyone without it never sees the guide — they could not follow it. Omit it and the guide is shown to anyone who can open the admin. |
 | `ordered()` | Position within the section. Lower first; the default is 50. |
 

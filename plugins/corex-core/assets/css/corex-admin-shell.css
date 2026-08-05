@@ -1107,7 +1107,13 @@ body.corex-admin-screen .corex-admin__shell {
 .corex-admin .corex-select {
 	position: relative;
 	display: inline-block;
-	min-inline-size: 11rem;
+
+	/* `min(11rem, 100%)`, not a bare `11rem`: a minimum is a floor the
+	   control cannot go under, so in a toolbar narrower than 11rem the
+	   select overran its container and the shell — which clips — cut it
+	   off. Yielding keeps the 11rem intent everywhere it fits and costs
+	   nothing where it does not (spec 097). */
+	min-inline-size: min(11rem, 100%);
 }
 
 /* Full-width variant for form fields, where the control fills its row rather

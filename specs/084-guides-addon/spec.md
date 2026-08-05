@@ -71,12 +71,18 @@ listed at all.
 **Why this priority**: 082 names this as an edge case and has no mechanism for it. A manual that
 documents absent screens teaches people the product is broken.
 
-### User Story 4 — Help is one click from the screen it describes (Priority: P2)
+### User Story 4 — Help is one click from the screen it describes (Priority: P2) — SUPERSEDED by spec 097
 
 A guide that names the admin screen it belongs to also appears in that screen's contextual help tab.
 
 **Why this priority**: the WordPress contextual-help API is used **zero times** in this repository
 today, so this is a whole surface standing empty.
+
+> **Superseded (2026-08-05, spec 097).** Shipped and then removed. Filling an empty surface was a
+> fair reading of it; what it missed is that the surface belongs to wp-admin, and a CoreX screen is
+> a full-bleed product that hides wp-admin — so the panel opened *above* the shell and pushed the
+> product down the page. The address a guide declares survives and is now rendered as a link on the
+> Guides screen, which was always the better half of this story.
 
 ## Requirements *(mandatory)*
 
@@ -114,7 +120,9 @@ today, so this is a whole surface standing empty.
   steps.
 - **FR-012** The screen MUST be searchable across registered titles and step text, with no external
   dependency.
-- **FR-013** A guide declaring a screen MUST add a contextual help tab on that screen linking to it.
+- **FR-013** ~~A guide declaring a screen MUST add a contextual help tab on that screen linking to
+  it.~~ **Superseded by spec 097 FR-001.** The declared address is now rendered as a link on the
+  Guides screen instead, and CoreX admin screens carry no contextual help at all.
 - **FR-014** The screen MUST follow the CoreX admin shell: tokens only, logical properties, RTL, and
   WCAG 2.2 AA.
 
@@ -132,8 +140,8 @@ today, so this is a whole surface standing empty.
 
 - **SC-001** A second plugin registers a guide on `plugins_loaded` at default priority and it appears
   — the boot race, tested rather than reasoned about.
-- **SC-002** A guide requiring a capability the viewer lacks is absent from the screen and from the
-  help tab.
+- **SC-002** A guide requiring a capability the viewer lacks is absent from the screen. (It was also
+  absent from the help tab, until spec 097 removed that surface.)
 - **SC-003** Deactivating a contributing plugin removes only its guides.
 - **SC-004** A malformed contribution through the filter is discarded and the screen still renders.
 - **SC-005** Changing an admin screen and regenerating produces a different committed screenshot.

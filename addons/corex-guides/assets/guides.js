@@ -60,8 +60,12 @@
 		filter( input.value.trim().toLowerCase() );
 	} );
 
-	// A guide deep-linked from a Help tab is opened and scrolled to, so the link lands on the
-	// content rather than on a collapsed <details> the reader then has to find and expand.
+	// A guide arrived at by its anchor is opened and scrolled to, so the link lands on the content
+	// rather than on a collapsed <details> the reader then has to find and expand. Every guide
+	// renders `id="guide-<id>"`, which makes those anchors a public address anybody can link to —
+	// a bookmark, a documentation page, a client plugin pointing its users at the right guide.
+	// Spec 084's contextual help tab was the first such caller and spec 097 removed it; the anchors
+	// it linked to are still there and still worth landing on properly.
 	if ( window.location.hash.indexOf( '#guide-' ) === 0 ) {
 		const target = document.getElementById(
 			window.location.hash.slice( 1 )

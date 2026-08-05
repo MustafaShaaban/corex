@@ -18,21 +18,6 @@ defined('ABSPATH') || exit;
 final class CorexAdminAssets
 {
     /**
-     * Matches every CoreX-owned admin screen by hook/screen-id, regardless of the menu-title
-     * prefix WordPress derives (the toplevel `toplevel_page_corex-settings` Overview, and every
-     * submenu — `corex_page_*` or `corex-framework_page_*` depending on how WP sanitises the
-     * "COREX FRAMEWORK" menu title — plus any declarative `corex-page-*` option page). Every CoreX
-     * submenu lives under the `corex-settings` parent, so its hook/screen id ends in
-     * `_page_corex-<slug>`; matching that prefix covers ALL current and future CoreX screens
-     * (Overview, Add-ons, Data, Data Models, Forms, Submissions, Email Studio, Operations &
-     * Security, Access, Insights, Setup, Settings, option pages) so the full-bleed shell body class
-     * is never missing on a real CoreX screen. Keyed on the slug after `_page_`, so the same check
-     * works for both the enqueue hook and the `get_current_screen()` id (which disagree for the
-     * submenu pages).
-     */
-    private const SCREEN_PATTERN = '#(?:^toplevel_page_corex-settings$|_page_corex-[a-z0-9-]+)#';
-
-    /**
      * Injected rather than reached for through the facade: this class is built by the container
      * (`ConfigServiceProvider`), so it has a constructor to inject into, and constitution IV wants
      * the dependency visible here. `Facades\AdminDate` exists for view code that has no
@@ -74,9 +59,13 @@ final class CorexAdminAssets
         return $classes;
     }
 
+    /**
+     * Kept as a delegate rather than deleted: this is the name the rest of the codebase already
+     * calls, and the answer now comes from {@see CorexScreens} so there is one regex, not three.
+     */
     public function supports(string $hook): bool
     {
-        return preg_match(self::SCREEN_PATTERN, $hook) === 1;
+        return CorexScreens::supports($hook);
     }
 
     public function enqueue(string $hook): void

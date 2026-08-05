@@ -96,6 +96,13 @@ module.exports = defineConfig( {
 		trace: process.env.COREX_E2E_TRACE
 			? 'retain-on-failure'
 			: 'on-first-retry',
+		// Unlike a trace, this costs nothing on a passing run — the image is captured only when a
+		// test has already failed. It is here because its absence cost real time: spec 097's two
+		// layout failures came back from CI as a 60-second click timeout and a boolean, with no
+		// picture of a screen whose control had been clipped out of existence. One screenshot would
+		// have said so immediately. (`retries` is unset, so `on-first-retry` traces never fire in
+		// CI — this is the evidence that actually arrives.)
+		screenshot: 'only-on-failure',
 	},
 	projects: [ { name: 'chromium', use: { ...devices[ 'Desktop Chrome' ] } } ],
 } );

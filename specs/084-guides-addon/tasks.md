@@ -26,10 +26,11 @@ progress and prove nothing.
 
 - [x] **T020** `GuidesScreen` — submenu under `corex-settings`, sections, topic detail, admin shell.
 - [x] **T021** Client-side search over registered content, no external dependency.
-- [x] **T022** `ContextualHelp` — a help tab on each screen a guide declares (FR-013).
+- [x] **T022** ~~`ContextualHelp` — a help tab on each screen a guide declares (FR-013).~~
+      Shipped, then **removed by spec 097**; the declared address became a Guides-screen link.
 - [x] **T023** CSS, tokens only, logical properties, RTL.
 - [x] **T024** Playwright: renders, search filters, help tab present, gated guide absent for a
-      subscriber.
+      subscriber. (The help-tab assertion was replaced by spec 097 with its absence.)
 
 ## Phase 4 — CoreX's own guides
 

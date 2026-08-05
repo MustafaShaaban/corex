@@ -90,7 +90,6 @@ final class GuidesServiceProvider extends ServiceProvider
         }
 
         $this->container->make(GuidesScreen::class)->register();
-        $this->container->make(ContextualHelp::class)->register();
 
         // Resolved inside the closure, not at boot: `admin-post.php` is the only request that ever
         // fires this, and building the controller on every admin page load to answer a POST that

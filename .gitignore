@@ -99,5 +99,11 @@ tests/e2e/cur/
 tests/e2e/final/
 tests/e2e/fix*/
 
+# ...but `fixtures/` is a real, tracked directory that the glob above swallows.
+# It cost a CI run to find: `git add` reported nothing, the commit looked complete,
+# and the browser job failed on `cp: No such file or directory` (spec 097).
+!tests/e2e/fixtures/
+!tests/e2e/fixtures/**
+
 # Ad-hoc screenshot/scratch output from local Playwright runs.
 output/
