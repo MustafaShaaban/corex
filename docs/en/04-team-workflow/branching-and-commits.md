@@ -9,7 +9,7 @@ last_verified: null
 # Branching, commits & pull requests
 
 The git model Corex uses, with the exact commands. The rules come from
-[`COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md) and [`COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md).
+[`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md) and [`../../internal/COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md).
 
 ## The branching model (git-flow-lite)
 
@@ -117,4 +117,4 @@ git tag -a v0.20.0 -m "Corex v0.20.0" && git push origin main v0.20.0
 ## See also
 
 - [The Spec Kit loop](./spec-kit.md) · [Quality gates](./quality-gates.md) ·
-  [`COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)
+  [`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)

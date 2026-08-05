@@ -11,17 +11,15 @@ rather than repeating completed Spec Kit history.
 
 ## 1. Roadmap purpose
 
-Corex uses distinct documents for distinct planning needs:
+This file holds **milestones, dependencies, priorities and deliberate deferrals** — the plan. It does
+not hold status; `PROJECT-STATUS.md` does, and [`README.md`](README.md) carries the one table naming
+which root document answers which question.
 
-- `ROADMAP.md` is the durable product and engineering roadmap: completed foundation, active milestones, dependencies, priorities, and future boundaries.
-- `PROJECT-STATUS.md` is the public, per-module state: stable / partial / planned, and what is missing.
-- `PROGRESS.md` is the immediate session/resume file: the latest verified state and one recommended next action.
-- `CHANGELOG.md` records actual released and unreleased product changes, not plans.
-- `DECISIONS.md` records important architectural and product decisions and their rationale, not task status.
-- `specs/` contains reviewed implementation contracts. A roadmap milestone is not authorization to implement it.
-- `design/` contains the separate design roadmap, inventory, and approved design-to-engineering handoffs.
+Two rules that live here and nowhere else:
 
-Approved design work moves from design inventory to a focused handoff, then to an engineering spec. Design exploration is not implementation scope by itself.
+- **A roadmap milestone is not authorization to implement it** (§16). A reviewed spec in `specs/` is.
+- Approved design work moves from the `design/` inventory to a focused handoff, then to an engineering
+  spec. Design exploration is not implementation scope by itself.
 
 ## Roadmap at a glance
 
@@ -44,22 +42,7 @@ Approved design work moves from design inventory to a focused handoff, then to a
 
 ## Current focus and execution order
 
-- **Done:** the core framework foundations, stable-client readiness work, Spec 056 dependency/security remediation,
-  CI and CodeQL verification, GitHub branch-protection review, and the repository-side design inventory/handoff
-  structure.
-- **Active now:** nothing. Specs 069–072 shipped in v0.34.0/v0.35.0; **080–086 shipped in v0.38.0 and
-  v0.38.1** (2026-07-28); **087** merged after it. No feature spec is open, and the next one is an owner
-  decision — see §17.
-- **Verification baseline (v0.38.1 + spec 087):** CI gates **four** suites on every pull request — PHP unit,
-  JS, integration against a WordPress it provisions itself, and Playwright in a browser, plus CodeQL. Counts
-  on `main`: **unit 1704, integration 356, JS 431, Playwright 120**. Before v0.35.0 only the PHP unit job ran,
-  and only on PRs based on `main`/`develop`, so a stacked PR was never checked at all.
-  **CI is the authority for integration and browser runs**: a long-lived dev install accumulates state a
-  freshly provisioned one does not, which is why three integration specs fail locally and pass in CI.
-- **Known open, and not hidden:** three browser specs excluded from a fresh-install run, a 1px RTL overflow
-  on `corex-access`, and Arabic typography proved for layout but not for type. Each is listed with its source
-  in [`PROJECT-STATUS.md`](PROJECT-STATUS.md). The 24 bounded dependency exceptions that stood here were
-  closed by spec 089; the policy file now holds none.
+- **Active now:** nothing. No feature spec is open, and the next one is an owner decision — see §17.
 - **Blocked:** M3 cannot enter engineering without an approved navigation handoff and the reviewed M2 token
   contract. M4 cannot start until the minimum M2/M3 foundations and selected M5 components are ready.
 - **Not authorized:** roadmap presence does not authorize implementation, Pro work, builders, or bulk spec creation.
@@ -68,39 +51,23 @@ Before the first real company websites, CoreX requires the M0 release, an approv
 foundation, reusable M3 navigation/template parts, the complete M4 company-page contract, and only the M5 component
 batches proven necessary by that kit.
 
-## Company Website Start Track — June 21–22, 2026
+## 2. What already exists
 
-CoreX v0.27.0 is stable enough to begin first company-site project planning, content architecture, local setup,
-brand gathering, and implementation preparation. Full launch readiness for those sites still depends on completing
-the minimum company-site path: M2 brand tokens and visual foundation; M3 header/mobile navigation/footer/template
-parts; M4 Company Site Kit v1; and selected M5 blocks required by M4.
+**This section states dependencies, not status.** What is built, partial or planned — with the file that
+records each one — is [`PROJECT-STATUS.md`](PROJECT-STATUS.md), and that is the only place it is stated.
+It used to be stated here too, in a table that fell three releases behind the one beside it.
 
-CoreX is not yet fully finished or public/commercial-launch ready. M6-M11 are later productization, future, and
-commercial scope unless the active company project demonstrates a specific dependency. Their open status does not
-block all first-client preparation or require unrelated scope to move into M2-M5.
+The foundations the milestones below build on are in place: the core framework, the data layer, the CLI and
+`make:site`, the block engine, forms, the admin product surface, the add-on architecture and its runtime
+gating, the site-kit foundations, the design-token system, and the published documentation. Each carries its
+own named gaps, and those gaps are what M1–M11 close.
 
-## 2. Current foundation status
+The Free/Pro boundary matrix protects adoption and security basics in Free/Core; its commercial
+implementation is M11. The release workflow — dependency policy, CI, CodeQL, branch protection,
+Dependabot security updates and secret scanning — is in place and gates every pull request.
 
-The repository contains substantial implemented foundations. This is a high-level planning summary, not a release certification.
-
-| Foundation | Current status |
-|---|---|
-| Core framework | Exists: boot, container, services/repositories, events, security, and support layers are present. The M0 release baseline is v0.27.0. |
-| Data layer | Exists: models, fields, query/data tooling, and data-management foundations are present. Advanced workflows remain separate scope. |
-| CLI / `make:site` | Exists with scaffold and readiness validation. Verify generated sites in real client use. |
-| Block engine | Exists with discovery and conditional-asset foundations. New visual blocks remain M5 scope. |
-| Forms | Exists as a framework package. Complete visitor/admin states and email presentation in M7. |
-| Config/admin foundation | Exists, with the M6 admin design landed (merged via PR #59): the full-bleed CoreX shell across every admin screen, the CoreX `wp-login.php` design, the Data explorer, real Settings tabs, and provider-specific Captcha — render-verified dark + light. Remaining: the manual RTL/200%/keyboard acceptance sweep (backlog). |
-| Add-ons architecture | Exists with optional add-on packages and dependency metadata. Continue validating packaging and disabled-state safety. |
-| Runtime add-on gating | Implemented under stable-client readiness and included in v0.27.0. Continue regression verification, especially WooCommerce absence/inactive cases. |
-| Company / Portfolio / Woo kits | Foundations exist. They are not yet equivalent to the complete page coverage in M4, M8, and M9. |
-| Design-system / DLS | A substantial token, component, pattern, and documentation foundation exists. Final CoreX identity and approved external design intake remain M1/M2. |
-| Docs | In-repo and published-docs foundations exist. Productization and marketing surfaces remain M10. |
-| Readiness checks | Exist and cover multiple release categories. Local readiness passed for Spec 056; Docker/wp-env, browser automation, and deployment-profile evidence remain environment-gated. |
-| Free/Pro boundary matrix | Exists and protects adoption/security basics in Free/Core. Commercial implementation remains M11. |
-| Tests and release workflow | Broad Pest/Jest/build/readiness coverage exists. Dependency policy, CI, CodeQL, branch protection, required CI, Dependabot security updates, and secret scanning were verified during Spec 056 delivery. The clean v0.27.0 release is published; environment-dependent E2E evidence remains explicit follow-up verification. |
-
-The current release baseline and exact verification counts belong in `PROGRESS.md` and `CHANGELOG.md`, not here.
+The current release baseline and exact verification counts belong in `PROGRESS.md` and
+`CHANGELOG.md`, not here.
 
 ## 3. M0 - Stabilization, Security, and Release Hygiene
 
@@ -408,158 +375,18 @@ These items require later validation and dedicated specs. They must not leak int
 - Do not create code directly from design exploration without a reviewed engineering spec.
 - Update roadmap status when priorities or dependencies change; do not rewrite completed spec history into the roadmap.
 
-## 17. Current and next recommended specs
+## 17. Next recommended specs
 
-> **Status (2026-07-28): specs 080–085 are merged and released as v0.38.0**, taking the repository
-> to **zero open issues and zero open PRs**. The thread running through them is that a framework can
-> describe a capability it does not have: 083 completed an error experience whose unifying half was
-> never built, 084 turned a planned documentation page into an add-on a client site extends, 085
-> closed three production reports, and 081 built the file uploads the documentation already
-> promised. **Verification changed the work in every one of them** — two of eleven reported items
-> turned out to be already fixed, and `Table::managed()` did not exist at all.
->
-> **Status (2026-07-28): specs 076–079 are merged and released as v0.37.0.** Four specs about
-> telling the truth on screen, each begun by reproducing the defect on a running install — which
-> changed the work three times. 076 gave the admin one date and time contract shared by PHP and
-> JavaScript (PR **#138**). 077 made every operations mode disclose what it will do before it does it
-> (PR **#140**, `f32de72`). 078 replaced a four-line cache command with a classified inventory that
-> **cannot** delete a security control, because `corex_throttle_*` and `corex_captcha_seen_*` are
-> rate-limit and captcha-replay state wearing a transient's clothes (PR **#141**, `7fa8215`). 079
-> fixed an access request that *succeeded* while showing the requester an operation envelope, and
-> then found the larger hole behind it: the request went into a table no product surface read
-> (PR **#143**, `81bc773`).
->
-> Specs 069–072 shipped in v0.34.0/v0.35.0; 073–075 in v0.36.0. Nothing is in flight. The standing
-> rule still governs: the approved current design is the functional contract, and a required control
-> may not remain a placeholder.
->
-> **Superseded framing, kept because the rule it states still applies (2026-07-03, owner correction):
-> Spec 068 — Product Functional Completion.**
-> The approved current design is the functional contract. A required current control may not remain sample,
-> planned, future, reference-only, read-only, placeholder-only, or dead. An absent optional dependency may gate its
-> dependent behavior only with a working install/activate/connect path. Spec 068 supersedes the earlier Spec
-> 063/065/067 deferral boundary where it conflicts and requires direct functional, security, test, runtime, and
-> rendered evidence for all fourteen product areas. Company/client-site work and recommendations remain prohibited
-> until the Spec 068 completion audit passes.
+Nothing here is authorized by appearing here (§16). One reviewed spec at a time.
 
-Create and implement one reviewed spec at a time:
+**What has already shipped is not listed.** It used to be — roughly two hundred lines narrating every
+merged spec, its PR number and its test counts, restated from `CHANGELOG.md` and going stale between
+releases. `CHANGELOG.md` is where a released change is recorded; `git log` is where a merge is.
 
-1. **Spec 057 - Brand Tokens and Logo System** — done: merged via PR #54 (`f9994f8`), M2 closed.
-   Remaining follow-up is env-gated wp-env/browser evidence and an owner release/version decision.
-2. **Spec 058 - Header, Mobile Navigation, Mega Menu, and Footer System** — implemented (US1-US4) on PR #56; design
-   handoff approved/recorded (`design/handoffs/navigation-footer.md`). Next: review/merge + env-gated browser
-   evidence.
-3. **Spec 059 - Company Site Kit v1 Structure and Page Coverage** — core implemented: `CompanyBlueprint` provides
-   the full v1 page set + demo levels + SEO starter, reusing the existing provisioning. Remaining: the M5 section
-   blocks the kit proved necessary (services/team/case-study/locations grids) and the `make:site` visual-foundation
-   inheritance.
-4. **Specs 063–067 — historical staged gap/fidelity work.** Their compatible completed foundations remain, but
-   their presentation-only and deferral boundaries are superseded by Spec 068 (Decision #115).
-5. **Spec 068 - Product Functional Completion** — Phases 1–12 implemented and verified on PR #98; the final
-   requirement-by-requirement audit (Phase 12) is complete with the completion audit at **0 findings**, full unit
-   **1,257/1,257**, integration **104/104**, Jest **209/209**, performance contracts **3/3**, and guards clean on the
-   diff. Implements shared product foundations then functional vertical slices for Email; Forms/Flows/Submissions;
-   Data/Data Models; Operations/Security/Access; Blog Pro; Overview/Add-ons; Insights/Setup/Settings; approved
-   components/theme/account/docs. **Residual before PR is marked ready:** 4 environment/demo-content/actor-state
-   Playwright specs (not code regressions) — see `specs/068-admin-product-functional-completion/evidence.md`
-   §Final Verification and Decision #138. Source: `specs/068-admin-product-functional-completion/`.
-
-6. **Spec 069 - Admin correctness and login-hiding parity** — done, released in **v0.34.0**. Login hiding stopped
-   announcing itself, the Insights/Overview grids gained one column rhythm, and every admin selection control
-   became `CorexSelect` (DECISIONS #141). Source: `specs/069-*/`.
-7. **Spec 070 - Transport error fidelity and hidden-admin style parity** — done, merged via PR #117, released in
-   **v0.35.0**. Route identity now comes from the path rather than the payload, error responses reach the screen
-   instead of being replaced by a generic message, and a hidden `/wp-admin` renders the theme's 404 properly
-   styled. Source: `specs/070-*/`.
-8. **Spec 071 - Form delivery reliability and reCAPTCHA v3** — done, merged via PR #118, released in **v0.35.0**.
-   Source: `specs/071-*/`.
-9. **Spec 072 - Notification Center and Dashboard Command Center** — done, merged via PR #119, released in
-   **v0.35.0**. Eight producers, a recipient-aware store with per-user state, REST with a two-tier gate, the
-   header bell/drawer, the full FR-018 saved views, per-category preferences, the framework's first recurring
-   job, and the Dashboard Command Center. **T021 (`NotificationChannelPolicy`) is deliberately unbuilt** — it
-   guards an email-notification loop, and no email delivery channel for notifications exists to guard yet.
-   Source: `specs/072-*/`.
-10. **Spec 073 - Admin polish and correctness** — done, merged via PR **#129** (`9b5939f`). Seven truthful-surface
-    fixes: the Add-ons state filter, the Data Models inline-SVG loss, the inert Operations mode preview, the
-    record-detail em-dash bug, `CorexSelect` on the remaining dropdowns, the doubled toolbar count, and the
-    admin prose rhythm baseline. Source: `specs/073-*/`.
-11. **Spec 074 - Core admin truthfulness and integration closure** — done, merged via PR **#130** (`d243b7f`). A unified form
-    catalog so a form registered in `FormRegistry` is discoverable everywhere without a site-specific filter hook;
-    capability-aware Data Models tabs plus `corex_subscribers` as the first genuinely import- and
-    migration-capable managed model; the Submission Inbox heading rhythm; a Notifications action center that
-    separates *read* from *resolved* and collapses eight saved views to three; and a capability summary that
-    answers "what can this site do" where the question is asked. Decisions #157–#160. Source:
-    `specs/074-core-admin-truthfulness-and-integration-closure/`.
-12. **Spec 075 - Blog Pro functional completion** — done, merged via PR **#132**. Blog Pro's services and REST
-    existed but its React screen was a read-only reference dashboard that called `useReducer` and discarded
-    the dispatch, leaving the whole client state module unreachable and all seven routes without a caller.
-    It is now a workspace: choose the post (the choice is the URL), move it through review with a note, and
-    approve/spam/trash the comments waiting on it — with "no data yet" distinguished from zero, and two
-    exports deleted rather than wired to something that could not honestly call them. Decisions #161–#162.
-    Source: `specs/075-blog-pro-functional-completion/`.
-13. **Spec 076 - Admin date & time foundation** — done, merged via PR **#138**. One formatting contract for the
-    whole admin, shared by PHP and JavaScript against a common fixture: site timezone as the single source of
-    truth, active WordPress locale, semantic `<time>` markup, relative times whose exact value is readable
-    rather than hover-only, and truthful fallbacks — a non-positive integer is an absence, not 1970.
-    Source: `specs/076-admin-datetime-foundation/`.
-14. **Spec 077 - Operations & security UX and safety completion** — done, merged via PR **#140** (`f32de72`).
-    Every operations mode discloses what changing to it will do and the confirmation it requires, before it is
-    applied; a no-op change stops reporting "Saved"; a login slug colliding with an existing page or route is
-    refused. The screen is sectioned, and the server's render is the instruction the no-JavaScript path follows.
-    Source: `specs/077-operations-security-completion/`.
-15. **Spec 078 - Cache architecture and performance management** — done, merged via PR **#141** (`7fa8215`).
-    Classification first, because the obvious implementation — a sweep of `corex_*` transients — would have
-    reset brute-force protection and re-opened the captcha replay window at exactly the moment an operator
-    reaches for it. Nothing in the feature deletes by pattern; clearing walks declared entries. Seven layers
-    reported from real checks, with "cannot look" distinguished from "off". Decisions #171–#173.
-    Source: `specs/078-cache-architecture/`.
-16. **Spec 079 - Unified admin error and access request experience** — done, merged via PR **#143** (`81bc773`).
-    The denied screen's form posted the browser at a REST endpoint, so asking for access rendered a JSON
-    document — and the request had *succeeded*, so this was a success displayed as an operation envelope.
-    Reproducing it found two worse things: a CoreX address with no screen behind it told administrators they
-    lacked `manage_options` at HTTP 403, and `AccessRequestStore::pending()` had no production caller at all,
-    so requests landed in a table no surface read. Decisions #174–#177.
-    Source: `specs/079-admin-errors-access-request/`.
-17. **Spec 083 - Every admin refusal is a CoreX page** — done, merged via PR **#151** (`77524df`).
-    Spec 079 shipped titled "unified admin error experience" with the unifying half unbuilt, and nothing
-    caught it because the only browser test touching a refusal visited the one URL that could not fail.
-    Measured first: nine of eleven admin addresses rendered WordPress's white box to a real subscriber,
-    including CoreX's own Careers screen. Decisions #187–#188.
-    Source: `specs/083-admin-error-surface/`.
-18. **Spec 084 - An extendable user-guide add-on** — done, merged via PR **#152** (`e6ec188`).
-    `addons/corex-guides` ships CoreX's own in-admin guides and the registry a client site extends with
-    guides for its own content types. Registration defers to first read, because CoreX and a site plugin
-    both boot on `plugins_loaded` at priority 10. Supersedes spec 082. Decision #189.
-    Source: `specs/084-guides-addon/`.
-19. **Spec 085 - Production findings from a live build** — done, merged via PR **#153** (`7439ddc`).
-    Issues #148, #149 and #150. Two of the eleven reported items needed no work, and the most instructive
-    finding was that spec 080's better empty state made an unrelated defect *harder* to see.
-    Decisions #190–#191.
-    Source: `specs/085-production-findings/`.
-20. **Spec 081 - Files, end to end** — done, merged via PR **#154** (`47d040d`). Issue #138 items 6–9.
-    The framework had no upload handling at all: a repo-wide search for `wp_handle_upload` found two
-    comments describing one and no code. A protected file is now protected by a capability check rather
-    than a deny file. Decisions #192–#194.
-    Source: `specs/081-forms-files-end-to-end/`.
-21. **Spec 086 - Consumer validation against a real fork** — done, merged via PR **#156** (`211e710`),
-    released as **v0.38.1**. Standing up a site plugin that followed the published documentation found four
-    defects, none visible from the code — including one where a site plugin following our own guides could
-    take the whole site down, because CoreX and the starter this framework *generates* both boot on
-    `plugins_loaded` at priority 10 and `Boot::app()` throws rather than returning null. Decisions #195–#196.
-    No durable spec directory; the branch identifier is retained so 086 is not reused.
-22. **Spec 087 - Reaching a human, notifications that lead somewhere, controls you can see** — done, merged
-    via PR **#158**. Five owner-reported items, four of which sat behind code that reads correctly: the Guides
-    add-on had no way to contact anybody; the notification call-to-action existed end to end and was dark three
-    ways at once (the server sent `label_key` while the client read `label`, the documented `ability` gate was
-    never enforced, and seven of eight producers set no action at all); every snooze click answered 422; a
-    `<Button>` with no variant kept Gutenberg's ink on the dark surface; and the blue focus ring was a
-    specificity loss to `.wp-core-ui .button:focus` at (0,3,0) against a CoreX rule inside `:where()` at
-    (0,2,0). Decisions #197–#201. Source: `specs/087-guides-support-and-admin-controls/`.
-23. **Spec 088 - Public release readiness** — this one. One canonical repository URL (the plugin `Update URI`
-    headers had been pointing update checks at an organisation that does not publish releases — a functional
-    defect shipping in every installed copy), a roadmap that matches the released version, and
-    `PROJECT-STATUS.md`: every module with a status, and every gap traced to the file that records it.
-    Source: `specs/088-public-release-readiness/`.
+The standing rule that governed those specs still governs the next one: **the approved current design
+is the functional contract**, and a required control may not remain sample, planned, future,
+reference-only, read-only, placeholder-only or dead. An absent optional dependency may gate its
+dependent behaviour only with a working install/activate/connect path. (DECISIONS #115.)
 
 ### Candidates for a later spec — owner decision
 

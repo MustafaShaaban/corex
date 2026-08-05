@@ -217,4 +217,4 @@ Job 'Deploy' succeeded
 ## See also
 
 - [Linux dev setup](../00-getting-started/linux.md) (the same WP-CLI + symlink flow) ·
-  [`COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)
+  [`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)

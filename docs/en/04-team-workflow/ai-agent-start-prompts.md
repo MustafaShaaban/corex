@@ -33,7 +33,7 @@ You are working in the CoreX monorepo. Before doing anything:
 ```text
 Mode: CoreX Framework. You may edit plugins/, addons/, packages/, root theme/, root specs/, root docs/, docs-app/,
 ROADMAP.md, root PROGRESS.md, framework admin/login/docs UI, release/versioning.
-Read: root AGENTS.md/CLAUDE.md, specs/constitution.md, COREX-WORKING-GUIDE.md, COREX-FRAMEWORK.md, root PROGRESS.md,
+Read: root AGENTS.md/CLAUDE.md, specs/constitution.md, ../../internal/COREX-WORKING-GUIDE.md, ../../internal/COREX-FRAMEWORK.md, root PROGRESS.md,
 ROADMAP.md, the active root spec. Do NOT edit sites/<client>/ unless explicitly authorized.
 Follow Spec Kit (root specs/), run clean-code-guard + wp-guard (+ test-guard/docs-guard as relevant), apply UI/UX
 ProMax to framework UI. End with the required handoff format.

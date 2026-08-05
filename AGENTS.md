@@ -4,30 +4,51 @@ You are working on **Corex**, a professional, Laravel-inspired WordPress framewo
 Namespace `Corex\`, CLI `wp corex`, CSS prefix `--corex-`. Target: WordPress 7.0+,
 PHP 8.3+, FSE block themes. Built spec-first with Spec Kit. This file mirrors `CLAUDE.md`.
 
-## Cold-start sequence (COREX-WORKING-GUIDE.md Part E)
+## Cold-start sequence (docs/internal/COREX-WORKING-GUIDE.md Part E)
 A fresh agent, given only this repo, must be able to read four files and correctly
 state what to build next — without anyone explaining. Do this, in order:
 1. Read `specs/constitution.md` — the non-negotiable rules. They override everything.
    (Canonical source: `.specify/memory/constitution.md`; `specs/constitution.md` mirrors it.)
 2. Read `PROGRESS.md` — current status; continue from the "Next" section.
 3. Read the active spec in `specs/` for the module you're touching.
-4. Skim `COREX-FRAMEWORK.md` (architecture) and `COREX-WORKING-GUIDE.md` (how we work).
-   `COREX-EMAIL-ADDON.md` is the Corex Mail spec for when its turn comes.
+4. Skim `docs/internal/COREX-FRAMEWORK.md` (architecture) and `docs/internal/COREX-WORKING-GUIDE.md` (how we work).
+   `docs/internal/COREX-EMAIL-ADDON.md` is the Corex Mail spec for when its turn comes.
 
 ## Source-of-truth hierarchy (top wins) — §A.1
-1. `specs/constitution.md`  2. `COREX-FRAMEWORK.md`  3. the active module spec
+1. `specs/constitution.md`  2. `docs/internal/COREX-FRAMEWORK.md`  3. the active module spec
 4. `PROGRESS.md`  5. the code. If code contradicts the constitution, the code is wrong.
+
+## Precedence between the instruction files themselves
+
+Stated here once, and referenced rather than restated by the others. Four files tell an agent how to
+work, and until spec 098 each of them carried its own partial copy of the workflow — which is three
+chances for the copies to disagree and no way to tell which one was right.
+
+1. **`specs/constitution.md`** (→ `.specify/memory/constitution.md`) — the non-negotiable rules.
+   Overrides everything below, including a direct request. Where they conflict, say so rather than
+   comply.
+2. **`AGENTS.md`** — this file. The precedence order, the cold-start sequence, the Role Gate, and the
+   required handoff format. `CLAUDE.md` is its Claude Code-flavoured mirror and must not diverge on
+   anything but tooling.
+3. **`CONTRIBUTING.md`** — the mechanics: branching, commit messages, versioning, how to run each
+   suite, and what the guard gate runs. Where this file names a rule and `CONTRIBUTING.md` gives the
+   command for it, `CONTRIBUTING.md` is the one to follow.
+4. **`SECURITY.md`** — reporting, supported versions, and the dependency-advisory policy. Authoritative
+   on its own subject over anything above it.
+
+`README.md` carries the table of which *root document* answers which question. That is a different
+question from this one, and neither list repeats the other.
 
 ## Role Gate — classify the session BEFORE editing (spec 061)
 > Role Gate decides **where** you work · Spec Kit decides **what** to build · Guard Gate decides **whether**
 > it is safe to ship · UI/UX ProMax decides **whether** visible UI is good enough.
 
-Pick exactly one mode and stay inside it (full detail: COREX-WORKING-GUIDE.md §F; prompts:
+Pick exactly one mode and stay inside it (full detail: docs/internal/COREX-WORKING-GUIDE.md §F; prompts:
 `docs/en/04-team-workflow/ai-agent-start-prompts.md`):
 
 1. **CoreX Framework Mode** — edits `plugins/`, `addons/`, `packages/`, root `theme/`, root `specs/`, root `docs/`,
    `docs-app/`, `ROADMAP.md`, root `PROGRESS.md`, CoreX admin/login/docs UI, release/versioning. Follow the root
-   agent files + `specs/constitution.md` + `COREX-WORKING-GUIDE.md` + `COREX-FRAMEWORK.md`. **Must not** edit
+   agent files + `specs/constitution.md` + `docs/internal/COREX-WORKING-GUIDE.md` + `docs/internal/COREX-FRAMEWORK.md`. **Must not** edit
    `sites/<client>/` unless explicitly authorized.
 2. **Client Site Mode** — edits `sites/<client>/` only (client plugin/theme, pages, blocks, templates, content,
    branding). Follow the root files for global safety + `sites/<client>/{AGENTS,CLAUDE,PROGRESS,DECISIONS}.md` +
@@ -58,7 +79,7 @@ NEXT STEP
 
 ## WHILE working
 - Run `git status --short --branch` before edits; work from the active feature branch, never from `main`.
-- **Single workspace (COREX-WORKING-GUIDE.md §A.7):** work only from the normal project root checkout — no
+- **Single workspace (docs/internal/COREX-WORKING-GUIDE.md §A.7):** work only from the normal project root checkout — no
   `.worktrees` without explicit owner approval. Before editing, verify root/branch/status/log/remote/worktree, and
   **stop and report** if you are on the wrong branch, in the wrong checkout, or see uncommitted changes you did not
   create. The active PR branch is the working source of truth — continue from its latest pushed commit; never
@@ -80,12 +101,12 @@ NEXT STEP
 - Update `PROGRESS.md`; log non-trivial decisions in `DECISIONS.md`.
 - For multi-agent work, final reports and handoffs must name the branch, spec path, completed task IDs,
   files owned, verification commands/results, guard status, and any files being released for another agent.
-- **End every response with a NEXT STEP block** (format in COREX-WORKING-GUIDE.md §A.3 / constitution).
+- **End every response with a NEXT STEP block** (format in docs/internal/COREX-WORKING-GUIDE.md §A.3 / constitution).
 
 ## Spec Kit workflow (commands namespaced `speckit-*`)
 `/speckit-constitution` → `/speckit-specify` → `/speckit-clarify` → `/speckit-plan`
 → `/speckit-tasks` → `/speckit-implement`. Spec before code; review between tasks.
-Module build order: see `COREX-SPECKIT-START.md` ("The rhythm from here").
+Module build order: see `docs/internal/COREX-SPECKIT-START.md` ("The rhythm from here").
 
 Durable memory lives in files (`PROGRESS.md`, `DECISIONS.md`, `specs/`), not chat.
 Nothing here is Claude-only — this workflow is model-agnostic by design.

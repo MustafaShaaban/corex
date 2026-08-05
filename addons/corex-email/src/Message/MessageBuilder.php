@@ -109,7 +109,7 @@ final class MessageBuilder
     /**
      * Attach a file from the media library by id (spec 081).
      *
-     * Named `attachMedia()` because `COREX-EMAIL-ADDON.md` has documented that name since the
+     * Named `attachMedia()` because `../../../../docs/internal/COREX-EMAIL-ADDON.md` has documented that name since the
      * add-on was specified. `attach()` and `attachGenerated()` are documented too and are
      * deliberately absent: `attach()` implied a path, and a framework-generated file has no id
      * until something stores it — at which point this method is what you want.

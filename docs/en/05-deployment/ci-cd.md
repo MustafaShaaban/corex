@@ -28,7 +28,7 @@ never drift from the code, then publishes it to GitHub Pages at <https://mustafa
 
 ## Pipeline stages
 
-Per [`COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md), a full pipeline is:
+Per [`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md), a full pipeline is:
 
 ```mermaid
 flowchart LR
@@ -66,4 +66,4 @@ Pipelines variable groups backed by Key Vault) and the cloud's secret manager at
 ## See also
 
 - [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) (the repo gate) ·
-  [Team workflow → quality gates](../04-team-workflow/) · [`COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)
+  [Team workflow → quality gates](../04-team-workflow/) · [`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)

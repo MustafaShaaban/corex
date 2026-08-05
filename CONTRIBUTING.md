@@ -1,11 +1,16 @@
 # Contributing to Corex
 
-Corex is built spec-first and guard-gated. Read `CLAUDE.md`, `specs/constitution.md`, and
-`COREX-WORKING-GUIDE.md` before contributing — they override anything here on conflict.
+Corex is built spec-first and guard-gated. Read `specs/constitution.md` and
+`docs/internal/COREX-WORKING-GUIDE.md` before contributing.
+
+**This file holds the mechanics** — branching, commit messages, versioning, how to run each suite,
+what the guard gate runs. The rules those mechanics serve are in the constitution, and the precedence
+between all four instruction files is stated once in [`AGENTS.md`](AGENTS.md). Where a rule and its
+command disagree, the rule wins and the command is the bug.
 
 ## Branching model (git-flow-lite)
 
-Per `COREX-FRAMEWORK.md` §19:
+Per `docs/internal/COREX-FRAMEWORK.md` §19:
 
 | Branch | Purpose |
 |---|---|

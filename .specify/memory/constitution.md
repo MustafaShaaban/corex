@@ -1,7 +1,13 @@
 <!--
 SYNC IMPACT REPORT
-Latest amendment: 1.2.0 → 1.2.1 (PATCH — clarified Principle VII's scope: admin-menu screens are exempt
-from the route middleware pipeline but MUST use the shared AdminGuard helper, not hand-rolled cap+nonce).
+Latest amendment: 1.2.1 → 1.2.2 (PATCH — path correction only. The four COREX-*.md working documents
+moved from the repository root to docs/internal/, so the source-of-truth hierarchy and the §26 rule
+now name their real location. No principle added, removed, or redefined.)
+  - 1.2.2 (2026-08-05): COREX-FRAMEWORK.md relocated to docs/internal/ by spec 098's documentation
+    consolidation; the hierarchy entry and the architectural-change rule repointed. The root now holds
+    only the canonical set (README, PROJECT-STATUS, ROADMAP, CHANGELOG, PROGRESS, DECISIONS, AGENTS,
+    CLAUDE, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT), enforced by tests/repo-hygiene.test.js.
+    Templates unaffected. DECISIONS.md #216.
   - 1.2.1 (2026-06-11): Principle VII scope clarification (admin-menu screens → AdminGuard). Remediation
     P5 of the compliance review. No new principle; existing AdminDashboard + SetupWizardScreen refactored
     onto `Corex\Security\Admin\AdminGuard` (5 Pest tests). Templates unaffected. DECISIONS.md #58.
@@ -208,7 +214,7 @@ that a brief cannot silently override.
 When anything conflicts, resolve in this order (top wins):
 
 1. `specs/constitution.md` — these non-negotiable rules.
-2. `COREX-FRAMEWORK.md` — the architecture reference.
+2. `docs/internal/COREX-FRAMEWORK.md` — the architecture reference.
 3. The active spec in `specs/` for the module being built.
 4. `PROGRESS.md` — what is done, in progress, and next.
 5. The code — the current implementation.
@@ -227,6 +233,6 @@ If code contradicts the constitution, the code is wrong, not the constitution.
   - PATCH — clarifications, wording, non-semantic refinements.
 - **Compliance** — every spec, plan, task set, and diff is reviewed against these principles.
   The Spec Kit `/speckit-plan` Constitution Check gate enforces this before implementation.
-- Architectural changes MUST update `COREX-FRAMEWORK.md` in the same change (its §26 rule).
+- Architectural changes MUST update `docs/internal/COREX-FRAMEWORK.md` in the same change (its §26 rule).
 
-**Version**: 1.2.1 | **Ratified**: 2026-06-07 | **Last Amended**: 2026-06-11
+**Version**: 1.2.2 | **Ratified**: 2026-06-07 | **Last Amended**: 2026-08-05

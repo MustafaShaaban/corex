@@ -84,7 +84,7 @@ New pages start from [`en/_template.md`](./en/_template.md) (and
 
 ## See also (repository root — the authoritative project docs)
 
-- [`COREX-FRAMEWORK.md`](../COREX-FRAMEWORK.md) — the architecture reference.
-- [`COREX-WORKING-GUIDE.md`](../COREX-WORKING-GUIDE.md) — how the team works + the continuity protocol.
-- [`COREX-SPECKIT-START.md`](../COREX-SPECKIT-START.md) — the Spec Kit build sequence.
+- [`internal/COREX-FRAMEWORK.md`](../COREX-FRAMEWORK.md) — the architecture reference.
+- [`internal/COREX-WORKING-GUIDE.md`](../COREX-WORKING-GUIDE.md) — how the team works + the continuity protocol.
+- [`internal/COREX-SPECKIT-START.md`](../COREX-SPECKIT-START.md) — the Spec Kit build sequence.
 - [`specs/constitution.md`](../specs/constitution.md) — the non-negotiable rules.

@@ -30,7 +30,7 @@ Corex is a **framework**, not a site. Two ways to reuse it:
 
 1. **Build a client site *on* Corex (normal case).** Create a *separate* project; Corex is the
    shared framework, and each site supplies its own brand (`theme.json` + `brand.json`) and content
-   — design is *data*, not a fork (COREX-FRAMEWORK.md §10, §24). One framework, many brands.
+   — design is *data*, not a fork (../docs/internal/COREX-FRAMEWORK.md §10, §24). One framework, many brands.
 2. **Spin up another dev copy of the framework.** `git clone` this repo, then run
    `./scripts/setup-wordpress.ps1`.
 

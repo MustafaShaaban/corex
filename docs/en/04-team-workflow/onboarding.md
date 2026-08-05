@@ -17,8 +17,8 @@ authoritative documents rather than restating their rules — read those; this p
    `wp theme list` shows `corex`.
 2. **Read the four authoritative files** (15 minutes — they are short and they govern everything):
    - [`specs/constitution.md`](../../../specs/constitution.md) — the non-negotiable rules.
-   - [`COREX-FRAMEWORK.md`](../../../COREX-FRAMEWORK.md) — the architecture.
-   - [`COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md) — how the team works + continuity.
+   - [`../../internal/COREX-FRAMEWORK.md`](../../../COREX-FRAMEWORK.md) — the architecture.
+   - [`../../internal/COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md) — how the team works + continuity.
    - [`PROGRESS.md`](../../../PROGRESS.md) — what is done and what's next.
 3. **Understand the two doc surfaces:** this handbook (ops/contributor) vs the **docs-app** site (product +
    class reference). See [What lives where](../../README.md#what-lives-where).
@@ -53,4 +53,4 @@ pass CI. The full loop is in [The Spec Kit loop](./spec-kit.md); the rules each 
 ## See also
 
 - [Team workflow index](./index.md) · [Contributing on-ramp](../08-contributing/) ·
-  [`COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md)
+  [`../../internal/COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md)

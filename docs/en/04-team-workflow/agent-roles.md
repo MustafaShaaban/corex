@@ -22,8 +22,8 @@ Working *on the framework itself*.
 
 - **Edits:** `plugins/`, `addons/`, `packages/`, root `theme/`, root `specs/`, root `docs/`, `docs-app/`,
   `ROADMAP.md`, root `PROGRESS.md`, CoreX admin/login/docs UI, release/versioning.
-- **Source of truth:** root `AGENTS.md`/`CLAUDE.md`, `specs/constitution.md`, `COREX-WORKING-GUIDE.md`,
-  `COREX-FRAMEWORK.md`, root `PROGRESS.md`, `ROADMAP.md`, the active root spec.
+- **Source of truth:** root `AGENTS.md`/`CLAUDE.md`, `specs/constitution.md`, `../../internal/COREX-WORKING-GUIDE.md`,
+  `../../internal/COREX-FRAMEWORK.md`, root `PROGRESS.md`, `ROADMAP.md`, the active root spec.
 - **Must not:** edit `sites/<client>/` unless explicitly authorized.
 
 ### 2. Client Site Mode

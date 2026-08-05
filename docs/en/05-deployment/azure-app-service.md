@@ -10,7 +10,7 @@ last_verified: null        # cloud execution is the env-gated D12 check
 
 This recipe runs Corex on **Azure App Service for Containers**, using the production image from the
 [Docker page](./docker.md), a managed MySQL database, Key Vault for secrets, and a **staging slot** for
-zero-downtime releases. Every deploy ships a **release tag** (per [`COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)).
+zero-downtime releases. Every deploy ships a **release tag** (per [`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)).
 
 > Assumes you have an Azure subscription with permission to create resources.
 
@@ -215,4 +215,4 @@ Job 'Deploy' succeeded
 
 ## See also
 
-- [Docker production image](./docker.md#the-production-image) · [`COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)
+- [Docker production image](./docker.md#the-production-image) · [`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)

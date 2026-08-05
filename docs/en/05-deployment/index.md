@@ -9,7 +9,7 @@ last_verified: null
 # Deployment
 
 Complete, step-by-step recipes for running and shipping Corex. Every recipe deploys a **release tag** (per
-[`COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)) and covers secrets, backups, rollback, zero-downtime,
+[`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)) and covers secrets, backups, rollback, zero-downtime,
 and CI/CD — with a Mermaid topology diagram.
 
 > **Status:** ✅ authored (phases D3–D6).
