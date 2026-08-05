@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Config\Addons\AddonsScreen;
 use Corex\Config\AdminUi\CorexAdminAssets;
+use Corex\Config\AdminUi\ScreenHelp;
 use Corex\Config\Addons\KitActivationNotice;
 use Corex\Config\Activity\ActivityTable;
 use Corex\Config\Activity\ActivityController;
@@ -787,6 +788,9 @@ final class ConfigServiceProvider extends ServiceProvider
 
         $this->container->make(AdminBranding::class)->register();
         $this->container->make(CorexAdminAssets::class)->register();
+        // Always, not only when corex-guides is active: spec 084's help tabs were one source of
+        // contextual help on a CoreX screen, and this removes every source (spec 097, FR-003/FR-005).
+        $this->container->make(ScreenHelp::class)->register();
         $this->container->make(AdminDashboard::class)->register();
         $this->container->make(AddonsScreen::class)->register();
         $this->container->make(FormsFlowsScreen::class)->register();

@@ -11,7 +11,7 @@ namespace Corex\Config\Notifications;
 defined('ABSPATH') || exit;
 
 use Corex\Access\CorexAbility;
-use Corex\Config\AdminUi\CorexAdminAssets;
+use Corex\Config\AdminUi\CorexScreens;
 use Corex\Notifications\NotificationService;
 use WP_Admin_Bar;
 
@@ -26,10 +26,8 @@ final class NotificationToolbar
 {
     private const VISUAL_CAP = 99;
 
-    public function __construct(
-        private readonly NotificationService $notifications,
-        private readonly CorexAdminAssets $screens,
-    ) {
+    public function __construct(private readonly NotificationService $notifications)
+    {
     }
 
     public function register(): void
@@ -70,7 +68,7 @@ final class NotificationToolbar
 
         $screen = get_current_screen();
 
-        return $screen !== null && $this->screens->supports($screen->id);
+        return $screen !== null && CorexScreens::supports($screen->id);
     }
 
     private function label(int $count): string

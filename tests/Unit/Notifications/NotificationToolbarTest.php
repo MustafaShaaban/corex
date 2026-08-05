@@ -13,7 +13,6 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
-use Corex\Config\AdminUi\CorexAdminAssets;
 use Corex\Config\Notifications\NotificationToolbar;
 use Corex\Tests\Support\RecordingNotificationService;
 
@@ -51,7 +50,9 @@ function toolbarFor(int $unread): NotificationToolbar
     $service = new RecordingNotificationService();
     $service->unreadCount = $unread;
 
-    return new NotificationToolbar($service, new CorexAdminAssets());
+    // The screen predicate is `CorexScreens::supports()` since spec 097 — a static regex with
+    // nothing to substitute, so the toolbar no longer injects the asset loader to reach it.
+    return new NotificationToolbar($service);
 }
 
 it('adds a notification node with the unread count for a manager off a CoreX screen', function () {

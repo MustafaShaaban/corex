@@ -3,6 +3,34 @@
  * allow-list. Admin authentication is handled once in `global-setup.js` (storageState),
  * so specs start already logged in and don't each re-run a flaky login.
  */
+
+/**
+ * Every CoreX admin route, as `[ slug, rail label ]`.
+ *
+ * Lifted out of `admin-command-center.spec.js` by spec 097, which needed the same list to prove no
+ * route carries a contextual Help tab. Two copies would drift, and the one that drifted would be
+ * whichever spec nobody was editing — so a new screen would quietly go unchecked by one of them.
+ *
+ * A route added to CoreX belongs here, which is what makes both matrices grow with the product.
+ */
+const COREX_ROUTES = [
+	[ 'corex-settings', 'Overview' ],
+	[ 'corex-addons', 'Add-ons' ],
+	[ 'corex-forms', 'Forms & Flows' ],
+	[ 'corex-submissions', 'Submissions' ],
+	[ 'corex-email-studio', 'Email Studio' ],
+	// Spec 069: one Data entry. `corex-data` rendered the same explorer and now redirects here.
+	[ 'corex-data-models', 'Data' ],
+	[ 'corex-operations-security', 'Operations & Security' ],
+	[ 'corex-access', 'Access & Abilities' ],
+	[ 'corex-blog-pro', 'Blog Pro' ],
+	[ 'corex-insights', 'Insights' ],
+	[ 'corex-notifications', 'Notifications' ],
+	[ 'corex-guides', 'Guides' ],
+	[ 'corex-setup', 'Setup Wizard' ],
+	[ 'corex-settings-config', 'Settings' ],
+];
+
 /**
  * Known, non-Corex console noise that must NOT fail the sweep (documented allow-list).
  * Keep this tiny and justified — the default is zero tolerated errors.
@@ -188,4 +216,9 @@ async function seedSubmission(
 	);
 }
 
-module.exports = { collectConsoleErrors, seedSubmission, FLOW_SLUG };
+module.exports = {
+	collectConsoleErrors,
+	seedSubmission,
+	FLOW_SLUG,
+	COREX_ROUTES,
+};

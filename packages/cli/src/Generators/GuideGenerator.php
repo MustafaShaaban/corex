@@ -12,8 +12,7 @@ defined('ABSPATH') || exit;
 
 /**
  * Scaffolds a user guide — a `Guide` of topics and numbered steps the developer registers with the
- * `GuideRegistry` (spec 084), so a site's own guides appear beside Corex's on the Guides screen and
- * in its screens' Help tabs.
+ * `GuideRegistry` (spec 084), so a site's own guides appear beside Corex's on the Guides screen.
  *
  * The scaffold deliberately includes a warning step and a `result` on every instruction. Both are
  * the parts an author skips when starting from a blank file, and both are what make a guide

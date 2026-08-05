@@ -13,7 +13,7 @@ addons/corex-guides/
   src/GuideRegistry.php            register · registerDeferred · all · find · forSection
   src/Guide.php Topic.php Step.php Screenshot.php
   src/GuidesScreen.php             the admin surface
-  src/ContextualHelp.php           the per-screen help-tab bridge
+  src/ContextualHelp.php           the per-screen help-tab bridge (removed by spec 097)
   src/Corex/CorexGuides.php        CoreX's own guides, as registered objects
   assets/guides.css  guides.js  screenshots/
 ```
@@ -91,8 +91,9 @@ the size is real, so captures stay viewport-sized PNGs and the set stays small.
   filter, capability gating in both directions.
 - Integration: **a second plugin registering on `plugins_loaded` at default priority appears** —
   SC-001, the race this design exists for, tested rather than argued.
-- Playwright: the screen renders, search filters, a help tab appears on a declaring screen, and a
-  guide requiring an absent capability is not listed for a subscriber.
+- Playwright: the screen renders, search filters, a help tab appears on a declaring screen (spec 097
+  replaced this with its absence, and with the Guides-screen link), and a guide requiring an absent
+  capability is not listed for a subscriber.
 - Guards: `wp-guard`, `clean-code-guard`, `test-guard`, `docs-guard`.
 - `specs/082-dashboard-user-manual/spec.md` marked superseded; a `DECISIONS.md` entry on why a
   registry beat a docs page.

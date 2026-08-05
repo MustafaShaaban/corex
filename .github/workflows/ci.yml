@@ -144,6 +144,14 @@ jobs:
 
       # Fixtures the browser specs need but a fresh install has no reason to contain. Each one
       # removed from the exclusion list in tests/e2e/playwright.config.js is seeded here.
+      # A plugin CoreX has never heard of, registering a guide through the public `corex_guides`
+      # filter (spec 097, FR-008). An mu-plugin, so it is active with no activation step — and a
+      # committed file rather than a heredoc here, so the same fixture serves a local run.
+      - name: Install the client-guide fixture
+        run: |
+          mkdir -p wp/wp-content/mu-plugins
+          cp tests/e2e/fixtures/corex-e2e-client-guide.php wp/wp-content/mu-plugins/
+
       - name: Seed browser-test fixtures
         run: |
           # /contact/ carrying the registered contact form. corex/form with no flowId or flowSlug

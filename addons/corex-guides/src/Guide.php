@@ -61,8 +61,12 @@ final class Guide
     /**
      * The admin address this guide describes, e.g. `edit.php?post_type=corex_job`.
      *
-     * Used to put the guide in that screen's contextual help tab (FR-013). A guide that describes no
-     * single screen simply omits it and lives on the Guides screen only.
+     * Rendered on the Guides screen as a link straight to that screen, so a reader who has just
+     * finished the steps is one click from doing them. A guide that describes no single screen
+     * simply omits it and carries no link.
+     *
+     * It also fed the screen's WordPress contextual help tab until spec 097 removed that surface
+     * from CoreX admin; the address itself was always the better half of that feature and stays.
      */
     public function onScreen(string $screen): self
     {

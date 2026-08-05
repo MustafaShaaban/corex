@@ -92,16 +92,14 @@ it('accepts a guide registered after the framework has finished booting', functi
         ->and($guide->topics)->toHaveCount(1);
 });
 
-it('puts a site guide on the screen it declares, beside nothing of Corex’s', function () {
+it('keeps the screen a site guide declares, for the link the Guides screen renders', function () {
     guideRegistry()->registerDeferred(static fn (): array => [
         Guide::for('site-projects', 'Managing projects')
             ->onScreen('edit.php?post_type=site_project'),
     ]);
 
-    $found = guideRegistry()->forScreen('edit.php?post_type=site_project');
-
-    expect($found)->toHaveCount(1)
-        ->and($found[0]->id)->toBe('site-projects');
+    expect(guideRegistry()->find('site-projects')->screen)
+        ->toBe('edit.php?post_type=site_project');
 });
 
 it('lets a site replace a Corex guide it disagrees with', function () {

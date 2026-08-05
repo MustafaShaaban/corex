@@ -235,6 +235,12 @@ final class AdminPage
             'settings' => __('Settings', 'corex'),
             'insights' => __('Insights', 'corex'),
             'setup' => __('Setup Wizard', 'corex'),
+            // The Guides screen has passed 'guides' since spec 084 and this map never learned it,
+            // so the one screen somebody opens *because they are lost* introduced itself as
+            // "Corex / Framework" while its own heading said Guides. Found by spec 097 widening the
+            // browser route matrix to every CoreX route, which is exactly the kind of gap a matrix
+            // that lists twelve of fourteen screens cannot find.
+            'guides' => __('Guides', 'corex'),
             'option-page' => __('Options', 'corex'),
         ];
 

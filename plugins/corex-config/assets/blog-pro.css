@@ -43,12 +43,23 @@
 	gap: var(--corex-admin-space-md);
 }
 
+/* `min(Xrem, 100%)` rather than a bare `Xrem` (spec 097, FR-012).
+
+   `repeat(auto-fit, minmax(16rem, 1fr))` reads as "at least 16rem per
+   column", but a track minimum is a floor the container cannot go under.
+   Once the shell's main track is narrower than the floor, the grid
+   overruns it instead of dropping to one column, and the workspace
+   scrolls sideways inside a shell that clips it.
+
+   `min(…, 100%)` lets the floor yield to the container, which is the
+   behaviour the `auto-fit` was written for. Nothing changes at any width
+   where it already fit. */
 .corex-admin .corex-blog-pro__stats {
-	grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
 }
 
 .corex-admin .corex-blog-pro__grid {
-	grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
 }
 
 .corex-admin .corex-blog-pro__metric {

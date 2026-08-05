@@ -7,23 +7,7 @@
  */
 
 const { test, expect } = require( '@playwright/test' );
-const { collectConsoleErrors } = require( './helpers' );
-
-const ROUTES = [
-	[ 'corex-settings', 'Overview' ],
-	[ 'corex-addons', 'Add-ons' ],
-	[ 'corex-forms', 'Forms & Flows' ],
-	[ 'corex-submissions', 'Submissions' ],
-	[ 'corex-email-studio', 'Email Studio' ],
-	// Spec 069: one Data entry. `corex-data` rendered the same explorer and now redirects here.
-	[ 'corex-data-models', 'Data' ],
-	[ 'corex-operations-security', 'Operations & Security' ],
-	[ 'corex-access', 'Access & Abilities' ],
-	[ 'corex-blog-pro', 'Blog Pro' ],
-	[ 'corex-insights', 'Insights' ],
-	[ 'corex-setup', 'Setup Wizard' ],
-	[ 'corex-settings-config', 'Settings' ],
-];
+const { collectConsoleErrors, COREX_ROUTES: ROUTES } = require( './helpers' );
 
 test( 'Overview projects real readiness, activity, and command-center counts', async ( {
 	page,

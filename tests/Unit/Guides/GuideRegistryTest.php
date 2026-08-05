@@ -133,15 +133,14 @@ it('offers no guide whose capability the reader lacks', function () {
         ->toBe(['open', 'reader']);
 });
 
-it('finds the guides describing one admin screen, and none for another', function () {
+// The screen address a guide declares survives spec 097 — what it feeds is the Guides-screen link,
+// not the removed help tab — so the registry must still carry it through registration untouched.
+it('carries the admin screen a guide declares, and leaves the rest empty', function () {
     $this->registry->register(Guide::for('jobs', 'Jobs')->onScreen('edit.php?post_type=corex_job'));
     $this->registry->register(Guide::for('loose', 'Belongs to no screen'));
 
-    expect($this->registry->forScreen('edit.php?post_type=corex_job'))->toHaveCount(1)
-        ->and($this->registry->forScreen('upload.php'))->toBeEmpty()
-        // A guide with no declared screen must not match the empty string, or every screen
-        // without a guide would suddenly grow a help tab for it.
-        ->and($this->registry->forScreen(''))->toBeEmpty();
+    expect($this->registry->find('jobs')->screen)->toBe('edit.php?post_type=corex_job')
+        ->and($this->registry->find('loose')->screen)->toBe('');
 });
 
 /**

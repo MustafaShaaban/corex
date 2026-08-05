@@ -56,13 +56,14 @@ final class GuideRegistry
      * can be certain it runs after Corex has bound the registry — and a plugin cannot be certain of
      * that from `plugins_loaded`.
      *
-     * **Keep the factory cheap: it runs on every admin page load.** {@see ContextualHelp} reads the
-     * registry on `current_screen` to decide whether the screen has a help tab, so resolution
-     * happens once per admin request, not once per visit to the Guides screen. Guides are value
-     * objects and building them costs nothing; a factory that queries the database or reads a file
-     * would put that cost on every page in wp-admin. If a guide's content genuinely has to come
-     * from storage, cache it — the registry deliberately does not, because it cannot know how long
-     * somebody else's data stays fresh.
+     * **Keep the factory cheap.** Guides are value objects and building them costs nothing; a
+     * factory that queries the database or reads a file would put that cost on the request. If a
+     * guide's content genuinely has to come from storage, cache it — the registry deliberately does
+     * not, because it cannot know how long somebody else's data stays fresh.
+     *
+     * The registry is read when the Guides screen renders, and no longer on every admin page load:
+     * spec 084 also read it on `current_screen` to fill each screen's contextual help tab, and
+     * spec 097 removed that surface.
      *
      * @param callable():list<Guide> $factory
      */
@@ -130,19 +131,6 @@ final class GuideRegistry
         }
 
         return $grouped;
-    }
-
-    /**
-     * The available guides that describe a given admin screen (FR-013).
-     *
-     * @return list<Guide>
-     */
-    public function forScreen(string $screen): array
-    {
-        return array_values(array_filter(
-            $this->available(),
-            static fn (Guide $guide): bool => $guide->screen !== '' && $guide->screen === $screen,
-        ));
     }
 
     private function resolveDeferred(): void

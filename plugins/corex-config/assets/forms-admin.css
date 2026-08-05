@@ -87,15 +87,48 @@
 .corex-admin .corex-flow-editor__field-list ol,
 .corex-admin .corex-flow-test-results {
 	display: grid;
+
+	/* Explicit, because a grid's implicit column is `auto` — sized to its
+	   widest item's min-content and unable to shrink below it. That is how
+	   one wide row made the whole list refuse to fit its track. */
+	grid-template-columns: minmax(0, 1fr);
 	gap: var(--corex-admin-space-xs);
 	margin: var(--corex-admin-space-md) 0 0;
 	padding: 0;
 	list-style: none;
 }
 
+/* A grid item's automatic minimum size is its min-content width unless it
+   is told otherwise, so without these the tracks above are free to be
+   overrun by exactly the content they constrain. */
+.corex-admin .corex-flow-list__catalog,
+.corex-admin .corex-flow-list__rows > li,
+.corex-admin .corex-flow-list__rows > li > button {
+	min-inline-size: 0;
+}
+
+/* Every track minimum is 0 rather than a rem measurement, and that is
+   load-bearing rather than a style preference (spec 097, FR-013).
+
+   These were `minmax(10rem, 2fr) repeat(3, minmax(6rem, 1fr))
+   minmax(9rem, 1fr)` — 37rem of minimums, so the row could never be
+   narrower than that however little room it was given. The catalog sits
+   in a `minmax(0, 2fr)` track of `.corex-flow-list`, which sits in the
+   shell's main track, which carries `overflow: clip`.
+
+   At a desktop viewport the row therefore ran well past the shell's
+   content box and was clipped out of existence:
+   `document.elementFromPoint()` at the row button's own centre returned
+   the `.corex-admin` wrapper, and a click could never land. That is what
+   CI reported for a full minute as "intercepts pointer events" — not a
+   flaky test, a control that genuinely was not there.
+
+   `minmax(0, …)` lets the columns share what is available and the text
+   wrap, which is what the `fr` ratios always meant. The narrow-viewport
+   rule below still stacks the row entirely. */
 .corex-admin .corex-flow-list__rows > li > button {
 	display: grid;
-	grid-template-columns: minmax(10rem, 2fr) repeat(3, minmax(6rem, 1fr)) minmax(9rem, 1fr);
+	grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) minmax(0, 1fr);
 	align-items: center;
 	gap: var(--corex-admin-space-sm);
 	inline-size: 100%;
