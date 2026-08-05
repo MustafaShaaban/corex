@@ -28,7 +28,8 @@ sources above — usually better, and always somewhere a reader could find it. (
   against a WordPress that CI provisions itself, Playwright, and both CodeQL contexts.
 - **Verified at v0.41.0:** Pest unit **1727** · integration **356** · Jest **442** across 54 suites ·
   Playwright **141** on a fresh install (144 locally; three specs are excluded from a fresh-install
-  run, see below) · docs site **286 pages** with links asserted against the built output ·
+  run, see below) · docs site **922 pages** (54 authored + 868 generated class reference) with links
+  asserted against the built output ·
   dependency gate PASS with 0 findings and 0 exceptions · `wp corex readiness 0.41.0` PASS.
 
 **CI is the authority for the integration and browser suites.** A long-lived development install
