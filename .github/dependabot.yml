@@ -12,6 +12,21 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # Not a held upgrade — a held *narrowing*. Dependabot proposed `github/codeql-action@v4` →
+      # `@v4.37.4`, which is a patch pin rather than a version bump: `@v4` is a moving major tag that
+      # already receives every patch on the next run. Accepting it would freeze CodeQL at one patch,
+      # make it the only action in this repository not pinned to a major (checkout, setup-node,
+      # setup-php, upload-artifact and deploy-pages are all `@vN`), and generate a pull request for
+      # every future patch of a security scanner — noise that trains a reviewer to skim.
+      #
+      # Majors are deliberately NOT ignored: `@v4` → `@v5` is a real upgrade and should still be
+      # proposed. Lift this hold if the repository adopts SHA pinning for every action, at which
+      # point the inconsistency argument disappears. See DECISIONS #219.
+      - dependency-name: 'github/codeql-action'
+        update-types:
+          - 'version-update:semver-minor'
+          - 'version-update:semver-patch'
 
   - package-ecosystem: composer
     directory: /

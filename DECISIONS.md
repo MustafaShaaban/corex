@@ -4215,3 +4215,57 @@ Three consequences worth stating:
   `package.json`, and no document announces a release for which no tag exists. That last check is not
   hypothetical — `PROGRESS.md` opened with "**v0.41.0 released**" while the newest tag was v0.40.0.
 Status: Final.
+
+## #219 — A patch pin on one action is not an upgrade, and the nightly E2E workflow never ran
+
+Date: 2026-08-05 · Spec: 099 · Status: Final
+
+Two decisions from the same pass over the repository's GitHub state.
+
+**`github/codeql-action` stays on `@v4`.** Dependabot proposed `@v4` → `@v4.37.4`, which reads like a
+bump and is a *narrowing*: `@v4` is a moving major tag that already receives every patch. Accepting it
+would freeze a security scanner at one patch, make it the only action here not pinned to a major —
+`checkout`, `setup-node`, `setup-php`, `upload-artifact` and `deploy-pages` are all `@vN` — and open a
+pull request for every future patch, which is noise that teaches a reviewer to skim. The ignore is
+scoped to minor and patch only, so `@v4` → `@v5` will still be proposed. It lifts if the repository
+adopts SHA pinning for every action, at which point the inconsistency argument is gone.
+
+**`.github/workflows/e2e.yml` is deleted.** It ran nightly and had failed every night for at least a
+week, always at the same place:
+
+> `global-setup could not authenticate the admin user. Tried: /wp-login.php, /corex-login/.`
+
+It could not have passed. It set no `COREX_BASE_URL`, so Playwright's config fell back to
+`http://corex.local` — a developer's WAMP host that does not exist on a runner — and no
+`COREX_ADMIN_USER`/`COREX_ADMIN_PASS`, and it seeded none of the fixtures the specs need. It was
+written before `ci.yml` had a browser job at all.
+
+`ci.yml`'s **Browser tests (Playwright)** job supersedes it completely and is stricter in every
+dimension: it provisions a real WordPress behind nginx, seeds every fixture, runs on **every pull
+request** rather than nightly, and is a required check on `main`. Keeping a second, permanently red
+workflow beside it does not add a safety net — **a red that is always red carries no information**,
+and the habit of ignoring it is the thing that lets a real failure through.
+
+## #220 — Eight dependency pull requests, tested rather than trusted
+
+Date: 2026-08-05 · Spec: 099 · Status: Final
+
+Eight Dependabot pull requests (#172–#179) were open. Seven are consolidated into one change and one
+is closed with the hold above. What matters is how the two majors were decided, because a green
+"Validate dependency advisories" check would have said nothing about either.
+
+- **`@wordpress/components` 37 → 38.** Imported by more than twenty admin modules — the Data
+  explorer, every dialog, the Submissions inbox, the block editor sidebars. A component library major
+  breaks at *render* time, which no advisory scan and no unit test reaches. Verified against the
+  build, Jest (442), both linters, and the full Playwright suite (144) driving those screens in a real
+  browser.
+- **`@wordpress/scripts` 33 → 34.** The build toolchain itself — webpack, babel, the lint configs and
+  the Jest transform. Verified the same way, plus the produced bundles.
+
+Both passed everything, so both land. Had either failed, it would have been closed with a precise
+`dependabot.yml` hold naming the failure, not left open and red.
+
+The general rule this pass confirms: **a green dependency-security check proves an advisory is
+closed, not that the software still works.** The two are different questions, and only one of them
+has a scanner.
+Status: Final.
