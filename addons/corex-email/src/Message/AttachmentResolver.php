@@ -13,7 +13,7 @@ defined('ABSPATH') || exit;
 /**
  * Turns attachment ids into absolute paths `wp_mail()` can send (spec 081, FR-010).
  *
- * `COREX-EMAIL-ADDON.md` has described this class since the add-on was specified, and it did not
+ * `../../../../docs/internal/COREX-EMAIL-ADDON.md` has described this class since the add-on was specified, and it did not
  * exist — nor did `attach()`, `attachMedia()` or `attachGenerated()`. The mail stack carried no
  * attachments field at all and `WpMailDriver` called `wp_mail()` with four arguments, so the
  * `$attachments` parameter was never passed. The documentation promised a capability the framework

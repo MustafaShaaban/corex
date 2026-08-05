@@ -15,7 +15,7 @@ and links the authoritative sources rather than duplicating their rules.
 
 1. Get a working environment: [getting-started](../00-getting-started/) for your OS.
 2. Read the rules: [the constitution](../../../specs/constitution.md) and
-   [`COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md).
+   [`../../internal/COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md).
 3. Understand the workflow: [Team workflow](../04-team-workflow/).
 
 ## The path for a change
@@ -53,5 +53,5 @@ becomes code — so a clear problem statement is the most useful thing you can p
 
 ## See also
 
-- [Team workflow](../04-team-workflow/) (the full detail) · [`COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md)
+- [Team workflow](../04-team-workflow/) (the full detail) · [`../../internal/COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md)
   · [the constitution](../../../specs/constitution.md)

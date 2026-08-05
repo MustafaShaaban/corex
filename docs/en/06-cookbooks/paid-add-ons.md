@@ -77,4 +77,4 @@ packages a whole **Pro add-on** that ships separately and self-activates on the 
 ## See also
 
 - [WooCommerce detect-and-defer](./woocommerce-detect-and-defer.md) (the same gating shape) ·
-  [Feature flags](../../README.md#what-lives-where) · `COREX-FRAMEWORK.md §14` (commercial architecture).
+  [Feature flags](../../README.md#what-lives-where) · `../../internal/COREX-FRAMEWORK.md §14` (commercial architecture).

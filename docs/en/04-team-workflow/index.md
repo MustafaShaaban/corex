@@ -9,7 +9,7 @@ last_verified: null
 # Team workflow
 
 The newcomer on-ramp to how Corex is built. These pages **link** to the authoritative
-[`COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md) and [the constitution](../../../specs/constitution.md)
+[`../../internal/COREX-WORKING-GUIDE.md`](../../../COREX-WORKING-GUIDE.md) and [the constitution](../../../specs/constitution.md)
 — they explain them for a first-timer, they do not replace them.
 
 ## Pages

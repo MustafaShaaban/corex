@@ -68,7 +68,7 @@ it('restores a queued message that carries no sender as carrying none', function
 /**
  * Attachments (spec 081, #138 item 9).
  *
- * `COREX-EMAIL-ADDON.md` documented `attach()`, `attachMedia()`, `attachGenerated()` and an
+ * `../../../docs/internal/COREX-EMAIL-ADDON.md` documented `attach()`, `attachMedia()`, `attachGenerated()` and an
  * `AttachmentResolver` since the add-on was specified. None existed, `MailRequest` carried no
  * attachments field, and `WpMailDriver` called `wp_mail()` with four arguments — so the framework
  * could not send a file under any circumstances while its own documentation said it could.

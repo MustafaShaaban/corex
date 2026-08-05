@@ -1,6 +1,6 @@
 # Corex Tests
 
-Per COREX-FRAMEWORK.md §18 and the constitution's Definition of Done, tests are **required**.
+Per ../docs/internal/COREX-FRAMEWORK.md §18 and the constitution's Definition of Done, tests are **required**.
 
 | Directory | Level | Tooling |
 |---|---|---|

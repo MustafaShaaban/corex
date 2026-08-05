@@ -10,8 +10,8 @@ last_verified: null
 
 Corex is built **spec-first**: a spec is written and reviewed before the code. This is enforced by the
 constitution (Principle X) and is how an AI agent (Claude Code) and a human stay in sync. The authoritative
-description is [`COREX-WORKING-GUIDE.md` Part D](../../../COREX-WORKING-GUIDE.md) and
-[`COREX-SPECKIT-START.md`](../../../COREX-SPECKIT-START.md); this page is the working summary.
+description is [`../../internal/COREX-WORKING-GUIDE.md` Part D](../../../COREX-WORKING-GUIDE.md) and
+[`../../internal/COREX-SPECKIT-START.md`](../../../COREX-SPECKIT-START.md); this page is the working summary.
 
 ## The loop
 
@@ -47,10 +47,10 @@ flowchart LR
 ## Conflicts win upward
 
 If a request conflicts with the rules, the agent **surfaces the conflict and stops** rather than silently
-choosing. The source-of-truth order ([`COREX-WORKING-GUIDE.md §A.1`](../../../COREX-WORKING-GUIDE.md)):
+choosing. The source-of-truth order ([`../../internal/COREX-WORKING-GUIDE.md §A.1`](../../../COREX-WORKING-GUIDE.md)):
 
 ```text
-1. specs/constitution.md   2. COREX-FRAMEWORK.md   3. the active spec
+1. specs/constitution.md   2. ../../internal/COREX-FRAMEWORK.md   3. the active spec
 4. PROGRESS.md             5. the code
 ```
 
@@ -74,4 +74,4 @@ Next owner may edit: docs/en/04-team-workflow/spec-kit.md
 ## See also
 
 - [Quality gates](./quality-gates.md) · [Branching & commits](./branching-and-commits.md) ·
-  [`COREX-SPECKIT-START.md`](../../../COREX-SPECKIT-START.md)
+  [`../../internal/COREX-SPECKIT-START.md`](../../../COREX-SPECKIT-START.md)

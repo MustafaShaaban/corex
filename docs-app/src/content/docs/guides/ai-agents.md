@@ -4,7 +4,7 @@ description: How to point a coding agent at CoreX — framework vs client-site b
 ---
 
 CoreX is built to be worked on by AI coding agents as well as people. The repo's agent rules live in
-`AGENTS.md`, `CLAUDE.md`, `.specify/memory/constitution.md`, and `COREX-WORKING-GUIDE.md`. This page summarises
+`AGENTS.md`, `CLAUDE.md`, `.specify/memory/constitution.md`, and `../../../../../docs/internal/COREX-WORKING-GUIDE.md`. This page summarises
 the rules that matter most and adds the client-site boundary.
 
 ## The standing agent rules

@@ -185,4 +185,4 @@ Job 'Deploy' succeeded
 
 ## See also
 
-- [Docker production image](./docker.md#the-production-image) · [`COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)
+- [Docker production image](./docker.md#the-production-image) · [`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)

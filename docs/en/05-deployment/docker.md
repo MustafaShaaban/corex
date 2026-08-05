@@ -167,7 +167,7 @@ docker build --target prod -t corex:prod .
 The `prod` target bakes WordPress core, the Corex source, the **compiled** block assets (from the `assets`
 stage), and the **production** vendored dependencies (`composer install --no-dev`, from the `vendor` stage) into
 the image, runs as the unprivileged `www-data` user, and contains no Node/dev tooling — matching the framework's
-`build → package` release stages ([`COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)).
+`build → package` release stages ([`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)).
 
 > A production image still needs a database, a web server in front of php-fpm, and real secrets — those come
 > from your host (see the [Azure](./azure-app-service.md) / [AWS](./aws-beanstalk.md) recipes and

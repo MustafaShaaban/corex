@@ -4109,3 +4109,109 @@ describes a different screen. The related browser test was changed the same way:
 `toHaveCount( 1 )` and reported "expected 1, received 3", a true statement about a number that says
 nothing about whether gating works. Both now name what they mean.
 Status: Final.
+
+## #216 — The Help tab is wp-admin's chrome, and CoreX admin is not wp-admin
+
+Date: 2026-08-05 · Spec: 097 · Status: Final
+
+Spec 084 put each guide into the WordPress contextual Help tab of the screen it describes, reasoning
+that the panel was a whole surface standing empty. That reading was fair and the conclusion was
+wrong: the panel belongs to wp-admin, and every CoreX screen is a full-bleed product deliberately
+built to hide wp-admin (`body.corex-admin-screen`, spec 067). The tab was the one piece of core
+chrome that survived that, and it opened *above* the shell, pushing the entire product down the page.
+
+Three things about how it was removed are decisions rather than mechanics.
+
+**It is a removal, not a stylesheet.** `remove_help_tabs()` plus an emptied sidebar means
+`WP_Screen::render_screen_meta()` never enters its help branch, so the link, the toggle and the panel
+are never emitted. Hiding them with CSS would leave the markup, its scripts and its reserved height
+in the page — the defect made invisible rather than absent.
+
+**It runs on `admin_head` at `PHP_INT_MAX`, not on `current_screen`.** Deleting spec 084's
+registration removes the tabs *CoreX* added and nothing else. `admin-header.php` fires `admin_head`
+and only then renders the screen meta, so that is the last point which still beats the render and the
+first which is later than every point at which help can be registered — including by core or by a
+plugin CoreX has never heard of. A screen that is clean until somebody activates an unrelated plugin
+has been tidied, not fixed.
+
+**It lives in `corex-config`, not in the Guides add-on.** `corex-guides` is optional (Principle IX);
+a removal shipped with it would hand the tab back the moment somebody deactivated Guides.
+
+`Guide::onScreen()` was kept. The Guides screen already rendered the declared address as a link to
+the screen it describes, which was always the better half of spec 084's idea — searchable, carrying
+the steps, and one click from the menu. Only `GuideRegistry::forScreen()`, whose sole consumer was
+the help tab, was removed rather than left as dead code.
+
+## #217 — Three CoreX admin surfaces overran their own shell, and `overflow: clip` hid it
+
+Date: 2026-08-05 · Spec: 097 · Status: Final
+
+The two Playwright failures that blocked the v0.41.0 release read as unrelated — a click that
+"intercepts pointer events" for sixty seconds, and a boolean overflow assertion at one viewport
+width. They were the same mistake in three places: **a CSS length written as a preference and read by
+the engine as a floor.**
+
+- `grid-template-columns: minmax(10rem, 2fr) repeat(3, minmax(6rem, 1fr)) minmax(9rem, 1fr)` on the
+  Forms catalog row — 37rem of track minimums the row could never go under.
+- `repeat(auto-fit, minmax(16rem, 1fr))` on the Blog Pro workspace, which reads as "at least 16rem
+  per column" and prevents the grid dropping to one column instead of causing it.
+- `min-inline-size: 11rem` on `.corex-select`, in toolbars narrower than 11rem.
+
+`.corex-admin__shell` carries `overflow: clip`, so none of this was visible: the content simply left
+the box and stopped being painted. That is why the Forms failure presented as pointer interception —
+`document.elementFromPoint()` at the row button's own centre returned the `.corex-admin` wrapper,
+because the button had been clipped out of existence. **It was not a flaky click. The control was not
+there.**
+
+The fixes are `minmax(0, …)` where the ratio was the real intent, and `min(Xrem, 100%)` where the
+floor was. Both let the length yield to a container narrower than itself, which is what the original
+declarations meant. Neither assertion was changed, and both were measured before and after.
+
+The general rule, worth keeping: **inside a clipping container, a minimum that cannot yield is not a
+minimum, it is an overflow.** `overflow: clip` on the shell is correct and stays — it is what keeps
+the product inside its own frame — but it means a containment defect is silent, so containment has to
+be asserted rather than seen.
+
+## #218 — The record is kept in six places, and each answers one question
+
+Date: 2026-08-05 · Spec: 098 · Status: Final
+
+`PROGRESS.md` reached 4,589 lines — forty stacked `RESUME HERE` blocks, 435 KB, append-only. Only the
+top was ever read. Everything beneath it was already recorded somewhere better: what changed in a
+release in `CHANGELOG.md`, why in `DECISIONS.md`, the agreed contract in `specs/`, and what happened
+on a given day in `git log`.
+
+Two earlier versions of this repository *defended* the size — `README.md` and `PROJECT-STATUS.md`
+both carried a section explaining that 420 KB was "the method, not clutter". The defence was half
+right. The method is the record; the transcript was not the record, it was a copy of it with the
+provenance stripped.
+
+So each document now answers exactly one question, and none answers another's:
+
+| File | Question |
+|---|---|
+| `PROJECT-STATUS.md` | What works, what is partial, what is not built — today. |
+| `ROADMAP.md` | What is planned, in what order, what is deferred. |
+| `CHANGELOG.md` | What changed in each release. |
+| `PROGRESS.md` | Where to resume: baseline, in flight, next. |
+| `DECISIONS.md` | Why anything non-obvious is the way it is. |
+| `specs/` | The contract, written before the code. |
+
+`DECISIONS.md` is deliberately **not** trimmed. It is 4,111 lines because it is the one file whose
+value is cumulative — a decision that turned out wrong is worth as much as one that did not, and this
+entry is only meaningful beside the 215 before it.
+
+Three consequences worth stating:
+
+- **The four `COREX-*.md` working documents moved to `docs/internal/`**, so the repository root holds
+  only the canonical set. This required a PATCH amendment to the constitution (1.2.1 → 1.2.2), whose
+  source-of-truth hierarchy named `COREX-FRAMEWORK.md` by its old path.
+- **The docs site no longer keeps a second, hand-written status page.** It was 62 lines against the
+  root file's 123, with its own opening paragraph and its own version sentence. It is generated from
+  `PROJECT-STATUS.md` by `scripts/sync-project-status.mjs` and held to it by a test — the same
+  arrangement the token inventory has, for the same reason.
+- **`tests/repo-hygiene.test.js` enforces the shape**: the root holds exactly the canonical set, no
+  generated directory or archive or export is tracked, every prose version statement agrees with
+  `package.json`, and no document announces a release for which no tag exists. That last check is not
+  hypothetical — `PROGRESS.md` opened with "**v0.41.0 released**" while the newest tag was v0.40.0.
+Status: Final.

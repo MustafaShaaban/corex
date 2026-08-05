@@ -11,9 +11,11 @@ multisite, headless, or AI-agent-driven — on one clean, documented, spec-first
 ## Status: v0.40.0, actively developed, honest about its gaps
 
 The foundation is stable and used: the engine, the block/forms/config layers, the admin product, the
-CLI generators, Corex Mail, and the docs site. Verification runs on every pull request — **1711 PHP
-unit tests, 356 integration tests against a WordPress that CI provisions itself, 431 JavaScript
-tests, and 120 browser tests**.
+CLI generators, Corex Mail, and the docs site. Every pull request runs the PHP unit suite, the
+JavaScript suite, both linters, an integration suite against a WordPress that CI provisions itself,
+Playwright in a real browser, and CodeQL — six checks, all required on `main`. The counts for the
+current release are in [PROJECT-STATUS.md](PROJECT-STATUS.md), which is stamped at release time
+rather than by hand.
 
 Several add-ons are partial, one site kit is a reserved seam rather than a kit, and three browser
 specs are excluded from a fresh-install run. None of that is hidden:
@@ -54,27 +56,32 @@ tests/              Pest (Unit, Integration), Jest, Playwright (e2e).
 
 ## How this repository records itself
 
-If the file sizes look strange — `PROGRESS.md` at 420 KB, `DECISIONS.md` with 201 numbered entries,
-`specs/` with 86 directories — that is the working method, not debris left behind.
+Each root document answers exactly one question, and none of them answers another's:
 
-| File | What it is |
+| File | The question it answers |
 |---|---|
-| `specs/` | The reviewed contract for every feature, **written before its code**. Nothing non-trivial is built without one. |
-| `.specify/memory/constitution.md` | The non-negotiable rules. Where code and constitution disagree, the code is wrong. |
-| `DECISIONS.md` | Why anything non-obvious is the way it is — including the decisions that turned out wrong. |
-| `PROGRESS.md` | The running session log. Detailed and long; `PROJECT-STATUS.md` is the summary you want first. |
-| `CLAUDE.md` / `AGENTS.md` | Orientation for coding agents. |
+| [`PROJECT-STATUS.md`](PROJECT-STATUS.md) | What works, what is partial, what is not built — **today**. |
+| [`ROADMAP.md`](ROADMAP.md) | What is planned, in what order, and what is deliberately deferred. |
+| [`CHANGELOG.md`](CHANGELOG.md) | What changed in each release. |
+| [`PROGRESS.md`](PROGRESS.md) | Where to resume: current baseline, what is in flight, what is next. |
+| [`DECISIONS.md`](DECISIONS.md) | Why anything non-obvious is the way it is — including the decisions that turned out wrong. |
+| [`specs/`](specs/) | The reviewed contract for every feature, **written before its code**. Nothing non-trivial is built without one. |
+| [`.specify/memory/constitution.md`](.specify/memory/constitution.md) | The non-negotiable rules. Where code and constitution disagree, the code is wrong. |
+| [`AGENTS.md`](AGENTS.md) · [`CLAUDE.md`](CLAUDE.md) | Orientation for coding agents, and the precedence order between all of the above. |
 
-These are kept deliberately. Several defects this project has closed were found by reading what it
-had previously *claimed* about itself — a framework can describe a capability it does not have, and
-the written record is what makes that catchable.
+The record is kept deliberately, and it earns its keep: several defects this project has closed were
+found by reading what it had previously *claimed* about itself. A framework can describe a capability
+it does not have, and the written record is what makes that catchable.
+
+`tests/repo-hygiene.test.js` holds the root to exactly this set, and fails the build if a document
+declares a version `package.json` disagrees with, or announces a release that has no tag.
 
 ### Read first (agents and humans)
 
 1. `PROJECT-STATUS.md` — what is finished and what is not.
 2. `specs/constitution.md` → `.specify/memory/constitution.md` — the non-negotiable rules.
-3. `COREX-FRAMEWORK.md` (architecture) and `COREX-WORKING-GUIDE.md` (how we work).
-   `COREX-EMAIL-ADDON.md` is the Corex Mail spec; `COREX-SPECKIT-START.md` the build order.
+3. `docs/internal/COREX-FRAMEWORK.md` (architecture) and `docs/internal/COREX-WORKING-GUIDE.md` (how we work).
+   `docs/internal/COREX-EMAIL-ADDON.md` is the Corex Mail spec; `docs/internal/COREX-SPECKIT-START.md` the build order.
 
 ## Start here: your first company site
 
@@ -198,7 +205,7 @@ see [PROJECT-STATUS.md](PROJECT-STATUS.md), under *Known open items*, for how.
 ## Contributing
 
 Corex is built **spec-first** (Spec Kit) under a strict constitution, with guard skills as the quality gate
-and a NEXT STEP handoff on every change. See `CONTRIBUTING.md` and `COREX-WORKING-GUIDE.md` before opening a PR
+and a NEXT STEP handoff on every change. See `CONTRIBUTING.md` and `docs/internal/COREX-WORKING-GUIDE.md` before opening a PR
 — including the rule that every feature PR updates its documentation in the same change.
 
 ## License

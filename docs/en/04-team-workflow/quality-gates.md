@@ -9,7 +9,7 @@ last_verified: null
 # Quality gates — guards, Pest, Playwright
 
 No diff ships until it passes these gates. The authoritative definition is the constitution's **Guard Gate** +
-**Definition of Done** and [`COREX-WORKING-GUIDE.md` Parts B & D](../../../COREX-WORKING-GUIDE.md); this page is
+**Definition of Done** and [`../../internal/COREX-WORKING-GUIDE.md` Parts B & D](../../../COREX-WORKING-GUIDE.md); this page is
 the practical summary.
 
 ## The Guard Gate (run on every diff, before it is presented)
@@ -82,4 +82,4 @@ docs · updated `PROGRESS.md` · ended with a `NEXT STEP` block.
 ## See also
 
 - [The Spec Kit loop](./spec-kit.md) · [Branching & commits](./branching-and-commits.md) ·
-  [`COREX-WORKING-GUIDE.md` Part D.4](../../../COREX-WORKING-GUIDE.md)
+  [`../../internal/COREX-WORKING-GUIDE.md` Part D.4](../../../COREX-WORKING-GUIDE.md)
