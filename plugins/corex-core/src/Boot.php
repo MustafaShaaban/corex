@@ -23,9 +23,13 @@ use Corex\Events\EventServiceProvider;
 use Corex\Foundation\CoreServiceProvider;
 use Corex\Foundation\DataServiceProvider;
 use Corex\Foundation\HttpServiceProvider;
+use Corex\Multisite\RuntimeContexts;
 use Corex\Assets\AssetsServiceProvider;
 use Corex\Forms\FormsServiceProvider;
 use Corex\Security\SecurityModule;
+use Corex\Support\BootLogger;
+use Corex\Support\Config\Sources\DotenvSource;
+use Corex\Support\Config\Truthy;
 use Corex\Theme\NavigationServiceProvider;
 use Corex\Theme\ThemeServiceProvider;
 use RuntimeException;
@@ -60,6 +64,8 @@ final class Boot
 
     private static ?Application $app = null;
 
+    private static ?DotenvSource $dotenv = null;
+
     public static function init(): void
     {
         add_action('plugins_loaded', [self::class, 'boot']);
@@ -75,7 +81,18 @@ final class Boot
 
         $debug = defined('WP_DEBUG') && WP_DEBUG;
 
-        self::$app = new Application($debug, providers: self::providersForState(self::runtimeState()));
+        // Detected once and seeded into the container, because CoreServiceProvider's config
+        // factory resolves MultisiteContext and NetworkContext. Without this the very first
+        // resolution of ConfigInterface throws BindingResolutionException — and ProviderRepository
+        // catches and logs a failed provider, so the framework would degrade silently rather than
+        // fatally (spec 100 FR-003).
+        $contexts = RuntimeContexts::detect();
+
+        self::$app = new Application(
+            $debug,
+            providers: self::providersForState(self::runtimeState()),
+            contexts: $contexts,
+        );
         self::$app->boot();
 
         /**
@@ -210,18 +227,50 @@ final class Boot
 
     private static function featureFlagEnabled(string $flag): bool
     {
+        // Boot has no container yet, so features.* deliberately uses this fixed precedence only:
+        // deployment .env → per-site option → network option → false (spec 100 FR-025–FR-026).
+        $key = 'features.' . $flag;
+        $dotenv = self::dotenv();
+
+        if ($dotenv->has($key)) {
+            return Truthy::of($dotenv->get($key));
+        }
+
+        $optionValue = false;
+
         if (function_exists('get_option')) {
             $optionValue = get_option('corex_features_' . $flag, false);
 
-            if (in_array($optionValue, [true, 1, '1'], true)) {
-                return true;
+            if ($optionValue !== false) {
+                return Truthy::of($optionValue);
             }
         }
 
-        $environmentValue = getenv('FEATURES_' . strtoupper($flag));
+        if (
+            $optionValue === false
+            && function_exists('is_multisite')
+            && is_multisite()
+            && function_exists('get_site_option')
+        ) {
+            return Truthy::of(get_site_option('corex_features_' . $flag, false));
+        }
 
-        return is_string($environmentValue)
-            && in_array(strtolower(trim($environmentValue)), ['1', 'true', 'on', 'yes'], true);
+        return false;
+    }
+
+    private static function dotenv(): DotenvSource
+    {
+        return self::$dotenv ??= new DotenvSource(self::projectRoot(), new BootLogger(false));
+    }
+
+    private static function projectRoot(): string
+    {
+        // Mirrors CoreServiceProvider::projectRoot(); the fallback keeps headless Boot tests viable.
+        if (defined('COREX_CORE_PATH')) {
+            return dirname(COREX_CORE_PATH, 2);
+        }
+
+        return dirname(__DIR__, 3);
     }
 
     /**

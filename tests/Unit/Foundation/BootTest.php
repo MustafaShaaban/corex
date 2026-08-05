@@ -25,7 +25,15 @@ it('hooks the bootstrap onto plugins_loaded', function () {
 
 it('boots once and resolves dependencies through the Corex facade', function () {
     Functions\when('add_action')->justReturn(true);
-    Functions\when('get_option')->justReturn([]);
+    // What WordPress itself returns for an unset option. `justReturn([])` made every option an
+    // array instead, which reaches ThemeServiceProvider's `(string) $config->get(...)` as an
+    // array-to-string conversion — and this suite is configured to fail on warnings.
+    Functions\when('get_option')->justReturn(false);
+    // Boot detects the install shape before building the Application. Stubbed explicitly rather
+    // than left to function_exists(): once any test in the process mocks a WordPress function,
+    // Brain Monkey defines it globally, so a later test that reaches it without an expectation
+    // fails — and only when the suite runs in that order.
+    Functions\when('is_multisite')->justReturn(false);
 
     Boot::boot();
     Boot::boot();

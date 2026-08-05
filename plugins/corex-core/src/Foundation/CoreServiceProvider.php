@@ -12,12 +12,17 @@ defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
 use Corex\Health\HealthModule;
+use Corex\Multisite\MultisiteContext;
+use Corex\Multisite\NetworkContext;
 use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\FeatureFlags;
 use Corex\Support\Config\Repository;
+use Corex\Support\Config\SettingRegistry;
 use Corex\Support\Config\Sources\DefaultsSource;
 use Corex\Support\Config\Sources\DotenvSource;
+use Corex\Support\Config\Sources\NetworkDefaultsSource;
+use Corex\Support\Config\Sources\NetworkLockSource;
 use Corex\Support\Config\Sources\OptionsSource;
 use Corex\Support\DateTime\AdminDateTime;
 use Corex\Support\DateTime\AdminDateTimeFormatter;
@@ -26,16 +31,27 @@ use Corex\Update\UpdateService;
 
 /**
  * The foundation's own provider. Binds the layered config engine
- * (.env → WP options → defaults) as a shared service.
+ * (.env → network lock → WP options → network default → defaults) as a shared service.
  */
 final class CoreServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->container->singleton(SettingRegistry::class);
+
         $this->container->singleton(ConfigInterface::class, function (ContainerInterface $container): Repository {
+            $registry = $container->make(SettingRegistry::class);
+            $multisite = $container->make(MultisiteContext::class);
+            $network = $container->make(NetworkContext::class);
+
             return new Repository([
                 new DotenvSource($this->projectRoot(), $container->make(BootLogger::class)),
+                // Deployment-owned .env stays highest: allowing a network-admin database row to
+                // override it would invert privilege. A lock must beat a site option, while a
+                // network default must lose to one, fixing the sources on opposite sides of it.
+                new NetworkLockSource($registry, $multisite, $network),
                 new OptionsSource(),
+                new NetworkDefaultsSource($registry, $multisite, $network),
                 new DefaultsSource($this->defaults()),
             ]);
         });

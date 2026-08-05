@@ -10,6 +10,8 @@ namespace Corex\Config\Addons;
 
 defined('ABSPATH') || exit;
 
+use Corex\Support\Config\Truthy;
+
 /**
  * The dependency-aware decisions behind the add-on screen — pure, so the safety property
  * (you can't break a dependency) is unit-testable with no WordPress. Disabling an add-on
@@ -97,7 +99,7 @@ final class AddonManager
                 $activeSlugs[] = $addon->slug;
             }
 
-            if ($addon->hasFlag() && get_option('corex_features_' . $addon->flag) === '1') {
+            if ($addon->hasFlag() && Truthy::of(get_option('corex_features_' . $addon->flag))) {
                 $enabledFlags[] = (string) $addon->flag;
             }
         }

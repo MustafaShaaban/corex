@@ -19,8 +19,6 @@ defined('ABSPATH') || exit;
  */
 final class FeatureFlags
 {
-    private const TRUTHY = ['1', 'true', 'on', 'yes'];
-
     public function __construct(private readonly ConfigInterface $config)
     {
     }
@@ -62,18 +60,6 @@ final class FeatureFlags
 
     private function toBool(mixed $value): bool
     {
-        if (is_bool($value)) {
-            return $value;
-        }
-
-        if (is_int($value)) {
-            return $value === 1;
-        }
-
-        if (is_string($value)) {
-            return in_array(strtolower(trim($value)), self::TRUTHY, true);
-        }
-
-        return false;
+        return Truthy::of($value);
     }
 }
