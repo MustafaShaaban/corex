@@ -15,6 +15,7 @@ use Corex\Cache\CacheScope;
 use Corex\Cli\Commands\DocsCommand;
 use Corex\Cli\Commands\DoctorCommand;
 use Corex\Cli\Commands\MakeCommand;
+use Corex\Cli\Commands\MigrateCommand;
 use Corex\Cli\Commands\ReadinessCommand;
 use Corex\Cli\Commands\ReadinessCommandServices;
 use Corex\Cli\Commands\ResetCommand;
@@ -116,6 +117,7 @@ final class CliServiceProvider extends ServiceProvider
         $this->container->singleton(ComponentCoverageReadinessCheck::class);
         $this->container->singleton(FreeProBoundaryReadinessCheck::class);
         $this->container->singleton(MultiAgentReadinessCheck::class);
+        $this->container->singleton(MigrateCommand::class);
 
         $this->container->singleton(
             DocsGenerator::class,
@@ -380,6 +382,15 @@ final class CliServiceProvider extends ServiceProvider
             'corex reset',
             static function (array $args, array $assoc) use ($reset): void {
                 $reset->run($args, $assoc);
+            },
+        );
+
+        $migrate = $this->container->make(MigrateCommand::class);
+
+        WP_CLI::add_command(
+            'corex migrate',
+            static function (array $args, array $assoc) use ($migrate): void {
+                $migrate->run($args, $assoc);
             },
         );
 

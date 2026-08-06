@@ -8,85 +8,85 @@ register schema.
 
 ## Phase 1 — Contexts and scope primitives (no behaviour change)
 
-- [ ] **T001** `MultisiteContext`, `SiteContext`, `NetworkContext`, `NetworkCapabilities` interfaces
+- [x] **T001** `MultisiteContext`, `SiteContext`, `NetworkContext`, `NetworkCapabilities` interfaces
       in `plugins/corex-core/src/Multisite/`. (FR-001)
-- [ ] **T002** `SingleSiteMultisiteContext`, `SingleSiteContext`, `SingleSiteNetworkContext`,
+- [x] **T002** `SingleSiteMultisiteContext`, `SingleSiteContext`, `SingleSiteNetworkContext`,
       `SingleSiteCapabilities` — constants only, zero WordPress calls. (FR-002)
-- [ ] **T003** `WpMultisiteContext`, `WpSiteContext`, `WpNetworkContext`, `WpNetworkCapabilities`.
+- [x] **T003** `WpMultisiteContext`, `WpSiteContext`, `WpNetworkContext`, `WpNetworkCapabilities`.
       `WpNetworkContext::siteIds()` includes archived, excludes deleted and spam. (FR-001, FR-043)
-- [ ] **T004** `SiteScoped` and `SiteScope` interfaces; `SingleSiteScope` (direct call, empty
+- [x] **T004** `SiteScoped` and `SiteScope` interfaces; `SingleSiteScope` (direct call, empty
       register); `SiteScopeManager` with the `$new === $prev` guard and `switch_blog` at priority 0.
       (FR-015, FR-017, FR-018)
-- [ ] **T005** `RuntimeContexts::detect()` + `seedInto(Container)`.
-- [ ] **T006** `Application::__construct` gains `?RuntimeContexts $contexts = null`, seeded in
+- [x] **T005** `RuntimeContexts::detect()` + `seedInto(Container)`.
+- [x] **T006** `Application::__construct` gains `?RuntimeContexts $contexts = null`, seeded in
       `boot()` beside `ContainerInterface`/`BootLogger`/`HookRegistry`/`ControllerMap`. Existing
       two-arg call sites must compile unchanged. (FR-003)
-- [ ] **T007** `ListenerProvider::hasListenersFor(string $eventClass): bool`. (FR-041)
-- [ ] **T008** Pest: contexts answer correctly for both shapes; `SingleSite*` make zero WP calls;
+- [x] **T007** `ListenerProvider::hasListenersFor(string $eventClass): bool`. (FR-041)
+- [x] **T008** Pest: contexts answer correctly for both shapes; `SingleSite*` make zero WP calls;
       `SiteScopeManager` no-ops on equal ids, treats switch and restore identically, invalidates every
       registered service, and `run()` restores on throw.
-- [ ] **T009** Pest: `add_action('switch_blog', …)` is never called when multisite is disabled.
+- [x] **T009** Pest: `add_action('switch_blog', …)` is never called when multisite is disabled.
       (SC-008, FR-004)
-- [ ] **T010** Pest: no provider binds `SiteContext`/`MultisiteContext`/`NetworkContext`/
+- [x] **T010** Pest: no provider binds `SiteContext`/`MultisiteContext`/`NetworkContext`/
       `PluginActivationInspector` — the `Container::register()` clobber guard. (plan risk 2)
 
 ## Phase 2 — Config network layer
 
-- [ ] **T011** `SettingScope` enum, `SettingDefinition`, `SettingRegistry` (`scopeOf()` returns
+- [x] **T011** `SettingScope` enum, `SettingDefinition`, `SettingRegistry` (`scopeOf()` returns
       `Site` when unregistered) + a `corex_setting_scopes` filter. (FR-023, FR-024)
-- [ ] **T012** `NetworkLockSource` and `NetworkDefaultsSource` — `has()` returns false unless
+- [x] **T012** `NetworkLockSource` and `NetworkDefaultsSource` — `has()` returns false unless
       multisite is enabled **and** the key carries the matching scope **and** a network option is
       stored. Option namespace `corex_network_*`. (FR-021)
-- [ ] **T013** `CoreServiceProvider::register()` — bind `SettingRegistry` **before** the
+- [x] **T013** `CoreServiceProvider::register()` — bind `SettingRegistry` **before** the
       `ConfigInterface` closure; five-source list `Dotenv → NetworkLock → Options → NetworkDefaults
       → Defaults`. (FR-020, FR-022)
-- [ ] **T014** `Truthy::of()`; route `FeatureFlags::toBool()`, `Boot::featureFlagEnabled()` and
+- [x] **T014** `Truthy::of()`; route `FeatureFlags::toBool()`, `Boot::featureFlagEnabled()` and
       `AddonManager.php:100` through it. (FR-025)
-- [ ] **T015** `Boot::featureFlagEnabled()` reads `.env` through `DotenvSource` instead of `getenv()`,
+- [x] **T015** `Boot::featureFlagEnabled()` reads `.env` through `DotenvSource` instead of `getenv()`,
       and falls back to `get_site_option('corex_features_*')` on multisite. (FR-026)
-- [ ] **T016** Pest: the SC-007 precedence matrix — present in each layer, absent everywhere, stored
+- [x] **T016** Pest: the SC-007 precedence matrix — present in each layer, absent everywhere, stored
       null — identical with empty network sources; lock beats site option; default loses to it and
       beats code defaults; `.env` beats both.
-- [ ] **T017** Pest: a `SettingDefinition` registered *after* `ConfigInterface` was resolved still
+- [x] **T017** Pest: a `SettingDefinition` registered *after* `ConfigInterface` was resolved still
       applies.
-- [ ] **T018** Pest: `Truthy` across the six-value set; the three former call sites agree.
+- [x] **T018** Pest: `Truthy` across the six-value set; the three former call sites agree.
 
 ## Phase 3 — Schema, migrations, site lifecycle
 
-- [ ] **T019** `SchemaMigrator` interface; `Migrator implements SchemaMigrator` with **no body
+- [x] **T019** `SchemaMigrator` interface; `Migrator implements SchemaMigrator` with **no body
       change**; `DataServiceProvider` binds `SchemaMigrator` → `Migrator`.
-- [ ] **T020** `SchemaComponent` (explicit `optionName`) and `SchemaRegistry`. (FR-033)
-- [ ] **T021** `SchemaVersionStore` + `WpOptionSchemaVersionStore` (`autoload = false`). (FR-029)
-- [ ] **T022** `SiteMigrationOutcome`, `SiteMigrationResult`, `NetworkMigrationResult`. (FR-032)
-- [ ] **T023** `SiteMigrationRunner` — `runForSite`/`runForSites`/`runForNetwork`/`pendingSiteIds`;
+- [x] **T020** `SchemaComponent` (explicit `optionName`) and `SchemaRegistry`. (FR-033)
+- [x] **T021** `SchemaVersionStore` + `WpOptionSchemaVersionStore` (`autoload = false`). (FR-029)
+- [x] **T022** `SiteMigrationOutcome`, `SiteMigrationResult`, `NetworkMigrationResult`. (FR-032)
+- [x] **T023** `SiteMigrationRunner` — `runForSite`/`runForSites`/`runForNetwork`/`pendingSiteIds`;
       version check first, `dbDelta`, post-verify before writing the version; each site inside
       `SiteScope::run()`; per-site try/catch returning the failure. (FR-028, FR-030, FR-031, FR-034)
-- [ ] **T024** `ConfigServiceProvider` registers a `SchemaComponent` for the seven foundation tables
+- [x] **T024** `ConfigServiceProvider` registers a `SchemaComponent` for the seven foundation tables
       with the literal option name `corex_product_foundation_schema_version`; delete
       `installFoundationSchema()`. (FR-033)
-- [ ] **T025** `SchemaSelfHeal` — admin/cron/CLI only, behind a 60-second per-site transient lock.
-      (FR-035)
-- [ ] **T026** Site lifecycle events in `Multisite/Events/`, scalars only; mirror
+- [x] **T025** `SchemaSelfHeal` — admin and cron only (WP-CLI deliberately excluded; `wp corex
+      migrate` is the explicit tool), behind a per-site transient mutex held for the run. (FR-035)
+- [x] **T026** Site lifecycle events in `Multisite/Events/`, scalars only; mirror
       `corex_site_{created,migrated,deleted}` as WordPress actions. (FR-039, FR-040)
-- [ ] **T027** `SiteLifecycleSubscriber` — `wp_initialize_site` @20, `wp_delete_site` @10,
+- [x] **T027** `SiteLifecycleSubscriber` — `wp_initialize_site` @20, `wp_delete_site` @10,
       `wpmu_drop_tables` @10 as a **filter** that appends table names. (FR-036, FR-037)
-- [ ] **T028** `MultisiteServiceProvider` — appended to `Boot::CORE_PROVIDERS`; calls
+- [x] **T028** `MultisiteServiceProvider` — appended to `Boot::CORE_PROVIDERS`; calls
       `SiteScopeManager::listen()`, registers the subscriber and self-heal, all gated on
       `MultisiteContext::enabled()` where they only apply to a network.
-- [ ] **T029** Pest: runner idempotency, continue-on-error, batching/`nextOffset`, exact site ids
+- [x] **T029** Pest: runner idempotency, continue-on-error, batching/`nextOffset`, exact site ids
       passed to the scope, version written only after every table verifies, and the literal option
       name.
-- [ ] **T030** Pest: the subscriber's `wpmu_drop_tables` return value contains every registered
+- [x] **T030** Pest: the subscriber's `wpmu_drop_tables` return value contains every registered
       table's full name and preserves the incoming ones.
 
 ## Phase 4 — CLI migration command
 
-- [ ] **T031** `packages/cli/src/Commands/MigrateCommand.php` — `wp corex migrate [--network]
+- [x] **T031** `packages/cli/src/Commands/MigrateCommand.php` — `wp corex migrate [--network]
       [--batch=<n>] [--dry-run]`; per-site table output; exit non-zero when any site failed.
       (FR-031)
-- [ ] **T032** Register it in `CliServiceProvider::boot()` following the existing closure-delegating
+- [x] **T032** Register it in `CliServiceProvider::boot()` following the existing closure-delegating
       pattern.
-- [ ] **T033** Pest: the command's pure decision layer; the WP-CLI boundary stays a printer.
+- [x] **T033** Pest: the command's pure decision layer; the WP-CLI boundary stays a printer.
 
 ## Phase 5 — Activation scope and provider resolution
 

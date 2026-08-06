@@ -23,6 +23,7 @@ use Corex\Events\EventServiceProvider;
 use Corex\Foundation\CoreServiceProvider;
 use Corex\Foundation\DataServiceProvider;
 use Corex\Foundation\HttpServiceProvider;
+use Corex\Multisite\MultisiteServiceProvider;
 use Corex\Multisite\RuntimeContexts;
 use Corex\Assets\AssetsServiceProvider;
 use Corex\Forms\FormsServiceProvider;
@@ -58,6 +59,9 @@ final class Boot
         NavigationServiceProvider::class,
         FormsServiceProvider::class,
         AbilitiesProvider::class,
+        // Last by design: ConfigServiceProvider registers its SchemaComponent during boot
+        // before multisite self-heal reads the registry on both install shapes (spec 100 FR-035).
+        MultisiteServiceProvider::class,
     ];
 
     private static bool $booted = false;

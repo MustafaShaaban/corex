@@ -12,10 +12,10 @@ defined('ABSPATH') || exit;
 
 /**
  * Creates/drops custom tables under the site prefix + a `corex_` namespace, via
- * WordPress's idempotent `dbDelta`. The boundary to the schema. Table names are
- * code-defined (never request input), so identifier interpolation is safe here.
+ * WordPress's idempotent `dbDelta`. SchemaMigrator keeps callers headless-testable;
+ * table names are code-defined, so identifier interpolation is safe here.
  */
-final class Migrator
+final class Migrator implements SchemaMigrator
 {
     private const NAMESPACE = 'corex_';
 

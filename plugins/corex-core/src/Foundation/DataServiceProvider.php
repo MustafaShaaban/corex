@@ -12,6 +12,8 @@ defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
 use Corex\Database\QueryExecutor;
+use Corex\Database\Schema\Migrator;
+use Corex\Database\Schema\SchemaMigrator;
 use Corex\Fields\AcfFieldDriver;
 use Corex\Fields\FieldDriver;
 use Corex\Fields\FieldResolver;
@@ -29,7 +31,11 @@ final class DataServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->container->singleton(\Corex\Database\Casts\Caster::class);
-        $this->container->singleton(\Corex\Database\Schema\Migrator::class);
+        $this->container->singleton(Migrator::class);
+        $this->container->singleton(
+            SchemaMigrator::class,
+            static fn (ContainerInterface $c): SchemaMigrator => $c->make(Migrator::class),
+        );
 
         // The registry of tables an app marks managed (spec 038); corex-config reads it to seed
         // the Corex → Data screen with a source per table. Apps register their tables into it.

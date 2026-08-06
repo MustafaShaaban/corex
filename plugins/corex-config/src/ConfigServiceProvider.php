@@ -122,7 +122,8 @@ use Corex\Config\Submissions\WpSubmissionExportJobQueue;
 use Corex\Config\Submissions\WpSubmissionExportStore;
 use Corex\Config\Retention\SubmissionRetentionStore;
 use Corex\Database\Schema\ManagedTables;
-use Corex\Database\Schema\Migrator;
+use Corex\Database\Schema\SchemaComponent;
+use Corex\Database\Schema\SchemaRegistry;
 use Corex\Config\Insights\InsightRegistry;
 use Corex\Config\Insights\InsightStore;
 use Corex\Config\Insights\InsightWidgetFacts;
@@ -735,15 +736,20 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(ManagedTables::class)->register($readingEventTable->managed());
         $this->container->make(ManagedTables::class)->register($notificationTable->managed());
         $this->container->make(ManagedTables::class)->register($notificationUserStateTable->managed());
-        $this->installFoundationSchema([
-            $activityTable->schema(),
-            ...$accessTables->schemas(),
-            $jobTable->schema(),
-            $loginAttemptTable->schema(),
-            $readingEventTable->schema(),
-            $notificationTable->schema(),
-            $notificationUserStateTable->schema(),
-        ]);
+        $this->container->make(SchemaRegistry::class)->register(new SchemaComponent(
+            'product-foundation',
+            self::FOUNDATION_SCHEMA_VERSION,
+            [
+                $activityTable->schema(),
+                ...$accessTables->schemas(),
+                $jobTable->schema(),
+                $loginAttemptTable->schema(),
+                $readingEventTable->schema(),
+                $notificationTable->schema(),
+                $notificationUserStateTable->schema(),
+            ],
+            self::FOUNDATION_SCHEMA_OPTION,
+        ));
         $this->container->make(AbilityCompatibility::class)->register();
         $this->registerNotificationProducers();
         $this->container->make(\Corex\Config\Notifications\NotificationBell::class)->register();
@@ -850,32 +856,5 @@ final class ConfigServiceProvider extends ServiceProvider
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\EmailStudioFailureNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\ReadinessNotificationProducer::class));
         $registry->register();
-    }
-
-    /** @param list<\Corex\Database\Schema\Table> $schemas */
-    private function installFoundationSchema(array $schemas): void
-    {
-        $installedVersion = get_option(self::FOUNDATION_SCHEMA_OPTION, '');
-
-        if ($installedVersion === self::FOUNDATION_SCHEMA_VERSION) {
-            return;
-        }
-
-        if (! is_file(ABSPATH . 'wp-admin/includes/upgrade.php')) {
-            return;
-        }
-
-        $migrator = $this->container->make(Migrator::class);
-        foreach ($schemas as $schema) {
-            $migrator->create($schema);
-        }
-
-        foreach ($schemas as $schema) {
-            if (! $migrator->exists($schema->name)) {
-                return;
-            }
-        }
-
-        update_option(self::FOUNDATION_SCHEMA_OPTION, self::FOUNDATION_SCHEMA_VERSION, false);
     }
 }
