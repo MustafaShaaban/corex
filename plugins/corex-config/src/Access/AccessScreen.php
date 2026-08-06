@@ -11,6 +11,7 @@ namespace Corex\Config\Access;
 use Corex\Admin\AdminPage;
 use Corex\Access\RoleAbilityStore;
 use Corex\Config\AdminUi\ScreenAsset;
+use Corex\Multisite\PluginActivationInspector;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -35,6 +36,7 @@ final class AccessScreen
         private readonly AccessAuditLog $audit,
         private readonly RoleAbilityStore $roleAbilities,
         private readonly PendingAccessRequests $pending,
+        private readonly PluginActivationInspector $pluginActivationInspector,
     ) {
     }
 
@@ -597,9 +599,7 @@ final class AccessScreen
      */
     private function activePlugins(): array
     {
-        $plugins = get_option('active_plugins', []);
-
-        return is_array($plugins) ? array_map('strval', array_values($plugins)) : [];
+        return $this->pluginActivationInspector->activePluginFiles();
     }
 
     /**

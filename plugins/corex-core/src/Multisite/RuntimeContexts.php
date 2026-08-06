@@ -64,12 +64,23 @@ final class RuntimeContexts
         );
     }
 
-    public function seedInto(Container $container): void
+    public function seedInto(
+        Container $container,
+        ?PluginActivationInspector $pluginActivationInspector = null,
+    ): void
     {
         $container->instance(MultisiteContext::class, $this->multisite);
         $container->instance(SiteContext::class, $this->site);
         $container->instance(NetworkContext::class, $this->network);
         $container->instance(NetworkCapabilities::class, $this->capabilities);
         $container->instance(SiteScope::class, $this->scope);
+
+        if ($pluginActivationInspector !== null) {
+            $container->instance(PluginActivationInspector::class, $pluginActivationInspector);
+
+            if ($pluginActivationInspector instanceof SiteScoped) {
+                $this->scope->register($pluginActivationInspector);
+            }
+        }
     }
 }

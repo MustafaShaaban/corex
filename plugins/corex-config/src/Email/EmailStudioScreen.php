@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Admin\AdminPage;
 use Corex\Config\AdminUi\ScreenAsset;
+use Corex\Multisite\PluginActivationInspector;
 use Corex\Security\Admin\AdminGuard;
 
 /**
@@ -27,6 +28,7 @@ final class EmailStudioScreen
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly TransportAdvisory $advisory,
+        private readonly PluginActivationInspector $pluginActivationInspector,
     ) {
     }
 
@@ -142,9 +144,6 @@ final class EmailStudioScreen
 
     private function emailActive(): bool
     {
-        $active = array_map('strval', (array) get_option('active_plugins', []));
-        $network = array_keys((array) get_site_option('active_sitewide_plugins', []));
-
-        return in_array(self::EMAIL_PLUGIN, [...$active, ...$network], true);
+        return $this->pluginActivationInspector->isActive(self::EMAIL_PLUGIN);
     }
 }

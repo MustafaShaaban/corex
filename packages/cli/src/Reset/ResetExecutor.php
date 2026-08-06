@@ -26,23 +26,23 @@ final class ResetExecutor
     {
     }
 
-    public function apply(ResetAction $action): void
+    public function apply(ResetAction $action, bool $networkWide = false): void
     {
         match ($action->kind) {
-            ResetAction::DEACTIVATE_ADDON => $this->deactivate($action->target),
+            ResetAction::DEACTIVATE_ADDON => $this->deactivate($action->target, $networkWide),
             ResetAction::DELETE_OPTION    => $this->deleteOption($action->target),
             ResetAction::REMOVE_DEMO      => $this->removeDemo((int) $action->target),
             ResetAction::DB_WIPE          => $this->wipeDatabase(),
         };
     }
 
-    private function deactivate(string $pluginFile): void
+    private function deactivate(string $pluginFile, bool $networkWide): void
     {
         if (! function_exists('deactivate_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
-        deactivate_plugins($pluginFile);
+        deactivate_plugins($pluginFile, false, $networkWide);
     }
 
     private function deleteOption(string $key): void

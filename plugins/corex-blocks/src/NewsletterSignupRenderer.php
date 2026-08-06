@@ -10,6 +10,8 @@ namespace Corex\Blocks;
 
 defined('ABSPATH') || exit;
 
+use Corex\Multisite\PluginActivationInspector;
+
 /**
  * Server render for the Newsletter Signup block (spec 063, Phase 7). It renders a REAL double opt-in
  * signup form wired to the existing `corex/v1/newsletter/subscribe` REST route (provided by the
@@ -22,6 +24,10 @@ defined('ABSPATH') || exit;
 final class NewsletterSignupRenderer implements BlockRenderer
 {
     private const NEWSLETTER_PLUGIN = 'corex-newsletter/corex-newsletter.php';
+
+    public function __construct(private readonly PluginActivationInspector $pluginActivationInspector)
+    {
+    }
 
     /**
      * @param array<string, mixed> $attributes
@@ -79,10 +85,6 @@ final class NewsletterSignupRenderer implements BlockRenderer
 
     private function newsletterActive(): bool
     {
-        return in_array(
-            self::NEWSLETTER_PLUGIN,
-            array_map('strval', (array) get_option('active_plugins', [])),
-            true,
-        );
+        return $this->pluginActivationInspector->isActive(self::NEWSLETTER_PLUGIN);
     }
 }

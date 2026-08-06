@@ -12,6 +12,7 @@ use Corex\Foundation\CoreServiceProvider;
 use Corex\Multisite\MultisiteContext;
 use Corex\Multisite\NetworkCapabilities;
 use Corex\Multisite\NetworkContext;
+use Corex\Multisite\PluginActivationInspector;
 use Corex\Multisite\RuntimeContexts;
 use Corex\Multisite\SingleSiteCapabilities;
 use Corex\Multisite\SingleSiteContext;
@@ -20,6 +21,7 @@ use Corex\Multisite\SingleSiteNetworkContext;
 use Corex\Multisite\SingleSiteScope;
 use Corex\Multisite\SiteContext;
 use Corex\Multisite\SiteScope;
+use Corex\Multisite\WpPluginActivationInspector;
 
 function seedableRuntimeContexts(): RuntimeContexts
 {
@@ -47,7 +49,8 @@ it('seeds every runtime primitive under its interface id', function () {
 it('keeps root-seeded primitives after the core provider registers', function () {
     $contexts = seedableRuntimeContexts();
     $container = new Container();
-    $contexts->seedInto($container);
+    $inspector = new WpPluginActivationInspector($contexts->multisite);
+    $contexts->seedInto($container, $inspector);
 
     (new CoreServiceProvider($container))->register();
 
@@ -55,12 +58,19 @@ it('keeps root-seeded primitives after the core provider registers', function ()
         ->and($container->make(SiteContext::class))->toBe($contexts->site)
         ->and($container->make(NetworkContext::class))->toBe($contexts->network)
         ->and($container->make(NetworkCapabilities::class))->toBe($contexts->capabilities)
-        ->and($container->make(SiteScope::class))->toBe($contexts->scope);
+        ->and($container->make(SiteScope::class))->toBe($contexts->scope)
+        ->and($container->make(PluginActivationInspector::class))->toBe($inspector);
 });
 
 it('seeds runtime contexts during application boot', function () {
     $contexts = seedableRuntimeContexts();
-    $application = new Application(debug: false, providers: [], contexts: $contexts);
+    $inspector = new WpPluginActivationInspector($contexts->multisite);
+    $application = new Application(
+        debug: false,
+        providers: [],
+        contexts: $contexts,
+        pluginActivationInspector: $inspector,
+    );
 
     $application->boot();
     $container = $application->container();
@@ -69,7 +79,8 @@ it('seeds runtime contexts during application boot', function () {
         ->and($container->make(SiteContext::class))->toBe($contexts->site)
         ->and($container->make(NetworkContext::class))->toBe($contexts->network)
         ->and($container->make(NetworkCapabilities::class))->toBe($contexts->capabilities)
-        ->and($container->make(SiteScope::class))->toBe($contexts->scope);
+        ->and($container->make(SiteScope::class))->toBe($contexts->scope)
+        ->and($container->make(PluginActivationInspector::class))->toBe($inspector);
 });
 
 it('keeps the two-argument application constructor and binds no multisite primitive', function () {

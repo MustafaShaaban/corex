@@ -432,6 +432,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Security\Admin\AdminGuard::class),
                 $c->make(\Corex\Admin\AdminPage::class),
                 $c,
+                $c->make(\Corex\Multisite\PluginActivationInspector::class),
             ),
         );
 
@@ -713,6 +714,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Security\Admin\AdminGuard::class),
                 $c->make(\Corex\Admin\AdminPage::class),
                 $c->make(\Corex\Config\Email\TransportAdvisory::class),
+                $c->make(\Corex\Multisite\PluginActivationInspector::class),
             ),
         );
     }

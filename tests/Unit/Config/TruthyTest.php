@@ -10,6 +10,8 @@ use Brain\Monkey\Functions;
 use Corex\Boot;
 use Corex\Config\Addons\AddonManager;
 use Corex\Config\Addons\AddonRegistry;
+use Corex\Multisite\SingleSiteMultisiteContext;
+use Corex\Multisite\WpPluginActivationInspector;
 use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Config\FeatureFlags;
@@ -91,7 +93,10 @@ it('uses the canonical yes value in all three former feature-flag call sites', f
                 return true;
             }
         };
-        $state = (new AddonManager(new AddonRegistry()))->state();
+        $state = (new AddonManager(
+            new AddonRegistry(),
+            new WpPluginActivationInspector(new SingleSiteMultisiteContext()),
+        ))->state();
 
         expect((new FeatureFlags($config))->enabled('woocommerce_kit'))->toBeTrue()
             ->and(invokeBootFeatureFlag('woocommerce_kit'))->toBeTrue()

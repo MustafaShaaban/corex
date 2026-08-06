@@ -39,7 +39,8 @@ it('mounts a localized REST-backed client only when the optional email add-on is
         ->and($screen)->toContain("rest_url('corex/v1/email-studio')")
         ->and($screen)->toContain("wp_create_nonce('wp_rest')")
         ->and($screen)->toContain("'settingsUrl'")
-        ->and($screen)->toContain('active_sitewide_plugins')
+        ->and($screen)->toContain('PluginActivationInspector')
+        ->and($screen)->not->toContain('active_sitewide_plugins')
         ->and($screen)->toContain('wp_set_script_translations');
 });
 

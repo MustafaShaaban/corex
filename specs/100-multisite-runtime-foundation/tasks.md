@@ -90,41 +90,41 @@ register schema.
 
 ## Phase 5 — Activation scope and provider resolution
 
-- [ ] **T034** `ActivationScope` enum with `isActive()` and a translated `label()`. (FR-005)
-- [ ] **T035** `PluginActivationInspector` interface; `WpPluginActivationInspector implements
+- [x] **T034** `ActivationScope` enum with `isActive()` and a translated `label()`. (FR-005)
+- [x] **T035** `PluginActivationInspector` interface; `WpPluginActivationInspector implements
       PluginActivationInspector, SiteScoped` depending only on `MultisiteContext`; network wins over
       site; `corex_plugin_activation_scopes` filter is the only route to `MustUse`.
       (FR-006, FR-007, FR-009)
-- [ ] **T036** `Boot::activePlugins()` deleted; `runtimeState(RuntimeContexts $contexts)` uses the
+- [x] **T036** `Boot::activePlugins()` deleted; `runtimeState(RuntimeContexts $contexts)` uses the
       inspector; `activeSlugs()` also records `array<string, ActivationScope>`.
-- [ ] **T037** `AddonRuntimeState` gains optional `activationScopes` + `scopeOf()`; `isActive()`
+- [x] **T037** `AddonRuntimeState` gains optional `activationScopes` + `scopeOf()`; `isActive()`
       preserved and derived so `AddonStatusResolver` and its tests are untouched.
-- [ ] **T038** `AddonBlockReason` enum and `AddonExclusion` with a translated `message()`.
-- [ ] **T039** `AddonProviderResolver` two-pass fixpoint (`selfGate` + `satisfyDependencies`).
+- [x] **T038** `AddonBlockReason` enum and `AddonExclusion` with a translated `message()`.
+- [x] **T039** `AddonProviderResolver` two-pass fixpoint (`selfGate` + `satisfyDependencies`).
       (FR-011, FR-012)
-- [ ] **T040** `AddonProviderResolution` gains `exclusions()`/`exclusionFor()`/`scopes()`;
+- [x] **T040** `AddonProviderResolution` gains `exclusions()`/`exclusionFor()`/`scopes()`;
       `reasonFor()` kept. (FR-013, FR-014)
-- [ ] **T041** Pest: a network-activated add-on resolves; network wins on collision;
+- [x] **T041** Pest: a network-activated add-on resolves; network wins on collision;
       `activePluginFiles()` is deduped and stable; the memo drops on `switch_blog`; single-site output
       equals today's `get_option('active_plugins')`. (FR-010)
-- [ ] **T042** Pest: resolution is order-independent; cross-scope dependency satisfaction; exclusion
+- [x] **T042** Pest: resolution is order-independent; cross-scope dependency satisfaction; exclusion
       messages name scope and site.
 
 ## Phase 6 — Converge every activation call site
 
-- [ ] **T043** `AddonManager.php:90` — inspector; `AddonState` gains optional `scopes` + `scopeOf()`.
-- [ ] **T044** `AdminDashboard.php:225,259` — inspector; the `advanced.multisite` row at :204 gains
+- [x] **T043** `AddonManager.php:90` — inspector; `AddonState` gains optional `scopes` + `scopeOf()`.
+- [x] **T044** `AdminDashboard.php:225,259` — inspector; the `advanced.multisite` row at :204 gains
       network id and site count from `NetworkContext`.
-- [ ] **T045** `OverviewRenderer.php:352` — inspector.
-- [ ] **T046** `AccessScreen.php:600` — inspector.
-- [ ] **T047** `NewsletterSignupRenderer.php:84` — inspector.
-- [ ] **T048** `BlueprintActivator.php:284` — `is_plugin_active()` → `$inspector->isActive()`.
-- [ ] **T049** Delete the hand-rolled merges in `FormsFlowsScreen.php:147-150` and
+- [x] **T045** `OverviewRenderer.php:352` — inspector.
+- [x] **T046** `AccessScreen.php:600` — inspector.
+- [x] **T047** `NewsletterSignupRenderer.php:84` — inspector.
+- [x] **T048** `BlueprintActivator.php:284` — `is_plugin_active()` → `$inspector->isActive()`.
+- [x] **T049** Delete the hand-rolled merges in `FormsFlowsScreen.php:147-150` and
       `EmailStudioScreen.php:145-148`; both take the inspector. Update their contract tests, which
       currently string-assert `'active_sitewide_plugins'`. (FR-008)
-- [ ] **T050** `ResetCommand.php:123` — inspector, **plus** the network guard: one site unless
+- [x] **T050** `ResetCommand.php:123` — inspector, **plus** the network guard: one site unless
       `--network`, never touches `corex_network_*`. (plan risk 4)
-- [ ] **T051** Pest: admin and runtime agree on every install shape; `ResetCommand` refuses a network
+- [x] **T051** Pest: admin and runtime agree on every install shape; `ResetCommand` refuses a network
       scope without the flag.
 
 ## Phase 7 — The eager-capture conversions and the two leaks

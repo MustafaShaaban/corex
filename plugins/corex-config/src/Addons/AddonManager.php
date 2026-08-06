@@ -10,6 +10,7 @@ namespace Corex\Config\Addons;
 
 defined('ABSPATH') || exit;
 
+use Corex\Multisite\PluginActivationInspector;
 use Corex\Support\Config\Truthy;
 
 /**
@@ -20,8 +21,10 @@ use Corex\Support\Config\Truthy;
  */
 final class AddonManager
 {
-    public function __construct(private readonly AddonRegistry $registry)
-    {
+    public function __construct(
+        private readonly AddonRegistry $registry,
+        private readonly PluginActivationInspector $pluginActivationInspector,
+    ) {
     }
 
     /**
@@ -88,14 +91,15 @@ final class AddonManager
      */
     public function state(): AddonState
     {
-        /** @var list<string> $active */
-        $active = (array) get_option('active_plugins', []);
-
         $activeSlugs  = [];
         $enabledFlags = [];
+        $scopes = [];
 
         foreach ($this->registry->all() as $addon) {
-            if (in_array($addon->pluginFile, $active, true)) {
+            $scope = $this->pluginActivationInspector->scopeOf($addon->pluginFile);
+            $scopes[$addon->slug] = $scope;
+
+            if ($scope->isActive()) {
                 $activeSlugs[] = $addon->slug;
             }
 
@@ -104,7 +108,7 @@ final class AddonManager
             }
         }
 
-        return new AddonState($activeSlugs, $enabledFlags);
+        return new AddonState($activeSlugs, $enabledFlags, $scopes);
     }
 
     /** Whether an add-on's plugin file is present on disk. */

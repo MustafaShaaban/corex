@@ -15,6 +15,7 @@ use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Container\ContainerInterface;
 use Corex\Forms\Catalog\FormCatalog;
 use Corex\Forms\Catalog\FormCatalogEntry;
+use Corex\Multisite\PluginActivationInspector;
 use Corex\Security\Admin\AdminGuard;
 use Throwable;
 
@@ -31,6 +32,7 @@ final class FormsFlowsScreen
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly ContainerInterface $container,
+        private readonly PluginActivationInspector $pluginActivationInspector,
     ) {
     }
 
@@ -144,9 +146,6 @@ final class FormsFlowsScreen
 
     private function formsActive(): bool
     {
-        $active  = array_map('strval', (array) get_option('active_plugins', []));
-        $network = array_keys((array) get_site_option('active_sitewide_plugins', []));
-
-        return in_array(self::FORMS_PLUGIN, [...$active, ...$network], true);
+        return $this->pluginActivationInspector->isActive(self::FORMS_PLUGIN);
     }
 }

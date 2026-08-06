@@ -18,6 +18,8 @@ use Corex\Config\Addons\AddonRegistry;
 use Corex\Config\Addons\AddonsScreen;
 use Corex\Config\Addons\PendingKits;
 use Corex\Config\Docs\DocsUrl;
+use Corex\Multisite\SingleSiteMultisiteContext;
+use Corex\Multisite\WpPluginActivationInspector;
 use Corex\Provisioning\KitProvisioner;
 use Corex\Security\Admin\AdminGuard;
 use Corex\Support\Config\ConfigInterface;
@@ -57,7 +59,7 @@ function addonsScreenWithDocsBase(string $base): AddonsScreen
 
     return new AddonsScreen(
         $registry,
-        new AddonManager($registry),
+        new AddonManager($registry, new WpPluginActivationInspector(new SingleSiteMultisiteContext())),
         $bare(AddonActivator::class),
         $bare(AdminGuard::class),
         Mockery::mock(KitProvisioner::class),
