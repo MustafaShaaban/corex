@@ -22,6 +22,27 @@ it('self-boots once on plugins_loaded with no fatals', function () {
         ->and(Boot::app()->isBooted())->toBeTrue();
 });
 
+/**
+ * The guard that spec 100 discovered was missing. `ProviderRepository::load()` catches every
+ * Throwable from a provider's register() and boot() and records it on the BootLogger
+ * (ProviderRepository.php:75, :89), so a provider that cannot be constructed at all degrades to a
+ * silently absent feature rather than a white screen — which is the right runtime behaviour and the
+ * wrong test behaviour. Nothing read those messages back, so a wiring break was invisible to a
+ * fully green suite: spec 100 added a tenth constructor argument to OverviewRenderer and left its
+ * explicit nine-argument factory in ConfigServiceProvider untouched, and 1809 passing tests had
+ * nothing to say about a dashboard that would not render.
+ *
+ * Assert on the messages, not just on the absence of a fatal.
+ */
+it('boots every provider without logging an error', function () {
+    $errors = array_values(array_filter(
+        Boot::app()->container()->make(BootLogger::class)->messages(),
+        static fn (array $message): bool => $message['level'] === 'error',
+    ));
+
+    expect($errors)->toBe([], 'Boot logged: ' . implode(' | ', array_column($errors, 'message')));
+});
+
 it('exposes a working container that resolves foundation services', function () {
     $container = Boot::app()->container();
 

@@ -154,6 +154,7 @@ use Corex\Jobs\JobDispatcher;
 use Corex\Jobs\JobHandlerRegistry;
 use Corex\Jobs\JobRepository;
 use Corex\Jobs\JobService;
+use Corex\Multisite\SiteScope;
 use Corex\Mail\SubmissionEmailGateway;
 use Corex\Mail\UnavailableSubmissionEmailGateway;
 
@@ -178,12 +179,20 @@ final class ConfigServiceProvider extends ServiceProvider
 
         $this->container->singleton(
             BrandingService::class,
-            static fn (ContainerInterface $c): BrandingService => new BrandingService(
-                $c->make(ConfigInterface::class),
-                // The approved Core X product lockup (see assets/brand/logo-manifest.json).
-                // A per-site `brand.logo_url` override still wins, so client identity is unaffected.
-                plugins_url('assets/brand/corex-lockup.svg', dirname(__DIR__) . '/corex-config.php'),
-            ),
+            static function (ContainerInterface $c): BrandingService {
+                $branding = new BrandingService(
+                    $c->make(ConfigInterface::class),
+                    // The approved Core X product lockup (see assets/brand/logo-manifest.json).
+                    // A per-site `brand.logo_url` override still wins, so client identity is unaffected.
+                    static fn (): string => plugins_url(
+                        'assets/brand/corex-lockup.svg',
+                        dirname(__DIR__) . '/corex-config.php',
+                    ),
+                );
+                $c->make(SiteScope::class)->register($branding);
+
+                return $branding;
+            },
         );
 
         $this->container->singleton(AdminBranding::class);
@@ -358,6 +367,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Config\Data\DataRegistry::class),
                 $c->make(\Corex\Config\Addons\AddonRegistry::class),
                 $c,
+                $c->make(\Corex\Multisite\PluginActivationInspector::class),
             ),
         );
 

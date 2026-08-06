@@ -11,6 +11,7 @@ declare(strict_types=1);
 use Corex\Database\QueryBuilder;
 use Corex\Database\QueryExecutor;
 use Corex\Repositories\Hydrator;
+use Corex\Tests\Fixtures\Data\FakeConfig;
 use Corex\Tests\Fixtures\Data\FakeFieldDriver;
 use Corex\Tests\Fixtures\Data\Job;
 
@@ -18,9 +19,12 @@ require_once __DIR__ . '/DataFixtures.php';
 
 function jobQuery(int $cap = 500): QueryBuilder
 {
-    $executor = new QueryExecutor(new Hydrator(new FakeFieldDriver()));
+    $executor = new QueryExecutor(
+        new Hydrator(new FakeFieldDriver()),
+        new FakeConfig(['query.max' => $cap]),
+    );
 
-    return new QueryBuilder(Job::class, $executor, $cap);
+    return new QueryBuilder(Job::class, $executor);
 }
 
 it('caps posts_per_page and never emits -1', function () {

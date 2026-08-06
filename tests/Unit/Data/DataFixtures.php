@@ -16,6 +16,25 @@ use Corex\Fields\FieldDriver;
 use Corex\Models\Model;
 use Corex\Repositories\Hydrator;
 use Corex\Repositories\PostRepository;
+use Corex\Support\Config\ConfigInterface;
+
+final class FakeConfig implements ConfigInterface
+{
+    /** @param array<string,mixed> $values */
+    public function __construct(private readonly array $values = [])
+    {
+    }
+
+    public function get(string $key, mixed $default = null): mixed
+    {
+        return $this->values[$key] ?? $default;
+    }
+
+    public function has(string $key): bool
+    {
+        return array_key_exists($key, $this->values);
+    }
+}
 
 /** In-memory field driver for repository tests (real collaborator, no WP). */
 final class FakeFieldDriver implements FieldDriver
@@ -40,7 +59,7 @@ final class JobRepository extends PostRepository
     {
         $hydrator = new Hydrator($fields);
 
-        return new self($fields, $hydrator, new QueryExecutor($hydrator));
+        return new self($fields, $hydrator, new QueryExecutor($hydrator, new FakeConfig()));
     }
 
     protected function model(): string

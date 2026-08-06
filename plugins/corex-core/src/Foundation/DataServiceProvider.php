@@ -64,7 +64,7 @@ final class DataServiceProvider extends ServiceProvider
             QueryExecutor::class,
             static fn (ContainerInterface $c): QueryExecutor => new QueryExecutor(
                 $c->make(Hydrator::class),
-                (int) $c->make(ConfigInterface::class)->get('query.max', 500),
+                $c->make(ConfigInterface::class),
             ),
         );
     }

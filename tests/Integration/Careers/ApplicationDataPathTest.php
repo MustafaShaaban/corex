@@ -26,6 +26,7 @@ use Corex\Mail\Mailer;
 use Corex\Security\Upload\AttachmentResult;
 use Corex\Security\Upload\AttachmentStorage;
 use Corex\Security\Upload\UploadValidator;
+use Corex\Support\Config\ConfigInterface;
 
 it('stores a valid application through the real custom table', function () {
     add_filter('pre_wp_mail', '__return_true');
@@ -49,7 +50,7 @@ it('stores a valid application through the real custom table', function () {
         new UploadValidator(['application/pdf' => ['pdf']], 5 * 1024 * 1024),
         $storage,
         $container->make(Mailer::class),
-        'hr@example.com',
+        $container->make(ConfigInterface::class),
     );
 
     $cv     = ['name' => 'cv.pdf', 'type' => 'application/pdf', 'size' => 100_000, 'error' => UPLOAD_ERR_OK];

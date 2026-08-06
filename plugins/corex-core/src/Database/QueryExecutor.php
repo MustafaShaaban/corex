@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Models\Model;
 use Corex\Repositories\Hydrator;
+use Corex\Support\Config\ConfigInterface;
 use WP_Query;
 
 /**
@@ -23,7 +24,7 @@ final class QueryExecutor
 {
     public function __construct(
         private readonly Hydrator $hydrator,
-        private readonly int $maxResults = 500,
+        private readonly ConfigInterface $config,
     ) {
     }
 
@@ -32,7 +33,7 @@ final class QueryExecutor
      */
     public function maxResults(): int
     {
-        return $this->maxResults;
+        return (int) $this->config->get('query.max', 500);
     }
 
     /**

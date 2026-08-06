@@ -129,22 +129,22 @@ register schema.
 
 ## Phase 7 — The eager-capture conversions and the two leaks
 
-- [ ] **T052** `DataServiceProvider.php:61` — inject `ConfigInterface` into `QueryExecutor`; read
+- [x] **T052** `DataServiceProvider.php:61` — inject `ConfigInterface` into `QueryExecutor`; read
       `query.max` where it is applied. (FR-016)
-- [ ] **T053** `AssetsServiceProvider.php:30-33` — `AssetManager` becomes `SiteScoped`, memoizing the
+- [x] **T053** `AssetsServiceProvider.php:30-33` — `AssetManager` becomes `SiteScoped`, memoizing the
       base URL and dropping it on switch; manifest and version stay file-derived.
-- [ ] **T054** `ConfigServiceProvider.php:181-185` — `BrandingService` becomes `SiteScoped`. This is
+- [x] **T054** `ConfigServiceProvider.php:181-185` — `BrandingService` becomes `SiteScoped`. This is
       the canonical documented example.
-- [ ] **T055** `CareersServiceProvider.php:62` — the HR email / `admin_email` is read at send time.
-- [ ] **T056** Regression test pinning `corex.middleware.throttle` as `bind()`, not `singleton()` —
+- [x] **T055** `CareersServiceProvider.php:62` — the HR email / `admin_email` is read at send time.
+- [x] **T056** Regression test pinning `corex.middleware.throttle` as `bind()`, not `singleton()` —
       it is correct today and a future "optimisation" would silently reintroduce the bug.
-- [ ] **T057** `WpNotificationPreferenceStore` — blog-prefixed meta key off the main site; the main
+- [x] **T057** `WpNotificationPreferenceStore` — blog-prefixed meta key off the main site; the main
       site keeps the unprefixed key, which is where the only correct existing rows are. (FR-044)
-- [ ] **T058** `JobRunner` + the Action Scheduler payload carry `siteId`; execution and the capability
+- [x] **T058** `JobRunner` + the Action Scheduler payload carry `siteId`; execution and the capability
       check run inside `SiteScope::run()`. (FR-045)
-- [ ] **T059** `CacheManager.php:162` — `wp_cache_flush()` gains a network-aware warning; correct the
+- [x] **T059** `CacheManager.php:162` — `wp_cache_flush()` gains a network-aware warning; correct the
       `CacheScope.php:30-32` docblock, which says "the site" and means the network.
-- [ ] **T060** Pest for each conversion: construct → switch → assert the value re-reads from the new
+- [x] **T060** Pest for each conversion: construct → switch → assert the value re-reads from the new
       site. (FR-019)
 
 ## Phase 8 — The multisite environment

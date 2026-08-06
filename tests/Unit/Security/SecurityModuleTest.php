@@ -20,7 +20,8 @@ use Corex\Security\SecurityModule;
 use Corex\Support\BootLogger;
 use Corex\Support\Config\ConfigInterface;
 
-it('registers the standard middleware aliases resolvable by name', function () {
+function securityModuleContainer(): Container
+{
     $container = new Container();
     $container->instance(ContainerInterface::class, $container);
     $container->instance(BootLogger::class, new BootLogger(debug: false));
@@ -37,10 +38,23 @@ it('registers the standard middleware aliases resolvable by name', function () {
     });
 
     (new SecurityModule($container))->register();
+
+    return $container;
+}
+
+it('registers the standard middleware aliases resolvable by name', function () {
+    $container = securityModuleContainer();
     $resolver = $container->make(MiddlewareResolver::class);
 
     expect($resolver->resolve('nonce'))->toBeInstanceOf(NonceMiddleware::class)
         ->and($resolver->resolve('auth:edit_posts'))->toBeInstanceOf(CapabilityMiddleware::class)
         ->and($resolver->resolve('throttle'))->toBeInstanceOf(ThrottleMiddleware::class)
         ->and($resolver->resolve('sanitize'))->toBeInstanceOf(SanitizeMiddleware::class);
+});
+
+it('binds the throttle middleware factory as transient rather than singleton', function () {
+    $container = securityModuleContainer();
+
+    expect($container->make('corex.middleware.throttle'))
+        ->not->toBe($container->make('corex.middleware.throttle'));
 });

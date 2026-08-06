@@ -19,6 +19,7 @@ use Corex\Mail\MailRequest;
 use Corex\Security\Upload\AttachmentResult;
 use Corex\Security\Upload\AttachmentStorage;
 use Corex\Security\Upload\UploadValidator;
+use Corex\Support\Config\ConfigInterface;
 
 final class ArrayApplicationStore implements ApplicationStore
 {
@@ -89,7 +90,17 @@ function applicationService(
         new UploadValidator(['application/pdf' => ['pdf']], 2 * 1024 * 1024),
         $attachments ?? new RecordingAttachmentStore(),
         $mailer,
-        'hr@example.com',
+        new class implements ConfigInterface {
+            public function get(string $key, mixed $default = null): mixed
+            {
+                return $key === 'careers.hr_email' ? 'hr@example.com' : $default;
+            }
+
+            public function has(string $key): bool
+            {
+                return $key === 'careers.hr_email';
+            }
+        },
     );
 }
 

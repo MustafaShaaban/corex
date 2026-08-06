@@ -16,6 +16,7 @@ use Corex\Jobs\JobDispatcher;
 use Corex\Jobs\JobFinishedEvent;
 use Corex\Jobs\JobHandlerRegistry;
 use Corex\Jobs\JobRepository;
+use Corex\Multisite\SiteScope;
 use DateTimeImmutable;
 use Throwable;
 
@@ -30,16 +31,27 @@ final class JobRunner
         private readonly JobRepository $jobs,
         private readonly JobHandlerRegistry $handlers,
         private readonly JobDispatcher $dispatcher,
+        private readonly SiteScope $siteScope,
         private readonly ?EventDispatcher $events = null,
     ) {
     }
 
     public function register(): void
     {
-        add_action(ActionSchedulerJobDispatcher::HOOK, [$this, 'run'], 10, 1);
+        add_action(ActionSchedulerJobDispatcher::HOOK, [$this, 'run'], 10, 2);
     }
 
-    public function run(int $jobId): void
+    public function run(int $jobId, ?int $siteId = null): void
+    {
+        $this->siteScope->run(
+            $siteId ?? $this->siteScope->currentSiteId(),
+            function () use ($jobId): void {
+                $this->execute($jobId);
+            },
+        );
+    }
+
+    private function execute(int $jobId): void
     {
         $job = $this->jobs->find($jobId);
 

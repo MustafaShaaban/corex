@@ -49,7 +49,7 @@ abstract class PostRepository implements RepositoryInterface
 
     public function query(): QueryBuilder
     {
-        return new QueryBuilder($this->model(), $this->executor, $this->executor->maxResults());
+        return new QueryBuilder($this->model(), $this->executor);
     }
 
     public function find(int $id): ?Model

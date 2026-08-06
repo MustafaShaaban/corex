@@ -14,6 +14,7 @@ use Corex\Mail\Mailer;
 use Corex\Mail\MailRequest;
 use Corex\Security\Upload\AttachmentStorage;
 use Corex\Security\Upload\UploadValidator;
+use Corex\Support\Config\ConfigInterface;
 
 /**
  * Orchestrates an application: validate the required fields, validate the CV via the
@@ -28,7 +29,7 @@ final class ApplicationService
         private readonly UploadValidator $uploads,
         private readonly AttachmentStorage $attachments,
         private readonly Mailer $mailer,
-        private readonly string $hrEmail,
+        private readonly ConfigInterface $config,
     ) {
     }
 
@@ -74,7 +75,7 @@ final class ApplicationService
         ]);
 
         $this->mailer->send(new MailRequest(
-            to: [$this->hrEmail],
+            to: [$this->hrEmail()],
             templateName: 'careers-new-application',
             context: ['name' => $name, 'job_id' => (string) $jobId],
         ));
@@ -86,5 +87,10 @@ final class ApplicationService
         ));
 
         return ApplicationResult::stored($id);
+    }
+
+    private function hrEmail(): string
+    {
+        return (string) ($this->config->get('careers.hr_email') ?: get_option('admin_email'));
     }
 }

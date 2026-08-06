@@ -59,7 +59,6 @@ final class CareersServiceProvider extends ServiceProvider
             ApplicationService::class,
             static function (ContainerInterface $c): ApplicationService {
                 $config  = $c->make(ConfigInterface::class);
-                $hrEmail = (string) ($config->get('careers.hr_email') ?: get_option('admin_email'));
                 $validator = new UploadValidator(self::CV_TYPES, 5 * 1024 * 1024);
 
                 return new ApplicationService(
@@ -67,7 +66,7 @@ final class CareersServiceProvider extends ServiceProvider
                     $validator,
                     new AttachmentStore($validator),
                     $c->make(Mailer::class),
-                    $hrEmail,
+                    $config,
                 );
             },
         );

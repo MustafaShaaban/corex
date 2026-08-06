@@ -12,12 +12,17 @@ defined('ABSPATH') || exit;
 
 use Corex\Jobs\BoundedJob;
 use Corex\Jobs\JobDispatcher;
+use Corex\Multisite\SiteScope;
 use RuntimeException;
 
 final class ActionSchedulerJobDispatcher implements JobDispatcher
 {
     public const HOOK  = 'corex_run_bounded_job';
     public const GROUP = 'corex-jobs';
+
+    public function __construct(private readonly SiteScope $siteScope)
+    {
+    }
 
     public function available(): bool
     {
@@ -30,13 +35,17 @@ final class ActionSchedulerJobDispatcher implements JobDispatcher
             throw new RuntimeException('Action Scheduler is unavailable.');
         }
 
-        as_enqueue_async_action(self::HOOK, [$job->id], self::GROUP);
+        as_enqueue_async_action(self::HOOK, [$job->id, $this->siteScope->currentSiteId()], self::GROUP);
     }
 
     public function cancel(int $jobId): void
     {
         if ($this->available()) {
-            as_unschedule_all_actions(self::HOOK, [$jobId], self::GROUP);
+            as_unschedule_all_actions(
+                self::HOOK,
+                [$jobId, $this->siteScope->currentSiteId()],
+                self::GROUP,
+            );
         }
     }
 }
