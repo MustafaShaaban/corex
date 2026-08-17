@@ -10,7 +10,7 @@
     },
     "dependencies": {
         "@wordpress/components": "^38.0.0",
-        "@wordpress/element": "^8.3.0",
+        "@wordpress/element": "^8.5.0",
         "@wordpress/i18n": "^6.25.0"
     }
 }
