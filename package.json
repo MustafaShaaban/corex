@@ -37,7 +37,7 @@
     },
     "overrides": {
         "brace-expansion": "^5.0.9",
-        "fast-uri": "^3.1.5",
+        "fast-uri": "^3.1.7",
         "serialize-javascript": "^7.0.7",
         "uuid": "^14.0.1",
         "webpack-dev-server": "^6.0.0",
