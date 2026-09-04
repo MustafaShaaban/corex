@@ -40,9 +40,17 @@ async function signInAs( browser, baseURL, user, password ) {
 	} );
 	const page = await context.newPage();
 
+	// Every step below is allowed to fail so the next login path can be tried, which means a
+	// real failure arrives here as a bare `false`. It did: one CI run reported only "signed in
+	// as corex-guides-editor" and left no way to tell a lockout from a slow response from a
+	// login screen that never rendered. So each attempt records what actually happened.
+	const attempts = [];
 	let signedIn = false;
 	for ( const path of LOGIN_PATHS ) {
-		await page.goto( path ).catch( () => {} );
+		const response = await page.goto( path ).catch( ( error ) => {
+			attempts.push( `${ path }: navigation threw — ${ error.message }` );
+			return null;
+		} );
 
 		if (
 			! ( await page
@@ -50,6 +58,11 @@ async function signInAs( browser, baseURL, user, password ) {
 				.isVisible()
 				.catch( () => false ) )
 		) {
+			attempts.push(
+				`${ path }: no #user_login (status ${
+					response ? response.status() : 'none'
+				}, landed on ${ page.url() })`
+			);
 			continue;
 		}
 
@@ -64,9 +77,27 @@ async function signInAs( browser, baseURL, user, password ) {
 		if ( signedIn ) {
 			break;
 		}
+
+		// CoreX login protection answers a locked-out account on the login screen itself, so
+		// the reason for the refusal is on the page we are still looking at. Without it the
+		// message cannot distinguish "wrong password" from "too many attempts from this IP",
+		// and those have opposite fixes.
+		const refusal = await page
+			.locator( '#login_error, .notice-error, .corex-login__error' )
+			.first()
+			.innerText()
+			.catch( () => '' );
+		attempts.push(
+			`${ path }: submitted and stayed on ${ page.url() }${
+				refusal ? ` — ${ refusal.trim().replace( /\s+/g, ' ' ) }` : ''
+			}`
+		);
 	}
 
-	expect( signedIn, `signed in as ${ user }` ).toBe( true );
+	expect(
+		signedIn,
+		`signed in as ${ user }` + '\n  ' + attempts.join( '\n  ' )
+	).toBe( true );
 
 	return page;
 }

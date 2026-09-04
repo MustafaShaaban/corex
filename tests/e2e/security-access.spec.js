@@ -234,6 +234,51 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 
 	const CONTROL = '/corex-definitely-not-a-page/';
 
+	// A size assertion that fails with two numbers says nothing about which asset moved, and
+	// this one is measuring WordPress as much as it measures Corex — the gap widened on its own
+	// when core went 7.0.4 -> 7.1, with no commit here in between. So the message names the
+	// blocks that differ. Ids come from the wrappers core prints: <style id="x-inline-css">
+	// and <link id="x-css">.
+	const assetProfile = ( html ) => {
+		const sizes = new Map();
+		const inline = /<style id="([^"]+)"[^>]*>([\s\S]*?)<\/style>/g;
+		for ( const [ , id, body ] of html.matchAll( inline ) ) {
+			sizes.set( `style:${ id }`, body.length );
+		}
+		const link = /<link[^>]+id="([^"]+)"[^>]*>/g;
+		for ( const [ whole, id ] of html.matchAll( link ) ) {
+			sizes.set( `link:${ id }`, whole.length );
+		}
+		return sizes;
+	};
+
+	const divergenceReport = ( admin, control ) => {
+		const a = assetProfile( admin );
+		const c = assetProfile( control );
+		const rows = [];
+		for ( const key of new Set( [ ...a.keys(), ...c.keys() ] ) ) {
+			const delta = ( a.get( key ) ?? 0 ) - ( c.get( key ) ?? 0 );
+			if ( delta !== 0 ) {
+				rows.push( [ key, delta ] );
+			}
+		}
+		rows.sort( ( x, y ) => Math.abs( y[ 1 ] ) - Math.abs( x[ 1 ] ) );
+		const accounted = rows.reduce( ( sum, [ , d ] ) => sum + d, 0 );
+		const lines = rows
+			.slice( 0, 12 )
+			.map(
+				( [ key, delta ] ) =>
+					`  ${ delta > 0 ? '+' : '' }${ delta }B ${ key }`
+			);
+		return (
+			`\n  ${ accounted }B of the ${
+				admin.length - control.length
+			}B gap is` +
+			` identified markup; the rest is untagged.\n` +
+			lines.join( '\n' )
+		);
+	};
+
 	test( 'the default login and admin endpoints 404 without leaking a diagnostic', async ( {
 		request,
 	} ) => {
@@ -322,7 +367,8 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 			Math.abs( admin.length - control.length ) / control.length;
 		expect(
 			ratio,
-			`hidden admin ${ admin.length }B vs control ${ control.length }B`
+			`hidden admin ${ admin.length }B vs control ${ control.length }B` +
+				divergenceReport( admin, control )
 		).toBeLessThan( 0.05 );
 	} );
 } );
