@@ -4361,3 +4361,36 @@ about the *past*, not about the code.
 
 The general rule: **when a task's premise expires because earlier work removed it, record the expiry.** Do not
 retrofit the world so the checklist stays literally true.
+
+## #224 — The dependency gate runs on every pull request, and is a required check
+
+Date: 2026-09-04 · Spec: — (v0.42.0 stabilisation) · Status: Final
+
+`dependency-security.yml` was filtered to `paths:` — the manifests, the lockfiles, the policy file
+and its two scripts. That reads as an obvious economy: only a change to a manifest can change what
+is installed.
+
+It is wrong for this particular check, and the reason is what an advisory *is*. A dependency
+vulnerability is published by somebody else, at a time nobody here chooses, against a dependency
+tree that did not move. Between v0.41.0 and 2026-09-04 four were published; the gate reported FAIL
+on `main`; nothing ran it. `PROJECT-STATUS.md` went on saying "Dependency advisories — none open"
+for a month, and the failure was finally read off an unrelated Dependabot pull request. **The filter
+meant the gate was consulted only by the pull requests least likely to be looking for it.**
+
+The filter also made the check impossible to require. A required status check that never reports
+leaves a pull request pending indefinitely, so requiring a path-filtered workflow would have hung
+every docs-only change. That is why eight dependency pull requests sat at `MERGEABLE/UNSTABLE` with
+a red gate and could have been merged anyway.
+
+**Decision: remove the `paths:` filter, and add "Validate dependency advisories" to the required
+checks on `main`.** It costs about four minutes per pull request. The weekly schedule stays — a week
+with no pull requests is exactly the week an advisory lands unnoticed.
+
+"Integration tests (real WordPress Multisite)" is added to the required set at the same time. Spec
+100 makes Multisite a supported configuration rather than a claim in the README, and a supported
+configuration whose suite is allowed to fail is back to being a claim.
+
+This is the third gate in this repository found not to be gating: the workflow that never ran
+(spec 099), the stacked-PR CI gap that rendered "no checks" identically to "all checks passed"
+(DECISIONS #153), and now a check nothing required. The pattern worth naming: **a gate is not the
+script, it is the script plus the thing that makes failing it matter.**
