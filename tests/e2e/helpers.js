@@ -269,8 +269,33 @@ async function signInAs( browser, baseURL, user, password ) {
 	const attempts = [];
 	let signedIn = false;
 
+	// Bounded by the clock, not only by the pass count, and stopped dead when the browser is.
+	//
+	// The first version of this retried three times with a 15s navigation wait each — up to 45s of
+	// waiting inside a 60s test budget, before any page load. On the first CI run that hit a genuine
+	// sign-in failure the test timed out, Playwright tore the context down mid-loop, and the
+	// remaining attempts each reported "Target page, context or browser has been closed": twelve
+	// useless attempts against a dead browser, and a retry that made the timeout it was supposed to
+	// survive more likely.
+	const deadline = Date.now() + 30_000;
+
 	for ( let pass = 1; pass <= 3 && ! signedIn; pass++ ) {
+		if ( page.isClosed() || Date.now() > deadline ) {
+			attempts.push(
+				page.isClosed()
+					? `pass ${ pass }: abandoned — the browser context was closed`
+					: `pass ${ pass }: abandoned — 30s sign-in budget spent`
+			);
+			break;
+		}
+
 		for ( const path of LOGIN_PATHS ) {
+			// The context can die between candidates, not only between passes — a test timeout
+			// tears it down wherever the loop happens to be.
+			if ( page.isClosed() ) {
+				break;
+			}
+
 			const response = await page.goto( path ).catch( ( error ) => {
 				attempts.push(
 					`pass ${ pass } ${ path }: navigation threw — ${ error.message }`
@@ -297,9 +322,11 @@ async function signInAs( browser, baseURL, user, password ) {
 
 			// Bounded: an unbounded wait inside a loop whose purpose is to *try* an address spends
 			// the whole test budget on the first one that half-answers.
+			// 8s, not 15s. Three passes have to fit inside the 60s test budget alongside the page
+			// loads, and a login that has not navigated in eight seconds is not going to.
 			await Promise.all( [
-				page.waitForNavigation( { timeout: 15000 } ).catch( () => {} ),
-				page.click( '#wp-submit' ),
+				page.waitForNavigation( { timeout: 8000 } ).catch( () => {} ),
+				page.click( '#wp-submit' ).catch( () => {} ),
 			] );
 			signedIn = ! page.url().includes( 'wp-login.php' );
 
