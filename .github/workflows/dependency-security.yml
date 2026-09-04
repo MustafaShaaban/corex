@@ -1,20 +1,22 @@
 name: Dependency Security
 
 on:
-  # Unfiltered by base for the same reason as ci.yml; the paths filter below still keeps this to
-  # PRs that actually touch a manifest or the policy.
+  # Every pull request, and deliberately no `paths:` filter.
+  #
+  # It had one, listing the manifests and the policy file, which reads as an obvious economy: only
+  # a change to a manifest can change what is installed. But an advisory is published by somebody
+  # else, at a time nobody here chooses, against a dependency tree that did not move. Between
+  # v0.41.0 and 2026-09-04 four were published, the gate reported FAIL on `main`, and nothing ran
+  # it — because the filter meant it was consulted only by the pull requests least likely to be
+  # looking for it. PROJECT-STATUS.md went on saying "none open" the whole time.
+  #
+  # The filter also made this check impossible to *require*: a required check that never reports
+  # leaves a pull request pending forever, so a docs-only change would have hung. Running it on
+  # every pull request is what makes the branch protection honest. It costs about four minutes.
+  #
+  # The weekly schedule stays, because a week with no pull requests is exactly the week an
+  # advisory lands unnoticed.
   pull_request:
-    paths:
-      - package.json
-      - package-lock.json
-      - composer.json
-      - composer.lock
-      - docs-app/package.json
-      - docs-app/package-lock.json
-      - .github/dependency-security-policy.json
-      - .github/workflows/dependency-security.yml
-      - scripts/dependency-security-policy.mjs
-      - scripts/verify-dependency-security.mjs
   schedule:
     - cron: '17 4 * * 3'
   workflow_dispatch:

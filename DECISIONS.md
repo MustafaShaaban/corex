@@ -4361,3 +4361,51 @@ about the *past*, not about the code.
 
 The general rule: **when a task's premise expires because earlier work removed it, record the expiry.** Do not
 retrofit the world so the checklist stays literally true.
+
+## #224 — The dependency gate runs on every pull request, and is a required check
+
+Date: 2026-09-04 · Spec: — (v0.42.0 stabilisation) · Status: Final
+
+`dependency-security.yml` was filtered to `paths:` — the manifests, the lockfiles, the policy file
+and its two scripts. That reads as an obvious economy: only a change to a manifest can change what
+is installed.
+
+It is wrong for this particular check, and the reason is what an advisory *is*. A dependency
+vulnerability is published by somebody else, at a time nobody here chooses, against a dependency
+tree that did not move. Between v0.41.0 and 2026-09-04 four were published; the gate reported FAIL
+on `main`; nothing ran it. `PROJECT-STATUS.md` went on saying "Dependency advisories — none open"
+for a month, and the failure was finally read off an unrelated Dependabot pull request. **The filter
+meant the gate was consulted only by the pull requests least likely to be looking for it.**
+
+The filter also made the check impossible to require. A required status check that never reports
+leaves a pull request pending indefinitely, so requiring a path-filtered workflow would have hung
+every docs-only change. That is why eight dependency pull requests sat at `MERGEABLE/UNSTABLE` with
+a red gate and could have been merged anyway.
+
+**Decision: remove the `paths:` filter.** It costs about four minutes per pull request. The weekly
+schedule stays — a week with no pull requests is exactly the week an advisory lands unnoticed.
+
+**Requiring it is deferred, and the evidence changed the plan.** On 2026-09-04 `npm audit` returned
+unparseable output on three separate runs — npm-root on #196, npm-root again on #198 — each after an
+8-10 minute hang, with the same endpoint returning `503 Service Unavailable` locally that morning.
+All were `UNAVAILABLE`, not findings, and each cleared on a re-run.
+
+A fourth failure that day looked identical and was **not** transient: npm-docs failed three times in
+a row on the release branch and nowhere else, because `wp corex version` does not stamp
+`docs-app/package-lock.json` and its stale `file:..` link to the root package made npm hang. That is
+the distinction worth keeping — **an outage hits whatever runs next; a bug hits the same target every
+time.** Two re-runs were spent before anyone checked which pattern it was. Failing closed on that is correct and stays. But a *required* check
+that a third-party outage can fail blocks every merge in the repository until a human re-runs it,
+which trades one silent failure mode for a loud one. The gate gets a bounded retry around each audit
+invocation first — retrying only an unparseable or failed request, never a successful audit that
+reports findings — and becomes required once it can survive a registry hiccup.
+
+"Integration tests (real WordPress Multisite)" is added to the required set when the advisory gate
+is, since it needs no third-party service and has passed on every run. Spec 100 makes Multisite a
+supported configuration rather than a claim in the README, and a supported configuration whose suite
+is allowed to fail is back to being a claim.
+
+This is the third gate in this repository found not to be gating: the workflow that never ran
+(spec 099), the stacked-PR CI gap that rendered "no checks" identically to "all checks passed"
+(DECISIONS #153), and now a check nothing required. The pattern worth naming: **a gate is not the
+script, it is the script plus the thing that makes failing it matter.**
