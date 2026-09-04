@@ -32,6 +32,7 @@ auth.json
 # Corex is the framework SOURCE (theme/ + plugins/*). A running WordPress install
 # (./wp) and any site runtime artifacts are NOT part of the framework and are not committed.
 /wp/
+/wp-ms/
 wp-config.php
 wp-cli.local.yml
 /wp-cli.phar

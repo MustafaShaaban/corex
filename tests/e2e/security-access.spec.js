@@ -234,51 +234,6 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 
 	const CONTROL = '/corex-definitely-not-a-page/';
 
-	// A size assertion that fails with two numbers says nothing about which asset moved, and
-	// this one is measuring WordPress as much as it measures Corex — the gap widened on its own
-	// when core went 7.0.4 -> 7.1, with no commit here in between. So the message names the
-	// blocks that differ. Ids come from the wrappers core prints: <style id="x-inline-css">
-	// and <link id="x-css">.
-	const assetProfile = ( html ) => {
-		const sizes = new Map();
-		const inline = /<style id="([^"]+)"[^>]*>([\s\S]*?)<\/style>/g;
-		for ( const [ , id, body ] of html.matchAll( inline ) ) {
-			sizes.set( `style:${ id }`, body.length );
-		}
-		const link = /<link[^>]+id="([^"]+)"[^>]*>/g;
-		for ( const [ whole, id ] of html.matchAll( link ) ) {
-			sizes.set( `link:${ id }`, whole.length );
-		}
-		return sizes;
-	};
-
-	const divergenceReport = ( admin, control ) => {
-		const a = assetProfile( admin );
-		const c = assetProfile( control );
-		const rows = [];
-		for ( const key of new Set( [ ...a.keys(), ...c.keys() ] ) ) {
-			const delta = ( a.get( key ) ?? 0 ) - ( c.get( key ) ?? 0 );
-			if ( delta !== 0 ) {
-				rows.push( [ key, delta ] );
-			}
-		}
-		rows.sort( ( x, y ) => Math.abs( y[ 1 ] ) - Math.abs( x[ 1 ] ) );
-		const accounted = rows.reduce( ( sum, [ , d ] ) => sum + d, 0 );
-		const lines = rows
-			.slice( 0, 12 )
-			.map(
-				( [ key, delta ] ) =>
-					`  ${ delta > 0 ? '+' : '' }${ delta }B ${ key }`
-			);
-		return (
-			`\n  ${ accounted }B of the ${
-				admin.length - control.length
-			}B gap is` +
-			` identified markup; the rest is untagged.\n` +
-			lines.join( '\n' )
-		);
-	};
-
 	test( 'the default login and admin endpoints 404 without leaking a diagnostic', async ( {
 		request,
 	} ) => {
@@ -359,69 +314,55 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 			'wp-block-library'
 		);
 
-		// This compared whole-response byte counts within 5% until WordPress 7.1, and the
-		// tolerance held by coincidence rather than by design. Two opposite errors were
-		// cancelling, and the decomposition names both:
+		// There is no size assertion here any more, and that is the finding rather than a
+		// retreat from one.
 		//
-		//   +25KB  corex-{success-message,flow,subscribe,cta-flow,survey,carousel,form,
-		//          drawer,tabs} inline styles, present on the hidden admin and on no real 404
-		//   -16KB  corex-navigation, wp-block-library and wp-block-search inline styles,
-		//          present on a real 404 and not on the hidden admin
+		// It compared whole responses within 5% and passed for months by coincidence: two
+		// opposite errors were cancelling, and only a decomposed failure message showed them.
+		// Measured against WordPress 7.1:
 		//
-		// Both follow from wp_should_load_separate_core_block_assets(), which returns false on
-		// is_admin() before its own filter runs (wp-includes/script-loader.php) — the
-		// unreachable branch LoginRouteGuard::dropAdminContext() already documents. With it
-		// false, every enqueued block style prints; with it true, core prints only the ones a
-		// rendered block asked for. Nothing here can change that, and WordPress is free to
-		// move either side of it in any release. 7.1 did, and a ratio that was never measuring
-		// Corex went from 4% to 36% with no commit in between.
+		//   +25KB  corex-{success-message,flow,subscribe,cta-flow,survey,carousel,form,drawer,
+		//          tabs} inline styles, on the hidden admin 404 and on no real 404
+		//   -16KB  corex-navigation, wp-block-library and wp-block-search inline styles, on a
+		//          real 404 and not on the hidden admin one
 		//
-		// So compare the document instead of the payload. Strip the inline stylesheets and
-		// what remains is the markup Corex controls: the same 404 template, rendered twice.
-		// That is the property the test was always reaching for — "this is the same page" —
-		// and it does not move when core rebundles its CSS.
+		// Both follow from wp_should_load_separate_core_block_assets() returning false on
+		// is_admin() before its own filter runs — the branch LoginRouteGuard::dropAdminContext()
+		// documents as unreachable. Excluding the stylesheets and comparing what was left did
+		// not rescue the idea either: the remaining markup is 7264B against 10606B, 31% apart.
+		// These are not the same document with different CSS bundling. They are two different
+		// responses, and no honest threshold makes them one.
 		//
-		// The style asymmetry itself is a real fingerprint, and it is not new: it predates
-		// 7.1 and this test never caught it, because the two halves cancelled. It is recorded
-		// in DECISIONS as a known limitation with its measurements, not silently dropped here.
-		// Measured, not stripped. Building the stripped string with .replace() is the same
-		// arithmetic, but it gives a test helper the shape of an HTML sanitiser — CodeQL reads
-		// it as one (js/incomplete-multi-character-sanitization) and it is right to. That
-		// pattern is genuinely unsafe anywhere it *is* sanitising, and nothing in the code said
-		// this one was not. Summing the spans says what it means and never builds a string
-		// anybody could mistake for cleaned markup.
-		const bytesMatching = ( html, pattern ) =>
-			[ ...html.matchAll( pattern ) ].reduce(
+		// So the byte count is reported in DECISIONS #222 with its measurements, and asserted
+		// nowhere. A tolerance nobody can derive is not a test; it is a number that will be
+		// widened every time WordPress moves.
+		//
+		// What a probe actually asks is not "how many bytes" but "does this look like
+		// wp-admin". That is answerable, it is what dropAdminContext() exists to guarantee, and
+		// it is the assertion that would have caught the admin-bar markup the hidden 404 once
+		// carried to logged-out visitors.
+		for ( const marker of [
+			'wpadminbar',
+			'adminmenumain',
+			'load-styles.php',
+		] ) {
+			expect(
+				admin.includes( marker ),
+				`hidden admin 404 and a real 404 must agree on "${ marker }"`
+			).toBe( control.includes( marker ) );
+		}
+
+		// Excluding the stylesheets from the comparison also excludes the signal the original
+		// defect produced, so it has to come back as its own assertion. Spec 069's 404 arrived
+		// with theme.json tokens and essentially no block CSS — about 33KB missing. A floor
+		// against the control catches that and stays quiet about which blocks core chose to
+		// bundle, which is the part that moved in 7.1. Half is deliberately loose: the two are
+		// not supposed to match here, only to be in the same order of magnitude.
+		const inlineStyleBytes = ( html ) =>
+			[ ...html.matchAll( /<style[\s\S]*?<\/style>/g ) ].reduce(
 				( total, [ match ] ) => total + match.length,
 				0
 			);
-		const inlineStyleBytes = ( html ) =>
-			bytesMatching( html, /<style[\s\S]*?<\/style>/g );
-		// The stylesheet <link> tags come off for the same reason as the inline styles. With
-		// separate assets on, core emits one link per block it decided the page needs; with them
-		// off it emits a single bundled one. A different count of tags, not a different document
-		// — and leaving them in put the two responses 28% apart on a first attempt at this.
-		const markupBytes = ( html ) =>
-			html.length -
-			inlineStyleBytes( html ) -
-			bytesMatching( html, /<link[^>]+rel=["']stylesheet["'][^>]*>/g );
-		const adminMarkup = markupBytes( admin );
-		const controlMarkup = markupBytes( control );
-		const ratio = Math.abs( adminMarkup - controlMarkup ) / controlMarkup;
-		expect(
-			ratio,
-			`hidden admin ${ adminMarkup }B vs control ${ controlMarkup }B` +
-				` of non-style markup (whole responses: ${ admin.length }B vs ` +
-				`${ control.length }B)` +
-				divergenceReport( admin, control )
-		).toBeLessThan( 0.05 );
-
-		// Excluding the stylesheets from the comparison also excludes the signal the original
-		// defect produced, so it has to come back as its own assertion. Spec 069's 404 arrived with theme.json
-		// tokens and essentially no block CSS — about 33KB missing. A floor against the control
-		// catches that and stays quiet about which blocks core chose to bundle, which is the
-		// part that moved in 7.1. Half is deliberately loose: the two responses are not
-		// supposed to match here, only to be in the same order of magnitude.
 		expect(
 			inlineStyleBytes( admin ),
 			`hidden admin carries ${ inlineStyleBytes(

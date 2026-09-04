@@ -4314,9 +4314,23 @@ Both follow from `wp_should_load_separate_core_block_assets()`, which returns fa
 unreachable. With it false every enqueued block style prints; with it true core prints only what a
 rendered block asked for. CoreX cannot reach either side of that.
 
-**Decision: the test compares the two responses with inline stylesheets stripped**, which is the
-markup CoreX actually controls — the same 404 template rendered twice — and does not move when core
-rebundles its CSS. The whole-response byte counts are still reported in the failure message.
+**Decision: there is no size assertion any more.**
+
+That was not the first answer. The first was to compare the responses with the stylesheets excluded,
+on the theory that what remained was one 404 template rendered twice. The measurement refused it:
+7264B against 10606B, still 31% apart. These are not the same document with different CSS bundling,
+and no threshold anybody can derive makes them one. A tolerance that cannot be derived is not a test
+— it is a number that gets widened every time WordPress moves, which is exactly the history this
+entry is about.
+
+So the byte counts live here, with their measurements, and are asserted nowhere.
+
+What replaces it asks the question a probe actually asks — not "how many bytes" but "does this look
+like wp-admin". The hidden 404 and a real one must agree on `wpadminbar`, `adminmenumain` and
+`load-styles.php`. That is answerable, it is what `dropAdminContext()` exists to guarantee, and it
+would have caught the admin-bar markup the hidden 404 once served to logged-out visitors. The
+"is it styled at all" half — the defect spec 069 actually found — is kept as its own floor against
+the control's inline-style volume.
 
 **The fingerprint is real and it is not closed by this.** A probe that fetches both URLs and looks
 for `corex-survey-style-inline-css` can still tell them apart. It predates 7.1, and the old
