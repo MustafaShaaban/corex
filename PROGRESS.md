@@ -22,8 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.41.0** — tag `v0.41.0`, published at
-  <https://github.com/MustafaShaaban/corex/releases/tag/v0.41.0>. `main` is ahead of it.
+- **Latest published release: v0.42.0** — tag `v0.42.0`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -40,29 +39,30 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Spec 100 — multisite runtime foundation.** Branch `spec/100-multisite-runtime-foundation`, 78 of 80
-tasks done. The runtime, config, schema, activation and site-scope work is complete and its suite
-passes against a real three-site network (`composer test:multisite`, 6 specs, 66 assertions). What
-remains is T078 (guard gate) and T080 (the PR into `main`). T072 is recorded as not achievable —
-see DECISIONS #223.
+Nothing. No open feature spec, and no release in preparation.
 
-The headline defect it fixes: **network-activating a CoreX add-on silently disabled it on every site
-in the network**, with no notice and the Network Plugins screen still reporting it active.
+One dependency pull request stays open on purpose: **#186, `@wordpress/components` 38 → 40.** npm
+resolves 38.0.0 against a `^39.0.0` requirement and reports success, producing a lockfile that
+contradicts itself — so it was not bundled into the dependency pass. It is a major in a library more
+than twenty admin modules import, which per DECISIONS #220 needs render-time verification in a real
+browser. The PR carries what was tried.
 
-## Recently landed
+## Recently landed (v0.42.0)
 
-- **#193** — `main` green again under WordPress 7.1. Two browser specs, one of which was a real
-  cross-file race: `security-access.spec.js` toggles login protection for the whole site while other
-  spec files run on other workers, and the shared sign-in helper looked for the login endpoint only
-  once. The hidden-admin size assertion was removed rather than re-thresholded (DECISIONS #222).
-- **#194** — dependency advisories cleared across all three ecosystems. `verify:dependencies` passes
-  with one bounded exception (`extract-zip`, whose advisory range is `*`, reached only through a
-  chain nothing here calls).
+- **Spec 100 — multisite.** `README.md` advertised it; there were three runtime references to it in
+  the whole framework, one of which rendered the word "Yes". The headline defect: network-activating
+  a CoreX add-on **silently disabled it on every site in the network**, with the Network Plugins
+  screen still reporting it active. `integration-multisite` now runs in CI against a real three-site
+  network.
+- **`main` green under WordPress 7.1** (#193) and a nightly run so core drift is found by a nightly
+  rather than by a dependency PR three weeks later.
+- **Dependency advisories cleared** (#194, #196) — the gate passes with one bounded exception.
 
 ## Next
 
-Land spec 100, then clear the remaining Dependabot pull requests, then cut a release. After that the
-next *feature* spec is an owner decision; [`ROADMAP.md`](ROADMAP.md) §17 lists the candidates.
+The next *feature* spec is an owner decision; [`ROADMAP.md`](ROADMAP.md) §17 lists the candidates in
+order. **M3 (navigation and template parts) and M4 (the company-page contract)** are the substantive
+product direction — everything else on that list is remediation or productization.
 
 Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 
