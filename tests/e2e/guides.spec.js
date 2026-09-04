@@ -7,6 +7,7 @@
  * feature is spared instructions for it.
  */
 const { test, expect } = require( '@playwright/test' );
+const { signInAs } = require( './helpers' );
 
 // This file's *own* editor, not the one admin-errors.spec.js uses (spec 095). CoreX locks an
 // account out after repeated logins from one address — correctly — and two spec files sharing one
@@ -15,61 +16,7 @@ const { test, expect } = require( '@playwright/test' );
 const EDITOR = process.env.COREX_GUIDES_EDITOR_USER || 'corex-guides-editor';
 const EDITOR_PASS = process.env.COREX_EDITOR_PASS || 'CorexE2E!editor1';
 
-/** Where a login form might be, in the order global-setup.js tries them (spec 069). */
-const LOGIN_PATHS = [
-	process.env.COREX_LOGIN_PATH,
-	'/wp-login.php',
-	'/corex-login/',
-].filter( Boolean );
-
 const GUIDES = '/wp-admin/admin.php?page=corex-guides';
-
-/**
- * Sign in as a named user, in a context of its own so the shared administrator session survives.
- *
- * @param {import('@playwright/test').Browser} browser  The Playwright browser.
- * @param {string}                             baseURL  Where the site is served.
- * @param {string}                             user     The login name.
- * @param {string}                             password The password.
- * @return {Promise<import('@playwright/test').Page>} The signed-in page.
- */
-async function signInAs( browser, baseURL, user, password ) {
-	const context = await browser.newContext( {
-		storageState: undefined,
-		baseURL,
-	} );
-	const page = await context.newPage();
-
-	let signedIn = false;
-	for ( const path of LOGIN_PATHS ) {
-		await page.goto( path ).catch( () => {} );
-
-		if (
-			! ( await page
-				.locator( '#user_login' )
-				.isVisible()
-				.catch( () => false ) )
-		) {
-			continue;
-		}
-
-		await page.fill( '#user_login', user );
-		await page.fill( '#user_pass', password );
-		await Promise.all( [
-			page.waitForNavigation( { timeout: 15000 } ).catch( () => {} ),
-			page.click( '#wp-submit' ),
-		] );
-		signedIn = ! page.url().includes( 'wp-login.php' );
-
-		if ( signedIn ) {
-			break;
-		}
-	}
-
-	expect( signedIn, `signed in as ${ user }` ).toBe( true );
-
-	return page;
-}
 
 test.describe( 'Guides', () => {
 	test( 'lists the shipped guides, grouped, with their steps', async ( {
