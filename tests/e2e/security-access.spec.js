@@ -384,38 +384,44 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 		// The style asymmetry itself is a real fingerprint, and it is not new: it predates
 		// 7.1 and this test never caught it, because the two halves cancelled. It is recorded
 		// in DECISIONS as a known limitation with its measurements, not silently dropped here.
-		const withoutInlineStyles = ( html ) =>
-			html.replace( /<style[\s\S]*?<\/style>/g, '' );
-		// The <link> tags go too, and for the same reason. With separate assets on, core emits
-		// one stylesheet link per block it decided the page needs; with them off it emits a
-		// single bundled one. That is a different count of tags, not a different document, and
-		// leaving them in put the two responses 28% apart on a first attempt at this.
-		const withoutStylesheets = ( html ) =>
-			withoutInlineStyles( html ).replace(
-				/<link[^>]+rel=["']stylesheet["'][^>]*>/g,
-				''
+		// Measured, not stripped. Building the stripped string with .replace() is the same
+		// arithmetic, but it gives a test helper the shape of an HTML sanitiser — CodeQL reads
+		// it as one (js/incomplete-multi-character-sanitization) and it is right to. That
+		// pattern is genuinely unsafe anywhere it *is* sanitising, and nothing in the code said
+		// this one was not. Summing the spans says what it means and never builds a string
+		// anybody could mistake for cleaned markup.
+		const bytesMatching = ( html, pattern ) =>
+			[ ...html.matchAll( pattern ) ].reduce(
+				( total, [ match ] ) => total + match.length,
+				0
 			);
-		const adminMarkup = withoutStylesheets( admin );
-		const controlMarkup = withoutStylesheets( control );
-		const ratio =
-			Math.abs( adminMarkup.length - controlMarkup.length ) /
-			controlMarkup.length;
+		const inlineStyleBytes = ( html ) =>
+			bytesMatching( html, /<style[\s\S]*?<\/style>/g );
+		// The stylesheet <link> tags come off for the same reason as the inline styles. With
+		// separate assets on, core emits one link per block it decided the page needs; with them
+		// off it emits a single bundled one. A different count of tags, not a different document
+		// — and leaving them in put the two responses 28% apart on a first attempt at this.
+		const markupBytes = ( html ) =>
+			html.length -
+			inlineStyleBytes( html ) -
+			bytesMatching( html, /<link[^>]+rel=["']stylesheet["'][^>]*>/g );
+		const adminMarkup = markupBytes( admin );
+		const controlMarkup = markupBytes( control );
+		const ratio = Math.abs( adminMarkup - controlMarkup ) / controlMarkup;
 		expect(
 			ratio,
-			`hidden admin ${ adminMarkup.length }B vs control ${ controlMarkup.length }B` +
+			`hidden admin ${ adminMarkup }B vs control ${ controlMarkup }B` +
 				` of non-style markup (whole responses: ${ admin.length }B vs ` +
 				`${ control.length }B)` +
 				divergenceReport( admin, control )
 		).toBeLessThan( 0.05 );
 
-		// Stripping the stylesheets removes the signal the original defect actually produced,
-		// so it has to come back as its own assertion. Spec 069's 404 arrived with theme.json
+		// Excluding the stylesheets from the comparison also excludes the signal the original
+		// defect produced, so it has to come back as its own assertion. Spec 069's 404 arrived with theme.json
 		// tokens and essentially no block CSS — about 33KB missing. A floor against the control
 		// catches that and stays quiet about which blocks core chose to bundle, which is the
 		// part that moved in 7.1. Half is deliberately loose: the two responses are not
 		// supposed to match here, only to be in the same order of magnitude.
-		const inlineStyleBytes = ( html ) =>
-			html.length - withoutInlineStyles( html ).length;
 		expect(
 			inlineStyleBytes( admin ),
 			`hidden admin carries ${ inlineStyleBytes(
