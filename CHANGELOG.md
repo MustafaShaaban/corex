@@ -6,6 +6,13 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.42.0] — 2026-09-04
+
+The release that began as "close the open pull requests" and became finding out that three things the
+repository said about itself had stopped being true: `main` was green, the dependency gate passed, and
+nothing was in flight. None of them held, and none of them had been written dishonestly — each was
+true when written and quietly expired.
+
 ### Added
 
 - **Multisite is implemented, not advertised.** `README.md` claimed support and
