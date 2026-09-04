@@ -260,13 +260,29 @@ final class LoginRouteGuard
      * front-end request would strip things a genuine front-end 404 has, differing in the other
      * direction.
      *
-     * KNOWN LIMITATION: this narrows the difference, it does not erase it. A hidden /wp-admin
-     * serves the *monolithic* wp-block-library stylesheet where a front-end 404 serves core's
-     * per-block sheets, because wp_should_load_separate_core_block_assets() returns false on
-     * is_admin() before its own filter runs (wp-includes/script-loader.php) — that one really is
-     * unreachable. The response is styled and visually indistinguishable; its byte count is not
-     * identical. Hiding /wp-login.php — the endpoint that actually identifies a hidden login —
-     * IS byte-identical; see the spec for the measured sizes.
+     * KNOWN LIMITATION: this narrows the difference, it does not erase it, and the difference is
+     * bigger than this comment used to claim. wp_should_load_separate_core_block_assets() returns
+     * false on is_admin() before its own filter runs (wp-includes/script-loader.php), which is
+     * genuinely unreachable from here, and it cuts *both* ways. Measured against WordPress 7.1:
+     *
+     *   +25KB  corex-{success-message,flow,subscribe,cta-flow,survey,carousel,form,drawer,tabs}
+     *          inline styles, present here and on no real 404 — with separate assets off, every
+     *          enqueued block style prints, not only the ones a rendered block asked for.
+     *   -16KB  corex-navigation, wp-block-library and wp-block-search inline styles, present on a
+     *          real 404 and not here.
+     *
+     * The response is styled and visually indistinguishable, and the two errors happen to be of
+     * similar size, so the byte counts stayed close enough that a 5% assertion passed for months
+     * without either being known. They are not identical and they are not stable: WordPress 7.1
+     * moved the balance on its own and the gap went to 36%.
+     *
+     * So a probe that looks for corex-survey-style-inline-css on a "missing page" can still tell
+     * this endpoint from one that was never there. Closing that needs a way to make core take the
+     * front-end asset path on an is_admin() request; there is no such hook. Recorded in DECISIONS
+     * #222 with the measurements.
+     *
+     * Hiding /wp-login.php — the endpoint that actually identifies a hidden login — IS
+     * byte-identical; see the spec for the measured sizes.
      *
      * Public only so it can be tested. render404() exits, so nothing downstream of it is
      * observable from a test; this hook surgery is the part that has to be right, and the defect

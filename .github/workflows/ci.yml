@@ -8,6 +8,17 @@ on:
   # same way it renders "all checks passed". Spec 072's stack sat queued for merge that way with
   # eight real unit failures in it (DECISIONS #153).
   pull_request:
+  # WordPress is installed with `--version=latest` (see .github/actions/provision-wordpress), so
+  # this repository's CI result is a function of two inputs and only one of them is in git. When
+  # core went 7.0.4 -> 7.1 it took two browser specs with it, and `main` stayed green-looking
+  # because nothing had been pushed to it — the breakage surfaced three weeks later on an
+  # unrelated dependency PR, which is the worst place to read it.
+  #
+  # A nightly run against `main` puts the discovery where it belongs. Pinning core would be the
+  # other answer and it is the wrong one: CoreX advertises WP 7.0+, and a pin converts "we are
+  # broken on current WordPress" from a failing check into something nobody finds out about.
+  schedule:
+    - cron: '17 5 * * *'
 
 permissions:
   contents: read

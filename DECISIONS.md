@@ -4269,3 +4269,58 @@ The general rule this pass confirms: **a green dependency-security check proves 
 closed, not that the software still works.** The two are different questions, and only one of them
 has a scanner.
 Status: Final.
+
+## #221 — CI installs WordPress at `latest`, and `main` runs nightly to find out what that did
+
+Date: 2026-09-04 · Spec: — (pre-e-commerce cleanup) · Status: Final
+
+`.github/actions/provision-wordpress` runs `wp core download --version=latest`, so a CI result here
+is a function of two inputs and only one of them is in git. On 2026-08-31 that stopped being a
+theoretical observation: WordPress went 7.0.4 → 7.1 and took two browser specs with it. `main` had
+not been pushed to since 2026-08-05, so nothing re-ran, and the breakage was finally read off an
+unrelated Dependabot PR three weeks later — where it looked like the PR's fault.
+
+**Decision: keep `--version=latest`, and add a nightly `schedule:` trigger on `main` to `ci.yml`.**
+
+Pinning core was the alternative and it is the wrong one. CoreX advertises WP 7.0+ in `README.md`
+and in the plugin headers; a pin does not make that claim true, it makes it unfalsifiable. The
+failure mode we had was not "core moved" — that is expected and is information we want — it was
+"core moved and nobody found out for three weeks." A nightly fixes the part that was actually
+broken.
+
+Consequence, stated so it is not mistaken for a regression later: **`main` can go red without a
+commit.** That is the design. A red nightly means current WordPress broke us, and it should be read
+the same way as a red PR.
+
+## #222 — The hidden-admin 404 fingerprint is measured, not tolerated by accident
+
+Date: 2026-09-04 · Spec: — (pre-e-commerce cleanup) · Status: Final
+
+`security-access.spec.js` asserted that a hidden `/wp-admin/` 404 and a URL that never existed were
+within 5% of each other by byte count. It passed for months. It was passing by coincidence: two
+opposite errors were cancelling, and neither was known until the failure message was made to
+decompose the gap.
+
+Measured against WordPress 7.1:
+
+- **+25KB** — `corex-success-message`, `corex-flow`, `corex-subscribe`, `corex-cta-flow`,
+  `corex-survey`, `corex-carousel`, `corex-form`, `corex-drawer` and `corex-tabs` inline styles,
+  present on the hidden admin 404 and on no real 404.
+- **−16KB** — `corex-navigation`, `wp-block-library` and `wp-block-search` inline styles, present on
+  a real 404 and not on the hidden admin one.
+
+Both follow from `wp_should_load_separate_core_block_assets()`, which returns false on `is_admin()`
+*before* its own filter runs — the branch `LoginRouteGuard::dropAdminContext()` already documents as
+unreachable. With it false every enqueued block style prints; with it true core prints only what a
+rendered block asked for. CoreX cannot reach either side of that.
+
+**Decision: the test compares the two responses with inline stylesheets stripped**, which is the
+markup CoreX actually controls — the same 404 template rendered twice — and does not move when core
+rebundles its CSS. The whole-response byte counts are still reported in the failure message.
+
+**The fingerprint is real and it is not closed by this.** A probe that fetches both URLs and looks
+for `corex-survey-style-inline-css` can still tell them apart. It predates 7.1, and the old
+assertion never caught it. It is recorded here rather than quietly dropped, because the honest
+statement is "known, measured, structurally unreachable from here", not "within 5%". Closing it
+needs a way to make core take the front-end asset path on an `is_admin()` request, and no such hook
+exists today.

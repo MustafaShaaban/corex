@@ -83,7 +83,7 @@ async function signInAs( browser, baseURL, user, password ) {
 		// message cannot distinguish "wrong password" from "too many attempts from this IP",
 		// and those have opposite fixes.
 		const refusal = await page
-			.locator( '#login_error, .notice-error, .corex-login__error' )
+			.locator( '#login_error, .notice-error' )
 			.first()
 			.innerText()
 			.catch( () => '' );
