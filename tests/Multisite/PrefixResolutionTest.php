@@ -3,7 +3,7 @@
 /**
  * Real-network prefix resolution (spec 100 T066).
  *
- * @package Corex\Tests\Integration\Multisite
+ * @package Corex\Tests\Multisite
  */
 
 declare(strict_types=1);

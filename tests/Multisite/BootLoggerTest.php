@@ -3,7 +3,7 @@
 /**
  * Provider boot diagnostics across the real network (spec 100 T071).
  *
- * @package Corex\Tests\Integration\Multisite
+ * @package Corex\Tests\Multisite
  */
 
 declare(strict_types=1);

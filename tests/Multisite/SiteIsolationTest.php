@@ -3,7 +3,7 @@
 /**
  * Site-scoped settings, branding, and notification preferences (spec 100 T070).
  *
- * @package Corex\Tests\Integration\Multisite
+ * @package Corex\Tests\Multisite
  */
 
 declare(strict_types=1);

@@ -7,7 +7,7 @@
          beStrictAboutOutputDuringTests="false">
     <testsuites>
         <testsuite name="Multisite Integration">
-            <directory>tests/Integration/Multisite</directory>
+            <directory>tests/Multisite</directory>
         </testsuite>
     </testsuites>
     <source>

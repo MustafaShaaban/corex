@@ -32,4 +32,23 @@ if (! is_file($wpLoad)) {
     exit(1);
 }
 
+// WordPress logs new-site registrations through wpmu_log_new_registrations(), which reads
+// $_SERVER['REMOTE_ADDR'] unconditionally (wp-includes/ms-functions.php). There is no remote
+// address under CLI, so creating a site raises "preg_replace(): Passing null to parameter #3" from
+// core rather than from anything here. A loopback address is what a request would carry and is what
+// the site-creation tests need in order to report on their own behaviour instead of on core's.
+$_SERVER['REMOTE_ADDR'] ??= '127.0.0.1';
+
 require_once $wpLoad;
+
+// Set from the network itself rather than guessed. Site creation and deletion run core paths that
+// read $_SERVER['HTTP_HOST'] (get_site_by_path() and friends), which CLI does not provide — so
+// deleting a site raised `Undefined array key "HTTP_HOST"` from core and marked the test warned.
+// The network knows its own domain, and it differs between here and CI, so ask it.
+if (! isset($_SERVER['HTTP_HOST']) && function_exists('get_network')) {
+    $network = get_network();
+
+    if ($network !== null) {
+        $_SERVER['HTTP_HOST'] = $network->domain;
+    }
+}

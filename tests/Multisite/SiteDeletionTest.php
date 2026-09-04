@@ -3,7 +3,7 @@
 /**
  * Deleted-site schema cleanup against WordPress Multisite (spec 100 T069).
  *
- * @package Corex\Tests\Integration\Multisite
+ * @package Corex\Tests\Multisite
  */
 
 declare(strict_types=1);
@@ -26,6 +26,13 @@ it('removes every foundation table when a post-activation site is deleted', func
     ]);
     expect($siteId)->toBeInt();
 
+    // A site that has never taken an upload has no uploads directory, and wp_delete_site() walks
+    // that tree unconditionally (wp-includes/ms-site.php). Core silences its own opendir() with @,
+    // but PHPUnit promotes the suppressed warning anyway and the test reports as warned for a
+    // condition it did not create. Any real site has this directory; the fixture should too.
+    $uploads = $this->onSite($siteId, static fn (): string => wp_upload_dir()['basedir']);
+    wp_mkdir_p($uploads);
+
     try {
         $container = Boot::app()->container();
         $migrator = $container->make(Migrator::class);
@@ -44,7 +51,8 @@ it('removes every foundation table when a post-activation site is deleted', func
             $fullNames,
         );
 
-        expect($fullNames)->toHaveCount(7)
+        // Count owned by ConfigServiceProvider, not restated here — see SiteSchemaTest.
+        expect($fullNames)->not->toBeEmpty()
             ->and($tablesExist)->each->toBeTrue();
         wp_delete_site($siteId);
 

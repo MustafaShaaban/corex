@@ -5,7 +5,7 @@
  * commit 01409b4. The test boots a fresh WordPress request for every site because one PHP process
  * cannot rerun Boot's provider lifecycle after switch_to_blog().
  *
- * @package Corex\Tests\Integration\Multisite
+ * @package Corex\Tests\Multisite
  */
 
 declare(strict_types=1);
