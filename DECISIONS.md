@@ -4385,10 +4385,16 @@ a red gate and could have been merged anyway.
 **Decision: remove the `paths:` filter.** It costs about four minutes per pull request. The weekly
 schedule stays — a week with no pull requests is exactly the week an advisory lands unnoticed.
 
-**Requiring it is deferred, and the evidence changed the plan.** `npm audit` returned unparseable
-output twice within one hour on 2026-09-04 — npm-root on PR #196, npm-docs on PR #197 — each after a
-~10 minute run, with the same endpoint returning `503 Service Unavailable` locally that morning. Both
-were `UNAVAILABLE`, not findings. Failing closed on that is correct and stays. But a *required* check
+**Requiring it is deferred, and the evidence changed the plan.** On 2026-09-04 `npm audit` returned
+unparseable output on three separate runs — npm-root on #196, npm-root again on #198 — each after an
+8-10 minute hang, with the same endpoint returning `503 Service Unavailable` locally that morning.
+All were `UNAVAILABLE`, not findings, and each cleared on a re-run.
+
+A fourth failure that day looked identical and was **not** transient: npm-docs failed three times in
+a row on the release branch and nowhere else, because `wp corex version` does not stamp
+`docs-app/package-lock.json` and its stale `file:..` link to the root package made npm hang. That is
+the distinction worth keeping — **an outage hits whatever runs next; a bug hits the same target every
+time.** Two re-runs were spent before anyone checked which pattern it was. Failing closed on that is correct and stays. But a *required* check
 that a third-party outage can fail blocks every merge in the repository until a human re-runs it,
 which trades one silent failure mode for a loud one. The gate gets a bounded retry around each audit
 invocation first — retrying only an unparseable or failed request, never a successful audit that
