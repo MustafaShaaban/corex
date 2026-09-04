@@ -122,6 +122,7 @@ use Corex\Config\Submissions\WpSubmissionExportJobQueue;
 use Corex\Config\Submissions\WpSubmissionExportStore;
 use Corex\Config\Retention\SubmissionRetentionStore;
 use Corex\Database\Schema\ManagedTables;
+use Corex\Database\Schema\Migrator;
 use Corex\Database\Schema\SchemaComponent;
 use Corex\Database\Schema\SchemaRegistry;
 use Corex\Config\Insights\InsightRegistry;
