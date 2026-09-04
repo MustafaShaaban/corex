@@ -28,52 +28,119 @@ final class AddonProviderResolver
     public function resolve(array $coreProviders, AddonRuntimeState $state): AddonProviderResolution
     {
         $providerClasses = $coreProviders;
-        $includedSlugs = [];
-        $excludedReasons = [];
+        $selfGates = $this->selfGate($state);
+        $candidates = [];
+        $dependencies = [];
 
         foreach ($this->providers as $provider) {
-            $reason = $this->blockedReason($provider, $state, $includedSlugs);
+            $dependencies[$provider->slug] = $provider->dependencies;
+
+            if (($selfGates[$provider->slug] ?? null) === null) {
+                $candidates[] = $provider->slug;
+            }
+        }
+
+        $survivingSlugs = $this->satisfyDependencies($candidates, $dependencies);
+        $excludedReasons = [];
+        $exclusions = [];
+        $scopes = [];
+
+        foreach ($this->providers as $provider) {
+            $slug = $provider->slug;
+            $scope = $state->scopeOf($slug);
+            $scopes[$slug] = $scope;
+            $reason = $selfGates[$slug] ?? null;
+            $detail = $this->detailFor($provider, $reason);
+            $missingDependencies = array_values(array_diff($provider->dependencies, $survivingSlugs));
+
+            if (
+                $missingDependencies !== []
+                && in_array($reason, [
+                    null,
+                    AddonBlockReason::FeatureFlagDisabled,
+                    AddonBlockReason::ExternalGateUnavailable,
+                ], true)
+            ) {
+                $reason = AddonBlockReason::MissingDependencies;
+                $detail = implode(', ', $missingDependencies);
+            }
 
             if ($reason !== null) {
-                $excludedReasons[$provider->slug] = $reason;
+                $excludedReasons[$slug] = $reason->value . ($detail !== '' ? ': ' . $detail : '');
+                $exclusions[$slug] = new AddonExclusion(
+                    $slug,
+                    $reason,
+                    $scope,
+                    $state->siteId(),
+                    $detail,
+                );
 
                 continue;
             }
 
-            $includedSlugs[] = $provider->slug;
             $providerClasses[] = $provider->providerClass;
         }
 
-        return new AddonProviderResolution($providerClasses, $excludedReasons);
+        return new AddonProviderResolution($providerClasses, $excludedReasons, $exclusions, $scopes);
     }
 
     /**
-     * @param list<string> $includedSlugs
+     * Pass one evaluates only gates intrinsic to each provider. Dependencies are
+     * deliberately deferred until every viable candidate is known.
+     *
+     * @return array<string, ?AddonBlockReason>
      */
-    private function blockedReason(AddonProvider $provider, AddonRuntimeState $state, array $includedSlugs): ?string
+    private function selfGate(AddonRuntimeState $state): array
     {
-        if (! $state->isInstalled($provider)) {
-            return 'not installed';
+        $gates = [];
+
+        foreach ($this->providers as $provider) {
+            $gates[$provider->slug] = match (true) {
+                ! $state->isInstalled($provider) => AddonBlockReason::NotInstalled,
+                ! $state->isActive($provider->slug) => AddonBlockReason::Inactive,
+                $provider->featureFlag !== null && ! $state->flagEnabled($provider->featureFlag)
+                    => AddonBlockReason::FeatureFlagDisabled,
+                $provider->externalGate !== null && ! $state->externalGateOpen($provider->externalGate)
+                    => AddonBlockReason::ExternalGateUnavailable,
+                default => null,
+            };
         }
 
-        if (! $state->isActive($provider->slug)) {
-            return 'inactive';
-        }
+        return $gates;
+    }
 
-        $missingDependencies = array_values(array_diff($provider->dependencies, $includedSlugs));
+    /**
+     * Iteratively removes candidates whose dependencies will not load in this request.
+     *
+     * @param list<string>                $candidates
+     * @param array<string, list<string>> $dependencies
+     *
+     * @return list<string>
+     */
+    private function satisfyDependencies(array $candidates, array $dependencies): array
+    {
+        do {
+            $survivors = [];
 
-        if ($missingDependencies !== []) {
-            return 'missing dependencies: ' . implode(', ', $missingDependencies);
-        }
+            foreach ($candidates as $slug) {
+                if (array_diff($dependencies[$slug] ?? [], $candidates) === []) {
+                    $survivors[] = $slug;
+                }
+            }
 
-        if ($provider->featureFlag !== null && ! $state->flagEnabled($provider->featureFlag)) {
-            return 'feature flag disabled: ' . $provider->featureFlag;
-        }
+            $changed = count($survivors) !== count($candidates);
+            $candidates = $survivors;
+        } while ($changed);
 
-        if ($provider->externalGate !== null && ! $state->externalGateOpen($provider->externalGate)) {
-            return 'external gate unavailable: ' . $provider->externalGate;
-        }
+        return $candidates;
+    }
 
-        return null;
+    private function detailFor(AddonProvider $provider, ?AddonBlockReason $reason): string
+    {
+        return match ($reason) {
+            AddonBlockReason::FeatureFlagDisabled => (string) $provider->featureFlag,
+            AddonBlockReason::ExternalGateUnavailable => (string) $provider->externalGate,
+            default => '',
+        };
     }
 }

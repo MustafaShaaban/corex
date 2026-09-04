@@ -151,9 +151,13 @@ final class CacheManager
          * happen on a site that had one.
          */
         if (function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache()) {
+            $warning = function_exists('is_multisite') && is_multisite()
+                ? __('This network keeps transients in its object cache, so flushing it would empty the object cache for every site in the network and also remove CoreX rate limits and spent-token records. Run `wp cache flush` directly if that is what you intend.', 'corex')
+                : __('This site keeps transients in its object cache, so flushing it would also remove CoreX rate limits and spent-token records. Run `wp cache flush` directly if that is what you intend.', 'corex');
+
             return $outcome->withUnsupported(
                 'object',
-                __('This site keeps transients in its object cache, so flushing it would also remove CoreX rate limits and spent-token records. Run `wp cache flush` directly if that is what you intend.', 'corex'),
+                $warning,
             );
         }
 

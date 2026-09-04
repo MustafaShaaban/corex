@@ -106,6 +106,46 @@ graph TD
 
 **Operation modes** (switched via `corex mode:set` or a `wp-config.php` constant): `fse`, `builder`, `headless`, `woo`, `multisite`. Same codebase, different controller/block subsets activate.
 
+### 2.1 The `Corex\Multisite` layer and the site-scope rule
+
+Before spec 100 the framework had three runtime references to Multisite, one of which rendered the word
+"Yes" on a diagnostics screen. `README.md` advertised support; nothing implemented it. That layer now exists.
+
+**Contexts.** `MultisiteContext`, `SiteContext`, `NetworkContext` and `NetworkCapabilities` are resolved once
+by `RuntimeContexts::detect()` and seeded into the container. Single-site installs get `SingleSite*`
+implementations that make **no** WordPress calls and register no `switch_blog` listener — the layer costs a
+single-site install nothing.
+
+**The site-scope rule.** Anything that caches a value derived from the current site must re-read it after
+`switch_to_blog()`. Two ways to satisfy it, in order of preference:
+
+1. **Read it at use time.** `Migrator::fullName()` reads `global $wpdb` on every call, which is why
+   `switch_to_blog(2)` resolves `wp_2_corex_activity` with no further help. Every `Wp*Repository` does the
+   same inside each method. This is the default and it needs no machinery.
+2. **Implement `SiteScoped`** when a value is genuinely expensive to recompute. `SiteScope` invalidates the
+   memo on `switch_blog`. `AssetManager` and `BrandingService` work this way.
+
+What is *not* acceptable is capturing a site-derived value in a constructor and holding it — that is the bug
+class spec 100 Phase 7 removed, and the one a reviewer should look for first in new code.
+
+**Activation scope.** `PluginActivationInspector` reads both `active_plugins` and `active_sitewide_plugins`
+and answers with an `ActivationScope` (`None`, `Site`, `Network`, `MustUse`); network beats site on a
+collision. Nothing may read `get_option('active_plugins')` directly — doing so is what silently disabled every
+network-activated add-on, on every site, with the Network Plugins screen still reporting them active.
+
+**Schema.** `SchemaRegistry` holds `SchemaComponent`s; `SiteMigrationRunner` applies them per site, in
+batches, continuing past a failing site rather than stopping. `SiteLifecycleSubscriber` installs on
+`wp_initialize_site` and returns the tables through `wpmu_drop_tables` so WordPress removes them with its own
+cleanup. Existing networks migrate explicitly with `wp corex migrate --network`.
+
+**Config.** The resolution chain gains two network layers around the site option, so precedence is
+`.env` → network **lock** → site option → network **default** → code default. Both network layers read
+`corex_network_<key>` and are distinguished by the `SettingScope` the key was registered with; an
+unregistered key stays site-scoped and follows the old chain unchanged.
+
+See [`docs/en/06-cookbooks/multisite.md`](../en/06-cookbooks/multisite.md) for the operator-facing version,
+and `composer test:multisite` for the suite that asserts all of it against a real three-site network.
+
 ---
 
 ## 3. The Laravel Parallel

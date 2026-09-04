@@ -13,7 +13,7 @@ defined('ABSPATH') || exit;
 /**
  * The Corex footprint a soft reset acts on, gathered from WordPress by the command and
  * handed to the pure planner so the planner never reads WP itself: the active `corex-*`
- * add-on plugin files, the `corex_*` option keys (including `corex_features_*`), and the
+ * add-on plugin files, the site-scoped `corex_*` option keys (including `corex_features_*`), and the
  * seeded demo Home page id (null when none was seeded).
  */
 final class ResetInventory

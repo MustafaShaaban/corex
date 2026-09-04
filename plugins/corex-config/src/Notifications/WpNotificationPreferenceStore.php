@@ -29,7 +29,7 @@ final class WpNotificationPreferenceStore implements NotificationPreferenceStore
             return NotificationPreference::defaults();
         }
 
-        $stored = get_user_meta($userId, self::META_KEY, true);
+        $stored = get_user_meta($userId, $this->metaKey(), true);
 
         return is_array($stored) ? NotificationPreference::fromMap($stored) : NotificationPreference::defaults();
     }
@@ -40,6 +40,17 @@ final class WpNotificationPreferenceStore implements NotificationPreferenceStore
             return;
         }
 
-        update_user_meta($userId, self::META_KEY, $preference->toArray());
+        update_user_meta($userId, $this->metaKey(), $preference->toArray());
+    }
+
+    private function metaKey(): string
+    {
+        if (! is_multisite() || is_main_site()) {
+            return self::META_KEY;
+        }
+
+        global $wpdb;
+
+        return $wpdb->get_blog_prefix() . self::META_KEY;
     }
 }

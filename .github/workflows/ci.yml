@@ -147,6 +147,33 @@ jobs:
       - name: Integration tests (Pest, real WordPress)
         run: composer test:integration
 
+  integration-multisite:
+    name: Integration tests (real WordPress Multisite)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: corex
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/provision-wordpress
+        with:
+          multisite: 'true'
+          path: wp-ms
+          db-prefix: cxms_
+
+      - name: Integration tests (Pest, real WordPress Multisite)
+        run: composer test:multisite
+
   # The Playwright specs assert contracts nothing else can: the drawer's focus trap, Escape
   # returning focus to the bell, the RTL flip, and that the toolbar entry and header bell never
   # appear together. They needed a served site, so they only ever ran on a developer's machine.

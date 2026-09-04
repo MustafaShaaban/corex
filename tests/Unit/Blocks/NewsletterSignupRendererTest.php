@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Blocks\NewsletterSignupRenderer;
+use Corex\Multisite\SingleSiteMultisiteContext;
+use Corex\Multisite\WpPluginActivationInspector;
 
 function renderNewsletter(bool $active = true, array $attributes = []): string
 {
@@ -27,7 +29,9 @@ function renderNewsletter(bool $active = true, array $attributes = []): string
         ? ($active ? ['corex-newsletter/corex-newsletter.php'] : [])
         : $default);
 
-    return (new NewsletterSignupRenderer())->render($attributes, '', new stdClass());
+    return (new NewsletterSignupRenderer(
+        new WpPluginActivationInspector(new SingleSiteMultisiteContext()),
+    ))->render($attributes, '', new stdClass());
 }
 
 it('renders a real double opt-in form wired to the subscribe endpoint when the add-on is active', function () {

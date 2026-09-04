@@ -15,6 +15,7 @@ use Corex\Cache\CacheScope;
 use Corex\Cli\Commands\DocsCommand;
 use Corex\Cli\Commands\DoctorCommand;
 use Corex\Cli\Commands\MakeCommand;
+use Corex\Cli\Commands\MigrateCommand;
 use Corex\Cli\Commands\ReadinessCommand;
 use Corex\Cli\Commands\ReadinessCommandServices;
 use Corex\Cli\Commands\ResetCommand;
@@ -68,6 +69,10 @@ final class CliServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->container->singleton(ResetPlanner::class);
+        $this->container->singleton(ResetGate::class);
+        $this->container->singleton(ResetExecutor::class);
+        $this->container->singleton(ResetCommand::class);
         $this->container->singleton(StubRenderer::class);
         $this->container->singleton(Naming::class);
 
@@ -116,6 +121,7 @@ final class CliServiceProvider extends ServiceProvider
         $this->container->singleton(ComponentCoverageReadinessCheck::class);
         $this->container->singleton(FreeProBoundaryReadinessCheck::class);
         $this->container->singleton(MultiAgentReadinessCheck::class);
+        $this->container->singleton(MigrateCommand::class);
 
         $this->container->singleton(
             DocsGenerator::class,
@@ -374,12 +380,22 @@ final class CliServiceProvider extends ServiceProvider
             },
         );
 
-        $reset = new ResetCommand(new ResetPlanner(), new ResetGate(), new ResetExecutor());
+        $reset = $this->container->make(ResetCommand::class);
 
         WP_CLI::add_command(
             'corex reset',
             static function (array $args, array $assoc) use ($reset): void {
                 $reset->run($args, $assoc);
+            },
+            $this->resetCommandDefinition(),
+        );
+
+        $migrate = $this->container->make(MigrateCommand::class);
+
+        WP_CLI::add_command(
+            'corex migrate',
+            static function (array $args, array $assoc) use ($migrate): void {
+                $migrate->run($args, $assoc);
             },
         );
 
@@ -430,6 +446,38 @@ final class CliServiceProvider extends ServiceProvider
                 $version->run($args, $assoc);
             },
         );
+    }
+
+    /**
+     * @return array{shortdesc: string, synopsis: list<array{type: string, name: string, optional: bool, description: string}>}
+     */
+    private function resetCommandDefinition(): array
+    {
+        return [
+            'shortdesc' => __('Reset Corex site state, with explicit safeguards for destructive and network scope.', 'corex'),
+            'synopsis' => [
+                $this->resetFlag('hard', __('Wipe and rebuild the WordPress database.', 'corex')),
+                $this->resetFlag('dry-run', __('Preview the reset plan without changing anything.', 'corex')),
+                $this->resetFlag(
+                    'yes-i-mean-it',
+                    __('Supply the typed safeguard required for a hard reset.', 'corex'),
+                ),
+                $this->resetFlag('network', __('Permit network-scoped reset actions.', 'corex')),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{type: string, name: string, optional: bool, description: string}
+     */
+    private function resetFlag(string $name, string $description): array
+    {
+        return [
+            'type' => 'flag',
+            'name' => $name,
+            'optional' => true,
+            'description' => $description,
+        ];
     }
 
     /**

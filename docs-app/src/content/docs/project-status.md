@@ -106,11 +106,23 @@ Two entries stood under *Known open items* in v0.39.0 and no longer do. They are
 because "was this ever a problem, and how was it dealt with" is a fair question to ask of a project
 you are evaluating.
 
-### Dependency advisories — none open
+### Dependency advisories — one bounded exception
 
-`.github/dependency-security-policy.json` holds **zero exceptions**, and
-`npm run verify:dependencies` reports PASS with no findings across Composer, the root npm workspace
-and the docs-site npm workspace.
+`npm run verify:dependencies` reports **PASS** across Composer, the root npm workspace and the
+docs-site npm workspace: zero findings in two of the three, and in the root, **one finding covered by
+one exception**.
+
+That exception is `extract-zip` (GHSA-jmr9-qjv8-65gv). It is not a fix that was skipped — the
+advisory range is `*`, so every published version is affected and there is nothing to upgrade to. It
+arrives only through `@wordpress/scripts` → `@wordpress/e2e-test-utils-playwright` → `lighthouse` →
+`puppeteer-core` → `@puppeteer/browsers`, and nothing in this repository imports any of them: the
+browser suite drives `@playwright/test` directly. The package is installed and never executed. Its
+`upstreamTrigger` field names what would let it be deleted.
+
+**This section said "none open" while the gate was failing.** It was true when written and stopped
+being true when four advisories were published after v0.41.0 — and nothing re-ran the check, because
+`dependency-security.yml` is path-filtered to manifest changes, so the gate is consulted only by the
+pull requests least likely to be looking for it. Corrected 2026-09-04 (PR #194).
 
 This was 24 bounded exceptions as recently as v0.39.0. Closing them needed `overrides` rather than
 `npm audit fix`: every vulnerable package was a *transitive* one whose parent pinned it below the
@@ -119,8 +131,9 @@ patched version, and what npm proposed instead was a **downgrade** of `@wordpres
 question that turned out to depend on the root being clean, so fixing the root unblocked it and the
 Astro 7 migration landed with it. (Spec 089, DECISIONS #206)
 
-The gate fails closed on any unbounded finding, so an empty list is a state that is checked on every
-pull request, not a claim.
+The gate fails closed on any *unbounded* finding, so the exception list is checked on every pull
+request that touches a manifest. It is not, at time of writing, a **required** check — which is how
+eight dependency pull requests sat mergeable with it red.
 
 ### Branch protection
 

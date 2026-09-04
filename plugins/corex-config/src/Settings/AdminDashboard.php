@@ -11,6 +11,9 @@ namespace Corex\Config\Settings;
 use Corex\Admin\AdminPage;
 use Corex\Config\AdminUi\ScreenAsset;
 use Corex\Config\Overview\OverviewRenderer;
+use Corex\Multisite\MultisiteContext;
+use Corex\Multisite\NetworkContext;
+use Corex\Multisite\PluginActivationInspector;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -33,6 +36,9 @@ final class AdminDashboard
         private readonly AdminGuard $guard,
         private readonly AdminPage $page,
         private readonly OverviewRenderer $overview,
+        private readonly PluginActivationInspector $pluginActivationInspector,
+        private readonly MultisiteContext $multisite,
+        private readonly NetworkContext $network,
         private readonly SettingsSanitizer $sanitizer = new SettingsSanitizer(),
     ) {
     }
@@ -201,7 +207,7 @@ final class AdminDashboard
             'advanced.wp_version'   => (string) get_bloginfo('version'),
             'advanced.environment'  => (string) wp_get_environment_type(),
             'advanced.memory_limit' => (string) ini_get('memory_limit'),
-            'advanced.multisite'    => is_multisite() ? __('Yes', 'corex') : __('No', 'corex'),
+            'advanced.multisite'    => $this->multisiteDiagnostic(),
             default                 => '',
         };
     }
@@ -220,11 +226,7 @@ final class AdminDashboard
             return SettingsSectionState::Hidden;
         }
 
-        $active = in_array(
-            'corex-captcha/corex-captcha.php',
-            array_map('strval', (array) get_option('active_plugins', [])),
-            true,
-        );
+        $active = $this->pluginActivationInspector->isActive('corex-captcha/corex-captcha.php');
 
         if (! $active) {
             return SettingsSectionState::Disabled;
@@ -254,13 +256,31 @@ final class AdminDashboard
             return SettingsSectionState::Hidden;
         }
 
-        $active = in_array(
-            $pluginFile,
-            array_map('strval', (array) get_option('active_plugins', [])),
-            true,
-        );
+        $active = $this->pluginActivationInspector->isActive($pluginFile);
 
         return $active ? SettingsSectionState::Normal : SettingsSectionState::Disabled;
+    }
+
+    private function multisiteDiagnostic(): string
+    {
+        if (! $this->multisite->enabled()) {
+            return __('No', 'corex');
+        }
+
+        $siteCount = $this->network->siteCount();
+        /* translators: 1: WordPress network ID, 2: number of sites in the network. */
+        $format = _n(
+            'Yes — network %1$s, %2$s site',
+            'Yes — network %1$s, %2$s sites',
+            $siteCount,
+            'corex',
+        );
+
+        return sprintf(
+            $format,
+            number_format_i18n($this->network->id()),
+            number_format_i18n($siteCount),
+        );
     }
 
     /** @return array<string,mixed> */

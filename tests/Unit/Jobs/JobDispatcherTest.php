@@ -12,6 +12,7 @@ use Brain\Monkey\Functions;
 use Corex\Config\Jobs\ActionSchedulerJobDispatcher;
 use Corex\Config\Jobs\CronJobDispatcher;
 use Corex\Jobs\BoundedJob;
+use Corex\Tests\Fixtures\Multisite\SiteScopeEnvironment;
 
 if (! function_exists('as_enqueue_async_action')) {
     function as_enqueue_async_action(string $hook, array $args, string $group): int
@@ -43,7 +44,7 @@ function dispatcherJob(): BoundedJob
 }
 
 it('dispatches and cancels through Action Scheduler when available', function () {
-    $dispatcher = new ActionSchedulerJobDispatcher();
+    $dispatcher = new ActionSchedulerJobDispatcher((new SiteScopeEnvironment(7))->scope);
 
     expect($dispatcher->available())->toBeTrue();
     $dispatcher->dispatch(dispatcherJob());
@@ -51,11 +52,11 @@ it('dispatches and cancels through Action Scheduler when available', function ()
 
     expect($GLOBALS['corex_action_scheduler_enqueue'])->toBe([
         'hook'  => ActionSchedulerJobDispatcher::HOOK,
-        'args'  => [21],
+        'args'  => [21, 7],
         'group' => ActionSchedulerJobDispatcher::GROUP,
     ])->and($GLOBALS['corex_action_scheduler_cancel'])->toBe([
         'hook'  => ActionSchedulerJobDispatcher::HOOK,
-        'args'  => [21],
+        'args'  => [21, 7],
         'group' => ActionSchedulerJobDispatcher::GROUP,
     ]);
 });
@@ -63,14 +64,14 @@ it('schedules one cron event and clears matching retries', function () {
     Functions\when('wp_next_scheduled')->justReturn(false);
     Functions\expect('wp_schedule_single_event')
         ->once()
-        ->with(\Mockery::type('int'), CronJobDispatcher::HOOK, [21])
+        ->with(\Mockery::type('int'), CronJobDispatcher::HOOK, [21, 7])
         ->andReturn(true);
     Functions\expect('wp_clear_scheduled_hook')
         ->once()
-        ->with(CronJobDispatcher::HOOK, [21])
+        ->with(CronJobDispatcher::HOOK, [21, 7])
         ->andReturn(1);
 
-    $dispatcher = new CronJobDispatcher();
+    $dispatcher = new CronJobDispatcher((new SiteScopeEnvironment(7))->scope);
     $dispatcher->dispatch(dispatcherJob());
     $dispatcher->cancel(21);
 

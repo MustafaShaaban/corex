@@ -10,6 +10,8 @@ namespace Corex\Config\Branding;
 
 defined('ABSPATH') || exit;
 
+use Closure;
+use Corex\Multisite\SiteScoped;
 use Corex\Support\Config\ConfigInterface;
 
 /**
@@ -17,18 +19,33 @@ use Corex\Support\Config\ConfigInterface;
  * the bundled default) and the login-logo CSS. Pure — it produces strings; the WP
  * hooks live in AdminBranding. This is the Corex *product* brand (admin/login), never
  * a client site's look.
+ *
+ * The bundled URL is site-scoped because `plugins_url()` derives it from the current
+ * site's URL. The provider injects a lazy resolver and registers this singleton with
+ * `SiteScope`; switching blogs clears only the memo, so the next `logoUrl()` call reads
+ * the new site. Project plugins with site-derived singleton values copy these steps.
  */
-final class BrandingService
+final class BrandingService implements SiteScoped
 {
+    private ?string $defaultLogoUrl = null;
+
+    /**
+     * @param Closure():string|string $defaultLogoUrlResolver
+     */
     public function __construct(
         private readonly ConfigInterface $config,
-        private readonly string $defaultLogoUrl,
+        private readonly Closure|string $defaultLogoUrlResolver,
     ) {
     }
 
     public function logoUrl(): string
     {
-        return (string) ($this->config->get('brand.logo_url') ?: $this->defaultLogoUrl);
+        return (string) ($this->config->get('brand.logo_url') ?: $this->defaultLogoUrl());
+    }
+
+    public function forgetSiteState(int $siteId): void
+    {
+        $this->defaultLogoUrl = null;
     }
 
     public function loginCss(string $logoUrl): string
@@ -69,5 +86,16 @@ final class BrandingService
         $value = (string) $this->config->get('brand.login_sso_enabled', '');
 
         return $value !== '' && $value !== '0';
+    }
+
+    private function defaultLogoUrl(): string
+    {
+        if ($this->defaultLogoUrl === null) {
+            $this->defaultLogoUrl = $this->defaultLogoUrlResolver instanceof Closure
+                ? ($this->defaultLogoUrlResolver)()
+                : $this->defaultLogoUrlResolver;
+        }
+
+        return $this->defaultLogoUrl;
     }
 }

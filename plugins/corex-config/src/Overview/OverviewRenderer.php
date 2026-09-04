@@ -22,6 +22,7 @@ use Corex\Support\DateTime\AdminDateTime;
 use Corex\Container\ContainerInterface;
 use Corex\Forms\Catalog\FormCatalog;
 use Corex\Forms\Flow\FlowRepository;
+use Corex\Multisite\PluginActivationInspector;
 use Corex\Provisioning\KitProvisioner;
 
 defined('ABSPATH') || exit;
@@ -48,6 +49,7 @@ final class OverviewRenderer
         private readonly DataRegistry $data,
         private readonly AddonRegistry $addons,
         private readonly ContainerInterface $container,
+        private readonly PluginActivationInspector $pluginActivationInspector,
     ) {
     }
 
@@ -349,11 +351,10 @@ final class OverviewRenderer
      */
     private function addonCounts(): array
     {
-        $active  = array_map('strval', (array) get_option('active_plugins', []));
         $addons  = $this->addons->all();
         $running = 0;
         foreach ($addons as $addon) {
-            if (in_array($addon->pluginFile, $active, true)) {
+            if ($this->pluginActivationInspector->isActive($addon->pluginFile)) {
                 $running++;
             }
         }

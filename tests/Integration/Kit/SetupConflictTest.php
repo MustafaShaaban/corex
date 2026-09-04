@@ -11,6 +11,8 @@
 declare(strict_types=1);
 
 use Corex\Kit\BlueprintActivator;
+use Corex\Multisite\WpMultisiteContext;
+use Corex\Multisite\WpPluginActivationInspector;
 use Corex\Provisioning\PageDisposition;
 
 function conflictPageInput(string $slug): array
@@ -41,7 +43,7 @@ it('replaces existing content only from an explicit choice and records it (FR-13
         'post_content' => 'ORIGINAL USER CONTENT',
     ]);
 
-    $activator = new BlueprintActivator();
+    $activator = new BlueprintActivator(new WpPluginActivationInspector(new WpMultisiteContext()));
 
     // With no choice, the conflicting page is kept untouched (never silently overwritten).
     $activator->seedPages(conflictPageInput($slug));
@@ -63,7 +65,9 @@ it('creates a suffixed page and leaves the original untouched on a Suffix choice
         'post_content' => 'ORIGINAL USER CONTENT',
     ]);
 
-    (new BlueprintActivator())->seedPages(conflictPageInput($slug), [], [], [$slug => 'suffix']);
+    (new BlueprintActivator(
+        new WpPluginActivationInspector(new WpMultisiteContext()),
+    ))->seedPages(conflictPageInput($slug), [], [], [$slug => 'suffix']);
 
     $suffixed = get_page_by_path($slug . '-2');
 

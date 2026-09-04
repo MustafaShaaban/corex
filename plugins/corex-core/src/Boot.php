@@ -23,9 +23,17 @@ use Corex\Events\EventServiceProvider;
 use Corex\Foundation\CoreServiceProvider;
 use Corex\Foundation\DataServiceProvider;
 use Corex\Foundation\HttpServiceProvider;
+use Corex\Multisite\ActivationScope;
+use Corex\Multisite\MultisiteServiceProvider;
+use Corex\Multisite\PluginActivationInspector;
+use Corex\Multisite\RuntimeContexts;
+use Corex\Multisite\WpPluginActivationInspector;
 use Corex\Assets\AssetsServiceProvider;
 use Corex\Forms\FormsServiceProvider;
 use Corex\Security\SecurityModule;
+use Corex\Support\BootLogger;
+use Corex\Support\Config\Sources\DotenvSource;
+use Corex\Support\Config\Truthy;
 use Corex\Theme\NavigationServiceProvider;
 use Corex\Theme\ThemeServiceProvider;
 use RuntimeException;
@@ -54,11 +62,18 @@ final class Boot
         NavigationServiceProvider::class,
         FormsServiceProvider::class,
         AbilitiesProvider::class,
+        // Last by design: ConfigServiceProvider registers its SchemaComponent during boot
+        // before multisite self-heal reads the registry on both install shapes (spec 100 FR-035).
+        MultisiteServiceProvider::class,
     ];
 
     private static bool $booted = false;
 
     private static ?Application $app = null;
+
+    private static ?DotenvSource $dotenv = null;
+
+    private static ?PluginActivationInspector $pluginActivationInspector = null;
 
     public static function init(): void
     {
@@ -75,7 +90,20 @@ final class Boot
 
         $debug = defined('WP_DEBUG') && WP_DEBUG;
 
-        self::$app = new Application($debug, providers: self::providersForState(self::runtimeState()));
+        // Detected once and seeded into the container, because CoreServiceProvider's config
+        // factory resolves MultisiteContext and NetworkContext. Without this the very first
+        // resolution of ConfigInterface throws BindingResolutionException — and ProviderRepository
+        // catches and logs a failed provider, so the framework would degrade silently rather than
+        // fatally (spec 100 FR-003).
+        $contexts = RuntimeContexts::detect();
+        $runtimeState = self::runtimeState($contexts);
+
+        self::$app = new Application(
+            $debug,
+            providers: self::providersForState($runtimeState),
+            contexts: $contexts,
+            pluginActivationInspector: self::$pluginActivationInspector,
+        );
         self::$app->boot();
 
         /**
@@ -126,48 +154,46 @@ final class Boot
             ->providerClasses();
     }
 
-    private static function runtimeState(): AddonRuntimeState
+    private static function runtimeState(RuntimeContexts $contexts): AddonRuntimeState
     {
         $providers = (new AddonProviderRegistry())->all();
-        $activePlugins = self::activePlugins();
+        $inspector = new WpPluginActivationInspector($contexts->multisite);
+        self::$pluginActivationInspector = $inspector;
+        [$activeSlugs, $activationScopes] = self::activeSlugs($providers, $inspector);
 
         return new AddonRuntimeState(
-            activeSlugs: self::activeSlugs($providers, $activePlugins),
+            activeSlugs: $activeSlugs,
             installedPluginFiles: self::installedPluginFiles($providers),
             enabledFlags: self::enabledFlags($providers),
             externalGates: self::externalGates($providers),
+            activationScopes: $activationScopes,
+            siteId: $contexts->site->id(),
         );
     }
 
     /**
-     * @return list<string>
-     */
-    private static function activePlugins(): array
-    {
-        if (! function_exists('get_option')) {
-            return [];
-        }
-
-        return array_map('strval', (array) get_option('active_plugins', []));
-    }
-
-    /**
      * @param list<AddonProvider> $providers
-     * @param list<string>        $activePlugins
      *
-     * @return list<string>
+     * @return array{0: list<string>, 1: array<string, ActivationScope>}
      */
-    private static function activeSlugs(array $providers, array $activePlugins): array
+    private static function activeSlugs(
+        array $providers,
+        PluginActivationInspector $inspector,
+    ): array
     {
         $activeSlugs = [];
+        $activationScopes = [];
 
         foreach ($providers as $provider) {
-            if (in_array($provider->pluginFile, $activePlugins, true)) {
+            $scope = $inspector->scopeOf($provider->pluginFile);
+            $activationScopes[$provider->slug] = $scope;
+
+            if ($scope->isActive()) {
                 $activeSlugs[] = $provider->slug;
             }
         }
 
-        return $activeSlugs;
+        return [$activeSlugs, $activationScopes];
     }
 
     /**
@@ -210,18 +236,50 @@ final class Boot
 
     private static function featureFlagEnabled(string $flag): bool
     {
+        // Boot has no container yet, so features.* deliberately uses this fixed precedence only:
+        // deployment .env → per-site option → network option → false (spec 100 FR-025–FR-026).
+        $key = 'features.' . $flag;
+        $dotenv = self::dotenv();
+
+        if ($dotenv->has($key)) {
+            return Truthy::of($dotenv->get($key));
+        }
+
+        $optionValue = false;
+
         if (function_exists('get_option')) {
             $optionValue = get_option('corex_features_' . $flag, false);
 
-            if (in_array($optionValue, [true, 1, '1'], true)) {
-                return true;
+            if ($optionValue !== false) {
+                return Truthy::of($optionValue);
             }
         }
 
-        $environmentValue = getenv('FEATURES_' . strtoupper($flag));
+        if (
+            $optionValue === false
+            && function_exists('is_multisite')
+            && is_multisite()
+            && function_exists('get_site_option')
+        ) {
+            return Truthy::of(get_site_option('corex_features_' . $flag, false));
+        }
 
-        return is_string($environmentValue)
-            && in_array(strtolower(trim($environmentValue)), ['1', 'true', 'on', 'yes'], true);
+        return false;
+    }
+
+    private static function dotenv(): DotenvSource
+    {
+        return self::$dotenv ??= new DotenvSource(self::projectRoot(), new BootLogger(false));
+    }
+
+    private static function projectRoot(): string
+    {
+        // Mirrors CoreServiceProvider::projectRoot(); the fallback keeps headless Boot tests viable.
+        if (defined('COREX_CORE_PATH')) {
+            return dirname(COREX_CORE_PATH, 2);
+        }
+
+        return dirname(__DIR__, 3);
     }
 
     /**

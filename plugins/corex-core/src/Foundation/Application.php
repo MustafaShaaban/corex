@@ -14,6 +14,8 @@ use Corex\Container\Container;
 use Corex\Container\ContainerInterface;
 use Corex\Hooks\HookRegistry;
 use Corex\Http\ControllerMap;
+use Corex\Multisite\PluginActivationInspector;
+use Corex\Multisite\RuntimeContexts;
 use Corex\Support\BootLogger;
 
 /**
@@ -35,6 +37,8 @@ final class Application
     public function __construct(
         private readonly bool $debug = false,
         private readonly array $providers = [],
+        private readonly ?RuntimeContexts $contexts = null,
+        private readonly ?PluginActivationInspector $pluginActivationInspector = null,
     ) {
         $this->container = new Container();
     }
@@ -59,6 +63,7 @@ final class Application
         $this->container->instance(BootLogger::class, $logger);
         $this->container->instance(HookRegistry::class, $hooks);
         $this->container->instance(ControllerMap::class, $controllers);
+        $this->contexts?->seedInto($this->container, $this->pluginActivationInspector);
 
         $repository = new ProviderRepository($this->container, $logger, $hooks, $controllers);
         $repository->load($this->providers);

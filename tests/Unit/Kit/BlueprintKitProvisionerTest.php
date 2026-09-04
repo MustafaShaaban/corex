@@ -15,6 +15,8 @@ use Corex\Kit\BlueprintActivator;
 use Corex\Kit\BlueprintRegistry;
 use Corex\Kit\Provisioning\BlueprintKitProvisioner;
 use Corex\Kit\SetupWizard;
+use Corex\Multisite\SingleSiteMultisiteContext;
+use Corex\Multisite\WpPluginActivationInspector;
 
 function fakeCompanyBlueprint(): Blueprint
 {
@@ -55,7 +57,11 @@ function provisioner(): BlueprintKitProvisioner
     $registry = new BlueprintRegistry();
     $registry->register(fakeCompanyBlueprint());
 
-    return new BlueprintKitProvisioner($registry, new SetupWizard($registry), new BlueprintActivator());
+    return new BlueprintKitProvisioner(
+        $registry,
+        new SetupWizard($registry),
+        new BlueprintActivator(new WpPluginActivationInspector(new SingleSiteMultisiteContext())),
+    );
 }
 
 beforeEach(function () {

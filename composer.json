@@ -50,6 +50,7 @@
         "test": "pest",
         "test:unit": "pest",
         "test:integration": "pest --configuration=phpunit-integration.xml.dist",
+        "test:multisite": "php tests/run-multisite.php",
         "docs:generate": "php scripts/generate-docs.php",
         "i18n:pot": "wp i18n make-pot . plugins/corex-core/languages/corex.pot --domain=corex --exclude=wp,vendor,node_modules,docs-app,dist,build,tests"
     },

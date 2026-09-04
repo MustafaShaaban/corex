@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Kit;
 
 use Corex\Kit\Setup\ConflictResolver;
+use Corex\Multisite\PluginActivationInspector;
 use Corex\Provisioning\ApplyOutcome;
 use Corex\Provisioning\PageContent;
 use Corex\Provisioning\PageDisposition;
@@ -43,6 +44,7 @@ final class BlueprintActivator
     ];
 
     public function __construct(
+        private readonly PluginActivationInspector $pluginActivationInspector,
         private readonly PagePlanner $planner = new PagePlanner(),
         private readonly PageContent $content = new PageContent(),
         private readonly ConflictResolver $conflicts = new ConflictResolver(),
@@ -281,7 +283,7 @@ final class BlueprintActivator
         foreach ($modules as $module) {
             $file = self::MODULE_FILES[$module] ?? null;
 
-            if ($file !== null && ! is_plugin_active($file)) {
+            if ($file !== null && ! $this->pluginActivationInspector->isActive($file)) {
                 activate_plugin($file); // returns WP_Error on failure; non-fatal here
                 $activated[] = $module;
             }

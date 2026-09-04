@@ -30,6 +30,14 @@ final class ListenerProvider
     }
 
     /**
+     * Avoid constructing an event inside a large site loop when nobody consumes it.
+     */
+    public function hasListenersFor(string $eventClass): bool
+    {
+        return ($this->listeners[$eventClass] ?? []) !== [];
+    }
+
+    /**
      * @return list<callable> listeners for the event's class, in registration order
      */
     public function listenersFor(object $event): array

@@ -22,7 +22,8 @@ it('mounts the localized REST client only when CoreX Forms is active', function 
         ->and($screen)->toContain("rest_url('corex/v1/flows')")
         ->and($screen)->toContain("wp_create_nonce('wp_rest')")
         ->and($screen)->toContain("'ownerId'")
-        ->and($screen)->toContain('active_sitewide_plugins')
+        ->and($screen)->toContain('PluginActivationInspector')
+        ->and($screen)->not->toContain('active_sitewide_plugins')
         ->and($screen)->toContain("'corex-runtime'")
         ->and($screen)->toContain('wp_set_script_translations');
 });

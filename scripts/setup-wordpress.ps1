@@ -20,6 +20,21 @@
 .EXAMPLE
     powershell -File .\scripts\setup-wordpress.ps1
     powershell -File .\scripts\setup-wordpress.ps1 -SiteUrl http://corex.local -AdminEmail you@example.com
+
+.EXAMPLE
+    powershell -File .\scripts\setup-wordpress.ps1 -Multisite
+
+    Builds the WordPress Multisite network the multisite integration suite needs, in ./wp-ms with
+    the cxms_ table prefix, alongside (not instead of) the single-site install in ./wp. Same
+    database, different prefix, so the two do not collide.
+
+    It mirrors .github/actions/provision-wordpress with multisite: 'true' — same network
+    activations, same three fixture sites — because the suite asserts against that exact shape.
+    site2 exists before corex-email is activated on it alone; site3 is created afterwards, so
+    wp_initialize_site is the only route its CoreX tables can have arrived by.
+
+    No vhost is required: `composer test:multisite` loads ./wp-ms/wp-load.php directly and drives
+    the other sites through WP-CLI, so nothing here has to be reachable over HTTP.
 #>
 [CmdletBinding()]
 param(
@@ -34,8 +49,17 @@ param(
     [string]$DbHost        = 'localhost',
     [string]$DbPrefix      = 'cx_',
     [string]$WpDir         = 'wp',
-    [string]$MysqlBin      = ''   # auto-detected from WAMP if empty
+    [string]$MysqlBin      = '',  # auto-detected from WAMP if empty
+    [switch]$Multisite
 )
+
+# -Multisite is a second install, not a different one: ./wp-ms with the cxms_ prefix, matching
+# .github/actions/provision-wordpress so the local suite and CI assert against the same network.
+# Only defaults move — an explicitly passed -WpDir or -DbPrefix still wins.
+if ($Multisite) {
+    if (-not $PSBoundParameters.ContainsKey('WpDir'))    { $WpDir    = 'wp-ms' }
+    if (-not $PSBoundParameters.ContainsKey('DbPrefix')) { $DbPrefix = 'cxms_' }
+}
 
 # WP-CLI emits warnings to stderr on idempotent re-runs (e.g. "plugin already active"); under
 # 'Stop', PowerShell 5.1 turns native-command stderr into a fatal error. Use 'Continue' and check
@@ -99,12 +123,25 @@ if ($LASTEXITCODE -eq 0) { Write-Host "Database '$DbName' created." }
 else { Write-Host "Database '$DbName' already exists (ok)." }
 
 # --- 4. Install (or just align URLs if already installed) ---
-& wp core is-installed --path="$WpPath" 2>$null
+# For -Multisite this MUST ask about the network, not the site. `wp core is-installed` answers for
+# a single site, and a network's tables satisfy it — so if the database survives while wp-config.php
+# does not (delete ./wp-ms, re-run), the check passes, the install step is skipped, and the freshly
+# written wp-config.php never receives the MULTISITE constants. The run then fails several steps
+# later with "This is not a multisite installation", pointing at the theme rather than the config.
+if ($Multisite) { & wp core is-installed --network --path="$WpPath" 2>$null }
+else            { & wp core is-installed           --path="$WpPath" 2>$null }
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Installing WordPress ..."
-    & wp core install --path="$WpPath" --url="$SiteUrl" --title="$Title" `
-        --admin_user="$AdminUser" --admin_email="$AdminEmail" --admin_password="$AdminPassword" --skip-email
-    if ($LASTEXITCODE -ne 0) { Fail "wp core install failed." }
+    if ($Multisite) {
+        Write-Host "Installing WordPress Multisite (subdirectory) ..."
+        & wp core multisite-install --path="$WpPath" --url="$SiteUrl" --title="$Title" `
+            --admin_user="$AdminUser" --admin_email="$AdminEmail" --admin_password="$AdminPassword" --skip-email
+        if ($LASTEXITCODE -ne 0) { Fail "wp core multisite-install failed." }
+    } else {
+        Write-Host "Installing WordPress ..."
+        & wp core install --path="$WpPath" --url="$SiteUrl" --title="$Title" `
+            --admin_user="$AdminUser" --admin_email="$AdminEmail" --admin_password="$AdminPassword" --skip-email
+        if ($LASTEXITCODE -ne 0) { Fail "wp core install failed." }
+    }
 } else {
     Write-Host "WordPress already installed; ensuring siteurl/home = $SiteUrl ."
     & wp option update siteurl "$SiteUrl" --path="$WpPath" | Out-Null
@@ -146,19 +183,84 @@ if (Test-Path $addonsRoot) {
 & wp theme activate corex --path="$WpPath" | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail "Could not activate the Corex theme." }
 
-& wp plugin activate corex-core --path="$WpPath" | Out-Null
-if ($LASTEXITCODE -ne 0) { Fail "Could not activate corex-core, which every other plugin requires." }
+if ($Multisite) {
+    # The network fixture the multisite suite asserts against, identical to the CI action's.
+    # Network-activated plugins must load on every site; corex-email is activated on site2 ALONE,
+    # which is the half of the assertion that fails if activation scope is ignored.
+    $baseUrl = $SiteUrl.TrimEnd('/')
 
-# Then everything else that was junctioned above, add-ons included. The integration suite resolves
-# add-on services from the container, so a site with only plugins/* active is not the environment
-# those tests assume.
-& wp plugin activate --all --path="$WpPath" | Out-Null
-if ($LASTEXITCODE -ne 0) { Fail "Could not activate every Corex plugin - see 'wp plugin list --path=$WpPath'." }
+    & wp theme enable corex --network --path="$WpPath" | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "Could not network-enable the Corex theme." }
 
-# --- 7. Verify (the constitution's Environment Gate) ---
+    & wp plugin activate corex-core --network --path="$WpPath" | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "Could not network-activate corex-core, which every other plugin requires." }
+
+    & wp plugin activate corex-config corex-forms corex-blocks corex-ui corex-guides `
+        --network --path="$WpPath" | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "Could not network-activate the Corex plugins." }
+
+    # Ordered, not a set: site2 must exist and have corex-email activated on it BEFORE site3 is
+    # created, because SiteSchemaTest asserts that site3's CoreX tables can only have arrived via
+    # wp_initialize_site. Creating them together would still pass for the wrong reason.
+    foreach ($site in @(
+        @{ Slug = 'site2'; Title = 'Second Site' },
+        @{ Slug = 'site3'; Title = 'Third Site'  }
+    )) {
+        # Held in plain variables, not read as $site.Slug inside the argument. PowerShell expands
+        # only the bare variable there and appends the rest as literal text, so `--slug=$site.Slug`
+        # is sent as `--slug=System.Collections.Hashtable.Slug` — which WP-CLI accepts. The first
+        # pass creates a site at that path and the second fails with "Sorry, that site already
+        # exists!", naming neither the real cause nor the slug it actually used.
+        $slug  = $site.Slug
+        $title = $site.Title
+
+        # Idempotent, and checked on the captured output. `... | Out-Null; if (-not $?)` reads the
+        # exit status of Out-Null rather than the match, so it is always true and the site is never
+        # created — a re-run would then silently diverge from a fresh one.
+        $existing = @(& wp site list --path="$WpPath" --field=url)
+        $present  = $existing | Where-Object { $_ -like "*/$slug/*" }
+        if (-not $present) {
+            & wp site create --slug="$slug" --title="$title" --path="$WpPath" | Out-Null
+            if ($LASTEXITCODE -ne 0) { Fail "Could not create $slug." }
+        }
+
+        if ($slug -eq 'site2') {
+            & wp plugin activate corex-email --path="$WpPath" --url="$baseUrl/site2/" | Out-Null
+            if ($LASTEXITCODE -ne 0) { Fail "Could not activate corex-email on site2." }
+        }
+    }
+} else {
+    & wp plugin activate corex-core --path="$WpPath" | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "Could not activate corex-core, which every other plugin requires." }
+
+    # Then everything else that was junctioned above, add-ons included. The integration suite resolves
+    # add-on services from the container, so a site with only plugins/* active is not the environment
+    # those tests assume.
+    & wp plugin activate --all --path="$WpPath" | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "Could not activate every Corex plugin - see 'wp plugin list --path=$WpPath'." }
+}
+
+# --- 7. Install the Corex schema ---
+# SchemaSelfHeal runs only from admin or cron by design (spec 100 FR-035): a `wp plugin list` must
+# not write tables. A WP-CLI activation therefore leaves them uncreated until somebody loads
+# wp-admin, so the explicit tooling is called explicitly here — otherwise the integration suite
+# boots WordPress from the CLI, finds no activity table, and fails somewhere that looks unrelated.
+if ($Multisite) {
+    & wp corex migrate --network --path="$WpPath"
+} else {
+    & wp corex migrate --path="$WpPath"
+}
+if ($LASTEXITCODE -ne 0) { Fail "wp corex migrate failed - the Corex tables were not created." }
+
+# --- 8. Verify (the constitution's Environment Gate) ---
 Write-Host "`n== Verification ==" -ForegroundColor Cyan
 & wp theme list --path="$WpPath"
-& wp plugin list --path="$WpPath"
+if ($Multisite) {
+    & wp site list --path="$WpPath" --fields=blog_id,url
+    & wp plugin list --network --path="$WpPath" --status=active --field=name
+} else {
+    & wp plugin list --path="$WpPath"
+}
 Write-Host "`nSite : $SiteUrl"
 Write-Host "Admin: $SiteUrl/wp-admin/  ($AdminUser)"
 Write-Host "Done." -ForegroundColor Green

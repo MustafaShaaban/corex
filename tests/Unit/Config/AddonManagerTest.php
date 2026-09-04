@@ -11,10 +11,15 @@ declare(strict_types=1);
 use Corex\Config\Addons\AddonManager;
 use Corex\Config\Addons\AddonRegistry;
 use Corex\Config\Addons\AddonState;
+use Corex\Multisite\SingleSiteMultisiteContext;
+use Corex\Multisite\WpPluginActivationInspector;
 
 function manager(): AddonManager
 {
-    return new AddonManager(new AddonRegistry());
+    return new AddonManager(
+        new AddonRegistry(),
+        new WpPluginActivationInspector(new SingleSiteMultisiteContext()),
+    );
 }
 
 it('blocks disabling an add-on an active add-on requires, naming the dependent', function () {

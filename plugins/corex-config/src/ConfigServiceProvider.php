@@ -123,6 +123,8 @@ use Corex\Config\Submissions\WpSubmissionExportStore;
 use Corex\Config\Retention\SubmissionRetentionStore;
 use Corex\Database\Schema\ManagedTables;
 use Corex\Database\Schema\Migrator;
+use Corex\Database\Schema\SchemaComponent;
+use Corex\Database\Schema\SchemaRegistry;
 use Corex\Config\Insights\InsightRegistry;
 use Corex\Config\Insights\InsightStore;
 use Corex\Config\Insights\InsightWidgetFacts;
@@ -153,6 +155,7 @@ use Corex\Jobs\JobDispatcher;
 use Corex\Jobs\JobHandlerRegistry;
 use Corex\Jobs\JobRepository;
 use Corex\Jobs\JobService;
+use Corex\Multisite\SiteScope;
 use Corex\Mail\SubmissionEmailGateway;
 use Corex\Mail\UnavailableSubmissionEmailGateway;
 
@@ -177,12 +180,20 @@ final class ConfigServiceProvider extends ServiceProvider
 
         $this->container->singleton(
             BrandingService::class,
-            static fn (ContainerInterface $c): BrandingService => new BrandingService(
-                $c->make(ConfigInterface::class),
-                // The approved Core X product lockup (see assets/brand/logo-manifest.json).
-                // A per-site `brand.logo_url` override still wins, so client identity is unaffected.
-                plugins_url('assets/brand/corex-lockup.svg', dirname(__DIR__) . '/corex-config.php'),
-            ),
+            static function (ContainerInterface $c): BrandingService {
+                $branding = new BrandingService(
+                    $c->make(ConfigInterface::class),
+                    // The approved Core X product lockup (see assets/brand/logo-manifest.json).
+                    // A per-site `brand.logo_url` override still wins, so client identity is unaffected.
+                    static fn (): string => plugins_url(
+                        'assets/brand/corex-lockup.svg',
+                        dirname(__DIR__) . '/corex-config.php',
+                    ),
+                );
+                $c->make(SiteScope::class)->register($branding);
+
+                return $branding;
+            },
         );
 
         $this->container->singleton(AdminBranding::class);
@@ -357,6 +368,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Config\Data\DataRegistry::class),
                 $c->make(\Corex\Config\Addons\AddonRegistry::class),
                 $c,
+                $c->make(\Corex\Multisite\PluginActivationInspector::class),
             ),
         );
 
@@ -431,6 +443,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Security\Admin\AdminGuard::class),
                 $c->make(\Corex\Admin\AdminPage::class),
                 $c,
+                $c->make(\Corex\Multisite\PluginActivationInspector::class),
             ),
         );
 
@@ -712,6 +725,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Security\Admin\AdminGuard::class),
                 $c->make(\Corex\Admin\AdminPage::class),
                 $c->make(\Corex\Config\Email\TransportAdvisory::class),
+                $c->make(\Corex\Multisite\PluginActivationInspector::class),
             ),
         );
     }
@@ -735,15 +749,20 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(ManagedTables::class)->register($readingEventTable->managed());
         $this->container->make(ManagedTables::class)->register($notificationTable->managed());
         $this->container->make(ManagedTables::class)->register($notificationUserStateTable->managed());
-        $this->installFoundationSchema([
-            $activityTable->schema(),
-            ...$accessTables->schemas(),
-            $jobTable->schema(),
-            $loginAttemptTable->schema(),
-            $readingEventTable->schema(),
-            $notificationTable->schema(),
-            $notificationUserStateTable->schema(),
-        ]);
+        $this->container->make(SchemaRegistry::class)->register(new SchemaComponent(
+            'product-foundation',
+            self::FOUNDATION_SCHEMA_VERSION,
+            [
+                $activityTable->schema(),
+                ...$accessTables->schemas(),
+                $jobTable->schema(),
+                $loginAttemptTable->schema(),
+                $readingEventTable->schema(),
+                $notificationTable->schema(),
+                $notificationUserStateTable->schema(),
+            ],
+            self::FOUNDATION_SCHEMA_OPTION,
+        ));
         $this->container->make(AbilityCompatibility::class)->register();
         $this->registerNotificationProducers();
         $this->container->make(\Corex\Config\Notifications\NotificationBell::class)->register();
@@ -850,32 +869,5 @@ final class ConfigServiceProvider extends ServiceProvider
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\EmailStudioFailureNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\ReadinessNotificationProducer::class));
         $registry->register();
-    }
-
-    /** @param list<\Corex\Database\Schema\Table> $schemas */
-    private function installFoundationSchema(array $schemas): void
-    {
-        $installedVersion = get_option(self::FOUNDATION_SCHEMA_OPTION, '');
-
-        if ($installedVersion === self::FOUNDATION_SCHEMA_VERSION) {
-            return;
-        }
-
-        if (! is_file(ABSPATH . 'wp-admin/includes/upgrade.php')) {
-            return;
-        }
-
-        $migrator = $this->container->make(Migrator::class);
-        foreach ($schemas as $schema) {
-            $migrator->create($schema);
-        }
-
-        foreach ($schemas as $schema) {
-            if (! $migrator->exists($schema->name)) {
-                return;
-            }
-        }
-
-        update_option(self::FOUNDATION_SCHEMA_OPTION, self::FOUNDATION_SCHEMA_VERSION, false);
     }
 }

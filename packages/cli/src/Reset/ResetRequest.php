@@ -11,9 +11,9 @@ namespace Corex\Cli\Reset;
 defined('ABSPATH') || exit;
 
 /**
- * What the operator asked for: the reset mode, whether it is a dry run, and whether the
- * typed safeguard was supplied. A pure value object — the command builds it from the CLI
- * flags, the planner and gate read it.
+ * What the operator asked for: the reset mode, dry-run and typed-safeguard state,
+ * plus whether network scope was explicit. The command builds this pure value object
+ * from CLI flags; the planner and gates read it.
  */
 final class ResetRequest
 {
@@ -24,6 +24,7 @@ final class ResetRequest
         public readonly string $mode = self::SOFT,
         public readonly bool $dryRun = false,
         public readonly bool $confirmed = false,
+        public readonly bool $network = false,
     ) {
     }
 

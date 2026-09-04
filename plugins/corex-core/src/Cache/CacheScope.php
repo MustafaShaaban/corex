@@ -29,7 +29,7 @@ enum CacheScope: string
 
     /**
      * `wp_cache_flush()`. Opt-in only, because it empties the object cache for **every** plugin on
-     * the site, not just CoreX.
+     * every site in a Multisite network, not just CoreX or the current site.
      */
     case ObjectCache = 'object';
 

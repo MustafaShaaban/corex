@@ -14,13 +14,14 @@ use Corex\Database\QueryBuilder;
 use Corex\Database\QueryExecutor;
 use Corex\Fields\MetaFieldDriver;
 use Corex\Repositories\Hydrator;
+use Corex\Tests\Fixtures\Data\FakeConfig;
 use Corex\Tests\Fixtures\Data\Job;
 
 require_once dirname(__DIR__, 2) . '/Unit/Data/DataFixtures.php';
 
 function jobExecutor(): QueryExecutor
 {
-    return new QueryExecutor(new Hydrator(new MetaFieldDriver()));
+    return new QueryExecutor(new Hydrator(new MetaFieldDriver()), new FakeConfig());
 }
 
 it('runs a real query and returns a Collection of hydrated Models', function () {
@@ -29,7 +30,7 @@ it('runs a real query and returns a Collection of hydrated Models', function () 
     $second = wp_insert_post(['post_type' => 'job', 'post_title' => 'Beta', 'post_status' => 'publish']);
     update_post_meta($second, 'job_salary', 200);
 
-    $result = (new QueryBuilder(Job::class, jobExecutor(), 500))
+    $result = (new QueryBuilder(Job::class, jobExecutor()))
         ->where('post_status', 'publish')
         ->get();
 
@@ -44,7 +45,7 @@ it('runs a real query and returns a Collection of hydrated Models', function () 
 });
 
 it('returns an empty Collection when nothing matches', function () {
-    $result = (new QueryBuilder(Job::class, jobExecutor(), 500))
+    $result = (new QueryBuilder(Job::class, jobExecutor()))
         ->where('post_status', 'no-such-status-xyz')
         ->get();
 

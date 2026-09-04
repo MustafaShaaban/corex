@@ -73,7 +73,6 @@ final class QueryBuilder
     public function __construct(
         private readonly string $modelClass,
         private readonly QueryExecutor $executor,
-        private readonly int $cap,
     ) {
     }
 
@@ -253,8 +252,9 @@ final class QueryBuilder
     public function toArgs(): array
     {
         $args = $this->coreArgs;
+        $cap = $this->executor->maxResults();
         $args['post_type'] = ($this->modelClass)::postType();
-        $args['posts_per_page'] = min($this->limit ?? $this->cap, $this->cap);
+        $args['posts_per_page'] = min($this->limit ?? $cap, $cap);
         $args['no_found_rows'] = ! $this->countTotal;
 
         if ($this->page !== null) {

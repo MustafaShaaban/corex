@@ -19,8 +19,10 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Cache\ArrayCacheStore;
 use Corex\Cache\CacheClassification;
 use Corex\Cache\CacheEntry;
+use Corex\Cache\CacheManager;
 use Corex\Cache\CacheRegistry;
 use Corex\Cache\CacheScope;
 
@@ -158,4 +160,16 @@ it('drops a malformed declaration rather than treating it as clearable', functio
     }
 
     expect($registry->all())->toHaveCount(8);
+});
+
+it('warns that a persistent object-cache flush reaches every network site', function () {
+    Functions\when('wp_cache_flush')->justReturn(true);
+    Functions\when('wp_using_ext_object_cache')->justReturn(true);
+    Functions\when('is_multisite')->justReturn(true);
+
+    $outcome = (new CacheManager(new ArrayCacheStore(), new CacheRegistry()))
+        ->clear(CacheScope::ObjectCache, confirmed: true);
+
+    expect($outcome->unsupported['object'])
+        ->toContain('every site in the network');
 });

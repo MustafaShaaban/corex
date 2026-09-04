@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
+use Corex\Multisite\SiteScope;
 use Corex\Support\Config\ConfigInterface;
 
 /**
@@ -29,14 +30,17 @@ final class AssetsServiceProvider extends ServiceProvider
             function (ContainerInterface $c): AssetManager {
                 $config = $c->make(ConfigInterface::class);
 
-                return new AssetManager(
+                $manager = new AssetManager(
                     COREX_CORE_PATH,
-                    plugins_url('', COREX_CORE_FILE),
+                    static fn (): string => plugins_url('', COREX_CORE_FILE),
                     AssetEnvironment::from($this->environmentValue($config)),
                     $this->loadManifest(COREX_CORE_PATH . 'build/manifest.json'),
                     COREX_CORE_VERSION,
                     new AssetVersion(),
                 );
+                $c->make(SiteScope::class)->register($manager);
+
+                return $manager;
             },
         );
 

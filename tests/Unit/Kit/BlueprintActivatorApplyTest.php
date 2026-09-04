@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use Corex\Kit\BlueprintActivator;
+use Corex\Multisite\SingleSiteMultisiteContext;
+use Corex\Multisite\WpPluginActivationInspector;
 
 /** @return list<array{title:string,slug:string,content:string,front?:bool}> */
 function kitPages(): array
@@ -45,7 +47,9 @@ it('creates absent pages and sets the front page to the home', function () {
         return true;
     });
 
-    $outcome = (new BlueprintActivator())->seedPages(kitPages());
+    $outcome = (new BlueprintActivator(
+        new WpPluginActivationInspector(new SingleSiteMultisiteContext()),
+    ))->seedPages(kitPages());
 
     expect($outcome->created())->toHaveCount(2)
         ->and($outcome->frontPageId)->toBe(101)
@@ -75,7 +79,9 @@ it('adopts and populates a pre-existing empty home, and sets it as the front pag
         return true;
     });
 
-    $outcome = (new BlueprintActivator())->seedPages(kitPages());
+    $outcome = (new BlueprintActivator(
+        new WpPluginActivationInspector(new SingleSiteMultisiteContext()),
+    ))->seedPages(kitPages());
 
     expect($outcome->populated())->toHaveCount(1)
         ->and($outcome->frontPageId)->toBe(2511)
@@ -101,7 +107,9 @@ it('skips a home that already has user content and does not change the front pag
     });
     Functions\when('wp_update_post')->justReturn(0);
 
-    $outcome = (new BlueprintActivator())->seedPages(kitPages());
+    $outcome = (new BlueprintActivator(
+        new WpPluginActivationInspector(new SingleSiteMultisiteContext()),
+    ))->seedPages(kitPages());
 
     expect($outcome->skipped())->toHaveCount(1)
         ->and($outcome->frontPageId)->toBeNull()
