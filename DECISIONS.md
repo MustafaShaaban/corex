@@ -4382,13 +4382,22 @@ leaves a pull request pending indefinitely, so requiring a path-filtered workflo
 every docs-only change. That is why eight dependency pull requests sat at `MERGEABLE/UNSTABLE` with
 a red gate and could have been merged anyway.
 
-**Decision: remove the `paths:` filter, and add "Validate dependency advisories" to the required
-checks on `main`.** It costs about four minutes per pull request. The weekly schedule stays — a week
-with no pull requests is exactly the week an advisory lands unnoticed.
+**Decision: remove the `paths:` filter.** It costs about four minutes per pull request. The weekly
+schedule stays — a week with no pull requests is exactly the week an advisory lands unnoticed.
 
-"Integration tests (real WordPress Multisite)" is added to the required set at the same time. Spec
-100 makes Multisite a supported configuration rather than a claim in the README, and a supported
-configuration whose suite is allowed to fail is back to being a claim.
+**Requiring it is deferred, and the evidence changed the plan.** `npm audit` returned unparseable
+output twice within one hour on 2026-09-04 — npm-root on PR #196, npm-docs on PR #197 — each after a
+~10 minute run, with the same endpoint returning `503 Service Unavailable` locally that morning. Both
+were `UNAVAILABLE`, not findings. Failing closed on that is correct and stays. But a *required* check
+that a third-party outage can fail blocks every merge in the repository until a human re-runs it,
+which trades one silent failure mode for a loud one. The gate gets a bounded retry around each audit
+invocation first — retrying only an unparseable or failed request, never a successful audit that
+reports findings — and becomes required once it can survive a registry hiccup.
+
+"Integration tests (real WordPress Multisite)" is added to the required set when the advisory gate
+is, since it needs no third-party service and has passed on every run. Spec 100 makes Multisite a
+supported configuration rather than a claim in the README, and a supported configuration whose suite
+is allowed to fail is back to being a claim.
 
 This is the third gate in this repository found not to be gating: the workflow that never ran
 (spec 099), the stacked-PR CI gap that rendered "no checks" identically to "all checks passed"
