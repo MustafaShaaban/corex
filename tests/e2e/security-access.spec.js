@@ -386,8 +386,17 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 		// in DECISIONS as a known limitation with its measurements, not silently dropped here.
 		const withoutInlineStyles = ( html ) =>
 			html.replace( /<style[\s\S]*?<\/style>/g, '' );
-		const adminMarkup = withoutInlineStyles( admin );
-		const controlMarkup = withoutInlineStyles( control );
+		// The <link> tags go too, and for the same reason. With separate assets on, core emits
+		// one stylesheet link per block it decided the page needs; with them off it emits a
+		// single bundled one. That is a different count of tags, not a different document, and
+		// leaving them in put the two responses 28% apart on a first attempt at this.
+		const withoutStylesheets = ( html ) =>
+			withoutInlineStyles( html ).replace(
+				/<link[^>]+rel=["']stylesheet["'][^>]*>/g,
+				''
+			);
+		const adminMarkup = withoutStylesheets( admin );
+		const controlMarkup = withoutStylesheets( control );
 		const ratio =
 			Math.abs( adminMarkup.length - controlMarkup.length ) /
 			controlMarkup.length;

@@ -21,19 +21,13 @@
  * by somebody who must be refused AND by somebody who must not be.
  */
 const { test, expect } = require( '@playwright/test' );
+const { signInAs } = require( './helpers' );
 
 const SUBSCRIBER = process.env.COREX_REQUESTER_USER || 'corex-requester';
 const SUBSCRIBER_PASS =
 	process.env.COREX_REQUESTER_PASS || 'CorexE2E!requester1';
 const EDITOR = process.env.COREX_EDITOR_USER || 'corex-editor';
 const EDITOR_PASS = process.env.COREX_EDITOR_PASS || 'CorexE2E!editor1';
-
-/** Where a login form might be, in the order global-setup.js tries them (spec 069). */
-const LOGIN_PATHS = [
-	process.env.COREX_LOGIN_PATH,
-	'/wp-login.php',
-	'/corex-login/',
-].filter( Boolean );
 
 /**
  * Admin addresses a subscriber cannot open, and the status each must answer with.
@@ -79,59 +73,6 @@ const REFUSED_FOR_AN_EDITOR = [
 	[ 'core Plugins', '/wp-admin/plugins.php', 403 ],
 	[ 'a CoreX screen', '/wp-admin/admin.php?page=corex-forms', 403 ],
 ];
-
-/**
- * Sign in as a named user, in a context of its own so the shared administrator session survives.
- *
- * @param {import('@playwright/test').Browser} browser  The Playwright browser.
- * @param {string}                             baseURL  Where the site is served.
- * @param {string}                             user     The login name.
- * @param {string}                             password The password.
- * @return {Promise<import('@playwright/test').Page>} The signed-in page.
- */
-async function signInAs( browser, baseURL, user, password ) {
-	// newContext() does not inherit `use.baseURL` the way the `page` fixture does, so it is passed
-	// through explicitly — otherwise every relative navigation below is invalid, whatever the
-	// config says.
-	const context = await browser.newContext( {
-		storageState: undefined,
-		baseURL,
-	} );
-	const page = await context.newPage();
-
-	let signedIn = false;
-	for ( const path of LOGIN_PATHS ) {
-		await page.goto( path ).catch( () => {} );
-
-		if (
-			! ( await page
-				.locator( '#user_login' )
-				.isVisible()
-				.catch( () => false ) )
-		) {
-			continue;
-		}
-
-		await page.fill( '#user_login', user );
-		await page.fill( '#user_pass', password );
-
-		// Bounded: an unbounded wait inside a loop whose purpose is to *try* an address spends the
-		// whole test budget on the first one that half-answers.
-		await Promise.all( [
-			page.waitForNavigation( { timeout: 15000 } ).catch( () => {} ),
-			page.click( '#wp-submit' ),
-		] );
-		signedIn = ! page.url().includes( 'wp-login.php' );
-
-		if ( signedIn ) {
-			break;
-		}
-	}
-
-	expect( signedIn, `signed in as ${ user }` ).toBe( true );
-
-	return page;
-}
 
 /**
  * Assert that what the browser is looking at is a CoreX error document.

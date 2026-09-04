@@ -216,9 +216,128 @@ async function seedSubmission(
 	);
 }
 
+/**
+ * Where the login lives, in the order worth trying.
+ *
+ * `security-access.spec.js` turns login protection on for its own probes, which makes
+ * /wp-login.php answer the theme's 404 like any missing address — the feature working, not a
+ * fault. `fullyParallel: false` orders the tests *inside* a file; it does not stop files from
+ * running on different workers, so that toggle lands mid-run in whichever other file happens to
+ * be signing somebody in.
+ */
+const LOGIN_PATHS = [
+	process.env.COREX_LOGIN_PATH,
+	'/wp-login.php',
+	'/corex-login/',
+].filter( Boolean );
+
+/**
+ * Sign a non-administrator in, and survive the login endpoint moving underneath us.
+ *
+ * The administrator session is established once by `global-setup.js` and reused, so this is only
+ * for the fixture users a spec needs in addition to it.
+ *
+ * Three copies of this function existed, in `admin-errors`, `guides` and `access-request`. All
+ * three walked LOGIN_PATHS once, and two of them carried a comment explaining that the login page
+ * moves while they run. One pass is not enough for that: the window is between the *attempts*.
+ * Protection comes on, /wp-login.php stops serving a form, the loop falls through to
+ * /corex-login/ — and if protection went off again in between, that 404s too. Both candidates
+ * fail, `signedIn` is false, and the report says "could not sign in" in a file that changed
+ * nothing. It took down guides.spec.js on 2026-09-03 and admin-errors.spec.js on 2026-09-04, on
+ * pull requests that touched no browser test at all.
+ *
+ * So rediscover rather than retry-in-place: each pass re-reads where the login is now. This is
+ * not papering over a flake — the endpoint genuinely moves, and re-finding it is what a correct
+ * client does. Every attempt is recorded so a real failure names its cause instead of arriving
+ * as a bare false.
+ *
+ * @param {import('@playwright/test').Browser} browser  The Playwright browser.
+ * @param {string}                             baseURL  Where the site is served.
+ * @param {string}                             user     The login name.
+ * @param {string}                             password The password.
+ * @return {Promise<import('@playwright/test').Page>} The signed-in page.
+ */
+async function signInAs( browser, baseURL, user, password ) {
+	// newContext() does not inherit `use.baseURL` the way the `page` fixture does, so it is passed
+	// through explicitly — otherwise every relative navigation below is invalid, whatever the
+	// config says.
+	const context = await browser.newContext( {
+		storageState: undefined,
+		baseURL,
+	} );
+	const page = await context.newPage();
+	const attempts = [];
+	let signedIn = false;
+
+	for ( let pass = 1; pass <= 3 && ! signedIn; pass++ ) {
+		for ( const path of LOGIN_PATHS ) {
+			const response = await page.goto( path ).catch( ( error ) => {
+				attempts.push(
+					`pass ${ pass } ${ path }: navigation threw — ${ error.message }`
+				);
+				return null;
+			} );
+
+			if (
+				! ( await page
+					.locator( '#user_login' )
+					.isVisible()
+					.catch( () => false ) )
+			) {
+				attempts.push(
+					`pass ${ pass } ${ path }: no #user_login (status ${
+						response ? response.status() : 'none'
+					}, landed on ${ page.url() })`
+				);
+				continue;
+			}
+
+			await page.fill( '#user_login', user );
+			await page.fill( '#user_pass', password );
+
+			// Bounded: an unbounded wait inside a loop whose purpose is to *try* an address spends
+			// the whole test budget on the first one that half-answers.
+			await Promise.all( [
+				page.waitForNavigation( { timeout: 15000 } ).catch( () => {} ),
+				page.click( '#wp-submit' ),
+			] );
+			signedIn = ! page.url().includes( 'wp-login.php' );
+
+			if ( signedIn ) {
+				break;
+			}
+
+			// A refusal is rendered on the login screen we are still looking at. Without it the
+			// message cannot tell a wrong password from "too many attempts from this address",
+			// and those have opposite fixes.
+			const refusal = await page
+				.locator( '#login_error, .notice-error' )
+				.first()
+				.innerText()
+				.catch( () => '' );
+			attempts.push(
+				`pass ${ pass } ${ path }: submitted and stayed on ${ page.url() }${
+					refusal
+						? ` — ${ refusal.trim().replace( /\s+/g, ' ' ) }`
+						: ''
+				}`
+			);
+		}
+	}
+
+	helperExpect(
+		signedIn,
+		`signed in as ${ user }\n  ` + attempts.join( '\n  ' )
+	).toBe( true );
+
+	return page;
+}
+
 module.exports = {
 	collectConsoleErrors,
 	seedSubmission,
+	signInAs,
 	FLOW_SLUG,
 	COREX_ROUTES,
+	LOGIN_PATHS,
 };

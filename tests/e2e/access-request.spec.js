@@ -8,18 +8,12 @@
  * storage state.
  */
 const { test, expect } = require( '@playwright/test' );
+const { signInAs } = require( './helpers' );
 
 const REQUESTER = process.env.COREX_REQUESTER_USER || 'corex-requester';
 const REQUESTER_PASS =
 	process.env.COREX_REQUESTER_PASS || 'CorexE2E!requester1';
 const DENIED_SCREEN = '/wp-admin/admin.php?page=corex-forms';
-
-/** Where a login form might be, in the order global-setup.js tries them. */
-const LOGIN_PATHS = [
-	process.env.COREX_LOGIN_PATH,
-	'/wp-login.php',
-	'/corex-login/',
-].filter( Boolean );
 
 /** Fields the old JSON page exposed. None of them belongs on a page a person reads. */
 const INTERNAL_FIELDS = [
@@ -85,65 +79,6 @@ async function clearPendingRequests( page ) {
 	}
 }
 
-/**
- * A browser signed in as the subscriber, in its own context so the shared admin session is untouched.
- *
- * @param {import('@playwright/test').Browser} browser The Playwright browser.
- * @param {string}                             baseURL Where the site is served.
- * @return {Promise<import('@playwright/test').Page>} The signed-in page.
- */
-async function signInAsRequester( browser, baseURL ) {
-	// `browser.newContext()` does not inherit `use.baseURL` the way the `page` fixture does, so it
-	// is passed through from the `baseURL` fixture — otherwise every relative URL below is an
-	// invalid navigation, whatever the config says.
-	const context = await browser.newContext( {
-		storageState: undefined,
-		baseURL,
-	} );
-	const page = await context.newPage();
-
-	// The login page moves. `security-access.spec.js` turns login protection on, which makes
-	// /wp-login.php answer the theme's 404 like any missing address — the feature working, not a
-	// fault — and with ten workers that can happen while this file is running. `global-setup.js`
-	// copes the same way for the administrator session; without it, sign-in fails silently here
-	// and the failure surfaces several assertions later as a missing form.
-	let signedIn = false;
-	for ( const path of LOGIN_PATHS ) {
-		await page.goto( path ).catch( () => {} );
-
-		if (
-			! ( await page
-				.locator( '#user_login' )
-				.isVisible()
-				.catch( () => false ) )
-		) {
-			continue;
-		}
-
-		await page.fill( '#user_login', REQUESTER );
-		await page.fill( '#user_pass', REQUESTER_PASS );
-
-		// Bounded, and a timeout falls through to the next candidate rather than ending the test.
-		// An unbounded `waitForNavigation()` inside a loop whose whole purpose is to *try* an
-		// address spends the entire 60s test budget on the first one that half-answers — which is
-		// what it did under ten parallel workers, reported as a timeout in a helper rather than as
-		// "could not sign in".
-		await Promise.all( [
-			page.waitForNavigation( { timeout: 15000 } ).catch( () => {} ),
-			page.click( '#wp-submit' ),
-		] );
-		signedIn = ! page.url().includes( 'wp-login.php' );
-
-		if ( signedIn ) {
-			break;
-		}
-	}
-
-	expect( signedIn, `signed in as ${ REQUESTER }` ).toBe( true );
-
-	return page;
-}
-
 test.describe( 'Access request', () => {
 	// `page` here carries the shared administrator session, which is exactly what the cleanup
 	// needs — and it is the same route the Access screen's own Approve/Deny buttons call, so a
@@ -156,7 +91,12 @@ test.describe( 'Access request', () => {
 		browser,
 		baseURL,
 	} ) => {
-		const page = await signInAsRequester( browser, baseURL );
+		const page = await signInAs(
+			browser,
+			baseURL,
+			REQUESTER,
+			REQUESTER_PASS
+		);
 
 		const denied = await page.goto( DENIED_SCREEN );
 
@@ -211,7 +151,12 @@ test.describe( 'Access request', () => {
 		browser,
 		baseURL,
 	} ) => {
-		const page = await signInAsRequester( browser, baseURL );
+		const page = await signInAs(
+			browser,
+			baseURL,
+			REQUESTER,
+			REQUESTER_PASS
+		);
 
 		await page.goto( DENIED_SCREEN );
 		await page.fill(
@@ -241,7 +186,12 @@ test.describe( 'Access request', () => {
 		baseURL,
 		page,
 	} ) => {
-		const requester = await signInAsRequester( browser, baseURL );
+		const requester = await signInAs(
+			browser,
+			baseURL,
+			REQUESTER,
+			REQUESTER_PASS
+		);
 		await requester.goto( DENIED_SCREEN );
 		await requester.fill(
 			'#corex-denied-request-reason',
@@ -331,7 +281,12 @@ test.describe( 'Access request', () => {
 		browser,
 		baseURL,
 	} ) => {
-		const page = await signInAsRequester( browser, baseURL );
+		const page = await signInAs(
+			browser,
+			baseURL,
+			REQUESTER,
+			REQUESTER_PASS
+		);
 
 		await page.setViewportSize( { width: 375, height: 800 } );
 		await page.goto( DENIED_SCREEN );
