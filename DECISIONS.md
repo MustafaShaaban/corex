@@ -4338,3 +4338,26 @@ assertion never caught it. It is recorded here rather than quietly dropped, beca
 statement is "known, measured, structurally unreachable from here", not "within 5%". Closing it
 needs a way to make core take the front-end asset path on an `is_admin()` request, and no such hook
 exists today.
+
+## #223 — Spec 100 T072 was not achievable, and no failing commit was manufactured to satisfy it
+
+Date: 2026-09-04 · Spec: 100 · Status: Final
+
+T072 asked that T067 — the integration test proving a network-activated add-on loads on every site — be landed
+*first*, with its assertion failing against the `Boot` of the day, so CI history would carry a record of the
+defect. Good instinct: the defect was invisible precisely because nothing could see it.
+
+It could not be done. `Boot::activePlugins()` was deleted in T036 (commit `01409b4`), five commits before
+Phase 8 was written. By the time the test existed, the state it was meant to fail against did not.
+
+**Decision: skip it, and say so, rather than reconstruct the failure.** The alternative was reverting working
+code onto the branch to produce a red run documenting a bug that same branch had already fixed — a knowingly
+broken commit in the history, whose only purpose is to make a checklist item true.
+
+The behaviour is not unverified. `ProviderActivationTest` asserts it against a real three-site network — a
+network-activated add-on loads on all three, a site-activated one only on its own site — and T041 and T051
+pin the same facts in Pest across every install shape. What is missing is a red CI run, which is evidence
+about the *past*, not about the code.
+
+The general rule: **when a task's premise expires because earlier work removed it, record the expiry.** Do not
+retrofit the world so the checklist stays literally true.

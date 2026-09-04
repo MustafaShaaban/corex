@@ -6,6 +6,52 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Multisite is implemented, not advertised.** `README.md` claimed support and
+  `docs/en/06-cookbooks/multisite.md` gave a page of advice about it; across four plugins, twelve add-ons and
+  a theme there were exactly three runtime references to Multisite, one of them a diagnostics row rendering
+  the word "Yes". Spec 100 builds the runtime floor: a `Corex\Multisite` context layer, per-site schema
+  migration driven by `wp_initialize_site` and `wpmu_drop_tables`, a network configuration layer, and
+  activation-scope awareness throughout. Single-site installs are unaffected by construction — the
+  `SingleSite*` contexts make no WordPress calls and register no `switch_blog` listener.
+- `wp corex migrate [--network]` — migrates one site or every site in a network, in batches, continuing past
+  a failing site and reporting per-site outcomes.
+- `scripts/setup-wordpress.ps1 -Multisite` — builds the three-site network the multisite suite needs, in
+  `./wp-ms`, mirroring what CI provisions.
+- A multisite integration suite (`composer test:multisite`), run in CI as `integration-multisite`.
+- A nightly CI run on `main`. CI installs WordPress with `--version=latest`, so a result depends on two
+  inputs and only one of them is in git; WordPress 7.1 broke two browser specs and `main` looked green for
+  three weeks because nothing re-ran. `main` can now go red without a commit — that is the design
+  (DECISIONS #221).
+
+### Fixed
+
+- **Network-activating a CoreX add-on silently disabled it on every site in the network.** `Boot` read
+  `active_plugins` and never `active_sitewide_plugins`, so the provider was dropped and the add-on registered
+  no bindings, hooks, blocks or REST routes — with no notice, no error, and the Network Plugins screen still
+  reporting it active. Every activation call site now goes through `PluginActivationInspector`.
+- Site-scoped state leaking across `switch_to_blog()` — asset manifests, branding, the HR notification
+  address, queued-job site context, and notification preferences off the main site.
+- `docs/en/06-cookbooks/multisite.md` told operators to put a network-wide default in `.env` "and let a site
+  override it with its own option". The precedence runs the other way and always did: `.env` sits above every
+  option, so a site cannot override it. The page carried `last_verified: null`, which was the only accurate
+  thing on it.
+- Two browser specs that WordPress 7.1 broke, neither of which was a CoreX regression, and one sign-in race
+  that was: `security-access.spec.js` toggles login protection for the whole site while other spec files run
+  on other workers, and the shared sign-in helper only looked for the login endpoint once
+  (DECISIONS #222).
+- Dependency advisories across all three ecosystems — `js-yaml`, `nanoid`, `fast-uri`, `qs` and the
+  `express` chain. The `fast-uri` override had been pinned at `^3.1.5`, the vulnerable floor itself.
+
+### Changed
+
+- **`.env` feature flags now resolve through `DotenvSource` rather than `getenv()`.** A flag set in `.env`
+  was previously read by a different mechanism than every other setting; it now follows the documented
+  precedence chain like everything else.
+- **A network-activated add-on now boots.** Stated separately from the fix above because it is a behaviour
+  change for any install that had network-activated an add-on and worked around it being inert.
+
 ## [0.41.0] — 2026-08-05
 
 Eight specs, opened by three defect reports and one look at what the repository was claiming about

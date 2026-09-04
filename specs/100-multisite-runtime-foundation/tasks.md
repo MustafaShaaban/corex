@@ -149,34 +149,40 @@ register schema.
 
 ## Phase 8 — The multisite environment
 
-- [ ] **T061** `tests/bootstrap-multisite.php` — `wp-ms/wp-load.php`, exit-with-instructions when
+- [x] **T061** `tests/bootstrap-multisite.php` — `wp-ms/wp-load.php`, exit-with-instructions when
       absent.
-- [ ] **T062** `phpunit-multisite.xml.dist` + `tests/Integration/Multisite/TestCase.php` (skips when
+- [x] **T062** `phpunit-multisite.xml.dist` + `tests/Integration/Multisite/TestCase.php` (skips when
       `! is_multisite()`); `composer test:multisite`, not part of `composer test`.
-- [ ] **T063** `.gitignore` gains `/wp-ms/`.
-- [ ] **T064** `.github/actions/provision-wordpress/action.yml` — `multisite`/`path`/`db-prefix`
+- [x] **T063** `.gitignore` gains `/wp-ms/`.
+- [x] **T064** `.github/actions/provision-wordpress/action.yml` — `multisite`/`path`/`db-prefix`
       inputs; `wp core multisite-install` branch; the three-site activation fixture from the plan.
-- [ ] **T065** `.github/workflows/ci.yml` — `integration-multisite` job, cloned from `integration`.
-- [ ] **T066** Integration: per-site prefixes under `switch_to_blog`. (plan §Testing 1)
-- [ ] **T067** Integration: network-activated provider loads on all three sites; site-activated on
+- [x] **T065** `.github/workflows/ci.yml` — `integration-multisite` job, cloned from `integration`.
+- [x] **T066** Integration: per-site prefixes under `switch_to_blog`. (plan §Testing 1)
+- [x] **T067** Integration: network-activated provider loads on all three sites; site-activated on
       exactly one. (SC-001, SC-002)
-- [ ] **T068** Integration: all seven tables exist for the site created after activation. (SC-004)
-- [ ] **T069** Integration: deleting that site removes them. (SC-005)
-- [ ] **T070** Integration: settings, branding and notification preferences do not leak. (SC-006)
-- [ ] **T071** Integration: `BootLogger` recorded no error on any site. (SC-009)
-- [ ] **T072** Land T067 first with the assertion failing against the current `Boot`, so CI history
+- [x] **T068** Integration: all seven tables exist for the site created after activation. (SC-004)
+- [x] **T069** Integration: deleting that site removes them. (SC-005)
+- [x] **T070** Integration: settings, branding and notification preferences do not leak. (SC-006)
+- [x] **T071** Integration: `BootLogger` recorded no error on any site. (SC-009)
+- [~] **T072** — **not achievable, and not attempted.** It asked to land T067 with its assertion failing
+  against the then-current `Boot`, so CI history would hold a record of the defect. `Boot::activePlugins()`
+  was deleted in T036 (commit `01409b4`) before Phase 8 was written, so the failing state no longer exists to
+  demonstrate. Manufacturing one by reverting working code would put a knowingly broken commit on the branch
+  to document a bug the same branch already fixed. The behaviour is pinned by T041 and T051 in Pest and by
+  `ProviderActivationTest` against a real network. Recorded in DECISIONS #223.
+  <br>Original text: Land T067 first with the assertion failing against the current `Boot`, so CI history
       carries the defect. (SC-003)
-- [ ] **T073** `scripts/setup-wordpress.ps1` gains an optional `-Multisite` switch; local default
+- [x] **T073** `scripts/setup-wordpress.ps1` gains an optional `-Multisite` switch; local default
       stays single-site.
 
 ## Phase 9 — Close the loop
 
-- [ ] **T074** Correct `docs/en/06-cookbooks/multisite.md` and `docs/ar/06-cookbooks/multisite.md`:
+- [x] **T074** Correct `docs/en/06-cookbooks/multisite.md` and `docs/ar/06-cookbooks/multisite.md`:
       real precedence, real network-activation behaviour, `last_verified` set. (FR-046)
-- [ ] **T075** `docs/internal/COREX-FRAMEWORK.md` — the new `Corex\Multisite` layer, the site-scope
+- [x] **T075** `docs/internal/COREX-FRAMEWORK.md` — the new `Corex\Multisite` layer, the site-scope
       rule, and the config precedence (its §26 rule requires this in the same change).
-- [ ] **T076** `docs-app` reference and any guide naming config precedence or add-on activation.
-- [ ] **T077** `CHANGELOG.md` — including the two behaviour changes: `.env` feature flags now gate
+- [x] **T076** `docs-app` reference and any guide naming config precedence or add-on activation.
+- [x] **T077** `CHANGELOG.md` — including the two behaviour changes: `.env` feature flags now gate
       add-on boot, and schema self-heal no longer runs on front-end requests.
 - [ ] **T078** Guard Gate — `clean-code-guard`, `wp-guard`, `test-guard`, `docs-guard`.
 - [ ] **T079** `PROGRESS.md` + `DECISIONS.md`.
