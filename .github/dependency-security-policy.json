@@ -1,4 +1,22 @@
 {
   "version": 1,
-  "exceptions": []
+  "exceptions": [
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-jmr9-qjv8-65gv",
+      "package": "extract-zip",
+      "paths": [
+        "node_modules/extract-zip"
+      ],
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "reason": "Every version of extract-zip is affected (range *), so there is no upgrade to take and no override that resolves it. It arrives only as a transitive dependency of @wordpress/scripts, through @wordpress/e2e-test-utils-playwright -> lighthouse -> puppeteer-core -> @puppeteer/browsers, where its single job is unpacking the Chromium archive puppeteer downloads. Nothing in this repository imports lighthouse, puppeteer or e2e-test-utils-playwright: the browser suite drives @playwright/test directly and Playwright installs its own browsers. The package is installed and never executed.",
+      "control": "The advisory is a symlink path traversal in an extracted archive, so it needs an attacker-supplied zip. The only archive this path would ever open is a Chromium build fetched from Google's CDN by a code path this repository does not call. It is a devDependency, so it reaches no WordPress site: scripts/build-shared-host-dist.mjs ships plugin and theme source, never node_modules. Pull-request CI runs with a read-only token and no production secrets.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-12-31",
+      "upstreamTrigger": "Remove when @puppeteer/browsers depends on a fixed extract-zip (none exists as of 2026-09-04; latest 2.0.1 is affected), or when @wordpress/scripts drops the lighthouse and puppeteer chain from @wordpress/e2e-test-utils-playwright.",
+      "range": "<=2.0.1",
+      "url": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv"
+    }
+  ]
 }
