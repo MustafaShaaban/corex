@@ -106,6 +106,10 @@ resolves `wp_2_corex_activity` with no further help. Two things follow.
 `wp_initialize_site`, and `wp_delete_site` drops them again — the deletion is registered through
 `wpmu_drop_tables`, so WordPress removes them as part of its own cleanup.
 
+**A CLI-only install has to ask.** `SchemaSelfHeal` runs from admin or cron only — a `wp plugin list` must
+not write tables — so a site activated entirely through WP-CLI has no CoreX tables until the first admin
+request, a cron run, or an explicit migrate. Provisioning that never loads wp-admin should call it.
+
 **An existing network is migrated explicitly**, because installing an update does not visit every site:
 
 ```bash

@@ -110,3 +110,18 @@ runs:
           wp plugin activate --all --path='${{ inputs.path }}'
           wp plugin list --path='${{ inputs.path }}' --status=active --field=name
         fi
+
+    # Install the schema. SchemaSelfHeal deliberately runs only from admin or cron — a
+    # `wp plugin list` must not write tables — so a WP-CLI activation leaves them uncreated until
+    # somebody loads wp-admin. That is the design (spec 100 FR-035), and it means the explicit
+    # tooling has to be called explicitly. Without this the integration suite boots WordPress from
+    # the CLI, finds no activity table, and fails with "CoreX could not append the activity event"
+    # in tests that have nothing to do with schema.
+    - name: Install the Corex schema
+      shell: bash
+      run: |
+        if [[ '${{ inputs.multisite }}' == 'true' ]]; then
+          wp corex migrate --network --path='${{ inputs.path }}'
+        else
+          wp corex migrate --path='${{ inputs.path }}'
+        fi

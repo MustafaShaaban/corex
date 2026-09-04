@@ -51,6 +51,15 @@ All notable changes to Corex are documented here. The format follows
   precedence chain like everything else.
 - **A network-activated add-on now boots.** Stated separately from the fix above because it is a behaviour
   change for any install that had network-activated an add-on and worked around it being inert.
+- **Schema is no longer installed on every boot.** It used to be created unconditionally as corex-config
+  booted. It is now registered with `SchemaRegistry` and applied by `SchemaSelfHeal` from **admin or cron
+  only** — a `wp plugin list` must not write tables (FR-035) — by `wp_initialize_site` for a new site on a
+  network, or explicitly by `wp corex migrate`.
+
+  For a site activated through wp-admin nothing changes. **For a site activated entirely through WP-CLI the
+  tables do not exist until the first admin request, a cron run, or `wp corex migrate`.** Provisioning that
+  never loads wp-admin — CI, containers, scripted deploys — should call `wp corex migrate` after activating,
+  which is what `.github/actions/provision-wordpress` and `scripts/setup-wordpress.ps1` now do.
 
 ## [0.41.0] — 2026-08-05
 

@@ -240,7 +240,19 @@ if ($Multisite) {
     if ($LASTEXITCODE -ne 0) { Fail "Could not activate every Corex plugin - see 'wp plugin list --path=$WpPath'." }
 }
 
-# --- 7. Verify (the constitution's Environment Gate) ---
+# --- 7. Install the Corex schema ---
+# SchemaSelfHeal runs only from admin or cron by design (spec 100 FR-035): a `wp plugin list` must
+# not write tables. A WP-CLI activation therefore leaves them uncreated until somebody loads
+# wp-admin, so the explicit tooling is called explicitly here — otherwise the integration suite
+# boots WordPress from the CLI, finds no activity table, and fails somewhere that looks unrelated.
+if ($Multisite) {
+    & wp corex migrate --network --path="$WpPath"
+} else {
+    & wp corex migrate --path="$WpPath"
+}
+if ($LASTEXITCODE -ne 0) { Fail "wp corex migrate failed - the Corex tables were not created." }
+
+# --- 8. Verify (the constitution's Environment Gate) ---
 Write-Host "`n== Verification ==" -ForegroundColor Cyan
 & wp theme list --path="$WpPath"
 if ($Multisite) {
