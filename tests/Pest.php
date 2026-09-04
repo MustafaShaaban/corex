@@ -13,3 +13,4 @@ declare(strict_types=1);
 
 uses(\Corex\Tests\Unit\TestCase::class)->in('Unit');
 uses(\Corex\Tests\Integration\TestCase::class)->in('Integration');
+uses(\Corex\Tests\Integration\Multisite\TestCase::class)->in('Integration/Multisite');

@@ -12,6 +12,18 @@ inputs:
     description: PHP version to set up.
     required: false
     default: '8.3'
+  multisite:
+    description: Whether to install a subdirectory WordPress Multisite network.
+    required: false
+    default: 'false'
+  path:
+    description: Directory where WordPress is installed.
+    required: false
+    default: wp
+  db-prefix:
+    description: Database table prefix for this WordPress install.
+    required: false
+    default: cx_
 
 runs:
   using: composite
@@ -30,47 +42,71 @@ runs:
 
     - name: Download WordPress
       shell: bash
-      run: wp core download --path=wp --version=latest
+      run: wp core download --path='${{ inputs.path }}' --version=latest
 
     - name: Configure and install WordPress
       shell: bash
       run: |
-        wp config create --path=wp --dbname=corex --dbuser=root --dbpass=root \
-          --dbhost=127.0.0.1 --dbprefix=cx_ --skip-check
-        wp core install --path=wp --url='${{ inputs.site-url }}' --title=Corex \
-          --admin_user=admin --admin_password=changeme --admin_email=admin@example.com \
-          --skip-email
+        wp config create --path='${{ inputs.path }}' --dbname=corex --dbuser=root --dbpass=root \
+          --dbhost=127.0.0.1 --dbprefix='${{ inputs.db-prefix }}' --skip-check
+        if [[ '${{ inputs.multisite }}' == 'true' ]]; then
+          wp core multisite-install --path='${{ inputs.path }}' --url='${{ inputs.site-url }}' \
+            --title=Corex --admin_user=admin --admin_password=changeme \
+            --admin_email=admin@example.com --skip-email
+        else
+          wp core install --path='${{ inputs.path }}' --url='${{ inputs.site-url }}' --title=Corex \
+            --admin_user=admin --admin_password=changeme --admin_email=admin@example.com \
+            --skip-email
+        fi
         # Pretty permalinks, like any real site. A fresh install defaults to plain, and with plain
         # permalinks WordPress ignores the path entirely — an address that does not exist comes back
         # as the home page with a 200 instead of a 404, and the framework matches its custom login
         # slug by query string rather than by path. Both change what the suites observe.
-        wp rewrite structure '/%postname%/' --path=wp
-        wp rewrite flush --path=wp
+        wp rewrite structure '/%postname%/' --path='${{ inputs.path }}'
+        wp rewrite flush --path='${{ inputs.path }}'
 
     # The monorepo IS the source; wp-content only points at it. Mirrors the junctions the local
     # setup script creates, with symlinks.
     - name: Link the monorepo into wp-content
       shell: bash
       run: |
-        ln -sfn "$PWD/theme" wp/wp-content/themes/corex
+        ln -sfn "$PWD/theme" '${{ inputs.path }}'/wp-content/themes/corex
         for dir in plugins/*/; do
-          ln -sfn "$PWD/${dir%/}" "wp/wp-content/plugins/$(basename "$dir")"
+          ln -sfn "$PWD/${dir%/}" '${{ inputs.path }}'/wp-content/plugins/"$(basename "$dir")"
         done
         # Add-ons are plugin-shaped packages; link the ones carrying a top-level PHP file.
         for dir in addons/*/; do
           if compgen -G "${dir}*.php" > /dev/null; then
-            ln -sfn "$PWD/${dir%/}" "wp/wp-content/plugins/$(basename "$dir")"
+            ln -sfn "$PWD/${dir%/}" '${{ inputs.path }}'/wp-content/plugins/"$(basename "$dir")"
           fi
         done
 
     - name: Activate the theme and plugins
       shell: bash
       run: |
-        wp theme activate corex --path=wp
+        wp theme activate corex --path='${{ inputs.path }}'
+        site_url='${{ inputs.site-url }}'
+        site_url="${site_url%/}"
         # corex-core first: the others declare "Requires Plugins: corex-core", and WP-CLI activates
         # in the order given, so an alphabetical list fails with "Only activated 2 of 4 plugins".
-        wp plugin activate corex-core --path=wp
-        # Then everything linked, add-ons included — the suites resolve add-on services from the
-        # container, and a site with only plugins/* active is not the environment they assume.
-        wp plugin activate --all --path=wp
-        wp plugin list --path=wp --status=active --field=name
+        if [[ '${{ inputs.multisite }}' == 'true' ]]; then
+          wp theme enable corex --network --path='${{ inputs.path }}'
+          wp plugin activate corex-core --network --path='${{ inputs.path }}'
+          wp plugin activate corex-config corex-forms corex-blocks corex-ui corex-guides \
+            --network --path='${{ inputs.path }}'
+          wp site create --slug=site2 --title='Second Site' --path='${{ inputs.path }}'
+          wp plugin activate corex-email --path='${{ inputs.path }}' \
+            --url="$site_url/site2/"
+          # Created after activation so wp_initialize_site is the only route to its CoreX tables.
+          wp site create --slug=site3 --title='Third Site' --path='${{ inputs.path }}'
+          wp site list --path='${{ inputs.path }}' --fields=blog_id,url
+          wp plugin list --network --path='${{ inputs.path }}' --status=active --field=name
+          wp plugin list --path='${{ inputs.path }}' --url="$site_url/site2/" \
+            --status=active --field=name
+        else
+          wp plugin activate corex-core --path='${{ inputs.path }}'
+          # Then everything linked, add-ons included — the suites resolve add-on services from the
+          # container, and a site with only plugins/* active is not the environment they assume.
+          wp plugin activate --all --path='${{ inputs.path }}'
+          wp plugin list --path='${{ inputs.path }}' --status=active --field=name
+        fi
