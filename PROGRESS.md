@@ -39,7 +39,14 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-Nothing. No open feature spec, and no release in preparation.
+**`fix/dependency-advisories-2026-09` — the advisory gate, red on `main` since at least
+2026-08-12.** Five consecutive weekly runs failed, the most recent on `8c1467c` itself, while
+`PROJECT-STATUS.md` and this file went on describing the tree as cleared. A **critical** Astro
+advisory was among them. Astro 7.1.5 → 7.3.2, `svgo` and `colord` upgraded, and the two advisories
+with no upstream fix bounded by policy. Gate now passes locally on all three ecosystems
+(DECISIONS #226).
+
+No open feature spec, and no release in preparation.
 
 One dependency pull request stays open on purpose: **#186, `@wordpress/components` 38 → 40.** npm
 resolves 38.0.0 against a `^39.0.0` requirement and reports success, producing a lockfile that
@@ -76,7 +83,10 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   block styles for CoreX blocks that are not on the page; a real 404 does not. Structurally
   unreachable from here — `wp_should_load_separate_core_block_assets()` returns false on `is_admin()`
   before its own filter runs. Measured in DECISIONS #222.
-- One bounded dependency exception (`extract-zip`), with a named upstream trigger.
+- Three bounded dependency exceptions, each with a named upstream trigger: `extract-zip` twice
+  (GHSA-jmr9-qjv8-65gv and its sibling GHSA-7pqw-9j4j-h8q3, which must be removed together) and
+  `adm-zip` (GHSA-vwc7-r8mq-g2x9). All three are dev-only, and none has an upstream fix to take —
+  every published version of both packages is in range (DECISIONS #226).
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.
