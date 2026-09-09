@@ -4409,3 +4409,47 @@ This is the third gate in this repository found not to be gating: the workflow t
 (spec 099), the stacked-PR CI gap that rendered "no checks" identically to "all checks passed"
 (DECISIONS #153), and now a check nothing required. The pattern worth naming: **a gate is not the
 script, it is the script plus the thing that makes failing it matter.**
+
+## #225 — No command may unregister its neighbours
+
+Date: 2026-09-09 · Spec: — (issue #201) · Status: Final
+
+Under `composer install --no-dev` seven WP-CLI commands disappeared, `wp corex migrate` among them.
+Not an error — absent. `wp help corex` still listed the namespace and still listed commands, so the
+gap read as a release that never shipped them. A production install *is* a `--no-dev` install:
+`scripts/build-shared-host-dist.mjs` tells the operator to run exactly that. A site deployed by the
+documented path could not run its own schema migration, and nothing said so.
+
+Two defects, and only the second is interesting.
+
+`nikic/php-parser` was declared nowhere in `composer.json`. `ClassDocReader` uses it at runtime and
+it arrived only as a transitive dependency of `pestphp/pest`, so removing dev dependencies removed
+it. That is now a production dependency.
+
+But the missing `require` line is only what pulled the trigger. `CliServiceProvider::boot()` built
+every command eagerly, inline, in one straight-line method, so the first constructor to throw
+aborted the method and took every command declared after it with it. A docs-only dependency was
+therefore able to delete `migrate`. Commands registered *before* the throw survived, which is
+precisely what made it invisible: the namespace still answered.
+
+**Decision: registration is a lazy map, not a construction sequence.** `commandRegistrations()`
+returns name → handler and builds nothing; each handler constructs what it needs when its command
+runs. A missing dependency now fails loudly on its own invocation instead of quietly deleting its
+neighbours. `MediaServiceProvider` had the same shape — two commands plus, behind them, the
+`delete_attachment` cleanup and a job registration — and was converted before it could bite.
+
+The WP-CLI help surface is what makes the media half non-obvious. WP-CLI derives `wp help` from the
+callable's docblock, so swapping an object for a closure silently deletes the documented options.
+Moving them into a structured `synopsis` is not cosmetic: **the flag name must not be translatable.**
+WP-CLI parses the option syntax, so a translated `[--dry-run]` breaks argument handling in every
+locale except the one anybody testing would be using.
+
+The suite could not have caught any of this. `CommandRegistrationTest` asserted WP-CLI was *absent*,
+so `boot()` returned early and the registration path was never exercised — and the dev dependencies
+that hide the bug are the ones installed to run the tests. The regression test now builds the map
+with a container that throws on every resolution and asserts all 26 commands still register, having
+resolved nothing.
+
+Third instance of the pattern in DECISIONS #224's closing line, in a new place: a check that cannot
+observe the failure it exists to catch. Here the test asserted the precondition that guaranteed it
+would see nothing.

@@ -39,7 +39,15 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-Nothing. No open feature spec, and no release in preparation.
+**`fix/201-cli-command-registration` — issue #201, unpushed, no PR yet.** Two commits, both green
+locally (1821 unit, 8 integration; `--no-dev` dry-run retains php-parser). Under
+`composer install --no-dev` seven WP-CLI commands vanished silently, `wp corex migrate` among them —
+and that is the tree the documented packaging path builds. `nikic/php-parser` is now a production
+dependency, and command registration in both `CliServiceProvider` and `MediaServiceProvider` is a
+lazy map so no command's dependency can unregister its neighbours (DECISIONS #225).
+
+Next: push, open the PR, confirm CI. Nothing else is in flight — no open feature spec, and no
+release in preparation.
 
 One dependency pull request stays open on purpose: **#186, `@wordpress/components` 38 → 40.** npm
 resolves 38.0.0 against a `^39.0.0` requirement and reports success, producing a lockfile that
