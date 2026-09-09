@@ -15,13 +15,6 @@ defined('ABSPATH') || exit;
  * files tracked in a `_corex_webp` record (so it never removes originals, manually-uploaded WebP, or any
  * untracked file), clears the record afterwards, supports `--dry-run`, and reports scanned/deleted/skipped/
  * failed counts. The same tracked-only deletion runs on `delete_attachment` via {@see forgetAttachment()}.
- *
- * ## OPTIONS
- *
- * [--dry-run]          Report what would be deleted without removing anything.
- * [--all]              Process all attachments with a tracked derivative.
- * [--attachment=<id>]  Only this attachment.
- * [--limit=<n>]        Process at most N (0 = all). Default: 0.
  */
 final class WebpResetCommand
 {

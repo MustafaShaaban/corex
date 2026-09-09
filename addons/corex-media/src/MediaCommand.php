@@ -15,12 +15,6 @@ defined('ABSPATH') || exit;
  * design — it never deletes or overwrites originals, skips attachments that already have a `.webp`
  * sibling, skips unsupported types, respects the current {@see MediaSettings}, and supports a
  * dry-run. The decisions are the pure {@see WebpRegenerator}; this class is the WP/WP-CLI boundary.
- *
- * ## OPTIONS
- *
- * [--dry-run]      Report what would be converted without writing anything.
- * [--limit=<n>]    Process at most N attachments (0 = all). Default: 0.
- * [--attachment=<id>]  Only this attachment ID.
  */
 final class MediaCommand
 {
