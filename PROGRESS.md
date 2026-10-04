@@ -69,6 +69,10 @@ On `main` since v0.43.0, and not in a release yet:
   being newer than the newest request that existed before the file ran. Measured on the local
   install: 219 rows before and after each spec. Without WP-CLI the specs still run, the rows stay,
   and stderr says so.
+- **A retention action the form does not offer is refused, not a fatal error** (#237, DECISIONS
+  #239). The handler passed any posted action to the retention service and did not catch its
+  exception. It now checks the action first and the screen answers with an error notice. One unit
+  test drives the real handler with such an action; one integration test pins the notice.
 
 Released in v0.43.0:
 

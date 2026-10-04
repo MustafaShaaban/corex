@@ -38,9 +38,11 @@ function pruneRedirectQuery(array $post): array
 {
     $_POST = $post + [RetentionController::NONCE => 'nonce-value', 'corex_confirm' => '1'];
 
+    $settings   = new RetentionSettings();
     $controller = new RetentionController(
         new AdminGuard(),
-        new SubmissionRetention(new RetentionSettings(), Mockery::mock(SubmissionRetentionStore::class)),
+        new SubmissionRetention($settings, Mockery::mock(SubmissionRetentionStore::class)),
+        $settings,
     );
 
     try {
@@ -95,4 +97,16 @@ it('reports a move to trash when the form posted no action', function () {
     $query = pruneRedirectQuery([]);
 
     expect($query['corex_action'] ?? null)->toBe('trash');
+});
+
+/**
+ * The select offers three actions, and a post is whatever was sent. Anything else used to reach
+ * the retention service, whose `InvalidArgumentException` nothing caught: the operator got
+ * WordPress's critical-error page instead of an answer (DECISIONS #239).
+ */
+it('refuses an action the form does not offer, and says so instead of failing', function () {
+    $query = pruneRedirectQuery(['corex_retention_action' => 'delete']);
+
+    // The whole query: a refusal reports no action and no count, because none ran.
+    expect($query)->toBe(['page' => 'corex-submissions', 'corex_status' => 'retention-invalid']);
 });

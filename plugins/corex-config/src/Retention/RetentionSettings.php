@@ -59,10 +59,16 @@ final class RetentionSettings
         return $days > 0;
     }
 
+    /** Whether this is a retention action: archive, trash or anonymize. */
+    public function isAction(string $action): bool
+    {
+        return isset(self::STATES_TO_SKIP[$action]);
+    }
+
     /** @throws \InvalidArgumentException when the action is not archive, trash or anonymize. */
     public function assertAction(string $action): void
     {
-        if (! isset(self::STATES_TO_SKIP[$action])) {
+        if (! $this->isAction($action)) {
             throw new \InvalidArgumentException('The submission retention action is invalid.');
         }
     }

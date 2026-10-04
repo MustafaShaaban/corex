@@ -98,6 +98,13 @@ it('does not draw a run that was refused as a success', function () {
         ->and($notice)->not->toContain('corex-state--success');
 });
 
+it('answers an action the form does not offer with an error that says nothing changed', function () {
+    $notice = retentionResultNotice(['corex_status' => 'retention-invalid']);
+
+    expect($notice)->toContain('That is not a valid retention action. Nothing was changed.')
+        ->and($notice)->toContain('corex-state--error');
+});
+
 it('still draws a saved policy and a completed run as a success', function (array $query) {
     expect(retentionResultNotice($query))->toContain('corex-state--success');
 })->with([

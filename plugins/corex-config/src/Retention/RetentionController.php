@@ -16,7 +16,8 @@ defined('ABSPATH') || exit;
 /**
  * Handles the retention actions (spec 065): save the window, and prune old submissions. Both are
  * `admin_post` handlers gated by the shared {@see AdminGuard} (capability + nonce). Pruning additionally
- * requires the confirmation box — it never deletes without an explicit preview + confirm. PRG redirects
+ * requires the confirmation box — it never deletes without an explicit preview + confirm — and an
+ * action the form offers; anything else is refused before the retention service is reached. PRG redirects
  * back to the Submissions Inbox with a status and, after a prune, the action that ran and how many
  * submissions it handled, which is all the screen has to report the result from.
  */
@@ -29,6 +30,7 @@ final class RetentionController
     public function __construct(
         private readonly AdminGuard $guard,
         private readonly SubmissionRetention $retention,
+        private readonly RetentionSettings $settings,
     ) {
     }
 
@@ -62,9 +64,14 @@ final class RetentionController
         $action = isset($_POST['corex_retention_action'])
             ? sanitize_key(wp_unslash($_POST['corex_retention_action']))
             : 'trash';
+        if (! $this->settings->isAction($action)) {
+            $this->redirect('retention-invalid');
+
+            return;
+        }
+
         $includeTest = isset($_POST['corex_include_test']) && $_POST['corex_include_test'] === '1';
         $removed = $this->retention->prune($action, $includeTest);
-        // Reached only for an action the retention service accepted; it throws on any other.
         $this->redirect('retention-pruned', ['corex_count' => $removed, 'corex_action' => $action]);
     }
 

@@ -6,6 +6,22 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **A retention action the form does not offer ended in WordPress's critical-error page.** The handler
+  passed any posted action to the retention service, whose exception nothing caught. No submission was
+  touched, but the operator got a crash. The handler now refuses the action and the screen says "That is
+  not a valid retention action. Nothing was changed." (DECISIONS #239).
+
+### Client impact
+
+What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
+Read this before taking the release.
+
+- **One string in the `corex` text domain is new**: "That is not a valid retention action. Nothing was
+  changed.", on the Submissions screen. A site that ships its own translation of that domain shows it in
+  English until it is translated. Nothing else changes for a running site.
+
 ## [0.43.0] — 2026-10-04
 
 Two features for building a client's site on CoreX, and the fixes found along the way.
