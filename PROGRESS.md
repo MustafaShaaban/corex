@@ -39,16 +39,6 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Spec 102 — a client site the framework can be updated underneath — is implemented on PR #211**
-(DECISIONS #230). The framework prescribed `sites/<client>/` and its own checks rejected it. A client
-repository now passes them untouched: one ownership file says which paths are the client's, hygiene,
-the linters, Jest and prettier read it, `npm run verify:framework` proves the framework files match
-the recorded release, and `make:site` generates the baseline record, the update checklist and the
-client's own CI. `client-site-layout` in CI generates a real site and runs every check against it.
-The update procedure is documented in English and Arabic. `specs/102-update-safe-client-sites/tasks.md`
-records each task, including the ones the work changed. Open on it: making `client-site-layout` a
-required check is an owner setting in branch protection.
-
 Spec 101, coming-soon mode, is open as a draft pull request (#210) with a spec and a plan, and no
 code. One thing found while building 102 shaped that plan: a generated client theme is a standalone
 block theme, not a child of the Corex theme, so it does not inherit a template the parent ships.
@@ -59,6 +49,15 @@ No dependency pull request is being held.
 
 On `main` since v0.42.1, and not in a release yet:
 
+- **Spec 102 — a client site the framework can be updated underneath** (#211, DECISIONS #230). The
+  framework prescribed `sites/<client>/` and its own checks rejected it. A client repository now
+  passes them untouched: one ownership file says which paths are the client's, hygiene, the
+  linters, Jest and prettier read it, `npm run verify:framework` proves the framework files match
+  the recorded release, and `make:site` generates the baseline record, the update checklist and the
+  client's own CI. `client-site-layout` in CI generates a real site and runs every check against
+  it. The update procedure is documented in English and Arabic.
+  `specs/102-update-safe-client-sites/tasks.md` records each task, including the ones the work
+  changed. [`CHANGELOG.md`](CHANGELOG.md) lists it under Unreleased.
 - **The integration suite no longer rewrites the operations mode of the install it runs against**
   (#221, tests only). `OptionalDashboardWidgetsTest` saved `OperationsModeStore::current()` and
   handed it back to `set()`: on an install that had declared nothing, that declared it
@@ -118,6 +117,8 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   occurrence names itself (DECISIONS #228).
 - **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
   Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
+- **`client-site-layout` is not a required check either** (spec 102). Making it one is an owner
+  setting in branch protection.
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.
