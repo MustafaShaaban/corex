@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.42.1** — tag `v0.42.1`, reachable from `main`.
+- **Latest published release: v0.43.0** — tag `v0.43.0`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -40,29 +40,26 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Spec 101, coming-soon mode, is complete on pull request #210 and waiting to be merged.** All 68
-tasks are done. Coming soon is the fifth operations mode: a signed-out visitor gets the
-coming-soon page at the home URL with a 200 and a temporary redirect to it from everywhere else;
-anybody who can edit posts gets the real site and is told on every page that visitors do not; a
-preview link shows the real site to somebody without an account; `wp corex mode get|set` reads and
-changes the mode from the command line; and `make:site` gives every new client theme its own
-`templates/coming-soon.html`. `specs/101-coming-soon-mode/tasks.md` records each task and what it
-found (DECISIONS #238).
-
-What it is waiting on, in order: the pull request being merged; then a release,
-**v0.43.0**, which is the first a client repository can be created from with the mode in it.
-
-One thing it found that was not its own has since been fixed on `main`: every WP-CLI command
-logged a "translation loading triggered too early" notice, because commands were registered before
-`init`. They are registered on `cli_init` now (DECISIONS #235), which covers the new mode command
-too.
+No feature spec is in flight. Spec 101 (coming-soon mode) and spec 102 (update-safe client sites)
+are both in v0.43.0, which makes it the first release a client repository can be created from with
+the mode in it and with a way to take every later release by merging.
 
 No dependency pull request is being held.
 
 ## Recently landed
 
-On `main` since v0.42.1, and not in a release yet:
+Released in v0.43.0. Nothing is on `main` since that is not in a release.
 
+- **Spec 101 — coming soon is an operations mode** (#210, DECISIONS #238). While it is on, a
+  signed-out visitor gets the coming-soon page at the home URL with a 200 and a temporary redirect
+  to it from everywhere else; anybody who can edit posts gets the real site, and is told on every
+  page that visitors do not; a preview link shows the real site to somebody without an account
+  and is removed when the site leaves the mode; `wp corex mode get|set` reads and changes the mode
+  by the screen's own rules; and `make:site` gives every new client theme its own
+  `templates/coming-soon.html`. The whole behaviour is one pure table,
+  `ComingSoonDecision::for()`, and a browser project of its own proves it from outside.
+  `specs/101-coming-soon-mode/tasks.md` records each task and what it found. The guide is
+  *Coming soon mode*, in English and Arabic.
 - **Submission retention reaches every record again** (#228, DECISIONS #232). A run used to be
   handed the newest 500 private submissions past the window whatever had been done to them, so
   once 500 were anonymized or archived it re-handled those and never reached the rest. A run now
@@ -82,9 +79,8 @@ On `main` since v0.42.1, and not in a release yet:
   DECISIONS #235). `CliServiceProvider` and `MediaServiceProvider` built their command definitions
   while booting on `plugins_loaded`, and a definition translates its help text. Both now register
   on `cli_init`, the hook WP-CLI fires on `init`. The help text stays translatable and every
-  synopsis is unchanged. Spec 101's `modeCommandDefinition()` is covered without an edit once #210
-  merges on top; checked against that branch at `6e541962`. Two unit tests pin it, one per
-  provider.
+  synopsis is unchanged. Spec 101's `modeCommandDefinition()` is covered without an edit. Two unit
+  tests pin it, one per provider.
 - **A retention run refused for want of confirmation is a warning, not a success** (#235,
   DECISIONS #237). Applying retention without ticking the confirmation box runs nothing; the
   notice saying so was drawn with the success tick. Two integration tests pin the tone of each
@@ -97,7 +93,7 @@ On `main` since v0.42.1, and not in a release yet:
   client's own CI. `client-site-layout` in CI generates a real site and runs every check against
   it. The update procedure is documented in English and Arabic.
   `specs/102-update-safe-client-sites/tasks.md` records each task, including the ones the work
-  changed. [`CHANGELOG.md`](CHANGELOG.md) lists it under Unreleased.
+  changed. [`CHANGELOG.md`](CHANGELOG.md) lists it under 0.43.0.
 - **The integration suite no longer rewrites the operations mode of the install it runs against**
   (#221, tests only). `OptionalDashboardWidgetsTest` saved `OperationsModeStore::current()` and
   handed it back to `set()`: on an install that had declared nothing, that declared it
