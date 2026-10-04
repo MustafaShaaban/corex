@@ -12,14 +12,26 @@
 declare(strict_types=1);
 
 use Corex\Config\Notifications\CommandCenterWidget;
+use Corex\Tests\Support\NotificationRows;
+
+/** The prefix of every key the readiness producer writes. */
+const READINESS_NOTIFICATION_DEDUP = 'readiness.blocker:';
 
 beforeEach(function () {
     $administrators = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
     wp_set_current_user((int) ($administrators[0] ?? 0));
     $this->widget = Corex\Boot::app()->container()->make(CommandCenterWidget::class);
+
+    // Rendering evaluates readiness for real, and the readiness producer records what it finds:
+    // this install's own blockers, under the keys the product uses. Those rows belong to the
+    // install. A run must not add them, and must not raise the count or move the date on ones
+    // already there, so they are handed back as they were.
+    $this->readinessRows = NotificationRows::snapshotPrefixed(READINESS_NOTIFICATION_DEDUP);
 });
 
 afterEach(function () {
+    NotificationRows::restorePrefixed(READINESS_NOTIFICATION_DEDUP, $this->readinessRows);
+
     // The registration test sets an admin screen (`dashboard`); restore a front-end screen so a later
     // test's is_admin() is not left true (which would, e.g., make MaintenanceGuard stop blocking).
     set_current_screen('front');

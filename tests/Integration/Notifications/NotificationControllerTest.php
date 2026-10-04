@@ -6,6 +6,14 @@
  * Real WordPress, real tables, real REST dispatch. Proves the two-tier gate (read/own-action vs
  * manage), nonce enforcement on mutations, visibility filtering, and the envelope shape.
  *
+ * **The actor is an account this file creates, not the install's administrator.** The suite runs
+ * against a developer's real install, and these routes answer for whoever is signed in: an
+ * administrator sees every notification the install holds, so "the list has one item" was only
+ * true because each test began by deleting both tables — the developer's notifications and read
+ * state with them. A fresh account with no role sees nothing but what a test addresses to it, by
+ * id or through the one ability it is given, so the same assertions hold on a full table and
+ * nothing of the developer's is read, changed or removed.
+ *
  * @package Corex\Tests\Integration\Notifications
  */
 
@@ -23,24 +31,50 @@ use Corex\Notifications\Notification;
 use Corex\Notifications\NotificationCategory;
 use Corex\Notifications\NotificationRecipient;
 use Corex\Notifications\NotificationSeverity;
+use Corex\Tests\Support\NotificationRows;
+
+/** Every dedup key this file stores starts with this, which is how its rows are found again. */
+const CONTROLLER_TEST_DEDUP = 'controller.test:';
+
+/** An ability no producer targets and no role holds: only this file's actor sees through it. */
+const CONTROLLER_TEST_ABILITY = 'corex_notification_controller_test';
+
+const CONTROLLER_TEST_LOGIN = 'corex-notification-actor';
 
 beforeEach(function () {
-    global $wpdb;
     $this->migrator = new Migrator();
     $this->migrator->create((new NotificationTable())->schema());
     $this->migrator->create((new NotificationUserStateTable())->schema());
-    $wpdb->query('DELETE FROM ' . $this->migrator->fullName(NotificationUserStateTable::NAME));
-    $wpdb->query('DELETE FROM ' . $this->migrator->fullName(NotificationTable::NAME));
+    // A run that died before its afterEach leaves rows addressed to an account that is gone, and
+    // a repeat of the same dedup key would merge into them and stay invisible to the new one.
+    NotificationRows::forgetPrefixed(CONTROLLER_TEST_DEDUP);
 
     $this->repo = new WpNotificationRepository($this->migrator);
     (new NotificationController(new NotificationServiceImpl($this->repo), new WpNotificationPreferenceStore()))->register();
 
-    $admins = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
-    $this->adminId = (int) ($admins[0] ?? 0);
-    wp_set_current_user($this->adminId);
+    // The same died-early run leaves the account too; take it over rather than fail to create it.
+    $leftover = get_user_by('login', CONTROLLER_TEST_LOGIN);
+    $this->actorId = $leftover instanceof WP_User ? (int) $leftover->ID : (int) wp_insert_user([
+        'user_login' => CONTROLLER_TEST_LOGIN,
+        'user_pass'  => wp_generate_password(20, true, true),
+        'user_email' => CONTROLLER_TEST_LOGIN . '@example.com',
+        // No role at all. A role is a door: the install may grant CoreX abilities to any of them.
+        'role'       => '',
+    ]);
+    wp_set_current_user($this->actorId);
+    wp_get_current_user()->add_cap(CONTROLLER_TEST_ABILITY);
 });
 
-function storeNotification(NotificationRecipient $recipient, string $dedup = 'submission.new:contact'): Notification
+afterEach(function () {
+    NotificationRows::forgetPrefixed(CONTROLLER_TEST_DEDUP);
+
+    wp_set_current_user(0);
+    require_once ABSPATH . 'wp-admin/includes/user.php';
+    wp_delete_user($this->actorId);
+});
+
+/** A notification the actor sees through {@see CONTROLLER_TEST_ABILITY}, unless told otherwise. */
+function storeNotification(?NotificationRecipient $recipient = null, string $key = 'contact'): Notification
 {
     return Notification::create(
         type: 'submission.new',
@@ -50,8 +84,8 @@ function storeNotification(NotificationRecipient $recipient, string $dedup = 'su
         titleKey: 'notifications.submission.new.title',
         messageKey: 'notifications.submission.new.body',
         rendered: ['title' => 'New submission', 'body' => 'Contact form'],
-        dedupKey: $dedup,
-        recipient: $recipient,
+        dedupKey: CONTROLLER_TEST_DEDUP . $key,
+        recipient: $recipient ?? NotificationRecipient::forAbility(CONTROLLER_TEST_ABILITY),
         occurredAt: new DateTimeImmutable('now'),
     );
 }
@@ -67,7 +101,7 @@ function restCall(string $method, string $route, bool $withNonce = false): WP_RE
 }
 
 it('lists the actor’s notifications and counts the unread ones', function () {
-    $this->repo->upsertByDedupKey(storeNotification(NotificationRecipient::forAbility(CorexAbility::MANAGE_SUBMISSIONS)));
+    $this->repo->upsertByDedupKey(storeNotification());
 
     $list = restCall('GET', '/corex/v1/notifications');
     expect($list->get_status())->toBe(200);
@@ -81,7 +115,7 @@ it('lists the actor’s notifications and counts the unread ones', function () {
 });
 
 it('marks a notification read only with a nonce, and refuses without one', function () {
-    $stored = $this->repo->upsertByDedupKey(storeNotification(NotificationRecipient::forAbility(CorexAbility::MANAGE_SUBMISSIONS)));
+    $stored = $this->repo->upsertByDedupKey(storeNotification());
 
     // Logged in but no nonce → the own-action tier refuses (forbidden, not unauthorized).
     $denied = restCall('POST', '/corex/v1/notifications/' . $stored->id . '/read');
@@ -93,9 +127,9 @@ it('marks a notification read only with a nonce, and refuses without one', funct
 });
 
 it('does not list or reveal a notification the actor may not see', function () {
-    // Targeted at a different specific user — the admin is not that user and lacks any override here.
+    // Targeted at a different specific user — the actor is not that user and has no override here.
     $stored = $this->repo->upsertByDedupKey(
-        storeNotification(NotificationRecipient::forUser($this->adminId + 999), 'submission.new:other'),
+        storeNotification(NotificationRecipient::forUser($this->actorId + 999), 'other'),
     );
 
     expect(restCall('GET', '/corex/v1/notifications')->get_data()['data']['total'])->toBe(0)
@@ -103,8 +137,6 @@ it('does not list or reveal a notification the actor may not see', function () {
 });
 
 it('reads and saves per-category preferences, never muting a mandatory category', function () {
-    delete_user_meta($this->adminId, 'corex_notification_preferences');
-
     $initial = restCall('GET', '/corex/v1/notifications/preferences')->get_data();
     expect($initial['ok'])->toBeTrue();
     $security = array_values(array_filter(
@@ -128,7 +160,8 @@ it('reads and saves per-category preferences, never muting a mandatory category'
 });
 
 it('resolves a condition through the manage tier', function () {
-    $stored = $this->repo->upsertByDedupKey(storeNotification(NotificationRecipient::forAbility(CorexAbility::MANAGE_SUBMISSIONS)));
+    wp_get_current_user()->add_cap(CorexAbility::MANAGE_NOTIFICATIONS);
+    $stored = $this->repo->upsertByDedupKey(storeNotification());
 
     $response = restCall('POST', '/corex/v1/notifications/' . $stored->id . '/resolve', true);
     expect($response->get_status())->toBe(200)
@@ -143,7 +176,7 @@ it('resolves a condition through the manage tier', function () {
  * the control looked alive while doing nothing (spec 087, FR-015).
  */
 it('snoozes a notification on the parameter the client actually sends', function () {
-    $stored = $this->repo->upsertByDedupKey(storeNotification(NotificationRecipient::forAbility(CorexAbility::MANAGE_SUBMISSIONS)));
+    $stored = $this->repo->upsertByDedupKey(storeNotification());
 
     $request = new WP_REST_Request('POST', '/corex/v1/notifications/' . $stored->id . '/snooze');
     $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
@@ -160,7 +193,7 @@ it('snoozes a notification on the parameter the client actually sends', function
 });
 
 it('refuses a snooze with no date rather than silently doing nothing', function () {
-    $stored = $this->repo->upsertByDedupKey(storeNotification(NotificationRecipient::forAbility(CorexAbility::MANAGE_SUBMISSIONS)));
+    $stored = $this->repo->upsertByDedupKey(storeNotification());
 
     $response = restCall('POST', '/corex/v1/notifications/' . $stored->id . '/snooze', true);
 
@@ -186,9 +219,9 @@ it('withholds an action the actor may not use, and does not file it under needs-
         titleKey: 'notifications.submission.new.title',
         messageKey: 'notifications.submission.new.body',
         rendered: ['title' => 'New submission', 'body' => 'Contact form'],
-        dedupKey: 'submission.new:gated',
-        // Visible to anybody who can read, so the *recipient* is not what is being tested here.
-        recipient: NotificationRecipient::forAbility('read'),
+        dedupKey: CONTROLLER_TEST_DEDUP . 'gated',
+        // Visible to the actor, so the *recipient* is not what is being tested here.
+        recipient: NotificationRecipient::forAbility(CONTROLLER_TEST_ABILITY),
         occurredAt: new DateTimeImmutable('now'),
         action: \Corex\Notifications\NotificationAction::to(
             'notifications.submission.new.action',
@@ -217,13 +250,13 @@ it('offers the action, with its label, to an actor who does hold the ability', f
         titleKey: 'notifications.submission.new.title',
         messageKey: 'notifications.submission.new.body',
         rendered: ['title' => 'New submission', 'body' => 'Contact form'],
-        dedupKey: 'submission.new:allowed',
-        recipient: NotificationRecipient::forAbility('read'),
+        dedupKey: CONTROLLER_TEST_DEDUP . 'allowed',
+        recipient: NotificationRecipient::forAbility(CONTROLLER_TEST_ABILITY),
         occurredAt: new DateTimeImmutable('now'),
         action: \Corex\Notifications\NotificationAction::to(
             'notifications.submission.new.action',
             admin_url('admin.php?page=corex-submissions'),
-            'manage_options',
+            CONTROLLER_TEST_ABILITY,
             'Open the Submission Inbox',
         ),
     );

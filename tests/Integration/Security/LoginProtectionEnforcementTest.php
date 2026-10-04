@@ -21,24 +21,50 @@ use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\WpLoginAttemptStore;
 use Corex\Database\Schema\Migrator;
 
-beforeEach(function () {
+/**
+ * The address every attempt here is made from. It is in a range reserved for documentation, so no
+ * real sign-in comes from it and every attempt recorded against it is one of these tests'.
+ */
+const LOGIN_ENFORCEMENT_TEST_IP = '203.0.113.42';
+
+/**
+ * Remove these tests' attempts, and only theirs. This used to be an unqualified `DELETE FROM`,
+ * which on a developer's install is the whole sign-in history, active lockouts included.
+ */
+function forgetLoginEnforcementAttempts(Migrator $migrator): void
+{
     global $wpdb;
+
+    $wpdb->delete(
+        $migrator->fullName(LoginAttemptTable::NAME),
+        ['network_hash' => hash('sha256', LOGIN_ENFORCEMENT_TEST_IP)],
+    );
+}
+
+beforeEach(function () {
     $this->migrator = new Migrator();
     $this->migrator->create((new LoginAttemptTable())->schema());
     $this->attempts = new WpLoginAttemptStore($this->migrator);
     $this->settingsStore = new LoginProtectionSettingsStore();
 
+    // The tests start from "nothing saved"; the install's own policy is put back afterwards. It
+    // used to be deleted and left deleted.
+    $this->previousLoginSettings = get_option(LoginProtectionSettingsStore::OPTION, null);
     delete_option(LoginProtectionSettingsStore::OPTION);
-    $wpdb->query('DELETE FROM ' . $this->migrator->fullName(LoginAttemptTable::NAME));
+    forgetLoginEnforcementAttempts($this->migrator);
     $this->previousServer = $_SERVER;
-    $_SERVER['REMOTE_ADDR'] = '203.0.113.42';
+    $_SERVER['REMOTE_ADDR'] = LOGIN_ENFORCEMENT_TEST_IP;
     $_SERVER['HTTP_USER_AGENT'] = 'CoreX Test Browser';
 });
 
 afterEach(function () {
-    global $wpdb;
     delete_option(LoginProtectionSettingsStore::OPTION);
-    $wpdb->query('DELETE FROM ' . $this->migrator->fullName(LoginAttemptTable::NAME));
+    if ($this->previousLoginSettings !== null) {
+        // Re-added rather than updated, so it comes back not autoloaded — which is how the
+        // settings store writes it — whatever the tests saved in between.
+        update_option(LoginProtectionSettingsStore::OPTION, $this->previousLoginSettings, false);
+    }
+    forgetLoginEnforcementAttempts($this->migrator);
     $_SERVER = $this->previousServer;
 });
 

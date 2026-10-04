@@ -17,22 +17,26 @@ use Corex\Config\Notifications\NotificationUserStateTable;
 use Corex\Config\Notifications\WpNotificationRepository;
 use Corex\Database\Schema\Migrator;
 use Corex\Notifications\NotificationQuery;
+use Corex\Tests\Support\NotificationRows;
+
+/** Every dedup key the seed uses starts with this, which is how the 10k rows are found again. */
+const PERFORMANCE_TEST_DEDUP = 'performance.test:';
 
 beforeEach(function () {
-    global $wpdb;
     $this->migrator = new Migrator();
     $this->migrator->create((new NotificationTable())->schema());
     $this->migrator->create((new NotificationUserStateTable())->schema());
     $this->table = $this->migrator->fullName(NotificationTable::NAME);
-    $wpdb->query('DELETE FROM ' . $this->migrator->fullName(NotificationUserStateTable::NAME));
-    $wpdb->query('DELETE FROM ' . $this->table);
+    // The seed's uuids are fixed, so rows a died-early run left would collide with this one's.
+    NotificationRows::forgetPrefixed(PERFORMANCE_TEST_DEDUP);
     $this->repo = new WpNotificationRepository($this->migrator);
     $this->allow = static fn (string $ability): bool => true;
 });
 
 afterEach(function () {
-    global $wpdb;
-    $wpdb->query('DELETE FROM ' . $this->table); // never leave the 10k seed rows behind
+    // Never leave the 10k seed rows behind — and remove those rows only. This used to empty the
+    // table, which on a developer's install is every notification they had.
+    NotificationRows::forgetPrefixed(PERFORMANCE_TEST_DEDUP);
 });
 
 it('keeps unread count, a filtered page, and prune bounded across 10k notifications', function () {
@@ -49,7 +53,7 @@ it('keeps unread count, a filtered page, and prune bounded across 10k notificati
         $values[] = $wpdb->prepare(
             '(%s,%s,%s,%s,%s,%s,%s,%s,%s,%d,%s,%s,%s,%s,%s,%s)',
             $uuid, 'submission.new', 'submissions', 'action', 'forms', 'k.title', 'k.body',
-            $rendered, 'perf:' . $i, 1, $now, $now, $now, $now, $recipient, wp_json_encode([]),
+            $rendered, PERFORMANCE_TEST_DEDUP . $i, 1, $now, $now, $now, $now, $recipient, wp_json_encode([]),
         );
     }
     // Insert in chunks to stay within packet limits.
@@ -61,7 +65,7 @@ it('keeps unread count, a filtered page, and prune bounded across 10k notificati
             . 'VALUES ' . implode(',', $chunk)
         );
     }
-    expect((int) $wpdb->get_var('SELECT COUNT(*) FROM ' . $this->table))->toBe(10000);
+    expect(NotificationRows::countPrefixed(PERFORMANCE_TEST_DEDUP))->toBe(10000);
 
     $budget = 2.0; // seconds — generous; a bounded read is orders of magnitude faster.
 
