@@ -35,6 +35,12 @@ final class ComingSoonGuard
      */
     public const HOME_FILTER = 'corex_coming_soon_is_home';
 
+    /**
+     * The query argument by which somebody who is served the real site asks to see the page as a
+     * visitor does (FR-016). It asks for less than the user already has, so it carries no nonce.
+     */
+    public const VISITOR_VIEW = 'corex_visitor_view';
+
     public function __construct(
         private readonly OperationsModeStore $store,
         private readonly ComingSoonTemplate $template,
@@ -60,11 +66,38 @@ final class ComingSoonGuard
         match ($decision->outcome) {
             ComingSoonDecision::REDIRECT => $this->redirectHome(),
             ComingSoonDecision::SITEMAP  => $this->sendSitemap(),
-            // Swapped at the last moment WordPress offers, and last among the filters there, so
-            // the template chosen for the request's own query cannot be put back over it.
-            ComingSoonDecision::SERVE    => add_filter('template_include', [$this, 'serve'], PHP_INT_MAX),
+            ComingSoonDecision::SERVE    => $this->arrangeToServe(),
             default                      => null,
         };
+    }
+
+    private function arrangeToServe(): void
+    {
+        // Swapped at the last moment WordPress offers, and last among the filters there, so the
+        // template chosen for the request's own query cannot be put back over it.
+        add_filter('template_include', [$this, 'serve'], PHP_INT_MAX);
+
+        // The page is what a visitor sees, whoever is looking (US3.3) — and a visitor has no
+        // WordPress toolbar. Turning it off is two steps because WordPress sets it up on this same
+        // hook at this same priority, and was registered first: by now its stylesheet is queued,
+        // and that stylesheet is what pushes the page down by the toolbar's height.
+        add_filter('show_admin_bar', '__return_false');
+        wp_dequeue_style('admin-bar');
+        wp_dequeue_script('admin-bar');
+        add_filter('body_class', [$this, 'visitorBodyClasses']);
+    }
+
+    /**
+     * The `body_class` callback for the served page: a visitor's page is not marked as a signed-in
+     * one, and a theme may style by that mark.
+     *
+     * @param mixed $classes
+     *
+     * @return list<string>
+     */
+    public function visitorBodyClasses(mixed $classes): array
+    {
+        return array_values(array_diff((array) $classes, ['logged-in']));
     }
 
     /**
@@ -142,8 +175,8 @@ final class ComingSoonGuard
             allowedByClient: apply_filters(self::BYPASS_FILTER, false) === true,
             isRobotsOrFavicon: is_robots() || is_favicon(),
             canEditPosts: is_user_logged_in() && current_user_can('edit_posts'),
-            // The visitor view arrives with T034.
-            asksForVisitorView: false,
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state; it asks for less than the user already has.
+            asksForVisitorView: isset($_GET[self::VISITOR_VIEW]),
             holdsPreviewAccess: false,
             isSitemap: $this->isSitemapIndex($queryVars),
             isHome: apply_filters(

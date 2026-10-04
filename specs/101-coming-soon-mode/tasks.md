@@ -218,18 +218,66 @@ Operations screen.
 
 ## Phase 4 — The notice and the visitor view (US3.2 to US3.4)
 
-- [ ] **T031** Pest: `ComingSoonNoticeTest` — what the bar says and links to for an administrator,
+- [x] **T031** Pest: `ComingSoonNoticeTest` — what the bar says and links to for an administrator,
       for a user who can edit posts and cannot change the mode, and that it is absent for anybody
       who is not served the real site. (FR-016)
-- [ ] **T032** `ComingSoonNotice` — the front-end bar at `wp_body_open`, and the toolbar node in
+
+      Who gets a bar is not the notice's decision. `ComingSoonDecision` gained a `bar`, set on the
+      one row that is "the real site, served to somebody who can edit posts", so "who is told"
+      cannot drift from "who passes". Tested there first, and seen failing.
+- [x] **T032** `ComingSoonNotice` — the front-end bar at `wp_body_open`, and the toolbar node in
       the admin. The link to Operations & Security only for a user who can change the mode. Not
       dismissible.
-- [ ] **T033** `plugins/corex-config/assets/css/coming-soon-bar.css` — logical properties, CoreX
+
+      It also listens on `wp_footer`, and prints once: a theme that never fires `wp_body_open`
+      still gets the bar, at the foot of the page. It asks the guard for the decision once per
+      request, so the stylesheet and the bar cannot disagree.
+
+      The unit tests for what the bar says passed on their first run, because the class was
+      written straight after them and nothing was left to correct. The integration tests for where
+      it appears were written before it was registered or styled, and two of them failed for that.
+- [x] **T033** `plugins/corex-config/assets/css/coming-soon-bar.css` — logical properties, CoreX
       tokens, enqueued only on a response that shows the bar. (Principle VI, FR-021)
-- [ ] **T034** The visitor view: a user who passes and asks for it is served exactly what an
+
+      The tokens are the admin ones. They are defined on `.corex-admin` as well as on the admin
+      body, so the bar's element carries that class and the stylesheet names `corex-admin-tokens`
+      as its dependency: both arrive with the bar and on no other front-end response. The bar
+      brings CoreX's palette rather than the theme's so that its contrast is the same on every
+      client's site. The token adapter's header said it had two consumers; it now says three.
+- [x] **T034** The visitor view: a user who passes and asks for it is served exactly what an
       anonymous visitor at the home URL is served, marked non-cacheable. (US3.3)
-- [ ] **T035** Guard Gate, and a WCAG 2.2 AA pass on the bar: contrast in light and dark, focus
-      order, a name for each link.
+
+      Asked for with `?corex_visitor_view=1`. No nonce: it asks for less than the user already
+      has. It serves the page at any address, and is ignored from somebody who is a visitor
+      already.
+
+      "Exactly" took three steps, each found by comparing the two responses over HTTP. WordPress
+      sets its toolbar up on the same hook at the same priority and was registered first, so by
+      the time the guard runs the toolbar's stylesheet is queued — and that stylesheet is what
+      pushes the page down by the toolbar's height. So the toolbar is switched off *and* its
+      assets are taken back out of the queue; and `logged-in` is taken off the body, since a
+      theme may style by it. After that the visitor view and a signed-out visitor's page are the
+      same bytes.
+- [x] **T035** Guard Gate, and a WCAG 2.2 AA pass on the bar.
+
+      | | Light | Dark | Needs |
+      |---|---|---|---|
+      | Message on the bar | 17.01 | 16.28 | 4.5 |
+      | Link | 6.54 | 10.33 | 4.5 |
+      | Link, hovered | 9.71 | 12.40 | 4.5 |
+      | Focus ring against the bar | 4.96 | 11.29 | 3 |
+
+      Computed from the token values. Links are underlined, so they are not told apart by colour
+      alone; each is 29px tall, past the 24px target size; each name says where it goes. The bar
+      is an `aside` with a label. Checked in a browser in light, dark, right-to-left and at 375px:
+      it wraps without overflowing, and in right-to-left it mirrors.
+
+      Focus order, for the record: the bar's links come before the theme's skip link, because
+      WordPress inserts the skip link in front of the site's blocks and the bar is printed before
+      them. Two links ahead of the skip link, and the toolbar's are ahead of both.
+
+      From the guard gate: the notice asked for the decision twice per request, firing the
+      client's filters each time; it now asks once.
 
 ## Phase 5 — The preview link and its banner (US4)
 

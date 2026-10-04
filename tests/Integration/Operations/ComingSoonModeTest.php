@@ -91,6 +91,11 @@ afterEach(function () {
     remove_all_filters(ComingSoonGuard::BYPASS_FILTER);
     remove_all_filters(ComingSoonGuard::HOME_FILTER);
     remove_all_filters('template_include');
+    remove_filter('show_admin_bar', '__return_false');
+    remove_filter('body_class', [corexComingSoonGuard(), 'visitorBodyClasses']);
+    unset($_GET[ComingSoonGuard::VISITOR_VIEW], $GLOBALS['show_admin_bar'], $GLOBALS['wp_admin_bar']);
+    wp_dequeue_style('admin-bar');
+    wp_dequeue_script('admin-bar');
     wp_set_current_user(0);
 
     if (! function_exists('wp_delete_user')) {
@@ -331,4 +336,102 @@ it('accepts a form posted to the REST API while the mode is on', function () {
     expect(get_option(COREX_COMING_SOON_MODE_OPTION))->toBe(OperationsMode::COMING_SOON)
         ->and($response->get_status())->toBe(200)
         ->and($response->get_data()['ok'])->toBeTrue();
+});
+
+// The visitor view (spec 101, T034, US3.3).
+
+it('serves the page to an administrator who asks to see it as a visitor, at any address', function (string $path, array $queryVars) {
+    $adminId = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
+    wp_set_current_user($adminId);
+    $_GET[ComingSoonGuard::VISITOR_VIEW] = '1';
+
+    $decision = corexComingSoonVisit($path, $queryVars);
+
+    expect(ComingSoonGuard::VISITOR_VIEW)->toBe('corex_visitor_view')
+        ->and($decision->outcome)->toBe(ComingSoonDecision::SERVE)
+        // The same address answers with the real site without the request, so a cache must not
+        // keep either answer for the other.
+        ->and($decision->noCache)->toBeTrue()
+        ->and($decision->bar)->toBe(ComingSoonDecision::BAR_NONE);
+})->with([
+    'the home URL' => ['/?corex_visitor_view=1', []],
+    'a page'       => ['/about/?corex_visitor_view=1', ['pagename' => 'about']],
+]);
+
+it('gives the visitor view to an editor as well', function () {
+    $this->createdUsers[] = $editorId = corexComingSoonUser('editor');
+    wp_set_current_user($editorId);
+    $_GET[ComingSoonGuard::VISITOR_VIEW] = '1';
+
+    expect(corexComingSoonVisit('/?corex_visitor_view=1')->outcome)->toBe(ComingSoonDecision::SERVE);
+});
+
+it('changes nothing for somebody who asks for the visitor view and is a visitor already', function () {
+    $_GET[ComingSoonGuard::VISITOR_VIEW] = '1';
+
+    $home      = corexComingSoonVisit('/?corex_visitor_view=1');
+    $elsewhere = corexComingSoonVisit('/about/?corex_visitor_view=1', ['pagename' => 'about']);
+
+    // Asking is not a way in, and not a way to make the home page uncacheable either.
+    expect($home->outcome)->toBe(ComingSoonDecision::SERVE)
+        ->and($home->noCache)->toBeFalse()
+        ->and($elsewhere->outcome)->toBe(ComingSoonDecision::REDIRECT);
+});
+
+it('shows the real site, with the notice, to an administrator who has not asked', function () {
+    $adminId = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
+    wp_set_current_user($adminId);
+
+    $decision = corexComingSoonVisit('/');
+
+    expect($decision->outcome)->toBe(ComingSoonDecision::PASS)
+        ->and($decision->bar)->toBe(ComingSoonDecision::BAR_NOTICE);
+});
+
+it('takes the WordPress toolbar off the page it serves, so a signed-in user sees what a visitor sees', function () {
+    $adminId = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
+    wp_set_current_user($adminId);
+    $_GET[ComingSoonGuard::VISITOR_VIEW] = '1';
+    corexComingSoonVisit('/?corex_visitor_view=1');
+
+    // WordPress sets the toolbar up on this same hook, at this same priority, and was registered
+    // first — so by the time the guard runs, the toolbar's styles are already queued and its
+    // stylesheet has pushed the page down by the toolbar's height.
+    _wp_admin_bar_init();
+    $before = is_admin_bar_showing() && wp_style_is('admin-bar', 'enqueued');
+
+    corexComingSoonGuard()->handle();
+
+    expect($before)->toBeTrue()
+        ->and(is_admin_bar_showing())->toBeFalse()
+        ->and(wp_style_is('admin-bar', 'enqueued'))->toBeFalse()
+        ->and(wp_script_is('admin-bar', 'enqueued'))->toBeFalse();
+});
+
+it('does not mark the page it serves as a signed-in one', function () {
+    // The one thing left that told the visitor view from a visitor's own page, found by comparing
+    // the two over HTTP: WordPress adds `logged-in` to the body, and a theme may style by it.
+    $adminId = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
+    wp_set_current_user($adminId);
+    $before = get_body_class();
+    $_GET[ComingSoonGuard::VISITOR_VIEW] = '1';
+    corexComingSoonVisit('/?corex_visitor_view=1');
+
+    corexComingSoonGuard()->handle();
+
+    expect($before)->toContain('logged-in')
+        ->and(get_body_class())->not->toContain('logged-in')
+        ->and(get_body_class())->not->toContain('admin-bar');
+});
+
+it('leaves the toolbar alone on the real site', function () {
+    $adminId = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
+    wp_set_current_user($adminId);
+    corexComingSoonVisit('/');
+    _wp_admin_bar_init();
+
+    corexComingSoonGuard()->handle();
+
+    expect(is_admin_bar_showing())->toBeTrue()
+        ->and(wp_style_is('admin-bar', 'enqueued'))->toBeTrue();
 });

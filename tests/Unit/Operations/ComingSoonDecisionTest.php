@@ -198,3 +198,32 @@ it('treats a signed-in user who cannot edit posts exactly as an anonymous visito
         ->and($subscriberAtHome->outcome)->toBe(ComingSoonDecision::SERVE)
         ->and($subscriberAtHome->noCache)->toBeFalse();
 });
+
+// The bar — what a response that passes carries (spec 101, FR-016).
+
+it('puts the notice on the real site served to somebody who can edit posts', function (bool $isHome) {
+    $decision = ComingSoonDecision::for(comingSoonRequest(canEditPosts: true, isHome: $isHome));
+
+    expect($decision->bar)->toBe(ComingSoonDecision::BAR_NOTICE);
+})->with(['home' => true, 'elsewhere' => false]);
+
+it('puts no notice on the visitor view, which is exactly what a visitor is served', function () {
+    // US3.3. A bar on it would be the one thing on the page a visitor never sees.
+    $decision = ComingSoonDecision::for(comingSoonRequest(canEditPosts: true, asksForVisitorView: true));
+
+    expect($decision->outcome)->toBe(ComingSoonDecision::SERVE)
+        ->and($decision->bar)->toBe(ComingSoonDecision::BAR_NONE);
+});
+
+it('puts no notice on anything served to a visitor, or passed for any other reason', function (ComingSoonRequest $request) {
+    expect(ComingSoonDecision::for($request)->bar)->toBe(ComingSoonDecision::BAR_NONE);
+})->with([
+    'the page at home'          => [fn () => comingSoonRequest(isHome: true)],
+    'a redirect'                => [fn () => comingSoonRequest()],
+    'the sitemap'               => [fn () => comingSoonRequest(isSitemap: true)],
+    'robots.txt'                => [fn () => comingSoonRequest(isRobotsOrFavicon: true)],
+    'a request the client let through' => [fn () => comingSoonRequest(allowedByClient: true)],
+    // Not even for an editor: the admin has its own toolbar node, and the bar is a front-end thing.
+    'the admin, for an editor'  => [fn () => comingSoonRequest(neverIntercepted: true, canEditPosts: true)],
+    'another mode, for an editor' => [fn () => new ComingSoonRequest(OperationsMode::PRODUCTION, canEditPosts: true)],
+]);

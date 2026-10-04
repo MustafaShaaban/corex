@@ -1697,6 +1697,118 @@
       "context": "lines 189: background: var(--corex-admin-warning-soft);"
     },
     {
+      "legacy_property": "--corex-admin-border-strong",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 25: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);"
+    },
+    {
+      "legacy_property": "--corex-admin-border-width",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 25: border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);"
+    },
+    {
+      "legacy_property": "--corex-admin-focus",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 79: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);"
+    },
+    {
+      "legacy_property": "--corex-admin-focus-offset",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 80: outline-offset: var(--corex-admin-focus-offset);"
+    },
+    {
+      "legacy_property": "--corex-admin-focus-width",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 79: outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);"
+    },
+    {
+      "legacy_property": "--corex-admin-font-body",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 29: font-family: var(--corex-admin-font-body);"
+    },
+    {
+      "legacy_property": "--corex-admin-font-sm",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 30: font-size: var(--corex-admin-font-sm);"
+    },
+    {
+      "legacy_property": "--corex-admin-link",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 68: color: var(--corex-admin-link);"
+    },
+    {
+      "legacy_property": "--corex-admin-link-hover",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 75: color: var(--corex-admin-link-hover);"
+    },
+    {
+      "legacy_property": "--corex-admin-space-2xs",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 21, 26, 51, 67: gap: var(--corex-admin-space-2xs) var(--corex-admin-space-lg); | border-inline-start: var(--corex-admin-space-2xs) solid var(--corex-admin-warning); | gap: var(--corex-admin-space-2xs) var(--corex-admin-space-md);"
+    },
+    {
+      "legacy_property": "--corex-admin-space-lg",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 21: gap: var(--corex-admin-space-2xs) var(--corex-admin-space-lg);"
+    },
+    {
+      "legacy_property": "--corex-admin-space-md",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 24, 51: padding-inline: var(--corex-admin-space-md); | gap: var(--corex-admin-space-2xs) var(--corex-admin-space-md);"
+    },
+    {
+      "legacy_property": "--corex-admin-space-xs",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 23: padding-block: var(--corex-admin-space-xs);"
+    },
+    {
+      "legacy_property": "--corex-admin-surface",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 27: background: var(--corex-admin-surface);"
+    },
+    {
+      "legacy_property": "--corex-admin-text",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 28: color: var(--corex-admin-text);"
+    },
+    {
+      "legacy_property": "--corex-admin-warning",
+      "target_definition": "scoped --corex-admin-* adapter",
+      "resolution": "raw-allowance",
+      "path": "plugins/corex-config/assets/css/coming-soon-bar.css",
+      "context": "lines 26: border-inline-start: var(--corex-admin-space-2xs) solid var(--corex-admin-warning);"
+    },
+    {
       "legacy_property": "--corex-admin-action",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
@@ -5516,14 +5628,14 @@
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-core/assets/css/corex-admin-tokens.css",
-      "context": "lines 113: --corex-admin-login-card: var(--corex-admin-surface);"
+      "context": "lines 115: --corex-admin-login-card: var(--corex-admin-surface);"
     },
     {
       "legacy_property": "--corex-admin-surface-raised",
       "target_definition": "scoped --corex-admin-* adapter",
       "resolution": "raw-allowance",
       "path": "plugins/corex-core/assets/css/corex-admin-tokens.css",
-      "context": "lines 114: --corex-admin-login-field: var(--corex-admin-surface-raised);"
+      "context": "lines 116: --corex-admin-login-field: var(--corex-admin-surface-raised);"
     },
     {
       "legacy_property": "--corex-admin-action",

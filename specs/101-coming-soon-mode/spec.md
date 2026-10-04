@@ -79,8 +79,9 @@ below, and because they change what was approved they were put to the owner, who
 ### Session 2026-10-04 — found while implementing
 
 Building the guard against a real WordPress found three places where the spec, read literally,
-gives a worse result than it meant to. Each is implemented the way described here and is
-**awaiting the owner's approval**; each is one line to reverse.
+gives a worse result than it meant to. Each is implemented the way described here. The owner
+approved all three on 2026-10-04; the approval reached the implementing session relayed through
+the session coordinating the open threads, not typed into it.
 
 - Found: FR-005 lists `robots.txt` and the sitemap as the only addresses not redirected. A browser
   asks for `/favicon.ico` on every visit, and WordPress answers it with a redirect to the site

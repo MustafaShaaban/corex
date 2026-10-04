@@ -390,6 +390,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Operations\ComingSoonSitemap::class);
         $this->container->singleton(\Corex\Config\Operations\ComingSoonTemplate::class);
         $this->container->singleton(\Corex\Config\Operations\ComingSoonGuard::class);
+        $this->container->singleton(\Corex\Config\Operations\ComingSoonNotice::class);
         $this->container->singleton(
             \Corex\Config\Forms\FlowFilterOptions::class,
             static fn (ContainerInterface $c): \Corex\Config\Forms\FlowFilterOptions =>
@@ -840,6 +841,7 @@ final class ConfigServiceProvider extends ServiceProvider
         // before the site is put into Coming soon. The guard acts only while it is.
         $this->container->make(\Corex\Config\Operations\ComingSoonTemplate::class)->register();
         $this->container->make(\Corex\Config\Operations\ComingSoonGuard::class)->register();
+        $this->container->make(\Corex\Config\Operations\ComingSoonNotice::class)->register();
         $this->container->make(\Corex\Config\Security\LoginProtection\LoginRouteGuard::class)->register();
         $this->container->make(\Corex\Config\Security\LoginProtection\LoginProtectionEnforcer::class)->register();
         $this->container->make(\Corex\Config\Security\SecuritySettingsController::class)->register();

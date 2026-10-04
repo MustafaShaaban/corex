@@ -39,15 +39,25 @@ final readonly class ComingSoonDecision
     /** A valid preview link: remember this browser, then send it to the same address without the value. */
     public const CLAIM = 'claim';
 
+    /** The response carries no bar. */
+    public const BAR_NONE = '';
+
+    /** The response tells a signed-in user who passes that visitors see the coming-soon page. */
+    public const BAR_NOTICE = 'notice';
+
     /**
-     * @param string $outcome One of the constants above.
+     * @param string $outcome One of the outcome constants above.
      * @param bool   $noCache Whether the response must be marked non-cacheable, because what this
      *                        address answers depends on who asked (FR-015). False leaves the
      *                        response's caching as WordPress would have it.
+     * @param string $bar     Which bar the page carries, for the responses that are the real site
+     *                        served to somebody a visitor is not (FR-016). Decided here and not by
+     *                        whoever draws the bar, so "who is told" cannot drift from "who passes".
      */
     private function __construct(
         public string $outcome,
         public bool $noCache,
+        public string $bar = self::BAR_NONE,
     ) {
     }
 
@@ -67,7 +77,7 @@ final readonly class ComingSoonDecision
             // 6. Somebody who passes, asking to see what a visitor sees.
             $request->canEditPosts && $request->asksForVisitorView => new self(self::SERVE, true),
             // 7. Somebody building the site.
-            $request->canEditPosts => new self(self::PASS, true),
+            $request->canEditPosts => new self(self::PASS, true, self::BAR_NOTICE),
             // 8. Somebody reviewing it through the preview link.
             $request->holdsPreviewAccess => new self(self::PASS, true),
             // 9. A crawler asking what there is to index.
