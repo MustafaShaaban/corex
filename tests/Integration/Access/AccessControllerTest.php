@@ -37,6 +37,21 @@ beforeEach(function () {
     $this->controller = $this->container->make(AccessController::class);
 });
 
+afterEach(function () {
+    if (! isset($this->requesterId) || $this->requesterId < 1) {
+        return;
+    }
+
+    // Back to nobody first, so the request is not left authenticated as a deleted user.
+    wp_set_current_user(0);
+
+    if (! function_exists('wp_delete_user')) {
+        require_once ABSPATH . 'wp-admin/includes/user.php';
+    }
+
+    wp_delete_user($this->requesterId);
+});
+
 it('registers the Access REST routes', function () {
     add_action('rest_api_init', [$this->controller, 'register']);
     do_action('rest_api_init', rest_get_server());
@@ -87,8 +102,16 @@ it('previews and applies a role ability change with a confirmation', function ()
 });
 
 it('creates and approves an access request without using the protected login route', function () {
-    $users = get_users(['role' => 'subscriber', 'number' => 1, 'fields' => 'ID']);
-    $requesterId = (int) ($users[0] ?? wp_create_user('corex-access-requester', wp_generate_password(), 'requester@example.test'));
+    // Its own subscriber, deleted in `afterEach`. This used to borrow the first subscriber the
+    // install happened to have — and approving the request below grants that account a real
+    // ability, on a developer's real site — and, finding none, to create `corex-access-requester`
+    // and leave it there.
+    $this->requesterId = $requesterId = (int) wp_insert_user([
+        'user_login' => 'corex-access-requester-' . wp_generate_password(8, false),
+        'user_pass'  => wp_generate_password(),
+        'user_email' => uniqid('corex-access-', true) . '@example.test',
+        'role'       => 'subscriber',
+    ]);
     wp_set_current_user($requesterId);
 
     $create = accessRequest('POST', '/corex/v1/access/requests', [
