@@ -79,6 +79,19 @@ Jest's module map: on a machine with a `dist/` build or an agent session worktre
 name it found twice. The suite is unchanged at 54 suites and 442 tests. CI never builds `dist/` and
 has no worktrees, so it never printed them.
 
+**`fix/e2e-flaky-helpers` — browser-test helpers and CI only, open.** The browser job failed three
+times on diffs that changed no runtime code: the nightly on 2026-09-21, #210 and #211. Two of the
+three were one bug in `signInAs`. WordPress's login page moves focus to the username field 200ms
+after it renders; when that lands in the middle of Playwright typing the password, the password goes
+into the username field and the browser refuses to submit the form. The helper then waited on an
+error message that was never coming until the test timed out, so its retry passes never ran. It now
+checks that each field holds its credential before submitting, and reads a refusal without waiting
+for one. `tests/e2e/helpers.spec.js` reproduces both against a login form it controls
+(DECISIONS #228).
+
+The third failure is **not fixed, because it is not a test fault**: `GET corex/v1/flows` answered
+500 to three inbox specs in a row. See "Open, and not hidden".
+
 ## Recently landed (v0.42.0)
 
 - **Spec 100 — multisite.** `README.md` advertised it; there were three runtime references to it in
@@ -114,6 +127,12 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   and never executed; `braces` runs in the linter and the build, on patterns that come only from
   tool defaults. The `extract-zip` pair would clear with `@wordpress/scripts` 36, a toolchain major
   that has not been attempted (DECISIONS #226, #227).
+- **Something behind `GET corex/v1/flows` threw on 2026-10-04, and nobody knows what.** Three
+  `submissions-inbox` specs in a row got "Request could not be processed." on #211, with nothing
+  else running, straight after a seed that had succeeded. Every exception the flow code raises on
+  purpose is answered with a 409 or a 422, so this was one it does not expect. The message went to a
+  log CI did not keep. It keeps it now, and `seedSubmission` reports the server's answer instead of
+  a `TypeError` — the next occurrence names itself (DECISIONS #228).
 - **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
   Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
