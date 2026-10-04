@@ -5233,7 +5233,41 @@ changed classes from the working tree ahead of the install's autoloader. The spe
   and `page_on_front` at 0 without restoring what the install had. It ran here once. What the
   install held before was not recorded.
 
-## #236 — Coming soon is a mode, and what a request gets is one table
+## #237 — A retention run that was refused is a warning
+
+Date: 2026-10-04 · Spec: none (defect fix, left open by #233; spec 068 FR-056) · Status: Final
+
+Applying retention on the Submissions screen without ticking the confirmation box runs nothing:
+`RetentionController::prune()` redirects with `retention-confirm` before it reads the action. The
+screen answered with "Confirm the retention action before applying it." in a success state, because
+`SubmissionsInboxScreen::retentionNotice()` passed `success` for every status. A run that did not
+happen was drawn like one that worked.
+
+`retentionNotice()` now pairs each status with its tone. `retention-confirm` is `warning`; a saved
+policy and a completed run stay `success`.
+
+**Why warning and not error.** `OperationsSecurityScreen::statusNotice()` already answers the same
+situation — a mode change submitted without its confirmation box — with `warning`, and keeps `error`
+for a change that was blocked or invalid. Nothing failed here either; the operator left a step out.
+`AdminPage::state()` gives a warning `role="status"`, as it gave the success, so what a screen
+reader announces is unchanged.
+
+**The sentence is unchanged.** It already says what to do, and keeping it keeps its translations.
+
+This is numbered #237 because #236 is taken on the open spec 101 branch (#210).
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The new refusal test against `main`'s production code | failed: the notice carried `corex-state--success` |
+| `tests/Integration/Submissions/RetentionPanelCopyTest.php` with the change | 15 passed |
+| Unit suite (`pest`) | 1859 passed |
+| The notice on the development install: dark and light at 1440px, dark at 375px, light right-to-left at 375px | warning icon and border in each; no sideways scroll |
+
+The whole integration suite and the browser suite were left to CI.
+
+## #238 — Coming soon is a mode, and what a request gets is one table
 
 Spec 101. Spec 063 named coming-soon as an operations mode; spec 065 shipped four modes and it was
 not one of them, and the only trace was a unit test asserting it was invalid. Maintenance mode

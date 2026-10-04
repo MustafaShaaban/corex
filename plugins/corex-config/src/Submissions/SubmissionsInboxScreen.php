@@ -171,14 +171,15 @@ final class SubmissionsInboxScreen
         if (! str_starts_with($status, 'retention-')) {
             return '';
         }
-        $message = match ($status) {
-            'retention-saved' => __('Retention policy saved.', 'corex'),
-            'retention-confirm' => __('Confirm the retention action before applying it.', 'corex'),
-            'retention-pruned' => $this->prunedMessage(),
-            default => '',
+        [$tone, $message] = match ($status) {
+            'retention-saved' => ['success', __('Retention policy saved.', 'corex')],
+            // Not a success: the box was not ticked, so nothing ran.
+            'retention-confirm' => ['warning', __('Confirm the retention action before applying it.', 'corex')],
+            'retention-pruned' => ['success', $this->prunedMessage()],
+            default => ['', ''],
         };
 
-        return $message === '' ? '' : $this->page->state('success', __('Retention', 'corex'), $message);
+        return $message === '' ? '' : $this->page->state($tone, __('Retention', 'corex'), $message);
     }
 
     /**

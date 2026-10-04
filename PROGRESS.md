@@ -47,7 +47,7 @@ anybody who can edit posts gets the real site and is told on every page that vis
 preview link shows the real site to somebody without an account; `wp corex mode get|set` reads and
 changes the mode from the command line; and `make:site` gives every new client theme its own
 `templates/coming-soon.html`. `specs/101-coming-soon-mode/tasks.md` records each task and what it
-found (DECISIONS #236).
+found (DECISIONS #238).
 
 What it is waiting on, in order: the pull request being merged; then a release,
 **v0.43.0**, which is the first a client repository can be created from with the mode in it.
@@ -56,40 +56,6 @@ One thing it found that was not its own has since been fixed on `main`: every WP
 logged a "translation loading triggered too early" notice, because commands were registered before
 `init`. They are registered on `cli_init` now (DECISIONS #235), which covers the new mode command
 too.
-
-**The integration suite no longer empties the notification tables of the install it runs against,
-and no longer leaves rows on it** (branch `fix/integration-suite-leaves-install-rows`, tests only,
-DECISIONS #234). `NotificationControllerTest`, `WpNotificationRepositoryTest` and
-`NotificationPerformanceTest` began every test with an unqualified `DELETE FROM` on the
-notification and read-state tables, so each run removed every notification the developer had and
-what each user had read. They now act as actors nothing else on the install addresses — an account
-the controller test creates with no role, and two user ids no account has — and delete only rows
-under a dedup-key prefix of their own. The controller test had also been rewriting the
-administrator's notification preferences. Stopping the delete uncovered what it had been
-hiding, fixed in the same change:
-`FlowControllerTest` and `FlowLifecycleTest` each left a notification about their flow, and
-`CommandCenterWidgetTest` renders the widget, which evaluates readiness for real and records the
-install's own blockers; it now puts those rows back as they were. The rows the suite left are
-cleaned up by naming them: eight logged emails (`CallRequestDataPathTest`,
-`ApplicationDataPathTest`, `MailLifecycleTest`, `SubscriptionLifecycleTest`), two reading events
-(`BlogProControllerTest`), and two ids on `corex_kit_seeded_pages`, which came from
-`SetupConflictTest`. `DataManagementControllerTest` records the runs it creates instead of
-comparing the newest 500 before and after. One more was found by checksum, not by count:
-`LoginProtectionEnforcementTest` emptied the login-attempt table and deleted the login policy
-without putting it back, and `LoginRecoveryTest` left a lockout row and released every active
-lockout on the install; both now act on rows from their own documentation-range address. Measured
-on the development install with a before-and-after snapshot of post ids, every prefixed table's
-row count and checksum, option hashes, cron events, users and user meta: 377 of 377 pass, and
-across three consecutive runs the only differences are the transients listed under "Open, and not
-hidden".
-
-**WP-CLI no longer logs "translation loading … triggered too early" on every request** (#232, branch
-`fix/cli-commands-register-on-cli-init`, DECISIONS #235). `CliServiceProvider` and
-`MediaServiceProvider` built their command definitions while booting on `plugins_loaded`, and a
-definition translates its help text. Both now register on `cli_init`, the hook WP-CLI fires on
-`init`. The help text stays translatable and every synopsis is unchanged. Spec 101's
-`modeCommandDefinition()` is covered without an edit once #210 merges on top; checked against that
-branch at `6e541962`. Two unit tests pin it, one per provider.
 
 No dependency pull request is being held.
 
@@ -112,6 +78,17 @@ On `main` since v0.42.1, and not in a release yet:
   the selected action and says anonymizing cannot be undone; the prune handler sends the action
   back with the count, and the notice says archived, moved to trash or anonymized. Five
   integration tests and two unit tests pin it.
+- **WP-CLI no longer logs "translation loading … triggered too early" on every request** (#232,
+  DECISIONS #235). `CliServiceProvider` and `MediaServiceProvider` built their command definitions
+  while booting on `plugins_loaded`, and a definition translates its help text. Both now register
+  on `cli_init`, the hook WP-CLI fires on `init`. The help text stays translatable and every
+  synopsis is unchanged. Spec 101's `modeCommandDefinition()` is covered without an edit once #210
+  merges on top; checked against that branch at `6e541962`. Two unit tests pin it, one per
+  provider.
+- **A retention run refused for want of confirmation is a warning, not a success** (#235,
+  DECISIONS #237). Applying retention without ticking the confirmation box runs nothing; the
+  notice saying so was drawn with the success tick. Two integration tests pin the tone of each
+  retention notice.
 - **Spec 102 — a client site the framework can be updated underneath** (#211, DECISIONS #230). The
   framework prescribed `sites/<client>/` and its own checks rejected it. A client repository now
   passes them untouched: one ownership file says which paths are the client's, hygiene, the
@@ -147,6 +124,30 @@ On `main` since v0.42.1, and not in a release yet:
   administrators outlived the subscriber the tests delete. `AccessControllerTest` also granted the
   editor role `corex_manage_forms` through the real controller and left it granted; it now
   restores the grant row it found.
+- **The integration suite no longer empties the notification tables of the install it runs against,
+  and no longer leaves rows on it** (#231, tests only, DECISIONS #234).
+  `NotificationControllerTest`, `WpNotificationRepositoryTest` and `NotificationPerformanceTest`
+  began every test with an unqualified `DELETE FROM` on the notification and read-state tables, so
+  each run removed every notification the developer had and what each user had read. They now act as
+  actors nothing else on the install addresses — an account the controller test creates with no
+  role, and two user ids no account has — and delete only rows under a dedup-key prefix of their
+  own. The controller test had also been rewriting the administrator's notification preferences.
+  Stopping the delete uncovered what it had been hiding, fixed in the same change:
+  `FlowControllerTest` and `FlowLifecycleTest` each left a notification about their flow, and
+  `CommandCenterWidgetTest` renders the widget, which evaluates readiness for real and records the
+  install's own blockers; it now puts those rows back as they were. The rows the suite left are
+  cleaned up by naming them: eight logged emails (`CallRequestDataPathTest`,
+  `ApplicationDataPathTest`, `MailLifecycleTest`, `SubscriptionLifecycleTest`), two reading events
+  (`BlogProControllerTest`), and two ids on `corex_kit_seeded_pages`, which came from
+  `SetupConflictTest`. `DataManagementControllerTest` records the runs it creates instead of
+  comparing the newest 500 before and after. One more was found by checksum, not by count:
+  `LoginProtectionEnforcementTest` emptied the login-attempt table and deleted the login policy
+  without putting it back, and `LoginRecoveryTest` left a lockout row and released every active
+  lockout on the install; both now act on rows from their own documentation-range address. Measured
+  on the development install with a before-and-after snapshot of post ids, every prefixed table's
+  row count and checksum, option hashes, cron events, users and user meta: 377 of 377 pass, and
+  across three consecutive runs the only differences are the transients listed under "Open, and not
+  hidden".
 
 **v0.42.1**, a patch release. [`CHANGELOG.md`](CHANGELOG.md) has the full entry; the decisions are
 #224 to #229.
@@ -203,17 +204,12 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.
-- **A retention run that was refused looks like one that worked.** Applying retention without
-  ticking the confirmation box comes back as "Confirm the retention action before applying it",
-  drawn as a success state with its tick: `SubmissionsInboxScreen::retentionNotice()` gives every
-  status the `success` tone. Read from the code while fixing the form's copy (DECISIONS #233) and
-  not changed there.
 - Development installs predating spec 091 may hold leaked fixture users. Since #221 the
   suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
   there are not removed by anything.
 - **A full integration run still leaves transients on the install**, measured on 2026-10-04 with
-  the branch above applied: three rate-limit counters from `FlowControllerTest` and
-  `FlowLifecycleTest` (60 seconds), one migration preview from `DataManagementControllerTest`
+  #231 applied: three rate-limit counters from `FlowControllerTest` and `FlowLifecycleTest`
+  (60 seconds), one migration preview from `DataManagementControllerTest`
   (300 seconds), and the `contact` form's counter refreshed by `SubmitLifecycleTest`. Each expires
   on its own; the rows stay in the options table until WordPress clears expired transients. Nothing
   else differed between the snapshots.

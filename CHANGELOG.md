@@ -84,6 +84,9 @@ All notable changes to Corex are documented here. The format follows
   to trash", for Archive and Anonymize as well — and anonymizing cannot be undone. The box now asks to
   confirm the selected action and says that anonymizing cannot be undone, and the notice says what the run
   did: archived, moved to trash, or anonymized (DECISIONS #233).
+- **A retention run refused for want of confirmation was shown as a success.** Applying retention without
+  ticking the confirmation box runs nothing, and the notice that says so — "Confirm the retention action
+  before applying it" — carried the success tick. It is now a warning (DECISIONS #237).
 
 ### Changed
 
