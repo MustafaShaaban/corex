@@ -4500,7 +4500,7 @@ quietly expire is how a bounded exception becomes a permanent one.
 
 ## #227 — Ten upgrades, one override proven against its parent, and one exception that needs an owner
 
-Date: 2026-10-04 · Spec: 089 · Status: Final, except the `braces` classification, which is the owner's to confirm
+Date: 2026-10-04 · Spec: 089 · Status: Final — merged as #212 on the owner's instruction, with the `braces` exception as written
 
 #203 cleared every advisory known on 2026-09-09 and merged on 2026-10-04. On the day it merged the
 gate on `main` failed again: 21 findings in the root npm workspace, 18 of them unbounded, and 8 in
