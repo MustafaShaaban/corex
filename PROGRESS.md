@@ -39,34 +39,43 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Spec 102 — a client site the framework can be updated underneath — is implemented on PR #211**
-(DECISIONS #230). The framework prescribed `sites/<client>/` and its own checks rejected it. A client
-repository now passes them untouched: one ownership file says which paths are the client's, hygiene,
-the linters, Jest and prettier read it, `npm run verify:framework` proves the framework files match
-the recorded release, and `make:site` generates the baseline record, the update checklist and the
-client's own CI. `client-site-layout` in CI generates a real site and runs every check against it.
-The update procedure is documented in English and Arabic. `specs/102-update-safe-client-sites/tasks.md`
-records each task, including the ones the work changed. Open on it: making `client-site-layout` a
-required check is an owner setting in branch protection.
-
-Spec 101, coming-soon mode, is open as a draft pull request (#210) with a spec and a plan, and no
-code. One thing found while building 102 shaped that plan: a generated client theme is a standalone
-block theme, not a child of the Corex theme, so it does not inherit a template the parent ships.
+**Spec 101, coming-soon mode, is being implemented on draft pull request #210.** As of 2026-10-04
+its branch holds the first five of the plan's eight phases — tasks T001 to T047 of 68: one service
+that changes the mode, tests of the template seam it builds on, the mode itself with its guard and
+default page, the notice and visitor view, and the preview link with its banner. Still open there:
+the WP-CLI mode command, the generated template and asset action, and the documentation, release
+notes and browser project.
+`specs/101-coming-soon-mode/tasks.md` on that branch is the record; read it rather than this
+paragraph. One thing found while building 102 shaped the plan: a generated client theme is a
+standalone block theme, not a child of the Corex theme, so it does not inherit a template the
+parent ships.
 
 No dependency pull request is being held.
 
-**The integration suite no longer rewrites the operations mode of the install it runs against**
-(branch `fix/integration-suite-leaves-state`, tests only). `OptionalDashboardWidgetsTest` saved
-`OperationsModeStore::current()` and handed it back to `set()`. On an install that had declared
-nothing, that declared it `production`; on a declared one, every run pushed rows into a history
-capped at twenty. It now snapshots and restores `corex_operations_mode` and
-`corex_operations_mode_log` as the Operations tests do. `GuideExtensionTest` and
-`AccessControllerTest` delete the subscriber they create, and the second no longer borrows the
-first subscriber the install has — approving its request granted that account a real ability.
+## Recently landed
 
-## Recently landed (v0.42.1)
+On `main` since v0.42.1, and not in a release yet:
 
-A patch release. [`CHANGELOG.md`](CHANGELOG.md) has the full entry; the decisions are #224 to #229.
+- **Spec 102 — a client site the framework can be updated underneath** (#211, DECISIONS #230). The
+  framework prescribed `sites/<client>/` and its own checks rejected it. A client repository now
+  passes them untouched: one ownership file says which paths are the client's, hygiene, the
+  linters, Jest and prettier read it, `npm run verify:framework` proves the framework files match
+  the recorded release, and `make:site` generates the baseline record, the update checklist and the
+  client's own CI. `client-site-layout` in CI generates a real site and runs every check against
+  it. The update procedure is documented in English and Arabic.
+  `specs/102-update-safe-client-sites/tasks.md` records each task, including the ones the work
+  changed. [`CHANGELOG.md`](CHANGELOG.md) lists it under Unreleased.
+- **The integration suite no longer rewrites the operations mode of the install it runs against**
+  (#221, tests only). `OptionalDashboardWidgetsTest` saved `OperationsModeStore::current()` and
+  handed it back to `set()`: on an install that had declared nothing, that declared it
+  `production`; on a declared one, every run pushed rows into a history capped at twenty. It now
+  snapshots and restores `corex_operations_mode` and `corex_operations_mode_log`, as the Operations
+  tests do. `GuideExtensionTest` and `AccessControllerTest` delete the subscriber they create, and
+  the second no longer borrows the first subscriber the install has — approving its request
+  granted that account a real ability.
+
+**v0.42.1**, a patch release. [`CHANGELOG.md`](CHANGELOG.md) has the full entry; the decisions are
+#224 to #229.
 
 - **`composer install --no-dev` no longer drops seven WP-CLI commands** (#202, issue #201). A
   production install is a `--no-dev` install, and it could not run `wp corex migrate`.
@@ -115,12 +124,15 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   occurrence names itself (DECISIONS #228).
 - **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
   Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
+- **`client-site-layout` is not a required check either** (spec 102). Making it one is an owner
+  setting in branch protection.
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.
-- Development installs predating spec 091 may hold leaked fixture users. Once
-  `fix/integration-suite-leaves-state` lands the suite stops adding `guides-subscriber-*` and
-  `corex-access-requester` accounts; the ones already there are not removed by anything.
+- Development installs predating spec 091 may hold leaked fixture users. Since #221 the
+  suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
+  there are not removed by anything. The Access tests still leave their request rows behind, which
+  point at a deleted user once the test's subscriber is gone.
 - **Five integration tests fail on a long-lived development install** (measured 2026-10-04 on
   unmodified `main`; the owner reports the whole suite passing on a throwaway install): one in
   `ProductActivityCoverageTest`, three in `ProductDataPrivacyTest`, one in
