@@ -55,29 +55,25 @@ parent ships.
 DECISIONS #233). Its confirmation box and its result notice said "trash" for Archive and Anonymize
 as well. The box now asks to confirm the selected action and says anonymizing cannot be undone; the
 prune handler sends the action back with the count, and the notice says archived, moved to trash or
-anonymized. Five integration tests and two unit tests pin it. **It merges after #228**: that pull
-request adds the "Open, and not hidden" item this one closes, so this branch is rebased once #228
-is on `main` and deletes the item then. Merged the other way round, #228 would add an item that is
-already fixed.
+anonymized. Five integration tests and two unit tests pin it. It closes the item #228 left under
+"Open, and not hidden", and is rebased onto it.
 
 No dependency pull request is being held.
-
-**Submission retention reaches every record again** (branch
-`fix/retention-reselects-handled-submissions`, DECISIONS #232). A run used to be handed the newest
-500 private submissions past the window whatever had been done to them, so once 500 were
-anonymized or archived it re-handled those and never reached the rest. A run now skips what its
-action has nothing left to do for and takes the oldest first. Three decisions come with it: a
-submission is due while it is past the window and not anonymized, so the count on the Submissions
-screen no longer includes anonymized ones; an archived submission stays due and can still be
-anonymized or trashed; an anonymized one is finished and retention does not archive or trash it.
-Six integration tests in `tests/Integration/Retention/` pin it. On the development install the
-30-day selection went from 500 already-anonymized ids to the 7 submissions that still hold their
-data.
 
 ## Recently landed
 
 On `main` since v0.42.1, and not in a release yet:
 
+- **Submission retention reaches every record again** (#228, DECISIONS #232). A run used to be
+  handed the newest 500 private submissions past the window whatever had been done to them, so
+  once 500 were anonymized or archived it re-handled those and never reached the rest. A run now
+  skips what its action has nothing left to do for and takes the oldest first. Three decisions
+  come with it: a submission is due while it is past the window and not anonymized, so the count
+  on the Submissions screen no longer includes anonymized ones; an archived submission stays due
+  and can still be anonymized or trashed; an anonymized one is finished and retention does not
+  archive or trash it. Six integration tests in `tests/Integration/Retention/` pin it. On the
+  development install the 30-day selection went from 500 already-anonymized ids to the 7
+  submissions that still hold their data.
 - **Spec 102 — a client site the framework can be updated underneath** (#211, DECISIONS #230). The
   framework prescribed `sites/<client>/` and its own checks rejected it. A client repository now
   passes them untouched: one ownership file says which paths are the client's, hygiene, the
@@ -177,10 +173,6 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - Development installs predating spec 091 may hold leaked fixture users. Since #221 the
   suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
   there are not removed by anything.
-- **The retention form says "trash" whichever action ran.** Its confirmation box reads "Confirm
-  moving due submissions to the recoverable trash" and its result notice "N submissions moved to
-  trash", for Archive and Anonymize as well (`SubmissionsInboxScreen`). Found while fixing the
-  selection (DECISIONS #232) and not changed there.
 - **The integration suite still changes the install it runs against**, measured per full run on
   2026-10-04 with #224 applied. `NotificationControllerTest`,
   `NotificationPerformanceTest` and `WpNotificationRepositoryTest` delete every row in the

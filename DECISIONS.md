@@ -4993,10 +4993,11 @@ trash" there would have been the defect again for exactly the links that used to
 trash sentence is the old string unchanged, so an existing translation of it still applies; the
 other three and the confirmation label are new strings (`CHANGELOG.md`, "Client impact").
 
-The three actions are now named in three places: the service's validation, the form's options and
-the notice. The first two were already separate. They were left separate here: #232 moves the list
-of valid actions into `RetentionSettings`, on a branch this one does not build on, and a shared
-list is better made once that has landed.
+The three actions are now named in three places: the retention rules, the form's options and the
+notice. The first two were already separate. #232 made the list of valid actions the keys of a
+private map in `RetentionSettings`, from action to the states it skips. The form and the notice
+each need words per action, which that map does not hold, so they stay written out and the map
+stays private.
 
 **Tests.** `tests/Integration/Submissions/RetentionPanelCopyTest.php` renders the confirmation and
 the notice on real WordPress — each action in the singular and the plural, no "trash" in an archive
