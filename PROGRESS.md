@@ -47,21 +47,40 @@ anybody who can edit posts gets the real site and is told on every page that vis
 preview link shows the real site to somebody without an account; `wp corex mode get|set` reads and
 changes the mode from the command line; and `make:site` gives every new client theme its own
 `templates/coming-soon.html`. `specs/101-coming-soon-mode/tasks.md` records each task and what it
-found (DECISIONS #234).
+found (DECISIONS #235).
 
-What it is waiting on, in order: the pull request leaving draft and being merged; then a release,
+What it is waiting on, in order: the pull request being merged; then a release,
 **v0.43.0**, which is the first a client repository can be created from with the mode in it.
 
 One thing it found that is not its own, raised as a separate task: every WP-CLI command logs a
 "translation loading triggered too early" notice, from command descriptions being translated while
 commands are registered. The new mode command is written the same way.
 
-**The retention form says which action it ran** (#229, branch `fix/retention-copy-names-the-action`,
-DECISIONS #233). Its confirmation box and its result notice said "trash" for Archive and Anonymize
-as well. The box now asks to confirm the selected action and says anonymizing cannot be undone; the
-prune handler sends the action back with the count, and the notice says archived, moved to trash or
-anonymized. Five integration tests and two unit tests pin it. It closes the item #228 left under
-"Open, and not hidden", and is rebased onto it.
+**The integration suite no longer empties the notification tables of the install it runs against,
+and no longer leaves rows on it** (branch `fix/integration-suite-leaves-install-rows`, tests only,
+DECISIONS #234). `NotificationControllerTest`, `WpNotificationRepositoryTest` and
+`NotificationPerformanceTest` began every test with an unqualified `DELETE FROM` on the
+notification and read-state tables, so each run removed every notification the developer had and
+what each user had read. They now act as actors nothing else on the install addresses — an account
+the controller test creates with no role, and two user ids no account has — and delete only rows
+under a dedup-key prefix of their own. The controller test had also been rewriting the
+administrator's notification preferences. Stopping the delete uncovered what it had been
+hiding, fixed in the same change:
+`FlowControllerTest` and `FlowLifecycleTest` each left a notification about their flow, and
+`CommandCenterWidgetTest` renders the widget, which evaluates readiness for real and records the
+install's own blockers; it now puts those rows back as they were. The rows the suite left are
+cleaned up by naming them: eight logged emails (`CallRequestDataPathTest`,
+`ApplicationDataPathTest`, `MailLifecycleTest`, `SubscriptionLifecycleTest`), two reading events
+(`BlogProControllerTest`), and two ids on `corex_kit_seeded_pages`, which came from
+`SetupConflictTest`. `DataManagementControllerTest` records the runs it creates instead of
+comparing the newest 500 before and after. One more was found by checksum, not by count:
+`LoginProtectionEnforcementTest` emptied the login-attempt table and deleted the login policy
+without putting it back, and `LoginRecoveryTest` left a lockout row and released every active
+lockout on the install; both now act on rows from their own documentation-range address. Measured
+on the development install with a before-and-after snapshot of post ids, every prefixed table's
+row count and checksum, option hashes, cron events, users and user meta: 377 of 377 pass, and
+across three consecutive runs the only differences are the transients listed under "Open, and not
+hidden".
 
 No dependency pull request is being held.
 
@@ -79,6 +98,11 @@ On `main` since v0.42.1, and not in a release yet:
   archive or trash it. Six integration tests in `tests/Integration/Retention/` pin it. On the
   development install the 30-day selection went from 500 already-anonymized ids to the 7
   submissions that still hold their data.
+- **The retention form says which action it ran** (#229, DECISIONS #233). Its confirmation box and
+  its result notice said "trash" for Archive and Anonymize as well. The box now asks to confirm
+  the selected action and says anonymizing cannot be undone; the prune handler sends the action
+  back with the count, and the notice says archived, moved to trash or anonymized. Five
+  integration tests and two unit tests pin it.
 - **Spec 102 — a client site the framework can be updated underneath** (#211, DECISIONS #230). The
   framework prescribed `sites/<client>/` and its own checks rejected it. A client repository now
   passes them untouched: one ownership file says which paths are the client's, hygiene, the
@@ -178,18 +202,22 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - Development installs predating spec 091 may hold leaked fixture users. Since #221 the
   suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
   there are not removed by anything.
-- **The integration suite still changes the install it runs against**, measured per full run on
-  2026-10-04 with #224 applied. `NotificationControllerTest`,
-  `NotificationPerformanceTest` and `WpNotificationRepositoryTest` delete every row in the
-  notification and read-state tables, the developer's own included. Eight logged emails are left
-  by `CallRequestDataPathTest`, `ApplicationDataPathTest`, `MailLifecycleTest` and
-  `SubscriptionLifecycleTest`; two reading events by `BlogProControllerTest`; and
-  `corex_kit_seeded_pages` grows by two ids, not traced to a file.
+- **A full integration run still leaves transients on the install**, measured on 2026-10-04 with
+  the branch above applied: three rate-limit counters from `FlowControllerTest` and
+  `FlowLifecycleTest` (60 seconds), one migration preview from `DataManagementControllerTest`
+  (300 seconds), and the `contact` form's counter refreshed by `SubmitLifecycleTest`. Each expires
+  on its own; the rows stay in the options table until WordPress clears expired transients. Nothing
+  else differed between the snapshots.
+- `FlowControllerTest` and `FlowLifecycleTest` still clean up their flows, submissions and Email
+  Studio posts by comparing the newest 500 ids before and after. That leaves nothing on a quiet
+  install, and deletes whatever another process created during the test.
 - What earlier runs left on an existing install is not removed by anything: submissions the
-  retention test anonymized cannot be restored, `corex_retention_submissions_days` may read 30 on
-  an install whose owner never set it, and `corex_role_ability_grants` may hold an
-  `editor` / `corex_manage_forms` row nobody granted. The Access request rows, audit events and
-  notifications from earlier runs stay too.
+  retention test anonymized cannot be restored, and neither can notifications or read state the
+  notification tests deleted. `corex_retention_submissions_days` may read 30 on an install whose
+  owner never set it, `corex_role_ability_grants` may hold an `editor` / `corex_manage_forms` row
+  nobody granted, and the first administrator's notification preferences may have the jobs
+  category switched off. The Access request rows, audit events, logged emails, reading events
+  about deleted posts and stale ids on `corex_kit_seeded_pages` from earlier runs stay too.
 
 No security items.
 

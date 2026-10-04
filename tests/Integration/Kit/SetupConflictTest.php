@@ -24,12 +24,26 @@ function conflictPageInput(string $slug): array
     ]];
 }
 
+beforeEach(function () {
+    // `seedPages()` records every page it touches in this option, which is what a kit reset reads
+    // to decide what to remove. The raw value, so "it did not exist" can be put back as well.
+    $this->seededPagesBefore = get_option(BlueprintActivator::SEEDED_OPTION, null);
+});
+
 afterEach(function () {
     foreach (['corex-conflict-fixture', 'corex-conflict-fixture-2'] as $slug) {
         $existing = get_page_by_path($slug);
         if ($existing instanceof WP_Post) {
             wp_delete_post($existing->ID, true);
         }
+    }
+
+    // The pages are gone; their ids must not stay on the install's list of kit-seeded pages. Each
+    // run used to add two, naming pages that no longer existed.
+    if ($this->seededPagesBefore === null) {
+        delete_option(BlueprintActivator::SEEDED_OPTION);
+    } else {
+        update_option(BlueprintActivator::SEEDED_OPTION, $this->seededPagesBefore);
     }
 });
 

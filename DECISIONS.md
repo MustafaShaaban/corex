@@ -5038,7 +5038,113 @@ install it runs against (`PROGRESS.md`) — and is left to CI.
 - At 1440px the confirmation and the Apply button sit on a second row of the form, below the action
   select. Whether the old, shorter label fitted on the first row was not measured.
 
-## #234 — Coming soon is a mode, and what a request gets is one table
+## #234 — A test names the rows it wrote; it does not empty the table or act as the administrator
+
+Date: 2026-10-04 · Spec: none (test maintenance, follows #231) · Status: Final for the tests; what a run still leaves is in `PROGRESS.md`
+
+The integration suite boots the real `./wp`, so the tables it writes are a developer's. #231 fixed
+the tests that failed there. This entry is about the tests that passed and changed the install
+anyway, measured with a snapshot before and after a full run: post ids by type, the row count and
+`CHECKSUM TABLE` of every prefixed table, option hashes, cron events, users and user meta.
+
+**Three files emptied two tables.** `NotificationControllerTest`, `WpNotificationRepositoryTest`
+and `NotificationPerformanceTest` began every test with `DELETE FROM` on the notification and
+read-state tables, with no `WHERE`. A run removed every notification on the install and what each
+user had read. The assertions depended on it: "the list has one item" is true of an empty table.
+
+**The rows are found by a key of the test's own.** Each file stores under a dedup-key prefix no
+producer writes (`controller.test:`, `repository.test:`, `performance.test:`) and deletes by that
+prefix, before each test and after it. Before, because a run that dies leaves rows, and a repeat
+of the same key merges into the old row instead of creating one.
+
+**The assertions are scoped by who is asking, not by what is in the table.** Every notification
+read is filtered by the actor, so the tests ask as actors nothing else on the install addresses.
+
+- The repository test passes its actor as arguments. It uses two user ids no account has, and a
+  capability check that holds one ability, `corex_notification_repository_test`. It used to act as
+  users 7 and 8 holding every ability, which on a full table is every ability-targeted row.
+- The controller test goes through REST, where the actor is whoever is signed in. It signed in as
+  the first administrator, who sees everything. It now creates an account with no role, gives it
+  one test-only capability, and deletes it afterwards. No role, because the install may grant
+  CoreX abilities to any role. The alternative — keep the administrator and compare counts before
+  and after — was rejected: the read is capped at the 500 newest rows, so on an install holding
+  500 unresolved notifications one more does not change the count.
+
+Two things followed from acting as the administrator and are gone with it. The preferences test
+deleted that account's notification preferences and saved its own, so the administrator of the
+development install has had the jobs category switched off by the suite. And the default fixture
+key was `submission.new:contact`, which is what the submission producer writes for a form with
+that slug. That did nothing while the table was emptied first; left alone, the fixture would
+merge into the install's own row.
+
+**Two operations have no scope to be given, so the test moves out of their reach.**
+`pruneOlderThan()` removes whatever is resolved and older than a cutoff, and
+`SecurityResetLoginCommand::restore()` releases every lockout active at a given moment. Neither
+takes a filter, and adding one for a test would be production code. The prune test backdates its
+row to 1999 and prunes before 2000; the reset test records its lockout in 2099 and resets as of
+then. Only a row dated on purpose is on the far side of either line.
+
+**Stopping the delete uncovered what it had been hiding.** With the tables left alone, three more
+writers showed in the snapshot, and they are fixed here because this change is what exposes them.
+
+- `FlowControllerTest` and `FlowLifecycleTest` submit to a flow, and the submission producer
+  stores `submission.new:<slug>`. The slugs exist only in those files; each deletes its key.
+- `CommandCenterWidgetTest` renders the widget, which evaluates readiness for real. The readiness
+  producer then stores the install's own blockers under `readiness.blocker:<check>`, or raises
+  the count and moves the date on the ones already there. Those rows are not fixtures and cannot
+  be deleted afterwards: they may have been the developer's before the test ran. The test
+  snapshots the rows under that prefix and restores them — a row that was there reads as it did,
+  a row that was not is removed.
+- The Access tests' notifications were the third; pull request #225 had already removed them.
+
+**The rest of the list.** `CreatedPosts` (`tests/Support`) records post ids from the
+`wp_insert_post` action for the types a test names and deletes them afterwards. It is the
+listener `SubmitLifecycleTest` and `ProductDataPrivacyTest` got with #231, as a class, because
+five more files needed it.
+
+- Logged emails: `CallRequestDataPathTest` (2), `ApplicationDataPathTest` (2), `MailLifecycleTest`
+  (3) and `SubscriptionLifecycleTest` (1) each send through Corex Mail, which logs a post.
+- `DataManagementControllerTest` records its import, export and migration runs instead of
+  comparing the newest 500 ids before and after.
+- `BlogProControllerTest` deletes the reading events recorded against the post it created.
+- `corex_kit_seeded_pages` grew by two ids a run. A trace of option writes named
+  `SetupConflictTest`: `seedPages()` records each page it touches, and the test deleted the pages
+  and left their ids. It snapshots and restores the option.
+
+**One was found by checksum.** The login-attempt table held one row before a run and one after, so
+a row count showed nothing. `LoginProtectionEnforcementTest` ran an unqualified `DELETE FROM` on
+it around every test and deleted the login policy option without restoring it;
+`LoginRecoveryTest` then left a lockout row. Both now find their rows by the address they record
+against, which is in a range reserved for documentation (203.0.113.0/24), and the first puts the
+policy back.
+
+**Not migrated.** `SubmitLifecycleTest` and `ProductDataPrivacyTest` keep their inline listeners,
+and `OptionalDashboardWidgetsTest` keeps its own delete by prefix. They work; rewriting them onto
+the helpers is a separate change.
+
+What was run, on the development install, from the root checkout:
+
+| Check | Result |
+|---|---|
+| Full integration run on `main` at `5b424578`, before the change | 359 passed; 8 logged emails, 2 reading events, 2 seeded-page ids and a replaced login-attempt row left; the administrator's preferences row deleted and re-inserted. The Access tests' rows were also left, which pull request #225 has since fixed |
+| Two consecutive full runs with the change, four stand-in notifications and their read state seeded first, a snapshot around each | 377 ran and none failed; 21 carried a deprecation notice raised by the tracing bootstrap's own `setted_transient` listener. The stand-ins were unchanged, row for row. Four new transients and one refreshed per run |
+| A third run, with no stand-ins and no tracing | 377 passed; the same transients and no other difference |
+
+The stand-ins used the keys the old tests collided with and were removed afterwards, as were the
+rows the first run left. The 377 includes 18 integration tests `main` gained from pull requests
+#228 and #229 during the work.
+
+**Not done.**
+
+- The transients: rate-limit counters from the three tests that submit a form, and one migration
+  preview. They expire in 60 and 300 seconds. Recorded in `PROGRESS.md`.
+- `FlowControllerTest` and `FlowLifecycleTest` still delete flows, submissions and Email Studio
+  posts by comparing the newest 500 ids. Recorded in `PROGRESS.md`.
+- Two sessions running the suite at once against one database were not tested. The fixed prefixes
+  mean each would delete the other's fixtures mid-test; neither would touch the install's rows.
+- Nothing puts back what earlier runs removed or changed.
+
+## #235 — Coming soon is a mode, and what a request gets is one table
 
 Spec 101. Spec 063 named coming-soon as an operations mode; spec 065 shipped four modes and it was
 not one of them, and the only trace was a unit test asserting it was invalid. Maintenance mode

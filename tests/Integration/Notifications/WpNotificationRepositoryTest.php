@@ -6,6 +6,12 @@
  * Real WordPress, real tables. Covers dedup-keyed occurrence merging, visibility-filtered reads that
  * never leak to an unauthorized actor, per-user state, the condition lifecycle, and bounded pruning.
  *
+ * **The tables are a developer's, and these tests leave them as they found them.** Every read here
+ * is scoped by who is asking, so the tests ask as actors nothing else on the install addresses:
+ * two user ids no account has, and an ability no producer targets. What they see is then exactly
+ * what the test stored, however much the table already holds — which is what the assertions used
+ * to get by deleting every row in both tables before each test.
+ *
  * @package Corex\Tests\Integration\Notifications
  */
 
@@ -20,23 +26,36 @@ use Corex\Notifications\NotificationCategory;
 use Corex\Notifications\NotificationQuery;
 use Corex\Notifications\NotificationRecipient;
 use Corex\Notifications\NotificationSeverity;
+use Corex\Tests\Support\NotificationRows;
+
+/** Every dedup key this file stores starts with this, which is how its rows are found again. */
+const REPOSITORY_TEST_DEDUP = 'repository.test:';
+
+/** An ability no producer targets, so holding it shows an actor this file's rows and no others. */
+const REPOSITORY_TEST_ABILITY = 'corex_notification_repository_test';
 
 beforeEach(function () {
-    global $wpdb;
     $this->migrator = new Migrator();
     $this->migrator->create((new NotificationTable())->schema());
     $this->migrator->create((new NotificationUserStateTable())->schema());
     $this->repo = new WpNotificationRepository($this->migrator);
 
-    // Clean the two tables so tests are independent.
-    $wpdb->query('DELETE FROM ' . $this->migrator->fullName(NotificationUserStateTable::NAME));
-    $wpdb->query('DELETE FROM ' . $this->migrator->fullName(NotificationTable::NAME));
+    // Independent of each other, and of a run that died before its afterEach.
+    NotificationRows::forgetPrefixed(REPOSITORY_TEST_DEDUP);
 
-    $this->allow = static fn (string $ability): bool => true;
+    // Ids no account on a real install has, so nothing there is addressed to either.
+    $this->actor = 990_000_007;
+    $this->other = 990_000_008;
+
+    $this->allow = static fn (string $ability): bool => $ability === REPOSITORY_TEST_ABILITY;
     $this->deny  = static fn (string $ability): bool => false;
 });
 
-function makeNotification(NotificationRecipient $recipient, string $dedup = 'submission.new:contact'): Notification
+afterEach(function () {
+    NotificationRows::forgetPrefixed(REPOSITORY_TEST_DEDUP);
+});
+
+function makeNotification(NotificationRecipient $recipient, string $key = 'contact'): Notification
 {
     return Notification::create(
         type: 'submission.new',
@@ -46,38 +65,36 @@ function makeNotification(NotificationRecipient $recipient, string $dedup = 'sub
         titleKey: 'notifications.submission.new.title',
         messageKey: 'notifications.submission.new.body',
         rendered: ['title' => 'New submission', 'body' => 'Contact form'],
-        dedupKey: $dedup,
+        dedupKey: REPOSITORY_TEST_DEDUP . $key,
         recipient: $recipient,
         occurredAt: new DateTimeImmutable('now'),
     );
 }
 
 it('inserts a new notification and finds it back', function () {
-    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7)));
+    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor)));
 
     expect($stored->id)->toBeGreaterThan(0);
     $found = $this->repo->find($stored->id);
     expect($found)->not->toBeNull()
-        ->and($found->dedupKey)->toBe('submission.new:contact')
+        ->and($found->dedupKey)->toBe(REPOSITORY_TEST_DEDUP . 'contact')
         ->and($found->occurrences)->toBe(1);
 });
 
 it('merges a repeat by dedup key into one record with an incremented count', function () {
-    $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7)));
-    $second = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7)));
+    $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor)));
+    $second = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor)));
 
     expect($second->occurrences)->toBe(2);
     // Only one row exists for that dedup key.
-    global $wpdb;
-    $count = (int) $wpdb->get_var('SELECT COUNT(*) FROM ' . $this->migrator->fullName(NotificationTable::NAME));
-    expect($count)->toBe(1);
+    expect(NotificationRows::countPrefixed(REPOSITORY_TEST_DEDUP . 'contact'))->toBe(1);
 });
 
 it('returns a user-targeted notification to that user only, never to others', function () {
-    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7)));
+    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor)));
 
-    $mine = $this->repo->queryForActor(NotificationQuery::fromRequest([]), 7, $this->allow);
-    $theirs = $this->repo->queryForActor(NotificationQuery::fromRequest([]), 8, $this->allow);
+    $mine = $this->repo->queryForActor(NotificationQuery::fromRequest([]), $this->actor, $this->allow);
+    $theirs = $this->repo->queryForActor(NotificationQuery::fromRequest([]), $this->other, $this->allow);
 
     expect($mine['total'])->toBe(1)
         ->and($mine['items'][0]['id'])->toBe($stored->id)
@@ -88,18 +105,18 @@ it('filters by the per-user status instead of ignoring the filter', function () 
     // NotificationQuery::$status was accepted at the REST boundary, validated, and then never used
     // by any read — `?status=read` returned everything with a 200. These assertions fail if the
     // filter is dropped again.
-    $unread = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'status.unread:1'));
-    $read   = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'status.read:1'));
-    $this->repo->markRead((int) $read->id, 7);
+    $unread = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor), 'status.unread:1'));
+    $read   = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor), 'status.read:1'));
+    $this->repo->markRead((int) $read->id, $this->actor);
 
     $readOnly = $this->repo->queryForActor(
         NotificationQuery::fromRequest(['status' => 'read']),
-        7,
+        $this->actor,
         $this->allow,
     );
     $unreadOnly = $this->repo->queryForActor(
         NotificationQuery::fromRequest(['status' => 'unread']),
-        7,
+        $this->actor,
         $this->allow,
     );
 
@@ -113,12 +130,12 @@ it('filters by the per-user status instead of ignoring the filter', function () 
 });
 
 it('reports a resolved condition as resolved even for a user who never read it', function () {
-    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'status.resolved:1'));
-    $this->repo->resolveByDedupKey('status.resolved:1', 'condition cleared', new DateTimeImmutable('now'));
+    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor), 'status.resolved:1'));
+    $this->repo->resolveByDedupKey(REPOSITORY_TEST_DEDUP . 'status.resolved:1', 'condition cleared', new DateTimeImmutable('now'));
 
     $resolved = $this->repo->queryForActor(
         NotificationQuery::fromRequest(['status' => 'resolved']),
-        7,
+        $this->actor,
         $this->allow,
     );
 
@@ -127,16 +144,16 @@ it('reports a resolved condition as resolved even for a user who never read it',
 });
 
 it('narrows "assigned to me" to notifications that name the actor, not everything they can see', function () {
-    // Both are visible to user 7 (who holds every ability here); only one is theirs personally.
-    $mine = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'assigned.mine:1'));
+    // Both are visible to the actor (who holds the ability here); only one is theirs personally.
+    $mine = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor), 'assigned.mine:1'));
     $this->repo->upsertByDedupKey(
-        makeNotification(NotificationRecipient::forAbility('corex_manage_submissions'), 'assigned.broadcast:1')
+        makeNotification(NotificationRecipient::forAbility(REPOSITORY_TEST_ABILITY), 'assigned.broadcast:1')
     );
 
-    $all      = $this->repo->queryForActor(NotificationQuery::fromRequest([]), 7, $this->allow);
+    $all      = $this->repo->queryForActor(NotificationQuery::fromRequest([]), $this->actor, $this->allow);
     $assigned = $this->repo->queryForActor(
         NotificationQuery::fromRequest(['assigned_to_me' => true]),
-        7,
+        $this->actor,
         $this->allow,
     );
 
@@ -146,23 +163,23 @@ it('narrows "assigned to me" to notifications that name the actor, not everythin
 });
 
 it('does not leak an ability-targeted notification to a user lacking the ability', function () {
-    $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forAbility('corex_manage_email'), 'mail.provider.failure:default'));
+    $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forAbility(REPOSITORY_TEST_ABILITY), 'ability.only:1'));
 
-    $holder = $this->repo->queryForActor(NotificationQuery::fromRequest([]), 7, $this->allow);
-    $lacker = $this->repo->queryForActor(NotificationQuery::fromRequest([]), 7, $this->deny);
+    $holder = $this->repo->queryForActor(NotificationQuery::fromRequest([]), $this->actor, $this->allow);
+    $lacker = $this->repo->queryForActor(NotificationQuery::fromRequest([]), $this->actor, $this->deny);
 
     expect($holder['total'])->toBe(1)
         ->and($lacker['total'])->toBe(0);
 });
 
 it('counts only unread, visible notifications for the actor', function () {
-    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7)));
+    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor)));
 
-    expect($this->repo->unreadCountForActor(7, $this->allow))->toBe(1)
-        ->and($this->repo->unreadCountForActor(8, $this->allow))->toBe(0);
+    expect($this->repo->unreadCountForActor($this->actor, $this->allow))->toBe(1)
+        ->and($this->repo->unreadCountForActor($this->other, $this->allow))->toBe(0);
 
-    $this->repo->markRead($stored->id, 7);
-    expect($this->repo->unreadCountForActor(7, $this->allow))->toBe(0);
+    $this->repo->markRead($stored->id, $this->actor);
+    expect($this->repo->unreadCountForActor($this->actor, $this->allow))->toBe(0);
 });
 
 it('agrees with the unread view: a snoozed notification is neither counted nor listed', function () {
@@ -170,16 +187,16 @@ it('agrees with the unread view: a snoozed notification is neither counted nor l
     // only read/dismissed while the list derives a full status, so a snoozed item was counted but
     // not listed — a badge promising items the screen would not show, and an optional widget that
     // could register on the count and then render "all caught up".
-    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'snoozed.count:1'));
-    $this->repo->snooze((int) $stored->id, 7, new DateTimeImmutable('+1 day'));
+    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor), 'snoozed.count:1'));
+    $this->repo->snooze((int) $stored->id, $this->actor, new DateTimeImmutable('+1 day'));
 
     $listed = $this->repo->queryForActor(
         NotificationQuery::fromRequest(['status' => 'unread']),
-        7,
+        $this->actor,
         $this->allow,
     );
 
-    expect($this->repo->unreadCountForActor(7, $this->allow))->toBe(0)
+    expect($this->repo->unreadCountForActor($this->actor, $this->allow))->toBe(0)
         ->and($listed['total'])->toBe(0);
 });
 
@@ -187,64 +204,69 @@ it('marks all read without trampling a snooze the user deliberately set', functi
     // "Mark all as read" is offered from surfaces that show only unread items. Marking a snoozed
     // item read would silently cancel its resurfacing — the user asked to be reminded later, not to
     // have it filed away — so the sweep must touch only what is actually unread.
-    $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'sweep.unread:1'));
-    $snoozed = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'sweep.snoozed:1'));
-    $this->repo->snooze((int) $snoozed->id, 7, new DateTimeImmutable('+1 day'));
+    $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor), 'sweep.unread:1'));
+    $snoozed = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor), 'sweep.snoozed:1'));
+    $this->repo->snooze((int) $snoozed->id, $this->actor, new DateTimeImmutable('+1 day'));
 
-    $marked = $this->repo->markAllVisibleRead(7, $this->allow);
+    $marked = $this->repo->markAllVisibleRead($this->actor, $this->allow);
 
     $stillSnoozed = $this->repo->queryForActor(
         NotificationQuery::fromRequest(['status' => 'snoozed']),
-        7,
+        $this->actor,
         $this->allow,
     );
 
     expect($marked)->toBe(1)                                            // only the unread one
-        ->and($this->repo->unreadCountForActor(7, $this->allow))->toBe(0) // badge still clears
+        ->and($this->repo->unreadCountForActor($this->actor, $this->allow))->toBe(0) // badge still clears
         ->and($stillSnoozed['total'])->toBe(1);                          // snooze survives
 });
 
 it('keeps per-user read state private to each user', function () {
-    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUsers([7, 8])));
+    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUsers([$this->actor, $this->other])));
 
-    $this->repo->markRead($stored->id, 7);
+    $this->repo->markRead($stored->id, $this->actor);
 
-    expect($this->repo->unreadCountForActor(7, $this->allow))->toBe(0)  // 7 read it
-        ->and($this->repo->unreadCountForActor(8, $this->allow))->toBe(1); // 8 still unread
+    expect($this->repo->unreadCountForActor($this->actor, $this->allow))->toBe(0)  // 7 read it
+        ->and($this->repo->unreadCountForActor($this->other, $this->allow))->toBe(1); // 8 still unread
 });
 
 it('refuses to mark read a notification the actor cannot see', function () {
-    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7)));
+    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor)));
 
-    expect($this->repo->markRead($stored->id, 8))->toBeFalse(); // not their notification
-    expect($this->repo->unreadCountForActor(7, $this->allow))->toBe(1); // unchanged
+    expect($this->repo->markRead($stored->id, $this->other))->toBeFalse(); // not their notification
+    expect($this->repo->unreadCountForActor($this->actor, $this->allow))->toBe(1); // unchanged
 });
 
 it('resolves and reopens a condition by dedup key, independent of user dismissal', function () {
-    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forAbility('corex_manage_operations'), 'readiness.blocker:https'));
-    $this->repo->dismiss($stored->id, 7); // one user hides it
+    // Addressed to the actor by id, so the dismissal below is one the repository accepts: sight
+    // through an ability is checked against the signed-in user, and nobody is signed in here.
+    $condition = REPOSITORY_TEST_DEDUP . 'condition:1';
+    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor), 'condition:1'));
+    expect($this->repo->dismiss($stored->id, $this->actor))->toBeTrue(); // one user hides it
 
-    $resolvedCount = $this->repo->resolveByDedupKey('readiness.blocker:https', 'HTTPS is now configured.', new DateTimeImmutable('now'));
+    $resolvedCount = $this->repo->resolveByDedupKey($condition, 'HTTPS is now configured.', new DateTimeImmutable('now'));
     expect($resolvedCount)->toBe(1)
         ->and($this->repo->find($stored->id)->isResolved())->toBeTrue();
 
     // The condition recurs: a fresh occurrence reopens it.
-    $reopened = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forAbility('corex_manage_operations'), 'readiness.blocker:https'));
+    $reopened = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor), 'condition:1'));
     expect($reopened->isResolved())->toBeFalse()
         ->and($reopened->occurrences)->toBe(2);
 });
 
 it('prunes resolved notifications older than the cutoff, in bounded batches', function () {
     global $wpdb;
-    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser(7), 'old.thing:1'));
-    // Backdate + resolve it well before the cutoff.
+    $stored = $this->repo->upsertByDedupKey(makeNotification(NotificationRecipient::forUser($this->actor), 'old.thing:1'));
+    // Backdate + resolve it well before the cutoff. The prune has no scope to give it — it removes
+    // whatever on the install is resolved and older than the cutoff — so the cutoff is a date
+    // before WordPress existed, which only a row backdated on purpose can be older than.
     $wpdb->update(
         $this->migrator->fullName(NotificationTable::NAME),
-        ['resolved_at' => '2020-01-01 00:00:00', 'latest_occurred_at' => '2020-01-01 00:00:00'],
+        ['resolved_at' => '1999-01-01 00:00:00', 'latest_occurred_at' => '1999-01-01 00:00:00'],
         ['id' => $stored->id],
     );
 
-    $removed = $this->repo->pruneOlderThan(new DateTimeImmutable('2021-01-01'), 500);
+    $removed = $this->repo->pruneOlderThan(new DateTimeImmutable('2000-01-01'), 500);
     expect($removed)->toBe(1)
         ->and($this->repo->find($stored->id))->toBeNull();
 });

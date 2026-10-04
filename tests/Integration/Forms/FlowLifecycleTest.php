@@ -16,6 +16,7 @@ use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Studio\EmailTemplateRepository;
 use Corex\Email\Studio\EmailTemplateVersion;
 use Corex\Email\Studio\WpEmailStudioStore;
+use Corex\Tests\Support\NotificationRows;
 
 function lifecycleFlowRequest(string $method, string $route, array $payload = []): WP_REST_Request
 {
@@ -71,6 +72,11 @@ afterEach(function () {
     foreach (array_diff($emailIds, $this->emailBaseline) as $id) {
         wp_delete_post((int) $id, true);
     }
+
+    // A submission notifies whoever manages submissions, under a key made from the flow's slug.
+    // `lifecycle-flow` exists only in this file, so the notification about it is this file's.
+    NotificationRows::forget('submission.new:lifecycle-flow');
+
     if ($this->previousAppEnvironment === null) {
         delete_option('corex_app_env');
     } else {

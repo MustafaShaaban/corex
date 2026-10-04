@@ -12,6 +12,7 @@ use Corex\Forms\Flow\FlowController;
 use Corex\Forms\Flow\WpFlowStore;
 use Corex\Forms\Submission\FlowSubmissionController;
 use Corex\Boot;
+use Corex\Tests\Support\NotificationRows;
 
 beforeEach(function () {
     $container = Boot::app()->container();
@@ -55,6 +56,10 @@ afterEach(function () {
     foreach (array_diff($submissionIds, $this->baselineSubmissionIds) as $id) {
         wp_delete_post((int) $id, true);
     }
+
+    // A submission notifies whoever manages submissions, under a key made from the flow's slug.
+    // `integration-flow` exists only in this file, so the notification about it is this file's.
+    NotificationRows::forget('submission.new:integration-flow');
 });
 
 function flowRestPayload(string $message = 'Thanks'): array
