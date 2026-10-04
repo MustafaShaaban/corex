@@ -60,6 +60,20 @@ afterEach(function () {
     foreach (CorexGuides::all() as $guide) {
         $registry->register($guide);
     }
+
+    // The subscriber one test invents. It was never deleted, so every run left another
+    // `guides-subscriber-*` account on the developer's install. Here rather than at the end of that
+    // test for the same reason as above: a failed assertion must not be what leaves a user behind.
+    if (isset($this->subscriber) && $this->subscriber > 0) {
+        // Back to nobody first, so the request is not left authenticated as a deleted user.
+        wp_set_current_user(0);
+
+        if (! function_exists('wp_delete_user')) {
+            require_once ABSPATH . 'wp-admin/includes/user.php';
+        }
+
+        wp_delete_user($this->subscriber);
+    }
 });
 
 it('ships the Corex guides through the same public seam a site uses', function () {
@@ -121,13 +135,13 @@ it('offers a site guide only to somebody holding the capability it names', funct
         Guide::for('site-restricted', 'Restricted')->requiring('manage_network_options'),
     ]);
 
-    $subscriber = wp_insert_user([
+    $this->subscriber = (int) wp_insert_user([
         'user_login' => 'guides-subscriber-' . wp_generate_password(6, false),
         'user_pass'  => wp_generate_password(),
         'user_email' => uniqid('guides', false) . '@example.test',
         'role'       => 'subscriber',
     ]);
-    wp_set_current_user((int) $subscriber);
+    wp_set_current_user($this->subscriber);
 
     $ids = array_map(static fn (Guide $g): string => $g->id, guideRegistry()->available());
 
