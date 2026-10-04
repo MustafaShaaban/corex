@@ -240,6 +240,7 @@ describe( 'the tools that walk the tree', () => {
 		 * matched nothing. Asking Jest is the only way to see what Jest will do.
 		 */
 		let resolved = [];
+		let indexed = [];
 
 		beforeAll( () => {
 			const shown = execFileSync(
@@ -256,7 +257,10 @@ describe( 'the tools that walk the tree', () => {
 				}
 			);
 
-			resolved = JSON.parse( shown ).configs[ 0 ].testPathIgnorePatterns;
+			const [ config ] = JSON.parse( shown ).configs;
+
+			resolved = config.testPathIgnorePatterns;
+			indexed = config.modulePathIgnorePatterns;
 		}, 120000 );
 
 		it.each( directoryPatterns( everyPattern ) )(
@@ -272,6 +276,24 @@ describe( 'the tools that walk the tree', () => {
 				expect(
 					resolved.filter( ( ignored ) =>
 						new RegExp( ignored ).test( testFile )
+					)
+				).not.toEqual( [] );
+			}
+		);
+
+		it.each( directoryPatterns( everyPattern ) )(
+			'does not index the files under %s either',
+			( pattern ) => {
+				// Skipping a directory's tests does not stop Jest reading its `package.json`
+				// files into the module map, which is where duplicate-name warnings come from.
+				const file = path.join(
+					repositoryRoot,
+					...pattern.replace( '**', 'acme/package.json' ).split( '/' )
+				);
+
+				expect(
+					indexed.filter( ( ignored ) =>
+						new RegExp( ignored ).test( file )
 					)
 				).not.toEqual( [] );
 			}

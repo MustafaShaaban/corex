@@ -39,28 +39,42 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**`fix/dependency-advisories-2026-10` — open as PR #212.** #203
-cleared every advisory known on 2026-09-09 and merged on 2026-10-04, by which time the gate on `main`
-was red again with 26 new findings: 18 unbounded in the root npm workspace, 8 in the docs site. This branch takes every patched release that exists — ten packages, one of them
-(`basic-ftp` 5 → 6) through a new override that was proven against its parent — removes the
-`adm-zip` exception that 0.6.1 made unnecessary, and bounds the one finding with no fix, `braces`.
-`npm run verify:dependencies` reports PASS on the branch: zero findings in Composer and the docs
-site, three findings and three exceptions in the root (DECISIONS #227).
+**The October advisory pass landed as #212 on 2026-10-04** (DECISIONS #227). #203 had cleared every
+advisory known on 2026-09-09, and by the day it merged the gate on `main` was red again with 26 new
+findings. #212 took every patched release that exists — ten packages, one of them (`basic-ftp`
+5 → 6) through a new override proven against its parent — removed the `adm-zip` exception that
+0.6.1 made unnecessary, and bounded the one finding with no fix, `braces`. The gate reported PASS
+for the merged tree that day: zero findings in Composer and the docs site, three findings and three
+exceptions in the root.
 
-**The `braces` exception is an owner decision, not a formality.** The policy forbids excepting a
-high finding whose exposure is CI, and `braces` does run in CI. It is classed as build tooling with
-repository-authored input, following spec 056's precedent. Read DECISIONS #227 before merging.
+**The `braces` exception was merged as written, on the owner's instruction.** The policy forbids
+excepting a high finding whose exposure is CI, and `braces` does run in CI. It is classed as build
+tooling with repository-authored input, following spec 056's precedent. DECISIONS #227 records both
+readings and what would overturn the exception.
 
 Merged since v0.42.0: #202 (issue #201 — `composer install --no-dev` no longer drops seven WP-CLI
-commands, DECISIONS #225) and #203 (the September advisory pass, DECISIONS #226).
+commands, DECISIONS #225), #203 (the September advisory pass, DECISIONS #226), #212 (the October
+one, DECISIONS #227), #213 (the linters and Jest no longer walk `wp-ms/` or session worktrees) and
+#214 (Jest's module map no longer indexes generated copies).
 
-No open feature spec, and no release in preparation.
+Two feature specs are open as draft pull requests: spec 101, coming-soon mode (#210), and spec 102,
+update-safe client sites (#211). No release is in preparation.
 
-One dependency pull request stays open on purpose: **#186, `@wordpress/components` 38 → 40.** npm
+One dependency pull request stays open on purpose: **#208, `@wordpress/components` 38 → 40.1**
+(Dependabot's replacement for #186 and #200, both of which it closed). npm
 resolves 38.0.0 against a `^39.0.0` requirement and reports success, producing a lockfile that
 contradicts itself — so it was not bundled into the dependency pass. It is a major in a library more
 than twenty admin modules import, which per DECISIONS #220 needs render-time verification in a real
-browser. The PR carries what was tried.
+browser. #186 carries what was tried.
+
+**`fix/jest-haste-collisions` — tooling only, merged as PR #214 on 2026-10-04.** It follows #213, merged on
+2026-10-04, which keeps the linters and Jest out of `wp-ms/` and `.claude/worktrees/`, so
+`npm run lint:js`, `lint:css` and `test:js` report on Corex again on a machine that has the local
+multisite install. #214 also takes `wp/`, `wp-ms/`, `dist/` and `.claude/worktrees/` out of
+Jest's module map: on a machine with a `dist/` build or an agent session worktree, a cold-cache
+`npm run test:js` passed and printed nine "Haste module naming collision" warnings, one per package
+name it found twice. The suite is unchanged at 54 suites and 442 tests. CI never builds `dist/` and
+has no worktrees, so it never printed them.
 
 ## Recently landed (v0.42.0)
 
@@ -99,11 +113,6 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   that has not been attempted (DECISIONS #226, #227).
 - **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
   Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
-- **`npm run lint:js`, `lint:css` and `test:js` do not exclude `wp-ms/`.** On a machine that has
-  the local multisite install, stylelint reports about 240,000 errors from WordPress core's own CSS
-  and ESLint had not finished after ten minutes. CI has no `wp-ms/` and is unaffected. Until the three ignore lists
-  gain it, pass `--ignore-pattern=wp-ms/**` to the linters and `--testPathIgnorePatterns` to Jest to
-  get a local result that means anything.
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.

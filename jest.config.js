@@ -17,6 +17,13 @@
  * pattern has to stay anchored to this directory — a run started inside a worktree has that
  * directory in every test path, and an unanchored pattern would leave it nothing to run. It is
  * one of the local-only paths in the ownership map, and is anchored with them below.
+ *
+ * The directories in `notCorexSource` are in `modulePathIgnorePatterns` as well, because
+ * skipping a directory's tests does not stop Jest indexing its files. Every `package.json` in
+ * `dist/` or in a worktree carries the same `name` as the one it was copied from, and a run
+ * with a cold cache printed a "Haste module naming collision" warning for each name it found
+ * twice — all nine of this repository's, on a suite that passed. The same anchoring applies,
+ * for the same reason.
  */
 const defaultConfig = require( '@wordpress/scripts/config/jest-unit.config.js' );
 const {
@@ -56,6 +63,13 @@ const ownedElsewhere = [ ...clientOwned, ...localOnly ]
 			) }`
 	);
 
+const notCorexSource = [
+	'<rootDir>/wp/',
+	'<rootDir>/wp-ms/',
+	'<rootDir>/dist/',
+	...ownedElsewhere,
+];
+
 module.exports = {
 	...defaultConfig,
 	transform: {
@@ -67,10 +81,8 @@ module.exports = {
 	testPathIgnorePatterns: [
 		'/node_modules/',
 		'/build/',
-		'<rootDir>/wp/',
-		'<rootDir>/wp-ms/',
-		'<rootDir>/dist/',
 		'<rootDir>/docs-app/',
-		...ownedElsewhere,
+		...notCorexSource,
 	],
+	modulePathIgnorePatterns: notCorexSource,
 };
