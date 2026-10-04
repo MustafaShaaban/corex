@@ -39,9 +39,21 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-Nothing is in flight on `main`. Two feature specs are open as draft pull requests: spec 101,
-coming-soon mode (#210), and spec 102, update-safe client sites (#211). No dependency pull request
-is being held.
+**Spec 102 — a client site the framework can be updated underneath — is implemented on PR #211**
+(DECISIONS #230). The framework prescribed `sites/<client>/` and its own checks rejected it. A client
+repository now passes them untouched: one ownership file says which paths are the client's, hygiene,
+the linters, Jest and prettier read it, `npm run verify:framework` proves the framework files match
+the recorded release, and `make:site` generates the baseline record, the update checklist and the
+client's own CI. `client-site-layout` in CI generates a real site and runs every check against it.
+The update procedure is documented in English and Arabic. `specs/102-update-safe-client-sites/tasks.md`
+records each task, including the ones the work changed. Open on it: making `client-site-layout` a
+required check is an owner setting in branch protection.
+
+Spec 101, coming-soon mode, is open as a draft pull request (#210) with a spec and a plan, and no
+code. One thing found while building 102 shaped that plan: a generated client theme is a standalone
+block theme, not a child of the Corex theme, so it does not inherit a template the parent ships.
+
+No dependency pull request is being held.
 
 ## Recently landed (v0.42.1)
 

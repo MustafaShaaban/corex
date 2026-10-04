@@ -6,6 +6,8 @@ The {{ name }} website — a **Corex client site**.
 - **Theme:** `{{ theme_slug }}/`
 - **Specs / docs:** `specs/`, `docs/`
 - **Workflow + agent rules:** [AGENTS.md](./AGENTS.md)
+- **Taking a CoreX release:** [UPDATING-COREX.md](./UPDATING-COREX.md) — the framework release
+  this site is on is recorded in `corex-baseline.json`.
 
 Edit only the client plugin/theme — never the Corex framework. Scaffold with `wp corex make:*`.
 

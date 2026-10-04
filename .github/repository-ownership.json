@@ -1,0 +1,11 @@
+{
+  "frameworkRepository": "MustafaShaaban/corex",
+  "clientOwned": [
+    "sites/**",
+    ".github/workflows/site-*.yml"
+  ],
+  "localOnly": [
+    ".claude/worktrees/**",
+    ".worktrees/**"
+  ]
+}

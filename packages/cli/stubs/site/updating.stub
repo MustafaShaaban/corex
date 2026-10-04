@@ -1,0 +1,50 @@
+# Updating CoreX in {{ name }}
+
+This repository carries a copy of the CoreX framework beside the {{ name }} site, and takes each
+framework release by merging it. This is the checklist for doing that. The full procedure, with
+the reasoning behind each step, is in the framework's documentation:
+`docs/en/05-deployment/updating-a-client-site.md`.
+
+**The rule that keeps an update conflict-free:** client work never edits a framework-owned path.
+Everything of {{ name }}'s lives in `sites/{{ site_dir }}/` and in
+`.github/workflows/site-{{ site_dir }}.yml`. Every other path in this repository is the
+framework's, the root included.
+
+## Before
+
+- [ ] `git status` is clean, and you are on a new branch such as `chore/corex-<version>-update`.
+- [ ] `npm run verify:framework` passes. If it reports `DRIFT`, a framework file was edited here.
+      Resolve that first, or the merge will conflict on it.
+- [ ] Read the **Client impact** section of `CHANGELOG.md` for every release between the one
+      recorded in `sites/{{ site_dir }}/corex-baseline.json` and the one you are taking.
+- [ ] Note how the public pages look and behave now, to compare afterwards.
+
+## Update
+
+- [ ] `git fetch upstream --tags`
+- [ ] `git merge <release tag>` — for example `git merge v1.2.3`. A conflict in a framework-owned
+      path means a local edit: take the framework's version unless it is a recorded exception.
+- [ ] `composer install` and `npm ci`
+- [ ] `npm run build` — the framework's own assets.
+- [ ] Build the client's. In `sites/{{ site_dir }}/{{ plugin_slug }}` and
+      `sites/{{ site_dir }}/{{ theme_slug }}`, wherever there is a `package.json`, run `npm ci`
+      (or `npm install` where there is no lockfile) and then `npm run build`.
+- [ ] `wp corex migrate` — applies any database schema change the release carries. Run it again in
+      each environment as the release reaches it.
+
+## Verify
+
+- [ ] `npm run verify:framework -- --record <release tag>` — records the new baseline.
+- [ ] `npm run verify:framework` — must pass. It now compares against the release you took, so a
+      pass means the framework files here are exactly that release's.
+- [ ] `composer test` and `npm run test:js` — the framework's suites.
+- [ ] The {{ name }} site's own tests.
+- [ ] Compare the public pages with what you noted before.
+- [ ] Commit, including `sites/{{ site_dir }}/corex-baseline.json`, and open a pull request.
+
+## If a framework defect blocks {{ name }}
+
+Report it in the framework's repository and take the fix by update. If {{ name }} cannot wait,
+patch the file here and list it under `exceptions` in `corex-baseline.json`, with a `reason` and
+the `upstream` issue. `npm run verify:framework` reports the exception on every run, and fails it
+as `STALE` once the framework has the fix. Delete the exception then; do not re-apply the patch.

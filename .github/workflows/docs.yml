@@ -25,8 +25,13 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# Both jobs run in the framework's own repository and nowhere else. A client repository is a copy
+# of this one and inherits this file, and the documentation it would deploy is the framework's,
+# not the client's (spec 102). The repository is written out because an expression cannot read
+# `.github/repository-ownership.json`; `tests/repository-ownership.test.js` holds the two together.
 jobs:
   build:
+    if: github.repository == 'MustafaShaaban/corex'
     name: Regenerate reference + build docs site
     runs-on: ubuntu-latest
     steps:
@@ -72,6 +77,7 @@ jobs:
           path: docs-app/dist
 
   deploy:
+    if: github.repository == 'MustafaShaaban/corex'
     name: Publish to GitHub Pages
     needs: build
     runs-on: ubuntu-latest

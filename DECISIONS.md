@@ -4714,3 +4714,63 @@ rather than at the newest release.
 The rule #220 stated was right about the question and wrong about the mechanism for this package:
 **for a dependency the build externalises, compare the build output across the bump. Identical
 output closes the render-time question; only a difference needs a browser.**
+
+## #230 — A client site is defined by what it owns, and the framework is everything else
+
+Spec 102. The framework told a team to build a client site under `sites/<client>/` and then
+rejected that layout in four places of its own — repository hygiene, both linters and Jest — each
+found by a client, in the client's repository, and each worked around by editing a framework file.
+An edit to a framework file is a conflict waiting in every later update, which is the opposite of
+what a client needs from a framework it has to keep updating.
+
+**Ownership is a short list of client paths, and the framework is the complement.** The client
+repository had been verifying its updates with a `git diff` over a list of framework directories.
+A list is wrong in the direction that matters: what is missing from it is unchecked, and the
+repository root was missing, which is how a 17 MB archive was committed there during one update.
+`.github/repository-ownership.json` names two client patterns — `sites/**` and
+`.github/workflows/site-*.yml` — and everything else is the framework's. A new framework directory
+is covered the day it is added.
+
+**Which repository this is defaults to "the framework's".** An explicit role, then what CI reports,
+then the `origin` remote, then framework. A repository that cannot say what it is gets the rule
+that forbids `sites/`. Inferring "client" from the presence of a baseline record was rejected: it
+would let a client site be committed to the framework by committing its record with it.
+
+**The check is a Node script, not a `wp corex` command.** It needs git and nothing else, and a
+client's CI should not have to provision WordPress and a database to compare files.
+
+**A stale exception fails.** The update procedure says to delete a local patch once upstream has
+it. A list nobody is made to prune becomes a list of things nobody remembers the reason for.
+
+**Three things the plan got wrong, and the work corrected.**
+
+- *The plan linked client sites into CI's WordPress.* The provisioning action runs
+  `wp plugin activate --all`, so the framework's integration and browser suites would have run
+  with a client's plugin active. Dropped: nothing in the spec needs CI's WordPress to load one.
+- *`client-site-layout` was given the schedule condition.* In a client repository it would have
+  generated a second site with a different baseline on every pull request, and the check would
+  rightly have refused the pair. It is confined to the framework's repository on every event.
+- *"Linked, not activated" was not true of the setup script as first written.* `--all` switched a
+  linked client plugin on at the next re-run, and the Corex theme was activated unconditionally,
+  switching a client's site back to it. Both were found by running the script against a real
+  install, after a harness for the discovery logic had passed.
+
+**Two defects the work found that were not in the spec.**
+
+- `wp corex make:site --path=<dir>` could not run. `--path` is a WP-CLI global and never reaches
+  the command; the README, three guides and the readiness report all documented it. The site
+  directory is `--dir`, by the owner's decision, and `client-site-layout` runs the documented form.
+- Jest's `<rootDir>` ignore patterns silently stop applying on Windows in a checkout whose own
+  path holds a dot-directory, because Jest leaves a backslash before a dot alone when it rewrites
+  separators. That is every agent session worktree. A unit test that substituted `<rootDir>`
+  itself passed while Jest ran a failing test under `sites/`; the test now asks Jest for its
+  resolved configuration. The older `<rootDir>/wp/`, `/wp-ms/` and `/dist/` entries keep the
+  weakness and are not this spec's to change.
+
+**Owner settings, not files.** Making `client-site-layout` a required check is a branch-protection
+setting. It passed on its first run and on each run since; it is not required yet.
+
+**What is still unproven.** SC-001 asks for a site generated at one release and updated to the
+next. The next release does not exist. It was rehearsed in a scratch repository with tags standing
+in for releases — no conflict, and nothing under `sites/` changed but the baseline record — and it
+is proved for real the first time a client takes the release after this one.

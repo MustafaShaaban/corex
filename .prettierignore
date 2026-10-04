@@ -1,0 +1,16 @@
+# `npm run format` (wp-scripts format) uses this file when it exists and its own defaults when it
+# does not. A project file replaces those defaults rather than extending them, so they are
+# repeated here first.
+build
+vendor
+
+# Generated or installed, never authored here — the same list .stylelintignore keeps.
+**/node_modules/**
+**/dist/**
+wp/**
+wp-ms/**
+
+# Client sites are formatted by their own toolchain, from their own directory (spec 102). This
+# file cannot read .github/repository-ownership.json, so tests/repository-ownership.test.js holds
+# it to that map instead.
+sites/**

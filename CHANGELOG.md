@@ -6,6 +6,62 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **A client site the framework can be updated underneath** (spec 102). The framework tells a team to put
+  a client site under `sites/<client>/`, and its own checks rejected exactly that. A client repository now
+  passes them untouched, and can prove its framework files are unmodified.
+  - `.github/repository-ownership.json` names the client-owned paths — `sites/**` and
+    `.github/workflows/site-*.yml`. Everything else is the framework's, the repository root included.
+  - `npm run verify:framework` compares every framework-owned path with the release recorded in
+    `sites/<client>/corex-baseline.json`, and exits 1 on anything that differs without a recorded
+    exception. `--record <release>` writes a new baseline. Git and Node only — nothing installed.
+  - `wp corex make:site` generates the baseline record, `UPDATING-COREX.md`, and — for a site at
+    `<repository>/sites/<client>` — the client's own CI workflow, `.github/workflows/site-<client>.yml`.
+  - `wp corex make:site --starter` now ships a `phpunit.xml.dist` and test bootstrap, so its example test
+    can be run.
+  - `scripts/setup-wordpress.ps1` links every client plugin and theme under `sites/` into the local
+    WordPress, without activating them.
+  - A CI job, `client-site-layout`, generates a real starter site and runs every root check against it.
+  - Documentation: *Updating CoreX in a client site*, in English and Arabic.
+
+### Fixed
+
+- **`wp corex make:site --path=<dir>` never worked.** `--path` is a WP-CLI global, taken as the WordPress
+  install before any command sees its arguments, so the site directory never arrived. The README, the
+  guides and the readiness report all documented that form. The site directory is now `--dir`.
+- `tests/repo-hygiene.test.js` forbade `sites/` in every repository, including a client's own. The rule
+  now applies to the framework's repository only.
+- The root linters, Jest and `npm run format` swept `sites/`. They read the ownership file now.
+- Jest's `<rootDir>` ignore patterns silently stopped applying on Windows in a checkout whose own path
+  holds a dot-directory, which is every agent session worktree. The ownership-derived patterns are anchored
+  in a way that survives it.
+
+### Changed
+
+- Scheduled CI runs and the documentation deploy run in the framework's repository only. A client
+  repository inherits the workflows and no longer runs them. Pull-request and push runs are unchanged.
+
+### Client impact
+
+What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
+Read this before taking the release. *(This section is required from this release on — see
+`CONTRIBUTING.md`.)*
+
+- **No front-end or admin runtime behaviour changes from spec 102.** Everything it adds is tooling, the
+  site generator, CI and documentation.
+- **Four files conflict once, if your repository edited them** to make the framework's checks accept
+  `sites/`: `tests/repo-hygiene.test.js`, `.stylelintignore`, `eslint.config.js`, `jest.config.js`. Take
+  the framework's version of each — the edits are no longer needed.
+- **A client repository created before this release has no baseline record.** Adopt it at this update:
+  *Updating CoreX in a client site → A client repository that predates this page*.
+- **`wp corex make:site --path=<dir>` is now `--dir=<dir>`.** The old form never ran, so no working
+  script can depend on it.
+- **`scripts/setup-wordpress.ps1` activates the framework's plugins by name**, not with `--all`. A plugin
+  you installed into `./wp` by hand is no longer switched on by the script. It also leaves a linked client
+  theme active instead of switching back to the Corex theme.
+- **Scheduled CI and the documentation deploy no longer run in your repository.**
+
 ## [0.42.1] — 2026-10-04
 
 A patch release for one defect that reached production installs, and for a month of maintenance

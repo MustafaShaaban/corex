@@ -10,10 +10,10 @@ governance files a team and AI agents need.
 ## Generate a site
 
 ```bash
-wp corex make:site Acme --path=sites/acme
+wp corex make:site Acme --dir=sites/acme
 ```
 
-This creates, **under the site root** (`--path`, default the current directory + the slug — e.g. `sites/acme/`),
+This creates, **under the site root** (`--dir`, default the current directory + the slug — e.g. `sites/acme/`),
 the client plugin + theme as **one client unit** (it is not a WordPress install — the local WordPress in `./wp`
 loads it):
 
@@ -23,6 +23,11 @@ loads it):
   `templates/`, `parts/`).
 - **governance** at the site root: `AGENTS.md`, `CLAUDE.md`, `README.md`, `PROGRESS.md`, `DECISIONS.md`, a
   `.gitignore`, and `specs/` + `docs/` scaffolding.
+- **what lets the site take CoreX updates**: `corex-baseline.json` (the framework release and commit the
+  site is on), `UPDATING-COREX.md` (the update checklist, with this site's paths), and — when the site root
+  is `<repository>/sites/<client>` — the client's own CI workflow at
+  `.github/workflows/site-<client>.yml`. Generated anywhere else, the command says the workflow was skipped.
+  See [Update CoreX in a client site](/guides/updating-a-client-site/).
 
 The site's identity is **distinct from Corex's**: namespace `AcmeSite\`, text domain `acme-site`, REST namespace
 `acme/v1`, CSS prefix `--acme-`, option/CPT prefix `acme_`. Client code imports Corex base classes but never uses
@@ -39,8 +44,11 @@ passes only when the generated scaffold includes:
 - a theme token strategy in `acme-theme/theme.json`,
 - starter example files only for `--starter`.
 
-For client repositories, keep `wp corex compliance:check` in CI. It fails client-branding edits under Corex
-framework folders such as `plugins/corex-*`, `addons/corex-*`, `packages/`, or `theme/`.
+For client repositories, the generated `site-<client>.yml` workflow runs `node scripts/verify-framework.mjs`
+on every pull request. It compares every framework-owned path — everything outside `sites/` and the client's
+own workflow, the repository root included — with the recorded release, and fails on anything that differs.
+`wp corex compliance:check` remains for the narrower question of whether a list of changed file names
+touches `plugins/corex-*`, `addons/corex-*`, `packages/`, or `theme/`.
 
 ### Flags
 
@@ -50,7 +58,7 @@ framework folders such as `plugins/corex-*`, `addons/corex-*`, `packages/`, or `
 | `--minimal` | force the lean scaffold (no example) — same as the default; documents intent |
 | `--plugin-only` / `--theme-only` | generate just one side |
 | `--force` | regenerate (otherwise an existing site is skipped) |
-| `--path=<dir>` | the site root |
+| `--dir=<dir>` | the site root. Not `--path`: WP-CLI takes that for itself, as the WordPress install |
 
 ### `--starter` — a runnable example to learn from and delete
 

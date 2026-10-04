@@ -18,6 +18,8 @@ use Corex\Cli\Generators\Generator;
 use Corex\Cli\Generators\GeneratorContext;
 use Corex\Cli\Generators\GeneratorEngine;
 use Corex\Cli\Generators\GeneratorResult;
+use Corex\Cli\Site\SiteRepository;
+use Corex\Cli\Site\SiteRepositoryResolver;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldResult;
 use Throwable;
@@ -40,6 +42,7 @@ final class MakeCommand
         private readonly ?GeneratorContext $context = null,
         private readonly ?ApiResourceScaffolder $apiScaffolder = null,
         private readonly ?SiteScaffolder $siteScaffolder = null,
+        private readonly ?SiteRepositoryResolver $siteRepositories = null,
     ) {
     }
 
@@ -165,8 +168,13 @@ final class MakeCommand
     }
 
     /**
-     * Scaffold a client site (plugin + theme + governance) under `--path` (default: the
+     * Scaffold a client site (plugin + theme + governance) under `--dir` (default: the
      * current directory + the site slug). Flags: --plugin-only / --theme-only / --force.
+     *
+     * The site directory is `--dir`, not `--path`. It was read from `--path` until spec 102, and
+     * documented that way everywhere, and it never arrived: `--path` is a WP-CLI global, taken as
+     * the WordPress install before any command sees its arguments. So the documented form did
+     * not generate a site somewhere unexpected — it failed to find WordPress at all.
      *
      * @param array<string,mixed> $assoc
      */
@@ -178,7 +186,7 @@ final class MakeCommand
             return;
         }
 
-        $output = isset($assoc['path']) ? (string) $assoc['path'] : getcwd() . '/' . sanitize_title($name);
+        $output = isset($assoc['dir']) ? (string) $assoc['dir'] : getcwd() . '/' . sanitize_title($name);
 
         $options = [
             'force'       => (bool) ($assoc['force'] ?? false),
@@ -188,8 +196,10 @@ final class MakeCommand
             'starter'     => (bool) ($assoc['starter'] ?? false) && ! (bool) ($assoc['minimal'] ?? false),
         ];
 
+        $repository = $this->siteRepositories?->for($output, (string) getcwd());
+
         try {
-            $result = $this->siteScaffolder->scaffold($name, $output, $options);
+            $result = $this->siteScaffolder->scaffold($name, $output, $options, $repository);
         } catch (Throwable $e) {
             WP_CLI::error($e->getMessage());
 
@@ -203,11 +213,36 @@ final class MakeCommand
             WP_CLI::success(sprintf('Client site scaffolded: %s', $result->siteDir));
             WP_CLI::log('Edit only the client plugin/theme — never the Corex framework. See AGENTS.md.');
 
+            if ($repository !== null && ! $options['plugin_only'] && ! $options['theme_only']) {
+                $this->reportUpdateSafety($repository);
+            }
+
             return;
         }
 
         $result->status === SiteScaffoldResult::SKIPPED
             ? WP_CLI::warning(sprintf('%s (%s)', $result->message, $result->siteDir))
             : WP_CLI::error($result->message ?? 'Site scaffolding failed.');
+    }
+
+    /**
+     * Say plainly what the scaffold could not do (spec 102). Both are things the operator has to
+     * act on, and neither is visible in the list of files written.
+     */
+    private function reportUpdateSafety(SiteRepository $repository): void
+    {
+        if (! $repository->baseline->isResolved()) {
+            WP_CLI::warning(
+                'The framework commit could not be read from git, so corex-baseline.json records none. '
+                . 'Record one with: npm run verify:framework -- --record <release tag>'
+            );
+        }
+
+        if ($repository->root === null) {
+            WP_CLI::warning(
+                'No CI workflow was generated: the site is not at <repository>/sites/<client>, '
+                . 'so there is nowhere to place .github/workflows/site-<client>.yml.'
+            );
+        }
     }
 }

@@ -1,0 +1,6 @@
+{
+  "release": "{{ baseline_release }}",
+  "commit": "{{ baseline_commit }}",
+  "recorded": "{{ baseline_recorded }}",
+  "exceptions": []
+}
