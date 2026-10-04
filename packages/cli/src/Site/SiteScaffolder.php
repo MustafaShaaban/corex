@@ -24,6 +24,10 @@ use Corex\Cli\Generators\StubRenderer;
  * service → controller-on-envelope → block → option page → test + REMOVE-EXAMPLE.md) and a
  * starter-theme asset architecture (SCSS/JS + wp-scripts build + an Assets url/path/version
  * helper); the default and `--minimal` omit it.
+ *
+ * With the governance set it also writes what lets the site take framework updates (spec 102):
+ * `corex-baseline.json`, `UPDATING-COREX.md` and, when told where the repository root is, the
+ * client's own CI workflow. It is given the baseline; it never asks git for it.
  */
 final class SiteScaffolder
 {
@@ -35,24 +39,38 @@ final class SiteScaffolder
 
     /**
      * @param array<string,bool> $options
+     * @param SiteRepository|null $repository The framework baseline to record and, when the site
+     *                                        sits at `<root>/sites/<client>`, the repository root
+     *                                        (spec 102). Null records an unknown baseline.
      */
-    public function scaffold(string $rawName, string $outputDir, array $options = []): SiteScaffoldResult
-    {
+    public function scaffold(
+        string $rawName,
+        string $outputDir,
+        array $options = [],
+        ?SiteRepository $repository = null,
+    ): SiteScaffoldResult {
         $id         = SiteIdentity::from($rawName); // throws InvalidNameException on a reserved/empty name
         $force      = ! empty($options['force']);
         $pluginOnly = ! empty($options['plugin_only']);
         $themeOnly  = ! empty($options['theme_only']);
         $starter    = ! empty($options['starter']);
+        $repository ??= SiteRepository::unknown();
+        // The directory the site is generated in, which need not be the site's own slug.
+        $siteDir    = basename(str_replace('\\', '/', $outputDir));
 
         $values = [
-            'name'           => $id->name,
-            'namespace'      => $id->namespace,
-            'plugin_slug'    => $id->pluginSlug,
-            'theme_slug'     => $id->themeSlug,
-            'text_domain'    => $id->textDomain,
-            'rest_namespace' => $id->restNamespace,
-            'css_prefix'     => $id->cssPrefix,
-            'option_prefix'  => $id->optionPrefix,
+            'name'              => $id->name,
+            'namespace'         => $id->namespace,
+            'plugin_slug'       => $id->pluginSlug,
+            'theme_slug'        => $id->themeSlug,
+            'text_domain'       => $id->textDomain,
+            'rest_namespace'    => $id->restNamespace,
+            'css_prefix'        => $id->cssPrefix,
+            'option_prefix'     => $id->optionPrefix,
+            'site_dir'          => $siteDir,
+            'baseline_release'  => $repository->baseline->release,
+            'baseline_commit'   => $repository->baseline->commit,
+            'baseline_recorded' => gmdate('Y-m-d'),
         ];
 
         // spec 061: the client plugin + theme sit directly under the site root (sites/<client>/<slug>-site,
@@ -72,6 +90,7 @@ final class SiteScaffolder
             $stubFiles[$outputDir . '/.gitignore'] = 'site/gitignore';
             $literals[$outputDir . '/specs/.gitkeep'] = '';
             $literals[$outputDir . '/docs/.gitkeep']  = '';
+            $stubFiles += $this->updateSafetyStubs($outputDir, $siteDir, $repository);
         }
 
         if (! $themeOnly) {
@@ -109,6 +128,9 @@ final class SiteScaffolder
             $stubFiles[$pluginDir . '/src/Blocks/example/style.scss']                 = 'starter/block-scss';
             $stubFiles[$pluginDir . '/src/Options/ExampleOptions.php']                = 'starter/options';
             $stubFiles[$pluginDir . '/tests/ExampleTest.php']                         = 'starter/test';
+            // spec 102: the example test shipped with nothing that could run it.
+            $stubFiles[$pluginDir . '/phpunit.xml.dist']                              = 'starter/phpunit-xml';
+            $stubFiles[$pluginDir . '/tests/bootstrap.php']                           = 'starter/test-bootstrap';
             $stubFiles[$pluginDir . '/REMOVE-EXAMPLE.md']                             = 'starter/remove';
         }
 
@@ -139,6 +161,29 @@ final class SiteScaffolder
         }
 
         return $this->writeAll($outputDir, $rendered);
+    }
+
+    /**
+     * What lets the site take framework updates (spec 102): the baseline record, the client's
+     * copy of the update checklist, and — only when the repository root is known — the client's
+     * own CI workflow. The workflow is the one file written outside the site root, because a
+     * workflow runs from `.github/workflows/` and nowhere else; its name carries the site
+     * directory so no framework release can ship a file that collides with it.
+     *
+     * @return array<string,string> path => stub name
+     */
+    private function updateSafetyStubs(string $outputDir, string $siteDir, SiteRepository $repository): array
+    {
+        $stubs = [
+            $outputDir . '/corex-baseline.json' => 'site/baseline',
+            $outputDir . '/UPDATING-COREX.md'   => 'site/updating',
+        ];
+
+        if ($repository->root !== null) {
+            $stubs[$repository->root . '/.github/workflows/site-' . $siteDir . '.yml'] = 'site/workflow';
+        }
+
+        return $stubs;
     }
 
     /**

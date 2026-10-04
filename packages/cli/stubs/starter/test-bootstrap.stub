@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * Headless test bootstrap for {{ plugin_slug }} — no WordPress here. Loads the repository's
+ * Composer autoloader (Pest, and the Corex classes this site extends) and registers the same
+ * {{ namespace }}\ -> src/ autoloading the plugin file registers at runtime.
+ *
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+require dirname(__DIR__, 4) . '/vendor/autoload.php';
+
+// Class files carry a `defined('ABSPATH') || exit;` guard. Without this, requiring one ends the
+// whole PHP process with exit code 0 and no output.
+if (! defined('ABSPATH')) {
+    define('ABSPATH', dirname(__DIR__) . '/');
+}
+
+spl_autoload_register(static function (string $class): void {
+    $prefix = '{{ namespace }}\\';
+    if (strncmp($class, $prefix, strlen($prefix)) !== 0) {
+        return;
+    }
+    $relative = str_replace('\\', '/', substr($class, strlen($prefix)));
+    $file     = dirname(__DIR__) . '/src/' . $relative . '.php';
+    if (is_file($file)) {
+        require $file;
+    }
+});

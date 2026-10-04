@@ -41,6 +41,9 @@ use Corex\Cli\Release\DeploymentReadinessCheck;
 use Corex\Cli\Release\ReleasePackagePlan;
 use Corex\Cli\Routes\RouteList;
 use Corex\Cli\Routes\RoutesReader;
+use Corex\Cli\Site\FrameworkBaselineSource;
+use Corex\Cli\Site\GitFrameworkBaselineSource;
+use Corex\Cli\Site\SiteRepositoryResolver;
 use Corex\Cli\Site\SiteScaffolder;
 use Corex\Cli\Site\SiteScaffoldValidator;
 use Corex\Cli\Generators\ControllerGenerator;
@@ -114,6 +117,22 @@ final class CliServiceProvider extends ServiceProvider
             fn (ContainerInterface $c): SiteScaffolder => new SiteScaffolder(
                 $c->make(StubRenderer::class),
                 dirname(__DIR__) . '/stubs',
+            ),
+        );
+        // spec 102: make:site records the framework release it generates against, and places the
+        // client's CI workflow only when the site sits in this repository's `sites/`.
+        $this->container->singleton(
+            FrameworkBaselineSource::class,
+            static fn (): FrameworkBaselineSource => new GitFrameworkBaselineSource(
+                dirname(__DIR__, 3),
+                'v' . COREX_CORE_VERSION,
+            ),
+        );
+        $this->container->singleton(
+            SiteRepositoryResolver::class,
+            static fn (ContainerInterface $c): SiteRepositoryResolver => new SiteRepositoryResolver(
+                $c->make(FrameworkBaselineSource::class),
+                dirname(__DIR__, 3),
             ),
         );
         $this->container->singleton(SiteScaffoldValidator::class);
@@ -460,6 +479,7 @@ final class CliServiceProvider extends ServiceProvider
             $this->container->make(GeneratorContext::class),
             $this->container->make(ApiResourceScaffolder::class),
             $this->container->make(SiteScaffolder::class),
+            $this->container->make(SiteRepositoryResolver::class),
         );
     }
 

@@ -12,3 +12,10 @@ one PR; run guards before pushing; never push directly to `develop`/`main`. Use 
 `wp/wp-content/` or `dist/` as source. Keep specs in `specs/`, progress in `PROGRESS.md`, decisions in
 `DECISIONS.md`. Follow Spec Kit, the Guard Gate, and UI/UX ProMax. For a framework bug, stop and open a CoreX
 Framework Mode task. End every response with the standard SUMMARY / … / NEXT STEP handoff format.
+
+**Framework updates.** A copy of the framework sits beside the site in this repository and is
+updated by merging each release. Everything outside `sites/` and `.github/workflows/site-*.yml` is
+**framework-owned**, the root included, and client work never edits it — an edit there is a merge
+conflict in every later update. `npm run verify:framework` proves the framework's files still match
+the release recorded in `corex-baseline.json`; run it before pushing. To take a release, follow
+`UPDATING-COREX.md`.

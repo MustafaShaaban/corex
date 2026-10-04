@@ -89,28 +89,46 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
 
 ## Phase 3 — The generator (US1, US2, US4)
 
-- [ ] **T019** `FrameworkBaseline` value object and `FrameworkBaselineSource` interface in
+- [x] **T019** `FrameworkBaseline` value object and `FrameworkBaselineSource` interface in
       `packages/cli/src/Site/`.
-- [ ] **T020** `GitFrameworkBaselineSource` — the only git call in the package. Returns the
-      release tag's commit when the tag exists, otherwise `HEAD`, otherwise an empty commit.
-- [ ] **T021** Pest: `FrameworkBaselineSourceTest` — each of the three outcomes.
-- [ ] **T022** Stubs: `site/baseline`, `site/updating`, `site/workflow`. The workflow contains no
+- [x] **T020** `GitFrameworkBaselineSource` — the only git call in the package. Returns the
+      release tag's commit when the tag exists, otherwise `HEAD` with the release labelled
+      `(untagged)`, otherwise an empty commit.
+- [x] **T021** Pest: `FrameworkBaselineSourceTest` — each of the three outcomes, against real
+      repositories built in a temporary directory.
+- [x] **T022** Stubs: `site/baseline`, `site/updating`, `site/workflow`. The workflow contains no
       `${{ … }}` expression. (FR-005, FR-006, FR-012)
-- [ ] **T023** `SiteScaffolder` — emits the record and the checklist with the governance set, and
-      the workflow only when given a repository root. Still no WordPress and no git.
-- [ ] **T024** `MakeCommand` — passes the repository root when the site root is `<repo>/sites/<c>`;
-      says so when the workflow was skipped, and when the commit could not be resolved.
-- [ ] **T025** `CliServiceProvider` — bindings.
-- [ ] **T026** `site/AGENTS.md` and `site/CLAUDE.md` stubs — the rule that client work never edits
+- [x] **T023** `SiteScaffolder` — emits the record and the checklist with the governance set, and
+      the workflow only when given a repository root. Still no WordPress and no git. It takes a
+      `SiteRepository` (the baseline, and the root when there is one) as a fourth argument.
+- [x] **T024** `MakeCommand` — passes the repository root when the site root is `<repo>/sites/<c>`;
+      says so when the workflow was skipped, and when the commit could not be resolved. The
+      decision lives in `SiteRepositoryResolver`, which is unit-tested; the command only prints.
+      It reads a relative `--path` against the working directory, because
+      `--path=sites/acme` is how the documentation writes the command.
+- [x] **T025** `CliServiceProvider` — bindings.
+- [x] **T026** `site/AGENTS.md` and `site/CLAUDE.md` stubs — the rule that client work never edits
       a framework-owned path, what to do about a framework defect, and a corrected account of
       where the framework lives. `site/README.md` links the checklist. (FR-011, FR-012)
-- [ ] **T027** Starter: `phpunit.xml.dist` and `tests/bootstrap.php`, so the starter's Pest test
-      runs from the client plugin's directory.
-- [ ] **T028** `SiteScaffoldValidator` — the record and the checklist are required governance.
-- [ ] **T029** Pest: `SiteScaffolderTest`, `SiteScaffolderStarterTest`, `SiteScaffoldValidationTest`
-      — the new files, the skipped workflow, `--plugin-only` and `--theme-only` generating none of
-      it, and a rendered workflow containing neither `{{` nor `${{`.
-- [ ] **T030** Guard Gate — `clean-code-guard`, `wp-guard`, `test-guard`.
+- [x] **T027** Starter: `phpunit.xml.dist` and `tests/bootstrap.php`, so the starter's Pest test
+      runs from the client plugin's directory. The generated `.gitignore` now ignores
+      `.phpunit.cache/`, which the first run creates there.
+- [x] **T028** `SiteScaffoldValidator` — the record and the checklist are required governance.
+- [x] **T029** Pest: `SiteScaffolderUpdateSafetyTest` and `SiteRepositoryResolverTest` — the new
+      files, the skipped workflow, `--plugin-only` and `--theme-only` generating none of it, and
+      a rendered workflow containing neither `{{` nor `}}`. The existing scaffolder suites pass
+      unchanged.
+- [x] **T030** Guard Gate — `clean-code-guard`, `wp-guard`, `test-guard`, applied by hand.
+
+      Verified by hand as well, with a real starter site generated into this checkout through
+      the same classes `make:site` uses: the record named the `v0.42.0` tag's commit exactly;
+      the workflow parsed as YAML with its three jobs; the starter's example test ran from the
+      plugin directory the way the workflow runs it (1 passed); `lint:css` and `lint:js` exited
+      0 and Jest listed no test under `sites/`. Full Pest afterwards: 1853 passed.
+
+      Two forward references in the generated checklist are owed by Phase 6 and are not yet
+      true: the documentation page it points to (T040) and the `Client impact` heading in
+      `CHANGELOG.md` (T045).
 
 ## Phase 4 — CI (US1, US4)
 

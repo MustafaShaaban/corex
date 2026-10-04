@@ -1,7 +1,20 @@
 # {{ name }} — Agent Entry Point (a Corex client site)
 
-This is a **Corex client site**, not the Corex framework. The framework lives in its own
-repo and is updated separately — **do not edit Corex framework folders here.**
+This is a **Corex client site**, not the Corex framework. A copy of the framework sits beside the
+site in this repository and is updated by merging each framework release — so
+**do not edit Corex framework folders here.**
+
+## Framework updates — the rule that keeps them conflict-free
+Everything outside `sites/` and `.github/workflows/site-*.yml` is **framework-owned**, the
+repository root included. Client work never edits a framework-owned path: an edit there is a merge
+conflict waiting in every later framework update.
+
+- `npm run verify:framework` proves the framework's files in this repository still match the
+  release recorded in `corex-baseline.json`. Run it before pushing; the generated
+  `site-*.yml` workflow runs it on every pull request.
+- To take a framework release, follow `UPDATING-COREX.md`.
+- If a framework defect blocks this site and cannot wait for a release, patch it and record the
+  file under `exceptions` in `corex-baseline.json` with its reason and the upstream issue.
 
 ## Role Gate — you are in CLIENT SITE MODE
 > Role Gate decides **where** you work · Spec Kit decides **what** · Guard Gate decides **whether it ships** ·
