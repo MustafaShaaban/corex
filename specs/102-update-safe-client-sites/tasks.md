@@ -65,19 +65,27 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
       of changed paths, returning DRIFT, EXCEPTION and STALE entries. (FR-007, FR-008)
 - [x] **T012** Jest: `tests/framework-baseline.test.js` — one case per row of the plan's "What the
       check does", including an exception with no reason and an exception that no longer differs.
-- [ ] **T013** `scripts/verify-framework.mjs` — the runner: role short-circuit, find the records,
+- [x] **T013** `scripts/verify-framework.mjs` — the runner: role short-circuit, find the records,
       confirm the commit exists, collect changed and untracked paths, print one line per finding,
       exit 1 on any DRIFT, STALE or FAIL. `--json` for CI. Node built-ins only. (FR-007, FR-009)
-- [ ] **T014** `--record <ref>` — resolve the ref, write release and commit into every record,
-      refuse a ref that does not resolve.
-- [ ] **T015** Warn, without failing, when the recorded release tag exists and points at a
+- [x] **T014** `--record <ref>` — resolve the ref, write release and commit into every record,
+      refuse a ref that does not resolve. Also refuses `--record` with no release named, and
+      decodes every record before writing any, so one unreadable file changes none of them.
+- [x] **T015** Warn, without failing, when the recorded release tag exists and points at a
       different commit from the one recorded.
-- [ ] **T016** Jest: `tests/verify-framework.test.js` — against a git repository built in a
+- [x] **T016** Jest: `tests/verify-framework.test.js` — against a git repository built in a
       temporary directory: untouched tree exits 0; one changed character exits 1 and names the
       file; a recorded exception passes and is reported; a stale one fails; no baseline fails; a
-      commit absent from the repository fails; two records that disagree fail. (SC-003)
-- [ ] **T017** `package.json` `verify:framework`; `scripts/README.md` describes both scripts.
-- [ ] **T018** Guard Gate — `clean-code-guard`, `test-guard`, `docs-guard`.
+      commit absent from the repository fails; two records that disagree fail. (SC-003) Also: a
+      committed change, an added root file and a deleted framework file are each drift; client
+      changes are not; the framework role passes with nothing to compare. 18 cases, nothing mocked.
+- [x] **T017** `package.json` `verify:framework`; `scripts/README.md` describes the script, its
+      output lines, the record format and the two pure modules.
+- [x] **T018** Guard Gate — `clean-code-guard`, `test-guard` and `docs-guard`, applied by hand. The
+      runner was restructured once after the first green: results always carry their lists, which
+      removed a run of defensive fallbacks from the reporter, and the reporter split in two.
+      Every claim in the `scripts/README.md` section was checked against the script's behaviour
+      in the test run.
 
 ## Phase 3 — The generator (US1, US2, US4)
 
@@ -150,4 +158,8 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
 - [ ] **T048** SC-004, read-only: in the existing client repository, confirm each of its four local
       edits is unnecessary against this branch. Commit nothing there. (FR-017)
 - [ ] **T049** `PROGRESS.md`, `DECISIONS.md`, `PROJECT-STATUS.md` and its generated docs-site copy.
+- [ ] **T051** `scripts/README.md`, "Reusing Corex for a new website" — it says "Do **not** copy
+      this repo to make a website", which is the opposite of the client-repository model this
+      spec documents and the existing client repository uses. Found while adding the
+      `verify-framework.mjs` section beside it. Reconcile it with T040.
 - [ ] **T050** Guard Gate — `docs-guard` on every page; the full Pest, Jest and lint runs.

@@ -24,6 +24,62 @@ Requirements: WP-CLI with the command bundle (`wp core`/`wp db` available), a ru
 and the vhost (e.g. `corex.local`) with its docroot pointing at `<repo>/wp` plus a matching
 `127.0.0.1 corex.local` hosts entry. See `DECISIONS.md` #18 and the constitution "Environment Gate".
 
+## `verify-framework.mjs`
+
+Answers one question in a **client repository**: are the framework's files still the ones this
+repository recorded? A client repository carries a copy of the framework and takes each release by
+merging it, which only stays conflict-free while client work leaves framework-owned files alone.
+
+```bash
+npm run verify:framework                      # compare, one line per finding
+node scripts/verify-framework.mjs --json      # the same result as one JSON object, and nothing else
+npm run verify:framework -- --record v1.2.3   # write that release into every baseline record
+```
+
+It needs git and Node and nothing installed, so `node scripts/verify-framework.mjs` runs in CI
+before any `npm ci`. Call it through `node` when the output is to be parsed: `npm run` prints its own
+banner ahead of the script's.
+
+What it compares: every path that is **not** client-owned, against the commit named in
+`sites/<client>/corex-baseline.json`. Client-owned paths are the patterns in
+`.github/repository-ownership.json`; everything else is the framework's, the repository root
+included. Uncommitted changes and untracked files count.
+
+| Line | Meaning | Fails the check |
+|---|---|---|
+| `DRIFT <path>` | A framework-owned path differs from the baseline. | yes |
+| `EXCEPTION <path> <reason> <upstream>` | It differs, and the record lists it as a deliberate exception. | no |
+| `STALE <path>` | An exception whose path no longer differs. Delete it from the record. | yes |
+| `WARN <message>` | The recorded release tag exists and points at a different commit from the recorded one. | no |
+| `FAIL <message>` | No record, an invalid record, two records naming different commits, a commit that is not in this repository, or `--record` given no release or one that does not exist. | yes |
+
+Exit code `0` on a pass and `1` otherwise. In the framework's own repository there is no baseline
+to compare against, and it reports that and passes.
+
+A baseline record:
+
+```json
+{
+  "release": "v1.2.3",
+  "commit": "<the full 40-character commit hash>",
+  "recorded": "2026-10-04",
+  "exceptions": [
+    {
+      "path": "plugins/corex-core/src/Example.php",
+      "reason": "Why this framework file is changed here.",
+      "upstream": "https://github.com/MustafaShaaban/corex/issues/<number>"
+    }
+  ]
+}
+```
+
+The comparison uses `commit`; `release` is the name people read. A shallow clone does not contain
+the baseline commit, so CI has to check out full history.
+
+`repository-ownership.mjs` and `framework-baseline.mjs` are the two pure modules behind it — the
+first decides which paths are a client's and whether this checkout is the framework's own
+repository, the second validates a record and divides changed paths into the lines above.
+
 ## Reusing Corex for a new website
 
 Corex is a **framework**, not a site. Two ways to reuse it:
