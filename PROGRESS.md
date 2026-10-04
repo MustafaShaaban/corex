@@ -51,14 +51,6 @@ paragraph. One thing found while building 102 shaped the plan: a generated clien
 standalone block theme, not a child of the Corex theme, so it does not inherit a template the
 parent ships.
 
-**WP-CLI no longer logs "translation loading … triggered too early" on every request** (#232, branch
-`fix/cli-commands-register-on-cli-init`, DECISIONS #235). `CliServiceProvider` and
-`MediaServiceProvider` built their command definitions while booting on `plugins_loaded`, and a
-definition translates its help text. Both now register on `cli_init`, the hook WP-CLI fires on
-`init`. The help text stays translatable and every synopsis is unchanged. Spec 101's
-`modeCommandDefinition()` is covered without an edit once #210 merges on top; checked against that
-branch at `6e541962`. Two unit tests pin it, one per provider.
-
 No dependency pull request is being held.
 
 ## Recently landed
@@ -80,6 +72,13 @@ On `main` since v0.42.1, and not in a release yet:
   the selected action and says anonymizing cannot be undone; the prune handler sends the action
   back with the count, and the notice says archived, moved to trash or anonymized. Five
   integration tests and two unit tests pin it.
+- **WP-CLI no longer logs "translation loading … triggered too early" on every request** (#232,
+  DECISIONS #235). `CliServiceProvider` and `MediaServiceProvider` built their command definitions
+  while booting on `plugins_loaded`, and a definition translates its help text. Both now register
+  on `cli_init`, the hook WP-CLI fires on `init`. The help text stays translatable and every
+  synopsis is unchanged. Spec 101's `modeCommandDefinition()` is covered without an edit once #210
+  merges on top; checked against that branch at `6e541962`. Two unit tests pin it, one per
+  provider.
 - **A retention run refused for want of confirmation is a warning, not a success** (#235,
   DECISIONS #237). Applying retention without ticking the confirmation box runs nothing; the
   notice saying so was drawn with the success tick. Two integration tests pin the tone of each
