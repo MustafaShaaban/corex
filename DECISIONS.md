@@ -4652,3 +4652,59 @@ one that did not would hide the fault.
 Not re-examined: `helpers.js` blames the failures of 2026-09-03 and 2026-09-04 on the login address
 moving, and `ci.yml` blames one on lockout. Their artifacts expired, so whether either was this
 race cannot be checked.
+
+## #229 — A library the build does not bundle cannot break at render time
+
+Date: 2026-10-04 · Spec: none (dependency maintenance, under #220) · Status: Final — merged as #208
+
+`@wordpress/components` 38.0.0 → 41.0.0 was held open across three Dependabot pull requests (#186,
+#200, #208) for two reasons recorded on #186: npm had resolved 38.0.0 against a `^39.0.0`
+requirement and reported success, and #220 says a component-library major "breaks at *render* time"
+and so needs the screens driven in a real browser. This entry records what was found when the hold
+was tested, because the second reason turned out not to apply to this repository.
+
+**The resolution failure is gone.** #208's lockfile resolves 41.0.0 against `^41.0.0`, hoisted to
+the root `node_modules`. Why #186 resolved 38 against `^39` was not diagnosed: the peer ranges are
+the same on 38.0.0 and 41.0.0 (`react`, `react-dom` and `@types/react` at `^18 || ^19`), so the
+guess on #186 that a peer conflict caused it is not supported by anything seen here.
+
+**No workspace bundles this library.** None of the six build scripts passes a webpack config, so
+`wp-scripts build` applies its default dependency extraction: an import of `@wordpress/components`
+compiles to a read of `window.wp.components`, and the script's `.asset.php` lists `wp-components`
+as a dependency for WordPress to enqueue. What renders in wp-admin and the block editor is the copy
+the installed WordPress ships. The npm package decides what Jest renders against and nothing a
+browser loads.
+
+**So the proof is the build output, not a browser run.** The tree was built twice from a clean
+`npm ci`, at #208's base (`672461f1`, 38.0.0 installed) and at its head (`414f8a8d`, 41.0.0
+installed), with the installed version confirmed by `npm ls` before each build. All 169 files under
+the six workspaces' `build/` directories have the same SHA-256 on both. A browser given either build receives
+the same bytes.
+
+What was run, and where:
+
+| Check | Where | Result |
+|---|---|---|
+| Build, seven webpack compilations | export of `414f8a8d`, local | compiled, no warnings |
+| Build output, 38.0.0 against 41.0.0 | same export, local | 169 of 169 files identical |
+| Jest | same export, local, both versions | 54 suites; 441 passed, 2 skipped |
+| Jest | CI, `414f8a8d` | 442 passed |
+| Playwright, Chromium | CI, `414f8a8d` | 141 passed |
+| Linters, both integration suites, advisory gate, CodeQL | CI, `414f8a8d` | all eight checks green |
+
+Two limits on that table. The browser run is CI's; none was made on a workstation, because the
+local install was in use by another session's browser tests and identical output left nothing for a
+local run to find. And CI's browser suite excludes three tests on a fresh install, two of them
+block-editor tests (`tests/e2e/playwright.config.js`) — the editor being where this library is used
+most. The file comparison covers them, since their bundles are among the 169; the browser run does
+not.
+
+**What the bump does change.** Forty-six source files in seven packages import the library, and
+the Jest tests that render them now do so against 41.0.0 while production renders whatever version
+WordPress ships. That gap existed at 38.0.0 too and is not measured here. It is the real cost of
+moving this package, and the reason to keep it near the version the supported WordPress carries
+rather than at the newest release.
+
+The rule #220 stated was right about the question and wrong about the mechanism for this package:
+**for a dependency the build externalises, compare the build output across the bump. Identical
+output closes the render-time question; only a difference needs a browser.**
