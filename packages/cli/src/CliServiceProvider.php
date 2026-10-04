@@ -153,7 +153,7 @@ final class CliServiceProvider extends ServiceProvider
         // `cli_init` is the hook WP-CLI gives plugins for adding commands: it fires on `init`, and
         // only under WP-CLI. Registering straight from here built every definition on
         // `plugins_loaded`, and a definition translates its help text — which loads the `corex`
-        // text domain before WordPress 6.7+ allows it, once per WP-CLI request (DECISIONS #233).
+        // text domain before WordPress 6.7+ allows it, once per WP-CLI request (DECISIONS #235).
         add_action('cli_init', [$this, 'registerCommands']);
     }
 

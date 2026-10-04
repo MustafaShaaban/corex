@@ -4,7 +4,7 @@
  * The media provider boots on `plugins_loaded` and must build neither of its command definitions
  * there: they translate their help text, and a translation before `init` loads the `corex` text
  * domain earlier than WordPress 6.7+ accepts. The commands are handed to WP-CLI on `cli_init`
- * instead (DECISIONS #233).
+ * instead (DECISIONS #235).
  *
  * @package Corex\Tests\Unit\Media
  */

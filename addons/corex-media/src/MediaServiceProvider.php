@@ -71,7 +71,7 @@ final class MediaServiceProvider extends ServiceProvider
         // CLI: backfill (regenerate-webp) + safe cleanup (reset-webp) for existing uploads (spec 061/062).
         // On `cli_init` — WP-CLI's hook for adding commands, fired on `init` and only under WP-CLI —
         // because the definitions translate their help text, and doing that here, on
-        // `plugins_loaded`, loads the `corex` text domain too early (DECISIONS #233).
+        // `plugins_loaded`, loads the `corex` text domain too early (DECISIONS #235).
         add_action('cli_init', function () use ($capability, $settings): void {
             \WP_CLI::add_command(
                 'corex media regenerate-webp',

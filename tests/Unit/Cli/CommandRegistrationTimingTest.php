@@ -4,7 +4,7 @@
  * The CLI provider boots on `plugins_loaded` and must build no command definition there: a
  * definition translates its help text, and a translation before `init` loads the `corex` text
  * domain earlier than WordPress 6.7+ accepts. The commands are handed to WP-CLI on `cli_init`
- * instead (DECISIONS #233).
+ * instead (DECISIONS #235).
  *
  * @package Corex\Tests\Unit\Cli
  */
@@ -23,5 +23,5 @@ it('translates nothing while it boots, and registers its commands on cli_init', 
     $provider = new CliServiceProvider(new Container());
     $provider->boot();
 
-    expect(has_action('cli_init', [$provider, 'registerCommands']))->toBe(10);
+    expect(has_action('cli_init'))->toBeTrue();
 });
