@@ -51,6 +51,15 @@ paragraph. One thing found while building 102 shaped the plan: a generated clien
 standalone block theme, not a child of the Corex theme, so it does not inherit a template the
 parent ships.
 
+**The retention form says which action it ran** (branch `fix/retention-copy-names-the-action`,
+DECISIONS #233). Its confirmation box and its result notice said "trash" for Archive and Anonymize
+as well. The box now asks to confirm the selected action and says anonymizing cannot be undone; the
+prune handler sends the action back with the count, and the notice says archived, moved to trash or
+anonymized. Five integration tests and two unit tests pin it. **It merges after #228**: that pull
+request adds the "Open, and not hidden" item this one closes, so this branch is rebased once #228
+is on `main` and deletes the item then. Merged the other way round, #228 would add an item that is
+already fixed.
+
 No dependency pull request is being held.
 
 **Submission retention reaches every record again** (branch
@@ -160,6 +169,11 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.
+- **A retention run that was refused looks like one that worked.** Applying retention without
+  ticking the confirmation box comes back as "Confirm the retention action before applying it",
+  drawn as a success state with its tick: `SubmissionsInboxScreen::retentionNotice()` gives every
+  status the `success` tone. Read from the code while fixing the form's copy (DECISIONS #233) and
+  not changed there.
 - Development installs predating spec 091 may hold leaked fixture users. Since #221 the
   suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
   there are not removed by anything.

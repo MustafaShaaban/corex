@@ -4957,3 +4957,82 @@ suites are CI's.
 action ran ("Confirm moving due submissions to the recoverable trash", "N submissions moved to
 trash"). That predates this change and is listed in `PROGRESS.md`. Submissions the old selection
 anonymized twice keep their duplicate timeline events.
+
+## #233 — The retention form says which action it ran, and never guesses
+
+Date: 2026-10-04 · Spec: none (defect fix, noted at the end of #232; spec 068 FR-056) · Status: Final
+
+The retention form on the Submissions screen offers three actions — Archive, Move to trash,
+Anonymize personal data — and spoke about one. Its confirmation box read "Confirm moving due
+submissions to the recoverable trash." and its result notice "N submissions moved to trash.",
+whichever action was selected. An operator anonymizing submissions, which deletes the submitted
+values and cannot be undone, was asked to confirm a recoverable move and then told the records were
+in the trash. #232 found it while fixing what retention selects, and left it.
+
+**1. The confirmation is about the selected action, and states the one consequence that is
+permanent.** The label is now "Confirm applying the selected action to the due submissions.
+Anonymizing cannot be undone." It is one fixed sentence, not one per action. A label that followed
+the select would need a script written for this server-rendered form, and would change under a box
+the operator may already have ticked. The old label's only statement about consequences
+was "recoverable", which was false for one action in three; the new one says nothing about Archive
+or Move to trash being recoverable, because the form does not need the claim, and says the true
+thing about the action that is not.
+
+**2. The action travels with the result.** `RetentionController::prune()` redirected with
+`corex_status=retention-pruned` and `corex_count`, so the screen had no way to know what ran. It
+now adds `corex_action`, the action it handed to `SubmissionRetention::prune()`. That call throws
+on anything but the three actions, so a redirect that carries an action carries one that ran. The
+handler's default when the form posts no action is `trash`, as before, and that is what it reports.
+
+**3. The screen does not trust the address bar, and does not guess.** `corex_action` is read with
+`sanitize_key()` and matched against `archive`, `trash` and `anonymize`. Each has its own sentence
+with its own plural: "N submissions archived.", "N submissions moved to trash.", "N submissions
+anonymized." Anything else — an action somebody typed, or none, on a link saved before this change
+— gets "Retention applied to N submissions.", which names no action. Falling back to "moved to
+trash" there would have been the defect again for exactly the links that used to carry it. The
+trash sentence is the old string unchanged, so an existing translation of it still applies; the
+other three and the confirmation label are new strings (`CHANGELOG.md`, "Client impact").
+
+The three actions are now named in three places: the service's validation, the form's options and
+the notice. The first two were already separate. They were left separate here: #232 moves the list
+of valid actions into `RetentionSettings`, on a branch this one does not build on, and a shared
+list is better made once that has landed.
+
+**Tests.** `tests/Integration/Submissions/RetentionPanelCopyTest.php` renders the confirmation and
+the notice on real WordPress — each action in the singular and the plural, no "trash" in an archive
+or anonymize notice, the neutral sentence for a missing or unknown action, and the two halves of
+the label. It reaches `pruneForm()` and `retentionNotice()` by reflection, as
+`OperationsModeControllerNoticeTest` does for its screen: `render()` prints the form only when the
+install happens to hold due submissions. It reads and writes no submission.
+`tests/Unit/Retention/RetentionControllerTest.php` drives the real handler with the real guard and
+the real retention service, WordPress stubbed and retention off, and reads the redirect it issues.
+`prune()` ends in `exit`; the `wp_safe_redirect` stub throws the destination, so the handler runs
+up to the redirect and stops.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| Both new files against `main`'s production code | 14 of 16 cases failed; the two that passed are the trash notices, which were already right |
+| Both new files with the change | 16 passed |
+| Unit suite (`pest`) | 1857 passed |
+| `wp i18n make-pot` over the screen | the four plural strings extracted, each with its translator comment |
+| The screen on the development install, dark and light, 1440px and 375px, and right-to-left in dark | no sideways scroll; the five notices read as above |
+
+The render needed a retention window, which the development install does not have, so
+`corex_retention_submissions_days` was set to 30 for the captures and deleted again afterwards. The
+form was not submitted. The whole integration suite was not run locally — it still changes the
+install it runs against (`PROGRESS.md`) — and is left to CI.
+
+**Not done.**
+
+- The notice for a run that was *not* confirmed ("Confirm the retention action before applying
+  it") is drawn as a success state; every retention status gets the `success` tone. Recorded in
+  `PROGRESS.md` under "Open, and not hidden".
+- An action the service rejects reaches `SubmissionRetention` and its `InvalidArgumentException` is
+  not caught by the handler. Only somebody who passes the capability and nonce check and alters the
+  form's own select can send one. Read from the code, not reproduced.
+- The counts are printed with `%d`, as the "currently due" figure on the same panel is, not through
+  `number_format_i18n()`.
+- At 1440px the confirmation and the Apply button sit on a second row of the form, below the action
+  select. Whether the old, shorter label fitted on the first row was not measured.
