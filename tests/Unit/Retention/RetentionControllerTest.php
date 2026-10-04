@@ -107,6 +107,6 @@ it('reports a move to trash when the form posted no action', function () {
 it('refuses an action the form does not offer, and says so instead of failing', function () {
     $query = pruneRedirectQuery(['corex_retention_action' => 'delete']);
 
-    expect($query['corex_status'])->toBe('retention-invalid')
-        ->and($query)->not->toHaveKeys(['corex_action', 'corex_count']);
+    // The whole query: a refusal reports no action and no count, because none ran.
+    expect($query)->toBe(['page' => 'corex-submissions', 'corex_status' => 'retention-invalid']);
 });
