@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.42.0** — tag `v0.42.0`, reachable from `main`.
+- **Latest published release: v0.42.1** — tag `v0.42.1`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -39,69 +39,27 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**The October advisory pass landed as #212 on 2026-10-04** (DECISIONS #227). #203 had cleared every
-advisory known on 2026-09-09, and by the day it merged the gate on `main` was red again with 26 new
-findings. #212 took every patched release that exists — ten packages, one of them (`basic-ftp`
-5 → 6) through a new override proven against its parent — removed the `adm-zip` exception that
-0.6.1 made unnecessary, and bounded the one finding with no fix, `braces`. The gate reported PASS
-for the merged tree that day: zero findings in Composer and the docs site, three findings and three
-exceptions in the root.
+Nothing is in flight on `main`. Two feature specs are open as draft pull requests: spec 101,
+coming-soon mode (#210), and spec 102, update-safe client sites (#211). No dependency pull request
+is being held.
 
-**The `braces` exception was merged as written, on the owner's instruction.** The policy forbids
-excepting a high finding whose exposure is CI, and `braces` does run in CI. It is classed as build
-tooling with repository-authored input, following spec 056's precedent. DECISIONS #227 records both
-readings and what would overturn the exception.
+## Recently landed (v0.42.1)
 
-Merged since v0.42.0: #202 (issue #201 — `composer install --no-dev` no longer drops seven WP-CLI
-commands, DECISIONS #225), #203 (the September advisory pass, DECISIONS #226), #212 (the October
-one, DECISIONS #227), #213 (the linters and Jest no longer walk `wp-ms/` or session worktrees),
-#214 (Jest's module map no longer indexes generated copies), three routine Dependabot bumps —
-#205 (`@playwright/test` 1.63.0), #206 (`@wordpress/element` 8.8.0) and #207 (`@wordpress/i18n`
-6.29.0) — #216 (the lockfile back in the order npm writes it), #208 (`@wordpress/components`
-38 → 41, DECISIONS #229) and #217 (the browser-test sign-in helper, DECISIONS #228).
+A patch release. [`CHANGELOG.md`](CHANGELOG.md) has the full entry; the decisions are #224 to #229.
 
-Two feature specs are open as draft pull requests: spec 101, coming-soon mode (#210), and spec 102,
-update-safe client sites (#211). No release is in preparation.
-
-No dependency pull request is being held. **The `@wordpress/components` major, held since #186, landed as
-#208 on 2026-10-04.** The build does not bundle that library — every script reads it from the copy
-WordPress ships — so the bump was verified by building at 38.0.0 and at 41.0.0 and comparing the
-output: 169 files, identical. DECISIONS #229 has the evidence and the rule it leaves for the next
-major of an externalised package.
-
-**`fix/jest-haste-collisions` — tooling only, merged as PR #214 on 2026-10-04.** It follows #213, merged on
-2026-10-04, which keeps the linters and Jest out of `wp-ms/` and `.claude/worktrees/`, so
-`npm run lint:js`, `lint:css` and `test:js` report on Corex again on a machine that has the local
-multisite install. #214 also takes `wp/`, `wp-ms/`, `dist/` and `.claude/worktrees/` out of
-Jest's module map: on a machine with a `dist/` build or an agent session worktree, a cold-cache
-`npm run test:js` passed and printed nine "Haste module naming collision" warnings, one per package
-name it found twice. The suite is unchanged at 54 suites and 442 tests. CI never builds `dist/` and
-has no worktrees, so it never printed them.
-
-**`fix/e2e-flaky-helpers` — browser-test helpers and CI only, merged as PR #217 on 2026-10-04.** The
-browser job failed three times on diffs that changed no runtime code: the nightly on 2026-09-21,
-#210 and #211. Two of the
-three were one bug in `signInAs`. WordPress's login page moves focus to the username field 200ms
-after it renders; when that lands in the middle of Playwright typing the password, the password goes
-into the username field and the browser refuses to submit the form. The helper then waited on an
-error message that was never coming until the test timed out, so its retry passes never ran. It now
-checks that each field holds its credential before submitting, and reads a refusal without waiting
-for one. `tests/e2e/helpers.spec.js` reproduces both against a login form it controls
-(DECISIONS #228).
-
-The third failure is **not fixed, because it is not a test fault**: `GET corex/v1/flows` answered
-500 to three inbox specs in a row. See "Open, and not hidden".
-
-## Recently landed (v0.42.0)
-
-- **Spec 100 — multisite.** `README.md` advertised it; there were three runtime references to it in
-  the whole framework, one of which rendered the word "Yes". The headline defect: network-activating
-  a CoreX add-on **silently disabled it on every site in the network**, with the Network Plugins
-  screen still reporting it active. `integration-multisite` now runs in CI against a real three-site
-  network.
-- **`main` green under WordPress 7.1** (#193) and a nightly run so core drift is found by a nightly
-  rather than by a dependency PR three weeks later.
-- **Dependency advisories cleared** (#194, #196) — the gate passes with one bounded exception.
+- **`composer install --no-dev` no longer drops seven WP-CLI commands** (#202, issue #201). A
+  production install is a `--no-dev` install, and it could not run `wp corex migrate`.
+- **Two dependency advisory passes** (#203, #212), the first of which cleared a critical `astro`
+  finding in the docs site. The gate passes with three bounded exceptions.
+- **The dependency gate runs on every pull request** (#198).
+- **`@wordpress/components` 38 → 41** (#208), with three routine Dependabot bumps (#205, #206, #207)
+  and the lockfile put back in the order npm writes it (#216). The build does not bundle that
+  library, so the bump was verified by building at both versions and comparing the output
+  (DECISIONS #229).
+- **The linters and Jest no longer walk `wp-ms/` or session worktrees** (#213, #214).
+- **The browser-test sign-in helper no longer loses the password to WordPress's focus timer**
+  (#217), and the browser job keeps the server's logs when it fails (#219). Two of three recent
+  browser failures were that one bug; the third is under "Open, and not hidden" (DECISIONS #228).
 
 ## Next
 
