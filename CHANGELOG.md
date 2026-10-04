@@ -6,6 +6,16 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.43.0] — 2026-10-04
+
+Two features for building a client's site on CoreX, and the fixes found along the way.
+**Coming soon** is a fifth operations mode: visitors get a launch page the theme owns while the
+site is built behind it, with a preview link for people who have no account. And a client
+repository can now take framework releases by merging them, with a check that proves its framework
+files are unmodified. Coming soon changes nothing until it is selected. What does change on a
+running site is listed under Client impact; the one to read first is that submission retention
+selects different records.
+
 ### Added
 
 - **Coming soon is an operations mode** (spec 101). Spec 063 named it and spec 065 shipped without it;
