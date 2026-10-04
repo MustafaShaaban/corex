@@ -241,6 +241,29 @@ control.
 - **FR-017**: Nothing in this spec MUST require a client repository that already exists to change
   its layout.
 
+### Found by the work rather than specified
+
+Declared here rather than fixed quietly, because each is a behaviour change and none was in the
+spec as approved.
+
+- **FR-018**: `make:site` MUST take the site directory through an option WP-CLI does not consume,
+  and the documented command MUST be one that runs. `--path` is a WP-CLI global and is taken as the
+  WordPress install before any command sees its arguments, so `make:site --path=sites/acme` — the
+  form in the README, three guides and the readiness report — never ran. The option is `--dir`, by
+  the owner's decision. Without this FR-005 could not be met from the documented command at all.
+- **FR-019**: The setup script MUST leave a linked client plugin or theme in the state it found it,
+  on every run and not only the first. Meeting FR-014's "linked, not activated" required activating
+  the framework's plugins by name instead of with `--all`, and not re-activating the Corex theme
+  over a linked client theme that is already active.
+- **FR-020**: The job that checks a generated client site MUST run in the framework's repository
+  only. In a client repository it would generate a second site recording a different baseline.
+- **FR-021**: Ignore patterns derived from the ownership map MUST apply in a checkout whose own path
+  contains a dot-directory. Jest's `<rootDir>` substitution does not survive one on Windows.
+
+**Not done, by decision:** linking client sites into the WordPress that CI provisions. It appeared
+in the plan and was dropped, because the provisioning step activates every plugin it finds and the
+framework's own suites would then have run with a client's plugin active.
+
 ### Out of scope
 
 - Shipping CoreX as an installable dependency instead of a merged remote. It would remove the merge
@@ -267,7 +290,9 @@ control.
 ### Measurable Outcomes
 
 - **SC-001**: A client site generated at one release and updated to the next shows 0 conflicts in
-  framework-owned paths and 0 changed bytes under `sites/`.
+  framework-owned paths, and nothing under `sites/` changes except the baseline record, which is
+  rewritten to name the new release. *(Amended during implementation: the criterion first read "0
+  changed bytes under `sites/`", which the record's own purpose contradicts.)*
 - **SC-002**: A newly generated client repository passes every root check with 0 edits to
   framework-owned files.
 - **SC-003**: The unmodified-framework check detects a one-character change to any framework-owned

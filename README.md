@@ -155,6 +155,11 @@ wp corex make:site Acme            # plugin + theme + governance scaffold
 wp corex make:site Acme --starter  # the above + a runnable example slice to learn from and delete
 ```
 
+A client site lives in its own repository — a copy of a CoreX release with the site under
+`sites/<client>/` — and takes each later release by merging it. `npm run verify:framework` proves the
+framework files there are unmodified. Creating that repository and updating it:
+[Updating CoreX in a client site](docs/en/05-deployment/updating-a-client-site.md).
+
 ### Team-safe architecture (Role Gate)
 
 CoreX separates framework work from client work so a team (and AI agents) never collide. Classify every session

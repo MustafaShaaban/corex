@@ -207,7 +207,7 @@
       "path": "docs-app/src/content/docs/guides/client-site.md",
       "lines": [
         22,
-        39
+        44
       ],
       "topics": [
         "theme-authority"
@@ -255,10 +255,10 @@
       "path": "docs-app/src/content/docs/guides/updates.md",
       "lines": [
         12,
-        69,
-        74,
-        78,
-        83
+        77,
+        82,
+        86,
+        91
       ],
       "topics": [
         "brand.json"

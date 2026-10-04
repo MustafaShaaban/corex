@@ -154,9 +154,8 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
       runner, run the client's tests and build, the two root linters, the root Jest suite and
       `verify:framework` in the client role, then change one byte of `README.md` and require
       exit 1 with the file named. (FR-016, SC-002, SC-003)
-- [ ] **T037** Record in `DECISIONS.md` that making `client-site-layout` a required check is an
-      owner setting in branch protection, not a file in this change. Deferred to T049, with the
-      rest of the record.
+- [x] **T037** Recorded in `DECISIONS.md` #228: making `client-site-layout` a required check is an
+      owner setting in branch protection, not a file in this change.
 
 ## Phase 5 — The setup script (US5)
 
@@ -203,35 +202,49 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
 
 ## Phase 6 — Documentation and release notes (US2, US4, US6)
 
-- [ ] **T040** `docs/en/05-deployment/updating-a-client-site.md` — creating the client repository,
+- [x] **T040** `docs/en/05-deployment/updating-a-client-site.md` — creating the client repository,
       and every step of FR-010 as a command or a named check with its expected result. (FR-010,
-      FR-011)
-- [ ] **T041** The Arabic page — translated, not a placeholder. (FR-010)
-- [ ] **T042** `docs/en/05-deployment/updates-and-distribution.md` and its Arabic counterpart —
-      the boundary at `sites/<client>/`, and which route applies to a repository under version
-      control. (FR-015)
-- [ ] **T043** `docs/en/04-team-workflow/client-site-workflow.md` and its Arabic counterpart —
-      link both pages; point from `compliance:check` to `verify:framework`.
-- [ ] **T044** `docs-app`: `guides/updating-a-client-site.md`, `guides/updates.md`,
+      FR-011) Every command on it was run before it was written: the repository creation against a
+      scratch remote, and the update — a release merged with no conflict, the check failing against
+      the old baseline and passing once the new one was recorded, and a conflict over a locally
+      edited framework file resolved by taking the framework's version.
+- [x] **T041** The Arabic page — translated, not a placeholder. (FR-010)
+- [x] **T042** `docs/en/05-deployment/updates-and-distribution.md` — the boundary at
+      `sites/<client>/`, and which of the two update routes applies. (FR-015) Its Arabic counterpart
+      is a "translation pending" placeholder that points at the English source, as every Arabic page
+      in that section is, so it needed no change.
+- [x] **T043** `docs/en/04-team-workflow/client-site-workflow.md` — links the update page, states
+      the rule, and says what `compliance:check` does and does not answer beside
+      `verify:framework`. Arabic counterpart: a placeholder, as above.
+- [x] **T044** `docs-app`: `guides/updating-a-client-site.md` (new), `guides/updates.md`,
       `guides/client-site.md`, and the sidebar entry.
-- [ ] **T045** `CHANGELOG.md` — a `### Client impact` section under Unreleased, stating this
-      release's own. `CONTRIBUTING.md` — the rule, including that a release with none says so.
-      (FR-013)
-- [ ] **T046** Hygiene suite: every release section from 0.43.0 onward carries the heading.
-- [ ] **T047** Build the docs site and run `tests/docs-links.test.js` as a pass, not a skip.
-- [ ] **T048** SC-004, read-only: in the existing client repository, confirm each of its four local
-      edits is unnecessary against this branch. Commit nothing there. (FR-017)
-- [ ] **T049** `PROGRESS.md`, `DECISIONS.md`, `PROJECT-STATUS.md` and its generated docs-site copy.
-- [ ] **T051** `scripts/README.md`, "Reusing Corex for a new website" — it says "Do **not** copy
-      this repo to make a website", which is the opposite of the client-repository model this
-      spec documents and the existing client repository uses. Found while adding the
-      `verify-framework.mjs` section beside it. Reconcile it with T040.
-- [ ] **T052** The documented `wp corex make:site Acme --path=sites/acme` cannot run. `--path`
-      is a WP-CLI global: it is consumed as the WordPress install location before the command
-      sees it, so the site directory never arrives and WordPress is not found. Reproduced
-      against a real install — the default form, run from the directory the site should land
-      in, works; the `--path` form fails with "No WordPress installation found". `README.md`,
-      the client-site guides and the getting-started page all show the form that fails. Found
-      while writing T036, which therefore runs `make:site` from inside `sites/`. Needs an owner
-      decision: an option WP-CLI does not consume, or documentation of the default form.
-- [ ] **T050** Guard Gate — `docs-guard` on every page; the full Pest, Jest and lint runs.
+- [x] **T045** `CHANGELOG.md` — spec 102's entries under Unreleased, with a `### Client impact`
+      section stating this release's own. `CONTRIBUTING.md` — the rule, including that a release
+      with none says so. (FR-013)
+- [x] **T046** Hygiene suite: every release section from 0.43.0 onward carries the heading, and so
+      does Unreleased as soon as anything is written there. Seen to fail on the entries before
+      the section was added.
+- [x] **T047** The docs site was built and `tests/docs-links.test.js` ran as two passes, not two
+      skips. The new guide is in the build and its internal links carry the base path.
+- [x] **T048** SC-004, checked without touching the existing client repository: in a scratch copy
+      of it, this branch's versions of the four files it had edited — the hygiene suite,
+      `.stylelintignore`, `eslint.config.js`, `jest.config.js` — were laid over its own. With the
+      role resolved from its remote, the hygiene suite accepted all 653 tracked files under
+      `sites/`; Jest listed none of the 47 test files tracked there; stylelint ignored the client
+      theme's stylesheet and ESLint a client script. The copy was removed. (FR-017) One guard test
+      failed there, correctly: it expects a `0.42.0` section that repository's older changelog does
+      not have, and will once it takes this release.
+- [x] **T049** `PROGRESS.md`, `DECISIONS.md` #228, `PROJECT-STATUS.md` and its generated docs-site
+      copy. `README.md` gained a pointer to the update page.
+- [x] **T051** `scripts/README.md`, "Reusing Corex for a new website" — no longer says "do not copy
+      this repo to make a website". A client repository is a copy of it, by design; the section now
+      says so and links the update page.
+- [x] **T052** `make:site` takes the site directory as `--dir`. Watched through real WP-CLI before
+      and after: before, `--dir` was ignored and the site landed in `./acme`; after, it lands in
+      `sites/acme` with its workflow. The default form still works, and a directory outside
+      `sites/` is generated with the warning that no workflow could be placed. Every documented use
+      of the `--path` form is corrected — the README of the CLI package, three guides, the
+      deployment index and the readiness report — and `client-site-layout` now runs the command
+      exactly as documented. Recorded in the spec as FR-018.
+- [x] **T050** Guard Gate — `docs-guard` on every page, applied by hand; the full Pest, Jest and
+      lint runs. Results are in the pull request.

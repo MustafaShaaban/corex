@@ -59,8 +59,20 @@ one, DECISIONS #227), #213 (the linters and Jest no longer walk `wp-ms/` or sess
 #205 (`@playwright/test` 1.63.0), #206 (`@wordpress/element` 8.8.0) and #207 (`@wordpress/i18n`
 6.29.0).
 
-Two feature specs are open as draft pull requests: spec 101, coming-soon mode (#210), and spec 102,
-update-safe client sites (#211). No release is in preparation.
+**Spec 102 — a client site the framework can be updated underneath — is implemented on PR #211**
+(DECISIONS #228). The framework prescribed `sites/<client>/` and its own checks rejected it. A client
+repository now passes them untouched: one ownership file says which paths are the client's, hygiene,
+the linters, Jest and prettier read it, `npm run verify:framework` proves the framework files match
+the recorded release, and `make:site` generates the baseline record, the update checklist and the
+client's own CI. `client-site-layout` in CI generates a real site and runs every check against it.
+The update procedure is documented in English and Arabic. `specs/102-update-safe-client-sites/tasks.md`
+records each task, including the ones the work changed. Open on it: making `client-site-layout` a
+required check is an owner setting in branch protection.
+
+Spec 101, coming-soon mode, is open as a draft pull request (#210) with a spec and no code. One thing
+found while building 102 bears on it: a generated client theme is a standalone block theme, not a
+child of the Corex theme, so it does not inherit a template the parent ships. No release is in
+preparation.
 
 One dependency pull request stays open on purpose: **#208, the `@wordpress/components` major bump
 from 38** (Dependabot's replacement for #186 and #200, both of which it closed; it retargets #208

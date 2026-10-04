@@ -92,12 +92,19 @@ repository, the second validates a record and divides changed paths into the lin
 
 Corex is a **framework**, not a site. Two ways to reuse it:
 
-1. **Build a client site *on* Corex (normal case).** Create a *separate* project; Corex is the
-   shared framework, and each site supplies its own brand (`theme.json` + `brand.json`) and content
-   — design is *data*, not a fork (../docs/internal/COREX-FRAMEWORK.md §10, §24). One framework, many brands.
+1. **Build a client site *on* Corex (normal case).** The site gets its own repository: a copy of a
+   Corex release with the framework as a fetch-only remote, and the client's plugin and theme
+   generated under `sites/<client>/` by `wp corex make:site`. It takes each later release by merging
+   it — see [Updating CoreX in a client site](../docs/en/05-deployment/updating-a-client-site.md).
+   Brand is still *data* — `theme.json` + `brand.json` — not edits to framework files
+   (../docs/internal/COREX-FRAMEWORK.md §10, §24). One framework, many brands.
 2. **Spin up another dev copy of the framework.** `git clone` this repo, then run
    `./scripts/setup-wordpress.ps1`.
 
-Do **not** copy this repo to make a website, and do **not** move `theme/`/`plugins/` physically
-into `wp-content` — that breaks the Composer/npm-workspace layout and would bury the framework
-source inside the gitignored `./wp`. The junctions (or wp-env in Docker) are the bridge.
+Do **not** edit framework files in a client repository — `npm run verify:framework` is what tells
+you whether one has been — and do **not** move `theme/`/`plugins/` physically into `wp-content`:
+that breaks the Composer/npm-workspace layout and would bury the framework source inside the
+gitignored `./wp`. The junctions (or wp-env in Docker) are the bridge.
+
+This section used to say "do not copy this repo to make a website". A client repository is a copy
+of this one, by design; what must not happen is editing the copy's framework files.
