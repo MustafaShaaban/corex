@@ -17,22 +17,21 @@ const {
 	localOnly,
 } = require( './.github/repository-ownership.json' );
 
+const escapeForRegExp = ( text ) =>
+	text.replace( /[.*+?^${}()|[\]\\]/g, '\\$&' );
+
 /**
- * This directory as a regular expression, with forward slashes and every special character
- * escaped.
+ * This directory, written with forward slashes.
  *
  * Used instead of `<rootDir>` for the patterns below, because `<rootDir>` is not safe on Windows
  * when the checkout's own path contains a dot-directory. Jest rewrites path separators inside each
  * pattern and deliberately leaves a backslash that precedes a dot alone, taking it for an escape —
  * so `C:\repo\.claude\worktrees\x` becomes a pattern that matches `C:\repo.claude\…` and nothing
  * else, and every ignore anchored to it silently stops applying. That is the path of every agent
- * session worktree. Written with forward slashes and the dots escaped here, the same rewrite
+ * session worktree. Written with forward slashes and then escaped as a whole, the same rewrite
  * produces the right expression on Windows and changes nothing elsewhere.
  */
-const rootPattern = __dirname
-	.split( /[\\/]/ )
-	.join( '/' )
-	.replace( /[.*+?^${}()|[\]]/g, '\\$&' );
+const rootDirectory = __dirname.split( /[\\/]/ ).join( '/' );
 
 /**
  * Client sites and local-only directories, as path patterns Jest understands (spec 102).
@@ -45,9 +44,9 @@ const ownedElsewhere = [ ...clientOwned, ...localOnly ]
 	.filter( ( pattern ) => pattern.endsWith( '/**' ) )
 	.map(
 		( pattern ) =>
-			`^${ rootPattern }/${ pattern
-				.slice( 0, -2 )
-				.replace( /\./g, '\\.' ) }`
+			`^${ escapeForRegExp(
+				`${ rootDirectory }/${ pattern.slice( 0, -2 ) }`
+			) }`
 	);
 
 module.exports = {
