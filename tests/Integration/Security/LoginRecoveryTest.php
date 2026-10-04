@@ -10,10 +10,14 @@ declare(strict_types=1);
 
 use Corex\Cli\Commands\SecurityResetLoginCommand;
 use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
+use Corex\Config\Security\LoginProtection\LoginAttemptTable;
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginRouteGuard;
 use Corex\Config\Security\LoginProtection\LoginSlug;
 use Corex\Config\Security\LoginProtection\WpLoginAttemptStore;
+use Corex\Database\Schema\Migrator;
+
+const LOGIN_RECOVERY_TEST_IP = '203.0.113.9';
 
 beforeEach(function () {
     $this->previousLoginSettings = get_option(LoginProtectionSettingsStore::OPTION, null);
@@ -27,6 +31,14 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    // The lockout the reset test records, found by the address it is recorded against. The address
+    // is in a range reserved for documentation, so no real attempt shares it. Each run left the row.
+    global $wpdb;
+    $wpdb->delete(
+        (new Migrator())->fullName(LoginAttemptTable::NAME),
+        ['network_hash' => hash('sha256', LOGIN_RECOVERY_TEST_IP)],
+    );
+
     if (property_exists($this, 'previousPermalinks')) {
         update_option('permalink_structure', $this->previousPermalinks);
     }
@@ -81,10 +93,13 @@ it('resets protected login settings and releases active lockouts without changin
     $beforeHash = (string) $wpdb->get_var($wpdb->prepare('SELECT user_pass FROM ' . $wpdb->users . ' WHERE ID = %d', $adminId));
 
     $store = \Corex\Boot::app()->container()->make(WpLoginAttemptStore::class);
-    $now = new DateTimeImmutable('2026-07-07T12:00:00+00:00');
+    // The reset releases every lockout still active at `$now`, on the whole install: it has no
+    // narrower scope to be given. A `$now` decades away leaves this test's lockout as the only
+    // one active then, so a developer's real lockouts are not released by running the suite.
+    $now = new DateTimeImmutable('2099-01-01T12:00:00+00:00');
     $store->record(new LoginAttemptRecord(
         identityHash: hash('sha256', 'owner@example.com'),
-        networkHash: hash('sha256', '203.0.113.9'),
+        networkHash: hash('sha256', LOGIN_RECOVERY_TEST_IP),
         outcome: LoginAttemptRecord::LOCKED,
         reasonCode: 'threshold_exceeded',
         userId: null,
@@ -117,7 +132,7 @@ it('resets protected login settings and releases active lockouts without changin
 
     expect($result['restored_login_url'])->toContain('wp-login.php')
         ->and($result['restored_login_url'])->not->toContain('team-login')
-        ->and($result['released_lockouts'])->toBeGreaterThanOrEqual(1)
+        ->and($result['released_lockouts'])->toBe(1)
         ->and($after['enabled'])->toBeFalse()
         ->and($after['block_default_endpoints'])->toBeFalse()
         // The slug resets too, so re-enabling protection cannot walk back into the same lockout.

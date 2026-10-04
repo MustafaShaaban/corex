@@ -27,6 +27,18 @@ use Corex\Security\Upload\AttachmentResult;
 use Corex\Security\Upload\AttachmentStorage;
 use Corex\Security\Upload\UploadValidator;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Tests\Support\CreatedPosts;
+
+// A stored application is announced by email, and Corex Mail logs every send as a post. The
+// service hands back the application's id and not the logs', so they are caught as they are
+// inserted — each run used to leave two on the install.
+beforeEach(function () {
+    $this->emailLogs = CreatedPosts::watch('corex_email_log');
+});
+
+afterEach(function () {
+    $this->emailLogs->delete();
+});
 
 it('stores a valid application through the real custom table', function () {
     add_filter('pre_wp_mail', '__return_true');
