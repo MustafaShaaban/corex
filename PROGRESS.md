@@ -39,9 +39,16 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-Spec 101, coming-soon mode, is open as a draft pull request (#210) with a spec and a plan, and no
-code. One thing found while building 102 shaped that plan: a generated client theme is a standalone
-block theme, not a child of the Corex theme, so it does not inherit a template the parent ships.
+**Spec 101, coming-soon mode, is being implemented on draft pull request #210.** As of 2026-10-04
+its branch holds the first five of the plan's eight phases — tasks T001 to T047 of 68: one service
+that changes the mode, tests of the template seam it builds on, the mode itself with its guard and
+default page, the notice and visitor view, and the preview link with its banner. Still open there:
+the WP-CLI mode command, the generated template and asset action, and the documentation, release
+notes and browser project.
+`specs/101-coming-soon-mode/tasks.md` on that branch is the record; read it rather than this
+paragraph. One thing found while building 102 shaped the plan: a generated client theme is a
+standalone block theme, not a child of the Corex theme, so it does not inherit a template the
+parent ships.
 
 No dependency pull request is being held.
 
