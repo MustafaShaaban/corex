@@ -19,6 +19,8 @@ use Corex\Boot;
 use Corex\Config\Access\AccessRequestFlash;
 use Corex\Config\Access\AccessRequestFormController;
 use Corex\Config\Access\AccessTables;
+use Corex\Config\Activity\ActivityTable;
+use Corex\Config\Notifications\NotificationTable;
 use Corex\Database\Schema\Migrator;
 
 /**
@@ -111,6 +113,25 @@ afterEach(function () {
 
     if (! isset($this->requester) || $this->requester < 1) {
         return;
+    }
+
+    // Filing a request is audited and tells the administrators somebody is waiting. Both rows
+    // outlived the request: five of each per run of this file. They are found through the request
+    // ids, so before the rows that carry those are deleted.
+    $migrator = $this->container->make(Migrator::class);
+    $requestIds = $wpdb->get_col($wpdb->prepare(
+        'SELECT id FROM ' . $migrator->fullName(AccessTables::REQUESTS) . ' WHERE requester_id = %d',
+        $this->requester,
+    ));
+    foreach ($requestIds as $requestId) {
+        $wpdb->delete($migrator->fullName(ActivityTable::NAME), [
+            'target_type' => 'access_request',
+            'target_id' => (string) $requestId,
+        ]);
+        $wpdb->delete($migrator->fullName(NotificationTable::NAME), [
+            'source_type' => 'access_request',
+            'source_id' => (string) $requestId,
+        ]);
     }
 
     $wpdb->delete(
