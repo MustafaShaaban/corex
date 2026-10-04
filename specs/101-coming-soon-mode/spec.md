@@ -38,6 +38,29 @@ hold a form.
 launch, the people who most need to see the unfinished site are the client's own stakeholders, who
 have no WordPress account and should not be given an administrator one to look at a page.
 
+## Clarifications
+
+### Session 2026-10-04
+
+- Q: While Coming soon is on, what does a signed-in user who is not an administrator get on the
+  front end? → A: Anyone signed in who can edit posts is served the real site, so editors can
+  preview what they write before launch. A signed-in user who cannot edit posts (a subscriber, a
+  customer) is treated as an anonymous visitor.
+- Q: When does a preview link exist, and can it be switched off without issuing a new one? → A: No
+  link exists until an operator creates one. The operator can regenerate it or revoke it outright,
+  leaving none. Creating, regenerating and revoking are each recorded in the history with the
+  operator's name.
+- Q: What happens to the preview link and its holders when the site leaves Coming soon? → A:
+  Leaving Coming soon for any other mode removes the link and every access it granted. A later
+  return to Coming soon starts with no link. Preview access has no effect in any other mode.
+- Q: FR-005 redirects every non-home URL and FR-019 says feeds and sitemaps expose only home;
+  which do those addresses do? → A: The sitemap address answers 200 with a sitemap that lists the
+  home URL and nothing else. Feed addresses redirect to home like any other URL. `robots.txt` is
+  served normally.
+- Q: Does a stakeholder browsing through the preview link see anything saying the site is a private
+  preview? → A: Yes. A slim, non-dismissible banner on every front-end page says the site is a
+  private preview the public cannot see yet. It has no control for leaving the preview.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — An operator turns the coming-soon page on and off (Priority: P1)
@@ -109,13 +132,19 @@ page. Follow the notice's link to see the coming-soon page itself.
    **Then** a persistent notice states that Coming soon is on and links to Operations & Security.
 3. **Given** Coming soon is on, **When** an administrator asks to preview the coming-soon page,
    **Then** they see exactly what an anonymous visitor at the home URL sees.
+4. **Given** Coming soon is on, **When** a signed-in user who can edit posts but is not an
+   administrator requests any front-end URL, including the preview of their own draft, **Then** the
+   real site is served and the notice is shown without a link to a screen they cannot open.
+5. **Given** Coming soon is on, **When** a signed-in user who cannot edit posts requests a
+   front-end URL, **Then** they are treated exactly as an anonymous visitor.
 
 ---
 
 ### User Story 4 — A stakeholder reviews the site through a link (Priority: P2)
 
-The operator copies a preview link from Operations & Security and sends it to the client. The
-client opens it and browses the real site in that browser, without an account.
+The operator creates a preview link on Operations & Security, copies it and sends it to the
+client. The client opens it and browses the real site in that browser, without an account. When the
+review is over the operator revokes the link.
 
 **Why this priority**: it is what makes Coming soon usable on a real client project, but the mode
 works without it.
@@ -134,6 +163,16 @@ page is served.
    anonymous and nothing reveals whether the link was ever valid.
 4. **Given** a browser with preview access, **When** it requests anything under the admin, **Then**
    it has no more access than an anonymous visitor has.
+5. **Given** Coming soon has just been turned on and no operator has created a link, **When** the
+   operator opens Operations & Security, **Then** no link is shown and no URL grants preview access.
+6. **Given** a link exists, **When** the operator revokes it, **Then** no link exists, every browser
+   that used it is treated as anonymous from its next request, and the history records who revoked
+   it.
+7. **Given** a link exists, **When** the site leaves Coming soon for any other mode and later
+   returns to it, **Then** no link exists, and the old link and every browser that used it are
+   treated as anonymous.
+8. **Given** a browser with preview access, **When** it loads any front-end page, **Then** a banner
+   states that the site is a private preview the public cannot see yet, and it cannot be dismissed.
 
 ---
 
@@ -179,16 +218,17 @@ served is the one in the client theme, and it can be opened and changed in the S
 - **The login route, including a custom login address.** Never intercepted, so signing in, signing
   out and resetting a password work while Coming soon is on.
 - **`robots.txt`.** Served normally. A redirect there would hide the file crawlers are asked to read.
-- **Feeds and sitemaps.** They do not list or serve anything other than the home URL while the mode
-  is on.
+- **The sitemap.** Its address answers 200 with a sitemap listing the home URL and nothing else, so
+  a crawler that asks for it is told about the launch page.
+- **Feeds.** A feed address redirects to home like any other URL; no feed is served.
 - **The home URL with a query string** (a campaign tag, for example). Still the coming-soon page,
   with no redirect loop.
 - **A site whose front page is a static page, or one that redirects.** The home URL serves the
   coming-soon page regardless.
 - **A multilingual site.** Each language's home URL is a home URL for this purpose.
-- **A page cache or CDN in front of the site.** Responses to administrators and preview-link
-  holders, and the redirects, are marked non-cacheable, so a cache cannot hand the real site to an
-  anonymous visitor or the coming-soon page to an administrator.
+- **A page cache or CDN in front of the site.** Responses to signed-in users who are served the
+  real site and to preview-link holders, and the redirects, are marked non-cacheable, so a cache
+  cannot hand the real site to an anonymous visitor or the coming-soon page to someone who passes.
 - **A multisite network.** The mode is per site, as it already is.
 - **Content published in WordPress is still readable through the REST API**, as on any WordPress
   site. This mode hides the front end. It is not a confidentiality control, and the documentation
@@ -210,10 +250,12 @@ served is the one in the client theme, and it can be opened and changed in the S
 - **FR-004**: While the mode is on, an anonymous request for the home URL MUST receive the
   coming-soon page with a 200 status.
 - **FR-005**: While the mode is on, an anonymous request for any other front-end URL MUST receive a
-  temporary redirect to the home URL. A permanent redirect MUST NOT be used.
+  temporary redirect to the home URL. A permanent redirect MUST NOT be used. The only exceptions
+  are `robots.txt` and the sitemap (FR-019) and requests allowed through by FR-018.
 - **FR-006**: The admin, the login route, the REST API, AJAX and cron MUST never be intercepted.
-- **FR-007**: A signed-in administrator MUST always be served the real site. No configuration of
-  this feature may lock an administrator out.
+- **FR-007**: A signed-in user who can edit posts MUST be served the real site. A signed-in user
+  who cannot MUST be treated as an anonymous visitor. No configuration of this feature may lock an
+  administrator out.
 - **FR-008**: The coming-soon page MUST be supplied by the active theme through a named template
   that a child theme can override and the Site Editor can edit. The CoreX parent theme MUST ship a
   default. The mode's logic MUST NOT live in the theme (Principle I).
@@ -221,28 +263,39 @@ served is the one in the client theme, and it can be opened and changed in the S
   self-contained CoreX page (Principle II).
 - **FR-010**: The response for the coming-soon page MUST NOT carry a noindex signal unless
   WordPress's own search-engine visibility setting asks for one.
-- **FR-011**: An operator MUST be able to obtain one secret preview link, and to regenerate it. A
-  valid link MUST grant the browser that opens it front-end access to the real site for a bounded
-  period, and MUST then be removed from the visible address.
-- **FR-012**: Regenerating the link MUST revoke every access granted by the previous one.
+- **FR-011**: No preview link MUST exist until an operator creates one. An operator MUST be able to
+  create one secret preview link, to regenerate it, and to revoke it leaving none. A valid link MUST
+  grant the browser that opens it front-end access to the real site for a bounded period, and MUST
+  then be removed from the visible address.
+- **FR-012**: Regenerating or revoking the link MUST revoke every access granted by the previous
+  one. Creating, regenerating and revoking MUST each be recorded in the history with the operator's
+  name, and the record MUST NOT contain the secret.
+- **FR-012a**: Leaving Coming soon for any other mode MUST remove the link and every access it
+  granted, from the screen and from the command line alike. Preview access MUST have no effect in
+  any other mode.
 - **FR-013**: Preview access MUST grant no capability. It MUST NOT be stored in a form from which
   the secret can be read back out of the database.
 - **FR-014**: An invalid link MUST be indistinguishable, to the visitor, from no link.
-- **FR-015**: Responses that depend on who is asking — to administrators, to preview holders, and
-  the redirects — MUST be marked non-cacheable.
-- **FR-016**: A signed-in administrator MUST see a persistent notice, on the front end and in the
-  admin, whenever Coming soon is on, with a route to the screen that changes it and a way to view
-  the coming-soon page as a visitor sees it.
+- **FR-015**: Responses that depend on who is asking — to signed-in users who are served the real
+  site, to preview holders, and the redirects — MUST be marked non-cacheable.
+- **FR-016**: Every signed-in user who is served the real site MUST see a persistent notice, on the
+  front end and in the admin, whenever Coming soon is on, with a way to view the coming-soon page
+  as a visitor sees it. The route to the screen that changes the mode MUST be offered only to users
+  who can change it.
+- **FR-016a**: A browser with preview access MUST see a non-dismissible banner on every front-end
+  page stating that the site is a private preview the public cannot see yet. The banner MUST NOT
+  link to the admin and MUST NOT be shown to anonymous visitors.
 - **FR-017**: The mode MUST be readable and settable from the command line, with the same
   confirmation rules and the same history entry as the screen. A change from the command line MUST
   NOT bypass the acknowledgement.
 - **FR-018**: A documented extension point MUST let client code allow specific requests through,
   matching the one Maintenance mode already has.
-- **FR-019**: `robots.txt` MUST be served normally. Feeds and sitemaps MUST NOT expose any URL
-  other than home while the mode is on.
+- **FR-019**: `robots.txt` MUST be served normally. While the mode is on, the sitemap address MUST
+  answer 200 with a sitemap that lists the home URL and no other, and a feed address MUST redirect
+  to home under FR-005 without serving a feed.
 - **FR-020**: `make:site` MUST generate an editable coming-soon template in every new client theme.
-- **FR-021**: Every user-facing string MUST be translatable, and the default page and the notice
-  MUST be correct in RTL and meet WCAG 2.2 AA.
+- **FR-021**: Every user-facing string MUST be translatable, and the default page, the notice and
+  the preview banner MUST be correct in RTL and meet WCAG 2.2 AA.
 - **FR-022**: The test asserting that `coming-soon` is an invalid mode MUST be replaced by tests of
   the mode, not deleted.
 - **FR-023**: The operations guide (EN and AR) MUST document the mode, the preview link, the
@@ -260,8 +313,9 @@ served is the one in the client theme, and it can be opened and changed in the S
 
 - **Operations mode**: the site's single declared state. Gains one value. Exactly one mode is in
   force, so Coming soon and Maintenance cannot both be on.
-- **Preview access**: one secret per site, held only in a non-reversible form, with the time it was
-  issued. Replaced, never accumulated.
+- **Preview access**: at most one secret per site, and none until an operator creates it. Held only
+  in a non-reversible form, with the time it was issued. Replaced or removed, never accumulated,
+  and removed whenever the site leaves Coming soon.
 - **Coming-soon template**: a theme template with a fixed name, owned by presentation.
 
 ## Success Criteria *(mandatory)*
@@ -272,15 +326,15 @@ served is the one in the client theme, and it can be opened and changed in the S
   the Operations screen, without touching code.
 - **SC-002**: With the mode on, 100% of anonymous requests to non-home front-end URLs under test
   are redirected, and 0 bytes of the requested page are served.
-- **SC-003**: With the mode on, an administrator reaches every front-end URL under test, and the
-  notice is present on each.
+- **SC-003**: With the mode on, an administrator and an editor each reach every front-end URL under
+  test, and the notice is present on each. A subscriber reaches none of them.
 - **SC-004**: A stakeholder with the link reaches the real site with no account, and loses access
-  within one request of the link being regenerated.
+  within one request of the link being regenerated or revoked, or of the site leaving Coming soon.
 - **SC-005**: A newly generated client site serves its own coming-soon template with no step other
   than activating the theme and switching the mode.
 - **SC-006**: Maintenance mode's existing tests pass unchanged.
-- **SC-007**: The page and the notice pass the browser suite in LTR and RTL, light and dark, at
-  mobile and desktop widths.
+- **SC-007**: The page, the notice and the preview banner pass the browser suite in LTR and RTL,
+  light and dark, at mobile and desktop widths.
 
 ## Assumptions
 
@@ -290,9 +344,11 @@ served is the one in the client theme, and it can be opened and changed in the S
   staging or production; the Overview already reports the hosting environment separately.
 - **Launch is the existing production switch.** Leaving Coming soon for Production reuses the
   typed-phrase confirmation and readiness result rather than adding a second launch flow.
-- **Administrator means `manage_options`**, as it does for Maintenance mode.
-- **One preview link per site** is enough. Per-person links with individual revocation are not
-  needed for a pre-launch review and can be added without changing this contract.
+- **Administrator means `manage_options`**, as it does for Maintenance mode, and only an
+  administrator changes the mode. **"Can edit posts" means `edit_posts`**, which is what decides
+  who is served the real site. Maintenance mode's own rule (administrators only) is unchanged.
+- **At most one preview link per site** is enough. Per-person links with individual revocation are
+  not needed for a pre-launch review and can be added without changing this contract.
 - **Bounded period** for preview access defaults to 14 days, renewed by opening the link again.
 - **WordPress's "discourage search engines" setting** is the control for a client who wants the
   page hidden until launch. This spec adds no second one.
