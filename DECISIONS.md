@@ -5373,7 +5373,7 @@ What was run:
 | The new integration test against `main`'s production code | failed: no notice rendered |
 | `tests/Unit/Retention` with the change | 15 passed |
 | `tests/Integration/Submissions/RetentionPanelCopyTest.php` with the change | 16 passed |
-| Unit suite (`pest`) | 1860 passed |
+| Unit suite (`pest`), after the rebase onto `main` past v0.43.0 | 2037 passed |
 | The container builds `RetentionController` on the development install | yes |
 | The notice on the development install: dark and light at 1440px, dark at 375px, light right-to-left at 375px | error icon and border in each, `role="alert"`; no sideways scroll |
 
