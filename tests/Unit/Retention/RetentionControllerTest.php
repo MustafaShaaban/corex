@@ -96,3 +96,15 @@ it('reports a move to trash when the form posted no action', function () {
 
     expect($query['corex_action'] ?? null)->toBe('trash');
 });
+
+/**
+ * The select offers three actions, and a post is whatever was sent. Anything else used to reach
+ * the retention service, whose `InvalidArgumentException` nothing caught: the operator got
+ * WordPress's critical-error page instead of an answer (DECISIONS #239).
+ */
+it('refuses an action the form does not offer, and says so instead of failing', function () {
+    $query = pruneRedirectQuery(['corex_retention_action' => 'delete']);
+
+    expect($query['corex_status'])->toBe('retention-invalid')
+        ->and($query)->not->toHaveKeys(['corex_action', 'corex_count']);
+});
