@@ -135,60 +135,64 @@ final class CliServiceProvider extends ServiceProvider
             return;
         }
 
-        $naming = $this->container->make(Naming::class);
-        $command = new MakeCommand(
-            $this->container->make(GeneratorEngine::class),
-            [
-                'model'       => new ModelGenerator($naming),
-                'repository'  => new RepositoryGenerator(),
-                'controller'  => new ControllerGenerator(),
-                'service'     => new ServiceGenerator(),
-                'option-page' => new OptionPageGenerator(),
-                'guide'       => new GuideGenerator(),
-            ],
-            $this->container->make(BlockScaffolder::class),
-            $this->container->make(GeneratorContext::class),
-            $this->container->make(ApiResourceScaffolder::class),
-            $this->container->make(SiteScaffolder::class),
-        );
+        foreach ($this->commandRegistrations() as $name => $registration) {
+            WP_CLI::add_command($name, $registration['handler'], $registration['definition']);
+        }
+    }
+
+    /**
+     * @return array<string, array{handler: callable, definition: array<string, mixed>}>
+     */
+    public function commandRegistrations(): array
+    {
+        $root = dirname(__DIR__, 3);
+        $frameworkPaths = [
+            'plugins/corex-core', 'plugins/corex-blocks', 'plugins/corex-config', 'plugins/corex-forms',
+            'theme', 'packages/cli', 'addons/corex-ui', 'addons/corex-email', 'addons/corex-captcha',
+            'addons/corex-newsletter', 'addons/corex-careers', 'addons/corex-bookings', 'addons/corex-media',
+            'addons/corex-kit-company', 'addons/corex-kit-portfolio', 'addons/corex-kit-woo',
+        ];
+        $registrations = [];
 
         foreach (['model', 'repository', 'controller', 'service', 'option-page', 'guide', 'block', 'api-resource', 'site'] as $type) {
-            WP_CLI::add_command(
-                "corex make:{$type}",
-                static function (array $args, array $assoc) use ($command, $type): void {
-                    $command->run($type, $args, $assoc);
+            $registrations["corex make:{$type}"] = [
+                'handler' => function (array $args, array $assoc) use ($type): void {
+                    $this->makeCommand()->run($type, $args, $assoc);
                 },
-            );
+                'definition' => [],
+            ];
         }
 
         // REST discovery + OpenAPI (spec 046): list the Corex/app routes and emit an API doc.
-        $routesReader = new RoutesReader();
-        $namespaces   = array_values(array_unique(['corex', $this->container->make(GeneratorContext::class)->prefix]));
+        $registrations['corex routes:list'] = [
+            'handler' => function (): void {
+                $routesReader = new RoutesReader();
 
-        WP_CLI::add_command(
-            'corex routes:list',
-            static function () use ($routesReader, $namespaces): void {
-                foreach ((new RouteList())->lines($routesReader->read($namespaces)) as $line) {
+                foreach ((new RouteList())->lines($routesReader->read($this->routeNamespaces())) as $line) {
                     WP_CLI::log($line);
                 }
             },
-        );
+            'definition' => [],
+        ];
 
-        WP_CLI::add_command(
-            'corex api:docs',
-            static function () use ($routesReader, $namespaces): void {
-                $version = defined('COREX_CORE_VERSION') ? COREX_CORE_VERSION : '0.0.0';
-                $doc     = (new ApiDocsGenerator())->generate($routesReader->read($namespaces), 'Corex API', $version);
+        $registrations['corex api:docs'] = [
+            'handler' => function (): void {
+                $routesReader = new RoutesReader();
+                $version      = defined('COREX_CORE_VERSION') ? COREX_CORE_VERSION : '0.0.0';
+                $doc          = (new ApiDocsGenerator())->generate(
+                    $routesReader->read($this->routeNamespaces()),
+                    'Corex API',
+                    $version,
+                );
                 WP_CLI::log((string) wp_json_encode($doc, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
             },
-        );
+            'definition' => [],
+        ];
 
         // Asset diagnostics + cache reset (spec 047).
-        $assets = $this->container->make(AssetManager::class);
-
-        WP_CLI::add_command(
-            'corex assets:doctor',
-            static function () use ($assets): void {
+        $registrations['corex assets:doctor'] = [
+            'handler' => function (): void {
+                $assets  = $this->container->make(AssetManager::class);
                 $report  = new AssetReport();
                 $present = is_file(COREX_CORE_PATH . 'build/manifest.json');
                 $samples = ['build/index.js' => $assets->version('build/index.js')];
@@ -197,16 +201,16 @@ final class CliServiceProvider extends ServiceProvider
                     WP_CLI::log($line);
                 }
             },
-        );
+            'definition' => [],
+        ];
 
         // Cache management (spec 078). What this replaces deleted one transient and printed
         // "success" — a message that read as "your caches are cleared" while seven of the eight
         // things CoreX caches were untouched.
-        $cache = $this->container->make(CacheManager::class);
+        $registrations['corex cache:status'] = [
+            'handler' => function (): void {
+                $cache = $this->container->make(CacheManager::class);
 
-        WP_CLI::add_command(
-            'corex cache:status',
-            static function () use ($cache): void {
                 WP_CLI::log('Store: ' . $cache->store()->describe());
                 WP_CLI::log('');
                 WP_CLI::log('Declared cache entries:');
@@ -220,11 +224,13 @@ final class CliServiceProvider extends ServiceProvider
                     ));
                 }
             },
-        );
+            'definition' => [],
+        ];
 
-        WP_CLI::add_command(
-            'corex cache:doctor',
-            static function () use ($cache): void {
+        $registrations['corex cache:doctor'] = [
+            'handler' => function (): void {
+                $cache = $this->container->make(CacheManager::class);
+
                 // Deliberately says what CoreX cannot do as well as what it can — the two most
                 // common cache questions have answers CoreX does not control.
                 WP_CLI::log('Store:            ' . $cache->store()->describe());
@@ -246,11 +252,12 @@ final class CliServiceProvider extends ServiceProvider
                     WP_CLI::log('  ' . $entry->key . '* — ' . $entry->classification->value);
                 }
             },
-        );
+            'definition' => [],
+        ];
 
-        WP_CLI::add_command(
-            'corex cache:clear',
-            static function (array $args, array $assoc) use ($cache): void {
+        $registrations['corex cache:clear'] = [
+            'handler' => function (array $args, array $assoc): void {
+                $cache     = $this->container->make(CacheManager::class);
                 $requested = isset($assoc['scope']) ? (string) $assoc['scope'] : CacheScope::Corex->value;
                 $scope     = CacheScope::tryFromName($requested);
 
@@ -296,20 +303,12 @@ final class CliServiceProvider extends ServiceProvider
 
                 WP_CLI::success($outcome->summary());
             },
-        );
+            'definition' => [],
+        ];
 
         // Team ops + distribution (spec 050): compliance check, release packaging, local docs.
-        $frameworkPaths = [
-            'plugins/corex-core', 'plugins/corex-blocks', 'plugins/corex-config', 'plugins/corex-forms',
-            'theme', 'packages/cli', 'addons/corex-ui', 'addons/corex-email', 'addons/corex-captcha',
-            'addons/corex-newsletter', 'addons/corex-careers', 'addons/corex-bookings', 'addons/corex-media',
-            'addons/corex-kit-company', 'addons/corex-kit-portfolio', 'addons/corex-kit-woo',
-        ];
-        $cliRoot = dirname(__DIR__, 3);
-
-        WP_CLI::add_command(
-            'corex compliance:check',
-            static function (array $args, array $assoc) use ($frameworkPaths): void {
+        $registrations['corex compliance:check'] = [
+            'handler' => static function (array $args, array $assoc) use ($frameworkPaths): void {
                 $files  = isset($assoc['files']) ? array_filter(array_map('trim', explode(',', (string) $assoc['files']))) : [];
                 $result = (new ClientBrandingComplianceCheck())->evaluate(array_values($files), ! empty($assoc['allow-framework']));
 
@@ -324,11 +323,11 @@ final class CliServiceProvider extends ServiceProvider
                 }
                 WP_CLI::error('Compliance failed — client work must not edit Corex framework folders.');
             },
-        );
+            'definition' => [],
+        ];
 
-        WP_CLI::add_command(
-            'corex package:update',
-            static function (array $args, array $assoc) use ($frameworkPaths): void {
+        $registrations['corex package:update'] = [
+            'handler' => static function (array $args, array $assoc) use ($frameworkPaths): void {
                 $version  = (string) ($args[0] ?? '');
                 $download = (string) ($assoc['download-url'] ?? '');
                 $plan     = new ReleasePackagePlan($frameworkPaths, ['/tests/', '/specs/', 'node_modules', '.git/', 'wp-config', '.env']);
@@ -337,12 +336,12 @@ final class CliServiceProvider extends ServiceProvider
                 WP_CLI::log((string) wp_json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
                 WP_CLI::success(sprintf('Manifest planned for %s (framework-only; build the ZIP from the included paths).', $version));
             },
-        );
+            'definition' => [],
+        ];
 
-        WP_CLI::add_command(
-            'corex docs:sync',
-            static function () use ($cliRoot): void {
-                $built = $cliRoot . '/docs-app/dist';
+        $registrations['corex docs:sync'] = [
+            'handler' => static function () use ($root): void {
+                $built = $root . '/docs-app/dist';
                 if (! is_dir($built)) {
                     WP_CLI::warning('No built docs found — run `npm run build` in docs-app/ first.');
 
@@ -350,102 +349,127 @@ final class CliServiceProvider extends ServiceProvider
                 }
                 WP_CLI::success(sprintf('Docs available at %s — copy into .corex/docs/ (git-ignored) to read locally.', $built));
             },
-        );
+            'definition' => [],
+        ];
 
-        WP_CLI::add_command(
-            'corex docs:serve',
-            static function (): void {
+        $registrations['corex docs:serve'] = [
+            'handler' => static function (): void {
                 WP_CLI::log('Serve the docs locally: `cd docs-app && npm run dev` → http://localhost:4321');
             },
-        );
+            'definition' => [],
+        ];
 
-        $root = dirname(__DIR__, 3);
-        $docs = new DocsCommand(
-            $this->container->make(DocsGenerator::class),
-            [
-                'Core'    => $root . '/plugins/corex-core/src',
-                'Blocks'  => $root . '/plugins/corex-blocks/src',
-                'Forms'   => $root . '/plugins/corex-forms/src',
-                'Config'  => $root . '/plugins/corex-config/src',
-                'CLI'     => $root . '/packages/cli/src',
-                'Add-ons' => $root . '/addons',
-            ],
-            $root . '/docs-app/src/content/docs/reference',
-        );
+        $registrations['corex docs:generate'] = [
+            'handler' => function (array $args, array $assoc) use ($root): void {
+                $docs = new DocsCommand(
+                    $this->container->make(DocsGenerator::class),
+                    [
+                        'Core'    => $root . '/plugins/corex-core/src',
+                        'Blocks'  => $root . '/plugins/corex-blocks/src',
+                        'Forms'   => $root . '/plugins/corex-forms/src',
+                        'Config'  => $root . '/plugins/corex-config/src',
+                        'CLI'     => $root . '/packages/cli/src',
+                        'Add-ons' => $root . '/addons',
+                    ],
+                    $root . '/docs-app/src/content/docs/reference',
+                );
 
-        WP_CLI::add_command(
-            'corex docs:generate',
-            static function (array $args, array $assoc) use ($docs): void {
                 $docs->generate($args, $assoc);
             },
-        );
+            'definition' => [],
+        ];
 
-        $reset = $this->container->make(ResetCommand::class);
-
-        WP_CLI::add_command(
-            'corex reset',
-            static function (array $args, array $assoc) use ($reset): void {
-                $reset->run($args, $assoc);
+        $registrations['corex reset'] = [
+            'handler' => function (array $args, array $assoc): void {
+                $this->container->make(ResetCommand::class)->run($args, $assoc);
             },
-            $this->resetCommandDefinition(),
-        );
+            'definition' => $this->resetCommandDefinition(),
+        ];
 
-        $migrate = $this->container->make(MigrateCommand::class);
-
-        WP_CLI::add_command(
-            'corex migrate',
-            static function (array $args, array $assoc) use ($migrate): void {
-                $migrate->run($args, $assoc);
+        $registrations['corex migrate'] = [
+            'handler' => function (array $args, array $assoc): void {
+                $this->container->make(MigrateCommand::class)->run($args, $assoc);
             },
-        );
+            'definition' => [],
+        ];
 
-        $securityReset = new SecurityResetLoginCommand(
-            $this->container->make(\Corex\Config\Security\LoginProtection\LoginLockoutStore::class),
-        );
+        $registrations['corex security reset-login'] = [
+            'handler' => function (): void {
+                $securityReset = new SecurityResetLoginCommand(
+                    $this->container->make(\Corex\Config\Security\LoginProtection\LoginLockoutStore::class),
+                );
 
-        WP_CLI::add_command(
-            'corex security reset-login',
-            static function () use ($securityReset): void {
                 $securityReset->run();
             },
-        );
+            'definition' => [],
+        ];
 
-        $doctor = new DoctorCommand($this->container->make(HealthModule::class));
-
-        WP_CLI::add_command(
-            'corex doctor',
-            static function (array $args, array $assoc) use ($doctor): void {
+        $registrations['corex doctor'] = [
+            'handler' => function (array $args, array $assoc): void {
+                $doctor = new DoctorCommand($this->container->make(HealthModule::class));
                 $doctor->run($args, $assoc);
             },
-        );
+            'definition' => [],
+        ];
 
-        $readiness = new ReadinessCommand(ReadinessCommandServices::fromArray([
-            'metadata' => new MetadataConsistencyCheck(),
-            'ciSecurity' => new CiSecurityReadiness(),
-            'root' => $root,
-            'siteScaffolder' => $this->container->make(SiteScaffolder::class),
-            'siteScaffoldValidator' => $this->container->make(SiteScaffoldValidator::class),
-            'deploymentReadiness' => $this->container->make(DeploymentReadinessCheck::class),
-            'componentCoverage' => $this->container->make(ComponentCoverageReadinessCheck::class),
-            'freeProBoundary' => $this->container->make(FreeProBoundaryReadinessCheck::class),
-            'multiAgent' => $this->container->make(MultiAgentReadinessCheck::class),
-        ]));
+        $registrations['corex readiness'] = [
+            'handler' => function (array $args, array $assoc) use ($root): void {
+                $readiness = new ReadinessCommand(ReadinessCommandServices::fromArray([
+                    'metadata' => new MetadataConsistencyCheck(),
+                    'ciSecurity' => new CiSecurityReadiness(),
+                    'root' => $root,
+                    'siteScaffolder' => $this->container->make(SiteScaffolder::class),
+                    'siteScaffoldValidator' => $this->container->make(SiteScaffoldValidator::class),
+                    'deploymentReadiness' => $this->container->make(DeploymentReadinessCheck::class),
+                    'componentCoverage' => $this->container->make(ComponentCoverageReadinessCheck::class),
+                    'freeProBoundary' => $this->container->make(FreeProBoundaryReadinessCheck::class),
+                    'multiAgent' => $this->container->make(MultiAgentReadinessCheck::class),
+                ]));
 
-        WP_CLI::add_command(
-            'corex readiness',
-            static function (array $args, array $assoc) use ($readiness): void {
                 $readiness->run($args, $assoc);
             },
-        );
+            'definition' => [],
+        ];
 
-        $version = new VersionCommand(new VersionPlan(), $this->versionFiles($root));
-
-        WP_CLI::add_command(
-            'corex version',
-            static function (array $args, array $assoc) use ($version): void {
+        $registrations['corex version'] = [
+            'handler' => function (array $args, array $assoc) use ($root): void {
+                $version = new VersionCommand(new VersionPlan(), $this->versionFiles($root));
                 $version->run($args, $assoc);
             },
+            'definition' => [],
+        ];
+
+        return $registrations;
+    }
+
+    private function makeCommand(): MakeCommand
+    {
+        $naming = $this->container->make(Naming::class);
+
+        return new MakeCommand(
+            $this->container->make(GeneratorEngine::class),
+            [
+                'model'       => new ModelGenerator($naming),
+                'repository'  => new RepositoryGenerator(),
+                'controller'  => new ControllerGenerator(),
+                'service'     => new ServiceGenerator(),
+                'option-page' => new OptionPageGenerator(),
+                'guide'       => new GuideGenerator(),
+            ],
+            $this->container->make(BlockScaffolder::class),
+            $this->container->make(GeneratorContext::class),
+            $this->container->make(ApiResourceScaffolder::class),
+            $this->container->make(SiteScaffolder::class),
         );
+    }
+
+    /** @return list<string> */
+    private function routeNamespaces(): array
+    {
+        return array_values(array_unique([
+            'corex',
+            $this->container->make(GeneratorContext::class)->prefix,
+        ]));
     }
 
     /**

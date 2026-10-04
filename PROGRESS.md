@@ -39,12 +39,15 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**`fix/dependency-advisories-2026-09` — the advisory gate, red on `main` since at least
-2026-08-12.** Five consecutive weekly runs failed, the most recent on `8c1467c` itself, while
-`PROJECT-STATUS.md` and this file went on describing the tree as cleared. A **critical** Astro
-advisory was among them. Astro 7.1.5 → 7.3.2, `svgo` and `colord` upgraded, and the two advisories
-with no upstream fix bounded by policy. Gate now passes locally on all three ecosystems
-(DECISIONS #226).
+**`fix/201-cli-command-registration` — issue #201, open as PR #202.** Under
+`composer install --no-dev` seven WP-CLI commands vanished silently, `wp corex migrate` among them —
+and that is the tree the documented packaging path builds. `nikic/php-parser` is now a production
+dependency, and command registration in both `CliServiceProvider` and `MediaServiceProvider` is a
+lazy map so no command's dependency can unregister its neighbours (DECISIONS #225).
+
+The advisory gate, red on `main` since at least 2026-08-12, was cleared by #203 and is merged:
+Astro 7.1.5 → 7.3.2, `svgo` and `colord` upgraded, and the advisories with no upstream fix bounded
+by policy (DECISIONS #226).
 
 No open feature spec, and no release in preparation.
 
