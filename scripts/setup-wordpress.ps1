@@ -14,6 +14,11 @@
     -> create the database -> install WordPress -> junction theme/ and plugins/* into
     wp/wp-content -> activate the Corex theme + plugins -> verify.
 
+    In a client repository it also junctions every client plugin and theme under sites/ into the
+    single-site install (spec 102). Those are linked and not activated: switching a client's
+    plugin or theme on is its owner's decision, and the commands to do it are printed at the end.
+    With no sites/ directory the script does exactly what it did before.
+
     Real symlinks (mklink /D) need elevation; this uses directory JUNCTIONS (mklink /J), which do
     not. See DECISIONS.md #18 and the constitution "Environment Gate".
 
@@ -160,17 +165,63 @@ $themesDir  = Join-Path $WpPath 'wp-content\themes'
 $pluginsDir = Join-Path $WpPath 'wp-content\plugins'
 New-Item -ItemType Directory -Force -Path $themesDir, $pluginsDir | Out-Null
 
+# Every client plugin and theme under sites/ (spec 102), as what to link and where from. A client
+# site lives at sites/<client>/ in one of two layouts, the same two the dist builder packages
+# (scripts/build-shared-host-dist.mjs): flat, which is what make:site generates —
+# sites/<client>/<x>-site and <x>-theme — and the older nested one, sites/<client>/plugins/* and
+# sites/<client>/themes/*. Nothing else in a site directory is linked.
+function Get-ClientSiteLinks {
+    param([string]$SitesRoot)
+    if (-not (Test-Path $SitesRoot)) { return }
+
+    foreach ($site in Get-ChildItem $SitesRoot -Directory) {
+        foreach ($entry in Get-ChildItem $site.FullName -Directory) {
+            if ($entry.Name -eq 'plugins' -or $entry.Name -eq 'themes') {
+                $kind = if ($entry.Name -eq 'plugins') { 'plugin' } else { 'theme' }
+                Get-ChildItem $entry.FullName -Directory | ForEach-Object {
+                    [pscustomobject]@{ Kind = $kind; Name = $_.Name; Target = $_.FullName }
+                }
+            } elseif ($entry.Name -like '*-site') {
+                [pscustomobject]@{ Kind = 'plugin'; Name = $entry.Name; Target = $entry.FullName }
+            } elseif ($entry.Name -like '*-theme') {
+                [pscustomobject]@{ Kind = 'theme'; Name = $entry.Name; Target = $entry.FullName }
+            }
+        }
+    }
+}
+
 Write-Host "Wiring monorepo -> wp-content:"
 Set-Junction (Join-Path $themesDir 'corex') (Join-Path $Root 'theme')
+# The names are kept: step 6 activates exactly these, and nothing else that is in the directory.
+$frameworkPlugins = @()
 Get-ChildItem (Join-Path $Root 'plugins') -Directory | ForEach-Object {
     Set-Junction (Join-Path $pluginsDir $_.Name) $_.FullName
+    $frameworkPlugins += $_.Name
 }
 # Add-ons are WP-plugin-shaped Composer packages; junction any that contain a PHP file.
 $addonsRoot = Join-Path $Root 'addons'
 if (Test-Path $addonsRoot) {
     Get-ChildItem $addonsRoot -Directory -ErrorAction SilentlyContinue |
         Where-Object { Get-ChildItem $_.FullName -Filter '*.php' -ErrorAction SilentlyContinue } |
-        ForEach-Object { Set-Junction (Join-Path $pluginsDir $_.Name) $_.FullName }
+        ForEach-Object {
+            Set-Junction (Join-Path $pluginsDir $_.Name) $_.FullName
+            $frameworkPlugins += $_.Name
+        }
+}
+
+# Client sites are linked into the single-site install and left for their owner to activate.
+# Not into -Multisite: that install is the fixture the framework's multisite suite asserts
+# against, and it mirrors what CI provisions, which has no client site in it.
+$clientLinks = @()
+if (-not $Multisite) {
+    $clientLinks = @(Get-ClientSiteLinks (Join-Path $Root 'sites'))
+}
+if ($clientLinks.Count -gt 0) {
+    Write-Host "Wiring client sites -> wp-content (linked, not activated):"
+    foreach ($link in $clientLinks) {
+        $linkDir = if ($link.Kind -eq 'theme') { $themesDir } else { $pluginsDir }
+        Set-Junction (Join-Path $linkDir $link.Name) $link.Target
+    }
 }
 
 # --- 6. Activate theme + plugins ---
@@ -180,8 +231,19 @@ if (Test-Path $addonsRoot) {
 # resolved that order; it does not. This went unnoticed because a re-run activates whatever failed
 # the first time and the exit code was never checked, so a clean run looked identical to a repaired
 # one. CI on a fresh install is where it finally showed (PR #120).
-& wp theme activate corex --path="$WpPath" | Out-Null
-if ($LASTEXITCODE -ne 0) { Fail "Could not activate the Corex theme." }
+#
+# The Corex theme is activated unless a linked client theme is the one already active. This script
+# is the one to re-run after moving the repository, and activating Corex unconditionally meant a
+# re-run switched a client's site back to the framework's theme — found by running it, with the
+# client theme on, while the note at the end claimed client sites were "left as they were".
+$clientThemes = @($clientLinks | Where-Object { $_.Kind -eq 'theme' } | ForEach-Object { $_.Name })
+$activeTheme  = & wp theme list --status=active --field=name --path="$WpPath" 2>$null | Select-Object -First 1
+if ($clientThemes -contains $activeTheme) {
+    Write-Host "Leaving the client theme '$activeTheme' active."
+} else {
+    & wp theme activate corex --path="$WpPath" | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "Could not activate the Corex theme." }
+}
 
 if ($Multisite) {
     # The network fixture the multisite suite asserts against, identical to the CI action's.
@@ -233,10 +295,17 @@ if ($Multisite) {
     & wp plugin activate corex-core --path="$WpPath" | Out-Null
     if ($LASTEXITCODE -ne 0) { Fail "Could not activate corex-core, which every other plugin requires." }
 
-    # Then everything else that was junctioned above, add-ons included. The integration suite resolves
-    # add-on services from the container, so a site with only plugins/* active is not the environment
-    # those tests assume.
-    & wp plugin activate --all --path="$WpPath" | Out-Null
+    # Then every other framework plugin that was junctioned above, add-ons included. The integration
+    # suite resolves add-on services from the container, so a site with only plugins/* active is not
+    # the environment those tests assume.
+    #
+    # By name, not `--all`. `--all` activates whatever is in the plugins directory, and since
+    # spec 102 that includes a client's plugin once it has been linked — so a re-run would have
+    # switched a client plugin on that its owner had left off. Naming the framework's own plugins
+    # activates the same set as before in a repository with no client site, and leaves a client
+    # plugin in whichever state it was in.
+    $others = @($frameworkPlugins | Where-Object { $_ -ne 'corex-core' })
+    & wp plugin activate $others --path="$WpPath" | Out-Null
     if ($LASTEXITCODE -ne 0) { Fail "Could not activate every Corex plugin - see 'wp plugin list --path=$WpPath'." }
 }
 
@@ -260,6 +329,12 @@ if ($Multisite) {
     & wp plugin list --network --path="$WpPath" --status=active --field=name
 } else {
     & wp plugin list --path="$WpPath"
+}
+if ($clientLinks.Count -gt 0) {
+    Write-Host "`nClient sites are linked and were left as they were. To switch one on:"
+    foreach ($link in $clientLinks) {
+        Write-Host ("  wp {0} activate {1} --path={2}" -f $link.Kind, $link.Name, $WpDir)
+    }
 }
 Write-Host "`nSite : $SiteUrl"
 Write-Host "Admin: $SiteUrl/wp-admin/  ($AdminUser)"

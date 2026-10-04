@@ -20,6 +20,14 @@ What it does: installs WordPress into `./wp` (gitignored) → generates `wp-conf
 DB → installs the site → junctions `theme/` and `plugins/*` into `wp/wp-content/` → activates the
 Corex theme + plugins → verifies. It auto-detects the WAMP MySQL client and puts it on `PATH`.
 
+In a client repository it also junctions every client plugin and theme under `sites/` into that
+install — `sites/<client>/<x>-site` and `<x>-theme`, or the older `sites/<client>/plugins/*` and
+`themes/*`. They are linked and **not activated**; the commands to switch each one on are printed
+at the end. A re-run leaves a client plugin or theme in whichever state it was in, and keeps a
+client theme active if it already was. The framework's own plugins are activated by name, so
+nothing else that happens to be in the plugins directory is switched on. `-Multisite` links no
+client site: that install is the fixture the multisite suite asserts against.
+
 Requirements: WP-CLI with the command bundle (`wp core`/`wp db` available), a running WAMP MySQL,
 and the vhost (e.g. `corex.local`) with its docroot pointing at `<repo>/wp` plus a matching
 `127.0.0.1 corex.local` hosts entry. See `DECISIONS.md` #18 and the constitution "Environment Gate".
