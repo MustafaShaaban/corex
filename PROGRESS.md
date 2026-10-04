@@ -73,6 +73,11 @@ On `main` since v0.42.1, and not in a release yet:
   tests do. `GuideExtensionTest` and `AccessControllerTest` delete the subscriber they create, and
   the second no longer borrows the first subscriber the install has — approving its request
   granted that account a real ability.
+- **The integration suite no longer leaves access requests behind** (#223, tests only).
+  `AccessRequestFormTest` and `AccessControllerTest` deleted the subscriber they filed requests as
+  and left the requests, six rows a run, each pointing at a user that no longer existed. Both now
+  delete the rows in `afterEach`, by the requester they created. Measured on the local install: 207
+  rows before the whole suite and 207 after.
 
 **v0.42.1**, a patch release. [`CHANGELOG.md`](CHANGELOG.md) has the full entry; the decisions are
 #224 to #229.
@@ -131,8 +136,12 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - Arabic typography is proved for layout, not for type.
 - Development installs predating spec 091 may hold leaked fixture users. Since #221 the
   suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
-  there are not removed by anything. The Access tests still leave their request rows behind, which
-  point at a deleted user once the test's subscriber is gone.
+  there are not removed by anything. Since #223 the Access tests remove the requests they file;
+  rows an earlier run left, pointing at a deleted user, are not removed by anything either, and
+  nothing in CoreX cleans up a deleted user's access requests.
+- The browser suite still adds to the access-requests table on a development install:
+  `security-access.spec.js` files one request as the administrator per run and never decides it,
+  and `access-request.spec.js` leaves its requester's requests behind as denied rows.
 - **Five integration tests fail on a long-lived development install** (measured 2026-10-04 on
   unmodified `main`; the owner reports the whole suite passing on a throwaway install): one in
   `ProductActivityCoverageTest`, three in `ProductDataPrivacyTest`, one in
