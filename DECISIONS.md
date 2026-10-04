@@ -4409,3 +4409,47 @@ This is the third gate in this repository found not to be gating: the workflow t
 (spec 099), the stacked-PR CI gap that rendered "no checks" identically to "all checks passed"
 (DECISIONS #153), and now a check nothing required. The pattern worth naming: **a gate is not the
 script, it is the script plus the thing that makes failing it matter.**
+
+## #226 — The advisory gate was red on `main` for a month, and said so every week
+
+Date: 2026-09-09 · Spec: 089 · Status: Final
+
+DECISIONS #224 removed the `paths:` filter so the gate would run on every pull request, on the
+argument that an advisory is published by somebody else against a tree that did not move. That
+argument was right, and this is the bill arriving.
+
+The scheduled run on `main` failed on 2026-08-12, 2026-08-19, 2026-08-26, 2026-09-02 and again on
+2026-09-09 against `8c1467c` — five consecutive weeks, the whole time `PROGRESS.md` said
+"Dependency advisories cleared — the gate passes with one bounded exception" and
+`PROJECT-STATUS.md` agreed. Both were true when written. Neither was re-read. **The gate was not
+silent; nobody was listening.** It surfaced only because an unrelated pull request (#202) inherited
+the red — the same way the WordPress 7.1 breakage surfaced in DECISIONS #221, and the same way the
+#224 failure itself surfaced. Third time. The check that reports into a void is not a weaker version
+of a check that blocks; it is a different thing wearing the same name.
+
+One of the nine findings was **critical** — `astro` GHSA-26w7-cxv4-gfx2 in `docs-app`. It sat for
+some part of that month unread.
+
+**Decision: fix what has a fix, bound only what does not.** `astro` 7.1.5 → 7.3.2 (a minor inside
+the existing `^7.1.5`, so the Astro-7 hold noted at the time is not re-litigated), plus `svgo` and
+`colord`. That clears seven of nine, including the critical, and leaves `npm-docs` and `composer`
+completely clean.
+
+The remaining two get bounded exceptions because **no upgrade exists to take** — not because they
+were inconvenient. Every published `extract-zip` is in range (latest 2.0.1), and `adm-zip` 0.6.0 is
+simultaneously the latest release and inside `>=0.5.9 <=0.6.0`. npm's offered "fix" for both is a
+major *downgrade* of `@wordpress/scripts` and `@wordpress/env`, which buys a moderate dev-only
+advisory at the price of a materially older toolchain. That is not a fix, and taking it to make a
+gate green would be the gate managing us.
+
+`GHSA-7pqw-9j4j-h8q3` is the interesting one: a *second* advisory against the same `extract-zip`
+2.0.1 on the same dependency path as the already-excepted `GHSA-jmr9-qjv8-65gv`. An exception is
+written against an advisory ID, not a package, so an existing exception does not cover its own
+sibling — correctly, since each is a separate argument, but it means a package can go on generating
+new red without anything about the tree changing. Its `upstreamTrigger` says the two must be removed
+together, so neither outlives the reasoning that justified it.
+
+The `adm-zip` exception carries a condition rather than only a date: it rests on there being **no
+caller** — there is no `.wp-env.json`, and `plugin-zip` is referenced by no script or workflow. If
+either becomes false the exception has to be re-argued, not renewed. An exception whose premise can
+quietly expire is how a bounded exception becomes a permanent one.
