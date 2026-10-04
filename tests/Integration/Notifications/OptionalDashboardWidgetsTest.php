@@ -43,13 +43,26 @@ function registeredDashboardIds(OptionalDashboardWidgets $widgets): array
     return array_keys($wp_meta_boxes['dashboard']['normal']['core'] ?? []);
 }
 
+/** The site's declared operating state: the mode, and the history of who changed it and when. */
+const COREX_WIDGET_TEST_MODE_OPTIONS = ['corex_operations_mode', 'corex_operations_mode_log'];
+
 beforeEach(function () {
     $administrators = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
     wp_set_current_user((int) ($administrators[0] ?? 0));
 
     $this->widgets = Corex\Boot::app()->container()->make(OptionalDashboardWidgets::class);
     $this->modes   = Corex\Boot::app()->container()->make(OperationsModeStore::class);
-    $this->wasMode = $this->modes->current();
+
+    // Snapshot the raw options, never `current()`. On an install that has declared nothing,
+    // `current()` answers with `wp_get_environment_type()`, and handing that answer back to `set()`
+    // afterwards *declares* it: the earlier version of this file left such a site declared
+    // `production`. And `set()` logs, so even on a declared site every run pushed two rows into a
+    // history capped at twenty, until the log held nothing but this test. The integration suite runs
+    // against a real developer install (see OperationsModeNoOpTest) — snapshot and restore, both.
+    $this->savedModeOptions = [];
+    foreach (COREX_WIDGET_TEST_MODE_OPTIONS as $option) {
+        $this->savedModeOptions[$option] = get_option($option, null);
+    }
 });
 
 afterEach(function () {
@@ -71,7 +84,17 @@ afterEach(function () {
         $wpdb->query("DELETE FROM {$table} WHERE id IN ({$list})");
     }
 
-    $this->modes->set($this->wasMode, get_current_user_id());
+    // Exactly as they were, including "did not exist".
+    foreach ($this->savedModeOptions as $option => $saved) {
+        if ($saved === null) {
+            delete_option($option);
+
+            continue;
+        }
+
+        update_option($option, $saved, false);
+    }
+
     // Leave a front-end screen behind: a lingering admin screen leaks into later tests.
     set_current_screen('front');
     wp_set_current_user(0);

@@ -55,6 +55,15 @@ block theme, not a child of the Corex theme, so it does not inherit a template t
 
 No dependency pull request is being held.
 
+**The integration suite no longer rewrites the operations mode of the install it runs against**
+(branch `fix/integration-suite-leaves-state`, tests only). `OptionalDashboardWidgetsTest` saved
+`OperationsModeStore::current()` and handed it back to `set()`. On an install that had declared
+nothing, that declared it `production`; on a declared one, every run pushed rows into a history
+capped at twenty. It now snapshots and restores `corex_operations_mode` and
+`corex_operations_mode_log` as the Operations tests do. `GuideExtensionTest` and
+`AccessControllerTest` delete the subscriber they create, and the second no longer borrows the
+first subscriber the install has — approving its request granted that account a real ability.
+
 ## Recently landed (v0.42.1)
 
 A patch release. [`CHANGELOG.md`](CHANGELOG.md) has the full entry; the decisions are #224 to #229.
@@ -109,7 +118,14 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.
-- Development installs predating spec 091 may hold leaked fixture users.
+- Development installs predating spec 091 may hold leaked fixture users. Once
+  `fix/integration-suite-leaves-state` lands the suite stops adding `guides-subscriber-*` and
+  `corex-access-requester` accounts; the ones already there are not removed by anything.
+- **Five integration tests fail on a long-lived development install** (measured 2026-10-04 on
+  unmodified `main`; the owner reports the whole suite passing on a throwaway install): one in
+  `ProductActivityCoverageTest`, three in `ProductDataPrivacyTest`, one in
+  `SubmissionsControllerTest`. Three of them expect a count of 1 and found 4, 22 and 23. Not
+  diagnosed further.
 
 No security items.
 
