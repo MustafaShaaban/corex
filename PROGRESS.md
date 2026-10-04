@@ -47,7 +47,7 @@ anybody who can edit posts gets the real site and is told on every page that vis
 preview link shows the real site to somebody without an account; `wp corex mode get|set` reads and
 changes the mode from the command line; and `make:site` gives every new client theme its own
 `templates/coming-soon.html`. `specs/101-coming-soon-mode/tasks.md` records each task and what it
-found (DECISIONS #233).
+found (DECISIONS #234).
 
 What it is waiting on, in order: the pull request leaving draft and being merged; then a release,
 **v0.43.0**, which is the first a client repository can be created from with the mode in it.
@@ -56,24 +56,29 @@ One thing it found that is not its own, raised as a separate task: every WP-CLI 
 "translation loading triggered too early" notice, from command descriptions being translated while
 commands are registered. The new mode command is written the same way.
 
-No dependency pull request is being held.
+**The retention form says which action it ran** (#229, branch `fix/retention-copy-names-the-action`,
+DECISIONS #233). Its confirmation box and its result notice said "trash" for Archive and Anonymize
+as well. The box now asks to confirm the selected action and says anonymizing cannot be undone; the
+prune handler sends the action back with the count, and the notice says archived, moved to trash or
+anonymized. Five integration tests and two unit tests pin it. It closes the item #228 left under
+"Open, and not hidden", and is rebased onto it.
 
-**Submission retention reaches every record again** (branch
-`fix/retention-reselects-handled-submissions`, DECISIONS #232). A run used to be handed the newest
-500 private submissions past the window whatever had been done to them, so once 500 were
-anonymized or archived it re-handled those and never reached the rest. A run now skips what its
-action has nothing left to do for and takes the oldest first. Three decisions come with it: a
-submission is due while it is past the window and not anonymized, so the count on the Submissions
-screen no longer includes anonymized ones; an archived submission stays due and can still be
-anonymized or trashed; an anonymized one is finished and retention does not archive or trash it.
-Six integration tests in `tests/Integration/Retention/` pin it. On the development install the
-30-day selection went from 500 already-anonymized ids to the 7 submissions that still hold their
-data.
+No dependency pull request is being held.
 
 ## Recently landed
 
 On `main` since v0.42.1, and not in a release yet:
 
+- **Submission retention reaches every record again** (#228, DECISIONS #232). A run used to be
+  handed the newest 500 private submissions past the window whatever had been done to them, so
+  once 500 were anonymized or archived it re-handled those and never reached the rest. A run now
+  skips what its action has nothing left to do for and takes the oldest first. Three decisions
+  come with it: a submission is due while it is past the window and not anonymized, so the count
+  on the Submissions screen no longer includes anonymized ones; an archived submission stays due
+  and can still be anonymized or trashed; an anonymized one is finished and retention does not
+  archive or trash it. Six integration tests in `tests/Integration/Retention/` pin it. On the
+  development install the 30-day selection went from 500 already-anonymized ids to the 7
+  submissions that still hold their data.
 - **Spec 102 — a client site the framework can be updated underneath** (#211, DECISIONS #230). The
   framework prescribed `sites/<client>/` and its own checks rejected it. A client repository now
   passes them untouched: one ownership file says which paths are the client's, hygiene, the
@@ -165,13 +170,14 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.
+- **A retention run that was refused looks like one that worked.** Applying retention without
+  ticking the confirmation box comes back as "Confirm the retention action before applying it",
+  drawn as a success state with its tick: `SubmissionsInboxScreen::retentionNotice()` gives every
+  status the `success` tone. Read from the code while fixing the form's copy (DECISIONS #233) and
+  not changed there.
 - Development installs predating spec 091 may hold leaked fixture users. Since #221 the
   suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
   there are not removed by anything.
-- **The retention form says "trash" whichever action ran.** Its confirmation box reads "Confirm
-  moving due submissions to the recoverable trash" and its result notice "N submissions moved to
-  trash", for Archive and Anonymize as well (`SubmissionsInboxScreen`). Found while fixing the
-  selection (DECISIONS #232) and not changed there.
 - **The integration suite still changes the install it runs against**, measured per full run on
   2026-10-04 with #224 applied. `NotificationControllerTest`,
   `NotificationPerformanceTest` and `WpNotificationRepositoryTest` delete every row in the

@@ -74,6 +74,11 @@ All notable changes to Corex are documented here. The format follows
 - Jest's `<rootDir>` ignore patterns silently stopped applying on Windows in a checkout whose own path
   holds a dot-directory, which is every agent session worktree. The ownership-derived patterns are anchored
   in a way that survives it.
+- **The retention form on the Submissions screen said "trash" whichever action ran.** Its confirmation box
+  read "Confirm moving due submissions to the recoverable trash" and its result notice "N submissions moved
+  to trash", for Archive and Anonymize as well — and anonymizing cannot be undone. The box now asks to
+  confirm the selected action and says that anonymizing cannot be undone, and the notice says what the run
+  did: archived, moved to trash, or anonymized (DECISIONS #233).
 
 ### Changed
 
@@ -122,6 +127,10 @@ Read this before taking the release. *(This section is required from this releas
   you installed into `./wp` by hand is no longer switched on by the script. It also leaves a linked client
   theme active instead of switching back to the Corex theme.
 - **Scheduled CI and the documentation deploy no longer run in your repository.**
+- **Four strings in the `corex` text domain are new**, all on the Submissions screen's retention form: the
+  confirmation label, and the result notices for an archive, an anonymization and a run whose link names
+  no action. A site that ships its own translation of that domain shows them in English until they are
+  translated. "N submissions moved to trash" is unchanged and keeps its translation.
 
 ## [0.42.1] — 2026-10-04
 
