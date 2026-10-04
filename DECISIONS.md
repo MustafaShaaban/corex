@@ -4774,3 +4774,86 @@ setting. It passed on its first run and on each run since; it is not required ye
 next. The next release does not exist. It was rehearsed in a scratch repository with tags standing
 in for releases — no conflict, and nothing under `sites/` changed but the baseline record — and it
 is proved for real the first time a client takes the release after this one.
+
+## #231 — A test that counts the install's rows fails once the install has rows
+
+Date: 2026-10-04 · Spec: none (test maintenance, follows #221) · Status: Final for the tests; the retention defect it found is open
+
+Five integration tests failed on a long-lived development install and passed in CI. The integration
+suite boots the real `./wp`, so "the database" is a developer's site. This entry records what each
+failure was, what the tests were doing to that site, and one production defect found on the way.
+
+**The five failures were three assumptions.**
+
+- *A fixed key is unique.* `ProductDataPrivacyTest` and `SubmissionsControllerTest` filter by
+  `flow => 90` and expect a total of 1. Flow 90 is only a number; the install held 23 submissions
+  in it. Each test now gives its submissions a submitter address minted for that test and adds it
+  to the query as a search term. The alternative — deleting every flow-90 submission before the
+  test — was rejected: nothing says flow 90 is not a real form on somebody's site.
+- *A fixture is on the first page.* `ProductActivityCoverageTest` asked for an actor's hundred
+  newest events and looked for fixtures dated 2026-07-10. The export tests record under the same
+  actor id, 7, and had left 131 newer events. The actor and outcome queries are now scoped to the
+  window the fixtures are seeded into, as the area query already was.
+- *A bounded batch reaches the new record.* The retention test backdates a submission, prunes with
+  a 30-day window and expects that submission anonymized. See the defect below.
+
+**The cleanup was the leak.** `ProductDataPrivacyTest` and `SubmissionsControllerTest` deleted
+"whatever is among the newest 500 ids now and was not before". That misses a row backdated past
+the 500th — the retention test's aged submission, left behind on every run once the install held
+that many — and it deletes anything else that arrived meanwhile, which on a shared install
+includes another session's test run. Both now delete what they created: ids they hold, or, where a
+listener creates the post and returns nothing, ids recorded from `wp_insert_post` as this process
+inserts them. `SubmitLifecycleTest`, which cleaned up nothing, does the same.
+
+**An export is four records.** `SubmissionExportService::request()` writes the export, a job row,
+an event on the install's scheduler and an audit event. The test deleted the first. The scheduler
+then ran the job against a missing export and recorded a failure; the audit events are the 131
+above. All four go now.
+
+**The retention test was pruning the developer's site.** `prune('anonymize')` acts on every
+submission older than the window. With the window set to 30 days, each run anonymized whatever the
+install held that was older — 602 submissions there carry `corex_retention_state = anonymized` —
+and a failed expectation skipped the line that restored the option, leaving the install on a 30-day
+window. The test now narrows the retention query to its own two records through `pre_get_posts`
+and restores the raw option in `afterEach`. Narrowing through a hook depends on that query staying
+filterable, so the preview count is asserted to be exactly 1 before anything is pruned: with the
+narrowing removed the test fails there (`500 is identical to 1`) and the prune does not run. That
+was checked by removing it. Calling `applyIds()` with the one id was the alternative; it would have
+stopped testing that the window selects the record.
+
+**Fixture-keyed deletes clean up after earlier runs.** `DataManagementControllerTest` and
+`ProductMutationSecurityTest` delete audit events by a data-source key that exists only in those
+files. The first run on the development install removed 292 such events left by earlier runs.
+
+**The defect: anonymize and archive retention stop making progress at 500 records.**
+`SubmissionRetention::oldIds()` selects the newest `RetentionSettings::MAX_PRUNE` (500) private
+submissions older than the window, whatever the action and whatever was done to them before.
+`trash` removes a record from that set. `anonymize` and `archive` leave it private, so the next
+prune is handed the same records, applies the action to them again, and counts them as removed
+again. Once 500 handled records are newer than the unhandled ones, no later run reaches those. On
+the development install the query returned 500 ids, all 500 already anonymized, while five live
+submissions past the window were never selected. Below 500 the effect is quieter: the count a
+prune reports, and the count the Inbox preview shows, include records already handled.
+
+It is not fixed here. The fix has to decide what the preview counts when it does not yet know the
+action, and whether an anonymized record can still be archived or trashed — product questions —
+and this change is tests only. It is recorded in `PROGRESS.md` under "Open, and not hidden". The
+test that exposed it no longer does, because it no longer runs retention across the install; the
+fix needs its own test, and the cheap one is that a second prune of the same record returns 0.
+
+What was run, on the install the failures were reported from:
+
+| Check | Result |
+|---|---|
+| The three failing files, unmodified, retention test excluded | 4 failed, 7 passed |
+| Production retention query for a 30-day window, read-only | 500 ids, 500 already anonymized |
+| The three files, changed, twice | 12 passed; posts, options, table counts and scheduled events identical before and after |
+| Retention test with the narrowing removed | fails at the preview; install identical before and after |
+| Whole integration suite, changed, twice | 359 passed |
+
+**Not done.** The two Access tests leave eight audit events per run, and `AccessControllerTest`
+leaves the editor role allowed to manage forms; their request rows are being removed on another
+branch (#223), so that cleanup follows it rather than conflicting with it.
+`DataManagementControllerTest` still finds its posts by comparing the newest 500 ids. What else the
+suite still changes — three Notifications files delete every notification on the install — is
+listed in `PROGRESS.md`. Rows earlier runs left on existing installs are not removed.
