@@ -85,11 +85,11 @@ final class RetentionController
     }
 
     /**
-     * @param array<string,int|string> $result What the screen needs besides the status to report the outcome.
+     * @param array<string,int|string> $outcome What the screen needs, besides the status, to report what happened.
      */
-    private function redirect(string $status, array $result = []): void
+    private function redirect(string $status, array $outcome = []): void
     {
-        $args = ['page' => 'corex-submissions', 'corex_status' => $status] + $result;
+        $args = ['page' => 'corex-submissions', 'corex_status' => $status] + $outcome;
 
         wp_safe_redirect(add_query_arg($args, admin_url('admin.php')));
         exit;
