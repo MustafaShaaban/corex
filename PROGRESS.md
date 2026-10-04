@@ -51,7 +51,7 @@ paragraph. One thing found while building 102 shaped the plan: a generated clien
 standalone block theme, not a child of the Corex theme, so it does not inherit a template the
 parent ships.
 
-**The retention form says which action it ran** (branch `fix/retention-copy-names-the-action`,
+**The retention form says which action it ran** (#229, branch `fix/retention-copy-names-the-action`,
 DECISIONS #233). Its confirmation box and its result notice said "trash" for Archive and Anonymize
 as well. The box now asks to confirm the selected action and says anonymizing cannot be undone; the
 prune handler sends the action back with the count, and the notice says archived, moved to trash or
