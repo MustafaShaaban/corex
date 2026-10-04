@@ -458,11 +458,173 @@ async function signIn( page, user, password ) {
 	).toBe( true );
 }
 
+const { execFileSync } = require( 'node:child_process' );
+const fs = require( 'node:fs' );
+const os = require( 'node:os' );
+const nodePath = require( 'node:path' );
+
+/**
+ * Run PHP inside the real WordPress this suite is already testing against.
+ *
+ * For what has no route a browser could reach: the login-hiding precondition in
+ * `security-access.spec.js`, and removing the access requests a spec filed. Returns null when
+ * WP-CLI is unavailable, so a caller can skip or carry on rather than fail on an environment that
+ * cannot support it.
+ *
+ * Goes through a temp file and `eval-file` rather than `eval`: WP-CLI on Windows is a shim that
+ * needs a shell, and the shell then re-parses the PHP and eats its quotes.
+ *
+ * The install is `./wp` unless COREX_WP_PATH names another. It has to be the one COREX_BASE_URL
+ * serves: pointed at a different install, this reads and writes a database the browser never
+ * touches.
+ *
+ * @param {string} php PHP to execute in the loaded WordPress.
+ * @return {string|null} Trimmed stdout, or null if WP-CLI could not run.
+ */
+function wpEval( php ) {
+	const root = nodePath.join( __dirname, '..', '..' );
+	const install = process.env.COREX_WP_PATH || nodePath.join( root, 'wp' );
+	// The process id as well as the clock: spec files run on separate workers, and two of them
+	// asking in the same millisecond would otherwise share a file.
+	const file = nodePath.join(
+		os.tmpdir(),
+		`corex-e2e-${ process.pid }-${ Date.now() }.php`
+	);
+	fs.writeFileSync( file, `<?php\n${ php }\n` );
+	try {
+		return execFileSync(
+			'wp',
+			[ `--path=${ install }`, 'eval-file', file ],
+			{ cwd: root, encoding: 'utf8', shell: true, stdio: 'pipe' }
+		).trim();
+	} catch {
+		return null;
+	} finally {
+		fs.rmSync( file, { force: true } );
+	}
+}
+
+/**
+ * PHP that leaves the access-requests table's name in `$table`.
+ *
+ * Asked of the product's own classes rather than spelled out here, so the prefix and the table
+ * name cannot drift from the ones CoreX writes to.
+ */
+const ACCESS_REQUESTS_TABLE =
+	'global $wpdb; $table = ( new \\Corex\\Database\\Schema\\Migrator() )' +
+	'->fullName( \\Corex\\Config\\Access\\AccessTables::REQUESTS );';
+
+/**
+ * Run PHP that answers with one whole number, and read it.
+ *
+ * @param {string} php PHP that echoes a non-negative integer and nothing else.
+ * @return {number|null} The number, or null when WP-CLI did not run or said anything else.
+ */
+function wpCount( php ) {
+	const answer = wpEval( php );
+
+	return answer !== null && /^\d+$/.test( answer ) ? Number( answer ) : null;
+}
+
+/**
+ * Say so when a spec's access requests could not be removed.
+ *
+ * To stderr, where the list reporter shows it. A cleanup that fails quietly is how this table
+ * came to hold several hundred rows no spec knew it had left. It does not fail the test: the rows
+ * are debris, not a wrong answer, and a machine without WP-CLI can still run these specs.
+ *
+ * @param {number|null} removed What the delete answered.
+ * @return {number|null} The same value.
+ */
+function reportUnremoved( removed ) {
+	if ( removed === null ) {
+		process.stderr.write(
+			'\nThe access requests this spec filed were not removed: WP-CLI did not answer. ' +
+				'They stay in the access-requests table of the install under test.\n'
+		);
+	}
+
+	return removed;
+}
+
+/**
+ * The id of the newest access request, as a mark for `deleteAccessRequestsFiledSince`.
+ *
+ * @return {number|null} The id, 0 for an empty table, or null when WP-CLI did not answer.
+ */
+function latestAccessRequestId() {
+	return wpCount(
+		ACCESS_REQUESTS_TABLE +
+			' echo (int) $wpdb->get_var( "SELECT MAX(id) FROM {$table}" );'
+	);
+}
+
+/**
+ * Delete the access requests with these ids.
+ *
+ * For a spec that is told the id of what it filed. There is no route for this, on purpose: a
+ * decided request is the product's record of the decision. These rows are a test's, on an install
+ * that also holds requests that are not.
+ *
+ * @param {number[]} ids The requests the spec filed.
+ * @return {number|null} How many rows went, or null when WP-CLI did not answer.
+ */
+function deleteAccessRequests( ids ) {
+	const filed = ids.filter( Number.isInteger );
+
+	if ( filed.length === 0 ) {
+		return 0;
+	}
+
+	return reportUnremoved(
+		wpCount(
+			ACCESS_REQUESTS_TABLE +
+				` echo (int) $wpdb->query( "DELETE FROM {$table} WHERE id IN ( ${ filed.join(
+					', '
+				) } )" );`
+		)
+	);
+}
+
+/**
+ * Delete the access requests one user filed after a mark.
+ *
+ * For a spec that files through the browser and is never told an id. Both conditions matter: the
+ * user alone would take requests that account filed before the spec started, and the mark alone
+ * would take whatever another spec file, on another worker, filed in the meantime.
+ *
+ * @param {string}      login   The requester's login name.
+ * @param {number|null} afterId What `latestAccessRequestId()` answered before the spec filed.
+ * @return {number|null} How many rows went, or null when there was no mark or WP-CLI did not answer.
+ */
+function deleteAccessRequestsFiledSince( login, afterId ) {
+	if ( ! Number.isInteger( afterId ) ) {
+		return reportUnremoved( null );
+	}
+
+	// Base64, so no login name can close the PHP string it is carried in.
+	const encodedLogin = Buffer.from( login ).toString( 'base64' );
+
+	return reportUnremoved(
+		wpCount(
+			ACCESS_REQUESTS_TABLE +
+				` $user = get_user_by( 'login', base64_decode( '${ encodedLogin }' ) );` +
+				' echo $user ? (int) $wpdb->query( $wpdb->prepare(' +
+				' "DELETE FROM {$table} WHERE requester_id = %d AND id > %d",' +
+				` $user->ID, ${ afterId } ) ) : 0;`
+		)
+	);
+}
+
 module.exports = {
 	collectConsoleErrors,
+	deleteAccessRequests,
+	deleteAccessRequestsFiledSince,
+	latestAccessRequestId,
 	seedSubmission,
 	signIn,
 	signInAs,
+	wpEval,
 	FLOW_SLUG,
 	COREX_ROUTES,
 	LOGIN_PATHS,

@@ -7,6 +7,10 @@
  *   2. npx playwright install chromium
  *   3. npm run test:e2e
  *
+ * A few specs also reach the install through WP-CLI (`wpEval` in helpers.js), to set up what has
+ * no route and to remove the rows they leave. That acts on `./wp`; set COREX_WP_PATH when
+ * COREX_BASE_URL serves an install somewhere else. Without WP-CLI those steps are skipped.
+ *
  * Kept out of the default `npm test` / CI lanes that lack a browser; wire into CI behind a
  * job that boots WP (wp-env) first.
  */

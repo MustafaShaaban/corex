@@ -5,41 +5,11 @@
  */
 
 const { test, expect } = require( '@playwright/test' );
-const { execFileSync } = require( 'node:child_process' );
-const fs = require( 'node:fs' );
-const os = require( 'node:os' );
-const path = require( 'node:path' );
-const { collectConsoleErrors } = require( './helpers' );
-
-/**
- * Run PHP inside the real WordPress this suite is already testing against.
- *
- * Used only to set up and tear down the login-hiding precondition, which has no REST route an
- * anonymous context could reach. Returns null when WP-CLI is unavailable, so the tests that
- * depend on it can skip rather than fail on an environment that cannot support them.
- *
- * Goes through a temp file and `eval-file` rather than `eval`: WP-CLI on Windows is a shim that
- * needs a shell, and the shell then re-parses the PHP and eats its quotes.
- *
- * @param {string} php PHP to execute in the loaded WordPress.
- * @return {string|null} Trimmed stdout, or null if WP-CLI could not run.
- */
-function wpEval( php ) {
-	const root = path.join( __dirname, '..', '..' );
-	const file = path.join( os.tmpdir(), `corex-e2e-${ Date.now() }.php` );
-	fs.writeFileSync( file, `<?php\n${ php }\n` );
-	try {
-		return execFileSync(
-			'wp',
-			[ `--path=${ path.join( root, 'wp' ) }`, 'eval-file', file ],
-			{ cwd: root, encoding: 'utf8', shell: true, stdio: 'pipe' }
-		).trim();
-	} catch {
-		return null;
-	} finally {
-		fs.rmSync( file, { force: true } );
-	}
-}
+const {
+	collectConsoleErrors,
+	deleteAccessRequests,
+	wpEval,
+} = require( './helpers' );
 
 test( 'renders launch checklist login policy lockouts recovery and activity without console errors', async ( {
 	page,
@@ -147,32 +117,49 @@ test( 'always says where the login is, and warns before hiding the default endpo
 	await expect( page.locator( '.corex-security__warning' ) ).toHaveCount( 0 );
 } );
 
-test( 'creates a live access request through the localized Access REST workflow', async ( {
-	page,
-} ) => {
-	const errors = collectConsoleErrors( page );
-	await page.goto( '/wp-admin/admin.php?page=corex-access&tab=matrix' );
-	await expect(
-		page.getByRole( 'heading', { name: 'CoreX Access & Abilities' } )
-	).toBeVisible();
-	await expect( page.locator( '#corex-access-app' ) ).toBeVisible();
+test.describe( 'the Access REST workflow', () => {
+	// The request below is filed as the shared administrator, an account that also files requests
+	// of its own on a developer's install, so it is removed by its id and nothing wider. Without
+	// this every run left one request this spec never decides: 67 of them on the development
+	// install by 2026-10-04.
+	const filed = [];
 
-	const result = await page.evaluate( async () => {
-		return window.Corex.api.post(
-			`${ window.corexAccess.restUrl }/requests`,
-			{
-				ability: 'corex_manage_forms',
-				reason: 'Playwright request-access workflow evidence.',
-			},
-			{ nonce: window.corexAccess.nonce }
-		);
+	test.afterEach( () => {
+		deleteAccessRequests( filed.splice( 0 ) );
 	} );
 
-	// AccessController wraps its payload under `data` (asserted by AccessControllerTest), and the
-	// shared REST envelope adds its own `data`, so the created request lands at data.data.result.
-	expect( result.envelope.ok ).toBe( true );
-	expect( result.envelope.data.data.result.state ).toBe( 'completed' );
-	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
+	test( 'creates a live access request through the localized Access REST workflow', async ( {
+		page,
+	} ) => {
+		const errors = collectConsoleErrors( page );
+		await page.goto( '/wp-admin/admin.php?page=corex-access&tab=matrix' );
+		await expect(
+			page.getByRole( 'heading', { name: 'CoreX Access & Abilities' } )
+		).toBeVisible();
+		await expect( page.locator( '#corex-access-app' ) ).toBeVisible();
+
+		const result = await page.evaluate( async () => {
+			return window.Corex.api.post(
+				`${ window.corexAccess.restUrl }/requests`,
+				{
+					ability: 'corex_manage_forms',
+					reason: 'Playwright request-access workflow evidence.',
+				},
+				{ nonce: window.corexAccess.nonce }
+			);
+		} );
+
+		// Noted before anything is asserted, so a failure below still leaves `afterEach` an id.
+		filed.push( result.envelope?.data?.data?.result?.affected_ids?.[ 0 ] );
+
+		// AccessController wraps its payload under `data` (asserted by AccessControllerTest), and the
+		// shared REST envelope adds its own `data`, so the created request lands at data.data.result.
+		expect( result.envelope.ok ).toBe( true );
+		expect( result.envelope.data.data.result.state ).toBe( 'completed' );
+		expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual(
+			[]
+		);
+	} );
 } );
 
 test.describe( 'a hidden endpoint is indistinguishable from a page that was never there', () => {

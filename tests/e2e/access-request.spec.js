@@ -8,7 +8,11 @@
  * storage state.
  */
 const { test, expect } = require( '@playwright/test' );
-const { signInAs } = require( './helpers' );
+const {
+	deleteAccessRequestsFiledSince,
+	latestAccessRequestId,
+	signInAs,
+} = require( './helpers' );
 
 const REQUESTER = process.env.COREX_REQUESTER_USER || 'corex-requester';
 const REQUESTER_PASS =
@@ -85,6 +89,26 @@ test.describe( 'Access request', () => {
 	// break in the decision workflow shows up here as well as in its own test.
 	test.beforeEach( async ( { page } ) => {
 		await clearPendingRequests( page );
+	} );
+
+	// The rows themselves, which `clearPendingRequests` cannot remove: it decides a request, and a
+	// decided request is still a row. Each scenario that files one left it behind: 126 on the
+	// development install by 2026-10-04.
+	//
+	// The form never tells the browser an id, so the rows are found by who filed them and when: the
+	// requester's, newer than the newest request that existed before this file filed anything.
+	// `REQUESTER` is a fixture account, and this is the only spec file that files requests as it,
+	// which is what makes that narrow enough. In `afterEach` so that a failed assertion does not
+	// leave the row. The `beforeEach` above stays for a run that died before it got here, and for
+	// a machine with no WP-CLI, where this removes nothing and says so.
+	let newestBefore = null;
+
+	test.beforeAll( () => {
+		newestBefore = latestAccessRequestId();
+	} );
+
+	test.afterEach( () => {
+		deleteAccessRequestsFiledSince( REQUESTER, newestBefore );
 	} );
 
 	test( 'submitting the request keeps the browser in wp-admin and confirms what happened', async ( {
