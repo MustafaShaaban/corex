@@ -39,7 +39,7 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**`fix/dependency-advisories-2026-10` — committed locally, not pushed, no pull request yet.** #203
+**`fix/dependency-advisories-2026-10` — open as PR #212.** #203
 cleared every advisory known on 2026-09-09 and merged on 2026-10-04, by which time the gate on `main`
 was red again with 26 new findings: 18 unbounded in the root npm workspace, 8 in the docs site. This branch takes every patched release that exists — ten packages, one of them
 (`basic-ftp` 5 → 6) through a new override that was proven against its parent — removes the
