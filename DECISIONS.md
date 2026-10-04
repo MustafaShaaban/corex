@@ -4590,7 +4590,7 @@ command line; fixing the three ignore lists is a separate change and is not in t
 
 ## #228 — Two of three browser flakes were one race; the third is a 500 with no name
 
-Date: 2026-10-04 · Spec: none (browser-test helpers and CI) · Status: Open — on `fix/e2e-flaky-helpers`
+Date: 2026-10-04 · Spec: none (browser-test helpers and CI) · Status: Final — merged as #217; the 500 it describes is still open
 
 The browser job is a required check, and it failed three times on diffs that changed no runtime
 code: the nightly on 2026-09-21 (`guides.spec.js`), #210 (`access-request.spec.js`, on a pull
@@ -4648,6 +4648,12 @@ reported `Cannot read properties of undefined (reading 'flows')` — and the bro
 nginx's error and access logs and the php-fpm log into the artifact it uploads on failure. The seed
 is deliberately not retried: three failures across three seconds would have outlasted a retry, and
 one that did not would hide the fault.
+
+**The log collection did not prove itself, so it was made to.** On #217's own run the step copied
+12,148 access-log lines, 10 php-fpm lines and an nginx error log that was empty. An empty file says
+nothing about where a PHP message would have gone. The follow-up sets the pool's `error_log` to
+`/var/log/corex-php-error.log`, sends one request through php-fpm that writes a known line, and
+fails the job if that line is not in the file. A green browser job now means the route works.
 
 Not re-examined: `helpers.js` blames the failures of 2026-09-03 and 2026-09-04 on the login address
 moving, and `ci.yml` blames one on lockout. Their artifacts expired, so whether either was this
