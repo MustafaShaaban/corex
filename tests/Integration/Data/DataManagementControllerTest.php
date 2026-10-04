@@ -31,6 +31,7 @@ use Corex\Data\DataWriteAdapter;
 use Corex\Database\Schema\Migrator;
 use Corex\Operations\OperationResult;
 use Corex\Tests\Support\CreatedPosts;
+use Corex\Tests\Support\WatchedTransients;
 
 it('provides the consolidated Data management REST boundary', function () {
     expect(class_exists(Corex\Config\Data\DataManagementController::class))->toBeTrue()
@@ -62,6 +63,9 @@ beforeEach(function () {
         WpDataExportStore::POST_TYPE,
         WpMigrationRunStore::POST_TYPE,
     );
+    // A migration preview is kept in a transient until it is applied, and these tests preview
+    // without applying.
+    $this->transients = WatchedTransients::watch('corex_migration_preview_');
 
     $adapter = new class implements DataWriteAdapter {
         public array $records = [
@@ -120,6 +124,7 @@ afterEach(function () {
         $wpdb->delete($activity, ['target_type' => 'data_import', 'target_id' => (string) $id]);
     }
     $this->runs->delete();
+    $this->transients->restore();
 
     // So is an applied mutation, against the source. `rest-contacts` exists only in this file, so
     // every event against it is one of these tests' — including any an earlier run left behind.

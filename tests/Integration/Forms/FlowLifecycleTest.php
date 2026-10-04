@@ -16,7 +16,9 @@ use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Studio\EmailTemplateRepository;
 use Corex\Email\Studio\EmailTemplateVersion;
 use Corex\Email\Studio\WpEmailStudioStore;
+use Corex\Tests\Support\CreatedPosts;
 use Corex\Tests\Support\NotificationRows;
+use Corex\Tests\Support\WatchedTransients;
 
 function lifecycleFlowRequest(string $method, string $route, array $payload = []): WP_REST_Request
 {
@@ -37,41 +39,19 @@ beforeEach(function () {
     $this->emailStore->registerPostType();
     $this->previousAppEnvironment = get_option('corex_app_env', null);
     update_option('corex_app_env', 'development');
-    $this->lifecycleBaseline = get_posts([
-        'post_type' => [WpFlowStore::POST_TYPE, 'corex_submission'],
-        'post_status' => 'any',
-        'posts_per_page' => 500,
-        'fields' => 'ids',
-    ]);
-    $this->emailBaseline = get_posts([
-        'post_type' => WpEmailStudioStore::POST_TYPE,
-        'post_status' => 'any',
-        'posts_per_page' => 500,
-        'fields' => 'ids',
-    ]);
+    // The flow, the submission and the Email Studio posts this test creates, remembered as they
+    // are inserted. This replaced comparing the newest 500 ids before and after, which deleted
+    // whatever another process created in the meantime.
+    $this->posts = CreatedPosts::watch(WpFlowStore::POST_TYPE, 'corex_submission', WpEmailStudioStore::POST_TYPE);
+    // The submission goes through the rate limiter, which counts it in a transient.
+    $this->transients = WatchedTransients::watch('corex_throttle_');
     $administrators = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
     wp_set_current_user((int) ($administrators[0] ?? 0));
 });
 
 afterEach(function () {
-    $ids = get_posts([
-        'post_type' => [WpFlowStore::POST_TYPE, 'corex_submission'],
-        'post_status' => 'any',
-        'posts_per_page' => 500,
-        'fields' => 'ids',
-    ]);
-    foreach (array_diff($ids, $this->lifecycleBaseline) as $id) {
-        wp_delete_post((int) $id, true);
-    }
-    $emailIds = get_posts([
-        'post_type' => WpEmailStudioStore::POST_TYPE,
-        'post_status' => 'any',
-        'posts_per_page' => 500,
-        'fields' => 'ids',
-    ]);
-    foreach (array_diff($emailIds, $this->emailBaseline) as $id) {
-        wp_delete_post((int) $id, true);
-    }
+    $this->posts->delete();
+    $this->transients->restore();
 
     // A submission notifies whoever manages submissions, under a key made from the flow's slug.
     // `lifecycle-flow` exists only in this file, so the notification about it is this file's.
