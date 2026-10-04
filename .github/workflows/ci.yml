@@ -362,8 +362,12 @@ jobs:
   # the site tracked, and the unmodified-framework check — which must pass, and must then fail on
   # one changed byte. It runs against the generator's real output rather than a fixture, because
   # the generator is the thing that changes.
+  #
+  # Confined to the framework's repository on every event, not only the scheduled one. This is the
+  # framework testing its own generator. In a client repository it would generate a second site
+  # beside the real one, recording a different baseline, and the check would rightly refuse the pair.
   client-site-layout:
-    if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
+    if: github.repository == 'MustafaShaaban/corex'
     name: A generated client site passes every root check
     runs-on: ubuntu-latest
     env:

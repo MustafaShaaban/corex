@@ -384,10 +384,16 @@ describe( 'CI that is the framework’s alone', () => {
 			} ) );
 	};
 
+	// A job confined to the framework's repository outright satisfies the weaker schedule guard
+	// too, so either condition is accepted wherever the schedule guard is asked for.
 	const jobsWithout = ( guard, selected ) =>
 		selected.flatMap( ( { file, source } ) =>
 			jobsOf( source )
-				.filter( ( job ) => ! job.body.includes( `if: ${ guard }` ) )
+				.filter(
+					( job ) =>
+						! job.body.includes( `if: ${ guard }` ) &&
+						! job.body.includes( `if: ${ repositoryGuard }` )
+				)
 				.map( ( job ) => `${ file }: ${ job.name }` )
 		);
 
@@ -418,5 +424,17 @@ describe( 'CI that is the framework’s alone', () => {
 
 	it( 'deploys the documentation from the framework’s repository only', () => {
 		expect( jobsWithout( repositoryGuard, deployingPages ) ).toEqual( [] );
+	} );
+
+	it( 'generates its test client site in the framework’s repository only', () => {
+		// The job that checks a generated site is the framework testing its own generator. In a
+		// client repository it would generate a second site beside the real one, recording a
+		// different baseline, and the unmodified-framework check would rightly refuse the pair.
+		const ci = workflows.find( ( { file } ) => file === 'ci.yml' );
+		const job = jobsOf( ci.source ).find(
+			( { name } ) => name === 'client-site-layout'
+		);
+
+		expect( job.body ).toContain( `if: ${ repositoryGuard }` );
 	} );
 } );
