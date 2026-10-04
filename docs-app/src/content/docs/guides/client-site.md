@@ -20,7 +20,8 @@ loads it):
 - a **site plugin** `sites/acme/acme-site/` — app/business code under the `AcmeSite\` namespace (a service
   provider + `Models/Services/Controllers/Api/Blocks/Options`).
 - a **site theme** `sites/acme/acme-theme/` — presentation only (a valid block theme: `style.css`, `theme.json`,
-  `templates/`, `parts/`).
+  `templates/`, `parts/`). Its `templates/coming-soon.html` is the page visitors see while the site is in
+  [Coming soon mode](/guides/coming-soon/): the client's own from the first day, and where a launch design goes.
 - **governance** at the site root: `AGENTS.md`, `CLAUDE.md`, `README.md`, `PROGRESS.md`, `DECISIONS.md`, a
   `.gitignore`, and `specs/` + `docs/` scaffolding.
 - **what lets the site take CoreX updates**: `corex-baseline.json` (the framework release and commit the

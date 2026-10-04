@@ -108,6 +108,12 @@ it('reads the query cap where the limit is applied after a site switch', functio
 });
 
 it('recomputes the asset base URL through its provider registration after a site switch', function () {
+    // Stubbed rather than left undefined. AssetsServiceProvider asks `function_exists()` before
+    // calling it, and Brain Monkey defines a function for the whole process the first time any
+    // test stubs it — so whether it "exists" here used to depend on which tests ran earlier.
+    // spec 101's ModeCommandTest sorts before this file and stubs it, which is how that surfaced.
+    Functions\when('wp_get_environment_type')->justReturn('production');
+
     if (! defined('COREX_CORE_PATH')) {
         define('COREX_CORE_PATH', dirname(__DIR__, 3) . '/plugins/corex-core/');
     }

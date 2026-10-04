@@ -29,7 +29,7 @@ the same reason — so the next such gap is found by a reader, not by a customer
 | Module | Status | Notes |
 |---|---|---|
 | `corex-core` | **Stable** | Container (PSR-11), layered config (`.env` → options → defaults), routing, middleware, security, cache, jobs, notifications, mail seams, admin shell. |
-| `corex-config` | **Stable** | The admin product: settings, data models, submissions inbox, access, operations, notifications, insights, blog tools. |
+| `corex-config` | **Stable** | The admin product: settings, data models, submissions inbox, access, operations, notifications, insights, blog tools. Operations has five modes; Coming soon serves a launch page the theme owns, with a preview link for people without an account (spec 101). |
 | `corex-forms` | **Stable** | Schema, validation, flow builder, submission pipeline, routing, delivery. File uploads closed in spec 081. |
 | `corex-blocks` | **Stable** | Server-rendered blocks with the shared provider/renderer split. |
 | `theme/` | **Stable** | FSE block theme. Presentation only — deactivating it breaks presentation, never data. |

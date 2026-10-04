@@ -171,6 +171,25 @@ describe( 'Operations & Security client state', () => {
 		} );
 	} );
 
+	it( 'keeps every mode the server can report, Coming soon included', () => {
+		// The list exists to keep a reported mode in range; a mode missing from it is silently
+		// shown as staging, which for a site in Coming soon would be a false statement.
+		for ( const mode of [
+			'development',
+			'staging',
+			'production',
+			'maintenance',
+			'coming-soon',
+		] ) {
+			const state = securityReducer( initialSecurityState(), {
+				type: 'loaded',
+				payload: { mode },
+			} );
+
+			expect( state.mode ).toBe( mode );
+		}
+	} );
+
 	it( 'tracks lockouts, recovery result, activity, and recoverable errors', () => {
 		let state = securityReducer( initialSecurityState(), {
 			type: 'loaded',

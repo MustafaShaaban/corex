@@ -1,7 +1,7 @@
 /**
  * The operations-mode form's progressive disclosure (spec 077, FR-006/FR-008).
  *
- * The server renders all four mode blocks with three hidden and their inputs disabled. This makes
+ * The server renders every mode's block with all but one hidden and their inputs disabled. This makes
  * the swap immediate when the operator changes the selection, so choosing Production reveals the
  * typed confirmation without a round trip.
  *

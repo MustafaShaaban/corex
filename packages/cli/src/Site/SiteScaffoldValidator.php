@@ -209,7 +209,10 @@ final class SiteScaffoldValidator
 
             $contents = (string) file_get_contents($file->getPathname());
 
-            if (str_contains($contents, '{{') || str_contains($contents, '}}')) {
+            // The renderer's own definition of a placeholder (StubRenderer): two braces, a name,
+            // two braces. Any `{{` or `}}` at all was the rule until spec 101, and a block with an
+            // object attribute ends its comment in `}}` — so no template with a real layout passed.
+            if (preg_match('/\{\{\s*[\w.]+\s*\}\}/', $contents) === 1) {
                 $issues[] = 'unresolved-placeholder:' . str_replace('\\', '/', substr($file->getPathname(), strlen($siteDir) + 1));
             }
         }

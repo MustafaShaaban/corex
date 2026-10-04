@@ -15,9 +15,13 @@ defined('ABSPATH') || exit;
  * state (persisted by {@see OperationsModeStore}) — distinct from `wp_get_environment_type()`, which is
  * the default when no mode has been declared. This model owns the truthful metadata for each mode:
  * label, tone, description, the warnings the mode implies, whether changing to it needs confirmation
- * (production and maintenance do), and whether it changes public behaviour (only maintenance does).
- * WordPress-free, so it is unit-testable. It NEVER changes site behaviour itself — the boundary does,
- * safely and reversibly.
+ * (production, maintenance and coming soon do), and whether it changes public behaviour (maintenance
+ * and coming soon do). WordPress-free, so it is unit-testable. It NEVER changes site behaviour itself
+ * — the boundary does, safely and reversibly.
+ *
+ * Coming soon (spec 101) is the fifth mode. Spec 063 named it and spec 065 shipped without it; what
+ * each of the two closed modes does to a visitor is {@see MaintenanceGuard} and
+ * {@see ComingSoonGuard}, and they are deliberately not the same thing.
  */
 final class OperationsMode
 {
@@ -25,6 +29,7 @@ final class OperationsMode
     public const STAGING     = 'staging';
     public const PRODUCTION  = 'production';
     public const MAINTENANCE = 'maintenance';
+    public const COMING_SOON = 'coming-soon';
 
     public const TONE_INFO    = 'info';
     public const TONE_WARNING = 'warning';
@@ -38,7 +43,7 @@ final class OperationsMode
      */
     public function all(): array
     {
-        return [self::DEVELOPMENT, self::STAGING, self::PRODUCTION, self::MAINTENANCE];
+        return [self::DEVELOPMENT, self::STAGING, self::PRODUCTION, self::MAINTENANCE, self::COMING_SOON];
     }
 
     public function isValid(string $mode): bool
@@ -55,16 +60,19 @@ final class OperationsMode
         return $this->isValid($mode) ? $mode : self::PRODUCTION;
     }
 
-    /** Changing to production or maintenance requires an explicit confirmation step. */
+    /** Changing to production, maintenance or coming soon requires an explicit confirmation step. */
     public function requiresConfirmation(string $mode): bool
     {
-        return in_array($mode, [self::PRODUCTION, self::MAINTENANCE], true);
+        return in_array($mode, [self::PRODUCTION, self::MAINTENANCE, self::COMING_SOON], true);
     }
 
-    /** Only maintenance changes public behaviour (a maintenance notice for anonymous visitors). */
+    /**
+     * Maintenance and coming soon change public behaviour: a 503 notice in one, the coming-soon
+     * page and a redirect to it in the other.
+     */
     public function affectsPublic(string $mode): bool
     {
-        return $mode === self::MAINTENANCE;
+        return in_array($mode, [self::MAINTENANCE, self::COMING_SOON], true);
     }
 
     /**
@@ -90,6 +98,12 @@ final class OperationsMode
                 'label'  => __('Maintenance', 'corex'),
                 'tone'   => self::TONE_DANGER,
                 'detail' => __('Visitors see a maintenance notice; signed-in administrators keep full access.', 'corex'),
+            ],
+            self::COMING_SOON => [
+                'mode'   => self::COMING_SOON,
+                'label'  => __('Coming soon', 'corex'),
+                'tone'   => self::TONE_WARNING,
+                'detail' => __('Visitors see the coming-soon page; anyone signed in who can edit posts sees the real site.', 'corex'),
             ],
             default => [
                 'mode'   => self::PRODUCTION,
@@ -119,6 +133,10 @@ final class OperationsMode
             self::MAINTENANCE => [
                 __('The public site shows a maintenance notice. Switch back to production to restore it.', 'corex'),
                 __('You keep full admin access while signed in — you cannot lock yourself out.', 'corex'),
+            ],
+            self::COMING_SOON => [
+                __('The public site shows the coming-soon page, and every other address is redirected to it. Switch to production to open the site.', 'corex'),
+                __('Published content can still be read through the REST API. Keep anything that must stay private in draft.', 'corex'),
             ],
             default => [
                 __('Changes take effect for real visitors. Review dangerous actions before applying them.', 'corex'),

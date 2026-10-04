@@ -161,6 +161,7 @@ export default defineConfig( {
 							slug: 'guides/data',
 						},
 						{ label: 'Security Center', slug: 'guides/security' },
+						{ label: 'Coming soon mode', slug: 'guides/coming-soon' },
 						{ label: 'REST resources', slug: 'guides/rest' },
 						{
 							label: 'Headless WordPress',
