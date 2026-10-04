@@ -40,7 +40,7 @@ it('accepts either kind of path separator, and a trailing one', function () {
 });
 
 it('reads a relative site directory against the directory the command ran in', function (string $given) {
-    // `wp corex make:site Acme --path=sites/acme` is how the documentation writes it.
+    // `wp corex make:site Acme --dir=sites/acme` is how the documentation writes it.
     $repository = resolverFor('/work/project')->for($given, '/work/project');
 
     expect($repository->root)->toBe('/work/project');

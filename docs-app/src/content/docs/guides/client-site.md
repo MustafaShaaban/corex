@@ -10,10 +10,10 @@ governance files a team and AI agents need.
 ## Generate a site
 
 ```bash
-wp corex make:site Acme --path=sites/acme
+wp corex make:site Acme --dir=sites/acme
 ```
 
-This creates, **under the site root** (`--path`, default the current directory + the slug — e.g. `sites/acme/`),
+This creates, **under the site root** (`--dir`, default the current directory + the slug — e.g. `sites/acme/`),
 the client plugin + theme as **one client unit** (it is not a WordPress install — the local WordPress in `./wp`
 loads it):
 
@@ -50,7 +50,7 @@ framework folders such as `plugins/corex-*`, `addons/corex-*`, `packages/`, or `
 | `--minimal` | force the lean scaffold (no example) — same as the default; documents intent |
 | `--plugin-only` / `--theme-only` | generate just one side |
 | `--force` | regenerate (otherwise an existing site is skipped) |
-| `--path=<dir>` | the site root |
+| `--dir=<dir>` | the site root. Not `--path`: WP-CLI takes that for itself, as the WordPress install |
 
 ### `--starter` — a runnable example to learn from and delete
 

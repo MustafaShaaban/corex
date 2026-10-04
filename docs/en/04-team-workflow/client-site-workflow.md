@@ -27,7 +27,7 @@ sites/acme/
   specs/  docs/
 ```
 
-> Run it with `--path=sites/acme` so the client plugin/theme land directly under `sites/acme/` as `acme-site/`
+> Run it with `--dir=sites/acme` so the client plugin/theme land directly under `sites/acme/` as `acme-site/`
 > and `acme-theme/` (the flat layout above). **Backward compatibility:** sites generated before this layout used a
 > nested `plugins/` + `themes/` structure; those keep working as-is — only newly generated sites use the flat
 > layout, and the shared-host `dist` builder packages either shape.

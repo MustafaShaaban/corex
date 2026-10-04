@@ -52,7 +52,7 @@ final class DeploymentReadinessCheck
             self::profile([
                 'name' => 'client-site',
                 'packageShape' => 'Generated client plugin/theme repository consuming Corex as framework source or release package.',
-                'buildCommands' => ['wp corex make:site Acme --path=dist/acme', 'wp corex compliance:check'],
+                'buildCommands' => ['wp corex make:site Acme --dir=sites/acme', 'wp corex compliance:check'],
                 'dependencies' => ['Corex release package', 'PHP 8.3+', 'WordPress 7.0+'],
                 'secrets' => ['client database credentials', 'client mail credentials', 'WordPress auth salts'],
             ]),

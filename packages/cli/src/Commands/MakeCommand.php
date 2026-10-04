@@ -168,8 +168,13 @@ final class MakeCommand
     }
 
     /**
-     * Scaffold a client site (plugin + theme + governance) under `--path` (default: the
+     * Scaffold a client site (plugin + theme + governance) under `--dir` (default: the
      * current directory + the site slug). Flags: --plugin-only / --theme-only / --force.
+     *
+     * The site directory is `--dir`, not `--path`. It was read from `--path` until spec 102, and
+     * documented that way everywhere, and it never arrived: `--path` is a WP-CLI global, taken as
+     * the WordPress install before any command sees its arguments. So the documented form did
+     * not generate a site somewhere unexpected — it failed to find WordPress at all.
      *
      * @param array<string,mixed> $assoc
      */
@@ -181,7 +186,7 @@ final class MakeCommand
             return;
         }
 
-        $output = isset($assoc['path']) ? (string) $assoc['path'] : getcwd() . '/' . sanitize_title($name);
+        $output = isset($assoc['dir']) ? (string) $assoc['dir'] : getcwd() . '/' . sanitize_title($name);
 
         $options = [
             'force'       => (bool) ($assoc['force'] ?? false),

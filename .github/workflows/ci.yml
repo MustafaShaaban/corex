@@ -391,13 +391,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/provision-wordpress
 
-      # Run from inside `sites/`, so the site lands at `sites/acme`. The site directory cannot be
-      # given as `--path`: WP-CLI takes that option for itself, as the WordPress install.
+      # Exactly as the documentation writes it: from the repository root, with the site directory
+      # in `--dir`. It used to be documented as `--path=sites/acme`, which never ran — WP-CLI takes
+      # `--path` for itself, as the WordPress install, so the site directory never arrived and
+      # WordPress was not found. Here `--path` is used for what WP-CLI means by it.
       - name: Generate a starter client site
         run: |
           set -euo pipefail
-          mkdir -p sites
-          ( cd sites && wp corex make:site Acme --starter --path="$GITHUB_WORKSPACE/wp" )
+          wp corex make:site Acme --starter --dir=sites/acme --path="$GITHUB_WORKSPACE/wp"
           test -f sites/acme/corex-baseline.json
           test -f sites/acme/UPDATING-COREX.md
           test -f .github/workflows/site-acme.yml
