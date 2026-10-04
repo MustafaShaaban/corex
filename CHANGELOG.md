@@ -8,6 +8,29 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **Coming soon is an operations mode** (spec 101). Spec 063 named it and spec 065 shipped without it;
+  Maintenance mode could not stand in for it, because a 503 held for weeks tells a search engine the
+  site is failing, and its page is CoreX's and not the client's.
+  - While the mode is on, a signed-out visitor gets the coming-soon page at the home URL with a 200,
+    and a temporary redirect to it from every other front-end address. Anybody signed in who can edit
+    posts gets the real site. The admin, the login page, the REST API, AJAX and cron are never
+    intercepted; `robots.txt` and the favicon are served normally; the sitemap lists the home URL only.
+  - The page is a block template named `coming-soon`. CoreX registers a default that applies under
+    any block theme, a theme's own `templates/coming-soon.html` replaces it, and a theme with no
+    block templates gets a self-contained page.
+  - A notice bar on every front-end page tells somebody served the real site that visitors are not,
+    with a link to the page as a visitor sees it (`?corex_visitor_view=1`). In the admin it is a
+    toolbar node.
+  - **A preview link** shows the real site to somebody without an account: created, regenerated and
+    revoked on Operations & Security, shown once, good for 14 days per browser, and removed when the
+    site leaves the mode. Only a keyed hash is stored, and each action is in the history.
+  - `wp corex mode get` and `wp corex mode set <mode> [--acknowledge] [--phrase=PRODUCTION]`, held to
+    the same confirmations as the screen.
+  - `wp corex make:site` generates `templates/coming-soon.html` in every client theme.
+  - For a theme: the action `corex_coming_soon_enqueue_assets` and the body class `corex-coming-soon`,
+    both only on that page. For client code: the filters `corex_coming_soon_bypass` and
+    `corex_coming_soon_is_home`.
+  - Documentation: *Coming soon mode*, in English and Arabic.
 - **A client site the framework can be updated underneath** (spec 102). The framework tells a team to put
   a client site under `sites/<client>/`, and its own checks rejected exactly that. A client repository now
   passes them untouched, and can prove its framework files are unmodified.
@@ -27,6 +50,14 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The mode form could apply a mode other than the one on screen.** After a submission came back for
+  a missing confirmation, the form showed the proposed mode and its confirmation while the select
+  underneath still held the site's current mode; a script moved it on load. Submitted before that
+  script ran, or with no script, it applied the wrong mode. The proposed mode is now selected in the
+  markup.
+- The scaffold readiness check called any `{{` or `}}` in a generated file an unresolved placeholder,
+  so no generated block template with a nested attribute could pass. It now uses the renderer's own
+  definition of a placeholder.
 - **Submission retention stopped reaching records once 500 had been anonymized or archived.** Each run
   was handed the newest 500 private submissions older than the window, whatever had already been done to
   them. Anonymizing and archiving leave a submission private, so the next run got the same 500, applied
@@ -46,6 +77,9 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- On Operations & Security, the overview row "Maintenance: Off" is now "Public site", with three
+  answers — open to visitors, the maintenance page, the coming-soon page — and the history is headed
+  "Mode and preview link history".
 - Scheduled CI runs and the documentation deploy run in the framework's repository only. A client
   repository inherits the workflows and no longer runs them. Pull-request and push runs are unchanged.
 
@@ -57,6 +91,19 @@ Read this before taking the release. *(This section is required from this releas
 
 - **No front-end or admin runtime behaviour changes from spec 102.** Everything it adds is tooling, the
   site generator, CI and documentation.
+- **Coming soon mode changes nothing until somebody selects it.** A site that never enters the mode
+  serves exactly what it served before.
+- **`OperationsMode::all()` returns five values, not four.** Client code that enumerates the modes, or
+  matches on them without a default, now meets `coming-soon`.
+- **Rows in the `corex_operations_mode_log` option can be events.** A preview-link event is a row with
+  an `event` key and no `from` or `to`. `OperationsModeStore::history()` still returns mode changes
+  only; code that reads the option directly has to skip rows without `to`.
+- **`wp corex make:site` writes one more file**, `templates/coming-soon.html`, in a new client theme.
+  An existing client theme is not touched: it serves CoreX's default page until it adds that file.
+- **Names CoreX now uses on the front end**: the query arguments `corex_preview` and
+  `corex_visitor_view`, the cookie `corex_preview`, and the option `corex_preview_access`.
+- **`OperationsModeController` and `OperationsSecurityScreen` take different constructor arguments.**
+  Both are resolved by the container; only code that constructs them by hand is affected.
 - **Submission retention selects different records.** On a site that has anonymized or archived
   submissions, the "currently due" count on the Submissions screen drops by the number already
   anonymized, and the next Anonymize or Move to trash run acts on submissions earlier runs never reached.

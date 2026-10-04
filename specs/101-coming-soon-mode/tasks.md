@@ -454,31 +454,72 @@ Operations screen.
 
 ## Phase 8 — Documentation, release notes and the browser project
 
-- [ ] **T056** `tests/e2e/playwright.config.js` — a second project that depends on the first and
-      matches only the coming-soon spec; the first ignores it.
-- [ ] **T057** `tests/e2e/coming-soon.spec.js` — signed out: home is 200 with the page; a published
-      page, a post and an address that does not exist each answer 302 to home with none of their
-      content; `robots.txt` is served; the sitemap lists one URL; a feed redirects. Restores the
-      previous mode whatever happens. (SC-002)
-- [ ] **T058** Same file — an administrator and an editor each reach every address and see the bar,
-      with the Operations link for the administrator only; a subscriber is redirected. (SC-003)
-- [ ] **T059** Same file — the preview link: the real site, the banner, the secret gone from the
-      address bar; then regenerated, revoked, and the mode left, each ending access at the next
-      request. (SC-004)
-- [ ] **T060** Same file — the page, the bar and the banner in LTR and RTL, light and dark, at
-      mobile and desktop widths. (SC-007, FR-021)
-- [ ] **T061** `docs/en/03-operations/coming-soon.md` — the mode and who passes, the preview link,
-      the command, the template name and how a theme overrides it, the asset action, the note on
-      purging a page cache, and the REST limitation. (FR-023)
-- [ ] **T062** `docs/ar/03-operations/coming-soon.md` — translated, not a placeholder. (FR-023)
-- [ ] **T063** `docs/en/03-operations/operations-and-security.md` — the mode in the table of modes,
-      linking the new page.
-- [ ] **T064** `docs-app`: `guides/coming-soon.md` and its sidebar entry; `guides/client-site.md`
-      names the generated template.
-- [ ] **T065** `CHANGELOG.md` — the entries, and under **Client impact**: a new mode that changes
-      nothing until selected; `make:site` generates one more file; `OperationsMode::all()` returns
-      five values, for any client code that enumerates them.
-- [ ] **T066** Build the docs site and run the link check as a pass, not a skip. Regenerate the
-      token inventory.
-- [ ] **T067** `PROGRESS.md`, `DECISIONS.md`, `PROJECT-STATUS.md` and its generated copy.
-- [ ] **T068** Guard Gate — `docs-guard` on every page; the full Pest, Jest, lint and browser runs.
+- [x] **T056** `tests/e2e/playwright.config.js` — a second project, `coming-soon`, that depends on
+      the first and matches only the coming-soon spec; the first ignores it.
+- [x] **T057** `tests/e2e/coming-soon.spec.js` — signed out: home is 200 with the page, and still is
+      with a campaign tag; a published post, a published page, an address that does not exist, a
+      feed and a search each answer 302 to home with an empty body and a no-cache header;
+      `robots.txt` is served; the sitemap lists one URL. Restores the previous mode whatever
+      happens. (SC-002)
+- [x] **T058** Same file — an administrator reaches every address and sees the bar with the
+      Operations link; an editor sees it without; a subscriber ends at the coming-soon page. The
+      visitor view has no toolbar, no bar and no signed-in mark. (SC-003)
+- [x] **T059** Same file — the preview link: shown once and never on the screen again; opened, the
+      real site, the banner, the secret gone from the address bar; the cookie `HttpOnly`,
+      `SameSite=Lax`, fourteen days, and not the link; no way into the admin; then regenerated,
+      revoked, and the mode left and returned to, each ending access at the next request; and each
+      action in the history without the link. (SC-004)
+- [x] **T060** Same file — the page, the notice and the banner in LTR and RTL, light and dark, at
+      375px and 1280px: nothing scrolls sideways, the bar stays inside the viewport, its text and
+      links are measured at 4.5 to 1 or better against its background, its links are 24px or
+      taller, and its accent is on the start edge in either direction. (SC-007, FR-021)
+
+      **The spec found a defect on its first run that no other suite could.** After the mode form
+      came back for a missing acknowledgement it showed Coming soon and its checkbox, while the
+      `<select>` underneath still held the mode the site was in; a script moved it on load.
+      Ticked and submitted before that script ran — or with no script, the path the screen
+      documents as working — it applied the wrong mode. In the test it tried to launch the site.
+      The proposed mode is now selected in the markup itself, with an integration test, and the
+      defect predates this spec: it is the no-script path of the mode form as spec 077 left it.
+
+      Run here against this worktree's install on PHP's built-in server: 8 of 8. The existing
+      `operations-security.spec.js` was re-run for the form change: 15 of 15, once the config
+      plugin's scripts were built, which this worktree had never done. The rest of the browser
+      suite needs the block editor and the seeded fixtures and is CI's to run.
+
+      Two fixture users are seeded in CI for it — an editor and a subscriber of its own, since
+      login protection counts attempts per address and a shared user is how other specs came to
+      fail for each other.
+- [x] **T061** `docs/en/03-operations/coming-soon.md` — what each request gets and in what order;
+      turning it on and off, from the screen and the command line; the bar and the visitor view;
+      the preview link, and what is and is not stored; the template and how a theme replaces it;
+      the asset action and body class; the two filters; search engines; and the two limits — it
+      is not a confidentiality control, and a page cache has to be purged. (FR-023)
+- [x] **T062** `docs/ar/03-operations/coming-soon.md` — translated in full. Commands, file names,
+      hooks and paths stay in English, as the translation memory requires. (FR-023)
+
+      The Arabic `operations-and-security.md` beside it is still the translation placeholder it
+      was before this spec. This page links to it; translating it is not this spec's.
+- [x] **T063** `docs/en/03-operations/operations-and-security.md` — the mode in the table of modes,
+      a short section on what it does, and a link to the new page.
+- [x] **T064** `docs-app`: `guides/coming-soon.md` and its sidebar entry; `guides/client-site.md`
+      names the generated template. `docs/en/04-team-workflow/client-site-workflow.md` names it
+      too, where it lists a client theme's override points.
+- [x] **T065** `CHANGELOG.md` — the feature, two fixes, one change to the screen's wording, and
+      under **Client impact**: the mode changes nothing until selected; `OperationsMode::all()`
+      returns five values; rows in the mode log can be events; `make:site` writes one more file
+      and leaves existing themes alone; the names CoreX now uses on the front end; and two
+      constructors that changed.
+- [x] **T066** The docs site built with the class reference generated, as the Docs workflow does:
+      996 pages. `tests/docs-links.test.js` then ran against that build and passed — as a pass,
+      not the skip it reports when nothing is built. Token inventory regenerated.
+- [x] **T067** `PROGRESS.md` (the in-flight paragraph replaced, not appended to), `DECISIONS.md`
+      #233, `PROJECT-STATUS.md` and its generated copy.
+- [x] **T068** Guard Gate — `docs-guard` on each page: every command, flag, hook, filter, option,
+      class name and path in the guides was checked against the code or the command's own help,
+      and the ordered list of rules was corrected to the decision's actual ten after its first
+      draft left two out. Pest unit 2030, integration 463; Jest 530 and 476, none skipped;
+      `lint:js` and `lint:css` clean; the coming-soon browser project 8 of 8 locally.
+
+      Not run here: the main browser project in full, and the multisite integration suite. Both
+      run in CI.

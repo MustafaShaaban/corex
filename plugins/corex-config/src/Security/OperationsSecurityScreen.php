@@ -542,13 +542,20 @@ final class OperationsSecurityScreen
         $snapshot = $this->readiness->fromCurrentSite(new DateTimeImmutable('now'));
         $blockers = $snapshot->blockingKeys();
 
+        // The mode the form is offering is the one selected, not the one the site is in. They
+        // differ when a submission came back for a missing confirmation: the block and the
+        // confirmation on screen are the proposed mode's, and the value submitted has to be too.
+        // A script used to move the select on load, which left a window — and the whole of the
+        // no-script path — in which ticking the box and submitting applied the wrong mode.
+        $proposed = $this->proposedMode($current);
+
         $options = '';
         foreach ($this->modes->all() as $mode) {
             $meta = $this->modes->describe($mode);
             $options .= sprintf(
                 '<option value="%1$s"%2$s>%3$s</option>',
                 esc_attr($mode),
-                selected($mode, $current, false),
+                selected($mode, $proposed, false),
                 esc_html($meta['label']),
             );
         }
@@ -577,7 +584,7 @@ final class OperationsSecurityScreen
             // on it — so a listener bound here still hears the custom control's selections.
             . '<select id="corex-mode-select" name="corex_mode" data-corex-select data-corex-mode-select>'
             . $options . '</select>'
-            . $this->modeBlocks($this->proposedMode($current), $blockers)
+            . $this->modeBlocks($proposed, $blockers)
             . '<button type="submit" class="button button-primary" data-corex-mode-apply>'
             . esc_html__('Apply mode', 'corex') . '</button>'
             . '</form></section>';

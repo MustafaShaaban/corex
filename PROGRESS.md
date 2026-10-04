@@ -40,16 +40,21 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Spec 101, coming-soon mode, is being implemented on draft pull request #210.** As of 2026-10-04
-its branch holds the first five of the plan's eight phases — tasks T001 to T047 of 68: one service
-that changes the mode, tests of the template seam it builds on, the mode itself with its guard and
-default page, the notice and visitor view, and the preview link with its banner. Still open there:
-the WP-CLI mode command, the generated template and asset action, and the documentation, release
-notes and browser project.
-`specs/101-coming-soon-mode/tasks.md` on that branch is the record; read it rather than this
-paragraph. One thing found while building 102 shaped the plan: a generated client theme is a
-standalone block theme, not a child of the Corex theme, so it does not inherit a template the
-parent ships.
+**Spec 101, coming-soon mode, is complete on pull request #210 and waiting to be merged.** All 68
+tasks are done. Coming soon is the fifth operations mode: a signed-out visitor gets the
+coming-soon page at the home URL with a 200 and a temporary redirect to it from everywhere else;
+anybody who can edit posts gets the real site and is told on every page that visitors do not; a
+preview link shows the real site to somebody without an account; `wp corex mode get|set` reads and
+changes the mode from the command line; and `make:site` gives every new client theme its own
+`templates/coming-soon.html`. `specs/101-coming-soon-mode/tasks.md` records each task and what it
+found (DECISIONS #233).
+
+What it is waiting on, in order: the pull request leaving draft and being merged; then a release,
+**v0.43.0**, which is the first a client repository can be created from with the mode in it.
+
+One thing it found that is not its own, raised as a separate task: every WP-CLI command logs a
+"translation loading triggered too early" notice, from command descriptions being translated while
+commands are registered. The new mode command is written the same way.
 
 No dependency pull request is being held.
 

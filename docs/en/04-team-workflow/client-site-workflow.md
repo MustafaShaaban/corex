@@ -61,6 +61,8 @@ To take a new CoreX release, follow [Updating CoreX in a client site](../05-depl
 - **Structural header/footer or layout changes** → override the template parts in the **client theme**
   (`acme-theme/parts/header.html`, `acme-theme/parts/footer.html`, `acme-theme/templates/front-page.html`), which
   override the CoreX parent theme. Never edit the CoreX parent theme for one client.
+- **The launch page** → `acme-theme/templates/coming-soon.html`, the page visitors see while the site is in
+  Coming soon mode. See [Coming soon mode](../03-operations/coming-soon.md).
 
 ## 4. Reusable vs client-specific
 

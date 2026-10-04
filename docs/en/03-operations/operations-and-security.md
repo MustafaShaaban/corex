@@ -9,7 +9,7 @@ turned off.
 
 | Section | What it answers |
 |---|---|
-| **Overview** | Is this site live? Is anything blocking it? Anything locked out? |
+| **Overview** | Is this site live? Can the public see it? Is anything blocking it? Anything locked out? |
 | **Environment & Maintenance** | What mode is this site in, and how do I change it safely? |
 | **Login Protection** | Where is the login, and who is currently shut out? |
 | **Hardening** | What has WordPress got wrong, and what should I fix? |
@@ -48,6 +48,7 @@ mode needs — and no other.
 | **Staging** | Nothing. It reminds you about search indexing and external services. |
 | **Production** | The word `PRODUCTION`, typed. It shows the readiness result and any blockers first. |
 | **Maintenance** | A ticked acknowledgement that visitors are affected. |
+| **Coming soon** | A ticked acknowledgement that visitors will see the coming-soon page instead of the site. |
 
 Choosing the mode the site is already in does nothing, and the form says so rather than offering an
 Apply button that would have no effect. Nothing is written and nothing is added to the history — the
@@ -66,6 +67,17 @@ confirmation ready — one extra step, and the right question either way.
   integrations keep running.
 - To come back: change the mode here. If you cannot reach this screen, the recovery command in the
   Login Protection section works from the command line.
+
+### What Coming soon mode does
+
+- Visitors get the coming-soon page at the home URL with a **200**, and a temporary redirect to it
+  from every other address.
+- Anybody signed in who can edit posts keeps using the real site, and is told on every page that
+  visitors are not seeing it.
+- A preview link can show the real site to somebody without an account.
+- The REST API, AJAX, cron, the login page and `wp-admin` are **never** intercepted.
+
+It has a page of its own: [Coming soon mode](coming-soon.md).
 
 ## Production readiness
 
