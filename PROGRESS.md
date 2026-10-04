@@ -92,6 +92,13 @@ On `main` since v0.42.1, and not in a release yet:
   administrators outlived the subscriber the tests delete. `AccessControllerTest` also granted the
   editor role `corex_manage_forms` through the real controller and left it granted; it now
   restores the grant row it found.
+- **The browser specs remove the access requests they file** (#227, tests only).
+  `security-access.spec.js` filed one as the administrator on every run and never decided it;
+  `access-request.spec.js` left three as `corex-requester`, denied. Both now delete them in
+  `afterEach` through WP-CLI — the first by the id it is told, the second by requester and by
+  being newer than the newest request that existed before the file ran. Measured on the local
+  install: 219 rows before and after each spec. Without WP-CLI the specs still run, the rows stay,
+  and stderr says so.
 
 **v0.42.1**, a patch release. [`CHANGELOG.md`](CHANGELOG.md) has the full entry; the decisions are
 #224 to #229.
@@ -170,7 +177,10 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   retention test anonymized cannot be restored, `corex_retention_submissions_days` may read 30 on
   an install whose owner never set it, and `corex_role_ability_grants` may hold an
   `editor` / `corex_manage_forms` row nobody granted. The Access request rows, audit events and
-  notifications from earlier runs stay too.
+  notifications from earlier runs stay too, the browser specs' among them.
+- **Deleting a user leaves that user's access requests in place**, pointing at nobody. Nothing in
+  CoreX listens for a user being deleted. Whether it should remove or anonymize those requests is
+  a product question nobody has decided; the tests clean up after themselves either way.
 
 No security items.
 
