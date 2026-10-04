@@ -60,10 +60,10 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
 
 ## Phase 2 — The check (US3)
 
-- [ ] **T011** `scripts/framework-baseline.mjs` — pure: validate a baseline record (release,
+- [x] **T011** `scripts/framework-baseline.mjs` — pure: validate a baseline record (release,
       commit, exceptions with path, reason and upstream reference) and evaluate drift from a list
       of changed paths, returning DRIFT, EXCEPTION and STALE entries. (FR-007, FR-008)
-- [ ] **T012** Jest: `tests/framework-baseline.test.js` — one case per row of the plan's "What the
+- [x] **T012** Jest: `tests/framework-baseline.test.js` — one case per row of the plan's "What the
       check does", including an exception with no reason and an exception that no longer differs.
 - [ ] **T013** `scripts/verify-framework.mjs` — the runner: role short-circuit, find the records,
       confirm the commit exists, collect changed and untracked paths, print one line per finding,
