@@ -157,7 +157,10 @@ final class SubmissionsInboxScreen
             . '<label><input type="checkbox" name="corex_include_test" value="1" /> '
             . esc_html__('Include marked-test submissions', 'corex') . '</label>'
             . '<label><input type="checkbox" name="corex_confirm" value="1" /> '
-            . esc_html__('Confirm moving due submissions to the recoverable trash.', 'corex') . '</label>'
+            . esc_html__(
+                'Confirm applying the selected action to the due submissions. Anonymizing cannot be undone.',
+                'corex',
+            ) . '</label>'
             . '<button type="submit" class="button">' . esc_html__('Apply retention', 'corex') . '</button></form>';
     }
 
@@ -168,19 +171,43 @@ final class SubmissionsInboxScreen
         if (! str_starts_with($status, 'retention-')) {
             return '';
         }
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only PRG result.
-        $count = isset($_GET['corex_count']) ? absint(wp_unslash($_GET['corex_count'])) : 0;
         $message = match ($status) {
             'retention-saved' => __('Retention policy saved.', 'corex'),
             'retention-confirm' => __('Confirm the retention action before applying it.', 'corex'),
-            'retention-pruned' => sprintf(
-                /* translators: %d: submissions moved to trash */
-                _n('%d submission moved to trash.', '%d submissions moved to trash.', $count, 'corex'),
-                $count,
-            ),
+            'retention-pruned' => $this->prunedMessage(),
             default => '',
         };
 
         return $message === '' ? '' : $this->page->state('success', __('Retention', 'corex'), $message);
+    }
+
+    /**
+     * What a retention run did, in the words of the action that ran. The action arrives in the
+     * address bar, so one this screen does not offer — or none, on a link saved before the redirect
+     * carried it — gets a sentence that names no action rather than a guess at one.
+     */
+    private function prunedMessage(): string
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only PRG result.
+        $count = isset($_GET['corex_count']) ? absint(wp_unslash($_GET['corex_count'])) : 0;
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only PRG result.
+        $action = isset($_GET['corex_action']) ? sanitize_key(wp_unslash($_GET['corex_action'])) : '';
+        $sentence = match ($action) {
+            /* translators: %d: number of submissions archived */
+            'archive' => _n('%d submission archived.', '%d submissions archived.', $count, 'corex'),
+            /* translators: %d: number of submissions moved to trash */
+            'trash' => _n('%d submission moved to trash.', '%d submissions moved to trash.', $count, 'corex'),
+            /* translators: %d: number of submissions whose personal data was removed */
+            'anonymize' => _n('%d submission anonymized.', '%d submissions anonymized.', $count, 'corex'),
+            /* translators: %d: number of submissions a retention action was applied to */
+            default => _n(
+                'Retention applied to %d submission.',
+                'Retention applied to %d submissions.',
+                $count,
+                'corex',
+            ),
+        };
+
+        return sprintf($sentence, $count);
     }
 }

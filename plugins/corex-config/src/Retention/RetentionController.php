@@ -17,7 +17,8 @@ defined('ABSPATH') || exit;
  * Handles the retention actions (spec 065): save the window, and prune old submissions. Both are
  * `admin_post` handlers gated by the shared {@see AdminGuard} (capability + nonce). Pruning additionally
  * requires the confirmation box — it never deletes without an explicit preview + confirm. PRG redirects
- * back to the Submissions Inbox with a status.
+ * back to the Submissions Inbox with a status and, after a prune, the action that ran and how many
+ * submissions it handled, which is all the screen has to report the result from.
  */
 final class RetentionController
 {
@@ -63,7 +64,8 @@ final class RetentionController
             : 'trash';
         $includeTest = isset($_POST['corex_include_test']) && $_POST['corex_include_test'] === '1';
         $removed = $this->retention->prune($action, $includeTest);
-        $this->redirect('retention-pruned', $removed);
+        // Reached only for an action the retention service accepted; it throws on any other.
+        $this->redirect('retention-pruned', ['corex_count' => $removed, 'corex_action' => $action]);
     }
 
     private function assertAllowed(string $action): void
@@ -82,12 +84,12 @@ final class RetentionController
         }
     }
 
-    private function redirect(string $status, int $count = -1): void
+    /**
+     * @param array<string,int|string> $result What the screen needs besides the status to report the outcome.
+     */
+    private function redirect(string $status, array $result = []): void
     {
-        $args = ['page' => 'corex-submissions', 'corex_status' => $status];
-        if ($count >= 0) {
-            $args['corex_count'] = $count;
-        }
+        $args = ['page' => 'corex-submissions', 'corex_status' => $status] + $result;
 
         wp_safe_redirect(add_query_arg($args, admin_url('admin.php')));
         exit;
