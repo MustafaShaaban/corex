@@ -8,8 +8,16 @@ newer release is published it appears in **Plugins → Updates** in wp-admin —
 Corex never phones home unless you configure a source (spec 034).
 
 :::tip[The one rule that makes updates safe to click]
-A framework update replaces **framework files only**. Your application code (`corex-app/`), your brand
-(`brand.json`), your content, and your data are never touched.
+A framework update replaces **framework files only**. Your client plugin and theme (`sites/<client>/`),
+your brand (`brand.json`), your content, and your data are never touched.
+:::
+
+:::caution[A client repository under version control updates a different way]
+If your site lives in its own repository — a copy of the framework with the site in `sites/<client>/`,
+which is what `wp corex make:site` generates — take a release by **merging** it, and leave the endpoint on
+this page unconfigured. See [Update CoreX in a client site](/guides/updating-a-client-site/). The in-admin
+updater replaces plugin files inside a running WordPress, which in such a repository rewrites tracked
+framework files outside git.
 :::
 
 ## How a site checks for updates

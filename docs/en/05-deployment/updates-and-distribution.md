@@ -17,6 +17,19 @@ unless **you** configure a source (spec 034).
 > Your application code, your brand, your content, and your data are never touched. The
 > [safe-edit boundary](#the-safe-edit-boundary) below is exact about which is which.
 
+## Which update route applies to you
+
+There are two, and they are for different situations.
+
+| Your situation | Route |
+|---|---|
+| A **client repository under version control** — a copy of the framework with the site in `sites/<client>/`, the layout `wp corex make:site` generates | Merge the release. See [Updating CoreX in a client site](./updating-a-client-site.md). **Leave the endpoint on this page unconfigured.** |
+| A **deployed WordPress with no repository behind it**, where CoreX is installed as plugins | The in-admin updater described on this page. |
+
+The in-admin updater replaces plugin files inside a running WordPress. In a client repository the
+local `wp-content` is linked to the source, so that would rewrite tracked framework files outside
+git — exactly the change `npm run verify:framework` exists to catch.
+
 ## How a site checks for updates
 
 The Corex Core plugin declares an `Update URI` header, which tells WordPress to route its update check to
@@ -94,17 +107,20 @@ the **framework plugin's files** and nothing else.
 
 | Updated by a framework update (framework files) | **Never** touched by an update (yours) |
 |---|---|
-| `plugins/corex-*` (Core, Blocks, Forms, Config…) | `corex-app/` — your application code |
-| `addons/corex-*` framework add-ons you installed | `brand.json` — your brand tokens |
-| `packages/*` framework libraries | Your theme's content & customizations |
+| `plugins/corex-*` (Core, Blocks, Forms, Config…) | `sites/<client>/` — your client plugin and theme, as `wp corex make:site` generates them |
+| `addons/corex-*` framework add-ons you installed | `wp-content/corex-app/` — where the other `make:*` generators write when no application path is configured |
+| `packages/*` framework libraries | `brand.json` — your brand tokens |
 | The theme **scaffold/tokens** shipped by Corex | **Database content** — posts, pages, options |
 | | **Your data** — custom tables, form submissions |
 | | WordPress core & third-party plugins |
 
 **Why your work survives.** Corex is built so that everything *you* author lives outside the framework
-plugins — your code in `corex-app/`, your identity in `brand.json` (deep-merged over the theme tokens, see
-[theme tokens](../00-getting-started/)), and all content/data in the database. An update swaps framework
-files underneath that boundary; your layer sits on top, untouched.
+plugins — your client plugin and theme in `sites/<client>/`, your identity in `brand.json` (deep-merged
+over the theme tokens, see [theme tokens](../00-getting-started/)), and all content/data in the database.
+An update swaps framework files underneath that boundary; your layer sits on top, untouched.
+
+This page used to draw the boundary at `corex-app/` alone and never mentioned `sites/<client>/`, which is
+where a client site actually lives (corrected in spec 102).
 
 **The rule for staying upgrade-safe:** never edit framework files in place. Don't patch `plugins/corex-*`
 or the shipped theme tokens directly — extend through the seams Corex gives you (service providers, config

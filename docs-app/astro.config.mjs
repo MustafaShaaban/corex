@@ -176,6 +176,10 @@ export default defineConfig( {
 							slug: 'guides/client-site',
 						},
 						{
+							label: 'Update CoreX in a client site',
+							slug: 'guides/updating-a-client-site',
+						},
+						{
 							label: 'Company Site Kit v1',
 							slug: 'guides/company-kit',
 						},

@@ -59,3 +59,4 @@ Each profile records its package shape, build commands, dependencies, secrets, a
 | [`ci-cd.md`](./ci-cd.md) | CI/CD wiring per target | ✅ D6 |
 | [`secrets-backups-zero-downtime.md`](./secrets-backups-zero-downtime.md) | Cross-cutting operations | ✅ D6 |
 | [`updates-and-distribution.md`](./updates-and-distribution.md) | Self-update, manifests, and the safe-edit boundary | ✅ spec 034 |
+| [`updating-a-client-site.md`](./updating-a-client-site.md) | Creating a client repository, and taking each CoreX release in it | ✅ spec 102 |

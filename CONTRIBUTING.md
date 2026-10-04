@@ -38,6 +38,20 @@ co-author trailer.
 [Semantic Versioning](https://semver.org/). Pre-1.0 the public API may still move
 (`0.MINOR.PATCH`). `v1.0.0` is reserved for "usable for a real client website end-to-end".
 
+## Release notes: the Client impact section
+
+Every release section in `CHANGELOG.md` carries a `### Client impact` heading, from 0.43.0 on, and so
+does `[Unreleased]` as soon as anything is written under it. `tests/repo-hygiene.test.js` enforces both.
+
+It lists what in the release can change how a **client site** behaves or builds — changed defaults,
+changed validation, changed markup or asset handles, removed or renamed commands and options, and
+dependencies that were removed or moved a major version. A client repository takes a release by merging
+it, and a clean merge with green suites says nothing about any of those: two releases broke a client that
+way before this rule existed (spec 102).
+
+A release with nothing to list says so in one line under the heading. An absent heading reads exactly
+like "nobody checked", which is why it is not allowed to be absent.
+
 ## Definition of Done
 
 A change ships only when all hold (constitution "Definition of Done"):

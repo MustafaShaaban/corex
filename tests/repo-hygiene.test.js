@@ -336,3 +336,74 @@ describe( 'the docs-site mirror of the project status', () => {
 		expect( committed ).toBe( generated );
 	} );
 } );
+
+describe( 'what each release says to a client site', () => {
+	/**
+	 * A client repository takes a release by merging it, and a clean merge proves less than it
+	 * looks like. v0.40.0 changed three behaviours a client depended on and v0.41.0 removed a
+	 * package a client build had been borrowing; both merged without a conflict, with every suite
+	 * green, and both were found afterwards by hand (spec 102).
+	 *
+	 * So each release states, under one reserved heading, what in it can change a client site's
+	 * behaviour — and a release with nothing to state says that, because an absent heading reads
+	 * exactly like "nobody checked".
+	 */
+	const HEADING = '### Client impact';
+	const FIRST_RELEASE_HELD_TO_IT = [ 0, 43, 0 ];
+
+	const changelog = fs.readFileSync(
+		path.join( repositoryRoot, 'CHANGELOG.md' ),
+		'utf8'
+	);
+
+	/** Each `## [name]` section, as its name and everything up to the next one. */
+	const sections = changelog
+		.split( /^(?=## \[)/m )
+		.filter( ( section ) => section.startsWith( '## [' ) )
+		.map( ( section ) => ( {
+			name: section.match( /^## \[([^\]]+)\]/ )[ 1 ],
+			body: section.replace( /^## \[[^\n]*\n/, '' ),
+		} ) );
+
+	const isHeldToIt = ( name ) => {
+		const version = name.split( '.' ).map( Number );
+
+		for ( let part = 0; part < FIRST_RELEASE_HELD_TO_IT.length; part++ ) {
+			if ( version[ part ] !== FIRST_RELEASE_HELD_TO_IT[ part ] ) {
+				return version[ part ] > FIRST_RELEASE_HELD_TO_IT[ part ];
+			}
+		}
+
+		return true;
+	};
+
+	it( 'reads the changelog the way it is written', () => {
+		// A guard against going quiet: if the section pattern stopped matching, the assertions
+		// below would pass over nothing.
+		expect( sections.map( ( { name } ) => name ) ).toEqual(
+			expect.arrayContaining( [ 'Unreleased', '0.42.0' ] )
+		);
+		expect( isHeldToIt( '0.42.0' ) ).toBe( false );
+		expect( isHeldToIt( '0.43.0' ) ).toBe( true );
+		expect( isHeldToIt( '1.0.0' ) ).toBe( true );
+	} );
+
+	it( 'has a Client impact section in every release from 0.43.0 on', () => {
+		const missing = sections
+			.filter( ( { name } ) => /^\d+\.\d+\.\d+$/.test( name ) )
+			.filter( ( { name } ) => isHeldToIt( name ) )
+			.filter( ( { body } ) => ! body.includes( HEADING ) )
+			.map( ( { name } ) => name );
+
+		expect( missing ).toEqual( [] );
+	} );
+
+	it( 'has one under Unreleased as soon as anything is written there', () => {
+		const unreleased = sections.find(
+			( { name } ) => name === 'Unreleased'
+		);
+		const says = unreleased.body.trim() !== '';
+
+		expect( says && ! unreleased.body.includes( HEADING ) ).toBe( false );
+	} );
+} );
