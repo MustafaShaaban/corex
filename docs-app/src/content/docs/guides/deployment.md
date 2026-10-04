@@ -101,7 +101,7 @@ Spec 055 records these profiles in the readiness check:
 | `standard` | Tagged Corex release with core plugins and theme | `composer validate --no-check-publish`; `composer test`; `npm run build` | No known blocker |
 | `full` | First-party Corex runtime with optional add-ons gated by state | `composer test`; `npm run build`; `npm run test:js` | No known blocker |
 | `woo` | Corex plus WooCommerce and Woo kit | `composer test`; `npm run build`; `wp plugin is-installed woocommerce` | No known blocker |
-| `client-site` | Generated client plugin/theme consuming Corex | `wp corex make:site Acme --path=dist/acme`; `wp corex compliance:check` | No known blocker |
+| `client-site` | Generated client plugin/theme consuming Corex | `wp corex make:site Acme --dir=sites/acme`; `wp corex compliance:check` | No known blocker |
 | `shared-host` | Flat WordPress tree copied to shared hosting | `composer install --no-dev --optimize-autoloader`; assemble `dist/` | Verify PHP extensions, permissions, and no-symlink upload shape |
 | `azure-container` | Production Docker image on Azure App Service | `docker build --target prod -t corex:prod .`; `az webapp config container set` | Requires live Azure and repo secret verification |
 | `local-docker` | Docker Compose local stack | `docker compose up -d --build`; `docker compose exec php composer test` | Requires Docker daemon |

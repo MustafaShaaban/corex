@@ -39,7 +39,7 @@ Each profile records its package shape, build commands, dependencies, secrets, a
 | `standard` | Tagged Corex framework release with active core plugins and theme | `composer validate --no-check-publish`; `composer test`; `npm run build` | PHP 8.3+, Node 20+, WP-CLI, WordPress 7.0+ | DB, mail, WP salts | None known |
 | `full` | First-party Corex runtime with optional add-ons gated by Corex state | `composer test`; `npm run build`; `npm run test:js` | PHP 8.3+, Node 20+, WP-CLI, add-on files | DB, mail, captcha, WP salts | None known |
 | `woo` | Corex plus WooCommerce and Woo kit when the dependency exists | `composer test`; `npm run build`; `wp plugin is-installed woocommerce` | WooCommerce, PHP 8.3+, WordPress 7.0+ | DB, payment keys, WP salts | None known |
-| `client-site` | Generated client plugin/theme consuming a Corex release | `wp corex make:site Acme --path=dist/acme`; `wp corex compliance:check` | Corex release package, PHP 8.3+, WordPress 7.0+ | Client DB, mail, WP salts | None known |
+| `client-site` | Generated client plugin/theme consuming a Corex release | `wp corex make:site Acme --dir=sites/acme`; `wp corex compliance:check` | Corex release package, PHP 8.3+, WordPress 7.0+ | Client DB, mail, WP salts | None known |
 | `shared-host` | Flat WordPress tree with Corex copied into `wp-content` | `composer install --no-dev --optimize-autoloader`; `npm run build`; assemble `dist/` | PHP selector, MySQL panel, SFTP/FTP | DB, SFTP, WP salts | Verify PHP extensions, permissions, and no-symlink upload shape |
 | `azure-container` | Production Docker image on Azure App Service for Containers | `docker build --target prod -t corex:prod .`; `az webapp config container set` | Docker, Azure CLI, ACR, Azure MySQL | Azure, registry, DB, Key Vault | Requires live Azure subscription and repo secret verification |
 | `local-docker` | Docker Compose dev stack with the monorepo mounted into WordPress | `docker compose up -d --build`; `docker compose exec php composer test` | Docker daemon, Docker Compose, bind mounts | Local DB password, WP salts | Requires Docker daemon availability |
@@ -59,3 +59,4 @@ Each profile records its package shape, build commands, dependencies, secrets, a
 | [`ci-cd.md`](./ci-cd.md) | CI/CD wiring per target | ✅ D6 |
 | [`secrets-backups-zero-downtime.md`](./secrets-backups-zero-downtime.md) | Cross-cutting operations | ✅ D6 |
 | [`updates-and-distribution.md`](./updates-and-distribution.md) | Self-update, manifests, and the safe-edit boundary | ✅ spec 034 |
+| [`updating-a-client-site.md`](./updating-a-client-site.md) | Creating a client repository, and taking each CoreX release in it | ✅ spec 102 |

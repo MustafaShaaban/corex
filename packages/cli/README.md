@@ -87,7 +87,7 @@ wp corex make:site Acme                  # lean: plugin + theme + governance
 wp corex make:site Acme --starter        # + a runnable example slice + starter-theme assets
 ```
 
-Generates a complete **client site** under `--path` (default: the current directory + the slug):
+Generates a complete **client site** under `--dir` (default: the current directory + the slug):
 a site **plugin** (`acme-site/`, namespace `AcmeSite\`) and **theme** (`acme/`) with the client's own
 prefixes (REST `acme/v1`, CSS `--acme-`, options `acme_` — all distinct from Corex), plus governance
 docs (`AGENTS.md`, `CLAUDE.md`, `README.md`, `PROGRESS.md`, `DECISIONS.md`, `.gitignore`, `specs/`, `docs/`).
@@ -98,7 +98,7 @@ docs (`AGENTS.md`, `CLAUDE.md`, `README.md`, `PROGRESS.md`, `DECISIONS.md`, `.gi
 | `--minimal` | force the lean scaffold (no example) — same as the default |
 | `--plugin-only` / `--theme-only` | generate just one side |
 | `--force` | regenerate (otherwise an existing site is skipped) |
-| `--path=<dir>` | the site root |
+| `--dir=<dir>` | the site root. Not `--path`: WP-CLI takes that for itself, as the WordPress install |
 
 A name normalizing to `corex` (or empty) is refused, so a client site can never collide with the framework.
 Edit only the generated client plugin/theme — never the Corex framework. See the

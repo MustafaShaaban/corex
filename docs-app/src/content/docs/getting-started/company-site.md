@@ -103,12 +103,12 @@ Everything else is an **add-on** you enable by need — see the full tiering in
 ### 6. Generate the company site
 
 ```bash
-wp corex make:site Acme --path=sites/acme --starter
+wp corex make:site Acme --dir=sites/acme --starter
 ```
 
 This scaffolds a **client plugin + client theme** under `sites/acme/` — `sites/acme/acme-site/` (app code,
 `AcmeSite\` namespace) and `sites/acme/acme-theme/` (presentation) — plus team/agent governance files. It does
-**not** install WordPress: the throwaway WordPress in `./wp` loads this plugin + theme. `--path` is the site
+**not** install WordPress: the throwaway WordPress in `./wp` loads this plugin + theme. `--dir` is the site
 root (default: the current directory + the slug) and `--starter` adds a runnable example slice + the
 starter-theme SCSS/JS/image build. Details: [Build a client site](/guides/client-site/).
 

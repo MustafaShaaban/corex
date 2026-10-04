@@ -4,6 +4,9 @@
 /**/build/
 /**/dist/
 
+# Test run cache (named in the client plugin's phpunit.xml.dist)
+.phpunit.cache/
+
 # Environment / secrets (never commit)
 .env
 .env.*

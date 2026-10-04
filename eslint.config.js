@@ -16,6 +16,10 @@
  */
 
 const wpScriptsConfig = require( '@wordpress/scripts/config/eslint.config.cjs' );
+const {
+	clientOwned,
+	localOnly,
+} = require( './.github/repository-ownership.json' );
 
 module.exports = [
 	{
@@ -40,14 +44,23 @@ module.exports = [
 			 */
 			'docs-app/**',
 			/*
-			 * Agent session worktrees: each one is a full checkout of this repository inside
-			 * the repository. Flat config does not skip dot-directories, so every source file
-			 * was linted once per worktree — and failed there, because the patterns in this file
-			 * are anchored to the root: a worktree's `docs-app/` is not ignored and its
-			 * `scripts/` do not get the `no-console` exemption below. Stylelint needs no such
-			 * entry: the `**` glob wp-scripts hands it never enters a dot-directory.
+			 * Client sites, and directories that only ever exist on a developer's machine
+			 * (spec 102). Both come from the ownership map rather than being listed here, so
+			 * this file, Jest and the hygiene suite cannot come to disagree about them.
+			 *
+			 * A client site under `sites/` is linted by its own toolchain, from its own
+			 * directory: the root linters are the framework's.
+			 *
+			 * Agent session worktrees are the local-only case. Each one is a full checkout of
+			 * this repository inside the repository. Flat config does not skip dot-directories,
+			 * so every source file was linted once per worktree — and failed there, because the
+			 * patterns in this file are anchored to the root: a worktree's `docs-app/` is not
+			 * ignored and its `scripts/` do not get the `no-console` exemption below. Stylelint
+			 * needs no such entry: the `**` glob wp-scripts hands it never enters a
+			 * dot-directory.
 			 */
-			'.claude/worktrees/**',
+			...clientOwned,
+			...localOnly,
 		],
 	},
 	...wpScriptsConfig,

@@ -20,20 +20,91 @@ What it does: installs WordPress into `./wp` (gitignored) → generates `wp-conf
 DB → installs the site → junctions `theme/` and `plugins/*` into `wp/wp-content/` → activates the
 Corex theme + plugins → verifies. It auto-detects the WAMP MySQL client and puts it on `PATH`.
 
+In a client repository it also junctions every client plugin and theme under `sites/` into that
+install — `sites/<client>/<x>-site` and `<x>-theme`, or the older `sites/<client>/plugins/*` and
+`themes/*`. They are linked and **not activated**; the commands to switch each one on are printed
+at the end. A re-run leaves a client plugin or theme in whichever state it was in, and keeps a
+client theme active if it already was. The framework's own plugins are activated by name, so
+nothing else that happens to be in the plugins directory is switched on. `-Multisite` links no
+client site: that install is the fixture the multisite suite asserts against.
+
 Requirements: WP-CLI with the command bundle (`wp core`/`wp db` available), a running WAMP MySQL,
 and the vhost (e.g. `corex.local`) with its docroot pointing at `<repo>/wp` plus a matching
 `127.0.0.1 corex.local` hosts entry. See `DECISIONS.md` #18 and the constitution "Environment Gate".
+
+## `verify-framework.mjs`
+
+Answers one question in a **client repository**: are the framework's files still the ones this
+repository recorded? A client repository carries a copy of the framework and takes each release by
+merging it, which only stays conflict-free while client work leaves framework-owned files alone.
+
+```bash
+npm run verify:framework                      # compare, one line per finding
+node scripts/verify-framework.mjs --json      # the same result as one JSON object, and nothing else
+npm run verify:framework -- --record v1.2.3   # write that release into every baseline record
+```
+
+It needs git and Node and nothing installed, so `node scripts/verify-framework.mjs` runs in CI
+before any `npm ci`. Call it through `node` when the output is to be parsed: `npm run` prints its own
+banner ahead of the script's.
+
+What it compares: every path that is **not** client-owned, against the commit named in
+`sites/<client>/corex-baseline.json`. Client-owned paths are the patterns in
+`.github/repository-ownership.json`; everything else is the framework's, the repository root
+included. Uncommitted changes and untracked files count.
+
+| Line | Meaning | Fails the check |
+|---|---|---|
+| `DRIFT <path>` | A framework-owned path differs from the baseline. | yes |
+| `EXCEPTION <path> <reason> <upstream>` | It differs, and the record lists it as a deliberate exception. | no |
+| `STALE <path>` | An exception whose path no longer differs. Delete it from the record. | yes |
+| `WARN <message>` | The recorded release tag exists and points at a different commit from the recorded one. | no |
+| `FAIL <message>` | No record, an invalid record, two records naming different commits, a commit that is not in this repository, or `--record` given no release or one that does not exist. | yes |
+
+Exit code `0` on a pass and `1` otherwise. In the framework's own repository there is no baseline
+to compare against, and it reports that and passes.
+
+A baseline record:
+
+```json
+{
+  "release": "v1.2.3",
+  "commit": "<the full 40-character commit hash>",
+  "recorded": "2026-10-04",
+  "exceptions": [
+    {
+      "path": "plugins/corex-core/src/Example.php",
+      "reason": "Why this framework file is changed here.",
+      "upstream": "https://github.com/MustafaShaaban/corex/issues/<number>"
+    }
+  ]
+}
+```
+
+The comparison uses `commit`; `release` is the name people read. A shallow clone does not contain
+the baseline commit, so CI has to check out full history.
+
+`repository-ownership.mjs` and `framework-baseline.mjs` are the two pure modules behind it — the
+first decides which paths are a client's and whether this checkout is the framework's own
+repository, the second validates a record and divides changed paths into the lines above.
 
 ## Reusing Corex for a new website
 
 Corex is a **framework**, not a site. Two ways to reuse it:
 
-1. **Build a client site *on* Corex (normal case).** Create a *separate* project; Corex is the
-   shared framework, and each site supplies its own brand (`theme.json` + `brand.json`) and content
-   — design is *data*, not a fork (../docs/internal/COREX-FRAMEWORK.md §10, §24). One framework, many brands.
+1. **Build a client site *on* Corex (normal case).** The site gets its own repository: a copy of a
+   Corex release with the framework as a fetch-only remote, and the client's plugin and theme
+   generated under `sites/<client>/` by `wp corex make:site`. It takes each later release by merging
+   it — see [Updating CoreX in a client site](../docs/en/05-deployment/updating-a-client-site.md).
+   Brand is still *data* — `theme.json` + `brand.json` — not edits to framework files
+   (../docs/internal/COREX-FRAMEWORK.md §10, §24). One framework, many brands.
 2. **Spin up another dev copy of the framework.** `git clone` this repo, then run
    `./scripts/setup-wordpress.ps1`.
 
-Do **not** copy this repo to make a website, and do **not** move `theme/`/`plugins/` physically
-into `wp-content` — that breaks the Composer/npm-workspace layout and would bury the framework
-source inside the gitignored `./wp`. The junctions (or wp-env in Docker) are the bridge.
+Do **not** edit framework files in a client repository — `npm run verify:framework` is what tells
+you whether one has been — and do **not** move `theme/`/`plugins/` physically into `wp-content`:
+that breaks the Composer/npm-workspace layout and would bury the framework source inside the
+gitignored `./wp`. The junctions (or wp-env in Docker) are the bridge.
+
+This section used to say "do not copy this repo to make a website". A client repository is a copy
+of this one, by design; what must not happen is editing the copy's framework files.

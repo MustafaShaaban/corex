@@ -33,7 +33,7 @@ the same reason — so the next such gap is found by a reader, not by a customer
 | `corex-forms` | **Stable** | Schema, validation, flow builder, submission pipeline, routing, delivery. File uploads closed in spec 081. |
 | `corex-blocks` | **Stable** | Server-rendered blocks with the shared provider/renderer split. |
 | `theme/` | **Stable** | FSE block theme. Presentation only — deactivating it breaks presentation, never data. |
-| `packages/cli` | **Stable** | `wp corex make:*` generators, `version`, `docs:generate`, release packaging. |
+| `packages/cli` | **Stable** | `wp corex make:*` generators, `version`, `docs:generate`, release packaging. `make:site` generates what a client repository needs to take framework updates; `npm run verify:framework` checks it (spec 102). |
 
 ## Add-ons
 

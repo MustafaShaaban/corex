@@ -30,6 +30,10 @@ final class SiteScaffoldValidator
         'DECISIONS.md',
         'specs/.gitkeep',
         'docs/.gitkeep',
+        // spec 102: without these the site cannot say which framework release it is on, or how
+        // to take the next one.
+        'corex-baseline.json',
+        'UPDATING-COREX.md',
     ];
 
     /**

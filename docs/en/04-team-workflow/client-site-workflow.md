@@ -27,7 +27,7 @@ sites/acme/
   specs/  docs/
 ```
 
-> Run it with `--path=sites/acme` so the client plugin/theme land directly under `sites/acme/` as `acme-site/`
+> Run it with `--dir=sites/acme` so the client plugin/theme land directly under `sites/acme/` as `acme-site/`
 > and `acme-theme/` (the flat layout above). **Backward compatibility:** sites generated before this layout used a
 > nested `plugins/` + `themes/` structure; those keep working as-is — only newly generated sites use the flat
 > layout, and the shared-host `dist` builder packages either shape.
@@ -44,6 +44,15 @@ Every session on the client site is **[Client Site Mode](./agent-roles.md#2-clie
   `sites/<client>/DECISIONS.md`.
 - Follow **Spec Kit**, the **Guard Gate**, and **UI/UX ProMax**.
 - For a framework bug, **stop** and open a CoreX Framework Mode task — never patch CoreX internals for one client.
+
+Everything outside `sites/` and `.github/workflows/site-*.yml` is framework-owned, the repository root
+included, and client work never edits it: an edit there is a merge conflict in every later framework update.
+`npm run verify:framework` proves it — it compares every framework-owned path with the release recorded in
+`sites/<client>/corex-baseline.json` and fails on anything that differs. Run it before pushing; the generated
+`site-<client>.yml` workflow runs it on every pull request. (`wp corex compliance:check` answers a narrower
+question — whether a list of file names you pass it touches a framework folder — and needs no git.)
+
+To take a new CoreX release, follow [Updating CoreX in a client site](../05-deployment/updating-a-client-site.md).
 
 ## 3. Customize brand vs structure
 
