@@ -92,7 +92,9 @@ afterEach(function () {
     remove_all_filters(ComingSoonGuard::HOME_FILTER);
     remove_all_filters('template_include');
     remove_filter('show_admin_bar', '__return_false');
-    remove_filter('body_class', [corexComingSoonGuard(), 'visitorBodyClasses']);
+    remove_filter('body_class', [corexComingSoonGuard(), 'servedBodyClasses']);
+    remove_action('wp_enqueue_scripts', [corexComingSoonGuard(), 'enqueuePageAssets']);
+    remove_all_actions(ComingSoonGuard::ASSETS_ACTION);
     unset($_GET[ComingSoonGuard::VISITOR_VIEW], $GLOBALS['show_admin_bar'], $GLOBALS['wp_admin_bar']);
     wp_dequeue_style('admin-bar');
     wp_dequeue_script('admin-bar');
@@ -434,4 +436,73 @@ it('leaves the toolbar alone on the real site', function () {
 
     expect(is_admin_bar_showing())->toBeTrue()
         ->and(wp_style_is('admin-bar', 'enqueued'))->toBeTrue();
+});
+
+// The page's own assets and body class (spec 101, T054; plan Decision 9).
+
+it('offers a theme one action to load the assets of the coming-soon page on, only when that page is the response', function () {
+    $guard = corexComingSoonGuard();
+    $fired = 0;
+    add_action(ComingSoonGuard::ASSETS_ACTION, static function () use (&$fired): void {
+        $fired++;
+    });
+
+    corexComingSoonVisit('/');
+    $guard->handle();
+
+    expect(ComingSoonGuard::ASSETS_ACTION)->toBe('corex_coming_soon_enqueue_assets')
+        // Hooked to WordPress's own moment for queueing front-end assets, so whatever a theme
+        // enqueues there lands in the head with everything else.
+        ->and(has_action('wp_enqueue_scripts', [$guard, 'enqueuePageAssets']))->not->toBeFalse()
+        ->and($fired)->toBe(0);
+
+    $guard->enqueuePageAssets();
+
+    expect($fired)->toBe(1);
+});
+
+it('marks the body of the coming-soon page, so a theme can scope its styles to it', function () {
+    $before = get_body_class();
+    corexComingSoonVisit('/');
+
+    corexComingSoonGuard()->handle();
+
+    expect(ComingSoonGuard::BODY_CLASS)->toBe('corex-coming-soon')
+        ->and($before)->not->toContain('corex-coming-soon')
+        ->and(get_body_class())->toContain('corex-coming-soon');
+});
+
+it('loads the assets of the page and marks its body on the visitor view too, since it is the same page', function () {
+    $adminId = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
+    wp_set_current_user($adminId);
+    $_GET[ComingSoonGuard::VISITOR_VIEW] = '1';
+    corexComingSoonVisit('/about/?corex_visitor_view=1', ['pagename' => 'about']);
+    $guard = corexComingSoonGuard();
+
+    $guard->handle();
+
+    expect(has_action('wp_enqueue_scripts', [$guard, 'enqueuePageAssets']))->not->toBeFalse()
+        ->and(get_body_class())->toContain('corex-coming-soon');
+});
+
+it('neither loads those assets nor marks the body on any other response', function () {
+    // Principle VI: a launch page's stylesheet and fonts load where it renders and nowhere else.
+    $adminId = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
+    wp_set_current_user($adminId);
+    $guard = corexComingSoonGuard();
+
+    // The real site, served to somebody who passes.
+    corexComingSoonVisit('/about/', ['pagename' => 'about']);
+    $guard->handle();
+    $onTheRealSite = [has_action('wp_enqueue_scripts', [$guard, 'enqueuePageAssets']), in_array('corex-coming-soon', get_body_class(), true)];
+
+    // Another mode altogether.
+    update_option(COREX_COMING_SOON_MODE_OPTION, OperationsMode::PRODUCTION);
+    wp_set_current_user(0);
+    corexComingSoonVisit('/');
+    $guard->handle();
+    $inAnotherMode = [has_action('wp_enqueue_scripts', [$guard, 'enqueuePageAssets']), in_array('corex-coming-soon', get_body_class(), true)];
+
+    expect($onTheRealSite)->toBe([false, false])
+        ->and($inAnotherMode)->toBe([false, false]);
 });

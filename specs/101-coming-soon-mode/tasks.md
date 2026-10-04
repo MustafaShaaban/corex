@@ -412,15 +412,45 @@ Operations screen.
 
 ## Phase 7 — The generated template and the asset action (US6)
 
-- [ ] **T052** Pest: `SiteScaffolderTest` — a generated client theme has
-      `templates/coming-soon.html`, and `--plugin-only` does not. (FR-020)
-- [ ] **T053** `SiteScaffolder` — the template, as the client theme's own file.
-- [ ] **T054** `corex_coming_soon_enqueue_assets`, fired on `wp_enqueue_scripts` only when the page
-      is the response, and the `corex-coming-soon` body class. Integration test for both, and
-      that neither is present on any other response.
-- [ ] **T055** `client-site-layout` in CI — after generating the site, switch the generated theme
-      on, set the mode from the command line, and require the home URL to serve the client
-      theme's template. (SC-005)
+- [x] **T052** Pest: `SiteScaffolderTest` — a generated client theme has
+      `templates/coming-soon.html`: core blocks only, no header or footer part, every block
+      closed, nothing left for the renderer to fill in. `--theme-only` and `--starter` have it;
+      `--plugin-only` does not. (FR-020)
+- [x] **T053** `SiteScaffolder` — the template, as the client theme's own file, from
+      `packages/cli/stubs/site/theme-coming-soon.stub`. It opens with a comment saying what the
+      page is, why it has no header or footer, and where its own assets go.
+
+      **The readiness validator had to change.** `SiteScaffoldValidator` called any `{{` or `}}`
+      in a generated file an unresolved placeholder, and a block with an object attribute ends
+      its comment in `}}` — so no template with a real layout could pass, and every template the
+      generator wrote until now had been kept to flat attributes. It now uses the renderer's own
+      definition: two braces, a name, two braces. Two existing tests failed on the new template,
+      which is how it was found; two new ones pin the rule both ways.
+- [x] **T054** `corex_coming_soon_enqueue_assets`, fired on `wp_enqueue_scripts` only when the page
+      is the response, and the `corex-coming-soon` body class. Integration tests for both, on the
+      visitor view as well, and that neither is present on the real site or in another mode.
+
+      The body-class callback is the one that already took `logged-in` off the served page; it
+      now does both, under a name that says so.
+- [x] **T055** `client-site-layout` in CI — after generating and building the site, the generated
+      theme is switched on, the mode is set from the command line (and first refused without
+      `--acknowledge`), and the home URL has to answer 200 with the client theme's page; another
+      address has to answer 302 with no body. (SC-005)
+
+      The page is edited in the client's repository before the request, so the assertion is that
+      *that file* is what a visitor is sent. CoreX's default says the same words until somebody
+      changes them, and a check that could not tell the two apart would prove nothing.
+
+      Rehearsed by hand first, on this worktree's install, with a site generated into a scratch
+      directory by the real command: the edited page was served with the body class and the
+      theme's own stylesheet, a post redirected, and under the Corex theme the same address
+      served CoreX's default instead. The one part not rehearsed is `wp server`, which the CI
+      step uses to answer the request; the run on this commit is its first test.
+
+      Found on the way, and not this spec's: every WP-CLI command logs a "translation loading
+      triggered too early" notice, from the reset command's description being translated while
+      commands are registered. Phase 6's mode command was written the same way. Raised as its own
+      task.
 
 ## Phase 8 — Documentation, release notes and the browser project
 

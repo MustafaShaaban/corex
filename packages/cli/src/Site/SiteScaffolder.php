@@ -104,6 +104,10 @@ final class SiteScaffolder
         if (! $pluginOnly) {
             $stubFiles[$themeDir . '/style.css'] = 'site/theme-style';
             $stubFiles[$themeDir . '/theme.json'] = 'site/theme-json';
+            // spec 101: the page a site in Coming soon mode serves. CoreX registers a default under
+            // this template's name and a theme file of the same name replaces it, so a new site's
+            // launch page is the one in its own repository from the first day (FR-020).
+            $stubFiles[$themeDir . '/templates/coming-soon.html'] = 'site/theme-coming-soon';
             $literals[$themeDir . '/templates/index.html'] = "<!-- wp:template-part {\"slug\":\"header\",\"tagName\":\"header\"} /-->\n<!-- wp:post-content /-->\n<!-- wp:template-part {\"slug\":\"footer\",\"tagName\":\"footer\"} /-->";
             // Structural header/footer override points (spec 061). Brand-only changes (colours, fonts,
             // spacing) belong in theme.json / a style variation — NOT here, and never in the CoreX parent

@@ -43,6 +43,16 @@ final class ComingSoonGuard
      */
     public const VISITOR_VIEW = 'corex_visitor_view';
 
+    /**
+     * Fired when front-end assets are being queued, and only when the coming-soon page is the
+     * response. A designed launch page has a stylesheet and fonts of its own; a theme enqueues
+     * them here so they load where the page renders and nowhere else (Principle VI).
+     */
+    public const ASSETS_ACTION = 'corex_coming_soon_enqueue_assets';
+
+    /** On the body of the coming-soon page, and of no other, for a theme to scope its styles to. */
+    public const BODY_CLASS = 'corex-coming-soon';
+
     public function __construct(
         private readonly OperationsModeStore $store,
         private readonly ComingSoonTemplate $template,
@@ -88,20 +98,34 @@ final class ComingSoonGuard
         add_filter('show_admin_bar', '__return_false');
         wp_dequeue_style('admin-bar');
         wp_dequeue_script('admin-bar');
-        add_filter('body_class', [$this, 'visitorBodyClasses']);
+        add_filter('body_class', [$this, 'servedBodyClasses']);
+        add_action('wp_enqueue_scripts', [$this, 'enqueuePageAssets']);
     }
 
     /**
-     * The `body_class` callback for the served page: a visitor's page is not marked as a signed-in
-     * one, and a theme may style by that mark.
+     * The `wp_enqueue_scripts` callback for the served page: hands the moment on to whoever has
+     * assets for this page in particular.
+     */
+    public function enqueuePageAssets(): void
+    {
+        do_action(self::ASSETS_ACTION);
+    }
+
+    /**
+     * The `body_class` callback for the served page. It is marked as the coming-soon page, for a
+     * theme to scope its styles to; and it is not marked as a signed-in one, because a visitor's
+     * page is not, and a theme may style by that mark.
      *
      * @param mixed $classes
      *
      * @return list<string>
      */
-    public function visitorBodyClasses(mixed $classes): array
+    public function servedBodyClasses(mixed $classes): array
     {
-        return array_values(array_diff((array) $classes, ['logged-in']));
+        return array_values(array_unique([
+            ...array_diff((array) $classes, ['logged-in']),
+            self::BODY_CLASS,
+        ]));
     }
 
     /**
