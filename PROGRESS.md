@@ -78,8 +78,9 @@ Jest's module map: on a machine with a `dist/` build or an agent session worktre
 name it found twice. The suite is unchanged at 54 suites and 442 tests. CI never builds `dist/` and
 has no worktrees, so it never printed them.
 
-**`fix/e2e-flaky-helpers` — browser-test helpers and CI only, merged as PR #217 on 2026-10-04.** The browser job failed three
-times on diffs that changed no runtime code: the nightly on 2026-09-21, #210 and #211. Two of the
+**`fix/e2e-flaky-helpers` — browser-test helpers and CI only, merged as PR #217 on 2026-10-04.** The
+browser job failed three times on diffs that changed no runtime code: the nightly on 2026-09-21,
+#210 and #211. Two of the
 three were one bug in `signInAs`. WordPress's login page moves focus to the username field 200ms
 after it renders; when that lands in the middle of Playwright typing the password, the password goes
 into the username field and the browser refuses to submit the form. The helper then waited on an
@@ -130,8 +131,9 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   `submissions-inbox` specs in a row got "Request could not be processed." on #211, with nothing
   else running, straight after a seed that had succeeded. Every exception the flow code raises on
   purpose is answered with a 409 or a 422, so this was one it does not expect. The message went to a
-  log CI did not keep. It keeps it now, and `seedSubmission` reports the server's answer instead of
-  a `TypeError` — the next occurrence names itself (DECISIONS #228).
+  log CI did not keep. It keeps it now, in a file the job names and proves with a probe line on
+  every run. `seedSubmission` reports the server's answer instead of a `TypeError`, so the next
+  occurrence names itself (DECISIONS #228).
 - **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
   Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from

@@ -307,7 +307,15 @@ jobs:
           NGINX
           # nginx runs as www-data and has to traverse the runner's home to reach the workspace.
           chmod o+x /home/runner /home/runner/work "${GITHUB_WORKSPACE}" || true
-          sudo systemctl start php8.3-fpm
+          # Tell PHP where its error log is, rather than leave it to the image. The first run that
+          # collected the server logs found nginx's error log empty, which proves nothing either
+          # way about where a message would have gone.
+          sudo touch /var/log/corex-php-error.log
+          sudo chown www-data:www-data /var/log/corex-php-error.log
+          echo 'php_admin_flag[log_errors] = on' | sudo tee -a /etc/php/8.3/fpm/pool.d/www.conf > /dev/null
+          echo 'php_admin_value[error_log] = /var/log/corex-php-error.log' | sudo tee -a /etc/php/8.3/fpm/pool.d/www.conf > /dev/null
+          # restart, not start: installing the package already started it, with the old pool.
+          sudo systemctl restart php8.3-fpm
           sudo nginx -t
           sudo systemctl restart nginx
           for _ in $(seq 1 30); do
@@ -317,6 +325,19 @@ jobs:
           echo "site never came up"
           sudo tail -50 /var/log/nginx/error.log || true
           exit 1
+
+      # A log nobody has seen written to is a guess. One request through php-fpm writes a known
+      # line, and the job stops here if it is not in the file the failure artifact will carry —
+      # better to learn that on a green run than on the next 500.
+      - name: Prove where PHP's error log goes
+        run: |
+          echo "<?php error_log( 'corex-ci-log-probe' );" > wp/corex-log-probe.php
+          curl -sf -o /dev/null http://127.0.0.1:8080/corex-log-probe.php
+          rm wp/corex-log-probe.php
+          if ! sudo grep -q 'corex-ci-log-probe' /var/log/corex-php-error.log; then
+            echo "PHP's error log is not reaching /var/log/corex-php-error.log"
+            exit 1
+          fi
 
       # COREX_E2E_FRESH_INSTALL skips the specs that assume a site with content already in it —
       # published posts, built forms, stored submissions. See the list in tests/e2e/playwright.config.js;
@@ -333,13 +354,13 @@ jobs:
       # What the server said, for the failures a screenshot cannot explain.
       #
       # CoreX answers a throw behind a REST route with "Request could not be processed." and
-      # writes the exception's message to the PHP error log. Under php-fpm that should reach
-      # nginx's error log; the php-fpm log is taken as well, because nobody has yet watched it
-      # arrive. On 2026-10-04 three inbox specs met that 500 on a pull request that changed no
-      # runtime code, and the only record of what threw stayed on a runner that no longer exists.
+      # writes the exception's message to the PHP error log — /var/log/corex-php-error.log here,
+      # set and proved above. On 2026-10-04 three inbox specs met that 500 on a pull request that
+      # changed no runtime code, and the only record of what threw stayed on a runner that no
+      # longer exists.
       #
       # Collected on every run and uploaded only with a failure (the step below takes
-      # test-results/). Copying three files costs nothing, and a step that runs only when
+      # test-results/). Copying four files costs nothing, and a step that runs only when
       # something has already gone wrong is a step nobody has ever seen work.
       - name: Collect the server logs
         if: ${{ !cancelled() }}
@@ -348,6 +369,7 @@ jobs:
           sudo cp /var/log/nginx/error.log test-results/server-logs/nginx-error.log || true
           sudo cp /var/log/nginx/access.log test-results/server-logs/nginx-access.log || true
           sudo cp /var/log/php8.3-fpm.log test-results/server-logs/php-fpm.log || true
+          sudo cp /var/log/corex-php-error.log test-results/server-logs/php-error.log || true
           sudo chown -R "$(id -u):$(id -g)" test-results/server-logs
           wc -l test-results/server-logs/* || true
 
