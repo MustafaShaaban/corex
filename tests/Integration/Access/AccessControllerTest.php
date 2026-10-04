@@ -15,6 +15,9 @@ use Corex\Boot;
 use Corex\Config\Access\AccessController;
 use Corex\Config\Access\AccessRequestRepository;
 use Corex\Config\Access\AccessTables;
+use Corex\Config\Activity\ActivityTable;
+use Corex\Config\Notifications\NotificationTable;
+use Corex\Database\Schema\Migrator;
 use Corex\Operations\Confirmation;
 
 function accessRequest(string $method, string $route, array $payload = []): WP_REST_Request
@@ -26,6 +29,22 @@ function accessRequest(string $method, string $route, array $payload = []): WP_R
     return $request;
 }
 
+/**
+ * The editor role's explicit effect for the ability the role test changes, as the raw row.
+ *
+ * @return array<string,string>|null Null when there is no row, which is a state too: it means inherit.
+ */
+function editorFormsGrant(Migrator $migrator): ?array
+{
+    global $wpdb;
+
+    return $wpdb->get_row($wpdb->prepare(
+        'SELECT * FROM ' . $migrator->fullName(AccessTables::ROLE_GRANTS) . ' WHERE role_key = %s AND ability_key = %s',
+        'editor',
+        CorexAbility::MANAGE_FORMS,
+    ), ARRAY_A);
+}
+
 beforeEach(function () {
     $this->container = Boot::app()->container();
     foreach ($this->container->make(AccessTables::class)->schemas() as $schema) {
@@ -35,13 +54,56 @@ beforeEach(function () {
     $admins = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
     wp_set_current_user((int) ($admins[0] ?? 0));
     $this->controller = $this->container->make(AccessController::class);
+
+    // The role test below gives the editor role an ability, on a developer's real install. Keep
+    // what it overwrites, and the newest audit event, so what the test writes can be told from the
+    // install's own history afterwards.
+    global $wpdb;
+    $this->migrator = $this->container->make(Migrator::class);
+    $this->editorGrant = editorFormsGrant($this->migrator);
+    $this->lastActivityId = (int) $wpdb->get_var('SELECT MAX(id) FROM ' . $this->migrator->fullName(ActivityTable::NAME));
 });
 
 afterEach(function () {
     global $wpdb;
+    $activity = $this->migrator->fullName(ActivityTable::NAME);
+    $grants = $this->migrator->fullName(AccessTables::ROLE_GRANTS);
+
+    // Put the editor role back as it was. This used to stay granted: every editor on the install
+    // could manage forms because a test had said so.
+    if (editorFormsGrant($this->migrator) !== $this->editorGrant) {
+        $wpdb->delete($grants, ['role_key' => 'editor', 'ability_key' => CorexAbility::MANAGE_FORMS]);
+        if ($this->editorGrant !== null) {
+            $wpdb->insert($grants, $this->editorGrant);
+        }
+    }
+    // Its audit event is written under the administrator against a role the install really has, so
+    // only "after this test began" separates it from a change somebody actually made.
+    $wpdb->query($wpdb->prepare(
+        "DELETE FROM {$activity} WHERE id > %d AND kind = %s AND target_type = %s AND target_id = %s",
+        $this->lastActivityId,
+        'access.role.changed',
+        'role',
+        'editor',
+    ));
 
     if (! isset($this->requesterId) || $this->requesterId < 1) {
         return;
+    }
+
+    // Creating and approving a request are both audited against it, and creating it tells the
+    // administrators somebody is waiting. Those rows outlived the request. They are found through
+    // the request ids, so before the rows that carry those are deleted.
+    $requestIds = $wpdb->get_col($wpdb->prepare(
+        'SELECT id FROM ' . $this->migrator->fullName(AccessTables::REQUESTS) . ' WHERE requester_id = %d',
+        $this->requesterId,
+    ));
+    foreach ($requestIds as $requestId) {
+        $wpdb->delete($activity, ['target_type' => 'access_request', 'target_id' => (string) $requestId]);
+        $wpdb->delete($this->migrator->fullName(NotificationTable::NAME), [
+            'source_type' => 'access_request',
+            'source_id' => (string) $requestId,
+        ]);
     }
 
     // The request first, then its requester: nothing in CoreX listens for a user being deleted, so

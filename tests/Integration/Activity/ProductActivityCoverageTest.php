@@ -97,19 +97,29 @@ it('records events from every domain into one authoritative store', function () 
         ->and($event->context)->toBe(['source' => 'coverage', 'area' => 'data']);
 });
 
+/**
+ * The window the five events above were seeded into, as query filters.
+ *
+ * Every query here is scoped to it. Without it an assertion silently depends on how much unrelated
+ * activity the database already holds: results come back newest-first, the fixtures carry a fixed
+ * 2026-07-10 date, and on an install with more than a page of newer matching events they fall past
+ * the first page and the test fails for a reason that has nothing to do with reconciliation. The
+ * actor query did exactly that once other tests had left 131 export events for the same actor id.
+ *
+ * @return array{date_from:DateTimeImmutable,date_to:DateTimeImmutable}
+ */
+function activityCoverageWindow(): array
+{
+    return [
+        'date_from' => new DateTimeImmutable('2026-07-10T08:00:00+00:00'),
+        'date_to' => new DateTimeImmutable('2026-07-10T10:00:00+00:00'),
+    ];
+}
+
 it('reconciles activity by domain area', function () {
     $ids = fn (array $events): array => array_map(static fn (ActivityEvent $event): int => $event->id, $events);
 
-    // Scoped to the window these events were seeded into, exactly as the time-window test below
-    // does. Without it the assertion silently depends on how much unrelated activity the database
-    // already holds: results come back newest-first, the fixtures carry a fixed 2026-07-10 date,
-    // and on an install with a few hundred real events they fall past the first page and the test
-    // fails for a reason that has nothing to do with area reconciliation.
-    $inWindow = fn (string $area): array => $ids($this->service->query([
-        'area' => $area,
-        'date_from' => new DateTimeImmutable('2026-07-10T08:00:00+00:00'),
-        'date_to' => new DateTimeImmutable('2026-07-10T10:00:00+00:00'),
-    ], 1, 100));
+    $inWindow = fn (string $area): array => $ids($this->service->query(['area' => $area] + activityCoverageWindow(), 1, 100));
 
     expect($inWindow(ActivityEvent::AREA_DATA))->toContain($this->dataId)
         ->and($inWindow(ActivityEvent::AREA_DATA))->not->toContain($this->submissionsId)
@@ -120,11 +130,11 @@ it('reconciles activity by domain area', function () {
 it('reconciles one actor cross-domain footprint and denied outcomes', function () {
     $ids = fn (array $events): array => array_map(static fn (ActivityEvent $event): int => $event->id, $events);
 
-    $actorSeven = $ids($this->service->query(['actor_id' => 7], 1, 100));
+    $actorSeven = $ids($this->service->query(['actor_id' => 7] + activityCoverageWindow(), 1, 100));
     expect($actorSeven)->toContain($this->dataId, $this->submissionsId, $this->emailId)
         ->and($actorSeven)->not->toContain($this->formsId, $this->accessId);
 
-    $denied = $ids($this->service->query(['outcome' => ActivityEvent::OUTCOME_DENIED], 1, 100));
+    $denied = $ids($this->service->query(['outcome' => ActivityEvent::OUTCOME_DENIED] + activityCoverageWindow(), 1, 100));
     expect($denied)->toContain($this->accessId)
         ->and($denied)->not->toContain($this->dataId);
 });
@@ -143,11 +153,14 @@ it('reconciles activity inside a time window', function () {
 });
 
 it('prunes only activity past its retention window', function () {
-    $expiredId = recordCoverageEvent($this->service, ACTIVITY_COVERAGE_UUIDS['expired'], ActivityEvent::AREA_OPERATIONS, 'operation.expired', 7, ActivityEvent::OUTCOME_SUCCESS, '2026-01-01T00:00:00+00:00', '2026-02-01T00:00:00+00:00');
+    // Expired, and pruned, as of a date before CoreX existed. The prune acts on the whole table, so a
+    // realistic cutoff deletes the install's own expired events along with the fixture — and, being
+    // a bounded oldest-first batch, stops reaching the fixture once enough of them exist.
+    $expiredId = recordCoverageEvent($this->service, ACTIVITY_COVERAGE_UUIDS['expired'], ActivityEvent::AREA_OPERATIONS, 'operation.expired', 7, ActivityEvent::OUTCOME_SUCCESS, '2000-01-01T00:00:00+00:00', '2000-02-01T00:00:00+00:00');
 
-    $pruned = $this->service->pruneExpired(new DateTimeImmutable('2026-07-10T10:00:00+00:00'), 500);
+    $pruned = $this->service->pruneExpired(new DateTimeImmutable('2000-03-01T00:00:00+00:00'), 500);
 
-    expect($pruned)->toBeGreaterThanOrEqual(1)
+    expect($pruned)->toBe(1)
         ->and($this->service->find($expiredId))->toBeNull()
         // Live events with a future retention window survive.
         ->and($this->service->find($this->dataId))->not->toBeNull();
