@@ -341,6 +341,27 @@ jobs:
           COREX_E2E_FRESH_INSTALL: '1'
         run: npm run test:e2e
 
+      # What the server said, for the failures a screenshot cannot explain.
+      #
+      # CoreX answers a throw behind a REST route with "Request could not be processed." and
+      # writes the exception's message to the PHP error log. Under php-fpm that should reach
+      # nginx's error log; the php-fpm log is taken as well, because nobody has yet watched it
+      # arrive. On 2026-10-04 three inbox specs met that 500 on a pull request that changed no
+      # runtime code, and the only record of what threw stayed on a runner that no longer exists.
+      #
+      # Collected on every run and uploaded only with a failure (the step below takes
+      # test-results/). Copying three files costs nothing, and a step that runs only when
+      # something has already gone wrong is a step nobody has ever seen work.
+      - name: Collect the server logs
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p test-results/server-logs
+          sudo cp /var/log/nginx/error.log test-results/server-logs/nginx-error.log || true
+          sudo cp /var/log/nginx/access.log test-results/server-logs/nginx-access.log || true
+          sudo cp /var/log/php8.3-fpm.log test-results/server-logs/php-fpm.log || true
+          sudo chown -R "$(id -u):$(id -g)" test-results/server-logs
+          wc -l test-results/server-logs/* || true
+
       - name: Upload the report when the browser tests fail
         if: failure()
         uses: actions/upload-artifact@v7

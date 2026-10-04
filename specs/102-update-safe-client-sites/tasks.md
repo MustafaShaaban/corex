@@ -154,7 +154,7 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
       runner, run the client's tests and build, the two root linters, the root Jest suite and
       `verify:framework` in the client role, then change one byte of `README.md` and require
       exit 1 with the file named. (FR-016, SC-002, SC-003)
-- [x] **T037** Recorded in `DECISIONS.md` #228: making `client-site-layout` a required check is an
+- [x] **T037** Recorded in `DECISIONS.md` #230: making `client-site-layout` a required check is an
       owner setting in branch protection, not a file in this change.
 
 ## Phase 5 — The setup script (US5)
@@ -234,7 +234,7 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
       theme's stylesheet and ESLint a client script. The copy was removed. (FR-017) One guard test
       failed there, correctly: it expects a `0.42.0` section that repository's older changelog does
       not have, and will once it takes this release.
-- [x] **T049** `PROGRESS.md`, `DECISIONS.md` #228, `PROJECT-STATUS.md` and its generated docs-site
+- [x] **T049** `PROGRESS.md`, `DECISIONS.md` #230, `PROJECT-STATUS.md` and its generated docs-site
       copy. `README.md` gained a pointer to the update page.
 - [x] **T051** `scripts/README.md`, "Reusing Corex for a new website" — no longer says "do not copy
       this repo to make a website". A client repository is a copy of it, by design; the section now

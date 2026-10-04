@@ -4588,7 +4588,128 @@ that `.stylelintignore`, `eslint.config.js` and `jest.config.js` do not exclude,
 exclude `wp/`. CI has no such directory. The linters and Jest were verified with it excluded on the
 command line; fixing the three ignore lists is a separate change and is not in this one.
 
-## #228 — A client site is defined by what it owns, and the framework is everything else
+## #228 — Two of three browser flakes were one race; the third is a 500 with no name
+
+Date: 2026-10-04 · Spec: none (browser-test helpers and CI) · Status: Open — on `fix/e2e-flaky-helpers`
+
+The browser job is a required check, and it failed three times on diffs that changed no runtime
+code: the nightly on 2026-09-21 (`guides.spec.js`), #210 (`access-request.spec.js`, on a pull
+request that adds a spec and its checklist) and #211 (`submissions-inbox.spec.js`, three tests).
+
+**The sign-in failures were a race between WordPress and Playwright.** `wp-login.php` runs
+`wp_attempt_focus()`: 200ms after the form renders it focuses the username field and selects its
+contents. Playwright's `fill` is two steps — focus the field, then insert the text into whatever
+holds focus. A timer that fires between them sends the password into the username field, over the
+selected username. Both fields are `required`, so the browser will not submit the form: no request,
+no error on the page. The screenshot from #210 shows exactly that — the password in the username
+field and "Please fill out this field." under an empty password field.
+
+Measured, not inferred: against WordPress's script verbatim, 1 fill in 120 went astray when timed to
+the 200ms mark. With the focus moved in a microtask after the password field takes it, 60 in 60 did.
+
+**A second defect turned a recoverable miss into a 60-second timeout.** After a login that stays on
+`wp-login.php`, `signInAs` read `#login_error` with `innerText()`, which waits for the element to
+exist and has no timeout of its own. With no error on the page it waited until the test's timeout
+closed the browser. The three passes the helper makes — written for exactly this — never ran. Both
+September and October failures print the same two lines: pass 1 "submitted and stayed", pass 2
+"abandoned — the browser context was closed".
+
+**What was decided.**
+
+- *Check the form, then submit it.* `fillLoginForm` fills both fields, confirms each holds its own
+  credential, and fills again if not. The timer fires once, so the second fill is clean. Waiting for
+  the timer instead was rejected: it is an inline script behind a filter
+  (`enable_login_autofocus`), and a helper that waits on it hangs wherever it is absent. Writing
+  `.value` directly was rejected: the helper would stop using the form the way a person does.
+- *Read a refusal that is there; do not wait for one.* `allInnerTexts()` in place of `innerText()`.
+- *No `retries` in the Playwright config.* A retry would have turned all three failures green,
+  including the one below, which is a fault in the product.
+- *The helpers have their own spec.* `tests/e2e/helpers.spec.js` serves a login form through
+  `page.route` and holds it in the state that is otherwise a few milliseconds wide. Each fix was
+  removed in turn and its test failed. The first version of the race test did not: it moved the
+  focus with a zero-delay timer, which arrives ahead of the text only 58 times in 60, and the
+  helper's retry passes absorbed the rest.
+
+**The third failure is open, and is not a test fault.** On #211, `GET corex/v1/flows` answered 500
+"Request could not be processed." to three specs in a row. That body is `Pipeline`'s answer to any
+`Throwable`. What is known:
+
+- Nothing else was running. The other worker had finished, so no spec interfered.
+- The seed in the test before those three had succeeded, creating and publishing the flow.
+- `FlowRestGateway` answers `FlowConflictException` with a 409 and `DomainException` or
+  `InvalidArgumentException` with a 422, and every `throw` on the list path is one of those. So
+  this was a `Throwable` the flow code does not raise deliberately.
+- The same branch passed the same specs four times earlier that day, and once after.
+
+What threw is not known. `Pipeline` wrote the message to the PHP error log, and CI kept no server
+log. Two changes make the next occurrence diagnosable instead of guessing at this one:
+`seedSubmission` checks every answer and reports the step, status, code and message — it had
+reported `Cannot read properties of undefined (reading 'flows')` — and the browser job now copies
+nginx's error and access logs and the php-fpm log into the artifact it uploads on failure. The seed
+is deliberately not retried: three failures across three seconds would have outlasted a retry, and
+one that did not would hide the fault.
+
+Not re-examined: `helpers.js` blames the failures of 2026-09-03 and 2026-09-04 on the login address
+moving, and `ci.yml` blames one on lockout. Their artifacts expired, so whether either was this
+race cannot be checked.
+
+## #229 — A library the build does not bundle cannot break at render time
+
+Date: 2026-10-04 · Spec: none (dependency maintenance, under #220) · Status: Final — merged as #208
+
+`@wordpress/components` 38.0.0 → 41.0.0 was held open across three Dependabot pull requests (#186,
+#200, #208) for two reasons recorded on #186: npm had resolved 38.0.0 against a `^39.0.0`
+requirement and reported success, and #220 says a component-library major "breaks at *render* time"
+and so needs the screens driven in a real browser. This entry records what was found when the hold
+was tested, because the second reason turned out not to apply to this repository.
+
+**The resolution failure is gone.** #208's lockfile resolves 41.0.0 against `^41.0.0`, hoisted to
+the root `node_modules`. Why #186 resolved 38 against `^39` was not diagnosed: the peer ranges are
+the same on 38.0.0 and 41.0.0 (`react`, `react-dom` and `@types/react` at `^18 || ^19`), so the
+guess on #186 that a peer conflict caused it is not supported by anything seen here.
+
+**No workspace bundles this library.** None of the six build scripts passes a webpack config, so
+`wp-scripts build` applies its default dependency extraction: an import of `@wordpress/components`
+compiles to a read of `window.wp.components`, and the script's `.asset.php` lists `wp-components`
+as a dependency for WordPress to enqueue. What renders in wp-admin and the block editor is the copy
+the installed WordPress ships. The npm package decides what Jest renders against and nothing a
+browser loads.
+
+**So the proof is the build output, not a browser run.** The tree was built twice from a clean
+`npm ci`, at #208's base (`672461f1`, 38.0.0 installed) and at its head (`414f8a8d`, 41.0.0
+installed), with the installed version confirmed by `npm ls` before each build. All 169 files under
+the six workspaces' `build/` directories have the same SHA-256 on both. A browser given either build receives
+the same bytes.
+
+What was run, and where:
+
+| Check | Where | Result |
+|---|---|---|
+| Build, seven webpack compilations | export of `414f8a8d`, local | compiled, no warnings |
+| Build output, 38.0.0 against 41.0.0 | same export, local | 169 of 169 files identical |
+| Jest | same export, local, both versions | 54 suites; 441 passed, 2 skipped |
+| Jest | CI, `414f8a8d` | 442 passed |
+| Playwright, Chromium | CI, `414f8a8d` | 141 passed |
+| Linters, both integration suites, advisory gate, CodeQL | CI, `414f8a8d` | all eight checks green |
+
+Two limits on that table. The browser run is CI's; none was made on a workstation, because the
+local install was in use by another session's browser tests and identical output left nothing for a
+local run to find. And CI's browser suite excludes three tests on a fresh install, two of them
+block-editor tests (`tests/e2e/playwright.config.js`) — the editor being where this library is used
+most. The file comparison covers them, since their bundles are among the 169; the browser run does
+not.
+
+**What the bump does change.** Forty-six source files in seven packages import the library, and
+the Jest tests that render them now do so against 41.0.0 while production renders whatever version
+WordPress ships. That gap existed at 38.0.0 too and is not measured here. It is the real cost of
+moving this package, and the reason to keep it near the version the supported WordPress carries
+rather than at the newest release.
+
+The rule #220 stated was right about the question and wrong about the mechanism for this package:
+**for a dependency the build externalises, compare the build output across the bump. Identical
+output closes the render-time question; only a difference needs a browser.**
+
+## #230 — A client site is defined by what it owns, and the framework is everything else
 
 Spec 102. The framework told a team to build a client site under `sites/<client>/` and then
 rejected that layout in four places of its own — repository hygiene, both linters and Jest — each

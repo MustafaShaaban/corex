@@ -122,54 +122,84 @@ async function seedSubmission(
 		async ( fixture ) => {
 			const api = window.Corex.api;
 			const config = window.corexFlows;
-			const list = await api.get(
-				`${ config.restUrl }?search=${ fixture.slug }`,
-				{
-					nonce: config.nonce,
+
+			// Every answer is checked before it is read. `Corex.api` never throws — a refusal
+			// comes back as a result with no `data` — so the unchecked seed reported a 500 from
+			// the flow search as "Cannot read properties of undefined (reading 'flows')", three
+			// tests in a row, and discarded the one thing the server had said about it. The step
+			// and the answer are the report.
+			//
+			// It is not retried. Those three failures spanned three seconds with nothing else
+			// running, so a second attempt would have met the same answer — and a seed that
+			// quietly outlasts a 500 hides a fault in the product, not in the test.
+			const answered = async ( step, request ) => {
+				const result = await request;
+				if ( ! result.envelope.ok ) {
+					throw new Error(
+						`seedSubmission, ${ step }: HTTP ${ result.status } ${ result.envelope.code } — ${ result.envelope.message }`
+					);
 				}
+				return result;
+			};
+
+			const list = await answered(
+				'finding the flow',
+				api.get( `${ config.restUrl }?search=${ fixture.slug }`, {
+					nonce: config.nonce,
+				} )
 			);
 			let flow = list.envelope.data.flows.find(
 				( item ) => item.slug === fixture.slug
 			);
 			if ( ! flow ) {
-				const created = await api.post(
-					config.restUrl,
-					{
-						slug: fixture.slug,
-						name: 'Inbox E2E flow',
-						owner_id: config.ownerId,
-						placement_type: 'block',
-						configuration: fixture.configuration,
-					},
-					{ nonce: config.nonce }
+				const created = await answered(
+					'creating the flow',
+					api.post(
+						config.restUrl,
+						{
+							slug: fixture.slug,
+							name: 'Inbox E2E flow',
+							owner_id: config.ownerId,
+							placement_type: 'block',
+							configuration: fixture.configuration,
+						},
+						{ nonce: config.nonce }
+					)
 				);
 				flow = created.envelope.data.flow;
 			}
+
+			const readFlow = () =>
+				answered(
+					'reading the flow',
+					api.get( `${ config.restUrl }/${ flow.id }`, {
+						nonce: config.nonce,
+					} )
+				);
 
 			// Bring an existing fixture back to the shape this spec needs, rather than trusting
 			// whatever state a previous run — or a person clicking around the builder — left it in.
 			// The old seed only configured and published a flow it had just created, so once this
 			// flow drifted, every test in the file failed permanently and told you nothing useful.
-			let detail = await api.get( `${ config.restUrl }/${ flow.id }`, {
-				nonce: config.nonce,
-			} );
+			let detail = await readFlow();
 			let latest = detail.envelope.data.versions.at( -1 );
 			const captchaOff =
 				latest.configuration?.protection?.captcha === 'off';
 
 			if ( ! captchaOff ) {
-				await api.patch(
-					`${ config.restUrl }/${ flow.id }`,
-					{
-						expected_version: latest.version_number,
-						expected_checksum: latest.checksum,
-						configuration: fixture.configuration,
-					},
-					{ nonce: config.nonce }
+				await answered(
+					'saving its configuration',
+					api.patch(
+						`${ config.restUrl }/${ flow.id }`,
+						{
+							expected_version: latest.version_number,
+							expected_checksum: latest.checksum,
+							configuration: fixture.configuration,
+						},
+						{ nonce: config.nonce }
+					)
 				);
-				detail = await api.get( `${ config.restUrl }/${ flow.id }`, {
-					nonce: config.nonce,
-				} );
+				detail = await readFlow();
 				latest = detail.envelope.data.versions.at( -1 );
 			}
 
@@ -179,36 +209,46 @@ async function seedSubmission(
 					latest.version_number
 			) {
 				if ( detail.envelope.data.flow.state === 'published' ) {
-					await api.post(
-						`${ config.restUrl }/${ flow.id }/unpublish`,
-						{ expected_version: latest.version_number },
-						{ nonce: config.nonce }
+					await answered(
+						'unpublishing it',
+						api.post(
+							`${ config.restUrl }/${ flow.id }/unpublish`,
+							{ expected_version: latest.version_number },
+							{ nonce: config.nonce }
+						)
 					);
 				}
-				await api.post(
-					`${ config.restUrl }/${ flow.id }/publish`,
-					{ expected_version: latest.version_number },
-					{ nonce: config.nonce }
+				await answered(
+					'publishing it',
+					api.post(
+						`${ config.restUrl }/${ flow.id }/publish`,
+						{ expected_version: latest.version_number },
+						{ nonce: config.nonce }
+					)
 				);
-				detail = await api.get( `${ config.restUrl }/${ flow.id }`, {
-					nonce: config.nonce,
-				} );
+				detail = await readFlow();
 				latest = detail.envelope.data.versions.at( -1 );
 			}
 
 			const version = latest.version_number;
-			const real = await api.post(
-				`${ config.restUrl }/${ flow.id }/submit`,
-				{ email: fixture.email, utm_source: 'playwright' },
-				{ nonce: config.nonce }
+			const real = await answered(
+				'submitting to it',
+				api.post(
+					`${ config.restUrl }/${ flow.id }/submit`,
+					{ email: fixture.email, utm_source: 'playwright' },
+					{ nonce: config.nonce }
+				)
 			);
-			const marked = await api.post(
-				`${ config.restUrl }/${ flow.id }/test`,
-				{
-					expected_version: version,
-					values: { email: 'marked-test@example.com' },
-				},
-				{ nonce: config.nonce }
+			const marked = await answered(
+				'running its marked test',
+				api.post(
+					`${ config.restUrl }/${ flow.id }/test`,
+					{
+						expected_version: version,
+						values: { email: 'marked-test@example.com' },
+					},
+					{ nonce: config.nonce }
+				)
 			);
 			return { real, marked };
 		},
@@ -230,6 +270,45 @@ const LOGIN_PATHS = [
 	'/wp-login.php',
 	'/corex-login/',
 ].filter( Boolean );
+
+/**
+ * Put the credentials in the login form, and prove each is in its own field before anything is
+ * submitted.
+ *
+ * wp-login.php runs `wp_attempt_focus()`: 200ms after the form renders, it focuses the username
+ * field and selects its contents. Playwright's `fill` is two steps — focus the field, then insert
+ * the text into whatever holds focus — and nothing joins them. A timer that fires in between
+ * sends the password into the username field, over the selected username, and leaves the password
+ * field empty. Both fields are `required`, so the browser then refuses to submit the form at all:
+ * no request, no error on the page, nothing in a log.
+ *
+ * That is what failed access-request.spec.js on 2026-10-04 — the screenshot shows the password
+ * sitting in the username field. The window is a few milliseconds wide: against WordPress's own
+ * script, 1 fill in 120 hit it when timed to the 200ms mark.
+ *
+ * The timer fires once. So a form that does not hold what was typed is filled again, and the
+ * second time nothing is waiting to move the focus.
+ *
+ * @param {import('@playwright/test').Page} page     A page showing the login form.
+ * @param {string}                          user     The login name.
+ * @param {string}                          password The password.
+ */
+async function fillLoginForm( page, user, password ) {
+	const login = page.locator( '#user_login' );
+	const pass = page.locator( '#user_pass' );
+
+	await helperExpect( async () => {
+		await login.fill( user );
+		await pass.fill( password );
+
+		// A boolean, so that a failure does not print the credentials it was comparing.
+		helperExpect(
+			( await login.inputValue() ) === user &&
+				( await pass.inputValue() ) === password,
+			'the login form holds each credential in its own field'
+		).toBe( true );
+	} ).toPass( { timeout: 5_000 } );
+}
 
 /**
  * Sign a non-administrator in, and survive the login endpoint moving underneath us.
@@ -266,6 +345,24 @@ async function signInAs( browser, baseURL, user, password ) {
 		baseURL,
 	} );
 	const page = await context.newPage();
+
+	await signIn( page, user, password );
+
+	return page;
+}
+
+/**
+ * The sign-in itself, on a page that already exists.
+ *
+ * Separate from `signInAs` so that `helpers.spec.js` can drive it against a login form the test
+ * controls. The states that break a sign-in are a few milliseconds wide on a real site, and
+ * a helper that only ever meets the real site is one whose failures cannot be reproduced.
+ *
+ * @param {import('@playwright/test').Page} page     A page with no session.
+ * @param {string}                          user     The login name.
+ * @param {string}                          password The password.
+ */
+async function signIn( page, user, password ) {
 	const attempts = [];
 	let signedIn = false;
 
@@ -317,8 +414,7 @@ async function signInAs( browser, baseURL, user, password ) {
 				continue;
 			}
 
-			await page.fill( '#user_login', user );
-			await page.fill( '#user_pass', password );
+			await fillLoginForm( page, user, password );
 
 			// Bounded: an unbounded wait inside a loop whose purpose is to *try* an address spends
 			// the whole test budget on the first one that half-answers.
@@ -337,11 +433,15 @@ async function signInAs( browser, baseURL, user, password ) {
 			// A refusal is rendered on the login screen we are still looking at. Without it the
 			// message cannot tell a wrong password from "too many attempts from this address",
 			// and those have opposite fixes.
-			const refusal = await page
+			//
+			// Read what is there now, do not wait for it. `innerText()` waits for the element to
+			// exist and has no timeout of its own, so a login that stayed put *without* printing a
+			// reason was waited on until the test's own timeout closed the page — and the passes
+			// below, which exist for exactly that login, never ran.
+			const [ refusal = '' ] = await page
 				.locator( '#login_error, .notice-error' )
-				.first()
-				.innerText()
-				.catch( () => '' );
+				.allInnerTexts()
+				.catch( () => [] );
 			attempts.push(
 				`pass ${ pass } ${ path }: submitted and stayed on ${ page.url() }${
 					refusal
@@ -356,13 +456,12 @@ async function signInAs( browser, baseURL, user, password ) {
 		signedIn,
 		`signed in as ${ user }\n  ` + attempts.join( '\n  ' )
 	).toBe( true );
-
-	return page;
 }
 
 module.exports = {
 	collectConsoleErrors,
 	seedSubmission,
+	signIn,
 	signInAs,
 	FLOW_SLUG,
 	COREX_ROUTES,

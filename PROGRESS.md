@@ -55,12 +55,13 @@ readings and what would overturn the exception.
 Merged since v0.42.0: #202 (issue #201 — `composer install --no-dev` no longer drops seven WP-CLI
 commands, DECISIONS #225), #203 (the September advisory pass, DECISIONS #226), #212 (the October
 one, DECISIONS #227), #213 (the linters and Jest no longer walk `wp-ms/` or session worktrees),
-#214 (Jest's module map no longer indexes generated copies) and three routine Dependabot bumps:
+#214 (Jest's module map no longer indexes generated copies), three routine Dependabot bumps —
 #205 (`@playwright/test` 1.63.0), #206 (`@wordpress/element` 8.8.0) and #207 (`@wordpress/i18n`
-6.29.0).
+6.29.0) — #216 (the lockfile back in the order npm writes it), #208 (`@wordpress/components`
+38 → 41, DECISIONS #229) and #217 (the browser-test sign-in helper, DECISIONS #228).
 
 **Spec 102 — a client site the framework can be updated underneath — is implemented on PR #211**
-(DECISIONS #228). The framework prescribed `sites/<client>/` and its own checks rejected it. A client
+(DECISIONS #230). The framework prescribed `sites/<client>/` and its own checks rejected it. A client
 repository now passes them untouched: one ownership file says which paths are the client's, hygiene,
 the linters, Jest and prettier read it, `npm run verify:framework` proves the framework files match
 the recorded release, and `make:site` generates the baseline record, the update checklist and the
@@ -74,13 +75,11 @@ found while building 102 bears on it: a generated client theme is a standalone b
 child of the Corex theme, so it does not inherit a template the parent ships. No release is in
 preparation.
 
-One dependency pull request stays open on purpose: **#208, the `@wordpress/components` major bump
-from 38** (Dependabot's replacement for #186 and #200, both of which it closed; it retargets #208
-as releases appear, 41.0.0 on 2026-10-04). When the bump was tried on #186, npm
-resolved 38.0.0 against a `^39.0.0` requirement and reported success, producing a lockfile that
-contradicts itself — so it was not bundled into the dependency pass. It is a major in a library more
-than twenty admin modules import, which per DECISIONS #220 needs render-time verification in a real
-browser. #186 carries what was tried.
+No dependency pull request is being held. **The `@wordpress/components` major, held since #186, landed as
+#208 on 2026-10-04.** The build does not bundle that library — every script reads it from the copy
+WordPress ships — so the bump was verified by building at 38.0.0 and at 41.0.0 and comparing the
+output: 169 files, identical. DECISIONS #229 has the evidence and the rule it leaves for the next
+major of an externalised package.
 
 **`fix/jest-haste-collisions` — tooling only, merged as PR #214 on 2026-10-04.** It follows #213, merged on
 2026-10-04, which keeps the linters and Jest out of `wp-ms/` and `.claude/worktrees/`, so
@@ -90,6 +89,19 @@ Jest's module map: on a machine with a `dist/` build or an agent session worktre
 `npm run test:js` passed and printed nine "Haste module naming collision" warnings, one per package
 name it found twice. The suite is unchanged at 54 suites and 442 tests. CI never builds `dist/` and
 has no worktrees, so it never printed them.
+
+**`fix/e2e-flaky-helpers` — browser-test helpers and CI only, merged as PR #217 on 2026-10-04.** The browser job failed three
+times on diffs that changed no runtime code: the nightly on 2026-09-21, #210 and #211. Two of the
+three were one bug in `signInAs`. WordPress's login page moves focus to the username field 200ms
+after it renders; when that lands in the middle of Playwright typing the password, the password goes
+into the username field and the browser refuses to submit the form. The helper then waited on an
+error message that was never coming until the test timed out, so its retry passes never ran. It now
+checks that each field holds its credential before submitting, and reads a refusal without waiting
+for one. `tests/e2e/helpers.spec.js` reproduces both against a login form it controls
+(DECISIONS #228).
+
+The third failure is **not fixed, because it is not a test fault**: `GET corex/v1/flows` answered
+500 to three inbox specs in a row. See "Open, and not hidden".
 
 ## Recently landed (v0.42.0)
 
@@ -126,6 +138,12 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   and never executed; `braces` runs in the linter and the build, on patterns that come only from
   tool defaults. The `extract-zip` pair would clear with `@wordpress/scripts` 36, a toolchain major
   that has not been attempted (DECISIONS #226, #227).
+- **Something behind `GET corex/v1/flows` threw on 2026-10-04, and nobody knows what.** Three
+  `submissions-inbox` specs in a row got "Request could not be processed." on #211, with nothing
+  else running, straight after a seed that had succeeded. Every exception the flow code raises on
+  purpose is answered with a 409 or a 422, so this was one it does not expect. The message went to a
+  log CI did not keep. It keeps it now, and `seedSubmission` reports the server's answer instead of
+  a `TypeError` — the next occurrence names itself (DECISIONS #228).
 - **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
   Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
