@@ -104,8 +104,8 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
 - [x] **T024** `MakeCommand` — passes the repository root when the site root is `<repo>/sites/<c>`;
       says so when the workflow was skipped, and when the commit could not be resolved. The
       decision lives in `SiteRepositoryResolver`, which is unit-tested; the command only prints.
-      It reads a relative `--path` against the working directory, because
-      `--path=sites/acme` is how the documentation writes the command.
+      It reads a relative site directory against the working directory. (The note that stood
+      here said this was for `--path=sites/acme`. That command cannot run — see T052.)
 - [x] **T025** `CliServiceProvider` — bindings.
 - [x] **T026** `site/AGENTS.md` and `site/CLAUDE.md` stubs — the rule that client work never edits
       a framework-owned path, what to do about a framework defect, and a corrected account of
@@ -132,21 +132,31 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
 
 ## Phase 4 — CI (US1, US4)
 
-- [ ] **T031** Schedule guard on the jobs of `ci.yml`, `codeql.yml` and
+- [x] **T031** Schedule guard on the jobs of `ci.yml`, `codeql.yml` and
       `dependency-security.yml`. (FR-004)
-- [ ] **T032** Repository guard on both jobs of `docs.yml`. (FR-004)
-- [ ] **T033** Hygiene suite: every workflow with a schedule or a Pages deploy carries the guard,
-      and the repository it names is the map's `frameworkRepository`.
-- [ ] **T034** `.github/actions/provision-wordpress/action.yml` — link `sites/*/*-site` and
-      `sites/*/*-theme`.
-- [ ] **T035** The generated client workflow, exercised: full-history checkout, the check, a clean
-      install and build inside each client directory, the client's tests. (FR-005, SC-006)
-- [ ] **T036** `ci.yml` job `client-site-layout` — generate a starter site, commit it in the
-      runner, run the three root checks and `verify:framework` in the client role, change one byte
-      of a framework file and require exit 1, then build the generated theme with no root
-      `node_modules`. (FR-016, SC-002, SC-003)
+- [x] **T032** Repository guard on both jobs of `docs.yml`. (FR-004)
+- [x] **T033** `tests/repository-ownership.test.js`: every job of every workflow with a schedule
+      or a Pages deploy carries the guard, and the repository it names is the map's
+      `frameworkRepository`. It read as nine unguarded jobs before the guards were added. The
+      workflows are read as text: the only YAML parser in the tree is somebody else's dependency.
+- [~] **T034** Not done, by decision. Linking `sites/*/*-site` and `sites/*/*-theme` into the
+      provisioned WordPress would hand them to the `wp plugin activate --all` two steps later,
+      so in a client repository the framework's own integration and browser suites would run
+      with the client's plugin active — a different environment from the one they assert
+      against, in the one place those suites are supposed to mean the same thing everywhere.
+      Nothing in this spec needs CI's WordPress to load a client site: the generated workflow's
+      tests are headless, and the job in T036 only needs WordPress in order to run `make:site`.
+      `plan.md` is amended to match.
+- [x] **T035** The generated client workflow's steps, exercised by T036: the check, a clean
+      install and build inside the client theme with no root `node_modules`, and the client's
+      tests run from the plugin directory. (FR-005, SC-006)
+- [x] **T036** `ci.yml` job `client-site-layout` — generate a starter site, commit it in the
+      runner, run the client's tests and build, the two root linters, the root Jest suite and
+      `verify:framework` in the client role, then change one byte of `README.md` and require
+      exit 1 with the file named. (FR-016, SC-002, SC-003)
 - [ ] **T037** Record in `DECISIONS.md` that making `client-site-layout` a required check is an
-      owner setting in branch protection, not a file in this change.
+      owner setting in branch protection, not a file in this change. Deferred to T049, with the
+      rest of the record.
 
 ## Phase 5 — The setup script (US5)
 
@@ -180,4 +190,12 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
       this repo to make a website", which is the opposite of the client-repository model this
       spec documents and the existing client repository uses. Found while adding the
       `verify-framework.mjs` section beside it. Reconcile it with T040.
+- [ ] **T052** The documented `wp corex make:site Acme --path=sites/acme` cannot run. `--path`
+      is a WP-CLI global: it is consumed as the WordPress install location before the command
+      sees it, so the site directory never arrives and WordPress is not found. Reproduced
+      against a real install — the default form, run from the directory the site should land
+      in, works; the `--path` form fails with "No WordPress installation found". `README.md`,
+      the client-site guides and the getting-started page all show the form that fails. Found
+      while writing T036, which therefore runs `make:site` from inside `sites/`. Needs an owner
+      decision: an option WP-CLI does not consume, or documentation of the default form.
 - [ ] **T050** Guard Gate — `docs-guard` on every page; the full Pest, Jest and lint runs.

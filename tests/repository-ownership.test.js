@@ -328,3 +328,95 @@ describe( 'the tools that walk the tree', () => {
 		}
 	);
 } );
+
+describe( 'CI that is the framework’s alone', () => {
+	/**
+	 * A client repository inherits every workflow here, because it is a copy of this repository.
+	 * Two kinds of run are the framework's business and nobody else's: the scheduled ones, which
+	 * exist to catch this repository drifting against the world, and the documentation deploy.
+	 * Each job in such a workflow carries a condition naming the framework's repository.
+	 *
+	 * A workflow expression cannot read a JSON file, so the repository is written out in each
+	 * condition — and this is what stops those copies and the ownership map from disagreeing.
+	 */
+	const committed = loadOwnership( repositoryRoot );
+	const workflowsDirectory = path.join(
+		repositoryRoot,
+		'.github',
+		'workflows'
+	);
+	const scheduleGuard = `github.event_name != 'schedule' || github.repository == '${ committed.frameworkRepository }'`;
+	const repositoryGuard = `github.repository == '${ committed.frameworkRepository }'`;
+
+	const workflows = fs
+		.readdirSync( workflowsDirectory )
+		.filter( ( file ) => /\.ya?ml$/.test( file ) )
+		.filter(
+			( file ) =>
+				! isClientOwned( committed, `.github/workflows/${ file }` )
+		)
+		.map( ( file ) => ( {
+			file,
+			source: fs.readFileSync(
+				path.join( workflowsDirectory, file ),
+				'utf8'
+			),
+		} ) );
+
+	/**
+	 * Each job of a workflow, as its name and the text of its definition.
+	 *
+	 * Read as text rather than parsed: the only YAML parser in the tree arrives as somebody
+	 * else's dependency, and relying on one of those is the mistake spec 102 records.
+	 *
+	 * @param {string} source The workflow file.
+	 * @return {{name:string, body:string}[]} The jobs.
+	 */
+	const jobsOf = ( source ) => {
+		const jobs = source.split( /^jobs:\s*$/m )[ 1 ] ?? '';
+
+		return jobs
+			.split( /^(?= {2}[\w-]+:\s*$)/m )
+			.filter( ( block ) => /^ {2}[\w-]+:\s*$/m.test( block ) )
+			.map( ( block ) => ( {
+				name: block.match( /^ {2}([\w-]+):\s*$/m )[ 1 ],
+				body: block,
+			} ) );
+	};
+
+	const jobsWithout = ( guard, selected ) =>
+		selected.flatMap( ( { file, source } ) =>
+			jobsOf( source )
+				.filter( ( job ) => ! job.body.includes( `if: ${ guard }` ) )
+				.map( ( job ) => `${ file }: ${ job.name }` )
+		);
+
+	const scheduled = workflows.filter( ( { source } ) =>
+		/^ {2}schedule:\s*$/m.test( source )
+	);
+	const deployingPages = workflows.filter( ( { source } ) =>
+		/^ {2}pages:\s*write\s*$/m.test( source )
+	);
+
+	it( 'finds the workflows this is about', () => {
+		// A guard against the test going quiet: if the patterns above stopped matching, every
+		// assertion below would pass over an empty list.
+		expect( scheduled.map( ( { file } ) => file ).sort() ).toEqual( [
+			'ci.yml',
+			'codeql.yml',
+			'dependency-security.yml',
+		] );
+		expect( deployingPages.map( ( { file } ) => file ) ).toEqual( [
+			'docs.yml',
+		] );
+		expect( jobsOf( scheduled[ 0 ].source ) ).not.toEqual( [] );
+	} );
+
+	it( 'runs no scheduled job outside the framework’s repository', () => {
+		expect( jobsWithout( scheduleGuard, scheduled ) ).toEqual( [] );
+	} );
+
+	it( 'deploys the documentation from the framework’s repository only', () => {
+		expect( jobsWithout( repositoryGuard, deployingPages ) ).toEqual( [] );
+	} );
+} );

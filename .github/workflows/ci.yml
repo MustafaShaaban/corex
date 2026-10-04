@@ -23,8 +23,15 @@ on:
 permissions:
   contents: read
 
+# Every job below carries the same condition: a scheduled run happens in the framework's own
+# repository and nowhere else. A client repository is a copy of this one and inherits this file,
+# and the schedule exists to catch *this* repository drifting against the world — which is not a
+# client's to find out, nightly, in a repository whose subject is one site (spec 102). Pull-request
+# and push runs are unaffected. The repository is written out because an expression cannot read
+# `.github/repository-ownership.json`; `tests/repository-ownership.test.js` holds the two together.
 jobs:
   test:
+    if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
     name: Lint + headless tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
     strategy:
@@ -53,6 +60,7 @@ jobs:
         run: composer test
 
   js:
+    if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
     name: Lint + JS unit tests (Jest)
     runs-on: ubuntu-latest
     steps:
@@ -125,6 +133,7 @@ jobs:
   # requires ./wp/wp-load.php), so CI has to provision one. This mirrors scripts/setup-wordpress.ps1
   # — the documented local setup — step for step, with symlinks where that script uses junctions.
   integration:
+    if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
     name: Integration tests (real WordPress)
     runs-on: ubuntu-latest
     services:
@@ -148,6 +157,7 @@ jobs:
         run: composer test:integration
 
   integration-multisite:
+    if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
     name: Integration tests (real WordPress Multisite)
     runs-on: ubuntu-latest
     services:
@@ -178,6 +188,7 @@ jobs:
   # returning focus to the bell, the RTL flip, and that the toolbar entry and header bell never
   # appear together. They needed a served site, so they only ever ran on a developer's machine.
   e2e:
+    if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
     name: Browser tests (Playwright)
     runs-on: ubuntu-latest
     services:
@@ -340,6 +351,106 @@ jobs:
             test-results
           retention-days: 7
           if-no-files-found: ignore
+
+  # The framework tells a team to put a client site under `sites/<client>/`, and for a long time
+  # its own checks rejected exactly that: repository hygiene forbade the directory and the root
+  # linters and Jest swept it. Each of those was found in a client's repository, by the client.
+  #
+  # This job is the framework finding it first (spec 102, FR-016). It generates a real starter
+  # site with `make:site`, commits it the way a client would, and then runs everything a client
+  # repository runs: the client's own tests and build, the root linters, the root Jest suite with
+  # the site tracked, and the unmodified-framework check — which must pass, and must then fail on
+  # one changed byte. It runs against the generator's real output rather than a fixture, because
+  # the generator is the thing that changes.
+  client-site-layout:
+    if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
+    name: A generated client site passes every root check
+    runs-on: ubuntu-latest
+    env:
+      # From here on this checkout is treated as a client's repository. Without it the hygiene
+      # suite would — correctly — refuse a client site committed to the framework's own.
+      COREX_REPOSITORY_ROLE: client
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: corex
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/provision-wordpress
+
+      # Run from inside `sites/`, so the site lands at `sites/acme`. The site directory cannot be
+      # given as `--path`: WP-CLI takes that option for itself, as the WordPress install.
+      - name: Generate a starter client site
+        run: |
+          set -euo pipefail
+          mkdir -p sites
+          ( cd sites && wp corex make:site Acme --starter --path="$GITHUB_WORKSPACE/wp" )
+          test -f sites/acme/corex-baseline.json
+          test -f sites/acme/UPDATING-COREX.md
+          test -f .github/workflows/site-acme.yml
+          cat sites/acme/corex-baseline.json
+
+      - name: Commit it, as a client repository would
+        run: |
+          git config user.email ci@example.com
+          git config user.name CI
+          git add sites .github/workflows/site-acme.yml
+          git commit --quiet --message 'Add the client site'
+
+      - name: The client's own tests run from its plugin directory
+        working-directory: sites/acme/acme-site
+        run: ../../../vendor/bin/pest
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # Before the root install, on purpose. A client package that imports something it does not
+      # declare resolves it from the framework's node_modules when those are present, and breaks
+      # on the day a framework update removes it. With no root install there is nothing to borrow.
+      - name: The client theme builds from a clean install, with no root node_modules
+        run: |
+          set -euo pipefail
+          test ! -d node_modules
+          cd sites/acme/acme-theme
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Install the framework's dependencies
+        run: npm ci
+
+      - name: The root linters report nothing from the client site
+        run: |
+          npm run lint:css
+          npm run lint:js
+
+      - name: The root Jest suite passes with the site tracked, repository hygiene included
+        run: npm run test:js
+
+      - name: The framework is reported unmodified
+        run: node scripts/verify-framework.mjs
+
+      - name: One changed byte in a framework file is caught, and the file is named
+        run: |
+          set -euo pipefail
+          printf ' ' >> README.md
+          if node scripts/verify-framework.mjs > "$RUNNER_TEMP/verify.txt"; then
+            cat "$RUNNER_TEMP/verify.txt"
+            echo "verify:framework passed over a modified framework file." >&2
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/verify.txt"
+          grep --perl-regexp '^DRIFT\tREADME\.md$' "$RUNNER_TEMP/verify.txt"
 
 # Not yet wired here (tracked in CONTRIBUTING.md):
 #   - The guard gates (clean-code/wp/test/docs) are run by the coding agent on each diff

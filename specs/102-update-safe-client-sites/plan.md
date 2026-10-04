@@ -141,7 +141,7 @@ this, as they generate no governance today.
 .github/workflows/codeql.yml                       schedule guard
 .github/workflows/dependency-security.yml          schedule guard
 .github/workflows/docs.yml                         repository guard on build and deploy
-.github/actions/provision-wordpress/action.yml     link sites/*/*-site and sites/*/*-theme
+.github/actions/provision-wordpress/action.yml     unchanged — see tasks.md T034 for why the link was dropped
 
 scripts/repository-ownership.mjs                   NEW   pure: load map, match, classify, resolve role
 scripts/framework-baseline.mjs                     NEW   pure: validate a record, evaluate drift
@@ -189,7 +189,7 @@ Each step leaves the suite green and is useful without the next.
 2. **The check** (US3 · FR-007–009). `framework-baseline.mjs`, the runner, both suites.
 3. **The generator** (US1, US2, US4 · FR-005, 006, 012). Baseline source, new stubs, validator,
    Pest suites.
-4. **CI** (US1, US4 · FR-004, FR-016). Workflow guards, the provisioning link, the proof job.
+4. **CI** (US1, US4 · FR-004, FR-016). Workflow guards and the proof job.
 5. **The setup script** (US5 · FR-014).
 6. **Documentation and release notes** (US2, US4, US6 · FR-010, 011, 013, 015).
 
