@@ -54,15 +54,18 @@ readings and what would overturn the exception.
 
 Merged since v0.42.0: #202 (issue #201 — `composer install --no-dev` no longer drops seven WP-CLI
 commands, DECISIONS #225), #203 (the September advisory pass, DECISIONS #226), #212 (the October
-one, DECISIONS #227), #213 (the linters and Jest no longer walk `wp-ms/` or session worktrees) and
-#214 (Jest's module map no longer indexes generated copies).
+one, DECISIONS #227), #213 (the linters and Jest no longer walk `wp-ms/` or session worktrees),
+#214 (Jest's module map no longer indexes generated copies) and three routine Dependabot bumps:
+#205 (`@playwright/test` 1.63.0), #206 (`@wordpress/element` 8.8.0) and #207 (`@wordpress/i18n`
+6.29.0).
 
 Two feature specs are open as draft pull requests: spec 101, coming-soon mode (#210), and spec 102,
 update-safe client sites (#211). No release is in preparation.
 
-One dependency pull request stays open on purpose: **#208, `@wordpress/components` 38 → 40.1**
-(Dependabot's replacement for #186 and #200, both of which it closed). npm
-resolves 38.0.0 against a `^39.0.0` requirement and reports success, producing a lockfile that
+One dependency pull request stays open on purpose: **#208, the `@wordpress/components` major bump
+from 38** (Dependabot's replacement for #186 and #200, both of which it closed; it retargets #208
+as releases appear, 41.0.0 on 2026-10-04). When the bump was tried on #186, npm
+resolved 38.0.0 against a `^39.0.0` requirement and reported success, producing a lockfile that
 contradicts itself — so it was not bundled into the dependency pass. It is a major in a library more
 than twenty admin modules import, which per DECISIONS #220 needs render-time verification in a real
 browser. #186 carries what was tried.
