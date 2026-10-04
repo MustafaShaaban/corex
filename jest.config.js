@@ -12,6 +12,43 @@
  * — a number that changes with your working directory is not a number worth reporting.
  */
 const defaultConfig = require( '@wordpress/scripts/config/jest-unit.config.js' );
+const {
+	clientOwned,
+	localOnly,
+} = require( './.github/repository-ownership.json' );
+
+/**
+ * This directory as a regular expression, with forward slashes and every special character
+ * escaped.
+ *
+ * Used instead of `<rootDir>` for the patterns below, because `<rootDir>` is not safe on Windows
+ * when the checkout's own path contains a dot-directory. Jest rewrites path separators inside each
+ * pattern and deliberately leaves a backslash that precedes a dot alone, taking it for an escape —
+ * so `C:\repo\.claude\worktrees\x` becomes a pattern that matches `C:\repo.claude\…` and nothing
+ * else, and every ignore anchored to it silently stops applying. That is the path of every agent
+ * session worktree. Written with forward slashes and the dots escaped here, the same rewrite
+ * produces the right expression on Windows and changes nothing elsewhere.
+ */
+const rootPattern = __dirname
+	.split( /[\\/]/ )
+	.join( '/' )
+	.replace( /[.*+?^${}()|[\]]/g, '\\$&' );
+
+/**
+ * Client sites and local-only directories, as path patterns Jest understands (spec 102).
+ *
+ * A client site under `sites/` carries its own Jest config and runs from its own directory, so
+ * sweeping it in from here runs its suites without the module mapping they depend on. Anchored to
+ * this directory so that a run started inside one of them still finds its own tests.
+ */
+const ownedElsewhere = [ ...clientOwned, ...localOnly ]
+	.filter( ( pattern ) => pattern.endsWith( '/**' ) )
+	.map(
+		( pattern ) =>
+			`^${ rootPattern }/${ pattern
+				.slice( 0, -2 )
+				.replace( /\./g, '\\.' ) }`
+	);
 
 module.exports = {
 	...defaultConfig,
@@ -27,5 +64,6 @@ module.exports = {
 		'<rootDir>/wp/',
 		'<rootDir>/dist/',
 		'<rootDir>/docs-app/',
+		...ownedElsewhere,
 	],
 };

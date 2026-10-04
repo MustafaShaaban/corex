@@ -19,18 +19,44 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
       `sites/` rule applies in the framework role only; a secret, an archive, build output and a
       dependency directory are still rejected *inside* `sites/` in the client role. Both roles are
       asserted against a synthetic list, and the live run uses the resolved role. (FR-002)
-- [ ] **T005** `eslint.config.js` — ignores built from the map's client-owned and local-only paths.
+- [x] **T005** `eslint.config.js` — ignores built from the map's client-owned and local-only paths.
       (FR-003)
-- [ ] **T006** `jest.config.js` — `testPathIgnorePatterns` built from the same, anchored to
-      `<rootDir>`. (FR-003)
-- [ ] **T007** `.stylelintignore` — `sites/**`. A static file cannot read the map, so the hygiene
-      suite asserts the entry is present for every client-owned directory. (FR-003)
-- [ ] **T008** Establish whether `npm run format` reaches `sites/`. Add `.prettierignore` only if
-      it does, and record the finding here either way. (FR-003)
-- [ ] **T009** Verify by hand: with a throwaway `sites/acme/` holding a stylesheet and a script
-      that each fail their linter, and a failing test, `lint:css`, `lint:js` and `test:js` report
-      nothing from it. Record the three results here. The automated proof is T036.
-- [ ] **T010** Guard Gate — `clean-code-guard`, `test-guard`.
+- [x] **T006** `jest.config.js` — `testPathIgnorePatterns` built from the same, anchored to this
+      directory. (FR-003) **Not** through `<rootDir>` — see the finding under T009.
+- [x] **T007** `.stylelintignore` — `sites/**`. A static file cannot read the map, so
+      `tests/repository-ownership.test.js` asserts the entry is present for every client-owned
+      directory. (FR-003)
+- [x] **T008** Establish whether `npm run format` reaches `sites/`. **It did.** `wp-scripts format`
+      uses a project `.prettierignore` when one exists and otherwise its own, which lists only
+      `build` and `vendor`; under that default prettier reported a file under `sites/`. A project
+      `.prettierignore` now exists, repeats those defaults (a project file replaces them rather
+      than extending them), and is held to the map by the same test. (FR-003)
+- [x] **T009** Verified by hand with one stylesheet, one script and one test that each fail, placed
+      both under a throwaway `sites/acme/acme-theme/` and under a control directory inside
+      `tests/`. `lint:css` and `lint:js` reported the control files and nothing from `sites/`.
+      **`test:js` ran the failing test under `sites/`** — while the unit test for exactly that
+      was green.
+
+      The cause is not in the map. On Windows, Jest rewrites path separators inside each ignore
+      pattern and leaves a backslash that precedes a dot alone, taking it for an escape. A
+      checkout whose own path holds a dot-directory therefore turns every `<rootDir>` pattern
+      into one that matches nothing, and this work is being done in exactly such a checkout — an
+      agent session worktree under `.claude/worktrees/`. The first unit test substituted
+      `<rootDir>` itself and so could not see it. The patterns are now anchored to an escaped,
+      forward-slashed absolute path, and the test asks Jest for its resolved configuration
+      instead of predicting it. After the change Jest listed the control test and not the one
+      under `sites/`.
+
+      The older `<rootDir>/wp/`, `<rootDir>/dist/` and `<rootDir>/docs-app/` entries have the
+      same weakness in such a checkout. They are left as they are: they belong to tooling this
+      spec does not own, and a worktree has none of those directories to mis-sweep.
+
+      Full runs on the clean tree afterwards: `lint:css` exit 0, `lint:js` exit 0, Jest 55 suites,
+      486 passed, 2 skipped (the docs link check, which skips when the docs site is not built).
+- [x] **T010** Guard Gate — `clean-code-guard` and `test-guard`, applied by hand against the diff.
+      Three changes came out of it: the explicit-role check moved out of `resolveRole` into its
+      own function, an unused `version` field left the map, and a defensive null-coalesce left
+      `repositoryFromRemoteUrl`, whose only caller always passes a string.
 
 ## Phase 2 — The check (US3)
 

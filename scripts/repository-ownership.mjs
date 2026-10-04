@@ -105,15 +105,25 @@ export const isClientOwned = ( ownership, filePath ) =>
  * @return {string|null} `owner/name`, or null when the URL does not name one.
  */
 export const repositoryFromRemoteUrl = ( url ) => {
-	const match = String( url ?? '' )
-		.trim()
-		.match( /[:/]([\w.-]+\/[\w.-]+?)(?:\.git)?\/?$/ );
+	const match = url.trim().match( /[:/]([\w.-]+\/[\w.-]+?)(?:\.git)?\/?$/ );
 
 	return match ? match[ 1 ] : null;
 };
 
 const sameRepository = ( left, right ) =>
 	left.toLowerCase() === right.toLowerCase();
+
+const knownRole = ( role ) => {
+	if ( ! ROLES.includes( role ) ) {
+		throw new Error(
+			`COREX_REPOSITORY_ROLE must be one of: ${ ROLES.join(
+				', '
+			) }. Received "${ role }".`
+		);
+	}
+
+	return role;
+};
 
 /**
  * Whether this checkout is the framework's own repository or a client's.
@@ -131,16 +141,8 @@ const sameRepository = ( left, right ) =>
 export const resolveRole = ( { ownership, env, originUrl = '' } ) => {
 	const explicit = env.COREX_REPOSITORY_ROLE;
 
-	if ( explicit !== undefined && explicit !== '' ) {
-		if ( ! ROLES.includes( explicit ) ) {
-			throw new Error(
-				`COREX_REPOSITORY_ROLE must be one of: ${ ROLES.join(
-					', '
-				) }. Received "${ explicit }".`
-			);
-		}
-
-		return explicit;
+	if ( explicit ) {
+		return knownRole( explicit );
 	}
 
 	const repository =

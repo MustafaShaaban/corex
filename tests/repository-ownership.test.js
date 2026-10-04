@@ -6,6 +6,8 @@
  * rest now read: a path is client-owned if it matches a pattern in
  * `.github/repository-ownership.json`, and framework-owned otherwise.
  */
+const { execFileSync } = require( 'node:child_process' );
+const fs = require( 'node:fs' );
 const path = require( 'node:path' );
 
 const {
@@ -20,7 +22,6 @@ const {
 const repositoryRoot = path.resolve( __dirname, '..' );
 
 const ownership = parseOwnership( {
-	version: 1,
 	frameworkRepository: 'Acme/framework',
 	clientOwned: [ 'sites/**', '.github/workflows/site-*.yml' ],
 	localOnly: [ '.claude/worktrees/**' ],
@@ -198,4 +199,110 @@ describe( 'the map itself', () => {
 			isClientOwned( committed, '.github/workflows/site-acme.yml' )
 		).toBe( true );
 	} );
+} );
+
+describe( 'the tools that walk the tree', () => {
+	const committed = loadOwnership( repositoryRoot );
+	const everyPattern = [ ...committed.clientOwned, ...committed.localOnly ];
+	const directoryPatterns = ( patterns ) =>
+		patterns.filter( ( pattern ) => pattern.endsWith( '/**' ) );
+	const linesOf = ( file ) =>
+		fs
+			.readFileSync( path.join( repositoryRoot, file ), 'utf8' )
+			.split( /\r?\n/ );
+
+	it( 'keeps ESLint out of every client-owned and local-only path', () => {
+		// Loaded by Node itself, in a child process, exactly as ESLint loads it. Jest cannot
+		// `require` this file: the WordPress preset it re-exports pulls in an ES module.
+		const ignores = JSON.parse(
+			execFileSync(
+				process.execPath,
+				[
+					'-e',
+					'process.stdout.write( JSON.stringify( require( "./eslint.config.js" )[ 0 ].ignores ) )',
+				],
+				{ cwd: repositoryRoot, encoding: 'utf8' }
+			)
+		);
+
+		expect( ignores ).toEqual( expect.arrayContaining( everyPattern ) );
+	} );
+
+	describe( 'Jest', () => {
+		/**
+		 * The ignore patterns as Jest resolved them, not as `jest.config.js` wrote them.
+		 *
+		 * The difference is the whole test. An earlier version substituted `<rootDir>` itself and
+		 * passed while Jest went on running a failing test under `sites/`: on Windows, Jest
+		 * rewrites path separators inside each pattern and leaves a backslash that precedes a
+		 * dot alone, so a checkout whose own path holds a dot-directory — every agent session
+		 * worktree under `.claude/worktrees/` — turned each `<rootDir>` pattern into one that
+		 * matched nothing. Asking Jest is the only way to see what Jest will do.
+		 */
+		let resolved = [];
+
+		beforeAll( () => {
+			const shown = execFileSync(
+				process.execPath,
+				[
+					require.resolve( '@wordpress/scripts/bin/wp-scripts.js' ),
+					'test-unit-js',
+					'--showConfig',
+				],
+				{
+					cwd: repositoryRoot,
+					encoding: 'utf8',
+					maxBuffer: 32 * 1024 * 1024,
+				}
+			);
+
+			resolved = JSON.parse( shown ).configs[ 0 ].testPathIgnorePatterns;
+		}, 120000 );
+
+		it.each( directoryPatterns( everyPattern ) )(
+			'is kept out of %s',
+			( pattern ) => {
+				const testFile = path.join(
+					repositoryRoot,
+					...pattern
+						.replace( '**', 'acme/thing.test.js' )
+						.split( '/' )
+				);
+
+				expect(
+					resolved.filter( ( ignored ) =>
+						new RegExp( ignored ).test( testFile )
+					)
+				).not.toEqual( [] );
+			}
+		);
+
+		it( 'still runs the framework’s own tests', () => {
+			const ownTest = path.join(
+				repositoryRoot,
+				'tests',
+				'repo-hygiene.test.js'
+			);
+
+			expect(
+				resolved.filter( ( ignored ) =>
+					new RegExp( ignored ).test( ownTest )
+				)
+			).toEqual( [] );
+		} );
+	} );
+
+	// Static files cannot read the map, so they are held to it here instead. Only client-owned
+	// directories are asserted: neither tool's `**` glob enters a dot-directory, which is what
+	// every local-only path is.
+	it.each( [ '.stylelintignore', '.prettierignore' ] )(
+		'lists every client-owned directory in %s',
+		( file ) => {
+			expect( linesOf( file ) ).toEqual(
+				expect.arrayContaining(
+					directoryPatterns( committed.clientOwned )
+				)
+			);
+		}
+	);
 } );

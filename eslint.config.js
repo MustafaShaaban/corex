@@ -14,6 +14,10 @@
  */
 
 const wpScriptsConfig = require( '@wordpress/scripts/config/eslint.config.cjs' );
+const {
+	clientOwned,
+	localOnly,
+} = require( './.github/repository-ownership.json' );
 
 module.exports = [
 	{
@@ -36,6 +40,15 @@ module.exports = [
 			 * from the root install. It is linted by its own toolchain, from its own directory.
 			 */
 			'docs-app/**',
+			/*
+			 * Client sites, and directories that only ever exist on a developer's machine
+			 * (spec 102). The root linters are the framework's: a client site under `sites/`
+			 * is linted by its own toolchain, from its own directory. Read from the ownership
+			 * map rather than listed here, so this file, Jest and the hygiene suite cannot
+			 * come to disagree about what a client owns.
+			 */
+			...clientOwned,
+			...localOnly,
 		],
 	},
 	...wpScriptsConfig,

@@ -3,3 +3,8 @@
 **/build/**
 **/dist/**
 wp/**
+
+# Client sites are linted by their own toolchain, from their own directory (spec 102). This file
+# cannot read .github/repository-ownership.json, so tests/repository-ownership.test.js holds it to
+# that map instead.
+sites/**
