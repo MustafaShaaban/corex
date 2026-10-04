@@ -4497,3 +4497,93 @@ The `adm-zip` exception carries a condition rather than only a date: it rests on
 caller** — there is no `.wp-env.json`, and `plugin-zip` is referenced by no script or workflow. If
 either becomes false the exception has to be re-argued, not renewed. An exception whose premise can
 quietly expire is how a bounded exception becomes a permanent one.
+
+## #227 — Ten upgrades, one override proven against its parent, and one exception that needs an owner
+
+Date: 2026-10-04 · Spec: 089 · Status: Final, except the `braces` classification, which is the owner's to confirm
+
+#203 cleared every advisory known on 2026-09-09 and merged on 2026-10-04. On the day it merged the
+gate on `main` failed again: 21 findings in the root npm workspace, 18 of them unbounded, and 8 in
+the docs site, all unbounded. Nothing in the tree had moved. This entry records what was done with
+each.
+
+**Taken inside the ranges already declared, by lockfile update alone:**
+
+| Package | From → to | Tree |
+|---|---|---|
+| `http-cache-semantics` | 4.2.0 → 4.3.0 | root and docs |
+| `ip-address` | 10.7.0 → 10.7.3 | root |
+| `moment` | 2.30.1 → 2.31.0 | root |
+| `webpack-dev-middleware` | 8.1.0 → 8.3.0 | root |
+| `devalue` | 5.8.2 → 5.9.4 | docs |
+
+`webpack-dev-middleware` 8.3.0 raised its own floor on `memfs` (4.64.0 → 4.80.0, with its eight
+`@jsonjoy.com/fs-*` packages), moved `glob-to-regex.js` to 1.3.1 and nested a `range-parser` 1.3.0.
+Those are consequences of the upgrade, not separate choices.
+
+**Taken through overrides that already existed, with the floor raised to the patched release:**
+`brace-expansion` ^5.0.12, `fast-uri` ^3.1.8, `markdown-it` ^14.3.2 and `adm-zip` ^0.6.1. The lockfile
+is what installs them; the floor is there so a regenerated lockfile cannot resolve back into an
+advisory range.
+
+**`adm-zip` 0.6.1 retires an exception.** DECISIONS #226 bounded GHSA-vwc7-r8mq-g2x9 because 0.6.0
+was both the latest release and inside the range. 0.6.1 is outside it, and outside the six further
+`adm-zip` advisories published since. The exception is deleted, not left to go stale — a stale
+exception fails the gate, which is the gate doing its job.
+
+**One new override, and it is a major: `basic-ftp` ^6.2.2.** GHSA-c475-qrg2-pj4r covers `<=6.2.0`
+and is patched only in the 6 line. Its sole parent, `get-uri`, declares `^5` in the installed
+6.0.5 and still does in its latest, 8.0.1, so no parent upgrade reaches the fix. DECISIONS #206 set the bar for this: an
+override has to be proven by the parent's own behaviour, not by the advisory count going down. So
+`get-uri` was made to do the one thing it uses `basic-ftp` for — fetch a file over FTP — against a
+loopback server, once with 5.3.1 as a control and once with 6.2.2. Both returned the same bytes and
+the same last-modified time. `get-uri` calls `access`, `lastMod`, `list`, `downloadTo` and `close`,
+and all five worked under both. Nothing in this repository runs that chain
+(`@wordpress/scripts` → `@wordpress/e2e-test-utils-playwright` → `lighthouse` → `puppeteer-core` →
+`@puppeteer/browsers` → `proxy-agent` → `pac-proxy-agent` → `get-uri`), which is a reason to care
+less about the advisory, not a reason to skip the proof.
+
+**One finding has no fix, and bounding it is a judgement rather than a lookup: `braces`
+GHSA-vfj7-8cjw-p6xm.** 3.0.3 is the latest release and the advisory, published 2026-09-18, covers
+`<=3.0.3` with no patched version. It cannot be removed: it arrives through `micromatch`, which the
+latest `fast-glob`, `stylelint` and `http-proxy-middleware` all require, so `@wordpress/scripts` 36
+would install it too.
+
+The policy forbids excepting a high finding whose exposure is `shipped-runtime` or `ci`, and
+**`braces` runs in CI** — in `npm run lint:css` and `npm run build`. The two earlier exceptions in
+the file are for a package that is installed and never executed; this one is not that, and saying
+it is would be the convenient lie. It is classed `build-test-transitive` on the reasoning spec 056
+applied to the `minimatch` and `brace-expansion` ReDoS findings, whose own exception text said they
+were "exercised on developer machines and CI runners": on that reading the class describes where
+the *input* comes from, not whether the code executes. The defect needs a deeply
+nested brace pattern. Every `wp-scripts` invocation here is a bare command with directory flags, no
+tracked file imports `braces`, `micromatch`, `fast-glob` or `globby`, and there is no custom
+webpack, stylelint or dev-server proxy configuration. Supplying a pattern therefore means committing
+to this repository's tooling configuration, which already grants code execution in the same job,
+and the result is one crashed process.
+
+Two things were checked rather than assumed. The lockfile does not mark `braces` dev-only, which
+looks like a shipped dependency and is not: `@wordpress/theme`, installed beneath
+`@wordpress/components`, lists `stylelint` as an optional peer. `@wordpress/components` is
+externalised to the `wp-components` script handle, and a search of every workspace `build/`
+directory finds no `braces`, `micromatch` or `stylelint` code.
+
+If the owner reads `ci` as "executes in CI" rather than "reachable by untrusted input in CI", this
+exception is forbidden by the policy as written and the gate cannot pass until `braces` publishes a
+fix. That reading is defensible. It is recorded here so the choice is made deliberately and not by
+whoever wrote the JSON.
+
+**The `extract-zip` pair has a route out it did not have in September.** `@puppeteer/browsers` 3.x
+dropped `extract-zip` altogether, and `@wordpress/scripts` 36 installs it. The upstream trigger on
+GHSA-jmr9-qjv8-65gv now says so. It was not taken here: 34 → 36 is two toolchain majors with ESLint
+10 and stylelint 17 inside them, and an override forcing `@puppeteer/browsers` 3 under a
+`puppeteer-core` that pins 2.13.2 exactly could not be proven on a chain nothing here runs.
+
+**Not folded in:** `@wordpress/components` 38 → 40 (#186), which still needs render-time
+verification in a browser, and the `@wordpress/scripts` major above.
+
+**A local result that looked like a failure and was not.** `npm run lint:css` reported 240,743
+errors, every one of them in `wp-ms/` — the git-ignored multisite install that spec 100 added and
+that `.stylelintignore`, `eslint.config.js` and `jest.config.js` do not exclude, though all three
+exclude `wp/`. CI has no such directory. The linters and Jest were verified with it excluded on the
+command line; fixing the three ignore lists is a separate change and is not in this one.
