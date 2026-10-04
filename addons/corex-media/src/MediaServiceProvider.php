@@ -69,7 +69,10 @@ final class MediaServiceProvider extends ServiceProvider
         }, 10, 2);
 
         // CLI: backfill (regenerate-webp) + safe cleanup (reset-webp) for existing uploads (spec 061/062).
-        if (defined('WP_CLI') && WP_CLI) {
+        // On `cli_init` — WP-CLI's hook for adding commands, fired on `init` and only under WP-CLI —
+        // because the definitions translate their help text, and doing that here, on
+        // `plugins_loaded`, loads the `corex` text domain too early (DECISIONS #235).
+        add_action('cli_init', function () use ($capability, $settings): void {
             \WP_CLI::add_command(
                 'corex media regenerate-webp',
                 static function (array $args, array $assoc) use ($capability, $settings): void {
@@ -84,7 +87,7 @@ final class MediaServiceProvider extends ServiceProvider
                 },
                 $this->resetWebpCommandDefinition(),
             );
-        }
+        });
 
         // Clean up tracked derivatives when an attachment is deleted (never touch untracked files).
         add_action('delete_attachment', static function ($attachmentId): void {

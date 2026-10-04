@@ -47,14 +47,15 @@ anybody who can edit posts gets the real site and is told on every page that vis
 preview link shows the real site to somebody without an account; `wp corex mode get|set` reads and
 changes the mode from the command line; and `make:site` gives every new client theme its own
 `templates/coming-soon.html`. `specs/101-coming-soon-mode/tasks.md` records each task and what it
-found (DECISIONS #235).
+found (DECISIONS #236).
 
 What it is waiting on, in order: the pull request being merged; then a release,
 **v0.43.0**, which is the first a client repository can be created from with the mode in it.
 
-One thing it found that is not its own, raised as a separate task: every WP-CLI command logs a
-"translation loading triggered too early" notice, from command descriptions being translated while
-commands are registered. The new mode command is written the same way.
+One thing it found that was not its own has since been fixed on `main`: every WP-CLI command
+logged a "translation loading triggered too early" notice, because commands were registered before
+`init`. They are registered on `cli_init` now (DECISIONS #235), which covers the new mode command
+too.
 
 **The integration suite no longer empties the notification tables of the install it runs against,
 and no longer leaves rows on it** (branch `fix/integration-suite-leaves-install-rows`, tests only,
@@ -81,6 +82,14 @@ on the development install with a before-and-after snapshot of post ids, every p
 row count and checksum, option hashes, cron events, users and user meta: 377 of 377 pass, and
 across three consecutive runs the only differences are the transients listed under "Open, and not
 hidden".
+
+**WP-CLI no longer logs "translation loading … triggered too early" on every request** (#232, branch
+`fix/cli-commands-register-on-cli-init`, DECISIONS #235). `CliServiceProvider` and
+`MediaServiceProvider` built their command definitions while booting on `plugins_loaded`, and a
+definition translates its help text. Both now register on `cli_init`, the hook WP-CLI fires on
+`init`. The help text stays translatable and every synopsis is unchanged. Spec 101's
+`modeCommandDefinition()` is covered without an edit once #210 merges on top; checked against that
+branch at `6e541962`. Two unit tests pin it, one per provider.
 
 No dependency pull request is being held.
 
@@ -211,6 +220,9 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - `FlowControllerTest` and `FlowLifecycleTest` still clean up their flows, submissions and Email
   Studio posts by comparing the newest 500 ids before and after. That leaves nothing on a quiet
   install, and deletes whatever another process created during the test.
+- `ResetExecutorTest` leaves `show_on_front` at `posts` and `page_on_front` at 0, whatever the
+  install had. Read from the test on 2026-10-04, not measured: a before-and-after snapshot shows
+  no difference on an install already at those values (DECISIONS #235).
 - What earlier runs left on an existing install is not removed by anything: submissions the
   retention test anonymized cannot be restored, and neither can notifications or read state the
   notification tests deleted. `corex_retention_submissions_days` may read 30 on an install whose

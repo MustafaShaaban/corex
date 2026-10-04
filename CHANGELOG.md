@@ -65,6 +65,11 @@ All notable changes to Corex are documented here. The format follows
   and never reached an older submission that still held personal data. A run now skips the submissions
   its action has nothing left to do for and takes the oldest first, and the Inbox count no longer
   includes anonymized submissions (DECISIONS #232).
+- **Every WP-CLI request on a site with `WP_DEBUG` on logged "Translation loading for the `corex` domain
+  was triggered too early".** The CLI and Media providers built their command definitions on
+  `plugins_loaded`, and a definition translates its help text. The commands are now registered on
+  `cli_init`, the hook WP-CLI fires on `init`. Command names, options and help text are unchanged
+  (DECISIONS #235).
 - **`wp corex make:site --path=<dir>` never worked.** `--path` is a WP-CLI global, taken as the WordPress
   install before any command sees its arguments, so the site directory never arrived. The README, the
   guides and the readiness report all documented that form. The site directory is now `--dir`.

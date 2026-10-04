@@ -514,7 +514,7 @@ Operations screen.
       996 pages. `tests/docs-links.test.js` then ran against that build and passed — as a pass,
       not the skip it reports when nothing is built. Token inventory regenerated.
 - [x] **T067** `PROGRESS.md` (the in-flight paragraph replaced, not appended to), `DECISIONS.md`
-      #235 (renumbered twice, as `main` took #233 and then #234 on the same day), `PROJECT-STATUS.md` and its
+      #236 (renumbered three times, as `main` took #233, #234 and #235 on the same day), `PROJECT-STATUS.md` and its
       generated copy.
 - [x] **T068** Guard Gate — `docs-guard` on each page: every command, flag, hook, filter, option,
       class name and path in the guides was checked against the code or the command's own help,

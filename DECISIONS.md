@@ -5144,7 +5144,96 @@ rows the first run left. The 377 includes 18 integration tests `main` gained fro
   mean each would delete the other's fixtures mid-test; neither would touch the install's rows.
 - Nothing puts back what earlier runs removed or changed.
 
-## #235 — Coming soon is a mode, and what a request gets is one table
+## #235 — WP-CLI commands are registered on `cli_init`, and their help text stays translatable
+
+Date: 2026-10-04 · Spec: none (defect fix) · Status: Final
+
+Every WP-CLI request on a site with `WP_DEBUG` on wrote this to `debug.log`:
+
+> Function _load_textdomain_just_in_time was called incorrectly. Translation loading for the
+> `corex` domain was triggered too early.
+
+`CliServiceProvider::boot()` runs on `plugins_loaded` and called `commandRegistrations()`, which
+builds each command's definition. `resetCommandDefinition()` translates its short description and
+its four option descriptions, so `__()` ran before `init`. The log holds one notice per request,
+for the first caller, which hid how many there were:
+
+- `resetCommandDefinition()` — the one in the logged stack.
+- `MediaServiceProvider::boot()` — two more definitions, written the same way, also built on
+  `plugins_loaded`.
+- `modeCommandDefinition()` on spec 101's branch (#210) — a fourth, not yet merged.
+
+Fixing the CLI provider alone moves the notice to the next caller. Run that way, `wp corex doctor`
+still logged it once, from `regenerateWebpCommandDefinition()`.
+
+**Decision: both providers hand their commands to WP-CLI on `cli_init`.** WP-CLI fires that action
+on WordPress's `init`, for plugins to add commands, and it fires nowhere else. By then a
+translation is allowed, and the command has not been looked up yet: WP-CLI runs it after WordPress
+has finished loading. `boot()` now only hooks; the definitions are built when the hook runs.
+
+Three alternatives, and why not:
+
+- *Untranslated English help text.* WP-CLI's own help is English, and no translation of these
+  strings exists. But the Definition of Done says "no hardcoded user-facing text", #225 kept the
+  descriptions translatable on purpose, and the `i18n:pot` script scans the files they are in. It
+  would also have to be remembered at every new definition: #210 wrote its definition the way the
+  neighbours were written.
+- *`init` directly.* The same moment, but it fires on every request, so the handler needs its own
+  "is this WP-CLI" check. `cli_init` is that check.
+- *Definitions as closures.* Changes the shape `commandRegistrations()` returns, which
+  `CommandRegistrationTest` and #210's tests read, for no gain over moving the call.
+
+What did not change: the synopsis of every command, so WP-CLI still rejects a flag a command does
+not take; the array `commandRegistrations()` returns; and that building it resolves nothing from
+the container (#225). `modeCommandDefinition()` needs no edit — it is covered when #210 merges on
+top of this, and the same patch applies to that branch without a conflict.
+
+`boot()` no longer checks `class_exists('WP_CLI')` or the `WP_CLI` constant. Without WP-CLI the
+hook is added and never fires.
+
+**Tests.** Two unit tests, one per provider, stub `__()` to throw and call `boot()`, then assert a
+callback on `cli_init`. Against `main`'s providers both fail on the hook assertion. With the hook
+in place but a definition built inside `boot()`, both fail on the thrown translation, naming the
+string. The media test silences one warning: Brain Monkey probes each hooked closure with
+`Closure::bind()`, which warns for a static one, and `boot()` hooks several.
+
+What was run, on the development install (WordPress 7.1.2, WP-CLI 2.12.0, `WP_DEBUG_LOG` on). Each
+WP-CLI request wrote its PHP errors to a file of its own rather than the shared `debug.log`, which
+other sessions write to; a "before" run on unchanged code is what shows the capture works.
+
+| Check | Before | After |
+|---|---|---|
+| `wp corex doctor` | notice, stack through `resetCommandDefinition()` | no log output |
+| `wp corex reset --dry-run` | notice | no log output |
+| `wp help corex reset` | notice | no log output; options listed |
+| `wp help corex media regenerate-webp` | — | no log output |
+| `wp help corex` | — | identical to before, 93 lines |
+| `wp corex reset --bogus-flag`, `wp corex media reset-webp --dry-run --nope` | — | "unknown … parameter", exit 1 |
+| Spec 101's branch at `6e541962`: `wp corex mode get`, `wp corex doctor` | notice | no such notice |
+| Same branch: `wp corex mode set production --acknowlege` | — | "unknown --acknowlege parameter", exit 1 |
+| Unit suite (`pest`) | — | 1859 passed |
+| `tests/Integration/Cli` | — | 5 passed |
+
+The root checkout was not edited or switched for any of this. The `main` rows loaded the two
+changed classes from the working tree ahead of the install's autoloader. The spec 101 rows pointed
+`WP_PLUGIN_DIR`, for that one request, at an export of the branch with and without the patch.
+
+**Not done.**
+
+- Nothing in CI runs a WP-CLI command and reads the log afterwards, so a translation that returns
+  to `plugins_loaded` from somewhere other than these two `boot()` methods would not be caught.
+- The spec 101 runs still logged one notice, in both columns:
+  `_wp_connectors_resolve_ai_provider_logo_url`, "Provider logo path must be located within the
+  plugins or must-use plugins directory". The scratch plugin directory reached the AI provider
+  plugin through a junction, so its real path was outside the directory. Not seen on the `main`
+  rows, which used the install's own plugin directory.
+- A provider booted after `cli_init` has fired would register nothing. `Boot` boots every provider
+  on `plugins_loaded`, so there is no such path today.
+- `tests/Integration/Cli` also holds `ResetExecutorTest`, which leaves `show_on_front` at `posts`
+  and `page_on_front` at 0 without restoring what the install had. It ran here once. What the
+  install held before was not recorded.
+
+## #236 — Coming soon is a mode, and what a request gets is one table
 
 Spec 101. Spec 063 named coming-soon as an operations mode; spec 065 shipped four modes and it was
 not one of them, and the only trace was a unit test asserting it was invalid. Maintenance mode
