@@ -4,8 +4,12 @@
  * Tests for the rules that govern a change of operations mode (spec 101, T002).
  *
  * These are the rules `OperationsModeController::handle()` held until spec 101, stated against a
- * service so the command line can be held to the same ones. Nothing here is new behaviour: each
- * case is something the controller already did.
+ * service so the command line can be held to the same ones. Nothing in the first part is new
+ * behaviour: each case is something the controller already did.
+ *
+ * The cases at the end are User Story 1 of spec 101 — turning Coming soon on, and off again. The
+ * service needed no change for them, which is the point of the mode being a mode: they are here so
+ * that the acceptance scenarios are stated somewhere that fails if that stops being true.
  *
  * @package Corex\Tests\Unit\Operations
  */
@@ -177,4 +181,64 @@ it('launches to production through the launch service once the phrase is typed',
     expect($result->status)->toBe(ModeChangeResult::SAVED)
         ->and($result->applied)->toBe(OperationsMode::PRODUCTION)
         ->and($this->store->current())->toBe(OperationsMode::PRODUCTION);
+});
+
+// Spec 101, User Story 1 — an operator turns the coming-soon page on and off.
+
+it('asks for the acknowledgement Coming soon needs, proposing the mode back, and writes nothing', function () {
+    // US1.2
+    $result = $this->service->apply(modeChange(OperationsMode::COMING_SOON));
+
+    expect($result->status)->toBe(ModeChangeResult::NEEDS_ACKNOWLEDGEMENT)
+        ->and($result->proposed)->toBe(OperationsMode::COMING_SOON)
+        ->and($this->store->current())->toBe(OperationsMode::DEVELOPMENT)
+        ->and(modeChangeLog())->toBe([]);
+});
+
+it('does not accept the production phrase in place of the Coming soon acknowledgement', function () {
+    // FR-002: the acknowledgement is ticked. A typed phrase answers a different question.
+    $result = $this->service->apply(modeChange(OperationsMode::COMING_SOON, phrase: 'PRODUCTION'));
+
+    expect($result->status)->toBe(ModeChangeResult::NEEDS_ACKNOWLEDGEMENT)
+        ->and(modeChangeLog())->toBe([]);
+});
+
+it('turns Coming soon on once acknowledged, and records who did it', function () {
+    // US1.1
+    $result = $this->service->apply(modeChange(OperationsMode::COMING_SOON, acknowledged: true));
+
+    expect($result->status)->toBe(ModeChangeResult::SAVED)
+        ->and($result->applied)->toBe(OperationsMode::COMING_SOON)
+        ->and($this->store->current())->toBe(OperationsMode::COMING_SOON)
+        ->and(modeChangeLog())->toHaveCount(1)
+        ->and(modeChangeLog()[0]['to'])->toBe(OperationsMode::COMING_SOON)
+        ->and(modeChangeLog()[0]['user'])->toBe(7);
+});
+
+it('writes nothing when Coming soon is applied to a site already in it', function () {
+    // US1.4
+    $this->service->apply(modeChange(OperationsMode::COMING_SOON, acknowledged: true));
+
+    $again = $this->service->apply(modeChange(OperationsMode::COMING_SOON, acknowledged: true));
+
+    expect($again->status)->toBe(ModeChangeResult::UNCHANGED)
+        ->and(modeChangeLog())->toHaveCount(1);
+});
+
+it('leaves Coming soon by the rules of the mode it leaves for, not by any of its own', function () {
+    // FR-002, second sentence; US1.3 for production. Staging needs nothing, so nothing is asked;
+    // production still needs its phrase, and the acknowledgement that turned Coming soon on is
+    // not one.
+    $this->service->apply(modeChange(OperationsMode::COMING_SOON, acknowledged: true));
+
+    $toProduction = $this->service->apply(modeChange(OperationsMode::PRODUCTION, acknowledged: true));
+    $toStaging    = $this->service->apply(modeChange(OperationsMode::STAGING));
+
+    expect($toProduction->status)->toBe(ModeChangeResult::NEEDS_PHRASE)
+        ->and($toStaging->status)->toBe(ModeChangeResult::SAVED)
+        ->and($this->store->current())->toBe(OperationsMode::STAGING)
+        // Two rows: into Coming soon, and out of it. The refused production launch left none.
+        ->and(modeChangeLog())->toHaveCount(2)
+        ->and(modeChangeLog()[1]['from'])->toBe(OperationsMode::COMING_SOON)
+        ->and(modeChangeLog()[1]['to'])->toBe(OperationsMode::STAGING);
 });

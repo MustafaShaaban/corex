@@ -54,16 +54,21 @@ in order; the first that matches decides.
 | 2 | Admin, login, REST, AJAX or cron | pass | unchanged |
 | 3 | Carries a `corex_preview` value | claim it: valid → set the cookie, redirect to the same address without it. Invalid → carry on as if it were absent | no |
 | 4 | Client code allowed it through (FR-018) | pass | unchanged |
-| 5 | `robots.txt` | pass | unchanged |
+| 5 | `robots.txt`, or the favicon | pass | unchanged |
 | 6 | Signed in and can edit posts, asking to see the page as a visitor | serve the coming-soon page | no |
 | 7 | Signed in and can edit posts | pass, with the notice | no |
 | 8 | Holds valid preview access | pass, with the banner | no |
-| 9 | The sitemap address | 200, a sitemap listing the home URL only | yes |
+| 9 | The sitemap address, on a site that publishes sitemaps | 200, a sitemap listing the home URL only | yes |
 | 10 | The home URL | 200, the coming-soon page | yes |
 | 11 | Anything else, feeds included | 302 to the home URL | no |
 
 A signed-in user who cannot edit posts matches none of 6–8 and falls through as a visitor, which
 is FR-007.
+
+Three things in this table were settled while building step 3 and are written up in the spec's
+clarifications: the favicon in row 5; row 9 standing aside when WordPress is set to discourage
+search engines; and, before row 11 redirects, WordPress's own `/login` and `/admin` shortcuts being
+given their turn. A fourth refined Decision 3 and is stated there.
 
 ## Decisions
 
@@ -85,6 +90,12 @@ query WordPress resolved, and a front page that is a static page, or redirects, 
 spec's edge cases. The path against the home URL's path is what the visitor asked for. A
 multilingual plugin's per-language home is admitted through `corex_coming_soon_is_home`, so no
 plugin is called by name.
+
+*Refined in step 3:* the path alone is not enough. `/?feed=rss2`, `/?p=12` and `/?s=term` all have
+the home path, and WordPress renders a feed before it chooses a template, so a path-only rule
+would have served the site's posts as a feed to anybody who asked. Home is the home path **with
+no public query variable matched in it**. A campaign tag is not a query variable WordPress knows,
+so it changes nothing.
 
 **4. The preview secret is in the visitor's cookie and only its keyed hash is on the server.** The
 link carries a random token. Claiming it sets an `HttpOnly`, `SameSite=Lax` cookie holding the
@@ -163,7 +174,8 @@ plugins/corex-config/src/Operations/
   PreviewAccessStore.php          NEW  interface, and the option-backed implementation
   PreviewLinkController.php       NEW  admin_post: create / regenerate / revoke, behind AdminGuard
   ComingSoonNotice.php            NEW  the front-end bar and the toolbar node
-plugins/corex-config/templates/coming-soon.html   NEW  the default page, core blocks and tokens
+plugins/corex-config/templates/coming-soon.php    NEW  the default page, core blocks and tokens
+                                                  (PHP, not .html: an HTML template cannot be translated)
 plugins/corex-config/assets/css/coming-soon-bar.css   NEW  loaded only with the bar
 plugins/corex-config/src/Security/OperationsSecurityScreen.php   the preview-link card; history rows for link events
 plugins/corex-config/src/Security/securityCenterState.js         the mode list gains coming-soon

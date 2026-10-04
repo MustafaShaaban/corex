@@ -31,6 +31,9 @@ it('asks each mode for its own confirmation and no other', function (string $mod
     'staging'     => [OperationsMode::STAGING, ModeDisclosure::CONFIRM_NONE],
     'production'  => [OperationsMode::PRODUCTION, ModeDisclosure::CONFIRM_PHRASE],
     'maintenance' => [OperationsMode::MAINTENANCE, ModeDisclosure::CONFIRM_ACKNOWLEDGEMENT],
+    // Spec 101, FR-002: closing the site to visitors is acknowledged, not typed. The phrase stays
+    // reserved for going live.
+    'coming soon' => [OperationsMode::COMING_SOON, ModeDisclosure::CONFIRM_ACKNOWLEDGEMENT],
 ]);
 
 it('never asks for both confirmations at once', function (string $mode) {
@@ -44,17 +47,20 @@ it('never asks for both confirmations at once', function (string $mode) {
     OperationsMode::STAGING,
     OperationsMode::PRODUCTION,
     OperationsMode::MAINTENANCE,
+    OperationsMode::COMING_SOON,
 ]);
 
 it('asks for the phrase only when going live', function () {
     expect($this->disclosure->requiresPhrase(OperationsMode::PRODUCTION))->toBeTrue()
         ->and($this->disclosure->requiresPhrase(OperationsMode::MAINTENANCE))->toBeFalse()
+        ->and($this->disclosure->requiresPhrase(OperationsMode::COMING_SOON))->toBeFalse()
         ->and($this->disclosure->requiresPhrase(OperationsMode::DEVELOPMENT))->toBeFalse()
         ->and($this->disclosure->requiresPhrase(OperationsMode::STAGING))->toBeFalse();
 });
 
 it('asks for the acknowledgement only when visitors are affected', function () {
     expect($this->disclosure->requiresAcknowledgement(OperationsMode::MAINTENANCE))->toBeTrue()
+        ->and($this->disclosure->requiresAcknowledgement(OperationsMode::COMING_SOON))->toBeTrue()
         ->and($this->disclosure->requiresAcknowledgement(OperationsMode::PRODUCTION))->toBeFalse()
         ->and($this->disclosure->requiresAcknowledgement(OperationsMode::DEVELOPMENT))->toBeFalse()
         ->and($this->disclosure->requiresAcknowledgement(OperationsMode::STAGING))->toBeFalse();
@@ -72,6 +78,7 @@ it('agrees with OperationsMode about which modes need confirming at all', functi
     OperationsMode::STAGING,
     OperationsMode::PRODUCTION,
     OperationsMode::MAINTENANCE,
+    OperationsMode::COMING_SOON,
 ]);
 
 it('describes every mode with a summary and real consequences', function () {
@@ -92,6 +99,42 @@ it('describes maintenance with what the guard actually does', function () {
         ->and($consequences)->toContain('REST')
         ->and($consequences)->toContain('cron')
         ->and($consequences)->toContain('Recovery');
+});
+
+it('describes all five modes, so the screen draws a block for each', function () {
+    expect(array_column($this->disclosure->describeAll(), 'mode'))->toBe([
+        OperationsMode::DEVELOPMENT,
+        OperationsMode::STAGING,
+        OperationsMode::PRODUCTION,
+        OperationsMode::MAINTENANCE,
+        OperationsMode::COMING_SOON,
+    ]);
+});
+
+it('describes coming soon with what the guard actually does', function () {
+    // Each line is checkable against ComingSoonGuard and ComingSoonDecision (FR-003): the status
+    // served, who passes, what is never intercepted, and how to leave.
+    $described    = $this->disclosure->describe(OperationsMode::COMING_SOON);
+    $consequences = implode(' ', $described['consequences']);
+
+    expect($described['summary'])->toContain('coming-soon page')
+        ->and($consequences)->toContain('200')
+        ->and($consequences)->toContain('temporary redirect')
+        ->and($consequences)->toContain('edit posts')
+        ->and($consequences)->toContain('REST')
+        ->and($consequences)->toContain('cron')
+        ->and($consequences)->toContain('login')
+        ->and($consequences)->toContain('To leave');
+});
+
+it('does not describe coming soon in maintenance terms', function () {
+    // The two were treated as one thing in exactly one place before spec 101. A 503 is what
+    // maintenance answers and what coming soon must never claim.
+    $described = $this->disclosure->describe(OperationsMode::COMING_SOON);
+    $text      = $described['summary'] . ' ' . implode(' ', $described['consequences']);
+
+    expect($text)->not->toContain('503')
+        ->and($text)->not->toContain('maintenance');
 });
 
 it('normalises an unknown mode rather than describing nothing', function () {

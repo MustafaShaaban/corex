@@ -93,53 +93,128 @@ A refactor. Nothing an operator or a visitor can observe changes.
 One slice. A mode that could be selected and did nothing would be a false statement on the
 Operations screen.
 
-- [ ] **T012** Pest: `OperationsModeTest` — the assertion that `coming-soon` is invalid is replaced
+- [x] **T012** Pest: `OperationsModeTest` — the assertion that `coming-soon` is invalid is replaced
       by tests of the mode: valid, listed after maintenance, needs confirmation, affects the
       public, described with a tone and a detail, and carrying its warnings. (FR-001, FR-022)
-- [ ] **T013** `OperationsMode` — `COMING_SOON`, and its entry in `all()`,
-      `requiresConfirmation()`, `affectsPublic()`, `describe()` and `warnings()`.
-- [ ] **T014** Pest: `ModeDisclosureTest` — the mode asks for an acknowledgement, not a phrase; its
+- [x] **T013** `OperationsMode` — `COMING_SOON`, and its entry in `all()`,
+      `requiresConfirmation()`, `affectsPublic()`, `describe()` and `warnings()`. The tone is
+      warning, not maintenance's danger: the site is closed on purpose and is answering 200.
+- [x] **T014** Pest: `ModeDisclosureTest` — the mode asks for an acknowledgement, not a phrase; its
       summary and each consequence name something the code does. (FR-002, FR-003)
-- [ ] **T015** `ModeDisclosure` — the confirmation, the summary and the consequences: the status
-      served, who passes, what is never intercepted, how to leave.
-- [ ] **T016** `ComingSoonRequest` — the facts about one request, as a value object: the mode,
-      whether the context is one that is never intercepted, the preview value carried, whether
-      client code allowed it, whether it is `robots.txt`, the sitemap address or the home URL,
-      whether the user can edit posts, whether they asked for the visitor view, and whether valid
-      preview access is held.
-- [ ] **T017** Pest: `ComingSoonDecisionTest` — one case per row of the plan's table, and one per
-      pair of rows whose order matters: an editor asking for the visitor view gets the page; a
-      subscriber is a visitor; a preview holder is not redirected; an allowed request passes
-      before the home rule; `robots.txt` passes for everybody. (FR-004 to FR-007, FR-018, FR-019)
-- [ ] **T018** `ComingSoonDecision::for()` — the table, returning pass, serve, sitemap or redirect,
-      and whether the response may be cached. Reads nothing.
-- [ ] **T019** `plugins/corex-config/templates/coming-soon.html` — the default page: core blocks,
-      `theme.json` variables, translatable strings, no header or footer part. (FR-008, FR-021)
-- [ ] **T020** `ComingSoonTemplate` — registers the default under `coming-soon`; resolves the
-      canvas for that slug; and when nothing resolves, returns a self-contained `StandalonePage`
-      document with a 200. (FR-008, FR-009)
-- [ ] **T021** `ComingSoonSitemap` — one `urlset` holding the home URL. (FR-019)
-- [ ] **T022** `ComingSoonGuard` — on `template_redirect` at priority 0 it gathers the facts and
+- [x] **T015** `ModeDisclosure` — the confirmation, the summary and the consequences: the status
+      served, who passes, what is never intercepted, how to leave. "How to leave" names the screen
+      only. The command line is added to that sentence in Phase 6, when it exists.
+- [x] **T016** `ComingSoonRequest` — the facts about one request, as a value object. Ten of them,
+      each defaulting to "no", so the request with nothing said about it is the anonymous visitor
+      at some other address.
+
+      Two differ from what this task first listed. The preview value is carried as *whether a
+      valid one is present*, not as the value: an invalid value must be indistinguishable from
+      none (FR-014), and the surest way is for the decision never to be told about it. And
+      `robots.txt` shares its fact with the favicon — see T022.
+- [x] **T017** Pest: `ComingSoonDecisionTest` — one case per row of the plan's table, and one per
+      pair of rows whose order matters. Twenty-four cases. (FR-004 to FR-007, FR-018, FR-019)
+
+      The order cases could not be seen failing one by one, because every case failed together
+      for the missing class. So the order was checked the other way: each pair of rows was
+      swapped in the code and the suite run. Rows 2 and 3 swapped: 1 failure. 6 and 7: 2. 9 and
+      10: 1. The home rule moved above the bypass: 5. Above the claim: 6.
+- [x] **T018** `ComingSoonDecision::for()` — the table, as one `match`, read top to bottom. Reads
+      nothing. Five outcomes, not the four this task named: claiming a preview link is its own
+      outcome, since it redirects to the same address and not to home. Nothing can produce it
+      until T042.
+- [x] **T019** `plugins/corex-config/templates/coming-soon.php` — the default page: core blocks,
+      spacing presets, translatable strings, no header or footer part. (FR-008, FR-021)
+
+      A `.php` file, not the `.html` this task named: an HTML block template cannot be translated,
+      and FR-021 requires that it can. No side padding is written into it: physical left and right
+      padding is recorded by the token inventory as left-to-right only, so the inner group is a
+      constrained one and takes the theme's own root padding instead.
+- [x] **T020** `ComingSoonTemplate` — registers the default under `coming-soon` on `init`; resolves
+      the canvas for that slug; and builds a self-contained `StandalonePage` document for a theme
+      with no block templates. (FR-008, FR-009)
+
+      `StandalonePage::document()` gained an `$indexable` argument. Every page it rendered before
+      was an interstitial and carried `noindex`; this one is a public page. The fallback carries
+      the site's name and not CoreX's mark, for the same reason.
+- [x] **T021** `ComingSoonSitemap` — one `urlset` holding the home URL, well-formed for a home URL
+      with characters XML reserves. (FR-019)
+- [x] **T022** `ComingSoonGuard` — on `template_redirect` at priority 0 it gathers the facts and
       acts: redirects with a 302 and no-cache headers, answers the sitemap, or arranges for
-      `template_include` to serve the page with a 200. Home is the request path against the home
-      URL's path, through the `corex_coming_soon_is_home` filter. The bypass is
-      `corex_coming_soon_bypass`, matching Maintenance mode's. (FR-004, FR-005, FR-015, FR-018)
-- [ ] **T023** The response for the page carries no noindex unless WordPress's own visibility
-      setting adds one; asserted both ways. (FR-010)
-- [ ] **T024** `ConfigServiceProvider` — bindings, and registration beside `MaintenanceGuard`.
-- [ ] **T025** `OperationsSecurityScreen` and `securityCenterState.js` — the mode is offered, its
-      block renders, and the script's list of modes includes it. (FR-001, FR-003)
-- [ ] **T026** `theme/patterns/maintenance.php` — its description no longer calls itself a
+      `template_include` to serve the page with a 200. The bypass is `corex_coming_soon_bypass`,
+      and admits only a strict `true`, as Maintenance mode's does. (FR-004, FR-005, FR-015, FR-018)
+
+      Four things were found here that the plan did not have. The first is a correction to the
+      plan; the other three change what the spec says and are written up in its clarifications,
+      awaiting the owner.
+
+      1. **Home is the home path with no WordPress query variable on it.** `/?feed=rss2` has the
+         home path, and WordPress renders a feed before it chooses any template — so the plan's
+         path-only rule would have served the unfinished site's posts to anybody who asked for the
+         feed that way. Found by writing the test for it; the rule was weakened afterwards to
+         confirm the tests fail without it (4 failures).
+      2. **The favicon passes**, like `robots.txt`. Redirected home, every visit would render the
+         page twice.
+      3. **No sitemap is published when WordPress is set to discourage search engines.** WordPress
+         publishes none then, and the mode should not overrule the one control an operator has.
+      4. **`/login` and `/admin` keep working.** They are WordPress's shortcuts to routes the mode
+         never intercepts. Its redirect for them is given its turn before the guard redirects
+         home, and is left alone where login protection has already switched it off.
+- [x] **T023** The response for the page carries no noindex unless WordPress's own visibility
+      setting adds one; asserted both ways, for the block template and for the fallback. (FR-010)
+- [x] **T024** `ConfigServiceProvider` — three singletons, and registration beside
+      `MaintenanceGuard`. The default page is registered in every mode, so it can be designed
+      before the site is put into Coming soon.
+- [x] **T025** `OperationsSecurityScreen` and `securityCenterState.js` — the mode is offered, its
+      block renders with an acknowledgement that names this mode's consequence and not
+      maintenance's, and the script's list of modes includes it. (FR-001, FR-003)
+
+      The overview row that read "Maintenance: Off" now reads "Public site", with three answers:
+      open to visitors, the maintenance page, the coming-soon page. With two modes that close the
+      site, "Maintenance: Off" was true and unhelpful.
+- [x] **T026** `theme/patterns/maintenance.php` — its description no longer calls itself a
       coming-soon notice.
-- [ ] **T027** Search every `match` and every list of modes for one that lacks the new value. The
-      plan names four files outside `Operations/`; record what the search finds beyond them.
-- [ ] **T028** Integration: `ComingSoonModeTest` — real users. Anonymous at home is served; at
-      another address is redirected; an administrator and an editor pass; a subscriber is
-      redirected; the bypass filter passes without changing the stored mode. A form posted to the
-      REST endpoint while the mode is on is accepted. (FR-006, FR-007, US2.3)
-- [ ] **T029** Maintenance mode's unit and integration tests pass with no line of them changed.
-      (SC-006)
-- [ ] **T030** Guard Gate — `clean-code-guard`, `wp-guard`, `test-guard`.
+- [x] **T027** Every `match` and every list of modes, searched.
+
+      Beyond the four files the plan named, nothing needed the new value. Every other consumer
+      goes through `OperationsMode::describe()` or prints the mode as it is — the Overview, the
+      Command Center widget, the insight widget. `OptionalDashboardWidgets` compares with
+      Development only, so its development-only widgets stay hidden in Coming soon, as they do in
+      Maintenance. `CompanyBlueprint`'s `maintenance` is a page slug.
+
+      One thing seen and left. The overview's "Environment and mode differ" notice appears
+      whenever the declared mode is not WordPress's environment type — so always, in Coming soon,
+      as it already does in Maintenance. It is accurate and mildly noisy; changing it would change
+      the Maintenance screen, which this spec does not do.
+- [x] **T028** Integration: `ComingSoonModeTest` — 29 cases against real users: anonymous at home is
+      served; at eight other kinds of address is redirected; an administrator and an editor pass;
+      a subscriber does not; the two extension points; the sitemap both ways; no filter is
+      consulted in any other mode. A form posted through the real REST server while the mode is
+      on is accepted. (FR-006, FR-007, US2.3) And `ComingSoonTemplateResolutionTest` — the real
+      default under the three fixture themes.
+
+      **An error of mine, recorded.** The first draft's helper cast the result of
+      `wp_insert_user()` to an integer. When a run died before its clean-up and the user already
+      existed, that result was an error, the cast made it 1, and the clean-up then deleted user 1
+      — the administrator of the install the suite runs against — with every post they owned. It
+      was this worktree's throwaway install and it was rebuilt from the setup script. The helper
+      now refuses an error, and the clean-up deletes a user only if its login is one this file
+      creates.
+
+      Not covered by an automated test: what is actually sent for a redirect, the sitemap and the
+      fallback page, since each ends the request. They were requested over real HTTP against this
+      worktree's install, signed out and as each role, under plain and pretty permalinks and
+      under each fixture theme, and behaved as the table says. The browser suite makes that
+      repeatable in T057.
+- [x] **T029** Maintenance mode's unit and integration tests pass with no line of them changed, and
+      `MaintenanceGuard` is untouched. (SC-006)
+- [x] **T030** Guard Gate — `clean-code-guard`, `wp-guard`, `test-guard`, applied by hand. One
+      change came out of it: the `template_include` callback took a `string`, and another plugin's
+      filter can hand it anything.
+
+      Found and not fixed, because it predates this spec: some other integration test leaves the
+      install's mode option set to `production`. Confirmed by running the previous commit's suite
+      from a clean option.
 
 ## Phase 4 — The notice and the visitor view (US3.2 to US3.4)
 

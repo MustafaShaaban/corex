@@ -309,10 +309,8 @@ final class OperationsSecurityScreen
                 'environment',
             ],
             [
-                __('Maintenance', 'corex'),
-                $current === OperationsMode::MAINTENANCE
-                    ? __('Visitors see the maintenance page', 'corex')
-                    : __('Off', 'corex'),
+                __('Public site', 'corex'),
+                $this->publicSiteSummary($current),
                 'environment',
             ],
             [
@@ -354,6 +352,22 @@ final class OperationsSecurityScreen
             . $this->environmentConflictNotice()
             . '<ul class="corex-opsec__summary-list">' . $items . '</ul>'
             . '</section>';
+    }
+
+    /**
+     * What a visitor is getting right now, in one line.
+     *
+     * This row used to be "Maintenance: Off", which answered a question about one mode. With two
+     * modes that close the site (spec 101) the question an operator is actually asking here is
+     * whether the public can see it, and that has three answers.
+     */
+    private function publicSiteSummary(string $mode): string
+    {
+        return match ($mode) {
+            OperationsMode::MAINTENANCE => __('Visitors see the maintenance page', 'corex'),
+            OperationsMode::COMING_SOON => __('Visitors see the coming-soon page', 'corex'),
+            default                     => __('Open to visitors', 'corex'),
+        };
     }
 
     private function sectionUrl(string $section): string
@@ -501,7 +515,7 @@ final class OperationsSecurityScreen
     /**
      * One block per mode: what it means, what follows from it, and the confirmation it needs.
      *
-     * All four are rendered and three are hidden, rather than fetching the right one over REST when
+     * All of them are rendered and all but one hidden, rather than fetching the right one over REST when
      * the selection changes. A fetch would add a route, a spinner and a failure mode to a form that
      * has none of those, to save markup nobody is paying for.
      *
@@ -562,9 +576,16 @@ final class OperationsSecurityScreen
         }
 
         if ($confirmation === ModeDisclosure::CONFIRM_ACKNOWLEDGEMENT) {
+            // One field name for both modes that ask for it: only the proposed mode's block is
+            // enabled, so only its checkbox is ever submitted. The sentence is the mode's own —
+            // an acknowledgement that names the wrong consequence acknowledges nothing.
+            $sentence = $mode === OperationsMode::COMING_SOON
+                ? __('I understand visitors will see the coming-soon page instead of the site.', 'corex')
+                : __('I understand maintenance affects real visitors.', 'corex');
+
             return '<label class="corex-opsec__mode-confirm">'
                 . '<input type="checkbox" name="corex_confirm" value="1"' . $inert . ' /> '
-                . esc_html__('I understand maintenance affects real visitors.', 'corex') . '</label>';
+                . esc_html($sentence) . '</label>';
         }
 
         return '';

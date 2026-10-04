@@ -385,6 +385,11 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Operations\ProductionLaunchService::class);
         // spec 101: one holder of the mode-change rules, for the screen and the command line alike.
         $this->container->singleton(\Corex\Config\Operations\ModeChangeService::class);
+        // spec 101: Coming soon mode. Singletons because each holds a hook: a second instance
+        // would register the default page, or answer the request, twice.
+        $this->container->singleton(\Corex\Config\Operations\ComingSoonSitemap::class);
+        $this->container->singleton(\Corex\Config\Operations\ComingSoonTemplate::class);
+        $this->container->singleton(\Corex\Config\Operations\ComingSoonGuard::class);
         $this->container->singleton(
             \Corex\Config\Forms\FlowFilterOptions::class,
             static fn (ContainerInterface $c): \Corex\Config\Forms\FlowFilterOptions =>
@@ -831,6 +836,10 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Blog\BlogProScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();
         $this->container->make(\Corex\Config\Operations\MaintenanceGuard::class)->register();
+        // The default page is registered in every mode, so it can be designed in the Site Editor
+        // before the site is put into Coming soon. The guard acts only while it is.
+        $this->container->make(\Corex\Config\Operations\ComingSoonTemplate::class)->register();
+        $this->container->make(\Corex\Config\Operations\ComingSoonGuard::class)->register();
         $this->container->make(\Corex\Config\Security\LoginProtection\LoginRouteGuard::class)->register();
         $this->container->make(\Corex\Config\Security\LoginProtection\LoginProtectionEnforcer::class)->register();
         $this->container->make(\Corex\Config\Security\SecuritySettingsController::class)->register();

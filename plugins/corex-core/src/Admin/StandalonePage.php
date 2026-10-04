@@ -45,9 +45,13 @@ final class StandalonePage
     /**
      * A full `<!DOCTYPE html>` document wrapping $bodyHtml in the branded standalone body.
      *
-     * @param string $variant optional modifier appended as `corex-standalone--<variant>`
+     * @param string $variant   optional modifier appended as `corex-standalone--<variant>`
+     * @param bool   $indexable whether this is a page meant to be found. Everything this class
+     *                          rendered before spec 101 was an interstitial — a 503, a 403 — and
+     *                          crawlers are asked to stay away from those. The coming-soon
+     *                          fallback is a public page served with a 200, and is not.
      */
-    public function document(string $title, string $bodyHtml, string $variant = ''): string
+    public function document(string $title, string $bodyHtml, string $variant = '', bool $indexable = false): string
     {
         $lang       = function_exists('get_bloginfo') ? (string) get_bloginfo('language') : 'en-US';
         $charset    = function_exists('get_bloginfo') ? (string) get_bloginfo('charset') : '';
@@ -71,7 +75,7 @@ final class StandalonePage
             . '<head>'
             . '<meta charset="' . esc_attr($charset) . '" />'
             . '<meta name="viewport" content="width=device-width, initial-scale=1" />'
-            . '<meta name="robots" content="noindex, nofollow" />'
+            . ($indexable ? '' : '<meta name="robots" content="noindex, nofollow" />')
             . '<title>' . esc_html($title) . '</title>'
             . '<style>' . $this->inlineStyles() . '</style>'
             . '</head>'

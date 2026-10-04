@@ -76,6 +76,34 @@ below, and because they change what was approved they were put to the owner, who
   Story 4 has the operator copy the link from the screen. Both hold only if the link is shown at
   the moment it is created or regenerated, and never again. → Stated as an assumption.
 
+### Session 2026-10-04 — found while implementing
+
+Building the guard against a real WordPress found three places where the spec, read literally,
+gives a worse result than it meant to. Each is implemented the way described here and is
+**awaiting the owner's approval**; each is one line to reverse.
+
+- Found: FR-005 lists `robots.txt` and the sitemap as the only addresses not redirected. A browser
+  asks for `/favicon.ico` on every visit, and WordPress answers it with a redirect to the site
+  icon. Redirected home instead, every visit to the coming-soon page renders it twice and the tab
+  has no icon. → Changed: the favicon address is served as it is with the mode off, like
+  `robots.txt`.
+- Found: FR-019 says the sitemap address answers 200. WordPress itself publishes no sitemap when it
+  is set to discourage search engines, and that setting is the one control this spec gives an
+  operator for keeping the page out of search results (FR-010). → Changed: the one-URL sitemap is
+  published only when WordPress would publish a sitemap. Otherwise the address is redirected like
+  any other.
+- Found: FR-006 says the login route is never intercepted. WordPress also answers `/login` and
+  `/admin` with a redirect to the login page and the admin, and an operator who types either would
+  be sent to the coming-soon page. → Changed: those shortcuts keep working. Where login protection
+  hides the login route it already switches them off, and then they are ordinary addresses.
+
+One thing implementation settled that needed no change to this spec, recorded because it is not
+obvious: **the home URL is the home path with nothing on it that WordPress acts on.** `/?feed=rss2`,
+`/?p=12` and `/?s=term` share the home path, and WordPress renders a feed before it chooses any
+template — so treating the path alone as "home" would have served the unfinished site's posts to
+anybody who asked for the feed by query string. A campaign tag is not something WordPress acts on,
+so `/?utm_source=…` is still the home URL, as the edge case below already says.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — An operator turns the coming-soon page on and off (Priority: P1)
@@ -234,11 +262,17 @@ served is the one in the client theme, and it can be opened and changed in the S
 - **The login route, including a custom login address.** Never intercepted, so signing in, signing
   out and resetting a password work while Coming soon is on.
 - **`robots.txt`.** Served normally. A redirect there would hide the file crawlers are asked to read.
+- **The favicon.** `/favicon.ico` is served as it is with the mode off.
+- **`/login` and `/admin`.** WordPress's own shortcuts to the login page and the admin keep working,
+  unless login protection has hidden the login route, in which case they are ordinary addresses.
 - **The sitemap.** Its address answers 200 with a sitemap listing the home URL and nothing else, so
-  a crawler that asks for it is told about the launch page.
+  a crawler that asks for it is told about the launch page. When WordPress is set to discourage
+  search engines it publishes no sitemap, and neither does this mode.
 - **Feeds.** A feed address redirects to home like any other URL; no feed is served.
 - **The home URL with a query string** (a campaign tag, for example). Still the coming-soon page,
   with no redirect loop.
+- **The home path with a WordPress query on it** (`/?feed=rss2`, `/?p=12`, `/?s=term`). Not the home
+  URL: it is a feed, a post or a search, and is redirected like any other address.
 - **A site whose front page is a static page, or one that redirects.** The home URL serves the
   coming-soon page regardless.
 - **A multilingual site.** Each language's home URL is a home URL for this purpose.
@@ -267,7 +301,8 @@ served is the one in the client theme, and it can be opened and changed in the S
   coming-soon page with a 200 status.
 - **FR-005**: While the mode is on, an anonymous request for any other front-end URL MUST receive a
   temporary redirect to the home URL. A permanent redirect MUST NOT be used. The only exceptions
-  are `robots.txt` and the sitemap (FR-019) and requests allowed through by FR-018.
+  are `robots.txt`, the favicon and the sitemap (FR-019), WordPress's own shortcuts to the login
+  page and the admin (FR-006), and requests allowed through by FR-018.
 - **FR-006**: The admin, the login route, the REST API, AJAX and cron MUST never be intercepted.
 - **FR-007**: A signed-in user who can edit posts MUST be served the real site. A signed-in user
   who cannot MUST be treated as an anonymous visitor. No configuration of this feature may lock an
@@ -307,9 +342,10 @@ served is the one in the client theme, and it can be opened and changed in the S
   NOT bypass the acknowledgement.
 - **FR-018**: A documented extension point MUST let client code allow specific requests through,
   matching the one Maintenance mode already has.
-- **FR-019**: `robots.txt` MUST be served normally. While the mode is on, the sitemap address MUST
-  answer 200 with a sitemap that lists the home URL and no other, and a feed address MUST redirect
-  to home under FR-005 without serving a feed.
+- **FR-019**: `robots.txt` and the favicon MUST be served normally. While the mode is on, the
+  sitemap address MUST answer 200 with a sitemap that lists the home URL and no other, unless
+  WordPress is set to discourage search engines, in which case no sitemap is published. A feed
+  address MUST redirect to home under FR-005 without serving a feed.
 - **FR-020**: `make:site` MUST generate an editable coming-soon template in every new client theme.
 - **FR-021**: Every user-facing string MUST be translatable, and the default page, the notice and
   the preview banner MUST be correct in RTL and meet WCAG 2.2 AA.

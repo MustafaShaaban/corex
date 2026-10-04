@@ -19,7 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-  "count": 1107,
+  "count": 1108,
   "consumers": [
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
@@ -8530,6 +8530,16 @@
       "direction_context": "not-applicable",
       "resolution": "raw-allowance",
       "target_definition": "scoped --corex-admin-* adapter"
+    },
+    {
+      "path": "plugins/corex-config/templates/coming-soon.php",
+      "selector_or_context": "lines 28, 28: <div class=\"wp-block-group\" style=\"padding-top:var(--wp--preset--spacing--50);padding-bottom:var(--wp--preset--spacing--50)\">",
+      "property": "--wp--preset--spacing--50",
+      "owner": "config-plugin",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.50"
     },
     {
       "path": "plugins/corex-core/assets/css/corex-admin-login.css",

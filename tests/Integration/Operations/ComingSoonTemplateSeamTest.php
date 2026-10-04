@@ -10,10 +10,17 @@
  * these tests exercise WordPress and no CoreX code. If one of them fails after a core update, the
  * coming-soon page's design needs revisiting, and this is where that is found out.
  *
+ * CoreX's own default is taken out of the registry while these run and put back afterwards. It is
+ * registered under the same slug, so left in place the tests would be resolving it rather than the
+ * stand-in they register — and would stop being statements about WordPress alone.
+ *
  * @package Corex\Tests\Integration\Operations
  */
 
 declare(strict_types=1);
+
+use Corex\Boot;
+use Corex\Config\Operations\ComingSoonTemplate;
 
 const COREX_SEAM_TEMPLATE = 'corex-seam-test//coming-soon';
 const COREX_SEAM_DEFAULT  = 'PLUGIN DEFAULT PAGE';
@@ -70,6 +77,11 @@ function corexSeamActivate(string $stylesheet): void
 beforeEach(function () {
     $this->previousStylesheet = get_stylesheet();
     $this->hadSupport         = current_theme_supports('block-templates');
+    $this->hadCorexDefault    = WP_Block_Templates_Registry::get_instance()->is_registered(ComingSoonTemplate::NAME);
+
+    if ($this->hadCorexDefault) {
+        unregister_block_template(ComingSoonTemplate::NAME);
+    }
 
     register_theme_directory(corexSeamThemesDirectory());
     wp_clean_themes_cache();
@@ -94,6 +106,12 @@ afterEach(function () {
         static fn (string $directory): bool => wp_normalize_path($directory) !== wp_normalize_path(corexSeamThemesDirectory()),
     ));
     wp_clean_themes_cache();
+
+    // After the theme is back, for the reason corexSeamActivate() gives: the id is fixed at
+    // registration, from the theme active then.
+    if ($this->hadCorexDefault) {
+        Boot::app()->container()->make(ComingSoonTemplate::class)->registerDefault();
+    }
 
     $_wp_current_template_content = null;
     $_wp_current_template_id      = null;

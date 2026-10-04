@@ -4,7 +4,7 @@
  * Title: Maintenance notice
  * Slug: corex/maintenance
  * Categories: corex
- * Description: A centered maintenance/coming-soon notice — heading, message, and a contact line. Mirrors the live Operations maintenance surface (Corex\Admin\StandalonePage) for editor use. Built on core blocks and CoreX brand tokens.
+ * Description: A centered maintenance notice — heading, message, and a contact line. Mirrors the live Operations maintenance surface (Corex\Admin\StandalonePage) for editor use. Built on core blocks and CoreX brand tokens.
  *
  * @package Corex
  */
