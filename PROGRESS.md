@@ -142,6 +142,18 @@ On `main` since v0.42.1, and not in a release yet:
   row count and checksum, option hashes, cron events, users and user meta: 377 of 377 pass, and
   across three consecutive runs the only differences are the transients listed under "Open, and not
   hidden".
+- **A full integration run no longer leaves transients on the install, and the flow tests delete
+  only what they created** (#236, tests only, DECISIONS #238). Two things were left open by #231. A
+  run left five transients: rate-limit counters from `FlowControllerTest`, `FlowLifecycleTest` and
+  `SubmitLifecycleTest`, and a migration preview from `DataManagementControllerTest`. Those tests
+  now put back every transient they write — one that was absent is removed, one that was there gets
+  its value and expiry back. And the two flow tests cleaned up by comparing the newest 500 flows,
+  submissions and Email Studio posts before and after, which deleted whatever another process
+  created during the test; they now record the posts they insert. Measured on the development
+  install with the same before-and-after snapshot as #231, a rate-limit counter seeded first: 377 of
+  377 pass twice in a row, the seeded counter is unchanged, and the only difference is
+  `_transient_doing_cron`, the lock WordPress itself takes when a scheduled event is due on any
+  load.
 
 **v0.42.1**, a patch release. [`CHANGELOG.md`](CHANGELOG.md) has the full entry; the decisions are
 #224 to #229.
@@ -201,15 +213,6 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - Development installs predating spec 091 may hold leaked fixture users. Since #221 the
   suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
   there are not removed by anything.
-- **A full integration run still leaves transients on the install**, measured on 2026-10-04 with
-  #231 applied: three rate-limit counters from `FlowControllerTest` and `FlowLifecycleTest`
-  (60 seconds), one migration preview from `DataManagementControllerTest`
-  (300 seconds), and the `contact` form's counter refreshed by `SubmitLifecycleTest`. Each expires
-  on its own; the rows stay in the options table until WordPress clears expired transients. Nothing
-  else differed between the snapshots.
-- `FlowControllerTest` and `FlowLifecycleTest` still clean up their flows, submissions and Email
-  Studio posts by comparing the newest 500 ids before and after. That leaves nothing on a quiet
-  install, and deletes whatever another process created during the test.
 - `ResetExecutorTest` leaves `show_on_front` at `posts` and `page_on_front` at 0, whatever the
   install had. Read from the test on 2026-10-04, not measured: a before-and-after snapshot shows
   no difference on an install already at those values (DECISIONS #235).

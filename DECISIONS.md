@@ -5266,3 +5266,46 @@ What was run:
 | The notice on the development install: dark and light at 1440px, dark at 375px, light right-to-left at 375px | warning icon and border in each; no sideways scroll |
 
 The whole integration suite and the browser suite were left to CI.
+
+## #238 — A test puts back the transients it writes; it does not delete them
+
+Date: 2026-10-04 · Spec: none (test maintenance, follows #234) · Status: Final
+
+#234 left two things open, both recorded in `PROGRESS.md`: a full integration run left five
+transients on the install, and two flow tests still cleaned up by comparing the newest 500 ids.
+
+**The transients.** Three tests submit a form, and every submission is counted by
+`ThrottleMiddleware` in `corex_throttle_<hash>`. `DataManagementControllerTest` previews a
+migration without applying it, and `WpMigrationPreviewStore` keeps the preview in
+`corex_migration_preview_<hash>`. They expire in 60 and 300 seconds; the rows stay in the options
+table until WordPress sweeps expired transients.
+
+Deleting them afterwards was rejected. The counter for the `contact` form is keyed by form and
+client, so it is the same key on every run: a run that starts inside the window finds a counter
+already there, and deleting it would remove something the test did not create. `WatchedTransients`
+(`tests/Support`) restores instead. It listens on the options API, which says what was there
+before each write: `add_option` fires only for a row that does not exist yet, and `update_option`
+hands over the value being replaced. Afterwards a transient that was absent is deleted, and one
+that existed gets its value and its expiry back. The `set_transient` action was not used because
+it fires after the write, when the old value is gone.
+
+With a persistent object cache WordPress keeps transients in the cache and never touches the
+options table, so the helper sees nothing and restores nothing. Not tested; the development
+install has no object cache.
+
+**The flow tests.** `FlowControllerTest` and `FlowLifecycleTest` use `CreatedPosts` (#234) for
+their flows, submissions and Email Studio posts, in place of the before-and-after comparison.
+
+What was run, on the development install, from the root checkout:
+
+| Check | Result |
+|---|---|
+| A `contact` counter seeded at 1 with a 900-second expiry, then two consecutive full runs with a snapshot around each | 377 passed both times; the seeded counter's value and expiry unchanged |
+| Differences between the snapshots | `_transient_doing_cron` added by the first run and gone after the second; nothing else |
+
+`_transient_doing_cron` is the lock WordPress core takes in `spawn_cron()` when a scheduled event
+is due. Loading WordPress does that, not a test, and no trace of it has a test file in its
+backtrace.
+
+**Not done.** `ResetExecutorTest` and the front-page options, an open item in `PROGRESS.md`
+(DECISIONS #235), are not part of this change.
