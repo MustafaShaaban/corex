@@ -6,6 +6,49 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.42.1] — 2026-10-04
+
+A patch release for one defect that reached production installs, and for a month of maintenance
+behind it. On a running site one thing changes: seven WP-CLI commands that a production install
+lost are back.
+
+### Fixed
+
+- **`composer install --no-dev` removed seven WP-CLI commands, `wp corex migrate` among them.** Not
+  an error — absent, with `wp help corex` still listing the namespace. A production install is a
+  `--no-dev` install, so a site deployed by the documented path could not run its own schema
+  migration. `nikic/php-parser`, which `ClassDocReader` uses at runtime, was declared nowhere and
+  arrived only through a dev dependency; it is now a production dependency. And command registration
+  is a lazy map rather than a construction sequence, so a command that cannot be built fails on its
+  own invocation instead of removing every command declared after it. `MediaServiceProvider` had
+  the same shape and was converted. (Issue #201, DECISIONS #225)
+- **Dependency advisories, in two passes.** September's cleared the backlog, including a critical
+  `astro` finding (GHSA-26w7-cxv4-gfx2) in the documentation site. October's took every patched
+  release that existed, across ten packages. The gate passes with three bounded exceptions —
+  `extract-zip` twice and `braces` — none of which has a patched release to take. All three are in
+  build and test tooling. (DECISIONS #226, #227)
+- **The browser suite failed on pull requests that changed no runtime code.** WordPress's login
+  page moves focus to the username field 200ms after it renders; when that landed while the
+  sign-in helper was typing the password, the password went into the username field and the form
+  would not submit. The helper now confirms each field holds its credential before submitting.
+  (DECISIONS #228)
+- `npm run lint:js`, `lint:css` and `test:js` reported on WordPress core, or never finished, on a
+  machine with the local multisite install or an agent session worktree. They no longer walk
+  `wp-ms/` or `.claude/worktrees/`, and Jest's module map no longer indexes generated copies.
+
+### Changed
+
+- **The dependency gate runs on every pull request**, not only on those that touch a manifest. An
+  advisory is published against a tree that did not move, so the path filter meant the gate was
+  consulted only by the pull requests least likely to be looking for it. (DECISIONS #224)
+- `@wordpress/components` 38 → 41, `@wordpress/element` 8.6 → 8.8, `@wordpress/i18n` 6.27 → 6.29
+  and `@playwright/test` 1.62 → 1.63. No workspace bundles `@wordpress/components`: the build reads
+  it from the copy WordPress ships, so the npm package decides what Jest renders against and
+  nothing a browser loads. (DECISIONS #229)
+- The browser job in CI keeps the server's logs when it fails, in a file it proves it can write to
+  on every run. A 500 from `GET corex/v1/flows` on 2026-10-04 could not be explained because
+  nothing had kept them; its cause is still unknown. (DECISIONS #228)
+
 ## [0.42.0] — 2026-09-04
 
 The release that began as "close the open pull requests" and became finding out that three things the
