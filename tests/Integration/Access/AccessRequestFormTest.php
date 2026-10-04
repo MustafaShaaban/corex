@@ -50,12 +50,18 @@ beforeEach(function () {
 
     // A real subscriber, not an administrator with a capability removed: the whole flow turns on
     // what a low-privilege user can reach, and a doctored administrator is not that.
-    $this->requester = (int) wp_insert_user([
+    $requester = wp_insert_user([
         'user_login' => 'corex-079-requester-' . wp_generate_password(8, false),
         'user_pass'  => wp_generate_password(),
         'user_email' => uniqid('corex079-', true) . '@example.test',
         'role'       => 'subscriber',
     ]);
+
+    // Checked rather than cast: `(int)` turns a WP_Error into 1, and `afterEach` deletes the user
+    // with this id and every access request that user filed — on most installs, the administrator.
+    expect($requester)->toBeInt();
+
+    $this->requester = $requester;
     wp_set_current_user($this->requester);
 
     $this->requests   = $this->container->make(AccessRequestStore::class);
@@ -75,22 +81,43 @@ beforeEach(function () {
 });
 
 /**
- * Delete the subscriber this test invented, and the request it left behind.
+ * Delete the access requests this test filed, then the subscriber it invented to file them.
  *
- * Without this, every run of this file leaked one `corex-079-requester-*` user with a pending
- * access request attached — **311 of them** on the development install by the time anybody
- * counted. That is not tidiness: the denied surface renders its *pending* state when a request
- * exists, so accumulated fixtures eventually make `access-request.spec.js` find a confirmation
- * where it expects a form, and the browser suite fails for a reason nothing in it reports.
+ * Two deletes, because the second does not imply the first: nothing in CoreX listens for a user
+ * being deleted, so `wp_delete_user()` removes the account and leaves its rows in the requests
+ * table pointing at nobody. This teardown used to delete only the user while this comment claimed
+ * both: on 2026-10-04 the development install held 346 requests whose requester no longer
+ * existed, and each run of this file added five.
+ *
+ * By requester rather than by state or reason, because the table on a developer's install also
+ * holds requests that belong to the browser specs and to real use. Every request a test here
+ * files is filed as `$this->requester`, an account that did not exist before `beforeEach`, so
+ * this cannot reach a row the test did not create.
+ *
+ * In `afterEach` rather than at the end of each test, so a failed assertion still cleans up.
+ *
+ * Why it matters beyond tidiness: before the user was deleted at all, every run leaked a
+ * `corex-079-requester-*` account with a pending request attached — 311 of them by the time
+ * anybody counted. The denied surface renders its *pending* state when a request exists, so
+ * accumulated fixtures eventually make `access-request.spec.js` find a confirmation where it
+ * expects a form, and the browser suite fails for a reason nothing in it reports.
  *
  * The open item recorded this as `clearPendingRequests` clearing only the current requester's
  * rows. That helper is correct — it deliberately spares other specs' requests. The rows were
  * arriving from here.
  */
 afterEach(function () {
+    global $wpdb;
+
     if (! isset($this->requester) || $this->requester < 1) {
         return;
     }
+
+    $wpdb->delete(
+        $this->container->make(Migrator::class)->fullName(AccessTables::REQUESTS),
+        ['requester_id' => $this->requester],
+        ['%d'],
+    );
 
     // Back to nobody first: deleting the user you are currently authenticated as leaves the
     // request with a current user that no longer exists.
