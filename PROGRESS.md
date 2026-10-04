@@ -39,15 +39,20 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**`fix/201-cli-command-registration` — issue #201, open as PR #202.** Under
-`composer install --no-dev` seven WP-CLI commands vanished silently, `wp corex migrate` among them —
-and that is the tree the documented packaging path builds. `nikic/php-parser` is now a production
-dependency, and command registration in both `CliServiceProvider` and `MediaServiceProvider` is a
-lazy map so no command's dependency can unregister its neighbours (DECISIONS #225).
+**`fix/dependency-advisories-2026-10` — committed locally, not pushed, no pull request yet.** #203
+cleared every advisory known on 2026-09-09 and merged on 2026-10-04, by which time the gate on `main`
+was red again with 26 new findings: 18 unbounded in the root npm workspace, 8 in the docs site. This branch takes every patched release that exists — ten packages, one of them
+(`basic-ftp` 5 → 6) through a new override that was proven against its parent — removes the
+`adm-zip` exception that 0.6.1 made unnecessary, and bounds the one finding with no fix, `braces`.
+`npm run verify:dependencies` reports PASS on the branch: zero findings in Composer and the docs
+site, three findings and three exceptions in the root (DECISIONS #227).
 
-The advisory gate, red on `main` since at least 2026-08-12, was cleared by #203 and is merged:
-Astro 7.1.5 → 7.3.2, `svgo` and `colord` upgraded, and the advisories with no upstream fix bounded
-by policy (DECISIONS #226).
+**The `braces` exception is an owner decision, not a formality.** The policy forbids excepting a
+high finding whose exposure is CI, and `braces` does run in CI. It is classed as build tooling with
+repository-authored input, following spec 056's precedent. Read DECISIONS #227 before merging.
+
+Merged since v0.42.0: #202 (issue #201 — `composer install --no-dev` no longer drops seven WP-CLI
+commands, DECISIONS #225) and #203 (the September advisory pass, DECISIONS #226).
 
 No open feature spec, and no release in preparation.
 
@@ -88,8 +93,17 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   before its own filter runs. Measured in DECISIONS #222.
 - Three bounded dependency exceptions, each with a named upstream trigger: `extract-zip` twice
   (GHSA-jmr9-qjv8-65gv and its sibling GHSA-7pqw-9j4j-h8q3, which must be removed together) and
-  `adm-zip` (GHSA-vwc7-r8mq-g2x9). All three are dev-only, and none has an upstream fix to take —
-  every published version of both packages is in range (DECISIONS #226).
+  `braces` (GHSA-vfj7-8cjw-p6xm). None has a patched release to take. `extract-zip` is installed
+  and never executed; `braces` runs in the linter and the build, on patterns that come only from
+  tool defaults. The `extract-zip` pair would clear with `@wordpress/scripts` 36, a toolchain major
+  that has not been attempted (DECISIONS #226, #227).
+- **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
+  Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
+- **`npm run lint:js`, `lint:css` and `test:js` do not exclude `wp-ms/`.** On a machine that has
+  the local multisite install, stylelint reports about 240,000 errors from WordPress core's own CSS
+  and ESLint had not finished after ten minutes. CI has no `wp-ms/` and is unaffected. Until the three ignore lists
+  gain it, pass `--ignore-pattern=wp-ms/**` to the linters and `--testPathIgnorePatterns` to Jest to
+  get a local result that means anything.
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.

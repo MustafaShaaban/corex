@@ -408,8 +408,9 @@ Nothing is authorized by appearing here (§16). Listed so the choice is informed
   into reach; cutting **v0.39.0** found that `package.json`, `README.md`, `ROADMAP.md` and both status pages were
   still stamped by hand — which is how this file came to sit three releases behind a correct README. All are
   stamped now (DECISIONS #205).
-- ~~**The 24 bounded dependency exceptions.**~~ Closed by spec 089. The policy file holds none, and
-  `verify:dependencies` passes across Composer, npm-root and npm-docs.
+- ~~**The 24 bounded dependency exceptions.**~~ Closed by spec 089, which left the policy file empty at
+  v0.40.0. Advisories published since have put three back, each with no patched release to take;
+  `PROJECT-STATUS.md` carries the current list.
 - **M3/M4 product tracks** (§6–§7), which remain the substantive product direction and are the only items here
   that would be a *feature* spec rather than remediation.
 
