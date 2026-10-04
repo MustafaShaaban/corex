@@ -24,6 +24,31 @@ const path = require( 'node:path' );
 
 const repositoryRoot = path.resolve( __dirname, '..' );
 
+const {
+	loadOwnership,
+	resolveRole,
+} = require( '../scripts/repository-ownership.mjs' );
+
+/** The `origin` remote, or an empty string where there is none. */
+const originUrl = ( () => {
+	try {
+		return execFileSync(
+			'git',
+			[ '-C', repositoryRoot, 'remote', 'get-url', 'origin' ],
+			{ encoding: 'utf8', stdio: [ 'ignore', 'pipe', 'ignore' ] }
+		).trim();
+	} catch {
+		return '';
+	}
+} )();
+
+/** `framework` in CoreX's own repository, `client` in a repository built on it (spec 102). */
+const repositoryRole = resolveRole( {
+	ownership: loadOwnership( repositoryRoot ),
+	env: process.env,
+	originUrl,
+} );
+
 /** Every path git tracks, one per line. */
 const trackedFiles = execFileSync(
 	'git',
@@ -63,10 +88,6 @@ const FORBIDDEN = [
 		'Playwright report output',
 	],
 	[
-		/^sites\//,
-		'a client site implementation — those live in their own repository',
-	],
-	[
 		/\.zip$|\.tar\.gz$|\.tgz$|\.rar$|\.7z$/,
 		'an archive — ship releases, not committed archives',
 	],
@@ -84,8 +105,50 @@ const FORBIDDEN = [
 	],
 ];
 
+/**
+ * What must never be tracked in the framework's own repository, and may be in a client's.
+ *
+ * `sites/<client>/` is where `make:site` puts a client site, and a client's repository is built
+ * around one. This rule used to sit in the list above and applied everywhere, so it failed the
+ * suite on the client's own deliverable and the client had to delete it — an edit to a framework
+ * file, and so a conflict waiting in every later update (spec 102). It is now a statement about
+ * one repository rather than about all of them. Every rule above still applies inside `sites/`.
+ */
+const FORBIDDEN_IN_THE_FRAMEWORK = [
+	[
+		/^sites\//,
+		'a client site implementation — those live in their own repository',
+	],
+];
+
 /** `.env.example` is the deliberate exception to the `.env` rule. */
 const FORBIDDEN_EXCEPTIONS = [ /(^|\/)\.env\.example$/ ];
+
+/**
+ * Every tracked path that must not be tracked, with the reason, for a repository in `role`.
+ *
+ * @param {string[]} files Repository-relative paths.
+ * @param {string}   role  `framework` or `client`.
+ * @return {string[]} One sentence per offender.
+ */
+const offendersIn = ( files, role ) => {
+	const rules =
+		role === 'framework'
+			? [ ...FORBIDDEN, ...FORBIDDEN_IN_THE_FRAMEWORK ]
+			: FORBIDDEN;
+
+	return files
+		.filter(
+			( file ) =>
+				! FORBIDDEN_EXCEPTIONS.some( ( allowed ) =>
+					allowed.test( file )
+				)
+		)
+		.flatMap( ( file ) => {
+			const match = rules.find( ( [ pattern ] ) => pattern.test( file ) );
+			return match ? [ `${ file } — ${ match[ 1 ] }` ] : [];
+		} );
+};
 
 /**
  * The Markdown files allowed to sit at the repository root.
@@ -110,21 +173,7 @@ const ALLOWED_ROOT_MARKDOWN = [
 
 describe( 'tracked files', () => {
 	it( 'holds no generated directory, archive, export or secret', () => {
-		const offenders = trackedFiles
-			.filter(
-				( file ) =>
-					! FORBIDDEN_EXCEPTIONS.some( ( allowed ) =>
-						allowed.test( file )
-					)
-			)
-			.flatMap( ( file ) => {
-				const match = FORBIDDEN.find( ( [ pattern ] ) =>
-					pattern.test( file )
-				);
-				return match ? [ `${ file } — ${ match[ 1 ] }` ] : [];
-			} );
-
-		expect( offenders ).toEqual( [] );
+		expect( offendersIn( trackedFiles, repositoryRole ) ).toEqual( [] );
 	} );
 
 	it( 'keeps the repository root to its canonical documents', () => {
@@ -144,6 +193,44 @@ describe( 'tracked files', () => {
 		).map( ( file ) => `${ file } is missing from the repository root` );
 
 		expect( missing ).toEqual( [] );
+	} );
+} );
+
+describe( 'a client site under sites/', () => {
+	const clientSite = [
+		'sites/acme/AGENTS.md',
+		'sites/acme/acme-site/acme-site.php',
+		'sites/acme/acme-theme/theme.json',
+	];
+
+	it( 'is refused in the framework repository', () => {
+		expect( offendersIn( clientSite, 'framework' ) ).toEqual(
+			clientSite.map(
+				( file ) =>
+					`${ file } — a client site implementation — those live in their own repository`
+			)
+		);
+	} );
+
+	it( 'is accepted in a client repository', () => {
+		expect( offendersIn( clientSite, 'client' ) ).toEqual( [] );
+	} );
+
+	it.each( [
+		[ 'sites/acme/.env', 'an environment file' ],
+		[ 'sites/acme/handoff.zip', 'an archive' ],
+		[ 'sites/acme/acme-theme/build/main.js', 'build output' ],
+		[
+			'sites/acme/acme-site/node_modules/left-pad/index.js',
+			'npm dependencies',
+		],
+		[ 'sites/acme/acme-site/vendor/autoload.php', 'Composer dependencies' ],
+		[ 'sites/acme/deploy.pem', 'a private key or certificate' ],
+	] )( 'still refuses %s in a client repository', ( file, reason ) => {
+		const offenders = offendersIn( [ file ], 'client' );
+
+		expect( offenders ).toHaveLength( 1 );
+		expect( offenders[ 0 ] ).toContain( reason );
 	} );
 } );
 

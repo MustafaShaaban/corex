@@ -6,16 +6,16 @@ Six phases, in the plan's order. Each leaves every suite green and is useful wit
 
 ## Phase 1 — The map and the tools that read it (US1)
 
-- [ ] **T001** `.github/repository-ownership.json` — `frameworkRepository`, `clientOwned`
+- [x] **T001** `.github/repository-ownership.json` — `frameworkRepository`, `clientOwned`
       (`sites/**`, `.github/workflows/site-*.yml`) and `localOnly` (directories that exist on a
       developer's machine and never in CI). (FR-001)
-- [ ] **T002** `scripts/repository-ownership.mjs` — pure: load the map, match a path against a
+- [x] **T002** `scripts/repository-ownership.mjs` — pure: load the map, match a path against a
       pattern (`**` and `*` only), `isClientOwned(path)`, and `resolveRole({ env, originUrl })` in
       the plan's order: explicit override, `GITHUB_REPOSITORY`, `origin`, then *framework*.
-- [ ] **T003** Jest: `tests/repository-ownership.test.js` — matching (a file under `sites/`, the
+- [x] **T003** Jest: `tests/repository-ownership.test.js` — matching (a file under `sites/`, the
       client workflow, `ci.yml`, a file merely *named* `sites`), and every branch of role
       resolution including both remote URL forms and an invalid override.
-- [ ] **T004** `tests/repo-hygiene.test.js` — the offender computation takes `(files, role)`. The
+- [x] **T004** `tests/repo-hygiene.test.js` — the offender computation takes `(files, role)`. The
       `sites/` rule applies in the framework role only; a secret, an archive, build output and a
       dependency directory are still rejected *inside* `sites/` in the client role. Both roles are
       asserted against a synthetic list, and the live run uses the resolved role. (FR-002)
