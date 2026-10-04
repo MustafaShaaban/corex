@@ -55,20 +55,19 @@ readings and what would overturn the exception.
 Merged since v0.42.0: #202 (issue #201 — `composer install --no-dev` no longer drops seven WP-CLI
 commands, DECISIONS #225), #203 (the September advisory pass, DECISIONS #226), #212 (the October
 one, DECISIONS #227), #213 (the linters and Jest no longer walk `wp-ms/` or session worktrees),
-#214 (Jest's module map no longer indexes generated copies) and three routine Dependabot bumps:
+#214 (Jest's module map no longer indexes generated copies), three routine Dependabot bumps —
 #205 (`@playwright/test` 1.63.0), #206 (`@wordpress/element` 8.8.0) and #207 (`@wordpress/i18n`
-6.29.0).
+6.29.0) — #216 (the lockfile back in the order npm writes it), #208 (`@wordpress/components`
+38 → 41, DECISIONS #229) and #217 (the browser-test sign-in helper, DECISIONS #228).
 
 Two feature specs are open as draft pull requests: spec 101, coming-soon mode (#210), and spec 102,
 update-safe client sites (#211). No release is in preparation.
 
-One dependency pull request stays open on purpose: **#208, the `@wordpress/components` major bump
-from 38** (Dependabot's replacement for #186 and #200, both of which it closed; it retargets #208
-as releases appear, 41.0.0 on 2026-10-04). When the bump was tried on #186, npm
-resolved 38.0.0 against a `^39.0.0` requirement and reported success, producing a lockfile that
-contradicts itself — so it was not bundled into the dependency pass. It is a major in a library more
-than twenty admin modules import, which per DECISIONS #220 needs render-time verification in a real
-browser. #186 carries what was tried.
+No dependency pull request is being held. **The `@wordpress/components` major, held since #186, landed as
+#208 on 2026-10-04.** The build does not bundle that library — every script reads it from the copy
+WordPress ships — so the bump was verified by building at 38.0.0 and at 41.0.0 and comparing the
+output: 169 files, identical. DECISIONS #229 has the evidence and the rule it leaves for the next
+major of an externalised package.
 
 **`fix/jest-haste-collisions` — tooling only, merged as PR #214 on 2026-10-04.** It follows #213, merged on
 2026-10-04, which keeps the linters and Jest out of `wp-ms/` and `.claude/worktrees/`, so
@@ -79,8 +78,9 @@ Jest's module map: on a machine with a `dist/` build or an agent session worktre
 name it found twice. The suite is unchanged at 54 suites and 442 tests. CI never builds `dist/` and
 has no worktrees, so it never printed them.
 
-**`fix/e2e-flaky-helpers` — browser-test helpers and CI only, merged as #217 on 2026-10-04.** The
-browser job failed three times on diffs that changed no runtime code: the nightly on 2026-09-21, #210 and #211. Two of the
+**`fix/e2e-flaky-helpers` — browser-test helpers and CI only, merged as PR #217 on 2026-10-04.** The
+browser job failed three times on diffs that changed no runtime code: the nightly on 2026-09-21,
+#210 and #211. Two of the
 three were one bug in `signInAs`. WordPress's login page moves focus to the username field 200ms
 after it renders; when that lands in the middle of Playwright typing the password, the password goes
 into the username field and the browser refuses to submit the form. The helper then waited on an
