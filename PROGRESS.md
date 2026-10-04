@@ -62,6 +62,13 @@ On `main` since v0.43.0, and not in a release yet:
   377 pass twice in a row, the seeded counter is unchanged, and the only difference is
   `_transient_doing_cron`, the lock WordPress itself takes when a scheduled event is due on any
   load.
+- **The browser specs remove the access requests they file** (#227, tests only).
+  `security-access.spec.js` filed one as the administrator on every run and never decided it;
+  `access-request.spec.js` left three as `corex-requester`, denied. Both now delete them in
+  `afterEach` through WP-CLI — the first by the id it is told, the second by requester and by
+  being newer than the newest request that existed before the file ran. Measured on the local
+  install: 219 rows before and after each spec. Without WP-CLI the specs still run, the rows stay,
+  and stderr says so.
 
 Released in v0.43.0:
 
@@ -226,8 +233,12 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   notification tests deleted. `corex_retention_submissions_days` may read 30 on an install whose
   owner never set it, `corex_role_ability_grants` may hold an `editor` / `corex_manage_forms` row
   nobody granted, and the first administrator's notification preferences may have the jobs
-  category switched off. The Access request rows, audit events, logged emails, reading events
-  about deleted posts and stale ids on `corex_kit_seeded_pages` from earlier runs stay too.
+  category switched off. The Access request rows (the browser specs' among them), audit events,
+  logged emails, reading events about deleted posts and stale ids on `corex_kit_seeded_pages` from
+  earlier runs stay too.
+- **Deleting a user leaves that user's access requests in place**, pointing at nobody. Nothing in
+  CoreX listens for a user being deleted. Whether it should remove or anonymize those requests is
+  a product question nobody has decided; the tests clean up after themselves either way.
 
 No security items.
 
