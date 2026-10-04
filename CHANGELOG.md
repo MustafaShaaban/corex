@@ -27,6 +27,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **Submission retention stopped reaching records once 500 had been anonymized or archived.** Each run
+  was handed the newest 500 private submissions older than the window, whatever had already been done to
+  them. Anonymizing and archiving leave a submission private, so the next run got the same 500, applied
+  the action to them again — a second timeline event, a new update time — reported them as handled again,
+  and never reached an older submission that still held personal data. A run now skips the submissions
+  its action has nothing left to do for and takes the oldest first, and the Inbox count no longer
+  includes anonymized submissions (DECISIONS #232).
 - **`wp corex make:site --path=<dir>` never worked.** `--path` is a WP-CLI global, taken as the WordPress
   install before any command sees its arguments, so the site directory never arrived. The README, the
   guides and the readiness report all documented that form. The site directory is now `--dir`.
@@ -50,6 +57,13 @@ Read this before taking the release. *(This section is required from this releas
 
 - **No front-end or admin runtime behaviour changes from spec 102.** Everything it adds is tooling, the
   site generator, CI and documentation.
+- **Submission retention selects different records.** On a site that has anonymized or archived
+  submissions, the "currently due" count on the Submissions screen drops by the number already
+  anonymized, and the next Anonymize or Move to trash run acts on submissions earlier runs never reached.
+  Three things an operator may have relied on change: Move to trash no longer trashes an anonymized
+  submission, Archive no longer touches an archived or anonymized one, and a run takes the oldest due
+  submissions first instead of the newest. Nothing runs by itself — retention still acts only when
+  someone confirms it on that screen.
 - **Four files conflict once, if your repository edited them** to make the framework's checks accept
   `sites/`: `tests/repo-hygiene.test.js`, `.stylelintignore`, `eslint.config.js`, `jest.config.js`. Take
   the framework's version of each — the edits are no longer needed.

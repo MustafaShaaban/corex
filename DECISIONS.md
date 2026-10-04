@@ -4857,3 +4857,103 @@ branch (#223), so that cleanup follows it rather than conflicting with it.
 `DataManagementControllerTest` still finds its posts by comparing the newest 500 ids. What else the
 suite still changes — three Notifications files delete every notification on the install — is
 listed in `PROGRESS.md`. Rows earlier runs left on existing installs are not removed.
+
+## #232 — Retention skips what its action has already done, and "due" means still holding personal data
+
+Date: 2026-10-04 · Spec: none (defect fix, found in #231; spec 068 FR-056) · Status: Final
+
+`SubmissionRetention` handed every run the newest 500 private submissions older than the window,
+whatever the action and whatever had been done to them. Trashing takes a submission out of that
+set. Anonymizing and archiving leave it private, so the next run got the same records, applied the
+action again — a new title, another timeline event, a new update time — counted them as handled
+again, and, once 500 handled records were newer than the unhandled ones, never reached an older
+submission that still held personal data. #231 measured it: 500 ids selected, all 500 already
+anonymized, live submissions past the window never selected.
+
+The fix is a selection rule, and the rule needed three product answers. They are these.
+
+**1. What "due" means before an action is chosen.** `preview()` takes no action, and its count is
+the "currently due" figure on the Submissions screen, which also decides whether the apply form is
+shown. A submission is due while it is older than the window and has not been anonymized — that
+is, while it still holds the personal data the window exists to limit. An anonymized submission is
+not due. An archived one is: archiving keeps every submitted value.
+
+**2. What each action selects.** The due submissions it still has something to do for:
+
+| Action | Skips | So it acts on |
+|---|---|---|
+| Archive | archived, anonymized | due submissions not yet archived |
+| Anonymize | anonymized | every due submission, archived or not |
+| Move to trash | anonymized | every due submission, archived or not |
+
+For the same marked-test choice, every action's set is the preview's set or a subset of it, so a
+run never acts on a record the count did not include. That was the class's stated contract ("only
+what the preview measured") and it still holds. The one way past the count on the screen is the
+"Include marked-test submissions" box, which was already so: the count there excludes marked tests
+and the box adds them.
+
+**3. Whether an anonymized submission may still be archived or trashed.** By retention, no.
+Anonymizing finishes retention for a record: what is left is the non-personal workflow evidence the
+operator chose to keep by anonymizing instead of trashing. Two alternatives were weighed.
+
+- *Let trash take anonymized records too.* Then either the count includes them — the defect, a
+  count of records nothing needs doing to — or it does not, and "5 currently due" followed by
+  "505 moved to trash" breaks the preview contract. A screen that offers trashing anonymized
+  records as its own counted choice would be honest; it is a feature, not this fix.
+- *Treat archived as finished as well.* Archive is the first option in the action list. Had
+  archived records left the count, one run of it would have emptied the count, hidden the form,
+  and left every archived submission holding its personal data with no retention action able to
+  reach it. The Inbox's bulk actions do not anonymize or trash.
+
+Archiving an anonymized record was never useful: it overwrote `corex_retention_state` with
+`archived`, which made the record look un-anonymized to the next anonymize run.
+
+A single anonymized submission can still be trashed through the Data source
+(`SubmissionsSource::delete()`); there is no bulk route. That is the cost of answer 3 and it is
+accepted.
+
+**Oldest first.** A run is still bounded at `RetentionSettings::MAX_PRUNE`. It now takes the
+submissions that have been due longest (`post_date` ascending, then id) instead of the newest. With
+the skip rule either order makes progress; this one handles the longest-overdue first.
+
+**Where the rule lives.** `RetentionSettings` holds one map from action to the states it skips, and
+the list of valid actions is that map's keys. `SubmissionRetention` turns the states into a
+`NOT EXISTS OR NOT IN` meta clause beside the existing marked-test clause. The store methods
+(`anonymizeForRetention()`, `archiveForRetention()`) are unchanged: `applyIds()` is their only
+caller and `prune()` is its only caller outside tests, so a second guard there would have been the
+same rule written twice.
+
+**What an operator sees change.** On a site with anonymized submissions the due count drops by
+that number. Move to trash no longer trashes anonymized submissions, Archive no longer touches
+archived or anonymized ones, and runs go oldest first. Retention still runs only when someone
+confirms it on the Submissions screen; nothing is scheduled. `CHANGELOG.md` carries this under
+"Client impact".
+
+**The tests.** `tests/Integration/Retention/SubmissionRetentionTest.php`, six tests on real
+WordPress, written before the fix. Five failed on the unfixed code for the reason each names; the
+sixth (trash still takes an archived submission) guards the other direction and was checked by
+making trash skip archived records, which fails it. The suite runs on a developer's install, so
+every retention query in the file is narrowed to the test's own submissions through
+`pre_get_posts` — to none until one is inserted — and each test asserts the preview count before
+it prunes. Two unit tests that only restated the action map were written and removed again: every
+entry in the map is exercised through `prune()`.
+
+What was run, on the long-lived development install:
+
+| Check | Result |
+|---|---|
+| The new file against unfixed code | 5 failed, as expected; install identical before and after |
+| The new file against the fix | 6 passed; posts, post meta, options and table counts identical before and after |
+| Retention, Privacy, Submissions and Data integration tests | 45 passed |
+| Unit suite | 1,853 passed |
+| The fixed selection for a 30-day window, read-only | 7 ids, all without a retention state; none of the 602 anonymized submissions |
+| The same query before the fix (#231) | 500 ids, all anonymized |
+
+The local runs loaded this branch's classes over the root checkout's `vendor/` and `./wp` through a
+prepended autoloader, so the shared checkout stayed on `main`. The full integration and browser
+suites are CI's.
+
+**Not done.** The retention form's confirmation label and its result notice say "trash" whichever
+action ran ("Confirm moving due submissions to the recoverable trash", "N submissions moved to
+trash"). That predates this change and is listed in `PROGRESS.md`. Submissions the old selection
+anonymized twice keep their duplicate timeline events.

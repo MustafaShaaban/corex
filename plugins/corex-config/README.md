@@ -147,7 +147,9 @@ history and the shared activity stream. Marked-test submissions are excluded unl
 
 Retention defaults to the same marked-test exclusion and offers dry-run counts plus confirmed Archive, recoverable
 Trash, or Anonymize operations. Anonymization removes submitted values, submitter projections, hidden/UTM/consent data,
-and notes while retaining non-personal workflow evidence and a retention timeline event.
+and notes while retaining non-personal workflow evidence and a retention timeline event. A submission is due while it
+is older than the window and has not been anonymized; a run takes at most 500 due submissions, oldest first, and skips
+those its operation has nothing left to do for — an anonymized one for every operation, an archived one for Archive.
 
 ## Email Studio (Corex → Email Studio)
 
