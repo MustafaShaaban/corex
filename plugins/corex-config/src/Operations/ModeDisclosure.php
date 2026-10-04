@@ -164,7 +164,7 @@ final class ModeDisclosure
                 __('Anyone signed in who can edit posts is served the real site. Signed-in users who cannot are treated as visitors.', 'corex'),
                 __('The admin, the login page, the REST API, AJAX and cron are never intercepted, and robots.txt is served normally.', 'corex'),
                 __('A preview link, if you create one, shows the real site to whoever opens it, with no access to the admin. It is removed when the site leaves this mode.', 'corex'),
-                __('To leave: change the mode here. Opening the site to the public is the Production switch, with its own confirmation.', 'corex'),
+                __('To leave: change the mode here, or run wp corex mode set if you cannot reach this screen. Opening the site to the public is the Production switch, with its own confirmation.', 'corex'),
             ],
             default => [],
         };

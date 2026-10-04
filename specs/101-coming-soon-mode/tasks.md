@@ -372,15 +372,43 @@ Operations screen.
 
 ## Phase 6 — The command (US5)
 
-- [ ] **T048** Pest: `ModeCommandTest` — `get` reports the mode and whether it was declared or
-      inherited; `set` with the confirmation its mode needs has the same result and history row
-      as the screen; without it, nothing changes and the exit is non-zero; an unknown mode fails.
-      (FR-017)
-- [ ] **T049** `ModeCommand` and `ModeCommandResult` — a pure `execute()` over
+- [x] **T048** Pest: `ModeCommandTest` — 17 cases. `get` reports the mode and whether it was
+      declared or inherited; `set` with the confirmation its mode needs has the same result and
+      history row as the screen; without it, nothing changes and the exit is non-zero; an unknown
+      mode fails. (FR-017)
+
+      "The same history row as the screen" is tested by making the change both ways and comparing
+      the rows, the time aside.
+- [x] **T049** `ModeCommand` and `ModeCommandResult` — a pure `execute()` over
       `ModeChangeService`, and a `run()` that prints.
-- [ ] **T050** Registered in `CliServiceProvider`'s lazy map; an integration test that the command
-      is present under `composer install --no-dev`, beside the ones #202 restored.
-- [ ] **T051** `packages/cli/README.md` — the command and its options.
+
+      Three things the task did not name. Setting the mode the site is already in **succeeds**:
+      a deploy script that sets it on every run must not fail on its second. Going live as
+      nobody is refused with a sentence rather than the launch service's exception — the thing
+      Phase 1 found — and says to pass `--user`. And `get --porcelain` prints the mode alone,
+      for a script to read.
+
+      One test elsewhere had to change. `SiteScopedStateTest` passed only while
+      `wp_get_environment_type` had never been stubbed earlier in the run: the code it exercises
+      asks `function_exists()` first, and Brain Monkey defines a function for the whole process
+      the first time any test stubs it. `ModeCommandTest` sorts before it and stubs it. The test
+      now stubs the function itself, so it no longer depends on what ran before.
+- [x] **T050** Registered in `CliServiceProvider`'s lazy map as `corex mode get` and
+      `corex mode set`, resolved only when run; `CommandRegistrationTest` holds both to the
+      unresolvable-container test beside the ones #202 restored.
+
+      Both carry a synopsis, which their neighbours mostly do not. With one, WP-CLI checks the
+      arguments first, so a mistyped `--acknowlege` is an error and not an acknowledgement that
+      silently was not given.
+
+      Run in a real WP-CLI against this worktree's install, through every case, reading the exit
+      code each time: 0 for a change made and for no change needed; 1 for a missing
+      acknowledgement, a missing phrase, a launch with no user, an unknown mode, no mode, and a
+      mistyped flag.
+- [x] **T051** `packages/cli/README.md` — the command, what each mode needs, the exit codes, and
+      what `--user` is for. The mode's description on the screen now names the command as the
+      way back for an operator who cannot reach the screen, as T015 said it would once it
+      existed.
 
 ## Phase 7 — The generated template and the asset action (US6)
 

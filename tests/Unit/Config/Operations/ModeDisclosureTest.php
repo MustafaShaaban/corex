@@ -125,6 +125,8 @@ it('describes coming soon with what the guard actually does', function () {
         ->and($consequences)->toContain('cron')
         ->and($consequences)->toContain('login')
         ->and($consequences)->toContain('To leave')
+        // The way back for an operator who cannot reach this screen (User Story 5).
+        ->and($consequences)->toContain('wp corex mode set')
         // The preview link is part of what the mode does, and so is what ends it (FR-012a).
         ->and($consequences)->toContain('preview link')
         ->and($consequences)->toContain('removed when the site leaves');
