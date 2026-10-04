@@ -38,9 +38,11 @@ function pruneRedirectQuery(array $post): array
 {
     $_POST = $post + [RetentionController::NONCE => 'nonce-value', 'corex_confirm' => '1'];
 
+    $settings   = new RetentionSettings();
     $controller = new RetentionController(
         new AdminGuard(),
-        new SubmissionRetention(new RetentionSettings(), Mockery::mock(SubmissionRetentionStore::class)),
+        new SubmissionRetention($settings, Mockery::mock(SubmissionRetentionStore::class)),
+        $settings,
     );
 
     try {

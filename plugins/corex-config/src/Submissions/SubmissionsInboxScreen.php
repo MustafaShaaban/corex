@@ -175,6 +175,10 @@ final class SubmissionsInboxScreen
             'retention-saved' => ['success', __('Retention policy saved.', 'corex')],
             // Not a success: the box was not ticked, so nothing ran.
             'retention-confirm' => ['warning', __('Confirm the retention action before applying it.', 'corex')],
+            'retention-invalid' => [
+                'error',
+                __('That is not a valid retention action. Nothing was changed.', 'corex'),
+            ],
             'retention-pruned' => ['success', $this->prunedMessage()],
             default => ['', ''],
         };
