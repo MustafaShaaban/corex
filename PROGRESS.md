@@ -62,6 +62,14 @@ contradicts itself — so it was not bundled into the dependency pass. It is a m
 than twenty admin modules import, which per DECISIONS #220 needs render-time verification in a real
 browser. The PR carries what was tried.
 
+**`fix/jest-haste-collisions` — tooling only, stacked on `fix/lint-ignore-wp-ms`; both were local
+and unpushed on 2026-10-04.** The first keeps the linters and Jest out of `wp-ms/` and
+`.claude/worktrees/`. The second also takes `wp/`, `wp-ms/`, `dist/` and `.claude/worktrees/` out of
+Jest's module map: on a machine with a `dist/` build or an agent session worktree, a cold-cache
+`npm run test:js` passed and printed nine "Haste module naming collision" warnings, one per package
+name it found twice. The suite is unchanged at 54 suites and 442 tests. CI never builds `dist/` and
+has no worktrees, so it never printed them.
+
 ## Recently landed (v0.42.0)
 
 - **Spec 100 — multisite.** `README.md` advertised it; there were three runtime references to it in

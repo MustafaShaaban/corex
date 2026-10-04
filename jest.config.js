@@ -16,8 +16,22 @@
  * checkout inside this one, so each worktree on disk ran the whole suite one more time. The
  * pattern has to stay anchored to `<rootDir>` — a run started inside a worktree has that
  * directory in every test path, and an unanchored pattern would leave it nothing to run.
+ *
+ * The directories in `notCorexSource` are in `modulePathIgnorePatterns` as well, because
+ * skipping a directory's tests does not stop Jest indexing its files. Every `package.json` in
+ * `dist/` or in a worktree carries the same `name` as the one it was copied from, and a run
+ * with a cold cache printed a "Haste module naming collision" warning for each name it found
+ * twice — all nine of this repository's, on a suite that passed. The same anchoring applies,
+ * for the same reason.
  */
 const defaultConfig = require( '@wordpress/scripts/config/jest-unit.config.js' );
+
+const notCorexSource = [
+	'<rootDir>/wp/',
+	'<rootDir>/wp-ms/',
+	'<rootDir>/dist/',
+	'<rootDir>/.claude/worktrees/',
+];
 
 module.exports = {
 	...defaultConfig,
@@ -30,10 +44,8 @@ module.exports = {
 	testPathIgnorePatterns: [
 		'/node_modules/',
 		'/build/',
-		'<rootDir>/wp/',
-		'<rootDir>/wp-ms/',
-		'<rootDir>/dist/',
 		'<rootDir>/docs-app/',
-		'<rootDir>/.claude/worktrees/',
+		...notCorexSource,
 	],
+	modulePathIgnorePatterns: notCorexSource,
 };
