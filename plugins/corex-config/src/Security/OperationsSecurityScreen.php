@@ -14,6 +14,10 @@ use Corex\Config\Operations\ModeDisclosure;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeController;
 use Corex\Config\Operations\OperationsModeStore;
+use Corex\Config\Operations\PreviewAccess;
+use Corex\Config\Operations\PreviewLinkController;
+use Corex\Config\Operations\PreviewLinkResult;
+use Corex\Config\Operations\PreviewLinkService;
 use Corex\Config\Operations\ProductionReadinessSnapshotFactory;
 use Corex\Config\Security\LoginProtection\LoginAttemptRecord;
 use Corex\Config\Security\LoginProtection\LoginLockoutReader;
@@ -48,6 +52,7 @@ final class OperationsSecurityScreen
         private readonly AdminDateTime $dateTime,
         private readonly ModeDisclosure $disclosure,
         private readonly CacheStatusReport $cacheStatus,
+        private readonly PreviewAccess $preview,
     ) {
     }
 
@@ -190,7 +195,8 @@ final class OperationsSecurityScreen
     private function section(string $active, array $checks, int $warnings): string
     {
         return match ($active) {
-            'environment' => $this->securityApp('environment') . $this->modeCard() . $this->auditCard(),
+            'environment' => $this->securityApp('environment') . $this->modeCard()
+                . $this->previewLinkCard() . $this->auditCard(),
             'login'       => $this->securityApp('login'),
             'hardening'   => $this->checksCard($checks, $warnings),
             'activity'    => $this->securityApp('activity'),
@@ -426,6 +432,10 @@ final class OperationsSecurityScreen
             return '';
         }
 
+        if (str_starts_with($status, 'preview_')) {
+            return $this->previewLinkNotice(substr($status, strlen('preview_')));
+        }
+
         [$tone, $message] = match ($status) {
             'saved'   => ['success', __('Operations mode updated.', 'corex')],
             // Distinct from 'saved' on purpose: nothing was written and nothing was logged, and a
@@ -440,6 +450,83 @@ final class OperationsSecurityScreen
         };
 
         return $message === '' ? '' : $this->page->state($tone, __('Operations mode', 'corex'), $message);
+    }
+
+    /**
+     * What happened to the preview link, after an action that made no new one. A new link is not
+     * reported here: it is shown once by {@see PreviewLinkController}, on the response that made it.
+     */
+    private function previewLinkNotice(string $status): string
+    {
+        [$tone, $message] = match ($status) {
+            PreviewLinkResult::REVOKED => ['success', __('Preview link revoked. Anybody who was using it now sees the coming-soon page.', 'corex')],
+            PreviewLinkResult::EXISTS  => ['info', __('A preview link already exists, and it was left as it is. Regenerate it to replace it.', 'corex')],
+            PreviewLinkResult::NONE    => ['info', __('There is no preview link to change.', 'corex')],
+            PreviewLinkResult::NOT_COMING_SOON => ['warning', __('A preview link exists only while the site is in Coming soon.', 'corex')],
+            PreviewLinkResult::INVALID => ['error', __('That is not something that can be done to the preview link.', 'corex')],
+            default                    => ['', ''],
+        };
+
+        return $message === '' ? '' : $this->page->state($tone, __('Preview link', 'corex'), $message);
+    }
+
+    /**
+     * The preview link (spec 101, US4): whether one exists, when it was made and by whom, and the
+     * controls for it. Present only while the site is in Coming soon, because a link exists only
+     * then.
+     *
+     * The link itself is never here. What is stored cannot be turned back into it (FR-013), so
+     * the card says that one exists and offers to replace it; the address is shown once, by
+     * {@see PreviewLinkController}, when it is made.
+     */
+    private function previewLinkCard(): string
+    {
+        if ($this->store->current() !== OperationsMode::COMING_SOON) {
+            return '';
+        }
+
+        $issued = $this->preview->issued();
+
+        if ($issued === null) {
+            $state    = '<p class="corex-opsec__detail">' . esc_html__('No preview link exists.', 'corex') . '</p>';
+            $controls = $this->previewLinkForm(PreviewLinkService::CREATE, __('Create preview link', 'corex'), true);
+        } else {
+            $user = $issued['user'] > 0 ? get_userdata($issued['user']) : false;
+            $when = $this->dateTime->format($issued['time'], AdminDateTime::FULL, __('Time not recorded', 'corex'));
+
+            $state = '<p class="corex-opsec__detail">' . esc_html__('A preview link exists.', 'corex') . ' '
+                . esc_html__('Created by', 'corex') . ' '
+                . esc_html($user ? $user->display_name : __('system', 'corex')) . ' · ' . $when->toHtml() . '</p>'
+                . '<p class="corex-opsec__detail">'
+                . esc_html__('The link was shown once, when it was made, and cannot be shown again. If it is lost, regenerate it: the old one stops working.', 'corex')
+                . '</p>';
+            $controls = $this->previewLinkForm(PreviewLinkService::REGENERATE, __('Regenerate link', 'corex'), true)
+                . $this->previewLinkForm(PreviewLinkService::REVOKE, __('Revoke link', 'corex'), false);
+        }
+
+        return '<section class="corex-surface corex-opsec__preview">'
+            . '<p class="corex-admin__eyebrow">' . esc_html__('PREVIEW LINK', 'corex') . '</p>'
+            . '<h2>' . esc_html__('Show the site to somebody without an account', 'corex') . '</h2>'
+            . '<p class="corex-opsec__detail">'
+            . esc_html__('One secret link. Whoever opens it sees the real site in that browser for 14 days, with a banner saying it is a private preview. It gives no access to the admin, and it stops working when you regenerate or revoke it, or when the site leaves Coming soon.', 'corex')
+            . '</p>'
+            . $state
+            . '<div class="corex-opsec__preview-actions">' . $controls . '</div>'
+            . '</section>';
+    }
+
+    /**
+     * One button, as its own form: each action on the link is a separate, nonce-gated POST.
+     */
+    private function previewLinkForm(string $operation, string $label, bool $primary): string
+    {
+        return '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">'
+            . '<input type="hidden" name="action" value="' . esc_attr(PreviewLinkController::ACTION) . '" />'
+            . '<input type="hidden" name="' . esc_attr(PreviewLinkController::OPERATION) . '" value="' . esc_attr($operation) . '" />'
+            . wp_nonce_field(PreviewLinkController::ACTION, PreviewLinkController::NONCE, true, false)
+            . '<button type="submit" class="button' . ($primary ? ' button-primary' : '') . '">'
+            . esc_html($label) . '</button>'
+            . '</form>';
     }
 
     /**
@@ -594,14 +681,17 @@ final class OperationsSecurityScreen
     /**
      * The mode-change audit log (spec 065): the real recent history from {@see OperationsModeStore},
      * or an honest empty state. No fabricated activity.
+     *
+     * Since spec 101 it also lists what was done to the preview link, as rows of their own: who
+     * created, regenerated or revoked it, and when. Never the link.
      */
     private function auditCard(): string
     {
-        $history = $this->store->history(8);
+        $history = $this->store->timeline(8);
 
         if ($history === []) {
             return '<section class="corex-surface corex-opsec__audit">'
-                . '<header class="corex-opsec__checks-head"><h2>' . esc_html__('Mode change history', 'corex') . '</h2></header>'
+                . '<header class="corex-opsec__checks-head"><h2>' . esc_html__('Mode and preview link history', 'corex') . '</h2></header>'
                 . '<p class="corex-opsec__detail">' . esc_html__('No operations-mode changes recorded yet.', 'corex')
                 . '</p></section>';
         }
@@ -618,16 +708,30 @@ final class OperationsSecurityScreen
                 __('Time not recorded', 'corex'),
             );
 
+            $what = $entry['event'] !== ''
+                ? esc_html($this->eventLabel($entry['event']))
+                : '<code>' . esc_html($entry['from']) . '</code> &rarr; <code>' . esc_html($entry['to']) . '</code>';
+
             $rows .= '<li class="corex-opsec__audit-row">'
-                . '<span class="corex-opsec__audit-change"><code>' . esc_html($entry['from']) . '</code> &rarr; <code>'
-                . esc_html($entry['to']) . '</code></span>'
+                . '<span class="corex-opsec__audit-change">' . $what . '</span>'
                 . '<span class="corex-opsec__audit-meta">' . esc_html($who) . ' · '
                 . $when->toHtml() . '</span></li>';
         }
 
         return '<section class="corex-surface corex-opsec__audit">'
-            . '<header class="corex-opsec__checks-head"><h2>' . esc_html__('Mode change history', 'corex') . '</h2></header>'
+            . '<header class="corex-opsec__checks-head"><h2>' . esc_html__('Mode and preview link history', 'corex') . '</h2></header>'
             . '<ul class="corex-opsec__audit-list">' . $rows . '</ul></section>';
+    }
+
+    /** The operator's words for an event the store records under a fixed name. */
+    private function eventLabel(string $event): string
+    {
+        return match ($event) {
+            OperationsModeStore::EVENT_PREVIEW_CREATED     => __('Preview link created', 'corex'),
+            OperationsModeStore::EVENT_PREVIEW_REGENERATED => __('Preview link regenerated', 'corex'),
+            OperationsModeStore::EVENT_PREVIEW_REVOKED     => __('Preview link revoked', 'corex'),
+            default                                        => $event,
+        };
     }
 
     /**

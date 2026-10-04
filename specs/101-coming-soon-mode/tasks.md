@@ -281,34 +281,94 @@ Operations screen.
 
 ## Phase 5 — The preview link and its banner (US4)
 
-- [ ] **T036** `PreviewAccessStore` — the interface, and an in-memory implementation for tests.
-- [ ] **T037** Pest: `PreviewAccessTest` — no link exists until one is created; a created link's
-      token is held; a different token is not; regenerating ends the old token and starts a new
-      one; revoking leaves none; clearing leaves none; and nothing in the store equals the token
-      or can be turned back into it. (FR-011 to FR-014)
-- [ ] **T038** `PreviewAccess` — create, regenerate, revoke, clear, and `holds(token)`. The store
-      keeps a keyed hash, when it was issued and by whom.
-- [ ] **T039** The option-backed store, not autoloaded.
-- [ ] **T040** `OperationsModeStore` — a log row may carry an `event`; `record()` writes one with
-      no `from` or `to`; `history()` keeps answering mode changes for the callers that want only
-      those. Pest for both shapes, and that no row ever holds a token. (FR-012)
-- [ ] **T041** `ModeChangeService` — leaving Coming soon for any other mode clears the link. Pest
-      from the service, so it is true of the screen and the command alike. (FR-012a)
-- [ ] **T042** `ComingSoonGuard` — claiming: a valid value sets the cookie (`HttpOnly`,
+- [x] **T036** `PreviewAccessStore` — the interface, and an in-memory implementation for tests
+      (`tests/Fixtures/Operations/InMemoryPreviewAccessStore.php`).
+- [x] **T037** Pest: `PreviewAccessTest` — 27 cases: no link until one is created; a created link's
+      token is accepted; a different token is not; regenerating ends the old token and starts a
+      new one; revoking leaves none; clearing leaves none; and nothing in the store equals the
+      token or can be turned back into it. (FR-011 to FR-014)
+
+      Each security rule was then weakened in the code and the suite run, to see the tests fail:
+      a grant that never runs out, an expiry outside the signature, a signature over nothing of
+      the link, a hash without the key, a create that replaces, a regenerate that creates. Each
+      was caught.
+- [x] **T038** `PreviewAccess` — create, regenerate, revoke, clear, and what a browser must hold.
+      The store keeps a keyed hash, when it was issued and by whom.
+
+      **The cookie does not hold the token**, which the plan said it would. It holds a grant: an
+      expiry, and a signature over the stored hash and that expiry. A cookie that leaks gives
+      away one browser's access and not the link; the fourteen days are enforced by the server
+      and not by a cookie lifetime its holder can edit; and regenerating or revoking still ends
+      every grant at the next request, because the signature is over the hash they replace. The
+      plan's Decision 4 is amended to say so.
+
+      Creating over a link that exists does nothing, and regenerating where there is none does
+      nothing. Two tabs open on the screen must not let a stale "Create" silently end the link
+      the other tab just handed to the client.
+- [x] **T039** `OptionPreviewAccessStore` — one option, not autoloaded. Anything under its name
+      that is not a record this class wrote is read as no link.
+- [x] **T040** `OperationsModeStore` — a log row may carry an `event`; `record()` writes one with
+      no `from` or `to`; `timeline()` answers both kinds; `history()` keeps answering mode changes
+      for the callers that want only those. (FR-012)
+
+      `record()` accepts three named events and nothing else. The log is a closed vocabulary the
+      screen renders, not a place a caller can write free text — which is also what keeps a link
+      out of it.
+- [x] **T041** `ModeChangeService` — leaving Coming soon for any other mode clears the link.
+      (FR-012a)
+
+      It asks the store whether the site has left the mode, before and after the change, rather
+      than inferring it from the result. A launch reaches the store through
+      `ProductionLaunchService` and the other modes reach it directly; the first draft of the
+      test for the launch route is what showed the two had to be covered by one check. A change
+      that was refused, or that changed nothing, keeps the link. No "revoked" row is written:
+      nobody revoked it, and the mode change beside it is the record.
+- [x] **T042** `ComingSoonGuard` — claiming: a valid value sets the cookie (`HttpOnly`,
       `SameSite=Lax`, `Secure` over HTTPS, 14 days) and redirects to the same address without it;
       an invalid one changes nothing and is not acknowledged. (FR-011, FR-014)
-- [ ] **T043** `PreviewLinkController` — `admin_post` handlers for create, regenerate and revoke,
-      behind `AdminGuard`, each writing its history row. The new link is shown once, on the
-      response to the action that made it. (FR-011, FR-012, Principle VII)
-- [ ] **T044** `OperationsSecurityScreen` — the preview-link card, present only in Coming soon: no
+
+      An invalid value never becomes a fact of the request at all, so nothing downstream can
+      answer it differently from no value. Over HTTP, a wrong link and no link return the same
+      status and the same headers, the date aside.
+- [x] **T043** `PreviewLinkController` — one `admin_post` action behind `AdminGuard`, carrying
+      which of the three operations is wanted. (FR-011, FR-012, Principle VII)
+
+      The rules are not in it. `PreviewLinkService` holds them — only while the site is in Coming
+      soon, each operation recorded with the operator — and returns a `PreviewLinkResult`
+      (Principle III). Two classes the plan's file list did not have.
+
+      A new link is shown by answering the POST itself, with a page, and not by redirecting. It
+      has to be: the link is stored nowhere it could be read back from, so a redirect would mean
+      putting the secret in an address or parking it in the database for the next request.
+      Everything that makes no link redirects back to the screen with a status, as its other
+      forms do.
+- [x] **T044** `OperationsSecurityScreen` — the preview-link card, present only in Coming soon: no
       link and a Create button; or when it was created and by whom, with Regenerate and Revoke.
-      History rows for link events render with the operator's name.
-- [ ] **T045** The preview banner — the same bar, with the private-preview message and no link, for
-      a browser that holds preview access. Never shown to an anonymous visitor. (FR-016a)
-- [ ] **T046** Integration: `PreviewAccessIntegrationTest` — the option store against a real
-      database; leaving the mode through the service empties it; a preview holder requesting
-      anything under the admin gets what an anonymous visitor gets. (US4.4, US4.7)
-- [ ] **T047** Guard Gate — `clean-code-guard`, `wp-guard`, `test-guard`.
+      History rows for link events render with the operator's name, and the history's heading
+      now says it holds both. The link is never on the screen.
+- [x] **T045** The preview banner — the same bar, with the private-preview message and no link,
+      for a browser that holds preview access. Never shown to an anonymous visitor. (FR-016a)
+
+      Somebody who can edit posts and also holds preview access gets the notice, not the banner:
+      an operator who opened the client's link to check it is still an operator. The mode's
+      description on the screen gained a line about the link and what removes it.
+- [x] **T046** Integration: `PreviewAccessIntegrationTest` (18) and `PreviewLinkScreenTest` (14) —
+      the option store against a real database, and that the row holds no link; leaving the mode
+      through the real service empties it; the guard claims a valid link and treats a wrong, old
+      or revoked one as none; a grant has no effect in another mode; a preview holder under the
+      admin has what an anonymous visitor has. (US4.4, US4.7)
+
+      Not covered by an automated test, for the same reason as before — each ends the request:
+      the cookie actually set, the redirect that follows, and the controller's two responses.
+      Each was driven over real HTTP against this worktree's install: opening a link, browsing
+      with the grant, a wrong link, regenerating, revoking, leaving the mode and coming back, and
+      the admin side with and without a nonce and a session. T059 makes that repeatable.
+- [x] **T047** Guard Gate — `clean-code-guard`, `wp-guard`, `test-guard`, applied by hand.
+
+      Worth saying to whoever writes the guide in Phase 8: a preview link's token is in the
+      address when it is opened, so it is in the web server's access log for that one request.
+      That is true of every link of this kind. It is why the link can be regenerated, and why
+      the cookie does not carry it.
 
 ## Phase 6 — The command (US5)
 

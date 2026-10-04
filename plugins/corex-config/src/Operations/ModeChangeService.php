@@ -27,7 +27,8 @@ use Corex\Operations\OperationResult;
  * - production is a launch — it needs its typed phrase and goes through
  *   {@see ProductionLaunchService}, which evaluates readiness and records the override;
  * - a mode that needs an acknowledgement is not applied without one;
- * - applying the mode already declared changes nothing and is reported as such.
+ * - applying the mode already declared changes nothing and is reported as such;
+ * - leaving Coming soon, by any route, removes the preview link (spec 101, FR-012a).
  *
  * Capability and nonce are not here. They belong to whichever boundary received the request.
  */
@@ -38,10 +39,28 @@ final class ModeChangeService
         private readonly OperationsModeStore $store,
         private readonly ProductionReadinessSnapshotFactory $readiness,
         private readonly ProductionLaunchService $productionLaunch,
+        private readonly PreviewAccess $preview,
     ) {
     }
 
     public function apply(ModeChangeRequest $request): ModeChangeResult
+    {
+        $before = $this->store->current();
+        $result = $this->change($request);
+
+        // Asked of the store, not inferred from the result: a launch reaches the store through
+        // ProductionLaunchService and the other modes reach it directly, and what matters is
+        // whether the site has in fact left the mode — by whichever route, and only if it has.
+        // The link is not recorded as revoked: nobody revoked it. The mode change beside it in
+        // the history is the record.
+        if ($before === OperationsMode::COMING_SOON && $this->store->current() !== OperationsMode::COMING_SOON) {
+            $this->preview->clear();
+        }
+
+        return $result;
+    }
+
+    private function change(ModeChangeRequest $request): ModeChangeResult
     {
         if (! $this->modes->isValid($request->mode)) {
             return ModeChangeResult::invalid();

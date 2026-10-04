@@ -124,7 +124,10 @@ it('describes coming soon with what the guard actually does', function () {
         ->and($consequences)->toContain('REST')
         ->and($consequences)->toContain('cron')
         ->and($consequences)->toContain('login')
-        ->and($consequences)->toContain('To leave');
+        ->and($consequences)->toContain('To leave')
+        // The preview link is part of what the mode does, and so is what ends it (FR-012a).
+        ->and($consequences)->toContain('preview link')
+        ->and($consequences)->toContain('removed when the site leaves');
 });
 
 it('does not describe coming soon in maintenance terms', function () {

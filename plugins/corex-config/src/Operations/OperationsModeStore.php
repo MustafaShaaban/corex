@@ -15,12 +15,26 @@ defined('ABSPATH') || exit;
  * prefixed, autoload-off option; the audit log is a short capped list of {time, user, from, to}. When
  * no mode has been declared it truthfully falls back to `wp_get_environment_type()`, so the Overview
  * badge shows a real value from the first load. This is the only boundary that writes the mode.
+ *
+ * Since spec 101 the log also holds the preview link's events — created, regenerated, revoked — as
+ * rows of their own kind: {time, user, event}. They are part of the same story an operator reads
+ * here ("who opened the site to the client, and when"), and they never hold the link itself.
  */
 final class OperationsModeStore
 {
     private const OPTION = 'corex_operations_mode';
     private const LOG    = 'corex_operations_mode_log';
     private const MAX_LOG = 20;
+
+    public const EVENT_PREVIEW_CREATED     = 'preview_link_created';
+    public const EVENT_PREVIEW_REGENERATED = 'preview_link_regenerated';
+    public const EVENT_PREVIEW_REVOKED     = 'preview_link_revoked';
+
+    private const EVENTS = [
+        self::EVENT_PREVIEW_CREATED,
+        self::EVENT_PREVIEW_REGENERATED,
+        self::EVENT_PREVIEW_REVOKED,
+    ];
 
     public function __construct(private readonly OperationsMode $modes)
     {
@@ -80,6 +94,53 @@ final class OperationsModeStore
     }
 
     /**
+     * Record something that happened which is not a change of mode. Only the events named above
+     * are accepted: the log is a closed vocabulary the screen can render, not a place a caller
+     * can write free text into.
+     */
+    public function record(string $event, int $userId): void
+    {
+        if (! in_array($event, self::EVENTS, true)) {
+            return;
+        }
+
+        $this->append(['time' => time(), 'user' => $userId, 'event' => $event]);
+    }
+
+    /**
+     * Everything in the log, newest first: mode changes and events together. A mode change has an
+     * empty `event`; an event has empty `from` and `to`.
+     *
+     * @return list<array{time:int,user:int,from:string,to:string,event:string}>
+     */
+    public function timeline(int $limit = self::MAX_LOG): array
+    {
+        $log = get_option(self::LOG, []);
+        if (! is_array($log)) {
+            return [];
+        }
+
+        $entries = [];
+        foreach ($log as $entry) {
+            if (! is_array($entry) || (! isset($entry['to']) && ! isset($entry['event']))) {
+                continue;
+            }
+            $entries[] = [
+                'time'  => (int) ($entry['time'] ?? 0),
+                'user'  => (int) ($entry['user'] ?? 0),
+                'from'  => (string) ($entry['from'] ?? ''),
+                'to'    => (string) ($entry['to'] ?? ''),
+                'event' => (string) ($entry['event'] ?? ''),
+            ];
+        }
+
+        return array_slice(array_reverse($entries), 0, max(1, $limit));
+    }
+
+    /**
+     * The mode changes, newest first. Events are not mode changes and are left out, so the callers
+     * that ask "when did this site change mode" keep getting exactly that.
+     *
      * @return list<array{time:int,user:int,from:string,to:string}>
      */
     public function history(int $limit = self::MAX_LOG): array
@@ -107,10 +168,18 @@ final class OperationsModeStore
 
     private function appendLog(string $from, string $to, int $userId): void
     {
+        $this->append(['time' => time(), 'user' => $userId, 'from' => $from, 'to' => $to]);
+    }
+
+    /**
+     * @param array<string,int|string> $row
+     */
+    private function append(array $row): void
+    {
         $log = get_option(self::LOG, []);
         $log = is_array($log) ? $log : [];
 
-        $log[] = ['time' => time(), 'user' => $userId, 'from' => $from, 'to' => $to];
+        $log[] = $row;
 
         if (count($log) > self::MAX_LOG) {
             $log = array_slice($log, -self::MAX_LOG);

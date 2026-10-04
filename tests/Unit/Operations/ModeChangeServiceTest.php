@@ -22,6 +22,7 @@ use Corex\Config\Operations\ModeChangeResult;
 use Corex\Config\Operations\ModeChangeService;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
+use Corex\Config\Operations\PreviewAccess;
 use Corex\Config\Operations\ProductionLaunchService;
 use Corex\Config\Operations\ProductionReadinessSnapshotFactory;
 use Corex\Config\Operations\ReadinessEvaluatedEvent;
@@ -29,6 +30,7 @@ use Corex\Config\Security\HardeningChecks;
 use Corex\Events\EventDispatcher;
 use Corex\Events\ListenerProvider;
 use Corex\Support\BootLogger;
+use Corex\Tests\Fixtures\Operations\InMemoryPreviewAccessStore;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -54,11 +56,14 @@ beforeEach(function () {
     $this->store = new OperationsModeStore($modes);
     $this->now   = new DateTimeImmutable('2026-10-04T12:00:00+00:00');
 
+    $this->preview = new PreviewAccess(new InMemoryPreviewAccessStore(), 'a-key-only-the-site-knows');
+
     $this->service = new ModeChangeService(
         $modes,
         $this->store,
         new ProductionReadinessSnapshotFactory(new HardeningChecks()),
         new ProductionLaunchService($this->store),
+        $this->preview,
     );
 });
 
@@ -167,6 +172,7 @@ it('evaluates readiness, and announces it, even when the production phrase is st
             new EventDispatcher($listeners, new BootLogger(debug: false)),
         ),
         new ProductionLaunchService($this->store),
+        $this->preview,
     );
 
     $result = $service->apply(modeChange(OperationsMode::PRODUCTION));
@@ -241,4 +247,74 @@ it('leaves Coming soon by the rules of the mode it leaves for, not by any of its
         ->and(modeChangeLog())->toHaveCount(2)
         ->and(modeChangeLog()[1]['from'])->toBe(OperationsMode::COMING_SOON)
         ->and(modeChangeLog()[1]['to'])->toBe(OperationsMode::STAGING);
+});
+
+// Spec 101, FR-012a — leaving Coming soon removes the preview link, whoever asked for the change.
+// Stated against the service because the screen and the command line both go through it, so it
+// cannot be true of one and not the other.
+
+it('removes the preview link when the site leaves Coming soon for a mode that needs no confirmation', function () {
+    $this->service->apply(modeChange(OperationsMode::COMING_SOON, acknowledged: true));
+    $token = $this->preview->create(7, $this->now);
+    $grant = $this->preview->grant($token, $this->now);
+
+    $this->service->apply(modeChange(OperationsMode::STAGING));
+
+    expect($this->preview->exists())->toBeFalse()
+        ->and($this->preview->accepts($token))->toBeFalse()
+        ->and($this->preview->honours($grant, $this->now))->toBeFalse();
+});
+
+it('removes the preview link when the site leaves Coming soon by launching', function () {
+    // The launch goes through ProductionLaunchService, not the store call the other modes take.
+    // The link has to go on that route too: it is the one a site in Coming soon is meant to leave by.
+    $this->service->apply(modeChange(OperationsMode::COMING_SOON, acknowledged: true));
+    $token = $this->preview->create(7, $this->now);
+
+    $result = $this->service->apply(modeChange(OperationsMode::PRODUCTION, phrase: 'PRODUCTION'));
+
+    expect($result->status)->toBe(ModeChangeResult::SAVED)
+        ->and($this->store->current())->toBe(OperationsMode::PRODUCTION)
+        ->and($this->preview->exists())->toBeFalse()
+        ->and($this->preview->accepts($token))->toBeFalse();
+});
+
+it('starts with no link when the site comes back to Coming soon', function () {
+    // US4.7: the old link is not waiting to work again.
+    $this->service->apply(modeChange(OperationsMode::COMING_SOON, acknowledged: true));
+    $token = $this->preview->create(7, $this->now);
+    $this->service->apply(modeChange(OperationsMode::STAGING));
+
+    $this->service->apply(modeChange(OperationsMode::COMING_SOON, acknowledged: true));
+
+    expect($this->store->current())->toBe(OperationsMode::COMING_SOON)
+        ->and($this->preview->exists())->toBeFalse()
+        ->and($this->preview->accepts($token))->toBeFalse();
+});
+
+it('keeps the preview link when a change away from Coming soon did not happen', function (ModeChangeRequest $refused) {
+    $this->service->apply(modeChange(OperationsMode::COMING_SOON, acknowledged: true));
+    $token = $this->preview->create(7, $this->now);
+
+    $this->service->apply($refused);
+
+    // The site is still in Coming soon, so the client's link must still work.
+    expect($this->store->current())->toBe(OperationsMode::COMING_SOON)
+        ->and($this->preview->accepts($token))->toBeTrue();
+})->with([
+    'maintenance, not acknowledged'    => [fn () => modeChange(OperationsMode::MAINTENANCE)],
+    'production, phrase not typed'     => [fn () => modeChange(OperationsMode::PRODUCTION)],
+    'a mode that does not exist'       => [fn () => modeChange('holiday')],
+    'Coming soon again'                => [fn () => modeChange(OperationsMode::COMING_SOON, acknowledged: true)],
+]);
+
+it('records leaving the mode as the mode change, with no separate row for the link', function () {
+    // Plan, Decision 6: the mode change beside it is the record. A "revoked" row here would say
+    // an operator revoked the link, which nobody did.
+    $this->service->apply(modeChange(OperationsMode::COMING_SOON, acknowledged: true));
+    $this->preview->create(7, $this->now);
+
+    $this->service->apply(modeChange(OperationsMode::STAGING));
+
+    expect(array_column($this->store->timeline(), 'event'))->toBe(['', '']);
 });

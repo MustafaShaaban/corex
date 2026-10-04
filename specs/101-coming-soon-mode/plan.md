@@ -102,7 +102,13 @@ link carries a random token. Claiming it sets an `HttpOnly`, `SameSite=Lax` cook
 token for 14 days and redirects to the address without it. The option stores an HMAC of the token,
 when it was issued and by whom. Regenerating replaces the hash, revoking deletes it, and leaving
 the mode deletes it — each ends every access at the next request, with no list of sessions to
-maintain. *Rejected:* a server-side session table (state to expire and clean up for the same
+maintain.
+
+*Refined in step 5:* the cookie does not hold the token. It holds a **grant**: an expiry, and a
+signature over the stored hash and that expiry. Three things follow. A cookie that leaks gives away
+one browser's access and not the link. The fourteen days are enforced by the server, not by a
+cookie lifetime the holder can edit. And regenerating or revoking still ends every grant at the
+next request, because the signature is over the hash those replace or remove. *Rejected:* a server-side session table (state to expire and clean up for the same
 result), and a signed, self-expiring token with no stored state (cannot be revoked).
 
 **5. One service changes the mode, for the screen and the command line alike.** FR-017 wants the
@@ -170,9 +176,12 @@ plugins/corex-config/src/Operations/
   ComingSoonGuard.php             NEW  gathers the facts; redirects, serves, or passes
   ComingSoonTemplate.php          NEW  registers the default; resolves the canvas; standalone fallback
   ComingSoonSitemap.php           NEW  the one-URL sitemap
-  PreviewAccess.php               NEW  create, regenerate, revoke, claim, holds, clear
-  PreviewAccessStore.php          NEW  interface, and the option-backed implementation
-  PreviewLinkController.php       NEW  admin_post: create / regenerate / revoke, behind AdminGuard
+  PreviewAccess.php               NEW  create, regenerate, revoke, clear; accepts a token, grants and honours access
+  PreviewAccessStore.php          NEW  interface
+  OptionPreviewAccessStore.php    NEW  the option-backed implementation, not autoloaded
+  PreviewLinkService.php          NEW  when a link may be made, and that making one is recorded
+  PreviewLinkResult.php           NEW  what happened, and the token for the one response that shows it
+  PreviewLinkController.php       NEW  admin_post behind AdminGuard; shows a new link once
   ComingSoonNotice.php            NEW  the front-end bar and the toolbar node
 plugins/corex-config/templates/coming-soon.php    NEW  the default page, core blocks and tokens
                                                   (PHP, not .html: an HTML template cannot be translated)

@@ -45,6 +45,9 @@ final readonly class ComingSoonDecision
     /** The response tells a signed-in user who passes that visitors see the coming-soon page. */
     public const BAR_NOTICE = 'notice';
 
+    /** The response tells a preview holder that this is a private preview the public cannot see. */
+    public const BAR_PREVIEW = 'preview';
+
     /**
      * @param string $outcome One of the outcome constants above.
      * @param bool   $noCache Whether the response must be marked non-cacheable, because what this
@@ -79,7 +82,7 @@ final readonly class ComingSoonDecision
             // 7. Somebody building the site.
             $request->canEditPosts => new self(self::PASS, true, self::BAR_NOTICE),
             // 8. Somebody reviewing it through the preview link.
-            $request->holdsPreviewAccess => new self(self::PASS, true),
+            $request->holdsPreviewAccess => new self(self::PASS, true, self::BAR_PREVIEW),
             // 9. A crawler asking what there is to index.
             $request->isSitemap => new self(self::SITEMAP, false),
             // 10. The launch page.

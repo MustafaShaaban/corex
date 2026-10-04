@@ -31,6 +31,13 @@
 	line-height: 1.5;
 }
 
+/* The private-preview banner is the same bar with a different message
+   (FR-016a). Its edge is the information colour rather than the warning one:
+   nothing here needs the reader to act. */
+.corex-coming-soon-bar.corex-coming-soon-bar--preview {
+	border-inline-start-color: var(--corex-admin-info);
+}
+
 /* The theme styles paragraphs, lists and links for its own content. Inside
    the bar they are the bar's, so each is set rather than inherited from
    whatever the page happens to use. */

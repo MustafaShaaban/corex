@@ -227,3 +227,25 @@ it('puts no notice on anything served to a visitor, or passed for any other reas
     'the admin, for an editor'  => [fn () => comingSoonRequest(neverIntercepted: true, canEditPosts: true)],
     'another mode, for an editor' => [fn () => new ComingSoonRequest(OperationsMode::PRODUCTION, canEditPosts: true)],
 ]);
+
+// The preview banner (spec 101, FR-016a).
+
+it('puts the private-preview banner on the real site served to a preview holder', function (bool $isHome) {
+    $decision = ComingSoonDecision::for(comingSoonRequest(holdsPreviewAccess: true, isHome: $isHome));
+
+    expect($decision->outcome)->toBe(ComingSoonDecision::PASS)
+        ->and($decision->bar)->toBe(ComingSoonDecision::BAR_PREVIEW);
+})->with(['home' => true, 'elsewhere' => false]);
+
+it('gives somebody who can edit posts the notice, not the banner, though they also hold preview access', function () {
+    // Rows 7 and 8 in that order. An operator who opened the client's link to check it is still
+    // an operator: they are told what visitors see and given the way to the visitor view.
+    $decision = ComingSoonDecision::for(comingSoonRequest(canEditPosts: true, holdsPreviewAccess: true));
+
+    expect($decision->bar)->toBe(ComingSoonDecision::BAR_NOTICE);
+});
+
+it('puts no banner on the response that claims a link', function () {
+    // It is a redirect. The banner is on the page it leads to.
+    expect(ComingSoonDecision::for(comingSoonRequest(carriesValidPreview: true))->bar)->toBe(ComingSoonDecision::BAR_NONE);
+});

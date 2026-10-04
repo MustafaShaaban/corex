@@ -21,6 +21,8 @@ use Corex\Config\Operations\ComingSoonSitemap;
 use Corex\Config\Operations\ComingSoonTemplate;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
+use Corex\Config\Operations\PreviewAccess;
+use Corex\Tests\Fixtures\Operations\InMemoryPreviewAccessStore;
 
 function comingSoonNotice(): ComingSoonNotice
 {
@@ -39,7 +41,12 @@ function comingSoonNotice(): ComingSoonNotice
     $store = new OperationsModeStore(new OperationsMode());
 
     return new ComingSoonNotice(
-        new ComingSoonGuard($store, new ComingSoonTemplate(new StandalonePage('', '')), new ComingSoonSitemap()),
+        new ComingSoonGuard(
+            $store,
+            new ComingSoonTemplate(new StandalonePage('', '')),
+            new ComingSoonSitemap(),
+            new PreviewAccess(new InMemoryPreviewAccessStore(), 'a-key-only-the-site-knows'),
+        ),
         $store,
     );
 }
@@ -125,4 +132,41 @@ it('carries the class the CoreX tokens are defined on, and none of its own colou
 
     expect($html)->toMatch('/^<aside class="corex-admin corex-coming-soon-bar"/')
         ->and($html)->not->toContain('style=');
+});
+
+// The preview banner (spec 101, T045, FR-016a) — the same bar, with a different message.
+
+/** The decision for a browser that holds preview access and nothing else. */
+function comingSoonPreviewDecision(): ComingSoonDecision
+{
+    return ComingSoonDecision::for(new ComingSoonRequest(OperationsMode::COMING_SOON, holdsPreviewAccess: true));
+}
+
+it('tells a preview holder that this is a private preview the public cannot see yet', function () {
+    $html = comingSoonNotice()->html(comingSoonPreviewDecision(), canChangeMode: false);
+
+    expect($html)->toMatch('/^<aside class="corex-admin corex-coming-soon-bar corex-coming-soon-bar--preview"/')
+        ->and($html)->toContain('Private preview')
+        ->and($html)->toContain('The public cannot see this site yet');
+});
+
+it('gives the preview banner no link at all, and nothing that leads to the admin', function () {
+    // FR-016a. A stakeholder has no account; a link to a screen that would ask them to sign in is
+    // a dead end, and "leave the preview" is not something the banner offers.
+    $html = comingSoonNotice()->html(comingSoonPreviewDecision(), canChangeMode: true);
+
+    expect(comingSoonLinks($html))->toBe([])
+        ->and($html)->not->toContain('<a ')
+        ->and($html)->not->toContain('<button')
+        ->and($html)->not->toContain('wp-admin')
+        ->and($html)->not->toContain('corex_visitor_view')
+        ->and($html)->not->toContain('<ul');
+});
+
+it('does not tell a preview holder what the notice tells an operator', function () {
+    $banner = comingSoonNotice()->html(comingSoonPreviewDecision(), canChangeMode: false);
+    $notice = comingSoonNotice()->html(comingSoonPassedDecision(), canChangeMode: false);
+
+    expect($banner)->not->toContain('Coming soon is on')
+        ->and($notice)->not->toContain('Private preview');
 });

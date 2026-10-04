@@ -25,6 +25,9 @@ use WP_Admin_Bar;
  * user there, and a notice that depends on a preference is not persistent. In the admin the
  * toolbar is always present, so the message goes in it.
  *
+ * A browser that holds preview access gets the same bar with a different message and no links
+ * (FR-016a): it is a private preview, and the public cannot see it yet.
+ *
  * Who sees the bar is not decided here. {@see ComingSoonDecision} names the bar a response
  * carries, so "who is told" cannot drift from "who passes". It cannot be dismissed.
  */
@@ -96,6 +99,10 @@ final class ComingSoonNotice
      */
     public function html(ComingSoonDecision $decision, bool $canChangeMode): string
     {
+        if ($decision->bar === ComingSoonDecision::BAR_PREVIEW) {
+            return $this->previewBanner();
+        }
+
         if ($decision->bar !== ComingSoonDecision::BAR_NOTICE) {
             return '';
         }
@@ -116,6 +123,21 @@ final class ComingSoonNotice
             . esc_html__('Coming soon is on.', 'corex') . '</strong> '
             . esc_html__('Visitors see the coming-soon page, not this site.', 'corex') . '</p>'
             . '<ul class="corex-coming-soon-bar__links">' . $links . '</ul>'
+            . '</aside>';
+    }
+
+    /**
+     * The bar for a browser that holds preview access (FR-016a): what this is, and nothing to
+     * follow. A stakeholder has no account, so a link to the admin would be a dead end, and
+     * leaving the preview is not something the banner offers.
+     */
+    private function previewBanner(): string
+    {
+        return '<aside class="corex-admin corex-coming-soon-bar corex-coming-soon-bar--preview" aria-label="'
+            . esc_attr__('Site status', 'corex') . '">'
+            . '<p class="corex-coming-soon-bar__message"><strong>'
+            . esc_html__('Private preview.', 'corex') . '</strong> '
+            . esc_html__('The public cannot see this site yet.', 'corex') . '</p>'
             . '</aside>';
     }
 

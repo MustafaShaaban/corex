@@ -10,6 +10,8 @@ namespace Corex\Config\Operations;
 
 defined('ABSPATH') || exit;
 
+use DateTimeImmutable;
+
 /**
  * The public behaviour of Coming soon mode (spec 101): the launch page at the home URL with a 200,
  * a temporary redirect to it from every other front-end address, and the real site for the people
@@ -45,6 +47,7 @@ final class ComingSoonGuard
         private readonly OperationsModeStore $store,
         private readonly ComingSoonTemplate $template,
         private readonly ComingSoonSitemap $sitemap,
+        private readonly PreviewAccess $preview,
     ) {
     }
 
@@ -67,6 +70,7 @@ final class ComingSoonGuard
             ComingSoonDecision::REDIRECT => $this->redirectHome(),
             ComingSoonDecision::SITEMAP  => $this->sendSitemap(),
             ComingSoonDecision::SERVE    => $this->arrangeToServe(),
+            ComingSoonDecision::CLAIM    => $this->claimPreview(),
             default                      => null,
         };
     }
@@ -168,16 +172,15 @@ final class ComingSoonGuard
         return new ComingSoonRequest(
             mode: $mode,
             neverIntercepted: $this->isNeverIntercepted(),
-            // The preview link arrives with T042. Until it does, no value can be valid and no
-            // browser can hold access, and saying so here is truer than reading a cookie nothing
-            // sets.
-            carriesValidPreview: false,
+            // An invalid value is not carried into the request at all: it is "no" here, exactly
+            // as an absent one is, so nothing downstream can answer the two differently (FR-014).
+            carriesValidPreview: $this->carriesValidPreview(),
             allowedByClient: apply_filters(self::BYPASS_FILTER, false) === true,
             isRobotsOrFavicon: is_robots() || is_favicon(),
             canEditPosts: is_user_logged_in() && current_user_can('edit_posts'),
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state; it asks for less than the user already has.
             asksForVisitorView: isset($_GET[self::VISITOR_VIEW]),
-            holdsPreviewAccess: false,
+            holdsPreviewAccess: $this->holdsPreviewAccess(),
             isSitemap: $this->isSitemapIndex($queryVars),
             isHome: apply_filters(
                 self::HOME_FILTER,
@@ -232,6 +235,60 @@ final class ComingSoonGuard
         // visitors to the home URL after launch.
         wp_safe_redirect(home_url('/'), 302, 'CoreX');
         exit;
+    }
+
+    /**
+     * A valid preview link is being opened: remember this browser, and send it to the address it
+     * asked for without the secret on it, so the link does not stay in the address bar, in the
+     * browser's history, or in the Referer of the next page it follows.
+     */
+    private function claimPreview(): never
+    {
+        $now   = new DateTimeImmutable('now');
+        $grant = $this->preview->grant($this->previewValue(), $now);
+
+        // The decision said the link was valid a moment ago; if it has been revoked since, there
+        // is no grant, and the redirect below simply leads to what a visitor gets.
+        if ($grant !== null) {
+            setcookie(PreviewAccess::COOKIE, $grant, [
+                'expires'  => $this->preview->expires($now),
+                'path'     => COOKIEPATH !== '' ? COOKIEPATH : '/',
+                'domain'   => (string) COOKIE_DOMAIN,
+                // Never readable by script, never sent on a cross-site sub-request, and only
+                // over HTTPS when the site is served over it.
+                'secure'   => is_ssl(),
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        }
+
+        wp_safe_redirect(remove_query_arg(PreviewAccess::PARAMETER), 302, 'CoreX');
+        exit;
+    }
+
+    private function carriesValidPreview(): bool
+    {
+        $value = $this->previewValue();
+
+        return $value !== '' && $this->preview->accepts($value);
+    }
+
+    private function holdsPreviewAccess(): bool
+    {
+        $grant = isset($_COOKIE[PreviewAccess::COOKIE]) && is_string($_COOKIE[PreviewAccess::COOKIE])
+            ? sanitize_text_field(wp_unslash($_COOKIE[PreviewAccess::COOKIE]))
+            : '';
+
+        return $grant !== '' && $this->preview->honours($grant, new DateTimeImmutable('now'));
+    }
+
+    /** The preview value on the address, or an empty string when there is none. */
+    private function previewValue(): string
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- the value is itself the credential being checked.
+        $value = $_GET[PreviewAccess::PARAMETER] ?? '';
+
+        return is_string($value) ? sanitize_text_field(wp_unslash($value)) : '';
     }
 
     private function sendSitemap(): never

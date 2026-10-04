@@ -16,6 +16,8 @@ use Corex\Config\Operations\ComingSoonSitemap;
 use Corex\Config\Operations\ComingSoonTemplate;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
+use Corex\Config\Operations\PreviewAccess;
+use Corex\Tests\Fixtures\Operations\InMemoryPreviewAccessStore;
 
 function comingSoonGuard(): ComingSoonGuard
 {
@@ -23,6 +25,7 @@ function comingSoonGuard(): ComingSoonGuard
         new OperationsModeStore(new OperationsMode()),
         new ComingSoonTemplate(new StandalonePage('', '')),
         new ComingSoonSitemap(),
+        new PreviewAccess(new InMemoryPreviewAccessStore(), 'a-key-only-the-site-knows'),
     );
 }
 
