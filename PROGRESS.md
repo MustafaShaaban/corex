@@ -51,32 +51,6 @@ paragraph. One thing found while building 102 shaped the plan: a generated clien
 standalone block theme, not a child of the Corex theme, so it does not inherit a template the
 parent ships.
 
-**The integration suite no longer empties the notification tables of the install it runs against,
-and no longer leaves rows on it** (branch `fix/integration-suite-leaves-install-rows`, tests only,
-DECISIONS #234). `NotificationControllerTest`, `WpNotificationRepositoryTest` and
-`NotificationPerformanceTest` began every test with an unqualified `DELETE FROM` on the
-notification and read-state tables, so each run removed every notification the developer had and
-what each user had read. They now act as actors nothing else on the install addresses — an account
-the controller test creates with no role, and two user ids no account has — and delete only rows
-under a dedup-key prefix of their own. The controller test had also been rewriting the
-administrator's notification preferences. Stopping the delete uncovered what it had been
-hiding, fixed in the same change:
-`FlowControllerTest` and `FlowLifecycleTest` each left a notification about their flow, and
-`CommandCenterWidgetTest` renders the widget, which evaluates readiness for real and records the
-install's own blockers; it now puts those rows back as they were. The rows the suite left are
-cleaned up by naming them: eight logged emails (`CallRequestDataPathTest`,
-`ApplicationDataPathTest`, `MailLifecycleTest`, `SubscriptionLifecycleTest`), two reading events
-(`BlogProControllerTest`), and two ids on `corex_kit_seeded_pages`, which came from
-`SetupConflictTest`. `DataManagementControllerTest` records the runs it creates instead of
-comparing the newest 500 before and after. One more was found by checksum, not by count:
-`LoginProtectionEnforcementTest` emptied the login-attempt table and deleted the login policy
-without putting it back, and `LoginRecoveryTest` left a lockout row and released every active
-lockout on the install; both now act on rows from their own documentation-range address. Measured
-on the development install with a before-and-after snapshot of post ids, every prefixed table's
-row count and checksum, option hashes, cron events, users and user meta: 377 of 377 pass, and
-across three consecutive runs the only differences are the transients listed under "Open, and not
-hidden".
-
 **WP-CLI no longer logs "translation loading … triggered too early" on every request** (#232, branch
 `fix/cli-commands-register-on-cli-init`, DECISIONS #235). `CliServiceProvider` and
 `MediaServiceProvider` built their command definitions while booting on `plugins_loaded`, and a
@@ -141,6 +115,30 @@ On `main` since v0.42.1, and not in a release yet:
   administrators outlived the subscriber the tests delete. `AccessControllerTest` also granted the
   editor role `corex_manage_forms` through the real controller and left it granted; it now
   restores the grant row it found.
+- **The integration suite no longer empties the notification tables of the install it runs against,
+  and no longer leaves rows on it** (#231, tests only, DECISIONS #234).
+  `NotificationControllerTest`, `WpNotificationRepositoryTest` and `NotificationPerformanceTest`
+  began every test with an unqualified `DELETE FROM` on the notification and read-state tables, so
+  each run removed every notification the developer had and what each user had read. They now act as
+  actors nothing else on the install addresses — an account the controller test creates with no
+  role, and two user ids no account has — and delete only rows under a dedup-key prefix of their
+  own. The controller test had also been rewriting the administrator's notification preferences.
+  Stopping the delete uncovered what it had been hiding, fixed in the same change:
+  `FlowControllerTest` and `FlowLifecycleTest` each left a notification about their flow, and
+  `CommandCenterWidgetTest` renders the widget, which evaluates readiness for real and records the
+  install's own blockers; it now puts those rows back as they were. The rows the suite left are
+  cleaned up by naming them: eight logged emails (`CallRequestDataPathTest`,
+  `ApplicationDataPathTest`, `MailLifecycleTest`, `SubscriptionLifecycleTest`), two reading events
+  (`BlogProControllerTest`), and two ids on `corex_kit_seeded_pages`, which came from
+  `SetupConflictTest`. `DataManagementControllerTest` records the runs it creates instead of
+  comparing the newest 500 before and after. One more was found by checksum, not by count:
+  `LoginProtectionEnforcementTest` emptied the login-attempt table and deleted the login policy
+  without putting it back, and `LoginRecoveryTest` left a lockout row and released every active
+  lockout on the install; both now act on rows from their own documentation-range address. Measured
+  on the development install with a before-and-after snapshot of post ids, every prefixed table's
+  row count and checksum, option hashes, cron events, users and user meta: 377 of 377 pass, and
+  across three consecutive runs the only differences are the transients listed under "Open, and not
+  hidden".
 
 **v0.42.1**, a patch release. [`CHANGELOG.md`](CHANGELOG.md) has the full entry; the decisions are
 #224 to #229.
@@ -206,8 +204,8 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
   there are not removed by anything.
 - **A full integration run still leaves transients on the install**, measured on 2026-10-04 with
-  the branch above applied: three rate-limit counters from `FlowControllerTest` and
-  `FlowLifecycleTest` (60 seconds), one migration preview from `DataManagementControllerTest`
+  #231 applied: three rate-limit counters from `FlowControllerTest` and `FlowLifecycleTest`
+  (60 seconds), one migration preview from `DataManagementControllerTest`
   (300 seconds), and the `contact` form's counter refreshed by `SubmitLifecycleTest`. Each expires
   on its own; the rows stay in the options table until WordPress clears expired transients. Nothing
   else differed between the snapshots.
