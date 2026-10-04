@@ -4410,6 +4410,50 @@ This is the third gate in this repository found not to be gating: the workflow t
 (DECISIONS #153), and now a check nothing required. The pattern worth naming: **a gate is not the
 script, it is the script plus the thing that makes failing it matter.**
 
+## #225 — No command may unregister its neighbours
+
+Date: 2026-09-09 · Spec: — (issue #201) · Status: Final
+
+Under `composer install --no-dev` seven WP-CLI commands disappeared, `wp corex migrate` among them.
+Not an error — absent. `wp help corex` still listed the namespace and still listed commands, so the
+gap read as a release that never shipped them. A production install *is* a `--no-dev` install:
+`scripts/build-shared-host-dist.mjs` tells the operator to run exactly that. A site deployed by the
+documented path could not run its own schema migration, and nothing said so.
+
+Two defects, and only the second is interesting.
+
+`nikic/php-parser` was declared nowhere in `composer.json`. `ClassDocReader` uses it at runtime and
+it arrived only as a transitive dependency of `pestphp/pest`, so removing dev dependencies removed
+it. That is now a production dependency.
+
+But the missing `require` line is only what pulled the trigger. `CliServiceProvider::boot()` built
+every command eagerly, inline, in one straight-line method, so the first constructor to throw
+aborted the method and took every command declared after it with it. A docs-only dependency was
+therefore able to delete `migrate`. Commands registered *before* the throw survived, which is
+precisely what made it invisible: the namespace still answered.
+
+**Decision: registration is a lazy map, not a construction sequence.** `commandRegistrations()`
+returns name → handler and builds nothing; each handler constructs what it needs when its command
+runs. A missing dependency now fails loudly on its own invocation instead of quietly deleting its
+neighbours. `MediaServiceProvider` had the same shape — two commands plus, behind them, the
+`delete_attachment` cleanup and a job registration — and was converted before it could bite.
+
+The WP-CLI help surface is what makes the media half non-obvious. WP-CLI derives `wp help` from the
+callable's docblock, so swapping an object for a closure silently deletes the documented options.
+Moving them into a structured `synopsis` is not cosmetic: **the flag name must not be translatable.**
+WP-CLI parses the option syntax, so a translated `[--dry-run]` breaks argument handling in every
+locale except the one anybody testing would be using.
+
+The suite could not have caught any of this. `CommandRegistrationTest` asserted WP-CLI was *absent*,
+so `boot()` returned early and the registration path was never exercised — and the dev dependencies
+that hide the bug are the ones installed to run the tests. The regression test now builds the map
+with a container that throws on every resolution and asserts all 26 commands still register, having
+resolved nothing.
+
+Third instance of the pattern in DECISIONS #224's closing line, in a new place: a check that cannot
+observe the failure it exists to catch. Here the test asserted the precondition that guaranteed it
+would see nothing.
+
 ## #226 — The advisory gate was red on `main` for a month, and said so every week
 
 Date: 2026-09-09 · Spec: 089 · Status: Final
@@ -4453,3 +4497,158 @@ The `adm-zip` exception carries a condition rather than only a date: it rests on
 caller** — there is no `.wp-env.json`, and `plugin-zip` is referenced by no script or workflow. If
 either becomes false the exception has to be re-argued, not renewed. An exception whose premise can
 quietly expire is how a bounded exception becomes a permanent one.
+
+## #227 — Ten upgrades, one override proven against its parent, and one exception that needs an owner
+
+Date: 2026-10-04 · Spec: 089 · Status: Final — merged as #212 on the owner's instruction, with the `braces` exception as written
+
+#203 cleared every advisory known on 2026-09-09 and merged on 2026-10-04. On the day it merged the
+gate on `main` failed again: 21 findings in the root npm workspace, 18 of them unbounded, and 8 in
+the docs site, all unbounded. Nothing in the tree had moved. This entry records what was done with
+each.
+
+**Taken inside the ranges already declared, by lockfile update alone:**
+
+| Package | From → to | Tree |
+|---|---|---|
+| `http-cache-semantics` | 4.2.0 → 4.3.0 | root and docs |
+| `ip-address` | 10.7.0 → 10.7.3 | root |
+| `moment` | 2.30.1 → 2.31.0 | root |
+| `webpack-dev-middleware` | 8.1.0 → 8.3.0 | root |
+| `devalue` | 5.8.2 → 5.9.4 | docs |
+
+`webpack-dev-middleware` 8.3.0 raised its own floor on `memfs` (4.64.0 → 4.80.0, with its eight
+`@jsonjoy.com/fs-*` packages), moved `glob-to-regex.js` to 1.3.1 and nested a `range-parser` 1.3.0.
+Those are consequences of the upgrade, not separate choices.
+
+**Taken through overrides that already existed, with the floor raised to the patched release:**
+`brace-expansion` ^5.0.12, `fast-uri` ^3.1.8, `markdown-it` ^14.3.2 and `adm-zip` ^0.6.1. The lockfile
+is what installs them; the floor is there so a regenerated lockfile cannot resolve back into an
+advisory range.
+
+**`adm-zip` 0.6.1 retires an exception.** DECISIONS #226 bounded GHSA-vwc7-r8mq-g2x9 because 0.6.0
+was both the latest release and inside the range. 0.6.1 is outside it, and outside the six further
+`adm-zip` advisories published since. The exception is deleted, not left to go stale — a stale
+exception fails the gate, which is the gate doing its job.
+
+**One new override, and it is a major: `basic-ftp` ^6.2.2.** GHSA-c475-qrg2-pj4r covers `<=6.2.0`
+and is patched only in the 6 line. Its sole parent, `get-uri`, declares `^5` in the installed
+6.0.5 and still does in its latest, 8.0.1, so no parent upgrade reaches the fix. DECISIONS #206 set the bar for this: an
+override has to be proven by the parent's own behaviour, not by the advisory count going down. So
+`get-uri` was made to do the one thing it uses `basic-ftp` for — fetch a file over FTP — against a
+loopback server, once with 5.3.1 as a control and once with 6.2.2. Both returned the same bytes and
+the same last-modified time. `get-uri` calls `access`, `lastMod`, `list`, `downloadTo` and `close`,
+and all five worked under both. Nothing in this repository runs that chain
+(`@wordpress/scripts` → `@wordpress/e2e-test-utils-playwright` → `lighthouse` → `puppeteer-core` →
+`@puppeteer/browsers` → `proxy-agent` → `pac-proxy-agent` → `get-uri`), which is a reason to care
+less about the advisory, not a reason to skip the proof.
+
+**One finding has no fix, and bounding it is a judgement rather than a lookup: `braces`
+GHSA-vfj7-8cjw-p6xm.** 3.0.3 is the latest release and the advisory, published 2026-09-18, covers
+`<=3.0.3` with no patched version. It cannot be removed: it arrives through `micromatch`, which the
+latest `fast-glob`, `stylelint` and `http-proxy-middleware` all require, so `@wordpress/scripts` 36
+would install it too.
+
+The policy forbids excepting a high finding whose exposure is `shipped-runtime` or `ci`, and
+**`braces` runs in CI** — in `npm run lint:css` and `npm run build`. The two earlier exceptions in
+the file are for a package that is installed and never executed; this one is not that, and saying
+it is would be the convenient lie. It is classed `build-test-transitive` on the reasoning spec 056
+applied to the `minimatch` and `brace-expansion` ReDoS findings, whose own exception text said they
+were "exercised on developer machines and CI runners": on that reading the class describes where
+the *input* comes from, not whether the code executes. The defect needs a deeply
+nested brace pattern. Every `wp-scripts` invocation here is a bare command with directory flags, no
+tracked file imports `braces`, `micromatch`, `fast-glob` or `globby`, and there is no custom
+webpack, stylelint or dev-server proxy configuration. Supplying a pattern therefore means committing
+to this repository's tooling configuration, which already grants code execution in the same job,
+and the result is one crashed process.
+
+Two things were checked rather than assumed. The lockfile does not mark `braces` dev-only, which
+looks like a shipped dependency and is not: `@wordpress/theme`, installed beneath
+`@wordpress/components`, lists `stylelint` as an optional peer. `@wordpress/components` is
+externalised to the `wp-components` script handle, and a search of every workspace `build/`
+directory finds no `braces`, `micromatch` or `stylelint` code.
+
+If the owner reads `ci` as "executes in CI" rather than "reachable by untrusted input in CI", this
+exception is forbidden by the policy as written and the gate cannot pass until `braces` publishes a
+fix. That reading is defensible. It is recorded here so the choice is made deliberately and not by
+whoever wrote the JSON.
+
+**The `extract-zip` pair has a route out it did not have in September.** `@puppeteer/browsers` 3.x
+dropped `extract-zip` altogether, and `@wordpress/scripts` 36 installs it. The upstream trigger on
+GHSA-jmr9-qjv8-65gv now says so. It was not taken here: 34 → 36 is two toolchain majors with ESLint
+10 and stylelint 17 inside them, and an override forcing `@puppeteer/browsers` 3 under a
+`puppeteer-core` that pins 2.13.2 exactly could not be proven on a chain nothing here runs.
+
+**Not folded in:** `@wordpress/components` 38 → 40 (#186), which still needs render-time
+verification in a browser, and the `@wordpress/scripts` major above.
+
+**A local result that looked like a failure and was not.** `npm run lint:css` reported 240,743
+errors, every one of them in `wp-ms/` — the git-ignored multisite install that spec 100 added and
+that `.stylelintignore`, `eslint.config.js` and `jest.config.js` do not exclude, though all three
+exclude `wp/`. CI has no such directory. The linters and Jest were verified with it excluded on the
+command line; fixing the three ignore lists is a separate change and is not in this one.
+
+## #228 — Two of three browser flakes were one race; the third is a 500 with no name
+
+Date: 2026-10-04 · Spec: none (browser-test helpers and CI) · Status: Open — on `fix/e2e-flaky-helpers`
+
+The browser job is a required check, and it failed three times on diffs that changed no runtime
+code: the nightly on 2026-09-21 (`guides.spec.js`), #210 (`access-request.spec.js`, on a pull
+request that adds a spec and its checklist) and #211 (`submissions-inbox.spec.js`, three tests).
+
+**The sign-in failures were a race between WordPress and Playwright.** `wp-login.php` runs
+`wp_attempt_focus()`: 200ms after the form renders it focuses the username field and selects its
+contents. Playwright's `fill` is two steps — focus the field, then insert the text into whatever
+holds focus. A timer that fires between them sends the password into the username field, over the
+selected username. Both fields are `required`, so the browser will not submit the form: no request,
+no error on the page. The screenshot from #210 shows exactly that — the password in the username
+field and "Please fill out this field." under an empty password field.
+
+Measured, not inferred: against WordPress's script verbatim, 1 fill in 120 went astray when timed to
+the 200ms mark. With the focus moved in a microtask after the password field takes it, 60 in 60 did.
+
+**A second defect turned a recoverable miss into a 60-second timeout.** After a login that stays on
+`wp-login.php`, `signInAs` read `#login_error` with `innerText()`, which waits for the element to
+exist and has no timeout of its own. With no error on the page it waited until the test's timeout
+closed the browser. The three passes the helper makes — written for exactly this — never ran. Both
+September and October failures print the same two lines: pass 1 "submitted and stayed", pass 2
+"abandoned — the browser context was closed".
+
+**What was decided.**
+
+- *Check the form, then submit it.* `fillLoginForm` fills both fields, confirms each holds its own
+  credential, and fills again if not. The timer fires once, so the second fill is clean. Waiting for
+  the timer instead was rejected: it is an inline script behind a filter
+  (`enable_login_autofocus`), and a helper that waits on it hangs wherever it is absent. Writing
+  `.value` directly was rejected: the helper would stop using the form the way a person does.
+- *Read a refusal that is there; do not wait for one.* `allInnerTexts()` in place of `innerText()`.
+- *No `retries` in the Playwright config.* A retry would have turned all three failures green,
+  including the one below, which is a fault in the product.
+- *The helpers have their own spec.* `tests/e2e/helpers.spec.js` serves a login form through
+  `page.route` and holds it in the state that is otherwise a few milliseconds wide. Each fix was
+  removed in turn and its test failed. The first version of the race test did not: it moved the
+  focus with a zero-delay timer, which arrives ahead of the text only 58 times in 60, and the
+  helper's retry passes absorbed the rest.
+
+**The third failure is open, and is not a test fault.** On #211, `GET corex/v1/flows` answered 500
+"Request could not be processed." to three specs in a row. That body is `Pipeline`'s answer to any
+`Throwable`. What is known:
+
+- Nothing else was running. The other worker had finished, so no spec interfered.
+- The seed in the test before those three had succeeded, creating and publishing the flow.
+- `FlowRestGateway` answers `FlowConflictException` with a 409 and `DomainException` or
+  `InvalidArgumentException` with a 422, and every `throw` on the list path is one of those. So
+  this was a `Throwable` the flow code does not raise deliberately.
+- The same branch passed the same specs four times earlier that day, and once after.
+
+What threw is not known. `Pipeline` wrote the message to the PHP error log, and CI kept no server
+log. Two changes make the next occurrence diagnosable instead of guessing at this one:
+`seedSubmission` checks every answer and reports the step, status, code and message — it had
+reported `Cannot read properties of undefined (reading 'flows')` — and the browser job now copies
+nginx's error and access logs and the php-fpm log into the artifact it uploads on failure. The seed
+is deliberately not retried: three failures across three seconds would have outlasted a retry, and
+one that did not would hide the fault.
+
+Not re-examined: `helpers.js` blames the failures of 2026-09-03 and 2026-09-04 on the login address
+moving, and `ci.yml` blames one on lockout. Their artifacts expired, so whether either was this
+race cannot be checked.

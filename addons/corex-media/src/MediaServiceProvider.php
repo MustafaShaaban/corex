@@ -70,8 +70,20 @@ final class MediaServiceProvider extends ServiceProvider
 
         // CLI: backfill (regenerate-webp) + safe cleanup (reset-webp) for existing uploads (spec 061/062).
         if (defined('WP_CLI') && WP_CLI) {
-            \WP_CLI::add_command('corex media regenerate-webp', new MediaCommand($capability, $settings));
-            \WP_CLI::add_command('corex media reset-webp', new WebpResetCommand());
+            \WP_CLI::add_command(
+                'corex media regenerate-webp',
+                static function (array $args, array $assoc) use ($capability, $settings): void {
+                    (new MediaCommand($capability, $settings))($args, $assoc);
+                },
+                $this->regenerateWebpCommandDefinition(),
+            );
+            \WP_CLI::add_command(
+                'corex media reset-webp',
+                static function (array $args, array $assoc): void {
+                    (new WebpResetCommand())($args, $assoc);
+                },
+                $this->resetWebpCommandDefinition(),
+            );
         }
 
         // Clean up tracked derivatives when an attachment is deleted (never touch untracked files).
@@ -113,5 +125,52 @@ final class MediaServiceProvider extends ServiceProvider
 
             return $metadata; // unchanged — the WebP is a sibling; WP's own sizes are untouched
         }, 20, 2);
+    }
+
+    /**
+     * @return array{shortdesc: string, synopsis: list<array{type: string, name: string, optional: bool, description: string}>}
+     */
+    private function regenerateWebpCommandDefinition(): array
+    {
+        return [
+            'shortdesc' => __('Backfill WebP siblings for existing uploads.', 'corex'),
+            'synopsis' => [
+                $this->commandArg('flag', 'dry-run', __('Report what would be converted without writing anything.', 'corex')),
+                $this->commandArg('assoc', 'limit', __('Process at most N attachments (0 = all). Default: 0.', 'corex')),
+                $this->commandArg('assoc', 'attachment', __('Only this attachment ID.', 'corex')),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{shortdesc: string, synopsis: list<array{type: string, name: string, optional: bool, description: string}>}
+     */
+    private function resetWebpCommandDefinition(): array
+    {
+        return [
+            'shortdesc' => __('Safely remove CoreX-generated WebP derivatives.', 'corex'),
+            'synopsis' => [
+                $this->commandArg('flag', 'dry-run', __('Report what would be deleted without removing anything.', 'corex')),
+                $this->commandArg('flag', 'all', __('Process all attachments with a tracked derivative.', 'corex')),
+                $this->commandArg('assoc', 'attachment', __('Only this attachment.', 'corex')),
+                $this->commandArg('assoc', 'limit', __('Process at most N (0 = all). Default: 0.', 'corex')),
+            ],
+        ];
+    }
+
+    /**
+     * Only the description is translatable. The name carries the literal flag syntax WP-CLI parses
+     * into the synopsis, so translating it would break argument handling in every non-English locale.
+     *
+     * @return array{type: string, name: string, optional: bool, description: string}
+     */
+    private function commandArg(string $type, string $name, string $description): array
+    {
+        return [
+            'type' => $type,
+            'name' => $name,
+            'optional' => true,
+            'description' => $description,
+        ];
     }
 }

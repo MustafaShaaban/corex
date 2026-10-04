@@ -39,20 +39,58 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**`fix/dependency-advisories-2026-09` — the advisory gate, red on `main` since at least
-2026-08-12.** Five consecutive weekly runs failed, the most recent on `8c1467c` itself, while
-`PROJECT-STATUS.md` and this file went on describing the tree as cleared. A **critical** Astro
-advisory was among them. Astro 7.1.5 → 7.3.2, `svgo` and `colord` upgraded, and the two advisories
-with no upstream fix bounded by policy. Gate now passes locally on all three ecosystems
-(DECISIONS #226).
+**The October advisory pass landed as #212 on 2026-10-04** (DECISIONS #227). #203 had cleared every
+advisory known on 2026-09-09, and by the day it merged the gate on `main` was red again with 26 new
+findings. #212 took every patched release that exists — ten packages, one of them (`basic-ftp`
+5 → 6) through a new override proven against its parent — removed the `adm-zip` exception that
+0.6.1 made unnecessary, and bounded the one finding with no fix, `braces`. The gate reported PASS
+for the merged tree that day: zero findings in Composer and the docs site, three findings and three
+exceptions in the root.
 
-No open feature spec, and no release in preparation.
+**The `braces` exception was merged as written, on the owner's instruction.** The policy forbids
+excepting a high finding whose exposure is CI, and `braces` does run in CI. It is classed as build
+tooling with repository-authored input, following spec 056's precedent. DECISIONS #227 records both
+readings and what would overturn the exception.
 
-One dependency pull request stays open on purpose: **#186, `@wordpress/components` 38 → 40.** npm
-resolves 38.0.0 against a `^39.0.0` requirement and reports success, producing a lockfile that
+Merged since v0.42.0: #202 (issue #201 — `composer install --no-dev` no longer drops seven WP-CLI
+commands, DECISIONS #225), #203 (the September advisory pass, DECISIONS #226), #212 (the October
+one, DECISIONS #227), #213 (the linters and Jest no longer walk `wp-ms/` or session worktrees),
+#214 (Jest's module map no longer indexes generated copies) and three routine Dependabot bumps:
+#205 (`@playwright/test` 1.63.0), #206 (`@wordpress/element` 8.8.0) and #207 (`@wordpress/i18n`
+6.29.0).
+
+Two feature specs are open as draft pull requests: spec 101, coming-soon mode (#210), and spec 102,
+update-safe client sites (#211). No release is in preparation.
+
+One dependency pull request stays open on purpose: **#208, the `@wordpress/components` major bump
+from 38** (Dependabot's replacement for #186 and #200, both of which it closed; it retargets #208
+as releases appear, 41.0.0 on 2026-10-04). When the bump was tried on #186, npm
+resolved 38.0.0 against a `^39.0.0` requirement and reported success, producing a lockfile that
 contradicts itself — so it was not bundled into the dependency pass. It is a major in a library more
 than twenty admin modules import, which per DECISIONS #220 needs render-time verification in a real
-browser. The PR carries what was tried.
+browser. #186 carries what was tried.
+
+**`fix/jest-haste-collisions` — tooling only, merged as PR #214 on 2026-10-04.** It follows #213, merged on
+2026-10-04, which keeps the linters and Jest out of `wp-ms/` and `.claude/worktrees/`, so
+`npm run lint:js`, `lint:css` and `test:js` report on Corex again on a machine that has the local
+multisite install. #214 also takes `wp/`, `wp-ms/`, `dist/` and `.claude/worktrees/` out of
+Jest's module map: on a machine with a `dist/` build or an agent session worktree, a cold-cache
+`npm run test:js` passed and printed nine "Haste module naming collision" warnings, one per package
+name it found twice. The suite is unchanged at 54 suites and 442 tests. CI never builds `dist/` and
+has no worktrees, so it never printed them.
+
+**`fix/e2e-flaky-helpers` — browser-test helpers and CI only, open.** The browser job failed three
+times on diffs that changed no runtime code: the nightly on 2026-09-21, #210 and #211. Two of the
+three were one bug in `signInAs`. WordPress's login page moves focus to the username field 200ms
+after it renders; when that lands in the middle of Playwright typing the password, the password goes
+into the username field and the browser refuses to submit the form. The helper then waited on an
+error message that was never coming until the test timed out, so its retry passes never ran. It now
+checks that each field holds its credential before submitting, and reads a refusal without waiting
+for one. `tests/e2e/helpers.spec.js` reproduces both against a login form it controls
+(DECISIONS #228).
+
+The third failure is **not fixed, because it is not a test fault**: `GET corex/v1/flows` answered
+500 to three inbox specs in a row. See "Open, and not hidden".
 
 ## Recently landed (v0.42.0)
 
@@ -85,8 +123,18 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   before its own filter runs. Measured in DECISIONS #222.
 - Three bounded dependency exceptions, each with a named upstream trigger: `extract-zip` twice
   (GHSA-jmr9-qjv8-65gv and its sibling GHSA-7pqw-9j4j-h8q3, which must be removed together) and
-  `adm-zip` (GHSA-vwc7-r8mq-g2x9). All three are dev-only, and none has an upstream fix to take —
-  every published version of both packages is in range (DECISIONS #226).
+  `braces` (GHSA-vfj7-8cjw-p6xm). None has a patched release to take. `extract-zip` is installed
+  and never executed; `braces` runs in the linter and the build, on patterns that come only from
+  tool defaults. The `extract-zip` pair would clear with `@wordpress/scripts` 36, a toolchain major
+  that has not been attempted (DECISIONS #226, #227).
+- **Something behind `GET corex/v1/flows` threw on 2026-10-04, and nobody knows what.** Three
+  `submissions-inbox` specs in a row got "Request could not be processed." on #211, with nothing
+  else running, straight after a seed that had succeeded. Every exception the flow code raises on
+  purpose is answered with a 409 or a 422, so this was one it does not expect. The message went to a
+  log CI did not keep. It keeps it now, and `seedSubmission` reports the server's answer instead of
+  a `TypeError` — the next occurrence names itself (DECISIONS #228).
+- **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
+  Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.

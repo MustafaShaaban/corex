@@ -14,7 +14,7 @@
       "control": "The advisory is a symlink path traversal in an extracted archive, so it needs an attacker-supplied zip. The only archive this path would ever open is a Chromium build fetched from Google's CDN by a code path this repository does not call. It is a devDependency, so it reaches no WordPress site: scripts/build-shared-host-dist.mjs ships plugin and theme source, never node_modules. Pull-request CI runs with a read-only token and no production secrets.",
       "owner": "Corex maintainers",
       "reviewAfter": "2026-12-31",
-      "upstreamTrigger": "Remove when @puppeteer/browsers depends on a fixed extract-zip (none exists as of 2026-09-04; latest 2.0.1 is affected), or when @wordpress/scripts drops the lighthouse and puppeteer chain from @wordpress/e2e-test-utils-playwright.",
+      "upstreamTrigger": "Remove when the installed @puppeteer/browsers no longer depends on extract-zip. Upstream has already done this: @puppeteer/browsers 3.x unpacks with modern-tar and carries no extract-zip at all. It reaches this tree through @wordpress/scripts 36 (@wordpress/e2e-test-utils-playwright ^2.1.0 -> lighthouse ^13.4.1 -> puppeteer-core ^25.9.0 -> @puppeteer/browsers 3.2.3, checked 2026-10-04), not through an override: the installed puppeteer-core 24.43.1 pins @puppeteer/browsers 2.13.2 exactly, and forcing a different major under it could not be proven on a chain nothing here runs. So this exception is now waiting on the @wordpress/scripts 34 -> 36 migration, which is a toolchain major (ESLint 10, stylelint 17) and needs its own verified pass. No fixed extract-zip exists (latest 2.0.1 is affected).",
       "range": "<=2.0.1",
       "url": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv"
     },
@@ -37,20 +37,20 @@
     },
     {
       "ecosystem": "npm-root",
-      "advisoryId": "GHSA-vwc7-r8mq-g2x9",
-      "package": "adm-zip",
+      "advisoryId": "GHSA-vfj7-8cjw-p6xm",
+      "package": "braces",
       "paths": [
-        "node_modules/adm-zip"
+        "node_modules/braces"
       ],
-      "severityCeiling": "moderate",
+      "severityCeiling": "high",
       "exposure": "build-test-transitive",
-      "reason": "The advisory range is >=0.5.9 <=0.6.0 and 0.6.0 is the latest published release, so every version anyone can install is affected and there is no upgrade to take. This repository already pins it through an `adm-zip: ^0.6.0` override, which is as current as the ecosystem allows. It arrives only through devDependencies: @wordpress/env, and @wordpress/scripts for its `plugin-zip` command. Neither consumer runs here — there is no .wp-env.json in the repository, so the `env:start`/`env:stop` scripts are an unconfigured local convenience, and `plugin-zip` is not referenced by any script or workflow. npm audit's only offered fix is @wordpress/env 11.8.0, a major downgrade from the pinned ^11.12.0, which would trade a moderate dev-only advisory for a materially older toolchain.",
-      "control": "The defect is that extraction follows symlinks in the destination, allowing an arbitrary file overwrite, so it requires an attacker-supplied archive AND a caller that extracts one. The two callers that could reach it are unconfigured and unused respectively, and both parents are devDependencies, so nothing here reaches a WordPress site — scripts/build-shared-host-dist.mjs ships plugin and theme source, never node_modules. Pull-request CI runs with a read-only token and no production secrets, and does not invoke wp-env or plugin-zip.",
+      "reason": "braces 3.0.3 is the latest release and the advisory, published 2026-09-18, covers <=3.0.3 with no patched version, so there is no upgrade to take and no override that resolves it. It cannot be designed out either: it arrives through micromatch 4.0.8, which the latest fast-glob (3.3.3), stylelint (17.16.0) and http-proxy-middleware (4.2.0) all still require, so @wordpress/scripts 36 would install it too. Unlike extract-zip this code does run: stylelint and fast-glob execute it during `npm run lint:css` and `npm run build`, on developer machines and in CI. It is classed build-test-transitive rather than ci because of where its input comes from, the same reasoning spec 056 applied to the minimatch and brace-expansion findings. The defect needs a deeply nested brace pattern, and the only glob patterns in play here are the built-in defaults of @wordpress/scripts: every invocation in this repository is a bare `wp-scripts` command with directory flags, no tracked file imports braces, micromatch, fast-glob or globby, and there is no custom webpack, stylelint or dev-server proxy configuration that could carry a pattern in. The lockfile does not mark braces dev-only, and that is an install edge rather than an import: @wordpress/theme, installed beneath @wordpress/components for corex-config, lists stylelint as an optional peer for a lint plugin it ships. @wordpress/components itself is externalised to the `wp-components` script handle, and no built asset contains braces, micromatch or stylelint code (checked against every workspace build/ directory on 2026-10-04).",
+      "control": "A successful trigger is an uncaught RangeError that ends one lint or build process: a failed job, with nothing read and nothing written (CVSS C:N/I:N/A:H). Supplying the pattern means committing a change to this repository's tooling configuration, which already grants arbitrary code execution in that same job, so the advisory adds nothing to what such an author could do. CI runs with `contents: read` and no production secrets. Nothing reaches a WordPress site: scripts/build-shared-host-dist.mjs ships plugin and theme source and excludes node_modules.",
       "owner": "Corex maintainers",
       "reviewAfter": "2026-12-31",
-      "upstreamTrigger": "Remove when adm-zip publishes a release above 0.6.0 that the advisory does not cover, and the override can move to it. If a .wp-env.json is ever added, or plugin-zip is wired into the release path, this exception must be re-argued rather than renewed — the 'no caller' half of the reasoning would no longer hold.",
-      "range": ">=0.5.9 <=0.6.0",
-      "url": "https://github.com/advisories/GHSA-vwc7-r8mq-g2x9"
+      "upstreamTrigger": "Remove when braces publishes a release above 3.0.3 that the advisory does not cover; micromatch requires ^3.0.3, so a lockfile update takes it with no override. Also removable if fast-glob, stylelint and http-proxy-middleware all stop depending on micromatch. This exception must be re-argued rather than renewed if a custom webpack or stylelint configuration, a dev-server proxy, or any script that passes an external value as a glob is added: the \"patterns come only from tool defaults\" half of the reasoning would no longer hold.",
+      "range": "<=3.0.3",
+      "url": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm"
     }
   ]
 }
