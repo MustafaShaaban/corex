@@ -13,22 +13,46 @@ its code exists.
 
 A refactor. Nothing an operator or a visitor can observe changes.
 
-- [ ] **T001** `ModeChangeRequest` and `ModeChangeResult` in
-      `plugins/corex-config/src/Operations/` — the target mode, the actor and what was confirmed;
-      and saved, unchanged, needs-confirmation, blocked or invalid, with the mode that applies.
-- [ ] **T002** Pest: `ModeChangeServiceTest` — every rule `OperationsModeController::handle()`
-      holds today, stated against the service: an unknown mode is invalid; a mode needing an
+- [x] **T001** `ModeChangeRequest` and `ModeChangeResult` in
+      `plugins/corex-config/src/Operations/` — the target mode, the actor, the time and what was
+      confirmed; and saved, unchanged, needs-acknowledgement, needs-phrase, blocked or invalid,
+      with the mode applied and the mode proposed kept apart, as the screen's redirect keeps them.
+- [x] **T002** Pest: `ModeChangeServiceTest` — every rule `OperationsModeController::handle()`
+      held, stated against the service: an unknown mode is invalid; a mode needing an
       acknowledgement without one needs confirmation and writes nothing; production without the
-      phrase needs confirmation; production with it goes through the launch service and is saved
-      or blocked; re-applying the declared mode is unchanged and writes nothing.
-- [ ] **T003** `ModeChangeService::apply()` — those rules, moved out of the controller unaltered.
-- [ ] **T004** `OperationsModeController` — reads the request, calls the service, redirects. No
-      rule left in it.
-- [ ] **T005** `ConfigServiceProvider` binds the service.
-- [ ] **T006** Proof that nothing changed: `OperationsModeControllerNoticeTest`,
-      `OperationsModeNoOpTest`, `OperationsModeStoreTest`, `ProductionLaunchServiceTest` and
-      `operations-security.spec.js` pass without a line of them edited.
-- [ ] **T007** Guard Gate — `clean-code-guard`, `wp-guard`, `test-guard`.
+      phrase needs it; production with it goes through the launch service; re-applying the declared
+      mode is unchanged and writes nothing; declaring an inherited mode is a change. Twelve cases,
+      all failing before the service existed.
+- [x] **T003** `ModeChangeService::apply()` — those rules, moved out of the controller.
+
+      "Unaltered" needed a correction the first version did not have. The controller evaluated
+      readiness *before* checking the production phrase, and the evaluation announces itself so
+      the Notification Center can reconcile readiness warnings. The first draft of the service
+      checked the phrase first, which would have stopped a submit that still owed the phrase from
+      refreshing those warnings. A test now pins the order, and failed against that draft.
+- [x] **T004** `OperationsModeController` — reads the request, calls the service, redirects. No
+      rule left in it: its constructor takes the guard and the service, and nothing else.
+- [x] **T005** `ConfigServiceProvider` declares the service a singleton beside the launch service.
+      The controller is still resolved by the container's autowiring, as it was.
+- [x] **T006** Proof that nothing changed.
+
+      - The existing tests pass with no line of them edited: Pest unit 1833; the integration suite
+        on a freshly provisioned install, 359, including `OperationsModeControllerNoticeTest`,
+        `OperationsModeNoOpTest` and `MaintenanceModeTest`.
+      - The real `admin_post` handler was driven on that install through nine requests covering
+        every rule — an unknown mode, a save, a repeat, maintenance without and with its
+        acknowledgement, production with no phrase, a wrong one and the right one, and a change
+        back — once with the original controller and once with this one. The nine redirects and
+        the four history rows are identical, byte for byte.
+      - `operations-security.spec.js` needs a served site and was not run here. It is unedited,
+        and CI runs it.
+- [x] **T007** Guard Gate — `clean-code-guard`, `wp-guard`, `test-guard`, applied by hand. The
+      request sanitising stays in the controller, where the request is; capability and nonce stay
+      with `AdminGuard`.
+
+      One thing for Phase 6, found here: `ProductionLaunchRequest` refuses an actor id below 1,
+      so a production launch from the command line needs a real user (`--user`), not WP-CLI's
+      anonymous 0.
 
 ## Phase 2 — Prove the template seam before building on it
 

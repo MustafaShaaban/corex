@@ -383,6 +383,8 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Security\HardeningChecks::class);
         $this->container->singleton(\Corex\Config\Operations\ProductionReadinessSnapshotFactory::class);
         $this->container->singleton(\Corex\Config\Operations\ProductionLaunchService::class);
+        // spec 101: one holder of the mode-change rules, for the screen and the command line alike.
+        $this->container->singleton(\Corex\Config\Operations\ModeChangeService::class);
         $this->container->singleton(
             \Corex\Config\Forms\FlowFilterOptions::class,
             static fn (ContainerInterface $c): \Corex\Config\Forms\FlowFilterOptions =>
