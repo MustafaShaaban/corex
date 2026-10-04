@@ -56,14 +56,37 @@ A refactor. Nothing an operator or a visitor can observe changes.
 
 ## Phase 2 — Prove the template seam before building on it
 
-- [ ] **T008** Integration: a block template registered by a plugin under the slug `coming-soon`
+- [x] **T008** Integration: a block template registered by a plugin under the slug `coming-soon`
       is found by `locate_block_template()` for that slug, and resolves to the template canvas.
-- [ ] **T009** Integration: with a theme that has `templates/coming-soon.html`, the theme's content
+- [x] **T009** Integration: with a theme that has `templates/coming-soon.html`, the theme's content
       is what resolves, and the registered one is not.
-- [ ] **T010** Integration: with a theme that declares no block-template support, nothing resolves
+- [x] **T010** Integration: with a theme that declares no block-template support, nothing resolves
       — the case the standalone fallback exists for.
-- [ ] **T011** Record the outcome here. If WordPress does not behave as the plan's Decision 2
-      assumes, stop: the plan changes before Phase 3 starts.
+- [x] **T011** The outcome: **WordPress behaves as Decision 2 assumes. The plan stands.**
+
+      `tests/Integration/Operations/ComingSoonTemplateSeamTest.php`, against three fixture themes
+      in `tests/Fixtures/Themes/`. These tests exercise WordPress and no CoreX code — there is
+      none to exercise yet — so they were never going to be seen failing first; what they are for
+      is to fail later, if a core release changes the seam.
+
+      | Active theme | Resolves to | Content served |
+      |---|---|---|
+      | A block theme with no `coming-soon` template | the template canvas | the plugin's registered template |
+      | A block theme with `templates/coming-soon.html` | the template canvas | the theme's own |
+      | A classic theme | nothing | nothing |
+
+      The same three, plus the Corex theme itself, were then run with each theme active from boot
+      in a process of its own, and agreed. That mattered for the third row: the in-suite test has
+      to set block-template support by hand after switching theme mid-request, because WordPress
+      decides it once during theme setup, and a test that sets the flag it then reads proves
+      little alone. In its own process a classic theme reports no support and resolves nothing,
+      unaided.
+
+      One thing learned that the plan did not know. WordPress fixes a registered template's id
+      when it is registered, from the theme active at that moment — `<active theme>//coming-soon`.
+      The first version of the test registered before switching theme and got the wrong theme in
+      the id. It changes nothing in the design, since a plugin registers on `init`, after the
+      theme is chosen; it does mean `ComingSoonTemplate` must not register earlier than that.
 
 ## Phase 3 — The mode, the decision, the guard and the default page (US1, US2, US3.1, US3.5)
 
