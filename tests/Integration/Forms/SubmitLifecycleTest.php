@@ -49,6 +49,31 @@ function submissionCount(): int
 
 $valid = ['name' => 'Mustafa', 'email' => 'm@example.com', 'message' => 'Hello from the test'];
 
+/**
+ * Remember the submission a valid submit stores, and the email it logs, so `afterEach` can delete
+ * exactly those.
+ *
+ * The listeners write both and hand back neither id, so they are caught as they are inserted.
+ * Without this every run left one `contact` submission and one logged email on the install.
+ */
+beforeEach(function () {
+    $this->createdPosts = [];
+    $this->rememberCreatedPost = function (int $postId, WP_Post $post, bool $update): void {
+        if (! $update && in_array($post->post_type, ['corex_submission', 'corex_email_log'], true)) {
+            $this->createdPosts[] = $postId;
+        }
+    };
+    add_action('wp_insert_post', $this->rememberCreatedPost, 10, 3);
+});
+
+afterEach(function () {
+    remove_action('wp_insert_post', $this->rememberCreatedPost, 10);
+
+    foreach ($this->createdPosts as $postId) {
+        wp_delete_post($postId, true);
+    }
+});
+
 it('accepts a valid nonced submission: 200, stored, and both listeners run', function () use ($valid) {
     $mailed = [];
     add_filter('pre_wp_mail', function ($short, $atts) use (&$mailed) {

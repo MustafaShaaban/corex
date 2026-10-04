@@ -9,6 +9,7 @@
 declare(strict_types=1);
 
 use Corex\Boot;
+use Corex\Config\Activity\ActivityTable;
 use Corex\Config\Data\CapabilityAwareDataSource;
 use Corex\Config\Data\DataManagementController;
 use Corex\Config\Data\DataQuery;
@@ -27,6 +28,7 @@ use Corex\Config\DataModels\WpMigrationRunStore;
 use Corex\Data\DataField;
 use Corex\Data\DataSourceCapabilities;
 use Corex\Data\DataWriteAdapter;
+use Corex\Database\Schema\Migrator;
 use Corex\Operations\OperationResult;
 
 it('provides the consolidated Data management REST boundary', function () {
@@ -106,10 +108,21 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    global $wpdb;
+    $activity = (new Migrator())->fullName(ActivityTable::NAME);
+
     foreach ($this->dataRunBaseline ?? [] as $type => $baseline) {
         $ids = get_posts(['post_type' => $type, 'post_status' => 'any', 'posts_per_page' => 500, 'fields' => 'ids']);
-        foreach (array_diff($ids, $baseline) as $id) wp_delete_post((int) $id, true);
+        foreach (array_diff($ids, $baseline) as $id) {
+            // Validating an import is audited against the run, and the event outlived it.
+            if ($type === WpDataImportStore::POST_TYPE) $wpdb->delete($activity, ['target_type' => 'data_import', 'target_id' => (string) $id]);
+            wp_delete_post((int) $id, true);
+        }
     }
+
+    // So is an applied mutation, against the source. `rest-contacts` exists only in this file, so
+    // every event against it is one of these tests' — including any an earlier run left behind.
+    $wpdb->delete($activity, ['target_type' => 'data_source', 'target_id' => 'rest-contacts']);
 });
 
 function dataOperation(array $ids): OperationResult

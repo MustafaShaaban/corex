@@ -33,8 +33,9 @@ is a nightly run on `main` now so the discovery happens where it belongs (DECISI
 nightly means current WordPress broke us — read it like a red pull request.
 
 **CI is the authority for the integration and browser suites.** A long-lived development install
-accumulates rows a freshly provisioned one does not, which is why three integration specs fail
-locally and pass in CI. Check a claim against a CI run, not against your machine. `composer test`
+accumulates rows a freshly provisioned one does not, which is why five integration tests failed
+locally and passed in CI until 2026-10-04 (see "In flight"). Check a claim against a CI run, not
+against your machine. `composer test`
 additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an unmodified tree too.
 
 ## In flight
@@ -51,6 +52,21 @@ standalone block theme, not a child of the Corex theme, so it does not inherit a
 parent ships.
 
 No dependency pull request is being held.
+
+**The integration suite passes on a long-lived development install, and no longer leaves
+submissions or data and export audit events on it** (branch
+`fix/integration-tests-assume-empty-install`, tests only, DECISIONS #231). Five tests failed there
+because they counted rows on the whole install: flow 90 held 23 submissions, and 131 export events
+sat under the actor id the activity fixtures use. Each test now mints a submitter of its own and
+searches for it, and the activity queries are scoped to the window the fixtures are seeded into.
+Four files stopped leaving rows: `ProductDataPrivacyTest` (a backdated submission its cleanup could
+not see, and for every export a job row, a scheduled event and an audit event),
+`SubmitLifecycleTest` (a submission and a logged email), `DataManagementControllerTest` and
+`ProductMutationSecurityTest` (audit events). The retention test in `ProductDataPrivacyTest` also
+anonymized the install's own submissions older than thirty days on every run, and left the
+retention window at 30 whenever it failed; it now acts on its own two records and restores the
+option. Measured on the install the failures were reported from: 359 of 359 pass, twice in a row.
+What the suite still changes there is listed under "Open, and not hidden".
 
 ## Recently landed
 
@@ -133,11 +149,25 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
   there are not removed by anything. The Access tests still leave their request rows behind, which
   point at a deleted user once the test's subscriber is gone.
-- **Five integration tests fail on a long-lived development install** (measured 2026-10-04 on
-  unmodified `main`; the owner reports the whole suite passing on a throwaway install): one in
-  `ProductActivityCoverageTest`, three in `ProductDataPrivacyTest`, one in
-  `SubmissionsControllerTest`. Three of them expect a count of 1 and found 4, 22 and 23. Not
-  diagnosed further.
+- **Submission retention stops reaching records once 500 have been anonymized or archived.** A
+  production defect, found through a failing test and not fixed (DECISIONS #231).
+  `SubmissionRetention` hands each prune the newest 500 private submissions older than the window.
+  `trash` takes a record out of that set; `anonymize` and `archive` leave it private, so the next
+  run is handed the same 500, reports them as removed again, and never reaches an older record
+  that still holds personal data. The Inbox preview counts them as waiting to be removed. On the
+  development install the batch was 500 already-anonymized submissions and the five still-live
+  ones behind them were never selected.
+- **The integration suite still changes the install it runs against**, measured per full run on
+  2026-10-04 with the branch above applied. `NotificationControllerTest`,
+  `NotificationPerformanceTest` and `WpNotificationRepositoryTest` delete every row in the
+  notification and read-state tables, the developer's own included. Eight logged emails are left
+  by `CallRequestDataPathTest`, `ApplicationDataPathTest`, `MailLifecycleTest` and
+  `SubscriptionLifecycleTest`; two reading events by `BlogProControllerTest`; and
+  `corex_kit_seeded_pages` grows by two ids, not traced to a file. The two Access tests leave
+  eight audit events, and `AccessControllerTest` leaves the editor role allowed to manage forms.
+- What earlier runs left on an existing install is not removed by anything: submissions the
+  retention test anonymized cannot be restored, and `corex_retention_submissions_days` may read 30
+  on an install whose owner never set it.
 
 No security items.
 

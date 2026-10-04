@@ -28,26 +28,20 @@ beforeEach(function () {
     if (! post_type_exists('corex_submission')) {
         register_post_type('corex_submission', ['public' => false]);
     }
-    $this->submissionBaseline = get_posts([
-        'post_type' => 'corex_submission',
-        'post_status' => 'any',
-        'posts_per_page' => 500,
-        'fields' => 'ids',
-    ]);
+    // The submissions this test inserts, deleted by id afterwards. Comparing the newest 500 ids
+    // before and after deleted whatever else arrived on the install meanwhile.
+    $this->submissionIds = [];
+    // A submitter nothing else on the install can share. The list below is asked for one flow, and
+    // flow 90 is only a number: a developer's real install had 23 submissions in it.
+    $this->submitterEmail = 'sam.' . strtolower(wp_generate_password(12, false)) . '@example.com';
     $administrators = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
     wp_set_current_user((int) ($administrators[0] ?? 0));
     $this->submissionsController = Boot::app()->container()->make(SubmissionsController::class);
 });
 
 afterEach(function () {
-    $ids = get_posts([
-        'post_type' => 'corex_submission',
-        'post_status' => 'any',
-        'posts_per_page' => 500,
-        'fields' => 'ids',
-    ]);
-    foreach (array_diff($ids, $this->submissionBaseline) as $id) {
-        wp_delete_post((int) $id, true);
+    foreach ($this->submissionIds as $id) {
+        wp_delete_post($id, true);
     }
 });
 
@@ -71,7 +65,7 @@ it('registers the complete Inbox query workflow bulk email and export routes', f
 });
 
 it('queries details mutates status and adds notes through canonical envelopes', function () {
-    $submissionId = wp_insert_post([
+    $this->submissionIds[] = $submissionId = wp_insert_post([
         'post_type' => 'corex_submission',
         'post_status' => 'private',
         'post_title' => 'REST submission',
@@ -84,13 +78,16 @@ it('queries details mutates status and adds notes through canonical envelopes', 
             'corex_owner_key' => '',
             'corex_is_test' => 0,
             'corex_submitter_name' => 'Sam',
-            'corex_submitter_email' => 'sam@example.com',
-            'corex_values_json' => ['name' => 'Sam', 'email' => 'sam@example.com'],
+            'corex_submitter_email' => $this->submitterEmail,
+            'corex_values_json' => ['name' => 'Sam', 'email' => $this->submitterEmail],
             'corex_submission_updated_at' => '2026-07-04T12:00:00+00:00',
         ],
     ]);
 
-    $list = $this->submissionsController->index(submissionsRequest('GET', '/corex/v1/submissions', ['flow' => 90]));
+    $list = $this->submissionsController->index(submissionsRequest('GET', '/corex/v1/submissions', [
+        'flow' => 90,
+        'search' => $this->submitterEmail,
+    ]));
     $detailRequest = submissionsRequest('GET', '/corex/v1/submissions/' . $submissionId);
     $detailRequest->set_url_params(['id' => $submissionId]);
     $detail = $this->submissionsController->show($detailRequest);
@@ -116,7 +113,7 @@ it('queries details mutates status and adds notes through canonical envelopes', 
 });
 
 it('rejects mutation without a valid REST nonce before changing state', function () {
-    $submissionId = wp_insert_post([
+    $this->submissionIds[] = $submissionId = wp_insert_post([
         'post_type' => 'corex_submission',
         'post_status' => 'private',
         'post_title' => 'Protected submission',

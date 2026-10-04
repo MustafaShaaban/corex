@@ -14,6 +14,7 @@
 declare(strict_types=1);
 
 use Corex\Boot;
+use Corex\Config\Activity\ActivityTable;
 use Corex\Config\Data\CapabilityAwareDataSource;
 use Corex\Config\Data\DataMutationApplyRequest;
 use Corex\Config\Data\DataMutationRequest;
@@ -30,6 +31,7 @@ use Corex\Config\DataModels\WpMigrationPreviewStore;
 use Corex\Data\DataField;
 use Corex\Data\DataSourceCapabilities;
 use Corex\Data\DataWriteAdapter;
+use Corex\Database\Schema\Migrator;
 use Corex\Operations\OperationResult;
 
 const MUTATION_SECURITY_SOURCE = 'security-contacts';
@@ -104,6 +106,14 @@ afterEach(function () {
         require_once ABSPATH . 'wp-admin/includes/user.php';
         wp_delete_user($this->subscriberId);
     }
+
+    // An applied mutation is audited. The source exists only in this file, so every event against
+    // it is one of these tests' — including any an earlier run left behind.
+    global $wpdb;
+    $wpdb->delete((new Migrator())->fullName(ActivityTable::NAME), [
+        'target_type' => 'data_source',
+        'target_id' => MUTATION_SECURITY_SOURCE,
+    ]);
 });
 
 it('denies a mutation preview to an actor without the data capability', function () {
