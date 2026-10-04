@@ -38,9 +38,20 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    global $wpdb;
+
     if (! isset($this->requesterId) || $this->requesterId < 1) {
         return;
     }
+
+    // The request first, then its requester: nothing in CoreX listens for a user being deleted, so
+    // `wp_delete_user()` alone leaves the row behind, pointing at nobody. By requester, because
+    // this account is the test's own and the table also holds requests that are not.
+    $wpdb->delete(
+        $this->container->make(\Corex\Database\Schema\Migrator::class)->fullName(AccessTables::REQUESTS),
+        ['requester_id' => $this->requesterId],
+        ['%d'],
+    );
 
     // Back to nobody first, so the request is not left authenticated as a deleted user.
     wp_set_current_user(0);
@@ -106,12 +117,18 @@ it('creates and approves an access request without using the protected login rou
     // install happened to have — and approving the request below grants that account a real
     // ability, on a developer's real site — and, finding none, to create `corex-access-requester`
     // and leave it there.
-    $this->requesterId = $requesterId = (int) wp_insert_user([
+    $requesterId = wp_insert_user([
         'user_login' => 'corex-access-requester-' . wp_generate_password(8, false),
         'user_pass'  => wp_generate_password(),
         'user_email' => uniqid('corex-access-', true) . '@example.test',
         'role'       => 'subscriber',
     ]);
+
+    // Checked rather than cast: `(int)` turns a WP_Error into 1, and `afterEach` deletes the user
+    // with this id and every access request that user filed.
+    expect($requesterId)->toBeInt();
+
+    $this->requesterId = $requesterId;
     wp_set_current_user($requesterId);
 
     $create = accessRequest('POST', '/corex/v1/access/requests', [
