@@ -51,13 +51,6 @@ paragraph. One thing found while building 102 shaped the plan: a generated clien
 standalone block theme, not a child of the Corex theme, so it does not inherit a template the
 parent ships.
 
-**The retention form says which action it ran** (#229, branch `fix/retention-copy-names-the-action`,
-DECISIONS #233). Its confirmation box and its result notice said "trash" for Archive and Anonymize
-as well. The box now asks to confirm the selected action and says anonymizing cannot be undone; the
-prune handler sends the action back with the count, and the notice says archived, moved to trash or
-anonymized. Five integration tests and two unit tests pin it. It closes the item #228 left under
-"Open, and not hidden", and is rebased onto it.
-
 No dependency pull request is being held.
 
 ## Recently landed
@@ -74,6 +67,11 @@ On `main` since v0.42.1, and not in a release yet:
   archive or trash it. Six integration tests in `tests/Integration/Retention/` pin it. On the
   development install the 30-day selection went from 500 already-anonymized ids to the 7
   submissions that still hold their data.
+- **The retention form says which action it ran** (#229, DECISIONS #233). Its confirmation box and
+  its result notice said "trash" for Archive and Anonymize as well. The box now asks to confirm
+  the selected action and says anonymizing cannot be undone; the prune handler sends the action
+  back with the count, and the notice says archived, moved to trash or anonymized. Five
+  integration tests and two unit tests pin it.
 - **Spec 102 — a client site the framework can be updated underneath** (#211, DECISIONS #230). The
   framework prescribed `sites/<client>/` and its own checks rejected it. A client repository now
   passes them untouched: one ownership file says which paths are the client's, hygiene, the
