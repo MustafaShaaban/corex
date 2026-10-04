@@ -17,6 +17,40 @@
       "upstreamTrigger": "Remove when @puppeteer/browsers depends on a fixed extract-zip (none exists as of 2026-09-04; latest 2.0.1 is affected), or when @wordpress/scripts drops the lighthouse and puppeteer chain from @wordpress/e2e-test-utils-playwright.",
       "range": "<=2.0.1",
       "url": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-7pqw-9j4j-h8q3",
+      "package": "extract-zip",
+      "paths": [
+        "node_modules/extract-zip"
+      ],
+      "severityCeiling": "high",
+      "exposure": "build-test-transitive",
+      "reason": "A second advisory published against the same package, the same installed version (2.0.1) and the same dependency path as GHSA-jmr9-qjv8-65gv, describing the same defect class: archive entries that are symlinks are written without validation. Its range is <=2.0.1 and 2.0.1 is the latest release, so again there is no upgrade to take. The path is unchanged: @wordpress/scripts -> @wordpress/e2e-test-utils-playwright -> lighthouse -> puppeteer-core -> @puppeteer/browsers, whose only use of it is unpacking the Chromium archive puppeteer downloads. Nothing here imports that chain; the browser suite drives @playwright/test directly and Playwright installs its own browsers.",
+      "control": "Identical to GHSA-jmr9-qjv8-65gv, because it is the same code on the same path: exploiting it requires an attacker-supplied archive, and the only archive this path would open is a Chromium build from Google's CDN, fetched by a code path this repository never calls. devDependency only, so it reaches no WordPress site — scripts/build-shared-host-dist.mjs ships plugin and theme source, never node_modules. Pull-request CI runs with a read-only token and no production secrets.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-12-31",
+      "upstreamTrigger": "Remove together with GHSA-jmr9-qjv8-65gv: both clear the moment @puppeteer/browsers depends on a fixed extract-zip, or @wordpress/scripts drops the lighthouse and puppeteer chain. Neither should outlive the other.",
+      "range": "<=2.0.1",
+      "url": "https://github.com/advisories/GHSA-7pqw-9j4j-h8q3"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-vwc7-r8mq-g2x9",
+      "package": "adm-zip",
+      "paths": [
+        "node_modules/adm-zip"
+      ],
+      "severityCeiling": "moderate",
+      "exposure": "build-test-transitive",
+      "reason": "The advisory range is >=0.5.9 <=0.6.0 and 0.6.0 is the latest published release, so every version anyone can install is affected and there is no upgrade to take. This repository already pins it through an `adm-zip: ^0.6.0` override, which is as current as the ecosystem allows. It arrives only through devDependencies: @wordpress/env, and @wordpress/scripts for its `plugin-zip` command. Neither consumer runs here — there is no .wp-env.json in the repository, so the `env:start`/`env:stop` scripts are an unconfigured local convenience, and `plugin-zip` is not referenced by any script or workflow. npm audit's only offered fix is @wordpress/env 11.8.0, a major downgrade from the pinned ^11.12.0, which would trade a moderate dev-only advisory for a materially older toolchain.",
+      "control": "The defect is that extraction follows symlinks in the destination, allowing an arbitrary file overwrite, so it requires an attacker-supplied archive AND a caller that extracts one. The two callers that could reach it are unconfigured and unused respectively, and both parents are devDependencies, so nothing here reaches a WordPress site — scripts/build-shared-host-dist.mjs ships plugin and theme source, never node_modules. Pull-request CI runs with a read-only token and no production secrets, and does not invoke wp-env or plugin-zip.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-12-31",
+      "upstreamTrigger": "Remove when adm-zip publishes a release above 0.6.0 that the advisory does not cover, and the override can move to it. If a .wp-env.json is ever added, or plugin-zip is wired into the release path, this exception must be re-argued rather than renewed — the 'no caller' half of the reasoning would no longer hold.",
+      "range": ">=0.5.9 <=0.6.0",
+      "url": "https://github.com/advisories/GHSA-vwc7-r8mq-g2x9"
     }
   ]
 }
