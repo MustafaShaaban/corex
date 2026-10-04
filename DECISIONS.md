@@ -5326,6 +5326,59 @@ Three things changed the spec while building and were approved by the owner on 2
 favicon passes like `robots.txt`; no sitemap is published when WordPress is set to discourage
 search engines; and WordPress's `/login` and `/admin` shortcuts keep working.
 
+## #239 — The retention handler refuses an action the form does not offer
+
+Date: 2026-10-04 · Spec: none (defect fix, left open by #233; spec 068 FR-056) · Status: Final
+
+The retention form's select offers three actions. `RetentionController::prune()` read the posted
+value, ran it through `sanitize_key()`, and handed it to `SubmissionRetention::prune()`. That
+method throws `InvalidArgumentException` for anything but `archive`, `trash` or `anonymize`, and
+the handler did not catch it, so the request ended in WordPress's critical-error page. Only a user
+who passes the capability and nonce check can get that far, and no record was touched — the
+service checks the action before it selects anything. The operator still got a crash where an
+answer was owed. #233 read this from the code; the new unit test reproduces it through the real
+handler.
+
+**The handler asks before it calls.** `RetentionSettings::isAction()` answers whether a value is
+one of the three actions, and `assertAction()` now uses it, so the list of actions is still the
+keys of one map. `prune()` asks after the confirmation check and before the service, and redirects
+with `corex_status=retention-invalid` when the answer is no. The controller takes
+`RetentionSettings` as a third constructor argument, which the container resolves with no new
+wiring.
+
+Catching the exception in the handler was the smaller change and was not taken. `prune()` also
+runs a query and writes records, and a `catch (InvalidArgumentException)` around it would report
+any such exception from that work as "not a valid action".
+
+**The service still throws.** `SubmissionRetention::prune()` is public and its tests call it
+directly. For a caller that is code, a wrong action is a programming error, and an exception is
+the right answer to one.
+
+**What the operator sees.** "That is not a valid retention action. Nothing was changed.", as an
+error: `OperationsSecurityScreen` answers an invalid mode the same way. The redirect carries no
+action and no count, because none ran.
+
+**Unchanged.** A post with no action field still runs Move to trash, the handler's default as
+before. A post without the confirmation box is still answered with the confirmation warning,
+whatever action it carried.
+
+The number was taken while spec 101 (#210) and the integration-suite cleanup (#236) were still open
+branches; they landed first, as #238 and #240, and #236 is unused.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The new unit test against `main`'s production code | failed with the uncaught `InvalidArgumentException` |
+| The new integration test against `main`'s production code | failed: no notice rendered |
+| `tests/Unit/Retention` with the change | 15 passed |
+| `tests/Integration/Submissions/RetentionPanelCopyTest.php` with the change | 16 passed |
+| Unit suite (`pest`) | 1860 passed |
+| The container builds `RetentionController` on the development install | yes |
+| The notice on the development install: dark and light at 1440px, dark at 375px, light right-to-left at 375px | error icon and border in each, `role="alert"`; no sideways scroll |
+
+The whole integration suite and the browser suite were left to CI.
+
 ## #240 — A test puts back the transients it writes; it does not delete them
 
 Date: 2026-10-04 · Spec: none (test maintenance, follows #234) · Status: Final
