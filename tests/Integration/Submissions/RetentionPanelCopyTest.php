@@ -32,9 +32,10 @@ function retentionPanelPart(string $method): string
 }
 
 /**
- * The notice the screen renders after a retention run redirects back to it.
+ * The notice the screen renders after a retention handler redirects back to it.
  *
- * @param array<string,string> $query What the redirect carried besides the status.
+ * @param array<string,string> $query What the redirect carried. The status is a completed run
+ *                                    unless the query names another.
  */
 function retentionResultNotice(array $query): string
 {
@@ -83,6 +84,25 @@ it('names no action when the redirect carries none it knows', function (array $q
 })->with([
     'no action'         => [[]],
     'an unknown action' => [['corex_action' => 'delete']],
+]);
+
+/**
+ * Applying retention without ticking the confirmation box runs nothing. The notice that said so
+ * was drawn as a success, tick and all, so a refused run looked like one that worked.
+ */
+it('does not draw a run that was refused as a success', function () {
+    $notice = retentionResultNotice(['corex_status' => 'retention-confirm']);
+
+    expect($notice)->toContain('Confirm the retention action before applying it.')
+        ->and($notice)->toContain('corex-state--warning')
+        ->and($notice)->not->toContain('corex-state--success');
+});
+
+it('still draws a saved policy and a completed run as a success', function (array $query) {
+    expect(retentionResultNotice($query))->toContain('corex-state--success');
+})->with([
+    'a saved policy'  => [['corex_status' => 'retention-saved']],
+    'a completed run' => [['corex_status' => 'retention-pruned', 'corex_action' => 'archive', 'corex_count' => '3']],
 ]);
 
 it('asks the operator to confirm the action they selected, not a move to trash', function () {
