@@ -4587,3 +4587,68 @@ errors, every one of them in `wp-ms/` — the git-ignored multisite install that
 that `.stylelintignore`, `eslint.config.js` and `jest.config.js` do not exclude, though all three
 exclude `wp/`. CI has no such directory. The linters and Jest were verified with it excluded on the
 command line; fixing the three ignore lists is a separate change and is not in this one.
+
+## #228 — Two of three browser flakes were one race; the third is a 500 with no name
+
+Date: 2026-10-04 · Spec: none (browser-test helpers and CI) · Status: Open — on `fix/e2e-flaky-helpers`
+
+The browser job is a required check, and it failed three times on diffs that changed no runtime
+code: the nightly on 2026-09-21 (`guides.spec.js`), #210 (`access-request.spec.js`, on a pull
+request that adds a spec and its checklist) and #211 (`submissions-inbox.spec.js`, three tests).
+
+**The sign-in failures were a race between WordPress and Playwright.** `wp-login.php` runs
+`wp_attempt_focus()`: 200ms after the form renders it focuses the username field and selects its
+contents. Playwright's `fill` is two steps — focus the field, then insert the text into whatever
+holds focus. A timer that fires between them sends the password into the username field, over the
+selected username. Both fields are `required`, so the browser will not submit the form: no request,
+no error on the page. The screenshot from #210 shows exactly that — the password in the username
+field and "Please fill out this field." under an empty password field.
+
+Measured, not inferred: against WordPress's script verbatim, 1 fill in 120 went astray when timed to
+the 200ms mark. With the focus moved in a microtask after the password field takes it, 60 in 60 did.
+
+**A second defect turned a recoverable miss into a 60-second timeout.** After a login that stays on
+`wp-login.php`, `signInAs` read `#login_error` with `innerText()`, which waits for the element to
+exist and has no timeout of its own. With no error on the page it waited until the test's timeout
+closed the browser. The three passes the helper makes — written for exactly this — never ran. Both
+September and October failures print the same two lines: pass 1 "submitted and stayed", pass 2
+"abandoned — the browser context was closed".
+
+**What was decided.**
+
+- *Check the form, then submit it.* `fillLoginForm` fills both fields, confirms each holds its own
+  credential, and fills again if not. The timer fires once, so the second fill is clean. Waiting for
+  the timer instead was rejected: it is an inline script behind a filter
+  (`enable_login_autofocus`), and a helper that waits on it hangs wherever it is absent. Writing
+  `.value` directly was rejected: the helper would stop using the form the way a person does.
+- *Read a refusal that is there; do not wait for one.* `allInnerTexts()` in place of `innerText()`.
+- *No `retries` in the Playwright config.* A retry would have turned all three failures green,
+  including the one below, which is a fault in the product.
+- *The helpers have their own spec.* `tests/e2e/helpers.spec.js` serves a login form through
+  `page.route` and holds it in the state that is otherwise a few milliseconds wide. Each fix was
+  removed in turn and its test failed. The first version of the race test did not: it moved the
+  focus with a zero-delay timer, which arrives ahead of the text only 58 times in 60, and the
+  helper's retry passes absorbed the rest.
+
+**The third failure is open, and is not a test fault.** On #211, `GET corex/v1/flows` answered 500
+"Request could not be processed." to three specs in a row. That body is `Pipeline`'s answer to any
+`Throwable`. What is known:
+
+- Nothing else was running. The other worker had finished, so no spec interfered.
+- The seed in the test before those three had succeeded, creating and publishing the flow.
+- `FlowRestGateway` answers `FlowConflictException` with a 409 and `DomainException` or
+  `InvalidArgumentException` with a 422, and every `throw` on the list path is one of those. So
+  this was a `Throwable` the flow code does not raise deliberately.
+- The same branch passed the same specs four times earlier that day, and once after.
+
+What threw is not known. `Pipeline` wrote the message to the PHP error log, and CI kept no server
+log. Two changes make the next occurrence diagnosable instead of guessing at this one:
+`seedSubmission` checks every answer and reports the step, status, code and message — it had
+reported `Cannot read properties of undefined (reading 'flows')` — and the browser job now copies
+nginx's error and access logs and the php-fpm log into the artifact it uploads on failure. The seed
+is deliberately not retried: three failures across three seconds would have outlasted a retry, and
+one that did not would hide the fault.
+
+Not re-examined: `helpers.js` blames the failures of 2026-09-03 and 2026-09-04 on the login address
+moving, and `ci.yml` blames one on lockout. Their artifacts expired, so whether either was this
+race cannot be checked.
