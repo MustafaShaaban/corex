@@ -8,7 +8,7 @@ This page is generated from [`PROJECT-STATUS.md`](https://github.com/MustafaShaa
 root, which is the canonical copy. Edit that file; this one is rebuilt from it.
 :::
 
-**Version 0.42.0** · updated 2026-08-05
+**Version 0.42.0** · updated 2026-10-04
 
 This page exists so you do not have to read the git history to find out what you are adopting.
 Everything below is traceable to something in this repository — a spec, a policy file, a test
@@ -106,23 +106,43 @@ Two entries stood under *Known open items* in v0.39.0 and no longer do. They are
 because "was this ever a problem, and how was it dealt with" is a fair question to ask of a project
 you are evaluating.
 
-### Dependency advisories — one bounded exception
+### Dependency advisories — three bounded exceptions
 
 `npm run verify:dependencies` reports **PASS** across Composer, the root npm workspace and the
-docs-site npm workspace: zero findings in two of the three, and in the root, **one finding covered by
-one exception**.
+docs-site npm workspace as of 2026-10-04: zero findings in Composer and the docs site, and in the
+root, **three findings covered by three exceptions**. That date matters. An advisory is published by
+somebody else against a tree that did not move, so this is a measurement, not a property — earlier
+the same day, before the upgrades below, the gate failed with 26 unbounded findings.
 
-That exception is `extract-zip` (GHSA-jmr9-qjv8-65gv). It is not a fix that was skipped — the
-advisory range is `*`, so every published version is affected and there is nothing to upgrade to. It
-arrives only through `@wordpress/scripts` → `@wordpress/e2e-test-utils-playwright` → `lighthouse` →
-`puppeteer-core` → `@puppeteer/browsers`, and nothing in this repository imports any of them: the
-browser suite drives `@playwright/test` directly. The package is installed and never executed. Its
-`upstreamTrigger` field names what would let it be deleted.
+None of the three is a fix that was skipped. Each is an advisory with no patched release to take:
 
-**This section said "none open" while the gate was failing.** It was true when written and stopped
-being true when four advisories were published after v0.41.0 — and nothing re-ran the check, because
-`dependency-security.yml` is path-filtered to manifest changes, so the gate is consulted only by the
-pull requests least likely to be looking for it. Corrected 2026-09-04 (PR #194).
+| Package | Advisory | Why it cannot be closed |
+|---|---|---|
+| `extract-zip` 2.0.1 | GHSA-jmr9-qjv8-65gv, GHSA-7pqw-9j4j-h8q3 | Every published version is in range. Installed and never executed: it arrives through `@wordpress/scripts` → `@wordpress/e2e-test-utils-playwright` → `lighthouse` → `puppeteer-core` → `@puppeteer/browsers`, and the browser suite drives `@playwright/test` directly. |
+| `braces` 3.0.3 | GHSA-vfj7-8cjw-p6xm | 3.0.3 is the latest release and the advisory covers `<=3.0.3`. It arrives through `micromatch`, which the latest `fast-glob`, `stylelint` and `http-proxy-middleware` all still require. |
+
+**`braces` is the one to read carefully, because unlike `extract-zip` it runs** — in
+`npm run lint:css` and `npm run build`, locally and in CI. The defect is a stack overflow on a
+deeply nested brace pattern, and the only glob patterns that reach it here are the built-in defaults
+of `@wordpress/scripts`: no tracked file imports a glob library and there is no custom webpack,
+stylelint or dev-server proxy configuration. Triggering it would take a commit to this repository's
+tooling configuration, and the result would be one failed job. It is not in any built asset. The
+policy forbids excepting a high finding whose exposure is CI, so this rests on a judgement that the
+exposure is build tooling with repository-authored input — the same judgement spec 056 made for
+`minimatch` and `brace-expansion`. The exception says what would overturn it.
+
+The `extract-zip` pair now has a route out that it did not have before: `@puppeteer/browsers` 3.x
+dropped `extract-zip` entirely, and `@wordpress/scripts` 36 installs it. That is a two-major
+toolchain upgrade (ESLint 10, stylelint 17) and has not been done.
+
+Every exception names its dependency path, compensating control, review date (2026-12-31) and
+upstream removal trigger in `.github/dependency-security-policy.json`.
+
+**This section has been wrong twice by standing still.** It said "none open" for a month while the
+gate failed on `main`, and after that was corrected it went on saying "one bounded exception"
+while the policy file held three. Both were true when written. The gate has run on every pull
+request and weekly on `main` since DECISIONS #224, and is **not a required check**, so a red result
+on `main` blocks nothing and is only seen by whoever looks. (DECISIONS #224, #226, #227)
 
 This was 24 bounded exceptions as recently as v0.39.0. Closing them needed `overrides` rather than
 `npm audit fix`: every vulnerable package was a *transitive* one whose parent pinned it below the
@@ -130,10 +150,6 @@ patched version, and what npm proposed instead was a **downgrade** of `@wordpres
 19 — which `CONTRIBUTING.md` forbids. The docs-site half was recorded as blocked by a lockfile
 question that turned out to depend on the root being clean, so fixing the root unblocked it and the
 Astro 7 migration landed with it. (Spec 089, DECISIONS #206)
-
-The gate fails closed on any *unbounded* finding, so the exception list is checked on every pull
-request that touches a manifest. It is not, at time of writing, a **required** check — which is how
-eight dependency pull requests sat mergeable with it red.
 
 ### Branch protection
 
@@ -143,9 +159,9 @@ Force-pushes and branch deletion are blocked.
 
 Two things are deliberately *not* set, and the reasons matter more than the settings:
 
-- **`dependency-security` is not required**, because it is paths-filtered — it runs only on pull
-  requests that touch a manifest, a lockfile or the policy. A required check that does not run leaves
-  a pull request pending forever, so requiring it would block every change that touches no dependency.
+- **`dependency-security` is not required.** It runs on every pull request, but it depends on a
+  third-party advisory service, and a required check that an outage can fail blocks every merge
+  until somebody re-runs it. Requiring it is deferred until it can survive that (DECISIONS #224).
 - **Reviews are not required and admins are not enforced.** This is a single-maintainer repository;
   both would lock the maintainer out of their own `main` rather than add a reviewer.
 
@@ -168,7 +184,6 @@ auth/profile system · Pro licensing UI · animation in wp-admin · advanced Woo
 - **Capability Inspector / System Map** — every provider, seam, job and integration with live health.
   Spec 074 added a bounded version to the Models screen; the full map is its natural successor and is
   deliberately not in 074's scope.
-- **Astro 7 for `docs-app`** — unblocked technically, held by the lockfile question above.
 
 Nothing here is authorized by appearing here. That is `ROADMAP.md` §16, and it is the rule this
 project has kept to.
