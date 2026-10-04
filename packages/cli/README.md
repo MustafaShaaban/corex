@@ -3,7 +3,8 @@
 Stub-based generators that remove repetitive file creation. The generator **engine**
 (render + write) is pure PHP and headless-testable; the **WP-CLI layer**
 (`MakeCommand`, `CliServiceProvider`) is the only part that touches `WP_CLI` and is
-registered only when WP-CLI is present (`class_exists('WP_CLI')`) — Principle IX.
+registered only when WP-CLI is present — on `cli_init`, the hook WP-CLI fires on `init` for
+adding commands — Principle IX.
 
 ## Requirements
 

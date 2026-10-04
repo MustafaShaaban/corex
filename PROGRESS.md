@@ -77,6 +77,14 @@ row count and checksum, option hashes, cron events, users and user meta: 377 of 
 across three consecutive runs the only differences are the transients listed under "Open, and not
 hidden".
 
+**WP-CLI no longer logs "translation loading … triggered too early" on every request** (#232, branch
+`fix/cli-commands-register-on-cli-init`, DECISIONS #235). `CliServiceProvider` and
+`MediaServiceProvider` built their command definitions while booting on `plugins_loaded`, and a
+definition translates its help text. Both now register on `cli_init`, the hook WP-CLI fires on
+`init`. The help text stays translatable and every synopsis is unchanged. Spec 101's
+`modeCommandDefinition()` is covered without an edit once #210 merges on top; checked against that
+branch at `6e541962`. Two unit tests pin it, one per provider.
+
 No dependency pull request is being held.
 
 ## Recently landed
@@ -206,6 +214,9 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - `FlowControllerTest` and `FlowLifecycleTest` still clean up their flows, submissions and Email
   Studio posts by comparing the newest 500 ids before and after. That leaves nothing on a quiet
   install, and deletes whatever another process created during the test.
+- `ResetExecutorTest` leaves `show_on_front` at `posts` and `page_on_front` at 0, whatever the
+  install had. Read from the test on 2026-10-04, not measured: a before-and-after snapshot shows
+  no difference on an install already at those values (DECISIONS #235).
 - What earlier runs left on an existing install is not removed by anything: submissions the
   retention test anonymized cannot be restored, and neither can notifications or read state the
   notification tests deleted. `corex_retention_submissions_days` may read 30 on an install whose
