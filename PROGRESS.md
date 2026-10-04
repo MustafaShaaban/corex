@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.42.1** — tag `v0.42.1`, reachable from `main`.
+- **Latest published release: v0.43.0** — tag `v0.43.0`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -40,23 +40,73 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Spec 101, coming-soon mode, is being implemented on draft pull request #210.** As of 2026-10-04
-its branch holds the first five of the plan's eight phases — tasks T001 to T047 of 68: one service
-that changes the mode, tests of the template seam it builds on, the mode itself with its guard and
-default page, the notice and visitor view, and the preview link with its banner. Still open there:
-the WP-CLI mode command, the generated template and asset action, and the documentation, release
-notes and browser project.
-`specs/101-coming-soon-mode/tasks.md` on that branch is the record; read it rather than this
-paragraph. One thing found while building 102 shaped the plan: a generated client theme is a
-standalone block theme, not a child of the Corex theme, so it does not inherit a template the
-parent ships.
+No feature spec is in flight. Spec 101 (coming-soon mode) and spec 102 (update-safe client sites)
+are both in v0.43.0, which makes it the first release a client repository can be created from with
+the mode in it and with a way to take every later release by merging.
 
 No dependency pull request is being held.
 
 ## Recently landed
 
-On `main` since v0.42.1, and not in a release yet:
+On `main` since v0.43.0, and not in a release yet:
 
+- **A full integration run no longer leaves transients on the install, and the flow tests delete
+  only what they created** (#236, tests only, DECISIONS #240). Two things were left open by #231. A
+  run left five transients: rate-limit counters from `FlowControllerTest`, `FlowLifecycleTest` and
+  `SubmitLifecycleTest`, and a migration preview from `DataManagementControllerTest`. Those tests
+  now put back every transient they write — one that was absent is removed, one that was there gets
+  its value and expiry back. And the two flow tests cleaned up by comparing the newest 500 flows,
+  submissions and Email Studio posts before and after, which deleted whatever another process
+  created during the test; they now record the posts they insert. Measured on the development
+  install with the same before-and-after snapshot as #231, a rate-limit counter seeded first: 377 of
+  377 pass twice in a row, the seeded counter is unchanged, and the only difference is
+  `_transient_doing_cron`, the lock WordPress itself takes when a scheduled event is due on any
+  load.
+- **The browser specs remove the access requests they file** (#227, tests only).
+  `security-access.spec.js` filed one as the administrator on every run and never decided it;
+  `access-request.spec.js` left three as `corex-requester`, denied. Both now delete them in
+  `afterEach` through WP-CLI — the first by the id it is told, the second by requester and by
+  being newer than the newest request that existed before the file ran. Measured on the local
+  install: 219 rows before and after each spec. Without WP-CLI the specs still run, the rows stay,
+  and stderr says so.
+
+Released in v0.43.0:
+
+- **Spec 101 — coming soon is an operations mode** (#210, DECISIONS #238). While it is on, a
+  signed-out visitor gets the coming-soon page at the home URL with a 200 and a temporary redirect
+  to it from everywhere else; anybody who can edit posts gets the real site, and is told on every
+  page that visitors do not; a preview link shows the real site to somebody without an account
+  and is removed when the site leaves the mode; `wp corex mode get|set` reads and changes the mode
+  by the screen's own rules; and `make:site` gives every new client theme its own
+  `templates/coming-soon.html`. The whole behaviour is one pure table,
+  `ComingSoonDecision::for()`, and a browser project of its own proves it from outside.
+  `specs/101-coming-soon-mode/tasks.md` records each task and what it found. The guide is
+  *Coming soon mode*, in English and Arabic.
+- **Submission retention reaches every record again** (#228, DECISIONS #232). A run used to be
+  handed the newest 500 private submissions past the window whatever had been done to them, so
+  once 500 were anonymized or archived it re-handled those and never reached the rest. A run now
+  skips what its action has nothing left to do for and takes the oldest first. Three decisions
+  come with it: a submission is due while it is past the window and not anonymized, so the count
+  on the Submissions screen no longer includes anonymized ones; an archived submission stays due
+  and can still be anonymized or trashed; an anonymized one is finished and retention does not
+  archive or trash it. Six integration tests in `tests/Integration/Retention/` pin it. On the
+  development install the 30-day selection went from 500 already-anonymized ids to the 7
+  submissions that still hold their data.
+- **The retention form says which action it ran** (#229, DECISIONS #233). Its confirmation box and
+  its result notice said "trash" for Archive and Anonymize as well. The box now asks to confirm
+  the selected action and says anonymizing cannot be undone; the prune handler sends the action
+  back with the count, and the notice says archived, moved to trash or anonymized. Five
+  integration tests and two unit tests pin it.
+- **WP-CLI no longer logs "translation loading … triggered too early" on every request** (#232,
+  DECISIONS #235). `CliServiceProvider` and `MediaServiceProvider` built their command definitions
+  while booting on `plugins_loaded`, and a definition translates its help text. Both now register
+  on `cli_init`, the hook WP-CLI fires on `init`. The help text stays translatable and every
+  synopsis is unchanged. Spec 101's `modeCommandDefinition()` is covered without an edit. Two unit
+  tests pin it, one per provider.
+- **A retention run refused for want of confirmation is a warning, not a success** (#235,
+  DECISIONS #237). Applying retention without ticking the confirmation box runs nothing; the
+  notice saying so was drawn with the success tick. Two integration tests pin the tone of each
+  retention notice.
 - **Spec 102 — a client site the framework can be updated underneath** (#211, DECISIONS #230). The
   framework prescribed `sites/<client>/` and its own checks rejected it. A client repository now
   passes them untouched: one ownership file says which paths are the client's, hygiene, the
@@ -65,7 +115,7 @@ On `main` since v0.42.1, and not in a release yet:
   client's own CI. `client-site-layout` in CI generates a real site and runs every check against
   it. The update procedure is documented in English and Arabic.
   `specs/102-update-safe-client-sites/tasks.md` records each task, including the ones the work
-  changed. [`CHANGELOG.md`](CHANGELOG.md) lists it under Unreleased.
+  changed. [`CHANGELOG.md`](CHANGELOG.md) lists it under 0.43.0.
 - **The integration suite no longer rewrites the operations mode of the install it runs against**
   (#221, tests only). `OptionalDashboardWidgetsTest` saved `OperationsModeStore::current()` and
   handed it back to `set()`: on an install that had declared nothing, that declared it
@@ -92,13 +142,30 @@ On `main` since v0.42.1, and not in a release yet:
   administrators outlived the subscriber the tests delete. `AccessControllerTest` also granted the
   editor role `corex_manage_forms` through the real controller and left it granted; it now
   restores the grant row it found.
-- **The browser specs remove the access requests they file** (#227, tests only).
-  `security-access.spec.js` filed one as the administrator on every run and never decided it;
-  `access-request.spec.js` left three as `corex-requester`, denied. Both now delete them in
-  `afterEach` through WP-CLI — the first by the id it is told, the second by requester and by
-  being newer than the newest request that existed before the file ran. Measured on the local
-  install: 219 rows before and after each spec. Without WP-CLI the specs still run, the rows stay,
-  and stderr says so.
+- **The integration suite no longer empties the notification tables of the install it runs against,
+  and no longer leaves rows on it** (#231, tests only, DECISIONS #234).
+  `NotificationControllerTest`, `WpNotificationRepositoryTest` and `NotificationPerformanceTest`
+  began every test with an unqualified `DELETE FROM` on the notification and read-state tables, so
+  each run removed every notification the developer had and what each user had read. They now act as
+  actors nothing else on the install addresses — an account the controller test creates with no
+  role, and two user ids no account has — and delete only rows under a dedup-key prefix of their
+  own. The controller test had also been rewriting the administrator's notification preferences.
+  Stopping the delete uncovered what it had been hiding, fixed in the same change:
+  `FlowControllerTest` and `FlowLifecycleTest` each left a notification about their flow, and
+  `CommandCenterWidgetTest` renders the widget, which evaluates readiness for real and records the
+  install's own blockers; it now puts those rows back as they were. The rows the suite left are
+  cleaned up by naming them: eight logged emails (`CallRequestDataPathTest`,
+  `ApplicationDataPathTest`, `MailLifecycleTest`, `SubscriptionLifecycleTest`), two reading events
+  (`BlogProControllerTest`), and two ids on `corex_kit_seeded_pages`, which came from
+  `SetupConflictTest`. `DataManagementControllerTest` records the runs it creates instead of
+  comparing the newest 500 before and after. One more was found by checksum, not by count:
+  `LoginProtectionEnforcementTest` emptied the login-attempt table and deleted the login policy
+  without putting it back, and `LoginRecoveryTest` left a lockout row and released every active
+  lockout on the install; both now act on rows from their own documentation-range address. Measured
+  on the development install with a before-and-after snapshot of post ids, every prefixed table's
+  row count and checksum, option hashes, cron events, users and user meta: 377 of 377 pass, and
+  across three consecutive runs the only differences were five transients, which #236 has since
+  stopped leaving.
 
 **v0.42.1**, a patch release. [`CHANGELOG.md`](CHANGELOG.md) has the full entry; the decisions are
 #224 to #229.
@@ -158,26 +225,17 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - Development installs predating spec 091 may hold leaked fixture users. Since #221 the
   suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
   there are not removed by anything.
-- **Submission retention stops reaching records once 500 have been anonymized or archived.** A
-  production defect, found through a failing test and not fixed (DECISIONS #231).
-  `SubmissionRetention` hands each prune the newest 500 private submissions older than the window.
-  `trash` takes a record out of that set; `anonymize` and `archive` leave it private, so the next
-  run is handed the same 500, reports them as removed again, and never reaches an older record
-  that still holds personal data. The Inbox preview counts them as waiting to be removed. On the
-  development install the batch was 500 already-anonymized submissions and the five still-live
-  ones behind them were never selected.
-- **The integration suite still changes the install it runs against**, measured per full run on
-  2026-10-04 with #224 applied. `NotificationControllerTest`,
-  `NotificationPerformanceTest` and `WpNotificationRepositoryTest` delete every row in the
-  notification and read-state tables, the developer's own included. Eight logged emails are left
-  by `CallRequestDataPathTest`, `ApplicationDataPathTest`, `MailLifecycleTest` and
-  `SubscriptionLifecycleTest`; two reading events by `BlogProControllerTest`; and
-  `corex_kit_seeded_pages` grows by two ids, not traced to a file.
+- `ResetExecutorTest` leaves `show_on_front` at `posts` and `page_on_front` at 0, whatever the
+  install had. Read from the test on 2026-10-04, not measured: a before-and-after snapshot shows
+  no difference on an install already at those values (DECISIONS #235).
 - What earlier runs left on an existing install is not removed by anything: submissions the
-  retention test anonymized cannot be restored, `corex_retention_submissions_days` may read 30 on
-  an install whose owner never set it, and `corex_role_ability_grants` may hold an
-  `editor` / `corex_manage_forms` row nobody granted. The Access request rows, audit events and
-  notifications from earlier runs stay too, the browser specs' among them.
+  retention test anonymized cannot be restored, and neither can notifications or read state the
+  notification tests deleted. `corex_retention_submissions_days` may read 30 on an install whose
+  owner never set it, `corex_role_ability_grants` may hold an `editor` / `corex_manage_forms` row
+  nobody granted, and the first administrator's notification preferences may have the jobs
+  category switched off. The Access request rows (the browser specs' among them), audit events,
+  logged emails, reading events about deleted posts and stale ids on `corex_kit_seeded_pages` from
+  earlier runs stay too.
 - **Deleting a user leaves that user's access requests in place**, pointing at nobody. Nothing in
   CoreX listens for a user being deleted. Whether it should remove or anonymize those requests is
   a product question nobody has decided; the tests clean up after themselves either way.

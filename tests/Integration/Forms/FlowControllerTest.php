@@ -12,6 +12,9 @@ use Corex\Forms\Flow\FlowController;
 use Corex\Forms\Flow\WpFlowStore;
 use Corex\Forms\Submission\FlowSubmissionController;
 use Corex\Boot;
+use Corex\Tests\Support\CreatedPosts;
+use Corex\Tests\Support\NotificationRows;
+use Corex\Tests\Support\WatchedTransients;
 
 beforeEach(function () {
     $container = Boot::app()->container();
@@ -19,42 +22,24 @@ beforeEach(function () {
     $this->store->registerPostType();
     $this->controller = $container->make(FlowController::class);
     $this->submissionController = $container->make(FlowSubmissionController::class);
-    $this->baselineIds = get_posts([
-        'post_type' => WpFlowStore::POST_TYPE,
-        'post_status' => 'any',
-        'posts_per_page' => 500,
-        'fields' => 'ids',
-    ]);
-    $this->baselineSubmissionIds = get_posts([
-        'post_type' => 'corex_submission',
-        'post_status' => 'any',
-        'posts_per_page' => 500,
-        'fields' => 'ids',
-    ]);
+    // The flows and submissions these tests create, remembered as they are inserted. This
+    // replaced comparing the newest 500 ids of each before and after, which deleted whatever
+    // another process created in the meantime.
+    $this->posts = CreatedPosts::watch(WpFlowStore::POST_TYPE, 'corex_submission');
+    // A submission goes through the rate limiter, which counts it in a transient.
+    $this->transients = WatchedTransients::watch('corex_throttle_');
 
     $administrators = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
     wp_set_current_user((int) ($administrators[0] ?? 0));
 });
 
 afterEach(function () {
-    $ids = get_posts([
-        'post_type' => WpFlowStore::POST_TYPE,
-        'post_status' => 'any',
-        'posts_per_page' => 500,
-        'fields' => 'ids',
-    ]);
-    foreach (array_diff($ids, $this->baselineIds) as $id) {
-        wp_delete_post((int) $id, true);
-    }
-    $submissionIds = get_posts([
-        'post_type' => 'corex_submission',
-        'post_status' => 'any',
-        'posts_per_page' => 500,
-        'fields' => 'ids',
-    ]);
-    foreach (array_diff($submissionIds, $this->baselineSubmissionIds) as $id) {
-        wp_delete_post((int) $id, true);
-    }
+    $this->posts->delete();
+    $this->transients->restore();
+
+    // A submission notifies whoever manages submissions, under a key made from the flow's slug.
+    // `integration-flow` exists only in this file, so the notification about it is this file's.
+    NotificationRows::forget('submission.new:integration-flow');
 });
 
 function flowRestPayload(string $message = 'Thanks'): array

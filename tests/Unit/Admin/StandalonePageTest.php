@@ -43,6 +43,18 @@ it('renders a complete self-contained HTML document', function () {
         ->and($html)->toContain('</body></html>');
 });
 
+it('asks crawlers to stay away unless the page is one meant to be found', function () {
+    // Every page this class rendered before spec 101 was an interstitial — a 503, a 403 — and
+    // noindex was right for all of them. The coming-soon fallback is a public launch page served
+    // with a 200, and a noindex on it would contradict the reason the mode exists (FR-010).
+    $interstitial = standalonePage()->document('Away', '<main></main>');
+    $launchPage   = standalonePage()->document('Coming soon', '<main></main>', 'coming-soon', indexable: true);
+
+    expect($interstitial)->toContain('<meta name="robots" content="noindex, nofollow"')
+        ->and($launchPage)->not->toContain('name="robots"')
+        ->and($launchPage)->not->toContain('noindex');
+});
+
 it('inlines the token adapter and the standalone stylesheet', function () {
     $html = standalonePage()->document('Away', '<main></main>');
 

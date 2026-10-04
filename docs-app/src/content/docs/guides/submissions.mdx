@@ -70,13 +70,20 @@ URL.
 
 ## Retention
 
-Set the age window under **Submission retention**. The preview count excludes marked tests by default. After confirming,
-choose one operation:
+Set the age window under **Submission retention**. The panel shows how many responses are currently due: older than the
+window and still holding their personal data. The count excludes marked tests by default and stops at 500, the size of
+one run. After confirming, choose one operation:
 
 - **Archive** keeps the response and marks its workflow and retention state.
 - **Move to trash** uses WordPress's recoverable trash.
 - **Anonymize personal data** removes submitted values, submitter projections, hidden/UTM/consent data, and notes while
   preserving non-personal workflow evidence.
+
+A run handles at most 500 responses, oldest first, and skips the ones its operation has nothing left to do for:
+
+- An anonymized response is finished. It is no longer counted as due, and no operation selects it again.
+- An archived response still holds its personal data, so it stays in the count and can still be anonymized or moved to
+  trash. Archive does not select it a second time.
 
 Each applied archive or anonymization writes a retention timeline event. Including marked tests is a separate explicit
 choice so diagnostic fixtures are never swept into ordinary retention work accidentally.

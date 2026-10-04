@@ -4857,3 +4857,517 @@ branch (#223), so that cleanup follows it rather than conflicting with it.
 `DataManagementControllerTest` still finds its posts by comparing the newest 500 ids. What else the
 suite still changes — three Notifications files delete every notification on the install — is
 listed in `PROGRESS.md`. Rows earlier runs left on existing installs are not removed.
+
+## #232 — Retention skips what its action has already done, and "due" means still holding personal data
+
+Date: 2026-10-04 · Spec: none (defect fix, found in #231; spec 068 FR-056) · Status: Final
+
+`SubmissionRetention` handed every run the newest 500 private submissions older than the window,
+whatever the action and whatever had been done to them. Trashing takes a submission out of that
+set. Anonymizing and archiving leave it private, so the next run got the same records, applied the
+action again — a new title, another timeline event, a new update time — counted them as handled
+again, and, once 500 handled records were newer than the unhandled ones, never reached an older
+submission that still held personal data. #231 measured it: 500 ids selected, all 500 already
+anonymized, live submissions past the window never selected.
+
+The fix is a selection rule, and the rule needed three product answers. They are these.
+
+**1. What "due" means before an action is chosen.** `preview()` takes no action, and its count is
+the "currently due" figure on the Submissions screen, which also decides whether the apply form is
+shown. A submission is due while it is older than the window and has not been anonymized — that
+is, while it still holds the personal data the window exists to limit. An anonymized submission is
+not due. An archived one is: archiving keeps every submitted value.
+
+**2. What each action selects.** The due submissions it still has something to do for:
+
+| Action | Skips | So it acts on |
+|---|---|---|
+| Archive | archived, anonymized | due submissions not yet archived |
+| Anonymize | anonymized | every due submission, archived or not |
+| Move to trash | anonymized | every due submission, archived or not |
+
+For the same marked-test choice, every action's set is the preview's set or a subset of it, so a
+run never acts on a record the count did not include. That was the class's stated contract ("only
+what the preview measured") and it still holds. The one way past the count on the screen is the
+"Include marked-test submissions" box, which was already so: the count there excludes marked tests
+and the box adds them.
+
+**3. Whether an anonymized submission may still be archived or trashed.** By retention, no.
+Anonymizing finishes retention for a record: what is left is the non-personal workflow evidence the
+operator chose to keep by anonymizing instead of trashing. Two alternatives were weighed.
+
+- *Let trash take anonymized records too.* Then either the count includes them — the defect, a
+  count of records nothing needs doing to — or it does not, and "5 currently due" followed by
+  "505 moved to trash" breaks the preview contract. A screen that offers trashing anonymized
+  records as its own counted choice would be honest; it is a feature, not this fix.
+- *Treat archived as finished as well.* Archive is the first option in the action list. Had
+  archived records left the count, one run of it would have emptied the count, hidden the form,
+  and left every archived submission holding its personal data with no retention action able to
+  reach it. The Inbox's bulk actions do not anonymize or trash.
+
+Archiving an anonymized record was never useful: it overwrote `corex_retention_state` with
+`archived`, which made the record look un-anonymized to the next anonymize run.
+
+A single anonymized submission can still be trashed through the Data source
+(`SubmissionsSource::delete()`); there is no bulk route. That is the cost of answer 3 and it is
+accepted.
+
+**Oldest first.** A run is still bounded at `RetentionSettings::MAX_PRUNE`. It now takes the
+submissions that have been due longest (`post_date` ascending, then id) instead of the newest. With
+the skip rule either order makes progress; this one handles the longest-overdue first.
+
+**Where the rule lives.** `RetentionSettings` holds one map from action to the states it skips, and
+the list of valid actions is that map's keys. `SubmissionRetention` turns the states into a
+`NOT EXISTS OR NOT IN` meta clause beside the existing marked-test clause. The store methods
+(`anonymizeForRetention()`, `archiveForRetention()`) are unchanged: `applyIds()` is their only
+caller and `prune()` is its only caller outside tests, so a second guard there would have been the
+same rule written twice.
+
+**What an operator sees change.** On a site with anonymized submissions the due count drops by
+that number. Move to trash no longer trashes anonymized submissions, Archive no longer touches
+archived or anonymized ones, and runs go oldest first. Retention still runs only when someone
+confirms it on the Submissions screen; nothing is scheduled. `CHANGELOG.md` carries this under
+"Client impact".
+
+**The tests.** `tests/Integration/Retention/SubmissionRetentionTest.php`, six tests on real
+WordPress, written before the fix. Five failed on the unfixed code for the reason each names; the
+sixth (trash still takes an archived submission) guards the other direction and was checked by
+making trash skip archived records, which fails it. The suite runs on a developer's install, so
+every retention query in the file is narrowed to the test's own submissions through
+`pre_get_posts` — to none until one is inserted — and each test asserts the preview count before
+it prunes. Two unit tests that only restated the action map were written and removed again: every
+entry in the map is exercised through `prune()`.
+
+What was run, on the long-lived development install:
+
+| Check | Result |
+|---|---|
+| The new file against unfixed code | 5 failed, as expected; install identical before and after |
+| The new file against the fix | 6 passed; posts, post meta, options and table counts identical before and after |
+| Retention, Privacy, Submissions and Data integration tests | 45 passed |
+| Unit suite | 1,853 passed |
+| The fixed selection for a 30-day window, read-only | 7 ids, all without a retention state; none of the 602 anonymized submissions |
+| The same query before the fix (#231) | 500 ids, all anonymized |
+
+The local runs loaded this branch's classes over the root checkout's `vendor/` and `./wp` through a
+prepended autoloader, so the shared checkout stayed on `main`. The full integration and browser
+suites are CI's.
+
+**Not done.** The retention form's confirmation label and its result notice say "trash" whichever
+action ran ("Confirm moving due submissions to the recoverable trash", "N submissions moved to
+trash"). That predates this change and is listed in `PROGRESS.md`. Submissions the old selection
+anonymized twice keep their duplicate timeline events.
+
+## #233 — The retention form says which action it ran, and never guesses
+
+Date: 2026-10-04 · Spec: none (defect fix, noted at the end of #232; spec 068 FR-056) · Status: Final
+
+The retention form on the Submissions screen offers three actions — Archive, Move to trash,
+Anonymize personal data — and spoke about one. Its confirmation box read "Confirm moving due
+submissions to the recoverable trash." and its result notice "N submissions moved to trash.",
+whichever action was selected. An operator anonymizing submissions, which deletes the submitted
+values and cannot be undone, was asked to confirm a recoverable move and then told the records were
+in the trash. #232 found it while fixing what retention selects, and left it.
+
+**1. The confirmation is about the selected action, and states the one consequence that is
+permanent.** The label is now "Confirm applying the selected action to the due submissions.
+Anonymizing cannot be undone." It is one fixed sentence, not one per action. A label that followed
+the select would need a script written for this server-rendered form, and would change under a box
+the operator may already have ticked. The old label's only statement about consequences
+was "recoverable", which was false for one action in three; the new one says nothing about Archive
+or Move to trash being recoverable, because the form does not need the claim, and says the true
+thing about the action that is not.
+
+**2. The action travels with the result.** `RetentionController::prune()` redirected with
+`corex_status=retention-pruned` and `corex_count`, so the screen had no way to know what ran. It
+now adds `corex_action`, the action it handed to `SubmissionRetention::prune()`. That call throws
+on anything but the three actions, so a redirect that carries an action carries one that ran. The
+handler's default when the form posts no action is `trash`, as before, and that is what it reports.
+
+**3. The screen does not trust the address bar, and does not guess.** `corex_action` is read with
+`sanitize_key()` and matched against `archive`, `trash` and `anonymize`. Each has its own sentence
+with its own plural: "N submissions archived.", "N submissions moved to trash.", "N submissions
+anonymized." Anything else — an action somebody typed, or none, on a link saved before this change
+— gets "Retention applied to N submissions.", which names no action. Falling back to "moved to
+trash" there would have been the defect again for exactly the links that used to carry it. The
+trash sentence is the old string unchanged, so an existing translation of it still applies; the
+other three and the confirmation label are new strings (`CHANGELOG.md`, "Client impact").
+
+The three actions are now named in three places: the retention rules, the form's options and the
+notice. The first two were already separate. #232 made the list of valid actions the keys of a
+private map in `RetentionSettings`, from action to the states it skips. The form and the notice
+each need words per action, which that map does not hold, so they stay written out and the map
+stays private.
+
+**Tests.** `tests/Integration/Submissions/RetentionPanelCopyTest.php` renders the confirmation and
+the notice on real WordPress — each action in the singular and the plural, no "trash" in an archive
+or anonymize notice, the neutral sentence for a missing or unknown action, and the two halves of
+the label. It reaches `pruneForm()` and `retentionNotice()` by reflection, as
+`OperationsModeControllerNoticeTest` does for its screen: `render()` prints the form only when the
+install happens to hold due submissions. It reads and writes no submission.
+`tests/Unit/Retention/RetentionControllerTest.php` drives the real handler with the real guard and
+the real retention service, WordPress stubbed and retention off, and reads the redirect it issues.
+`prune()` ends in `exit`; the `wp_safe_redirect` stub throws the destination, so the handler runs
+up to the redirect and stops.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| Both new files against `main`'s production code | 14 of 16 cases failed; the two that passed are the trash notices, which were already right |
+| Both new files with the change | 16 passed |
+| Unit suite (`pest`) | 1857 passed |
+| `wp i18n make-pot` over the screen | the four plural strings extracted, each with its translator comment |
+| The screen on the development install, dark and light, 1440px and 375px, and right-to-left in dark | no sideways scroll; the five notices read as above |
+
+The render needed a retention window, which the development install does not have, so
+`corex_retention_submissions_days` was set to 30 for the captures and deleted again afterwards. The
+form was not submitted. The whole integration suite was not run locally — it still changes the
+install it runs against (`PROGRESS.md`) — and is left to CI.
+
+**Not done.**
+
+- The notice for a run that was *not* confirmed ("Confirm the retention action before applying
+  it") is drawn as a success state; every retention status gets the `success` tone. Recorded in
+  `PROGRESS.md` under "Open, and not hidden".
+- An action the service rejects reaches `SubmissionRetention` and its `InvalidArgumentException` is
+  not caught by the handler. Only somebody who passes the capability and nonce check and alters the
+  form's own select can send one. Read from the code, not reproduced.
+- The counts are printed with `%d`, as the "currently due" figure on the same panel is, not through
+  `number_format_i18n()`.
+- At 1440px the confirmation and the Apply button sit on a second row of the form, below the action
+  select. Whether the old, shorter label fitted on the first row was not measured.
+
+## #234 — A test names the rows it wrote; it does not empty the table or act as the administrator
+
+Date: 2026-10-04 · Spec: none (test maintenance, follows #231) · Status: Final for the tests; what a run still leaves is in `PROGRESS.md`
+
+The integration suite boots the real `./wp`, so the tables it writes are a developer's. #231 fixed
+the tests that failed there. This entry is about the tests that passed and changed the install
+anyway, measured with a snapshot before and after a full run: post ids by type, the row count and
+`CHECKSUM TABLE` of every prefixed table, option hashes, cron events, users and user meta.
+
+**Three files emptied two tables.** `NotificationControllerTest`, `WpNotificationRepositoryTest`
+and `NotificationPerformanceTest` began every test with `DELETE FROM` on the notification and
+read-state tables, with no `WHERE`. A run removed every notification on the install and what each
+user had read. The assertions depended on it: "the list has one item" is true of an empty table.
+
+**The rows are found by a key of the test's own.** Each file stores under a dedup-key prefix no
+producer writes (`controller.test:`, `repository.test:`, `performance.test:`) and deletes by that
+prefix, before each test and after it. Before, because a run that dies leaves rows, and a repeat
+of the same key merges into the old row instead of creating one.
+
+**The assertions are scoped by who is asking, not by what is in the table.** Every notification
+read is filtered by the actor, so the tests ask as actors nothing else on the install addresses.
+
+- The repository test passes its actor as arguments. It uses two user ids no account has, and a
+  capability check that holds one ability, `corex_notification_repository_test`. It used to act as
+  users 7 and 8 holding every ability, which on a full table is every ability-targeted row.
+- The controller test goes through REST, where the actor is whoever is signed in. It signed in as
+  the first administrator, who sees everything. It now creates an account with no role, gives it
+  one test-only capability, and deletes it afterwards. No role, because the install may grant
+  CoreX abilities to any role. The alternative — keep the administrator and compare counts before
+  and after — was rejected: the read is capped at the 500 newest rows, so on an install holding
+  500 unresolved notifications one more does not change the count.
+
+Two things followed from acting as the administrator and are gone with it. The preferences test
+deleted that account's notification preferences and saved its own, so the administrator of the
+development install has had the jobs category switched off by the suite. And the default fixture
+key was `submission.new:contact`, which is what the submission producer writes for a form with
+that slug. That did nothing while the table was emptied first; left alone, the fixture would
+merge into the install's own row.
+
+**Two operations have no scope to be given, so the test moves out of their reach.**
+`pruneOlderThan()` removes whatever is resolved and older than a cutoff, and
+`SecurityResetLoginCommand::restore()` releases every lockout active at a given moment. Neither
+takes a filter, and adding one for a test would be production code. The prune test backdates its
+row to 1999 and prunes before 2000; the reset test records its lockout in 2099 and resets as of
+then. Only a row dated on purpose is on the far side of either line.
+
+**Stopping the delete uncovered what it had been hiding.** With the tables left alone, three more
+writers showed in the snapshot, and they are fixed here because this change is what exposes them.
+
+- `FlowControllerTest` and `FlowLifecycleTest` submit to a flow, and the submission producer
+  stores `submission.new:<slug>`. The slugs exist only in those files; each deletes its key.
+- `CommandCenterWidgetTest` renders the widget, which evaluates readiness for real. The readiness
+  producer then stores the install's own blockers under `readiness.blocker:<check>`, or raises
+  the count and moves the date on the ones already there. Those rows are not fixtures and cannot
+  be deleted afterwards: they may have been the developer's before the test ran. The test
+  snapshots the rows under that prefix and restores them — a row that was there reads as it did,
+  a row that was not is removed.
+- The Access tests' notifications were the third; pull request #225 had already removed them.
+
+**The rest of the list.** `CreatedPosts` (`tests/Support`) records post ids from the
+`wp_insert_post` action for the types a test names and deletes them afterwards. It is the
+listener `SubmitLifecycleTest` and `ProductDataPrivacyTest` got with #231, as a class, because
+five more files needed it.
+
+- Logged emails: `CallRequestDataPathTest` (2), `ApplicationDataPathTest` (2), `MailLifecycleTest`
+  (3) and `SubscriptionLifecycleTest` (1) each send through Corex Mail, which logs a post.
+- `DataManagementControllerTest` records its import, export and migration runs instead of
+  comparing the newest 500 ids before and after.
+- `BlogProControllerTest` deletes the reading events recorded against the post it created.
+- `corex_kit_seeded_pages` grew by two ids a run. A trace of option writes named
+  `SetupConflictTest`: `seedPages()` records each page it touches, and the test deleted the pages
+  and left their ids. It snapshots and restores the option.
+
+**One was found by checksum.** The login-attempt table held one row before a run and one after, so
+a row count showed nothing. `LoginProtectionEnforcementTest` ran an unqualified `DELETE FROM` on
+it around every test and deleted the login policy option without restoring it;
+`LoginRecoveryTest` then left a lockout row. Both now find their rows by the address they record
+against, which is in a range reserved for documentation (203.0.113.0/24), and the first puts the
+policy back.
+
+**Not migrated.** `SubmitLifecycleTest` and `ProductDataPrivacyTest` keep their inline listeners,
+and `OptionalDashboardWidgetsTest` keeps its own delete by prefix. They work; rewriting them onto
+the helpers is a separate change.
+
+What was run, on the development install, from the root checkout:
+
+| Check | Result |
+|---|---|
+| Full integration run on `main` at `5b424578`, before the change | 359 passed; 8 logged emails, 2 reading events, 2 seeded-page ids and a replaced login-attempt row left; the administrator's preferences row deleted and re-inserted. The Access tests' rows were also left, which pull request #225 has since fixed |
+| Two consecutive full runs with the change, four stand-in notifications and their read state seeded first, a snapshot around each | 377 ran and none failed; 21 carried a deprecation notice raised by the tracing bootstrap's own `setted_transient` listener. The stand-ins were unchanged, row for row. Four new transients and one refreshed per run |
+| A third run, with no stand-ins and no tracing | 377 passed; the same transients and no other difference |
+
+The stand-ins used the keys the old tests collided with and were removed afterwards, as were the
+rows the first run left. The 377 includes 18 integration tests `main` gained from pull requests
+#228 and #229 during the work.
+
+**Not done.**
+
+- The transients: rate-limit counters from the three tests that submit a form, and one migration
+  preview. They expire in 60 and 300 seconds. Recorded in `PROGRESS.md`.
+- `FlowControllerTest` and `FlowLifecycleTest` still delete flows, submissions and Email Studio
+  posts by comparing the newest 500 ids. Recorded in `PROGRESS.md`.
+- Two sessions running the suite at once against one database were not tested. The fixed prefixes
+  mean each would delete the other's fixtures mid-test; neither would touch the install's rows.
+- Nothing puts back what earlier runs removed or changed.
+
+## #235 — WP-CLI commands are registered on `cli_init`, and their help text stays translatable
+
+Date: 2026-10-04 · Spec: none (defect fix) · Status: Final
+
+Every WP-CLI request on a site with `WP_DEBUG` on wrote this to `debug.log`:
+
+> Function _load_textdomain_just_in_time was called incorrectly. Translation loading for the
+> `corex` domain was triggered too early.
+
+`CliServiceProvider::boot()` runs on `plugins_loaded` and called `commandRegistrations()`, which
+builds each command's definition. `resetCommandDefinition()` translates its short description and
+its four option descriptions, so `__()` ran before `init`. The log holds one notice per request,
+for the first caller, which hid how many there were:
+
+- `resetCommandDefinition()` — the one in the logged stack.
+- `MediaServiceProvider::boot()` — two more definitions, written the same way, also built on
+  `plugins_loaded`.
+- `modeCommandDefinition()` on spec 101's branch (#210) — a fourth, not yet merged.
+
+Fixing the CLI provider alone moves the notice to the next caller. Run that way, `wp corex doctor`
+still logged it once, from `regenerateWebpCommandDefinition()`.
+
+**Decision: both providers hand their commands to WP-CLI on `cli_init`.** WP-CLI fires that action
+on WordPress's `init`, for plugins to add commands, and it fires nowhere else. By then a
+translation is allowed, and the command has not been looked up yet: WP-CLI runs it after WordPress
+has finished loading. `boot()` now only hooks; the definitions are built when the hook runs.
+
+Three alternatives, and why not:
+
+- *Untranslated English help text.* WP-CLI's own help is English, and no translation of these
+  strings exists. But the Definition of Done says "no hardcoded user-facing text", #225 kept the
+  descriptions translatable on purpose, and the `i18n:pot` script scans the files they are in. It
+  would also have to be remembered at every new definition: #210 wrote its definition the way the
+  neighbours were written.
+- *`init` directly.* The same moment, but it fires on every request, so the handler needs its own
+  "is this WP-CLI" check. `cli_init` is that check.
+- *Definitions as closures.* Changes the shape `commandRegistrations()` returns, which
+  `CommandRegistrationTest` and #210's tests read, for no gain over moving the call.
+
+What did not change: the synopsis of every command, so WP-CLI still rejects a flag a command does
+not take; the array `commandRegistrations()` returns; and that building it resolves nothing from
+the container (#225). `modeCommandDefinition()` needs no edit — it is covered when #210 merges on
+top of this, and the same patch applies to that branch without a conflict.
+
+`boot()` no longer checks `class_exists('WP_CLI')` or the `WP_CLI` constant. Without WP-CLI the
+hook is added and never fires.
+
+**Tests.** Two unit tests, one per provider, stub `__()` to throw and call `boot()`, then assert a
+callback on `cli_init`. Against `main`'s providers both fail on the hook assertion. With the hook
+in place but a definition built inside `boot()`, both fail on the thrown translation, naming the
+string. The media test silences one warning: Brain Monkey probes each hooked closure with
+`Closure::bind()`, which warns for a static one, and `boot()` hooks several.
+
+What was run, on the development install (WordPress 7.1.2, WP-CLI 2.12.0, `WP_DEBUG_LOG` on). Each
+WP-CLI request wrote its PHP errors to a file of its own rather than the shared `debug.log`, which
+other sessions write to; a "before" run on unchanged code is what shows the capture works.
+
+| Check | Before | After |
+|---|---|---|
+| `wp corex doctor` | notice, stack through `resetCommandDefinition()` | no log output |
+| `wp corex reset --dry-run` | notice | no log output |
+| `wp help corex reset` | notice | no log output; options listed |
+| `wp help corex media regenerate-webp` | — | no log output |
+| `wp help corex` | — | identical to before, 93 lines |
+| `wp corex reset --bogus-flag`, `wp corex media reset-webp --dry-run --nope` | — | "unknown … parameter", exit 1 |
+| Spec 101's branch at `6e541962`: `wp corex mode get`, `wp corex doctor` | notice | no such notice |
+| Same branch: `wp corex mode set production --acknowlege` | — | "unknown --acknowlege parameter", exit 1 |
+| Unit suite (`pest`) | — | 1859 passed |
+| `tests/Integration/Cli` | — | 5 passed |
+
+The root checkout was not edited or switched for any of this. The `main` rows loaded the two
+changed classes from the working tree ahead of the install's autoloader. The spec 101 rows pointed
+`WP_PLUGIN_DIR`, for that one request, at an export of the branch with and without the patch.
+
+**Not done.**
+
+- Nothing in CI runs a WP-CLI command and reads the log afterwards, so a translation that returns
+  to `plugins_loaded` from somewhere other than these two `boot()` methods would not be caught.
+- The spec 101 runs still logged one notice, in both columns:
+  `_wp_connectors_resolve_ai_provider_logo_url`, "Provider logo path must be located within the
+  plugins or must-use plugins directory". The scratch plugin directory reached the AI provider
+  plugin through a junction, so its real path was outside the directory. Not seen on the `main`
+  rows, which used the install's own plugin directory.
+- A provider booted after `cli_init` has fired would register nothing. `Boot` boots every provider
+  on `plugins_loaded`, so there is no such path today.
+- `tests/Integration/Cli` also holds `ResetExecutorTest`, which leaves `show_on_front` at `posts`
+  and `page_on_front` at 0 without restoring what the install had. It ran here once. What the
+  install held before was not recorded.
+
+## #237 — A retention run that was refused is a warning
+
+Date: 2026-10-04 · Spec: none (defect fix, left open by #233; spec 068 FR-056) · Status: Final
+
+Applying retention on the Submissions screen without ticking the confirmation box runs nothing:
+`RetentionController::prune()` redirects with `retention-confirm` before it reads the action. The
+screen answered with "Confirm the retention action before applying it." in a success state, because
+`SubmissionsInboxScreen::retentionNotice()` passed `success` for every status. A run that did not
+happen was drawn like one that worked.
+
+`retentionNotice()` now pairs each status with its tone. `retention-confirm` is `warning`; a saved
+policy and a completed run stay `success`.
+
+**Why warning and not error.** `OperationsSecurityScreen::statusNotice()` already answers the same
+situation — a mode change submitted without its confirmation box — with `warning`, and keeps `error`
+for a change that was blocked or invalid. Nothing failed here either; the operator left a step out.
+`AdminPage::state()` gives a warning `role="status"`, as it gave the success, so what a screen
+reader announces is unchanged.
+
+**The sentence is unchanged.** It already says what to do, and keeping it keeps its translations.
+
+This is numbered #237 because #236 is taken on the open spec 101 branch (#210).
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The new refusal test against `main`'s production code | failed: the notice carried `corex-state--success` |
+| `tests/Integration/Submissions/RetentionPanelCopyTest.php` with the change | 15 passed |
+| Unit suite (`pest`) | 1859 passed |
+| The notice on the development install: dark and light at 1440px, dark at 375px, light right-to-left at 375px | warning icon and border in each; no sideways scroll |
+
+The whole integration suite and the browser suite were left to CI.
+
+## #238 — Coming soon is a mode, and what a request gets is one table
+
+Spec 101. Spec 063 named coming-soon as an operations mode; spec 065 shipped four modes and it was
+not one of them, and the only trace was a unit test asserting it was invalid. Maintenance mode
+could not stand in: it answers 503, which is right for minutes and wrong for the weeks before a
+launch; its page is CoreX's; and only an administrator sees past it.
+
+**A mode, not a second switch.** There is already one place an operator changes what the public
+gets, and making it a mode means Coming soon and Maintenance cannot both be on. Launch is the
+existing Production switch, with its readiness result and typed phrase. The cost is that a site in
+Coming soon is not also labelled staging or production; the Overview reports the hosting
+environment separately.
+
+**The behaviour is a table, and the table is one pure function.** `ComingSoonDecision::for()` takes
+the facts of a request and returns what it gets; it reads nothing. `ComingSoonGuard` is the only
+class that asks WordPress who is signed in or what was asked for. The order of the rows *is* the
+behaviour — the visitor view before the pass an editor gets, the sitemap before the home rule — so
+every pair whose order matters has a test, and each was confirmed to fail with the rows swapped.
+*Rejected:* a second mode inside `MaintenanceGuard`. Different status, audience and page, and its
+tests had to keep passing unchanged.
+
+**The default page comes from the plugin, not from the Corex theme.** A client theme generated by
+`make:site` is a standalone block theme and inherits nothing from the Corex theme, so a default
+shipped in `theme/templates/` would reach no client. `corex-config` registers a block template
+named `coming-soon`; a theme file of that name replaces it. That precedence is WordPress's, so it
+is pinned by a test against fixture themes that fails if a core release changes it.
+
+**"Home" is the home path with no WordPress query variable on it.** The plan said the path alone.
+`/?feed=rss2` has the home path, and WordPress renders a feed before it chooses any template — a
+path-only rule would have served the unfinished site's posts to anybody who asked. Found by
+writing the test.
+
+**The preview link's secret is never stored, and the cookie is not the link.** The site keeps a
+hash keyed with one of its own salts. A browser that opens the link is given a grant: an expiry and
+a signature over the stored hash and that expiry. So a leaked cookie gives away one browser's
+access and not the link; the fourteen days are enforced by the server; and regenerating, revoking
+or leaving the mode ends every grant at the next request with no list of sessions to walk.
+*Rejected:* a session table (state to expire for the same result), and a self-expiring signed
+token with no stored state (cannot be revoked).
+
+**A new link is shown by answering the POST, not by redirecting.** It is stored nowhere it could be
+read back from, so the one moment it exists is that response. A redirect would mean putting the
+secret in an address or parking it in the database for the next request to collect.
+
+**One service changes the mode, for the screen and the command line.** `ModeChangeService` holds
+the confirmation rules, so `wp corex mode set` cannot be a way round one, and it is the one place
+that removes the preview link on leaving the mode — asked of the store before and after, because a
+launch reaches the store by a different route from the other modes.
+
+**The browser spec has a project of its own.** Turning the mode on changes what every signed-out
+and subscriber request receives, and other specs drive both. It runs after the main project and
+alone, and restores the mode it found. On its first run it found a defect the other suites could
+not: the mode form's select still held the site's current mode after the form came back proposing
+another, until a script moved it, so a fast or script-less submit applied the wrong mode.
+
+Three things changed the spec while building and were approved by the owner on 2026-10-04: the
+favicon passes like `robots.txt`; no sitemap is published when WordPress is set to discourage
+search engines; and WordPress's `/login` and `/admin` shortcuts keep working.
+
+## #240 — A test puts back the transients it writes; it does not delete them
+
+Date: 2026-10-04 · Spec: none (test maintenance, follows #234) · Status: Final
+
+This is numbered #240 because #238 went to spec 101 (#210), which merged first, and #239 is
+taken on the open retention branch (#237).
+
+#234 left two things open, both recorded in `PROGRESS.md`: a full integration run left five
+transients on the install, and two flow tests still cleaned up by comparing the newest 500 ids.
+
+**The transients.** Three tests submit a form, and every submission is counted by
+`ThrottleMiddleware` in `corex_throttle_<hash>`. `DataManagementControllerTest` previews a
+migration without applying it, and `WpMigrationPreviewStore` keeps the preview in
+`corex_migration_preview_<hash>`. They expire in 60 and 300 seconds; the rows stay in the options
+table until WordPress sweeps expired transients.
+
+Deleting them afterwards was rejected. The counter for the `contact` form is keyed by form and
+client, so it is the same key on every run: a run that starts inside the window finds a counter
+already there, and deleting it would remove something the test did not create. `WatchedTransients`
+(`tests/Support`) restores instead. It listens on the options API, which says what was there
+before each write: `add_option` fires only for a row that does not exist yet, and `update_option`
+hands over the value being replaced. Afterwards a transient that was absent is deleted, and one
+that existed gets its value and its expiry back. The `set_transient` action was not used because
+it fires after the write, when the old value is gone.
+
+With a persistent object cache WordPress keeps transients in the cache and never touches the
+options table, so the helper sees nothing and restores nothing. Not tested; the development
+install has no object cache.
+
+**The flow tests.** `FlowControllerTest` and `FlowLifecycleTest` use `CreatedPosts` (#234) for
+their flows, submissions and Email Studio posts, in place of the before-and-after comparison.
+
+What was run, on the development install, from the root checkout:
+
+| Check | Result |
+|---|---|
+| A `contact` counter seeded at 1 with a 900-second expiry, then two consecutive full runs with a snapshot around each | 377 passed both times; the seeded counter's value and expiry unchanged |
+| Differences between the snapshots | `_transient_doing_cron` added by the first run and gone after the second; nothing else |
+
+`_transient_doing_cron` is the lock WordPress core takes in `spawn_cron()` when a scheduled event
+is due. Loading WordPress does that, not a test, and no trace of it has a test file in its
+backtrace.
+
+**Not done.** `ResetExecutorTest` and the front-page options, an open item in `PROGRESS.md`
+(DECISIONS #235), are not part of this change.

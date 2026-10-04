@@ -66,3 +66,62 @@ it('caps the audit log at 20 entries', function () {
 
     expect(count($this->store->history(100)))->toBe(20);
 });
+
+// Spec 101 — the preview link's events share this log (T040, FR-012).
+
+it('records an event with who and when, and no mode on either side', function () {
+    $this->store->set('coming-soon', 3);
+    $this->store->record(OperationsModeStore::EVENT_PREVIEW_CREATED, 5);
+
+    $timeline = $this->store->timeline();
+
+    expect($timeline)->toHaveCount(2)
+        // Newest first, like history().
+        ->and($timeline[0]['event'])->toBe('preview_link_created')
+        ->and($timeline[0]['user'])->toBe(5)
+        ->and($timeline[0]['time'])->toBeGreaterThan(0)
+        ->and($timeline[0]['from'])->toBe('')
+        ->and($timeline[0]['to'])->toBe('')
+        // A mode change is the other kind of row, and says so by having no event.
+        ->and($timeline[1]['event'])->toBe('')
+        ->and($timeline[1]['to'])->toBe('coming-soon');
+});
+
+it('keeps history() answering mode changes only, for the callers that want only those', function () {
+    $this->store->set('coming-soon', 3);
+    $this->store->record(OperationsModeStore::EVENT_PREVIEW_CREATED, 3);
+    $this->store->record(OperationsModeStore::EVENT_PREVIEW_REGENERATED, 3);
+    $this->store->record(OperationsModeStore::EVENT_PREVIEW_REVOKED, 3);
+    $this->store->set('development', 3);
+
+    $history = $this->store->history();
+
+    expect($history)->toHaveCount(2)
+        ->and(array_column($history, 'to'))->toBe(['development', 'coming-soon'])
+        ->and($this->store->timeline())->toHaveCount(5);
+});
+
+it('refuses to record an event it does not know', function () {
+    // The log is read by the screen as a closed vocabulary. A free-text event would be a place
+    // for a caller to write anything at all — the secret included.
+    $this->store->record('preview_link_created https://example.test/?corex_preview=secret', 3);
+    $this->store->record('', 3);
+
+    expect($this->store->timeline())->toBe([]);
+});
+
+it('holds events and mode changes to the same cap', function () {
+    for ($i = 0; $i < 25; $i++) {
+        $this->store->record(OperationsModeStore::EVENT_PREVIEW_REGENERATED, 1);
+    }
+
+    expect(count($this->store->timeline(100)))->toBe(20);
+});
+
+it('stores nothing in an event row but the event, the user and the time', function () {
+    $this->store->record(OperationsModeStore::EVENT_PREVIEW_CREATED, 5);
+
+    $row = $GLOBALS['corex_test_options']['corex_operations_mode_log'][0];
+
+    expect(array_keys($row))->toBe(['time', 'user', 'event']);
+});

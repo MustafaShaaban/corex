@@ -50,6 +50,15 @@ beforeEach(function () {
 
 afterEach(function () {
     if (! empty($this->postId) && function_exists('wp_delete_post')) {
+        // The analytics test records a view and a read against this post, and deleting the post
+        // does not delete them: each run left two events about a post that no longer existed.
+        // The post is this test's own, so every event against it is too.
+        global $wpdb;
+        $wpdb->delete(
+            $this->container->make(Migrator::class)->fullName(ReadingEventTable::NAME),
+            ['post_id' => (int) $this->postId],
+        );
+
         wp_delete_post((int) $this->postId, true);
     }
 });

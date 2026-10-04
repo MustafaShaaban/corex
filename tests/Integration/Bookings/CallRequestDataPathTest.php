@@ -15,6 +15,18 @@ use Corex\Bookings\CallRequestService;
 use Corex\Bookings\LeaderDirectory;
 use Corex\Bookings\WpCallRequestStore;
 use Corex\Boot;
+use Corex\Tests\Support\CreatedPosts;
+
+// A stored request is announced by email, and Corex Mail logs every send as a post. The service
+// hands back the request's id and not the logs', so they are caught as they are inserted — each
+// run used to leave two on the install.
+beforeEach(function () {
+    $this->emailLogs = CreatedPosts::watch('corex_email_log');
+});
+
+afterEach(function () {
+    $this->emailLogs->delete();
+});
 
 it('stores a valid call request through the real custom table', function () {
     add_filter('pre_wp_mail', '__return_true');

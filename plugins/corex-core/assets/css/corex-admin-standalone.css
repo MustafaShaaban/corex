@@ -102,6 +102,9 @@
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-sm);
 	text-align: start;
+
+	/* A quoted address has no spaces to break at, and must not widen the card. */
+	overflow-wrap: anywhere;
 }
 
 .corex-standalone__detail p {

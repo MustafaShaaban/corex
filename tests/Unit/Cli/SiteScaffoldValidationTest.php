@@ -81,3 +81,40 @@ it('fails validation when required scaffold files are missing or placeholders re
         );
 });
 
+it('does not mistake the nested attributes of a block for an unresolved placeholder', function () {
+    // spec 101. A block with an object attribute ends its comment in `}}`, and the generated
+    // coming-soon template has several. The validator used to flag any `{{` or `}}` at all,
+    // which no template with a real layout could pass. A placeholder is what the renderer
+    // would have filled in: two braces, a name, two braces.
+    $base = sys_get_temp_dir() . '/corex_validation_blocks_' . uniqid('', true);
+    mkdir($base);
+
+    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs'))
+        ->scaffold('Acme', $base);
+    file_put_contents(
+        $base . '/acme-theme/templates/page.html',
+        '<!-- wp:group {"layout":{"type":"constrained"}} --><div class="wp-block-group"></div><!-- /wp:group -->',
+    );
+
+    $finding = (new SiteScaffoldValidator())->validate($base, 'minimal');
+
+    expect($finding->status)->toBe(ReadinessFinding::STATUS_PASS)
+        ->and(file_get_contents($base . '/acme-theme/templates/coming-soon.html'))->toContain('}}');
+});
+
+it('still catches a placeholder left in a file beside nested block attributes', function () {
+    $base = sys_get_temp_dir() . '/corex_validation_mixed_' . uniqid('', true);
+    mkdir($base);
+
+    (new SiteScaffolder(new StubRenderer(), dirname(__DIR__, 3) . '/packages/cli/stubs'))
+        ->scaffold('Acme', $base);
+    file_put_contents(
+        $base . '/acme-theme/templates/page.html',
+        '<!-- wp:group {"layout":{"type":"constrained"}} --><p>{{ name }}</p><!-- /wp:group -->',
+    );
+
+    $finding = (new SiteScaffoldValidator())->validate($base, 'minimal');
+
+    expect($finding->status)->toBe(ReadinessFinding::STATUS_FAIL)
+        ->and($finding->evidence)->toContain('unresolved-placeholder:acme-theme/templates/page.html');
+});

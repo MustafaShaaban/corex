@@ -1,6 +1,8 @@
 /**
  * CoreX admin token adapter. It is registered, never globally enqueued, and is
- * consumed only by the scoped CoreX admin shell and login branding styles.
+ * consumed only by the scoped CoreX admin shell, the login branding styles,
+ * and the Coming soon notice bar (spec 101), whose element carries
+ * `.corex-admin` on the front end.
  */
 
 @font-face {

@@ -30,6 +30,8 @@ use Corex\Data\DataSourceCapabilities;
 use Corex\Data\DataWriteAdapter;
 use Corex\Database\Schema\Migrator;
 use Corex\Operations\OperationResult;
+use Corex\Tests\Support\CreatedPosts;
+use Corex\Tests\Support\WatchedTransients;
 
 it('provides the consolidated Data management REST boundary', function () {
     expect(class_exists(Corex\Config\Data\DataManagementController::class))->toBeTrue()
@@ -47,18 +49,23 @@ function dataManagementRequest(string $method, string $route, array $payload = [
 }
 
 beforeEach(function () {
-    $this->dataRunBaseline = [];
     $admins = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
     wp_set_current_user((int) ($admins[0] ?? 0));
     $container = Boot::app()->container();
     foreach ([WpDataImportStore::class, WpDataExportStore::class, WpMigrationRunStore::class] as $store) {
         $container->make($store)->registerPostType();
     }
-    foreach ([WpDataImportStore::POST_TYPE, WpDataExportStore::POST_TYPE, WpMigrationRunStore::POST_TYPE] as $type) {
-        $this->dataRunBaseline[$type] = get_posts([
-            'post_type' => $type, 'post_status' => 'any', 'posts_per_page' => 500, 'fields' => 'ids',
-        ]);
-    }
+    // The runs these tests create, remembered as they are inserted. This replaced comparing the
+    // newest 500 ids of each type before and after, which could not see a run dated before the
+    // 500th and deleted any run another process created in the meantime.
+    $this->runs = CreatedPosts::watch(
+        WpDataImportStore::POST_TYPE,
+        WpDataExportStore::POST_TYPE,
+        WpMigrationRunStore::POST_TYPE,
+    );
+    // A migration preview is kept in a transient until it is applied, and these tests preview
+    // without applying.
+    $this->transients = WatchedTransients::watch('corex_migration_preview_');
 
     $adapter = new class implements DataWriteAdapter {
         public array $records = [
@@ -111,14 +118,13 @@ afterEach(function () {
     global $wpdb;
     $activity = (new Migrator())->fullName(ActivityTable::NAME);
 
-    foreach ($this->dataRunBaseline ?? [] as $type => $baseline) {
-        $ids = get_posts(['post_type' => $type, 'post_status' => 'any', 'posts_per_page' => 500, 'fields' => 'ids']);
-        foreach (array_diff($ids, $baseline) as $id) {
-            // Validating an import is audited against the run, and the event outlived it.
-            if ($type === WpDataImportStore::POST_TYPE) $wpdb->delete($activity, ['target_type' => 'data_import', 'target_id' => (string) $id]);
-            wp_delete_post((int) $id, true);
-        }
+    // Validating an import is audited against the run, and the event outlived it. Post ids are
+    // unique across types, so asking for every run's id matches the imports' events and no others.
+    foreach ($this->runs->ids() as $id) {
+        $wpdb->delete($activity, ['target_type' => 'data_import', 'target_id' => (string) $id]);
     }
+    $this->runs->delete();
+    $this->transients->restore();
 
     // So is an applied mutation, against the source. `rest-contacts` exists only in this file, so
     // every event against it is one of these tests' — including any an earlier run left behind.

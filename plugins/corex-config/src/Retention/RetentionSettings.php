@@ -25,6 +25,23 @@ final class RetentionSettings
     /** Never prune more than this many records in a single manual run (safety bound). */
     public const MAX_PRUNE = 500;
 
+    /**
+     * The retention states (`corex_retention_state`) that finish retention for a record: its personal
+     * data is gone, so it is no longer due and no action selects it again. `archived` is not one of
+     * them — an archived record keeps its personal data and stays due (DECISIONS #232).
+     */
+    public const FINISHED_STATES = ['anonymized'];
+
+    /**
+     * Per retention action, the states it has nothing left to do for. Archiving an archived record
+     * again changes nothing; anonymizing or trashing one still removes its personal data.
+     */
+    private const STATES_TO_SKIP = [
+        'archive'   => ['archived', ...self::FINISHED_STATES],
+        'anonymize' => self::FINISHED_STATES,
+        'trash'     => self::FINISHED_STATES,
+    ];
+
     /** Clamp an arbitrary input to a valid retention window in days (0 = keep forever). */
     public function sanitizeDays(mixed $value): int
     {
@@ -42,9 +59,31 @@ final class RetentionSettings
         return $days > 0;
     }
 
+    /** @throws \InvalidArgumentException when the action is not archive, trash or anonymize. */
+    public function assertAction(string $action): void
+    {
+        if (! isset(self::STATES_TO_SKIP[$action])) {
+            throw new \InvalidArgumentException('The submission retention action is invalid.');
+        }
+    }
+
     /**
-     * The dry-run preview model: the window, whether retention is on, and how many submissions would be
-     * removed right now (the count the boundary measured). Never a fabricated number.
+     * The retention states an action has nothing left to do for, so a run of it skips records in
+     * them. Without this a run is handed the records the previous run already handled, and — a run
+     * being bounded by {@see self::MAX_PRUNE} — never reaches the ones behind them.
+     *
+     * @return list<string>
+     */
+    public function statesToSkip(string $action): array
+    {
+        $this->assertAction($action);
+
+        return self::STATES_TO_SKIP[$action];
+    }
+
+    /**
+     * The dry-run preview model: the window, whether retention is on, and how many submissions are due
+     * right now (the count the boundary measured). Never a fabricated number.
      *
      * @return array{days:int,enabled:bool,count:int,willPrune:bool}
      */

@@ -6,8 +6,41 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.43.0] — 2026-10-04
+
+Two features for building a client's site on CoreX, and the fixes found along the way.
+**Coming soon** is a fifth operations mode: visitors get a launch page the theme owns while the
+site is built behind it, with a preview link for people who have no account. And a client
+repository can now take framework releases by merging them, with a check that proves its framework
+files are unmodified. Coming soon changes nothing until it is selected. What does change on a
+running site is listed under Client impact; the one to read first is that submission retention
+selects different records.
+
 ### Added
 
+- **Coming soon is an operations mode** (spec 101). Spec 063 named it and spec 065 shipped without it;
+  Maintenance mode could not stand in for it, because a 503 held for weeks tells a search engine the
+  site is failing, and its page is CoreX's and not the client's.
+  - While the mode is on, a signed-out visitor gets the coming-soon page at the home URL with a 200,
+    and a temporary redirect to it from every other front-end address. Anybody signed in who can edit
+    posts gets the real site. The admin, the login page, the REST API, AJAX and cron are never
+    intercepted; `robots.txt` and the favicon are served normally; the sitemap lists the home URL only.
+  - The page is a block template named `coming-soon`. CoreX registers a default that applies under
+    any block theme, a theme's own `templates/coming-soon.html` replaces it, and a theme with no
+    block templates gets a self-contained page.
+  - A notice bar on every front-end page tells somebody served the real site that visitors are not,
+    with a link to the page as a visitor sees it (`?corex_visitor_view=1`). In the admin it is a
+    toolbar node.
+  - **A preview link** shows the real site to somebody without an account: created, regenerated and
+    revoked on Operations & Security, shown once, good for 14 days per browser, and removed when the
+    site leaves the mode. Only a keyed hash is stored, and each action is in the history.
+  - `wp corex mode get` and `wp corex mode set <mode> [--acknowledge] [--phrase=PRODUCTION]`, held to
+    the same confirmations as the screen.
+  - `wp corex make:site` generates `templates/coming-soon.html` in every client theme.
+  - For a theme: the action `corex_coming_soon_enqueue_assets` and the body class `corex-coming-soon`,
+    both only on that page. For client code: the filters `corex_coming_soon_bypass` and
+    `corex_coming_soon_is_home`.
+  - Documentation: *Coming soon mode*, in English and Arabic.
 - **A client site the framework can be updated underneath** (spec 102). The framework tells a team to put
   a client site under `sites/<client>/`, and its own checks rejected exactly that. A client repository now
   passes them untouched, and can prove its framework files are unmodified.
@@ -27,6 +60,26 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The mode form could apply a mode other than the one on screen.** After a submission came back for
+  a missing confirmation, the form showed the proposed mode and its confirmation while the select
+  underneath still held the site's current mode; a script moved it on load. Submitted before that
+  script ran, or with no script, it applied the wrong mode. The proposed mode is now selected in the
+  markup.
+- The scaffold readiness check called any `{{` or `}}` in a generated file an unresolved placeholder,
+  so no generated block template with a nested attribute could pass. It now uses the renderer's own
+  definition of a placeholder.
+- **Submission retention stopped reaching records once 500 had been anonymized or archived.** Each run
+  was handed the newest 500 private submissions older than the window, whatever had already been done to
+  them. Anonymizing and archiving leave a submission private, so the next run got the same 500, applied
+  the action to them again — a second timeline event, a new update time — reported them as handled again,
+  and never reached an older submission that still held personal data. A run now skips the submissions
+  its action has nothing left to do for and takes the oldest first, and the Inbox count no longer
+  includes anonymized submissions (DECISIONS #232).
+- **Every WP-CLI request on a site with `WP_DEBUG` on logged "Translation loading for the `corex` domain
+  was triggered too early".** The CLI and Media providers built their command definitions on
+  `plugins_loaded`, and a definition translates its help text. The commands are now registered on
+  `cli_init`, the hook WP-CLI fires on `init`. Command names, options and help text are unchanged
+  (DECISIONS #235).
 - **`wp corex make:site --path=<dir>` never worked.** `--path` is a WP-CLI global, taken as the WordPress
   install before any command sees its arguments, so the site directory never arrived. The README, the
   guides and the readiness report all documented that form. The site directory is now `--dir`.
@@ -36,9 +89,20 @@ All notable changes to Corex are documented here. The format follows
 - Jest's `<rootDir>` ignore patterns silently stopped applying on Windows in a checkout whose own path
   holds a dot-directory, which is every agent session worktree. The ownership-derived patterns are anchored
   in a way that survives it.
+- **The retention form on the Submissions screen said "trash" whichever action ran.** Its confirmation box
+  read "Confirm moving due submissions to the recoverable trash" and its result notice "N submissions moved
+  to trash", for Archive and Anonymize as well — and anonymizing cannot be undone. The box now asks to
+  confirm the selected action and says that anonymizing cannot be undone, and the notice says what the run
+  did: archived, moved to trash, or anonymized (DECISIONS #233).
+- **A retention run refused for want of confirmation was shown as a success.** Applying retention without
+  ticking the confirmation box runs nothing, and the notice that says so — "Confirm the retention action
+  before applying it" — carried the success tick. It is now a warning (DECISIONS #237).
 
 ### Changed
 
+- On Operations & Security, the overview row "Maintenance: Off" is now "Public site", with three
+  answers — open to visitors, the maintenance page, the coming-soon page — and the history is headed
+  "Mode and preview link history".
 - Scheduled CI runs and the documentation deploy run in the framework's repository only. A client
   repository inherits the workflows and no longer runs them. Pull-request and push runs are unchanged.
 
@@ -50,6 +114,26 @@ Read this before taking the release. *(This section is required from this releas
 
 - **No front-end or admin runtime behaviour changes from spec 102.** Everything it adds is tooling, the
   site generator, CI and documentation.
+- **Coming soon mode changes nothing until somebody selects it.** A site that never enters the mode
+  serves exactly what it served before.
+- **`OperationsMode::all()` returns five values, not four.** Client code that enumerates the modes, or
+  matches on them without a default, now meets `coming-soon`.
+- **Rows in the `corex_operations_mode_log` option can be events.** A preview-link event is a row with
+  an `event` key and no `from` or `to`. `OperationsModeStore::history()` still returns mode changes
+  only; code that reads the option directly has to skip rows without `to`.
+- **`wp corex make:site` writes one more file**, `templates/coming-soon.html`, in a new client theme.
+  An existing client theme is not touched: it serves CoreX's default page until it adds that file.
+- **Names CoreX now uses on the front end**: the query arguments `corex_preview` and
+  `corex_visitor_view`, the cookie `corex_preview`, and the option `corex_preview_access`.
+- **`OperationsModeController` and `OperationsSecurityScreen` take different constructor arguments.**
+  Both are resolved by the container; only code that constructs them by hand is affected.
+- **Submission retention selects different records.** On a site that has anonymized or archived
+  submissions, the "currently due" count on the Submissions screen drops by the number already
+  anonymized, and the next Anonymize or Move to trash run acts on submissions earlier runs never reached.
+  Three things an operator may have relied on change: Move to trash no longer trashes an anonymized
+  submission, Archive no longer touches an archived or anonymized one, and a run takes the oldest due
+  submissions first instead of the newest. Nothing runs by itself — retention still acts only when
+  someone confirms it on that screen.
 - **Four files conflict once, if your repository edited them** to make the framework's checks accept
   `sites/`: `tests/repo-hygiene.test.js`, `.stylelintignore`, `eslint.config.js`, `jest.config.js`. Take
   the framework's version of each — the edits are no longer needed.
@@ -61,6 +145,10 @@ Read this before taking the release. *(This section is required from this releas
   you installed into `./wp` by hand is no longer switched on by the script. It also leaves a linked client
   theme active instead of switching back to the Corex theme.
 - **Scheduled CI and the documentation deploy no longer run in your repository.**
+- **Four strings in the `corex` text domain are new**, all on the Submissions screen's retention form: the
+  confirmation label, and the result notices for an archive, an anonymization and a run whose link names
+  no action. A site that ships its own translation of that domain shows them in English until they are
+  translated. "N submissions moved to trash" is unchanged and keeps its translation.
 
 ## [0.42.1] — 2026-10-04
 

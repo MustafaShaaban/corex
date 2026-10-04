@@ -63,6 +63,9 @@ const CANNOT_RUN_ON_A_FRESH_INSTALL = [
 	'creates publishes tests and submits a persisted flow without console errors',
 ];
 
+/** The one spec that changes what the whole site serves, and so runs in a project of its own. */
+const COMING_SOON_SPEC = /coming-soon\.spec\.js$/;
+
 const freshInstallExclusions = () => {
 	if (
 		! process.env.COREX_E2E_FRESH_INSTALL ||
@@ -108,5 +111,24 @@ module.exports = defineConfig( {
 		// CI — this is the evidence that actually arrives.)
 		screenshot: 'only-on-failure',
 	},
-	projects: [ { name: 'chromium', use: { ...devices[ 'Desktop Chrome' ] } } ],
+	projects: [
+		{
+			name: 'chromium',
+			use: { ...devices[ 'Desktop Chrome' ] },
+			testIgnore: COMING_SOON_SPEC,
+		},
+		// Coming soon mode (spec 101), after everything else and alone.
+		//
+		// Turning the mode on changes what every signed-out and subscriber request receives, for
+		// the whole site, until it is turned off. Other specs drive both — access-request signs in
+		// as a subscriber — so a mode switched on by one spec in the shared run would fail others
+		// at random, and nowhere near the cause. A project that depends on the main one runs only
+		// once that has finished; the spec restores the mode it found when it is done.
+		{
+			name: 'coming-soon',
+			use: { ...devices[ 'Desktop Chrome' ] },
+			testMatch: COMING_SOON_SPEC,
+			dependencies: [ 'chromium' ],
+		},
+	],
 } );

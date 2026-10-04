@@ -1,0 +1,18 @@
+<!-- {{ name }} — the page visitors see while the site is in Coming soon mode (Operations & Security). This file replaces CoreX's default page: edit it here, or in the Site Editor. No header or footer part on purpose — every link in one would be redirected straight back to this page. Load this page's own styles and fonts on the corex_coming_soon_enqueue_assets action, and style it under body.corex-coming-soon. -->
+<!-- wp:group {"tagName":"main","align":"full","style":{"dimensions":{"minHeight":"100vh"}},"layout":{"type":"flex","orientation":"vertical","justifyContent":"center","verticalAlignment":"center"}} -->
+<main class="wp-block-group alignfull" style="min-height:100vh">
+	<!-- wp:group {"style":{"spacing":{"padding":{"top":"var:preset|spacing|50","bottom":"var:preset|spacing|50"},"blockGap":"var:preset|spacing|30"}},"layout":{"type":"constrained"}} -->
+	<div class="wp-block-group" style="padding-top:var(--wp--preset--spacing--50);padding-bottom:var(--wp--preset--spacing--50)">
+		<!-- wp:site-title {"level":0,"textAlign":"center","isLink":false} /-->
+
+		<!-- wp:heading {"textAlign":"center","level":1} -->
+		<h1 class="wp-block-heading has-text-align-center">Coming soon</h1>
+		<!-- /wp:heading -->
+
+		<!-- wp:paragraph {"align":"center"} -->
+		<p class="has-text-align-center">We are getting things ready. Please check back soon.</p>
+		<!-- /wp:paragraph -->
+	</div>
+	<!-- /wp:group -->
+</main>
+<!-- /wp:group -->

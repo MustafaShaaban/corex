@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 use Corex\Boot;
 use Corex\Forms\Submission\SubmitController;
+use Corex\Tests\Support\WatchedTransients;
 
 function submitController(): SubmitController
 {
@@ -64,6 +65,10 @@ beforeEach(function () {
         }
     };
     add_action('wp_insert_post', $this->rememberCreatedPost, 10, 3);
+
+    // Every submit that gets past the nonce is counted by the rate limiter, in a transient keyed
+    // by form and client. A second run inside the window finds the first run's counter.
+    $this->transients = WatchedTransients::watch('corex_throttle_');
 });
 
 afterEach(function () {
@@ -72,6 +77,8 @@ afterEach(function () {
     foreach ($this->createdPosts as $postId) {
         wp_delete_post($postId, true);
     }
+
+    $this->transients->restore();
 });
 
 it('accepts a valid nonced submission: 200, stored, and both listeners run', function () use ($valid) {

@@ -1,0 +1,96 @@
+/**
+ * The Coming soon notice (spec 101, FR-016): a slim bar on every front-end
+ * page served to somebody who is shown the real site while visitors are shown
+ * the coming-soon page.
+ *
+ * Enqueued by ComingSoonNotice only on a response that shows the bar, with
+ * `corex-admin-tokens` as its dependency: the bar's element carries
+ * `.corex-admin`, the class those tokens are defined on. It brings CoreX's
+ * palette rather than borrowing the theme's, so it reads the same and keeps
+ * its contrast on every client's site. Light and dark follow the system
+ * setting, as the tokens do.
+ *
+ * Logical properties throughout: the bar is the same in either direction.
+ */
+
+.corex-coming-soon-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-lg);
+	margin: 0;
+	padding-block: var(--corex-admin-space-xs);
+	padding-inline: var(--corex-admin-space-md);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-inline-start: var(--corex-admin-space-2xs) solid var(--corex-admin-warning);
+	background: var(--corex-admin-surface);
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-body);
+	font-size: var(--corex-admin-font-sm);
+	line-height: 1.5;
+}
+
+/* The private-preview banner is the same bar with a different message
+   (FR-016a). Its edge is the information colour rather than the warning one:
+   nothing here needs the reader to act. */
+.corex-coming-soon-bar.corex-coming-soon-bar--preview {
+	border-inline-start-color: var(--corex-admin-info);
+}
+
+/* The theme styles paragraphs, lists and links for its own content. Inside
+   the bar they are the bar's, so each is set rather than inherited from
+   whatever the page happens to use. */
+.corex-coming-soon-bar .corex-coming-soon-bar__message {
+	margin: 0;
+	padding: 0;
+	color: inherit;
+	font: inherit;
+}
+
+.corex-coming-soon-bar .corex-coming-soon-bar__message strong {
+	font-weight: 600;
+}
+
+.corex-coming-soon-bar .corex-coming-soon-bar__links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-md);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-coming-soon-bar .corex-coming-soon-bar__links li {
+	margin: 0;
+	padding: 0;
+}
+
+/* Underlined, not only coloured: a link has to be recognisable without
+   relying on colour. The block padding takes the pointer target past the
+   minimum size WCAG 2.2 asks for (2.5.8). */
+.corex-coming-soon-bar .corex-coming-soon-bar__links a {
+	display: inline-block;
+	padding-block: var(--corex-admin-space-2xs);
+	color: var(--corex-admin-link);
+	font: inherit;
+	font-weight: 600;
+	text-decoration: underline;
+}
+
+.corex-coming-soon-bar .corex-coming-soon-bar__links a:hover {
+	color: var(--corex-admin-link-hover);
+}
+
+.corex-coming-soon-bar .corex-coming-soon-bar__links a:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+/* A printed page is the page, not a message to its editor. */
+@media print {
+
+	.corex-coming-soon-bar {
+		display: none;
+	}
+}

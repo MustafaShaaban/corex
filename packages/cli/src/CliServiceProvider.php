@@ -16,6 +16,7 @@ use Corex\Cli\Commands\DocsCommand;
 use Corex\Cli\Commands\DoctorCommand;
 use Corex\Cli\Commands\MakeCommand;
 use Corex\Cli\Commands\MigrateCommand;
+use Corex\Cli\Commands\ModeCommand;
 use Corex\Cli\Commands\ReadinessCommand;
 use Corex\Cli\Commands\ReadinessCommandServices;
 use Corex\Cli\Commands\ResetCommand;
@@ -150,10 +151,18 @@ final class CliServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        if (! class_exists('WP_CLI')) {
-            return;
-        }
+        // `cli_init` is the hook WP-CLI gives plugins for adding commands: it fires on `init`, and
+        // only under WP-CLI. Registering straight from here built every definition on
+        // `plugins_loaded`, and a definition translates its help text — which loads the `corex`
+        // text domain before WordPress 6.7+ allows it, once per WP-CLI request (DECISIONS #235).
+        add_action('cli_init', [$this, 'registerCommands']);
+    }
 
+    /**
+     * Hands every command to WP-CLI. Public so it can be hooked; it runs on `cli_init`.
+     */
+    public function registerCommands(): void
+    {
         foreach ($this->commandRegistrations() as $name => $registration) {
             WP_CLI::add_command($name, $registration['handler'], $registration['definition']);
         }
@@ -423,6 +432,18 @@ final class CliServiceProvider extends ServiceProvider
             'definition' => [],
         ];
 
+        // The operations mode from the command line (spec 101, FR-017). Resolved when the command
+        // runs, like its neighbours, so a dependency that cannot be built costs this command and
+        // not the registration of every other one.
+        foreach (['get', 'set'] as $action) {
+            $registrations["corex mode {$action}"] = [
+                'handler' => function (array $args, array $assoc) use ($action): void {
+                    $this->container->make(ModeCommand::class)->run($action, $args, $assoc);
+                },
+                'definition' => $this->modeCommandDefinition($action),
+            ];
+        }
+
         $registrations['corex doctor'] = [
             'handler' => function (array $args, array $assoc): void {
                 $doctor = new DoctorCommand($this->container->make(HealthModule::class));
@@ -507,6 +528,47 @@ final class CliServiceProvider extends ServiceProvider
                     __('Supply the typed safeguard required for a hard reset.', 'corex'),
                 ),
                 $this->resetFlag('network', __('Permit network-scoped reset actions.', 'corex')),
+            ],
+        ];
+    }
+
+    /**
+     * What `wp corex mode get` and `wp corex mode set` take. Declared so WP-CLI checks the
+     * arguments before the handler runs: a mistyped `--acknowlege` is then an error, rather than
+     * an acknowledgement that silently was not given.
+     *
+     * @return array<string, mixed>
+     */
+    private function modeCommandDefinition(string $action): array
+    {
+        if ($action === 'get') {
+            return [
+                'shortdesc' => __('Show the CoreX operations mode, and whether it was declared or inherited.', 'corex'),
+                'synopsis'  => [
+                    $this->resetFlag('porcelain', __('Print the mode and nothing else.', 'corex')),
+                ],
+            ];
+        }
+
+        return [
+            'shortdesc' => __('Change the CoreX operations mode, with the confirmation the mode needs.', 'corex'),
+            'synopsis'  => [
+                [
+                    'type'        => 'positional',
+                    'name'        => 'mode',
+                    'optional'    => false,
+                    'description' => __('development, staging, production, maintenance or coming-soon.', 'corex'),
+                ],
+                $this->resetFlag(
+                    'acknowledge',
+                    __('Confirm a mode that changes what visitors get: maintenance or coming-soon.', 'corex'),
+                ),
+                [
+                    'type'        => 'assoc',
+                    'name'        => 'phrase',
+                    'optional'    => true,
+                    'description' => __('The typed confirmation for going live: PRODUCTION.', 'corex'),
+                ],
             ],
         ];
     }

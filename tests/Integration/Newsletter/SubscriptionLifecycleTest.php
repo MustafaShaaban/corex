@@ -15,6 +15,18 @@ use Corex\Newsletter\Subscriber\SubscriberRepository;
 use Corex\Newsletter\Subscriber\SubscriberStore;
 use Corex\Newsletter\Subscription\SubscriptionService;
 use Corex\Newsletter\TokenSigner;
+use Corex\Tests\Support\CreatedPosts;
+
+// Subscribing sends the confirmation email, and Corex Mail logs every send as a post. Nothing
+// hands that log's id back, so it is caught as it is inserted — each run used to leave one on
+// the install.
+beforeEach(function () {
+    $this->emailLogs = CreatedPosts::watch('corex_email_log');
+});
+
+afterEach(function () {
+    $this->emailLogs->delete();
+});
 
 it('subscribes (pending) then confirms a subscriber through the real custom table', function () {
     add_filter('pre_wp_mail', '__return_true');
