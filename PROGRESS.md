@@ -39,7 +39,7 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**`fix/dependency-advisories-2026-10` — open as PR #212.** #203
+**`fix/dependency-advisories-2026-10` — merged as PR #212 on 2026-10-04.** #203
 cleared every advisory known on 2026-09-09 and merged on 2026-10-04, by which time the gate on `main`
 was red again with 26 new findings: 18 unbounded in the root npm workspace, 8 in the docs site. This branch takes every patched release that exists — ten packages, one of them
 (`basic-ftp` 5 → 6) through a new override that was proven against its parent — removes the
@@ -62,9 +62,10 @@ contradicts itself — so it was not bundled into the dependency pass. It is a m
 than twenty admin modules import, which per DECISIONS #220 needs render-time verification in a real
 browser. The PR carries what was tried.
 
-**`fix/jest-haste-collisions` — tooling only, open as PR #214, stacked on `fix/lint-ignore-wp-ms`
-(PR #213), which merges first.** #213 keeps the linters and Jest out of `wp-ms/` and
-`.claude/worktrees/`. #214 also takes `wp/`, `wp-ms/`, `dist/` and `.claude/worktrees/` out of
+**`fix/jest-haste-collisions` — tooling only, open as PR #214.** It follows #213, merged on
+2026-10-04, which keeps the linters and Jest out of `wp-ms/` and `.claude/worktrees/`, so
+`npm run lint:js`, `lint:css` and `test:js` report on Corex again on a machine that has the local
+multisite install. #214 also takes `wp/`, `wp-ms/`, `dist/` and `.claude/worktrees/` out of
 Jest's module map: on a machine with a `dist/` build or an agent session worktree, a cold-cache
 `npm run test:js` passed and printed nine "Haste module naming collision" warnings, one per package
 name it found twice. The suite is unchanged at 54 suites and 442 tests. CI never builds `dist/` and
@@ -107,11 +108,6 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   that has not been attempted (DECISIONS #226, #227).
 - **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
   Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
-- **`npm run lint:js`, `lint:css` and `test:js` do not exclude `wp-ms/`.** On a machine that has
-  the local multisite install, stylelint reports about 240,000 errors from WordPress core's own CSS
-  and ESLint had not finished after ten minutes. CI has no `wp-ms/` and is unaffected. Until the three ignore lists
-  gain it, pass `--ignore-pattern=wp-ms/**` to the linters and `--testPathIgnorePatterns` to Jest to
-  get a local result that means anything.
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.
