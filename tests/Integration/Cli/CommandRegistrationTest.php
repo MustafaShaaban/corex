@@ -89,12 +89,14 @@ it('keeps all command registrations available when dependencies cannot resolve',
         'corex reset',
         'corex migrate',
         'corex security reset-login',
+        'corex mode get',
+        'corex mode set',
         'corex doctor',
         'corex readiness',
         'corex version',
     ];
 
-    expect($registrations)->toHaveCount(26)
+    expect($registrations)->toHaveCount(28)
         ->and(array_keys($registrations))->toBe($expectedCommands)
         ->and($registrations)->toHaveKeys(['corex migrate', 'corex doctor', 'corex reset'])
         ->and($container->resolutionAttempts)->toBe(0);
@@ -113,4 +115,28 @@ it('declares php-parser as a production dependency', function () {
     );
 
     expect($composer['require']['nikic/php-parser'] ?? null)->toBe('^5.0');
+});
+
+it('describes the mode commands, so WP-CLI rejects a flag they do not take', function () {
+    // spec 101, T050. With a synopsis WP-CLI validates the arguments before the handler runs: a
+    // mistyped `--acknowlege` is an error, not a silently missing acknowledgement.
+    $registrations = (new CliServiceProvider(new UnresolvableCommandContainer201()))->commandRegistrations();
+
+    $names = static fn (array $definition): array => array_column($definition['synopsis'], 'name');
+
+    expect($registrations['corex mode get']['definition']['shortdesc'])->not->toBe('')
+        ->and($names($registrations['corex mode get']['definition']))->toBe(['porcelain'])
+        ->and($names($registrations['corex mode set']['definition']))->toBe(['mode', 'acknowledge', 'phrase'])
+        ->and($registrations['corex mode set']['definition']['synopsis'][0]['type'])->toBe('positional')
+        ->and($registrations['corex mode set']['definition']['synopsis'][0]['optional'])->toBeFalse();
+});
+
+it('resolves the mode command from the real container, with the service the screen uses', function () {
+    $container = Boot::app()->container();
+    $command   = $container->make(\Corex\Cli\Commands\ModeCommand::class);
+
+    $result = $command->execute('get', [], [], 0, new DateTimeImmutable('now'));
+
+    expect($result->ok)->toBeTrue()
+        ->and($result->mode)->toBe($container->make(\Corex\Config\Operations\OperationsModeStore::class)->current());
 });

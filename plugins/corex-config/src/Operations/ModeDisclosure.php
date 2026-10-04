@@ -52,7 +52,8 @@ final class ModeDisclosure
     {
         return match ($this->modes->normalize($mode)) {
             OperationsMode::PRODUCTION  => self::CONFIRM_PHRASE,
-            OperationsMode::MAINTENANCE => self::CONFIRM_ACKNOWLEDGEMENT,
+            OperationsMode::MAINTENANCE,
+            OperationsMode::COMING_SOON => self::CONFIRM_ACKNOWLEDGEMENT,
             default                     => self::CONFIRM_NONE,
         };
     }
@@ -72,7 +73,8 @@ final class ModeDisclosure
      *
      * Every line is something the code actually does. The maintenance lines in particular are
      * verifiable against {@see MaintenanceGuard}: anonymous front-end visitors get a 503 with a
-     * `Retry-After`, and admin, cron, AJAX and REST contexts are never intercepted.
+     * `Retry-After`, and admin, cron, AJAX and REST contexts are never intercepted. The coming-soon
+     * lines are the rows of {@see ComingSoonDecision}, in the operator's words.
      *
      * @return array{
      *     mode: string,
@@ -125,6 +127,10 @@ final class ModeDisclosure
                 'Closed to visitors while you work. Administrators keep working normally.',
                 'corex',
             ),
+            OperationsMode::COMING_SOON => __(
+                'Not open yet. Visitors see the coming-soon page while the site is built behind it.',
+                'corex',
+            ),
             default => '',
         };
     }
@@ -152,6 +158,13 @@ final class ModeDisclosure
                 __('Signed-in administrators continue to use the site normally.', 'corex'),
                 __('The REST API, AJAX, cron, and wp-admin are never intercepted.', 'corex'),
                 __('Recovery: change the mode back here, or run the recovery command if you cannot reach this screen.', 'corex'),
+            ],
+            OperationsMode::COMING_SOON => [
+                __('Visitors receive the coming-soon page at the home address with a 200 status. Every other address answers with a temporary redirect to it.', 'corex'),
+                __('Anyone signed in who can edit posts is served the real site. Signed-in users who cannot are treated as visitors.', 'corex'),
+                __('The admin, the login page, the REST API, AJAX and cron are never intercepted, and robots.txt is served normally.', 'corex'),
+                __('A preview link, if you create one, shows the real site to whoever opens it, with no access to the admin. It is removed when the site leaves this mode.', 'corex'),
+                __('To leave: change the mode here, or run wp corex mode set if you cannot reach this screen. Opening the site to the public is the Production switch, with its own confirmation.', 'corex'),
             ],
             default => [],
         };

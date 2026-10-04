@@ -138,3 +138,57 @@ it('honours --plugin-only and --theme-only', function () {
     expect(is_file($themeOnly . '/acme-theme/style.css'))->toBeTrue()
         ->and(is_dir($themeOnly . '/acme-site'))->toBeFalse();
 });
+
+// spec 101 — every new client theme starts with a coming-soon page it can edit (T052, FR-020).
+
+it('gives a generated client theme its own coming-soon template', function () {
+    $base = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $base);
+
+    $template = (string) file_get_contents($base . '/acme-theme/templates/coming-soon.html');
+
+    preg_match_all('/<!-- wp:([a-z0-9\/-]+)/', $template, $blocks);
+    preg_match_all('/<!-- wp:[a-z0-9\/-]+ (?:\{.*?\} )?-->/s', $template, $opened);
+    preg_match_all('/<!-- \/wp:[a-z0-9\/-]+ -->/', $template, $closed);
+
+    // The file name is the contract: `coming-soon` is the slug CoreX's default is registered
+    // under, and a theme file of that name is what replaces it.
+    expect($template)->not->toBe('')
+        ->and($blocks[1])->not->toBeEmpty()
+        // Core blocks only, so the page does not depend on any plugin's blocks being active.
+        ->and(array_filter($blocks[1], static fn (string $name): bool => str_contains($name, '/')))->toBe([])
+        // No header or footer: every link in one is redirected straight back to this page.
+        ->and($template)->not->toContain('wp:template-part')
+        ->and(count($opened[0]))->toBe(count($closed[0]))
+        ->and($template)->toContain('Coming soon')
+        // Nothing left for the renderer to fill in.
+        ->and($template)->not->toMatch('/\{\{\s*[\w.]+\s*\}\}/');
+});
+
+it('tells whoever opens the generated template what it is and where its assets go', function () {
+    $base = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $base);
+
+    $template = (string) file_get_contents($base . '/acme-theme/templates/coming-soon.html');
+
+    expect($template)->toStartWith('<!--')
+        ->and($template)->toContain('Acme')
+        ->and($template)->toContain('Coming soon mode')
+        // The action a designed page loads its own stylesheet and fonts on (T054).
+        ->and($template)->toContain('corex_coming_soon_enqueue_assets');
+});
+
+it('generates the coming-soon template with the theme, and not without it', function () {
+    $pluginOnly = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $pluginOnly, ['plugin_only' => true]);
+
+    $themeOnly = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $themeOnly, ['theme_only' => true]);
+
+    $starter = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $starter, ['starter' => true]);
+
+    expect(is_file($pluginOnly . '/acme-theme/templates/coming-soon.html'))->toBeFalse()
+        ->and(is_file($themeOnly . '/acme-theme/templates/coming-soon.html'))->toBeTrue()
+        ->and(is_file($starter . '/acme-theme/templates/coming-soon.html'))->toBeTrue();
+});

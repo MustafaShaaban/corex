@@ -149,6 +149,42 @@ WordPress login URL. It is intentionally narrow:
 
 Use it when a custom login route, default-endpoint protection, or active lockout blocks owner access.
 
+### `mode` — read and change the operations mode (spec 101)
+
+```bash
+wp corex mode get                                  # the mode, and whether it was declared or inherited
+wp corex mode get --porcelain                      # the mode and nothing else, for a script
+wp corex mode set staging                          # a mode that needs no confirmation
+wp corex mode set coming-soon --acknowledge        # a mode that changes what visitors get
+wp corex mode set maintenance --acknowledge
+wp corex mode set production --phrase=PRODUCTION --user=<login>
+```
+
+The same change the Operations & Security screen makes, by the same rules: both go through
+`Corex\Config\Operations\ModeChangeService`. The command is not a way round a confirmation.
+
+| The mode | Needs | Without it |
+|---|---|---|
+| `development`, `staging` | nothing | — |
+| `coming-soon`, `maintenance` | `--acknowledge` | nothing changes, exit 1 |
+| `production` | `--phrase=PRODUCTION` and `--user=<login>` | nothing changes, exit 1 |
+
+- **Exit codes.** 0 when the site is in the mode asked for afterwards, including when it already
+  was — a deploy script that sets the mode on every run does not fail on its second. 1 for
+  everything else: a confirmation not given, a mode that does not exist, a launch that was blocked.
+- **`--user`.** The change is recorded in the mode history against the user WP-CLI runs as. Without
+  `--user` that is nobody, and the history shows "system". Going live refuses to be recorded
+  against nobody.
+- **Leaving Coming soon** removes the preview link, exactly as it does from the screen.
+- **A mistyped flag is an error.** `--acknowlege` does not quietly count as no acknowledgement:
+  WP-CLI rejects it before the command runs.
+
+For a fresh production install that should not be public yet:
+
+```bash
+wp corex mode set coming-soon --acknowledge --user=<login>
+```
+
 ### `doctor` — health check (spec 036)
 
 ```bash

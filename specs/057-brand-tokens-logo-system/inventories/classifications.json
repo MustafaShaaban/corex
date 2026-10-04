@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 1107,
+    "consumer_records": 1125,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -562,6 +562,7 @@
         "plugins/corex-config/assets/addons.css",
         "plugins/corex-config/assets/blog-pro.css",
         "plugins/corex-config/assets/control-panel.css",
+        "plugins/corex-config/assets/css/coming-soon-bar.css",
         "plugins/corex-config/assets/data-models.css",
         "plugins/corex-config/assets/data-models.scss",
         "plugins/corex-config/assets/data.css",

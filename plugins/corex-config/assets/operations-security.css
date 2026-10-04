@@ -201,6 +201,15 @@
 	font-size: var(--corex-admin-font-sm);
 }
 
+/* The preview link's controls (spec 101): one form per action, side by side,
+   wrapping on a narrow screen. */
+.corex-admin .corex-opsec__preview-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-sm);
+	margin-block-start: var(--corex-admin-space-md);
+}
+
 .corex-admin .corex-opsec__audit-list {
 	list-style: none;
 	margin: 0;

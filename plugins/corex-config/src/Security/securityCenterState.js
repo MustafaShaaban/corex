@@ -9,7 +9,13 @@
  */
 
 /** The operations modes the server recognises; used only to keep a reported mode in range. */
-const MODES = [ 'development', 'staging', 'production', 'maintenance' ];
+const MODES = [
+	'development',
+	'staging',
+	'production',
+	'maintenance',
+	'coming-soon',
+];
 
 export function securityEndpoint( root, path = '' ) {
 	const base = String( root || '' ).replace( /\/$/, '' );

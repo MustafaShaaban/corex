@@ -104,3 +104,81 @@ it('says nothing when the mode was only inherited', function () {
 
     expect(invokeScreen($this->screen, 'environmentConflictNotice'))->toBe('');
 });
+
+// Spec 101 — Coming soon on the mode form (T025, FR-001 to FR-003).
+
+it('offers Coming soon on the mode form, after Maintenance', function () {
+    $form = invokeScreen($this->screen, 'modeCard');
+
+    preg_match_all('/<option value="([a-z-]+)"/', $form, $options);
+
+    expect($options[1])->toBe(['development', 'staging', 'production', 'maintenance', 'coming-soon'])
+        ->and($form)->toContain('>Coming soon</option>');
+});
+
+it('draws a block for Coming soon that says what the mode does and asks for its own acknowledgement', function () {
+    $_GET['mode'] = 'coming-soon';
+    $form         = invokeScreen($this->screen, 'modeCard');
+    unset($_GET['mode']);
+
+    preg_match('/<div class="corex-opsec__mode-block" data-mode="coming-soon"(.*?)<\/div>/s', $form, $block);
+
+    expect($block)->not->toBe([])
+        // Proposed by the address, so it is the visible block and its checkbox is submittable.
+        ->and($block[1])->not->toContain(' hidden')
+        ->and($block[1])->not->toContain(' disabled')
+        ->and($block[1])->toContain('name="corex_confirm"')
+        ->and($block[1])->toContain('200 status')
+        ->and($block[1])->toContain('edit posts')
+        // The acknowledgement names this mode's consequence. Maintenance's sentence under a
+        // Coming soon heading would be the two modes treated as one again.
+        ->and($block[1])->toContain('coming-soon page')
+        ->and($block[1])->not->toContain('maintenance');
+});
+
+it('keeps Maintenance asking for the acknowledgement it always asked for', function () {
+    $_GET['mode'] = 'maintenance';
+    $form         = invokeScreen($this->screen, 'modeCard');
+    unset($_GET['mode']);
+
+    preg_match('/<div class="corex-opsec__mode-block" data-mode="maintenance"(.*?)<\/div>/s', $form, $block);
+
+    expect($block[1])->toContain('I understand maintenance affects real visitors.');
+});
+
+it('says on the overview what visitors are getting while the site is in Coming soon', function () {
+    update_option('corex_operations_mode', 'coming-soon', false);
+
+    $overview = invokeScreen($this->screen, 'overviewCard', [], 0);
+
+    expect($overview)->toContain('Coming soon')
+        ->and($overview)->toContain('Visitors see the coming-soon page');
+});
+
+it('selects the proposed mode in the form itself, so what is submitted is what is on screen', function () {
+    // Found by the browser suite (spec 101). The form came back from a missing acknowledgement
+    // showing Coming soon and its checkbox, with the <select> underneath still on the mode the
+    // site was in; a script moved it on load. Ticked and submitted before that script ran — or
+    // with no script at all, the path the screen documents as working — it applied the wrong mode.
+    update_option('corex_operations_mode', 'development', false);
+    $_GET['mode'] = 'coming-soon';
+    $form         = invokeScreen($this->screen, 'modeCard');
+    unset($_GET['mode']);
+
+    preg_match_all('/<option value="([a-z-]+)"([^>]*)>/', $form, $options, PREG_SET_ORDER);
+    $selected = array_values(array_filter($options, static fn (array $option): bool => str_contains($option[2], 'selected')));
+
+    expect($selected)->toHaveCount(1)
+        ->and($selected[0][1])->toBe('coming-soon')
+        // What the site is in is still stated, separately, for the script that greys out a no-op.
+        ->and($form)->toContain('data-current-mode="development"');
+});
+
+it('selects the current mode when nothing is proposed', function () {
+    update_option('corex_operations_mode', 'staging', false);
+    $form = invokeScreen($this->screen, 'modeCard');
+
+    preg_match('/<option value="([a-z-]+)"[^>]*selected/', $form, $selected);
+
+    expect($selected[1])->toBe('staging');
+});

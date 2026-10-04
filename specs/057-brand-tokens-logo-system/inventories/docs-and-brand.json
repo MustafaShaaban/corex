@@ -207,7 +207,7 @@
       "path": "docs-app/src/content/docs/guides/client-site.md",
       "lines": [
         22,
-        44
+        45
       ],
       "topics": [
         "theme-authority"
@@ -267,7 +267,7 @@
     {
       "path": "packages/cli/README.md",
       "lines": [
-        159
+        195
       ],
       "topics": [
         "brand.json"

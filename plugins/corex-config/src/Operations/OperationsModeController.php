@@ -9,7 +9,6 @@ declare(strict_types=1);
 namespace Corex\Config\Operations;
 
 use Corex\Admin\StandalonePage;
-use Corex\Operations\OperationResult;
 use Corex\Security\Admin\AdminGuard;
 use DateTimeImmutable;
 
@@ -17,11 +16,10 @@ defined('ABSPATH') || exit;
 
 /**
  * Handles the operations-mode change (spec 065). A single `admin_post` handler gated by the shared
- * {@see AdminGuard} (capability + nonce). Changing to a mode that requires confirmation (production or
- * maintenance) is rejected unless the confirmation box was ticked. On success it persists the mode +
- * audit entry and redirects (POST-redirect-GET) back to Operations & Security with a status. It never
- * fakes a change, never renames WordPress core, and cannot lock the operator out (maintenance always
- * lets signed-in admins through — see {@see MaintenanceGuard}).
+ * {@see AdminGuard} (capability + nonce). It hands the request to {@see ModeChangeService}, which
+ * holds the rules (spec 101), and redirects (POST-redirect-GET) back to Operations & Security with
+ * what the service reported. It never fakes a change, never renames WordPress core, and cannot lock
+ * the operator out (maintenance always lets signed-in admins through — see {@see MaintenanceGuard}).
  */
 final class OperationsModeController
 {
@@ -30,10 +28,7 @@ final class OperationsModeController
 
     public function __construct(
         private readonly AdminGuard $guard,
-        private readonly OperationsMode $modes,
-        private readonly OperationsModeStore $store,
-        private readonly ProductionReadinessSnapshotFactory $readiness,
-        private readonly ProductionLaunchService $productionLaunch,
+        private readonly ModeChangeService $changes,
     ) {
     }
 
@@ -57,70 +52,23 @@ final class OperationsModeController
             exit;
         }
 
-        $mode = isset($_POST['corex_mode']) ? sanitize_key(wp_unslash($_POST['corex_mode'])) : '';
-
-        if (! $this->modes->isValid($mode)) {
-            $this->redirect('invalid');
-
-            return;
-        }
-
-        if ($mode === OperationsMode::PRODUCTION) {
-            $this->handleProductionLaunch();
-
-            return;
-        }
-
-        $confirmed = isset($_POST['corex_confirm']) && $_POST['corex_confirm'] === '1';
-        if ($this->modes->requiresConfirmation($mode) && ! $confirmed) {
-            // Propose the mode back, so the confirmation it needs is on screen when the operator
-            // arrives — the no-JavaScript second step.
-            $this->redirect('confirm', '', $mode);
-
-            return;
-        }
-
-        // Asked before applying, because `set()` deliberately makes a no-change indistinguishable
-        // from a change in its return value — both answer "what is the mode now". The operator
-        // needs the other answer: whether anything happened.
-        $wasAlreadyInForce = $this->store->current() === $this->modes->normalize($mode)
-            && $this->store->isDeclared();
-
-        $applied = $this->store->set($mode, get_current_user_id());
-
-        // "Saved" over a change that did not happen is a small lie with a real cost: it teaches the
-        // operator that the notice means nothing, on the one screen where a notice has to mean
-        // something.
-        $this->redirect($wasAlreadyInForce ? 'unchanged' : 'saved', $applied);
-    }
-
-    private function handleProductionLaunch(): void
-    {
-        $now      = new DateTimeImmutable('now');
-        $actorId  = get_current_user_id();
-        $snapshot = $this->readiness->fromCurrentSite($now);
-        $preview  = $this->productionLaunch->preview($snapshot, $actorId, $now);
-        $phrase   = isset($_POST['corex_confirm_phrase'])
-            ? sanitize_text_field(wp_unslash($_POST['corex_confirm_phrase']))
-            : '';
-
-        if ($phrase !== ProductionLaunchService::REQUIRED_PHRASE) {
-            $this->redirect('production_confirm', '', OperationsMode::PRODUCTION);
-
-            return;
-        }
-
-        $result = $this->productionLaunch->apply(new ProductionLaunchRequest(
-            snapshot: $snapshot,
-            actorId: $actorId,
-            now: $now,
-            override: new ProductionLaunchOverride($preview->confirmation, $phrase),
+        // The controller reads the request and reports the outcome. What the outcome is — which
+        // confirmation a mode owes, whether anything changed, whether a launch is blocked — is
+        // decided by the service, so the command line is held to exactly the same rules.
+        $result = $this->changes->apply(new ModeChangeRequest(
+            mode: isset($_POST['corex_mode']) ? sanitize_key(wp_unslash($_POST['corex_mode'])) : '',
+            actorId: get_current_user_id(),
+            now: new DateTimeImmutable('now'),
+            acknowledged: isset($_POST['corex_confirm']) && $_POST['corex_confirm'] === '1',
+            phrase: isset($_POST['corex_confirm_phrase'])
+                ? sanitize_text_field(wp_unslash($_POST['corex_confirm_phrase']))
+                : '',
         ));
 
-        $this->redirect(
-            $result->state === OperationResult::STATE_COMPLETED ? 'saved' : 'blocked',
-            OperationsMode::PRODUCTION,
-        );
+        // The result's status is the screen's own vocabulary. "Unchanged" stays distinct from
+        // "saved" all the way to the notice: "saved" over a change that did not happen teaches
+        // the operator that the notice means nothing, on the one screen where it has to.
+        $this->redirect($result->status, $result->applied, $result->proposed);
     }
 
     /**
