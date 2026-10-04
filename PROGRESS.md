@@ -106,6 +106,10 @@ On `main` since v0.42.1, and not in a release yet:
   the selected action and says anonymizing cannot be undone; the prune handler sends the action
   back with the count, and the notice says archived, moved to trash or anonymized. Five
   integration tests and two unit tests pin it.
+- **A retention run refused for want of confirmation is a warning, not a success** (#235,
+  DECISIONS #237). Applying retention without ticking the confirmation box runs nothing; the
+  notice saying so was drawn with the success tick. Two integration tests pin the tone of each
+  retention notice.
 - **Spec 102 — a client site the framework can be updated underneath** (#211, DECISIONS #230). The
   framework prescribed `sites/<client>/` and its own checks rejected it. A client repository now
   passes them untouched: one ownership file says which paths are the client's, hygiene, the
@@ -197,11 +201,6 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.
-- **A retention run that was refused looks like one that worked.** Applying retention without
-  ticking the confirmation box comes back as "Confirm the retention action before applying it",
-  drawn as a success state with its tick: `SubmissionsInboxScreen::retentionNotice()` gives every
-  status the `success` tone. Read from the code while fixing the form's copy (DECISIONS #233) and
-  not changed there.
 - Development installs predating spec 091 may hold leaked fixture users. Since #221 the
   suite no longer adds `guides-subscriber-*` or `corex-access-requester` accounts; the ones already
   there are not removed by anything.
