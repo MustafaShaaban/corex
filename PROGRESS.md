@@ -80,6 +80,11 @@ On `main` since v0.43.0, and not in a release yet:
   tested. The blocker's title changes with it: a check's label states the condition that passes,
   so "<label> is not ready for production" read backwards; it is "Readiness check not met:
   <label>" now.
+- **`max_length` and `min_length` count characters** (DECISIONS #241). They were the same classes
+  as `max` and `min`, which compare an all-digit answer as a number, so a phone number was "too
+  long" for a 32-character field and the stock contact form refused a message of `2025`. Two new
+  rules on the server, the same two in the form runtime, and the contact form moved onto them.
+  `max` and `min` keep both meanings; whether they should is under "Open, and not hidden".
 
 Released in v0.43.0:
 
@@ -226,6 +231,9 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   log CI did not keep. It keeps it now, in a file the job names and proves with a probe line on
   every run. `seedSubmission` reports the server's answer instead of a `TypeError`, so the next
   occurrence names itself (DECISIONS #228).
+- **`max:N` and `min:N` decide what to measure from what the answer looks like.** `2025` in a text
+  field is compared as a number. Left as it is by DECISIONS #241, which names the alternative
+  (compare as a number only beside `numeric`) and why it is a behaviour change, not a fix.
 - **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
   Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
 - **`client-site-layout` is not a required check either** (spec 102). Making it one is an owner

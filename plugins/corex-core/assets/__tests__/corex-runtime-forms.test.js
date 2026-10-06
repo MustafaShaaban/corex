@@ -117,6 +117,26 @@ describe( 'the client rule table mirrors the server', () => {
 
 		expect( errors.site ?? null ).toBe( expected );
 	} );
+
+	// The length rules had no client arm, and on the server they compared an all-digit answer as
+	// a number: a phone field limited to 32 characters refused `01016999700` (2026-10-06).
+	it.each( [
+		[ 'max_length', '32', '01016999700', null ],
+		[ 'max_length', '11', '01016999700', null ],
+		[ 'max_length', '5', '01016999700', 'max' ],
+		[ 'min_length', '3', '12', 'min' ],
+		[ 'min_length', '3', '007', null ],
+	] )(
+		'counts characters for %s:%s when the answer is %s',
+		( rule, limit, value, expected ) => {
+			const errors = window.Corex.forms.validate(
+				[ { name: 'f', rules: [ { rule, params: [ limit ] } ] } ],
+				{ f: value }
+			);
+
+			expect( errors.f ?? null ).toBe( expected );
+		}
+	);
 } );
 
 describe( 'validation messages', () => {

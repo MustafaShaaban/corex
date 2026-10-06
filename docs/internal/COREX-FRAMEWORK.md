@@ -540,9 +540,9 @@ wp corex make:form contact
 class ContactForm extends Form
 {
     protected array $fields = [
-        'name'    => ['type' => 'text',     'rules' => ['required', 'max:120']],
+        'name'    => ['type' => 'text',     'rules' => ['required', 'max_length:120']],
         'email'   => ['type' => 'email',    'rules' => ['required', 'email']],
-        'message' => ['type' => 'textarea', 'rules' => ['required', 'max:2000']],
+        'message' => ['type' => 'textarea', 'rules' => ['required', 'max_length:2000']],
     ];
 
     protected array $actions = ['email', 'store'];

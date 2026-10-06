@@ -27,9 +27,9 @@ final class ContactForm extends Form
     public function fields(): array
     {
         return [
-            'name'    => ['type' => 'text', 'rules' => ['required', 'max:120'], 'label' => __('Name', 'corex')],
+            'name'    => ['type' => 'text', 'rules' => ['required', 'max_length:120'], 'label' => __('Name', 'corex')],
             'email'   => ['type' => 'email', 'rules' => ['required', 'email'], 'label' => __('Email', 'corex')],
-            'message' => ['type' => 'textarea', 'rules' => ['required', 'max:2000'], 'label' => __('Message', 'corex')],
+            'message' => ['type' => 'textarea', 'rules' => ['required', 'max_length:2000'], 'label' => __('Message', 'corex')],
         ];
     }
 }
