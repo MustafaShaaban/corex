@@ -15,6 +15,9 @@ use Corex\Forms\Validation\Rule;
 /**
  * Lower bound. For numeric values the value must be ≥ N; for strings the length
  * must be ≥ N. An empty value passes (see `required` for emptiness).
+ *
+ * "Numeric" is what the answer looks like, not what the field is for: `12` in a name is
+ * compared as a number. To bound text by its length whatever it holds, use {@see MinLength}.
  */
 final class Min implements Rule
 {

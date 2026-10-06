@@ -13,8 +13,10 @@ defined('ABSPATH') || exit;
 use Corex\Forms\Validation\Rules\Email;
 use Corex\Forms\Validation\Rules\Max;
 use Corex\Forms\Validation\Rules\MaxFileSize;
+use Corex\Forms\Validation\Rules\MaxLength;
 use Corex\Forms\Validation\Rules\MimeType;
 use Corex\Forms\Validation\Rules\Min;
+use Corex\Forms\Validation\Rules\MinLength;
 use Corex\Forms\Validation\Rules\Numeric;
 use Corex\Forms\Validation\Rules\Pattern;
 use Corex\Forms\Validation\Rules\Phone;
@@ -41,8 +43,8 @@ final class RuleRegistry
             'email'    => new Email(),
             'max'      => new Max(),
             'min'      => new Min(),
-            'max_length' => new Max(),
-            'min_length' => new Min(),
+            'max_length' => new MaxLength(),
+            'min_length' => new MinLength(),
             'numeric'  => new Numeric(),
             'url'      => new Url(),
             'phone'    => new Phone(),

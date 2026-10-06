@@ -19,9 +19,9 @@ final class ContactForm extends Form
     public function fields(): array
     {
         return [
-            'name'    => ['type' => 'text', 'rules' => ['required', 'max:120'], 'label' => __('Name', 'corex')],
+            'name'    => ['type' => 'text', 'rules' => ['required', 'max_length:120'], 'label' => __('Name', 'corex')],
             'email'   => ['type' => 'email', 'rules' => ['required', 'email'], 'label' => __('Email', 'corex')],
-            'message' => ['type' => 'textarea', 'rules' => ['required', 'max:2000'], 'label' => __('Message', 'corex')],
+            'message' => ['type' => 'textarea', 'rules' => ['required', 'max_length:2000'], 'label' => __('Message', 'corex')],
         ];
     }
 }
@@ -34,12 +34,17 @@ Register it with the `FormRegistry` in a provider's `boot()`.
 | Key | Values |
 |---|---|
 | `type` | `text` `email` `number` `tel` `url` `password` `date` `file` `textarea` `select` `radio` `checkbox` `checkbox-group` `toggle` |
-| `rules` | `required` `email` `max:N` `min:N` `numeric` |
+| `rules` | `required` `email` `max_length:N` `min_length:N` `max:N` `min:N` `numeric` |
 | `options` | `value => label` (for `select`/`radio`/`checkbox-group`) |
 | `label_mode` | `visible` (default) `hidden` `inline` |
 | `width` | `full` (default) `half` `third` `two-thirds` `quarter` (12-col grid) |
 | `class` | extra class on the control |
 | `attrs` | extra HTML attributes (whitelisted; `name/id/type/class/required` and `on*` are dropped) |
+
+**Bounding text and bounding numbers are different rules.** `max_length:N` and `min_length:N` count
+characters, whatever the answer holds. `max:N` and `min:N` compare an answer that looks like a number as
+a number and count the characters of anything else, so `max:300` on a message refuses the answer `2025`.
+Use the length rules for names, messages, phone numbers and codes, and `max`/`min` for quantities.
 
 ## Place the block
 

@@ -5424,3 +5424,40 @@ backtrace.
 
 **Not done.** `ResetExecutorTest` and the front-page options, an open item in `PROGRESS.md`
 (DECISIONS #235), are not part of this change.
+
+## #241 — A length rule counts characters; `max` and `min` keep both meanings
+
+Date: 2026-10-06 · Spec: none (defect fix, reported from a client site on v0.43.0) · Status: Final
+
+`RuleRegistry` registered `max_length` and `min_length` as the same two classes as `max` and
+`min`. Those compare an answer that passes `is_numeric()` as a number and count the characters of
+anything else. So a length rule did not measure length whenever the answer was all digits: a phone
+field declared `max_length:32` refused `01016999700` as too long, and `12` satisfied
+`min_length:3`. The stock contact form had the same fault under the other name: its message was
+`max:2000`, and a message of `2025` was refused.
+
+**Decided.** `max_length` and `min_length` are their own rules, `MaxLength` and `MinLength`, and
+count characters whatever the answer holds. They fail with the keys `max` and `min`, so they share
+the existing messages. The form runtime gains the same two rules; it had no arm for either, so a
+length rule was checked only by the server. The stock contact form uses `max_length` for its name
+and message.
+
+**`max` and `min` are not changed.** Their two meanings are what they have always done, and a site
+may bound a quantity with `max:10` and no `numeric` beside it; counting characters there would let
+`99999` through. The alternative — compare as a number only when the field also declares
+`numeric`, as Laravel does — is the cleaner contract and a behaviour change for every form that
+has `max` or `min` on a field, so it is not made inside a defect fix. The rule classes and the
+forms guide now say which rule to use for text.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| Four new cases and the contact-form case in `ValidatorTest`, before the change | three failed: `01016999700` refused by `max_length:32`, `12` accepted by `min_length:3`, `2025` refused as a contact message |
+| The four mirrored cases in `corex-runtime-forms.test.js`, without the runtime change | two failed: no client arm existed |
+| The unit suite | 2043 passed |
+| `tests/Integration/Forms`, real WordPress | 35 passed |
+| The JavaScript suite | 534 passed in 57 suites |
+
+**Not done.** `Max`, `Min` and the two new rules cast an array answer to a string, as `Max` and
+`Min` did before; a length rule on a multi-value field is not defined.

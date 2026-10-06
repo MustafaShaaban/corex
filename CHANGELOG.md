@@ -20,6 +20,13 @@ All notable changes to Corex are documented here. The format follows
   condition that passes, and the title was "<label> is not ready for production": "File editing
   disabled is not ready for production", "No default "admin" account is not ready for production".
   It is now "Readiness check not met: <label>".
+- **`max_length` and `min_length` did not measure length when the answer was all digits.** They were
+  registered as the same classes as `max` and `min`, which compare a numeric-looking answer as a
+  number: a phone field declared `max_length:32` refused `01016999700` as too long, and `12` passed
+  `min_length:3`. They are their own rules now and count characters, on the server and in the form
+  runtime, which had no arm for either. The stock contact form had the fault under the other name —
+  its message was `max:2000`, so a message of `2025` was refused — and uses `max_length` now
+  (DECISIONS #241).
 
 ### Client impact
 
@@ -37,6 +44,13 @@ Read this before taking the release.
   "Readiness check not met: %s". An open readiness blocker takes the new title at the next readiness
   evaluation; a site that ships its own translation of that domain shows it in English until it is
   translated.
+- **A form field with `max_length` or `min_length` accepts and refuses different answers.** An
+  all-digit answer is measured by its number of characters, where it used to be compared as a
+  number: digits inside the limit that were refused are accepted, and digits shorter than a minimum
+  that were accepted are refused. The browser now checks both rules before submitting. `max` and
+  `min` behave as before.
+- **The stock `contact` form accepts a name or message made only of digits**, up to the same 120
+  and 2000 characters.
 
 ## [0.43.0] — 2026-10-04
 

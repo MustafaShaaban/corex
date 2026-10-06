@@ -366,6 +366,24 @@
 
 			return measured < limit ? 'min' : null;
 		},
+		// The length rules count characters whatever the answer holds: `01016999700` is eleven
+		// characters, not a number. They fail with the keys `max` and `min`, as the server's do.
+		max_length( value, params ) {
+			if ( isEmpty( value ) ) {
+				return null;
+			}
+			const limit = parseInt( ( params && params[ 0 ] ) || '0', 10 );
+
+			return length( value ) > limit ? 'max' : null;
+		},
+		min_length( value, params ) {
+			if ( isEmpty( value ) ) {
+				return null;
+			}
+			const limit = parseInt( ( params && params[ 0 ] ) || '0', 10 );
+
+			return length( value ) < limit ? 'min' : null;
+		},
 		numeric( value ) {
 			if ( isEmpty( value ) ) {
 				return null;
