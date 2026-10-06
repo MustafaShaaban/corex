@@ -27,6 +27,15 @@ use Corex\Support\Config\ConfigInterface;
  */
 final class SendEmailListener
 {
+    /**
+     * The one form the `contact-notification` template was written for. It prints a name, an email
+     * and a message, and a mailer that has templates renders it in place of the body below — so
+     * naming it for any other form sent that form's notification without its fields.
+     */
+    private const CONTACT_FORM = 'contact';
+
+    private const CONTACT_TEMPLATE = 'contact-notification';
+
     public function __construct(
         private readonly NotificationDispatcher $dispatcher,
         private readonly ConfigInterface $config,
@@ -53,7 +62,7 @@ final class SendEmailListener
 
         $request = new MailRequest(
             to: $recipient !== '' ? [$recipient] : [],
-            templateName: 'contact-notification',
+            templateName: $event->formSlug === self::CONTACT_FORM ? self::CONTACT_TEMPLATE : null,
             context: $context,
             subject: sprintf(
                 /* translators: %s: form slug */
