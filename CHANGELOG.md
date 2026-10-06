@@ -28,6 +28,17 @@ All notable changes to Corex are documented here. The format follows
   its message was `max:2000`, so a message of `2025` was refused — and uses `max_length` now
   (DECISIONS #241).
 
+### Security
+
+- **Behind a trusted proxy, a visitor could choose the address login protection counted against.**
+  With trusted-proxy mode on, `ClientIpResolver` took the first address in `X-Forwarded-For` that
+  was not a trusted proxy, reading from the left. A proxy appends the address it saw to whatever the
+  client sent, so the leftmost entries are the client's own: sending a different invented address
+  with each attempt kept every failure under a fresh address, and sending somebody else's put the
+  failures against theirs. The resolver reads from the right now — the nearest hop that is not
+  itself trusted — and stops at an entry that is not an address. A site with trusted-proxy mode off
+  was not affected (DECISIONS #242).
+
 ### Client impact
 
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
@@ -51,6 +62,13 @@ Read this before taking the release.
   `min` behave as before.
 - **The stock `contact` form accepts a name or message made only of digits**, up to the same 120
   and 2000 characters.
+- **With trusted-proxy mode on, every proxy between the visitor and WordPress has to be in the
+  trusted ranges.** Login protection now takes the nearest hop that is not trusted as the client.
+  Behind one listed proxy nothing changes for an honest visitor. Behind two, with only the nearer
+  one listed — a CDN in front of a local reverse proxy, say — the CDN's address used to be skipped
+  by accident and is now taken for the client, so every visitor through that CDN node shares one
+  lockout count until the CDN's ranges are added. Lockouts already recorded stay keyed to the
+  address they were recorded under.
 
 ## [0.43.0] — 2026-10-04
 

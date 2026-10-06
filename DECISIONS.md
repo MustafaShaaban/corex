@@ -5461,3 +5461,43 @@ What was run:
 
 **Not done.** `Max`, `Min` and the two new rules cast an array answer to a string, as `Max` and
 `Min` did before; a length rule on a multi-value field is not defined.
+
+## #242 — The client's address is the nearest hop no trusted proxy vouches for
+
+Date: 2026-10-06 · Spec: none (security fix; spec 068 FR-076, login protection) · Status: Final
+
+With trusted-proxy mode on and the request arriving from a trusted proxy, `ClientIpResolver`
+walked `X-Forwarded-For` from the left and returned the first address that was not a trusted
+proxy. A proxy does not replace that header; it appends the address it saw to whatever arrived.
+The left of the list is therefore written by the client. A visitor behind a trusted proxy who sent
+`X-Forwarded-For: 198.51.100.1` was recorded as `198.51.100.1`, and login protection counts
+failures by identity and network: a new invented address per attempt never reached the threshold,
+and a chosen one put the failures against somebody else.
+
+**Decided.** Read from the right. Skip entries that are trusted proxies; the first one that is not
+is the client. An entry that is not an address ends the walk and the proxy's own address is used:
+nothing to the left of an entry nobody could read is vouched for by anybody.
+
+**What this asks of a site.** Every proxy between the visitor and WordPress has to be in the
+trusted ranges. Before, a chain with an unlisted proxy in the middle resolved the visitor by
+accident, because the unlisted proxy was never reached. Now that proxy is taken for the client.
+That is the correct answer to "which address can be believed", and it is recorded under Client
+impact because it changes what such a site sees.
+
+**Not done here.**
+- The form rate limit, the flow submission limit and the form challenge context read
+  `REMOTE_ADDR` directly (`SubmitController`, `FlowSubmissionController`,
+  `FormChallengeContextFactory`), so behind any proxy every visitor shares one allowance. They
+  cannot use this resolver as it stands: it lives in corex-config under login protection and is
+  configured by the login policy, and corex-forms does not depend on corex-config. Moving address
+  resolution to corex-core with its own setting is a design change, not part of a security fix.
+- A named header such as `CF-Connecting-IP`, which a CDN sets itself and a client cannot append to.
+- Nothing documents trusted-proxy mode for an operator.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| Three new cases in `LoginProtectionServiceTest`, before the change | all three returned the address the client wrote |
+| `tests/Unit/Security` | 78 passed |
+| The existing case (untrusted peer; one trusted proxy; IPv6) | unchanged and passing: with one honest entry, left and right agree |
