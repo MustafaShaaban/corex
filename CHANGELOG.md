@@ -27,6 +27,12 @@ All notable changes to Corex are documented here. The format follows
   runtime, which had no arm for either. The stock contact form had the fault under the other name —
   its message was `max:2000`, so a message of `2025` was refused — and uses `max_length` now
   (DECISIONS #241).
+- **With CoreX Mail active, a code-defined form's notification left out its fields.** The default
+  listener named the `contact-notification` template for every form, and a mailer that has
+  templates renders the template in place of the body it is also given. That template prints a
+  name, an email and a message, so a form with any other field was emailed without it, under the
+  subject "New contact form submission". Only the `contact` form names that template now; every
+  other form sends the generated table of all its fields (DECISIONS #243).
 
 ### Security
 
@@ -69,6 +75,12 @@ Read this before taking the release.
   by accident and is now taken for the client, so every visitor through that CDN node shares one
   lockout count until the CDN's ranges are added. Lockouts already recorded stay keyed to the
   address they were recorded under.
+- **With CoreX Mail active, the notification for a code-defined form other than `contact` looks
+  different.** Its subject becomes `New "<slug>" form submission` and its body lists every
+  submitted field, where it was the contact template's three rows. A site that edited the
+  `contact-notification` template and relied on it for its other forms gives those forms an Email
+  Studio route on `forms.<slug>.submitted`, which is tried before this default. The `contact` form,
+  and any site without CoreX Mail, sees no change.
 
 ## [0.43.0] — 2026-10-04
 
