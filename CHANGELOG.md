@@ -12,6 +12,14 @@ All notable changes to Corex are documented here. The format follows
   passed any posted action to the retention service, whose exception nothing caught. No submission was
   touched, but the operator got a crash. The handler now refuses the action and the screen says "That is
   not a valid retention action. Nothing was changed." (DECISIONS #239).
+- **The "No default "admin" account" check could never pass.** It compared WordPress's answer with
+  `null`, and WordPress answers `false` for a login nobody has, so the check warned on every site
+  — including one with no such account — and each readiness evaluation published a blocker for it.
+  It now passes when no user has that login.
+- **A readiness blocker's title read as the opposite of the fault.** A check's label states the
+  condition that passes, and the title was "<label> is not ready for production": "File editing
+  disabled is not ready for production", "No default "admin" account is not ready for production".
+  It is now "Readiness check not met: <label>".
 
 ### Client impact
 
@@ -20,7 +28,15 @@ Read this before taking the release.
 
 - **One string in the `corex` text domain is new**: "That is not a valid retention action. Nothing was
   changed.", on the Submissions screen. A site that ships its own translation of that domain shows it in
-  English until it is translated. Nothing else changes for a running site.
+  English until it is translated.
+- **A site with no user named `admin` loses one readiness blocker.** On Operations & Security the
+  "No default "admin" account" check turns to a pass, the count of hardening warnings drops by one,
+  and the notification about it resolves at the next readiness evaluation. A site that does have
+  such a user keeps the warning.
+- **One string in the `corex` text domain is replaced**: "%s is not ready for production" becomes
+  "Readiness check not met: %s". An open readiness blocker takes the new title at the next readiness
+  evaluation; a site that ships its own translation of that domain shows it in English until it is
+  translated.
 
 ## [0.43.0] — 2026-10-04
 

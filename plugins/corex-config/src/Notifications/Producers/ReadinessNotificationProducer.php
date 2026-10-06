@@ -82,13 +82,14 @@ final class ReadinessNotificationProducer implements NotificationProducer
             sourceModule: 'operations',
             titleKey: 'notifications.readiness.blocker.title',
             messageKey: 'notifications.readiness.blocker.body',
-            // "Readiness blocker: HTTPS" named a category and a subject and asked nothing. The
-            // check's own label already says what is wrong; leading with it, and saying what it
-            // stops, is the difference between a log line and something you can act on.
+            // A check's label states the condition that passes — "File editing disabled", "No
+            // default "admin" account" — so the title says that condition is not met. "<label> is
+            // not ready for production" read as the opposite of the fault for five of the six
+            // checks. What to do about it is the body.
             rendered: [
                 'title' => sprintf(
-                    /* translators: %s: the readiness check label, e.g. "HTTPS". */
-                    __('%s is not ready for production', 'corex'),
+                    /* translators: %s: the readiness check label, which states the passing condition, e.g. "File editing disabled". */
+                    __('Readiness check not met: %s', 'corex'),
                     $check['label'],
                 ),
                 'body' => $check['summary'],
