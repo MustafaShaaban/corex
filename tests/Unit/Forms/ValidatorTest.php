@@ -78,6 +78,7 @@ it('counts characters for a length rule when the answer is all digits', function
     expect(validate(['f' => ['rules' => [$rule]]], ['f' => $value])->errors)->toBe($errors);
 })->with([
     'a phone number inside its character limit' => ['max_length:32', '01016999700', []],
+    'digits exactly at the character limit' => ['max_length:11', '01016999700', []],
     'digits past the character limit' => ['max_length:5', '01016999700', ['f' => 'max']],
     'digits short of the character minimum' => ['min_length:3', '12', ['f' => 'min']],
     'digits that reach the character minimum' => ['min_length:3', '007', []],

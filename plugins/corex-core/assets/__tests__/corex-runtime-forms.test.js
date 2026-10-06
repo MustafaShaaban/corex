@@ -122,6 +122,7 @@ describe( 'the client rule table mirrors the server', () => {
 	// a number: a phone field limited to 32 characters refused `01016999700` (2026-10-06).
 	it.each( [
 		[ 'max_length', '32', '01016999700', null ],
+		[ 'max_length', '11', '01016999700', null ],
 		[ 'max_length', '5', '01016999700', 'max' ],
 		[ 'min_length', '3', '12', 'min' ],
 		[ 'min_length', '3', '007', null ],
