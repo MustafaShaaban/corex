@@ -5453,11 +5453,11 @@ What was run:
 
 | Check | Result |
 |---|---|
-| Four new cases and the contact-form case in `ValidatorTest`, before the change | three failed: `01016999700` refused by `max_length:32`, `12` accepted by `min_length:3`, `2025` refused as a contact message |
+| Four of the five new cases and the contact-form case in `ValidatorTest`, before the change | three failed: `01016999700` refused by `max_length:32`, `12` accepted by `min_length:3`, `2025` refused as a contact message |
 | The four mirrored cases in `corex-runtime-forms.test.js`, without the runtime change | two failed: no client arm existed |
-| The unit suite | 2043 passed |
+| The unit suite | 2044 passed |
 | `tests/Integration/Forms`, real WordPress | 35 passed |
-| The JavaScript suite | 534 passed in 57 suites |
+| The JavaScript suite | 535 passed in 57 suites |
 
 **Not done.** `Max`, `Min` and the two new rules cast an array answer to a string, as `Max` and
 `Min` did before; a length rule on a multi-value field is not defined.
