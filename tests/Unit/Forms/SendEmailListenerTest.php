@@ -120,3 +120,60 @@ it('records wp_mail acceptance as accepted, never sent, when CoreX Mail is absen
         ->and($delivery->status)->not->toBe(MailResult::STATE_SENT)
         ->and($delivery->provider)->toBe('wp-mail');
 });
+
+/**
+ * A mailer that keeps the request it is handed, so a test can read what the listener asked for.
+ */
+function requestKeepingMailer(): AttemptingMailer
+{
+    return new class implements AttemptingMailer {
+        public ?MailRequest $request = null;
+
+        public function send(MailRequest $request): void
+        {
+            $this->request = $request;
+        }
+
+        public function attempt(MailRequest $request): MailResult
+        {
+            $this->request = $request;
+
+            return new MailResult(
+                attemptId: 'f6773ddc-2d63-40cc-b408-35c0a81c084b',
+                requestId: $request->requestId,
+                state: MailResult::STATE_CAPTURED,
+                provider: 'corex-mail',
+                message: 'Captured.',
+                occurredAt: new DateTimeImmutable('2026-10-06T10:00:00+00:00'),
+                retryable: false,
+            );
+        }
+    };
+}
+
+/**
+ * Every form's notification named the `contact-notification` template, and a mailer that has
+ * templates renders the template in place of the body it is also handed. That template prints a
+ * name, an email and a message, so a form with any other field sent an email without it, under
+ * the subject "New contact form submission". Reported on 2026-10-06 from a client site.
+ */
+it('sends a form other than the contact form its own fields, not the contact template', function () {
+    $mailer = requestKeepingMailer();
+
+    (new SendEmailListener(new NotificationDispatcher(null, $mailer), emailListenerConfig()))
+        ->dispatch(new FormSubmittedEvent('callback', ['phone' => '01016999700', 'company' => 'Acme']));
+
+    expect($mailer->request->templateName)->toBeNull()
+        ->and($mailer->request->subject)->toBe('New "callback" form submission')
+        ->and($mailer->request->body)->toContain('01016999700')
+        ->and($mailer->request->body)->toContain('Acme');
+});
+
+it('still sends the contact form through the contact template', function () {
+    $mailer = requestKeepingMailer();
+
+    (new SendEmailListener(new NotificationDispatcher(null, $mailer), emailListenerConfig()))
+        ->dispatch(submittedEvent());
+
+    expect($mailer->request->templateName)->toBe('contact-notification');
+});

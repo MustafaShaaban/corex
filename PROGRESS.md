@@ -89,6 +89,9 @@ On `main` since v0.43.0, and not in a release yet:
   trusted-proxy mode on, the resolver took the leftmost untrusted address, which is the part of the
   header a client writes: a visitor behind a trusted proxy chose the address its failures were
   counted against. It takes the nearest hop no trusted proxy vouches for. Three unit cases pin it.
+- **A form other than `contact` is no longer emailed through the contact template** (DECISIONS
+  #243). The default listener named `contact-notification` for every form; with CoreX Mail active
+  the template replaced the generated body, so other forms' fields never reached the email.
 
 Released in v0.43.0:
 

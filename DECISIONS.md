@@ -5501,3 +5501,35 @@ What was run:
 | Three new cases in `LoginProtectionServiceTest`, before the change | all three returned the address the client wrote |
 | `tests/Unit/Security` | 78 passed |
 | The existing case (untrusted peer; one trusted proxy; IPv6) | unchanged and passing: with one honest entry, left and right agree |
+
+## #243 — The contact template is the contact form's
+
+Date: 2026-10-06 · Spec: none (defect fix, reported from a client site on v0.43.0) · Status: Final
+
+`SendEmailListener` is the default notification for every code-defined form. It built one
+`MailRequest` carrying both a template name, `contact-notification`, and a generated body listing
+every submitted field. Which of the two is used depends on what sends it: `wp_mail()` sends the
+body, and `RequestMailer` — CoreX Mail — renders the template whenever a name is set and never
+reads the body. `ContactNotificationTemplate` prints a name, an email and a message. So with CoreX
+Mail active, a form with any other field was emailed without it, under the template's subject,
+"New contact form submission"; with CoreX Mail inactive the same form's email was complete.
+
+**Decided.** The listener names the template only for the `contact` form, the form it was written
+for. Every other form sends no template name, so every transport sends the generated table.
+
+Dropping the template altogether was rejected: a site may have edited `contact-notification` in
+Email Studio, and its contact form should keep that. Choosing by the submitted keys — use the
+template when the submission has nothing but a name, an email and a message — was rejected as a
+rule nobody could predict from outside.
+
+A site that wants a designed email for another form already has the means: an Email Studio route
+on `forms.<slug>.submitted` is tried before this listener's request is used at all.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| New case in `SendEmailListenerTest`, before the change | failed: a `callback` form's request named `contact-notification` |
+| `SendEmailListenerTest` | 5 passed |
+| The unit suite | 2049 passed |
+| `tests/Integration/Forms` and `tests/Integration/Mail`, real WordPress | 40 passed |
