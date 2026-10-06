@@ -85,6 +85,10 @@ On `main` since v0.43.0, and not in a release yet:
   long" for a 32-character field and the stock contact form refused a message of `2025`. Two new
   rules on the server, the same two in the form runtime, and the contact form moved onto them.
   `max` and `min` keep both meanings; whether they should is under "Open, and not hidden".
+- **Login protection reads `X-Forwarded-For` from the trusted end** (DECISIONS #242). With
+  trusted-proxy mode on, the resolver took the leftmost untrusted address, which is the part of the
+  header a client writes: a visitor behind a trusted proxy chose the address its failures were
+  counted against. It takes the nearest hop no trusted proxy vouches for. Three unit cases pin it.
 
 Released in v0.43.0:
 
@@ -234,6 +238,10 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **`max:N` and `min:N` decide what to measure from what the answer looks like.** `2025` in a text
   field is compared as a number. Left as it is by DECISIONS #241, which names the alternative
   (compare as a number only beside `numeric`) and why it is a behaviour change, not a fix.
+- **Form rate limits count every visitor behind a proxy as one.** `SubmitController`,
+  `FlowSubmissionController` and `FormChallengeContextFactory` read `REMOTE_ADDR` directly, so
+  behind a reverse proxy or a CDN the per-client allowance is shared by the whole site. The
+  resolver login protection uses cannot be reached from corex-forms as it stands (DECISIONS #242).
 - **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
   Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
 - **`client-site-layout` is not a required check either** (spec 102). Making it one is an owner

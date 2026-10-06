@@ -115,6 +115,27 @@ it('resolves trusted proxy client addresses without accepting spoofed forwarded 
         ]))->toBe('2001:db9::1');
 });
 
+/**
+ * A proxy appends the address it saw to whatever X-Forwarded-For the client sent, so the entries a
+ * client can write are on the left and the ones a trusted proxy vouches for are on the right. The
+ * resolver read from the left: a client behind a trusted proxy chose the address its sign-in
+ * failures were counted against. Reported on 2026-10-06 from a site behind a tunnel.
+ */
+it('takes the address the nearest trusted proxy saw, not one the client wrote', function (string $forwardedFor, string $expected) {
+    $resolver = new ClientIpResolver(loginPolicy([
+        'trustedProxyMode' => true,
+        'trustedProxyRanges' => ['10.0.0.0/8'],
+    ]));
+
+    expect($resolver->resolve(['REMOTE_ADDR' => '10.1.2.3', 'HTTP_X_FORWARDED_FOR' => $forwardedFor]))
+        ->toBe($expected);
+})->with([
+    'the client wrote an address of its own first' => ['198.51.100.1, 203.0.113.9', '203.0.113.9'],
+    'two trusted proxies stand between' => ['198.51.100.1, 203.0.113.9, 10.9.9.9', '203.0.113.9'],
+    // What the nearest proxy reported cannot be read, so nothing further left is believed either.
+    'the nearest entry is not an address' => ['198.51.100.1, not-an-address', '10.1.2.3'],
+]);
+
 it('does not record or lock out when login protection is disabled', function () {
     $store = new CorexTestLoginAttemptStore();
     $service = new LoginProtectionService(new LoginProtectionPolicy(loginPolicy(['enabled' => false])), $store);

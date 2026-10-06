@@ -11,7 +11,10 @@ namespace Corex\Config\Security\LoginProtection;
 defined('ABSPATH') || exit;
 
 /**
- * Resolves client IPs while ignoring spoofed forwarded headers from untrusted peers.
+ * Resolves the client's address. A forwarded header is believed only when the request arrives from
+ * a trusted proxy, and then only as far as trusted proxies vouch for it: the answer is the nearest
+ * hop that is not itself trusted. Every proxy between the visitor and WordPress therefore has to
+ * be in the trusted ranges, or the first one that is not is taken for the client.
  */
 final readonly class ClientIpResolver
 {
@@ -29,9 +32,16 @@ final readonly class ClientIpResolver
             return $remote;
         }
 
-        foreach (explode(',', (string) ($server['HTTP_X_FORWARDED_FOR'] ?? '')) as $candidate) {
-            $ip = $this->validIp(trim($candidate));
-            if ($ip !== null && ! $this->trusted($ip)) {
+        // Read from the right. Each proxy appends the address it saw, so the rightmost entries are
+        // the ones a trusted proxy vouches for and the leftmost are whatever the client sent.
+        $hops = explode(',', (string) ($server['HTTP_X_FORWARDED_FOR'] ?? ''));
+        foreach (array_reverse($hops) as $hop) {
+            $ip = $this->validIp(trim($hop));
+            if ($ip === null) {
+                // Nothing left of an entry that cannot be read is vouched for by anybody.
+                break;
+            }
+            if (! $this->trusted($ip)) {
                 return $ip;
             }
         }
