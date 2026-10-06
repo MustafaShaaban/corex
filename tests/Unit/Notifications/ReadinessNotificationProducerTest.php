@@ -70,6 +70,29 @@ it('raises a notification for a blocking readiness check', function () {
         ->and($note->recipient->canBeSeenBy(9, fn (string $a): bool => $a === CorexAbility::MANAGE_OPERATIONS))->toBeTrue();
 });
 
+/**
+ * A readiness check's label states the condition that passes: "File editing disabled", "No default
+ * "admin" account". The title used to be "<label> is not ready for production", which read as the
+ * opposite of the fault for five of the six checks — reported on 2026-10-06 as "No default "admin"
+ * account is not ready for production".
+ */
+it('titles a blocker as a condition that is not met', function () {
+    $snapshot = new ReadinessSnapshot([[
+        'key'            => 'default_admin',
+        'label'          => 'No default "admin" account',
+        'state'          => 'blocking',
+        'summary'        => 'Avoid a user named "admin".',
+        'resolution_url' => '',
+        'checked_at'     => '2026-10-06T10:00:00+00:00',
+        'evidence_hash'  => hash('sha256', 'default_admin'),
+    ]]);
+
+    $service = reconcileReadiness(new RecordingNotificationService(), $snapshot);
+
+    expect($service->published[0]->rendered['title'])
+        ->toBe('Readiness check not met: No default "admin" account');
+});
+
 it('resolves a check that now passes and never publishes for it', function () {
     $service = reconcileReadiness(new RecordingNotificationService(), readinessSnapshot(['https' => 'pass']));
 

@@ -73,6 +73,13 @@ On `main` since v0.43.0, and not in a release yet:
   #239). The handler passed any posted action to the retention service and did not catch its
   exception. It now checks the action first and the screen answers with an error notice. One unit
   test drives the real handler with such an action; one integration test pins the notice.
+- **The "No default admin account" hardening check can pass.** It compared `username_exists()`
+  with `null`; WordPress answers `false`, so every site was warned and sent a readiness blocker,
+  whatever its accounts were called. Found on the first client site built from v0.43.0. Two
+  integration tests ask WordPress itself, where before only the engine downstream of the fact was
+  tested. The blocker's title changes with it: a check's label states the condition that passes,
+  so "<label> is not ready for production" read backwards; it is "Readiness check not met:
+  <label>" now.
 
 Released in v0.43.0:
 

@@ -35,7 +35,8 @@ final class HardeningFacts
                 || str_starts_with((string) home_url(), 'https://'),
             'fileEditDisabled'   => defined('DISALLOW_FILE_EDIT') && DISALLOW_FILE_EDIT === true,
             'debugDisplayOff'    => ! $displayEnabled,
-            'defaultAdminAbsent' => username_exists('admin') === null,
+            // username_exists() answers int|false. Compared with null, this was false on every site.
+            'defaultAdminAbsent' => username_exists('admin') === false,
             'indexingAllowed'    => (string) get_option('blog_public', '1') !== '0',
             'authSaltsConfigured' => self::authSaltsConfigured(),
         ];
