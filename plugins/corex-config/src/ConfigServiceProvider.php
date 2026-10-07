@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 use Corex\Config\Addons\AddonsScreen;
 use Corex\Config\AdminUi\CorexAdminAssets;
 use Corex\Config\AdminUi\ScreenHelp;
+use Corex\Config\AdminUi\ScreenNotices;
 use Corex\Config\Addons\KitActivationNotice;
 use Corex\Config\Activity\ActivityTable;
 use Corex\Config\Activity\ActivityController;
@@ -886,6 +887,9 @@ final class ConfigServiceProvider extends ServiceProvider
         // Always, not only when corex-guides is active: spec 084's help tabs were one source of
         // contextual help on a CoreX screen, and this removes every source (spec 097, FR-003/FR-005).
         $this->container->make(ScreenHelp::class)->register();
+        // The other thing WordPress puts above a CoreX screen: its notices, the core update nag
+        // first among them. They are printed under the page header instead.
+        $this->container->make(ScreenNotices::class)->register();
         $this->container->make(AdminDashboard::class)->register();
         $this->container->make(AddonsScreen::class)->register();
         $this->container->make(FormsFlowsScreen::class)->register();

@@ -53,7 +53,7 @@ first, because it was the cheapest end-to-end proof the store worked at all.
 - [x] **T031** Attachments through `MailRequest` → `MessageBuilder::attachMedia()` →
       `EmailMessage` → the fifth argument of `wp_mail()`, surviving the queue.
       **Not met until 2026-10-08:** `MailService::deliver()` rebuilt the message without them. See
-      spec 085, Phase 6, and DECISIONS #263.
+      spec 085, Phase 6, and DECISIONS #264.
 - [x] **T032** `COREX-EMAIL-ADDON.md` describes what exists. `attach()` and `attachGenerated()` are
       recorded as not implemented, with the reason, rather than quietly deleted.
 

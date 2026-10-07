@@ -222,6 +222,13 @@ jobs:
           mkdir -p wp/wp-content/mu-plugins
           cp tests/e2e/fixtures/corex-e2e-client-guide.php wp/wp-content/mu-plugins/
 
+      # Core prints its update nag only while an update is pending, and this job installs the
+      # latest WordPress, where none is. This fixture answers the update check for a request that
+      # asks it to, so admin-core-notices.spec.js meets the nag here too. Without the query
+      # argument it does nothing.
+      - name: Install the core-notices fixture
+        run: cp tests/e2e/fixtures/corex-e2e-core-notices.php wp/wp-content/mu-plugins/
+
       - name: Seed browser-test fixtures
         run: |
           # /contact/ carrying the registered contact form. corex/form with no flowId or flowSlug

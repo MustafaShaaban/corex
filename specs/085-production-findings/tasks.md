@@ -55,7 +55,7 @@ T030 and T031 between them cover six of the seven files in the issue's own table
 `MailService`, which rebuilds the message on its way to the driver. FR-011 and SC-005 were
 marked met on tests that stopped at the request and the queue (T032), so the sender was dropped on
 every send from v0.38.0 to v0.43.3. Spec 081's attachments (its T031, FR-010) merged an hour
-later and were dropped by the same seven arguments. Recorded in DECISIONS #263.
+later and were dropped by the same seven arguments. Recorded in DECISIONS #264.
 
 - [x] **T050** Verify against `main`: `MailService::deliver()` still builds the message from seven
       positional arguments. Confirmed at 390554e1.

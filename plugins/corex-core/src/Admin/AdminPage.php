@@ -58,18 +58,33 @@ final class AdminPage
         $actions = (string) apply_filters('corex_admin_header_actions', '');
         $actionsHtml = $actions === '' ? '' : '<div class="corex-admin__header-actions">' . $actions . '</div>';
 
+        // What WordPress printed on `admin_notices` before this page was called, the core update
+        // nag among it: printed here, under the page header, so that nothing sits in a band above
+        // the shell. The contributor captured that output and hands it over unchanged. It is not
+        // escaped again, which would remove the links and forms a notice is made of.
+        //
+        // The region is always printed, and core's `wp-header-end` marker closes it: WordPress's
+        // own script moves every notice not marked `inline` to after that marker, and without one
+        // it moves them to after the first heading, which is inside the page header. The marker
+        // is last so that a notice which is moved lands below the ones that stay, the order they
+        // were printed in.
+        $notices = (string) apply_filters('corex_admin_notices', '');
+
         return sprintf(
             '<div class="wrap corex-admin corex-admin--%1$s"' . $themeAttr . '><div class="corex-admin__shell">%2$s'
             . '<main class="corex-admin__main" aria-labelledby="corex-page-title">'
             . '<header class="corex-admin__header"><div class="corex-admin__heading">'
             . '<p class="corex-admin__eyebrow">%3$s</p><h1 id="corex-page-title">%4$s</h1>%5$s'
-            . '</div>%6$s</header><div class="corex-admin__content">',
+            . '</div>%6$s</header>'
+            . '<div class="corex-admin__notices">%7$s<hr class="wp-header-end" /></div>'
+            . '<div class="corex-admin__content">',
             esc_attr($section),
             $this->rail($section),
             esc_html($breadcrumb),
             esc_html($title),
             $descriptionHtml,
             $actionsHtml,
+            $notices,
         );
     }
 

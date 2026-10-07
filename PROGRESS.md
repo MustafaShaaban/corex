@@ -70,7 +70,7 @@ v0.43.2 (DECISIONS #260): the submissions and flow routes now carry a permission
 the same site (DECISIONS #261): `CommandRegistrationTest` asserted the framework's namespace and so
 failed in a client's repository after v0.43.2; it holds in both now.
 
-Unreleased, reported from a client site that runs three mailboxes (issue #150, DECISIONS #263): a
+Unreleased, reported from a client site that runs three mailboxes (issue #150, DECISIONS #264): a
 message's sender and its attachments now reach the mail driver. `MailService::deliver()` rebuilt
 every message without them, so both were accepted and dropped on every send from v0.38.0 to
 v0.43.3, and #150 had been closed with the defect in place. A site that names a sender starts
@@ -84,6 +84,16 @@ wants its own verified pass. It would retire both overrides listed under "Open, 
 One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`).
 
 ## Recently landed
+
+On `main` since v0.43.3, not in a release:
+
+- **What WordPress prints before the page is inside the CoreX shell** (#277, DECISIONS #263).
+  The core update nag sat in a band above the shell and pushed every CoreX screen 54px down, on
+  any install with a core update pending; CI installs the latest WordPress and never saw it. The
+  server now captures what `admin_notices` and `all_admin_notices` print on a CoreX screen and
+  the shell prints it under the page header, drawn as a CoreX alert. Nothing is hidden.
+  `admin-core-notices.spec.js` asks for a pending update through a fixture and measures the
+  result on every route, in dark and light, in both directions, at four widths.
 
 Released in v0.43.3: the submission detail pane (spec 103 slice 4, DECISIONS #259) and three
 reports from the first client site's v0.43.2 update: route permission callbacks and the
@@ -321,7 +331,7 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   mailboxes). An operator's reply from the Submissions inbox, a routed email and a message
   composed in Email Studio are built in `EmailStudioSubmissionGateway`, `EmailRouteMessageFactory` and `EmailStudioController`
   with no sender, and go to the driver without passing `MailService`. They leave from
-  `mail.from.address`. Read from the code on 2026-10-08, not sent (DECISIONS #263).
+  `mail.from.address`. Read from the code on 2026-10-08, not sent (DECISIONS #264).
 - **Trusted proxies have no field on the Security screen.** The screen's state carries the list and
   saves it back unchanged; nothing draws it. `wp corex security trusted-proxies` is the only way to
   set it (DECISIONS #250).
