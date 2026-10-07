@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Admin\StandalonePage;
 use Corex\Security\Admin\AdminGuard;
+use Corex\Support\EmailAnswer;
 
 /**
  * Where the Guides support form posts (spec 087, FR-005 / FR-007 / FR-008).
@@ -137,7 +138,7 @@ final class SupportRequestController
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified above.
         $message = isset($_POST['corex_guides_message']) ? sanitize_textarea_field(wp_unslash($_POST['corex_guides_message'])) : '';
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified above.
-        $from = isset($_POST['corex_guides_email']) ? sanitize_email(wp_unslash($_POST['corex_guides_email'])) : '';
+        $from = isset($_POST['corex_guides_email']) ? EmailAnswer::address(wp_unslash($_POST['corex_guides_email'])) : '';
 
         if (! in_array($category, self::CATEGORIES, true)) {
             $category = self::CATEGORIES[0];

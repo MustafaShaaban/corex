@@ -20,6 +20,7 @@ use Corex\Email\Template\TemplateRegistry;
 use Corex\Foundation\ServiceProvider;
 use Corex\Mail\Mailer;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Support\EmailAnswer;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -97,7 +98,7 @@ final class BookingsServiceProvider extends ServiceProvider
 
         $data = [
             'name'           => sanitize_text_field((string) $request['name']),
-            'email'          => sanitize_email((string) $request['email']),
+            'email'          => EmailAnswer::address($request['email']),
             'phone'          => sanitize_text_field((string) $request['phone']),
             'preferred_time' => sanitize_text_field((string) $request['preferred_time']),
             'message'        => sanitize_textarea_field((string) $request['message']),

@@ -26,6 +26,7 @@ use Corex\Newsletter\Subscription\SubscriptionService;
 use Corex\Newsletter\Templates\NewsletterConfirmTemplate;
 use Corex\Newsletter\Templates\NewsletterNotifyTemplate;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Support\EmailAnswer;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -151,7 +152,7 @@ final class NewsletterServiceProvider extends ServiceProvider
             return new WP_REST_Response(['ok' => false, 'error' => 'captcha'], 422);
         }
 
-        $email   = sanitize_email((string) $request['email']);
+        $email   = EmailAnswer::address($request['email']);
         $topics  = array_map('sanitize_key', (array) ($request['topics'] ?? []));
         $consent = (bool) $request['consent'];
 

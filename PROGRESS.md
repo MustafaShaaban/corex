@@ -57,6 +57,11 @@ On `main` since v0.43.1, and not in a release yet:
   `salma@example.com` and a malformed address on a required field was answered with "required".
   `EmailAnswer`, in corex-core's `Support` namespace, hands the rules what was typed; the form and
   flow controllers both use it. One existing test had asserted the defect and is corrected.
+- **The add-on endpoints no longer do it either** (#256, DECISIONS #246): newsletter subscribe,
+  bookings, careers, account registration and profile update, and the Guides support request. The
+  registration one created an account under the rewritten address. Subscribe and registration are
+  pinned through the real REST server; bookings, careers and Guides are covered by the helper's
+  table and by reading, not by a test of their own.
 
 Released in v0.43.1, a patch release. [`CHANGELOG.md`](CHANGELOG.md) has the full entry, with what
 changes for a client site; the decisions are #239 to #244.
@@ -262,10 +267,6 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **`max:N` and `min:N` decide what to measure from what the answer looks like.** `2025` in a text
   field is compared as a number. Left as it is by DECISIONS #241, which names the alternative
   (compare as a number only beside `numeric`) and why it is a behaviour change, not a fix.
-- **Five add-on handlers still clean an email address and then accept it**: newsletter subscribe,
-  bookings, careers applications, profile registration and the Guides support request each call
-  `sanitize_email()` on what was posted. The forms engine was fixed (DECISIONS #245); these were
-  read, not changed.
 - **Form rate limits count every visitor behind a proxy as one.** `SubmitController`,
   `FlowSubmissionController` and `FormChallengeContextFactory` read `REMOTE_ADDR` directly, so
   behind a reverse proxy or a CDN the per-client allowance is shared by the whole site. The

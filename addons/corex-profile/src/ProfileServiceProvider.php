@@ -23,6 +23,7 @@ use Corex\Profile\Account\RegistrationRequest;
 use Corex\Profile\Account\WordPressAuthGateway;
 use Corex\Profile\Notification\NotificationService;
 use Corex\Profile\Session\SessionService;
+use Corex\Support\EmailAnswer;
 use DateTimeImmutable;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -154,7 +155,7 @@ final class ProfileServiceProvider extends ServiceProvider
         }
 
         $result = $this->container->make(AccountService::class)->register(new RegistrationRequest(
-            sanitize_email((string) $request['email']),
+            EmailAnswer::address($request['email']),
             (string) $request['password'],
             (string) $request['password_confirm'],
             sanitize_user((string) $request['username']),
@@ -202,7 +203,8 @@ final class ProfileServiceProvider extends ServiceProvider
         $fields = [];
         foreach (['display_name', 'first_name', 'last_name', 'email'] as $key) {
             if ($request[$key] !== null) {
-                $fields[$key] = (string) $request[$key];
+                // An address that would be altered on its way into the account is refused, not saved.
+                $fields[$key] = $key === 'email' ? EmailAnswer::address($request[$key]) : (string) $request[$key];
             }
         }
 

@@ -16,6 +16,12 @@ All notable changes to Corex are documented here. The format follows
   was dropped without a word. Forms and flows now hand the rules what was typed: an address WordPress
   would leave alone is kept as it is, and anything else reaches the `email` rule as text and is
   refused by name (DECISIONS #245).
+- **Five add-on endpoints did the same, and one of them created accounts.** Newsletter subscribe,
+  the bookings call request, a careers application, account registration and profile update, and the
+  Guides support request each cleaned the posted address and handed it to a service that then found
+  it valid. Registering with `name,x@example.com` created an account for `namex@example.com`. Each
+  now takes the address only when WordPress would store it exactly as typed, and otherwise passes
+  nothing, which its service already refuses (DECISIONS #246).
 
 ### Client impact
 
@@ -30,6 +36,12 @@ Read this before taking the release.
 - **An `email` field with no `email` rule stores what was typed.** It used to store a cleaned
   address or nothing. Declare the rule on any field whose value is used as an address; the stock
   contact form does. CoreX's own senders check an address before using it.
+- **Subscribe, call-request, application and registration requests refuse a mistyped address.** They
+  answer 422 with the reason each already gave for an invalid address (`invalid_email` for an
+  account, `invalid_fields` for an application), where they used to succeed under a different
+  address. A front end that posts to these endpoints should show that answer by the email field.
+- **A Guides support request with a mistyped reply address is sent without one**, and says "no
+  address given", where it used to carry a different address.
 
 ## [0.43.1] — 2026-10-07
 
