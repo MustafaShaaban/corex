@@ -6633,3 +6633,43 @@ What was run:
 
 **Not run.** `wp corex routes:list` was not run on the client site after the change; the test
 reads the same `RoutesReader` the command prints from.
+
+## #261 — A framework test that also runs in a client's repository asserts what is true in both
+
+Date: 2026-10-07 · Reported from the first client site, on its v0.43.2 update · Status: Final
+
+The report: "Integration tests (real WordPress)" failed on the client's update pull request, 1
+failed and 524 passed. `CommandRegistrationTest` expected the generators' namespace to be `App`
+and got `MuvaSite`. The same client code on v0.43.1 passed.
+
+**What was true.** v0.43.2 made the generators write into the one client plugin under `sites/`,
+under its namespace (DECISIONS #252). That is what was asked for and it is right. The test was
+written before a client's repository existed and asserted the framework's default. A client's
+repository carries the framework's tests and runs them, so from v0.43.2 every pull request of a
+client with exactly one site had a red check, on a file the client must not edit.
+
+**It was not caught here** because the framework's repository holds no site, and the unit test of
+`ClientSitePlugin` builds its sites in a temporary directory. Nothing ran the integration suite
+with a site in `sites/`.
+
+**What was chosen.** The test asserts `App` where there is no client plugin under `sites/`. Where
+there is one, it asserts the namespace is a valid one and no more: which plugin is chosen and what
+its namespace is belongs to `ClientSitePluginTest`, and repeating that rule here would be a second
+copy of it.
+
+**Rejected: skipping the test in a client's repository.** The rest of it, that the CLI provider
+boots and the engine resolves without WP-CLI, is as true and as worth knowing there.
+
+**Whether there are others.** The client's run is the evidence: one failure in the integration
+suite, none in the unit suite or in Jest. No other test reads the generators' context.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The test, with one temporary site at `sites/acme/acme-site/`, before the change | 1 failed: `'App'` expected, `'AcmeSite'` received |
+| The test, with that site, after | 5 passed |
+| The test, with no site | 5 passed |
+
+**Not run.** The whole integration suite was not run here with a site in place. The client's CI
+runs it on every pull request and will say.
