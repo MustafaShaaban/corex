@@ -1,6 +1,13 @@
 /* CoreX Submissions Inbox (spec 068). Token-only, responsive, RTL-safe. */
+
+/*
+ * One column that takes the width it is given. As an `auto` track it grew to
+ * its widest child's minimum, so the filter row pushed the whole inbox past
+ * the window and the clipped part could not be scrolled to.
+ */
 .corex-admin .corex-inbox {
 	display: grid;
+	grid-template-columns: minmax(0, 1fr);
 	gap: var(--corex-admin-space-lg);
 	min-inline-size: 0;
 }
@@ -69,14 +76,23 @@
 	border-inline-start-color: var(--corex-admin-error);
 }
 
+/*
+ * The filters wrap by the space they are given. A breakpoint on the window
+ * cannot do it: the content column is narrower than the window by two
+ * sidebars, and at 1280 it has room for five of these, not six.
+ */
 .corex-admin .corex-inbox__filters {
 	display: grid;
-	grid-template-columns: minmax(14rem, 2fr) repeat(5, minmax(8rem, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
 	gap: var(--corex-admin-space-sm);
 	padding: var(--corex-admin-space-md);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-md);
 	background: var(--corex-admin-surface);
+}
+
+.corex-admin .corex-inbox__filters .is-wide {
+	grid-column: span 2;
 }
 
 .corex-admin .corex-inbox__filters label,
@@ -166,21 +182,83 @@
 	text-transform: uppercase;
 }
 
+/*
+ * Any cell of a row opens its submission. The row's one button is stretched
+ * over the whole row, so there is one control and one keyboard stop. Anything
+ * interactive added to a row has to be lifted above that area, as the checkbox
+ * cell is.
+ */
+.corex-admin .corex-inbox__table tbody tr {
+	position: relative;
+	cursor: pointer;
+}
+
+.corex-admin .corex-inbox__table td:first-child {
+	border-inline-start: var(--corex-admin-space-2xs) solid transparent;
+}
+
 .corex-admin .corex-inbox__table tr.is-unread td {
 	background: color-mix(in srgb, var(--corex-admin-info) 6%, var(--corex-admin-surface));
 }
 
-.corex-admin .corex-inbox__row-button {
+.corex-admin .corex-inbox__table tbody tr:hover td,
+.corex-admin .corex-inbox__table tbody tr:focus-within td {
+	background: var(--corex-admin-surface-alt);
+}
+
+/* The open row: a tint, and a leading-edge bar, so not colour alone. */
+.corex-admin .corex-inbox__table tbody tr.is-open td {
+	background: color-mix(in srgb, var(--corex-admin-action) 8%, var(--corex-admin-surface));
+}
+
+.corex-admin .corex-inbox__table tbody tr.is-open td:first-child {
+	border-inline-start-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-inbox__select-cell {
 	position: relative;
+	z-index: 1;
+	cursor: default;
+}
+
+/* A measure for the sender: a long address is cut with an ellipsis, not run
+   under the next column. The pane shows it whole. */
+.corex-admin .corex-inbox__row-button {
 	display: grid;
-	gap: var(--corex-admin-space-2xs);
+	grid-template-columns: var(--corex-admin-space-md) minmax(0, 1fr);
+	row-gap: var(--corex-admin-space-2xs);
+	inline-size: 100%;
+	min-inline-size: 12rem;
+	max-inline-size: 20rem;
 	padding: 0;
-	padding-inline-start: var(--corex-admin-space-md);
 	color: var(--corex-admin-text);
 	background: transparent;
 	border: 0;
 	text-align: start;
 	cursor: pointer;
+}
+
+.corex-admin .corex-inbox__row-button::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+}
+
+/* The focus ring belongs to the row the button stands for. Drawn on the row,
+   it is not cut by the checkbox cell lifted above the button's hit area. */
+.corex-admin .corex-inbox__row-button:focus-visible {
+	outline: none;
+}
+
+.corex-admin .corex-inbox__table tbody tr:has(.corex-inbox__row-button:focus-visible) {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: calc(-1 * var(--corex-admin-focus-width));
+}
+
+.corex-admin .corex-inbox__row-button > * {
+	grid-column: 2;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .corex-admin .corex-inbox__row-button small {
@@ -197,10 +275,10 @@
 	font-style: normal;
 }
 
-.corex-admin .corex-inbox__unread {
-	position: absolute;
-	inset-block-start: var(--corex-admin-space-xs);
-	inset-inline-start: 0;
+.corex-admin .corex-inbox__row-button > .corex-inbox__unread {
+	grid-column: 1;
+	grid-row: 1;
+	align-self: center;
 	inline-size: var(--corex-admin-space-xs);
 	block-size: var(--corex-admin-space-xs);
 	background: var(--corex-admin-info);
@@ -438,15 +516,6 @@
 	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
 }
 
-@media (max-width: 1200px) { /* corex-token-allow: approved desktop breakpoint */
-	.corex-admin .corex-inbox__filters {
-		grid-template-columns: repeat(3, minmax(9rem, 1fr));
-	}
-
-	.corex-admin .corex-inbox__filters .is-wide {
-		grid-column: span 2;
-	}
-}
 
 @media (max-width: 782px) { /* corex-token-allow: WordPress admin breakpoint */
 	.corex-admin .corex-inbox__filters {

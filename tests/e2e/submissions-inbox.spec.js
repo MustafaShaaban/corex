@@ -215,3 +215,60 @@ test( 'contains the Inbox at mobile tablet desktop wide and RTL viewports', asyn
 		'rtl'
 	);
 } );
+
+/**
+ * The whole row opens the submission (spec 103, US4).
+ *
+ * Only the submitter cell's button did: a click on the form, the status or the date did nothing,
+ * which read as a broken row. The button is still the row's one control; its hit area covers the
+ * row, and the checkbox sits above it.
+ */
+test( 'opens a submission from any cell of its row, and marks the row that is open', async ( {
+	page,
+} ) => {
+	await page.getByLabel( 'Search' ).fill( EMAIL );
+	const row = page
+		.locator( '.corex-inbox__table tbody tr' )
+		.filter( { hasText: EMAIL } )
+		.first();
+	await expect( row ).toBeVisible();
+	// The search reloads the list. A click made while it does is answered by the reload.
+	await expect(
+		page.getByText( 'marked-test@example.com', { exact: true } )
+	).toHaveCount( 0 );
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
+	const drawer = page.locator( '.corex-inbox__drawer' );
+	const cells = row.locator( 'td' );
+	const count = await cells.count();
+
+	// Every cell after the checkbox and the submitter: form, status, notification, owner, received.
+	for ( let index = 2; index < count; index++ ) {
+		// By position, as a mouse does: the row's button covers the cell, so a click aimed at
+		// the cell element itself is one Playwright refuses to make.
+		await cells.nth( index ).scrollIntoViewIfNeeded();
+		const box = await cells.nth( index ).boundingBox();
+		await page.mouse.click( box.x + box.width / 2, box.y + box.height / 2 );
+		await expect(
+			drawer,
+			`cell ${ index } opens the submission`
+		).toBeVisible();
+		await expect( row ).toHaveAttribute( 'aria-current', 'true' );
+		await drawer
+			.getByRole( 'button', { name: /^Close/ } )
+			.first()
+			.click();
+		await expect( drawer ).toBeHidden();
+		await expect( row ).not.toHaveAttribute( 'aria-current', 'true' );
+	}
+
+	// The checkbox selects the row and opens nothing.
+	await row.getByLabel( /Select submission/ ).check();
+	await expect( row.getByLabel( /Select submission/ ) ).toBeChecked();
+	await expect( drawer ).toBeHidden();
+
+	// One stop per row opens it: the row holds exactly one button.
+	await expect( row.getByRole( 'button' ) ).toHaveCount( 1 );
+} );

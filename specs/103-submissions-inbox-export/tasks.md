@@ -1,0 +1,122 @@
+# Tasks: A submissions inbox and exports a client can use
+
+**Input**: [spec.md](./spec.md), [plan.md](./plan.md)
+
+**How this was written**: by hand to the Spec Kit tasks template. `/speckit-tasks` was not run.
+
+Tests are written first and seen to fail. `[P]` marks a task that touches no file another open task
+touches. Each slice ends with its guards, its rendered check where it has UI, and its notes
+(`CHANGELOG.md` with client impact, `PROGRESS.md`, `DECISIONS.md`).
+
+## Slice 1 — The row opens the submission (US4)
+
+- [x] T001 Playwright: clicking the form, status and received cells of a row opens the submission; clicking its checkbox does not (`tests/e2e/`)
+- [x] T002 Stretch `.corex-inbox__row-button` over its row and lift the checkbox above it (`assets/submissions-admin.scss`)
+- [x] T003 Row affordance: pointer, hover and focus-within background, from tokens (`assets/submissions-admin.scss`)
+- [x] T004 Mark the open row: `aria-current` on the row and `aria-expanded` on its button, with a marker that is not colour alone (`Submissions/index.js`, stylesheet)
+- [x] T005 ~~Jest: the row for the open submission carries the state~~ Covered by T001 on the real page instead: `InboxTable` is not exported, and the browser test asserts `aria-current` appearing and going
+- [x] T006 Rendered check in dark and light at 1280, RTL dark at 1280, light at 782; guards; notes
+- [x] T007 (found by T001) The inbox no longer grows past the window: its column is `minmax(0, 1fr)` and the filters wrap by the space they have
+
+## Slice 2 — A readable file, and getting it (US1, US2, US3, US7)
+
+### The table
+
+- [ ] T010 [P] Pest unit: `SubmissionExportTable` — one row per submission, one column per question in the form's order, the fixed columns first, an empty cell for an unanswered question, several values joined, a renamed question, a question missing from the form (FR-001 to FR-007)
+- [ ] T011 [P] Pest unit: typed cells — date-time in the site's timezone, a number, a boolean in words
+- [ ] T012 `SubmissionExportTable` and its cell value object (`Submissions/`)
+- [ ] T013 Contract `SubmissionQuestions`, with an empty default bound in corex-config (`Submissions/`)
+- [ ] T014 Its implementation in corex-forms for a code form and for a flow; integration test for both
+- [ ] T015 Owner display name for "Assigned to"; "Unassigned" when there is none (FR-004)
+
+### The file
+
+- [ ] T020 [P] Pest unit: `CsvExportWriter` — byte-order mark, the chosen separator, quoting, the formula guard on every text cell (FR-008, FR-017)
+- [ ] T021 `ExportDocument`, `ExportWriter`, `CsvExportWriter` (`Export/`)
+- [ ] T022 Pest integration: `ExportFileStore` writes outside the web-readable uploads, streams, and deletes
+- [ ] T023 `ExportFileStore` on `ProtectedUploads`
+- [ ] T024 `SubmissionExportRequest`: `format`, `separator`, columns as a list of named columns; the old group names still accepted and mapped (a stored run must still load)
+- [ ] T025 `SubmissionExportJobHandler` builds the table and writes through the writer; the last batch finalises the file
+- [ ] T026 Several forms in one CSV export: one file per form in an archive, and the request says so (FR-018)
+- [ ] T027 A file name from the site, the form and the date (FR-025)
+
+### Scope and counts
+
+- [ ] T030 Pest integration: the preview answers the three counts and the filters in words; tests are left out unless asked for; a person sees only their own (FR-010 to FR-013)
+- [ ] T031 `SubmissionExportPreview` and `GET …/exports/preview`
+- [ ] T032 An export of nothing is refused with a reason (FR-014)
+
+### The flow
+
+- [ ] T040 Pest integration: two runs of the same job at once append each batch once
+- [ ] T041 A per-job lock in `JobRunner` (`Jobs/JobRunner.php`)
+- [ ] T042 Pest integration: `POST …/exports/{id}/advance` runs one batch and answers processed, total and state; another person's export is refused
+- [ ] T043 The advance route, and the download as a stream with its content type and name (FR-022, FR-026)
+- [ ] T044 A stored run whose file is still in post meta downloads as before
+- [ ] T045 Column choice per person and form in user meta, re-validated on read (FR-009, FR-027)
+
+### The dialog
+
+- [ ] T050 [P] `CorexDialog` on `<dialog>`: focus in, Escape, focus back, labelled by its title; Jest
+- [ ] T051 Jest: the dialog's state — default scope from the selection, disabled reasons, the summary line, the personal-data gate
+- [ ] T052 The export dialog rebuilt in `Submissions/export/`: scope with counts and filters in words, columns named and marked, format and separator, summary, confirmation, one primary action
+- [ ] T053 Progress, completion with the automatic save, a button when the browser blocks it, failure with retry (FR-022 to FR-024)
+- [ ] T054 Every label translatable; the raw column keys gone (FR-033)
+- [ ] T055 `ConfirmBulk` moved onto `CorexDialog`
+- [ ] T056 Styles from tokens, logical properties (`assets/submissions-admin.scss`)
+- [ ] T057 Playwright: filter, select two rows, export as CSV, receive a file with the questions as headings
+- [ ] T058 Rendered check in light and dark, LTR and RTL, 1280 and 782 wide, keyboard only; guards; notes
+
+## Slice 3 — Excel (US6)
+
+- [ ] T060 [P] Pest unit: the workbook read back part by part — a sheet per form named for it, shared strings, date-time and number cells with their styles, the frozen row, the autofilter, widths
+- [ ] T061 `XlsxExportWriter` (`Export/`)
+- [ ] T062 The formula guard in a workbook (FR-008)
+- [ ] T063 Excel in the dialog and the request
+- [ ] T064 Open one produced workbook in a real spreadsheet, with Arabic text, and record what was seen
+- [ ] T065 Guards; notes
+
+## Slice 4 — The detail pane (US5)
+
+- [ ] T070 The submission's REST payload carries its questions' wording (D2) and the people who can own it
+- [ ] T071 Jest: the pane's order; answers headed by wording with the key as fallback; no empty technical section; one "nothing recorded" line
+- [ ] T072 Header: name, mailto and tel links, form, date, number, status, read state (FR-040)
+- [ ] T073 Answers first; reply and notes; one triage group with a labelled status and one assignment control (FR-039, FR-042)
+- [ ] T074 Delivery per attempt with the reason and where to fix it (FR-043)
+- [ ] T075 Technical details as one closed group (FR-044)
+- [ ] T076 Opening marks read; the header marks unread (FR-047)
+- [ ] T077 Focus into the pane, Escape, focus back to the row; clear of the admin toolbar; the inbox behind it inert (FR-045, FR-046)
+- [ ] T078 Playwright: open by keyboard, read, close, focus is on the row
+- [ ] T079 Rendered check as above; guards; notes
+
+## Slice 5 — History (US9)
+
+- [ ] T080 Pest integration: a run records format, size and expiry; expired runs lose their file and keep their entry; deleting is recorded in the activity log; a person sees only their own
+- [ ] T081 The run's new fields; `DELETE …/exports/{id}`; the daily cleanup
+- [ ] T082 The history in the dialog: who, when, what in words, format, count, size, expiry, download again, delete
+- [ ] T083 Rendered check; guards; notes
+
+## Slice 6 — PDF (US8)
+
+- [ ] T090 Spike: a PHP library that shapes Arabic and what it adds to the distribution, against a print-styled document; the result recorded in `plan.md` and `DECISIONS.md` before any code
+- [ ] T091 Pest unit: the document's parts — identity, title, filters, count, who and when, page numbers, the sign-off block
+- [ ] T092 `PdfExportWriter`
+- [ ] T093 Brand name and logo from the brand settings, with the site title as the fallback
+- [ ] T094 One produced document opened and printed, with Arabic answers; what was seen recorded
+- [ ] T095 PDF in the dialog; guards; notes
+
+## Slice 7 — The Data export (US10)
+
+- [ ] T100 Audit `DataModels/ExportPanel.js` and its services against FR-048's list; add the findings to `plan.md`
+- [ ] T101 The Data export writes through `Export/` writers and stores through `ExportFileStore`
+- [ ] T102 Preview with a count, the advance route, the streamed download
+- [ ] T103 Its dialog on `CorexDialog`, in the same order as the Submissions export
+- [ ] T104 Playwright: one Data export end to end
+- [ ] T105 Rendered check; guards; notes
+
+## Dependencies
+
+- Slice 1 depends on nothing.
+- Slice 2 is the base of 3, 5, 6 and 7.
+- Slice 4 needs T013 and T014 from slice 2.
+- Slices 3, 4 and 5 are independent of each other once slice 2 is in.

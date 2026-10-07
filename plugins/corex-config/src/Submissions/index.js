@@ -430,7 +430,20 @@ function BulkToolbar( props ) {
 	);
 }
 
+// The detail pane's id, so the row that opened it can say which element it controls.
+const DRAWER_ID = 'corex-submission-detail';
+
+function rowClassName( item, openId ) {
+	return [
+		item.read_at ? '' : 'is-unread',
+		item.id === openId ? 'is-open' : '',
+	]
+		.filter( Boolean )
+		.join( ' ' );
+}
+
 function InboxTable( { state, dispatch, open } ) {
+	const openId = state.drawer.open ? state.drawer.id : 0;
 	const all =
 		state.items.length > 0 &&
 		state.items.every( ( item ) => state.selectedIds.includes( item.id ) );
@@ -489,9 +502,12 @@ function InboxTable( { state, dispatch, open } ) {
 					{ state.items.map( ( item ) => (
 						<tr
 							key={ item.id }
-							className={ item.read_at ? '' : 'is-unread' }
+							className={ rowClassName( item, openId ) }
+							aria-current={
+								item.id === openId ? 'true' : undefined
+							}
 						>
-							<td>
+							<td className="corex-inbox__select-cell">
 								<input
 									type="checkbox"
 									checked={ state.selectedIds.includes(
@@ -514,8 +530,14 @@ function InboxTable( { state, dispatch, open } ) {
 								/>
 							</td>
 							<td>
+								{ /* The row's one control. Its hit area is stretched over the
+								     whole row in the stylesheet, so any cell opens the
+								     submission and the keyboard still meets one stop per row. */ }
 								<button
+									type="button"
 									className="corex-inbox__row-button"
+									aria-expanded={ item.id === openId }
+									aria-controls={ DRAWER_ID }
 									onClick={ () => open( item.id ) }
 								>
 									<span
@@ -697,6 +719,7 @@ function DetailDrawer( { drawer, inbox } ) {
 	if ( drawer.status === 'loading' ) {
 		return (
 			<aside
+				id={ DRAWER_ID }
 				className="corex-inbox__drawer"
 				aria-label={ __( 'Submission detail', 'corex' ) }
 			>
@@ -709,7 +732,7 @@ function DetailDrawer( { drawer, inbox } ) {
 	}
 	if ( ! record ) {
 		return (
-			<aside className="corex-inbox__drawer">
+			<aside id={ DRAWER_ID } className="corex-inbox__drawer">
 				<Button onClick={ inbox.close }>
 					{ __( 'Close', 'corex' ) }
 				</Button>
@@ -722,6 +745,7 @@ function DetailDrawer( { drawer, inbox } ) {
 	).filter( ( item ) => item?.attempt_id );
 	return (
 		<aside
+			id={ DRAWER_ID }
 			className="corex-inbox__drawer"
 			aria-labelledby="corex-submission-title"
 		>

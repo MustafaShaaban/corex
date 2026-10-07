@@ -21,6 +21,11 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **Any cell of a Submissions row opens the submission** (spec 103). Only the submitter's name did;
+  a click on the form, the status or the date did nothing. The row still has one control and one
+  keyboard stop: its button now covers the row, and the checkbox sits above it. The row of the open
+  submission is marked with a tint and a bar on its leading edge, and says so to assistive
+  technology (DECISIONS #253).
 - **The Operations mode panel is reorganised.** It said what the current mode does three or four
   times, drew two unmarked lists that read as one paragraph, laid its form out as a wrapping row
   with the button far from the confirmation that enables it, and asked for a confirmation of the
@@ -33,6 +38,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The right-hand side of the Submissions inbox was cut off and could not be reached.** With the
+  WordPress menu and the CoreX menu both open, a 1280-pixel window leaves the inbox 816 pixels. The
+  filter row needed 958, the inbox's one column grew to fit it, and a container above it clipped
+  what was left: the "Received" column and the "To" date were off the edge with nothing to scroll.
+  The filters now wrap by the space they are given, and the table scrolls inside its own frame
+  when it is wider than that.
 - **In a client repository, `wp corex make:*` wrote outside the client's plugin** (#251). With no
   `app.path` configured the generators wrote to `wp-content/corex-app` under `App\`, while the
   generated `AGENTS.md` said they wrote into the client plugin. In a repository with exactly one
@@ -89,6 +100,9 @@ All notable changes to Corex are documented here. The format follows
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
 Read this before taking the release.
 
+- **Text in a Submissions row can no longer be selected by dragging.** The row is one control now.
+  Open the submission to copy from it. A long sender address is cut with an ellipsis in the row
+  and shown whole in the pane.
 - **`wp corex make:*` writes somewhere new in a client repository with one site**: the client
   plugin's `src/`, not `wp-content/corex-app`. Files already generated into `corex-app` are not
   moved. A repository with `APP_PATH` set in its `.env`, with several sites, or with none is
