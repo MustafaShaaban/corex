@@ -93,6 +93,14 @@ final class PhaseSevenJobHandler implements JobHandler
     }
 }
 
+// The runner takes a lock per job, in the options table. These tests are about which site and
+// which user a step runs as; the lock itself is exercised against a real database in
+// tests/Integration/Submissions/SubmissionExportFileTest.php.
+beforeEach(function () {
+    Functions\when('add_option')->justReturn(true);
+    Functions\when('delete_option')->justReturn(true);
+});
+
 it('runs queued work and its capability check under the recorded site', function (
     int $currentSiteId,
     ?int $recordedSiteId,

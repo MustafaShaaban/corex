@@ -120,9 +120,19 @@ function exportStore(): SubmissionExportStore
 function exportQueue(): SubmissionExportJobQueue
 {
     return new class() implements SubmissionExportJobQueue {
+        /** @var list<int> */
+        public array $advanced = [];
+
         public function enqueue(SubmissionExportRun $run): int
         {
             return 900 + $run->id;
+        }
+
+        public function advance(int $jobId): array
+        {
+            $this->advanced[] = $jobId;
+
+            return ['state' => 'running', 'processed' => 100, 'total' => 250, 'error' => ''];
         }
     };
 }
@@ -542,3 +552,33 @@ it('refuses a column, a format or a separator it does not know', function (array
     'an unknown format' => [['format' => 'docx']],
     'an unknown separator' => [['separator' => 'pipe']],
 ]);
+
+/**
+ * The dialog shows these before anything is exported, so a person knows what each choice means
+ * (spec 103, FR-010). They are counted the way the export itself would count.
+ */
+it('counts what each scope would export, before it is exported', function () {
+    [$activity] = exportActivity();
+    $service = new SubmissionExportService(exportReader(exportRecords()), exportStore(), exportQueue(), $activity);
+
+    // 20 and 22 are real, 21 is a marked test. A member of the sales team sees 20 and 21.
+    expect($service->preview(new SubmissionAccessScope(7, true), [20, 21, 22, 99], [], false))
+        ->toBe(['selected' => 2, 'filtered' => 2, 'accessible' => 2])
+        ->and($service->preview(new SubmissionAccessScope(7, true), [20, 21, 22, 99], [], true))
+        ->toBe(['selected' => 3, 'filtered' => 3, 'accessible' => 3])
+        ->and($service->preview(new SubmissionAccessScope(7, false, ['sales']), [20, 21, 22], [], false))
+        ->toBe(['selected' => 1, 'filtered' => 1, 'accessible' => 1]);
+});
+
+it('takes a step of an export for the person who made it, and for nobody else', function () {
+    [$activity] = exportActivity();
+    $queue = exportQueue();
+    $service = new SubmissionExportService(exportReader(exportRecords()), exportStore(), $queue, $activity);
+    $scope = new SubmissionAccessScope(7, true, canExportPersonalData: true);
+    $run = $service->request($scope, SubmissionExportRequest::from(['scope' => 'accessible', 'columns' => ['identity']]));
+
+    expect($service->advance($scope, $run->id))->toBe(['state' => 'running', 'processed' => 100, 'total' => 250, 'error' => ''])
+        ->and($queue->advanced)->toBe([$run->jobId]);
+
+    $service->advance(new SubmissionAccessScope(8, false), $run->id);
+})->throws(DomainException::class, 'The submission export is unavailable.');

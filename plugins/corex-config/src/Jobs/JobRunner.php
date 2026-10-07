@@ -27,6 +27,12 @@ final class JobRunner
 {
     private const BATCH_SIZE = 100;
 
+    /** One option per job being run. `add_option()` fails when the row exists, which is the lock. */
+    private const LOCK_PREFIX = 'corex_job_running_';
+
+    /** A run that died holding its lock is taken to have ended after this many seconds. */
+    private const LOCK_SECONDS = 120;
+
     public function __construct(
         private readonly JobRepository $jobs,
         private readonly JobHandlerRegistry $handlers,
@@ -51,7 +57,43 @@ final class JobRunner
         );
     }
 
+    /**
+     * One step of a job, unless another run of the same job is already taking one.
+     *
+     * A job is advanced by the scheduler, and also by a screen that is waiting for it. Two runs at
+     * once would each read the job at the same point and do the same batch twice.
+     */
     private function execute(int $jobId): void
+    {
+        if (! $this->lock($jobId)) {
+            return;
+        }
+
+        try {
+            $this->step($jobId);
+        } finally {
+            delete_option(self::LOCK_PREFIX . $jobId);
+        }
+    }
+
+    private function lock(int $jobId): bool
+    {
+        $name = self::LOCK_PREFIX . $jobId;
+
+        if (add_option($name, time(), '', false)) {
+            return true;
+        }
+
+        if (time() - (int) get_option($name, 0) < self::LOCK_SECONDS) {
+            return false;
+        }
+
+        // Held by a run that never let go. Its time is replaced, so two runs that both find it
+        // stale do not both proceed: only one of them changes the value.
+        return update_option($name, time(), false);
+    }
+
+    private function step(int $jobId): void
     {
         $job = $this->jobs->find($jobId);
 

@@ -42,6 +42,8 @@ final readonly class SubmissionsController
         $this->route('/submissions/bulk/apply', 'POST', 'bulkApply');
         $this->route('/submissions/exports', 'GET', 'exports');
         $this->route('/submissions/exports', 'POST', 'createExport');
+        $this->route('/submissions/exports/preview', 'POST', 'previewExport');
+        $this->route('/submissions/exports/(?P<export>\d+)/advance', 'POST', 'advanceExport');
         $this->route('/submissions/exports/(?P<export>\d+)/download', 'GET', 'downloadExport');
     }
 
@@ -176,6 +178,25 @@ final readonly class SubmissionsController
         )]));
     }
 
+    public function previewExport(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, $this->exportShape(), fn (Request $safe): Response => Response::ok([
+            'counts' => $this->services->exports->preview(
+                $this->scope(),
+                (array) ($safe->input['selected_ids'] ?? []),
+                (array) ($safe->input['query'] ?? []),
+                (bool) ($safe->input['include_test'] ?? false),
+            ),
+        ]));
+    }
+
+    public function advanceExport(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, [], fn (): Response => Response::ok([
+            'progress' => $this->services->exports->advance($this->scope(), RouteParam::int($request, 'export')),
+        ]));
+    }
+
     public function downloadExport(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->read($request, fn (): Response => Response::ok([
@@ -250,10 +271,12 @@ final readonly class SubmissionsController
         return [
             'scope' => 'sanitize_key',
             'selected_ids' => $this->integerList(...),
-            'columns' => $this->keyList(...),
+            'columns' => $this->columnList(...),
             'query' => $this->query(...),
             'include_test' => 'rest_sanitize_boolean',
             'personal_data_acknowledged' => 'rest_sanitize_boolean',
+            'format' => 'sanitize_key',
+            'separator' => 'sanitize_key',
         ];
     }
 
@@ -263,10 +286,18 @@ final readonly class SubmissionsController
         return array_values(array_filter(array_map('absint', is_array($value) ? $value : [])));
     }
 
-    /** @return list<string> */
-    private function keyList(mixed $value): array
+    /**
+     * Column names, which may name one answer as `answer:<key>`. `sanitize_key()` would drop the
+     * colon and turn that into a column nobody asked for.
+     *
+     * @return list<string>
+     */
+    private function columnList(mixed $value): array
     {
-        return array_values(array_filter(array_map('sanitize_key', is_array($value) ? $value : [])));
+        return array_values(array_filter(array_map(
+            static fn (mixed $column): string => (string) preg_replace('/[^A-Za-z0-9_:\-]/', '', (string) $column),
+            is_array($value) ? $value : [],
+        )));
     }
 
     /** @return array<string,string> */

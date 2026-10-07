@@ -148,3 +148,106 @@ it('refuses an export of nothing, and says so', function () {
     expect($response->get_data()['ok'])->toBeFalse()
         ->and($response->get_status())->toBeGreaterThanOrEqual(400);
 });
+
+/**
+ * The dialog does not wait for the scheduler: it asks for a step, and then another, until the
+ * file is ready (spec 103, FR-022). On a quiet site WP-Cron may not fire for minutes.
+ */
+it('finishes an export for a screen that is waiting on it, without the scheduler', function () {
+    $this->posts[] = $submission = seedContactSubmission(
+        ['name' => 'Mona', 'email' => 'mona@example.com', 'message' => 'Hello'],
+        '2026-10-07 09:30:00',
+    );
+
+    $export = $this->controller->createExport(exportRouteRequest('POST', '/corex/v1/submissions/exports', [
+        'scope' => 'selected',
+        'selected_ids' => [$submission],
+        'columns' => ['id', 'answer:email'],
+        'personal_data_acknowledged' => true,
+        'separator' => 'semicolon',
+    ]))->get_data()['data']['export'];
+    $this->posts[] = (int) $export['id'];
+    $this->jobs[]  = (int) $export['job_id'];
+
+    $advance = exportRouteRequest('POST', '/corex/v1/submissions/exports/' . $export['id'] . '/advance');
+    $advance->set_url_params(['export' => $export['id']]);
+    $progress = $this->controller->advanceExport($advance)->get_data()['data']['progress'];
+
+    $stored = $this->container->make(WpSubmissionExportStore::class)->file((int) $export['id']);
+    $this->files[] = (string) ($stored['path'] ?? '');
+
+    expect($progress)->toMatchArray(['state' => 'completed', 'processed' => 1, 'total' => 1, 'error' => ''])
+        // One answer as a column, and the separator, both reach the file through the route.
+        ->and(file_get_contents((string) $stored['path']))->toBe("\xEF\xBB\xBF" . "ID;Email\r\n" . $submission . ";mona@example.com\r\n");
+});
+
+/**
+ * The scheduler and a waiting screen can ask for the same step at the same moment. Two runs would
+ * each read the job at the same point and write the same batch twice.
+ */
+it('does not take a step of a job while another run of it holds the step', function () {
+    $this->posts[] = $submission = seedContactSubmission(['name' => 'Mona'], '2026-10-07 09:30:00');
+
+    $export = $this->controller->createExport(exportRouteRequest('POST', '/corex/v1/submissions/exports', [
+        'scope' => 'selected',
+        'selected_ids' => [$submission],
+        'columns' => ['id'],
+    ]))->get_data()['data']['export'];
+    $this->posts[] = (int) $export['id'];
+    $this->jobs[]  = (int) $export['job_id'];
+
+    $runner = $this->container->make(JobRunner::class);
+    $store  = $this->container->make(WpSubmissionExportStore::class);
+    $lock   = 'corex_job_running_' . $export['job_id'];
+
+    add_option($lock, time(), '', false);
+    $runner->run((int) $export['job_id']);
+    $whileHeld = $store->file((int) $export['id']);
+
+    delete_option($lock);
+    $runner->run((int) $export['job_id']);
+    $afterwards = $store->file((int) $export['id']);
+    $this->files[] = (string) ($afterwards['path'] ?? '');
+
+    expect($whileHeld)->toBeNull()
+        ->and($afterwards)->not->toBeNull()
+        // And the run that took the step let go of it.
+        ->and(get_option($lock, 'released'))->toBe('released');
+});
+
+it('takes over a step from a run that died holding it', function () {
+    $this->posts[] = $submission = seedContactSubmission(['name' => 'Mona'], '2026-10-07 09:30:00');
+
+    $export = $this->controller->createExport(exportRouteRequest('POST', '/corex/v1/submissions/exports', [
+        'scope' => 'selected',
+        'selected_ids' => [$submission],
+        'columns' => ['id'],
+    ]))->get_data()['data']['export'];
+    $this->posts[] = (int) $export['id'];
+    $this->jobs[]  = (int) $export['job_id'];
+
+    add_option('corex_job_running_' . $export['job_id'], time() - 600, '', false);
+    $this->container->make(JobRunner::class)->run((int) $export['job_id']);
+
+    $stored = $this->container->make(WpSubmissionExportStore::class)->file((int) $export['id']);
+    $this->files[] = (string) ($stored['path'] ?? '');
+
+    expect($stored)->not->toBeNull();
+});
+
+it('says how many submissions each choice would export', function () {
+    $marker = 'count-' . strtolower(wp_generate_password(12, false)) . '@example.com';
+    $this->posts[] = $first  = seedContactSubmission(['name' => 'A', 'email' => $marker], '2026-10-07 09:30:00');
+    $this->posts[] = $second = seedContactSubmission(['name' => 'B', 'email' => $marker], '2026-10-07 09:31:00');
+    update_post_meta($first, 'corex_submitter_email', $marker);
+    update_post_meta($second, 'corex_submitter_email', $marker);
+
+    $counts = $this->controller->previewExport(exportRouteRequest('POST', '/corex/v1/submissions/exports/preview', [
+        'selected_ids' => [$first],
+        'query' => ['search' => $marker],
+    ]))->get_data()['data']['counts'];
+
+    expect($counts['selected'])->toBe(1)
+        ->and($counts['filtered'])->toBe(2)
+        ->and($counts['accessible'])->toBeGreaterThanOrEqual(2);
+});
