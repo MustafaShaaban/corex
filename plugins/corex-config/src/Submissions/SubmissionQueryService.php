@@ -17,9 +17,15 @@ use DomainException;
  */
 final readonly class SubmissionQueryService
 {
+    /**
+     * @param SubmissionQuestions|null  $questions Asked for a form's wording, when there is somebody to ask.
+     * @param SubmissionOwnerNames|null $owners    Asked who an owner is, and who can be one.
+     */
     public function __construct(
         private SubmissionInboxReader $reader,
         private SubmissionAccessPolicy $access,
+        private ?SubmissionQuestions $questions = null,
+        private ?SubmissionOwnerNames $owners = null,
     ) {
     }
 
@@ -43,7 +49,27 @@ final readonly class SubmissionQueryService
         $scope = $this->scope($actorId);
         $record = $this->reader->findInbox($submissionId, $scope);
 
-        return $record !== null && $scope->allows($record) ? $record : null;
+        return $record !== null && $scope->allows($record) ? $this->described($record) : null;
+    }
+
+    /**
+     * The record, with what a person needs to read it: the questions its answers belong to, its
+     * owner by name, and the people it could be given to. The record's own fields are untouched.
+     *
+     * @param array<string,mixed> $record
+     *
+     * @return array<string,mixed>
+     */
+    private function described(array $record): array
+    {
+        return $record + [
+            'questions' => $this->questions?->for((string) ($record['form'] ?? '')) ?? [],
+            'owner_name' => $this->owners?->nameOf(
+                (string) ($record['owner_type'] ?? 'none'),
+                (string) ($record['owner_key'] ?? ''),
+            ) ?? '',
+            'owners' => $this->owners?->people() ?? [],
+        ];
     }
 
     private function scope(int $actorId): SubmissionAccessScope

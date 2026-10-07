@@ -331,6 +331,11 @@ function exportFiles(): SubmissionExportFiles
         {
             return '';
         }
+
+        public function people(): array
+        {
+            return [];
+        }
     };
 
     return new SubmissionExportFiles(

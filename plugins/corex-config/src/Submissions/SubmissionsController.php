@@ -81,6 +81,10 @@ final readonly class SubmissionsController
                 $record = $this->services->workflow->markRead($scope, $id, $expected);
                 $expected = (string) $record['updated_at'];
             }
+            if ((bool) ($safe->input['mark_unread'] ?? false)) {
+                $record = $this->services->workflow->markUnread($scope, $id, $expected);
+                $expected = (string) $record['updated_at'];
+            }
             if (($safe->input['owner_type'] ?? '') !== '') {
                 $record = $this->services->workflow->assign($scope, $id, new SubmissionAssignment(
                     (string) $safe->input['owner_type'],
@@ -252,6 +256,7 @@ final readonly class SubmissionsController
         return [
             'status' => 'sanitize_key',
             'mark_read' => 'rest_sanitize_boolean',
+            'mark_unread' => 'rest_sanitize_boolean',
             'owner_type' => 'sanitize_key',
             'owner_key' => 'sanitize_key',
             'expected_updated_at' => 'sanitize_text_field',

@@ -62,6 +62,20 @@ final readonly class SubmissionWorkflowService
         return $updated;
     }
 
+    /**
+     * Opening a submission marks it read, so there is a way back for somebody who only looked.
+     *
+     * @return array<string,mixed>
+     */
+    public function markUnread(SubmissionAccessScope $scope, int $submissionId, string $expectedUpdatedAt): array
+    {
+        $this->accessible($scope, $submissionId);
+        $updated = $this->submissions->updateWorkflow($submissionId, ['read_at' => '', 'read_by' => 0], $expectedUpdatedAt);
+        $this->timeline->append($submissionId, 'unread', 'success', ['actor_id' => $scope->actorId]);
+
+        return $updated;
+    }
+
     /** @return array<string,mixed> */
     public function assign(
         SubmissionAccessScope $scope,
