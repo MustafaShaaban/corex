@@ -72,6 +72,10 @@ final class SiteScaffolder
             'baseline_commit'   => $repository->baseline->commit,
             'baseline_recorded' => gmdate('Y-m-d'),
         ];
+        // The README describes the theme's build pipeline only when the site is given one.
+        $values['theme_assets'] = $starter && ! $pluginOnly
+            ? $this->renderer->render($this->readStub('starter/readme-theme-assets'), $values)
+            : '';
 
         // spec 061: the client plugin + theme sit directly under the site root (sites/<client>/<slug>-site,
         // <slug>-theme) — not nested under plugins/themes — so the layout reads as one client unit.

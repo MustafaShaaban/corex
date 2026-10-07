@@ -23,6 +23,7 @@ use Corex\Cli\Commands\ResetCommand;
 use Corex\Cli\Commands\SecurityResetLoginCommand;
 use Corex\Cli\Commands\SecurityTrustedProxiesCommand;
 use Corex\Cli\Commands\VersionCommand;
+use Corex\Cli\Site\ClientSitePlugin;
 use Corex\Cli\Release\CiSecurityReadiness;
 use Corex\Cli\Release\ComponentCoverageReadinessCheck;
 use Corex\Cli\Release\FreeProBoundaryReadinessCheck;
@@ -652,6 +653,16 @@ final class CliServiceProvider extends ServiceProvider
     private function context(ConfigInterface $config): GeneratorContext
     {
         $base = (string) $config->get('app.path');
+
+        // In a client repository the generators belong in the client's plugin. Nothing sets
+        // `app.path` when a site is generated, so the one site under `sites/` is the answer.
+        $clientPlugin = $base === ''
+            ? $this->container->make(ClientSitePlugin::class)->generatorContext(dirname(__DIR__, 3))
+            : null;
+
+        if ($clientPlugin !== null) {
+            return $clientPlugin;
+        }
 
         if ($base === '' && defined('WP_CONTENT_DIR')) {
             $base = WP_CONTENT_DIR . '/corex-app';

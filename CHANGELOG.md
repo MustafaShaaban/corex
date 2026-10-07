@@ -33,6 +33,17 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **In a client repository, `wp corex make:*` wrote outside the client's plugin** (#251). With no
+  `app.path` configured the generators wrote to `wp-content/corex-app` under `App\`, while the
+  generated `AGENTS.md` said they wrote into the client plugin. In a repository with exactly one
+  site under `sites/` they now write into that site's plugin, `sites/<client>/<slug>-site/src`,
+  under its namespace (DECISIONS #252).
+- **A generated site's README described a build pipeline the site did not have** (#251). The "Theme
+  assets" section, with `assets/src/`, `npm run build` and the `Corex\Assets\*` calls, was written
+  for every site. It is now written only with `--starter`, which is what generates those files.
+- **A generated site's `AGENTS.md` told the client to follow Spec Kit, which writes to
+  framework-owned paths** (#251). It now says to write the site's specs by hand, and why. Making
+  the `/speckit-*` commands work in a client repository is still open.
 - **Behind a proxy, a form counted every visitor as one client** (#247). The rate limit of a form and
   of a flow was keyed on `REMOTE_ADDR`, and so was the address sent to the captcha provider. Behind a
   proxy, a load balancer or a CDN that is the proxy: one allowance for the whole site, which one
@@ -78,6 +89,13 @@ All notable changes to Corex are documented here. The format follows
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
 Read this before taking the release.
 
+- **`wp corex make:*` writes somewhere new in a client repository with one site**: the client
+  plugin's `src/`, not `wp-content/corex-app`. Files already generated into `corex-app` are not
+  moved. A repository with `APP_PATH` set in its `.env`, with several sites, or with none is
+  unchanged.
+- **The files `make:site` already generated are not rewritten.** A site's own `README.md` and
+  `AGENTS.md` are the client's; correct them by hand if they describe a pipeline the site lacks,
+  or say that the generators write into the client plugin when they did not.
 - **A form that asks a local audience for a phone number can stop refusing local numbers.** Change
   the field's rule from `phone` to `phone:national`. Nothing changes for a form that is left alone:
   `phone` accepts and refuses exactly what it did.
