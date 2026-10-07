@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.43.0** — tag `v0.43.0`, reachable from `main`.
+- **Latest published release: v0.43.1** — tag `v0.43.1`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -44,11 +44,15 @@ No feature spec is in flight. Spec 101 (coming-soon mode) and spec 102 (update-s
 are both in v0.43.0, which makes it the first release a client repository can be created from with
 the mode in it and with a way to take every later release by merging.
 
-No dependency pull request is being held.
+One dependency pull request is held: #240, `@wordpress/scripts` 34 → 36, a toolchain major that
+wants its own verified pass. It would retire both overrides listed under "Open, and not hidden".
+Three routine Dependabot pull requests are open beside it (#241, #242, #243).
 
 ## Recently landed
 
-On `main` since v0.43.0, and not in a release yet:
+Released in v0.43.1, a patch release. Nothing is on `main` since that is not in a release.
+[`CHANGELOG.md`](CHANGELOG.md) has the full entry, with what changes for a client site; the decisions
+are #239 to #244.
 
 - **A full integration run no longer leaves transients on the install, and the flow tests delete
   only what they created** (#236, tests only, DECISIONS #240). Two things were left open by #231. A
