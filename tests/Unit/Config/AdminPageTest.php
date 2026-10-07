@@ -8,6 +8,7 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Filters;
 use Brain\Monkey\Functions;
 use Corex\Admin\AdminPage;
 
@@ -33,6 +34,26 @@ it('renders the branded shell with a labelled main region and page header', func
         ->and($html)->toContain('COREX FRAMEWORK')
         ->and($html)->toContain('<h1 id="corex-page-title">CoreX Data</h1>')
         ->and($html)->toContain('Manage framework records.');
+});
+
+it('prints the notice region between the page header and the content, closed by the marker WordPress moves notices to', function () {
+    $html = (new AdminPage())->open('data', 'CoreX Data', '');
+
+    // With nothing to show the region is still there: core's script looks for `wp-header-end`
+    // and, finding none, moves every notice to after the first heading, inside the page header.
+    expect($html)->toContain(
+        '</header><div class="corex-admin__notices"><hr class="wp-header-end" /></div><div class="corex-admin__content">'
+    );
+});
+
+it('prints what WordPress printed before the page inside that region, unchanged', function () {
+    $nag = '<div class="notice notice-warning update-nag inline"><a href="update-core.php">Please update now</a>.</div>';
+    Filters\expectApplied('corex_admin_notices')->once()->with('')->andReturn($nag);
+
+    $html = (new AdminPage())->open('data', 'CoreX Data', '');
+
+    // Not escaped again: the link is what the notice is for.
+    expect($html)->toContain('<div class="corex-admin__notices">' . $nag . '<hr class="wp-header-end" /></div>');
 });
 
 it('gives every CoreX screen a distinct rail icon and a correct active state (spec 064)', function (string $section, string $iconClass) {

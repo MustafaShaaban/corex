@@ -6,35 +6,6 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
-### Fixed
-
-- **`scripts/setup-wordpress.ps1` installs the browser suite's fixtures, as two files said it
-  did.** The docblock of `tests/e2e/fixtures/corex-e2e-client-guide.php` and a comment in
-  `tests/e2e/admin-help-tab.spec.js` both said the script copied that fixture into
-  `wp/wp-content/mu-plugins/`. The script had no such step, so on a development install "a guide
-  registered by a client plugin still appears" failed until somebody copied the file by hand. The
-  script now copies every `tests/e2e/fixtures/corex-e2e-*.php` there, on every run, so a re-run
-  refreshes a fixture that was edited. The browser job in `.github/workflows/ci.yml` copies the
-  same pattern where it named one file, so a fixture added to the directory reaches both.
-
-  Two installs get no copy. `-Multisite` does not, because that install mirrors
-  `.github/actions/provision-wordpress`, which installs no must-use plugin. A run that links a
-  client site does not either, and prints the commands instead.
-
-### Client impact
-
-Nothing to do on update.
-
-- **Re-running `scripts/setup-wordpress.ps1` in a repository with a site under `sites/` copies no
-  fixture.** A must-use plugin is active as soon as the file is there, and the client-guide
-  fixture adds a guide named "Client plugin guide" to the Guides screen. To run the framework's
-  browser suite against such an install, use the two commands the script prints at the end.
-- **A new client repository gets the fixtures on its first run**, because the procedure runs the
-  script before `wp corex make:site` and there is no site to recognise yet. They are
-  `wp/wp-content/mu-plugins/corex-e2e-*.php`; delete them if that install is ever shown to
-  anyone but a developer. The dist builder packages neither `tests/` nor the install's
-  `wp-content`, so they reach no artifact.
-
 ### Added
 
 - **The export history says what each export was** (spec 103, slice 5). It was a date, a count
@@ -56,6 +27,40 @@ Nothing to do on update.
 - **A download from "Recent exports" that failed said nothing.** It says so now.
 - **An export whose file is no longer on the server is not offered for download.** It was listed
   with a "Download" that could only fail. It reads "No file to download."
+- **`scripts/setup-wordpress.ps1` installs the browser suite's fixtures, as two files said it
+  did.** The docblock of `tests/e2e/fixtures/corex-e2e-client-guide.php` and a comment in
+  `tests/e2e/admin-help-tab.spec.js` both said the script copied that fixture into
+  `wp/wp-content/mu-plugins/`. The script had no such step, so on a development install "a guide
+  registered by a client plugin still appears" failed until somebody copied the file by hand. The
+  second fixture, `corex-e2e-core-notices.php`, said to copy it by hand. The script now copies
+  every `tests/e2e/fixtures/corex-e2e-*.php` there, on every run, so a re-run refreshes a fixture
+  that was edited. The browser job in `.github/workflows/ci.yml` copies the same pattern in one
+  step where it named each file in a step of its own, so a fixture added to the directory reaches
+  both. The two docblocks now say the same thing.
+
+  Two installs get no copy. `-Multisite` does not, because that install mirrors
+  `.github/actions/provision-wordpress`, which installs no must-use plugin. A run that links a
+  client site does not either, and prints the commands instead.
+- **WordPress's update notice no longer sits above the CoreX admin.** While a core update is
+  pending, WordPress prints "WordPress 7.1.3 is available! Please update now." before the page. On
+  a CoreX screen that was a pale box in a band of its own above the shell, and every screen
+  started 54px lower. It is now printed under the page header, in the content column, drawn like a
+  CoreX alert in dark and in light, with its two links as they were. It is moved, not hidden: an
+  administrator still sees it on every CoreX screen.
+- **Every notice printed on `admin_notices` or `all_admin_notices` goes to the same place** on a
+  CoreX screen, a plugin's and CoreX's own (the result of switching an add-on, the kit prompt).
+  WordPress's script used to move these into the page header, between the title and its
+  description, in WordPress's light colours in both appearances. They are stacked under the
+  header, 12px apart, with the tone on the edge reading starts from and the dismiss button on the
+  far side, in both directions.
+  With nothing to show, the page is laid out as it was. Something printed on those hooks that is
+  not a notice, Hello Dolly's line for one, is in the same place as a line of text. It used to
+  float in the top corner beside the shell, and the whole shell was drawn narrower to make room
+  for it.
+
+It was not seen in CI because CI installs the latest WordPress, where no update is pending.
+`tests/e2e/admin-core-notices.spec.js` asks for one: a fixture answers the update check for the
+request, so WordPress prints its own notice whatever version the install runs.
 
 ### Client impact
 
@@ -77,6 +82,28 @@ Nothing to do on update.
 - **Strings in the history are new** in the `corex` text domain.
 - **The admin bundle changed.** `build/` is git-ignored: rebuild `plugins/corex-config` after
   taking this.
+- **A notice your plugin prints on `admin_notices` is drawn inside the CoreX shell on CoreX
+  screens.** It is a child of `.corex-admin__notices` and takes the shell's colours. A stylesheet
+  of yours that reached it as `#wpbody-content > .notice` on a CoreX screen no longer matches it.
+  Other admin screens are unchanged.
+- **The shell has one more element**: `<div class="corex-admin__notices">` between
+  `.corex-admin__header` and `.corex-admin__content`, always printed, and of no height while it is
+  empty. A selector written as `.corex-admin__header + .corex-admin__content` no longer matches.
+- **`corex_admin_notices` is a new filter**: markup to print in that region, read by
+  `AdminPage::open()`.
+- **The notice change asks nothing of a site on update**, and nothing to rebuild: the shell's
+  stylesheet is not a built file.
+- **Re-running `scripts/setup-wordpress.ps1` in a repository with a site under `sites/` copies no
+  browser-test fixture.** A must-use plugin is active as soon as the file is there, and the
+  client-guide fixture adds a guide named "Client plugin guide" to the Guides screen. To run the
+  framework's browser suite against such an install, use the two commands the script prints at
+  the end.
+- **A new client repository gets the fixtures on its first run**, because the procedure runs the
+  script before `wp corex make:site` and there is no site to recognise yet. They are
+  `wp/wp-content/mu-plugins/corex-e2e-*.php`; delete them if that install is ever shown to
+  anyone but a developer. The dist builder packages neither `tests/` nor the install's
+  `wp-content`, so they reach no artifact.
+
 
 ## [0.43.3] — 2026-10-07
 

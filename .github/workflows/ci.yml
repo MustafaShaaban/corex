@@ -214,10 +214,13 @@ jobs:
 
       # Fixtures the browser specs need but a fresh install has no reason to contain. Each one
       # removed from the exclusion list in tests/e2e/playwright.config.js is seeded here.
-      # The mu-plugin fixtures, each saying in its own docblock what it is for. The first was a
-      # plugin CoreX has never heard of, registering a guide through the public `corex_guides`
-      # filter (spec 097, FR-008). Mu-plugins, so they are active with no activation step — and
-      # committed files rather than heredocs here, so the same fixtures serve a local run.
+      # The mu-plugin fixtures, each saying in its own docblock what it is for. One is a plugin
+      # CoreX has never heard of, registering a guide through the public `corex_guides` filter
+      # (spec 097, FR-008). One answers core's update check for a request that asks it to: core
+      # prints its update nag only while an update is pending, and this job installs the latest
+      # WordPress, where none is, so without it admin-core-notices.spec.js would meet no nag here.
+      # Mu-plugins, so they are active with no activation step — and committed files rather than
+      # heredocs here, so the same fixtures serve a local run.
       #
       # By pattern, not by name: scripts/setup-wordpress.ps1 copies the same pattern into the
       # framework's development install, so a fixture added to that directory reaches both without
