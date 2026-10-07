@@ -368,7 +368,7 @@ final readonly class SubmissionsController
         register_rest_route('corex/v1', $path, [
             'methods' => $method,
             'callback' => [$this, $callback],
-            'permission_callback' => '__return_true',
+            'permission_callback' => [$this->gateway, 'permits'],
             'args' => [
                 'id' => ['sanitize_callback' => 'absint'],
                 'export' => ['sanitize_callback' => 'absint'],

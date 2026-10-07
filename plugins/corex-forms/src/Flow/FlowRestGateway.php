@@ -19,6 +19,7 @@ use Corex\Http\Middleware\SanitizeMiddleware;
 use Corex\Http\ResponseEnvelope;
 use DomainException;
 use InvalidArgumentException;
+use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -27,10 +28,28 @@ use WP_REST_Response;
  */
 final readonly class FlowRestGateway
 {
+    /** What it takes to read or change a flow, asked at the route and again in the middleware. */
+    private const CAPABILITY = 'manage_options';
+
     public function __construct(
         private Pipeline $pipeline,
         private MiddlewareResolver $middleware,
     ) {
+    }
+
+    /**
+     * What every flow route asks before a handler runs. The handlers ask again through the
+     * middleware, and a change needs a nonce as well. This is here so the route says it is guarded.
+     */
+    public function permits(): true|WP_Error
+    {
+        return current_user_can(self::CAPABILITY)
+            ? true
+            : new WP_Error(
+                'forbidden',
+                __('You do not have permission to perform this action.', 'corex'),
+                ['status' => 403],
+            );
     }
 
     /** @param callable(Request):Response $handler */
@@ -41,7 +60,7 @@ final readonly class FlowRestGateway
         return $this->execute(
             $corexRequest,
             $handler,
-            $this->middleware->resolveAll(['auth:manage_options']),
+            $this->middleware->resolveAll(['auth:' . self::CAPABILITY]),
         );
     }
 
@@ -58,7 +77,7 @@ final readonly class FlowRestGateway
             nonceAction: 'wp_rest',
         );
         $middleware = [
-            ...$this->middleware->resolveAll(['auth:manage_options', 'nonce']),
+            ...$this->middleware->resolveAll(['auth:' . self::CAPABILITY, 'nonce']),
             new SanitizeMiddleware($shape),
         ];
 

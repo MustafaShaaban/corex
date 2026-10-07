@@ -92,7 +92,6 @@ const FORBIDDEN = [
 		'an archive — ship releases, not committed archives',
 	],
 	[ /\.dc\.html$/, 'a raw design-tool export' ],
-	[ /(^|\/)support\.js$/, 'a design-export helper script' ],
 	[ /\.(bak|orig|swp|tmp)$|~$/, 'an editor or backup artifact' ],
 	[ /(^|\/)(\.DS_Store|Thumbs\.db|desktop\.ini)$/, 'an OS artifact' ],
 	[
@@ -121,6 +120,34 @@ const FORBIDDEN_IN_THE_FRAMEWORK = [
 	],
 ];
 
+/**
+ * Whether a file is the helper a design tool writes beside its export.
+ *
+ * It is called `support.js`, which is also a reasonable name for anybody's own file. So it is the
+ * helper only where an export is: at the root, under `design/`, or in a directory that holds a
+ * `.dc.html`.
+ *
+ * @param {string}   file  One repository-relative path.
+ * @param {string[]} files Every path it is tracked beside.
+ * @return {boolean} True for a design-export helper.
+ */
+const isDesignExportHelper = ( file, files ) => {
+	if ( path.posix.basename( file ) !== 'support.js' ) {
+		return false;
+	}
+	const directory = path.posix.dirname( file );
+
+	return (
+		directory === '.' ||
+		/^design(\/|$)/.test( directory ) ||
+		files.some(
+			( other ) =>
+				other.endsWith( '.dc.html' ) &&
+				path.posix.dirname( other ) === directory
+		)
+	);
+};
+
 /** `.env.example` is the deliberate exception to the `.env` rule. */
 const FORBIDDEN_EXCEPTIONS = [ /(^|\/)\.env\.example$/ ];
 
@@ -146,7 +173,13 @@ const offendersIn = ( files, role ) => {
 		)
 		.flatMap( ( file ) => {
 			const match = rules.find( ( [ pattern ] ) => pattern.test( file ) );
-			return match ? [ `${ file } — ${ match[ 1 ] }` ] : [];
+			if ( match ) {
+				return [ `${ file } — ${ match[ 1 ] }` ];
+			}
+
+			return isDesignExportHelper( file, files )
+				? [ `${ file } — a design-export helper script` ]
+				: [];
 		} );
 };
 
@@ -231,6 +264,46 @@ describe( 'a client site under sites/', () => {
 
 		expect( offenders ).toHaveLength( 1 );
 		expect( offenders[ 0 ] ).toContain( reason );
+	} );
+} );
+
+/**
+ * `support.js` is the helper a design tool writes beside its `.dc.html` export. The rule refused
+ * every file of that name, anywhere, and it is also what a client called its own Playwright helper:
+ * the first client site had "Lint + JS unit tests" fail on two pull requests over a test file of its
+ * own (2026-10-07). It is refused where an export is, and nowhere else.
+ */
+describe( 'a file named support.js', () => {
+	it.each( [
+		[ 'at the repository root', [ 'support.js' ] ],
+		[ 'under design/', [ 'design/handoff/support.js' ] ],
+		[
+			'beside a design export',
+			[ 'docs/mockups/Inbox.dc.html', 'docs/mockups/support.js' ],
+		],
+	] )( 'is refused as a design-export helper %s', ( _where, files ) => {
+		expect( offendersIn( files, 'client' ) ).toContain(
+			`${ files[ files.length - 1 ] } — a design-export helper script`
+		);
+	} );
+
+	it.each( [
+		[ 'sites/acme/acme-site/tests/e2e/support.js' ],
+		[ 'tests/e2e/support.js' ],
+		[ 'plugins/corex-config/src/admin/support.js' ],
+	] )( 'is a file like any other at %s', ( file ) => {
+		expect( offendersIn( [ file ], 'client' ) ).toEqual( [] );
+	} );
+
+	it( 'is not excused by a design export somewhere else', () => {
+		expect(
+			offendersIn(
+				[ 'docs/mockups/Inbox.dc.html', 'tests/e2e/support.js' ],
+				'client'
+			)
+		).toEqual( [
+			'docs/mockups/Inbox.dc.html — a raw design-tool export',
+		] );
 	} );
 } );
 
