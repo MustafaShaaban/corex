@@ -6066,3 +6066,56 @@ What was run:
 That `CliServiceProvider` hands it the repository root was read, not run: `dirname(__DIR__, 3)` is
 the expression the same class already uses for that root. No `make:block` was run in a client
 checkout.
+
+## #253 — A Submissions row is one control stretched over the row, and the inbox takes the width it is given
+
+Date: 2026-10-07 · Spec: 103 (submissions inbox and exports), slice 1 · Status: Final
+
+The owner, on the first client site: "i need the full row to be clickable not just the first
+column". Only `.corex-inbox__row-button`, in the submitter cell, opened a submission.
+
+**How the row opens.** The button stays the row's one control and its hit area is stretched over
+the row: the row is the containing block, and the button's `::after` covers it. The checkbox cell
+is lifted above that area. Considered and not done:
+
+- *A click handler on the row.* It needs a second focus stop or a row that is itself focusable, has
+  to ignore clicks that came from the checkbox, and gives assistive technology a row that acts and
+  a button that also acts.
+- *A link per cell.* Six stops per row for one destination.
+
+**What it costs.** Text in a row cannot be selected by dragging, because the control is above it.
+The pane is where a submission is read and copied. Anything interactive added to a row later has
+to be lifted above the hit area; the stylesheet says so at the rule.
+
+**The open row** carries `aria-current` and its button `aria-expanded` and `aria-controls`. It is
+drawn with a tint and a bar on its leading edge, so the state is not colour alone. The focus ring
+is drawn on the row, with `:has()`, because a ring on the button's stretched area was cut where the
+checkbox cell sits above it.
+
+**Found by the test, and fixed with it.** The new browser test could not click the "Received"
+cell: it was off the edge of a 1280-pixel window, and nothing scrolled. `.corex-inbox` is a grid
+with one `auto` column; the filter row's six fixed-minimum columns needed 958 pixels, the column
+grew to fit, and `.corex-admin__shell` clips its overflow. Two changes: the inbox's column is
+`minmax(0, 1fr)`, so no child can widen it, and the filters wrap with `auto-fit`. The 1200-pixel
+window breakpoint the filters had is removed: the content column is narrower than the window by two
+sidebars, so a breakpoint on the window could not know when they stopped fitting.
+
+Constraining the column squeezed the table, and the sender's address ran under the next column.
+The sender's cell now has a measure, 12 to 20rem, and an ellipsis.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| New Playwright test: every cell after the checkbox opens the submission, the row is marked, the checkbox opens nothing, one button per row | failed before (the cells did nothing, then "Received" was unreachable); passes |
+| `submissions-inbox.spec.js` | 5 passed |
+| Jest, whole suite | 556 passed |
+| `lint-js`, `lint-style` on the changed files | clean |
+| Looked at, rendered: dark and light at 1280, right-to-left dark at 1280, light at 782; a row open, hovered and focused | as described above |
+
+**Seen and left for its slice.** At 782 wide the detail pane covers the window and its top is under
+the admin toolbar. That is FR-046, slice 4.
+
+**Not done.** No Jest test of the row's state: `InboxTable` is not exported and the browser test
+asserts the same attributes on the real page. `tasks.md` T005 says so. The Spec Kit
+`agent-context` hook was not run, so `CLAUDE.md` still points at the plan of spec 068.

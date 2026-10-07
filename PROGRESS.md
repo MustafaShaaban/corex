@@ -40,9 +40,27 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-No feature spec is in flight. Spec 101 (coming-soon mode) and spec 102 (update-safe client sites)
-are both in v0.43.0, which makes it the first release a client repository can be created from with
-the mode in it and with a way to take every later release by merging.
+**Spec 103, a submissions inbox and exports a client can use, is in flight**
+([`specs/103-submissions-inbox-export/`](specs/103-submissions-inbox-export/spec.md)). The owner's
+request from the first client site: the whole row should open a submission, the detail pane is
+disorganised, and the export is unreadable, CSV only, and has to be refreshed to be downloaded. It
+is delivered in seven slices, one pull request each:
+
+| Slice | What | State |
+|---|---|---|
+| 1 | The whole row opens the submission | done (DECISIONS #253) |
+| 2 | A readable file, scopes with counts, the rebuilt dialog, download without a refresh, CSV | next |
+| 3 | Excel | not started |
+| 4 | The detail pane | not started |
+| 5 | Export history: size, expiry, delete | not started |
+| 6 | PDF | not started; needs a spike on a library that renders Arabic |
+| 7 | The Data export, to the same standard | not started |
+
+Two readings in the spec are the owner's to overrule: that opening a submission marks it read, and
+that "signed off with the identity" on the PDF means the brand identity plus a sign-off block
+naming the person who exported it.
+
+Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 
 One dependency pull request is held: #240, `@wordpress/scripts` 34 → 36, a toolchain major that
 wants its own verified pass. It would retire both overrides listed under "Open, and not hidden".
