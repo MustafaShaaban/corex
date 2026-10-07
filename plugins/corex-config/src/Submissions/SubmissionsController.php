@@ -45,6 +45,7 @@ final readonly class SubmissionsController
         $this->route('/submissions/exports/preview', 'POST', 'previewExport');
         $this->route('/submissions/exports/(?P<export>\d+)/advance', 'POST', 'advanceExport');
         $this->route('/submissions/exports/(?P<export>\d+)/download', 'GET', 'downloadExport');
+        $this->route('/submissions/exports/(?P<export>\d+)', 'DELETE', 'deleteExport');
     }
 
     public function index(WP_REST_Request $request): WP_REST_Response
@@ -176,10 +177,9 @@ final readonly class SubmissionsController
 
     public function exports(WP_REST_Request $request): WP_REST_Response
     {
-        return $this->gateway->read($request, fn (): Response => Response::ok(['exports' => array_map(
-            static fn (SubmissionExportRun $run): array => $run->toArray(),
-            $this->services->exports->history($this->scope()),
-        )]));
+        return $this->gateway->read($request, fn (): Response => Response::ok([
+            'exports' => $this->services->exportHistory->entries($this->scope()),
+        ]));
     }
 
     public function previewExport(WP_REST_Request $request): WP_REST_Response
@@ -204,11 +204,20 @@ final readonly class SubmissionsController
         ]));
     }
 
+    public function deleteExport(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, [], function () use ($request): Response {
+            $this->services->exportHistory->delete($this->scope(), RouteParam::int($request, 'export'));
+
+            return Response::ok(['exports' => $this->services->exportHistory->entries($this->scope())]);
+        });
+    }
+
     public function downloadExport(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->read($request, fn (): Response => Response::ok([
             'artifact' => $this->artifact(
-                $this->services->exports->download($this->scope(), RouteParam::int($request, 'export')),
+                $this->services->exportHistory->download($this->scope(), RouteParam::int($request, 'export')),
             ),
         ]));
     }

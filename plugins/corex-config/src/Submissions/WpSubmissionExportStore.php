@@ -11,6 +11,7 @@ namespace Corex\Config\Submissions;
 defined('ABSPATH') || exit;
 
 use Corex\Config\Export\ExportDirectory;
+use DateTimeImmutable;
 use RuntimeException;
 
 /**
@@ -121,6 +122,48 @@ final class WpSubmissionExportStore implements SubmissionExportStore
         // absolute path stops being true the day a site is moved.
         update_post_meta($runId, self::FILE, ['name' => basename($file['path'])] + array_diff_key($file, ['path' => true]));
         update_post_meta($runId, '_corex_submission_exported_records', max(0, $recordCount));
+        // Kept on the run, so the history can still say how large a file was once it is gone.
+        $this->persist($this->hydrate($runId)->withFileSize(is_file($file['path']) ? (int) filesize($file['path']) : 0));
+    }
+
+    public function removeFile(int $runId, string $reason, int $actorId): SubmissionExportRun
+    {
+        $run = $this->find($runId) ?? throw new RuntimeException(__('Submission export was not found.', 'corex'));
+        $file = $this->file($runId);
+        if ($file !== null && is_file($file['path'])) {
+            wp_delete_file($file['path']);
+        }
+        delete_post_meta($runId, self::FILE);
+        delete_post_meta($runId, self::ARTIFACT);
+
+        $run = $run->withoutFile($reason, $actorId, new DateTimeImmutable('now'));
+        $this->persist($run);
+
+        return $run;
+    }
+
+    public function holdingFilesBefore(DateTimeImmutable $cutoff, int $limit): array
+    {
+        $ids = get_posts([
+            'post_type' => self::POST_TYPE,
+            'post_status' => 'private',
+            'posts_per_page' => max(1, $limit),
+            'fields' => 'ids',
+            'orderby' => 'date',
+            'order' => 'ASC',
+            'no_found_rows' => true,
+            'date_query' => [['before' => $cutoff->format('Y-m-d H:i:s'), 'column' => 'post_date_gmt']],
+            'meta_query' => [
+                'relation' => 'OR',
+                ['key' => self::FILE, 'compare' => 'EXISTS'],
+                ['key' => self::ARTIFACT, 'compare' => 'EXISTS'],
+            ],
+        ]);
+
+        return array_values(array_filter(array_map(
+            fn (int $id): ?SubmissionExportRun => $this->hydrate($id),
+            array_map('intval', $ids),
+        )));
     }
 
     public function file(int $runId): ?array

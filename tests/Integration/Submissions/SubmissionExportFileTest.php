@@ -14,6 +14,10 @@ declare(strict_types=1);
 
 use Corex\Boot;
 use Corex\Config\Jobs\JobRunner;
+use Corex\Config\Retention\RetentionSweep;
+use Corex\Config\Submissions\SubmissionAccessScope;
+use Corex\Config\Submissions\SubmissionExportHistory;
+use Corex\Config\Submissions\SubmissionExportRetention;
 use Corex\Config\Submissions\SubmissionsController;
 use Corex\Config\Submissions\WpSubmissionExportStore;
 use Corex\Security\Upload\ProtectedUploads;
@@ -319,4 +323,157 @@ it('writes a workbook when Excel is asked for, with the form’s questions as it
         ->and($sheet)->toContain('>Message<')
         ->and($sheet)->toContain('>سلمى<')
         ->and($sheet)->toContain('<v>46302.52083333</v>');
+});
+
+/**
+ * A finished export of one submission, made through the routes the screen uses (spec 103, US9).
+ *
+ * @return array<string,mixed> The export as the route answered it.
+ */
+function finishedExportOf(object $test, string $format = 'xlsx'): array
+{
+    $test->posts[] = $submission = seedContactSubmission(
+        ['name' => 'Salma', 'email' => 'salma@example.com', 'message' => 'Hello'],
+        '2026-10-07 09:30:00',
+    );
+    $export = $test->controller->createExport(exportRouteRequest('POST', '/corex/v1/submissions/exports', [
+        'scope' => 'selected',
+        'selected_ids' => [$submission],
+        'columns' => ['id', 'submitted', 'answers'],
+        'personal_data_acknowledged' => true,
+        'format' => $format,
+    ]))->get_data()['data']['export'];
+    $test->posts[] = (int) $export['id'];
+    $test->jobs[]  = (int) $export['job_id'];
+
+    $advance = exportRouteRequest('POST', '/corex/v1/submissions/exports/' . $export['id'] . '/advance');
+    $advance->set_url_params(['export' => $export['id']]);
+    $test->controller->advanceExport($advance);
+
+    $stored = $test->container->make(WpSubmissionExportStore::class)->file((int) $export['id']);
+    $test->files[] = (string) ($stored['path'] ?? '');
+
+    return $export + ['path' => (string) ($stored['path'] ?? '')];
+}
+
+/** The history's entry for one export, as `GET …/exports` answers it. */
+function historyEntryOf(object $test, int $exportId): array
+{
+    $entries = $test->controller->exports(exportRouteRequest('GET', '/corex/v1/submissions/exports'))->get_data()['data']['exports'];
+
+    return array_values(array_filter($entries, static fn (array $entry): bool => (int) $entry['id'] === $exportId))[0] ?? [];
+}
+
+/** Makes an export as old as it has to be to have expired, in both places its date is kept. */
+function backdateExport(int $exportId, DateTimeImmutable $madeAt): void
+{
+    wp_update_post([
+        'ID' => $exportId,
+        'edit_date' => true,
+        'post_date_gmt' => $madeAt->format('Y-m-d H:i:s'),
+        'post_date' => get_date_from_gmt($madeAt->format('Y-m-d H:i:s')),
+    ]);
+    $payload = get_post_meta($exportId, '_corex_submission_export_payload', true);
+    update_post_meta($exportId, '_corex_submission_export_payload', ['created_at' => $madeAt->format(DATE_ATOM)] + $payload);
+}
+
+it('records what an export was: who made it, its format, its size and when it expires', function () {
+    $export = finishedExportOf($this);
+    $entry = historyEntryOf($this, (int) $export['id']);
+    $madeAt = new DateTimeImmutable((string) $entry['created_at']);
+
+    expect($entry)->toMatchArray([
+        'format' => 'xlsx',
+        'record_count' => 1,
+        'state' => 'ready',
+        'actor_name' => wp_get_current_user()->display_name,
+        'file_size' => filesize($export['path']),
+        'expires_at' => $madeAt->modify('+30 days')->format(DATE_ATOM),
+    ])->and($entry['file_size'])->toBeGreaterThan(1000);
+});
+
+it('removes the file of an export past its retention, keeps the entry, and no longer hands it back', function () {
+    $export = finishedExportOf($this);
+    $id = (int) $export['id'];
+    // Older than anything else on the install can be, so the cutoff below finds this export alone.
+    backdateExport($id, new DateTimeImmutable('2001-01-01 09:00:00 UTC'));
+    $cutoff = new DateTimeImmutable('2001-06-01 00:00:00 UTC');
+    $store = $this->container->make(WpSubmissionExportStore::class);
+
+    $held = array_map(static fn ($run): int => $run->id, $store->holdingFilesBefore($cutoff, 10));
+    $removed = $this->container->make(SubmissionExportRetention::class)->pruneOlderThan($cutoff);
+    // Read from the store: an export this old is not on the first page of anybody's history.
+    $run = $store->find($id);
+
+    $download = exportRouteRequest('GET', '/corex/v1/submissions/exports/' . $id . '/download');
+    $download->set_url_params(['export' => $id]);
+    $refused = $this->controller->downloadExport($download);
+
+    expect($held)->toBe([$id])
+        ->and($removed)->toBe(1)
+        ->and(is_file($export['path']))->toBeFalse()
+        ->and($run->removedReason)->toBe('expired')
+        ->and($run->removedBy)->toBe(0)
+        ->and($run->format)->toBe('xlsx')
+        ->and($run->fileSize)->toBeGreaterThan(1000)
+        ->and($store->holdingFilesBefore($cutoff, 10))->toBe([])
+        ->and($refused->get_status())->toBe(404);
+});
+
+it('has the daily retention sweep clean exported files, thirty days after they were made', function () {
+    $plan = array_column($this->container->make(RetentionSweep::class)->preview(), null, 'key');
+
+    expect($plan['submission_exports'] ?? null)->toMatchArray(['retentionDays' => 30, 'enabled' => true]);
+});
+
+it('deletes an export on request: the file goes, the entry says who, and the activity log has it', function () {
+    global $wpdb;
+
+    $export = finishedExportOf($this, 'csv');
+    $id = (int) $export['id'];
+
+    $delete = exportRouteRequest('DELETE', '/corex/v1/submissions/exports/' . $id);
+    $delete->set_url_params(['export' => $id]);
+    $answer = $this->controller->deleteExport($delete);
+    $entry = historyEntryOf($this, $id);
+    $logged = $wpdb->get_row($wpdb->prepare(
+        "SELECT actor_id, outcome FROM {$wpdb->prefix}corex_activity_events WHERE kind = %s AND target_id = %s",
+        'submission.export.deleted',
+        (string) $id,
+    ), ARRAY_A);
+
+    expect($answer->get_status())->toBe(200)
+        ->and(is_file($export['path']))->toBeFalse()
+        ->and($entry)->toMatchArray([
+            'state' => 'deleted',
+            'removed_by' => get_current_user_id(),
+            'removed_by_name' => wp_get_current_user()->display_name,
+        ])
+        ->and($logged)->toBe(['actor_id' => (string) get_current_user_id(), 'outcome' => 'success'])
+        // A second request has nothing to delete, and says so without doing anything.
+        ->and($this->controller->deleteExport($delete)->get_status())->toBe(422);
+});
+
+it('does not delete an export without a nonce', function () {
+    $export = finishedExportOf($this, 'csv');
+    $id = (int) $export['id'];
+    $delete = new WP_REST_Request('DELETE', '/corex/v1/submissions/exports/' . $id);
+    $delete->set_url_params(['export' => $id]);
+
+    expect($this->controller->deleteExport($delete)->get_status())->toBe(403)
+        ->and(is_file($export['path']))->toBeTrue();
+});
+
+it('shows a person their own exports and nobody else’s, unless they manage every submission', function () {
+    $export = finishedExportOf($this, 'csv');
+    $id = (int) $export['id'];
+    $history = $this->container->make(SubmissionExportHistory::class);
+    $somebodyElse = new SubmissionAccessScope(get_current_user_id() + 100000, false);
+    $ids = static fn (array $entries): array => array_map(static fn (array $entry): int => (int) $entry['id'], $entries);
+
+    expect($ids($history->entries(new SubmissionAccessScope(get_current_user_id(), false))))->toContain($id)
+        ->and($ids($history->entries($somebodyElse)))->not->toContain($id)
+        ->and($ids($history->entries(new SubmissionAccessScope($somebodyElse->actorId, true))))->toContain($id)
+        ->and(fn () => $history->delete($somebodyElse, $id))->toThrow(DomainException::class, 'The submission export is unavailable.')
+        ->and(is_file($export['path']))->toBeTrue();
 });
