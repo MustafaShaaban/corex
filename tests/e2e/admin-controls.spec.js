@@ -16,7 +16,7 @@
  * review does not catch, which is the failure mode this repository keeps meeting.
  */
 const { test, expect } = require( '@playwright/test' );
-const { seedSubmission } = require( './helpers' );
+const { contrast, pinAppearance, seedSubmission } = require( './helpers' );
 
 const INBOX = '/wp-admin/admin.php?page=corex-submissions';
 const NOTIFICATIONS = '/wp-admin/admin.php?page=corex-notifications';
@@ -26,38 +26,6 @@ const MIN_CONTRAST = 3;
 
 /** WCAG 2.2 AA target size (2.5.8) asks 24x24; CoreX adopts 44x44 for unlabelled controls. */
 const MIN_TARGET = 24;
-
-/**
- * Relative luminance of a computed `rgb()` / `rgba()` colour.
- *
- * @param {string} value A computed CSS colour.
- * @return {number} Its relative luminance, 0..1.
- */
-function luminance( value ) {
-	const [ r, g, b ] = ( value.match( /[\d.]+/g ) || [ 0, 0, 0 ] )
-		.slice( 0, 3 )
-		.map( ( channel ) => {
-			const c = Number( channel ) / 255;
-
-			return c <= 0.03928
-				? c / 12.92
-				: Math.pow( ( c + 0.055 ) / 1.055, 2.4 );
-		} );
-
-	return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/**
- * @param {string} foreground A computed CSS colour.
- * @param {string} background A computed CSS colour.
- * @return {number} The WCAG contrast ratio between them.
- */
-function contrast( foreground, background ) {
-	const a = luminance( foreground );
-	const b = luminance( background );
-
-	return ( Math.max( a, b ) + 0.05 ) / ( Math.min( a, b ) + 0.05 );
-}
 
 /**
  * The colour actually painted behind an element, walking up past transparent ancestors — which is
@@ -130,18 +98,12 @@ async function openPinned( page, url, theme ) {
 		await app.waitFor( { state: 'attached', timeout: 15000 } );
 	}
 
-	await page.evaluate( ( pinned ) => {
-		document
-			.querySelectorAll( '.corex-admin' )
-			.forEach( ( shell ) =>
-				shell.setAttribute( 'data-corex-theme', pinned )
-			);
-		document.body.classList.remove(
-			'corex-appearance-light',
-			'corex-appearance-dark'
-		);
-		document.body.classList.add( `corex-appearance-${ pinned }` );
-	}, theme );
+	// Only the appearance is pinned. The direction handed over is the one the screen already has, so
+	// what is measured is still this install's own layout.
+	const direction = await page.evaluate(
+		() => window.getComputedStyle( document.documentElement ).direction
+	);
+	await pinAppearance( page, theme, direction );
 }
 
 const THEMES = [ 'dark', 'light' ];
