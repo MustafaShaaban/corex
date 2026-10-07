@@ -560,34 +560,65 @@ final class OperationsSecurityScreen
             );
         }
 
-        $warnings = '';
-        foreach ($this->modes->warnings($current) as $warning) {
-            $warnings .= '<li>' . esc_html($warning) . '</li>';
-        }
-
         $inherited = $declared ? '' :
             '<p class="corex-opsec__detail">' . esc_html__('Inherited from the WordPress environment type — declare a mode to override it.', 'corex') . '</p>';
 
+        // Nothing is being proposed while the selection is the mode the site has declared. The
+        // panel says so in one line and asks for nothing: it used to draw that mode's consequences
+        // and its confirmation beside a disabled button, a confirmation of a change that is not one.
+        //
+        // Declared, not merely current. A site that inherits its mode from the WordPress
+        // environment type has not stated one, and choosing that same mode states it — a change
+        // the store records (see OperationsModeStore::set()), so the form has to offer it.
+        $unchanged = $declared && $proposed === $current;
+
         return '<section class="corex-surface corex-opsec__env is-' . esc_attr($env['tone']) . '">'
             . '<p class="corex-admin__eyebrow">' . esc_html__('OPERATIONS MODE', 'corex') . '</p>'
-            . '<h2>' . esc_html($env['label']) . '</h2>'
+            . '<div class="corex-opsec__mode-now"><h2>' . esc_html($env['label']) . '</h2>'
+            . '<span class="corex-opsec__mode-pill">' . esc_html__('Current mode', 'corex') . '</span></div>'
+            // The one sentence about what this mode does. The summary and consequences below
+            // belong to a mode being proposed, and are never drawn for this one as well.
             . '<p class="corex-opsec__detail">' . esc_html($env['detail']) . '</p>' . $inherited
-            . '<ul class="corex-opsec__warnings">' . $warnings . '</ul>'
+            . $this->cautions($current)
             . '<form class="corex-opsec__mode-form" method="post" action="' . esc_url(admin_url('admin-post.php')) . '"'
-            . ' data-corex-mode-form data-current-mode="' . esc_attr($current) . '">'
+            . ' data-corex-mode-form data-current-mode="' . esc_attr($current) . '"'
+            . ' data-mode-declared="' . ($declared ? '1' : '0') . '">'
             . '<input type="hidden" name="action" value="' . esc_attr(OperationsModeController::ACTION) . '" />'
             . wp_nonce_field(OperationsModeController::ACTION, OperationsModeController::NONCE, true, false)
+            . '<div class="corex-opsec__mode-field">'
             . '<label class="corex-opsec__mode-label" for="corex-mode-select">' . esc_html__('Change mode', 'corex') . '</label>'
             // Both hooks: `data-corex-select` keeps the approved CoreX control (DECISIONS #141),
             // and `data-corex-mode-select` is what the disclosure binds to. They compose because
             // the upgrade keeps the native <select> as the submitted value and dispatches `change`
             // on it — so a listener bound here still hears the custom control's selections.
             . '<select id="corex-mode-select" name="corex_mode" data-corex-select data-corex-mode-select>'
-            . $options . '</select>'
-            . $this->modeBlocks($proposed, $blockers)
+            . $options . '</select></div>'
+            . '<p class="corex-opsec__detail corex-opsec__mode-same" data-corex-mode-same' . ($unchanged ? '' : ' hidden') . '>'
+            . esc_html__('This is the mode the site is in. Choose another to see what changing to it would do.', 'corex') . '</p>'
+            . $this->modeBlocks($proposed, $current, $declared, $blockers)
+            // Enabled as rendered: without the script this button is the only way to propose a
+            // mode at all. The script disables it while the selection is the current mode.
             . '<button type="submit" class="button button-primary" data-corex-mode-apply>'
             . esc_html__('Apply mode', 'corex') . '</button>'
             . '</form></section>';
+    }
+
+    /**
+     * What the current mode leaves exposed or still asks of the operator — the warnings its one
+     * sentence does not already make. Drawn as cautions, apart from the informational lines.
+     */
+    private function cautions(string $mode): string
+    {
+        $items = '';
+        foreach ($this->modes->cautions($mode) as $caution) {
+            // The icon and the tone say "caution" to somebody looking. The hidden word says it to
+            // somebody listening, who would otherwise hear one more sentence in a list.
+            $items .= '<li><span class="dashicons dashicons-warning" aria-hidden="true"></span>'
+                . '<span><span class="screen-reader-text">' . esc_html__('Caution:', 'corex') . ' </span>'
+                . esc_html($caution) . '</span></li>';
+        }
+
+        return $items === '' ? '' : '<ul class="corex-opsec__cautions">' . $items . '</ul>';
     }
 
     /**
@@ -617,31 +648,73 @@ final class OperationsSecurityScreen
      * is not submitted, so the server can never receive a confirmation belonging to a mode the
      * operator did not choose. Hiding alone would still post the field.
      *
+     * A block is a proposal, so a declared mode's own block is never the visible one: selecting the
+     * mode the site has declared proposes nothing, and there is nothing to describe or confirm. An
+     * inherited mode's block is offered, as the declaration it would be.
+     *
+     * No `<div>` inside a block. The form is one column, and the tests that read a block out of the
+     * page stop at the first closing one.
+     *
      * @param list<string> $blockers Readiness blockers, for the production block.
      */
-    private function modeBlocks(string $proposed, array $blockers): string
+    private function modeBlocks(string $proposed, string $current, bool $declared, array $blockers): string
     {
         $blocks = '';
 
         foreach ($this->disclosure->describeAll() as $described) {
             $mode     = $described['mode'];
-            $isActive = $mode === $proposed;
+            $isCurrent = $mode === $current;
+            $isActive  = $mode === $proposed && ! ($declared && $isCurrent);
             $inert    = $isActive ? '' : ' disabled';
 
-            $consequences = '';
-            foreach ($described['consequences'] as $consequence) {
-                $consequences .= '<li>' . esc_html($consequence) . '</li>';
-            }
+            $label   = $this->modes->describe($mode)['label'];
+            $heading = $isCurrent
+                /* translators: %s: the name of the operations mode the site already follows, e.g. "Production". */
+                ? sprintf(__('Declaring %s', 'corex'), $label)
+                /* translators: %s: the name of an operations mode, e.g. "Coming soon". */
+                : sprintf(__('Switching to %s', 'corex'), $label);
 
             $blocks .= '<div class="corex-opsec__mode-block" data-mode="' . esc_attr($mode) . '"'
                 . ($isActive ? '' : ' hidden') . '>'
+                . '<h3 class="corex-opsec__mode-heading">' . esc_html($heading) . '</h3>'
                 . '<p class="corex-opsec__detail">' . esc_html($described['summary']) . '</p>'
-                . '<ul class="corex-opsec__mode-consequences">' . $consequences . '</ul>'
+                . $this->bulletList($described['consequences'])
+                . $this->moreAboutMode($described['reference'])
                 . $this->confirmationControl($described['confirmation'], $mode, $blockers, $inert)
                 . '</div>';
         }
 
         return $blocks;
+    }
+
+    /**
+     * How the mode works and how to leave it: true and worth having, and not what has to be read
+     * before every change. Closed until asked for.
+     *
+     * @param list<string> $reference
+     */
+    private function moreAboutMode(array $reference): string
+    {
+        if ($reference === []) {
+            return '';
+        }
+
+        return '<details class="corex-opsec__mode-more"><summary>'
+            . esc_html__('More about this mode', 'corex') . '</summary>'
+            . $this->bulletList($reference) . '</details>';
+    }
+
+    /**
+     * @param list<string> $lines
+     */
+    private function bulletList(array $lines): string
+    {
+        $items = '';
+        foreach ($lines as $line) {
+            $items .= '<li>' . esc_html($line) . '</li>';
+        }
+
+        return $items === '' ? '' : '<ul class="corex-opsec__mode-consequences">' . $items . '</ul>';
     }
 
     /**

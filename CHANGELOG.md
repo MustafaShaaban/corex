@@ -6,7 +6,24 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **The Operations mode panel is reorganised.** It said what the current mode does three or four
+  times, drew two unmarked lists that read as one paragraph, laid its form out as a wrapping row
+  with the button far from the confirmation that enables it, and asked for a confirmation of the
+  mode the site was already in. Now: the current mode with one sentence and, under it, only the
+  cautions that sentence does not make, drawn as notices. The change form is one column. A proposed
+  mode has a heading, a short list of what changes for visitors and for people signed in, the
+  reference notes behind "More about this mode", then the confirmation with the button directly
+  under it. Selecting the mode a site has declared proposes nothing, and the form says so and asks
+  for nothing (DECISIONS #247).
+
 ### Fixed
+
+- **A site that only inherits its mode could not declare it from the screen.** Choosing the mode the
+  site already follows was treated as a non-change and the button disabled, while the same screen
+  told the operator to "declare a mode" and the store records that declaration as a change. The
+  button is disabled only for a mode the site has declared.
 
 - **A form could store, and reply to, an email address nobody typed.** An `email` field was passed
   through `sanitize_email()` before it was validated, and that function does not refuse an address,
@@ -28,6 +45,14 @@ All notable changes to Corex are documented here. The format follows
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
 Read this before taking the release.
 
+- **`ModeDisclosure::describe()` returns fewer `consequences` and a new `reference` list.** The lines
+  about how a mode works and how to leave it moved from the first to the second. Code that prints a
+  mode's consequences prints both to say what it said before. `OperationsMode::cautions()` is new;
+  `warnings()` returns what it always did.
+- **Six strings in the `corex` text domain are new** on Operations & Security: "Current mode",
+  "Switching to %s", "Declaring %s", "More about this mode", "Caution:" and the line shown when the
+  selected mode is the one the site has declared. A site that ships its own translation of that domain shows them
+  in English until they are translated.
 - **A form or flow with an `email` field refuses addresses it used to rewrite.** A mistyped address
   such as `sal,ma@example.com` or `josé@example.com` now fails with the `email` error where it was
   accepted under a different address. A malformed address on a required field answers `email`, not

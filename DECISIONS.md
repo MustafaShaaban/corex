@@ -5709,3 +5709,75 @@ covered by their existing tests; the one-line change in each handler was read.
 
 **Left as it is.** `SettingsSanitizer` and `OptionPageScreen` clean an address an administrator
 typed into a settings screen, in the same way. The person who typed it sees what was saved.
+
+## #247 — The mode panel says the current mode once, and describes a mode only when it is being proposed
+
+Date: 2026-10-07 · Spec: none (remediation of the spec 065 / 077 / 101 panel, reported by the owner) · Status: Final
+
+The owner sent a screenshot of the Operations mode panel on a site in Coming soon and called it
+messy. Read against the code, five things were wrong in it:
+
+1. **One fact, three or four times.** The mode's `detail`, the first of its `warnings()`, the
+   selected block's `summary` and its first two `consequences` all described the same state.
+2. **Two lists drawn as prose.** `corex-opsec__warnings` and `corex-opsec__mode-consequences` had
+   no markers and no space between items, about 150 characters wide. The current mode's warnings
+   could not be told from the selected mode's consequences.
+3. **A row where a column was wanted.** Label, select, then the mode block beside the select, and
+   the button wrapping back to the far side, nowhere near the confirmation that enables it.
+4. **A confirmation of nothing.** With the select on the mode the site was in, the panel showed
+   that mode's consequences and its acknowledgement beside a disabled button.
+5. **The one real caution had no weight.** "Published content can still be read through the REST
+   API" sat among lines that only restated the mode.
+
+**Decided.**
+
+- **The current mode** is its name, a pill that says in words that it is the current mode, and
+  its one `detail` sentence. Under it are `OperationsMode::cautions()` only: the warnings that say
+  something the detail does not. Coming soon has one, Staging has one, the others none. They are
+  drawn as notices with an icon and the warning tone, and a hidden "Caution:" for a screen reader.
+  `warnings()` is unchanged and still feeds the dashboard widget; it is written in terms of
+  `cautions()` so the two cannot drift.
+- **A block describes a proposal.** `ModeDisclosure::describe()` now separates `consequences` —
+  what a switch changes for visitors and for people signed in, which is what the operator is
+  agreeing to — from `reference`, how the mode works and how to leave it. A block is a heading
+  ("Switching to …"), the summary, the consequences as a real list, the reference behind a closed
+  "More about this mode", the confirmation, and the button directly under it.
+- **The form is one column**, with what is read held to a reading measure and the divider left to
+  span the card.
+- **Selecting the declared mode proposes nothing.** No block, no confirmation; one line saying so,
+  and with the script running the button is disabled. The button is enabled as rendered, because
+  without the script it is the only way to propose a mode at all.
+
+**Declared, not merely current — a defect found on the way.** The script disabled the button
+whenever the selection equalled the current mode. But a site that inherits its mode from the
+WordPress environment type has declared none, the screen tells it to "declare a mode", and
+`OperationsModeStore` records that declaration as a change. So on exactly those sites, the button
+was disabled for the mode they were most likely to declare. "Nothing to change" now means the mode
+is declared and selected; an inherited mode's own block is offered, headed "Declaring …". The form
+carries `data-mode-declared` for the script, and the browser tests read it, because a CI install
+is undeclared and a developer's usually is not.
+
+**Kept:** the `?mode=` path that makes the form work without a script, `disabled` inputs in hidden
+blocks, the native select under the CoreX control, tokens and logical properties only. One CSS
+rule is new in kind: a block is a grid now, and `display` set by a class outranks the browser's
+rule for `hidden`, so `[hidden]` is restated for it.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| New unit tests for `cautions()` and the `consequences` / `reference` split, before the change | failed: method and key did not exist |
+| New integration tests in `OperationsSectionsTest`, before the change | 3 failed; 15 pass now, the four existing ones unchanged |
+| New `operations-mode.test.js`, before the script change | 3 failed; 4 pass now |
+| `tests/e2e/operations-security.spec.js` against the development install, mode declared | 15 passed |
+| The same file's mode-form tests with the mode undeclared, as in CI | 5 passed; the install's mode was put back |
+| Unit suite | 2056 passed |
+| `lint:css`, `lint:js`, token inventory regenerated | clean |
+| Rendered: Coming soon current; Development current; Coming soon and Production proposed (4 blockers); dark and light; 1280 and 782 wide | read on screenshots |
+| "More about this mode" toggle height | 26px |
+
+**Not done.** `tests/e2e/coming-soon.spec.js` was not run locally: it changes what the whole site
+serves, and is left to its own CI project. The panel was not looked at in right-to-left; it uses
+logical properties throughout, and the existing 375px / 200% / RTL overflow test covers the
+overview tab, not this one. Maintenance has no caution of its own: "a 503 held for weeks tells a
+search engine the site is failing" would be a true one, and is new copy nobody asked for.

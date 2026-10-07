@@ -128,7 +128,7 @@ final class OperationsMode
             ],
             self::STAGING => [
                 __('Double-check email recipients and third-party integrations before any test send.', 'corex'),
-                __('Search engines should be discouraged from indexing this environment.', 'corex'),
+                ...$this->cautions(self::STAGING),
             ],
             self::MAINTENANCE => [
                 __('The public site shows a maintenance notice. Switch back to production to restore it.', 'corex'),
@@ -136,11 +136,31 @@ final class OperationsMode
             ],
             self::COMING_SOON => [
                 __('The public site shows the coming-soon page, and every other address is redirected to it. Switch to production to open the site.', 'corex'),
-                __('Published content can still be read through the REST API. Keep anything that must stay private in draft.', 'corex'),
+                ...$this->cautions(self::COMING_SOON),
             ],
             default => [
                 __('Changes take effect for real visitors. Review dangerous actions before applying them.', 'corex'),
             ],
+        };
+    }
+
+    /**
+     * The warnings that say something {@see describe()}'s detail does not: what the mode leaves
+     * exposed, or what the operator still has to do. Shown under the current mode, where a warning
+     * that restates the detail is the same sentence twice.
+     *
+     * @return list<string>
+     */
+    public function cautions(string $mode): array
+    {
+        return match ($this->normalize($mode)) {
+            self::STAGING => [
+                __('Search engines should be discouraged from indexing this environment.', 'corex'),
+            ],
+            self::COMING_SOON => [
+                __('Published content can still be read through the REST API. Keep anything that must stay private in draft.', 'corex'),
+            ],
+            default => [],
         };
     }
 }

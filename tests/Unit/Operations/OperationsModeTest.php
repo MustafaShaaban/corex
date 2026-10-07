@@ -91,3 +91,23 @@ it('gives maintenance a lockout-prevention warning', function () {
     expect($warnings)->toContain('admin access')
         ->and($this->modes->warnings('production'))->not->toBe([]);
 });
+
+/**
+ * The mode panel said one thing three or four times: the mode's detail, a warning that restated
+ * it, and the selected mode's summary and consequences (reported 2026-10-07 with a screenshot of
+ * Coming soon). A caution is a warning the detail does not already make, and the panel shows only
+ * those under the current mode.
+ */
+it('keeps as cautions only what the description of the mode does not already say', function () {
+    expect($this->modes->cautions('coming-soon'))->toHaveCount(1)
+        ->and($this->modes->cautions('coming-soon')[0])->toContain('REST API')
+        ->and($this->modes->cautions('staging'))->toHaveCount(1)
+        ->and($this->modes->cautions('staging')[0])->toContain('Search engines')
+        ->and($this->modes->cautions('maintenance'))->toBe([])
+        ->and($this->modes->cautions('development'))->toBe([])
+        ->and($this->modes->cautions('production'))->toBe([]);
+});
+
+it('counts every caution among the warnings of its mode, so the two lists cannot drift apart', function (string $mode) {
+    expect(array_diff($this->modes->cautions($mode), $this->modes->warnings($mode)))->toBe([]);
+})->with(['development', 'staging', 'production', 'maintenance', 'coming-soon']);

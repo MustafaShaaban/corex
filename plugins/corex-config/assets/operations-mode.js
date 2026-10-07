@@ -16,7 +16,29 @@
 	'use strict';
 
 	/**
-	 * Reveal one block and retire the rest.
+	 * Whether the selection is the mode the site has already declared.
+	 *
+	 * Declared, not merely current. A site that inherits its mode from the WordPress environment
+	 * type has stated none, and choosing that same mode states it: a change the server records.
+	 * Treating it as a non-change left the button disabled on exactly the sites the screen tells to
+	 * "declare a mode".
+	 *
+	 * @param {HTMLFormElement} form     The mode form.
+	 * @param {string}          selected The mode now chosen.
+	 * @return {boolean} True when applying the selection would change nothing.
+	 */
+	function proposesNothing( form, selected ) {
+		return (
+			form.getAttribute( 'data-mode-declared' ) === '1' &&
+			selected === form.getAttribute( 'data-current-mode' )
+		);
+	}
+
+	/**
+	 * Reveal the block for a proposed mode and retire the rest.
+	 *
+	 * A block describes a change, so none is shown while the selection is the mode the site is in:
+	 * there is nothing to describe and nothing to confirm, and a line says so instead.
 	 *
 	 * `disabled` matters as much as `hidden`: a hidden input is still submitted, so without it the
 	 * server could receive a confirmation belonging to a mode the operator did not choose. The
@@ -26,8 +48,16 @@
 	 * @param {string}          selected The mode now chosen.
 	 */
 	function show( form, selected ) {
+		const unchanged = proposesNothing( form, selected );
+		const same = form.querySelector( '[data-corex-mode-same]' );
+
+		if ( same ) {
+			same.hidden = ! unchanged;
+		}
+
 		form.querySelectorAll( '[data-mode]' ).forEach( function ( block ) {
-			const isActive = block.getAttribute( 'data-mode' ) === selected;
+			const isActive =
+				! unchanged && block.getAttribute( 'data-mode' ) === selected;
 
 			block.hidden = ! isActive;
 			block
@@ -49,13 +79,12 @@
 	 */
 	function reflectNoOp( form, selected ) {
 		const apply = form.querySelector( '[data-corex-mode-apply]' );
-		const current = form.getAttribute( 'data-current-mode' );
 
-		if ( ! apply || ! current ) {
+		if ( ! apply ) {
 			return;
 		}
 
-		const unchanged = selected === current;
+		const unchanged = proposesNothing( form, selected );
 
 		apply.disabled = unchanged;
 		apply.setAttribute( 'aria-disabled', String( unchanged ) );
