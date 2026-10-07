@@ -407,7 +407,7 @@
 				return 'url';
 			}
 		},
-		phone( value ) {
+		phone( value, params ) {
 			if ( isEmpty( value ) ) {
 				return null;
 			}
@@ -415,7 +415,15 @@
 			// the server's rejects what the server would accept; one that is looser is a promise
 			// the submit then breaks.
 			const digits = String( value ).replace( /[\s()\-.\u00A0]/g, '' );
-			return /^\+?[1-9]\d{1,14}$/.test( digits ) ? null : 'phone';
+			if ( /^\+?[1-9]\d{1,14}$/.test( digits ) ) {
+				return null;
+			}
+			// `phone:national` also accepts a number written with its trunk zero.
+			const national =
+				( params || [] ).indexOf( 'national' ) !== -1 &&
+				/^0\d{6,14}$/.test( digits );
+
+			return national ? null : 'phone';
 		},
 	};
 

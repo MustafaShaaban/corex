@@ -68,6 +68,9 @@ On `main` since v0.43.1, and not in a release yet:
   check reports that as `REMOVED`, not drift. The dependency advisory check runs in the
   framework's repository only, and CodeQL there or in a public client. Found by creating the
   first client repository from v0.43.0.
+- **`phone:national` accepts a number written with its trunk zero** (#249, DECISIONS #251). `phone`
+  is E.164 by design and refused `010 1699 9700`; every site with a local audience wrote its own
+  rule. The parameter is additive, and the browser's rule mirrors it.
 - **A form behind a proxy counts visitors, not the proxy** (#247, DECISIONS #250). Form and flow rate
   limits and the captcha check read `REMOTE_ADDR`; they now ask `Corex\Http\ClientAddress`, which
   corex-config answers from the trusted-proxy list login protection already used. That list had no

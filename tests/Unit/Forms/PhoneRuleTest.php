@@ -63,3 +63,33 @@ it('leaves emptiness to the required rule', function () {
 it('ignores a value that is not a scalar rather than stringifying it', function () {
     expect($this->rule->validate(['+201016999700'], [], []))->toBeNull();
 });
+
+/**
+ * A number written the way its own country writes it starts with the trunk `0`, which E.164
+ * forbids: `010 1699 9700` was refused by a contact form asking a local audience for "Phone"
+ * (#249, reported 2026-10-06). `phone:national` accepts that form as well.
+ */
+it('accepts a number written with its trunk zero when the field allows national numbers', function (string $number) {
+    expect($this->rule->validate($number, ['national'], []))->toBeNull();
+})->with([
+    'an Egyptian mobile' => ['010 1699 9700'],
+    'a London landline' => ['(020) 7946-0958'],
+    'the shortest it takes: a zero and six digits' => ['0123456'],
+    'the longest: a zero and fourteen digits' => ['012345678901234'],
+    'an international number, as before' => ['+20 101 699 9700'],
+    'a national number with no trunk zero, as before' => ['555 010 0199'],
+]);
+
+it('still refuses what is not a number when the field allows national numbers', function (string $number) {
+    expect($this->rule->validate($number, ['national'], []))->toBe('phone');
+})->with([
+    'words' => ['call me'],
+    'a zero and five digits' => ['012345'],
+    'a zero and fifteen digits' => ['0123456789012345'],
+    'a plus before the trunk zero' => ['+0123456789'],
+    'a single zero' => ['0'],
+]);
+
+it('goes on refusing a trunk zero on a field that did not ask for national numbers', function () {
+    expect($this->rule->validate('010 1699 9700', [], []))->toBe('phone');
+});

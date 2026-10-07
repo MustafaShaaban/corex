@@ -106,6 +106,32 @@ describe( 'the client rule table mirrors the server', () => {
 		expect( errors.phone ?? null ).toBe( expected );
 	} );
 
+	// `phone:national` (#249): a number written with its trunk zero, which E.164 has no room for.
+	// The same table as the server's, because a browser that disagrees with it either refuses
+	// what would have been stored or promises what the submit then rejects.
+	it.each( [
+		[ '010 1699 9700', [ 'national' ], null ],
+		[ '(020) 7946-0958', [ 'national' ], null ],
+		[ '0123456', [ 'national' ], null ],
+		[ '012345678901234', [ 'national' ], null ],
+		[ '+20 101 699 9700', [ 'national' ], null ],
+		[ '012345', [ 'national' ], 'phone' ],
+		[ '0123456789012345', [ 'national' ], 'phone' ],
+		[ '+0123456789', [ 'national' ], 'phone' ],
+		[ 'call me', [ 'national' ], 'phone' ],
+		[ '010 1699 9700', [], 'phone' ],
+	] )(
+		'validates the phone %s with params %j',
+		( value, params, expected ) => {
+			const errors = window.Corex.forms.validate(
+				[ { name: 'phone', rules: [ { rule: 'phone', params } ] } ],
+				{ phone: value }
+			);
+
+			expect( errors.phone ?? null ).toBe( expected );
+		}
+	);
+
 	it.each( [
 		[ 'https://example.test', null ],
 		[ 'not a url', 'url' ],

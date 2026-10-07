@@ -5966,3 +5966,51 @@ proxy trusted, the second visitor is refused.
 **Not verified where it was reported.** Nothing here was run behind a real tunnel or CDN. Whether
 `127.0.0.1` and `::1` are the right entries for the reporting site depends on what its
 `REMOTE_ADDR` is, which that site has to read.
+
+## #251 — `phone` stays international; `phone:national` also takes a number with its trunk zero
+
+Date: 2026-10-07 · Spec: none (defect), issue #249 · Status: Final
+
+`Rules\Phone` strips separators and requires E.164: an optional `+`, a first digit that is not zero,
+up to fifteen digits. A number written the way its own country writes it starts with the trunk `0`
+and was refused: `010 1699 9700`, `(020) 7946-0958`. A contact form asking a local audience for
+"Phone" refused most of what it was given. Reported 2026-10-06 from a client site, which wrote its
+own rule.
+
+The refusal is deliberate. `PhoneRuleTest` has asserted since #148 that `0123456789` is "not
+dialable", and it is right: without the country, a national number cannot be rung. So the rule's
+default does not change, and nothing changes for a form that does not ask.
+
+**What was added.** A parameter. `phone:national` accepts everything `phone` accepts, and also a
+`0` followed by six to fourteen digits. Fifteen digits in all is the most E.164 allows a whole
+number; seven is short enough for the shortest local numbers that carry a trunk zero, and long
+enough that `0` and `012345` are refused. `corex-runtime.js` applies the same two patterns, and its
+test runs the same table.
+
+**Considered and not done.**
+
+- *A second rule, `phone_national`.* It would need its own error key or share `phone`'s; a
+  parameter keeps one rule, one key and one message.
+- *A parameter naming the country, to normalise to E.164.* That is a numbering-plan table per
+  country, which is a library, not a rule. The answer is stored as it was typed.
+- *Accept a leading zero by default.* It would change what every existing `phone` field accepts.
+
+**What `phone:national` does not know.** It accepts any `0` followed by six to fourteen digits,
+including the international prefix some countries dial as `00`. It does not check that the number
+exists in any country's plan. A national number with no trunk zero, such as `555 010 0199`, was
+always accepted by `phone` and still is.
+
+**Found on the way.** The rule's own docblock offered `(020) 7946-0958` as a number it accepts. It
+refused it. The docblock now says which form each rule takes.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| New `PhoneRuleTest` cases, before the change | 4 failed: the four numbers with a trunk zero |
+| `tests/Unit/Forms` | 199 passed |
+| `corex-runtime-forms.test.js`, with the same table | 31 passed |
+| `wp-scripts lint-js` on the runtime and its test | clean after `--fix` |
+
+Not run: a browser submit of a `phone:national` field. The schema a form block hands the browser
+carries a rule's parameters, which `SchemaExporterTest` covers for other rules.
