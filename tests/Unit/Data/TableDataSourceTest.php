@@ -128,3 +128,15 @@ it('normalizes managed table underscores into URL-safe source keys', function ()
     expect($source->key())->toBe('table-invoice-items')
         ->and($source->capabilities()->sourceKey)->toBe('table-invoice-items');
 });
+
+it('lets a managed table be exported as Excel by the people who may export it as CSV', function () {
+    // Every source CoreX ships declared Excel unsupported, so the Data screen never offered it
+    // (spec 103, D12b).
+    $capabilities = (new TableDataSource(
+        new ManagedTable('invoice_items', 'Invoice items', [['id' => 'name', 'label' => 'Name']]),
+        tableReader([], 0),
+    ))->capabilities();
+
+    expect($capabilities->supports('export_xlsx'))->toBeTrue()
+        ->and($capabilities->permissionMap['export_xlsx'])->toBe($capabilities->permissionMap['export_csv']);
+});

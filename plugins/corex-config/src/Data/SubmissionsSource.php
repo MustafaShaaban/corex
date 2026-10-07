@@ -129,7 +129,7 @@ final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSou
             importDryRun: false,
             importCommit: false,
             exportCsv: true,
-            exportXlsx: false,
+            exportXlsx: true,
             migrations: false,
             rollback: false,
             maxPageSize: 100,
@@ -140,6 +140,7 @@ final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSou
                 DataSourceCapabilities::DETAIL     => CorexAbility::MANAGE_SUBMISSIONS,
                 DataSourceCapabilities::DELETE     => CorexAbility::MANAGE_SUBMISSIONS,
                 DataSourceCapabilities::EXPORT_CSV => CorexAbility::MANAGE_SUBMISSIONS,
+                DataSourceCapabilities::EXPORT_XLSX => CorexAbility::MANAGE_SUBMISSIONS,
             ],
         );
     }

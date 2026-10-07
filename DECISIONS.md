@@ -6932,3 +6932,66 @@ What was run:
 and the install beside it runs another branch. The new test in `MailLifecycleTest` does what the
 probe above did and runs in CI. No message was sent through a relay; `wp_mail()` was stopped at
 `pre_wp_mail` in every run.
+
+## #264 — The Data export was audited first, and the audit changed what the slice is
+
+Date: 2026-10-08 · Spec: 103 (submissions inbox and exports), slice 7a · Status: Final
+
+The owner, in the request the spec is built from: "even in the data export the operations is
+poor". The plan said to audit it against FR-048's list before writing code, and to record what
+was found. It is in the plan as D12. Three findings decided the slice.
+
+**There are two Data exports on the screen.** The plan named the panel on the Export tab. The
+Records tab has a dialog of its own. They post to one route and neither hands over a file: one
+closes and says the export was queued, the other says to refresh the history. So the dialog the
+spec asks for replaces two things, and is slice 7b.
+
+**Excel was never offered.** The spec says the Data export "already has an xlsx writer". It did.
+The screen offers the format where a source declares it, and `SubmissionsSource`,
+`TableDataSource` and the registry's default all declared `exportXlsx: false`. The writer that
+was there wrote every cell as text and needed PHP's `zip` extension. It is removed. The two
+sources CoreX ships now declare Excel, under the ability that already guards their CSV: the same
+people, the same records, another format. A source a client wrote declares its own, as before.
+
+**A list was written as the word "Array".** Every value was `(string) $value`. A Data source
+declares what each field is, so `DataExportTable` builds typed cells from that. Three readings
+in it are choices:
+
+- A stored date and time with no offset is written as it was stored. Nothing says which timezone
+  a table's column is in, and moving it would be inventing one. A value that does carry an offset
+  is moved to the site's time.
+- Only a value shaped like a date and time is read as one. PHP reads "next week" as a date, and a
+  field holding those words is not holding one. The first version of the table did exactly that;
+  its test caught it.
+- A day without a time stays text. A cell has no kind for a day alone, and writing one as a date
+  and time would put a midnight on it that nobody recorded.
+
+**One writer, one place for files.** The Data export writes through `Export\ExportWriters` into
+`Export\ExportDirectory`, as the Submissions export does. Its rows between batches are in a
+working file; `SubmissionExportSpool`'s reading and writing became `Export\ExportSpool`, which
+both use. Only the columns asked for are written to it: a record's other fields have no business
+on the disk, even for a minute.
+
+**The two screens were left alone, and still work.** 7a keeps the answers they read. They gain
+Excel and lose nothing. The download's shape is unchanged; only the file's name and contents are.
+
+**Not done.** The dialog (7b). Expiry and deletion of a Data export's file: FR-048 does not list
+them, and the file is kept as its post meta was kept. A working file of an export whose job never
+finishes is not swept, for either export. The third, unlinked export route from spec 045 is left
+registered.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `DataExportTableTest`, before the class existed | failed: class not found |
+| `DataExportTableTest`, first version of the table | 1 failed: "next week" was written as a date |
+| `DataExportTableTest` | 20 passed |
+| `DataExportServiceTest` | 15 passed |
+| `tests/Unit` | 2239 passed |
+| `tests/Integration`, real WordPress | 543 passed |
+| `data-management.spec.js`, a browser, on the two unchanged screens | 7 passed |
+
+**Not run.** A produced Data workbook was not opened in a real spreadsheet; the Submissions
+workbook was, in slice 3, and this is the same writer. The two screens were not looked at with
+"XLSX" now among their formats.

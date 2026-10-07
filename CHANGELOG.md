@@ -18,6 +18,14 @@ All notable changes to Corex are documented here. The format follows
 - **An export can be deleted.** "Delete" on an entry asks first, removes the file and leaves the
   entry, which then says who deleted it and when. The activity log records it as
   `submission.export.deleted`. `DELETE corex/v1/submissions/exports/{id}` is the route.
+- **The Data export writes an Excel workbook** (spec 103, slice 7a), for submissions and for every
+  managed table. The screen has offered "XLSX" only where a source declared it, and no source
+  CoreX ships did, so no site has ever been offered it. The workbook has the source's name on its
+  sheet, the heading row kept in view, filtering on, and numbers and dates written as such.
+- **The Data export can be asked how much it would export**, and can take its steps on request:
+  `POST corex/v1/data/{source}/exports/preview` answers the count for the selected rows, the
+  filters and everything; `POST corex/v1/data/{source}/exports/{id}/advance` takes one step now.
+  The screens that use them come with slice 7b.
 
 ### Fixed
 
@@ -27,6 +35,16 @@ All notable changes to Corex are documented here. The format follows
 - **A download from "Recent exports" that failed said nothing.** It says so now.
 - **An export whose file is no longer on the server is not offered for download.** It was listed
   with a "Download" that could only fail. It reads "No file to download."
+- **A Data export wrote a list as the word "Array"**, with a PHP warning: every value was written
+  as `(string) $value`. A value is now written as what its field is declared to be: a number as a
+  number, a date and time as one, a switch as Yes or No, a list as its items.
+- **A Data export's CSV opened as mojibake in a spreadsheet** for any text outside ASCII: it had no
+  byte-order mark. It has one, and a choice of separator, from the writer the Submissions export
+  uses.
+- **A Data export of no records wrote a file with a heading row.** It is refused: "There is
+  nothing to export."
+- **The same Data export asked for twice in one second was one export.** Its hash is salted, as
+  the Submissions export's has been since v0.43.2.
 - **`scripts/setup-wordpress.ps1` installs the browser suite's fixtures, as two files said it
   did.** The docblock of `tests/e2e/fixtures/corex-e2e-client-guide.php` and a comment in
   `tests/e2e/admin-help-tab.spec.js` both said the script copied that fixture into
@@ -123,6 +141,19 @@ request, so WordPress prints its own notice whatever version the install runs.
   `file()` answers null for a file that is not on disk. Code that implements the interface has to
   add them.
 - **`SubmissionControllerServices` takes one more constructor argument.**
+- **A Data export's file is on disk**, in `uploads/corex-private/exports/`, where it was a base64
+  string in post meta. An export made before this is still downloaded from where it is.
+- **A Data export's CSV begins with a byte-order mark** and is named
+  `<site>-<source>-<date>.csv`, where it was `corex-<source>-<id>.csv`. Anything that reads the
+  file by its name or expects its first byte to be the first heading has to be adjusted.
+- **In a Data export, a switch reads "Yes" or "No"** where it read `1` or nothing, and a date and
+  time reads `2026-10-07 09:30` where it read as it was stored.
+- **"XLSX" appears as a format on the Data screen** for submissions and managed tables.
+- **`DataExportStore` changed**: `saveArtifact()` is gone, `saveFile()` and `file()` are new.
+  **`DataExportJobQueue` has a second method, `advance()`.** `DataExportArtifact` and
+  `DataExportArtifactWriter` are removed. Code that implements or uses them has to follow.
+- **`WpDataExportStore` and `WpDataExportJobQueue` take one more constructor argument each**, and
+  `DataExportJobHandler` takes `DataExportFiles` where it took the writer.
 - **Strings in the history are new** in the `corex` text domain.
 - **The admin bundle changed.** `build/` is git-ignored: rebuild `plugins/corex-config` after
   taking this.

@@ -15,6 +15,7 @@ use Corex\Config\Data\DataManagementController;
 use Corex\Config\Data\DataQuery;
 use Corex\Config\Data\DataRegistry;
 use Corex\Config\Data\DataSource;
+use Corex\Config\Data\DataSourceService;
 use Corex\Config\Data\FieldAwareDataSource;
 use Corex\Config\Data\QueryableDataSource;
 use Corex\Config\Data\WritableDataSource;
@@ -28,6 +29,7 @@ use Corex\Config\DataModels\WpMigrationRunStore;
 use Corex\Data\DataField;
 use Corex\Data\DataSourceCapabilities;
 use Corex\Data\DataWriteAdapter;
+use Corex\Security\Upload\ProtectedUploads;
 use Corex\Database\Schema\Migrator;
 use Corex\Operations\OperationResult;
 use Corex\Tests\Support\CreatedPosts;
@@ -237,4 +239,92 @@ it('accepts a bounded CSV upload and parses it server-side before the dry run', 
     expect($response->get_status())->toBe(200)
         ->and($response->get_data()['data']['import']['state'])->toBe('valid')
         ->and($response->get_data()['data']['import']['accepted_rows'][0]['name'])->toBe('Ada');
+});
+
+/**
+ * The Data export, through the routes its screen uses (spec 103, US10).
+ *
+ * It queued a job and told the person to refresh. These ask how much each choice would export,
+ * take the export's steps on request, and read back a file that is on disk and named for what it
+ * holds.
+ */
+function dataExportRoute(string $method, string $path, array $payload = [], array $params = []): WP_REST_Request
+{
+    $request = dataManagementRequest($method, '/corex/v1/data/rest-contacts/' . $path, $payload);
+    $request->set_url_params(['source' => 'rest-contacts'] + $params);
+
+    return $request;
+}
+
+it('says how many records each choice would export, before anything is exported', function () {
+    $answer = $this->controller->previewExport(dataExportRoute('POST', 'exports/preview', [
+        'selected_ids' => [1, 99],
+        'query' => [],
+    ]))->get_data();
+
+    expect($answer['ok'])->toBeTrue()
+        ->and($answer['data']['counts'])->toBe(['selected' => 1, 'filtered' => 2, 'all' => 2]);
+});
+
+it('writes no file for an export of nothing, and says so', function () {
+    $this->dataAdapter->records = [];
+
+    $answer = $this->controller->createExport(dataExportRoute('POST', 'exports', [
+        'scope' => 'all', 'selected_ids' => [], 'query' => [],
+        'columns' => ['status'], 'format' => 'csv',
+    ]));
+
+    expect($answer->get_status())->toBe(422)
+        ->and($answer->get_data()['message'])->toBe('There is nothing to export.')
+        ->and($this->runs->ids())->toBe([]);
+});
+
+it('exports on request: a step taken now, a workbook on disk, named for the site and the source', function () {
+    global $wpdb;
+
+    $export = $this->controller->createExport(dataExportRoute('POST', 'exports', [
+        'scope' => 'all', 'selected_ids' => [], 'query' => [],
+        'columns' => ['name', 'status'], 'format' => 'xlsx',
+        'personal_data_acknowledged' => true,
+    ]))->get_data()['data']['export'];
+    $id = (int) $export['id'];
+
+    // What the screen does while a person waits: no scheduler ran.
+    $progress = $this->controller->advanceExport(
+        dataExportRoute('POST', "exports/$id/advance", [], ['id' => $id])
+    )->get_data()['data']['progress'];
+    $stored = Boot::app()->container()->make(WpDataExportStore::class)->file($id);
+    $artifact = $this->controller->downloadExport(
+        dataExportRoute('GET', "exports/$id/download", [], ['id' => $id])
+    )->get_data()['data']['artifact'];
+    $workbook = base64_decode($artifact['content'], true);
+
+    $archive = new ZipArchive();
+    $archive->open((string) $stored['path']);
+    $sheet = (string) $archive->getFromName('xl/worksheets/sheet1.xml');
+    $archive->close();
+
+    unlink((string) $stored['path']);
+    $wpdb->delete($wpdb->prefix . 'corex_bounded_jobs', ['id' => (int) $export['job_id']]);
+    $wpdb->delete((new Migrator())->fullName(ActivityTable::NAME), ['target_type' => 'data_export', 'target_id' => (string) $id]);
+
+    expect($progress)->toMatchArray(['state' => 'completed', 'processed' => 2, 'total' => 2])
+        ->and(str_replace('\\', '/', (string) $stored['path']))->toContain('/' . ProtectedUploads::DIRECTORY . '/exports/')
+        ->and($artifact['filename'])->toBe(sanitize_file_name(
+            sanitize_title(get_bloginfo('name')) . '-rest-contacts-' . gmdate('Y-m-d') . '.xlsx'
+        ))
+        ->and($artifact['mime'])->toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        ->and(substr((string) $workbook, 0, 2))->toBe('PK')
+        ->and($sheet)->toContain('>Name<')
+        ->and($sheet)->toContain('>Grace<')
+        ->and($sheet)->not->toContain('example.com');
+});
+
+it('offers Excel for the submissions source CoreX ships, to the people who may export it as CSV', function () {
+    // What the screen is told about the source: whether each format is there to offer.
+    $actions = Boot::app()->container()->make(DataSourceService::class)
+        ->describe(get_current_user_id(), 'submissions')['actions'];
+
+    expect($actions['export_csv']['visible'])->toBeTrue()
+        ->and($actions['export_xlsx'])->toBe($actions['export_csv']);
 });

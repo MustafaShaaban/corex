@@ -170,6 +170,9 @@ Found beside the list:
   batch. D4 already says where a file belongs.
 - **The same request made twice in one second is one export**: the run's hash is not salted. Slice
   2 fixed the same fault in the Submissions export.
+- **A third export is still registered and nothing links to it**: `Data\DataExportController`, an
+  `admin_post_corex_data_export` handler from spec 045 that streams a CSV. It is left as it is;
+  removing a route is its own change.
 
 **D12a. One writer, one place for files.** The Data export builds an `ExportDocument` of typed
 cells from the source's declared field types and writes it through `ExportWriters` into

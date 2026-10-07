@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Corex\Config\DataModels;
 defined('ABSPATH') || exit;
 
+use Corex\Config\Export\ExportWriters;
 use DateTimeImmutable;
 use InvalidArgumentException;
 
@@ -25,6 +26,7 @@ final readonly class DataExportRun
         $this->query = is_array($payload['query'] ?? null) ? $payload['query'] : [];
         $this->columns = array_values(array_map('strval', (array) ($payload['columns'] ?? [])));
         $this->format = (string) ($payload['format'] ?? '');
+        $this->separator = (string) (($payload['separator'] ?? '') ?: ExportWriters::DEFAULT_SEPARATOR);
         $this->personalDataClasses = array_values(array_map('strval', (array) ($payload['personal_data_classes'] ?? [])));
         $this->recordCount = (int) ($payload['record_count'] ?? 0);
         $this->exportedRows = (int) ($payload['exported_rows'] ?? 0);
@@ -43,6 +45,7 @@ final readonly class DataExportRun
     /** @var array<string,mixed> */ public array $query;
     /** @var list<string> */ public array $columns;
     public string $format;
+    public string $separator;
     /** @var list<string> */ public array $personalDataClasses;
     public int $recordCount;
     public int $exportedRows;
@@ -62,7 +65,9 @@ final readonly class DataExportRun
             'state' => self::STATE_QUEUED,
             'created_at' => (new DateTimeImmutable('now'))->format(DATE_ATOM),
         ];
-        $payload['input_hash'] = hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR));
+        // Salted, so the same request made twice is two exports. The job that writes an export
+        // finds it by this hash, and an unsalted one sent both jobs to one run.
+        $payload['input_hash'] = hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR) . '|' . bin2hex(random_bytes(8)));
 
         return self::from($payload);
     }
@@ -78,6 +83,7 @@ final readonly class DataExportRun
             'id' => $this->id, 'actor_id' => $this->actorId, 'job_id' => $this->jobId,
             'source_key' => $this->sourceKey, 'scope' => $this->scope, 'selected_ids' => $this->selectedIds,
             'query' => $this->query, 'columns' => $this->columns, 'format' => $this->format,
+            'separator' => $this->separator,
             'personal_data_classes' => $this->personalDataClasses, 'record_count' => $this->recordCount,
             'exported_rows' => $this->exportedRows, 'state' => $this->state, 'input_hash' => $this->inputHash,
             'created_at' => $this->createdAt->format(DATE_ATOM),

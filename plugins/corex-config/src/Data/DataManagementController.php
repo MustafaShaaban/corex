@@ -47,6 +47,8 @@ final readonly class DataManagementController
         $this->route('/data/(?P<source>[\w-]+)/imports/(?P<id>\d+)/report', 'GET', 'importReport');
         $this->route('/data/(?P<source>[\w-]+)/exports', 'POST', 'createExport');
         $this->route('/data/(?P<source>[\w-]+)/exports', 'GET', 'exports');
+        $this->route('/data/(?P<source>[\w-]+)/exports/preview', 'POST', 'previewExport');
+        $this->route('/data/(?P<source>[\w-]+)/exports/(?P<id>\d+)/advance', 'POST', 'advanceExport');
         $this->route('/data/(?P<source>[\w-]+)/exports/(?P<id>\d+)/download', 'GET', 'downloadExport');
     }
 
@@ -189,6 +191,30 @@ final readonly class DataManagementController
         });
     }
 
+    public function previewExport(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, $this->exportShape(), fn (Request $safe): Response => Response::ok([
+            'counts' => $this->services->exports->preview(
+                get_current_user_id(),
+                sanitize_key((string) $request->get_param('source')),
+                (array) ($safe->input['selected_ids'] ?? []),
+                (array) ($safe->input['query'] ?? []),
+            ),
+        ]));
+    }
+
+    public function advanceExport(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, [], fn (): Response => Response::ok([
+            'progress' => $this->services->exports->advance(
+                get_current_user_id(),
+                RouteParam::int($request),
+                false,
+                sanitize_key((string) $request->get_param('source')),
+            ),
+        ]));
+    }
+
     public function downloadExport(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->read($request, function () use ($request): Response {
@@ -200,7 +226,8 @@ final readonly class DataManagementController
             );
 
             return Response::ok(['artifact' => [
-                'filename' => $artifact['filename'],
+                // Named for the site, what it holds and the day it was made.
+                'filename' => sanitize_file_name(sanitize_title(get_bloginfo('name')) . '-' . $artifact['filename']),
                 'mime' => $artifact['mime'],
                 'encoding' => 'base64',
                 'content' => base64_encode($artifact['content']),
@@ -291,7 +318,7 @@ final readonly class DataManagementController
     {
         return [
             'scope' => 'sanitize_key', 'selected_ids' => $this->integerList(...), 'query' => $this->query(...),
-            'columns' => $this->keyList(...), 'format' => 'sanitize_key',
+            'columns' => $this->keyList(...), 'format' => 'sanitize_key', 'separator' => 'sanitize_key',
             'personal_data_acknowledged' => 'rest_sanitize_boolean',
         ];
     }

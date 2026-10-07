@@ -163,6 +163,8 @@ class TableDataSource implements QueryableDataSource, SchemaAwareDataSource, Cap
             DataSourceCapabilities::DETAIL     => CorexAbility::MANAGE_DATA,
             DataSourceCapabilities::DELETE     => CorexAbility::MANAGE_DATA,
             DataSourceCapabilities::EXPORT_CSV => CorexAbility::MANAGE_DATA,
+            // The same people, the same records, another format.
+            DataSourceCapabilities::EXPORT_XLSX => CorexAbility::MANAGE_DATA,
         ];
 
         if ($writable) {
@@ -194,7 +196,7 @@ class TableDataSource implements QueryableDataSource, SchemaAwareDataSource, Cap
             importDryRun: $writable && $this->table->supportsImport(),
             importCommit: $writable && $this->table->supportsImport(),
             exportCsv: true,
-            exportXlsx: false,
+            exportXlsx: true,
             migrations: $migratable,
             rollback: $migratable && $this->table->supportsRollback(),
             maxPageSize: 100,

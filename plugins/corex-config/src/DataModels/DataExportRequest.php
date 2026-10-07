@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Corex\Config\DataModels;
 defined('ABSPATH') || exit;
 
+use Corex\Config\Export\ExportWriters;
 use InvalidArgumentException;
 
 final readonly class DataExportRequest
@@ -22,7 +23,8 @@ final readonly class DataExportRequest
         $this->selectedIds = self::ids($payload['selected_ids'] ?? []);
         $this->query = is_array($payload['query'] ?? null) ? $payload['query'] : [];
         $this->columns = array_values(array_unique(array_map('strval', (array) ($payload['columns'] ?? []))));
-        $this->format = strtolower((string) ($payload['format'] ?? 'csv'));
+        $this->format = strtolower((string) ($payload['format'] ?? ExportWriters::CSV));
+        $this->separator = (string) (($payload['separator'] ?? '') ?: ExportWriters::DEFAULT_SEPARATOR);
         $this->personalDataAcknowledged = (bool) ($payload['personal_data_acknowledged'] ?? false);
         $this->validate();
     }
@@ -34,6 +36,8 @@ final readonly class DataExportRequest
     /** @var array<string,mixed> */ public array $query;
     /** @var list<string> */ public array $columns;
     public string $format;
+    /** Which character parts the values of a CSV; a key of `ExportWriters::SEPARATORS`. */
+    public string $separator;
     public bool $personalDataAcknowledged;
 
     /** @param array<string,mixed> $payload */
@@ -53,6 +57,7 @@ final readonly class DataExportRequest
             'query' => $this->query,
             'columns' => $this->columns,
             'format' => $this->format,
+            'separator' => $this->separator,
             'personal_data_acknowledged' => $this->personalDataAcknowledged,
         ];
     }
@@ -63,8 +68,11 @@ final readonly class DataExportRequest
             throw new InvalidArgumentException('The data export actor or source is invalid.');
         }
         if (! in_array($this->scope, [self::SCOPE_FILTERED, self::SCOPE_SELECTED, self::SCOPE_ALL], true)
-            || ! in_array($this->format, ['csv', 'xlsx'], true) || $this->columns === []) {
+            || ! in_array($this->format, ExportWriters::FORMATS, true) || $this->columns === []) {
             throw new InvalidArgumentException('The data export scope, format, or columns are invalid.');
+        }
+        if (! isset(ExportWriters::SEPARATORS[$this->separator])) {
+            throw new InvalidArgumentException('The data export separator is invalid.');
         }
         if (($this->scope === self::SCOPE_SELECTED) !== ($this->selectedIds !== [])) {
             throw new InvalidArgumentException('Selected data exports require exact record IDs.');
