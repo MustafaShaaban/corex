@@ -72,12 +72,12 @@ Slice 2a ends here (DECISIONS #254). T030, T031 and everything below is slice 2b
 
 ## Slice 3 — Excel (US6)
 
-- [ ] T060 [P] Pest unit: the workbook read back part by part — a sheet per form named for it, shared strings, date-time and number cells with their styles, the frozen row, the autofilter, widths
-- [ ] T061 `XlsxExportWriter` (`Export/`)
-- [ ] T062 The formula guard in a workbook (FR-008)
-- [ ] T063 Excel in the dialog and the request
-- [ ] T064 Open one produced workbook in a real spreadsheet, with Arabic text, and record what was seen
-- [ ] T065 Guards; notes
+- [x] T060 [P] Pest unit: the workbook read back part by part — a sheet per form named for it, shared strings, date-time and number cells with their styles, the frozen row, the autofilter, widths
+- [x] T061 `XlsxExportWriter` (`Export/`)
+- [x] T062 The formula guard in a workbook (FR-008)
+- [x] T063 Excel in the dialog and the request
+- [x] T064 Open one produced workbook in a real spreadsheet, with Arabic text, and record what was seen
+- [x] T065 Guards; notes
 
 ## Slice 4 — The detail pane (US5)
 

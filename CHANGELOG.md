@@ -12,6 +12,12 @@ All notable changes to Corex are documented here. The format follows
   visitor's address. The setting existed, was read by login protection, and could be set only by
   posting to the REST route by hand: the Security screen has no field for it. An entry that is not an
   address or a CIDR range refuses the whole list (#247).
+- **Submissions export as an Excel workbook** (spec 103). It is what the dialog offers first. The
+  submitted time is a date and a numeric answer is a number, so both sort and filter. The heading
+  row is bold and stays in view, filtering is already on, each column is as wide as what it holds,
+  and each form is a sheet of its own, named for it. A phone number keeps its leading zero. Text
+  that begins with `=` is text. A right-to-left site gets right-to-left sheets. CSV is still
+  offered, with its separator (DECISIONS #256).
 - **`phone:national`** accepts a phone number written with its country's trunk `0`, such as
   `010 1699 9700`, as well as everything `phone` accepts. `phone` alone stays international (E.164)
   and still refuses it. The browser applies the same rule (#249, DECISIONS #251).
@@ -128,6 +134,12 @@ All notable changes to Corex are documented here. The format follows
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
 Read this before taking the release.
 
+- **The export dialog now opens on Excel, not CSV.** Somebody who exports from the screen and
+  feeds the file to something that reads CSV has to choose "CSV (.csv)" under File type. A request
+  to the route that names no `format` is still a CSV.
+- **In a CSV, a value that begins with `+`, `-`, `=` or `@` is shown with an apostrophe in front**
+  when it is opened in a spreadsheet: `'+20 101 699 9700`. That is what stops a spreadsheet running
+  it as a formula. An Excel workbook does not need it and does not have it.
 - **New routes**: `POST corex/v1/submissions/exports/preview` answers how many submissions each
   scope would export and whether the person may export personal data; `POST
   corex/v1/submissions/exports/{id}/advance` takes one step of an export now and answers its state

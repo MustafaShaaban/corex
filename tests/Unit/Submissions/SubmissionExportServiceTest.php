@@ -336,7 +336,7 @@ function exportFiles(): SubmissionExportFiles
     return new SubmissionExportFiles(
         new SubmissionExportTable($owners, static fn (): DateTimeZone => new DateTimeZone('UTC')),
         $questions,
-        new ExportWriters(),
+        new ExportWriters(static fn (): bool => false),
         $directory,
     );
 }
@@ -582,3 +582,31 @@ it('takes a step of an export for the person who made it, and for nobody else', 
 
     $service->advance(new SubmissionAccessScope(8, false), $run->id);
 })->throws(DomainException::class, 'The submission export is unavailable.');
+
+it('writes an export as a workbook, a sheet per form, when Excel is asked for', function () {
+    $export = runExport(
+        ['scope' => 'accessible', 'columns' => ['identity', 'submitted_fields'], 'personal_data_acknowledged' => true, 'format' => 'xlsx'],
+        [
+            20 => contactSubmission(20),
+            30 => contactSubmission(30, ['form' => 'careers', 'flow' => 'Careers', 'values' => ['role' => 'Designer']]),
+        ],
+    );
+    $file = $export['store']->file($export['run']->id);
+
+    $archive = new ZipArchive();
+    $archive->open($file['path']);
+    $workbook = (string) $archive->getFromName('xl/workbook.xml');
+    $contact  = (string) $archive->getFromName('xl/worksheets/sheet1.xml');
+
+    expect($file)->toMatchArray([
+        'extension' => 'xlsx',
+        'content_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'subject' => 'submissions',
+    ])
+        ->and($workbook)->toContain('name="Contact"')
+        ->and($workbook)->toContain('name="Careers"')
+        ->and($contact)->toContain('Your name')
+        ->and($contact)->toContain('Salma');
+
+    $archive->close();
+});

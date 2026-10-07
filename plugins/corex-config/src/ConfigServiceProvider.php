@@ -650,7 +650,11 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Config\Export\ExportDirectory::class,
             \Corex\Config\Export\ProtectedExportDirectory::class,
         );
-        $this->container->singleton(\Corex\Config\Export\ExportWriters::class);
+        $this->container->singleton(
+            \Corex\Config\Export\ExportWriters::class,
+            static fn (): \Corex\Config\Export\ExportWriters =>
+                new \Corex\Config\Export\ExportWriters(static fn (): bool => is_rtl()),
+        );
         $this->container->singleton(
             \Corex\Config\Submissions\SubmissionExportTable::class,
             static fn (ContainerInterface $c): \Corex\Config\Submissions\SubmissionExportTable =>
