@@ -63,6 +63,11 @@ Two readings in the spec are the owner's to overrule: that opening a submission 
 the identity" on the PDF means the brand identity plus a sign-off block naming the person who
 exported it.
 
+Unreleased on `main` beside slice 4, both reported from the first client site after it took
+v0.43.2 (DECISIONS #260): the submissions and flow routes now carry a permission callback, so
+`routes:list` no longer prints 25 guarded routes as "public"; and the hygiene test refuses
+`support.js` only where a design export is, not a client's own test helper.
+
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 
 One dependency pull request is held: #240, `@wordpress/scripts` 34 → 36, a toolchain major that
