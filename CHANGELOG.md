@@ -6,6 +6,16 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.43.1] — 2026-10-07
+
+A patch release for what the first client site built on 0.43.0 found, and for thirteen dependency
+advisories published since. One fix is a security fix: behind a trusted proxy, a visitor could
+choose the address login protection counted its failures against. Four more correct things a
+running site got wrong — a readiness check that could not pass, length rules that did not measure
+length, a notification email that left out a form's fields, and a retention form that could end in
+an error page. Nothing a site serves is rebuilt differently; what does change for a running site is
+listed under Client impact, and the entry to read first there is the one about trusted proxies.
+
 ### Fixed
 
 - **A retention action the form does not offer ended in WordPress's critical-error page.** The handler
