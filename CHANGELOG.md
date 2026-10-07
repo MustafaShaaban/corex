@@ -21,6 +21,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **A submissions export is a file a person can read** (spec 103). It had one column per group of
+  data, with the whole group encoded into one cell: a lead's five answers arrived as a single cell
+  of punctuation. It now has one row per submission and one column per answer, headed by the
+  question the form asked. Before the answers: ID, Submitted (in the site's timezone), Form, Status,
+  Assigned to (a person's name), Read and Test. Campaign data, hidden metadata and the consent
+  record have a column per value. Names in Arabic or with accents open correctly in a spreadsheet,
+  and an export of several forms arrives as one file per form in an archive (DECISIONS #254).
 - **Any cell of a Submissions row opens the submission** (spec 103). Only the submitter's name did;
   a click on the form, the status or the date did nothing. The row still has one control and one
   keyboard stop: its button now covers the row, and the checkbox sits above it. The row of the open
@@ -38,6 +45,9 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The same export made twice produced one file.** An export was found by a hash of who asked and
+  what for, so a second identical request was given the first one's job and the older entry never
+  got a file. Each export now has a hash of its own.
 - **The right-hand side of the Submissions inbox was cut off and could not be reached.** With the
   WordPress menu and the CoreX menu both open, a 1280-pixel window leaves the inbox 816 pixels. The
   filter row needed 958, the inbox's one column grew to fit it, and a container above it clipped
@@ -100,6 +110,25 @@ All notable changes to Corex are documented here. The format follows
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
 Read this before taking the release.
 
+- **The submissions export file has a different shape.** Anything that reads it by position or by
+  its old headings (`identity`, `workflow`, `submitted_fields`, each holding JSON) has to be
+  changed: the headings are now words and each value has a column. The file begins with a UTF-8
+  byte-order mark and its lines end in CRLF.
+- **An export of several forms is a `.zip`**, holding one `.csv` per form.
+- **An export of nothing is refused** with "There is nothing to export", where it used to produce a
+  file holding only headings.
+- **Exported files are written to `uploads/corex-private/exports/`**, the directory a web server is
+  told not to serve, and are no longer kept in the database. A backup that takes the database and
+  not the uploads directory no longer contains them. An export made before this release still
+  downloads.
+- **`POST corex/v1/submissions/exports` takes `format` and `separator`**, and `columns` as column
+  names (`id`, `submitted`, `form`, `status`, `assigned_to`, `read`, `test`, `answers`,
+  `answer:<key>`, `hidden_metadata`, `utm`, `consent_snapshot`, `notes`). The three group names it
+  took before are still accepted and stand for the same data. The download answers `artifact` with
+  `filename`, `content_type` and `base64`; `csv` is sent only for an export made before this
+  release.
+- **`SubmissionExportStore` changed**: `saveArtifact()` is gone, `saveFile()` and `file()` are new.
+  `SubmissionExportCsvWriter` is removed. Code that implemented or called either has to follow.
 - **Text in a Submissions row can no longer be selected by dragging.** The row is one control now.
   Open the submission to copy from it. A long sender address is cut with an ellipsis in the row
   and shown whole in the pane.

@@ -274,8 +274,16 @@ final readonly class SubmissionExportTable
         }
 
         $name = $this->owners->nameOf($type, $key);
+        if ($name !== '') {
+            return $name;
+        }
 
-        return $name !== '' ? $name : sprintf('%s: %s', $type, $key);
+        // Routed to whoever owns the form: there is no key, and no person to name.
+        if ($type === 'flow_owner') {
+            return __('The form’s owner', 'corex');
+        }
+
+        return $key === '' ? $type : sprintf('%s: %s', $type, $key);
     }
 
     private function yesNo(bool $value): string

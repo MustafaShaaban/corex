@@ -124,6 +124,10 @@ it('says the fixed columns in words a person reads', function (array $record, ar
         ['owner_type' => 'team', 'owner_key' => 'sales'],
         ['41', '2026-10-07 09:30', 'Lead form', 'New', 'team: sales', 'No', 'No'],
     ],
+    'one routed to the form’s owner, who has no key' => [
+        ['owner_type' => 'flow_owner', 'owner_key' => ''],
+        ['41', '2026-10-07 09:30', 'Lead form', 'New', 'The form’s owner', 'No', 'No'],
+    ],
     'a marked test' => [
         ['is_test' => true],
         ['41', '2026-10-07 09:30', 'Lead form', 'New', 'Unassigned', 'No', 'Yes'],
