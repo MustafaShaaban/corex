@@ -6761,6 +6761,17 @@ both. Right-to-left was checked by setting the document's direction, as the othe
 do, not on a site whose language is right-to-left: WordPress's own right-to-left stylesheet was
 not loaded. Nothing was looked at in Firefox or Safari.
 
+**What CI found on the first run.** Seven of the eight new browser tests failed there and passed
+here. CI activates every plugin a fresh WordPress ships with, and Hello Dolly prints
+`<p id="dolly">` on `admin_notices`: the tests expected three things in the region and met four,
+and the region they expected to be empty was 62px tall. The fix was doing what it should: before
+it, that paragraph floated over the top of the shell; now it is a line of its own in the region,
+in the shell's ink, spaced like a notice and not drawn as one. The tests were wrong to assume
+that only the fixture prints on the hook. They now check the spacing of everything in the region,
+check the notice styling of notices only, and empty the region in the page before measuring it
+empty. Run here with a stand-in that prints what Hello Dolly prints, and without: 8 passed each
+way.
+
 **Left as it is.** `admin-controls.spec.js` and `coming-soon.spec.js` each keep their own copy of
 the contrast calculation that `tests/e2e/helpers.js` now exports. The comment on the fixture
 `corex-e2e-client-guide.php` says `scripts/setup-wordpress.ps1` copies it into `mu-plugins`; the

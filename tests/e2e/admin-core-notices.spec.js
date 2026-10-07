@@ -21,6 +21,42 @@ const NAG = '.corex-admin__notices > .update-nag';
 const INFO = '#corex-e2e-notice-info';
 const DISMISSIBLE = '#corex-e2e-notice-error';
 
+/** What the fixture makes WordPress print, in the order it is printed. */
+const FIXTURE_NOTICES = [
+	'notice notice-warning update-nag inline',
+	'corex-e2e-notice-info',
+	'corex-e2e-notice-error',
+];
+
+/**
+ * The fixture's notices among everything in the region.
+ *
+ * An install's own plugins print on the same hooks. CI activates every plugin a fresh WordPress
+ * ships with, and Hello Dolly prints a line of a song on `admin_notices`: the first run of this
+ * spec in CI met four things in the region where it expected three. What somebody else printed is
+ * measured for its spacing like the rest, and is not expected to look like a notice.
+ *
+ * @param {Array} printed What `measure()` found in the region.
+ * @return {string[]} The names of the fixture's notices, in the order they are drawn.
+ */
+const fixtureNoticesIn = ( printed ) =>
+	printed
+		.map( ( item ) => item.name )
+		.filter( ( name ) => FIXTURE_NOTICES.includes( name ) );
+
+/**
+ * The space above each thing in the region when it is spaced as the shell spaces it: one gutter
+ * under the page header, then 12px between one and the next.
+ *
+ * @param {number} gutter The shell's gutter at this width.
+ * @param {number} count  How many things are in the region.
+ * @return {number[]} The expected space above each.
+ */
+const stackedUnder = ( gutter, count ) => [
+	gutter,
+	...Array( Math.max( count - 1, 0 ) ).fill( 12 ),
+];
+
 /** The shell's one-column layout starts here, and its gutters go from 32px to 24px. */
 const NARROW = 782;
 
@@ -111,13 +147,16 @@ function measure( page ) {
 				last && firstBlock
 					? px( box( firstBlock ).top - box( last ).bottom )
 					: null,
-			notices: drawn.map( ( notice, index ) => {
+			printed: drawn.map( ( notice, index ) => {
 				const style = window.getComputedStyle( notice );
 				const fromLeft = box( notice ).left - box( main ).left;
 				const fromRight = box( main ).right - box( notice ).right;
 
 				return {
 					name: notice.id || notice.className,
+					isNotice: notice.matches(
+						'.notice, .updated, .error, .update-nag'
+					),
 					gapAbove: px(
 						box( notice ).top -
 							( index === 0
@@ -174,19 +213,15 @@ test.describe( 'with a core update pending', () => {
 
 			// The notices the two hooks printed are with it, in the order they were printed.
 			expect(
-				layout.notices.map( ( notice ) => notice.name ),
+				fixtureNoticesIn( layout.printed ),
 				`${ slug } notices in the region`
-			).toEqual( [
-				'notice notice-warning update-nag inline',
-				'corex-e2e-notice-info',
-				'corex-e2e-notice-error',
-			] );
+			).toEqual( FIXTURE_NOTICES );
 
 			// Directly under the page header, and the content follows without a second gutter.
 			expect(
-				layout.notices[ 0 ].gapAbove,
-				`${ slug } space above the first notice`
-			).toBeCloseTo( 32, 0 );
+				layout.printed.map( ( item ) => item.gapAbove ),
+				`${ slug } space above each thing in the region`
+			).toEqual( stackedUnder( 32, layout.printed.length ) );
 			expect(
 				layout.lastNoticeToContent,
 				`${ slug } space between the notices and the content area`
@@ -218,22 +253,22 @@ test.describe( 'with a core update pending', () => {
 						`shell offset below admin bar: ${ where }`
 					).toBeLessThanOrEqual( 1 );
 					expect(
-						layout.notices,
+						fixtureNoticesIn( layout.printed ),
 						`notices: ${ where }`
-					).toHaveLength( 3 );
+					).toEqual( FIXTURE_NOTICES );
 
 					// One gutter above, 12px between, and 24px to the first block: the distance
 					// between any two blocks on a CoreX screen.
 					expect(
-						layout.notices.map( ( notice ) => notice.gapAbove ),
-						`space above each notice: ${ where }`
-					).toEqual( [ gutter, 12, 12 ] );
+						layout.printed.map( ( item ) => item.gapAbove ),
+						`space above each thing in the region: ${ where }`
+					).toEqual( stackedUnder( gutter, layout.printed.length ) );
 					expect(
 						layout.lastNoticeToFirstBlock,
 						`space under the last notice: ${ where }`
 					).toBeCloseTo( 24, 0 );
 
-					for ( const notice of layout.notices ) {
+					for ( const notice of layout.printed ) {
 						const which = `${ notice.name }: ${ where }`;
 
 						// The same inline edges as the content under it.
@@ -244,6 +279,11 @@ test.describe( 'with a core update pending', () => {
 						expect( notice.fromEnd, `end edge of ${ which }` ).toBe(
 							gutter
 						);
+
+						if ( ! notice.isNotice ) {
+							continue;
+						}
+
 						// The tone is on the edge reading starts from, in both directions.
 						expect(
 							notice.startEdge,
@@ -398,6 +438,7 @@ test.describe( 'with a core update pending', () => {
 		page,
 	} ) => {
 		await openWith( page, 'corex-addons', 'pending' );
+		const before = await measure( page );
 
 		await page.locator( `${ DISMISSIBLE } .notice-dismiss` ).click();
 		// WordPress fades the notice and then takes it out of the page.
@@ -406,9 +447,10 @@ test.describe( 'with a core update pending', () => {
 		const layout = await measure( page );
 
 		await expect( page.locator( NAG ) ).toBeVisible();
-		expect( layout.notices.map( ( notice ) => notice.gapAbove ) ).toEqual( [
-			32, 12,
-		] );
+		expect( layout.printed ).toHaveLength( before.printed.length - 1 );
+		expect( layout.printed.map( ( item ) => item.gapAbove ) ).toEqual(
+			stackedUnder( 32, layout.printed.length )
+		);
 		expect( layout.lastNoticeToFirstBlock ).toBeCloseTo( 24, 0 );
 	} );
 } );
@@ -417,6 +459,16 @@ test.describe( 'with nothing for WordPress to say', () => {
 	test( 'the notice region takes no space', async ( { page } ) => {
 		await openWith( page, 'corex-addons', 'none' );
 		await expect( page.locator( NAG ) ).toHaveCount( 0 );
+
+		// The region with nothing in it is what is measured here. What another plugin of this
+		// install printed on the hook is taken out of the page first, as dismissing it would.
+		await page.evaluate( () =>
+			document
+				.querySelectorAll(
+					'.corex-admin__notices > :not(.wp-header-end)'
+				)
+				.forEach( ( printed ) => printed.remove() )
+		);
 
 		const layout = await measure( page );
 

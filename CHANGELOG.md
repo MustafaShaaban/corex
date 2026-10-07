@@ -20,7 +20,9 @@ All notable changes to Corex are documented here. The format follows
   description, in WordPress's light colours in both appearances. They are stacked under the
   header, 12px apart, with the tone on the edge reading starts from and the dismiss button on the
   far side, in both directions.
-  With nothing to show, the page is laid out as it was.
+  With nothing to show, the page is laid out as it was. Something printed on those hooks that is
+  not a notice, Hello Dolly's line for one, is in the same place as a line of text. It used to
+  float over the top of the shell.
 
 It was not seen in CI because CI installs the latest WordPress, where no update is pending.
 `tests/e2e/admin-core-notices.spec.js` asks for one: a fixture answers the update check for the
