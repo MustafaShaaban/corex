@@ -105,7 +105,14 @@ final readonly class ProtectionStage implements SubmissionStage
             ];
         }
 
-        // Legacy boolean path (turnstile/hcaptcha or a custom driver).
+        // Turnstile and hCaptcha have a verifier and no widget: nothing on the form produces their
+        // token. Refusing a submission for lacking it rejected every submission of every flow on a
+        // site that had chosen one. A token that does arrive is still verified below.
+        if ($token === '' && $this->contextFactory?->driverPlacesNoWidget()) {
+            return [true, ['status' => 'not_configured']];
+        }
+
+        // Legacy boolean path (turnstile/hcaptcha with a token, or a custom driver).
         $passed = $this->captcha->verify($token);
 
         return [$passed, ['status' => $passed ? 'passed' : 'failed']];

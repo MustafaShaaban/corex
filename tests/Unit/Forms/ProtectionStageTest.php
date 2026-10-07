@@ -11,6 +11,7 @@ use Corex\Forms\Flow\Flow;
 use Corex\Forms\Flow\FlowConfiguration;
 use Corex\Forms\Flow\FlowVersion;
 use Corex\Forms\Submission\FormChallengeContextFactory;
+use Corex\Forms\Submission\FormSubmissionService;
 use Corex\Forms\Submission\Stages\ProtectionStage;
 use Corex\Forms\Submission\SubmissionPipelineContext;
 use Corex\Security\ChallengeContext;
@@ -197,4 +198,68 @@ it('still fails a filled honeypot even when captcha passes', function () {
 
     expect($result->failed())->toBeTrue()
         ->and($result->context->metadata['spam']['honeypot'])->toBe('failed');
+});
+
+// ---- a driver CoreX verifies and places no widget for ---------------------
+
+/**
+ * Turnstile and hCaptcha can be chosen in Settings, their keys saved, and "Test verification"
+ * answers that the keys were accepted. No widget for either is placed on a form and no token field
+ * is rendered, so the token was always empty, the verifier refused it, and every submission of
+ * every flow was rejected. Reported 2026-10-07, by reading, from the first client site.
+ */
+function tokenOnlyVerifier(): ChallengeVerifier
+{
+    return new class implements ChallengeVerifier {
+        public function verify(string $token): bool
+        {
+            return $token === 'a-token-the-provider-accepts';
+        }
+    };
+}
+
+it('does not refuse a submission for lacking a token no widget was placed to produce', function (string $driver) {
+    $stage = new ProtectionStage(tokenOnlyVerifier(), challengeContextFactory([
+        'captcha.driver' => $driver,
+        'captcha.secret' => 'a-secret',
+    ]));
+    $result = $stage->execute(protectionContext(['email' => 'visitor@example.com']));
+
+    expect($result->failed())->toBeFalse()
+        // Said as it is: nothing challenged this submission. The trap field still guarded it.
+        ->and($result->context->metadata['spam']['captcha'])->toBe('not_configured')
+        ->and($result->context->metadata['spam']['honeypot'])->toBe('passed');
+})->with(['turnstile', 'hcaptcha']);
+
+it('still verifies a token for such a driver when a site sends one', function (string $token, bool $rejected) {
+    $stage = new ProtectionStage(tokenOnlyVerifier(), challengeContextFactory([
+        'captcha.driver' => 'turnstile',
+        'captcha.secret' => 'a-secret',
+    ]));
+    $result = $stage->execute(protectionContext(['captcha_token' => $token]));
+
+    expect($result->failed())->toBe($rejected)
+        ->and($result->context->metadata['spam']['captcha'])->toBe($rejected ? 'failed' : 'passed');
+})->with([
+    'a token the provider accepts' => ['a-token-the-provider-accepts', false],
+    'a token it refuses' => ['made-up', true],
+]);
+
+it('still refuses a missing token for a driver that is not one of these', function () {
+    // A site's own driver places its own widget. A submission without its token is a failed challenge.
+    $stage = new ProtectionStage(tokenOnlyVerifier(), challengeContextFactory([
+        'captcha.driver' => 'acme-challenge',
+        'captcha.secret' => 'a-secret',
+    ]));
+
+    expect($stage->execute(protectionContext(['email' => 'visitor@example.com']))->failed())->toBeTrue();
+});
+
+it('still refuses a filled trap field under such a driver', function () {
+    $stage = new ProtectionStage(tokenOnlyVerifier(), challengeContextFactory([
+        'captcha.driver' => 'turnstile',
+        'captcha.secret' => 'a-secret',
+    ]));
+
+    expect($stage->execute(protectionContext([FormSubmissionService::HONEYPOT_KEY => 'a bot wrote here']))->failed())->toBeTrue();
 });
