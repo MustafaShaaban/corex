@@ -95,3 +95,30 @@ it('accepts a contact message that is only a number', function () {
 
     expect($result->errors)->toBe([]);
 });
+
+/**
+ * `max` and `min` decided what to measure from what the answer looked like, so a message bounded
+ * by `max:300` refused `2025` and a name bounded by `min:3` accepted `12` (#250). They now follow
+ * the field: a number field compares the number, every other field counts characters.
+ */
+it('measures a bound by what the field is for', function (array $definition, string $value, array $errors) {
+    expect(validate(['f' => $definition], ['f' => $value])->errors)->toBe($errors);
+})->with([
+    'a message that is only a year' => [['type' => 'textarea', 'rules' => ['max:300']], '2025', []],
+    'a two-digit name under a three-character minimum' => [['type' => 'text', 'rules' => ['min:3']], '12', ['f' => 'min']],
+    'a phone number typed into a text field' => [['rules' => ['max:20']], '01016999700', []],
+    'digits past a text field’s character limit' => [['rules' => ['max:5']], '123456', ['f' => 'max']],
+    'a number over its limit' => [['type' => 'number', 'rules' => ['max:10']], '11', ['f' => 'max']],
+    'a number at its limit' => [['type' => 'number', 'rules' => ['max:10']], '10', []],
+    'a long number under its limit' => [['type' => 'number', 'rules' => ['max:10']], '9.5000', []],
+    'an age under its minimum' => [['rules' => ['numeric', 'min:18']], '17', ['f' => 'min']],
+    'an age at its minimum' => [['rules' => ['numeric', 'min:18']], '18', []],
+    'a rating over its scale' => [['type' => 'rating', 'rules' => ['max:5']], '6', ['f' => 'max']],
+]);
+
+it('counts characters for a quantity that is declared only as text', function () {
+    // The change a form owes itself: a field that means a number says so, with the `number` type
+    // or the `numeric` rule. Until it does, `99999` is five characters.
+    expect(validate(['quantity' => ['type' => 'text', 'rules' => ['max:10']]], ['quantity' => '99999'])->errors)
+        ->toBe([]);
+});

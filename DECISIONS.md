@@ -5838,3 +5838,63 @@ CodeQL would run, which is the old behaviour and not a new failure.
 **Left as it is.** `wp corex readiness` lists both files as evidence for its `ci-security` row. It
 is the framework's own release check; run in a client repository that has deleted them, that row
 would report them missing. Nothing in the client workflow runs it.
+
+## #249 — A bound measures what the field is for, and the form's schema is where that is decided
+
+Date: 2026-10-07 · Spec: none (defect), issue #250 · Status: Final
+
+`Rules\Max` and `Rules\Min` compared an answer that passed `is_numeric()` as a number and counted
+the characters of anything else. The field was never consulted: `max:300` on a message refused the
+answer `2025`, and `min:3` on a name accepted `12`. DECISIONS #241 fixed `max_length` and `min_length` and
+left this, because changing it changes forms that exist.
+
+**The contract now.** A field is a number when its type is `number` or `rating`, or when its rules
+include `numeric`. `max:N` and `min:N` compare the number there, and count characters on every
+other field. `max_length` and `min_length` count characters on any field.
+
+**Where it is decided.** `SchemaResolver::resolve()` rewrites `max` and `min` to `max_length` and
+`min_length` on a field that is not a number. Considered and not done:
+
+- *Give the rule the field.* `Rule::validate()` takes the value, the parameters and the other
+  values. Adding the field changes an interface that client sites implement.
+- *Decide in the validator.* The browser validates from the exported schema, so the same decision
+  would have to be written a second time in `corex-runtime.js` and kept equal by hand.
+
+The resolver is the one thing both read: `Validator` runs the resolved rules and `SchemaExporter`
+exports them. No rule class and no line of the browser runtime changed.
+
+**What it costs.** The resolved schema no longer repeats what was declared: a text field's `max:80`
+is `max_length` in `FieldSchema::$rules`. Nothing in the framework reads a resolved rule by the
+names `max` or `min`; three tests asserted the old name and were updated. The error keys are the
+same either way.
+
+**No deprecation step, and why.** #250 proposed one. The forms it would have protected are those
+that bound a quantity with `max:N` on a text field and do not declare `numeric`. Under the old
+behaviour such a field already accepted any answer that was not a number, counted by its length:
+`abcdefghij` passed `max:10`. It was not a numeric bound before this change, only one that held
+for answers that happened to be digits. Neither client repository uses `max` or `min`, and the
+stock contact form moved to the length rules under DECISIONS #241. The change is stated under Client impact
+with the one-line fix.
+
+**Left as it is.**
+
+- A number field's answer that is not numeric is still measured by its length by `Max` and `Min`.
+  `numeric` is the rule that refuses it.
+- The messages for the keys `max` and `min` say "too long" and "too short", which is wrong for a
+  number that is too large or too small. That was true before this change and is not made worse by
+  it; a second pair of keys would change the error keys a front end receives.
+- A field type registered by a site is a number only if its field declares `numeric`.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| New resolver and validator cases, before the change | 10 failed |
+| `tests/Unit/Forms` | 187 passed |
+| `tests/Unit` | 2078 passed |
+| `tests/Integration/Forms`, real WordPress | 60 passed |
+| `corex-runtime-forms.test.js` | 21 passed, unchanged |
+
+Not run: a browser submit of a rewritten rule. The exported schema is asserted to carry
+`max_length`, and the runtime's `max_length` arm has its own tests; the two were not watched
+together in a page.

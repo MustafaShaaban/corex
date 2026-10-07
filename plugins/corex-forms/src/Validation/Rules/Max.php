@@ -13,11 +13,14 @@ defined('ABSPATH') || exit;
 use Corex\Forms\Validation\Rule;
 
 /**
- * Upper bound. For numeric values the value must be ≤ N; for strings the length
- * must be ≤ N. An empty value passes (see `required` for emptiness).
+ * Upper bound on a number: the value must be ≤ N. An empty value passes (see `required` for
+ * emptiness).
  *
- * "Numeric" is what the answer looks like, not what the field is for: `2025` in a message is
- * compared as a number. To bound text by its length whatever it holds, use {@see MaxLength}.
+ * A form reaches this rule only for a field that is a number — the `number` or `rating` type, or
+ * any field declaring `numeric`. `SchemaResolver` turns `max:N` on every other field into
+ * {@see MaxLength}, so `2025` in a message is counted, not compared.
+ *
+ * An answer that is not numeric is measured by its length. Declare `numeric` to refuse it.
  */
 final class Max implements Rule
 {

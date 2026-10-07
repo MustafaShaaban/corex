@@ -20,6 +20,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **`max:N` and `min:N` measured whatever the answer looked like** (#250). An answer that was all
+  digits was compared as a number on any field, so `max:300` on a message refused the answer `2025`
+  and `min:3` on a name accepted `12`. What a bound measures now follows the field: the number on a
+  field that is a number, characters on every other. A field is a number when its type is `number`
+  or `rating`, or when it declares `numeric`. The form's schema is where that is settled, so the
+  server and the browser are handed the same rule (DECISIONS #249).
 - **A site that only inherits its mode could not declare it from the screen.** Choosing the mode the
   site already follows was treated as a non-change and the button disabled, while the same screen
   told the operator to "declare a mode" and the store records that declaration as a change. The
@@ -53,6 +59,15 @@ All notable changes to Corex are documented here. The format follows
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
 Read this before taking the release.
 
+- **A `max:N` or `min:N` on a field that is not a number now counts characters, always.** Check any
+  form that bounds a quantity typed into a `text` field: without `numeric`, `max:10` there now
+  accepts `99999`, which is five characters. Add `numeric` to the field's rules or give it the
+  `number` type. Going the other way, a text field now accepts all-digit answers it used to refuse
+  as too large, and refuses short all-digit answers it used to accept. A form that uses
+  `max_length`/`min_length` for text and declares its numbers is unaffected.
+- **A form's resolved schema names the rule that runs.** `max`/`min` on a field that is not a number
+  appear as `max_length`/`min_length` in `FieldSchema::$rules` and in the schema the form block
+  hands the browser. The error keys are unchanged: both still fail as `max` and `min`.
 - **A client repository should delete two files after taking this release**:
   `git rm .github/dependabot.yml .github/CODEOWNERS`, then close any open Dependabot pull requests
   without merging them. *Updating CoreX in a client site* has the steps. `npm run verify:framework`

@@ -41,10 +41,17 @@ Register it with the `FormRegistry` in a provider's `boot()`.
 | `class` | extra class on the control |
 | `attrs` | extra HTML attributes (whitelisted; `name/id/type/class/required` and `on*` are dropped) |
 
-**Bounding text and bounding numbers are different rules.** `max_length:N` and `min_length:N` count
-characters, whatever the answer holds. `max:N` and `min:N` compare an answer that looks like a number as
-a number and count the characters of anything else, so `max:300` on a message refuses the answer `2025`.
-Use the length rules for names, messages, phone numbers and codes, and `max`/`min` for quantities.
+**What `max:N` and `min:N` measure depends on the field, not on the answer.** On a field that is a
+number they compare the number; on every other field they count characters, so `max:300` on a message
+accepts the answer `2025`. A field is a number when its `type` is `number` or `rating`, or when its
+rules include `numeric`. `max_length:N` and `min_length:N` count characters on any field.
+
+A quantity typed into a `text` field is bounded as a number only if the field says it is one:
+
+```php
+'quantity' => ['type' => 'text', 'rules' => ['numeric', 'max:10']],  // refuses 11
+'quantity' => ['type' => 'text', 'rules' => ['max:10']],             // accepts 99999: five characters
+```
 
 ## Place the block
 
