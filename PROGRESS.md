@@ -80,7 +80,7 @@ One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`)
 
 On `main` since v0.43.3, not in a release:
 
-- **`CONTRIBUTING.md` describes the browser suite as it runs** (#PRNUM). "Browser verification"
+- **`CONTRIBUTING.md` describes the browser suite as it runs** (#283). "Browser verification"
   named `.github/workflows/e2e.yml`, deleted in 0.41.0, and a local run that started wp-env and
   drove another address. It now describes the `e2e` job of `ci.yml` and what a local run needs, the must-use
   fixtures among them: copied by hand, documented in that one place. Comments in `tests/e2e/`
