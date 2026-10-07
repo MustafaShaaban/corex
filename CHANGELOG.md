@@ -6,6 +6,40 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **WordPress's update notice no longer sits above the CoreX admin.** While a core update is
+  pending, WordPress prints "WordPress 7.1.3 is available! Please update now." before the page. On
+  a CoreX screen that was a pale box in a band of its own above the shell, and every screen
+  started 54px lower. It is now printed under the page header, in the content column, drawn like a
+  CoreX alert in dark and in light, with its two links as they were. It is moved, not hidden: an
+  administrator still sees it on every CoreX screen.
+- **Every notice printed on `admin_notices` or `all_admin_notices` goes to the same place** on a
+  CoreX screen, a plugin's and CoreX's own (the result of switching an add-on, the kit prompt).
+  WordPress's script used to move these into the page header, between the title and its
+  description, in WordPress's light colours in both appearances. They are stacked under the
+  header, 12px apart, with the tone on the edge reading starts from and the dismiss button on the
+  far side, in both directions.
+  With nothing to show, the page is laid out as it was.
+
+It was not seen in CI because CI installs the latest WordPress, where no update is pending.
+`tests/e2e/admin-core-notices.spec.js` asks for one: a fixture answers the update check for the
+request, so WordPress prints its own notice whatever version the install runs.
+
+### Client impact
+
+Nothing to do on update, and nothing to rebuild: the stylesheet is not a built file.
+
+- **A notice your plugin prints on `admin_notices` is drawn inside the CoreX shell on CoreX
+  screens.** It is a child of `.corex-admin__notices` and takes the shell's colours. A stylesheet
+  of yours that reached it as `#wpbody-content > .notice` on a CoreX screen no longer matches it.
+  Other admin screens are unchanged.
+- **The shell has one more element**: `<div class="corex-admin__notices">` between
+  `.corex-admin__header` and `.corex-admin__content`, always printed, and of no height while it is
+  empty. A selector written as `.corex-admin__header + .corex-admin__content` no longer matches.
+- **`corex_admin_notices` is a new filter**: markup to print in that region, read by
+  `AdminPage::open()`.
+
 ## [0.43.3] — 2026-10-07
 
 The submission detail pane, rebuilt, and three faults the first client site reported within hours

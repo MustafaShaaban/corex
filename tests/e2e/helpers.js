@@ -458,6 +458,88 @@ async function signIn( page, user, password ) {
 	).toBe( true );
 }
 
+/**
+ * The WCAG contrast ratio between two computed colours.
+ *
+ * `admin-controls.spec.js` and `coming-soon.spec.js` each carry a copy of this from before it was
+ * here. A new spec takes this one.
+ *
+ * @param {string} first  A computed `rgb()` or `rgba()` colour.
+ * @param {string} second Another.
+ * @return {number} The ratio, from 1 to 21.
+ */
+function contrast( first, second ) {
+	const luminance = ( colour ) => {
+		const [ red, green, blue ] = colour
+			.match( /[\d.]+/g )
+			.slice( 0, 3 )
+			.map( ( channel ) => {
+				const value = Number( channel ) / 255;
+
+				return value <= 0.03928
+					? value / 12.92
+					: Math.pow( ( value + 0.055 ) / 1.055, 2.4 );
+			} );
+
+		return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+	};
+	const [ lighter, darker ] = [
+		luminance( first ),
+		luminance( second ),
+	].sort( ( a, b ) => b - a );
+
+	return ( lighter + 0.05 ) / ( darker + 0.05 );
+}
+
+/**
+ * Show the loaded CoreX screen in one appearance and one direction, whatever the install is set to.
+ *
+ * An install pins Light or Dark in its settings, and the pin is written on the shell and on the
+ * body, so `emulateMedia` alone changes nothing there. The direction is set on the document, which
+ * is what the shell's logical properties follow. WordPress's own right-to-left stylesheet is not
+ * loaded this way, so wp-admin's chrome around the shell is not what a right-to-left site shows.
+ *
+ * It answers when the change has been drawn. The shell animates colours, and under reduced motion
+ * gives every property a transition of a hundredth of a millisecond, so a style read in the same
+ * task as the change is the value from before it: a border measured on the side it had just left.
+ *
+ * @param {import('@playwright/test').Page} page      A page showing a CoreX screen.
+ * @param {string}                          theme     'dark' or 'light'.
+ * @param {string}                          direction 'ltr' or 'rtl'.
+ */
+async function pinAppearance( page, theme, direction ) {
+	await page.evaluate(
+		( [ pinned, dir ] ) => {
+			document
+				.querySelectorAll( '.corex-admin' )
+				.forEach( ( shell ) =>
+					shell.setAttribute( 'data-corex-theme', pinned )
+				);
+			document.body.classList.remove(
+				'corex-appearance-light',
+				'corex-appearance-dark'
+			);
+			document.body.classList.add( `corex-appearance-${ pinned }` );
+			document.documentElement.setAttribute( 'dir', dir );
+			document.body.setAttribute( 'dir', dir );
+		},
+		[ theme, direction ]
+	);
+
+	await page.evaluate( async () => {
+		await new Promise( ( drawn ) => window.requestAnimationFrame( drawn ) );
+		// Transitions only: a spinner's animation never finishes.
+		await Promise.all(
+			document
+				.getAnimations()
+				.filter(
+					( animation ) => animation instanceof window.CSSTransition
+				)
+				.map( ( animation ) => animation.finished.catch( () => {} ) )
+		);
+	} );
+}
+
 const { execFileSync } = require( 'node:child_process' );
 const fs = require( 'node:fs' );
 const os = require( 'node:os' );
@@ -618,9 +700,11 @@ function deleteAccessRequestsFiledSince( login, afterId ) {
 
 module.exports = {
 	collectConsoleErrors,
+	contrast,
 	deleteAccessRequests,
 	deleteAccessRequestsFiledSince,
 	latestAccessRequestId,
+	pinAppearance,
 	seedSubmission,
 	signIn,
 	signInAs,

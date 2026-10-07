@@ -6673,3 +6673,96 @@ What was run:
 
 **Not run.** The whole integration suite was not run here with a site in place. The client's CI
 runs it on every pull request and will say.
+
+## #262 — What WordPress prints before the page is printed inside the CoreX shell, by the server
+
+Date: 2026-10-07 · Asked for by the owner, from a browser test that fails on the development install · Status: Final
+
+The report: `admin-help-tab.spec.js` ("the shell starts where the page starts, with no blank band
+above it") fails on the development install with "corex-settings shell offset below admin bar:
+expected <= 1, received 54". WordPress's update nag is in a band above the shell.
+
+**What was true.** `wp-admin/admin-header.php` fires `admin_notices` and `all_admin_notices` as the
+first thing inside `#wpbody-content`, before the page is called. WordPress's script then moves
+every `div.notice` to after a `.wp-header-end` marker, or to after the first heading when the page
+has no marker, and skips a notice marked `inline`. The update nag is `notice notice-warning
+update-nag inline`, so it stayed above the shell: 12px of margin and a 41.6px box. A notice not
+marked `inline` was moved to after the `<h1>`, which on a CoreX screen is inside the page header,
+between the title and its description, in WordPress's light colours in both appearances.
+
+**It was not caught in CI** because CI installs the latest WordPress and the nag is printed only
+while an update is pending. The development install runs 7.1.2 with 7.1.3 out. Any client site with
+an update pending shows it.
+
+**What was chosen.** `Corex\Config\AdminUi\ScreenNotices` opens an output buffer on
+`admin_notices` at the first priority and closes it on `all_admin_notices` at the last, on CoreX
+screens only. `AdminPage::open()` reads the captured markup through a new filter,
+`corex_admin_notices`, and prints it in `<div class="corex-admin__notices">` between the page
+header and the content, followed by a `wp-header-end` marker. The stylesheet draws a notice there
+as a CoreX alert. The region takes space only while it holds something that is drawn.
+
+**Rejected: moving the nag with a script.** The page would be drawn with the nag above the shell
+and then jump by its height on every load.
+
+**Rejected: hiding the nag until a script has moved it.** Whenever the script did not run, an
+administrator would not be told a core update is pending.
+
+**Rejected: styling it where it is.** The band is the defect. Nothing in CSS moves an element into
+another parent.
+
+**Everything the two hooks print is taken, not only the nag.** A plugin's notice marked `inline`
+has the same defect. One that is not marked is moved by WordPress's script to the marker, and the
+marker is now in the region.
+
+**The marker is last in the region.** WordPress's script inserts notices after it and leaves an
+`inline` one where it is. With the marker first, the nag was printed first and drawn last.
+
+**What cannot be lost.** If a notice callback leaves a buffer open, or closes one it did not open,
+the capture is abandoned and the notices appear where WordPress printed them. If a page under the
+CoreX menu draws no shell, nothing reads the filter, and the captured markup is printed after the
+page callback, on the hook WordPress calls the page through.
+
+**The markup is not escaped again.** It is output WordPress and other plugins had already sent in
+the same request. Passing it through `wp_kses_post()` would remove the forms and scripts some
+notices are made of.
+
+**`:has()` is new to this stylesheet.** The region is padded only while it holds something drawn,
+and the content area's top padding drops from 32px to 24px under it. A class set by the server
+would be wrong the moment a notice is dismissed. A script, a style element, a template and a
+hidden element do not open the region; an element a plugin hides in some other way does, and
+leaves 24px of extra space above the content.
+
+**Not a spec.** This is a defect in the shell that specs 067 and 097 describe (nothing of
+wp-admin above the product), fixed to their contract. No new screen, setting or string.
+
+What was run, on the development install (WordPress 7.1.2), the changed files served to the test
+requests only:
+
+| Check | Result |
+|---|---|
+| `admin-core-notices.spec.js` before the change | 8 failed; the first: "corex-settings shell offset below admin bar", 53.59 |
+| `admin-core-notices.spec.js` after | 8 passed |
+| `admin-help-tab.spec.js` after | 12 passed, the reported test among them |
+| Unit suite | 2209 passed |
+| Jest | 61 suites passed |
+| Stylelint on the stylesheet, ESLint on the spec and the helpers | clean |
+
+What the browser test measures, on all fourteen routes with an update pending: the shell's offset
+below the admin bar, nothing left above the shell, one visible nag with its update link, 32px from
+the page header to the first notice. On one screen, in dark and light, left-to-right and
+right-to-left, at 375, 768, 1024 and 1440 wide: one gutter above the first notice (32px, 24px at
+782 and under), 12px between notices, 24px to the first block, the content's inline edges, a 4px
+tone edge on the side reading starts from, text and link contrast of at least 4.5:1, a 24px
+dismiss button 12px inside the far edge and level with the first line. With no update pending: a
+region of no height.
+
+**Not run.** The integration suite and the rest of the browser suite were not run here; CI runs
+both. Right-to-left was checked by setting the document's direction, as the other browser tests
+do, not on a site whose language is right-to-left: WordPress's own right-to-left stylesheet was
+not loaded. Nothing was looked at in Firefox or Safari.
+
+**Left as it is.** `admin-controls.spec.js` and `coming-soon.spec.js` each keep their own copy of
+the contrast calculation that `tests/e2e/helpers.js` now exports. The comment on the fixture
+`corex-e2e-client-guide.php` says `scripts/setup-wordpress.ps1` copies it into `mu-plugins`; the
+script does not, for that fixture or for the new one. On a development install both are copied by
+hand.

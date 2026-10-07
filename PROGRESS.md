@@ -78,6 +78,16 @@ One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`)
 
 ## Recently landed
 
+On `main` since v0.43.3, not in a release:
+
+- **What WordPress prints before the page is inside the CoreX shell** (#PRNUM, DECISIONS #262).
+  The core update nag sat in a band above the shell and pushed every CoreX screen 54px down, on
+  any install with a core update pending; CI installs the latest WordPress and never saw it. The
+  server now captures what `admin_notices` and `all_admin_notices` print on a CoreX screen and
+  the shell prints it under the page header, drawn as a CoreX alert. Nothing is hidden.
+  `admin-core-notices.spec.js` asks for a pending update through a fixture and measures the
+  result on every route, in dark and light, in both directions, at four widths.
+
 Released in v0.43.3: the submission detail pane (spec 103 slice 4, DECISIONS #259) and three
 reports from the first client site's v0.43.2 update: route permission callbacks and the
 `support.js` rule (#260), and a framework test that failed in a client's repository (#261).

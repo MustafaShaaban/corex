@@ -2061,3 +2061,134 @@ body.corex-admin-screen .corex-admin__shell {
 	margin-inline-start: 0;
 	margin-inline-end: -1px;
 }
+
+/*
+ * What WordPress prints before the page: core's update nag and every
+ * notice hooked on `admin_notices`. ScreenNotices (corex-config) captures
+ * that output and AdminPage prints it here, between the page header and
+ * the content, so nothing sits in a band above the shell.
+ *
+ * The region is always in the page, and it ends with core's
+ * `wp-header-end` marker: WordPress's script puts every notice after
+ * that marker. It takes space only while it holds something that is
+ * drawn. The marker does not open it, and neither does a script or a
+ * style element a plugin printed on the same hook.
+ */
+.corex-admin__notices {
+
+	/* The dismiss button's size: WordPress's own, and the smallest pointer
+	   target WCAG 2.2 AA allows (2.5.8). */
+	--corex-admin-notice-dismiss-size: 1.5rem;
+}
+
+.corex-admin__notices > .wp-header-end {
+	display: none;
+}
+
+.corex-admin__notices:has(> :not(.wp-header-end, script, style, link, template, [hidden], .hidden)) {
+	display: flex;
+	flex-direction: column;
+	gap: var(--corex-admin-space-sm);
+	padding-block-start: var(--corex-admin-space-xl);
+	padding-inline: var(--corex-admin-space-xl);
+}
+
+/* Top-level blocks on a screen sit 24px apart. The first block under a
+   notice does too, in place of the content area's own top padding. */
+.corex-admin__notices:has(> :not(.wp-header-end, script, style, link, template, [hidden], .hidden)) + .corex-admin__content {
+	padding-block-start: var(--corex-admin-space-lg);
+}
+
+/* A WordPress notice drawn as a CoreX alert (.corex-state): the raised
+   surface, a hairline border, and the tone on the inline-start edge.
+   WordPress paints these white with dark text whatever the appearance,
+   and sets the edge and the dismiss button on physical sides. */
+.corex-admin__notices > :is(.notice, .updated, .error, .update-nag) {
+	margin: 0;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: none;
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+}
+
+.corex-admin__notices > :is(.notice-success, .updated) {
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+.corex-admin__notices > :is(.notice-warning, .update-nag) {
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin__notices > :is(.notice-error, .error) {
+	border-inline-start-color: var(--corex-admin-error);
+}
+
+.corex-admin__notices > :is(.notice, .updated, .error, .update-nag) :is(p, .notice-title) {
+	margin: 0;
+	color: inherit;
+}
+
+.corex-admin__notices > :is(.notice, .updated, .error, .update-nag) p {
+	font-size: inherit;
+	line-height: inherit;
+}
+
+.corex-admin__notices > :is(.notice, .updated, .error, .update-nag) p + p {
+	margin-block-start: var(--corex-admin-space-xs);
+}
+
+/* A link inside a sentence is underlined in every state: the shell's
+   links are told apart by colour alone, which is not enough in running
+   text (WCAG 1.4.1). */
+.corex-admin .corex-admin__notices a:not([class*="button"]):not(.components-button) {
+	text-decoration: underline;
+	text-underline-offset: 0.15em;
+}
+
+.corex-admin .corex-admin__notices :is(a, button):focus {
+	box-shadow: none;
+}
+
+.corex-admin .corex-admin__notices :is(a, button):focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+/* The dismiss button WordPress adds: on the inline-end side, centred on
+   the first line of text, in the shell's ink. */
+.corex-admin .corex-admin__notices > .is-dismissible {
+	position: relative;
+	padding-inline-end: calc(var(--corex-admin-space-sm) * 2 + var(--corex-admin-notice-dismiss-size));
+}
+
+.corex-admin .corex-admin__notices .notice-dismiss {
+	inset-block-start: calc(var(--corex-admin-space-sm) + (var(--corex-admin-font-sm) * var(--corex-admin-line-normal) - var(--corex-admin-notice-dismiss-size)) / 2);
+	inset-inline: auto var(--corex-admin-space-sm);
+	inline-size: var(--corex-admin-notice-dismiss-size);
+	block-size: var(--corex-admin-notice-dismiss-size);
+	padding: 0;
+	color: var(--corex-admin-text-muted);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-admin__notices .notice-dismiss::before {
+	color: currentcolor;
+	opacity: 1;
+}
+
+.corex-admin .corex-admin__notices .notice-dismiss:hover {
+	color: var(--corex-admin-text);
+}
+
+@media (max-width: 782px) {
+
+	.corex-admin__notices:has(> :not(.wp-header-end, script, style, link, template, [hidden], .hidden)) {
+		padding-block-start: var(--corex-admin-space-lg);
+		padding-inline: var(--corex-admin-space-lg);
+	}
+}
