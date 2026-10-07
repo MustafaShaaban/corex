@@ -18,6 +18,7 @@ use Corex\Http\Middleware\Pipeline;
 use Corex\Http\Middleware\Request;
 use Corex\Http\Middleware\Response;
 use Corex\Http\Middleware\SanitizeMiddleware;
+use Corex\Support\EmailAnswer;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -96,7 +97,7 @@ final class SubmitController
      *
      * @param array<string,FieldSchema> $schema
      *
-     * @return array<string,string> key => WP sanitizer function name
+     * @return array<string,callable|string> key => sanitizer
      */
     private function sanitizeShape(array $schema): array
     {
@@ -104,7 +105,7 @@ final class SubmitController
 
         foreach ($schema as $name => $field) {
             $shape[$name] = match ($field->type) {
-                'email'    => 'sanitize_email',
+                'email'    => EmailAnswer::clean(...),
                 'textarea' => 'sanitize_textarea_field',
                 'multi-select' => self::sanitizeList(...),
                 default    => 'sanitize_text_field',

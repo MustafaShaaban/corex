@@ -126,3 +126,32 @@ it('rejects an empty required field with 422 field errors and no side effect', f
         ->and($response->get_data()['errors']['message'])->toBe('required')
         ->and(submissionCount())->toBe($before);
 });
+
+/**
+ * An email answer was cleaned before it was judged. `sanitize_email()` removes what it does not
+ * accept, so `sal,ma@example.com` became `salma@example.com`, passed the email rule, and the
+ * submission was stored under — and any reply sent to — an address nobody typed. An answer with
+ * no address in it was emptied, so a required field said "required" where it meant "not an
+ * address", and an optional one was dropped without a word. Reported on 2026-10-07 from a client
+ * site.
+ */
+it('refuses an email address it would have to alter, and stores nothing', function (string $typed) use ($valid) {
+    // If this ever regresses the submission is valid, and a valid submission sends mail.
+    add_filter('pre_wp_mail', '__return_true');
+
+    $before   = submissionCount();
+    $response = submitController()->submit(
+        submitRequest(['email' => $typed] + $valid, wp_create_nonce('wp_rest')),
+    );
+
+    remove_filter('pre_wp_mail', '__return_true');
+
+    expect($response->get_status())->toBe(422)
+        ->and($response->get_data()['errors']['email'] ?? null)->toBe('email')
+        ->and(submissionCount())->toBe($before);
+})->with([
+    'a comma typed for a dot' => ['sal,ma@example.com'],
+    'a letter the cleaner drops' => ['josé@example.com'],
+    'a doubled at sign' => ['salma@@example.com'],
+    'no address at all' => ['not-an-email'],
+]);

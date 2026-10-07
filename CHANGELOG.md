@@ -6,6 +6,31 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **A form could store, and reply to, an email address nobody typed.** An `email` field was passed
+  through `sanitize_email()` before it was validated, and that function does not refuse an address,
+  it removes what it does not accept: `sal,ma@example.com` became `salma@example.com`, passed the
+  `email` rule, and the submission was stored under it. An answer with no address in it was emptied
+  first, so a required field answered "required" where it meant "not an address", and an optional one
+  was dropped without a word. Forms and flows now hand the rules what was typed: an address WordPress
+  would leave alone is kept as it is, and anything else reaches the `email` rule as text and is
+  refused by name (DECISIONS #245).
+
+### Client impact
+
+What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
+Read this before taking the release.
+
+- **A form or flow with an `email` field refuses addresses it used to rewrite.** A mistyped address
+  such as `sal,ma@example.com` or `josé@example.com` now fails with the `email` error where it was
+  accepted under a different address. A malformed address on a required field answers `email`, not
+  `required`, so a site with its own message for either sees the other. An optional email field
+  with a malformed address now fails validation; it used to be accepted with the field empty.
+- **An `email` field with no `email` rule stores what was typed.** It used to store a cleaned
+  address or nothing. Declare the rule on any field whose value is used as an address; the stock
+  contact form does. CoreX's own senders check an address before using it.
+
 ## [0.43.1] — 2026-10-07
 
 A patch release for what the first client site built on 0.43.0 found, and for thirteen dependency

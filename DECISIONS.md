@@ -5601,3 +5601,58 @@ What was run, on the final tree:
 machine this was done on and starting containers was not part of the task. The integration and
 browser suites were left to CI. `@wordpress/scripts` 36, which would retire both overrides, is
 still a separate toolchain upgrade (spec 056, US3).
+
+## #245 — An email answer is judged as typed, not cleaned into an address and then accepted
+
+Date: 2026-10-07 · Spec: none (defect fix, reported from a client site on v0.43.1) · Status: Final
+
+The form and flow controllers build a sanitizer for each field from its type, and for `email` it
+was `sanitize_email()`, run by `SanitizeMiddleware` before validation. That function does not
+refuse anything. It removes the characters it does not accept and returns what is left:
+
+| Typed | After `sanitize_email()` | What happened |
+|---|---|---|
+| `sal,ma@example.com` | `salma@example.com` | passed the `email` rule; stored and replied to under an address nobody typed |
+| `josé@example.com` | `jos@example.com` | the same |
+| `salma@@example.com` | `salma@example.com` | the same |
+| `not-an-email` | *(empty)* | a required field answered `required`; an optional one was dropped and the submission accepted |
+
+A comma for a dot is an ordinary typo, and the stock contact form was affected as much as a
+client's. It has been so since the forms engine was written; no release introduced it.
+
+**Decided.** An email answer is trimmed and then compared with what `sanitize_email()` would make
+of it. If the two are the same, the address is one WordPress leaves alone and it is kept exactly.
+If they differ, the answer goes to the rules as text (`sanitize_text_field()`), so the `email`
+rule refuses it by name. The helper is `EmailAnswer` in corex-core's `Support` namespace, used by
+both controllers.
+
+**One case returns nothing.** Stripping markup can itself leave a clean address behind:
+`<b>salma</b>@example.com` becomes `salma@example.com` as text. That is still not what was typed,
+so the helper returns an empty string for it. A required field then answers `required`; that one
+input keeps the old wrong message, which is the price of the rule that nothing the helper returns
+is an address the visitor did not write.
+
+**What it does not do.**
+- It does not make the `email` rule and WordPress agree. The rule is PHP's `FILTER_VALIDATE_EMAIL`;
+  an address with a quoted local part passes it and is altered by `sanitize_email()`. Such an
+  address is now stored as typed, where it used to be stored altered.
+- A field of type `email` with no `email` rule used to store a cleaned address or nothing, and now
+  stores what was typed. The type never implied the rule, and it still does not. The senders in
+  the forms and mail code check an address with `is_email()` before using one.
+- `sanitize_email()` on posted input is in five add-on handlers as well: newsletter subscribe,
+  bookings, careers applications, profile registration and the Guides support request. They were
+  read and not changed here; each needs its own look at what its service does with a refused
+  address. The helper is in corex-core so they can use it.
+
+**A test had asserted the defect.** `FlowControllerTest` expected `not-an-email` on a required
+field to be answered with `required`. It expects `email` now and says why.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| Four new cases in `SubmitLifecycleTest`, before the change | three accepted with a 200 under the altered address; the fourth answered `required` |
+| The new flow case in `FlowLifecycleTest`, without the flow controller's change | accepted with a 200 |
+| `EmailAnswerTest`, ten inputs against WordPress's real cleaners | 10 passed |
+| `tests/Integration/Forms` and `tests/Integration/Mail`, real WordPress | 55 passed |
+| The unit suite | 2049 passed |

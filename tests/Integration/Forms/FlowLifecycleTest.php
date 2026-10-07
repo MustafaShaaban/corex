@@ -159,3 +159,42 @@ it('runs a published visitor flow through storage routing email inbox and timeli
         ->and(get_post_meta($submissionId, 'corex_submission_timeline', true)[1]['stage'])->toBe('notification')
         ->and(get_post_meta($submissionId, 'corex_submission_timeline', true)[1]['summary']['delivery_status'])->toBe('captured');
 });
+
+/**
+ * The flow path cleaned an email answer the same way the form path did: `sal,ma@example.com`
+ * was rewritten to `salma@example.com` before validation and the submission accepted under it
+ * (2026-10-07). Both controllers now hand the rules what was typed.
+ */
+it('refuses a flow submission whose email address it would have to alter', function () {
+    $payload = [
+        'slug' => 'lifecycle-flow',
+        'name' => 'Lifecycle flow',
+        'owner_id' => get_current_user_id(),
+        'placement_type' => 'block',
+        'configuration' => [
+            'schema' => [
+                ['uuid' => 'email-field', 'key' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true],
+            ],
+            'validation' => ['email' => ['required', 'email']],
+            'routing' => ['rules' => [], 'fallback' => ['type' => 'flow_owner', 'config' => []]],
+            'email_routes' => [],
+            'success' => ['type' => 'inline', 'message' => 'Received.'],
+            'placement_snapshot' => ['type' => 'block'],
+        ],
+    ];
+    $created = $this->flowsController->create(lifecycleFlowRequest('POST', '/corex/v1/flows', $payload));
+    $flowId = $created->get_data()['data']['flow']['id'];
+    $publish = lifecycleFlowRequest('POST', '/corex/v1/flows/' . $flowId . '/publish', ['expected_version' => 1]);
+    $publish->set_url_params(['id' => $flowId]);
+    $this->flowsController->publish($publish);
+
+    $submit = lifecycleFlowRequest('POST', '/corex/v1/flows/' . $flowId . '/submit', ['email' => 'sal,ma@example.com']);
+    $submit->set_url_params(['id' => $flowId]);
+    $response = $this->visitorController->submit($submit);
+
+    $stored = get_posts(['post_type' => 'corex_submission', 'post_status' => 'any', 'meta_key' => 'corex_flow_id', 'meta_value' => $flowId, 'fields' => 'ids']);
+
+    expect($response->get_status())->toBe(422)
+        ->and(wp_json_encode($response->get_data()))->toContain('"email":"email"')
+        ->and($stored)->toBe([]);
+});
