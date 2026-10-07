@@ -59,6 +59,17 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The Submissions filters were four different heights.** Search was 50 pixels tall, the two
+  selects 40, the owner field 47 and the dates 54, with 16, 12 and 2 pixels of inner padding,
+  because each input type brought its own from WordPress. Every text control on the screen is now
+  40 pixels with the same padding. "To" no longer drops onto a row by itself: the date range is one
+  item, and the filters are laid out by the width of their own panel, not the window's. The
+  heading's checkbox stood two pixels off the column under it.
+- **Checkboxes and radios in the export dialog stood above their labels**, five pixels and two,
+  lifted by a margin WordPress gives them for sitting in a line of text. The format section was
+  twelve pixels further from the next than the others, an empty band sat above the buttons when
+  there was nothing to say, the recent exports were 18 pixels tall with small targets, and one read
+  "1 submissions". All measured, fixed, and now measured by the browser suite.
 - **The export dialog had no styles.** Every CoreX admin style is scoped under `.corex-admin`, and
   the dialog was drawn by the WordPress modal at the end of the page, outside it. Its column
   choices were raw keys on one line, never translated. Dialogs on this screen are now the browser's

@@ -6365,3 +6365,70 @@ What was run:
 | `tests/Unit` | 2186 passed |
 | Integration, whole suite | 521 passed |
 | Jest, whole suite | 595 passed |
+
+## #257 — The spacing of the export dialog and the inbox filters was measured, not looked at
+
+Date: 2026-10-07 · Spec: 103 (submissions inbox and exports) · Status: Final
+
+The owner, while slices 2b and 3 were being merged: "please make sure that the UI visually is
+correct spaces and margins and so on".
+
+Both had been looked at rendered before they were presented, and both had faults that looking did
+not catch. So this time every gap, padding and alignment was read off the page with
+`getBoundingClientRect()` and `getComputedStyle()`, and then looked at.
+
+**What the numbers said about the export dialog.**
+
+| Measured | Was | Is |
+|---|---|---|
+| A column checkbox against the middle of its label's line | 5.1px above | 0 |
+| A scope's radio against its name | 2px above | 0 |
+| Margin on the format hint | `0 0 12px` | `0` |
+| Gap under the Format section | 36px, where the others are 24px | 24px |
+| Gap between column choices, each two lines | 8px | 12px |
+| A row of "Recent exports" | 18px tall | 40px, with a rule between rows |
+| The band above the buttons when there is nothing to say | a line of empty height | none: the reason shares the buttons' row |
+| "1 submissions" | — | "1 submission" |
+
+The first three have one cause. WordPress gives a checkbox and a radio `margin: -4px 4px 0 0`, for
+sitting in a line of text, and a paragraph a bottom margin. Neither is wrong in WordPress's own
+screens. In a grid or a flex row they are. Each checkbox now stands in a box one line tall and is
+centred in it, which holds whatever size the input is: WordPress makes them 25 pixels on a phone.
+
+**What the numbers said about the filters.**
+
+| Measured | Was | Is |
+|---|---|---|
+| Heights of the six controls | 50, 40, 40, 47, 54, 54 | 40 each |
+| Inner padding | 16, 12, 12, 2, 16, 16 | 12 each |
+| "From" and "To" | on different rows | one item, always together |
+| Heading checkbox against the column | 2px off | 0 |
+
+The filters are now laid out by the width of their own panel, with a container query. Slice 1
+replaced a breakpoint on the window with `auto-fit`, which stopped the panel overflowing and let
+"To" wrap alone. A container query is what the first fix was reaching for: the content column is
+narrower than the window by two sidebars, and only the panel knows its own width. The container is
+the filter panel, not the inbox: a container contains its fixed-position descendants, and the
+detail pane is one.
+
+**Kept measured.** Two tests in `submissions-inbox.spec.js` assert the numbers above on the real
+page, the dialog in both directions and the filters at four widths. A spacing fault is plain on the
+screen and invisible to a test of behaviour, so it comes back the first time somebody touches the
+markup.
+
+**One more thing the unit suite caught.** `TokenConsumerContractTest` rejected `flex: 1 1 14rem`
+as an unrecorded raw value. It is a measure, and is marked as one.
+
+**Not reviewed here.** The detail pane. It is rebuilt in slice 4, and gets the same treatment
+there. The bulk toolbar and the pagination were looked at and not measured.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `submissions-inbox.spec.js`, with the two measuring tests | 7 passed |
+| `admin-controls.spec.js`, `admin-datetime.spec.js`, which also read this screen | passed; 29 across the three files |
+| `tests/Unit` | 2186 passed |
+| Jest, whole suite | 595 passed |
+| `lint-js`, `lint-style` | clean |
+| Looked at after measuring: the dialog in dark, light, right-to-left dark and light at 480; the filters at 1440, 1280, 900 and 480 | as the tables say |
