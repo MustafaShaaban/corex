@@ -95,3 +95,46 @@ it('binds the corex-core Mailer seam so Forms can delegate (detect-and-defer)', 
 
     remove_all_filters('pre_wp_mail');
 });
+
+// The whole path, from the seam a consumer holds to the arguments `wp_mail()` is called with. The
+// sender and the attachments each had tests at the request and at the queue, and were dropped
+// between the two on every send from v0.38.0 to v0.43.3 (#150).
+it('hands wp_mail() the mailbox and the files a request names', function () {
+    $attachmentId = (int) wp_insert_attachment([
+        'post_title'     => 'corex-mail-probe',
+        'post_status'    => 'inherit',
+        'post_mime_type' => 'text/plain',
+    ]);
+    $file = trailingslashit(wp_upload_dir()['basedir']) . 'corex-mail-probe-' . $attachmentId . '.txt';
+    wp_mkdir_p(dirname($file));
+    file_put_contents($file, 'probe');
+    update_attached_file($attachmentId, $file);
+    $path = get_attached_file($attachmentId);
+
+    $handed = [];
+    add_filter('pre_wp_mail', function ($short, array $atts) use (&$handed) {
+        $handed = $atts;
+
+        return true;
+    }, 10, 2);
+
+    Boot::app()->container()->make(Mailer::class)->send(new MailRequest(
+        to: ['admin@example.com'],
+        subject: 'Probe',
+        body: '<p>x</p>',
+        from: 'noreply@example.com',
+        attachments: [$attachmentId],
+    ));
+
+    remove_all_filters('pre_wp_mail');
+    wp_delete_attachment($attachmentId, true);
+
+    $from = array_values(array_filter(
+        (array) ($handed['headers'] ?? []),
+        static fn (string $header): bool => str_starts_with($header, 'From:'),
+    ));
+
+    expect($from)->toHaveCount(1)
+        ->and($from[0])->toContain('noreply@example.com')
+        ->and($handed['attachments'] ?? null)->toBe([$path]);
+});
