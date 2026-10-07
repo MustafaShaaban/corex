@@ -6432,3 +6432,65 @@ What was run:
 | Jest, whole suite | 595 passed |
 | `lint-js`, `lint-style` | clean |
 | Looked at after measuring: the dialog in dark, light, right-to-left dark and light at 480; the filters at 1440, 1280, 900 and 480 | as the tables say |
+
+## #258 — A submission is not refused for lacking a token that nothing was placed to produce
+
+Date: 2026-10-07 · Spec: none (defect) · Refs #264 · Status: Final
+
+Reported 2026-10-07 from the first client site, by reading v0.43.1, and confirmed by reading
+`main`. It had not been reproduced on a site; the unit test below reproduces it.
+
+**What happened.** Settings offers three captcha providers that take keys. For Turnstile and
+hCaptcha with a secret saved, `CaptchaResolver` binds `RemoteCaptcha`. Nothing else knows them:
+`FormChallengeContextFactory::providerConfigured()` is true for `recaptcha` only, so the flow block
+renders no token field, and `CaptchaAssetController` loads a script for `recaptcha` only. No
+Turnstile or hCaptcha widget exists in the repository. `ProtectionStage` then took its boolean
+path and called `verify('')`, which is false for an empty token. Every submission of every flow was
+refused with "Submission protection rejected the request", on a site whose "Test verification" had
+just answered "The captcha keys were accepted".
+
+`CaptchaResolver` already carries a comment about this shape of fault, for a provider chosen
+before its keys are pasted: "half configured is not configured". This is the other half.
+
+**What changed.** In `ProtectionStage`: when the token is empty and the configured driver is one
+of the two that place no widget, the challenge is recorded as `not_configured` and the trap field
+decides. A token that does arrive is verified as before.
+
+Considered and not done:
+
+- *Bind no verifier for these drivers.* A site that renders a Turnstile widget itself and posts
+  its token would stop being verified at all.
+- *Decide by whether a token field was rendered* (`providerConfigured()`). That is false for any
+  driver that is not reCAPTCHA, including a site's own, which places its own widget. A submission
+  without that driver's token is a failed challenge and is still refused; there is a test for it.
+- *Take the two providers out of the setting.* It would strand the keys of a site that has saved
+  them, and they are wanted: placing the widgets is part of #264.
+
+**What it costs.** A site that renders its own Turnstile or hCaptcha widget inside a CoreX flow
+was protected against a submission with no token, and now is not: such a submission is guarded by
+the trap field alone. Neither client repository does this, and nothing documents it as supported.
+
+**Saying so.** Three places told an operator the site was protected:
+
+- "Test verification" answered `ok`. It answers `no_widget` now: the keys are good and challenge
+  nobody.
+- The admin's list of unfinished configuration had one captcha entry, for missing keys. It has a
+  second, for keys that nothing uses.
+- The setting's help said "Choose a provider". It says which provider places a challenge today.
+
+**Left as it is.** `ControlPanelStatus` still counts a key driver with both keys as complete. It
+answers whether the fields are filled, which they are. The Add-ons page still lists the four
+drivers the add-on has verifiers for.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `ProtectionStageTest`, new cases, before the change | 2 failed: both drivers refused a submission with no token |
+| `ProtectionStageTest` | 15 passed |
+| `CaptchaDiagnosticTest` | 9 passed |
+| `CaptchaWidgetGapTest`, real WordPress | 4 passed |
+| `tests/Unit` | 2195 passed |
+
+**Not run.** A flow was not submitted in a browser with Turnstile selected. The stage is tested
+with the real context factory and a verifier that accepts one token.

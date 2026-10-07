@@ -291,6 +291,9 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **Spec Kit cannot be run in a client repository without drift** (#251, item 1). The scripts write
   `specs/`, `.specify/feature.json` and the root `CLAUDE.md`, all framework-owned there. A client
   spec is written by hand under `sites/<client>/specs/`; the generated `AGENTS.md` says so.
+- **Turnstile and hCaptcha have a verifier and no widget.** They can be chosen and given keys, and
+  nothing places their challenge on a form. Choosing one no longer rejects submissions, and the
+  admin says it challenges nobody (DECISIONS #258). Placing the widgets belongs with #264.
 - **Trusted proxies have no field on the Security screen.** The screen's state carries the list and
   saves it back unchanged; nothing draws it. `wp corex security trusted-proxies` is the only way to
   set it (DECISIONS #250).

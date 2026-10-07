@@ -59,6 +59,14 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **Choosing Turnstile or hCaptcha rejected every submission of every flow.** Both can be chosen in
+  Settings and given keys, and "Test verification" answered that the keys were accepted. No widget
+  for either is placed on a form and no token is sent, so the server refused each submission for
+  lacking one, with "Submission protection rejected the request". A submission is no longer
+  refused for lacking a token that nothing was placed to produce; the trap field still guards it,
+  and it is recorded as not challenged. A token that does arrive is still verified. "Test
+  verification" now says the keys are good and challenge nobody, the admin lists it as a gap, and
+  the setting says which provider places a challenge today (DECISIONS #258).
 - **The Submissions filters were four different heights.** Search was 50 pixels tall, the two
   selects 40, the owner field 47 and the dates 54, with 16, 12 and 2 pixels of inner padding,
   because each input type brought its own from WordPress. Every text control on the screen is now
@@ -145,6 +153,11 @@ All notable changes to Corex are documented here. The format follows
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
 Read this before taking the release.
 
+- **A site with Turnstile or hCaptcha selected starts accepting flow submissions again**, guarded by
+  the trap field and not by a challenge. It was accepting none. Only reCAPTCHA places a challenge
+  on CoreX forms; choose it, or leave the trap field as the guard.
+- **`POST corex/v1/captcha/test` answers `no_widget`, with status 400**, for Turnstile and hCaptcha
+  keys the provider accepts, where it answered `ok`.
 - **The export dialog now opens on Excel, not CSV.** Somebody who exports from the screen and
   feeds the file to something that reads CSV has to choose "CSV (.csv)" under File type. A request
   to the route that names no `format` is still a CSV.

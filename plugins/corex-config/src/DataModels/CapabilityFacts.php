@@ -150,6 +150,17 @@ final class CapabilityFacts
             ];
         }
 
+        // Turnstile and hCaptcha can be chosen and given keys, and no widget for either is placed
+        // on a form. With keys saved the first gap above is silent, and the site reads as protected.
+        if (in_array($captchaDriver, ['turnstile', 'hcaptcha'], true) && trim((string) $config->get('captcha.secret', '')) !== '') {
+            $gaps[] = [
+                'key'          => 'captcha.widget',
+                'summary'      => __('The selected captcha provider has keys, but CoreX does not place its widget on forms yet, so it is not challenging anybody. The honeypot is still on.', 'corex'),
+                'action_label' => __('Choose a captcha driver', 'corex'),
+                'action_url'   => admin_url('admin.php?page=corex-settings-config'),
+            ];
+        }
+
         if ((string) $config->get('updates.endpoint', '') === '') {
             $gaps[] = [
                 'key'          => 'updates.endpoint',

@@ -28,6 +28,9 @@ final readonly class FormChallengeContextFactory
 {
     private const DEFAULT_THRESHOLD = 0.3;
 
+    /** CoreX's own drivers that have a verifier and no browser side yet. */
+    private const DRIVERS_WITHOUT_WIDGET = ['turnstile', 'hcaptcha'];
+
     public function __construct(private ConfigInterface $config, private ClientAddress $client)
     {
     }
@@ -66,6 +69,18 @@ final readonly class FormChallengeContextFactory
         }
 
         return $this->providerConfigured();
+    }
+
+    /**
+     * Whether the configured driver is one CoreX can verify a token for and places no widget for.
+     *
+     * Turnstile and hCaptcha can be chosen and given keys, and nothing on a form produces their
+     * token: no script is loaded and no token field is rendered. A submission that arrives without
+     * one has not failed a challenge. It was never set one.
+     */
+    public function driverPlacesNoWidget(): bool
+    {
+        return in_array((string) $this->config->get('captcha.driver', 'none'), self::DRIVERS_WITHOUT_WIDGET, true);
     }
 
     public function providerConfigured(): bool
