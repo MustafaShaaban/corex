@@ -6933,7 +6933,7 @@ and the install beside it runs another branch. The new test in `MailLifecycleTes
 probe above did and runs in CI. No message was sent through a relay; `wp_mail()` was stopped at
 `pre_wp_mail` in every run.
 
-## #264 — The Data export was audited first, and the audit changed what the slice is
+## #265 — The Data export was audited first, and the audit changed what the slice is
 
 Date: 2026-10-08 · Spec: 103 (submissions inbox and exports), slice 7a · Status: Final
 
