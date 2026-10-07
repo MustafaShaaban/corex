@@ -111,3 +111,47 @@ it('rejects unsupported status filters instead of widening the result set', func
     expect(fn () => SubmissionInboxQuery::from(['status' => 'deleted']))
         ->toThrow(InvalidArgumentException::class, 'status');
 });
+
+/**
+ * The detail pane headed each answer with its field key, named an owner as a type and a key, and
+ * asked for a typed "eligible owner key" to assign one (spec 103, FR-041 and FR-042). What it needs
+ * to do better arrives with the submission.
+ */
+it('hands the detail pane the form’s questions, the owner’s name and who can own it', function () {
+    $reader = queryReader([
+        ['id' => 4, 'form' => 'lead', 'owner_type' => 'user', 'owner_key' => '7', 'is_test' => false, 'values' => ['looking_for' => 'Branding']],
+    ], 1);
+    $questions = new class implements Corex\Config\Submissions\SubmissionQuestions {
+        public function for(string $form): array
+        {
+            return $form === 'lead' ? [['key' => 'looking_for', 'label' => 'What are you looking for?', 'type' => 'select']] : [];
+        }
+    };
+    $owners = new class implements Corex\Config\Submissions\SubmissionOwnerNames {
+        public function nameOf(string $ownerType, string $ownerKey): string
+        {
+            return $ownerType === 'user' && $ownerKey === '7' ? 'Mona Adel' : '';
+        }
+
+        public function people(): array
+        {
+            return [['key' => '7', 'label' => 'Mona Adel'], ['key' => '9', 'label' => 'Omar Said']];
+        }
+    };
+    $service = new SubmissionQueryService($reader, queryPolicy(new SubmissionAccessScope(7, true)), $questions, $owners);
+
+    $detail = $service->detail(7, 4);
+
+    expect($detail['questions'])->toBe([['key' => 'looking_for', 'label' => 'What are you looking for?', 'type' => 'select']])
+        ->and($detail['owner_name'])->toBe('Mona Adel')
+        ->and($detail['owners'])->toBe([['key' => '7', 'label' => 'Mona Adel'], ['key' => '9', 'label' => 'Omar Said']])
+        // And the record itself is untouched.
+        ->and($detail['values'])->toBe(['looking_for' => 'Branding']);
+});
+
+it('still answers a detail with nobody to ask about questions or owners', function () {
+    $reader  = queryReader([['id' => 4, 'form' => 'lead', 'owner_type' => 'none', 'owner_key' => '', 'is_test' => false]], 1);
+    $service = new SubmissionQueryService($reader, queryPolicy(new SubmissionAccessScope(7, true)));
+
+    expect($service->detail(7, 4))->toMatchArray(['questions' => [], 'owner_name' => '', 'owners' => []]);
+});

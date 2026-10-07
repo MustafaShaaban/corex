@@ -81,16 +81,19 @@ Slice 2a ends here (DECISIONS #254). T030, T031 and everything below is slice 2b
 
 ## Slice 4 — The detail pane (US5)
 
-- [ ] T070 The submission's REST payload carries its questions' wording (D2) and the people who can own it
-- [ ] T071 Jest: the pane's order; answers headed by wording with the key as fallback; no empty technical section; one "nothing recorded" line
-- [ ] T072 Header: name, mailto and tel links, form, date, number, status, read state (FR-040)
-- [ ] T073 Answers first; reply and notes; one triage group with a labelled status and one assignment control (FR-039, FR-042)
-- [ ] T074 Delivery per attempt with the reason and where to fix it (FR-043)
-- [ ] T075 Technical details as one closed group (FR-044)
-- [ ] T076 Opening marks read; the header marks unread (FR-047)
-- [ ] T077 Focus into the pane, Escape, focus back to the row; clear of the admin toolbar; the inbox behind it inert (FR-045, FR-046)
-- [ ] T078 Playwright: open by keyboard, read, close, focus is on the row
-- [ ] T079 Rendered check as above; guards; notes
+- [x] T070 The submission's REST payload carries its questions' wording (D2) and the people who can own it
+- [x] T071 Jest: the pane's order; answers headed by wording with the key as fallback; no empty technical section; one "nothing recorded" line
+- [x] T072 Header: name, mailto and tel links, form, date, number, status, read state (FR-040)
+- [x] T073 Answers first; reply and notes; one triage group with a labelled status and one assignment control (FR-039, FR-042)
+- [x] T074 Delivery: the result, when, and the reason; a line saying why nothing was recorded for a form defined in code
+- [ ] T074b The rest of FR-043: to whom each attempt went, and where a failure can be fixed. A submission stores one
+  delivery record with no recipient, and the inbox is not told the mail screen's address or whether the person may
+  open it. Both are server work
+- [x] T075 Technical details as one closed group (FR-044)
+- [x] T076 Opening marks read; the header marks unread (FR-047)
+- [x] T077 Focus into the pane, Escape, focus back to the row; clear of the admin toolbar; the inbox behind it inert (FR-045, FR-046)
+- [x] T078 Playwright: open by keyboard, read, close, focus is on the row
+- [x] T079 Rendered check as above; guards; notes
 
 ## Slice 5 — History (US9)
 

@@ -53,14 +53,15 @@ is delivered in seven slices, one pull request each:
 | 2b | Scopes with counts, the rebuilt dialog, download without a refresh | done (DECISIONS #255). Not in it: a remembered column choice, choosing single questions and their order |
 | 3 | Excel | done (DECISIONS #256). A produced workbook and a produced CSV were opened in Excel |
 | — | Spacing review of the dialog and the filters, on the owner's request | done (DECISIONS #257). Measured, fixed, and kept measured by two browser tests |
-| 4 | The detail pane | not started |
+| 4 | The detail pane | done (DECISIONS #259). Measured, and kept measured by a browser test. Not in it: to whom a notification went and where a failure can be fixed (T074b), which the server does not record |
 | 5 | Export history: size, expiry, delete | not started |
 | 6 | PDF | not started; needs a spike on a library that renders Arabic |
 | 7 | The Data export, to the same standard | not started |
 
-Two readings in the spec are the owner's to overrule: that opening a submission marks it read, and
-that "signed off with the identity" on the PDF means the brand identity plus a sign-off block
-naming the person who exported it.
+Two readings in the spec are the owner's to overrule: that opening a submission marks it read
+(built that way in slice 4, with "Mark unread" in the pane's header), and that "signed off with
+the identity" on the PDF means the brand identity plus a sign-off block naming the person who
+exported it.
 
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 

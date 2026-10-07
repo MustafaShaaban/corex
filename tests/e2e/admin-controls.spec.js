@@ -245,7 +245,7 @@ test.describe( 'Admin controls are visible and behave when clicked', () => {
 			await row.click();
 
 			const close = page
-				.locator( '.corex-inbox__drawer header .components-button' )
+				.locator( '.corex-inbox__drawer .corex-dialog__close' )
 				.first();
 			await expect( close ).toBeVisible();
 

@@ -12,8 +12,14 @@ import CorexDialog from '../admin/components/CorexDialog.js';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import CorexTime from '../admin/components/CorexTime.js';
 import CorexErrorState from '../admin/components/CorexErrorState.js';
-import FieldValue from '../admin/components/FieldValue.js';
+import DetailPane from './detail/DetailPane.js';
 import ExportDialog from './export/ExportDialog.js';
+import {
+	DeliveryBadge,
+	STATUS_LABELS,
+	STATUSES,
+	StatusBadge,
+} from './badges.js';
 import {
 	inboxFiltersFromUrl,
 	inboxSubmissionFromUrl,
@@ -24,26 +30,6 @@ import { useInbox } from './useInbox.js';
 const config = window.corexSubmissions || { restUrl: '', nonce: '', flows: [] };
 // Empty when the forms add-on is absent (Principle IX) — the form filter simply does not render.
 const FLOWS = Array.isArray( config.flows ) ? config.flows : [];
-const STATUSES = [
-	'new',
-	'in_progress',
-	'replied',
-	'closed',
-	'spam',
-	'archived',
-];
-const STATUS_LABELS = {
-	new: __( 'New', 'corex' ),
-	in_progress: __( 'In progress', 'corex' ),
-	replied: __( 'Replied', 'corex' ),
-	closed: __( 'Closed', 'corex' ),
-	spam: __( 'Spam', 'corex' ),
-	archived: __( 'Archived', 'corex' ),
-};
-const STATUS_OPTIONS = STATUSES.map( ( status ) => ( {
-	value: status,
-	label: STATUS_LABELS[ status ],
-} ) );
 const BULK_ACTIONS = [
 	{ value: 'mark_read', label: __( 'Mark read', 'corex' ) },
 	{ value: 'assign', label: __( 'Assign', 'corex' ) },
@@ -55,13 +41,6 @@ const OWNER_TYPES = [
 	{ value: 'team', label: __( 'Team', 'corex' ) },
 	{ value: 'role', label: __( 'Role', 'corex' ) },
 	{ value: 'none', label: __( 'Unassigned', 'corex' ) },
-];
-// The drawer leads with Unassigned because that is the state most rows start in.
-const ASSIGNMENT_OWNER_TYPES = [
-	OWNER_TYPES[ 3 ],
-	OWNER_TYPES[ 0 ],
-	OWNER_TYPES[ 1 ],
-	OWNER_TYPES[ 2 ],
 ];
 
 function App() {
@@ -164,7 +143,11 @@ function App() {
 				update={ updateFilter }
 			/>
 			{ inbox.state.drawer.open && (
-				<DetailDrawer drawer={ inbox.state.drawer } inbox={ inbox } />
+				<DetailPane
+					id={ DRAWER_ID }
+					drawer={ inbox.state.drawer }
+					inbox={ inbox }
+				/>
 			) }
 			{ preview && (
 				<ConfirmBulk
@@ -577,91 +560,6 @@ function InboxTable( { state, dispatch, open } ) {
 	);
 }
 
-function StatusBadge( { status } ) {
-	return (
-		<span className={ `corex-inbox__status is-${ status }` }>
-			{ STATUS_LABELS[ status ] || status }
-		</span>
-	);
-}
-
-// The notification-delivery states, each conveyed by text + icon + accessible name — never colour
-// alone (WCAG 2.2 AA 1.4.1). "accepted" reads as accepted-for-delivery: a transport taking a message
-// is not proof it reached an inbox (spec 071 FR-015). Written in this file's dense single-line style.
-const DELIVERY_META = {
-	accepted: {
-		label: __( 'Notification accepted', 'corex' ),
-		tone: 'success',
-		icon: 'yes-alt',
-	},
-	captured: {
-		label: __( 'Notification captured', 'corex' ),
-		tone: 'info',
-		icon: 'download',
-	},
-	queued: {
-		label: __( 'Notification queued', 'corex' ),
-		tone: 'info',
-		icon: 'clock',
-	},
-	sending: {
-		label: __( 'Notification sending', 'corex' ),
-		tone: 'info',
-		icon: 'update',
-	},
-	sent: {
-		label: __( 'Notification sent', 'corex' ),
-		tone: 'success',
-		icon: 'yes-alt',
-	},
-	opened: {
-		label: __( 'Notification opened', 'corex' ),
-		tone: 'success',
-		icon: 'visibility',
-	},
-	failed: {
-		label: __( 'Notification failed', 'corex' ),
-		tone: 'warning',
-		icon: 'warning',
-	},
-	rejected: {
-		label: __( 'Notification rejected', 'corex' ),
-		tone: 'warning',
-		icon: 'dismiss',
-	},
-	bounced: {
-		label: __( 'Notification bounced', 'corex' ),
-		tone: 'warning',
-		icon: 'undo',
-	},
-	not_attempted: {
-		label: __( 'No notification', 'corex' ),
-		tone: 'neutral',
-		icon: 'minus',
-	},
-	unavailable: {
-		label: __( 'Delivery unavailable', 'corex' ),
-		tone: 'neutral',
-		icon: 'backup',
-	},
-};
-
-function DeliveryBadge( { delivery } ) {
-	const meta = DELIVERY_META[ delivery?.status ] || DELIVERY_META.unavailable;
-	return (
-		<span
-			className={ `corex-inbox__delivery is-${ meta.tone }` }
-			title={ delivery?.safe_reason || meta.label }
-		>
-			<span
-				className={ `dashicons dashicons-${ meta.icon }` }
-				aria-hidden="true"
-			/>
-			<span>{ meta.label }</span>
-		</span>
-	);
-}
-
 function Pagination( { state, filters, update } ) {
 	const pages = Math.max( 1, Math.ceil( state.total / filters.perPage ) );
 	return (
@@ -690,350 +588,6 @@ function Pagination( { state, filters, update } ) {
 				{ __( 'Next', 'corex' ) }
 			</Button>
 		</nav>
-	);
-}
-
-function DetailDrawer( { drawer, inbox } ) {
-	const record = drawer.record;
-	const [ note, setNote ] = useState( '' );
-	const [ reply, setReply ] = useState( { subject: '', body: '' } );
-	const [ owner, setOwner ] = useState( {
-		owner_type: record?.owner_type || 'none',
-		owner_key: record?.owner_key || '',
-	} );
-	const [ log, setLog ] = useState( null );
-	useEffect( () => {
-		if ( record ) {
-			setOwner( {
-				owner_type: record.owner_type || 'none',
-				owner_key: record.owner_key || '',
-			} );
-		}
-	}, [ record ] );
-	if ( drawer.status === 'loading' ) {
-		return (
-			<aside
-				id={ DRAWER_ID }
-				className="corex-inbox__drawer"
-				aria-label={ __( 'Submission detail', 'corex' ) }
-			>
-				<Button onClick={ inbox.close }>
-					{ __( 'Close', 'corex' ) }
-				</Button>
-				<Spinner />
-			</aside>
-		);
-	}
-	if ( ! record ) {
-		return (
-			<aside id={ DRAWER_ID } className="corex-inbox__drawer">
-				<Button onClick={ inbox.close }>
-					{ __( 'Close', 'corex' ) }
-				</Button>
-				<p>{ drawer.error }</p>
-			</aside>
-		);
-	}
-	const emails = Object.values(
-		record.related_emails?.bindings || {}
-	).filter( ( item ) => item?.attempt_id );
-	return (
-		<aside
-			id={ DRAWER_ID }
-			className="corex-inbox__drawer"
-			aria-labelledby="corex-submission-title"
-		>
-			<header>
-				<div>
-					<p>{ record.flow }</p>
-					<h2 id="corex-submission-title">
-						{ record.submitter_name ||
-							__( 'Anonymous submission', 'corex' ) }
-					</h2>
-					<span>{ record.submitter_email }</span>
-				</div>
-				<Button
-					icon="no-alt"
-					label={ __( 'Close detail', 'corex' ) }
-					onClick={ inbox.close }
-				/>
-			</header>
-			<div className="corex-inbox__drawer-actions">
-				<CorexSelect
-					label={ __( 'Status', 'corex' ) }
-					value={ record.status }
-					options={ STATUS_OPTIONS }
-					block
-					onChange={ ( status ) =>
-						inbox.update( record.id, {
-							status,
-							expected_updated_at: record.updated_at,
-						} )
-					}
-				/>
-				{ ! record.read_at && (
-					<Button
-						onClick={ () =>
-							inbox.update( record.id, {
-								mark_read: true,
-								expected_updated_at: record.updated_at,
-							} )
-						}
-					>
-						{ __( 'Mark read', 'corex' ) }
-					</Button>
-				) }
-			</div>
-			<section>
-				<h3>{ __( 'Assignment', 'corex' ) }</h3>
-				<div className="corex-inbox__assignment">
-					<CorexSelect
-						label={ __( 'Owner type', 'corex' ) }
-						value={ owner.owner_type }
-						options={ ASSIGNMENT_OWNER_TYPES }
-						onChange={ ( ownerType ) =>
-							setOwner( {
-								...owner,
-								owner_type: ownerType,
-								owner_key:
-									ownerType === 'none' ? '' : owner.owner_key,
-							} )
-						}
-					/>
-					<input
-						value={ owner.owner_key }
-						disabled={ owner.owner_type === 'none' }
-						onChange={ ( e ) =>
-							setOwner( { ...owner, owner_key: e.target.value } )
-						}
-						placeholder={ __( 'Eligible owner key', 'corex' ) }
-					/>
-					<Button
-						variant="secondary"
-						onClick={ () =>
-							inbox.update( record.id, {
-								...owner,
-								expected_updated_at: record.updated_at,
-							} )
-						}
-					>
-						{ __( 'Assign', 'corex' ) }
-					</Button>
-				</div>
-			</section>
-			<section className="corex-inbox__delivery-detail">
-				<h3>{ __( 'Notification delivery', 'corex' ) }</h3>
-				<p>
-					<DeliveryBadge delivery={ record.delivery } />
-				</p>
-				{ record.delivery?.safe_reason && (
-					<p className="corex-inbox__muted">
-						{ record.delivery.safe_reason }
-					</p>
-				) }
-				{ record.delivery?.attempted_at && (
-					// The date is a <time> element rather than a string interpolated into the
-					// sentence, so it keeps its machine value. `sprintf` cannot carry markup.
-					<p className="corex-inbox__muted">
-						{ __( 'Attempted', 'corex' ) }{ ' ' }
-						<CorexTime value={ record.delivery.attempted_at } />
-					</p>
-				) }
-			</section>
-			<DetailSection
-				title={ __( 'Submitted fields', 'corex' ) }
-				value={ record.values }
-			/>
-			<DetailSection
-				title={ __( 'Hidden metadata', 'corex' ) }
-				value={ record.hidden_metadata }
-			/>
-			<DetailSection
-				title={ __( 'UTM attribution', 'corex' ) }
-				value={ record.utm }
-			/>
-			<DetailSection
-				title={ __( 'Consent snapshot', 'corex' ) }
-				value={ record.consent_snapshot }
-			/>
-			<section>
-				<h3>{ __( 'Internal notes', 'corex' ) }</h3>
-				<ul className="corex-inbox__timeline">
-					{ ( record.notes || [] ).map( ( item ) => (
-						<li key={ item.id }>
-							<strong>#{ item.author_id }</strong> { item.body }
-							<small>
-								<CorexTime
-									value={ item.created_at }
-									absent={ __( 'Not recorded', 'corex' ) }
-								/>
-							</small>
-						</li>
-					) ) }
-				</ul>
-				<textarea
-					value={ note }
-					onChange={ ( e ) => setNote( e.target.value ) }
-					placeholder={ __( 'Add a team note', 'corex' ) }
-				/>
-				<Button
-					variant="secondary"
-					disabled={ ! note.trim() }
-					onClick={ async () => {
-						if (
-							await inbox.addNote( record.id, {
-								body: note,
-								visibility: 'corex-team',
-							} )
-						) {
-							setNote( '' );
-						}
-					} }
-				>
-					{ __( 'Add note', 'corex' ) }
-				</Button>
-			</section>
-			<section>
-				<h3>{ __( 'Email', 'corex' ) }</h3>
-				<input
-					value={ reply.subject }
-					onChange={ ( e ) =>
-						setReply( { ...reply, subject: e.target.value } )
-					}
-					placeholder={ __( 'Reply subject', 'corex' ) }
-				/>
-				<textarea
-					value={ reply.body }
-					onChange={ ( e ) =>
-						setReply( { ...reply, body: e.target.value } )
-					}
-					placeholder={ __( 'Reply message', 'corex' ) }
-				/>
-				<Button
-					variant="secondary"
-					disabled={
-						! reply.subject ||
-						! reply.body ||
-						! record.submitter_email
-					}
-					onClick={ () => inbox.reply( record.id, reply ) }
-				>
-					{ __( 'Send reply', 'corex' ) }
-				</Button>
-				<ul>
-					{ emails.map( ( email ) => (
-						<li key={ email.attempt_id }>
-							<code>{ email.state }</code>{ ' ' }
-							<Button
-								variant="link"
-								onClick={ () =>
-									inbox.resend( record.id, email.attempt_id )
-								}
-								disabled={ ! email.retryable }
-							>
-								{ __( 'Resend', 'corex' ) }
-							</Button>{ ' ' }
-							<Button
-								variant="link"
-								onClick={ async () => {
-									const result = await inbox.log(
-										record.id,
-										email.attempt_id
-									);
-									if ( result.envelope.ok ) {
-										setLog( result.envelope.data.log );
-									}
-								} }
-							>
-								{ __( 'Open log', 'corex' ) }
-							</Button>
-						</li>
-					) ) }
-				</ul>
-				{ log && <pre>{ JSON.stringify( log, null, 2 ) }</pre> }
-			</section>
-			<section>
-				<h3>{ __( 'Timeline', 'corex' ) }</h3>
-				<ul className="corex-inbox__timeline">
-					{ ( record.timeline || [] ).map( ( event, index ) => (
-						<li key={ event.id || index }>
-							<strong>{ event.stage || event.kind }</strong>
-							<span>{ event.outcome || event.state }</span>
-							<small>
-								<CorexTime
-									value={
-										event.created_at || event.occurred_at
-									}
-									absent={ __( 'Not recorded', 'corex' ) }
-								/>
-							</small>
-						</li>
-					) ) }
-				</ul>
-			</section>
-			<footer>
-				<span>
-					{ sprintf(
-						/* translators: %d: the flow version this submission was made against. */
-						__( 'Version %d', 'corex' ),
-						record.flow_version_id || 0
-					) }
-				</span>
-				<span>
-					{ __( 'Retention:', 'corex' ) } { record.retention_state }
-				</span>
-				<span>
-					{ record.exported_at
-						? __( 'Exported', 'corex' )
-						: __( 'Not exported', 'corex' ) }
-				</span>
-			</footer>
-		</aside>
-	);
-}
-
-/**
- * What `FieldValue` should be handed for one stored value.
- *
- * A described attachment goes through untouched so it renders as a link; anything else that is an
- * object is still JSON, which is unlovely but honest — better than "[object Object]" and better
- * than dropping a value nobody anticipated (#138 item 6).
- *
- * @param {*} item One stored value.
- * @return {*} The value, or its JSON.
- */
-function displayable( item ) {
-	if ( item !== null && typeof item === 'object' ) {
-		return typeof item.id === 'number' && 'missing' in item
-			? item
-			: JSON.stringify( item );
-	}
-
-	return item;
-}
-
-function DetailSection( { title, value } ) {
-	const entries = Object.entries( value || {} );
-	return (
-		<section>
-			<h3>{ title }</h3>
-			{ entries.length === 0 ? (
-				<p className="corex-inbox__muted">
-					{ __( 'No data recorded.', 'corex' ) }
-				</p>
-			) : (
-				<dl className="corex-inbox__fields">
-					{ entries.map( ( [ key, item ] ) => (
-						<div key={ key }>
-							<dt>{ key }</dt>
-							<dd>
-								<FieldValue value={ displayable( item ) } />
-							</dd>
-						</div>
-					) ) }
-				</dl>
-			) }
-		</section>
 	);
 }
 

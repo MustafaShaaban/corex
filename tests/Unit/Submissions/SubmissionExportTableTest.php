@@ -56,6 +56,11 @@ function exportTable(string $timezone = 'UTC'): SubmissionExportTable
         {
             return $ownerType === 'user' && $ownerKey === '7' ? 'Mona Adel' : '';
         }
+
+        public function people(): array
+        {
+            return [];
+        }
     };
 
     return new SubmissionExportTable($owners, static fn (): DateTimeZone => new DateTimeZone($timezone));

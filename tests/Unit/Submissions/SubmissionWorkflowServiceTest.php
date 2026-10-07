@@ -147,3 +147,20 @@ it('rejects stale writes, unsupported statuses, and restricted notes without per
         ->and(fn () => $service->addNote($limited, 12, 'private', 'restricted'))
         ->toThrow(DomainException::class, 'restricted');
 });
+
+/**
+ * Opening a submission marks it read (spec 103, FR-047). So it has to be possible to say the
+ * opposite: somebody who opened one to glance at it leaves it for whoever acts on it.
+ */
+it('marks a read submission unread again, and says who did', function () {
+    $store = workflowStore([...workflowRecord(), 'read_at' => '2026-07-04T11:00:00+00:00', 'read_by' => 3]);
+    $timeline = timelineStore();
+    $service = new SubmissionWorkflowService($store, $timeline);
+
+    $updated = $service->markUnread(new SubmissionAccessScope(7, true), 12, '2026-07-04T12:00:00+00:00');
+
+    expect($updated['read_at'])->toBe('')
+        ->and($updated['read_by'])->toBe(0)
+        ->and($timeline->events[0]['stage'])->toBe('unread')
+        ->and($timeline->events[0]['summary'])->toMatchArray(['actor_id' => 7]);
+});

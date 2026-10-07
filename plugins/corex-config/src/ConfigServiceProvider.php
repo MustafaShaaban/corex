@@ -612,7 +612,15 @@ final class ConfigServiceProvider extends ServiceProvider
             SubmissionTimelineStore::class,
             static fn (ContainerInterface $c): SubmissionTimelineRepository => $c->make(SubmissionTimelineRepository::class),
         );
-        $this->container->singleton(SubmissionQueryService::class);
+        $this->container->singleton(
+            SubmissionQueryService::class,
+            static fn (ContainerInterface $c): SubmissionQueryService => new SubmissionQueryService(
+                $c->make(\Corex\Config\Submissions\SubmissionInboxReader::class),
+                $c->make(\Corex\Config\Submissions\SubmissionAccessPolicy::class),
+                $c->make(\Corex\Config\Submissions\SubmissionQuestions::class),
+                $c->make(\Corex\Config\Submissions\SubmissionOwnerNames::class),
+            ),
+        );
         $this->container->singleton(SubmissionWorkflowService::class);
         $this->container->singleton(
             SubmissionEmailGateway::class,
