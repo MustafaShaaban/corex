@@ -50,7 +50,7 @@ is delivered in seven slices, one pull request each:
 |---|---|---|
 | 1 | The whole row opens the submission | done (DECISIONS #253) |
 | 2a | A readable file: a column per answer headed by the question, CSV a spreadsheet opens, files on disk | done (DECISIONS #254) |
-| 2b | Scopes with counts, the rebuilt dialog, download without a refresh, column choice | next |
+| 2b | Scopes with counts, the rebuilt dialog, download without a refresh | done (DECISIONS #255). Not in it: a remembered column choice, choosing single questions and their order |
 | 3 | Excel | not started |
 | 4 | The detail pane | not started |
 | 5 | Export history: size, expiry, delete | not started |

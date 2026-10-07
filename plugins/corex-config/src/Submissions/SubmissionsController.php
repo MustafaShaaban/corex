@@ -187,6 +187,9 @@ final readonly class SubmissionsController
                 (array) ($safe->input['query'] ?? []),
                 (bool) ($safe->input['include_test'] ?? false),
             ),
+            // The dialog offers the columns that hold personal data only to somebody who may
+            // export it. The export itself refuses them regardless.
+            'permissions' => ['personal_data' => $this->scope()->canExportPersonalData],
         ]));
     }
 

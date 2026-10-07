@@ -203,5 +203,7 @@ export function buildExportPayload( options ) {
 		query: options.scope === 'filtered' ? { ...options.filters } : {},
 		include_test: Boolean( options.includeTest ),
 		personal_data_acknowledged: Boolean( options.acknowledged ),
+		format: options.format || 'csv',
+		separator: options.separator || 'comma',
 	};
 }

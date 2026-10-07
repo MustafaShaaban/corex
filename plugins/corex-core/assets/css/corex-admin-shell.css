@@ -1916,6 +1916,101 @@ body.corex-admin-screen .corex-admin__shell {
 	}
 }
 
+
+/* CorexDialog (spec 103) — a decision asked in front of the screen.
+
+   It is the native <dialog>, shown modally. The browser draws it in the top
+   layer without moving it in the document, so it stays inside `.corex-admin`
+   and every rule and token here reaches it. The WordPress Modal is drawn in a
+   portal at the end of <body>, outside that scope, which is why a CoreX
+   control inside one had no styles at all. */
+.corex-admin .corex-dialog {
+	inline-size: min(40rem, calc(100vw - 2 * var(--corex-admin-space-md)));
+	max-block-size: calc(100vh - 2 * var(--corex-admin-space-lg));
+	padding: 0;
+	overflow: hidden;
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	box-shadow: var(--corex-admin-shadow-lg);
+}
+
+.corex-admin .corex-dialog::backdrop {
+	background: var(--corex-admin-overlay);
+}
+
+/* Header and actions stay in view; only what is between them scrolls. */
+.corex-admin .corex-dialog__panel {
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	max-block-size: inherit;
+}
+
+.corex-admin .corex-dialog__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-md);
+	padding: var(--corex-admin-space-md) var(--corex-admin-space-lg);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-dialog__title {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-lg);
+	line-height: var(--corex-admin-line-tight);
+}
+
+.corex-admin .corex-dialog__close {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: var(--corex-admin-control-height);
+	block-size: var(--corex-admin-control-height);
+	padding: 0;
+	color: var(--corex-admin-text-muted);
+	background: transparent;
+	border: 0;
+	border-radius: var(--corex-admin-radius-sm);
+	cursor: pointer;
+}
+
+.corex-admin .corex-dialog__close:hover {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+}
+
+.corex-admin .corex-dialog__close:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-admin .corex-dialog__close:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.corex-admin .corex-dialog__body {
+	display: grid;
+	gap: var(--corex-admin-space-lg);
+	padding: var(--corex-admin-space-lg);
+	overflow-y: auto;
+}
+
+.corex-admin .corex-dialog__body > p {
+	margin: 0;
+}
+
+.corex-admin .corex-dialog__footer {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	padding: var(--corex-admin-space-md) var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
 /* The 1px RTL overflow, which was not where it was recorded.
  *
  * This project carried "corex-access overflows 1px in RTL at 375px" as an
