@@ -11,6 +11,7 @@ namespace Corex\Config\Submissions;
 defined('ABSPATH') || exit;
 
 use Corex\Config\Export\ExportCell;
+use Closure;
 use Corex\Config\Export\ExportSheet;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -39,7 +40,12 @@ final readonly class SubmissionExportTable
     private const NUMBER_TYPES = ['number', 'rating'];
     private const SEVERAL_VALUES = '; ';
 
-    public function __construct(private SubmissionOwnerNames $owners, private DateTimeZone $siteTimezone)
+    /**
+     * @param Closure():DateTimeZone $siteTimezone Asked each time a date is written, not once: the
+     *                                             table outlives a request under WP-CLI and in a
+     *                                             test, and a site's timezone is a setting.
+     */
+    public function __construct(private SubmissionOwnerNames $owners, private Closure $siteTimezone)
     {
     }
 
@@ -241,7 +247,7 @@ final readonly class SubmissionExportTable
 
         return $moment === false
             ? ExportCell::text($storedUtc)
-            : ExportCell::dateTime($moment->setTimezone($this->siteTimezone));
+            : ExportCell::dateTime($moment->setTimezone(($this->siteTimezone)()));
     }
 
     private function status(string $status): string

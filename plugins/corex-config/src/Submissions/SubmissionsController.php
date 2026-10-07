@@ -179,8 +179,41 @@ final readonly class SubmissionsController
     public function downloadExport(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->read($request, fn (): Response => Response::ok([
-            'artifact' => $this->services->exports->download($this->scope(), RouteParam::int($request, 'export')),
+            'artifact' => $this->artifact(
+                $this->services->exports->download($this->scope(), RouteParam::int($request, 'export')),
+            ),
         ]));
+    }
+
+    /**
+     * An export as the screen saves it: named for the site, with its bytes.
+     *
+     * The bytes travel base64 inside the JSON answer, because an archive is not text. An export
+     * made before files were kept on disk has only its CSV text, and is sent as that.
+     *
+     * @param array{name:string,content_type:string,path:?string,csv:?string} $download
+     *
+     * @return array{filename:string,content_type:string,base64?:string,csv?:string}
+     */
+    private function artifact(array $download): array
+    {
+        $artifact = [
+            'filename' => sanitize_file_name(sanitize_title(get_bloginfo('name')) . '-' . $download['name']),
+            'content_type' => $download['content_type'],
+        ];
+
+        if ($download['path'] === null) {
+            return $artifact + ['csv' => (string) $download['csv']];
+        }
+
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- a local file CoreX wrote, in its protected directory.
+        $bytes = is_file($download['path']) ? file_get_contents($download['path']) : false;
+        if ($bytes === false) {
+            throw new DomainException(__('The exported file is no longer on the server.', 'corex'));
+        }
+
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- carrying a file's bytes in a JSON answer.
+        return $artifact + ['base64' => base64_encode($bytes)];
     }
 
     private function scope(): SubmissionAccessScope

@@ -10,19 +10,25 @@ namespace Corex\Config\Submissions;
 
 defined('ABSPATH') || exit;
 
+use Corex\Config\Export\ExportDirectory;
 use RuntimeException;
 
 /**
- * Private WordPress storage for export jobs, history, and protected CSV artifacts.
+ * Private WordPress storage for export jobs and history, and for where each export's file is.
  */
 final class WpSubmissionExportStore implements SubmissionExportStore
 {
     public const POST_TYPE = 'corex_sub_export';
 
+    public function __construct(private readonly ExportDirectory $directory)
+    {
+    }
+
     private const PAYLOAD = '_corex_submission_export_payload';
     private const HASH = '_corex_submission_export_input_hash';
     private const ACTOR = '_corex_submission_export_actor';
     private const ARTIFACT = '_corex_submission_export_csv';
+    private const FILE = '_corex_submission_export_file';
 
     public function registerPostType(): void
     {
@@ -105,13 +111,34 @@ final class WpSubmissionExportStore implements SubmissionExportStore
         )));
     }
 
-    public function saveArtifact(int $runId, string $csv, int $recordCount): void
+    public function saveFile(int $runId, array $file, int $recordCount): void
     {
         if ($this->find($runId) === null) {
             throw new RuntimeException(__('Submission export was not found.', 'corex'));
         }
-        update_post_meta($runId, self::ARTIFACT, $csv);
+        // Only the file's name is kept. A full path would not survive: WordPress strips
+        // backslashes from stored meta, which is every separator of a Windows path, and an
+        // absolute path stops being true the day a site is moved.
+        update_post_meta($runId, self::FILE, ['name' => basename($file['path'])] + array_diff_key($file, ['path' => true]));
         update_post_meta($runId, '_corex_submission_exported_records', max(0, $recordCount));
+    }
+
+    public function file(int $runId): ?array
+    {
+        if ($this->find($runId) === null) {
+            return null;
+        }
+        $file = get_post_meta($runId, self::FILE, true);
+        if (! is_array($file) || ! is_string($file['name'] ?? null) || $file['name'] === '') {
+            return null;
+        }
+
+        return [
+            'path' => $this->directory->path() . '/' . basename($file['name']),
+            'extension' => (string) ($file['extension'] ?? ''),
+            'content_type' => (string) ($file['content_type'] ?? ''),
+            'subject' => (string) ($file['subject'] ?? ''),
+        ];
     }
 
     public function artifact(int $runId): ?string

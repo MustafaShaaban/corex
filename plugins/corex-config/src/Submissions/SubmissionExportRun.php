@@ -10,6 +10,7 @@ namespace Corex\Config\Submissions;
 
 defined('ABSPATH') || exit;
 
+use Corex\Config\Export\ExportWriters;
 use DateTimeImmutable;
 use InvalidArgumentException;
 
@@ -30,6 +31,7 @@ final readonly class SubmissionExportRun
     public array $query;
     public bool $includeTest;
     public string $format;
+    public string $separator;
     public int $recordCount;
     public string $inputHash;
     public DateTimeImmutable $createdAt;
@@ -45,7 +47,8 @@ final readonly class SubmissionExportRun
         $this->columns = array_values(array_map('strval', (array) ($payload['columns'] ?? [])));
         $this->query = is_array($payload['query'] ?? null) ? $payload['query'] : [];
         $this->includeTest = (bool) ($payload['include_test'] ?? false);
-        $this->format = (string) ($payload['format'] ?? 'csv');
+        $this->format = (string) ($payload['format'] ?? ExportWriters::CSV);
+        $this->separator = (string) ($payload['separator'] ?? ExportWriters::DEFAULT_SEPARATOR);
         $this->recordCount = (int) ($payload['record_count'] ?? 0);
         $this->inputHash = (string) ($payload['input_hash'] ?? '');
         $this->createdAt = new DateTimeImmutable((string) ($payload['created_at'] ?? 'now'));
@@ -67,7 +70,9 @@ final readonly class SubmissionExportRun
             ...$payload,
             'actor_id' => $actorId,
             'record_count' => $recordCount,
-            'input_hash' => hash('sha256', $actorId . '|' . $encoded),
+            // Salted, so the same request made twice is two exports. The job that writes an export
+            // finds it by this hash, and an unsalted one sent both jobs to the newer run.
+            'input_hash' => hash('sha256', $actorId . '|' . $encoded . '|' . bin2hex(random_bytes(8))),
             'created_at' => (new DateTimeImmutable('now'))->format(DATE_ATOM),
         ]);
     }
@@ -95,6 +100,7 @@ final readonly class SubmissionExportRun
             'query' => $this->query,
             'include_test' => $this->includeTest,
             'format' => $this->format,
+            'separator' => $this->separator,
             'record_count' => $this->recordCount,
             'input_hash' => $this->inputHash,
             'created_at' => $this->createdAt->format(DATE_ATOM),

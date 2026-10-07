@@ -99,7 +99,6 @@ use Corex\Config\Options\OptionPageScreen;
 use Corex\Config\Submissions\SubmissionAccessPolicy;
 use Corex\Config\Submissions\SubmissionBulkPreviewStore;
 use Corex\Config\Submissions\SubmissionBulkService;
-use Corex\Config\Submissions\SubmissionExportCsvWriter;
 use Corex\Config\Submissions\SubmissionExportJobHandler;
 use Corex\Config\Submissions\SubmissionExportJobQueue;
 use Corex\Config\Submissions\SubmissionExportService;
@@ -636,7 +635,31 @@ final class ConfigServiceProvider extends ServiceProvider
             SubmissionExportJobQueue::class,
             static fn (ContainerInterface $c): WpSubmissionExportJobQueue => $c->make(WpSubmissionExportJobQueue::class),
         );
-        $this->container->singleton(SubmissionExportCsvWriter::class);
+        $this->container->singleton(
+            \Corex\Config\Submissions\SubmissionOwnerNames::class,
+            \Corex\Config\Submissions\WpSubmissionOwnerNames::class,
+        );
+        // Asked of corex-forms when an export or the detail pane needs a form's wording. The
+        // container is handed over because forms is optional and is looked for only when asked.
+        $this->container->singleton(
+            \Corex\Config\Submissions\SubmissionQuestions::class,
+            static fn (ContainerInterface $c): \Corex\Config\Forms\FormQuestions =>
+                new \Corex\Config\Forms\FormQuestions($c),
+        );
+        $this->container->singleton(
+            \Corex\Config\Export\ExportDirectory::class,
+            \Corex\Config\Export\ProtectedExportDirectory::class,
+        );
+        $this->container->singleton(\Corex\Config\Export\ExportWriters::class);
+        $this->container->singleton(
+            \Corex\Config\Submissions\SubmissionExportTable::class,
+            static fn (ContainerInterface $c): \Corex\Config\Submissions\SubmissionExportTable =>
+                new \Corex\Config\Submissions\SubmissionExportTable(
+                    $c->make(\Corex\Config\Submissions\SubmissionOwnerNames::class),
+                    static fn (): \DateTimeZone => wp_timezone(),
+                ),
+        );
+        $this->container->singleton(\Corex\Config\Submissions\SubmissionExportFiles::class);
         $this->container->singleton(SubmissionExportJobHandler::class);
         $this->container->singleton(SubmissionExportService::class);
         $this->container->singleton(SubmissionControllerServices::class);

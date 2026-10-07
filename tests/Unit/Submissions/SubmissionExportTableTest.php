@@ -58,7 +58,7 @@ function exportTable(string $timezone = 'UTC'): SubmissionExportTable
         }
     };
 
-    return new SubmissionExportTable($owners, new DateTimeZone($timezone));
+    return new SubmissionExportTable($owners, static fn (): DateTimeZone => new DateTimeZone($timezone));
 }
 
 /**
