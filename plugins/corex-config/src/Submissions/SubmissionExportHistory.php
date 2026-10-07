@@ -27,7 +27,7 @@ final readonly class SubmissionExportHistory
     /** The file is there to download. */
     public const STATE_READY = 'ready';
 
-    /** No file was written yet: the export is still running, or it stopped. */
+    /** There is no file: the export is still running, it stopped, or its file is gone from disk. */
     public const STATE_PENDING = 'pending';
 
     public function __construct(

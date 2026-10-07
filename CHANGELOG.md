@@ -6,6 +6,49 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **The export history says what each export was** (spec 103, slice 5). It was a date, a count
+  and a link. Each entry now says what it covered (the ticked rows, the filters in words, or
+  everything), its format, how many submissions, how large the file is, who made it and when, and
+  what became of the file. The five newest are listed, and a link under them shows the rest.
+- **An exported file expires.** It is kept for 30 days from the day it was made. The daily
+  retention sweep then removes the file and leaves the entry, which says it expired. An export is
+  a copy of people's answers on the server, and nothing removed one before.
+- **An export can be deleted.** "Delete" on an entry asks first, removes the file and leaves the
+  entry, which then says who deleted it and when. The activity log records it as
+  `submission.export.deleted`. `DELETE corex/v1/submissions/exports/{id}` is the route.
+
+### Fixed
+
+- **The export dialog printed `[object Object] to [object Object]`** for "Current filters" when
+  the inbox was filtered by date. It read a date through a helper that answers the text together
+  with its machine form, and printed the pair. In v0.43.2 and v0.43.3.
+- **A download from "Recent exports" that failed said nothing.** It says so now.
+- **An export whose file is no longer on the server is not offered for download.** It was listed
+  with a "Download" that could only fail. It reads "No file to download."
+
+### Client impact
+
+- **Exports already on a site start expiring.** The first daily sweep after this is taken removes
+  the file of every submissions export made more than 30 days ago, and the stored text of any made
+  before v0.43.2. The entries stay. Somebody who needs an old export has to download it first.
+- **`GET corex/v1/submissions/exports` answers more for each export**: `file_size`, `state`
+  (`ready`, `expired`, `deleted` or `pending`), `expires_at`, `actor_name`, `removed_reason`,
+  `removed_by`, `removed_by_name` and `removed_at`. Nothing was removed.
+- **`…/exports/{id}/download` answers 404 for an export that expired or was deleted**, where it
+  answered the file.
+- **`SubmissionExportService::history()` and `::download()` moved** to the new
+  `SubmissionExportHistory`, as `entries()` and `download()`. Code that called them on the service
+  has to ask for the history.
+- **`SubmissionExportStore` has two more methods**, `removeFile()` and `holdingFilesBefore()`, and
+  `file()` answers null for a file that is not on disk. Code that implements the interface has to
+  add them.
+- **`SubmissionControllerServices` takes one more constructor argument.**
+- **Strings in the history are new** in the `corex` text domain.
+- **The admin bundle changed.** `build/` is git-ignored: rebuild `plugins/corex-config` after
+  taking this.
+
 ## [0.43.3] — 2026-10-07
 
 The submission detail pane, rebuilt, and three faults the first client site reported within hours

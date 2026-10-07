@@ -176,8 +176,15 @@ final class WpSubmissionExportStore implements SubmissionExportStore
             return null;
         }
 
+        $path = $this->directory->path() . '/' . basename($file['name']);
+        // A file can go without CoreX removing it: a site moved without its private uploads, a
+        // host that clears them. The history then says there is no file, and offers none.
+        if (! is_file($path)) {
+            return null;
+        }
+
         return [
-            'path' => $this->directory->path() . '/' . basename($file['name']),
+            'path' => $path,
             'extension' => (string) ($file['extension'] ?? ''),
             'content_type' => (string) ($file['content_type'] ?? ''),
             'subject' => (string) ($file['subject'] ?? ''),

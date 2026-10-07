@@ -34,7 +34,8 @@ interface SubmissionExportStore
 
     /**
      * @return array{path:string,extension:string,content_type:string,subject:string}|null Null while
-     *         the export is not finished, and for an export made before files were kept on disk.
+     *         the export is not finished, when its file is no longer on disk, and for an export
+     *         made before files were kept on disk.
      */
     public function file(int $runId): ?array;
 

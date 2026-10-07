@@ -481,6 +481,140 @@ test( 'reads a submission in the pane: the answer first, the parts evenly spaced
 } );
 
 /**
+ * What was exported before (spec 103, US9).
+ *
+ * The history was a date, a count and a link. It says now what each export covered, in what
+ * format and how large, who made it, and when its file expires; and a file can be deleted. This
+ * makes one export, reads its entry, measures it, and deletes it.
+ *
+ * It also sets a date range first. The dialog put the filters in force into words with a date
+ * helper that answers an object, and printed "[object Object] to [object Object]".
+ */
+test( 'lists what was exported before, says what became of each file, and deletes one when asked', async ( {
+	page,
+} ) => {
+	await page.getByLabel( 'Search' ).fill( EMAIL );
+	const today = new Date().toISOString().slice( 0, 10 );
+	await page.getByLabel( 'From' ).fill( today );
+	await page.getByLabel( 'To', { exact: true } ).fill( today );
+	await expect(
+		page.getByText( 'marked-test@example.com', { exact: true } )
+	).toHaveCount( 0 );
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
+
+	await page
+		.getByRole( 'button', { name: 'Export', exact: true } )
+		.dispatchEvent( 'click' );
+	const dialog = page.getByRole( 'dialog', { name: 'Export submissions' } );
+	const filtered = dialog
+		.locator( '.corex-export__scope' )
+		.filter( { hasText: 'Current filters' } );
+	await expect( filtered ).toContainText(
+		String( new Date().getFullYear() )
+	);
+	await expect( dialog ).not.toContainText( '[object Object]' );
+
+	// The current filters, as a CSV. How many submissions that is depends on how many tests of
+	// this file ran before this one: each seeds another under the same address.
+	await filtered.locator( 'input[type="radio"]' ).check();
+	await dialog.getByRole( 'combobox', { name: 'File type' } ).click();
+	await page.getByRole( 'option', { name: 'CSV (.csv)' } ).click();
+	await dialog
+		.getByText( 'I understand this export contains personal data' )
+		.click();
+	const arriving = page.waitForEvent( 'download' );
+	await dialog
+		.getByRole( 'button', { name: /^Export \d+ submissions?$/ } )
+		.click();
+	await arriving;
+	await expect( dialog.getByText( /^Saved .+\.csv\.$/ ) ).toBeVisible();
+
+	const recent = dialog.locator( '.corex-export__recent' );
+	const entry = recent.locator( '.corex-export__entry' ).first();
+	await expect( entry ).toHaveClass( /is-ready/ );
+	await expect( entry.locator( '.corex-export__entry-what' ) ).toContainText(
+		`Search: “${ EMAIL }”`
+	);
+	await expect( entry ).toContainText( 'CSV' );
+	await expect( entry ).toContainText( /\d+ submissions?/ );
+	await expect( entry ).toContainText( /\d+ (B|KB)/ );
+	await expect( entry ).toContainText( 'admin' );
+	await expect( entry.locator( '.corex-export__entry-file' ) ).toHaveText(
+		/^Expires .*\d{4}$/
+	);
+
+	const measured = await recent.evaluate( ( section ) => {
+		const box = ( node ) => node.getBoundingClientRect();
+		const size = ( node ) =>
+			parseFloat( window.getComputedStyle( node ).fontSize );
+		const first = section.querySelector( '.corex-export__entry' );
+		const lines = Array.from(
+			first.querySelector( '.corex-export__entry-text' ).children
+		);
+		const buttons = Array.from(
+			first.querySelectorAll( '.corex-export__entry-actions button' )
+		);
+
+		return {
+			what: size( lines[ 0 ] ),
+			facts: size( lines[ 1 ] ),
+			file: size( lines[ lines.length - 1 ] ),
+			lineGaps: lines
+				.slice( 1 )
+				.map( ( line, index ) =>
+					Math.round( box( line ).top - box( lines[ index ] ).bottom )
+				),
+			textStartsWithHeading:
+				Math.round( box( lines[ 0 ] ).left ) ===
+				Math.round( box( section.querySelector( 'h3' ) ).left ),
+			buttonHeights: buttons.map( ( node ) =>
+				Math.round( box( node ).height )
+			),
+			// A label wider than its button runs past the edge of the dialog.
+			clipped: buttons.filter(
+				( node ) => node.scrollWidth > node.clientWidth + 1
+			).length,
+			pastTheEdge: buttons.filter(
+				( node ) => box( node ).right > box( section ).right + 1
+			).length,
+		};
+	} );
+	expect( measured.what ).toBe( 14 );
+	expect( measured.facts ).toBe( 14 );
+	expect( measured.file ).toBe( 12 );
+	expect( new Set( measured.lineGaps ), 'one gap between lines' ).toEqual(
+		new Set( [ 4 ] )
+	);
+	expect( measured.textStartsWithHeading ).toBe( true );
+	expect( measured.buttonHeights ).toHaveLength( 2 );
+	expect( Math.min( ...measured.buttonHeights ) ).toBeGreaterThanOrEqual(
+		24
+	);
+	expect( measured.clipped ).toBe( 0 );
+	expect( measured.pastTheEdge ).toBe( 0 );
+
+	// Deleting asks first, and the answer focus lands on is the safe one.
+	await entry.getByRole( 'button', { name: 'Delete', exact: true } ).click();
+	const asking = entry.getByRole( 'group', { name: 'Delete this file?' } );
+	await expect(
+		asking.getByRole( 'button', { name: 'Keep it' } )
+	).toBeFocused();
+	await asking.getByRole( 'button', { name: 'Delete file' } ).click();
+
+	await expect( entry ).toHaveClass( /is-deleted/ );
+	await expect( entry.locator( '.corex-export__entry-file' ) ).toHaveText(
+		/^Deleted by admin, /
+	);
+	await expect( entry.getByRole( 'button' ) ).toHaveCount( 0 );
+	await expect(
+		recent.getByRole( 'heading', { name: 'Recent exports' } )
+	).toBeFocused();
+} );
+
+/**
  * The export dialog's spacing, measured (spec 103, FR-034).
  *
  * WordPress gives a checkbox and a radio a negative top margin, for sitting in a line of text. In

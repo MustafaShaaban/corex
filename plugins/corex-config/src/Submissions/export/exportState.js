@@ -368,3 +368,138 @@ export function fileFrom( artifact ) {
 		type: artifact.content_type || 'text/csv;charset=utf-8',
 	} );
 }
+
+/**
+ * What a past export covered, in words (FR-028): the rows that were ticked, the filters that were
+ * in force, or everything.
+ *
+ * @param {Object}   entry    One export from the history.
+ * @param {Function} describe Turns the inbox's filters into words; `describeFilters`, with the
+ *                            forms and statuses the dialog knows.
+ * @return {string} What it covered.
+ */
+export function coverageOf( entry, describe ) {
+	const words = [ scopeInWords( entry, describe ) ];
+
+	if ( entry.include_test ) {
+		words.push( __( 'with tests', 'corex' ) );
+	}
+
+	return words.join( ', ' );
+}
+
+function scopeInWords( entry, describe ) {
+	if ( entry.scope === 'selected' ) {
+		const count = ( entry.selected_ids || [] ).length;
+
+		return sprintf(
+			/* translators: %s: how many inbox rows were ticked. */
+			_n( '%s selected row', '%s selected rows', count, 'corex' ),
+			count.toLocaleString()
+		);
+	}
+	if ( entry.scope !== 'filtered' ) {
+		return __( 'Everything', 'corex' );
+	}
+
+	const query = entry.query || {};
+	const filters = describe( {
+		...query,
+		dateFrom: query.date_from,
+		dateTo: query.date_to,
+	} );
+
+	return filters.length > 0
+		? filters.join( ', ' )
+		: __( 'Everything in view, no filters', 'corex' );
+}
+
+const BYTES_IN_A_KILOBYTE = 1024;
+
+/**
+ * A file's size as a person reads it. An export made before sizes were kept has none, and says
+ * nothing rather than "0 B".
+ *
+ * @param {number} bytes The size in bytes.
+ * @return {string} For example "48 KB", or '' when the size is not known.
+ */
+export function sizeOf( bytes ) {
+	const size = Number( bytes ) || 0;
+
+	if ( size <= 0 ) {
+		return '';
+	}
+	if ( size < BYTES_IN_A_KILOBYTE ) {
+		/* translators: %s: a file size in bytes. */
+		return sprintf( __( '%s B', 'corex' ), size.toLocaleString() );
+	}
+	if ( size < BYTES_IN_A_KILOBYTE * BYTES_IN_A_KILOBYTE ) {
+		return sprintf(
+			/* translators: %s: a file size in kilobytes. */
+			__( '%s KB', 'corex' ),
+			Math.round( size / BYTES_IN_A_KILOBYTE ).toLocaleString()
+		);
+	}
+
+	return sprintf(
+		/* translators: %s: a file size in megabytes. */
+		__( '%s MB', 'corex' ),
+		( size / BYTES_IN_A_KILOBYTE / BYTES_IN_A_KILOBYTE ).toLocaleString(
+			undefined,
+			{ maximumFractionDigits: 1 }
+		)
+	);
+}
+
+/**
+ * A format by the name a person knows it by.
+ *
+ * @param {string} [format] `xlsx`, `csv`, or one added later.
+ * @return {string} Its name.
+ */
+export function formatName( format = 'csv' ) {
+	return format === 'xlsx'
+		? __( 'Excel', 'corex' )
+		: String( format ).toUpperCase();
+}
+
+/**
+ * What became of a past export's file (FR-028 to FR-030): when it expires, that it expired, who
+ * deleted it, or that there is none, because the export did not finish or the file is gone.
+ *
+ * @param {Object}   entry      One export from the history.
+ * @param {Function} formatDate Turns a stored date into one a person reads.
+ * @return {string} One line.
+ */
+export function fileNoteOf( entry, formatDate ) {
+	if ( entry.state === 'deleted' ) {
+		return entry.removed_by_name
+			? sprintf(
+					/* translators: 1: the person who deleted an exported file. 2: when. */
+					__( 'Deleted by %1$s, %2$s', 'corex' ),
+					entry.removed_by_name,
+					formatDate( entry.removed_at )
+			  )
+			: sprintf(
+					/* translators: %s: when an exported file was deleted. */
+					__( 'Deleted %s', 'corex' ),
+					formatDate( entry.removed_at )
+			  );
+	}
+	if ( entry.state === 'expired' ) {
+		return sprintf(
+			/* translators: %s: the date an exported file expired. */
+			__( 'Expired %s. It can no longer be downloaded.', 'corex' ),
+			formatDate( entry.expires_at )
+		);
+	}
+	if ( entry.state === 'pending' ) {
+		return __( 'No file to download.', 'corex' );
+	}
+
+	return sprintf(
+		/* translators: %s: the date an exported file will be removed. */
+		__( 'Expires %s', 'corex' ),
+		formatDate( entry.expires_at )
+	);
+}

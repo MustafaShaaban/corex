@@ -82,9 +82,24 @@ Under **Format**, choose **Excel workbook (.xlsx)** or **CSV (.csv)**. A workboo
 numbers, and a frozen heading row. A CSV opens correctly in a spreadsheet, with a choice of separator: comma,
 semicolon or tab.
 
-The dialog shows the export's progress and saves the file when it is ready; there is nothing to refresh. **Recent
-exports** lists earlier ones, each with **Save it again**. History records the actor, scope, columns, row count, and
-time, while the shared activity stream records the compliance event without copying submitted values.
+The dialog shows the export's progress and saves the file when it is ready; there is nothing to refresh. History
+records the actor, scope, columns, row count, and time, while the shared activity stream records the compliance event
+without copying submitted values.
+
+### Recent exports
+
+Under the form, **Recent exports** lists what was exported before: your own exports, or everybody's when you may
+manage every submission. Each entry says what it covered (the ticked rows, the filters in words, or everything), its
+format, how many submissions, how large the file is, who made it and when, and what became of the file:
+
+- **Expires** on a date: the file is kept, and **Download** saves it again.
+- **Expired**: the file passed its retention and can no longer be downloaded. The entry stays.
+- **Deleted by** somebody, on a date. The entry stays.
+- **No file to download**: the export did not finish, or its file is no longer on the server.
+
+An exported file is kept for 30 days from the day it was made. The daily retention sweep then removes the file and
+leaves the entry. **Delete** removes a file sooner, after asking; the activity stream records who deleted it. The list
+shows the five newest; a link under them, which says how many more there are, shows the rest.
 
 In a CSV, a value that begins with `+`, `-`, `=` or `@` is written so a spreadsheet does not run it as a formula.
 Downloads pass through the authorized Inbox endpoint rather than exposing a public uploads URL.
