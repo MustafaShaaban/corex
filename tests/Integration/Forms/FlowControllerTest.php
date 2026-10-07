@@ -189,7 +189,9 @@ it('returns field errors and stores nothing when a published visitor payload is 
 
     expect($response->get_status())->toBe(422)
         ->and($response->get_data()['code'])->toBe('validation_failed')
-        ->and($response->get_data()['errors']['email'])->toBe('required')
+        // This read 'required' until 2026-10-07 and was the defect, asserted: the answer was
+        // emptied by `sanitize_email()` before the rules ran, so the email rule never saw it.
+        ->and($response->get_data()['errors']['email'])->toBe('email')
         ->and(count(get_posts([
             'post_type' => 'corex_submission',
             'post_status' => 'any',

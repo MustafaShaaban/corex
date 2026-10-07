@@ -18,6 +18,7 @@ use Corex\Http\Middleware\Request;
 use Corex\Http\Middleware\Response;
 use Corex\Http\Middleware\SanitizeMiddleware;
 use Corex\Http\ResponseEnvelope;
+use Corex\Support\EmailAnswer;
 use DomainException;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -122,7 +123,7 @@ final readonly class FlowSubmissionController
         ];
         foreach ($schema as $name => $field) {
             $shape[$name] = match ($field->type) {
-                'email' => 'sanitize_email',
+                'email' => EmailAnswer::clean(...),
                 'textarea' => 'sanitize_textarea_field',
                 'url' => 'esc_url_raw',
                 'number', 'rating' => 'floatval',
