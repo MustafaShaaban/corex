@@ -6295,3 +6295,73 @@ owns the directory and could not have seen this.
 **Not checked.** The progress bar on an export of more than one batch was not watched in a
 browser: the browser test exports one submission. A screen reader was not used. The lock was
 exercised by holding it, not by two processes racing.
+
+## #256 — The Excel workbook is written by hand, and a real spreadsheet was asked what it made of it
+
+Date: 2026-10-07 · Spec: 103 (submissions inbox and exports), slice 3 · Status: Final
+
+The owner: "why it is just a CSV why can't i export as modern excel extensions?"
+
+**Written by hand, with no library.** A workbook is a zip of XML, and what the spec asks of one is
+small: typed cells, a bold heading row held in view, filtering on, column widths, a sheet per form.
+`XlsxExportWriter` writes exactly those parts. The Data export already built a one-sheet, all-text
+workbook the same way, with `ZipArchive`. Considered and not done: a spreadsheet library. The ones
+that exist are many times the size of everything else in the plugin, and the shared-host
+distribution carries every dependency.
+
+What that costs is that nothing validates the file but its tests. So the tests read the workbook
+back part by part, and one produced workbook was opened in a real spreadsheet (below).
+
+**What a cell is.** A number is a number cell. A date-time is the spreadsheet's day count with a
+`yyyy-mm-dd hh:mm` format, counted on the clock the value was given in, because a spreadsheet date
+has no timezone. Text is an inline string.
+
+**No formula guard in a workbook.** A string cell is never evaluated; only a formula element is.
+An apostrophe in front of `=HYPERLINK(…)` would be shown, and would be wrong. CSV keeps its guard,
+and that guard has a visible cost that Excel made plain: a phone number written `+20 101 699 9700`
+opens as `'+20 101 699 9700`. That is the right trade for CSV, where the alternative is a
+spreadsheet parsing the value, and it is the reason the dialog now opens on Excel.
+
+**Sheets.** Named for the form, within what a spreadsheet allows: 31 characters, none of
+`[]:*?/\`, and no two the same in any capitals. A sheet for a right-to-left site is laid out right
+to left; that follows the site's language at the moment the file is written.
+
+**Rows are streamed.** A sheet's rows are written to a working file as they are read. Its column
+widths and the range to filter are known only at the end, so the sheet's XML is assembled around
+the rows then. Column widths come from the longest value, between 8 and 58 characters.
+
+**What a real spreadsheet said.** One workbook and one CSV were written by the real writers and
+opened in the Excel installed on the development machine, through its automation interface, and
+closed without saving:
+
+| Asked of Excel | Answer |
+|---|---|
+| The workbook's sheets | `Lead form`, `Careers apply` |
+| The heading cell | bold |
+| The submitted cell | a date, shown as `2026-10-09 18:45`, format `yyyy-mm-dd hh:mm` |
+| An Arabic name | read back exactly |
+| `=HYPERLINK("http://x","click")` in a workbook | text, not a formula |
+| `01016999700` | text, with its leading zero |
+| A budget of 2500 | a number |
+| Filtering | on, over `A1:F4` |
+| The first row | frozen |
+| Sorting by the submitted column | IDs 41, 42, 43: chronological (SC-005) |
+| The CSV, opened as a double-click opens it | six columns, the Arabic name exact, the formula-like value text |
+
+That also closes what slice 2a's notes said had not been done: nobody had opened a file in Excel.
+
+**Not checked.** Only Excel was asked. LibreOffice, Numbers and Google Sheets were not. A workbook
+of more than a few rows was not opened. `dimension` and shared strings are left out, which a
+spreadsheet tolerates and a strict validator may remark on.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `XlsxExportWriterTest`, reading the workbook back | 11 passed |
+| `SubmissionExportServiceTest`, with a workbook of two forms | 26 passed |
+| `SubmissionExportFileTest`, real WordPress: Excel through the route, the job and the download | 8 passed |
+| `submissions-inbox.spec.js`, real browser: an `.xlsx` on one click, then the CSV | 5 passed |
+| `tests/Unit` | 2186 passed |
+| Integration, whole suite | 521 passed |
+| Jest, whole suite | 595 passed |

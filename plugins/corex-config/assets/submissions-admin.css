@@ -581,8 +581,11 @@
 	font-weight: 600;
 }
 
-.corex-admin .corex-export__separator {
-	max-inline-size: 16rem;
+/* The file type, and beside it whatever that type lets a person choose. */
+.corex-admin .corex-export__format {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 16rem));
+	gap: var(--corex-admin-space-sm);
 }
 
 .corex-admin .corex-export__notice {

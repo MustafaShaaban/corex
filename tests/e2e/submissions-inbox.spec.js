@@ -202,7 +202,23 @@ test( 'filters works assigns notes bulk actions and audits personal-data exports
 		.getByText( 'I understand this export contains personal data' )
 		.click();
 
-	// One click, and the file arrives. No refresh, no second button (FR-022).
+	// One click, and the file arrives. No refresh, no second button (FR-022). The dialog offers
+	// an Excel workbook first (FR-016): a zip, which begins with these two bytes.
+	const workbookArriving = page.waitForEvent( 'download' );
+	await start.click();
+	const workbook = await workbookArriving;
+	expect( workbook.suggestedFilename() ).toMatch( /\.xlsx$/ );
+	expect(
+		fs
+			.readFileSync( await workbook.path() )
+			.subarray( 0, 2 )
+			.toString( 'latin1' )
+	).toBe( 'PK' );
+	await expect( dialog.getByText( /^Saved .+\.xlsx\.$/ ) ).toBeVisible();
+
+	// The same export as text, which this test can read.
+	await dialog.getByRole( 'combobox', { name: 'File type' } ).click();
+	await page.getByRole( 'option', { name: 'CSV (.csv)' } ).click();
 	const downloading = page.waitForEvent( 'download' );
 	await start.click();
 	const download = await downloading;

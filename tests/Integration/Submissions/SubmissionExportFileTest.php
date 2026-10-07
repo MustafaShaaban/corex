@@ -277,3 +277,46 @@ it('still has somewhere to write an export on a host that cannot write to upload
         ->and($written)->not->toContain('/uploads/')
         ->and($written)->toStartWith(wp_normalize_path(untrailingslashit(get_temp_dir())));
 });
+
+it('writes a workbook when Excel is asked for, with the form’s questions as its headings', function () {
+    $this->posts[] = $submission = seedContactSubmission(
+        ['name' => 'سلمى', 'email' => 'salma@example.com', 'message' => 'Hello'],
+        '2026-10-07 09:30:00',
+    );
+
+    $export = $this->controller->createExport(exportRouteRequest('POST', '/corex/v1/submissions/exports', [
+        'scope' => 'selected',
+        'selected_ids' => [$submission],
+        'columns' => ['id', 'submitted', 'answers'],
+        'personal_data_acknowledged' => true,
+        'format' => 'xlsx',
+    ]))->get_data()['data']['export'];
+    $this->posts[] = (int) $export['id'];
+    $this->jobs[]  = (int) $export['job_id'];
+
+    $advance = exportRouteRequest('POST', '/corex/v1/submissions/exports/' . $export['id'] . '/advance');
+    $advance->set_url_params(['export' => $export['id']]);
+    $this->controller->advanceExport($advance);
+
+    $stored = $this->container->make(WpSubmissionExportStore::class)->file((int) $export['id']);
+    $this->files[] = (string) ($stored['path'] ?? '');
+
+    $archive = new ZipArchive();
+    $archive->open((string) $stored['path']);
+    $sheet = (string) $archive->getFromName('xl/worksheets/sheet1.xml');
+    $archive->close();
+
+    $download = exportRouteRequest('GET', '/corex/v1/submissions/exports/' . $export['id'] . '/download');
+    $download->set_url_params(['export' => $export['id']]);
+    $artifact = $this->controller->downloadExport($download)->get_data()['data']['artifact'];
+
+    expect($export['format'])->toBe('xlsx')
+        ->and($stored['extension'])->toBe('xlsx')
+        ->and($artifact['filename'])->toEndWith('.xlsx')
+        ->and($artifact['content_type'])->toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        // The stock contact form's labels, the answers, and the time in Cairo as a date: 12:30.
+        ->and($sheet)->toContain('>Name<')
+        ->and($sheet)->toContain('>Message<')
+        ->and($sheet)->toContain('>سلمى<')
+        ->and($sheet)->toContain('<v>46302.52083333</v>');
+});

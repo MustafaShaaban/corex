@@ -38,6 +38,31 @@ const PAUSE_WHEN_IDLE_MS = 700;
 
 const FAILED_STATES = [ 'failed', 'cancelled' ];
 
+function formats() {
+	return [
+		{ value: 'xlsx', label: __( 'Excel workbook (.xlsx)', 'corex' ) },
+		{ value: 'csv', label: __( 'CSV (.csv)', 'corex' ) },
+	];
+}
+
+/**
+ * What each format is for, in a line under the choice.
+ *
+ * @param {string} format The chosen format.
+ * @return {string} The line.
+ */
+function formatDetail( format ) {
+	return format === 'xlsx'
+		? __(
+				'Dates and numbers sort and filter. The headings stay in view. Each form is a sheet of its own.',
+				'corex'
+		  )
+		: __(
+				'Plain text that any spreadsheet or tool opens. Several forms arrive as one file per form, in a zip.',
+				'corex'
+		  );
+}
+
 function separators() {
 	return [
 		{ value: 'comma', label: __( 'Comma', 'corex' ) },
@@ -85,6 +110,7 @@ export default function ExportDialog( {
 		defaultScope( selectedIds.length )
 	);
 	const [ chosen, setChosen ] = useState( DEFAULT_CHOICES );
+	const [ format, setFormat ] = useState( 'xlsx' );
 	const [ separator, setSeparator ] = useState( 'comma' );
 	const [ includeTest, setIncludeTest ] = useState( false );
 	const [ acknowledged, setAcknowledged ] = useState( false );
@@ -178,7 +204,7 @@ export default function ExportDialog( {
 				includeTest,
 				acknowledged,
 				filters: query,
-				format: 'csv',
+				format,
 				separator,
 			} )
 		);
@@ -406,21 +432,32 @@ export default function ExportDialog( {
 
 			<fieldset className="corex-export__group" disabled={ running }>
 				<legend>{ __( 'Format', 'corex' ) }</legend>
-				<p className="corex-export__detail">
-					{ __(
-						'CSV, which opens in Excel, Numbers and Google Sheets. Several forms arrive as one file per form, in a zip.',
-						'corex'
+				<div className="corex-export__format">
+					<div className="corex-field">
+						<span>{ __( 'File type', 'corex' ) }</span>
+						<CorexSelect
+							label={ __( 'File type', 'corex' ) }
+							value={ format }
+							options={ formats() }
+							onChange={ setFormat }
+						/>
+					</div>
+					{ /* A separator is a property of text. A workbook has none to choose. */ }
+					{ format === 'csv' && (
+						<div className="corex-field">
+							<span>{ __( 'Separator', 'corex' ) }</span>
+							<CorexSelect
+								label={ __( 'Separator', 'corex' ) }
+								value={ separator }
+								options={ separators() }
+								onChange={ setSeparator }
+							/>
+						</div>
 					) }
-				</p>
-				<div className="corex-field corex-export__separator">
-					<span>{ __( 'Separator', 'corex' ) }</span>
-					<CorexSelect
-						label={ __( 'Separator', 'corex' ) }
-						value={ separator }
-						options={ separators() }
-						onChange={ setSeparator }
-					/>
 				</div>
+				<p className="corex-export__detail">
+					{ formatDetail( format ) }
+				</p>
 			</fieldset>
 
 			{ personal && (
