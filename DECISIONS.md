@@ -5533,3 +5533,71 @@ What was run:
 | `SendEmailListenerTest` | 5 passed |
 | The unit suite | 2049 passed |
 | `tests/Integration/Forms` and `tests/Integration/Mail`, real WordPress | 40 passed |
+
+## #244 — A second October advisory pass: an override is tested where it can be, and two criticals are bounded
+
+Date: 2026-10-07 · Spec: 056 (dependency security remediation) · Status: Final
+
+The dependency gate passed on 2026-10-04 and failed on every pull request from 2026-10-06, with
+nothing changed in this repository: thirteen advisories had been published against the same tree,
+eleven of them on 2026-10-05 and 2026-10-06. It is not a required check, so four pull requests were
+merged with it red before anybody acted on it (#244, #245, #246, #252; none touched a manifest).
+
+**Closed by taking a patched release (six).** `npm audit fix`, never `--force`: `source-map-js`
+1.2.2, `compression` 1.8.2, `proxy-addr`, `sharp` 0.35.5 and `smol-toml` 1.9.0. `shell-quote` had a
+patched release inside the range its parent asks for and npm would not move it; its lockfile entry
+was removed and resolved again, to 1.12.0. In `docs-app` the same command moved
+`@astrojs/starlight` from 0.41.5 to 0.41.11.
+
+**Closed by an override (two).**
+- `lighthouse` `^13.5.0`. Six `@opentelemetry/instrumentation-*` packages were flagged
+  (GHSA-qqmp-wf37-98f9), all beneath `lighthouse` 12 → `@sentry/node` 9. `lighthouse` 13 brings
+  `@sentry/node` 10 and `puppeteer-core` 25, whose `@puppeteer/browsers` 3.x has no `extract-zip`.
+  So the same override removed the package the two oldest exceptions were for, and both are deleted.
+- `postcss-selector-parser` `^7.1.6` (GHSA-rj75-hqrm-r3gf), in the root and in `docs-app`. Five
+  cssnano plugins and `@stylistic/stylelint-plugin` ask for `^6`, and no 6.x release has the fix.
+
+**This reverses a refusal made three days ago, and here is why.** The `extract-zip` exception
+recorded on 2026-10-04 declined to force `@puppeteer/browsers` 3 under the installed
+`puppeteer-core` 24, because that pair "could not be proven on a chain nothing here runs". The
+objection stands for that pair. The `lighthouse` override is at a different joint: everything
+beneath it is the set upstream ships together, and the one mismatch is above it, where
+`@wordpress/e2e-test-utils-playwright` 1.54 asks for `lighthouse` `^12`. Nothing here imports that
+package. What can be checked was: the tree installs, and that package loads against `lighthouse`
+13, including its `lighthouse/core/index.cjs` import. It has not been run, because nothing runs it.
+
+**An override is tested before it is trusted.** `simple-git` `^4.0.2` was the obvious third
+override: four advisories, two critical, all fixed in 4.x. It installed cleanly. Then wp-env's own
+call sequence was run against it and failed on its first line — `SimpleGit is not a function`.
+`@wordpress/env` 11.16.0 calls `require( 'simple-git' )( … )`, and 4.x exports an object. The
+override would have turned a red gate green by breaking `npm run env:start`. It was removed.
+
+**Bounded (five).** The four `simple-git` advisories and `sprintf-js`. `sprintf-js` has no patched
+release, and its code is not reached: only `js-yaml`'s command-line entry point loads `argparse`.
+The `simple-git` four run when a developer starts wp-env, on input that comes from `wp-env.json`
+in this repository, and a person who can edit that file can already run commands through wp-env's
+`lifecycleScripts`. Their exposure is recorded as `local-dev-server`, which is what the policy
+requires for a critical finding to be excepted at all: no workflow uses wp-env and nothing under
+`node_modules` ships. They are reviewed on 2026-11-30, a month before the others. Removing
+`@wordpress/env` was not considered: it is a documented way to run CoreX.
+
+**`npm dedupe` was run and thrown away.** It was meant to hoist `simple-git` back to where it sat
+before the override was tried, and it changed twenty-five unrelated versions, ESLint among them.
+`simple-git` stays nested under `@wordpress/env`; the exceptions name that path.
+
+What was run, on the final tree:
+
+| Check | Result |
+|---|---|
+| `npm run verify:dependencies` | PASS — Composer 0, docs site 0, root 6 findings under 6 exceptions |
+| `npm run build`, compared file by file with a build from `main`'s lockfile | 169 files, byte-identical |
+| `npm run lint:css`, `npm run lint:js` | clean |
+| `npm run test:js -- --no-cache` | 535 passed in 57 suites |
+| The unit suite | 2049 passed |
+| `docs-app`: `npm run build`, compared with a build from `main`'s lockfile | 924 pages both times; every page differs because one stylesheet's hashed name changed, and that stylesheet differs by rules Starlight 0.41.11 adds |
+| `wp-env --version` | 11.16.0; the CLI loads |
+
+**Not done.** `wp-env start` was not run against the final tree; Docker is installed on the
+machine this was done on and starting containers was not part of the task. The integration and
+browser suites were left to CI. `@wordpress/scripts` 36, which would retire both overrides, is
+still a separate toolchain upgrade (spec 056, US3).

@@ -92,6 +92,11 @@ On `main` since v0.43.0, and not in a release yet:
 - **A form other than `contact` is no longer emailed through the contact template** (DECISIONS
   #243). The default listener named `contact-notification` for every form; with CoreX Mail active
   the template replaced the generated body, so other forms' fields never reached the email.
+- **The dependency gate passes again** (DECISIONS #244). Thirteen advisories were published
+  against a tree that had not moved and the gate failed on every pull request from 2026-10-06.
+  Six are closed by updates and two by overrides; five have no release to take and are bounded,
+  four on `simple-git` and one on `sprintf-js`. The two `extract-zip` exceptions are gone with the
+  package. All 169 built assets are byte-identical to the ones built before the pass.
 
 Released in v0.43.0:
 
@@ -225,12 +230,17 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   block styles for CoreX blocks that are not on the page; a real 404 does not. Structurally
   unreachable from here — `wp_should_load_separate_core_block_assets()` returns false on `is_admin()`
   before its own filter runs. Measured in DECISIONS #222.
-- Three bounded dependency exceptions, each with a named upstream trigger: `extract-zip` twice
-  (GHSA-jmr9-qjv8-65gv and its sibling GHSA-7pqw-9j4j-h8q3, which must be removed together) and
-  `braces` (GHSA-vfj7-8cjw-p6xm). None has a patched release to take. `extract-zip` is installed
-  and never executed; `braces` runs in the linter and the build, on patterns that come only from
-  tool defaults. The `extract-zip` pair would clear with `@wordpress/scripts` 36, a toolchain major
-  that has not been attempted (DECISIONS #226, #227).
+- Six bounded dependency exceptions, each with a named upstream trigger (DECISIONS #227, #244).
+  Four are on `simple-git` and its argument parser, two of them rated critical: it runs when a
+  developer starts wp-env, the fix is in a major `@wordpress/env` cannot use yet, and what it is
+  given comes from `wp-env.json` in this repository. They are reviewed on 2026-11-30. One is
+  `sprintf-js`, installed and not reached. One is `braces` (GHSA-vfj7-8cjw-p6xm), which runs in the
+  linter and the build on patterns that come only from tool defaults. None has a release this tree
+  can take.
+- **Two overrides hold packages above what their parents ask for**: `lighthouse` at 13 and
+  `postcss-selector-parser` at 7.1.6, in the root and in `docs-app`. Both go when
+  `@wordpress/scripts` 36 is taken, a toolchain major that has not been attempted
+  (Dependabot's #240 proposes it).
 - **Something behind `GET corex/v1/flows` threw on 2026-10-04, and nobody knows what.** Three
   `submissions-inbox` specs in a row got "Request could not be processed." on #211, with nothing
   else running, straight after a seed that had succeeded. Every exception the flow code raises on

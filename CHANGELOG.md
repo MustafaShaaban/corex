@@ -44,6 +44,15 @@ All notable changes to Corex are documented here. The format follows
   failures against theirs. The resolver reads from the right now — the nearest hop that is not
   itself trusted — and stops at an entry that is not an address. A site with trusted-proxy mode off
   was not affected (DECISIONS #242).
+- **Dependency advisories, a second October pass.** Thirteen advisories were published against a
+  tree that had not moved, eleven of them on 2026-10-05 and 2026-10-06, and the gate failed on
+  every pull request. Six are closed by taking patched releases (`source-map-js`, `compression`,
+  `proxy-addr`, `shell-quote`, `sharp`, `smol-toml`). Two are closed by overrides: `lighthouse` 13
+  replaces the six `@opentelemetry` instrumentation packages that were flagged and removes
+  `extract-zip` from the tree, so its two exceptions are deleted; `postcss-selector-parser` is held
+  at 7.1.6. Five have no release this tree can take and are bounded: four on `simple-git`, which
+  `@wordpress/env` cannot yet use at the fixed major, and one on `sprintf-js`. All are in build,
+  test and local development tooling; none is in a built asset (DECISIONS #244).
 
 ### Client impact
 
@@ -81,6 +90,13 @@ Read this before taking the release.
   `contact-notification` template and relied on it for its other forms gives those forms an Email
   Studio route on `forms.<slug>.submitted`, which is tried before this default. The `contact` form,
   and any site without CoreX Mail, sees no change.
+- **The dependency pass changes nothing a site serves.** Every built script and stylesheet is
+  byte-identical to the ones built before it. For a client repository it is `package.json`, the two
+  lockfiles and `docs-app/package.json`, all framework-owned: run `npm ci` after the merge.
+- **`npm run env:start` carries four open `simple-git` advisories**, two rated critical, that
+  `@wordpress/env` has no fixed release for. They concern what `simple-git` is given, which here is
+  `wp-env.json`. A client repository that adds a git source to its own wp-env configuration should
+  name only repositories it trusts.
 
 ## [0.43.0] — 2026-10-04
 
