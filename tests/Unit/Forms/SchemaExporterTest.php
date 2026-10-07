@@ -37,7 +37,7 @@ it('exports each field with the same name, type, required flag, and rules', func
     expect($exported[0]['rules'])->toBe([
         ['rule' => 'required', 'params' => []],
         ['rule' => 'email', 'params' => []],
-        ['rule' => 'max', 'params' => ['120']],
+        ['rule' => 'max_length', 'params' => ['120']],
     ]);
 
     expect($exported[1]['required'])->toBeFalse();
@@ -53,7 +53,7 @@ it('produces a JSON-serializable list (so it round-trips to the client)', functi
 
     $decoded = json_decode((string) $json, true);
     expect($decoded[0]['name'])->toBe('name');
-    expect($decoded[0]['rules'][1])->toBe(['rule' => 'min', 'params' => ['2']]);
+    expect($decoded[0]['rules'][1])->toBe(['rule' => 'min_length', 'params' => ['2']]);
 });
 
 it('returns an empty list for a form with no fields', function () {

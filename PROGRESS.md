@@ -46,7 +46,7 @@ the mode in it and with a way to take every later release by merging.
 
 One dependency pull request is held: #240, `@wordpress/scripts` 34 → 36, a toolchain major that
 wants its own verified pass. It would retire both overrides listed under "Open, and not hidden".
-Three routine Dependabot pull requests are open beside it (#241, #242, #243).
+One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`).
 
 ## Recently landed
 
@@ -68,6 +68,11 @@ On `main` since v0.43.1, and not in a release yet:
   check reports that as `REMOVED`, not drift. The dependency advisory check runs in the
   framework's repository only, and CodeQL there or in a public client. Found by creating the
   first client repository from v0.43.0.
+- **`max:N` and `min:N` follow the field, not the answer** (#250, DECISIONS #249). They compared
+  any all-digit answer as a number, so a message bounded by `max:300` refused `2025`. The schema
+  resolver now turns a bound on a field that is not a number into the matching length rule, which
+  is the one place both the server and the browser read. A quantity declared only as `text` loses
+  its numeric bound until it declares `numeric`; the changelog's client impact says so.
 - **The add-on endpoints no longer do it either** (#256, DECISIONS #246): newsletter subscribe,
   bookings, careers, account registration and profile update, and the Guides support request. The
   registration one created an account under the rewritten address. Subscribe and registration are

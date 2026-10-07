@@ -21,6 +21,12 @@ use InvalidArgumentException;
  */
 final class SchemaResolver
 {
+    /** Field types whose answer is a number, so a bound on them compares the number. */
+    private const NUMBER_TYPES = ['number', 'rating'];
+
+    /** What `max` and `min` become on a field whose answer is not a number. */
+    private const LENGTH_RULES = ['max' => 'max_length', 'min' => 'min_length'];
+
     public function __construct(private readonly RuleRegistry $rules)
     {
     }
@@ -47,11 +53,12 @@ final class SchemaResolver
                 throw new InvalidArgumentException(sprintf('Duplicate form field name: "%s".', $name));
             }
 
-            $rules = $this->parseRules($definition['rules'] ?? []);
+            $type  = (string) ($definition['type'] ?? 'text');
+            $rules = $this->boundsForField($type, $this->parseRules($definition['rules'] ?? []));
 
             $schema[$name] = new FieldSchema(
                 $name,
-                (string) ($definition['type'] ?? 'text'),
+                $type,
                 (string) ($definition['label'] ?? (string) $key),
                 $rules,
                 $this->isRequired($rules),
@@ -155,6 +162,29 @@ final class SchemaResolver
         }
 
         return $parsed;
+    }
+
+    /**
+     * Settles what `max:N` and `min:N` measure, from the field instead of from the answer.
+     *
+     * A field is a number when its type is one or it declares `numeric`; a bound there compares
+     * the number. On every other field the bound becomes the matching length rule, so `2025` in a
+     * message is four characters. Deciding it here hands the server and the browser one rule.
+     *
+     * @param list<array{rule:string,params:array<int,string>}> $rules
+     *
+     * @return list<array{rule:string,params:array<int,string>}>
+     */
+    private function boundsForField(string $type, array $rules): array
+    {
+        if (in_array($type, self::NUMBER_TYPES, true) || in_array('numeric', array_column($rules, 'rule'), true)) {
+            return $rules;
+        }
+
+        return array_map(
+            static fn (array $rule): array => ['rule' => self::LENGTH_RULES[$rule['rule']] ?? $rule['rule']] + $rule,
+            $rules,
+        );
     }
 
     /**
