@@ -42,6 +42,14 @@ it is added and a stray file at the root is not silently yours.
 framework release never ships a file under `sites/`, so a merge cannot overwrite your site. The
 only way to get a conflict is to have changed something the framework also changes.
 
+**Two framework files a client repository may delete.** `.github/dependabot.yml` and
+`.github/CODEOWNERS` act on whatever repository they are in, and neither can be told to act only
+in the framework's. Left in place, Dependabot opens pull requests against the framework's
+lockfiles every week — which a client must never merge, because that is drift — and CODEOWNERS
+asks the framework's reviewer to review the client's work. `.github/repository-ownership.json`
+lists both under `clientMayRemove`. Deleting one is not drift: the check prints `REMOVED` for it
+and passes. Editing one still is.
+
 That includes the root documents. `README.md`, `PROGRESS.md`, `DECISIONS.md` and `CHANGELOG.md` at
 the root are the framework's. The client's own are in `sites/acme/`, generated for you. Design
 handoffs, notes and anything else of the client's belong under `sites/acme/` too, which has its own
@@ -60,11 +68,23 @@ git switch -c main
 git remote rename origin upstream
 git remote set-url --push upstream DISABLED_DO_NOT_PUSH_TO_COREX
 git remote add origin git@github.com:your-account/acme.git
+git rm -q .github/dependabot.yml .github/CODEOWNERS
+git commit -q -m "Remove the framework's Dependabot and CODEOWNERS files"
 git push -u origin main
 ```
 
 `upstream` is now the framework, fetch-only: the push address is deliberately not an address, so a
 push to it fails instead of reaching the framework.
+
+The two files are removed before the first push on purpose. Dependabot acts on its configuration
+within minutes of seeing it, and its pull requests each start the whole of the framework's CI.
+
+**What the new repository shows on that push.** The framework's CI runs there on every push and
+pull request, as it does in the framework's own repository: lint, the PHP and JavaScript suites,
+the integration and browser tests. These do not run in a client repository, because nothing they
+report can be acted on there: the scheduled runs, the documentation deploy, and the dependency
+advisory check, whose findings are in the framework's lockfiles. CodeQL runs only when the
+repository is public; code scanning is not available to a private one without a paid plan.
 
 ```bash
 git remote -v
@@ -273,6 +293,15 @@ git commit
 During a merge, `--theirs` is the release being merged. If the edit was deliberate, it belongs in a
 recorded exception instead — see the next section.
 
+One conflict is expected, rarely. If a release changes `.github/dependabot.yml` or
+`.github/CODEOWNERS` and this repository deleted it, git reports that one side modified the file
+and the other deleted it. Keep it deleted:
+
+```bash
+git rm .github/dependabot.yml
+git commit
+```
+
 A conflict in `corex-baseline.json` cannot happen from a release, because no release ships that
 file.
 
@@ -323,6 +352,25 @@ update:
 3. Everything it lists as `DRIFT` is a local edit to a framework file. Edits that existed only to
    make the framework's linters, test runner or repository checks accept a client site are no
    longer needed: take the framework's version of each. Record anything deliberate as an exception.
+
+## A client repository created from v0.43.1 or earlier
+
+It still has the framework's `.github/dependabot.yml` and `.github/CODEOWNERS`, and Dependabot is
+opening pull requests in it. After taking a release that lists them under `clientMayRemove`:
+
+```bash
+git rm .github/dependabot.yml .github/CODEOWNERS
+git commit -m "Remove the framework's Dependabot and CODEOWNERS files"
+npm run verify:framework
+```
+
+```text
+REMOVED	.github/CODEOWNERS	the framework keeps this for its own repository
+REMOVED	.github/dependabot.yml	the framework keeps this for its own repository
+framework	PASS	0 drifted	0 accepted exceptions	baseline v1.2.4 <commit>
+```
+
+Close any Dependabot pull requests already open without merging them.
 
 ## Which update route applies
 

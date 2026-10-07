@@ -23,13 +23,23 @@ import {
 	parseBaseline,
 	sharedCommit,
 } from './framework-baseline.mjs';
-import { loadOwnership, resolveRole } from './repository-ownership.mjs';
+import {
+	loadOwnership,
+	mayBeRemovedByClient,
+	resolveRole,
+} from './repository-ownership.mjs';
 
 const SITES_DIRECTORY = 'sites';
 const BASELINE_FILE = 'corex-baseline.json';
 const RECORD_HINT =
 	'record one with `npm run verify:framework -- --record <release tag>`';
-const NOTHING_FOUND = { drift: [], excepted: [], stale: [], warnings: [] };
+const NOTHING_FOUND = {
+	drift: [],
+	excepted: [],
+	stale: [],
+	removed: [],
+	warnings: [],
+};
 
 const git = ( root, args ) => {
 	const run = spawnSync( 'git', args, {
@@ -155,6 +165,30 @@ const changedSince = ( root, commit ) => [
 	...gitPaths( root, [ 'ls-files', '--others', '--exclude-standard', '-z' ] ),
 ];
 
+/**
+ * The framework files this repository has deleted that its ownership map says it may.
+ *
+ * Deleted, as git sees it against the baseline, whether or not the deletion is committed. A file
+ * on that list which is still present and differs is not here, and is drift like any other.
+ *
+ * @param {string} root      Absolute path of the repository.
+ * @param {string} commit    The baseline commit.
+ * @param {Object} ownership The parsed ownership map.
+ * @return {string[]} Their paths.
+ */
+const removedSince = ( root, commit, ownership ) =>
+	gitPaths( root, [
+		'diff',
+		'--name-only',
+		'--no-renames',
+		'--diff-filter=D',
+		'-z',
+		commit,
+		'--',
+	] )
+		.filter( ( file ) => mayBeRemovedByClient( ownership, file ) )
+		.sort();
+
 const releaseWarnings = ( root, { release, commit } ) => {
 	const tagged = commitOf( root, `refs/tags/${ release }` );
 
@@ -171,10 +205,13 @@ const releaseWarnings = ( root, { release, commit } ) => {
 const compare = ( root, ownership ) => {
 	const records = usableRecords( root );
 	const [ { release, commit } ] = records;
+	const removed = removedSince( root, commit, ownership );
 	const found = evaluateDrift( {
 		ownership,
 		exceptions: records.flatMap( ( record ) => record.exceptions ),
-		changed: changedSince( root, commit ),
+		changed: changedSince( root, commit ).filter(
+			( file ) => ! removed.includes( file )
+		),
 	} );
 	const clean = found.drift.length === 0 && found.stale.length === 0;
 
@@ -182,6 +219,7 @@ const compare = ( root, ownership ) => {
 		status: clean ? 'pass' : 'fail',
 		baseline: { release, commit },
 		...found,
+		removed,
 		warnings: releaseWarnings( root, { release, commit } ),
 		failures: [],
 	};
@@ -243,6 +281,10 @@ const findingLines = ( result ) => [
 	...result.failures.map( ( failure ) => `FAIL\t${ failure }` ),
 	...result.warnings.map( ( warning ) => `WARN\t${ warning }` ),
 	...result.drift.map( ( file ) => `DRIFT\t${ file }` ),
+	...result.removed.map(
+		( file ) =>
+			`REMOVED\t${ file }\tthe framework keeps this for its own repository`
+	),
 	...result.stale.map(
 		( { path: file } ) =>
 			`STALE\t${ file }\tno longer differs — delete the exception`

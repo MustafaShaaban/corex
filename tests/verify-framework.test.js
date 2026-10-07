@@ -59,6 +59,8 @@ const clientRepository = () => {
 	write( root, '.github/repository-ownership.json', ownershipMap );
 	write( root, 'README.md', 'The framework.\n' );
 	write( root, 'plugins/core/core.php', '<?php // framework\n' );
+	// A file the framework keeps for its own repository, which a client is allowed to remove.
+	write( root, '.github/dependabot.yml', 'version: 2\n' );
 	const frameworkCommit = commitAll( root, 'framework' );
 	git( root, 'tag', 'v1.0.0' );
 
@@ -153,6 +155,44 @@ describe( 'a changed framework file', () => {
 		const outcome = verify( root );
 
 		expect( outcome.stdout ).toContain( 'DRIFT\tplugins/core/core.php' );
+		expect( outcome.status ).toBe( 1 );
+	} );
+} );
+
+/**
+ * Dependabot reads `.github/dependabot.yml` from whatever repository it finds it in, and cannot be
+ * told "only in the framework's". A client repository inherited the file and got pull requests
+ * against framework-owned lockfiles every week, which it must never merge and could not stop
+ * without editing a framework file (#239). The ownership map names the files a client may delete;
+ * deleting one is not drift, and editing one still is.
+ */
+describe( 'a file the framework keeps for its own repository', () => {
+	it( 'may be removed by a client, and the check says that it was', () => {
+		const { root } = clientRepository();
+		fs.rmSync( path.join( root, '.github', 'dependabot.yml' ) );
+		const outcome = verify( root );
+
+		expect( outcome.stdout ).toContain( 'REMOVED\t.github/dependabot.yml' );
+		expect( outcome.stdout ).toContain( 'framework\tPASS\t0 drifted' );
+		expect( outcome.status ).toBe( 0 );
+	} );
+
+	it( 'passes the same way once the removal is committed', () => {
+		const { root } = clientRepository();
+		git( root, 'rm', '-q', '.github/dependabot.yml' );
+		commitAll( root, 'no Dependabot here' );
+		const outcome = verify( root );
+
+		expect( outcome.stdout ).toContain( 'REMOVED\t.github/dependabot.yml' );
+		expect( outcome.status ).toBe( 0 );
+	} );
+
+	it( 'is still drift when it is edited instead of removed', () => {
+		const { root } = clientRepository();
+		write( root, '.github/dependabot.yml', 'version: 2\nupdates: []\n' );
+		const outcome = verify( root );
+
+		expect( outcome.stdout ).toContain( 'DRIFT\t.github/dependabot.yml' );
 		expect( outcome.status ).toBe( 1 );
 	} );
 } );

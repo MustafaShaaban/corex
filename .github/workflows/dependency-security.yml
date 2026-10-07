@@ -24,15 +24,16 @@ on:
 permissions:
   contents: read
 
-# Every job below carries the same condition: a scheduled run happens in the framework's own
-# repository and nowhere else. A client repository is a copy of this one and inherits this file,
-# and the schedule exists to catch *this* repository drifting against the world — which is not a
-# client's to find out, nightly, in a repository whose subject is one site (spec 102). Pull-request
-# and push runs are unaffected. The repository is written out because an expression cannot read
+# This job runs in the framework's own repository and nowhere else, on every kind of event. A client
+# repository is a copy of this one and inherits this file. What the audit reports is in the
+# framework's lockfiles, and the two remedies — a newer package, or an exception in the policy
+# file — are both edits to framework-owned paths. A client can make neither, so there it was a red
+# check on every pull request, waiting for a framework release (issue #239). It used to be confined
+# for scheduled runs only. The repository is written out because an expression cannot read
 # `.github/repository-ownership.json`; `tests/repository-ownership.test.js` holds the two together.
 jobs:
   audit:
-    if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
+    if: github.repository == 'MustafaShaaban/corex'
     name: Validate dependency advisories
     runs-on: ubuntu-latest
     steps:

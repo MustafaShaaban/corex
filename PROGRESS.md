@@ -63,6 +63,11 @@ On `main` since v0.43.1, and not in a release yet:
   nothing asked while the selection is the mode the site has declared. Found on the way: a site
   that only inherits its mode could not declare it, because the button was disabled for it.
   Checked rendered in dark and light at 1280 and 782 wide, as a declared and as an inherited mode.
+- **A client repository no longer inherits what it cannot use** (#239, DECISIONS #248). It may
+  delete the framework's Dependabot configuration and CODEOWNERS, and the unmodified-framework
+  check reports that as `REMOVED`, not drift. The dependency advisory check runs in the
+  framework's repository only, and CodeQL there or in a public client. Found by creating the
+  first client repository from v0.43.0.
 - **The add-on endpoints no longer do it either** (#256, DECISIONS #246): newsletter subscribe,
   bookings, careers, account registration and profile update, and the Guides support request. The
   registration one created an account under the rewritten address. Subscribe and registration are
