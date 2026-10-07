@@ -6275,13 +6275,22 @@ What was run:
 | `exportState.test.js`: the filters in words, the scopes and their counts, the columns, when the export can start | 32 passed |
 | `corexDialog.test.js` | 7 passed |
 | `SubmissionExportServiceTest`: counts per scope, and a step for the person who made the export and nobody else | 25 passed |
-| `SubmissionExportFileTest`, real WordPress: an export finished by the advance route alone; a held lock stops a step and is released after one; a stale lock is taken over; the preview route's counts | 6 passed |
+| `SubmissionExportFileTest`, real WordPress: an export finished by the advance route alone; a held lock stops a step and is released after one; a stale lock is taken over; the preview route's counts; somewhere to write when uploads cannot be written | 7 passed |
 | `submissions-inbox.spec.js`, a real browser: the count on the chosen scope, the button disabled with its reason until the notice is confirmed, one click, a downloaded file with the questions as headings, Escape, focus back on the Export button | 5 passed |
 | `tests/Unit` | 2174 passed |
-| Integration, whole suite | 519 passed |
+| Integration, whole suite | 520 passed |
 | Jest, whole suite | 595 passed |
 | `lint-js`, `lint-style` | clean |
 | Looked at, rendered: dark and light at 1280, right-to-left dark at 1280, light at 480 | two faults found and fixed: radios stretched by a rule written for text inputs, and the personal-data tag placed before the hint it belongs beside |
+
+**Found by CI, in slice 2a's work.** The browser suite passed here and failed in CI, where nginx and
+php-fpm run as a user that does not own the checkout. The dialog said why, in its own words:
+"CoreX could not create the directory exports are written to." Since slice 2a an export needs a
+directory to write to, and a host that does not let PHP write to uploads had lost exports
+altogether. `ProtectedExportDirectory` now falls back to the system's temporary directory, which
+is not served either. Such a host can still save an export when it is ready, and cannot download
+it again after the system clears its temporary files. Slice 2a's own tests ran as the user who
+owns the directory and could not have seen this.
 
 **Not checked.** The progress bar on an export of more than one batch was not watched in a
 browser: the browser test exports one submission. A screen reader was not used. The lock was

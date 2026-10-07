@@ -251,3 +251,29 @@ it('says how many submissions each choice would export', function () {
         ->and($counts['filtered'])->toBe(2)
         ->and($counts['accessible'])->toBeGreaterThanOrEqual(2);
 });
+/**
+ * Found by the browser suite in CI, where the web server runs as a user that does not own the
+ * uploads directory: every export failed with "could not create the directory". A host with a
+ * read-only filesystem is the same. The export is written to the system's temporary directory
+ * there, which is not served either.
+ */
+it('still has somewhere to write an export on a host that cannot write to uploads', function () {
+    // A place that cannot be a directory: it is already a file. WordPress forgets an error a
+    // filter sets on a path it has already tested, so the path itself has to be the one that fails.
+    $nowhere = __FILE__;
+    $refuse  = static fn (array $uploads): array => ['basedir' => $nowhere, 'path' => $nowhere] + $uploads;
+    add_filter('upload_dir', $refuse);
+
+    try {
+        $path = $this->container->make(\Corex\Config\Export\ExportDirectory::class)->path();
+    } finally {
+        remove_filter('upload_dir', $refuse);
+    }
+
+    $written = wp_normalize_path($path);
+
+    expect(is_dir($path))->toBeTrue()
+        ->and(is_writable($path))->toBeTrue()
+        ->and($written)->not->toContain('/uploads/')
+        ->and($written)->toStartWith(wp_normalize_path(untrailingslashit(get_temp_dir())));
+});

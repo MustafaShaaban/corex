@@ -147,6 +147,9 @@ Read this before taking the release.
 - **An export of several forms is a `.zip`**, holding one `.csv` per form.
 - **An export of nothing is refused** with "There is nothing to export", where it used to produce a
   file holding only headings.
+- **On a host where PHP cannot write to `uploads/`**, an export is written to the system's
+  temporary directory instead. It is still saved by the browser when it is ready; it cannot be
+  downloaded again once the system has cleared its temporary files.
 - **Exported files are written to `uploads/corex-private/exports/`**, the directory a web server is
   told not to serve, and are no longer kept in the database. A backup that takes the database and
   not the uploads directory no longer contains them. An export made before this release still
