@@ -6755,3 +6755,74 @@ What was run:
 
 **Not run.** The sweep was not left to run from WordPress's scheduler; its store was called with a
 cutoff. A screen reader was not used on the history.
+
+## #263 — A message reaches the driver with every field it had, and #150 was closed without that being asked
+
+Date: 2026-10-08 · Issue #150 · Specs: 085 (Phase 6) and 081 (FR-010) · Status: Final
+
+The report, from a client site that sends from three mailboxes: #150 is closed and its defect is
+still there at v0.43.3. The client carries a local patch for it and records the patch as an
+exception to its framework baseline.
+
+**What was true.** `MailService::deliver()` removes invalid recipients, and to do that it builds a
+second `EmailMessage`. It built it from seven positional arguments, the seven the class had when
+the service was written (spec 008). Spec 085 added `from` as the eighth and spec 081 added
+`attachments` as the ninth, both defaulted so that no existing caller had to change. This caller
+did not change, and so it passed neither. `MessageBuilder::send()` is the only caller of
+`deliver()` and the `Mailer` seam sends through the builder, so on every such send the driver
+received a null sender and no attachments, whatever the request carried.
+
+**Why the issue was closed.** It was closed by the merge of pull request #153 (spec 085) and
+released the same day in v0.38.0. The issue's own table listed seven files to change. Tasks T030
+and T031 covered six. The seventh was `MailService`, and nothing in the spec named it. The tests
+(T032, `PerMessageSenderTest`) assert that a request carries a sender and that the queue restores
+it. None asked what the driver was handed. FR-011 and SC-005 were marked met on those. SC-005, "a
+queued message and an immediate one leave from the same address", was even true: both left from
+the configured one. Spec 081 merged an hour later (#154), added its tests to the same file at the
+same two points, and lost its attachments to the same call.
+
+So the issue was closed on a change that was real, tested, and incomplete, and no check between
+the request and `wp_mail()` existed to say so.
+
+**What was chosen.** `deliver()` passes `from` and `attachments`, by name. It is the change the
+client carries as its local patch, written against v0.41.0. By name, because a constructor whose
+tail is reordered then fails instead of putting one value in another's place.
+
+**Rejected: a copy that cannot leave a field out**, by spreading `get_object_vars($message)` into
+the constructor with the three recipient lists replaced. It would carry a tenth field with nobody
+deciding whether that field needs inspecting first, and the sender is the example: it becomes a
+header. A field is carried here on purpose. What stops
+the next one being forgotten is a test: `MailServiceTest` builds a message with every constructor
+parameter set, fails if the class has a parameter the test does not set, and requires the message
+the driver gets to equal the one sent.
+
+**The sender is inspected.** `HeaderGuard` has said since spec 008 that it guards "a subject,
+from, reply-to", and `deliver()` gave it the subject and the reply-to. The driver does clean the
+address, with `sanitize_email()`, and that does not refuse a line break. It removes what it does
+not like and keeps the rest: `"info@example.com\r\nBcc: victim@example.com"` comes back as
+`info@example.comBccvictimexample.com`, which `is_email()` accepts. No header is injected, and the
+message would leave from a domain nobody owns. With the sender in the guard the message is
+refused and logged as `rejected`, as it is for the other two. A sender that is only malformed
+still falls back to the configured address at the driver, as spec 085 decided.
+
+**Not in it: Email Studio.** An operator's reply from the Submissions inbox, a routed email and a
+message composed in Email Studio are built in `EmailStudioSubmissionGateway`,
+`EmailRouteMessageFactory` and `EmailStudioController` with no sender, and `EmailStudioService`
+hands them to the driver without `MailService`. The issue's third mailbox, `contact@` for an
+operator's reply, is that path. It drops nothing, because nothing is set, and choosing a sender
+there is a feature with a setting behind it. It is listed in `PROGRESS.md`.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The new unit tests, on `main` at 390554e1 | 2 failed: sender `null`, attachments `[]`, a sender with a line break `sent` |
+| `tests/Unit/Mail/MailServiceTest.php`, after | 8 passed |
+| One message with a sender and one attachment through the `Mailer` seam on a real install, `main`'s `MailService`, `wp_mail()`'s arguments captured at `pre_wp_mail` | `From: Corex <the configured address>`, attachments `[]` |
+| The same, with this branch's `MailService` | `From: Corex <noreply@example.com>`, attachments: the file's path |
+| The unit suite | 2211 passed |
+
+**Not run here.** The integration suite: this was built in a worktree with no WordPress under it,
+and the install beside it runs another branch. The new test in `MailLifecycleTest` does what the
+probe above did and runs in CI. No message was sent through a relay; `wp_mail()` was stopped at
+`pre_wp_mail` in every run.

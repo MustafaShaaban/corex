@@ -70,6 +70,13 @@ v0.43.2 (DECISIONS #260): the submissions and flow routes now carry a permission
 the same site (DECISIONS #261): `CommandRegistrationTest` asserted the framework's namespace and so
 failed in a client's repository after v0.43.2; it holds in both now.
 
+Unreleased, reported from a client site that runs three mailboxes (issue #150, DECISIONS #263): a
+message's sender and its attachments now reach the mail driver. `MailService::deliver()` rebuilt
+every message without them, so both were accepted and dropped on every send from v0.38.0 to
+v0.43.3, and #150 had been closed with the defect in place. A site that names a sender starts
+sending from it when it takes this, which is the first entry under Client impact. That client
+carries the same change as a local patch and removes it on its next update.
+
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 
 One dependency pull request is held: #240, `@wordpress/scripts` 34 → 36, a toolchain major that
@@ -310,6 +317,11 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **Turnstile and hCaptcha have a verifier and no widget.** They can be chosen and given keys, and
   nothing places their challenge on a form. Choosing one no longer rejects submissions, and the
   admin says it challenges nobody (DECISIONS #258). Placing the widgets belongs with #264.
+- **A message sent from Email Studio cannot name its sender** (#150, the third of its three
+  mailboxes). An operator's reply from the Submissions inbox, a routed email and a message
+  composed in Email Studio are built in `EmailStudioSubmissionGateway`, `EmailRouteMessageFactory` and `EmailStudioController`
+  with no sender, and go to the driver without passing `MailService`. They leave from
+  `mail.from.address`. Read from the code on 2026-10-08, not sent (DECISIONS #263).
 - **Trusted proxies have no field on the Security screen.** The screen's state carries the list and
   saves it back unchanged; nothing draws it. `wp corex security trusted-proxies` is the only way to
   set it (DECISIONS #250).

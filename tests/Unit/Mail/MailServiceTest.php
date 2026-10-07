@@ -120,6 +120,63 @@ it('drops invalid recipients but still delivers to the valid ones', function () 
         ->and($driver->sent[0]->to)->toBe(['good@example.com']); // invalid dropped
 });
 
+/*
+ * What reaches the driver (#150).
+ *
+ * deliver() rebuilds the message, because it has to drop the invalid recipients. Up to v0.43.3 it
+ * rebuilt it from the seven fields the class had when the service was written, so the sender
+ * (spec 085) and the attachments (spec 081) were each threaded from the request to the driver and
+ * lost here, in the one place every send through the Mailer seam passes. Each had tests on both
+ * sides of this method and none across it.
+ */
+it('hands the driver every field the message carried, the sender and the attachments among them', function () {
+    $fields = [
+        'to'          => ['to@example.com'],
+        'cc'          => ['cc@example.com'],
+        'bcc'         => ['bcc@example.com'],
+        'replyTo'     => 'reply@example.com',
+        'subject'     => 'Hi',
+        'body'        => '<p>x</p>',
+        'headers'     => ['X-Campaign' => 'spring'],
+        'from'        => 'info@example.com',
+        'attachments' => [42, 43],
+    ];
+    $parameters = array_map(
+        static fn (ReflectionParameter $parameter): string => $parameter->getName(),
+        (new ReflectionClass(EmailMessage::class))->getConstructor()->getParameters(),
+    );
+    $driver  = fakeDriver();
+    $message = new EmailMessage(...$fields);
+
+    mailService($driver, fakeLogStore())->deliver($message);
+
+    // A field added to the message and not to this list fails here first, so the next one cannot
+    // be dropped the way these two were.
+    expect(array_keys($fields))->toBe($parameters)
+        ->and($driver->sent[0]->from)->toBe('info@example.com')
+        ->and($driver->sent[0]->attachments)->toBe([42, 43])
+        ->and($driver->sent[0])->toEqual($message);
+});
+
+it('rejects a header-injected sender without sending', function () {
+    $driver = fakeDriver();
+    $log    = fakeLogStore();
+
+    $result = mailService($driver, $log)->deliver(new EmailMessage(
+        ['to@example.com'],
+        [],
+        [],
+        null,
+        'Hi',
+        '<p>x</p>',
+        from: "info@example.com\r\nBcc: victim@example.com",
+    ));
+
+    expect($result->status)->toBe('rejected')
+        ->and($driver->sent)->toBe([])
+        ->and($log->records)->toBe(['rejected']);
+});
+
 it('fails without sending when every recipient is invalid', function () {
     $driver = fakeDriver();
     $log    = fakeLogStore();

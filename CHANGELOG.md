@@ -27,9 +27,32 @@ All notable changes to Corex are documented here. The format follows
 - **A download from "Recent exports" that failed said nothing.** It says so now.
 - **An export whose file is no longer on the server is not offered for download.** It was listed
   with a "Download" that could only fail. It reads "No file to download."
+- **A message's sender and its attachments never reached the mail driver** (#150). A sender set
+  with `MailRequest::$from` or `MessageBuilder::from()`, and files added with `attachments` or
+  `attachMedia()`, were accepted, kept across the queue, and dropped on every send: the mail left
+  from `mail.from.address` with nothing attached. `MailService::deliver()` rebuilds each message to
+  remove invalid recipients, and rebuilt it from the seven fields the message had before either
+  was added. In every release from v0.38.0, which announced both, to v0.43.3. What `wp_mail()` was
+  handed on a real install, before and after: `From: Corex <the configured address>` and no
+  files, then `From: Corex <noreply@example.com>` and the file. (DECISIONS #263)
+- **A sender is inspected for header injection** beside the subject and the reply-to. It was not,
+  which did not matter while it never arrived.
 
 ### Client impact
 
+- **Mail starts leaving from the address a message names, with the files it names.** Nothing in
+  the framework sets either, so a site that never set one sees no change. A site whose code sets
+  `from` on a `MailRequest`, or calls `MessageBuilder::from()` or `attachMedia()`, has been sending
+  from `mail.from.address` with nothing attached since v0.38.0, and after this sends what it
+  asked for. Before taking it, check that each address so named is one the site's relay may send
+  from (in FluentSMTP, a configured connection for that address) and that its domain's SPF and
+  DKIM cover it: until now the bug stood between a wrong address and the relay. Attached files
+  count toward the provider's size limit.
+- **A sender containing a line break or another control character is refused.** The message is
+  not sent and is logged as `rejected`, as it already was for a subject or a reply-to.
+- **A client that patched `addons/corex-email/src/MailService.php` to carry these two fields**
+  takes the framework's file as it is and removes its patch and its baseline exception. A patch
+  that added a comment above the constructor call conflicts with this one there.
 - **Exports already on a site start expiring.** The first daily sweep after this is taken removes
   the file of every submissions export made more than 30 days ago, and the stored text of any made
   before v0.43.2. The entries stay. Somebody who needs an old export has to download it first.
