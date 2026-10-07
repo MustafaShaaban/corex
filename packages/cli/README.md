@@ -37,6 +37,14 @@ Targets resolve from the Config engine (`config/app.php`, overridable by options
 | `wp corex make:controller <Name>` | a thin controller | `<base>/Controllers/<Name>Controller.php` |
 | `wp corex make:service <Name>` | a service class | `<base>/Services/<Name>Service.php` |
 
+`<base>`, the namespace and the prefix are chosen in this order:
+
+1. `app.path`, `app.namespace` and `app.prefix` when `app.path` is set: `APP_PATH`, `APP_NAMESPACE` and
+   `APP_PREFIX` in the repository's `.env`.
+2. The client plugin, in a repository with exactly one site under `sites/`: `sites/<client>/<slug>-site/src`,
+   the namespace of its service provider, and the plugin's slug as the prefix.
+3. `wp-content/corex-app`, under `App\` with the prefix `corex`.
+
 The name is normalized to a valid class identifier and the conventional suffix is
 applied once (`make:repository Invoice` and `make:repository InvoiceRepository` both
 produce `InvoiceRepository`). Existing files are **skipped** unless `--force` is

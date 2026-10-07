@@ -192,3 +192,38 @@ it('generates the coming-soon template with the theme, and not without it', func
         ->and(is_file($themeOnly . '/acme-theme/templates/coming-soon.html'))->toBeTrue()
         ->and(is_file($starter . '/acme-theme/templates/coming-soon.html'))->toBeTrue();
 });
+
+/**
+ * The README documented a theme build pipeline — `assets/src/`, `npm run build`, the
+ * `Corex\Assets\*` calls — whether or not the site had one. Only `--starter` generates it (#251).
+ */
+it('documents the theme’s asset pipeline only for a site that has one', function () {
+    $lean = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $lean);
+
+    $starter = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $starter, ['starter' => true]);
+
+    expect((string) file_get_contents($lean . '/README.md'))
+        ->not->toContain('npm run build')
+        ->not->toContain('assets/src')
+        ->and((string) file_get_contents($starter . '/README.md'))
+        ->toContain('## Theme assets')
+        ->toContain('acme-theme/assets/src/{scss,js,images}/')
+        ->toContain('npm run build');
+});
+
+/**
+ * The generated AGENTS.md told a client to follow Spec Kit and said the `make:*` generators write
+ * into the client plugin. Spec Kit writes to the repository root, which the framework owns, and
+ * the generators wrote elsewhere (#251). It now says where each thing goes.
+ */
+it('tells a client where its specs and generated code go', function () {
+    $base = tempSiteBase();
+    siteScaffolder()->scaffold('Acme', $base);
+
+    expect((string) file_get_contents($base . '/AGENTS.md'))
+        ->toContain('acme-site/src')
+        ->toContain('APP_PATH')
+        ->toContain('by hand');
+});

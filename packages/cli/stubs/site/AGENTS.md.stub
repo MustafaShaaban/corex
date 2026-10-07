@@ -47,5 +47,12 @@ prefix `{{ option_prefix }}`. Import Corex base classes; never use the `Corex\` 
 7. Commit. 8. Open a PR. 9. CI + review. 10. Merge to `develop` (staging) → tag/`main` (production).
 
 **One feature = one branch = one spec folder = one PR.** Run the guard skills before presenting/pushing.
-**Never push directly to `develop`/`main`.** Use the `wp corex make:*` generators (they write into this
-client plugin/theme, not the framework). Update docs after any feature.
+**Never push directly to `develop`/`main`.** Update docs after any feature.
+
+**Generators.** `wp corex make:*` writes into `{{ plugin_slug }}/src` under `{{ namespace }}\` while this
+is the only site in the repository. With more than one site, or to send them elsewhere, set `APP_PATH`,
+`APP_NAMESPACE` and `APP_PREFIX` in the repository's `.env`.
+
+**Specs.** Write this site's specs by hand in `specs/<work-item>-<slug>/`. The `/speckit-*` commands
+write to the repository root (`specs/`, `.specify/feature.json`, the root `CLAUDE.md`), which belongs to
+the framework: running them here shows up as drift in `npm run verify:framework`.

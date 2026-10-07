@@ -6014,3 +6014,55 @@ What was run:
 
 Not run: a browser submit of a `phone:national` field. The schema a form block hands the browser
 carries a rule's parameters, which `SchemaExporterTest` covers for other rules.
+
+## #252 — In a client repository the generators write into the client's plugin, and the generated files say only what is true
+
+Date: 2026-10-07 · Spec: 102 (update-safe client sites), issue #251 · Status: Final for items 2 and 3; item 1 open
+
+The first client repository created from v0.43.0 found three places where the framework sends
+client work into framework-owned paths. Two are fixed here.
+
+**Item 2: `wp corex make:*`.** `CliServiceProvider::context()` read `app.path` and, finding it
+empty, wrote to `wp-content/corex-app` under `App\`. Nothing sets `app.path` when a site is
+generated, and the generated `AGENTS.md` said the generators "write into this client plugin".
+
+Now, when `app.path` is empty, `ClientSitePlugin` looks for `sites/*/*-site/src/*ServiceProvider.php`
+under the repository root. Exactly one match is the answer: its directory is the base, the file's
+name gives the namespace, and the plugin's directory name is the prefix. The prefix is the plugin's
+slug because `BlockScaffolder` uses it as the text domain, and the slug is the text domain
+`make:site` gives the plugin.
+
+Considered and not done:
+
+- *Have `make:site` record `app.path`.* The setting is read from an option or from `.env`. An
+  option is per install and would name an absolute path on one machine; `.env` is not committed.
+  Neither travels with the repository, and the repository is what knows where its site is.
+- *Choose among several sites.* There is nothing to choose by. With none or several the locator
+  answers nothing and the old order applies; the generated `AGENTS.md` names the three `.env` keys.
+
+**Item 3: the README.** The "Theme assets" section moved to its own stub,
+`starter/readme-theme-assets`, rendered into the README only when the theme's assets are generated:
+`--starter` without `--plugin-only`.
+
+**Item 1: Spec Kit. Not fixed.** `.specify/scripts/powershell/common.ps1` resolves the specs
+directory as `<root>/specs`, `/speckit-specify` writes `.specify/feature.json`, and the
+agent-context extension rewrites the root `CLAUDE.md`. Teaching them a per-site root is a change to
+the Spec Kit scripts and to every command that calls them, and it wants its own spec. What changed
+is the instruction: the generated `AGENTS.md` no longer tells a client to run a workflow that
+produces drift. It says to write the spec by hand, and names the three paths.
+
+**Sites that exist are not corrected.** `make:site` does not rewrite a site it already generated,
+and the files are the client's. The changelog says what to correct by hand.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `ClientSitePluginTest`: one site, no site, two sites, no `sites/` | 4 passed; failed before the class existed |
+| `SiteScaffolderTest`: README with and without `--starter`; `AGENTS.md` content | failed before the change, pass after |
+| `tests/Unit/Cli` | 168 passed |
+
+**Not run in a client repository.** The locator is tested against a directory `make:site` filled.
+That `CliServiceProvider` hands it the repository root was read, not run: `dirname(__DIR__, 3)` is
+the expression the same class already uses for that root. No `make:block` was run in a client
+checkout.

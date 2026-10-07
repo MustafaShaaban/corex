@@ -68,6 +68,10 @@ On `main` since v0.43.1, and not in a release yet:
   check reports that as `REMOVED`, not drift. The dependency advisory check runs in the
   framework's repository only, and CodeQL there or in a public client. Found by creating the
   first client repository from v0.43.0.
+- **Two of three places a client repository was steered into framework paths are fixed** (#251,
+  DECISIONS #252). `make:*` writes into the client plugin of a repository with one site, and a
+  generated README documents the asset pipeline only for `--starter`. The third, Spec Kit writing
+  to the root, is not fixed: the generated `AGENTS.md` now says so, and #251 stays open for it.
 - **`phone:national` accepts a number written with its trunk zero** (#249, DECISIONS #251). `phone`
   is E.164 by design and refused `010 1699 9700`; every site with a local audience wrote its own
   rule. The parameter is additive, and the browser's rule mirrors it.
@@ -264,6 +268,9 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
 
+- **Spec Kit cannot be run in a client repository without drift** (#251, item 1). The scripts write
+  `specs/`, `.specify/feature.json` and the root `CLAUDE.md`, all framework-owned there. A client
+  spec is written by hand under `sites/<client>/specs/`; the generated `AGENTS.md` says so.
 - **Trusted proxies have no field on the Security screen.** The screen's state carries the list and
   saves it back unchanged; nothing draws it. `wp corex security trusted-proxies` is the only way to
   set it (DECISIONS #250).
