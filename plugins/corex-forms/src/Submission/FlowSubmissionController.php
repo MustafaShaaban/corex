@@ -11,6 +11,7 @@ namespace Corex\Forms\Submission;
 defined('ABSPATH') || exit;
 
 use Corex\Forms\Schema\FieldSchema;
+use Corex\Http\ClientAddress;
 use Corex\Http\Middleware\Middleware;
 use Corex\Http\Middleware\MiddlewareResolver;
 use Corex\Http\Middleware\Pipeline;
@@ -32,6 +33,7 @@ final readonly class FlowSubmissionController
         private FlowVisitorSubmissionService $submissions,
         private Pipeline $pipeline,
         private MiddlewareResolver $middleware,
+        private ClientAddress $client,
     ) {
     }
 
@@ -192,10 +194,6 @@ final readonly class FlowSubmissionController
 
     private function clientFingerprint(): string
     {
-        $ip = isset($_SERVER['REMOTE_ADDR'])
-            ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR']))
-            : '';
-
-        return md5($ip);
+        return md5($this->client->current());
     }
 }

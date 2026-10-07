@@ -18,6 +18,9 @@ defined('ABSPATH') || exit;
  */
 final readonly class ClientIpResolver
 {
+    /** What `resolve()` answers when the request carries no usable address. */
+    public const UNKNOWN = '0.0.0.0';
+
     public function __construct(private LoginProtectionSettings $settings)
     {
     }
@@ -27,7 +30,7 @@ final readonly class ClientIpResolver
      */
     public function resolve(array $server): string
     {
-        $remote = $this->validIp($server['REMOTE_ADDR'] ?? '') ?? '0.0.0.0';
+        $remote = $this->validIp($server['REMOTE_ADDR'] ?? '') ?? self::UNKNOWN;
         if (! $this->settings->trustedProxyMode || ! $this->trusted($remote)) {
             return $remote;
         }

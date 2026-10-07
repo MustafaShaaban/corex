@@ -6,6 +6,16 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **`wp corex security trusted-proxies`** shows, sets and clears the proxies a site trusts to report a
+  visitor's address. The setting existed, was read by login protection, and could be set only by
+  posting to the REST route by hand: the Security screen has no field for it. An entry that is not an
+  address or a CIDR range refuses the whole list (#247).
+- **`Corex\Http\ClientAddress`**, the one answer to "who is making this request" for anything that
+  counts or limits per client. corex-core answers with the connection's address; corex-config
+  replaces that with the address the trusted proxies report.
+
 ### Changed
 
 - **The Operations mode panel is reorganised.** It said what the current mode does three or four
@@ -20,6 +30,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **Behind a proxy, a form counted every visitor as one client** (#247). The rate limit of a form and
+  of a flow was keyed on `REMOTE_ADDR`, and so was the address sent to the captcha provider. Behind a
+  proxy, a load balancer or a CDN that is the proxy: one allowance for the whole site, which one
+  visitor could use up. Forms now ask for the client's address the way login protection does, so a
+  site that has named its proxies gets one allowance per visitor. A site that has not is unchanged
+  (DECISIONS #250).
 - **`max:N` and `min:N` measured whatever the answer looked like** (#250). An answer that was all
   digits was compared as a number on any field, so `max:300` on a message refused the answer `2025`
   and `min:3` on a name accepted `12`. What a bound measures now follows the field: the number on a
@@ -59,6 +75,17 @@ All notable changes to Corex are documented here. The format follows
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
 Read this before taking the release.
 
+- **A site behind a proxy has one command to run**: `wp corex security trusted-proxies` with the
+  address or range of every proxy between the visitor and WordPress, for example `127.0.0.1 ::1`
+  for a tunnel on the same machine. Until it is run nothing changes: forms and login protection
+  both go on counting the proxy as the client. *Security operations* says which addresses to list
+  and what makes the answer wrong.
+- **A site that already trusts proxies gets the change without doing anything.** Its form rate
+  limits start counting per visitor on the first request after the update. Allowances in progress
+  under the old key are not carried over.
+- **`SubmitController`, `FlowSubmissionController` and `FormChallengeContextFactory` take a
+  `Corex\Http\ClientAddress`.** Code that gets them from the container is unaffected. Code that
+  constructs one by hand passes `new Corex\Http\RemoteAddress()` for the old behaviour.
 - **A `max:N` or `min:N` on a field that is not a number now counts characters, always.** Check any
   form that bounds a quantity typed into a `text` field: without `numeric`, `max:10` there now
   accepts `99999`, which is five characters. Add `numeric` to the field's rules or give it the

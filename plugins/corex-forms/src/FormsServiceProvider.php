@@ -66,6 +66,7 @@ use Corex\Forms\Validation\RuleRegistry;
 use Corex\Forms\Validation\Validator;
 use Corex\Forms\Success\SuccessStateRegistry;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Http\ClientAddress;
 use Corex\Mail\Mailer;
 use Corex\Mail\RoutedMailer;
 use Corex\Mail\MailTemplateCatalog;
@@ -171,6 +172,7 @@ final class FormsServiceProvider extends ServiceProvider
             FormChallengeContextFactory::class,
             static fn (ContainerInterface $c): FormChallengeContextFactory => new FormChallengeContextFactory(
                 $c->make(ConfigInterface::class),
+                $c->make(ClientAddress::class),
             ),
         );
         $this->container->singleton(

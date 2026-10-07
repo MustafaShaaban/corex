@@ -17,6 +17,7 @@ use Corex\Security\ChallengeContext;
 use Corex\Security\ChallengeVerification;
 use Corex\Security\ChallengeVerifier;
 use Corex\Security\VerifyingChallenge;
+use Corex\Http\RemoteAddress;
 use Corex\Support\Config\ConfigInterface;
 
 beforeEach(function () {
@@ -58,7 +59,7 @@ function challengeContextFactory(array $config = []): FormChallengeContextFactor
         }
     };
 
-    return new FormChallengeContextFactory($reader);
+    return new FormChallengeContextFactory($reader, new RemoteAddress());
 }
 
 it('verifies and removes a configured captcha token before storage', function () {
