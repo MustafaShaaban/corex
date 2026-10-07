@@ -97,10 +97,10 @@ Slice 2a ends here (DECISIONS #254). T030, T031 and everything below is slice 2b
 
 ## Slice 5 — History (US9)
 
-- [ ] T080 Pest integration: a run records format, size and expiry; expired runs lose their file and keep their entry; deleting is recorded in the activity log; a person sees only their own
-- [ ] T081 The run's new fields; `DELETE …/exports/{id}`; the daily cleanup
-- [ ] T082 The history in the dialog: who, when, what in words, format, count, size, expiry, download again, delete
-- [ ] T083 Rendered check; guards; notes
+- [x] T080 Pest integration: a run records format, size and expiry; expired runs lose their file and keep their entry; deleting is recorded in the activity log; a person sees only their own
+- [x] T081 The run's new fields; `DELETE …/exports/{id}`; the daily cleanup
+- [x] T082 The history in the dialog: who, when, what in words, format, count, size, expiry, download again, delete
+- [x] T083 Rendered check; guards; notes
 
 ## Slice 6 — PDF (US8)
 

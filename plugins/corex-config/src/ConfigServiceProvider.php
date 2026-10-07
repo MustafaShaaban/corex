@@ -256,6 +256,7 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Config\Retention\RetentionSweep::class,
             static fn (ContainerInterface $c): \Corex\Config\Retention\RetentionSweep => new \Corex\Config\Retention\RetentionSweep([
                 $c->make(\Corex\Config\Retention\NotificationRetention::class),
+                $c->make(\Corex\Config\Submissions\SubmissionExportRetention::class),
             ]),
         );
         $this->container->singleton(\Corex\Config\Retention\RetentionScheduler::class);
@@ -675,6 +676,15 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Submissions\SubmissionExportFiles::class);
         $this->container->singleton(SubmissionExportJobHandler::class);
         $this->container->singleton(SubmissionExportService::class);
+        $this->container->singleton(
+            \Corex\Config\Submissions\SubmissionExportRetention::class,
+            static fn (ContainerInterface $c): \Corex\Config\Submissions\SubmissionExportRetention =>
+                new \Corex\Config\Submissions\SubmissionExportRetention(
+                    $c->make(SubmissionExportStore::class),
+                    static fn (): \DateTimeImmutable => new \DateTimeImmutable('now'),
+                ),
+        );
+        $this->container->singleton(\Corex\Config\Submissions\SubmissionExportHistory::class);
         $this->container->singleton(SubmissionControllerServices::class);
         $this->container->singleton(SubmissionRestGateway::class);
         $this->container->singleton(SubmissionsController::class);

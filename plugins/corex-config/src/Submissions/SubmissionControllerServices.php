@@ -20,6 +20,7 @@ final readonly class SubmissionControllerServices
         public SubmissionWorkflowService $workflow,
         public SubmissionBulkService $bulk,
         public SubmissionExportService $exports,
+        public SubmissionExportHistory $exportHistory,
         public SubmissionEmailService $email,
         public SubmissionAccessPolicy $access,
     ) {

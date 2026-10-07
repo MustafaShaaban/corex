@@ -18,6 +18,7 @@ use Corex\Config\Data\WpSubmissionsReader;
 use Corex\Config\Jobs\JobTable;
 use Corex\Config\Retention\SubmissionRetention;
 use Corex\Config\Submissions\SubmissionAccessScope;
+use Corex\Config\Submissions\SubmissionExportHistory;
 use Corex\Config\Submissions\SubmissionExportRequest;
 use Corex\Config\Submissions\SubmissionExportService;
 use Corex\Config\Submissions\SubmissionInboxQuery;
@@ -170,7 +171,8 @@ it('queues an acknowledged personal-data export and isolates its download to the
 
     // A different scoped actor cannot download another actor's personal-data export.
     $other = new SubmissionAccessScope(8, false, ['support'], canExportPersonalData: true);
-    expect(fn () => $service->download($other, $run->id))
+    $history = Boot::app()->container()->make(SubmissionExportHistory::class);
+    expect(fn () => $history->download($other, $run->id))
         ->toThrow(DomainException::class, 'The submission export is unavailable.');
 });
 

@@ -6,8 +6,27 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **The export history says what each export was** (spec 103, slice 5). It was a date, a count
+  and a link. Each entry now says what it covered (the ticked rows, the filters in words, or
+  everything), its format, how many submissions, how large the file is, who made it and when, and
+  what became of the file. The five newest are listed, and a link under them shows the rest.
+- **An exported file expires.** It is kept for 30 days from the day it was made. The daily
+  retention sweep then removes the file and leaves the entry, which says it expired. An export is
+  a copy of people's answers on the server, and nothing removed one before.
+- **An export can be deleted.** "Delete" on an entry asks first, removes the file and leaves the
+  entry, which then says who deleted it and when. The activity log records it as
+  `submission.export.deleted`. `DELETE corex/v1/submissions/exports/{id}` is the route.
+
 ### Fixed
 
+- **The export dialog printed `[object Object] to [object Object]`** for "Current filters" when
+  the inbox was filtered by date. It read a date through a helper that answers the text together
+  with its machine form, and printed the pair. In v0.43.2 and v0.43.3.
+- **A download from "Recent exports" that failed said nothing.** It says so now.
+- **An export whose file is no longer on the server is not offered for download.** It was listed
+  with a "Download" that could only fail. It reads "No file to download."
 - **WordPress's update notice no longer sits above the CoreX admin.** While a core update is
   pending, WordPress prints "WordPress 7.1.3 is available! Please update now." before the page. On
   a CoreX screen that was a pale box in a band of its own above the shell, and every screen
@@ -31,8 +50,24 @@ request, so WordPress prints its own notice whatever version the install runs.
 
 ### Client impact
 
-Nothing to do on update, and nothing to rebuild: the stylesheet is not a built file.
-
+- **Exports already on a site start expiring.** The first daily sweep after this is taken removes
+  the file of every submissions export made more than 30 days ago, and the stored text of any made
+  before v0.43.2. The entries stay. Somebody who needs an old export has to download it first.
+- **`GET corex/v1/submissions/exports` answers more for each export**: `file_size`, `state`
+  (`ready`, `expired`, `deleted` or `pending`), `expires_at`, `actor_name`, `removed_reason`,
+  `removed_by`, `removed_by_name` and `removed_at`. Nothing was removed.
+- **`…/exports/{id}/download` answers 404 for an export that expired or was deleted**, where it
+  answered the file.
+- **`SubmissionExportService::history()` and `::download()` moved** to the new
+  `SubmissionExportHistory`, as `entries()` and `download()`. Code that called them on the service
+  has to ask for the history.
+- **`SubmissionExportStore` has two more methods**, `removeFile()` and `holdingFilesBefore()`, and
+  `file()` answers null for a file that is not on disk. Code that implements the interface has to
+  add them.
+- **`SubmissionControllerServices` takes one more constructor argument.**
+- **Strings in the history are new** in the `corex` text domain.
+- **The admin bundle changed.** `build/` is git-ignored: rebuild `plugins/corex-config` after
+  taking this.
 - **A notice your plugin prints on `admin_notices` is drawn inside the CoreX shell on CoreX
   screens.** It is a child of `.corex-admin__notices` and takes the shell's colours. A stylesheet
   of yours that reached it as `#wpbody-content > .notice` on a CoreX screen no longer matches it.
@@ -42,6 +77,9 @@ Nothing to do on update, and nothing to rebuild: the stylesheet is not a built f
   empty. A selector written as `.corex-admin__header + .corex-admin__content` no longer matches.
 - **`corex_admin_notices` is a new filter**: markup to print in that region, read by
   `AdminPage::open()`.
+- **The notice change asks nothing of a site on update**, and nothing to rebuild: the shell's
+  stylesheet is not a built file.
+
 
 ## [0.43.3] — 2026-10-07
 
