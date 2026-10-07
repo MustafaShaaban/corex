@@ -12,6 +12,9 @@ All notable changes to Corex are documented here. The format follows
   visitor's address. The setting existed, was read by login protection, and could be set only by
   posting to the REST route by hand: the Security screen has no field for it. An entry that is not an
   address or a CIDR range refuses the whole list (#247).
+- **`phone:national`** accepts a phone number written with its country's trunk `0`, such as
+  `010 1699 9700`, as well as everything `phone` accepts. `phone` alone stays international (E.164)
+  and still refuses it. The browser applies the same rule (#249, DECISIONS #251).
 - **`Corex\Http\ClientAddress`**, the one answer to "who is making this request" for anything that
   counts or limits per client. corex-core answers with the connection's address; corex-config
   replaces that with the address the trusted proxies report.
@@ -75,6 +78,9 @@ All notable changes to Corex are documented here. The format follows
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
 Read this before taking the release.
 
+- **A form that asks a local audience for a phone number can stop refusing local numbers.** Change
+  the field's rule from `phone` to `phone:national`. Nothing changes for a form that is left alone:
+  `phone` accepts and refuses exactly what it did.
 - **A site behind a proxy has one command to run**: `wp corex security trusted-proxies` with the
   address or range of every proxy between the visitor and WordPress, for example `127.0.0.1 ::1`
   for a tunnel on the same machine. Until it is run nothing changes: forms and login protection

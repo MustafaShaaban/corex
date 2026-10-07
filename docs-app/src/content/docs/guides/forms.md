@@ -34,7 +34,7 @@ Register it with the `FormRegistry` in a provider's `boot()`.
 | Key | Values |
 |---|---|
 | `type` | `text` `email` `number` `tel` `url` `password` `date` `file` `textarea` `select` `radio` `checkbox` `checkbox-group` `toggle` |
-| `rules` | `required` `email` `max_length:N` `min_length:N` `max:N` `min:N` `numeric` |
+| `rules` | `required` `email` `max_length:N` `min_length:N` `max:N` `min:N` `numeric` `phone` `phone:national` |
 | `options` | `value => label` (for `select`/`radio`/`checkbox-group`) |
 | `label_mode` | `visible` (default) `hidden` `inline` |
 | `width` | `full` (default) `half` `third` `two-thirds` `quarter` (12-col grid) |
@@ -51,6 +51,17 @@ A quantity typed into a `text` field is bounded as a number only if the field sa
 ```php
 'quantity' => ['type' => 'text', 'rules' => ['numeric', 'max:10']],  // refuses 11
 'quantity' => ['type' => 'text', 'rules' => ['max:10']],             // accepts 99999: five characters
+```
+
+**`phone` is an international number; `phone:national` also takes a local one.** Both ignore spaces,
+brackets, hyphens and dots. `phone` accepts E.164: an optional `+`, a first digit that is not zero,
+up to fifteen digits. It refuses `010 1699 9700`, because a number that starts with its country's
+trunk `0` cannot be dialled without knowing the country. `phone:national` accepts that form too: a
+`0` followed by six to fourteen digits. Use it on a form whose audience is local.
+
+```php
+'phone' => ['type' => 'tel', 'rules' => ['phone']],           // +20 101 699 9700
+'phone' => ['type' => 'tel', 'rules' => ['phone:national']],  // +20 101 699 9700 or 010 1699 9700
 ```
 
 ## Place the block
