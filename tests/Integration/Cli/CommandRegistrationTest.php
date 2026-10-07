@@ -57,9 +57,21 @@ it('boots with the CLI provider and resolves the engine when WP-CLI is absent', 
 
     $container = Boot::app()->container();
 
+    // This suite also runs in a client's repository. There the generators write into the one
+    // client plugin under `sites/`, under its namespace (#251), and `App` is the answer only
+    // where there is no such plugin. Asserting `App` everywhere failed the check on every pull
+    // request of the first client site (2026-10-07). Which plugin is chosen, and its namespace,
+    // is `ClientSitePluginTest`'s to say.
+    $clientPlugins = glob(dirname(__DIR__, 3) . '/sites/*/*-site/src/*ServiceProvider.php') ?: [];
+    $namespace = $container->make(GeneratorContext::class)->namespace;
+
     expect($container->make(GeneratorEngine::class))->toBeInstanceOf(GeneratorEngine::class)
         ->and($container->make(Naming::class))->toBeInstanceOf(Naming::class)
-        ->and($container->make(GeneratorContext::class)->namespace)->toBe('App');
+        ->and($namespace)->toMatch('/^[A-Z][A-Za-z0-9]*(\\\\[A-Z][A-Za-z0-9]*)*$/');
+
+    if ($clientPlugins === []) {
+        expect($namespace)->toBe('App');
+    }
 });
 
 it('keeps all command registrations available when dependencies cannot resolve', function () {
