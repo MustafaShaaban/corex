@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.43.2** — tag `v0.43.2`, reachable from `main`.
+- **Latest published release: v0.43.3** — tag `v0.43.3`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -53,7 +53,7 @@ is delivered in seven slices, one pull request each:
 | 2b | Scopes with counts, the rebuilt dialog, download without a refresh | done (DECISIONS #255). Not in it: a remembered column choice, choosing single questions and their order |
 | 3 | Excel | done (DECISIONS #256). A produced workbook and a produced CSV were opened in Excel |
 | — | Spacing review of the dialog and the filters, on the owner's request | done (DECISIONS #257). Measured, fixed, and kept measured by two browser tests |
-| 4 | The detail pane | done (DECISIONS #259). Measured, and kept measured by a browser test. Not in it: to whom a notification went and where a failure can be fixed (T074b), which the server does not record |
+| 4 | The detail pane | done, in v0.43.3 (DECISIONS #259). Measured, and kept measured by a browser test. Not in it: to whom a notification went and where a failure can be fixed (T074b), which the server does not record |
 | 5 | Export history: size, expiry, delete | not started |
 | 6 | PDF | not started; needs a spike on a library that renders Arabic |
 | 7 | The Data export, to the same standard | not started |
@@ -63,7 +63,7 @@ Two readings in the spec are the owner's to overrule: that opening a submission 
 the identity" on the PDF means the brand identity plus a sign-off block naming the person who
 exported it.
 
-Unreleased on `main` beside slice 4, both reported from the first client site after it took
+Released in v0.43.3 beside slice 4, both reported from the first client site after it took
 v0.43.2 (DECISIONS #260): the submissions and flow routes now carry a permission callback, so
 `routes:list` no longer prints 25 guarded routes as "public"; and the hygiene test refuses
 `support.js` only where a design export is, not a client's own test helper. A third report from
@@ -77,6 +77,12 @@ wants its own verified pass. It would retire both overrides listed under "Open, 
 One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`).
 
 ## Recently landed
+
+Released in v0.43.3: the submission detail pane (spec 103 slice 4, DECISIONS #259) and three
+reports from the first client site's v0.43.2 update: route permission callbacks and the
+`support.js` rule (#260), and a framework test that failed in a client's repository (#261).
+[`CHANGELOG.md`](CHANGELOG.md) has the entry and its Client impact. Nothing is unreleased on
+`main` at the tag.
 
 Released in v0.43.2. [`CHANGELOG.md`](CHANGELOG.md) has the full entry, with what changes for a
 client site; the decisions are #245 to #258. It carries a patch number and holds more than a patch:
