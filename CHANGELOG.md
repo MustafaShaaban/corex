@@ -34,6 +34,21 @@ All notable changes to Corex are documented here. The format follows
 - **An answer is written in the direction of its own language.** An English answer in an Arabic
   admin had its full stop on the wrong side.
 
+### Fixed
+
+- **The submissions and flow routes say at the route who may call them.** All 15 routes under
+  `corex/v1/submissions` and the 10 under `corex/v1/flows` that the admin uses were registered with
+  `permission_callback => __return_true` and refused a caller inside the handler. Nobody could call
+  them who should not: an anonymous request was answered 403. But `wp corex routes:list` printed
+  every one as "public", and `wp corex api:docs` gave them no security requirement. Each now has a
+  permission callback that asks the same question the handler asks. The handlers still ask, and
+  still ask for a nonce on a change. `POST corex/v1/flows/{id}/submit`, which a visitor submits to,
+  is public and still is. Reported from the first client site.
+- **A file named `support.js` is refused only where a design export is**: at the repository root,
+  under `design/`, or beside a `.dc.html`. `tests/repo-hygiene.test.js` refused it anywhere as "a
+  design-export helper script", including under `sites/<client>/`, where it was a client's own
+  Playwright helper and failed "Lint + JS unit tests" on two of its pull requests.
+
 ### Client impact
 
 - **The submission's REST payload has three new keys**: `questions` (the form's questions, in
@@ -52,6 +67,13 @@ All notable changes to Corex are documented here. The format follows
   that domain shows them in English until they are translated.
 - **The admin bundle changed.** `build/` is git-ignored: rebuild `plugins/corex-config` after
   taking this.
+- **A caller refused by a submissions or flow route gets WordPress's error body**, `{ code,
+  message, data: { status } }`, where it got CoreX's envelope with `ok: false`. The status is still
+  403, the `code` is still `forbidden`, and the message is the same. CoreX's own admin reads either.
+  Code of a client's that calls these routes without the right to and reads `ok` from the answer
+  has to read the status.
+- **A client's test helper may be called `support.js` again**, anywhere outside the root and
+  `design/`. A client that renamed one to get past the rule does not have to rename it back.
 
 ## [0.43.2] — 2026-10-07
 

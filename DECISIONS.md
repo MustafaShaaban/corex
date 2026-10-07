@@ -6576,3 +6576,60 @@ What was run:
 **Not run.** A screen reader was not used on the pane. A real Arabic install was not used: the
 right-to-left check flipped the direction of an English one, which is why its dates read out of
 order in the capture and would not on a translated site.
+
+## #260 — A route that refuses a caller says so where routes are read
+
+Date: 2026-10-07 · Reported from the first client site, after it took v0.43.2 · Status: Final
+
+The report: `wp corex routes:list` prints the submissions export routes as "public" and the Data
+export routes as "guarded". An anonymous request to any of them is answered 403.
+
+**What was true.** Not four routes. All 15 under `corex/v1/submissions` and the 10 admin routes
+under `corex/v1/flows` were registered with `permission_callback => __return_true`. Each handler
+goes through a gateway that refuses first: the Inbox by the person's access scope, the flows by
+`manage_options` in the middleware. So nothing was open. The listing reads the registration, and
+the registration said open. The generated API description, which reads the same thing, gave the
+25 routes no security requirement.
+
+CoreX's own cookbook says: "Never expose a writing route with `permission_callback =>
+__return_true`."
+
+**Why they were written that way.** A refusal from a permission callback is WordPress's error
+body. A refusal from the handler is CoreX's envelope. Registering open kept every answer of these
+routes in one shape.
+
+**What was chosen.** Each gateway has `permits()`, and the routes name it as their permission
+callback. It answers `true` or a `WP_Error` with the status, the code and the reason the handler
+gave: 403, `forbidden`, "You cannot manage submissions." The handlers keep their own check. A
+route's guard is now where WordPress, the listing, the API description and a reviewer look for it.
+
+The cost is the shape of one answer: a refused caller gets `{ code, message, data }` and not
+`{ ok: false, … }`. `Corex.api` normalises both, so the admin does not change. It is in Client
+impact.
+
+**Rejected: teaching the listing.** A route could carry a mark saying "checked in the handler" and
+the reader could believe it. That is a claim beside the code, which is what the listing exists not
+to be.
+
+**The flows' capability is named once.** `manage_options` was a string in two middleware lists. It
+is a constant the route's check and both lists use.
+
+**`support.js`.** The hygiene test refused the name anywhere, as the helper a design tool writes
+beside a `.dc.html`. The client's Playwright helper had the name. Where a design export lands is
+written down nowhere, so the rule is anchored to what is known: the root, `design/`, and any
+directory that holds a `.dc.html`. A `support.js` beside a design export is still named, so both
+files are removed together.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `AdminRoutesDeclareTheirGuardTest`, before the change | 2 failed: both listings held open routes. 6 passed: the refusals and the answers |
+| `AdminRoutesDeclareTheirGuardTest`, real WordPress | 8 passed |
+| `tests/Integration/Submissions`, `FlowControllerTest` | 34 passed |
+| `repo-hygiene.test.js`, the new cases, before the change | 4 failed |
+| `repo-hygiene.test.js` | 27 passed |
+| `tests/Unit` | 2198 passed |
+
+**Not run.** `wp corex routes:list` was not run on the client site after the change; the test
+reads the same `RoutesReader` the command prints from.

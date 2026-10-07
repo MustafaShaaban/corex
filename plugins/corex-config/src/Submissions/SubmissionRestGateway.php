@@ -19,6 +19,7 @@ use Corex\Http\Middleware\SanitizeMiddleware;
 use Corex\Http\ResponseEnvelope;
 use DomainException;
 use InvalidArgumentException;
+use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -32,6 +33,20 @@ final readonly class SubmissionRestGateway
         private MiddlewareResolver $middleware,
         private SubmissionAccessPolicy $access,
     ) {
+    }
+
+    /**
+     * What every Inbox route asks before a handler runs: may this person manage submissions at all.
+     *
+     * The handlers ask again, and ask more: which submissions, and with a nonce for a change. This
+     * is here so the route says it is guarded. Registered open, it was refused to the same people
+     * and listed as public.
+     */
+    public function permits(): true|WP_Error
+    {
+        return $this->access->scopeFor(get_current_user_id()) === null
+            ? new WP_Error('forbidden', $this->refusal(), ['status' => 403])
+            : true;
     }
 
     /** @param callable(Request):Response $handler */
@@ -53,7 +68,7 @@ final readonly class SubmissionRestGateway
     private function authorized(WP_REST_Request $request, callable $handler, array $middleware): WP_REST_Response
     {
         if ($this->access->scopeFor(get_current_user_id()) === null) {
-            return $this->toRest(Response::reject(__('You cannot manage submissions.', 'corex'), 403));
+            return $this->toRest(Response::reject($this->refusal(), 403));
         }
         $safe = new Request(
             method: $request->get_method(),
@@ -64,6 +79,11 @@ final readonly class SubmissionRestGateway
         $domainHandler = fn (Request $input): Response => $this->domainResponse($handler, $input);
 
         return $this->toRest($this->pipeline->run($safe, $domainHandler, ...$middleware));
+    }
+
+    private function refusal(): string
+    {
+        return __('You cannot manage submissions.', 'corex');
     }
 
     /** @param callable(Request):Response $handler */
