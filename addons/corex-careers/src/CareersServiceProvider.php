@@ -31,6 +31,7 @@ use Corex\Mail\Mailer;
 use Corex\Security\Upload\AttachmentStore;
 use Corex\Security\Upload\UploadValidator;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Support\EmailAnswer;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -145,7 +146,7 @@ final class CareersServiceProvider extends ServiceProvider
 
         $fields = [
             'name'         => sanitize_text_field((string) $request['name']),
-            'email'        => sanitize_email((string) $request['email']),
+            'email'        => EmailAnswer::address($request['email']),
             'cover_letter' => sanitize_textarea_field((string) $request['cover_letter']),
         ];
 

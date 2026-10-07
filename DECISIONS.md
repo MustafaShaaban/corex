@@ -5656,3 +5656,56 @@ What was run:
 | `EmailAnswerTest`, ten inputs against WordPress's real cleaners | 10 passed |
 | `tests/Integration/Forms` and `tests/Integration/Mail`, real WordPress | 55 passed |
 | The unit suite | 2049 passed |
+
+## #246 — An endpoint that needs an address takes it as typed or not at all
+
+Date: 2026-10-07 · Spec: none (defect fix, issue #256; follows #245) · Status: Final
+
+#245 fixed the forms engine and named five add-on handlers with the same fault. Each called
+`sanitize_email()` on the posted address and handed the result to a service that validated it,
+which by then it always was:
+
+| Endpoint | What a mistyped address did |
+|---|---|
+| `POST corex/v1/newsletter/subscribe` | subscribed the cleaned address and sent it a confirmation |
+| `POST corex/v1/bookings/request` | stored a call request, and its acknowledgement, under it |
+| `POST corex/v1/careers/apply` | stored an application under it |
+| `POST corex/v1/account/register`, `POST corex/v1/account/profile` | created or re-addressed an account |
+| The Guides support form | sent the request with it as the reply address |
+
+The registration case was run on the development install before the change: posting
+`<name>,x@example.com` answered 200 `registered` and an account existed for
+`<name>x@example.com`. The newsletter case answered 200 the same way.
+
+**Decided.** These callers do not have rules to refuse an answer by name; they need an address or
+nothing. `EmailAnswer::address()` returns the trimmed answer when `sanitize_email()` would leave
+it unchanged, and an empty string otherwise. Every service here already refuses an empty address
+with the reason it gives for an invalid one, so no service changed. `EmailAnswer::clean()`, the
+forms engine's version, is now written in terms of it.
+
+**Stricter than the services.** The services validate with `FILTER_VALIDATE_EMAIL`, which accepts
+an address with a quoted local part; WordPress would store that address altered. `address()`
+refuses it, so an account or a subscription is only ever made for an address that is stored as it
+was typed.
+
+**The Guides form** takes an optional reply address. A mistyped one is now dropped, and the
+message says "no address given". Telling the person their address was not usable would be better
+and needs a new state on that form; not done.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| New REST test, newsletter subscribe, before the change | 200; the cleaned address was subscribed |
+| New REST test, account registration, before the change | 200 `registered`; an account existed for the cleaned address |
+| `EmailAnswerTest`, eight inputs to `address()` and ten to `clean()` | 18 passed |
+| Integration: Forms, Mail, Newsletter, Bookings, Careers, Profile, Guides | 75 passed |
+| The unit suite | 2049 passed |
+
+**Not tested directly.** The bookings, careers and Guides handlers have no test that posts a
+mistyped address to them: bookings needs a configured leader, careers a job and an upload, and the
+Guides controller's test is headless. The bookings and careers services' refusal of an invalid address is
+covered by their existing tests; the one-line change in each handler was read.
+
+**Left as it is.** `SettingsSanitizer` and `OptionPageScreen` clean an address an administrator
+typed into a settings screen, in the same way. The person who typed it sees what was saved.

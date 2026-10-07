@@ -29,3 +29,20 @@ it('hands the rules what was typed, or nothing, and never a different address', 
     'an empty answer stays empty' => ['', ''],
     'a list is not an email answer' => [['m@example.com'], ''],
 ]);
+
+/**
+ * For the callers that need an address or nothing — a subscription, an account, a reply — and
+ * hand it to a service that would find a cleaned address valid.
+ */
+it('gives a caller the address as typed, or nothing', function (mixed $typed, string $expected) {
+    expect(EmailAnswer::address($typed))->toBe($expected);
+})->with([
+    'an ordinary address' => ['m@example.com', 'm@example.com'],
+    'surrounding space is not part of it' => [" m@example.com\t", 'm@example.com'],
+    'a comma typed for a dot is not an address' => ['sal,ma@example.com', ''],
+    'a letter the cleaner would drop' => ['josé@example.com', ''],
+    'a quoted name the cleaner would unquote' => ['"sal ma"@example.com', ''],
+    'no address at all' => ['not-an-email', ''],
+    'nothing typed' => ['', ''],
+    'a list' => [['m@example.com'], ''],
+]);
