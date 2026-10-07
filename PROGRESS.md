@@ -57,6 +57,12 @@ On `main` since v0.43.1, and not in a release yet:
   `salma@example.com` and a malformed address on a required field was answered with "required".
   `EmailAnswer`, in corex-core's `Support` namespace, hands the rules what was typed; the form and
   flow controllers both use it. One existing test had asserted the defect and is corrected.
+- **The Operations mode panel is reorganised** (DECISIONS #247), on the owner's report that it
+  was messy. One sentence for the current mode and only real cautions under it; a one-column
+  change form; a proposed mode as a heading, a short list, a disclosure and its confirmation; and
+  nothing asked while the selection is the mode the site has declared. Found on the way: a site
+  that only inherits its mode could not declare it, because the button was disabled for it.
+  Checked rendered in dark and light at 1280 and 782 wide, as a declared and as an inherited mode.
 - **The add-on endpoints no longer do it either** (#256, DECISIONS #246): newsletter subscribe,
   bookings, careers, account registration and profile update, and the Guides support request. The
   registration one created an account under the rewritten address. Subscribe and registration are

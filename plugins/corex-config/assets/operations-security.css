@@ -63,13 +63,117 @@
 	font-size: var(--corex-admin-font-sm);
 }
 
-/* The mode blocks. Only one is visible at a time; the rest are `hidden`,
-   which the browser already honours — no rule here should override that. */
-.corex-admin .corex-opsec__mode-consequences {
-	margin: var(--corex-admin-space-xs) 0 var(--corex-admin-space-sm);
-	padding-inline-start: var(--corex-admin-space-md);
+/* The current mode: its name, a pill that says in words that this is the mode
+   in force, and one sentence. */
+.corex-admin .corex-opsec__mode-now {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-xs) var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-opsec__mode-now h2 {
+	margin: 0;
+}
+
+.corex-admin .corex-opsec__mode-pill {
+	padding: var(--corex-admin-space-2xs) var(--corex-admin-space-sm);
 	color: var(--corex-admin-text-muted);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-pill);
+}
+
+/* What the current mode leaves exposed. A notice and not a line of prose: an
+   icon, the warning tone and a box of its own, so it cannot be read as more
+   description. It used to share a list, and a weight, with sentences that
+   only restated the mode. */
+.corex-admin .corex-opsec__cautions {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	max-inline-size: 72ch; /* corex-token-allow: reading measure */
+	margin: var(--corex-admin-space-md) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-opsec__cautions li {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
 	font-size: var(--corex-admin-font-sm);
+	background: var(--corex-admin-warning-soft);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-opsec__cautions .dashicons {
+	flex: none;
+	color: var(--corex-admin-warning);
+}
+
+/* A proposed mode. At most one block is visible; the rest are `hidden`. A
+   block is a grid, and `display` set by a class outranks the browser's own
+   rule for that attribute, so the attribute is restated. */
+.corex-admin .corex-opsec__mode-block {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	justify-items: start;
+	max-inline-size: 72ch; /* corex-token-allow: reading measure */
+}
+
+.corex-admin .corex-opsec__mode-block[hidden] {
+	display: none;
+}
+
+.corex-admin .corex-opsec__mode-heading {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-md);
+	font-weight: 600;
+}
+
+/* A real list: markers, and room between the items. Unmarked and unspaced,
+   two of these read as one ragged paragraph. */
+.corex-admin .corex-opsec__mode-consequences {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	margin: 0;
+	padding-inline-start: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+	list-style: disc;
+}
+
+.corex-admin .corex-opsec__mode-consequences li {
+	margin: 0;
+}
+
+/* How the mode works and how to leave it. Closed until asked for. */
+.corex-admin .corex-opsec__mode-more summary {
+
+	/* Padding, so the toggle is at least the 24px a pointer target needs. */
+	padding-block: var(--corex-admin-space-2xs);
+	color: var(--corex-admin-action);
+	font-size: var(--corex-admin-font-sm);
+	cursor: pointer;
+}
+
+.corex-admin .corex-opsec__mode-more[open] summary {
+	margin-block-end: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-opsec__mode-more .corex-opsec__mode-consequences {
+	color: var(--corex-admin-text-muted);
 }
 
 .corex-admin .corex-opsec__env.is-success {
@@ -88,6 +192,13 @@
 .corex-admin .corex-opsec__note-text {
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-sm);
+}
+
+/* Inside the change form the column's gap does the spacing. */
+.corex-admin .corex-opsec__mode-block .corex-opsec__detail,
+.corex-admin .corex-opsec__mode-same {
+	max-inline-size: 72ch; /* corex-token-allow: reading measure */
+	margin: 0;
 }
 
 .corex-admin .corex-opsec__checks-head {
@@ -169,24 +280,24 @@
 	border-inline-start-color: var(--corex-admin-error);
 }
 
-.corex-admin .corex-opsec__warnings {
-	margin-block: var(--corex-admin-space-sm) 0;
-	padding-inline-start: var(--corex-admin-space-lg);
-	color: var(--corex-admin-text-muted);
-	font-size: var(--corex-admin-font-sm);
-	display: flex;
-	flex-direction: column;
-	gap: var(--corex-admin-space-2xs);
-}
-
+/* The change form is one column, about a reading measure wide. The label sits
+   above the select, a proposed change reads top to bottom under it, and the
+   button is directly below the confirmation that enables it. As a wrapping
+   row, the block floated beside the select and the button came back to the
+   far side under the label. */
 .corex-admin .corex-opsec__mode-form {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--corex-admin-space-sm);
+	display: grid;
+	gap: var(--corex-admin-space-md);
+	justify-items: start;
 	margin-block-start: var(--corex-admin-space-md);
 	padding-block-start: var(--corex-admin-space-md);
 	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-opsec__mode-field {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	justify-items: start;
 }
 
 .corex-admin .corex-opsec__mode-label {
@@ -194,11 +305,19 @@
 }
 
 .corex-admin .corex-opsec__mode-confirm {
-	display: inline-flex;
-	align-items: center;
-	gap: var(--corex-admin-space-2xs);
-	color: var(--corex-admin-text-muted);
+	display: flex;
+	align-items: baseline;
+	gap: var(--corex-admin-space-xs);
+	margin-block-start: var(--corex-admin-space-xs);
+	color: var(--corex-admin-text);
 	font-size: var(--corex-admin-font-sm);
+}
+
+/* WordPress lifts an admin checkbox with a negative margin, which leaves it
+   above the first line of a label it is laid out beside. */
+.corex-admin .corex-opsec__mode-confirm input {
+	flex: none;
+	margin: 0;
 }
 
 /* The preview link's controls (spec 101): one form per action, side by side,

@@ -100,11 +100,57 @@ test.describe( 'the mode form asks only what the chosen mode needs', () => {
 		} );
 	}
 
-	test( 'exactly one mode is described at a time', async ( { page } ) => {
+	/**
+	 * The mode the site is in, and whether it declared it or only inherits it from the WordPress
+	 * environment type. The two differ in what the form offers: a declared mode proposes nothing
+	 * when chosen again, and an inherited one can still be declared.
+	 *
+	 * @param {import('@playwright/test').Page} page The environment section.
+	 * @return {Promise<{current: string, declared: boolean}>} Where the site stands.
+	 */
+	async function standing( page ) {
+		const form = page.locator( '[data-corex-mode-form]' );
+
+		return {
+			current: await form.getAttribute( 'data-current-mode' ),
+			declared:
+				( await form.getAttribute( 'data-mode-declared' ) ) === '1',
+		};
+	}
+
+	/**
+	 * The blocks the form should be showing when `mode` is selected.
+	 *
+	 * @param {{current: string, declared: boolean}} site Where the site stands.
+	 * @param {string}                               mode The mode selected.
+	 * @return {string[]} That mode's block, or none when selecting it proposes nothing.
+	 */
+	const described = ( site, mode ) =>
+		site.declared && site.current === mode ? [] : [ mode ];
+
+	test( 'the mode a site has declared proposes nothing; any other mode is described alone', async ( {
+		page,
+	} ) => {
 		await page.goto( `${ SCREEN }&tab=environment` );
 
-		const shown = await offered( page );
-		expect( shown.visible ).toHaveLength( 1 );
+		// The selection starts on the mode the site is in. For a declared mode that used to draw
+		// its consequences and its confirmation beside a disabled button; it proposes nothing, so
+		// the form says so and asks for nothing. An inherited mode can still be declared, so its
+		// block is offered.
+		const site = await standing( page );
+		const resting = await offered( page );
+
+		expect( resting.visible ).toEqual( described( site, site.current ) );
+		await expect( page.locator( '[data-corex-mode-same]' ) ).toBeVisible( {
+			visible: site.declared,
+		} );
+
+		const other = site.current === 'staging' ? 'development' : 'staging';
+
+		await page.goto( `${ SCREEN }&tab=environment&mode=${ other }` );
+
+		expect( ( await offered( page ) ).visible ).toEqual( [ other ] );
+		await expect( page.locator( '[data-corex-mode-same]' ) ).toBeHidden();
 	} );
 
 	test( 'production asks for the phrase and nothing else', async ( {
@@ -112,10 +158,14 @@ test.describe( 'the mode form asks only what the chosen mode needs', () => {
 	} ) => {
 		await page.goto( `${ SCREEN }&tab=environment&mode=production` );
 
+		const site = await standing( page );
 		const shown = await offered( page );
-		expect( shown.visible ).toEqual( [ 'production' ] );
-		expect( shown.submittable ).toContain( 'corex_confirm_phrase' );
+
+		expect( shown.visible ).toEqual( described( site, 'production' ) );
 		expect( shown.submittable ).not.toContain( 'corex_confirm' );
+		if ( shown.visible.length > 0 ) {
+			expect( shown.submittable ).toContain( 'corex_confirm_phrase' );
+		}
 	} );
 
 	test( 'maintenance asks for the acknowledgement and nothing else', async ( {
@@ -123,10 +173,14 @@ test.describe( 'the mode form asks only what the chosen mode needs', () => {
 	} ) => {
 		await page.goto( `${ SCREEN }&tab=environment&mode=maintenance` );
 
+		const site = await standing( page );
 		const shown = await offered( page );
-		expect( shown.visible ).toEqual( [ 'maintenance' ] );
-		expect( shown.submittable ).toContain( 'corex_confirm' );
+
+		expect( shown.visible ).toEqual( described( site, 'maintenance' ) );
 		expect( shown.submittable ).not.toContain( 'corex_confirm_phrase' );
+		if ( shown.visible.length > 0 ) {
+			expect( shown.submittable ).toContain( 'corex_confirm' );
+		}
 	} );
 
 	test( 'development and staging ask for no confirmation at all', async ( {
@@ -137,8 +191,10 @@ test.describe( 'the mode form asks only what the chosen mode needs', () => {
 		for ( const mode of [ 'development', 'staging' ] ) {
 			await page.goto( `${ SCREEN }&tab=environment&mode=${ mode }` );
 
+			const site = await standing( page );
 			const shown = await offered( page );
-			expect( shown.visible, mode ).toEqual( [ mode ] );
+
+			expect( shown.visible, mode ).toEqual( described( site, mode ) );
 			expect( shown.submittable, mode ).not.toContain(
 				'corex_confirm_phrase'
 			);
@@ -146,13 +202,12 @@ test.describe( 'the mode form asks only what the chosen mode needs', () => {
 		}
 	} );
 
-	test( 'applying the mode already in force is not offered', async ( {
+	test( 'applying a declared mode again is not offered, and declaring an inherited one is', async ( {
 		page,
 	} ) => {
 		await page.goto( `${ SCREEN }&tab=environment` );
 
-		const form = page.locator( '[data-corex-mode-form]' );
-		const current = await form.getAttribute( 'data-current-mode' );
+		const site = await standing( page );
 
 		// The native <select> is hidden — CorexSelect upgrades it and keeps it only as the
 		// submitted value (DECISIONS #141). Driving the button-and-listbox the operator actually
@@ -168,13 +223,15 @@ test.describe( 'the mode form asks only what the chosen mode needs', () => {
 		const label = ( mode ) =>
 			mode.charAt( 0 ).toUpperCase() + mode.slice( 1 );
 
-		await choose( label( current ) );
-		await expect(
-			page.locator( '[data-corex-mode-apply]' )
-		).toBeDisabled();
+		// A site that only inherits its mode is told to declare one, and choosing the mode it
+		// already follows does that. The button used to be disabled for it all the same.
+		await choose( label( site.current ) );
+		await expect( page.locator( '[data-corex-mode-apply]' ) ).toBeEnabled( {
+			enabled: ! site.declared,
+		} );
 
-		// And a different one is.
-		const other = current === 'staging' ? 'development' : 'staging';
+		// And a different one always is.
+		const other = site.current === 'staging' ? 'development' : 'staging';
 		await choose( label( other ) );
 		await expect( page.locator( '[data-corex-mode-apply]' ) ).toBeEnabled();
 	} );

@@ -182,3 +182,73 @@ it('selects the current mode when nothing is proposed', function () {
 
     expect($selected[1])->toBe('staging');
 });
+
+/*
+ * The mode panel, reorganised (2026-10-07). It said the state of the site three or four times, drew
+ * two unmarked lists that read as one ragged paragraph, and asked for a confirmation of the mode
+ * the site was already in, beside a disabled button.
+ */
+
+it('says what the current mode does once, and under it only what that does not already say', function () {
+    update_option('corex_operations_mode', 'coming-soon', false);
+
+    $card = invokeScreen($this->screen, 'modeCard');
+
+    expect(substr_count($card, 'Visitors see the coming-soon page; anyone signed in who can edit posts sees the real site.'))->toBe(1)
+        // The warning that restated it is not drawn here.
+        ->and($card)->not->toContain('every other address is redirected to it. Switch to production')
+        // The one caution the mode has is, and it is marked up as a caution.
+        ->and($card)->toMatch('/<ul class="corex-opsec__cautions">.*Published content can still be read through the REST API\..*<\/ul>/s');
+});
+
+it('asks for nothing while the mode selected is the one the site is in', function () {
+    update_option('corex_operations_mode', 'coming-soon', false);
+
+    $card = invokeScreen($this->screen, 'modeCard');
+
+    preg_match('/<div class="corex-opsec__mode-block" data-mode="coming-soon"(.*?)<\/div>/s', $card, $block);
+
+    expect($block[1])->toContain(' hidden')
+        // Its acknowledgement cannot be submitted: there is no change to acknowledge.
+        ->and($block[1])->toContain('name="corex_confirm" value="1" disabled')
+        // And the panel says why nothing is being asked.
+        ->and($card)->toMatch('/<p class="[^"]*corex-opsec__mode-same[^"]*" data-corex-mode-same>/');
+});
+
+it('draws a proposed change as a heading, what it changes, and the rest behind a disclosure', function () {
+    update_option('corex_operations_mode', 'development', false);
+
+    $_GET['mode'] = 'coming-soon';
+    $card         = invokeScreen($this->screen, 'modeCard');
+    unset($_GET['mode']);
+
+    preg_match('/<div class="corex-opsec__mode-block" data-mode="coming-soon"(.*?)<\/div>/s', $card, $block);
+    [$changes, $more] = explode('<details', $block[1] . '<details', 2);
+
+    expect($block[1])->toContain('Switching to Coming soon')
+        ->and($changes)->toContain('200 status')
+        ->and($changes)->toContain('edit posts')
+        // How the mode works and how to leave it are a click away, not in the way.
+        ->and($changes)->not->toContain('To leave')
+        ->and($more)->toContain('To leave')
+        ->and($more)->toContain('preview link')
+        // Something is being proposed, so the "nothing to change" line is not shown.
+        ->and($card)->toMatch('/corex-opsec__mode-same[^>]* hidden/');
+});
+
+it('offers a mode the site only inherits as a declaration, because declaring it is a change', function () {
+    // Undeclared, the site follows the WordPress environment type, and the screen tells the
+    // operator to declare a mode. Choosing the one it already follows does that, and the store
+    // records it — so that block is a proposal like any other, with its own heading.
+    delete_option('corex_operations_mode');
+
+    $card = invokeScreen($this->screen, 'modeCard');
+
+    preg_match('/data-current-mode="([a-z-]+)" data-mode-declared="0"/', $card, $current);
+    preg_match('/<div class="corex-opsec__mode-block" data-mode="' . $current[1] . '"(.*?)<\/div>/s', $card, $block);
+
+    expect($block[1])->not->toContain(' hidden')
+        ->and($block[1])->toContain('Declaring ')
+        ->and($block[1])->not->toContain('Switching to ')
+        ->and($card)->toMatch('/corex-opsec__mode-same[^>]* hidden/');
+});

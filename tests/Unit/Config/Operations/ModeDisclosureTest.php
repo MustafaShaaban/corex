@@ -92,7 +92,9 @@ it('describes every mode with a summary and real consequences', function () {
 it('describes maintenance with what the guard actually does', function () {
     // Each line is checkable against MaintenanceGuard. A consequence list that describes behaviour
     // the code does not have is the kind of confident documentation that outlives the code.
-    $consequences = implode(' ', $this->disclosure->describe(OperationsMode::MAINTENANCE)['consequences']);
+    // What changes for people and the reference lines are drawn apart; together they are the account.
+    $described    = $this->disclosure->describe(OperationsMode::MAINTENANCE);
+    $consequences = implode(' ', [...$described['consequences'], ...$described['reference']]);
 
     expect($consequences)->toContain('503')
         ->and($consequences)->toContain('administrators')
@@ -115,7 +117,7 @@ it('describes coming soon with what the guard actually does', function () {
     // Each line is checkable against ComingSoonGuard and ComingSoonDecision (FR-003): the status
     // served, who passes, what is never intercepted, and how to leave.
     $described    = $this->disclosure->describe(OperationsMode::COMING_SOON);
-    $consequences = implode(' ', $described['consequences']);
+    $consequences = implode(' ', [...$described['consequences'], ...$described['reference']]);
 
     expect($described['summary'])->toContain('coming-soon page')
         ->and($consequences)->toContain('200')
@@ -136,7 +138,7 @@ it('does not describe coming soon in maintenance terms', function () {
     // The two were treated as one thing in exactly one place before spec 101. A 503 is what
     // maintenance answers and what coming soon must never claim.
     $described = $this->disclosure->describe(OperationsMode::COMING_SOON);
-    $text      = $described['summary'] . ' ' . implode(' ', $described['consequences']);
+    $text      = $described['summary'] . ' ' . implode(' ', [...$described['consequences'], ...$described['reference']]);
 
     expect($text)->not->toContain('503')
         ->and($text)->not->toContain('maintenance');
@@ -149,4 +151,23 @@ it('normalises an unknown mode rather than describing nothing', function () {
 
     expect($described['mode'])->toBe(OperationsMode::PRODUCTION)
         ->and($described['confirmation'])->toBe(ModeDisclosure::CONFIRM_PHRASE);
+});
+
+/**
+ * The panel drew every line of a mode as one flat list, about 150 characters wide, so what a
+ * switch would change for visitors could not be told from how the mode works or how to leave it
+ * (2026-10-07). The first kind is what the operator is agreeing to; the second is reference.
+ */
+it('separates what a switch changes for people from how the mode works and how to leave it', function () {
+    $maintenance = $this->disclosure->describe(OperationsMode::MAINTENANCE);
+    $comingSoon  = $this->disclosure->describe(OperationsMode::COMING_SOON);
+
+    expect(implode(' ', $maintenance['consequences']))->toContain('503')
+        ->and(implode(' ', $maintenance['consequences']))->not->toContain('Recovery')
+        ->and(implode(' ', $maintenance['reference']))->toContain('Recovery')
+        ->and($comingSoon['consequences'])->toHaveCount(2)
+        ->and(implode(' ', $comingSoon['consequences']))->toContain('edit posts')
+        ->and(implode(' ', $comingSoon['consequences']))->not->toContain('To leave')
+        ->and(implode(' ', $comingSoon['reference']))->toContain('To leave')
+        ->and(implode(' ', $comingSoon['reference']))->toContain('preview link');
 });

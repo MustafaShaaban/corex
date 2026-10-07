@@ -76,11 +76,16 @@ final class ModeDisclosure
      * `Retry-After`, and admin, cron, AJAX and REST contexts are never intercepted. The coming-soon
      * lines are the rows of {@see ComingSoonDecision}, in the operator's words.
      *
+     * `consequences` is what a switch changes for visitors and for people signed in — what the
+     * operator is agreeing to. `reference` is how the mode works and how to leave it: true, worth
+     * having, and not something to read before every change.
+     *
      * @return array{
      *     mode: string,
      *     confirmation: string,
      *     summary: string,
-     *     consequences: list<string>
+     *     consequences: list<string>,
+     *     reference: list<string>
      * }
      */
     public function describe(string $mode): array
@@ -92,13 +97,14 @@ final class ModeDisclosure
             'confirmation' => $this->confirmationFor($mode),
             'summary'      => $this->summary($mode),
             'consequences' => $this->consequences($mode),
+            'reference'    => $this->reference($mode),
         ];
     }
 
     /**
      * Every mode's description, for the renderer that draws all of them and hides the inactive ones.
      *
-     * @return list<array{mode:string,confirmation:string,summary:string,consequences:list<string>}>
+     * @return list<array{mode:string,confirmation:string,summary:string,consequences:list<string>,reference:list<string>}>
      */
     public function describeAll(): array
     {
@@ -151,17 +157,33 @@ final class ModeDisclosure
             ],
             OperationsMode::PRODUCTION => [
                 __('Readiness blockers must be resolved, or overridden deliberately by typing the confirmation phrase.', 'corex'),
-                __('The change is recorded in the mode history with your name against it.', 'corex'),
             ],
             OperationsMode::MAINTENANCE => [
                 __('Visitors who are not signed in receive a maintenance page with a 503 status.', 'corex'),
                 __('Signed-in administrators continue to use the site normally.', 'corex'),
-                __('The REST API, AJAX, cron, and wp-admin are never intercepted.', 'corex'),
-                __('Recovery: change the mode back here, or run the recovery command if you cannot reach this screen.', 'corex'),
             ],
             OperationsMode::COMING_SOON => [
                 __('Visitors receive the coming-soon page at the home address with a 200 status. Every other address answers with a temporary redirect to it.', 'corex'),
                 __('Anyone signed in who can edit posts is served the real site. Signed-in users who cannot are treated as visitors.', 'corex'),
+            ],
+            default => [],
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function reference(string $mode): array
+    {
+        return match ($mode) {
+            OperationsMode::PRODUCTION => [
+                __('The change is recorded in the mode history with your name against it.', 'corex'),
+            ],
+            OperationsMode::MAINTENANCE => [
+                __('The REST API, AJAX, cron, and wp-admin are never intercepted.', 'corex'),
+                __('Recovery: change the mode back here, or run the recovery command if you cannot reach this screen.', 'corex'),
+            ],
+            OperationsMode::COMING_SOON => [
                 __('The admin, the login page, the REST API, AJAX and cron are never intercepted, and robots.txt is served normally.', 'corex'),
                 __('A preview link, if you create one, shows the real site to whoever opens it, with no access to the admin. It is removed when the site leaves this mode.', 'corex'),
                 __('To leave: change the mode here, or run wp corex mode set if you cannot reach this screen. Opening the site to the public is the Production switch, with its own confirmation.', 'corex'),
