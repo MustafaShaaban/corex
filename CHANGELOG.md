@@ -6,6 +6,17 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.43.3] — 2026-10-07
+
+The submission detail pane, rebuilt, and three faults the first client site reported within hours
+of taking v0.43.2. Like v0.43.2 it carries a patch number and is more than a patch for a site: the
+pane's markup changed, opening a submission now marks it read, and a refused request to an admin
+route has a different body. Read Client impact before taking it.
+
+One of the three is the reason it is released today. Since v0.43.2 the framework's own integration
+suite failed on every pull request of a client repository with one site, on a test the client does
+not own. Nothing a site runs was wrong, and the check was red all the same.
+
 ### Changed
 
 - **The submission detail pane is reorganised** (spec 103, slice 4). The owner, of the old one: "the
