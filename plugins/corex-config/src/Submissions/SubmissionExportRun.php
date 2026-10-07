@@ -15,10 +15,17 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 
 /**
- * Durable export history record; it stores scope, columns, actor, count, and job linkage.
+ * Durable export history record; it stores scope, columns, actor, count, and job linkage, and
+ * what became of the file: how large it was, and whether it expired or somebody deleted it.
  */
 final readonly class SubmissionExportRun
 {
+    /** The file was removed because it passed its retention. */
+    public const REMOVED_EXPIRED = 'expired';
+
+    /** The file was removed because a person deleted it. */
+    public const REMOVED_DELETED = 'deleted';
+
     public int $id;
     public int $actorId;
     public int $jobId;
@@ -35,6 +42,13 @@ final readonly class SubmissionExportRun
     public int $recordCount;
     public string $inputHash;
     public DateTimeImmutable $createdAt;
+    /** In bytes; 0 until the file is written, and for an export made before sizes were kept. */
+    public int $fileSize;
+    /** `''` while the file is kept, or one of the `REMOVED_*` reasons. */
+    public string $removedReason;
+    /** The person who deleted the file; 0 when it expired or is still kept. */
+    public int $removedBy;
+    public ?DateTimeImmutable $removedAt;
 
     /** @param array<string,mixed> $payload */
     private function __construct(array $payload)
@@ -52,6 +66,12 @@ final readonly class SubmissionExportRun
         $this->recordCount = (int) ($payload['record_count'] ?? 0);
         $this->inputHash = (string) ($payload['input_hash'] ?? '');
         $this->createdAt = new DateTimeImmutable((string) ($payload['created_at'] ?? 'now'));
+        $this->fileSize = (int) ($payload['file_size'] ?? 0);
+        $this->removedReason = (string) ($payload['removed_reason'] ?? '');
+        $this->removedBy = (int) ($payload['removed_by'] ?? 0);
+        $this->removedAt = ((string) ($payload['removed_at'] ?? '')) === ''
+            ? null
+            : new DateTimeImmutable((string) $payload['removed_at']);
         $this->validate();
     }
 
@@ -87,6 +107,27 @@ final readonly class SubmissionExportRun
         return self::from([...$this->toArray(), 'job_id' => $jobId]);
     }
 
+    public function withFileSize(int $bytes): self
+    {
+        return self::from([...$this->toArray(), 'file_size' => $bytes]);
+    }
+
+    /**
+     * The run once its file is gone. It keeps the size the file had.
+     *
+     * @param string $reason  One of the `REMOVED_*` reasons.
+     * @param int    $actorId The person who deleted it; 0 when it expired.
+     */
+    public function withoutFile(string $reason, int $actorId, DateTimeImmutable $at): self
+    {
+        return self::from([
+            ...$this->toArray(),
+            'removed_reason' => $reason,
+            'removed_by' => $actorId,
+            'removed_at' => $at->format(DATE_ATOM),
+        ]);
+    }
+
     /** @return array<string,mixed> */
     public function toArray(): array
     {
@@ -104,6 +145,10 @@ final readonly class SubmissionExportRun
             'record_count' => $this->recordCount,
             'input_hash' => $this->inputHash,
             'created_at' => $this->createdAt->format(DATE_ATOM),
+            'file_size' => $this->fileSize,
+            'removed_reason' => $this->removedReason,
+            'removed_by' => $this->removedBy,
+            'removed_at' => $this->removedAt?->format(DATE_ATOM) ?? '',
         ];
     }
 
@@ -111,6 +156,12 @@ final readonly class SubmissionExportRun
     {
         if ($this->id < 0 || $this->actorId < 1 || $this->jobId < 0 || $this->recordCount < 0) {
             throw new InvalidArgumentException('The submission export identifiers are invalid.');
+        }
+        if ($this->fileSize < 0 || $this->removedBy < 0) {
+            throw new InvalidArgumentException('The submission export file record is invalid.');
+        }
+        if (! in_array($this->removedReason, ['', self::REMOVED_EXPIRED, self::REMOVED_DELETED], true)) {
+            throw new InvalidArgumentException('The reason the submission export file was removed is invalid.');
         }
         if (! in_array($this->scope, SubmissionExportRequest::SCOPES, true)) {
             throw new InvalidArgumentException('The submission export scope is invalid.');

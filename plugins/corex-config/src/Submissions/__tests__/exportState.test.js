@@ -7,13 +7,17 @@
 import {
 	blockedReason,
 	columnsFor,
+	coverageOf,
 	defaultScope,
 	describeFilters,
 	exportLabel,
+	fileNoteOf,
+	formatName,
 	holdsPersonalData,
 	offeredChoices,
 	progressOf,
 	scopeOptions,
+	sizeOf,
 } from '../export/exportState.js';
 
 const FLOWS = [
@@ -206,5 +210,118 @@ describe( 'progress', () => {
 		[ { processed: 0, total: 0 }, 0, 1 ],
 	] )( 'reads %p', ( progress, value, max ) => {
 		expect( progressOf( progress ) ).toMatchObject( { value, max } );
+	} );
+} );
+
+describe( 'a past export, in the history', () => {
+	const describe_ = ( filters ) =>
+		describeFilters( filters, FLOWS, STATUSES, asWritten );
+	const entry = ( overrides = {} ) => ( {
+		scope: 'accessible',
+		selected_ids: [],
+		query: {},
+		include_test: false,
+		format: 'xlsx',
+		file_size: 0,
+		state: 'ready',
+		expires_at: '2026-11-06T09:00:00+00:00',
+		removed_at: '',
+		removed_by_name: '',
+		...overrides,
+	} );
+
+	it.each( [
+		[ 'everything', entry(), 'Everything' ],
+		[
+			'ticked rows, by how many',
+			entry( { scope: 'selected', selected_ids: [ 4, 9, 12 ] } ),
+			'3 selected rows',
+		],
+		[
+			'one ticked row',
+			entry( { scope: 'selected', selected_ids: [ 4 ] } ),
+			'1 selected row',
+		],
+		[
+			'the filters it was made with',
+			entry( {
+				scope: 'filtered',
+				query: {
+					flow: '12',
+					status: 'new',
+					date_from: '2026-10-01',
+					date_to: '2026-10-07',
+				},
+			} ),
+			'Form: Lead form, Status: New, <2026-10-01> to <2026-10-07>',
+		],
+		[
+			'filters, when none was in force',
+			entry( { scope: 'filtered', query: { search: '' } } ),
+			'Everything in view, no filters',
+		],
+		[
+			'tests, when they were included',
+			entry( { include_test: true } ),
+			'Everything, with tests',
+		],
+	] )( 'says what it covered: %s', ( _name, item, words ) => {
+		expect( coverageOf( item, describe_ ) ).toBe( words );
+	} );
+
+	it.each( [
+		[ 0, '' ],
+		[ 512, '512 B' ],
+		[ 2048, '2 KB' ],
+		[ 48900, '48 KB' ],
+		[ 1572864, '1.5 MB' ],
+	] )( 'says how large %d bytes is', ( bytes, words ) => {
+		expect( sizeOf( bytes ) ).toBe( words );
+	} );
+
+	it.each( [
+		[ 'xlsx', 'Excel' ],
+		[ 'csv', 'CSV' ],
+		[ 'pdf', 'PDF' ],
+		[ undefined, 'CSV' ],
+	] )( 'names the format %s', ( format, name ) => {
+		expect( formatName( format ) ).toBe( name );
+	} );
+
+	it.each( [
+		[
+			'a file that is kept',
+			entry(),
+			'Expires <2026-11-06T09:00:00+00:00>',
+		],
+		[
+			'a file past its retention',
+			entry( { state: 'expired' } ),
+			'Expired <2026-11-06T09:00:00+00:00>. It can no longer be downloaded.',
+		],
+		[
+			'a file somebody deleted',
+			entry( {
+				state: 'deleted',
+				removed_at: '2026-10-08T10:00:00+00:00',
+				removed_by_name: 'Salma Adel',
+			} ),
+			'Deleted by Salma Adel, <2026-10-08T10:00:00+00:00>',
+		],
+		[
+			'a file deleted by somebody who can no longer be named',
+			entry( {
+				state: 'deleted',
+				removed_at: '2026-10-08T10:00:00+00:00',
+			} ),
+			'Deleted <2026-10-08T10:00:00+00:00>',
+		],
+		[
+			'an export with no file',
+			entry( { state: 'pending' } ),
+			'No file to download.',
+		],
+	] )( 'says what became of the file: %s', ( _name, item, words ) => {
+		expect( fileNoteOf( item, asWritten ) ).toBe( words );
 	} );
 } );

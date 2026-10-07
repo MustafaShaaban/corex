@@ -198,6 +198,10 @@ export function useInbox( config, filters ) {
 			window.Corex.api.get( `${ config.restUrl }/exports`, {
 				nonce: config.nonce,
 			} ),
+		deleteExport: ( id ) =>
+			window.Corex.api.delete( `${ config.restUrl }/exports/${ id }`, {
+				nonce: config.nonce,
+			} ),
 		downloadExport: ( id ) =>
 			window.Corex.api.get(
 				`${ config.restUrl }/exports/${ id }/download`,

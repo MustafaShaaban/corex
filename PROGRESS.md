@@ -54,7 +54,7 @@ is delivered in seven slices, one pull request each:
 | 3 | Excel | done (DECISIONS #256). A produced workbook and a produced CSV were opened in Excel |
 | — | Spacing review of the dialog and the filters, on the owner's request | done (DECISIONS #257). Measured, fixed, and kept measured by two browser tests |
 | 4 | The detail pane | done, in v0.43.3 (DECISIONS #259). Measured, and kept measured by a browser test. Not in it: to whom a notification went and where a failure can be fixed (T074b), which the server does not record |
-| 5 | Export history: size, expiry, delete | not started |
+| 5 | Export history: size, expiry, delete | done (DECISIONS #262), unreleased. A file is kept 30 days and removed by the daily retention sweep. Found on the way: the dialog printed `[object Object]` for a date filter |
 | 6 | PDF | not started; needs a spike on a library that renders Arabic |
 | 7 | The Data export, to the same standard | not started |
 

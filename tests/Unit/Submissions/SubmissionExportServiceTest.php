@@ -12,9 +12,11 @@ use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityRepository;
 use Corex\Activity\ActivityService;
 use Corex\Config\Submissions\SubmissionAccessScope;
+use Corex\Config\Submissions\SubmissionExportHistory;
 use Corex\Config\Submissions\SubmissionExportJobQueue;
 use Corex\Config\Submissions\SubmissionExportJobHandler;
 use Corex\Config\Submissions\SubmissionExportRequest;
+use Corex\Config\Submissions\SubmissionExportRetention;
 use Corex\Config\Submissions\SubmissionExportRun;
 use Corex\Config\Submissions\SubmissionExportService;
 use Corex\Config\Submissions\SubmissionExportSource;
@@ -100,9 +102,26 @@ function exportStore(): SubmissionExportStore
         /** @var array<int,array{path:string,extension:string,content_type:string,subject:string}> */
         public array $files = [];
 
+        /** What a written file is said to weigh, in bytes. */
+        public int $size = 2048;
+
         public function saveFile(int $runId, array $file, int $recordCount): void
         {
             $this->files[$runId] = $file;
+            $this->runs[$runId] = $this->runs[$runId]->withFileSize($this->size);
+        }
+
+        public function removeFile(int $runId, string $reason, int $actorId): SubmissionExportRun
+        {
+            unset($this->files[$runId], $this->artifacts[$runId]);
+
+            return $this->runs[$runId] = $this->runs[$runId]->withoutFile($reason, $actorId, new DateTimeImmutable('now'));
+        }
+
+        public function holdingFilesBefore(DateTimeImmutable $cutoff, int $limit): array
+        {
+            return array_slice(array_values(array_filter($this->runs, fn (SubmissionExportRun $run): bool =>
+                $run->createdAt < $cutoff && (isset($this->files[$run->id]) || isset($this->artifacts[$run->id])))), 0, $limit);
         }
 
         public function file(int $runId): ?array
@@ -244,9 +263,10 @@ it('returns permission-scoped export history', function () {
         'personal_data_acknowledged' => true,
     ]);
     $service->request($scope, $request);
+    $history = exportHistory($store, $activity);
 
-    expect($service->history($scope))->toHaveCount(1)
-        ->and($service->history(new SubmissionAccessScope(8, false)))->toBe([]);
+    expect($history->entries($scope))->toHaveCount(1)
+        ->and($history->entries(new SubmissionAccessScope(8, false)))->toBe([]);
 });
 
 /**
@@ -506,14 +526,16 @@ it('hands back a finished export by the name of what it holds, to the person who
     $run = $service->request($scope, SubmissionExportRequest::from(['scope' => 'accessible', 'columns' => ['identity']]));
     $store->saveFile($run->id, ['path' => '/tmp/x.csv', 'extension' => 'csv', 'content_type' => 'text/csv; charset=utf-8', 'subject' => 'contact'], 2);
 
-    expect($service->download($scope, $run->id))->toBe([
+    $history = exportHistory($store, $activity);
+
+    expect($history->download($scope, $run->id))->toBe([
         'name' => 'contact-' . $run->createdAt->format('Y-m-d') . '.csv',
         'content_type' => 'text/csv; charset=utf-8',
         'path' => '/tmp/x.csv',
         'csv' => null,
     ]);
 
-    $service->download(new SubmissionAccessScope(8, false), $run->id);
+    $history->download(new SubmissionAccessScope(8, false), $run->id);
 })->throws(DomainException::class, 'The submission export is unavailable.');
 
 it('still hands back an export made before files were kept on disk', function () {
@@ -524,7 +546,8 @@ it('still hands back an export made before files were kept on disk', function ()
     $run = $service->request($scope, SubmissionExportRequest::from(['scope' => 'accessible', 'columns' => ['identity']]));
     $store->artifacts[$run->id] = "identity\n1\n";
 
-    expect($service->download($scope, $run->id))->toMatchArray(['path' => null, 'csv' => "identity\n1\n"]);
+    expect(exportHistory($store, $activity)->download($scope, $run->id))
+        ->toMatchArray(['path' => null, 'csv' => "identity\n1\n"]);
 });
 
 /**
@@ -615,3 +638,186 @@ it('writes an export as a workbook, a sheet per form, when Excel is asked for', 
 
     $archive->close();
 });
+
+/**
+ * The history over a store, with user 7 a person who can be named and a clock that can be set.
+ */
+function exportHistory(SubmissionExportStore $store, ActivityService $activity, string $now = 'now'): SubmissionExportHistory
+{
+    $owners = new class implements SubmissionOwnerNames {
+        public function nameOf(string $ownerType, string $ownerKey): string
+        {
+            return $ownerType === 'user' && $ownerKey === '7' ? 'Salma Adel' : '';
+        }
+
+        public function people(): array
+        {
+            return [];
+        }
+    };
+
+    return new SubmissionExportHistory(
+        $store,
+        new SubmissionExportRetention($store, static fn (): DateTimeImmutable => new DateTimeImmutable($now)),
+        $owners,
+        $activity,
+    );
+}
+
+/**
+ * A finished export of two submissions, made by user 7 on a given day.
+ *
+ * @return array{0:object,1:SubmissionExportRun,2:ActivityService,3:object}
+ */
+function finishedExport(string $madeOn = 'now', string $format = 'xlsx'): array
+{
+    [$activity, $events] = exportActivity();
+    $store = exportStore();
+    $queued = SubmissionExportRun::queued(7, SubmissionExportRequest::from([
+        'scope' => 'accessible',
+        'columns' => ['identity'],
+        'format' => $format,
+    ]), 2);
+    $run = $store->create(SubmissionExportRun::from([
+        ...$queued->toArray(),
+        'created_at' => (new DateTimeImmutable($madeOn))->format(DATE_ATOM),
+    ]));
+    $store->saveFile($run->id, [
+        'path' => '/tmp/x.' . $format,
+        'extension' => $format,
+        'content_type' => 'application/octet-stream',
+        'subject' => 'contact',
+    ], 2);
+
+    return [$store, $store->find($run->id), $activity, $events];
+}
+
+it('says of each export who made it, in what format, how large it is and when it expires', function () {
+    [$store, $run, $activity] = finishedExport('2026-10-01 09:00:00 UTC');
+    $entry = exportHistory($store, $activity, '2026-10-07 12:00:00 UTC')->entries(new SubmissionAccessScope(7, false))[0];
+
+    expect($entry)->toMatchArray([
+        'id' => $run->id,
+        'actor_name' => 'Salma Adel',
+        'format' => 'xlsx',
+        'record_count' => 2,
+        'file_size' => 2048,
+        'state' => 'ready',
+        'expires_at' => '2026-10-31T09:00:00+00:00',
+    ]);
+});
+
+it('lists an export that is still being written as not finished', function () {
+    [$activity] = exportActivity();
+    $store = exportStore();
+    $run = $store->create(SubmissionExportRun::queued(7, SubmissionExportRequest::from([
+        'scope' => 'accessible',
+        'columns' => ['identity'],
+    ]), 2));
+
+    expect(exportHistory($store, $activity)->entries(new SubmissionAccessScope(7, false))[0])
+        ->toMatchArray(['id' => $run->id, 'state' => 'pending', 'file_size' => 0]);
+});
+
+it('lists an export past its retention as expired, and does not hand it back', function () {
+    [$store, $run, $activity] = finishedExport('2026-08-01 09:00:00 UTC');
+    $history = exportHistory($store, $activity, '2026-10-07 12:00:00 UTC');
+    $scope = new SubmissionAccessScope(7, false);
+
+    expect($history->entries($scope)[0]['state'])->toBe('expired');
+
+    $history->download($scope, $run->id);
+})->throws(DomainException::class, 'The submission export is unavailable: it expired.');
+
+it('removes the file of an export that is deleted, keeps its entry, and records who deleted it', function () {
+    [$store, $run, $activity, $events] = finishedExport();
+    $history = exportHistory($store, $activity);
+    $manager = new SubmissionAccessScope(7, true);
+
+    $history->delete($manager, $run->id);
+    $entry = $history->entries($manager)[0];
+    $event = $events->events[0];
+
+    expect($store->file($run->id))->toBeNull()
+        ->and($entry)->toMatchArray([
+            'state' => 'deleted',
+            'removed_by' => 7,
+            'removed_by_name' => 'Salma Adel',
+            'file_size' => 2048,
+        ])
+        ->and($event->kind)->toBe('submission.export.deleted')
+        ->and($event->actorId)->toBe(7)
+        ->and($event->targetId)->toBe((string) $run->id);
+});
+
+it('does not hand back an export that was deleted', function () {
+    [$store, $run, $activity] = finishedExport();
+    $history = exportHistory($store, $activity);
+    $scope = new SubmissionAccessScope(7, false);
+    $history->delete($scope, $run->id);
+
+    $history->download($scope, $run->id);
+})->throws(DomainException::class, 'The submission export is unavailable: it was deleted.');
+
+it('lets nobody delete an export they could not download', function () {
+    [$store, $run, $activity, $events] = finishedExport();
+
+    try {
+        exportHistory($store, $activity)->delete(new SubmissionAccessScope(8, false), $run->id);
+    } catch (DomainException $refusal) {
+        expect($refusal->getMessage())->toBe('The submission export is unavailable.');
+    }
+
+    expect($store->file($run->id))->not->toBeNull()
+        ->and($events->events)->toBe([]);
+});
+
+it('refuses to delete an export that holds no file', function (Closure $without) {
+    [$store, $run, $activity] = finishedExport();
+    $history = exportHistory($store, $activity);
+    $scope = new SubmissionAccessScope(7, false);
+    $without($history, $store, $scope, $run->id);
+
+    $history->delete($scope, $run->id);
+})->with([
+    'already deleted' => [fn ($history, $store, $scope, int $id) => $history->delete($scope, $id)],
+    'never written' => [function ($history, $store, $scope, int $id): void {
+        unset($store->files[$id]);
+    }],
+])->throws(DomainException::class, 'The submission export holds no file to delete.');
+
+it('removes the files of exports older than the retention and keeps their entries', function () {
+    [$store, $old, $activity] = finishedExport('2026-08-01 09:00:00 UTC');
+    $recent = $store->create(SubmissionExportRun::queued(7, SubmissionExportRequest::from([
+        'scope' => 'accessible',
+        'columns' => ['identity'],
+    ]), 2));
+    $store->saveFile($recent->id, ['path' => '/tmp/y.csv', 'extension' => 'csv', 'content_type' => 'text/csv', 'subject' => 'contact'], 2);
+    $retention = new SubmissionExportRetention($store, static fn (): DateTimeImmutable => new DateTimeImmutable('now'));
+
+    $removed = $retention->pruneOlderThan(new DateTimeImmutable('-' . $retention->retentionDays() . ' days'));
+    $entries = exportHistory($store, $activity)->entries(new SubmissionAccessScope(7, false));
+
+    expect($removed)->toBe(1)
+        ->and($store->file($old->id))->toBeNull()
+        ->and($store->file($recent->id))->not->toBeNull()
+        ->and(array_column($entries, 'state', 'id'))->toBe([$old->id => 'expired', $recent->id => 'ready'])
+        ->and($store->find($old->id)->removedBy)->toBe(0);
+});
+
+it('keeps what became of a file when a run is stored and read back', function () {
+    [$store, $run] = finishedExport();
+    $removed = $run->withoutFile(SubmissionExportRun::REMOVED_DELETED, 7, new DateTimeImmutable('2026-10-07 12:00:00 UTC'));
+    $read = SubmissionExportRun::from($removed->toArray());
+
+    expect($read->fileSize)->toBe(2048)
+        ->and($read->removedReason)->toBe('deleted')
+        ->and($read->removedBy)->toBe(7)
+        ->and($read->removedAt?->format(DATE_ATOM))->toBe('2026-10-07T12:00:00+00:00');
+});
+
+it('refuses a reason for removing a file that it does not know', function () {
+    [, $run] = finishedExport();
+
+    $run->withoutFile('misplaced', 7, new DateTimeImmutable('now'));
+})->throws(InvalidArgumentException::class);

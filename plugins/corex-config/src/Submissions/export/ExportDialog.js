@@ -17,17 +17,21 @@ import CorexTime from '../../admin/components/CorexTime.js';
 import { formatDateTime } from '../../admin/adminDateTime.js';
 import { buildExportPayload } from '../inbox.js';
 import {
+	DEFAULT_CHOICES,
 	blockedReason,
 	columnsFor,
-	DEFAULT_CHOICES,
+	coverageOf,
 	defaultScope,
 	describeFilters,
 	exportLabel,
 	fileFrom,
+	fileNoteOf,
+	formatName,
 	holdsPersonalData,
 	offeredChoices,
 	progressOf,
 	scopeOptions,
+	sizeOf,
 } from './exportState.js';
 
 /** Steps to wait through before telling the person the export will finish on its own. */
@@ -167,6 +171,8 @@ export default function ExportDialog( {
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the dialog opens.
 	}, [] );
 
+	const describe = ( source ) =>
+		describeFilters( source, flows, statusLabels, readableDate );
 	const mayExportPersonal = Boolean( preview?.permissions?.personal_data );
 	const choices = offeredChoices( mayExportPersonal || preview === null );
 	const allowed = chosen.filter( ( id ) =>
@@ -176,9 +182,7 @@ export default function ExportDialog( {
 	const options = scopeOptions( {
 		counts: preview?.counts ?? null,
 		selectedCount: selectedIds.length,
-		filters: describeFilters( filters, flows, statusLabels, ( date ) =>
-			formatDateTime( date, 'date', date )
-		),
+		filters: describe( filters ),
 	} );
 	const count =
 		options.find( ( option ) => option.value === scope )?.count ?? null;
@@ -493,11 +497,20 @@ export default function ExportDialog( {
 
 			<RecentExports
 				history={ history }
+				describe={ describe }
+				remove={ async ( id ) => {
+					const result = await inbox.deleteExport( id );
+					if ( showing.current && result.envelope.ok ) {
+						setHistory( result.envelope.data.exports );
+					}
+					return result.envelope.ok;
+				} }
 				download={ async ( id ) => {
 					const result = await inbox.downloadExport( id );
 					if ( result.envelope.ok ) {
 						save( result.envelope.data.artifact );
 					}
+					return result.envelope.ok;
 				} }
 			/>
 		</CorexDialog>
@@ -565,42 +578,190 @@ function ExportOutcome( { run, onSaveAgain } ) {
 	);
 }
 
-function RecentExports( { history, download } ) {
+/** How many past exports are listed before "Show all". */
+const RECENT_SHOWN = 5;
+
+/**
+ * A stored date as a person reads it. `formatDateTime` answers the text with its machine form;
+ * handing the whole answer to a sentence printed "[object Object]" where a date belonged.
+ *
+ * @param {string} value A stored date.
+ * @return {string} The date, or what was stored when it names no date.
+ */
+function readableDate( value ) {
+	return formatDateTime( value, 'date', String( value || '' ) ).human;
+}
+
+/**
+ * What was exported before (spec 103, US9): what each export covered, in what format and how
+ * large, who made it and when, and what became of its file. A file that is still kept can be
+ * downloaded again or deleted.
+ *
+ * @param {Object}        props
+ * @param {Array<Object>} props.history  The exports this person may see, newest first.
+ * @param {Function}      props.describe Turns the inbox's filters into words.
+ * @param {Function}      props.download Saves one export again; resolves to whether it could.
+ * @param {Function}      props.remove   Deletes one export's file; resolves to whether it could.
+ * @return {import('react').ReactElement|null} The history, or nothing when there is none.
+ */
+function RecentExports( { history, describe, download, remove } ) {
+	const headingId = useId();
+	const heading = useRef( null );
+	const [ showAll, setShowAll ] = useState( false );
+	const [ confirming, setConfirming ] = useState( 0 );
+	const [ problem, setProblem ] = useState( '' );
+
 	if ( ! history || history.length === 0 ) {
 		return null;
 	}
 
+	const attempt = async ( action, id, failure ) => {
+		setProblem( '' );
+		if ( ! ( await action( id ) ) ) {
+			setProblem( failure );
+		}
+	};
+	const deleteFile = async ( id ) => {
+		await attempt(
+			remove,
+			id,
+			__( 'The file could not be deleted.', 'corex' )
+		);
+		setConfirming( 0 );
+		// The buttons that had focus are gone with the file.
+		heading.current?.focus();
+	};
+
 	return (
-		<section className="corex-export__recent">
-			<h3>{ __( 'Recent exports', 'corex' ) }</h3>
+		<section className="corex-export__recent" aria-labelledby={ headingId }>
+			<h3 id={ headingId } ref={ heading } tabIndex={ -1 }>
+				{ __( 'Recent exports', 'corex' ) }
+			</h3>
+			{ problem && (
+				<p className="corex-export__recent-problem" role="alert">
+					{ problem }
+				</p>
+			) }
 			<ul>
-				{ history.slice( 0, 5 ).map( ( item ) => (
-					<li key={ item.id }>
-						<span>
-							<CorexTime value={ item.created_at } />
-							{ ' · ' }
-							{ sprintf(
-								/* translators: %s: a number of submissions. */
-								_n(
-									'%s submission',
-									'%s submissions',
-									Number( item.record_count ),
-									'corex'
-								),
-								Number( item.record_count ).toLocaleString()
-							) }
-							{ ' · ' }
-							{ String( item.format || 'csv' ).toUpperCase() }
-						</span>
-						<Button
-							variant="link"
-							onClick={ () => download( item.id ) }
+				{ ( showAll ? history : history.slice( 0, RECENT_SHOWN ) ).map(
+					( item ) => (
+						<li
+							key={ item.id }
+							className={ `corex-export__entry is-${ item.state }` }
 						>
-							{ __( 'Download', 'corex' ) }
-						</Button>
-					</li>
-				) ) }
+							<PastExport item={ item } describe={ describe } />
+							{ item.state === 'ready' && (
+								<PastExportActions
+									confirming={ confirming === item.id }
+									ask={ () => setConfirming( item.id ) }
+									keep={ () => setConfirming( 0 ) }
+									deleteFile={ () => deleteFile( item.id ) }
+									download={ () =>
+										attempt(
+											download,
+											item.id,
+											__(
+												'The file could not be downloaded.',
+												'corex'
+											)
+										)
+									}
+								/>
+							) }
+						</li>
+					)
+				) }
 			</ul>
+			{ history.length > RECENT_SHOWN && (
+				<Button
+					variant="link"
+					className="corex-export__recent-more"
+					aria-expanded={ showAll }
+					onClick={ () => setShowAll( ! showAll ) }
+				>
+					{ showAll
+						? __( 'Show fewer', 'corex' )
+						: sprintf(
+								/* translators: %s: how many more past exports can be listed. */
+								__( 'Show %s more', 'corex' ),
+								(
+									history.length - RECENT_SHOWN
+								).toLocaleString()
+						  ) }
+				</Button>
+			) }
 		</section>
+	);
+}
+
+function PastExport( { item, describe } ) {
+	const size = sizeOf( item.file_size );
+
+	return (
+		<div className="corex-export__entry-text">
+			<p className="corex-export__entry-what">
+				{ coverageOf( item, describe ) }
+			</p>
+			<p className="corex-export__entry-facts">
+				<span>{ formatName( item.format ) }</span>
+				<span>
+					{ sprintf(
+						/* translators: %s: a number of submissions. */
+						_n(
+							'%s submission',
+							'%s submissions',
+							Number( item.record_count ),
+							'corex'
+						),
+						Number( item.record_count ).toLocaleString()
+					) }
+				</span>
+				{ size && <span>{ size }</span> }
+			</p>
+			<p className="corex-export__entry-facts">
+				{ item.actor_name && <span>{ item.actor_name }</span> }
+				<CorexTime value={ item.created_at } />
+			</p>
+			<p className="corex-export__entry-file" aria-live="polite">
+				{ fileNoteOf( item, readableDate ) }
+			</p>
+		</div>
+	);
+}
+
+function PastExportActions( { confirming, ask, keep, deleteFile, download } ) {
+	if ( confirming ) {
+		return (
+			<div
+				className="corex-export__entry-actions is-confirming"
+				role="group"
+				aria-label={ __( 'Delete this file?', 'corex' ) }
+			>
+				<span>{ __( 'Delete this file?', 'corex' ) }</span>
+				<Button
+					variant="secondary"
+					isDestructive
+					onClick={ deleteFile }
+				>
+					{ __( 'Delete file', 'corex' ) }
+				</Button>
+				{ /* The safe answer is the one focus lands on. */ }
+				{ /* eslint-disable-next-line jsx-a11y/no-autofocus */ }
+				<Button variant="tertiary" onClick={ keep } autoFocus>
+					{ __( 'Keep it', 'corex' ) }
+				</Button>
+			</div>
+		);
+	}
+
+	return (
+		<div className="corex-export__entry-actions">
+			<Button variant="link" onClick={ download }>
+				{ __( 'Download', 'corex' ) }
+			</Button>
+			<Button variant="link" isDestructive onClick={ ask }>
+				{ __( 'Delete', 'corex' ) }
+			</Button>
+		</div>
 	);
 }

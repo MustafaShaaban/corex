@@ -6673,3 +6673,85 @@ What was run:
 
 **Not run.** The whole integration suite was not run here with a site in place. The client's CI
 runs it on every pull request and will say.
+
+## #262 — An export's expiry is the site's retention counted from its date, and is not stored
+
+Date: 2026-10-07 · Spec: 103 (submissions inbox and exports), slice 5 · Status: Final
+
+The owner asked for "professional features" of the export and named the history among what was
+poor. The spec: each past export says who made it, when, what it covered, its format, count and
+size, and when it expires; it can be downloaded again until then, and deleted (FR-028 to FR-031).
+
+**Expiry is not stored, though the plan said it would be.** D11 had a run record its expiry. CoreX
+already has one daily retention sweep, and every store in it answers two things: how many days it
+keeps, and "remove what is older than this". A stored expiry would be a second statement of the
+same fact, and the two would disagree on the day somebody changes the period. So an export expires
+`SubmissionExportRetention::DAYS` after it was made. The history shows that date and the sweep
+removes the file on it. A file past the date is expired from that moment, whether or not the sweep
+has been by: the history says so and the download refuses.
+
+**Thirty days, and no setting.** The spec's assumption, "unless the site already defines a
+retention for exports". No site does; nothing in CoreX had one. A setting nobody asked for is not
+added.
+
+**The file goes and the entry stays.** For an expiry and for a delete alike. The entry is what
+makes an export accountable: who took a copy of people's answers, of what, and when. The run keeps
+the size the file had, so the entry can still say it.
+
+**The history is its own class.** `SubmissionExportService` asked for exports, moved them along,
+listed them and handed them back, and needed a retention and a way to name people to do the last
+two properly. `SubmissionExportHistory` has those: `entries()`, `download()`, `delete()`. The
+service keeps asking and moving. `history()` and `download()` moved; that is in Client impact.
+
+**What can be listed can be downloaded and deleted, and nothing else.** One check, `accessible()`:
+a person's own exports, or every export for somebody who may manage all submissions.
+
+**Deleting asks first**, in the row, and the answer focus lands on is "Keep it". After a delete
+the buttons that had focus are gone, so focus goes to the section's heading.
+
+**A file that is not there is not offered.** `file()` answers null when the file is not on disk: a
+site moved without its private uploads, a host that clears them. Found on the development
+install, where files had been removed by hand and every one was still listed with a "Download"
+that could only fail.
+
+**Found on the way: `[object Object]`.** The dialog put the filters in force into words with
+`formatDateTime()`, which answers `{ human, machine, isPresent }`, and handed the whole answer to
+the sentence. A date range read "[object Object] to [object Object]". It has done since v0.43.2.
+The new browser test sets a date range for that reason; run against the released dialog it failed
+with exactly that text.
+
+**Not done.** An expired or stopped export's job is not looked up, so "No file to download" does
+not say which of the two it was. Files left on disk by an export whose entry was deleted outside
+CoreX are not swept. A remembered column choice (T045) and a streamed download (T043b) are still
+open from slice 2.
+
+What was measured, on a real page, and is asserted by a browser test:
+
+| Measured | Result |
+|---|---|
+| What an entry covered, and its facts | 14px; they were 13px, WordPress's size for a paragraph |
+| The line about the file | 12px |
+| Between the lines of an entry | 4px, all of them |
+| "Download" and "Delete" | 24px tall; neither wider than its box, neither past the dialog's edge |
+| An entry's text against the heading | one starting edge |
+| On "Delete" | focus is on "Keep it" |
+| After a delete | focus is on the heading; the entry reads "Deleted by …" and has no buttons |
+
+Looked at in dark, light, right-to-left and at 480px wide, with a kept, a deleted and an expired
+export in the list.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The history's unit tests, before the classes existed | failed: `SubmissionExportHistory` not found |
+| The history's wording in Jest, before the functions existed | 20 failed |
+| The new browser test against the released dialog | failed: "[object Object] to [object Object]" |
+| `tests/Unit` | 2209 passed |
+| `tests/Integration`, real WordPress | 539 passed |
+| Jest, `plugins/corex-config` | 356 passed |
+| `submissions-inbox.spec.js`, a browser | 9 passed |
+| `lint:js`, `lint:css` | clean |
+
+**Not run.** The sweep was not left to run from WordPress's scheduler; its store was called with a
+cutoff. A screen reader was not used on the history.

@@ -17,7 +17,8 @@ use DateTimeImmutable;
 use DomainException;
 
 /**
- * Permission-scoped, acknowledged, audited submission export orchestration.
+ * Permission-scoped, acknowledged, audited submission export orchestration: asking for an export
+ * and moving it along. What was exported before is {@see SubmissionExportHistory}.
  */
 final readonly class SubmissionExportService
 {
@@ -81,48 +82,6 @@ final readonly class SubmissionExportService
         }
 
         return $this->jobs->advance($run->jobId);
-    }
-
-    /** @return list<SubmissionExportRun> */
-    public function history(SubmissionAccessScope $scope, int $limit = 50): array
-    {
-        return $this->exports->history($scope, min(100, max(1, $limit)));
-    }
-
-    /**
-     * A finished export, for the person who made it or one who may manage every submission.
-     *
-     * @return array{name:string,content_type:string,path:?string,csv:?string} `path` for a file on
-     *         disk; `csv` for the text of an export made before files were kept there.
-     */
-    public function download(SubmissionAccessScope $scope, int $runId): array
-    {
-        $run = $this->exports->find($runId);
-        if ($run === null || (! $scope->manageAll && $run->actorId !== $scope->actorId)) {
-            throw new DomainException('The submission export is unavailable.');
-        }
-
-        $file = $this->exports->file($runId);
-        if ($file !== null) {
-            return [
-                'name' => sprintf('%s-%s.%s', $file['subject'], $run->createdAt->format('Y-m-d'), $file['extension']),
-                'content_type' => $file['content_type'],
-                'path' => $file['path'],
-                'csv' => null,
-            ];
-        }
-
-        $csv = $this->exports->artifact($runId);
-        if ($csv === null) {
-            throw new DomainException('The submission export artifact is not ready.');
-        }
-
-        return [
-            'name' => 'corex-submissions-' . $runId . '.csv',
-            'content_type' => 'text/csv; charset=utf-8',
-            'path' => null,
-            'csv' => $csv,
-        ];
     }
 
     private function assertPersonalData(SubmissionAccessScope $scope, SubmissionExportRequest $request): void
