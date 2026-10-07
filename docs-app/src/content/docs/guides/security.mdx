@@ -45,6 +45,51 @@ lockouts. It does not change users, roles, passwords, content, or unrelated sett
 
 Use `COREX_LOGIN_UNGUARD` only as a temporary emergency bypass and remove it after access is restored.
 
+## Behind a proxy, a load balancer or a CDN
+
+A request that passes through a proxy reaches WordPress from the proxy's address. Until CoreX is told
+which proxies to trust, that address is the client: login protection counts failed attempts against the
+proxy, and a form's rate limit is one allowance shared by every visitor.
+
+Name the proxies:
+
+```bash
+wp corex security trusted-proxies 127.0.0.1 ::1
+```
+
+Each argument is an address or a CIDR range, and the list given replaces the saved one. With no
+argument the command prints the list. `--clear` trusts no proxy. The Security screen has no field for
+this list; the command is how it is set.
+
+For a request that arrives from a trusted proxy, CoreX reads `X-Forwarded-For` from the right and takes
+the first address that is not itself a trusted proxy. That address is used by:
+
+- login protection, for attempts and lockouts;
+- the rate limit of every form and flow;
+- the captcha check, as the address sent to the provider with a challenge.
+
+| In front of WordPress | Trust |
+|---|---|
+| A tunnel or proxy on the same machine | `127.0.0.1` and `::1` |
+| A load balancer on a private network | Its address, or the network's range |
+| A CDN that connects to the origin directly | The ranges the CDN publishes |
+| A CDN in front of a load balancer | Both |
+
+Three things decide whether the answer is right:
+
+- **List every proxy between the visitor and WordPress.** The first one that is not listed is taken for
+  the visitor.
+- **List only proxies that append to `X-Forwarded-For`.** A trusted proxy is believed about who the
+  visitor is. One that passes a visitor's own header through unchanged lets the visitor choose an
+  address.
+- **A request from anywhere else is identified by its connection**, whatever headers it carries.
+
+An entry that is not an address or a range is refused, and nothing is saved:
+
+```text
+Error: Not an address or a range: proxy.example.com. Nothing was changed.
+```
+
 ## Access requests
 
 Denied CoreX admin screens now show a real request-access form. The request is stored with the requested CoreX ability,

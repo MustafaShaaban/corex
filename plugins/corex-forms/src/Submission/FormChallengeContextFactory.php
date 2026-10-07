@@ -11,6 +11,7 @@ namespace Corex\Forms\Submission;
 defined('ABSPATH') || exit;
 
 use Corex\Forms\Flow\FlowProtection;
+use Corex\Http\ClientAddress;
 use Corex\Security\ChallengeContext;
 use Corex\Support\Config\ConfigInterface;
 
@@ -27,7 +28,7 @@ final readonly class FormChallengeContextFactory
 {
     private const DEFAULT_THRESHOLD = 0.3;
 
-    public function __construct(private ConfigInterface $config)
+    public function __construct(private ConfigInterface $config, private ClientAddress $client)
     {
     }
 
@@ -104,7 +105,7 @@ final readonly class FormChallengeContextFactory
 
     private function remoteIp(): ?string
     {
-        $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash((string) $_SERVER['REMOTE_ADDR'])) : '';
+        $ip = $this->client->current();
 
         return $ip !== '' ? $ip : null;
     }

@@ -68,6 +68,11 @@ On `main` since v0.43.1, and not in a release yet:
   check reports that as `REMOVED`, not drift. The dependency advisory check runs in the
   framework's repository only, and CodeQL there or in a public client. Found by creating the
   first client repository from v0.43.0.
+- **A form behind a proxy counts visitors, not the proxy** (#247, DECISIONS #250). Form and flow rate
+  limits and the captcha check read `REMOTE_ADDR`; they now ask `Corex\Http\ClientAddress`, which
+  corex-config answers from the trusted-proxy list login protection already used. That list had no
+  way to be set from the admin or the command line, so `wp corex security trusted-proxies` is new,
+  and *Security operations* has the first documentation of what to list.
 - **`max:N` and `min:N` follow the field, not the answer** (#250, DECISIONS #249). They compared
   any all-digit answer as a number, so a message bounded by `max:300` refused `2025`. The schema
   resolver now turns a bound on a field that is not a number into the matching length rule, which
@@ -256,6 +261,9 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
 
+- **Trusted proxies have no field on the Security screen.** The screen's state carries the list and
+  saves it back unchanged; nothing draws it. `wp corex security trusted-proxies` is the only way to
+  set it (DECISIONS #250).
 - Three browser specs are excluded from a fresh-install run — two block-editor specs and the flow
   builder. The list lives in `tests/e2e/playwright.config.js` with the evidence for each.
 - **The hidden `/wp-admin/` 404 is distinguishable from a real one by its inline styles.** It carries

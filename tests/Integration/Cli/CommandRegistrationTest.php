@@ -89,6 +89,7 @@ it('keeps all command registrations available when dependencies cannot resolve',
         'corex reset',
         'corex migrate',
         'corex security reset-login',
+        'corex security trusted-proxies',
         'corex mode get',
         'corex mode set',
         'corex doctor',
@@ -96,7 +97,7 @@ it('keeps all command registrations available when dependencies cannot resolve',
         'corex version',
     ];
 
-    expect($registrations)->toHaveCount(28)
+    expect($registrations)->toHaveCount(29)
         ->and(array_keys($registrations))->toBe($expectedCommands)
         ->and($registrations)->toHaveKeys(['corex migrate', 'corex doctor', 'corex reset'])
         ->and($container->resolutionAttempts)->toBe(0);

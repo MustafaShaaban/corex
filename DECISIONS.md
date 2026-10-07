@@ -5898,3 +5898,71 @@ What was run:
 Not run: a browser submit of a rewritten rule. The exported schema is asserted to carry
 `max_length`, and the runtime's `max_length` arm has its own tests; the two were not watched
 together in a page.
+
+## #250 — Forms ask who the client is, and corex-config answers from the proxies the site trusts
+
+Date: 2026-10-07 · Spec: none (defect), issue #247 · Status: Final
+
+Reported 2026-10-06 from a client site behind a tunnel. The form and flow rate limits were keyed on
+`$_SERVER['REMOTE_ADDR']`, and the captcha check sent the same value to its provider. Behind a proxy
+that is the proxy's address: one allowance shared by every visitor.
+
+Login protection already resolved the address correctly (`ClientIpResolver`, corrected under
+DECISIONS #242). Forms could not use it: it lives in corex-config, and corex-forms depends only on
+corex-core. #247 named three things to decide.
+
+**1. Where address resolution lives.** A contract in corex-core, `Corex\Http\ClientAddress`, with
+one method. corex-core binds `RemoteAddress`, which answers with the connection's address and
+believes no header. corex-config binds `TrustedProxyClientAddress` over it, which asks the same
+`ClientIpResolver` login protection uses. Providers register in a fixed order with corex-config
+after corex-core, and a later binding replaces an earlier one, so corex-forms gets whichever is the
+better answer available and names neither.
+
+The setting did not move. It is still `trusted_proxy_mode` and `trusted_proxy_ranges` in the
+login-protection option. #247 called it "a login setting today, not a site setting"; what makes it a
+site setting is who reads it, and moving the stored keys would have been a migration for no change
+in behaviour. Where it is stored is now a detail behind the command below.
+
+**2. A CDN's own header (`CF-Connecting-IP`, `True-Client-IP`).** Not added. The site that reported
+this is behind a tunnel on the same machine, where the rightmost `X-Forwarded-For` entry is the
+address the CDN's edge saw, and trusting the loopback addresses gives the right answer. A header
+that one vendor sets is a second way to be wrong on every other host. A site that needs one can bind
+its own `ClientAddress`; that changes what forms see, not what login protection sees, which calls
+`ClientIpResolver` directly.
+
+**3. Operator documentation, and a way to set the list.** Writing the documentation showed there
+was nothing to document: the Security screen carries the list in its state and saves it back, and
+draws no field for it. The only way to set it was a hand-written POST to
+`corex/v1/security/login-protection`. So this adds `wp corex security trusted-proxies`, which
+prints, replaces or clears the list and refuses an entry that is not an address or a CIDR range. It
+edits the two keys in the stored option and leaves the others, as `security reset-login` does.
+*Security operations* now says which addresses to list and the two ways the answer goes wrong: a
+proxy left off the list, and a proxy that does not append to the header.
+
+**Left as it is.**
+
+- A field on the Security screen. It is a change to a built React screen with its own review; it is
+  listed in `PROGRESS.md` under "Open, and not hidden".
+- The REST route accepts any string as a trusted range. The resolver ignores one it cannot parse.
+- `BlogProController::shareClick()` passes `REMOTE_ADDR` into a visitor hash for reading analytics.
+  It is not a limit, and the hash also takes a visitor key and the user agent.
+- The two form controllers each have the same one-line `clientFingerprint()`.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `ClientAddressTest`: the connection's address, and the trusted-proxy answer | 11 passed |
+| `SecurityTrustedProxiesCommandTest` | 11 passed |
+| `FormClientAddressTest`, real WordPress: a second visitor behind a trusted proxy keeps their allowance; without the proxy trusted they share one | 3 passed |
+| `tests/Unit` | 2100 passed |
+| `tests/Integration/Cli`, `Forms`, `Security` | 141 passed |
+| The command on the local install: list, set, a refused entry, both arguments, clear, help | behaved as documented; the option it created was deleted afterwards |
+
+**Not watched failing first.** The rate-limit test could not run before the change, because the
+classes it constructs did not exist. Its third case is the old behaviour under the new code: with no
+proxy trusted, the second visitor is refused.
+
+**Not verified where it was reported.** Nothing here was run behind a real tunnel or CDN. Whether
+`127.0.0.1` and `::1` are the right entries for the reporting site depends on what its
+`REMOTE_ADDR` is, which that site has to read.

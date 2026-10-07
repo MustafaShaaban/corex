@@ -11,7 +11,9 @@ namespace Corex\Foundation;
 defined('ABSPATH') || exit;
 
 use Corex\Container\ContainerInterface;
+use Corex\Http\ClientAddress;
 use Corex\Http\EnvelopeResponder;
+use Corex\Http\RemoteAddress;
 
 /**
  * Registers the shared HTTP contract (spec 043): the {@see EnvelopeResponder} service
@@ -28,6 +30,8 @@ final class HttpServiceProvider extends ServiceProvider
             EnvelopeResponder::class,
             static fn (ContainerInterface $container): EnvelopeResponder => new EnvelopeResponder(),
         );
+        // The answer until corex-config, which knows the site's trusted proxies, replaces it.
+        $this->container->singleton(ClientAddress::class, RemoteAddress::class);
     }
 
     public function boot(): void

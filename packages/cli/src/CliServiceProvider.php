@@ -21,6 +21,7 @@ use Corex\Cli\Commands\ReadinessCommand;
 use Corex\Cli\Commands\ReadinessCommandServices;
 use Corex\Cli\Commands\ResetCommand;
 use Corex\Cli\Commands\SecurityResetLoginCommand;
+use Corex\Cli\Commands\SecurityTrustedProxiesCommand;
 use Corex\Cli\Commands\VersionCommand;
 use Corex\Cli\Release\CiSecurityReadiness;
 use Corex\Cli\Release\ComponentCoverageReadinessCheck;
@@ -432,6 +433,13 @@ final class CliServiceProvider extends ServiceProvider
             'definition' => [],
         ];
 
+        $registrations['corex security trusted-proxies'] = [
+            'handler' => function (array $args, array $assoc): void {
+                $this->container->make(SecurityTrustedProxiesCommand::class)->run($args, $assoc);
+            },
+            'definition' => $this->trustedProxiesCommandDefinition(),
+        ];
+
         // The operations mode from the command line (spec 101, FR-017). Resolved when the command
         // runs, like its neighbours, so a dependency that cannot be built costs this command and
         // not the registration of every other one.
@@ -569,6 +577,26 @@ final class CliServiceProvider extends ServiceProvider
                     'optional'    => true,
                     'description' => __('The typed confirmation for going live: PRODUCTION.', 'corex'),
                 ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{shortdesc: string, synopsis: list<array<string, mixed>>}
+     */
+    private function trustedProxiesCommandDefinition(): array
+    {
+        return [
+            'shortdesc' => __('Show or set the proxies trusted to report a visitor’s address.', 'corex'),
+            'synopsis'  => [
+                [
+                    'type'        => 'positional',
+                    'name'        => 'proxy',
+                    'optional'    => true,
+                    'repeating'   => true,
+                    'description' => __('An address or CIDR range to trust. The list given replaces the saved one.', 'corex'),
+                ],
+                $this->resetFlag('clear', __('Trust no proxy.', 'corex')),
             ],
         ];
     }

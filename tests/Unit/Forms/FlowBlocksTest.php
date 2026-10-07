@@ -21,6 +21,7 @@ use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Submission\FlowSchemaFactory;
 use Corex\Forms\Submission\FormChallengeContextFactory;
 use Corex\Forms\Validation\RuleRegistry;
+use Corex\Http\RemoteAddress;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Tests\Fixtures\Forms\InMemoryFlowStore;
 
@@ -106,7 +107,7 @@ function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED): FlowBlockRend
         new FlowSchemaFactory($resolver),
         new SchemaExporter(),
         new FieldRenderer(),
-        new FormChallengeContextFactory($config),
+        new FormChallengeContextFactory($config, new RemoteAddress()),
         new ProtectedFormRegistry(),
     );
 }

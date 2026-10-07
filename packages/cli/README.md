@@ -149,6 +149,21 @@ WordPress login URL. It is intentionally narrow:
 
 Use it when a custom login route, default-endpoint protection, or active lockout blocks owner access.
 
+### `security trusted-proxies` — say which proxies report a visitor's address
+
+```bash
+wp corex security trusted-proxies                    # print the list
+wp corex security trusted-proxies 127.0.0.1 ::1      # replace it
+wp corex security trusted-proxies --clear            # trust no proxy
+```
+
+Behind a proxy, a load balancer or a CDN, a request connects from the proxy. Naming the proxy here is
+what lets login protection and form rate limits count the visitor instead. Each argument is an address
+or a CIDR range; one that is neither refuses the whole list and saves nothing. It writes
+`trusted_proxy_mode` and `trusted_proxy_ranges` in the login-protection settings and leaves the rest.
+[Security operations](../../docs/en/03-operations/security.md#behind-a-proxy-a-load-balancer-or-a-cdn)
+says which addresses to list.
+
 ### `mode` — read and change the operations mode (spec 101)
 
 ```bash

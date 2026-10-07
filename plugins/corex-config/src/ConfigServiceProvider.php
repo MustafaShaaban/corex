@@ -429,6 +429,12 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionPolicy::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\LoginProtectionService::class);
         $this->container->singleton(\Corex\Config\Security\LoginProtection\ClientIpResolver::class);
+        // Replaces corex-core's connection address, so a form's rate limit and a login lockout
+        // identify a visitor behind a trusted proxy the same way.
+        $this->container->singleton(
+            \Corex\Http\ClientAddress::class,
+            \Corex\Config\Security\LoginProtection\TrustedProxyClientAddress::class,
+        );
         $this->container->singleton(
             \Corex\Config\Security\LoginProtection\LoginRouteGuard::class,
             static fn (ContainerInterface $c): \Corex\Config\Security\LoginProtection\LoginRouteGuard =>
