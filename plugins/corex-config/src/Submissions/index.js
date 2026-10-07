@@ -272,83 +272,95 @@ function Filters( { filters, update, flows } ) {
 			className="corex-inbox__filters"
 			aria-label={ __( 'Submission filters', 'corex' ) }
 		>
-			<label className="is-wide" htmlFor={ `${ fieldId }-search` }>
-				<span>{ __( 'Search', 'corex' ) }</span>
-				<input
-					id={ `${ fieldId }-search` }
-					type="search"
-					value={ filters.search }
-					onChange={ ( event ) =>
-						update( 'search', event.target.value )
-					}
-					placeholder={ __( 'Name, email, or flow', 'corex' ) }
+			{ /* The panel measures itself and this grid follows: see the stylesheet. */ }
+			<div className="corex-inbox__filter-grid">
+				<label className="is-wide" htmlFor={ `${ fieldId }-search` }>
+					<span>{ __( 'Search', 'corex' ) }</span>
+					<input
+						id={ `${ fieldId }-search` }
+						type="search"
+						value={ filters.search }
+						onChange={ ( event ) =>
+							update( 'search', event.target.value )
+						}
+						placeholder={ __( 'Name, email, or flow', 'corex' ) }
+					/>
+				</label>
+				<FormFilter
+					flows={ flows }
+					value={ filters.flow }
+					update={ update }
 				/>
-			</label>
-			<FormFilter
-				flows={ flows }
-				value={ filters.flow }
-				update={ update }
-			/>
-			<div className="corex-field">
-				<span>{ __( 'Status', 'corex' ) }</span>
-				<CorexSelect
-					label={ __( 'Status', 'corex' ) }
-					value={ filters.status }
-					options={ [
-						{ value: '', label: __( 'All statuses', 'corex' ) },
-						...STATUSES.map( ( status ) => ( {
-							value: status,
-							label: STATUS_LABELS[ status ],
-						} ) ),
-					] }
-					onChange={ ( status ) => update( 'status', status ) }
-					block
-				/>
+				<div className="corex-field">
+					<span>{ __( 'Status', 'corex' ) }</span>
+					<CorexSelect
+						label={ __( 'Status', 'corex' ) }
+						value={ filters.status }
+						options={ [
+							{ value: '', label: __( 'All statuses', 'corex' ) },
+							...STATUSES.map( ( status ) => ( {
+								value: status,
+								label: STATUS_LABELS[ status ],
+							} ) ),
+						] }
+						onChange={ ( status ) => update( 'status', status ) }
+						block
+					/>
+				</div>
+				<label
+					className="corex-inbox__owner"
+					htmlFor={ `${ fieldId }-owner` }
+				>
+					<span>{ __( 'Owner', 'corex' ) }</span>
+					<input
+						id={ `${ fieldId }-owner` }
+						value={ filters.owner }
+						onChange={ ( event ) =>
+							update( 'owner', event.target.value )
+						}
+						placeholder="team:sales"
+					/>
+				</label>
+				{ /* A range is one thing: its two ends stay side by side at every width. */ }
+				<div className="corex-inbox__dates">
+					<label htmlFor={ `${ fieldId }-date-from` }>
+						<span>{ __( 'From', 'corex' ) }</span>
+						<input
+							id={ `${ fieldId }-date-from` }
+							type="date"
+							value={ filters.dateFrom }
+							onChange={ ( event ) =>
+								update( 'dateFrom', event.target.value )
+							}
+						/>
+					</label>
+					<label htmlFor={ `${ fieldId }-date-to` }>
+						<span>{ __( 'To', 'corex' ) }</span>
+						<input
+							id={ `${ fieldId }-date-to` }
+							type="date"
+							value={ filters.dateTo }
+							onChange={ ( event ) =>
+								update( 'dateTo', event.target.value )
+							}
+						/>
+					</label>
+				</div>
+				<label
+					className="is-check"
+					htmlFor={ `${ fieldId }-include-test` }
+				>
+					<input
+						id={ `${ fieldId }-include-test` }
+						type="checkbox"
+						checked={ filters.includeTest }
+						onChange={ ( event ) =>
+							update( 'includeTest', event.target.checked )
+						}
+					/>
+					<span>{ __( 'Include marked tests', 'corex' ) }</span>
+				</label>
 			</div>
-			<label htmlFor={ `${ fieldId }-owner` }>
-				<span>{ __( 'Owner', 'corex' ) }</span>
-				<input
-					id={ `${ fieldId }-owner` }
-					value={ filters.owner }
-					onChange={ ( event ) =>
-						update( 'owner', event.target.value )
-					}
-					placeholder="team:sales"
-				/>
-			</label>
-			<label htmlFor={ `${ fieldId }-date-from` }>
-				<span>{ __( 'From', 'corex' ) }</span>
-				<input
-					id={ `${ fieldId }-date-from` }
-					type="date"
-					value={ filters.dateFrom }
-					onChange={ ( event ) =>
-						update( 'dateFrom', event.target.value )
-					}
-				/>
-			</label>
-			<label htmlFor={ `${ fieldId }-date-to` }>
-				<span>{ __( 'To', 'corex' ) }</span>
-				<input
-					id={ `${ fieldId }-date-to` }
-					type="date"
-					value={ filters.dateTo }
-					onChange={ ( event ) =>
-						update( 'dateTo', event.target.value )
-					}
-				/>
-			</label>
-			<label className="is-check" htmlFor={ `${ fieldId }-include-test` }>
-				<input
-					id={ `${ fieldId }-include-test` }
-					type="checkbox"
-					checked={ filters.includeTest }
-					onChange={ ( event ) =>
-						update( 'includeTest', event.target.checked )
-					}
-				/>{ ' ' }
-				<span>{ __( 'Include marked tests', 'corex' ) }</span>
-			</label>
 		</section>
 	);
 }

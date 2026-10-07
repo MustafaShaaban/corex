@@ -331,3 +331,172 @@ test( 'opens a submission from any cell of its row, and marks the row that is op
 	// One stop per row opens it: the row holds exactly one button.
 	await expect( row.getByRole( 'button' ) ).toHaveCount( 1 );
 } );
+
+/**
+ * The export dialog's spacing, measured (spec 103, FR-034).
+ *
+ * WordPress gives a checkbox and a radio a negative top margin, for sitting in a line of text. In
+ * the dialog's rows that lifted each one off the line it belongs to: five pixels for a checkbox,
+ * two for a radio. A paragraph took WordPress's bottom margin as well, so one section was twelve
+ * pixels further from the next than the others. Both are the kind of fault that is plain on the
+ * screen and invisible to a test of behaviour, so they are measured here.
+ */
+test( 'keeps the export dialog’s controls level with their labels, and its sections evenly spaced', async ( {
+	page,
+} ) => {
+	await page
+		.getByRole( 'button', { name: 'Export', exact: true } )
+		.dispatchEvent( 'click' );
+	const dialog = page.getByRole( 'dialog', { name: 'Export submissions' } );
+	await expect( dialog ).toBeVisible();
+
+	for ( const direction of [ 'ltr', 'rtl' ] ) {
+		await page
+			.locator( 'html' )
+			.evaluate(
+				( root, dir ) => root.setAttribute( 'dir', dir ),
+				direction
+			);
+
+		const measured = await page.evaluate( () => {
+			const box = ( node ) => node.getBoundingClientRect();
+			const centre = ( node ) => box( node ).top + box( node ).height / 2;
+			const firstLine = ( node ) => {
+				const range = document.createRange();
+				range.selectNodeContents( node );
+				return range.getClientRects()[ 0 ];
+			};
+			const offLine = ( input, label ) => {
+				const line = firstLine( label );
+				return Math.abs(
+					centre( input ) - ( line.top + line.height / 2 )
+				);
+			};
+			const sections = Array.from(
+				document.querySelector( '.corex-dialog__body' ).children
+			);
+			const pairs = Array.from(
+				document.querySelectorAll( '.corex-export__column' )
+			).map( ( column ) => [
+				column.querySelector( 'input' ),
+				column.querySelector( '.corex-export__column-name' ),
+			] );
+			const scope = document.querySelector( '.corex-export__scope' );
+			pairs.push( [
+				scope.querySelector( 'input' ),
+				scope.querySelector( '.corex-export__scope-name' ),
+			] );
+			const tests = document.querySelector( '.corex-export__check' );
+			pairs.push( [
+				tests.querySelector( 'input' ),
+				tests.querySelector( 'span:last-child' ),
+			] );
+
+			return {
+				furthestOffItsLine: Math.max(
+					...pairs.map( ( [ input, label ] ) =>
+						offLine( input, label )
+					)
+				),
+				sectionGaps: sections
+					.slice( 1 )
+					.map( ( section, index ) =>
+						Math.round(
+							box( section ).top - box( sections[ index ] ).bottom
+						)
+					),
+				paragraphMargins: Array.from(
+					document.querySelectorAll( '.corex-export p' )
+				).map(
+					( paragraph ) => window.getComputedStyle( paragraph ).margin
+				),
+			};
+		} );
+		const where = `in ${ direction }`;
+
+		// A pixel of tolerance for rounding; the faults this guards were two and five.
+		expect( measured.furthestOffItsLine, where ).toBeLessThanOrEqual( 1 );
+		expect(
+			new Set( measured.sectionGaps ).size,
+			`${ where }: section gaps ${ measured.sectionGaps.join( ', ' ) }`
+		).toBe( 1 );
+		expect(
+			measured.paragraphMargins.every( ( margin ) => margin === '0px' ),
+			where
+		).toBe( true );
+	}
+
+	await page
+		.locator( 'html' )
+		.evaluate( ( root ) => root.setAttribute( 'dir', 'ltr' ) );
+} );
+
+/**
+ * The inbox's filters, measured (spec 103).
+ *
+ * Six controls stood at four heights, 50, 40, 47 and 54 pixels, with three different inner
+ * paddings, because each input type brought its own from WordPress. "To" fell onto a row by
+ * itself, away from "From". And the heading's checkbox stood two pixels off the column under it.
+ */
+test( 'keeps the inbox filters one height, the date range together, and the checkbox column straight', async ( {
+	page,
+} ) => {
+	for ( const width of [ 1440, 1280, 900, 480 ] ) {
+		await page.setViewportSize( { width, height: 900 } );
+		const measured = await page.evaluate( () => {
+			const filters = document.querySelector( '.corex-inbox__filters' );
+			const box = ( node ) => node.getBoundingClientRect();
+			const controls = Array.from(
+				filters.querySelectorAll(
+					'input:not([type="checkbox"]), .corex-select__button'
+				)
+			);
+			const [ from, to ] =
+				filters.querySelectorAll( 'input[type="date"]' );
+			const check = filters.querySelector( '.is-check input' );
+			const words = filters.querySelector( '.is-check span' );
+			const middle = ( node ) => box( node ).top + box( node ).height / 2;
+
+			return {
+				heights: controls.map( ( node ) =>
+					Math.round( box( node ).height )
+				),
+				paddings: controls.map(
+					( node ) =>
+						window.getComputedStyle( node ).paddingInlineStart
+				),
+				datesOnOneRow:
+					Math.round( box( from ).top ) ===
+					Math.round( box( to ).top ),
+				checkboxOffItsWords: Math.abs(
+					middle( check ) - middle( words )
+				),
+				columnOffset: Math.abs(
+					box(
+						document.querySelector(
+							'.corex-inbox__table thead input'
+						)
+					).left -
+						box(
+							document.querySelector(
+								'.corex-inbox__table tbody input'
+							)
+						).left
+				),
+			};
+		} );
+		const where = `at ${ width }px`;
+
+		expect(
+			new Set( measured.heights ).size,
+			`${ where }: heights ${ measured.heights.join( ', ' ) }`
+		).toBe( 1 );
+		expect(
+			new Set( measured.paddings ).size,
+			`${ where }: paddings ${ measured.paddings.join( ', ' ) }`
+		).toBe( 1 );
+		expect( measured.datesOnOneRow, where ).toBe( true );
+		expect( measured.checkboxOffItsWords, where ).toBeLessThanOrEqual( 1 );
+		expect( measured.columnOffset, where ).toBeLessThanOrEqual( 0.5 );
+	}
+} );

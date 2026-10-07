@@ -52,6 +52,7 @@ is delivered in seven slices, one pull request each:
 | 2a | A readable file: a column per answer headed by the question, CSV a spreadsheet opens, files on disk | done (DECISIONS #254) |
 | 2b | Scopes with counts, the rebuilt dialog, download without a refresh | done (DECISIONS #255). Not in it: a remembered column choice, choosing single questions and their order |
 | 3 | Excel | done (DECISIONS #256). A produced workbook and a produced CSV were opened in Excel |
+| — | Spacing review of the dialog and the filters, on the owner's request | done (DECISIONS #257). Measured, fixed, and kept measured by two browser tests |
 | 4 | The detail pane | not started |
 | 5 | Export history: size, expiry, delete | not started |
 | 6 | PDF | not started; needs a spike on a library that renders Arabic |

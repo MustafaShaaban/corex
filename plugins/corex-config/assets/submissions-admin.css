@@ -77,22 +77,59 @@
 }
 
 /*
- * The filters wrap by the space they are given. A breakpoint on the window
- * cannot do it: the content column is narrower than the window by two
- * sidebars, and at 1280 it has room for five of these, not six.
+ * The filters are laid out by the width of their own panel. A breakpoint on
+ * the window cannot do it: the content column is narrower than the window by
+ * two sidebars. So the panel is a container and the grid inside it asks how
+ * wide that is.
+ *
+ * Search has the first row. Under it, five equal columns: form, status, owner,
+ * and the date range, which is one item two columns wide so that "From" and
+ * "To" are never parted. Left to wrap freely, "To" fell onto a row of its own.
  */
 .corex-admin .corex-inbox__filters {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
-	gap: var(--corex-admin-space-sm);
+	container-type: inline-size;
 	padding: var(--corex-admin-space-md);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-md);
 	background: var(--corex-admin-surface);
 }
 
+.corex-admin .corex-inbox__filter-grid {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: var(--corex-admin-space-sm);
+}
+
 .corex-admin .corex-inbox__filters .is-wide {
+	grid-column: 1 / -1;
+}
+
+.corex-admin .corex-inbox__dates {
+	display: grid;
 	grid-column: span 2;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--corex-admin-space-sm);
+}
+
+@container (max-width: 44rem) { /* corex-token-allow: the filter panel's own width */
+	.corex-admin .corex-inbox__filter-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	/* The odd one of three: a row of its own, not half a row beside nothing. */
+	.corex-admin .corex-inbox__owner {
+		grid-column: 1 / -1;
+	}
+}
+
+@container (max-width: 24rem) { /* corex-token-allow: the filter panel's own width */
+	.corex-admin .corex-inbox__filter-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.corex-admin .corex-inbox__dates {
+		grid-column: auto;
+	}
 }
 
 .corex-admin .corex-inbox__filters label,
@@ -108,7 +145,14 @@
 .corex-admin .corex-inbox__filters .is-check {
 	display: flex;
 	align-items: center;
+	gap: var(--corex-admin-space-xs);
 	grid-column: 1 / -1;
+}
+
+/* WordPress lifts a checkbox four pixels, for a line of text. In a row that
+   centres its items, that puts it above the words beside it. */
+.corex-admin .corex-inbox__filters .is-check input {
+	margin: 0;
 }
 
 .corex-admin .corex-inbox input:not([type="checkbox"], [type="radio"]),
@@ -120,6 +164,18 @@
 	background: var(--corex-admin-surface);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-sm);
+}
+
+/*
+ * One height and one inner padding for every text control here. They came out
+ * at 50, 47 and 54 pixels beside selects of 40, with 16, 2 and 16 pixels of
+ * padding, because each input type brought its own from WordPress.
+ */
+.corex-admin .corex-inbox input:not([type="checkbox"], [type="radio"]) {
+	box-sizing: border-box;
+	block-size: var(--corex-admin-control-height);
+	padding-block: 0;
+	padding-inline: var(--corex-admin-space-sm);
 }
 
 .corex-admin .corex-inbox textarea {
@@ -192,6 +248,8 @@
 	cursor: pointer;
 }
 
+/* On the heading cell too, or its checkbox stands two pixels off the column. */
+.corex-admin .corex-inbox__table th:first-child,
 .corex-admin .corex-inbox__table td:first-child {
 	border-inline-start: var(--corex-admin-space-2xs) solid transparent;
 }
@@ -494,10 +552,38 @@
 	font-weight: 600;
 }
 
-.corex-admin .corex-export__scopes,
-.corex-admin .corex-export__columns {
+.corex-admin .corex-export p {
+	margin: 0;
+}
+
+.corex-admin .corex-export__scopes {
 	display: grid;
 	gap: var(--corex-admin-space-xs);
+}
+
+/* Two lines each, so a little more between them than within them. */
+.corex-admin .corex-export__columns {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+}
+
+/*
+ * WordPress gives a checkbox and a radio a negative top margin, for sitting in
+ * a line of text. In a grid or a flex row that lifts them off the line they
+ * belong to. Here each stands in a box one line tall and is centred in it, so
+ * it is level with the first line of its label whatever size the input is.
+ */
+.corex-admin .corex-export input[type="checkbox"],
+.corex-admin .corex-export input[type="radio"] {
+	flex: none;
+	margin: 0;
+}
+
+.corex-admin .corex-export__box {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	block-size: 1lh;
 }
 
 /* Each scope is one target: its name, its count, and what it covers. */
@@ -550,7 +636,7 @@
 
 .corex-admin .corex-export__check {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: var(--corex-admin-space-sm);
 }
 
@@ -631,36 +717,54 @@
 }
 
 .corex-admin .corex-export__recent ul {
-	display: grid;
-	gap: var(--corex-admin-space-2xs);
 	margin: 0;
 	padding: 0;
 	list-style: none;
 }
 
+/* A row tall enough that its Download is a target, with a rule between rows. */
 .corex-admin .corex-export__recent li {
 	display: flex;
 	flex-wrap: wrap;
+	align-items: center;
 	justify-content: space-between;
-	gap: var(--corex-admin-space-sm);
-	color: var(--corex-admin-text-muted);
-	font-size: var(--corex-admin-font-sm);
-}
-
-/* One line saying why the export cannot start. It keeps its height when it
-   has nothing to say, so the buttons under it do not move. */
-.corex-admin .corex-export__summary {
-	min-block-size: 1lh;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-sm);
+	min-block-size: var(--corex-admin-control-height);
 	margin: 0;
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-sm);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
 }
 
+.corex-admin .corex-export__recent li:last-child {
+	border-block-end: 0;
+}
+
+/* Why the export cannot start, beside the buttons. It shares their row, so
+   the buttons do not move when it has nothing to say and no band is left
+   empty above them. On a narrow dialog it takes a row of its own. */
+.corex-admin .corex-export__footer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-export__summary {
+	flex: 1 1 14rem; /* corex-token-allow: the measure the reason keeps before it takes a row of its own */
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+/* Kept at the end of the row, and at the end of a row of their own when the
+   reason beside them has taken the first. */
 .corex-admin .corex-export__actions {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: flex-end;
 	gap: var(--corex-admin-space-sm);
+	margin-inline-start: auto;
 }
 
 .corex-admin .corex-inbox-retention {
@@ -684,14 +788,6 @@
 
 
 @media (max-width: 782px) { /* corex-token-allow: WordPress admin breakpoint */
-	.corex-admin .corex-inbox__filters {
-		grid-template-columns: 1fr 1fr;
-	}
-
-	.corex-admin .corex-inbox__filters .is-wide {
-		grid-column: 1 / -1;
-	}
-
 	.corex-admin .corex-inbox__drawer {
 		inline-size: 100%;
 		padding: var(--corex-admin-space-md);
@@ -703,14 +799,6 @@
 }
 
 @media (max-width: 480px) { /* corex-token-allow: compact mobile breakpoint */
-	.corex-admin .corex-inbox__filters {
-		grid-template-columns: 1fr;
-	}
-
-	.corex-admin .corex-inbox__filters .is-wide {
-		grid-column: auto;
-	}
-
 	.corex-admin .corex-inbox__header,
 	.corex-admin .corex-inbox__bulk,
 	.corex-admin .corex-inbox-retention form {

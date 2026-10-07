@@ -10,7 +10,7 @@
  */
 import { useEffect, useId, useRef, useState } from '@wordpress/element';
 import { Button } from '@wordpress/components';
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexDialog from '../../admin/components/CorexDialog.js';
 import CorexSelect from '../../admin/components/CorexSelect.js';
 import CorexTime from '../../admin/components/CorexTime.js';
@@ -286,7 +286,7 @@ export default function ExportDialog( {
 			onClose={ close }
 			className="corex-export"
 			footer={
-				<>
+				<div className="corex-export__footer">
 					<p
 						className="corex-export__summary"
 						role="status"
@@ -309,7 +309,7 @@ export default function ExportDialog( {
 							{ exportLabel( count ) }
 						</Button>
 					</div>
-				</>
+				</div>
 			}
 		>
 			<fieldset className="corex-export__group" disabled={ running }>
@@ -358,14 +358,16 @@ export default function ExportDialog( {
 					className="corex-export__check"
 					htmlFor={ `${ fieldId }-include-test` }
 				>
-					<input
-						id={ `${ fieldId }-include-test` }
-						type="checkbox"
-						checked={ includeTest }
-						onChange={ ( event ) =>
-							setIncludeTest( event.target.checked )
-						}
-					/>
+					<span className="corex-export__box">
+						<input
+							id={ `${ fieldId }-include-test` }
+							type="checkbox"
+							checked={ includeTest }
+							onChange={ ( event ) =>
+								setIncludeTest( event.target.checked )
+							}
+						/>
+					</span>
 					<span>
 						{ __( 'Include submissions marked as tests', 'corex' ) }
 					</span>
@@ -379,20 +381,22 @@ export default function ExportDialog( {
 						// The label is the choice's name alone. What it holds, and that it is
 						// personal data, describe the checkbox instead of lengthening its name.
 						<div key={ choice.id } className="corex-export__column">
-							<input
-								id={ `${ fieldId }-column-${ choice.id }` }
-								type="checkbox"
-								checked={ allowed.includes( choice.id ) }
-								onChange={ () => toggle( choice.id ) }
-								aria-describedby={ [
-									choice.personal
-										? `${ fieldId }-column-${ choice.id }-tag`
-										: '',
-									`${ fieldId }-column-${ choice.id }-hint`,
-								]
-									.filter( Boolean )
-									.join( ' ' ) }
-							/>
+							<span className="corex-export__box">
+								<input
+									id={ `${ fieldId }-column-${ choice.id }` }
+									type="checkbox"
+									checked={ allowed.includes( choice.id ) }
+									onChange={ () => toggle( choice.id ) }
+									aria-describedby={ [
+										choice.personal
+											? `${ fieldId }-column-${ choice.id }-tag`
+											: '',
+										`${ fieldId }-column-${ choice.id }-hint`,
+									]
+										.filter( Boolean )
+										.join( ' ' ) }
+								/>
+							</span>
 							<div>
 								<span className="corex-export__column-head">
 									<label
@@ -465,15 +469,17 @@ export default function ExportDialog( {
 					className="corex-export__check corex-export__notice"
 					htmlFor={ `${ fieldId }-acknowledged` }
 				>
-					<input
-						id={ `${ fieldId }-acknowledged` }
-						type="checkbox"
-						checked={ acknowledged }
-						disabled={ running }
-						onChange={ ( event ) =>
-							setAcknowledged( event.target.checked )
-						}
-					/>
+					<span className="corex-export__box">
+						<input
+							id={ `${ fieldId }-acknowledged` }
+							type="checkbox"
+							checked={ acknowledged }
+							disabled={ running }
+							onChange={ ( event ) =>
+								setAcknowledged( event.target.checked )
+							}
+						/>
+					</span>
 					<span>
 						{ __(
 							'I understand this export contains personal data and will handle it according to policy.',
@@ -575,7 +581,12 @@ function RecentExports( { history, download } ) {
 							{ ' · ' }
 							{ sprintf(
 								/* translators: %s: a number of submissions. */
-								__( '%s submissions', 'corex' ),
+								_n(
+									'%s submission',
+									'%s submissions',
+									Number( item.record_count ),
+									'corex'
+								),
 								Number( item.record_count ).toLocaleString()
 							) }
 							{ ' · ' }
