@@ -80,7 +80,7 @@ One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`)
 
 On `main` since v0.43.3, not in a release:
 
-- **`scripts/setup-wordpress.ps1` installs the browser suite's fixtures.** Two files said it
+- **`scripts/setup-wordpress.ps1` installs the browser suite's fixtures** (#281). Two files said it
   copied `tests/e2e/fixtures/corex-e2e-client-guide.php` into `wp/wp-content/mu-plugins/` and it
   had no such step. It now copies every `tests/e2e/fixtures/corex-e2e-*.php` into the single-site
   install, and the browser job in CI copies the same pattern. Not into `-Multisite`, and not into
