@@ -3,40 +3,6 @@
   "exceptions": [
     {
       "ecosystem": "npm-root",
-      "advisoryId": "GHSA-jmr9-qjv8-65gv",
-      "package": "extract-zip",
-      "paths": [
-        "node_modules/extract-zip"
-      ],
-      "severityCeiling": "high",
-      "exposure": "build-test-transitive",
-      "reason": "Every version of extract-zip is affected (range *), so there is no upgrade to take and no override that resolves it. It arrives only as a transitive dependency of @wordpress/scripts, through @wordpress/e2e-test-utils-playwright -> lighthouse -> puppeteer-core -> @puppeteer/browsers, where its single job is unpacking the Chromium archive puppeteer downloads. Nothing in this repository imports lighthouse, puppeteer or e2e-test-utils-playwright: the browser suite drives @playwright/test directly and Playwright installs its own browsers. The package is installed and never executed.",
-      "control": "The advisory is a symlink path traversal in an extracted archive, so it needs an attacker-supplied zip. The only archive this path would ever open is a Chromium build fetched from Google's CDN by a code path this repository does not call. It is a devDependency, so it reaches no WordPress site: scripts/build-shared-host-dist.mjs ships plugin and theme source, never node_modules. Pull-request CI runs with a read-only token and no production secrets.",
-      "owner": "Corex maintainers",
-      "reviewAfter": "2026-12-31",
-      "upstreamTrigger": "Remove when the installed @puppeteer/browsers no longer depends on extract-zip. Upstream has already done this: @puppeteer/browsers 3.x unpacks with modern-tar and carries no extract-zip at all. It reaches this tree through @wordpress/scripts 36 (@wordpress/e2e-test-utils-playwright ^2.1.0 -> lighthouse ^13.4.1 -> puppeteer-core ^25.9.0 -> @puppeteer/browsers 3.2.3, checked 2026-10-04), not through an override: the installed puppeteer-core 24.43.1 pins @puppeteer/browsers 2.13.2 exactly, and forcing a different major under it could not be proven on a chain nothing here runs. So this exception is now waiting on the @wordpress/scripts 34 -> 36 migration, which is a toolchain major (ESLint 10, stylelint 17) and needs its own verified pass. No fixed extract-zip exists (latest 2.0.1 is affected).",
-      "range": "<=2.0.1",
-      "url": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv"
-    },
-    {
-      "ecosystem": "npm-root",
-      "advisoryId": "GHSA-7pqw-9j4j-h8q3",
-      "package": "extract-zip",
-      "paths": [
-        "node_modules/extract-zip"
-      ],
-      "severityCeiling": "high",
-      "exposure": "build-test-transitive",
-      "reason": "A second advisory published against the same package, the same installed version (2.0.1) and the same dependency path as GHSA-jmr9-qjv8-65gv, describing the same defect class: archive entries that are symlinks are written without validation. Its range is <=2.0.1 and 2.0.1 is the latest release, so again there is no upgrade to take. The path is unchanged: @wordpress/scripts -> @wordpress/e2e-test-utils-playwright -> lighthouse -> puppeteer-core -> @puppeteer/browsers, whose only use of it is unpacking the Chromium archive puppeteer downloads. Nothing here imports that chain; the browser suite drives @playwright/test directly and Playwright installs its own browsers.",
-      "control": "Identical to GHSA-jmr9-qjv8-65gv, because it is the same code on the same path: exploiting it requires an attacker-supplied archive, and the only archive this path would open is a Chromium build from Google's CDN, fetched by a code path this repository never calls. devDependency only, so it reaches no WordPress site — scripts/build-shared-host-dist.mjs ships plugin and theme source, never node_modules. Pull-request CI runs with a read-only token and no production secrets.",
-      "owner": "Corex maintainers",
-      "reviewAfter": "2026-12-31",
-      "upstreamTrigger": "Remove together with GHSA-jmr9-qjv8-65gv: both clear the moment @puppeteer/browsers depends on a fixed extract-zip, or @wordpress/scripts drops the lighthouse and puppeteer chain. Neither should outlive the other.",
-      "range": "<=2.0.1",
-      "url": "https://github.com/advisories/GHSA-7pqw-9j4j-h8q3"
-    },
-    {
-      "ecosystem": "npm-root",
       "advisoryId": "GHSA-vfj7-8cjw-p6xm",
       "package": "braces",
       "paths": [
@@ -51,6 +17,91 @@
       "upstreamTrigger": "Remove when braces publishes a release above 3.0.3 that the advisory does not cover; micromatch requires ^3.0.3, so a lockfile update takes it with no override. Also removable if fast-glob, stylelint and http-proxy-middleware all stop depending on micromatch. This exception must be re-argued rather than renewed if a custom webpack or stylelint configuration, a dev-server proxy, or any script that passes an external value as a glob is added: the \"patterns come only from tool defaults\" half of the reasoning would no longer hold.",
       "range": "<=3.0.3",
       "url": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-x6jw-m9v5-85vh",
+      "package": "simple-git",
+      "paths": [
+        "node_modules/@wordpress/env/node_modules/simple-git"
+      ],
+      "severityCeiling": "critical",
+      "exposure": "local-dev-server",
+      "reason": "Published 2026-10-05: the unsafe-operation guard does not block git trailer command configuration. simple-git 3.36.0 is installed and the fix is in the 4.x line only. It is installed only beneath @wordpress/env (a devDependency), which uses it in two places: lib/download-sources.js, to clone and update the git sources named in a wp-env configuration, and lib/runtime/docker/download-wp-phpunit.js, to clone the WordPress test suite from a GitHub address written in that file. @wordpress/env 11.16.0, the latest release, requires simple-git ^3.32.3 and calls the package as a function (`require( 'simple-git' )( … )`). simple-git 4, where the fixes are, exports an object with a named `simpleGit` instead, so overriding it does not install a fix, it breaks `wp-env start`: the override was tried on 2026-10-07 and wp-env's own call sequence failed at the first line with \"SimpleGit is not a function\".",
+      "control": "The defect is a way round simple-git's refusal of dangerous git options, so it matters where somebody else chooses the arguments, the configuration or the environment simple-git is given. Here they come from one place: wp-env.json in this repository, which names a single git source, `WordPress/WordPress#master`, and the fixed option objects in wp-env's source. A person who can change that file can already run any command on the same machine through wp-env's documented `lifecycleScripts`, so the advisory gives them nothing they lack. It runs only when a developer starts wp-env (`npm run env:start`); no workflow under .github/ uses wp-env, and scripts/build-shared-host-dist.mjs ships plugin and theme source and never node_modules, so it reaches neither CI nor a WordPress site.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-11-30",
+      "upstreamTrigger": "Remove when @wordpress/env publishes a release that depends on simple-git 4.0.1 or later; a lockfile update then takes it with no override. Re-argue instead of renewing if wp-env.json gains a source whose URL or ref is not written in this repository, or if a CI workflow starts using wp-env: either would end the reasoning above.",
+      "range": ">=3.15.0 <4.0.1",
+      "url": "https://github.com/advisories/GHSA-x6jw-m9v5-85vh"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-g4wm-2vf7-vfgr",
+      "package": "simple-git",
+      "paths": [
+        "node_modules/@wordpress/env/node_modules/simple-git"
+      ],
+      "severityCeiling": "high",
+      "exposure": "local-dev-server",
+      "reason": "Published 2026-10-05: command execution through git configuration includes the guard does not block. simple-git 3.36.0 is installed and the fix is in the 4.x line only. It is installed only beneath @wordpress/env (a devDependency), which uses it in two places: lib/download-sources.js, to clone and update the git sources named in a wp-env configuration, and lib/runtime/docker/download-wp-phpunit.js, to clone the WordPress test suite from a GitHub address written in that file. @wordpress/env 11.16.0, the latest release, requires simple-git ^3.32.3 and calls the package as a function (`require( 'simple-git' )( … )`). simple-git 4, where the fixes are, exports an object with a named `simpleGit` instead, so overriding it does not install a fix, it breaks `wp-env start`: the override was tried on 2026-10-07 and wp-env's own call sequence failed at the first line with \"SimpleGit is not a function\".",
+      "control": "The defect is a way round simple-git's refusal of dangerous git options, so it matters where somebody else chooses the arguments, the configuration or the environment simple-git is given. Here they come from one place: wp-env.json in this repository, which names a single git source, `WordPress/WordPress#master`, and the fixed option objects in wp-env's source. A person who can change that file can already run any command on the same machine through wp-env's documented `lifecycleScripts`, so the advisory gives them nothing they lack. It runs only when a developer starts wp-env (`npm run env:start`); no workflow under .github/ uses wp-env, and scripts/build-shared-host-dist.mjs ships plugin and theme source and never node_modules, so it reaches neither CI nor a WordPress site.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-11-30",
+      "upstreamTrigger": "Remove when @wordpress/env publishes a release that depends on simple-git 4.0.1 or later; a lockfile update then takes it with no override. Re-argue instead of renewing if wp-env.json gains a source whose URL or ref is not written in this repository, or if a CI workflow starts using wp-env: either would end the reasoning above.",
+      "range": "<=3.36.0",
+      "url": "https://github.com/advisories/GHSA-g4wm-2vf7-vfgr"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-858h-whjf-mvg5",
+      "package": "simple-git",
+      "paths": [
+        "node_modules/@wordpress/env/node_modules/simple-git"
+      ],
+      "severityCeiling": "high",
+      "exposure": "local-dev-server",
+      "reason": "Published 2026-10-05: the guard can be bypassed with abbreviated git long options. simple-git 3.36.0 is installed and the fix is in the 4.x line only. It is installed only beneath @wordpress/env (a devDependency), which uses it in two places: lib/download-sources.js, to clone and update the git sources named in a wp-env configuration, and lib/runtime/docker/download-wp-phpunit.js, to clone the WordPress test suite from a GitHub address written in that file. @wordpress/env 11.16.0, the latest release, requires simple-git ^3.32.3 and calls the package as a function (`require( 'simple-git' )( … )`). simple-git 4, where the fixes are, exports an object with a named `simpleGit` instead, so overriding it does not install a fix, it breaks `wp-env start`: the override was tried on 2026-10-07 and wp-env's own call sequence failed at the first line with \"SimpleGit is not a function\".",
+      "control": "The defect is a way round simple-git's refusal of dangerous git options, so it matters where somebody else chooses the arguments, the configuration or the environment simple-git is given. Here they come from one place: wp-env.json in this repository, which names a single git source, `WordPress/WordPress#master`, and the fixed option objects in wp-env's source. A person who can change that file can already run any command on the same machine through wp-env's documented `lifecycleScripts`, so the advisory gives them nothing they lack. It runs only when a developer starts wp-env (`npm run env:start`); no workflow under .github/ uses wp-env, and scripts/build-shared-host-dist.mjs ships plugin and theme source and never node_modules, so it reaches neither CI nor a WordPress site.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-11-30",
+      "upstreamTrigger": "Remove when @wordpress/env publishes a release that depends on simple-git 4.0.1 or later; a lockfile update then takes it with no override. Re-argue instead of renewing if wp-env.json gains a source whose URL or ref is not written in this repository, or if a CI workflow starts using wp-env: either would end the reasoning above.",
+      "range": "<=3.36.0",
+      "url": "https://github.com/advisories/GHSA-858h-whjf-mvg5"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-v5rq-49vh-5v5c",
+      "package": "@simple-git/argv-parser",
+      "paths": [
+        "node_modules/@wordpress/env/node_modules/@simple-git/argv-parser"
+      ],
+      "severityCeiling": "critical",
+      "exposure": "local-dev-server",
+      "reason": "Published 2026-10-05: the VISUAL editor environment variable is left out of simple-git's unsafe-editor detection. @simple-git/argv-parser 1.1.1 is the parser simple-git 3.36.0 depends on; the fixed 2.0.1 belongs to simple-git 4 and cannot be placed under simple-git 3. It is installed only beneath @wordpress/env (a devDependency), which uses it in two places: lib/download-sources.js, to clone and update the git sources named in a wp-env configuration, and lib/runtime/docker/download-wp-phpunit.js, to clone the WordPress test suite from a GitHub address written in that file. @wordpress/env 11.16.0, the latest release, requires simple-git ^3.32.3 and calls the package as a function (`require( 'simple-git' )( … )`). simple-git 4, where the fixes are, exports an object with a named `simpleGit` instead, so overriding it does not install a fix, it breaks `wp-env start`: the override was tried on 2026-10-07 and wp-env's own call sequence failed at the first line with \"SimpleGit is not a function\".",
+      "control": "Exploiting it needs control of the environment variables of the process that runs git, which on a developer's machine is the developer. The defect is a way round simple-git's refusal of dangerous git options, so it matters where somebody else chooses the arguments, the configuration or the environment simple-git is given. Here they come from one place: wp-env.json in this repository, which names a single git source, `WordPress/WordPress#master`, and the fixed option objects in wp-env's source. A person who can change that file can already run any command on the same machine through wp-env's documented `lifecycleScripts`, so the advisory gives them nothing they lack. It runs only when a developer starts wp-env (`npm run env:start`); no workflow under .github/ uses wp-env, and scripts/build-shared-host-dist.mjs ships plugin and theme source and never node_modules, so it reaches neither CI nor a WordPress site.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-11-30",
+      "upstreamTrigger": "Remove together with the three simple-git exceptions: it leaves the tree with simple-git 3. Remove when @wordpress/env publishes a release that depends on simple-git 4.0.1 or later; a lockfile update then takes it with no override. Re-argue instead of renewing if wp-env.json gains a source whose URL or ref is not written in this repository, or if a CI workflow starts using wp-env: either would end the reasoning above.",
+      "range": "<2.0.1",
+      "url": "https://github.com/advisories/GHSA-v5rq-49vh-5v5c"
+    },
+    {
+      "ecosystem": "npm-root",
+      "advisoryId": "GHSA-hp3w-g68c-fv3c",
+      "package": "sprintf-js",
+      "paths": [
+        "node_modules/sprintf-js"
+      ],
+      "severityCeiling": "moderate",
+      "exposure": "unreachable",
+      "reason": "Published 2026-09-24 against sprintf-js <=1.1.3, and 1.1.3 is the latest release, so there is no upgrade to take. sprintf-js 1.0.3 is installed for argparse 1.0.10, which js-yaml 3.15.2 lists as a dependency. Two packages here use js-yaml 3: @wordpress/env, which calls `yaml.dump`, and @istanbuljs/load-nyc-config beneath Jest. Both use it as a library, and js-yaml's library code does not load argparse: the only file in js-yaml that requires it is bin/js-yaml.js, the command-line entry point, which no script, workflow or file in this repository invokes. So sprintf-js is installed and its code is not reached. Moving js-yaml to 4.x, which uses argparse 2 and no sprintf-js, was not done: it is a major version under two consumers that declare ^3, for a finding nothing here can trigger.",
+      "control": "The defect is a denial of service from an attacker-chosen precision in a format string. The only format strings on this path are argparse's own help and usage templates, printed when somebody runs the js-yaml command by hand. devDependency only: scripts/build-shared-host-dist.mjs ships plugin and theme source and never node_modules, so it reaches no WordPress site.",
+      "owner": "Corex maintainers",
+      "reviewAfter": "2026-12-31",
+      "upstreamTrigger": "Remove when sprintf-js publishes a release above 1.1.3 that the advisory does not cover and argparse 1 accepts it (it requires ~1.0.2, so that needs an override), or when both @wordpress/env and @istanbuljs/load-nyc-config depend on js-yaml 4 or later, which carries no sprintf-js. Re-argue if any script here starts calling the js-yaml command.",
+      "range": "<=1.1.3",
+      "url": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c"
     }
   ]
 }

@@ -15,5 +15,8 @@
     "astro": "^7.3.2",
     "corex-framework": "file:..",
     "sharp": "^0.35.3"
+  },
+  "overrides": {
+    "postcss-selector-parser": "^7.1.6"
   }
 }

@@ -98,37 +98,55 @@ Two entries stood under *Known open items* in v0.39.0 and no longer do. They are
 because "was this ever a problem, and how was it dealt with" is a fair question to ask of a project
 you are evaluating.
 
-### Dependency advisories — three bounded exceptions
+### Dependency advisories — six bounded exceptions
 
 `npm run verify:dependencies` reports **PASS** across Composer, the root npm workspace and the
-docs-site npm workspace as of 2026-10-04: zero findings in Composer and the docs site, and in the
-root, **three findings covered by three exceptions**. That date matters. An advisory is published by
-somebody else against a tree that did not move, so this is a measurement, not a property — earlier
-the same day, before the upgrades below, the gate failed with 26 unbounded findings.
+docs-site npm workspace as of 2026-10-07: zero findings in Composer and the docs site, and in the
+root, **six findings covered by six exceptions**. That date matters. An advisory is published by
+somebody else against a tree that did not move, so this is a measurement, not a property — the
+day before, with nothing changed here, the gate failed on thirteen advisories, eleven of them
+published on 2026-10-05 or 2026-10-06.
 
-None of the three is a fix that was skipped. Each is an advisory with no patched release to take:
+None of the six is a fix that was skipped. Each is an advisory with no release this tree can take:
 
 | Package | Advisory | Why it cannot be closed |
 |---|---|---|
-| `extract-zip` 2.0.1 | GHSA-jmr9-qjv8-65gv, GHSA-7pqw-9j4j-h8q3 | Every published version is in range. Installed and never executed: it arrives through `@wordpress/scripts` → `@wordpress/e2e-test-utils-playwright` → `lighthouse` → `puppeteer-core` → `@puppeteer/browsers`, and the browser suite drives `@playwright/test` directly. |
+| `simple-git` 3.36.0 | GHSA-x6jw-m9v5-85vh (critical), GHSA-g4wm-2vf7-vfgr, GHSA-858h-whjf-mvg5 | Fixed in 4.x only. It is installed for `@wordpress/env`, whose latest release requires `^3.32.3` and calls the package as a function; 4.x exports an object, so an override breaks `wp-env start` instead of fixing it. Tried, and it failed. |
+| `@simple-git/argv-parser` 1.1.1 | GHSA-v5rq-49vh-5v5c (critical) | The parser `simple-git` 3 depends on; the fixed 2.0.1 belongs to `simple-git` 4. |
+| `sprintf-js` 1.0.3 | GHSA-hp3w-g68c-fv3c | Every published version is in range. Installed for `argparse`, which only `js-yaml`'s command-line entry point loads, and nothing here runs that command. |
 | `braces` 3.0.3 | GHSA-vfj7-8cjw-p6xm | 3.0.3 is the latest release and the advisory covers `<=3.0.3`. It arrives through `micromatch`, which the latest `fast-glob`, `stylelint` and `http-proxy-middleware` all still require. |
 
-**`braces` is the one to read carefully, because unlike `extract-zip` it runs** — in
-`npm run lint:css` and `npm run build`, locally and in CI. The defect is a stack overflow on a
-deeply nested brace pattern, and the only glob patterns that reach it here are the built-in defaults
-of `@wordpress/scripts`: no tracked file imports a glob library and there is no custom webpack,
-stylelint or dev-server proxy configuration. Triggering it would take a commit to this repository's
-tooling configuration, and the result would be one failed job. It is not in any built asset. The
-policy forbids excepting a high finding whose exposure is CI, so this rests on a judgement that the
-exposure is build tooling with repository-authored input — the same judgement spec 056 made for
-`minimatch` and `brace-expansion`. The exception says what would overturn it.
+**The `simple-git` four are the ones to read carefully: two are rated critical, and the code
+runs.** `npm run env:start` clones WordPress through it. Each advisory is a way round
+`simple-git`'s refusal of dangerous git options, which matters where somebody else chooses what it
+is given. Here that is `wp-env.json` in this repository — one git source, `WordPress/WordPress` —
+and a person who can change that file can already run any command through wp-env's own
+`lifecycleScripts`. It runs on a developer's machine only: no workflow uses wp-env, and nothing
+under `node_modules` is shipped. The policy allows a critical finding to be excepted when its
+exposure is neither the shipped runtime nor CI; these are reviewed a month sooner than the rest,
+on 2026-11-30, and are removed by a lockfile update the day `@wordpress/env` moves to
+`simple-git` 4.
 
-The `extract-zip` pair now has a route out that it did not have before: `@puppeteer/browsers` 3.x
-dropped `extract-zip` entirely, and `@wordpress/scripts` 36 installs it. That is a two-major
-toolchain upgrade (ESLint 10, stylelint 17) and has not been done.
+**`braces` also runs** — in `npm run lint:css` and `npm run build`, locally and in CI. The defect
+is a stack overflow on a deeply nested brace pattern, and the only glob patterns that reach it here
+are the built-in defaults of `@wordpress/scripts`: no tracked file imports a glob library and there
+is no custom webpack, stylelint or dev-server proxy configuration. Triggering it would take a
+commit to this repository's tooling configuration, and the result would be one failed job. It is
+not in any built asset. The policy forbids excepting a high finding whose exposure is CI, so this
+rests on a judgement that the exposure is build tooling with repository-authored input — the same
+judgement spec 056 made for `minimatch` and `brace-expansion`. The exception says what would
+overturn it.
 
-Every exception names its dependency path, compensating control, review date (2026-12-31) and
-upstream removal trigger in `.github/dependency-security-policy.json`.
+The two `extract-zip` exceptions are gone, with the package. `lighthouse` is overridden to 13,
+which brings `puppeteer-core` 25 and `@puppeteer/browsers` 3.x, and that unpacks without
+`extract-zip`. Nothing here runs that chain — the browser suite drives `@playwright/test`
+directly — so the override was checked for what can be checked: the tree installs, and the one
+package that depends on `lighthouse` loads against it. `@wordpress/scripts` 36 installs the same
+versions by itself, and the override goes when that toolchain upgrade (ESLint 10, stylelint 17) is
+done.
+
+Every exception names its dependency path, compensating control, review date and upstream removal
+trigger in `.github/dependency-security-policy.json`.
 
 **This section has been wrong twice by standing still.** It said "none open" for a month while the
 gate failed on `main`, and after that was corrected it went on saying "one bounded exception"
