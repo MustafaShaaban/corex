@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.43.1** — tag `v0.43.1`, reachable from `main`.
+- **Latest published release: v0.43.2** — tag `v0.43.2`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -70,7 +70,9 @@ One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`)
 
 ## Recently landed
 
-On `main` since v0.43.1, and not in a release yet:
+Released in v0.43.2. [`CHANGELOG.md`](CHANGELOG.md) has the full entry, with what changes for a
+client site; the decisions are #245 to #258. It carries a patch number and holds more than a patch:
+an Excel export, a command, a contract, and two changed interfaces.
 
 - **A form no longer rewrites an email address before judging it** (DECISIONS #245). An `email`
   field went through `sanitize_email()` ahead of validation, so `sal,ma@example.com` was stored as

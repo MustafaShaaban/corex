@@ -6,6 +6,23 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.43.2] — 2026-10-07
+
+What the first client site found in its first week, and the first half of a rebuilt Submissions
+export. It carries a patch number and is more than a patch: it adds an Excel export, a command and
+a contract, changes the shape of the exported file and two interfaces behind it, and changes what
+`max:N` and `min:N` measure on a text field. Read Client impact before taking it.
+
+Three fixes stop a site turning people away. Choosing Turnstile or hCaptcha rejected every
+submission of every flow. Behind a proxy, a form counted every visitor as one client, so one could
+use up the allowance for all. And a mistyped email address was rewritten into a different one and
+accepted, in forms and in five add-on endpoints, one of which created accounts.
+
+The Submissions inbox is the other half. Any cell of a row opens the submission. The export is a
+file a person can read, as an Excel workbook or a CSV, from a dialog that says what it will export
+and hands the file over without a refresh. The detail pane, the export history, PDF and the Data
+export are not in this release.
+
 ### Added
 
 - **`wp corex security trusted-proxies`** shows, sets and clears the proxies a site trusts to report a

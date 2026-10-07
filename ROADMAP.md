@@ -1,6 +1,6 @@
 # Corex Product and Engineering Roadmap
 
-**Currently released: v0.43.1.** This roadmap is the durable, owner-friendly view of where Corex is,
+**Currently released: v0.43.2.** This roadmap is the durable, owner-friendly view of where Corex is,
 what must happen next, and what is intentionally deferred. It tracks milestones and dependencies
 rather than repeating completed Spec Kit history.
 
