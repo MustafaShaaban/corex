@@ -1,10 +1,12 @@
 /**
  * Corex E2E — console-error sweep (spec 052, US2). Fails if a console *error* (not a
- * warning) is emitted while loading the block editor, a Corex admin screen, or a front-end
- * page with Corex blocks — so a JS/asset regression (a 404 asset, a bad block registration,
+ * warning) is emitted while loading the block editor, the Corex settings screen, or the front
+ * page — so a JS/asset regression (a 404 asset, a bad block registration,
  * an item-20 block error) fails CI instead of hiding.
  *
- * ENVIRONMENT-GATED: needs wp-env up + `npx playwright install`. Runs in the e2e workflow.
+ * ENVIRONMENT-GATED: needs a served site and a browser; see the header of playwright.config.js.
+ * In CI it runs in the `e2e` job of .github/workflows/ci.yml, which excludes the block-editor
+ * test below by title.
  */
 const { test, expect } = require( '@playwright/test' );
 const { collectConsoleErrors } = require( './helpers' );

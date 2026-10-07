@@ -48,6 +48,26 @@ It was not seen in CI because CI installs the latest WordPress, where no update 
 `tests/e2e/admin-core-notices.spec.js` asks for one: a fixture answers the update check for the
 request, so WordPress prints its own notice whatever version the install runs.
 
+- **`CONTRIBUTING.md` sent a contributor to a browser-test workflow deleted in 0.41.0.** "Browser
+  verification" said the Playwright suite ran nightly and on demand from
+  `.github/workflows/e2e.yml`, on wp-env, and that a pull request was gated by the unit suites
+  only. It is the `e2e` job of `.github/workflows/ci.yml`: on every pull request, on a push to
+  `main` or `develop` and nightly, required on `main`, with no on-demand trigger, against a
+  WordPress the job provisions and serves with nginx and php-fpm. The section now says that, and
+  that the job skips three tests by title, two of them the block-editor tests the section names.
+- **The local run it described did not drive the site it started.** `npm run env:start` then
+  `npm run test:e2e` starts wp-env and drives `http://corex.local`, the suite's default. The
+  section now lists what a local run needs: a
+  served install with the add-ons active, the built bundles, the `COREX_*` variables with their
+  defaults, the content and users the CI job seeds, and every
+  `tests/e2e/fixtures/corex-e2e-*.php` copied into `wp-content/mu-plugins/`. The copy is
+  documented there once, for any install. The Docker entrypoint, `wp-env.json` and the Linux and
+  macOS guides are unchanged and install no fixture; the section says so.
+- **The comments in `tests/e2e/` that said the same things are corrected**: the header of
+  `playwright.config.js` (the suite was to be "wired into CI behind a job that boots wp-env") and
+  its list of why tests are excluded, and the headers of `smoke.spec.js`, `console.spec.js` and
+  `global-setup.js`. Comments only.
+
 ### Client impact
 
 - **Exports already on a site start expiring.** The first daily sweep after this is taken removes

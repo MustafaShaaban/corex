@@ -127,17 +127,71 @@ docs when available).
 
 A UI change is not done until it is **browser-verified** — "env-gated" is a CI gate, not an open excuse (spec 052):
 
-- The **E2E smoke** (`tests/e2e/`) exercises the three core flows in a real browser: insert a `corex/*` block in
-  the editor, submit the front-end contact form, and apply a kit.
+- The **E2E smoke** (`tests/e2e/smoke.spec.js`) exercises three core flows in a real browser: find a `corex/*`
+  block in the editor's inserter, submit the front-end contact form, and reach a real kit in the setup wizard.
 - The **console-error sweep** (`tests/e2e/console.spec.js`) fails on any console **error** (not warning) on the
-  block editor, the Corex admin, or a front-end page with Corex blocks — catching item-20-class JS/asset
+  block editor, the Corex settings screen, or the front page — catching item-20-class JS/asset
   regressions. A tiny, documented allow-list (`tests/e2e/helpers.js`) exempts known third-party noise.
 
-These run in CI nightly + on-demand (workflow_dispatch) via `.github/workflows/e2e.yml` — PRs stay gated by the fast unit CI, and you trigger the browser job before a release or to confirm a UI change. It (it provisions wp-env, activates
-Corex, installs Playwright, and runs the suite). To run locally:
+Both are part of the browser suite: every spec under `tests/e2e/`, run by `npm run test:e2e`.
+
+### In CI
+
+The suite is the `e2e` job, **Browser tests (Playwright)**, in `.github/workflows/ci.yml`. It runs on every pull
+request, on every push to `main` or `develop`, and nightly against `main` (05:17 UTC, in the framework's
+repository only), and it is a required check on `main`. `ci.yml` declares no `workflow_dispatch`, so there is no
+on-demand run: to run the job again, re-run it from the pull request's checks.
+
+The job does not use wp-env. `.github/actions/provision-wordpress` installs the latest WordPress into `./wp`,
+links the theme, the plugins and the add-ons into it, activates them, and installs the CoreX schema. The job then
+copies the must-use fixtures, seeds a `/contact/` page, three stored submissions and five users who are not
+administrators, builds the bundles, and serves the install with nginx and php-fpm at `http://127.0.0.1:8080`.
+
+The job sets `COREX_E2E_FRESH_INSTALL`, which skips three tests by title: `CANNOT_RUN_ON_A_FRESH_INSTALL` in
+`tests/e2e/playwright.config.js` lists them and says why. Two of the three are the block-editor tests of the
+smoke and of the sweep, so those two are checked only by a local run.
+
+### Locally
+
+The suite starts no site. It drives one that is already served, with the CoreX theme, the plugins and the
+add-ons active, which is the install `scripts/setup-wordpress.ps1` makes. Then, from the repository root:
 
 ```bash
-npm run env:start          # wp-env (Docker)
-npx playwright install     # the browser, once
+npm run build                        # the bundles are not committed
+npx playwright install chromium      # the browser, once
+mkdir -p wp/wp-content/mu-plugins    # the must-use fixtures (below)
+cp tests/e2e/fixtures/corex-e2e-*.php wp/wp-content/mu-plugins/
 npm run test:e2e
 ```
+
+The suite reads where the site is, and who signs in, from the environment:
+
+| Variable | Default | Set it when |
+|---|---|---|
+| `COREX_BASE_URL` | `http://corex.local` | the install is served at another address |
+| `COREX_ADMIN_USER`, `COREX_ADMIN_PASS` | `admin`, `password` | the install's administrator is not that pair. `scripts/setup-wordpress.ps1` has a different default for `-AdminPassword`, so set `COREX_ADMIN_PASS` for an install it made |
+| `COREX_LOGIN_PATH` | `/wp-login.php`, then `/corex-login/` | login protection moved the login to another address |
+| `COREX_WP_PATH` | `./wp` | `COREX_BASE_URL` serves an install somewhere else. A few specs reach the install through WP-CLI, and skip those steps where WP-CLI is not available |
+
+**The must-use fixtures.** Every `tests/e2e/fixtures/corex-e2e-*.php` has to be in `wp-content/mu-plugins/` of
+the install the suite drives. The `mkdir` and `cp` above make the same copy the CI job makes, for an install in
+`./wp`; for an install anywhere else, copy the files into its `wp-content/mu-plugins/`. They are copies, so make
+them again after editing a fixture. A must-use plugin is active as soon as the file is there, and one of these
+adds a guide to the Guides screen, so copy them only into an install kept for development.
+
+**Other installs.** The Docker entrypoint (`docker/php/entrypoint.sh`) and the manual steps of the
+[Linux](docs/en/00-getting-started/linux.md) and [macOS](docs/en/00-getting-started/macos.md) guides link the
+add-ons, activate four plugins and no add-on, and copy no fixture. Before running the suite against one of
+those installs, activate the rest and copy the fixtures yourself.
+
+**What CI seeds.** The `Seed browser-test fixtures` step of the `e2e` job creates the `/contact/` page, the
+stored submissions and the users named above. A new install has none of them. The smoke's contact-form test
+needs the page, and each spec that signs in as one of those users fails at the sign-in until the user exists.
+Run that step's `wp` commands against a new install, or set the environment variables read at the top of each
+such spec to users of your own.
+
+No workflow runs the suite against wp-env, and `wp-env.json` maps the theme and three plugins and none of the
+add-ons whose screens the specs open, so `npm run env:start` is not a way to run it.
+
+A local run is a check before you push. CI is the authority, for the reason given under
+[Running the tests](#running-the-tests).

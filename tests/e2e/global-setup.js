@@ -4,7 +4,8 @@
  * per-test login round-trip — and with it the WordPress cold-start "test cookie" first-login
  * race that otherwise flakes whichever spec happens to run first against a cold WP/OPcache.
  *
- * Credentials + base URL come from env (wp-env / WAMP defaults), never hard-coded.
+ * The base URL and the credentials come from the environment (COREX_BASE_URL, COREX_ADMIN_USER,
+ * COREX_ADMIN_PASS), with the defaults below for an install that sets none of them.
  */
 const { chromium, expect } = require( '@playwright/test' );
 const fs = require( 'fs' );
