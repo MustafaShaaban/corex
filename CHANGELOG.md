@@ -22,7 +22,8 @@ All notable changes to Corex are documented here. The format follows
   far side, in both directions.
   With nothing to show, the page is laid out as it was. Something printed on those hooks that is
   not a notice, Hello Dolly's line for one, is in the same place as a line of text. It used to
-  float over the top of the shell.
+  float in the top corner beside the shell, and the whole shell was drawn narrower to make room
+  for it.
 
 It was not seen in CI because CI installs the latest WordPress, where no update is pending.
 `tests/e2e/admin-core-notices.spec.js` asks for one: a fixture answers the update check for the

@@ -6765,8 +6765,10 @@ not loaded. Nothing was looked at in Firefox or Safari.
 here. CI activates every plugin a fresh WordPress ships with, and Hello Dolly prints
 `<p id="dolly">` on `admin_notices`: the tests expected three things in the region and met four,
 and the region they expected to be empty was 62px tall. The fix was doing what it should: before
-it, that paragraph floated over the top of the shell; now it is a line of its own in the region,
-in the shell's ink, spaced like a notice and not drawn as one. The tests were wrong to assume
+it, that paragraph floated in the top corner and the shell was drawn beside it, narrower for its
+whole height (its right edge at 1118 of 1280 with the same paragraph and style put in the page
+here); now it is a line of its own in the region, in the shell's ink, spaced like a notice and
+not drawn as one. The tests were wrong to assume
 that only the fixture prints on the hook. They now check the spacing of everything in the region,
 check the notice styling of notices only, and empty the region in the page before measuring it
 empty. Run here with a stand-in that prints what Hello Dolly prints, and without: 8 passed each
