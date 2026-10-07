@@ -78,6 +78,17 @@ One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`)
 
 ## Recently landed
 
+On `main` since v0.43.3, not in a release:
+
+- **`scripts/setup-wordpress.ps1` installs the browser suite's fixtures.** Two files said it
+  copied `tests/e2e/fixtures/corex-e2e-client-guide.php` into `wp/wp-content/mu-plugins/` and it
+  had no such step. It now copies every `tests/e2e/fixtures/corex-e2e-*.php` into the single-site
+  install, and the browser job in CI copies the same pattern. Not into `-Multisite`, and not into
+  an install with a client site linked, where the commands are printed instead. Run for real
+  against a throwaway database in all three cases. The second fixture,
+  `corex-e2e-core-notices.php`, arrives with #277; its docblock still says to copy it by hand, and
+  whichever of the two pull requests merges second owes that docblock the correction.
+
 Released in v0.43.3: the submission detail pane (spec 103 slice 4, DECISIONS #259) and three
 reports from the first client site's v0.43.2 update: route permission callbacks and the
 `support.js` rule (#260), and a framework test that failed in a client's repository (#261).

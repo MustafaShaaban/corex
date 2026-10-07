@@ -323,9 +323,10 @@ test.describe( 'what the removal must not touch', () => {
 		page,
 	} ) => {
 		// Registered through `corex_guides`, the seam a plugin with no container access uses, by
-		// `tests/e2e/fixtures/corex-e2e-client-guide.php` — dropped into `mu-plugins` by the CI
-		// workflow and by `scripts/setup-wordpress.ps1`. FR-008 is about somebody else's plugin, so
-		// proving it with a Corex guide would prove nothing.
+		// `tests/e2e/fixtures/corex-e2e-client-guide.php` — copied into `mu-plugins` by the CI
+		// workflow's browser job and, on a development install, by `scripts/setup-wordpress.ps1`.
+		// FR-008 is about somebody else's plugin, so proving it with a Corex guide would prove
+		// nothing.
 		//
 		// Deliberately NOT skipped when the fixture is missing. A browser check that quietly opts
 		// out when its fixture is absent reports green for the one condition it exists to catch —
@@ -336,7 +337,7 @@ test.describe( 'what the removal must not touch', () => {
 		const clientGuide = page.locator( '#guide-e2e-client-guide' );
 		await expect(
 			clientGuide,
-			'client-guide fixture missing — copy tests/e2e/fixtures/corex-e2e-client-guide.php into wp/wp-content/mu-plugins/'
+			'client-guide fixture missing — run scripts/setup-wordpress.ps1, or copy tests/e2e/fixtures/corex-e2e-client-guide.php into wp/wp-content/mu-plugins/'
 		).toBeVisible();
 		await expect( clientGuide ).toContainText( 'Client plugin guide' );
 

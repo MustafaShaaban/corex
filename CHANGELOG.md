@@ -6,6 +6,35 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **`scripts/setup-wordpress.ps1` installs the browser suite's fixtures, as two files said it
+  did.** The docblock of `tests/e2e/fixtures/corex-e2e-client-guide.php` and a comment in
+  `tests/e2e/admin-help-tab.spec.js` both said the script copied that fixture into
+  `wp/wp-content/mu-plugins/`. The script had no such step, so on a development install "a guide
+  registered by a client plugin still appears" failed until somebody copied the file by hand. The
+  script now copies every `tests/e2e/fixtures/corex-e2e-*.php` there, on every run, so a re-run
+  refreshes a fixture that was edited. The browser job in `.github/workflows/ci.yml` copies the
+  same pattern where it named one file, so a fixture added to the directory reaches both.
+
+  Two installs get no copy. `-Multisite` does not, because that install mirrors
+  `.github/actions/provision-wordpress`, which installs no must-use plugin. A run that links a
+  client site does not either, and prints the commands instead.
+
+### Client impact
+
+Nothing to do on update.
+
+- **Re-running `scripts/setup-wordpress.ps1` in a repository with a site under `sites/` copies no
+  fixture.** A must-use plugin is active as soon as the file is there, and the client-guide
+  fixture adds a guide named "Client plugin guide" to the Guides screen. To run the framework's
+  browser suite against such an install, use the two commands the script prints at the end.
+- **A new client repository gets the fixtures on its first run**, because the procedure runs the
+  script before `wp corex make:site` and there is no site to recognise yet. They are
+  `wp/wp-content/mu-plugins/corex-e2e-*.php`; delete them if that install is ever shown to
+  anyone but a developer. The dist builder packages neither `tests/` nor the install's
+  `wp-content`, so they reach no artifact.
+
 ### Added
 
 - **The export history says what each export was** (spec 103, slice 5). It was a date, a count
