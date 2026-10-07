@@ -66,7 +66,9 @@ exported it.
 Unreleased on `main` beside slice 4, both reported from the first client site after it took
 v0.43.2 (DECISIONS #260): the submissions and flow routes now carry a permission callback, so
 `routes:list` no longer prints 25 guarded routes as "public"; and the hygiene test refuses
-`support.js` only where a design export is, not a client's own test helper.
+`support.js` only where a design export is, not a client's own test helper. A third report from
+the same site (DECISIONS #261): `CommandRegistrationTest` asserted the framework's namespace and so
+failed in a client's repository after v0.43.2; it holds in both now.
 
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 

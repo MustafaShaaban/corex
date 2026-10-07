@@ -48,6 +48,12 @@ All notable changes to Corex are documented here. The format follows
   under `design/`, or beside a `.dc.html`. `tests/repo-hygiene.test.js` refused it anywhere as "a
   design-export helper script", including under `sites/<client>/`, where it was a client's own
   Playwright helper and failed "Lint + JS unit tests" on two of its pull requests.
+- **The framework's integration suite passes in a client's repository again.** Since v0.43.2 the
+  generators write into the one client plugin under `sites/`, under its namespace.
+  `CommandRegistrationTest` still asserted the namespace is `App`, so "Integration tests (real
+  WordPress)" failed on every pull request of a client repository with exactly one site, on a file
+  the client does not own. The test asserts `App` where there is no client plugin, and a valid
+  namespace anywhere else. Nothing a site runs has changed.
 
 ### Client impact
 
@@ -72,6 +78,9 @@ All notable changes to Corex are documented here. The format follows
   403, the `code` is still `forbidden`, and the message is the same. CoreX's own admin reads either.
   Code of a client's that calls these routes without the right to and reads `ok` from the answer
   has to read the status.
+- **A client repository with one site gets its "Integration tests (real WordPress)" check back.**
+  It has been red since v0.43.2 for a reason the client could not fix. Nothing to do but take the
+  release; an exception recorded for it in the meantime can be removed.
 - **A client's test helper may be called `support.js` again**, anywhere outside the root and
   `design/`. A client that renamed one to get past the rule does not have to rename it back.
 
