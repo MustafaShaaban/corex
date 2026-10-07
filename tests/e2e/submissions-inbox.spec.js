@@ -2,6 +2,7 @@
  * Complete Submissions Inbox workflow and personal-data export evidence (spec 068: T109).
  */
 
+const fs = require( 'node:fs' );
 const { test, expect } = require( '@playwright/test' );
 const { collectConsoleErrors, seedSubmission } = require( './helpers' );
 
@@ -182,15 +183,57 @@ test( 'filters works assigns notes bulk actions and audits personal-data exports
 		exact: true,
 	} );
 	await exportButton.dispatchEvent( 'click' );
-	const modal = page.getByRole( 'dialog', { name: 'Export submissions' } );
-	await modal
+	const dialog = page.getByRole( 'dialog', { name: 'Export submissions' } );
+
+	// It says what each choice covers before anything is exported (spec 103, FR-010): the one
+	// ticked row is the choice already made, with its count.
+	const chosen = dialog.locator( '.corex-export__scope.is-chosen' );
+	await expect( chosen ).toContainText( 'Selected rows' );
+	await expect( chosen.locator( '.corex-export__count' ) ).toHaveText( '1' );
+
+	// Personal data is chosen, so the export cannot start until the notice is confirmed, and the
+	// dialog says that is why.
+	const start = dialog.getByRole( 'button', { name: 'Export 1 submission' } );
+	await expect( start ).toBeDisabled();
+	await expect( dialog.getByRole( 'status' ).last() ).toContainText(
+		'Confirm the personal-data notice'
+	);
+	await dialog
 		.getByText( 'I understand this export contains personal data' )
 		.click();
-	await modal.getByRole( 'button', { name: 'Create export' } ).click();
-	await modal.getByRole( 'button', { name: 'Refresh history' } ).click();
+
+	// One click, and the file arrives. No refresh, no second button (FR-022).
+	const downloading = page.waitForEvent( 'download' );
+	await start.click();
+	const download = await downloading;
+	const contents = fs.readFileSync( await download.path(), 'utf8' );
+
+	expect( download.suggestedFilename() ).toMatch( /\.csv$/ );
+	// A column per answer, headed by the form's own question (FR-002): not one cell of JSON.
+	expect( contents ).toContain(
+		'ID,Submitted,Form,Status,"Assigned to",Read,Test,'
+	);
+	expect( contents ).toContain( EMAIL );
+	expect( contents ).not.toContain( '{"' );
+	await expect( dialog.getByText( /^Saved .+\.csv\.$/ ) ).toBeVisible();
 	await expect(
-		modal.locator( '.corex-inbox__export-history > li' ).first()
-	).toContainText( 'selected' );
+		dialog.getByRole( 'heading', { name: 'Recent exports' } )
+	).toBeVisible();
+
+	// The page behind an open dialog cannot be reached, so it is closed first.
+	await dialog
+		.getByRole( 'button', { name: 'Close', exact: true } )
+		.last()
+		.click();
+	await expect( dialog ).toBeHidden();
+
+	// Opened from the keyboard, Escape leaves, and focus goes back to what opened it (FR-035).
+	await exportButton.focus();
+	await page.keyboard.press( 'Enter' );
+	await expect( dialog ).toBeVisible();
+	await page.keyboard.press( 'Escape' );
+	await expect( dialog ).toBeHidden();
+	await expect( exportButton ).toBeFocused();
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );

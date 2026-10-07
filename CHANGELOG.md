@@ -21,6 +21,14 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **The export dialog is rebuilt, and the file arrives without a refresh** (spec 103). It says what
+  each choice covers before anything is exported: the rows ticked, the submissions matching the
+  filters in force with those filters in words, or everything, each with its number of
+  submissions. Columns are named in words and the ones that hold personal data are marked. One
+  button, labelled with how many submissions it will export, and when the file is ready the
+  browser saves it. A large export shows how far it has got. It used to queue the export, show
+  nothing until "Refresh history" was pressed, and need a second click on "Download"
+  (DECISIONS #255).
 - **A submissions export is a file a person can read** (spec 103). It had one column per group of
   data, with the whole group encoded into one cell: a lead's five answers arrived as a single cell
   of punctuation. It now has one row per submission and one column per answer, headed by the
@@ -45,6 +53,16 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The export dialog had no styles.** Every CoreX admin style is scoped under `.corex-admin`, and
+  the dialog was drawn by the WordPress modal at the end of the page, outside it. Its column
+  choices were raw keys on one line, never translated. Dialogs on this screen are now the browser's
+  own `<dialog>`, drawn where they are written, so the screen's styles and tokens reach them. The
+  bulk-action confirmation moved with it.
+- **An export waited for the site's scheduler**, which on a quiet site may not run for minutes. The
+  dialog now asks the server to take the export forward a step at a time while it is open. The
+  scheduler still finishes an export whose dialog was closed.
+- **Two runs of one job could do the same batch twice.** Nothing stopped the scheduler and a second
+  caller from each reading a job at the same point. A job now has a lock for the length of a step.
 - **The same export made twice produced one file.** An export was found by a hash of who asked and
   what for, so a second identical request was given the first one's job and the older entry never
   got a file. Each export now has a hash of its own.
@@ -110,6 +128,18 @@ All notable changes to Corex are documented here. The format follows
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
 Read this before taking the release.
 
+- **New routes**: `POST corex/v1/submissions/exports/preview` answers how many submissions each
+  scope would export and whether the person may export personal data; `POST
+  corex/v1/submissions/exports/{id}/advance` takes one step of an export now and answers its state
+  and progress.
+- **`SubmissionExportJobQueue` has a second method, `advance()`.** Code that implements the
+  interface has to add it.
+- **Every bounded job takes a lock per step**, an option named `corex_job_running_<id>` that exists
+  only while a step runs. A step that finds it held does nothing and leaves the job for the run
+  that holds it; a lock older than two minutes is taken over.
+- **Strings on the export dialog are new** in the `corex` text domain, and the old dialog's
+  "Create export" and "Refresh history" are gone. A site with its own translation of that domain
+  shows the new ones in English until they are translated.
 - **The submissions export file has a different shape.** Anything that reads it by position or by
   its old headings (`identity`, `workflow`, `submitted_fields`, each holding JSON) has to be
   changed: the headings are now words and each value has a column. The file begins with a UTF-8
@@ -117,6 +147,9 @@ Read this before taking the release.
 - **An export of several forms is a `.zip`**, holding one `.csv` per form.
 - **An export of nothing is refused** with "There is nothing to export", where it used to produce a
   file holding only headings.
+- **On a host where PHP cannot write to `uploads/`**, an export is written to the system's
+  temporary directory instead. It is still saved by the browser when it is ready; it cannot be
+  downloaded again once the system has cleared its temporary files.
 - **Exported files are written to `uploads/corex-private/exports/`**, the directory a web server is
   told not to serve, and are no longer kept in the database. A backup that takes the database and
   not the uploads directory no longer contains them. An export made before this release still

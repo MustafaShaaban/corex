@@ -93,18 +93,23 @@ describe( 'Submissions Inbox client state', () => {
 			buildExportPayload( {
 				scope: 'selected',
 				selectedIds: [ 8, 4 ],
-				columns: [ 'identity', 'submitted_fields' ],
+				columns: [ 'id', 'answers' ],
 				includeTest: false,
 				acknowledged: true,
 				filters: { status: 'new' },
+				separator: 'semicolon',
 			} )
 		).toEqual( {
 			scope: 'selected',
 			selected_ids: [ 4, 8 ],
-			columns: [ 'identity', 'submitted_fields' ],
+			columns: [ 'id', 'answers' ],
 			query: {},
 			include_test: false,
 			personal_data_acknowledged: true,
+			// What the file is, and how it is separated. A request that says neither is a
+			// comma-separated CSV.
+			format: 'csv',
+			separator: 'semicolon',
 		} );
 
 		expect(

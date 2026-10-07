@@ -97,7 +97,6 @@
 
 .corex-admin .corex-inbox__filters label,
 .corex-admin .corex-inbox__drawer label,
-.corex-admin .corex-inbox__export-modal label,
 .corex-admin .corex-inbox-retention label {
 	display: grid;
 	gap: var(--corex-admin-space-2xs);
@@ -112,7 +111,7 @@
 	grid-column: 1 / -1;
 }
 
-.corex-admin .corex-inbox input:not([type="checkbox"]),
+.corex-admin .corex-inbox input:not([type="checkbox"], [type="radio"]),
 .corex-admin .corex-inbox textarea,
 .corex-admin .corex-inbox-retention input[type="number"] {
 	inline-size: 100%;
@@ -443,8 +442,7 @@
 	overflow-wrap: anywhere;
 }
 
-.corex-admin .corex-inbox__timeline,
-.corex-admin .corex-inbox__export-history {
+.corex-admin .corex-inbox__timeline {
 	display: grid;
 	gap: var(--corex-admin-space-sm);
 	margin: 0;
@@ -452,8 +450,7 @@
 	list-style: none;
 }
 
-.corex-admin .corex-inbox__timeline li,
-.corex-admin .corex-inbox__export-history li {
+.corex-admin .corex-inbox__timeline li {
 	display: grid;
 	gap: var(--corex-admin-space-2xs);
 	padding-inline-start: var(--corex-admin-space-md);
@@ -478,23 +475,189 @@
 	font-size: var(--corex-admin-font-xs);
 }
 
-.corex-admin .corex-inbox__export-modal fieldset {
+/* The export dialog (spec 103): what to export, which columns, the format,
+   then one line and one button. */
+.corex-admin .corex-export__group {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	min-inline-size: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.corex-admin .corex-export__group > legend {
+	margin-block-end: var(--corex-admin-space-sm);
+	padding: 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-md);
+	font-weight: 600;
+}
+
+.corex-admin .corex-export__scopes,
+.corex-admin .corex-export__columns {
 	display: grid;
 	gap: var(--corex-admin-space-xs);
-	margin-block: var(--corex-admin-space-md);
 }
 
-.corex-admin .corex-inbox__export-modal fieldset label,
-.corex-admin .corex-inbox__warning {
+/* Each scope is one target: its name, its count, and what it covers. */
+.corex-admin .corex-export__scope {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-sm);
+	align-items: center;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	cursor: pointer;
+}
+
+.corex-admin .corex-export__scope.is-chosen {
+	background: color-mix(in srgb, var(--corex-admin-action) 8%, var(--corex-admin-surface));
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-export__scope.is-disabled {
+	color: var(--corex-admin-text-muted);
+	cursor: not-allowed;
+}
+
+.corex-admin .corex-export__scope:focus-within {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-admin .corex-export__scope-name,
+.corex-admin .corex-export__column-name {
+	font-weight: 600;
+}
+
+.corex-admin .corex-export__count {
+	color: var(--corex-admin-text-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.corex-admin .corex-export__detail {
+	display: block;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-export__scope .corex-export__detail {
+	grid-column: 2 / -1;
+}
+
+.corex-admin .corex-export__check {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
 }
 
-.corex-admin .corex-inbox__warning {
-	padding: var(--corex-admin-space-sm);
+.corex-admin .corex-export__column {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: var(--corex-admin-space-sm);
+	align-items: start;
+}
+
+.corex-admin .corex-export__column-name {
+	cursor: pointer;
+}
+
+.corex-admin .corex-export__column-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-export__tag {
+	padding-inline: var(--corex-admin-space-xs);
 	color: var(--corex-admin-warning);
 	background: var(--corex-admin-warning-soft);
+	border-radius: var(--corex-admin-radius-pill);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+}
+
+.corex-admin .corex-export__separator {
+	max-inline-size: 16rem;
+}
+
+.corex-admin .corex-export__notice {
+	align-items: flex-start;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	background: var(--corex-admin-warning-soft);
+	border-inline-start: var(--corex-admin-space-2xs) solid var(--corex-admin-warning);
 	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-export__outcome {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	justify-items: start;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	background: var(--corex-admin-surface);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-export__outcome.is-success {
+	background: var(--corex-admin-success-soft);
+}
+
+.corex-admin .corex-export__outcome.is-error {
+	background: var(--corex-admin-error-soft);
+}
+
+.corex-admin .corex-export__outcome p {
+	margin: 0;
+}
+
+.corex-admin .corex-export__progress {
+	inline-size: 100%;
+	accent-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-export__recent h3 {
+	margin: 0 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-export__recent ul {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-export__recent li {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+/* One line saying why the export cannot start. It keeps its height when it
+   has nothing to say, so the buttons under it do not move. */
+.corex-admin .corex-export__summary {
+	min-block-size: 1lh;
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-export__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: var(--corex-admin-space-sm);
 }
 
 .corex-admin .corex-inbox-retention {

@@ -44,30 +44,31 @@ Slice 2a ends here (DECISIONS #254). T030, T031 and everything below is slice 2b
 
 ### Scope and counts
 
-- [ ] T030 Pest integration: the preview answers the three counts and the filters in words; tests are left out unless asked for; a person sees only their own (FR-010 to FR-013)
-- [ ] T031 `SubmissionExportPreview` and `GET …/exports/preview`
+- [x] T030 Pest integration: the preview answers the three counts and the filters in words; tests are left out unless asked for; a person sees only their own (FR-010 to FR-013)
+- [x] T031 `SubmissionExportPreview` and `GET …/exports/preview`
 - [x] T032 An export of nothing is refused with a reason (FR-014)
 
 ### The flow
 
-- [ ] T040 Pest integration: two runs of the same job at once append each batch once
-- [ ] T041 A per-job lock in `JobRunner` (`Jobs/JobRunner.php`)
-- [ ] T042 Pest integration: `POST …/exports/{id}/advance` runs one batch and answers processed, total and state; another person's export is refused
-- [ ] T043 The advance route, and the download as a stream with its content type and name (FR-022, FR-026)
-- [ ] T044 A stored run whose file is still in post meta downloads as before
-- [ ] T045 Column choice per person and form in user meta, re-validated on read (FR-009, FR-027)
+- [x] T040 Pest integration: two runs of the same job at once append each batch once
+- [x] T041 A per-job lock in `JobRunner` (`Jobs/JobRunner.php`)
+- [x] T042 Pest integration: `POST …/exports/{id}/advance` runs one batch and answers processed, total and state; another person's export is refused
+- [x] T043 The advance route (FR-022, FR-026)
+- [ ] T043b The download as a stream with its content type and name; it still travels base64 inside a JSON answer
+- [x] T044 A stored run whose file is still in post meta downloads as before
+- [ ] T045 Column choice per person and form in user meta, re-validated on read (FR-009). Also open: choosing single questions and their order in the dialog; the route and the model already take them. FR-027 is done: personal columns are not offered to somebody who cannot export them
 
 ### The dialog
 
-- [ ] T050 [P] `CorexDialog` on `<dialog>`: focus in, Escape, focus back, labelled by its title; Jest
-- [ ] T051 Jest: the dialog's state — default scope from the selection, disabled reasons, the summary line, the personal-data gate
-- [ ] T052 The export dialog rebuilt in `Submissions/export/`: scope with counts and filters in words, columns named and marked, format and separator, summary, confirmation, one primary action
-- [ ] T053 Progress, completion with the automatic save, a button when the browser blocks it, failure with retry (FR-022 to FR-024)
-- [ ] T054 Every label translatable; the raw column keys gone (FR-033)
-- [ ] T055 `ConfirmBulk` moved onto `CorexDialog`
-- [ ] T056 Styles from tokens, logical properties (`assets/submissions-admin.scss`)
-- [ ] T057 Playwright: filter, select two rows, export as CSV, receive a file with the questions as headings
-- [ ] T058 Rendered check in light and dark, LTR and RTL, 1280 and 782 wide, keyboard only; guards; notes
+- [x] T050 [P] `CorexDialog` on `<dialog>`: focus in, Escape, focus back, labelled by its title; Jest
+- [x] T051 Jest: the dialog's state — default scope from the selection, disabled reasons, the summary line, the personal-data gate
+- [x] T052 The export dialog rebuilt in `Submissions/export/`: scope with counts and filters in words, columns named and marked, format and separator, summary, confirmation, one primary action
+- [x] T053 Progress, completion with the automatic save, a button when the browser blocks it, failure with retry (FR-022 to FR-024)
+- [x] T054 Every label translatable; the raw column keys gone (FR-033)
+- [x] T055 `ConfirmBulk` moved onto `CorexDialog`
+- [x] T056 Styles from tokens, logical properties (`assets/submissions-admin.scss`)
+- [x] T057 Playwright: filter, select two rows, export as CSV, receive a file with the questions as headings
+- [x] T058 Rendered check in light and dark, LTR and RTL, 1280 and 782 wide, keyboard only; guards; notes
 
 ## Slice 3 — Excel (US6)
 

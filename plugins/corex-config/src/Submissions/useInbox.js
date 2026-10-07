@@ -151,6 +151,8 @@ export function useInbox( config, filters ) {
 			return result;
 		},
 		createExport: ( data ) => mutate( '/exports', data ),
+		previewExport: ( data ) => mutate( '/exports/preview', data ),
+		advanceExport: ( id ) => mutate( `/exports/${ id }/advance`, {} ),
 		loadExports: () =>
 			window.Corex.api.get( `${ config.restUrl }/exports`, {
 				nonce: config.nonce,

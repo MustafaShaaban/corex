@@ -255,8 +255,10 @@ final readonly class SubmissionExportTable
         return match ($status) {
             'new' => __('New', 'corex'),
             'in_progress' => __('In progress', 'corex'),
+            'replied' => __('Replied', 'corex'),
             'closed' => __('Closed', 'corex'),
             'spam' => __('Spam', 'corex'),
+            'archived' => __('Archived', 'corex'),
             default => $status,
         };
     }

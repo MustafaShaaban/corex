@@ -3,18 +3,18 @@ import {
 	render,
 	useEffect,
 	useId,
-	useMemo,
 	useRef,
 	useState,
 } from '@wordpress/element';
-import { Button, Modal, Spinner } from '@wordpress/components';
+import { Button, Spinner } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
+import CorexDialog from '../admin/components/CorexDialog.js';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import CorexTime from '../admin/components/CorexTime.js';
 import CorexErrorState from '../admin/components/CorexErrorState.js';
 import FieldValue from '../admin/components/FieldValue.js';
+import ExportDialog from './export/ExportDialog.js';
 import {
-	buildExportPayload,
 	inboxFiltersFromUrl,
 	inboxSubmissionFromUrl,
 	toggleSubmission,
@@ -63,26 +63,6 @@ const ASSIGNMENT_OWNER_TYPES = [
 	OWNER_TYPES[ 1 ],
 	OWNER_TYPES[ 2 ],
 ];
-
-/**
- * Export scopes, minus any that cannot apply right now.
- *
- * The native control kept "Selected rows" in the list and disabled it when nothing was selected.
- * An option that can never be chosen is better left out than shown greyed: the list then only
- * ever offers things that work.
- *
- * @param {number} selectedCount How many rows are currently ticked.
- * @return {Array} Option list for the scope control.
- */
-function exportScopes( selectedCount ) {
-	return [
-		...( selectedCount
-			? [ { value: 'selected', label: __( 'Selected rows', 'corex' ) } ]
-			: [] ),
-		{ value: 'filtered', label: __( 'Current filter', 'corex' ) },
-		{ value: 'accessible', label: __( 'All accessible', 'corex' ) },
-	];
-}
 
 function App() {
 	const [ filters, setFilters ] = useState( () => ( {
@@ -197,11 +177,13 @@ function App() {
 				/>
 			) }
 			{ exportOpen && (
-				<ExportModal
+				<ExportDialog
 					close={ () => setExportOpen( false ) }
 					inbox={ inbox }
 					filters={ filters }
 					selectedIds={ inbox.state.selectedIds }
+					flows={ FLOWS }
+					statusLabels={ STATUS_LABELS }
 				/>
 			) }
 		</div>
@@ -1045,9 +1027,19 @@ function DetailSection( { title, value } ) {
 
 function ConfirmBulk( { preview, close, apply } ) {
 	return (
-		<Modal
+		<CorexDialog
 			title={ __( 'Confirm bulk action', 'corex' ) }
-			onRequestClose={ close }
+			onClose={ close }
+			footer={
+				<div className="corex-inbox__modal-actions">
+					<Button variant="tertiary" onClick={ close }>
+						{ __( 'Cancel', 'corex' ) }
+					</Button>
+					<Button variant="primary" onClick={ apply }>
+						{ __( 'Confirm and apply', 'corex' ) }
+					</Button>
+				</div>
+			}
 		>
 			<p>
 				{ sprintf(
@@ -1057,217 +1049,8 @@ function ConfirmBulk( { preview, close, apply } ) {
 					preview.count
 				) }
 			</p>
-			<div className="corex-inbox__modal-actions">
-				<Button variant="tertiary" onClick={ close }>
-					{ __( 'Cancel', 'corex' ) }
-				</Button>
-				<Button variant="primary" onClick={ apply }>
-					{ __( 'Confirm and apply', 'corex' ) }
-				</Button>
-			</div>
-		</Modal>
+		</CorexDialog>
 	);
-}
-
-function ExportModal( { close, inbox, filters, selectedIds } ) {
-	const [ scope, setScope ] = useState(
-		selectedIds.length ? 'selected' : 'filtered'
-	);
-	const [ columns, setColumns ] = useState( [
-		'identity',
-		'workflow',
-		'submitted_fields',
-	] );
-	const [ includeTest, setIncludeTest ] = useState( false );
-	const [ acknowledged, setAcknowledged ] = useState( false );
-	const [ history, setHistory ] = useState( [] );
-	// Each control is named by its own `for`/`id` pair rather than by being wrapped: a
-	// wrapping <label> is not announced by every assistive technology WordPress supports.
-	const fieldId = useId();
-	const personal = columns.some( ( item ) =>
-		[
-			'submitted_fields',
-			'hidden_metadata',
-			'utm',
-			'consent_snapshot',
-			'notes',
-		].includes( item )
-	);
-	const choices = useMemo(
-		() => [
-			'identity',
-			'workflow',
-			'submitted_fields',
-			'hidden_metadata',
-			'utm',
-			'consent_snapshot',
-			'notes',
-		],
-		[]
-	);
-	const refresh = async () => {
-		const result = await inbox.loadExports();
-		if ( result.envelope.ok ) {
-			setHistory( result.envelope.data.exports );
-		}
-	};
-	return (
-		<Modal
-			title={ __( 'Export submissions', 'corex' ) }
-			onRequestClose={ close }
-			className="corex-inbox__export-modal"
-		>
-			{ /* CorexSelect names its own button from `label`; a wrapping <label> would
-			     rename the control from its whole subtree on every selection. */ }
-			<div className="corex-field">
-				<span>{ __( 'Scope', 'corex' ) }</span>
-				<CorexSelect
-					label={ __( 'Scope', 'corex' ) }
-					value={ scope }
-					options={ exportScopes( selectedIds.length ) }
-					onChange={ setScope }
-				/>
-			</div>
-			<fieldset>
-				<legend>{ __( 'Columns', 'corex' ) }</legend>
-				{ choices.map( ( choice ) => (
-					<label
-						key={ choice }
-						htmlFor={ `${ fieldId }-column-${ choice }` }
-					>
-						<input
-							id={ `${ fieldId }-column-${ choice }` }
-							type="checkbox"
-							checked={ columns.includes( choice ) }
-							onChange={ () =>
-								setColumns(
-									columns.includes( choice )
-										? columns.filter(
-												( item ) => item !== choice
-										  )
-										: [ ...columns, choice ]
-								)
-							}
-						/>{ ' ' }
-						{ choice.replaceAll( '_', ' ' ) }
-					</label>
-				) ) }
-			</fieldset>
-			<label htmlFor={ `${ fieldId }-include-test` }>
-				<input
-					id={ `${ fieldId }-include-test` }
-					type="checkbox"
-					checked={ includeTest }
-					onChange={ ( e ) => setIncludeTest( e.target.checked ) }
-				/>{ ' ' }
-				{ __( 'Include marked tests', 'corex' ) }
-			</label>
-			{ personal && (
-				<label
-					className="corex-inbox__warning"
-					htmlFor={ `${ fieldId }-acknowledged` }
-				>
-					<input
-						id={ `${ fieldId }-acknowledged` }
-						type="checkbox"
-						checked={ acknowledged }
-						onChange={ ( e ) =>
-							setAcknowledged( e.target.checked )
-						}
-					/>{ ' ' }
-					{ __(
-						'I understand this export contains personal data and will handle it according to policy.',
-						'corex'
-					) }
-				</label>
-			) }
-			<div className="corex-inbox__modal-actions">
-				<Button onClick={ refresh }>
-					{ __( 'Refresh history', 'corex' ) }
-				</Button>
-				<Button
-					variant="primary"
-					disabled={
-						! columns.length || ( personal && ! acknowledged )
-					}
-					onClick={ async () => {
-						const data = await inbox.createExport(
-							buildExportPayload( {
-								scope,
-								selectedIds,
-								columns,
-								includeTest,
-								acknowledged,
-								filters: {
-									search: filters.search,
-									flow: filters.flow,
-									status: filters.status,
-									owner: filters.owner,
-									date_from: filters.dateFrom,
-									date_to: filters.dateTo,
-								},
-							} )
-						);
-						if ( data ) {
-							refresh();
-						}
-					} }
-				>
-					{ __( 'Create export', 'corex' ) }
-				</Button>
-			</div>
-			<ul className="corex-inbox__export-history">
-				{ history.map( ( item ) => (
-					<li key={ item.id }>
-						<span>
-							#{ item.id } · { item.scope } ·{ ' ' }
-							{ item.record_count }
-						</span>
-						<Button
-							variant="link"
-							onClick={ async () => {
-								const result = await inbox.downloadExport(
-									item.id
-								);
-								if ( result.envelope.ok ) {
-									downloadCsv(
-										result.envelope.data.artifact
-									);
-								}
-							} }
-						>
-							{ __( 'Download', 'corex' ) }
-						</Button>
-					</li>
-				) ) }
-			</ul>
-		</Modal>
-	);
-}
-
-/**
- * Saves an export the server answered with. A file comes as its bytes, base64; an export made
- * before files were kept on disk comes as CSV text.
- *
- * @param {Object} artifact The `artifact` of the download answer.
- */
-function downloadCsv( artifact ) {
-	const body =
-		typeof artifact.base64 === 'string'
-			? Uint8Array.from( window.atob( artifact.base64 ), ( character ) =>
-					character.charCodeAt( 0 )
-			  )
-			: artifact.csv;
-	const url = URL.createObjectURL(
-		new Blob( [ body ], {
-			type: artifact.content_type || 'text/csv;charset=utf-8',
-		} )
-	);
-	const link = document.createElement( 'a' );
-	link.href = url;
-	link.download = artifact.filename;
-	link.click();
-	URL.revokeObjectURL( url );
 }
 
 const root = document.getElementById( 'corex-submissions-app' );

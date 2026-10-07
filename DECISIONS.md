@@ -6204,3 +6204,94 @@ failures.
 **The browser test leaves a file.** `submissions-inbox.spec.js` creates an export through the
 dialog and never deletes it. It used to leave a database row; it now also leaves a file in the
 protected directory of the install it ran on. Expiry, in slice 5, is what removes them.
+
+## #255 — The export dialog is a real dialog, it says what it will export, and it moves the export itself
+
+Date: 2026-10-07 · Spec: 103 (submissions inbox and exports), slice 2b · Status: Final
+
+The owner, of the dialog: "why should i refresh to be able to download files? why it looks like
+this in the first place".
+
+**Why it looked like that.** Every CoreX admin rule is scoped under `.corex-admin`. The dialog was
+a `@wordpress/components` `Modal`, which renders through a portal at the end of `<body>`: outside
+that scope. `.corex-admin .corex-inbox__export-modal label` could not match anything, and neither
+could a token. `CorexDialog` is the native `<dialog>`, opened with `showModal()`. The browser
+draws a modal dialog in the top layer without moving it in the document, so it stays where it is
+written and every scoped rule reaches it. The focus trap, the inert page behind it, Escape and
+handing focus back are the browser's, not code here. The bulk-action confirmation uses it too.
+
+One thing about it had to be learned from the browser test. Focus was not handed back on close:
+the component closed its dialog in an effect cleanup, which React runs after it has taken the
+element out of the document, and a browser cannot restore focus from an element that is gone. It
+is a layout effect now, whose cleanup runs first.
+
+**Why it needed a refresh.** Creating an export queues a bounded job. A job moves only when
+WP-Cron or Action Scheduler fires, 100 submissions a run, and the dialog did not wait. Now
+`POST exports/{id}/advance` takes one step and answers the job's state, and the dialog calls it
+until the job completes, then fetches the file and saves it. It does not depend on the scheduler.
+The job is still queued as before, so an export whose dialog is closed is finished by the
+scheduler.
+
+**That makes two callers of one job, so the runner has a lock.** `JobRunner::execute()` read a job,
+did a batch and saved it, with nothing to stop a second run doing the same batch from the same
+point. A step now takes `add_option('corex_job_running_<id>')`, which fails when the row exists,
+and releases it in a `finally`. A lock older than two minutes is taken over, by an update that
+only one of two contenders can make. It is in the runner, so every job kind has it.
+
+**Saying what will be exported.** `POST exports/preview` counts the three scopes the way the
+export would, and says whether the person may export personal data. The dialog shows each scope
+with its count, puts the filters in force into words, opens on the selection when there is one,
+and labels its button with the number. A scope that cannot be chosen says why. Columns that hold
+personal data are not offered to somebody who cannot export them; the export refuses them
+regardless.
+
+The words are in `export/exportState.js`, as functions with no component around them, so they are
+tested without a browser.
+
+**Considered and not done.**
+
+- *Polling a status route while the scheduler does the work.* It leaves the wait to WP-Cron, which
+  is the thing that was slow.
+- *Running the whole export inside the request that creates it.* A request that takes as long as
+  the export does times out on the exports that matter.
+- *Keeping the dialog open until the export ends.* The spec lets it be closed. Closing it stops
+  the dialog asking, and the scheduler takes over.
+
+**Not in this slice, against the spec.**
+
+- **FR-009, a column choice remembered per person, and choosing single questions and their
+  order.** The model and the route take `answer:<key>` and an order; the dialog offers groups of
+  columns and remembers nothing. `tasks.md` T045 is open.
+- **Streaming the download.** It still travels base64 inside a JSON answer.
+- **Excel and PDF.** The format section says CSV and offers a separator. It does not show formats
+  that are not built.
+- **"There is nothing to export"** from the server is not translated, like the service's other
+  refusals. The dialog shows its own translated line before the request is made.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `exportState.test.js`: the filters in words, the scopes and their counts, the columns, when the export can start | 32 passed |
+| `corexDialog.test.js` | 7 passed |
+| `SubmissionExportServiceTest`: counts per scope, and a step for the person who made the export and nobody else | 25 passed |
+| `SubmissionExportFileTest`, real WordPress: an export finished by the advance route alone; a held lock stops a step and is released after one; a stale lock is taken over; the preview route's counts; somewhere to write when uploads cannot be written | 7 passed |
+| `submissions-inbox.spec.js`, a real browser: the count on the chosen scope, the button disabled with its reason until the notice is confirmed, one click, a downloaded file with the questions as headings, Escape, focus back on the Export button | 5 passed |
+| `tests/Unit` | 2174 passed |
+| Integration, whole suite | 520 passed |
+| Jest, whole suite | 595 passed |
+| `lint-js`, `lint-style` | clean |
+| Looked at, rendered: dark and light at 1280, right-to-left dark at 1280, light at 480 | two faults found and fixed: radios stretched by a rule written for text inputs, and the personal-data tag placed before the hint it belongs beside |
+
+**Found by CI, in slice 2a's work.** The browser suite passed here and failed in CI, where nginx and
+php-fpm run as a user that does not own the checkout. The dialog said why, in its own words:
+"CoreX could not create the directory exports are written to." Since slice 2a an export needs a
+directory to write to, and a host that does not let PHP write to uploads had lost exports
+altogether. `ProtectedExportDirectory` now falls back to the system's temporary directory, which
+is not served either. Such a host can still save an export when it is ready, and cannot download
+it again after the system clears its temporary files. Slice 2a's own tests ran as the user who
+owns the directory and could not have seen this.
+
+**Not checked.** The progress bar on an export of more than one batch was not watched in a
+browser: the browser test exports one submission. A screen reader was not used. The lock was
+exercised by holding it, not by two processes racing.

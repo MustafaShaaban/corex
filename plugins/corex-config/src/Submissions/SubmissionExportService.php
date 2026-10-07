@@ -45,6 +45,44 @@ final readonly class SubmissionExportService
         return $run;
     }
 
+    /**
+     * How many submissions each scope would export, before anything is exported.
+     *
+     * @param list<int>           $selectedIds
+     * @param array<string,mixed> $query       The filters in force.
+     *
+     * @return array{selected:int,filtered:int,accessible:int}
+     */
+    public function preview(SubmissionAccessScope $scope, array $selectedIds, array $query, bool $includeTest): array
+    {
+        $selected = 0;
+        foreach ($selectedIds as $id) {
+            $record = $this->submissions->findInbox((int) $id, $scope);
+            $selected += $record !== null && ($includeTest || ! ($record['is_test'] ?? false)) ? 1 : 0;
+        }
+
+        return [
+            'selected' => $selected,
+            'filtered' => $this->count($scope, $query, $includeTest),
+            'accessible' => $this->count($scope, [], $includeTest),
+        ];
+    }
+
+    /**
+     * Takes one step of an export now, for the person waiting on it.
+     *
+     * @return array{state:string,processed:int,total:int,error:string}
+     */
+    public function advance(SubmissionAccessScope $scope, int $runId): array
+    {
+        $run = $this->exports->find($runId);
+        if ($run === null || (! $scope->manageAll && $run->actorId !== $scope->actorId)) {
+            throw new DomainException('The submission export is unavailable.');
+        }
+
+        return $this->jobs->advance($run->jobId);
+    }
+
     /** @return list<SubmissionExportRun> */
     public function history(SubmissionAccessScope $scope, int $limit = 50): array
     {
@@ -114,10 +152,17 @@ final readonly class SubmissionExportService
 
     private function countQuery(SubmissionAccessScope $scope, SubmissionExportRequest $request): int
     {
-        $input = $request->scope === 'filtered' ? $request->query : [];
-        $input['include_test'] = $request->includeTest;
-        $input['per_page'] = 1;
-        $page = $this->submissions->queryInbox(SubmissionInboxQuery::from($input), $scope);
+        return $this->count($scope, $request->scope === 'filtered' ? $request->query : [], $request->includeTest);
+    }
+
+    /**
+     * @param array<string,mixed> $query
+     */
+    private function count(SubmissionAccessScope $scope, array $query, bool $includeTest): int
+    {
+        $query['include_test'] = $includeTest;
+        $query['per_page'] = 1;
+        $page = $this->submissions->queryInbox(SubmissionInboxQuery::from($query), $scope);
 
         return max(0, $page['total']);
     }
