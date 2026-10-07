@@ -1947,6 +1947,30 @@ body.corex-admin-screen .corex-admin__shell {
 	max-block-size: inherit;
 }
 
+/* A drawer: one record, read beside the list it came from. It is the same
+   modal dialog docked to the end of the window at full height, so it has the
+   same focus handling and the same dimmed page behind it, and being in the top
+   layer it is never under the admin toolbar. It is sized as a share of the
+   window as it is now, which on a phone is not what 100vh measures. */
+.corex-admin .corex-dialog.is-drawer {
+	inset-block: 0;
+	inset-inline: auto 0;
+	inline-size: min(36rem, 100%);
+	max-inline-size: 100%;
+	block-size: 100%;
+	max-block-size: 100%;
+	margin: 0;
+	border-block: 0;
+	border-inline-end: 0;
+	border-radius: 0;
+}
+
+.corex-admin .corex-dialog__heading {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	min-inline-size: 0;
+}
+
 .corex-admin .corex-dialog__header {
 	display: flex;
 	align-items: center;
@@ -1954,6 +1978,11 @@ body.corex-admin-screen .corex-admin__shell {
 	gap: var(--corex-admin-space-md);
 	padding: var(--corex-admin-space-md) var(--corex-admin-space-lg);
 	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+/* A drawer's header holds more than a title: its close sits at the top. */
+.corex-admin .corex-dialog.is-drawer .corex-dialog__header {
+	align-items: start;
 }
 
 .corex-admin .corex-dialog__title {

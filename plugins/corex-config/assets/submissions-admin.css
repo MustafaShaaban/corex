@@ -406,10 +406,6 @@
 	color: var(--corex-admin-text-muted);
 }
 
-.corex-admin .corex-inbox__delivery-detail p {
-	margin-block: var(--corex-admin-space-2xs) 0;
-}
-
 .corex-admin .corex-inbox__pagination,
 .corex-admin .corex-inbox__modal-actions {
 	display: flex;
@@ -435,72 +431,116 @@
 	border-radius: var(--corex-admin-radius-md);
 }
 
-.corex-admin .corex-inbox__drawer {
-	position: fixed;
-	z-index: var(--corex-admin-z-modal);
-	inset-block: 0;
-	inset-inline-end: 0;
-	overflow-y: auto;
-	inline-size: min(38rem, 100%);
-	padding: var(--corex-admin-space-lg);
-	color: var(--corex-admin-text);
-	background: var(--corex-admin-surface);
-	border-inline-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
-	box-shadow: var(--corex-admin-shadow-lg);
+/*
+ * The detail pane (spec 103): one submission, in the order it is read. It is a
+ * drawer form of the shared dialog, which gives it its position, its header
+ * and its scrolling. Everything here is what is inside.
+ */
+.corex-admin .corex-pane p,
+.corex-admin .corex-pane h3,
+.corex-admin .corex-pane h4 {
+	margin: 0;
 }
 
-.corex-admin .corex-inbox__drawer > header,
-.corex-admin .corex-inbox__drawer-actions,
-.corex-admin .corex-inbox__assignment,
-.corex-admin .corex-inbox__drawer > footer {
+/* A rule and the same space above every part after the first. */
+.corex-admin .corex-pane .corex-dialog__body > * + * {
+	padding-block-start: var(--corex-admin-space-lg);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-pane__waiting {
+	display: flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+}
+
+.corex-admin .corex-pane__header {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-pane__contact,
+.corex-admin .corex-pane__identity,
+.corex-admin .corex-pane__state,
+.corex-admin .corex-pane__delivery {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	justify-content: space-between;
-	gap: var(--corex-admin-space-sm);
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-md);
 }
 
-/* stylelint-disable-next-line no-descending-specificity */
-.corex-admin .corex-inbox__assignment input,
-.corex-admin .corex-inbox__assignment .corex-select {
-	flex: 1 1 10rem; /* corex-token-allow: structural assignment control basis */
-}
-
-.corex-admin .corex-inbox__drawer > section {
-	display: grid;
-	gap: var(--corex-admin-space-sm);
-	padding-block: var(--corex-admin-space-lg);
-	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
-}
-
-.corex-admin .corex-inbox__drawer h3 {
-	margin: 0;
-	font-size: var(--corex-admin-font-md);
-}
-
-.corex-admin .corex-inbox__fields {
-	display: grid;
-	gap: var(--corex-admin-space-xs);
-	margin: 0;
-}
-
-.corex-admin .corex-inbox__fields > div {
-	display: grid;
-	grid-template-columns: minmax(8rem, 0.5fr) minmax(0, 1fr);
-	gap: var(--corex-admin-space-sm);
-}
-
-.corex-admin .corex-inbox__fields dt {
-	color: var(--corex-admin-text-muted);
-	font-weight: 600;
-}
-
-.corex-admin .corex-inbox__fields dd {
-	margin: 0;
+.corex-admin .corex-pane__contact a {
 	overflow-wrap: anywhere;
 }
 
-.corex-admin .corex-inbox__timeline {
+/* "Mark unread" is a line of text, and still something a finger has to hit.
+   This is the smallest target WCAG 2.2 accepts (2.5.8). */
+.corex-admin .corex-pane__state .components-button.is-link {
+	min-block-size: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-pane__identity,
+.corex-admin .corex-pane__read,
+.corex-admin .corex-pane__muted {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-pane__section {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-pane__section h3 {
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-md);
+}
+
+/* A question above its answer: a question is a sentence, and a narrow column
+   beside the answer broke it over four lines. */
+.corex-admin .corex-pane__fields {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+}
+
+.corex-admin .corex-pane__fields > div {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+}
+
+.corex-admin .corex-pane__fields dt {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
+/* The answer is what the pane is opened for, so it is the larger of the two. */
+.corex-admin .corex-pane__fields dd {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-md);
+	line-height: var(--corex-admin-line-normal);
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+}
+
+.corex-admin .corex-pane__triage {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-pane__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-pane__timeline,
+.corex-admin .corex-pane__emails {
 	display: grid;
 	gap: var(--corex-admin-space-sm);
 	margin: 0;
@@ -508,27 +548,71 @@
 	list-style: none;
 }
 
-.corex-admin .corex-inbox__timeline li {
+.corex-admin .corex-pane__timeline li {
 	display: grid;
 	gap: var(--corex-admin-space-2xs);
+	margin: 0;
 	padding-inline-start: var(--corex-admin-space-md);
 	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border);
 }
 
-.corex-admin .corex-inbox__timeline small,
-.corex-admin .corex-inbox__muted {
+.corex-admin .corex-pane__timeline small {
 	color: var(--corex-admin-text-muted);
 }
 
-.corex-admin .corex-inbox__drawer pre {
-	overflow: auto;
+.corex-admin .corex-pane__emails li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+}
+
+.corex-admin .corex-pane__log {
+	margin: 0;
 	padding: var(--corex-admin-space-sm);
+	overflow: auto;
 	background: var(--corex-admin-surface-alt);
 	border-radius: var(--corex-admin-radius-sm);
 }
 
-.corex-admin .corex-inbox__drawer > footer {
-	padding-block-start: var(--corex-admin-space-md);
+.corex-admin .corex-pane__more > summary {
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-md);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.corex-admin .corex-pane__more > summary:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-admin .corex-pane__more[open] > summary {
+	margin-block-end: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-pane__group {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-pane__group + .corex-pane__group {
+	margin-block-start: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-pane__group h4 {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-pane__facts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-md);
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-xs);
 }
@@ -786,17 +870,6 @@
 	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
 }
 
-
-@media (max-width: 782px) { /* corex-token-allow: WordPress admin breakpoint */
-	.corex-admin .corex-inbox__drawer {
-		inline-size: 100%;
-		padding: var(--corex-admin-space-md);
-	}
-
-	.corex-admin .corex-inbox__fields > div {
-		grid-template-columns: 1fr;
-	}
-}
 
 @media (max-width: 480px) { /* corex-token-allow: compact mobile breakpoint */
 	.corex-admin .corex-inbox__header,

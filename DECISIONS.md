@@ -6494,3 +6494,85 @@ What was run:
 
 **Not run.** A flow was not submitted in a browser with Turnstile selected. The stage is tested
 with the real context factory and a verifier that accepts one token.
+
+## #259 — The detail pane is read from the top down, and it is the same dialog as the export
+
+Date: 2026-10-07 · Spec: 103 (submissions inbox and exports) · Status: Final
+
+The owner, from the first client site: "the right pane opened i feel that it is not well
+organized so if you can help with this and make it in a better way would be better".
+
+**What was wrong with it.** It was a fixed box of its own. The answers were the fourth thing in
+it, under the keys they were stored with. The owner was a type and a key. Three sections said "No
+data recorded." Status had no label. There were two controls for assignment. It took no focus, did
+not close on Escape, and went blank after every change, because a change reopened it.
+
+**The order.** A header, the answers, reply and notes, triage, the notification, technical
+details, history. It is the order of the questions somebody opens a submission with: who is this
+and how do I reach them, what did they say, what do I do about it. Reply and notes are above
+triage because the spec says so (FR-039), and because a status is usually changed after the reply
+that earns it.
+
+**It is `CorexDialog`, docked.** The export dialog already had what the pane lacked: the browser
+moves focus in, keeps it there, closes on Escape and hands focus back. A `drawer` variant docks
+the same dialog to the end of the window at full height. A second implementation of focus
+handling would have been a second place for it to be wrong. Being in the top layer, it is over
+the admin toolbar and not under it, which is how FR-046 is met. The page behind it is inert and
+dimmed; it is not usable while the pane is open, and it does not look as if it were.
+
+**Opening is reading.** The spec assumed it and asked the owner, who has not answered. It is built
+that way, with "Mark unread" in the header and a `mark_unread` on the route, because a submission
+that stays "unread" after somebody has read it makes the count of unread ones mean nothing. It is
+one request to take out if the owner says otherwise.
+
+**A change no longer reopens the pane.** A change is followed by fetching the submission again
+and swapping the record in. Reopening put the pane back into its loading state, which removed
+whatever had focus.
+
+**What the wording is made from.** The submission's payload now carries the form's questions, the
+owner's name and the people who can own it; the pane is a set of plain functions over that record
+(`detailState.js`), tested without a browser. The history is one of them. An event the function
+does not know is printed as it was stored, so a new kind of event is never dropped.
+
+**Answers in their own direction.** Each answer is in a `<bdi>`. `dir="auto"` on the cell would
+have fixed the punctuation too, and would have aligned an email address to the left of an Arabic
+pane, between two answers aligned to the right.
+
+**Not done: the rest of FR-043.** It asks the pane to say to whom each attempt went and where a
+failure can be fixed. A submission stores one delivery record: a result, a time, a provider, a
+reason. It stores no recipient, and the inbox is not told where the mail screen is or whether the
+person may open it. The pane shows what is recorded. The rest is T074b.
+
+What was measured, on a real page, and is now asserted by a browser test:
+
+| Measured | Result |
+|---|---|
+| The pane, in a 1280 by 720 window | 576px wide, the full height, at the end of the window |
+| The pane, in a 480 by 720 window | the whole window, nothing off the screen |
+| The bottom of the first answer | on the screen without scrolling at 720px of height (SC-007) |
+| Distance between parts | 24px, all of them |
+| Starting edge of the title, the header's lines, the headings, the questions | one |
+| Height of the text field and the two selects | 40px |
+| A question against its answer | 14px against 16px; the answer had been the smaller |
+| "Mark unread" | 17px tall as first built, 24px now (WCAG 2.2, 2.5.8) |
+| After Escape | focus is on the row's button |
+
+It was looked at in dark, light, right-to-left and at 480px wide. Two things were found by
+looking and not by measuring: the answers were smaller than their questions, and the history read
+"read success".
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `detailState.test.js`, the history cases, before the function existed | 11 failed |
+| Jest, `plugins/corex-config` | 336 passed |
+| `tests/Unit` | 2198 passed |
+| `tests/Integration/Submissions`, real WordPress | 28 passed |
+| `submissions-inbox.spec.js`, a browser | 8 passed |
+| `admin-controls.spec.js`, the close button's contrast in dark and light | 2 passed |
+| `lint:js`, `lint:css` | clean |
+
+**Not run.** A screen reader was not used on the pane. A real Arabic install was not used: the
+right-to-left check flipped the direction of an English one, which is why its dates read out of
+order in the capture and would not on a translated site.

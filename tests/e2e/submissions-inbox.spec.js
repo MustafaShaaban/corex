@@ -165,11 +165,11 @@ test( 'filters works assigns notes bulk actions and audits personal-data exports
 	await drawer.getByRole( 'combobox', { name: 'Status' } ).click();
 	await page.getByRole( 'option', { name: 'In progress' } ).click();
 	await drawer
-		.getByPlaceholder( 'Add a team note' )
+		.getByLabel( 'Add a note for the team' )
 		.fill( 'Browser evidence note.' );
 	await drawer.getByRole( 'button', { name: 'Add note' } ).click();
 	await expect( drawer.getByText( 'Browser evidence note.' ) ).toBeVisible();
-	await drawer.getByRole( 'button', { name: 'Close detail' } ).click();
+	await drawer.getByRole( 'button', { name: 'Close', exact: true } ).click();
 
 	await page
 		.getByLabel( /Select submission/ )
@@ -316,8 +316,7 @@ test( 'opens a submission from any cell of its row, and marks the row that is op
 		).toBeVisible();
 		await expect( row ).toHaveAttribute( 'aria-current', 'true' );
 		await drawer
-			.getByRole( 'button', { name: /^Close/ } )
-			.first()
+			.getByRole( 'button', { name: 'Close', exact: true } )
 			.click();
 		await expect( drawer ).toBeHidden();
 		await expect( row ).not.toHaveAttribute( 'aria-current', 'true' );
@@ -330,6 +329,155 @@ test( 'opens a submission from any cell of its row, and marks the row that is op
 
 	// One stop per row opens it: the row holds exactly one button.
 	await expect( row.getByRole( 'button' ) ).toHaveCount( 1 );
+} );
+
+/**
+ * The detail pane, read and measured (spec 103, US5).
+ *
+ * The pane it replaces put the answers fourth, under their field keys, and drew three sections
+ * that said nothing was recorded. This opens a submission the way a keyboard does and checks what
+ * a person sees: the answer is on the screen without scrolling at 720 pixels of height (SC-007),
+ * the parts are the same distance apart, everything starts on one edge, and closing it puts focus
+ * back on the row (FR-045). The spacing is measured for the reason the export dialog's is: it is
+ * the kind of fault a test of behaviour cannot see.
+ */
+test( 'reads a submission in the pane: the answer first, the parts evenly spaced, focus handed back', async ( {
+	page,
+} ) => {
+	await page.setViewportSize( { width: 1280, height: 720 } );
+	await page.getByLabel( 'Search' ).fill( EMAIL );
+	const row = page
+		.locator( '.corex-inbox__table tbody tr' )
+		.filter( { hasText: EMAIL } )
+		.first();
+	await expect( row ).toBeVisible();
+	await expect(
+		page.getByText( 'marked-test@example.com', { exact: true } )
+	).toHaveCount( 0 );
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
+
+	const opener = row.getByRole( 'button' );
+	await opener.focus();
+	await page.keyboard.press( 'Enter' );
+	const pane = page.getByRole( 'dialog' );
+	await expect( pane ).toBeVisible();
+	await expect( pane.locator( '.corex-pane__fields dt' ).first() ).toHaveText(
+		'Email'
+	);
+	await expect( pane.locator( '.corex-pane__fields dd' ).first() ).toHaveText(
+		EMAIL
+	);
+	await expect( pane.getByRole( 'link', { name: EMAIL } ) ).toHaveAttribute(
+		'href',
+		`mailto:${ EMAIL }`
+	);
+
+	// Opening it is reading it (FR-047): the seeded submission was unread a moment ago.
+	const markUnread = pane.getByRole( 'button', { name: 'Mark unread' } );
+	await expect( markUnread ).toBeVisible();
+
+	const measured = await pane.evaluate( ( dialog ) => {
+		const box = ( node ) => node.getBoundingClientRect();
+		const size = ( node ) =>
+			parseFloat( window.getComputedStyle( node ).fontSize );
+		const parts = Array.from(
+			dialog.querySelector( '.corex-dialog__body' ).children
+		);
+		// What is drawn: a question inside a closed group has no box to measure.
+		const aligned = dialog.querySelectorAll(
+			'.corex-dialog__title, .corex-pane__header > *, .corex-pane__section > h3, .corex-pane__section dt, .corex-pane__more > summary, .corex-pane__facts'
+		);
+
+		return {
+			focusInside: dialog.contains( dialog.ownerDocument.activeElement ),
+			firstAnswerBottom: box(
+				dialog.querySelector( '.corex-pane__fields dd' )
+			).bottom,
+			windowHeight: window.innerHeight,
+			gaps: parts
+				.slice( 1 )
+				.map( ( part, index ) =>
+					Math.round( box( part ).top - box( parts[ index ] ).bottom )
+				),
+			edges: Array.from(
+				new Set(
+					Array.from( aligned ).map( ( node ) =>
+						Math.round( box( node ).left )
+					)
+				)
+			),
+			controls: Array.from(
+				dialog.querySelectorAll(
+					'input[type="text"], .corex-select__button'
+				)
+			).map( ( node ) => Math.round( box( node ).height ) ),
+			question: size( dialog.querySelector( '.corex-pane__fields dt' ) ),
+			answer: size( dialog.querySelector( '.corex-pane__fields dd' ) ),
+			readToggle: box(
+				dialog.querySelector( '.corex-pane__state .components-button' )
+			).height,
+			emptySections: Array.from(
+				dialog.querySelectorAll( '.corex-pane__section, details' )
+			).filter( ( node ) => node.children.length < 2 ).length,
+		};
+	} );
+
+	expect( measured.focusInside, 'focus moved into the pane' ).toBe( true );
+	expect(
+		measured.firstAnswerBottom,
+		'the first answer is on the screen without scrolling'
+	).toBeLessThanOrEqual( measured.windowHeight );
+	expect( measured.gaps.length ).toBeGreaterThan( 3 );
+	expect( new Set( measured.gaps ), 'one distance between parts' ).toEqual(
+		new Set( [ 24 ] )
+	);
+	expect( measured.edges, 'one starting edge' ).toHaveLength( 1 );
+	expect( new Set( measured.controls ), 'one control height' ).toEqual(
+		new Set( [ 40 ] )
+	);
+	expect( measured.answer ).toBeGreaterThanOrEqual( measured.question );
+	expect( measured.readToggle ).toBeGreaterThanOrEqual( 24 );
+	expect( measured.emptySections, 'no section with nothing in it' ).toBe( 0 );
+
+	// The history is sentences, not the stage and outcome it was stored as.
+	await pane.getByText( 'History', { exact: true } ).click();
+	await expect(
+		pane.getByText( 'Marked read', { exact: true } )
+	).toBeVisible();
+	await expect( pane.getByText( /read success/ ) ).toHaveCount( 0 );
+
+	await markUnread.click();
+	await expect(
+		pane.getByRole( 'button', { name: 'Mark read' } )
+	).toBeVisible();
+	await expect( pane.getByText( 'Unread', { exact: true } ) ).toBeVisible();
+
+	// On a phone the pane is the window: nothing of it is off the screen.
+	await page.setViewportSize( { width: 480, height: 720 } );
+	const fit = await pane.evaluate( ( dialog ) => {
+		const box = dialog.getBoundingClientRect();
+
+		return {
+			left: Math.round( box.left ),
+			top: Math.round( box.top ),
+			right: Math.round( box.right ),
+			bottom: Math.round( box.bottom ),
+			width: window.innerWidth,
+			height: window.innerHeight,
+		};
+	} );
+	expect( fit.left ).toBeGreaterThanOrEqual( 0 );
+	expect( fit.top ).toBe( 0 );
+	expect( fit.right ).toBeLessThanOrEqual( fit.width );
+	expect( fit.bottom ).toBeLessThanOrEqual( fit.height );
+	await page.setViewportSize( { width: 1280, height: 720 } );
+
+	await page.keyboard.press( 'Escape' );
+	await expect( pane ).toBeHidden();
+	await expect( opener ).toBeFocused();
 } );
 
 /**

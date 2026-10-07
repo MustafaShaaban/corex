@@ -74,19 +74,60 @@ export function useInbox( config, filters ) {
 		[ config.nonce, config.restUrl ]
 	);
 
+	// Fetches the open submission again without putting the pane back into its loading state.
+	// Reopening it did that after every change: the pane blanked, and focus fell out of it.
+	const reload = useCallback(
+		async ( id ) => {
+			const result = await window.Corex.api.get(
+				`${ config.restUrl }/${ id }`,
+				{ nonce: config.nonce }
+			);
+			if ( result.envelope.ok ) {
+				dispatch( {
+					type: 'detailLoaded',
+					record: result.envelope.data.submission,
+				} );
+			}
+		},
+		[ config.nonce, config.restUrl ]
+	);
+
 	const refreshRecord = useCallback(
 		async ( id, success ) => {
 			await load( success );
-			await open( id );
+			await reload( id );
 		},
-		[ load, open ]
+		[ load, reload ]
+	);
+
+	// Opening a submission is reading it (spec 103, FR-047). The pane's header offers to mark it
+	// unread again, for somebody who only looked.
+	const openAndRead = useCallback(
+		async ( id ) => {
+			const record = await open( id );
+			if ( record && ! record.read_at ) {
+				const marked = await mutate(
+					`/${ id }`,
+					{
+						mark_read: true,
+						expected_updated_at: record.updated_at,
+					},
+					'patch'
+				);
+				if ( marked ) {
+					await refreshRecord( id, '' );
+				}
+			}
+			return record;
+		},
+		[ open, mutate, refreshRecord ]
 	);
 
 	return {
 		state,
 		dispatch,
 		load,
-		open,
+		open: openAndRead,
 		close: () => dispatch( { type: 'drawerClosed' } ),
 		update: async ( id, data ) => {
 			const result = await mutate( `/${ id }`, data, 'patch' );

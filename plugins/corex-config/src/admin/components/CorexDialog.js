@@ -26,6 +26,9 @@ import { __ } from '@wordpress/i18n';
  * @param {import('react').ReactNode} [props.footer]    Actions, kept in view under content that scrolls.
  * @param {string}                    [props.className] An extra class for the surface that uses it.
  * @param {boolean}                   [props.busy]      When true, leaving is refused: something is in progress that leaving would lose sight of.
+ * @param {string}                    [props.variant]   `drawer` docks it to the end of the window at full height, for reading one record beside the list it came from.
+ * @param {import('react').ReactNode} [props.subtitle]  What belongs under the title in the header and stays in view with it.
+ * @param {string}                    [props.id]        An id, for a control elsewhere that says it opens this.
  * @return {import('react').ReactElement} The dialog.
  */
 export default function CorexDialog( {
@@ -35,6 +38,9 @@ export default function CorexDialog( {
 	footer,
 	className = '',
 	busy = false,
+	variant = '',
+	subtitle = null,
+	id,
 } ) {
 	const dialog = useRef( null );
 	const titleId = useId();
@@ -67,7 +73,12 @@ export default function CorexDialog( {
 		// eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
 		<dialog
 			ref={ dialog }
-			className={ [ 'corex-dialog', className ]
+			id={ id }
+			className={ [
+				'corex-dialog',
+				variant === 'drawer' ? 'is-drawer' : '',
+				className,
+			]
 				.filter( Boolean )
 				.join( ' ' ) }
 			aria-labelledby={ titleId }
@@ -84,9 +95,12 @@ export default function CorexDialog( {
 		>
 			<div className="corex-dialog__panel">
 				<header className="corex-dialog__header">
-					<h2 id={ titleId } className="corex-dialog__title">
-						{ title }
-					</h2>
+					<div className="corex-dialog__heading">
+						<h2 id={ titleId } className="corex-dialog__title">
+							{ title }
+						</h2>
+						{ subtitle }
+					</div>
 					<button
 						type="button"
 						className="corex-dialog__close"

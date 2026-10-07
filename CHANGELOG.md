@@ -6,6 +6,53 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **The submission detail pane is reorganised** (spec 103, slice 4). The owner, of the old one: "the
+  right pane opened i feel that it is not well organized". It put the answers fourth, under their
+  field keys, showed an owner as a type and a key, and drew three sections that said "No data
+  recorded." It now reads from the top down:
+  - a header with the sender's name, their email address and phone number as `mailto:` and `tel:`
+    links, the form, the submission's number, when it arrived, its status and whether it is read;
+  - the answers, each under the question the form asked, with the stored key as the fallback;
+  - reply and team notes, each field with a visible label;
+  - one triage group: the status, and a single "Assigned to" control listing the people who can
+    manage submissions, and Unassigned;
+  - the notification's result, when, and the reason;
+  - hidden fields, campaign data and the consent record as one closed group, drawn only for the
+    parts that hold something, and one line when none does;
+  - the history, closed until opened, as sentences: "Status changed from New to In progress" where
+    it read "status success".
+- **Opening an unread submission marks it read**, and the pane's header offers "Mark unread". A
+  submission could be marked read and never unread.
+- **The pane is a dialog.** Focus moves into it, stays in it, Escape closes it, and focus goes back
+  to the row it was opened from. It sits over the admin toolbar and is as tall as the window, on a
+  phone as well. Changing a status or adding a note no longer blanks the pane while it reloads.
+- **A notification nobody recorded reads "Not tracked"**, in the inbox and in the pane, where it
+  read "Delivery unavailable". That is every submission of a form defined in code, and the old
+  wording looked like a fault on every row. The pane says why nothing was recorded.
+- **An answer is written in the direction of its own language.** An English answer in an Arabic
+  admin had its full stop on the wrong side.
+
+### Client impact
+
+- **The submission's REST payload has three new keys**: `questions` (the form's questions, in
+  order, with their wording and type), `owner_name`, and `owners` (the people who can be assigned).
+  Nothing was removed.
+- **`PATCH corex/v1/submissions/{id}` accepts `mark_unread`.**
+- **`SubmissionOwnerNames` has a second method, `people()`.** Code that implements the interface
+  has to add it.
+- **`SubmissionQueryService` takes two more constructor arguments**, both optional.
+- **The pane's markup and class names changed**: `.corex-inbox__drawer` is now a `<dialog>` and
+  what is inside it is `.corex-pane__*`. Site CSS written against `.corex-inbox__fields`,
+  `.corex-inbox__timeline` or the drawer's sections no longer matches anything.
+- **Opening a submission in the inbox now writes to it**: it is marked read, and its history gains
+  a line. A team that used "unread" to mean "nobody has dealt with this" should use the status.
+- **Strings in the pane are new** in the `corex` text domain. A site with its own translation of
+  that domain shows them in English until they are translated.
+- **The admin bundle changed.** `build/` is git-ignored: rebuild `plugins/corex-config` after
+  taking this.
+
 ## [0.43.2] — 2026-10-07
 
 What the first client site found in its first week, and the first half of a rebuilt Submissions
