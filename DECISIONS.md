@@ -5781,3 +5781,60 @@ serves, and is left to its own CI project. The panel was not looked at in right-
 logical properties throughout, and the existing 375px / 200% / RTL overflow test covers the
 overview tab, not this one. Maintenance has no caution of its own: "a 503 held for weeks tells a
 search engine the site is failing" would be a true one, and is new copy nobody asked for.
+
+## #248 — A client repository may delete two framework files, and two checks stay home
+
+Date: 2026-10-07 · Spec: 102 (update-safe client sites), issue #239 · Status: Final
+
+Spec 102's FR-004 kept the scheduled runs and the documentation deploy out of a client repository.
+Creating the first real one from v0.43.0 showed four more things it inherits and cannot use:
+
+| Inherited | What it did in a private client repository |
+|---|---|
+| `.github/dependabot.yml` | Four pull requests within minutes of the first push, against `composer.lock`, `package.json` and `docs-app/`; up to twenty at once, weekly. Each starts the whole CI. Merging one is drift. |
+| `.github/CODEOWNERS` | Names the framework's reviewer for every path. |
+| `codeql.yml` | Ran on every push and failed: code scanning is not available to a private repository without a paid plan. |
+| `dependency-security.yml` | Failed on every pull request whenever an advisory was open against the framework's own lockfiles, which only a framework release can clear. |
+
+**The two workflows** are given a condition, as FR-004's were. The advisory check runs in the
+framework's repository only: nothing it reports can be acted on anywhere else. CodeQL runs there,
+or in a client repository that is public, where code scanning works and the client's own code is
+worth scanning. `tests/repository-ownership.test.js` holds both conditions to the ownership file.
+
+**The two files cannot be given a condition.** Dependabot reads its configuration from whatever
+repository it is in, and CODEOWNERS likewise. Three ways out were written up in #239:
+
+- *Have each client record them as exceptions.* Works with no change, and the exception never
+  goes stale, so it is permanent bookkeeping in every client for something every client wants.
+- *Stop using Dependabot in the framework*, in favour of a scheduled job with a repository
+  condition. A large change to the framework's own maintenance to solve a client's problem.
+- *Let a client delete them.* Chosen. `.github/repository-ownership.json` gains
+  `clientMayRemove`, naming exactly those two files. `verify-framework` reports a deleted one as
+  `REMOVED` and passes; a file on the list that is present and edited is still `DRIFT`. Delete,
+  not edit: the files stay the framework's.
+
+**What it costs.** The update guide promises that a client who edits no framework path gets no
+conflict. This is one exception to it: a release that changes either file meets the deletion as a
+modify/delete conflict, once, resolved by deleting it again. The guide says so.
+
+**The creation procedure removes them before the first push**, because Dependabot acts within
+minutes of seeing its configuration. A repository created from v0.43.1 or earlier removes them
+after taking this release.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| Two new workflow-condition tests in `repository-ownership.test.js`, before the change | failed |
+| Three new cases in `verify-framework.test.js` (removed; removed and committed; edited instead), before the change | the two removals failed as `DRIFT` |
+| `verify-framework`, `repository-ownership` and `framework-baseline` tests | 83 passed |
+| `npm run verify:framework` in the framework's repository | PASS, nothing to compare |
+
+**Not verified where it matters most.** The two workflow conditions were not watched running in a
+client repository: that needs a client to take a release containing them. `github.event.repository.private`
+is read from the push and pull-request payloads; if it were absent, the negation would be true and
+CodeQL would run, which is the old behaviour and not a new failure.
+
+**Left as it is.** `wp corex readiness` lists both files as evidence for its `ci-security` row. It
+is the framework's own release check; run in a client repository that has deleted them, that row
+would report them missing. Nothing in the client workflow runs it.

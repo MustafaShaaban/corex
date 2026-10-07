@@ -44,6 +44,13 @@ flowchart LR
 الإطار لا يحتوي أي ملف تحت `sites/`، فلا يستطيع الدمج أن يكتب فوق موقعك. الطريقة الوحيدة للحصول
 على تعارض هي أن تكون قد غيّرت شيئًا يغيّره الإطار أيضًا.
 
+**ملفّان من ملفات الإطار يجوز لمستودع العميل حذفهما.** الملفان `.github/dependabot.yml`
+و `.github/CODEOWNERS` يعملان في أي مستودع يوجدان فيه، ولا يمكن حصر أي منهما في مستودع الإطار.
+إذا بقيا في مكانهما فتح Dependabot كل أسبوع طلبات دمج على ملفات القفل الخاصة بالإطار — وهي طلبات
+يجب ألا يدمجها العميل أبدًا، لأن دمجها انحراف — وطلب CODEOWNERS من مراجِع الإطار أن يراجع عمل
+العميل. الملف `.github/repository-ownership.json` يذكرهما تحت `clientMayRemove`. حذف أحدهما ليس
+انحرافًا: يطبع الفحص `REMOVED` له وينجح. أما تعديله فما زال انحرافًا.
+
 ويشمل ذلك مستندات الجذر. الملفات `README.md` و `PROGRESS.md` و `DECISIONS.md` و `CHANGELOG.md`
 الموجودة في الجذر هي للإطار. نظائرها الخاصة بالعميل موجودة في `sites/acme/` وتُولَّد لك. ملفات
 التصميم والملاحظات وكل ما يخص العميل مكانها `sites/acme/` أيضًا، ولها ملف `.gitignore` خاص بها.
@@ -61,11 +68,23 @@ git switch -c main
 git remote rename origin upstream
 git remote set-url --push upstream DISABLED_DO_NOT_PUSH_TO_COREX
 git remote add origin git@github.com:your-account/acme.git
+git rm -q .github/dependabot.yml .github/CODEOWNERS
+git commit -q -m "Remove the framework's Dependabot and CODEOWNERS files"
 git push -u origin main
 ```
 
 أصبح `upstream` هو الإطار، وللجلب فقط: عنوان الدفع ليس عنوانًا حقيقيًا عن قصد، فأي دفع إليه يفشل
 بدل أن يصل إلى الإطار.
+
+يُحذف الملفان قبل أول دفع عن قصد. يبدأ Dependabot العمل خلال دقائق من رؤية ملف إعداده، وكل طلب
+دمج يفتحه يشغّل اختبارات الإطار كلها.
+
+**ما يظهر في المستودع الجديد عند ذلك الدفع.** تعمل اختبارات الإطار هناك مع كل دفع وكل طلب دمج،
+كما تعمل في مستودع الإطار نفسه: الفحص النمطي، واختبارات PHP و JavaScript، واختبارات التكامل
+والمتصفح. أما ما لا يعمل في مستودع العميل، لأن نتائجه لا يمكن التصرف فيها هناك، فهو: التشغيل
+المجدول، ونشر التوثيق، وفحص التنبيهات الأمنية للاعتماديات الذي تخص نتائجه ملفات القفل الخاصة
+بالإطار. ويعمل CodeQL فقط إذا كان المستودع عامًّا؛ ففحص الشيفرة غير متاح لمستودع خاص دون خطة
+مدفوعة.
 
 ```bash
 git remote -v
@@ -269,6 +288,14 @@ git commit
 أثناء الدمج تشير `--theirs` إلى الإصدار الجاري دمجه. وإذا كان التعديل مقصودًا فمكانه استثناء
 مسجَّل — راجع القسم التالي.
 
+تعارض واحد متوقَّع، ونادر. إذا غيّر إصدارٌ الملف `.github/dependabot.yml` أو `.github/CODEOWNERS`
+وكان هذا المستودع قد حذفه، أبلغ git أن طرفًا عدّل الملف والآخر حذفه. أبقِه محذوفًا:
+
+```bash
+git rm .github/dependabot.yml
+git commit
+```
+
 لا يمكن أن يحدث تعارض في `corex-baseline.json` بسبب إصدار، لأن أي إصدار لا يحتوي هذا الملف.
 
 ## عندما يعطّل خللٌ في الإطار عمل العميل
@@ -315,6 +342,25 @@ framework	PASS	0 drifted	1 accepted exceptions	baseline v1.2.3 <commit>
 3. كل ما يظهر بوصفه `DRIFT` هو تعديل محلي على ملف من ملفات الإطار. التعديلات التي وُجدت فقط
    لجعل أدوات الفحص واختبارات الإطار تقبل موقع العميل لم تعد لازمة: خذ نسخة الإطار من كل منها.
    وسجّل أي تعديل مقصود بوصفه استثناءً.
+
+## مستودع عميل أُنشئ من v0.43.1 أو أقدم
+
+ما زال فيه الملفان `.github/dependabot.yml` و `.github/CODEOWNERS` الخاصان بالإطار، و Dependabot
+يفتح فيه طلبات دمج. بعد أخذ إصدار يذكرهما تحت `clientMayRemove`:
+
+```bash
+git rm .github/dependabot.yml .github/CODEOWNERS
+git commit -m "Remove the framework's Dependabot and CODEOWNERS files"
+npm run verify:framework
+```
+
+```text
+REMOVED	.github/CODEOWNERS	the framework keeps this for its own repository
+REMOVED	.github/dependabot.yml	the framework keeps this for its own repository
+framework	PASS	0 drifted	0 accepted exceptions	baseline v1.2.4 <commit>
+```
+
+أغلق أي طلبات دمج فتحها Dependabot من قبل دون دمجها.
 
 ## أي طريق تحديث ينطبق
 

@@ -24,6 +24,14 @@ All notable changes to Corex are documented here. The format follows
   site already follows was treated as a non-change and the button disabled, while the same screen
   told the operator to "declare a mode" and the store records that declaration as a change. The
   button is disabled only for a mode the site has declared.
+- **A client repository inherited four things from the framework that did not fit it** (#239).
+  Dependabot opened weekly pull requests against framework-owned lockfiles; CODEOWNERS asked the
+  framework's reviewer to review the client's work; CodeQL failed on every push in a private
+  repository; and the dependency advisory check failed on findings only a framework release can
+  clear. Now `.github/repository-ownership.json` lists the first two under `clientMayRemove`, and
+  `npm run verify:framework` reports a deleted one as `REMOVED` instead of drift. The advisory
+  check runs in the framework's repository only, and CodeQL there or in a public client repository
+  (DECISIONS #248).
 
 - **A form could store, and reply to, an email address nobody typed.** An `email` field was passed
   through `sanitize_email()` before it was validated, and that function does not refuse an address,
@@ -45,6 +53,14 @@ All notable changes to Corex are documented here. The format follows
 What in this release can change how a client site behaves or builds, whether or not the merge conflicts.
 Read this before taking the release.
 
+- **A client repository should delete two files after taking this release**:
+  `git rm .github/dependabot.yml .github/CODEOWNERS`, then close any open Dependabot pull requests
+  without merging them. *Updating CoreX in a client site* has the steps. `npm run verify:framework`
+  then prints two `REMOVED` lines and passes. A later release that changes either file conflicts
+  with the deletion once; keep it deleted.
+- **Two checks stop running in a client repository.** "Validate dependency advisories" no longer
+  runs there at all, and CodeQL no longer runs in a private one. Both show as skipped. A repository
+  that requires either check in its branch protection has to stop requiring it.
 - **`ModeDisclosure::describe()` returns fewer `consequences` and a new `reference` list.** The lines
   about how a mode works and how to leave it moved from the first to the second. Code that prints a
   mode's consequences prints both to say what it said before. `OperationsMode::cautions()` is new;

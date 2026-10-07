@@ -15,6 +15,7 @@ const {
 	loadOwnership,
 	matchesPattern,
 	isClientOwned,
+	mayBeRemovedByClient,
 	repositoryFromRemoteUrl,
 	resolveRole,
 } = require( '../scripts/repository-ownership.mjs' );
@@ -186,6 +187,31 @@ describe( 'the map itself', () => {
 		expect( () => parseOwnership( raw ) ).toThrow(
 			/repository-ownership\.json/
 		);
+	} );
+
+	it( 'names the two files a client repository may delete, and no others', () => {
+		// Both act on whatever repository they are in and cannot be made conditional: Dependabot's
+		// configuration opens pull requests against framework-owned files, and CODEOWNERS asks
+		// the framework's reviewer to review a client's work (#239).
+		const committed = loadOwnership( repositoryRoot );
+
+		expect( committed.clientMayRemove ).toEqual( [
+			'.github/dependabot.yml',
+			'.github/CODEOWNERS',
+		] );
+		expect(
+			mayBeRemovedByClient( committed, '.github/dependabot.yml' )
+		).toBe( true );
+		expect(
+			mayBeRemovedByClient( committed, '.github/workflows/ci.yml' )
+		).toBe( false );
+	} );
+
+	it( 'reads a map written before that list existed as allowing no removals', () => {
+		expect( ownership.clientMayRemove ).toEqual( [] );
+		expect(
+			mayBeRemovedByClient( ownership, '.github/dependabot.yml' )
+		).toBe( false );
 	} );
 
 	it( 'is committed, and gives sites/ to the client', () => {
@@ -424,6 +450,36 @@ describe( 'CI that is the framework’s alone', () => {
 
 	it( 'deploys the documentation from the framework’s repository only', () => {
 		expect( jobsWithout( repositoryGuard, deployingPages ) ).toEqual( [] );
+	} );
+
+	/**
+	 * Two more checks a client repository inherited and could not make pass (#239, found by
+	 * creating one from v0.43.0). Neither is a scheduled run, so the schedule guard let both
+	 * through on every push and pull request.
+	 */
+	it( 'audits dependencies in the framework’s repository only', () => {
+		// What it reports is in the framework's own lockfiles and policy file. A client can change
+		// neither, so there it could only ever be a red check waiting for a framework release.
+		const audit = jobsOf(
+			workflows.find( ( { file } ) => file === 'dependency-security.yml' )
+				.source
+		).find( ( { name } ) => name === 'audit' );
+
+		expect( audit.body ).toContain( `if: ${ repositoryGuard }
+` );
+	} );
+
+	it( 'scans a client repository only where code scanning can answer', () => {
+		// Code scanning is not available to a private repository without a paid plan: the analysis
+		// runs and then fails to report, on every push. A public client repository can use it.
+		const analyze = jobsOf(
+			workflows.find( ( { file } ) => file === 'codeql.yml' ).source
+		).find( ( { name } ) => name === 'analyze' );
+
+		expect( analyze.body ).toContain(
+			`if: ${ repositoryGuard } || ( github.event_name != 'schedule' && ! github.event.repository.private )
+`
+		);
 	} );
 
 	it( 'generates its test client site in the framework’s repository only', () => {

@@ -58,6 +58,7 @@ included. Uncommitted changes and untracked files count.
 | `DRIFT <path>` | A framework-owned path differs from the baseline. | yes |
 | `EXCEPTION <path> <reason> <upstream>` | It differs, and the record lists it as a deliberate exception. | no |
 | `STALE <path>` | An exception whose path no longer differs. Delete it from the record. | yes |
+| `REMOVED <path>` | A framework file this repository deleted, which `.github/repository-ownership.json` lists under `clientMayRemove`. Editing such a file is still `DRIFT`. | no |
 | `WARN <message>` | The recorded release tag exists and points at a different commit from the recorded one. | no |
 | `FAIL <message>` | No record, an invalid record, two records naming different commits, a commit that is not in this repository, or `--record` given no release or one that does not exist. | yes |
 

@@ -33,10 +33,22 @@ git switch -c main
 git remote rename origin upstream
 git remote set-url --push upstream DISABLED_DO_NOT_PUSH_TO_COREX
 git remote add origin git@github.com:your-account/acme.git
+git rm -q .github/dependabot.yml .github/CODEOWNERS
+git commit -q -m "Remove the framework's Dependabot and CODEOWNERS files"
 git push -u origin main
 ```
 
 `upstream` is now the framework, fetch-only: a push to it fails instead of reaching the framework.
+
+The two files removed before the first push are the only framework files a client repository may
+delete (`clientMayRemove` in `.github/repository-ownership.json`). Left in place, Dependabot opens
+weekly pull requests against the framework's lockfiles, which a client must never merge, and
+CODEOWNERS asks the framework's reviewer to review the client's work. The check reports each as
+`REMOVED` and passes; editing one is still drift.
+
+In the new repository the framework's CI runs on every push and pull request. The scheduled runs,
+the documentation deploy and the dependency advisory check do not run there, and CodeQL runs only
+when the repository is public.
 
 Install it, create the local WordPress ([WAMP / Apache + WP-CLI](/getting-started/wamp-apache/)),
 then generate the site from the repository root:
@@ -140,6 +152,9 @@ git checkout --theirs -- README.md
 git add README.md
 git commit
 ```
+
+If a release changes `.github/dependabot.yml` or `.github/CODEOWNERS` and this repository deleted
+it, git reports a modify/delete conflict. Keep it deleted: `git rm` the file and commit.
 
 ## When a framework defect blocks the client
 

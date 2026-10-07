@@ -28,10 +28,19 @@ const isPatternList = ( value ) =>
  * Validate the map and return it in the shape the rest of this module expects.
  *
  * @param {Object} raw The decoded JSON.
- * @return {{frameworkRepository:string, clientOwned:string[], localOnly:string[]}} The map.
+ *                     `clientMayRemove` is the short list of framework files a client repository may delete, and
+ *                     only delete: files that act on whatever repository they are in and cannot be made conditional.
+ *                     A map written before the list existed allows none.
+ *
+ * @return {{frameworkRepository:string, clientOwned:string[], localOnly:string[], clientMayRemove:string[]}} The map.
  */
 export const parseOwnership = ( raw ) => {
-	const { frameworkRepository, clientOwned, localOnly = [] } = raw ?? {};
+	const {
+		frameworkRepository,
+		clientOwned,
+		localOnly = [],
+		clientMayRemove = [],
+	} = raw ?? {};
 
 	if (
 		typeof frameworkRepository !== 'string' ||
@@ -48,7 +57,11 @@ export const parseOwnership = ( raw ) => {
 		throw invalid( '"localOnly" must be a list of path patterns' );
 	}
 
-	return { frameworkRepository, clientOwned, localOnly };
+	if ( ! isPatternList( clientMayRemove ) ) {
+		throw invalid( '"clientMayRemove" must be a list of path patterns' );
+	}
+
+	return { frameworkRepository, clientOwned, localOnly, clientMayRemove };
 };
 
 /**
@@ -95,6 +108,21 @@ export const matchesPattern = ( pattern, filePath ) => {
  */
 export const isClientOwned = ( ownership, filePath ) =>
 	ownership.clientOwned.some( ( pattern ) =>
+		matchesPattern( pattern, filePath )
+	);
+
+/**
+ * Whether a client repository may delete this framework file.
+ *
+ * Delete, not edit: the file stays the framework's, and a client that changes one has drifted like
+ * any other. What a client may do is not have it.
+ *
+ * @param {{clientMayRemove:string[]}} ownership The parsed ownership map.
+ * @param {string}                     filePath  A repository-relative path.
+ * @return {boolean} True when the map lists it as removable.
+ */
+export const mayBeRemovedByClient = ( ownership, filePath ) =>
+	ownership.clientMayRemove.some( ( pattern ) =>
 		matchesPattern( pattern, filePath )
 	);
 

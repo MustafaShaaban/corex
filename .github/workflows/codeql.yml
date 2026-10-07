@@ -14,15 +14,18 @@ permissions:
   contents: read
   security-events: write
 
-# Every job below carries the same condition: a scheduled run happens in the framework's own
-# repository and nowhere else. A client repository is a copy of this one and inherits this file,
-# and the schedule exists to catch *this* repository drifting against the world — which is not a
-# client's to find out, nightly, in a repository whose subject is one site (spec 102). Pull-request
-# and push runs are unaffected. The repository is written out because an expression cannot read
-# `.github/repository-ownership.json`; `tests/repository-ownership.test.js` holds the two together.
+# A client repository is a copy of this one and inherits this file. The job runs:
+#   - in the framework's own repository, on every kind of event;
+#   - in a client repository on a push or a pull request, when that repository is public.
+# Never on a schedule outside the framework: that run exists to catch *this* repository drifting
+# against the world (spec 102). And never in a private client repository: code scanning is not
+# available there without a paid plan, so the analysis ran and then failed to report, and the
+# client's `main` carried a red check from its first commit (issue #239). The repository is written
+# out because an expression cannot read `.github/repository-ownership.json`;
+# `tests/repository-ownership.test.js` holds the two together.
 jobs:
   analyze:
-    if: github.event_name != 'schedule' || github.repository == 'MustafaShaaban/corex'
+    if: github.repository == 'MustafaShaaban/corex' || ( github.event_name != 'schedule' && ! github.event.repository.private )
     name: CodeQL (${{ matrix.language }})
     runs-on: ubuntu-latest
     strategy:
