@@ -16,7 +16,8 @@ use DateTimeImmutable;
 use DomainException;
 
 /**
- * Resumable CSV export handler. Each invocation processes at most the runner batch size.
+ * Resumable export handler. Each invocation gathers at most the runner batch size; the one that
+ * gathers the last submission writes the file.
  */
 final readonly class SubmissionExportJobHandler implements JobHandler
 {
@@ -26,7 +27,7 @@ final readonly class SubmissionExportJobHandler implements JobHandler
         private SubmissionExportSource $submissions,
         private SubmissionAccessPolicy $access,
         private SubmissionExportStore $exports,
-        private SubmissionExportCsvWriter $csv,
+        private SubmissionExportFiles $files,
     ) {
     }
 
@@ -50,15 +51,23 @@ final readonly class SubmissionExportJobHandler implements JobHandler
         if ($records === [] && $processed < $job->total) {
             throw new DomainException('The submission export scope changed before completion.');
         }
-        $chunk = $this->csv->write($records, $run->columns, $job->processed === 0);
-        $artifact = ($this->exports->artifact($run->id) ?? '') . $chunk;
-        $this->exports->saveArtifact($run->id, $artifact, $processed);
+        $this->files->collect($run, $records);
         $this->submissions->markExported(array_column($records, 'id'), gmdate(DATE_ATOM));
         $advanced = $job->advance((string) $processed, $processed, $processed, 0, null, new DateTimeImmutable('now'));
 
-        return $processed === $job->total
-            ? $advanced->complete('submission-export:' . $run->id, new DateTimeImmutable('now'))
-            : $advanced;
+        if ($processed < $job->total) {
+            return $advanced;
+        }
+
+        $written = $this->files->finish($run);
+        $this->exports->saveFile($run->id, [
+            'path' => $written['file']->path,
+            'extension' => $written['file']->extension,
+            'content_type' => $written['file']->contentType,
+            'subject' => $written['subject'],
+        ], $processed);
+
+        return $advanced->complete('submission-export:' . $run->id, new DateTimeImmutable('now'));
     }
 
     /** @return list<array<string,mixed>> */

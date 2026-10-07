@@ -6119,3 +6119,88 @@ the admin toolbar. That is FR-046, slice 4.
 **Not done.** No Jest test of the row's state: `InboxTable` is not exported and the browser test
 asserts the same attributes on the real page. `tasks.md` T005 says so. The Spec Kit
 `agent-context` hook was not run, so `CLAUDE.md` still points at the plan of spec 068.
+
+## #254 — An export is a table first and a file second, and the file is written once, from every batch
+
+Date: 2026-10-07 · Spec: 103 (submissions inbox and exports), slice 2a · Status: Final
+
+The owner, of the export: "the exported file should be readable not serialized cells".
+`SubmissionExportCsvWriter` wrote one column per group of data and put `wp_json_encode()` of the
+group in the cell.
+
+**A table before any format.** `SubmissionExportTable` turns submissions and a form's questions
+into headings and typed cells: text, number, date-time. `CsvExportWriter` writes that table, and
+the Excel and PDF writers of later slices will write the same one. What a column holds is decided
+in one place. A cell carries its kind because a writer needs it: the submitted time is a date, an
+answer to a number question is a number, and a phone number that is all digits stays text.
+
+**The question's wording comes through a contract.** `SubmissionQuestions`, owned by corex-config,
+answered by `Forms\FormQuestions`, which asks corex-forms for a code form's fields or a flow's
+published schema. With corex-forms absent, or the form gone, it answers nothing and an answer is
+headed by its stored key. An answer the form no longer asks for is still exported, after the ones
+it does.
+
+**The file is written once.** The job gathers 100 submissions a run. The columns are not known
+until the last run, because a late submission may answer what no earlier one did, so a file
+written batch by batch could not have its headings right. Each batch is appended to a working file
+of one submission per line, and the run that gathers the last one reads it back and writes the
+export. Only the current batch is in memory while gathering. The old handler re-saved the whole
+growing CSV to one post-meta row on every batch.
+
+**The file is on disk, in the protected uploads directory**, under a name that cannot be guessed.
+Considered and not done: keeping it in post meta, as before. An archive is not text, and a meta
+row is the wrong place for a file of any size.
+
+Only the file's name is stored. The first version stored its path, and the integration test failed
+on Windows: WordPress strips backslashes from stored meta, which is every separator of a Windows
+path. The test had been asserting that the stored path "contained" the directory, which a path
+with no separators still did; it now asserts the file exists. A stored name also stays true when a
+site is moved.
+
+**CSV for a spreadsheet, not for a parser.** A byte-order mark, without which Excel reads UTF-8 as
+the local encoding; CRLF; a separator of comma, semicolon or tab. Text beginning with `=`, `+`, `-`
+or `@`, with or without leading whitespace, is prefixed with an apostrophe. A number cell is not:
+a negative number begins with a minus.
+
+**Several forms are one file each, in an archive.** Each form has its own questions. One file with
+every form's columns side by side was the alternative, and is mostly empty cells.
+
+**The site's timezone is asked for when a date is written.** The table was first built with
+`wp_timezone()` at boot, and the integration test, which changes the setting, showed the stale
+value. A process that outlives a request has the same problem.
+
+**The old group names still work.** `identity`, `workflow` and `submitted_fields` in a request
+stand for the columns that hold the same data, so the dialog as it is today produces the new file
+without being changed. Rebuilding the dialog is slice 2b.
+
+**Left for slice 2b.**
+
+- The download still travels base64 inside a JSON answer, so a large export is held in memory
+  twice. 2b streams it.
+- The export still waits for WP-Cron or Action Scheduler, and the dialog still has to be refreshed.
+- `separator` and `format` are accepted by the route and offered by no screen yet.
+- Choosing single answers as columns works in the model (`answer:<key>`) and is refused by the
+  route's sanitiser, which strips the colon.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `SubmissionExportTableTest` | 23 passed |
+| `CsvExportWriterTest`, reading the written bytes | 13 passed |
+| `SubmissionExportServiceTest`: the job over one and several batches, several forms, the formula guard, no working file left, the request's columns | 23 passed |
+| `SubmissionExportFileTest`, real WordPress: two submissions of the stock contact form, exported by the real job and downloaded | passed; it failed twice on the way, on the stored path and on the timezone |
+| `tests/Unit` | 2172 passed |
+| Integration, whole suite, real WordPress | 515 passed |
+| `submissions-inbox.spec.js`, which creates an export through the existing dialog | 5 passed |
+| Jest, whole suite | 556 passed |
+
+**Not watched failing first.** The table and writer tests were written before the classes, and a
+missing class is not a failing assertion. The two faults the integration test found were real
+failures.
+
+**Not opened in a spreadsheet.** The file's bytes are asserted. Nobody double-clicked one in Excel.
+
+**The browser test leaves a file.** `submissions-inbox.spec.js` creates an export through the
+dialog and never deletes it. It used to leave a database row; it now also leaves a file in the
+protected directory of the install it ran on. Expiry, in slice 5, is what removes them.

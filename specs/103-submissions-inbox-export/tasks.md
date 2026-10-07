@@ -22,29 +22,31 @@ touches. Each slice ends with its guards, its rendered check where it has UI, an
 
 ### The table
 
-- [ ] T010 [P] Pest unit: `SubmissionExportTable` — one row per submission, one column per question in the form's order, the fixed columns first, an empty cell for an unanswered question, several values joined, a renamed question, a question missing from the form (FR-001 to FR-007)
-- [ ] T011 [P] Pest unit: typed cells — date-time in the site's timezone, a number, a boolean in words
-- [ ] T012 `SubmissionExportTable` and its cell value object (`Submissions/`)
-- [ ] T013 Contract `SubmissionQuestions`, with an empty default bound in corex-config (`Submissions/`)
-- [ ] T014 Its implementation in corex-forms for a code form and for a flow; integration test for both
-- [ ] T015 Owner display name for "Assigned to"; "Unassigned" when there is none (FR-004)
+- [x] T010 [P] Pest unit: `SubmissionExportTable` — one row per submission, one column per question in the form's order, the fixed columns first, an empty cell for an unanswered question, several values joined, a renamed question, a question missing from the form (FR-001 to FR-007)
+- [x] T011 [P] Pest unit: typed cells — date-time in the site's timezone, a number, a boolean in words
+- [x] T012 `SubmissionExportTable` and its cell value object (`Submissions/`)
+- [x] T013 Contract `SubmissionQuestions`, with an empty default bound in corex-config (`Submissions/`)
+- [x] T014 Its implementation in corex-forms for a code form and for a flow; integration test for both
+- [x] T015 Owner display name for "Assigned to"; "Unassigned" when there is none (FR-004)
 
 ### The file
 
-- [ ] T020 [P] Pest unit: `CsvExportWriter` — byte-order mark, the chosen separator, quoting, the formula guard on every text cell (FR-008, FR-017)
-- [ ] T021 `ExportDocument`, `ExportWriter`, `CsvExportWriter` (`Export/`)
-- [ ] T022 Pest integration: `ExportFileStore` writes outside the web-readable uploads, streams, and deletes
-- [ ] T023 `ExportFileStore` on `ProtectedUploads`
-- [ ] T024 `SubmissionExportRequest`: `format`, `separator`, columns as a list of named columns; the old group names still accepted and mapped (a stored run must still load)
-- [ ] T025 `SubmissionExportJobHandler` builds the table and writes through the writer; the last batch finalises the file
-- [ ] T026 Several forms in one CSV export: one file per form in an archive, and the request says so (FR-018)
-- [ ] T027 A file name from the site, the form and the date (FR-025)
+- [x] T020 [P] Pest unit: `CsvExportWriter` — byte-order mark, the chosen separator, quoting, the formula guard on every text cell (FR-008, FR-017)
+- [x] T021 `ExportDocument`, `ExportWriter`, `CsvExportWriter` (`Export/`)
+- [x] T022 Covered by `SubmissionExportFileTest`: the real job writes into `uploads/corex-private/exports/` and the file exists. Streaming and deleting are slice 2b and slice 5
+- [x] T023 `ExportDirectory`, answered by `ProtectedExportDirectory` on `ProtectedUploads`
+- [x] T024 `SubmissionExportRequest`: `format`, `separator`, columns as a list of named columns; the old group names still accepted and mapped (a stored run must still load)
+- [x] T025 `SubmissionExportJobHandler` builds the table and writes through the writer; the last batch finalises the file
+- [x] T026 Several forms in one CSV export: one file per form in an archive, and the request says so (FR-018)
+- [x] T027 A file name from the site, the form and the date (FR-025): the service names what it holds and when, the controller adds the site
+
+Slice 2a ends here (DECISIONS #254). T030, T031 and everything below is slice 2b.
 
 ### Scope and counts
 
 - [ ] T030 Pest integration: the preview answers the three counts and the filters in words; tests are left out unless asked for; a person sees only their own (FR-010 to FR-013)
 - [ ] T031 `SubmissionExportPreview` and `GET …/exports/preview`
-- [ ] T032 An export of nothing is refused with a reason (FR-014)
+- [x] T032 An export of nothing is refused with a reason (FR-014)
 
 ### The flow
 

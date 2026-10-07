@@ -49,7 +49,8 @@ is delivered in seven slices, one pull request each:
 | Slice | What | State |
 |---|---|---|
 | 1 | The whole row opens the submission | done (DECISIONS #253) |
-| 2 | A readable file, scopes with counts, the rebuilt dialog, download without a refresh, CSV | next |
+| 2a | A readable file: a column per answer headed by the question, CSV a spreadsheet opens, files on disk | done (DECISIONS #254) |
+| 2b | Scopes with counts, the rebuilt dialog, download without a refresh, column choice | next |
 | 3 | Excel | not started |
 | 4 | The detail pane | not started |
 | 5 | Export history: size, expiry, delete | not started |

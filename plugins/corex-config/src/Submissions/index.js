@@ -1245,9 +1245,23 @@ function ExportModal( { close, inbox, filters, selectedIds } ) {
 	);
 }
 
+/**
+ * Saves an export the server answered with. A file comes as its bytes, base64; an export made
+ * before files were kept on disk comes as CSV text.
+ *
+ * @param {Object} artifact The `artifact` of the download answer.
+ */
 function downloadCsv( artifact ) {
+	const body =
+		typeof artifact.base64 === 'string'
+			? Uint8Array.from( window.atob( artifact.base64 ), ( character ) =>
+					character.charCodeAt( 0 )
+			  )
+			: artifact.csv;
 	const url = URL.createObjectURL(
-		new Blob( [ artifact.csv ], { type: 'text/csv;charset=utf-8' } )
+		new Blob( [ body ], {
+			type: artifact.content_type || 'text/csv;charset=utf-8',
+		} )
 	);
 	const link = document.createElement( 'a' );
 	link.href = url;
