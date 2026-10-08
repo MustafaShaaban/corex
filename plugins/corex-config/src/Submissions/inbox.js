@@ -15,6 +15,8 @@ export const initialInboxState = {
 	message: '',
 	// The submissions the last action moved to the trash: what "Undo" puts back.
 	undo: [],
+	// Whether this person may delete a submission for good, as the server says.
+	mayDelete: false,
 	drawer: {
 		open: false,
 		id: 0,
@@ -194,6 +196,7 @@ export function normalizeInboxPage( payload = {} ) {
 	return {
 		items,
 		total: Math.max( 0, Number( payload.total ) || 0 ),
+		mayDelete: Boolean( payload.can_delete_permanently ),
 		page: Math.max( 1, Number( payload.page ) || 1 ),
 		perPage: Math.max( 1, Number( payload.per_page ) || 25 ),
 	};
@@ -232,12 +235,23 @@ export function buildExportPayload( options ) {
  * The bulk actions a view offers. In the trash a submission can only be restored: nothing else
  * may change it while it is there (spec 105, FR-006).
  *
- * @param {string} view `inbox` or `trash`.
+ * @param {string}  view        `inbox` or `trash`.
+ * @param {boolean} [mayDelete] Whether this person may delete a submission for good.
  * @return {Array<{value:string,label:string}>} The actions, in the order they are offered.
  */
-export function bulkActionsFor( view ) {
+export function bulkActionsFor( view, mayDelete = false ) {
 	if ( view === VIEW_TRASH ) {
-		return [ { value: 'restore', label: __( 'Restore', 'corex' ) } ];
+		const restore = { value: 'restore', label: __( 'Restore', 'corex' ) };
+
+		return mayDelete
+			? [
+					restore,
+					{
+						value: 'delete',
+						label: __( 'Delete permanently', 'corex' ),
+					},
+				]
+			: [ restore ];
 	}
 
 	return [
@@ -351,4 +365,101 @@ export function viewCount( view, total ) {
 				),
 				total
 			);
+}
+
+/**
+ * What a person is told before submissions are deleted for good: how many, everything that goes
+ * with them, that it cannot be undone, and where a copy may still be (spec 105, FR-012, FR-014).
+ *
+ * @param {number} count How many submissions.
+ * @return {{title:string,body:string,removes:string[],exports:string,acknowledge:string,confirm:string}} The dialog's words.
+ */
+export function deleteConfirmation( count ) {
+	return {
+		title: __( 'Delete permanently', 'corex' ),
+		body: sprintf(
+			/* translators: %d: number of submissions. */
+			_n(
+				'%d submission will be deleted for good. This cannot be undone.',
+				'%d submissions will be deleted for good. This cannot be undone.',
+				count,
+				'corex'
+			),
+			count
+		),
+		removes: [
+			__(
+				'The answers, with any hidden fields, campaign data and consent record',
+				'corex'
+			),
+			__( 'Team notes and the history of what was done', 'corex' ),
+			__( 'Files that were uploaded with it', 'corex' ),
+			__(
+				'The records and captured copies of emails sent about it',
+				'corex'
+			),
+		],
+		exports: __(
+			'Export files made earlier may still hold what is deleted here. Each is kept 30 days from the day it was made, and can be deleted sooner under Export, Recent exports.',
+			'corex'
+		),
+		acknowledge: __( 'I understand this cannot be undone', 'corex' ),
+		confirm: sprintf(
+			/* translators: %d: number of submissions. */
+			_n(
+				'Delete %d submission',
+				'Delete %d submissions',
+				count,
+				'corex'
+			),
+			count
+		),
+	};
+}
+
+/**
+ * What the inbox says once a permanent deletion has run. A submission is left in the trash when
+ * a file uploaded with it could not be removed, or when it was no longer there (FR-015, FR-016).
+ *
+ * @param {number} deleted How many were deleted.
+ * @param {number} failed  How many were not.
+ * @return {string} The notice.
+ */
+export function deleteNotice( deleted, failed ) {
+	const done = sprintf(
+		/* translators: %d: number of submissions. */
+		_n(
+			'%d submission deleted for good.',
+			'%d submissions deleted for good.',
+			deleted,
+			'corex'
+		),
+		deleted
+	);
+	if ( failed === 0 ) {
+		return done;
+	}
+
+	return (
+		done +
+		' ' +
+		sprintf(
+			/* translators: %d: number of submissions that were not deleted. */
+			_n(
+				'%d was not deleted: a file uploaded with it could not be removed, or it is no longer in the trash.',
+				'%d were not deleted: a file uploaded with them could not be removed, or they are no longer in the trash.',
+				failed,
+				'corex'
+			),
+			failed
+		)
+	);
+}
+
+/** Why somebody who manages the inbox is not offered a permanent delete (FR-010). */
+export function cannotDeleteReason() {
+	return __(
+		'Deleting a submission for good needs a permission you do not have. An administrator can grant it under Access & Abilities, or delete it for you.',
+		'corex'
+	);
 }
