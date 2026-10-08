@@ -16,14 +16,15 @@
 
 /**
  * @param {Object}  props          Component props.
+ * @param {string}  [props.as]     The element to draw: `span` where a `div` may not go, in a line of text or a heading.
  * @param {Element} props.children The surface's own markup, with bars and boxes for its content.
  * @return {Element} The placeholder.
  */
-export default function CorexSkeleton( { children } ) {
+export default function CorexSkeleton( { as: Tag = 'div', children } ) {
 	return (
-		<div className="corex-admin-skeleton" aria-hidden="true">
+		<Tag className="corex-admin-skeleton" aria-hidden="true">
 			{ children }
-		</div>
+		</Tag>
 	);
 }
 

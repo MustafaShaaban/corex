@@ -94,7 +94,8 @@ export function allRowsSelected( selected, rows ) {
  */
 export function viewState( { status, rowCount, hasQuery } ) {
 	if ( status === 'loading' ) {
-		return 'loading';
+		// Rows that are on screen stay there while their replacement is fetched.
+		return rowCount > 0 ? 'refreshing' : 'loading';
 	}
 	if ( status === 'error' ) {
 		return 'error';

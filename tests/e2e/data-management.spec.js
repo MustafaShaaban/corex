@@ -107,7 +107,11 @@ test( 'queries source records, opens detail, and exports them from one dialog', 
 	await expect(
 		page.getByRole( 'heading', { name: 'CoreX Data' } )
 	).toBeVisible();
-	await expect( page.getByText( 'Loading records…' ) ).toBeHidden();
+	// The list's own signal (spec 108). Waiting for "Loading records…" to be hidden passed when
+	// the sentence had never been drawn, which is every time now: a placeholder is drawn.
+	await expect(
+		page.locator( '.corex-data__panel-body .corex-loadable' )
+	).toHaveAttribute( 'data-corex-state', 'ready' );
 
 	const fixture = await page.evaluate( async () => {
 		const config = window.corexDataModels;

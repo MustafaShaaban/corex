@@ -1397,6 +1397,13 @@ body.corex-admin-screen .corex-admin__shell {
 	transition: opacity var(--corex-admin-motion-fast) var(--corex-admin-ease) var(--corex-admin-loading-delay);
 }
 
+/* What stands beside a waiting surface and belongs to the same answer, a
+   total over a table, waits with it. */
+.corex-admin [data-corex-waiting] {
+	opacity: var(--corex-admin-disabled-opacity);
+	transition: opacity var(--corex-admin-motion-fast) var(--corex-admin-ease) var(--corex-admin-loading-delay);
+}
+
 /* What says "waiting" and not "switched off": a bar along the top edge, in
    the action colour, outside what is dimmed. */
 .corex-admin .corex-loadable[data-corex-state="refreshing"]::before {
@@ -1520,7 +1527,8 @@ body.corex-admin-screen .corex-admin__shell {
 		animation: none;
 	}
 
-	.corex-admin .corex-loadable[data-corex-state="refreshing"] > .corex-loadable__body {
+	.corex-admin .corex-loadable[data-corex-state="refreshing"] > .corex-loadable__body,
+	.corex-admin [data-corex-waiting] {
 		transition-duration: 1ms;
 	}
 

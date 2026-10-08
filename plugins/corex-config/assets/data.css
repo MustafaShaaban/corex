@@ -302,6 +302,24 @@
 	border-spacing: 0;
 }
 
+/* A placeholder's columns are not the answer's, and a bar is a share of its
+   cell: the cells are given their widths, where the table's own take them
+   from what they hold. */
+.corex-admin .corex-admin-skeleton .corex-data__table {
+	table-layout: fixed;
+}
+
+.corex-admin .corex-admin-skeleton .corex-data__check {
+	inline-size: var(--corex-admin-space-2xl);
+}
+
+/* A row is as tall as the button in its last cell, which is taller than a
+   line of text: the bar standing in for it is that tall, so eight
+   placeholder rows are not thirty-six pixels short of eight real ones. */
+.corex-admin .corex-admin-skeleton .corex-data__row-actions .corex-admin-skeleton__bar {
+	block-size: 1.5rem; /* corex-token-allow: the height of WordPress's small button, which has no token */
+}
+
 .corex-admin .corex-data__table-scroll {
 	max-inline-size: 100%;
 	overflow-x: auto;

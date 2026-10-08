@@ -25,6 +25,10 @@ export function useDataExplorer( config ) {
 		( source ) => source.access === 'allowed'
 	);
 	const [ catalog, setCatalog ] = useState( initialCatalog );
+	// Whether the list of sources has been read. It failed in silence: with no source there
+	// is nothing to load, and the screen said "No records yet." about a request that had
+	// never been answered.
+	const [ catalogStatus, setCatalogStatus ] = useState( 'loading' );
 	const [ state, dispatch ] = useReducer(
 		dataReducer,
 		initialDataState( initialSource?.key || '' )
@@ -51,13 +55,19 @@ export function useDataExplorer( config ) {
 		[ config.nonce ]
 	);
 
-	useEffect( () => {
+	const loadCatalog = useCallback( () => {
+		setCatalogStatus( 'loading' );
 		request( 'get', `${ config.restUrl }/sources` )
-			.then( ( payload ) =>
-				setCatalog( normalizeCatalog( payload.sources ) )
-			)
-			.catch( () => undefined );
+			.then( ( payload ) => {
+				setCatalog( normalizeCatalog( payload.sources ) );
+				setCatalogStatus( 'ready' );
+			} )
+			.catch( () => setCatalogStatus( 'error' ) );
 	}, [ config.restUrl, request ] );
+
+	useEffect( () => {
+		loadCatalog();
+	}, [ loadCatalog ] );
 
 	useEffect( () => {
 		if ( state.sourceKey ) {
@@ -75,26 +85,40 @@ export function useDataExplorer( config ) {
 		if ( ! state.sourceKey ) {
 			return;
 		}
+		// Rows stay on screen while their replacement is fetched, so a second page or a
+		// second search can be asked for before the first has answered. Only the answer to
+		// the query that is current is kept.
+		let current = true;
 		dispatch( { type: 'loading' } );
 		request(
 			'get',
 			buildListUrl( config.restUrl, state.sourceKey, state.query )
 		)
-			.then( ( payload ) =>
-				dispatch( {
-					type: 'loaded',
-					payload: {
-						...payload,
-						rows: ( payload.rows || [] ).map( ( row, index ) => ( {
-							id: row.id ?? index,
-							...row,
-						} ) ),
-					},
-				} )
+			.then(
+				( payload ) =>
+					current &&
+					dispatch( {
+						type: 'loaded',
+						payload: {
+							...payload,
+							rows: ( payload.rows || [] ).map(
+								( row, index ) => ( {
+									id: row.id ?? index,
+									...row,
+								} )
+							),
+						},
+					} )
 			)
-			.catch( ( error ) =>
-				dispatch( { type: 'error', message: error.message } )
+			.catch(
+				( error ) =>
+					current &&
+					dispatch( { type: 'error', message: error.message } )
 			);
+
+		return () => {
+			current = false;
+		};
 	}, [ config.restUrl, request, state.sourceKey, state.query ] );
 
 	const source = useMemo(
@@ -179,6 +203,8 @@ export function useDataExplorer( config ) {
 
 	return {
 		catalog,
+		catalogStatus,
+		loadCatalog,
 		source,
 		state,
 		dispatch,
