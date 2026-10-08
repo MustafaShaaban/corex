@@ -67,13 +67,19 @@ use `Spinner` and 4 uses of `isBusy` to remove
 
 | Piece | Is |
 |---|---|
-| `CorexSkeleton` | Placeholder shapes, hidden from assistive technology: `Lines`, `Block`, `Rows` (a table's body, by columns and rows), `Cards`, `Tiles`, `Pane`, `Form` |
+| `CorexSkeleton` | A placeholder, hidden from assistive technology, and its parts: a bar the height of a line of text, and a box |
 | `CorexLoader` | The one indefinite loader, with an optional sentence |
 | `CorexLoadable` | The wrapper a surface puts round its content. Given a status (`loading`, `refreshing`, `ready`, `error`), a name for the content, and a skeleton, it shows the right thing, marks the surface, and announces |
-| `workingProps( working )` | What a button is given while its request is in flight |
+| `workingProps( working )` | What a button is given while its request is in flight: disabled, busy, and one attribute the styles hang on |
 
 The plain-JavaScript screens use the same class names, written as markup. The class names are
 the contract; the components are the convenience.
+
+Each piece lands with its first caller, not before: the placeholder and the wrapper in slice 1,
+the loader and the working button in slice 2. A placeholder is composed by its surface, from
+shared bars and boxes inside the surface's own markup, so that it takes the content's padding
+and gaps from the same rules the content does; the shared file holds the parts, not a catalogue
+of shapes nobody has asked for yet.
 
 ### D2. One signal on every surface (FR-045)
 
@@ -110,7 +116,8 @@ moves either way. Appearing is not movement, so the delay stays under reduced mo
 
 Content that is about to be replaced stays mounted, at the admin's disabled opacity, takes no
 pointer or keyboard action (`inert`), and has a thin bar of the action colour travelling along
-its top edge. Under reduced motion the bar is still and spans the edge, over the dimmed content.
+its top edge. If the keyboard's focus was inside it, focus moves to the surface, not to the top
+of the page. Under reduced motion the bar is still and spans the edge, over the dimmed content.
 
 `viewState()` in the Data client stops putting loading first when there are rows; the
 Notifications list keeps its items while it reloads. Search boxes ask after 300ms without a
@@ -125,15 +132,18 @@ the top, beside its sentence.
 
 ### D7. A working button (story 3)
 
-The label stays in the layout and becomes transparent; the loader is centred over it. So the
-button keeps its width exactly, and a screen reader still has the label. The button is disabled
-and marked busy, and the outcome is announced by the surface. `Button isBusy` is not used.
+The label stays in the layout with its fill made transparent, which leaves the button's own
+colour for the loader centred over it. So the button keeps its width exactly, and a screen
+reader still has the label. The button is disabled and marked busy, without the dimming a
+disabled control gets, and the outcome is announced by the surface. `Button isBusy` is not
+used.
 
 ### D8. Announcing (FR-042)
 
-`CorexLoadable` holds one visually hidden live region. It says "Loading {name}…" when a load
-has lasted longer than the delay of D4 and "{Name} loaded" when it ends; a refresh says
-nothing unless it fails. Placeholder shapes are `aria-hidden`.
+`CorexLoadable` holds one visually hidden live region. It says the surface's own loading
+sentence when a load has lasted a second, and "Loaded." when a load it announced ends; a load
+that was quicker than that says nothing, and nor does a refresh unless it fails. Each sentence
+is whole and translatable, not assembled. Placeholder shapes are `aria-hidden`.
 
 ### D9. Failures that are silent today (FR-006)
 
@@ -159,7 +169,7 @@ No violation needs justifying.
 
 ```text
 plugins/corex-core/assets/css/corex-admin-tokens.css     # five tokens
-plugins/corex-core/assets/css/corex-admin-shell.css      # .corex-skeleton*, .corex-loader, .corex-loadable, .corex-is-working
+plugins/corex-core/assets/css/corex-admin-shell.css      # .corex-skeleton*, .corex-loadable, .corex-loader, [data-corex-working]
 plugins/corex-config/src/admin/components/
 ├── CorexSkeleton.js
 ├── CorexLoader.js
@@ -180,12 +190,12 @@ Each is one pull request and leaves `main` releasable.
 
 | # | Stories | What lands |
 |---|---|---|
-| 1 | US1, US4 | The tokens, the styles and the four pieces, with their tests; applied to Notifications (the list, its preferences, the drawer on every screen), which also stops blanking its list. |
-| 2 | US1, US2 | Data: records (a skeleton first, rows kept after), the totals, the search box, a record opened at once, export history, migrations, the silent source list. |
-| 3 | US1, US2 | Forms and flows, and Email Studio, with a template chosen from the list. |
-| 4 | US1 | Insights and the setup wizard, in plain JavaScript; their silent failures. |
-| 5 | US3, US4 | Every action: one working state; `Spinner` and `isBusy` gone from the admin. |
-| 6 | US1, US2, US3 | Submissions: the list, the pane and both export dialogs, agreed with the session building spec 105. |
+| 1 | US1, US2 | The tokens, the placeholder and the wrapper, with their tests; applied to Notifications (the list, its preferences, the drawer on every screen), which also stops blanking its list. |
+| 2 | US3, US4 | The loader and the working button; every action outside the Submissions inbox; `isBusy` gone from the admin. |
+| 3 | US1, US2 | Data: records (a skeleton first, rows kept after), the totals, the search box, a record opened at once, export history, migrations, the silent source list. Its `Spinner` goes. |
+| 4 | US1, US2 | Forms and flows, and Email Studio, with a template chosen from the list. |
+| 5 | US1 | Insights and the setup wizard, in plain JavaScript; their silent failures. |
+| 6 | US1, US2, US3 | Submissions: the list, the pane, its actions and both export dialogs, agreed with the session building spec 105. The last `Spinner` goes. |
 
 ## Risks
 

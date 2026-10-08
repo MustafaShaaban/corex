@@ -129,7 +129,7 @@ reaches a site's files before the fourth.
 skeleton loader on every call and a better loader inside CoreX. Read as three things: a first
 load shows a placeholder in the shape of its content; a refresh keeps the content and marks it
 waiting; an action marks its button. One CoreX loader replaces WordPress's spinner and busy
-button. Twenty surfaces, six slices, the Submissions inbox last and agreed with the session
+button. Twenty surfaces, six slices (the placeholder first, then the loader and every action), the Submissions inbox last and agreed with the session
 building spec 105 there. The readings are under the spec's Assumptions and are his to overrule.
 
 Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
