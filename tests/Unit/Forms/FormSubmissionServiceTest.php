@@ -18,9 +18,12 @@ use Corex\Forms\FormRegistry;
 use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Submission\FormSubmissionService;
 use Corex\Forms\Submission\FormSubmittedEvent;
+use Corex\Forms\Submission\SubmissionChallenge;
+use Corex\Forms\Submission\SubmissionRefusal;
 use Corex\Forms\Validation\RuleRegistry;
 use Corex\Forms\Validation\Validator;
 use Brain\Monkey\Functions;
+use Corex\Security\ChallengeVerifier;
 use Corex\Support\BootLogger;
 
 final class ContactTestForm extends Form
@@ -40,14 +43,14 @@ final class ContactTestForm extends Form
 /**
  * @param list<FormSubmittedEvent> $dispatched captured events, by reference
  */
-function submissionService(array &$dispatched): FormSubmissionService
+function submissionService(array &$dispatched, ?Form $form = null, ?ChallengeVerifier $provider = null): FormSubmissionService
 {
     $registry = new FormRegistry();
-    $registry->register(new ContactTestForm());
+    $registry->register($form ?? new ContactTestForm());
 
     $rules    = new RuleRegistry();
-    $provider = new ListenerProvider();
-    $provider->listen(FormSubmittedEvent::class, function (FormSubmittedEvent $event) use (&$dispatched): void {
+    $listeners = new ListenerProvider();
+    $listeners->listen(FormSubmittedEvent::class, function (FormSubmittedEvent $event) use (&$dispatched): void {
         $dispatched[] = $event;
     });
 
@@ -55,7 +58,8 @@ function submissionService(array &$dispatched): FormSubmissionService
         $registry,
         new SchemaResolver($rules),
         new Validator($rules),
-        new EventDispatcher($provider, new BootLogger(debug: false)),
+        new EventDispatcher($listeners, new BootLogger(debug: false)),
+        challenge: new SubmissionChallenge($provider),
     );
 }
 
@@ -111,4 +115,81 @@ it('rejects an unknown form slug non-fatally', function () {
     expect($response->isOk())->toBeFalse()
         ->and($response->status)->toBe(404)
         ->and($dispatched)->toBe([]);
+});
+
+// Spec 104, US2 (#264): a form defined in code could not ask for the site's challenge.
+
+/** A lead form that says it is protected. */
+function protectedTestForm(): Form
+{
+    return new class extends Form {
+        public string $slug = 'callback';
+
+        protected array $fields = ['phone' => ['type' => 'text', 'rules' => ['required']]];
+
+        public function protection(): array
+        {
+            return ['captcha' => 'on'];
+        }
+    };
+}
+
+/** A provider that accepts one token. */
+function providerAccepting(string $accepted): ChallengeVerifier
+{
+    return new class($accepted) implements ChallengeVerifier {
+        public function __construct(private string $accepted)
+        {
+        }
+
+        public function verify(string $token): bool
+        {
+            return $token === $this->accepted;
+        }
+    };
+}
+
+it('refuses a protected form whose token the provider does not accept, before anything else happens', function (array $sent) {
+    $dispatched = [];
+    $service    = submissionService($dispatched, protectedTestForm(), providerAccepting('good-token'));
+
+    // The answers are invalid too: the challenge is what refuses it, and no field is judged.
+    $response = $service->handle('callback', $sent + ['phone' => '']);
+
+    expect($response->isOk())->toBeFalse()
+        ->and($response->status)->toBe(422)
+        ->and($response->value)->toBeInstanceOf(SubmissionRefusal::class)
+        ->and($response->value->code)->toBe('challenge_failed')
+        ->and($dispatched)->toBe([]);
+})->with([
+    'no token'         => [[]],
+    'a rejected token' => [['captcha_token' => 'forged']],
+]);
+
+it('accepts a protected form whose token the provider accepts, and keeps the token out of the answers', function () {
+    $dispatched = [];
+    $service    = submissionService($dispatched, protectedTestForm(), providerAccepting('good-token'));
+
+    $response = $service->handle('callback', ['phone' => '0100', 'captcha_token' => 'good-token']);
+
+    expect($response->isOk())->toBeTrue()
+        ->and($response->value)->toBe(['phone' => '0100'])
+        ->and($dispatched[0]->values)->toBe(['phone' => '0100']);
+});
+
+it('does not challenge a form that did not ask to be protected', function () {
+    $dispatched = [];
+    $service    = submissionService($dispatched, new ContactTestForm(), providerAccepting('good-token'));
+
+    $response = $service->handle('contact', ['name' => 'Mustafa', 'email' => 'm@example.com', 'message' => 'Hi']);
+
+    expect($response->isOk())->toBeTrue()
+        ->and($dispatched)->toHaveCount(1);
+});
+
+it('accepts a protected form on a site with no challenge provider', function () {
+    $dispatched = [];
+    $service    = submissionService($dispatched, protectedTestForm());
+
+    expect($service->handle('callback', ['phone' => '0100'])->isOk())->toBeTrue();
 });

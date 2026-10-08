@@ -5,7 +5,7 @@
  * Assembles a flat, deployable WordPress tree in `dist/` from repo SOURCE — never from the local
  * symlinked/junctioned `wp/wp-content/`. The result is what a shared host / cPanel / Azure SFTP deploy receives.
  *
- * Build entry: `npm run build:dist [-- --client=acme] [--dry-run]`
+ * Build entry: `npm run build:dist [-- --client=acme] [--pdf-fonts=all] [--dry-run]`
  * Verify:      `npm run verify:dist`
  *
  * Design: the planning logic (`buildPlan`) and the verifier (`verifyDist`) are pure and exported so they can be
@@ -21,6 +21,8 @@
  *   - wp-content/vendor: the production packages and an autoloader generated for this layout by Composer,
  *     inside the package (see shared-host-dist-autoload.mjs). The checkout's vendor/ is not copied. What a
  *     package ships that the artifact may never hold (its own .github, tests) is removed after the install.
+ *     The PDF library keeps the fonts for Latin, Greek, Cyrillic, Hebrew and Arabic text; `--pdf-fonts=all`
+ *     keeps every font it ships, which is most of the package's weight.
  *   - a corex-release.json manifest.
  *
  * What is always excluded: .git, .github, node_modules, tests, dev tooling, env/secrets, uploads, wp-config.php,
@@ -90,6 +92,15 @@ const DEV_EXCLUDES = [
 	'debug.log',
 ];
 
+/**
+ * The PDF library's fonts a package keeps unless it is built with `--pdf-fonts=all`: DejaVu, which has Latin,
+ * Greek, Cyrillic and Hebrew letters, and the two the library writes Arabic-script languages in.
+ */
+const LEAN_PDF_FONTS = [ /^DejaVu/i, /^XB Riyaz/i, /^Lateef/i ];
+
+/** What `--pdf-fonts` may be: the few fonts above, or every font the library ships. */
+const PDF_FONT_SETS = [ 'lean', 'all' ];
+
 const isForbidden = ( absPath ) => {
 	const parts = absPath.split( /[\\/]/ ).map( ( p ) => p.toLowerCase() );
 	return FORBIDDEN_SEGMENTS.some( ( seg ) =>
@@ -100,11 +111,16 @@ const isForbidden = ( absPath ) => {
 /**
  * Compute the build plan: the list of {from, to, kind} copy operations + the manifest. Pure — no filesystem writes.
  *
- * @param {{repoRoot:string, distDir:string, client?:string|null, version?:string}} cfg The build inputs.
+ * @param {{repoRoot:string, distDir:string, client?:string|null, version?:string, pdfFonts?:string}} cfg The build inputs.
  * @return {{copies:Array<{from:string,to:string,kind:string}>, autoload:Object, manifest:Object, warnings:string[]}} The plan.
  */
 export function buildPlan( cfg ) {
-	const { repoRoot, distDir, client = null } = cfg;
+	const { repoRoot, distDir, client = null, pdfFonts = 'lean' } = cfg;
+	if ( ! PDF_FONT_SETS.includes( pdfFonts ) ) {
+		throw new Error(
+			`--pdf-fonts is ${ PDF_FONT_SETS.join( ' or ' ) }, not "${ pdfFonts }".`
+		);
+	}
 	const copies = [];
 	const warnings = [];
 	const p = ( ...s ) => join( repoRoot, ...s );
@@ -231,6 +247,7 @@ export function buildPlan( cfg ) {
 		plugins: pluginNames.sort(),
 		themes: themeNames.sort(),
 		autoload: autoload.manifest,
+		pdf_fonts: pdfFonts,
 		excludes: DEV_EXCLUDES,
 		forbidden_segments: FORBIDDEN_SEGMENTS,
 	};
@@ -305,6 +322,37 @@ export function prunePackagedVendor( distDir ) {
 }
 
 /**
+ * Leave the PDF library the fonts in {@link LEAN_PDF_FONTS}, and the licences beside them.
+ *
+ * Its fonts are 87MB, 54MB of that six fonts for Chinese, Korean and three ancient scripts, in a package
+ * somebody uploads by hand. CoreX tells the library which fonts are installed, so a PDF is still written:
+ * text in a script whose font is not here prints as empty boxes, and a workbook or a CSV holds it as it is.
+ *
+ * @param {string} distDir The package being built.
+ * @return {string[]} The font files removed; none where the package has no PDF library.
+ */
+export function prunePdfFonts( distDir ) {
+	const fonts = join(
+		distDir,
+		PACKAGE_ROOT,
+		'vendor',
+		'mpdf',
+		'mpdf',
+		'ttfonts'
+	);
+	if ( ! existsSync( fonts ) ) {
+		return [];
+	}
+	const kept = ( file ) =>
+		! /\.(ttf|otf|ttc)$/i.test( file ) ||
+		LEAN_PDF_FONTS.some( ( family ) => family.test( file ) );
+	const removed = readdirSync( fonts ).filter( ( file ) => ! kept( file ) );
+	removed.forEach( ( file ) => rmSync( join( fonts, file ) ) );
+
+	return removed;
+}
+
+/**
  * Execute the plan. Writes nothing when dryRun is true.
  *
  * @param {Object}  plan             The plan from `buildPlan`.
@@ -333,6 +381,9 @@ export function runBuild( plan, distDir, options = {} ) {
 	if ( ! dryRun ) {
 		installPackagedVendor( plan.autoload, distDir );
 		prunePackagedVendor( distDir );
+		if ( plan.manifest.pdf_fonts !== 'all' ) {
+			prunePdfFonts( distDir );
+		}
 		writeFileSync(
 			join( distDir, 'corex-release.json' ),
 			JSON.stringify( plan.manifest, null, 2 ) + '\n'
@@ -486,12 +537,14 @@ if ( isMain ) {
 	const dryRun = args.includes( '--dry-run' );
 	const clientArg = args.find( ( a ) => a.startsWith( '--client=' ) );
 	const client = clientArg ? clientArg.split( '=' )[ 1 ] : null;
+	const fontsArg = args.find( ( a ) => a.startsWith( '--pdf-fonts=' ) );
+	const pdfFonts = fontsArg ? fontsArg.split( '=' )[ 1 ] : undefined;
 	const repoRoot = process.cwd();
 	const distDir = join( repoRoot, 'dist' );
 
 	let plan;
 	try {
-		plan = buildPlan( { repoRoot, distDir, client } );
+		plan = buildPlan( { repoRoot, distDir, client, pdfFonts } );
 	} catch ( error ) {
 		console.error( 'build:dist cannot plan the package:', error.message );
 		process.exit( 1 );

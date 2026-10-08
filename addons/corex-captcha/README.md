@@ -10,7 +10,7 @@ Optional add-on; requires `corex-core`.
 | `none` (default) | Always passes (the form honeypot + throttle still guard). |
 | `honeypot` | Passes when the hidden field is empty; fails when filled. |
 | `recaptcha` | **reCAPTCHA v3** — scored and typed. Verifies `success`, an exact hostname allowlist, the form's server-derived action, token age, one-time use, and a score threshold. **Fail-closed.** |
-| `turnstile` / `hcaptcha` | Posts the token to the provider; passes only on a confirmed `success`. **Fail-closed.** |
+| `turnstile` / `hcaptcha` | Shows the provider's widget above a protected form's button, sends its token with the form, and posts the token to the provider; passes only on a confirmed `success`. **Fail-closed**: a submission with no token is refused. |
 
 ### reCAPTCHA v3
 
@@ -24,7 +24,8 @@ default) → age → score → one-time use (replay is checked last, so only a f
 Settings (**CoreX → Settings → Captcha**): `captcha.site_key`, `captcha.secret`, `captcha.score_threshold`
 (default **0.3**), `captcha.allowed_hostnames`, and an optional global `captcha.action`. The client script
 loads only on pages with a protected form and requests a fresh token per submission. Only protected CoreX
-forms are covered; the honeypot always guards. The **site key** may reach the browser; the **secret never
+forms are covered: a flow unless its Protection tab says off, and a form defined in code when its
+`protection()` says on. The honeypot always guards. The **site key** may reach the browser; the **secret never
 does**.
 
 ## Use it

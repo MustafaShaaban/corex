@@ -55,7 +55,7 @@ is delivered in seven slices, one pull request each:
 | — | Spacing review of the dialog and the filters, on the owner's request | done (DECISIONS #257). Measured, fixed, and kept measured by two browser tests |
 | 4 | The detail pane | done, in v0.43.3 (DECISIONS #259). Measured, and kept measured by a browser test. Not in it: to whom a notification went and where a failure can be fixed (T074b), which the server does not record |
 | 5 | Export history: size, expiry, delete | done, in v0.43.4 (DECISIONS #262). A file is kept 30 days and removed by the daily retention sweep. Found on the way: the dialog printed `[object Object]` for a date filter |
-| 6 | PDF | done (DECISIONS #269), unreleased. mPDF, chosen by a spike; every page signed as CoreX's, which is what the owner meant; up to 500 records. Produced documents were rendered and looked at, left-to-right, right-to-left and wide. Found on the way: the Data export of Form submissions leaves its per-answer columns empty, and a ticked row loses "Submission" too, in every format (queued as its own task) |
+| 6 | PDF | done (DECISIONS #269), unreleased. mPDF, chosen by a spike; every page signed as CoreX's, which is what the owner meant; up to 500 records. The shared-host package keeps the library's fonts for Latin, Greek, Cyrillic, Hebrew and Arabic-script text and leaves the rest out unless built with `--pdf-fonts=all`: 33MB zipped where every font made it 71MB (DECISIONS #275). Produced documents were rendered and looked at, left-to-right, right-to-left and wide. Found on the way: the Data export of Form submissions leaves its per-answer columns empty, and a ticked row loses "Submission" too, in every format (queued as its own task) |
 | 7a | The Data export: the audit, and its file and flow on the server | done, in v0.43.4 (DECISIONS #265). The audit found two export surfaces, neither handing over a file, and that Excel was never reachable |
 | 7b | The Data export: one dialog for both surfaces | done (DECISIONS #266), unreleased. It is the Submissions export's dialog, from shared parts. Found on the way: in both dialogs a choice's name was a pixel smaller than the line describing it |
 | — | The Data export of Form submissions: each answer under its column, and a ticked row with its summary | done (#290, DECISIONS #270), unreleased. Found in a real export after 7b: every answer's column was empty. A source now hands an export its own rows (`ExportableDataSource`); a client's own exportable source has to implement it, which is under Client impact |
@@ -95,9 +95,9 @@ is the one spec issues #248 and #264 asked for. Four slices, one pull request ea
 | Slice | What | State |
 |---|---|---|
 | 1 | A form states its button label and its two messages | done (DECISIONS #274), unreleased |
-| 2 | A form defined in code is challenged by the site's provider (reCAPTCHA) | not started |
-| 3 | A site draws a form with its own markup, from published parts. Closes #248 | not started |
-| 4 | Turnstile and hCaptcha place a widget, on flows and on code-defined forms. Closes #264 | not started |
+| 2 | A form defined in code is challenged by the site's provider (reCAPTCHA) | done (DECISIONS #276), unreleased. Opt-in per form. No provider was called and no browser saw it; an integration test on real WordPress stands in for the provider |
+| 3 | A site draws a form with its own markup, from published parts. Closes #248 | done (DECISIONS #277), unreleased. The stock form is drawn from the same parts and is byte-identical. No browser saw a hand-drawn form; the runtime was run against one in jsdom |
+| 4 | Turnstile and hCaptcha place a widget, on flows and on code-defined forms. Closes #264 | done (DECISIONS #278), unreleased. Checked against each provider's real script on a local test page: Turnstile's whole cycle, hCaptcha's rendering only. Not seen on a CoreX page |
 
 Five readings in the spec are the owner's to overrule; they are under its Assumptions.
 
@@ -386,9 +386,14 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **Spec Kit cannot be run in a client repository without drift** (#251, item 1). The scripts write
   `specs/`, `.specify/feature.json` and the root `CLAUDE.md`, all framework-owned there. A client
   spec is written by hand under `sites/<client>/specs/`; the generated `AGENTS.md` says so.
-- **Turnstile and hCaptcha have a verifier and no widget.** They can be chosen and given keys, and
-  nothing places their challenge on a form. Choosing one no longer rejects submissions, and the
-  admin says it challenges nobody (DECISIONS #258). Placing the widgets belongs with #264.
+- **Turnstile and hCaptcha were not submitted through on a real site.** Their widget is placed
+  and a tokenless submission is refused (DECISIONS #278). What was seen is each provider's own
+  script rendering into a bare form on a local page, and Turnstile's token cycle there. Nobody
+  has completed an hCaptcha challenge through CoreX, and neither was seen inside a CoreX form.
+- **Four add-ons check a challenge token nothing produces**: bookings, careers, newsletter and
+  profile each verify `captcha_token` on their own route, and no widget or script is placed for
+  them. With a provider configured they refuse on a missing token. Read from the code while
+  planning spec 104; out of that spec's scope.
 - **A message sent from Email Studio cannot name its sender** (#150, the third of its three
   mailboxes). An operator's reply from the Submissions inbox, a routed email and a message
   composed in Email Studio are built in `EmailStudioSubmissionGateway`, `EmailRouteMessageFactory` and `EmailStudioController`

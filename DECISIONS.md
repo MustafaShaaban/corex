@@ -7768,3 +7768,262 @@ rendered check was made of a stated label on a page.
 
 **Left open.** Slices 2 to 4. `captcha.action`, the global setting, has no reader in corex-forms
 or the add-on; found while planning, not changed.
+
+## #275 — The shared-host package keeps a few of the PDF library's fonts, and a PDF is written with what is installed
+
+Date: 2026-10-08 · Spec: 103 (submissions inbox and exports), slice 6, after it merged · Status: Final
+
+DECISIONS #269 kept the PDF library's fonts whole and left pruning to the builder "as a packaging
+choice, not made here". The first client site made the choice necessary the same day: it is
+updated by a zip its owner uploads through a hosting panel's file manager, the largest zip proven
+there is 29.7MB, and it does not collect answers in the scripts most of the weight is for. The
+owner, asked to choose between the whole set, a pruned set and no PDF library in the package:
+"you decide the best for me".
+
+**Measured**, on the framework-only package, zipped with deflate level 6:
+
+| Package | Entries | Unpacked | Zipped |
+|---|---|---|---|
+| Without the PDF library | 6,278 | 99MB | 27MB |
+| Every font | 6,847 | 191MB | 71MB |
+| The default from now on | 6,594 | 117MB | 33MB |
+
+The library's fonts are 87MB. Six of them, for Chinese, Korean and three ancient scripts, are
+54MB.
+
+**Kept by default: DejaVu, XB Riyaz and Lateef**, with every licence file. DejaVu has Latin,
+Greek, Cyrillic and Hebrew letters and is the document's default font; the other two are what the
+library writes Arabic, Persian, Urdu, Pashto and Sindhi in. `--pdf-fonts=all` keeps everything.
+Not offered: naming scripts one by one. Two sets cover the sites there are, and a third can be
+added when a site needs one.
+
+**Not chosen: leaving the library out of the package.** That was the client session's
+preference, and it is the smallest package. But the PDF export was the owner's own request, made
+from that client's inbox, and a package without the library would withhold it from the site it
+was asked for on. Six megabytes of zip buy it back.
+
+**The library does not degrade by itself.** With a font's file missing it throws "Cannot find TTF
+TrueType font file" at the first text that asks for that font, and the whole export fails:
+reproduced before the change, with one Chinese answer. It checks its font list, not the disk. So
+`PdfFonts` gives it the list of fonts whose every file is installed, and the directory they are
+in. A font with its regular file and without its bold is left out, because a bold heading in it
+would stop the document the same way. Text in a script with no font installed is written in the
+default font and prints as empty boxes where that font has no letter.
+
+**Said where it is met.** The guide to the shared-host package has the table and the option; the
+Submissions guide says what a PDF from such a site prints; the package's manifest records which
+set it was built with.
+
+**A site installed with Composer is unchanged**: every font is there, and the list given to the
+library is the library's own.
+
+## #276 — A form defined in code is challenged by the same check a flow is
+
+Date: 2026-10-08 · Spec: 104 (a code-defined form's wording, markup and protection), slice 2 · Issue: #264 · Status: Final
+
+A site that chose reCAPTCHA and saved its keys had its flows protected and its code-defined forms
+not: nothing let such a form ask, its page loaded no provider script, and the submit route's
+sanitiser dropped a token before anything could check it.
+
+**One check.** `ProtectionStage::verifyCaptcha()` is now `SubmissionChallenge::verify(token, slug,
+protection)`, returning a `SubmissionChallengeOutcome`. The flow pipeline's stage calls it and
+stores what it stored before; `FormSubmissionService` calls it for a code-defined form. The stage's
+twelve tests run with every assertion unchanged, through a helper that builds the stage as the
+container does. `FormChallengeContextFactory::forContext()` had one caller and is now
+`forForm(slug, protection)`.
+
+**Opt-in, and why the default differs from a flow's.** A flow is protected unless its Protection
+tab says off. `Form::protection()` returns `['captcha' => 'off']` and a form opts in with `'on'`;
+`CodeFormProtection::of()` reads anything else as off. A form drawn by a site before this cannot
+carry a token. Had code-defined forms inherited the site default, such a form would have refused
+every submission on the day its site took this release with a provider configured. Not asked of
+the owner; it is under the spec's Assumptions.
+
+**Where the check sits.** After the trap field and before validation, so a submission that fails
+it has no answer judged, nothing stored and no listener run. The token is removed from the input
+before validation: it is not an answer and reaches no listener.
+
+**A refusal with its own code.** The route derived a refusal's `code` from its HTTP status, so a
+failed challenge would have read `error`, like an unknown form. A refusal's payload was either
+nothing or the field errors, keyed by field name, so a code could not ride in that array: a form
+with a field named `code` would collide with it. `SubmissionRefusal` is a typed payload, and
+`SubmitController` answers its code. The response is `422`, `code: "challenge_failed"`, and the
+message the provider script already shows when it cannot get a token.
+
+**The action travels with the form.** The reCAPTCHA script looked the action up in a map keyed by
+the form's name, and a flow and a code-defined form can share a name. It reads the action from
+the submitted form's own token field now, which already carried it and was read by nothing. The
+map is no longer sent to the page. `ProtectedFormRegistry` still answers the only question the
+asset controller asks of it: does this page hold a protected form.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The library, a directory holding only the kept fonts, its own font list | `MpdfException`: cannot find `Sun-ExtA.ttf` |
+| The same with the list cut to the fonts present | written; Latin, Arabic and Hebrew print, Chinese, Korean, Thai and Hindi are boxes |
+| `PdfFontsTest`, `PdfExportTest` (unit) | pass, with the rest of `tests/Unit` |
+| `PdfExportWithFewFontsTest`, real WordPress, one font family installed, answers in six scripts | a PDF is written |
+| `SubmissionExportFileTest`, real WordPress, every font | 15 passed, the PDF among them |
+| `tests/build-shared-host-dist.test.js` | 16 passed, three of them new |
+| The real package built with the default fonts, then verified by the builder | verified; 117.2MB, 33.4MB zipped |
+| A PDF written with nothing but that package's `vendor/` and its `PdfFonts` | written; English, Greek, Russian, Hebrew, Arabic and Urdu print, Chinese, Korean and Thai are boxes |
+
+**Not run.** The whole integration and browser suites; CI runs both. The 33MB is the framework
+alone: a client's own plugin and theme add to it. Nothing was uploaded to a host, so that the
+host accepts 33MB is not shown, only that it is close to the 29.7MB it has accepted.
+| `tests/Unit/Forms` after the extraction, before anything was built on it | 219 passed |
+| `FormSubmissionServiceTest`, the five new cases before the service changed | all failed (the service took no challenge) |
+| `tests/Unit/Forms`, after | 227 passed |
+| `tests/corex-captcha-v3.test.js`, the shared-name case before the script changed | failed; 7 passed after |
+| `tests/Integration/Forms/ProtectedCodeFormTest.php`, real WordPress, the provider stood in for | 3 passed: refused with the code and nothing stored; stored without the token; the block as the container wires it carries the field, declares the form, and the add-on then enqueues both scripts |
+| `tests/Unit` / Jest / `tests/Integration/Forms` and `Mail` | 2331 / 717 in 64 suites / 77 |
+
+**Not run.** No provider was called: a real reCAPTCHA token was never obtained or verified here.
+No browser saw a protected code-defined form. The browser test the tasks named (T021) was not
+written: the browser suite has no fixture that registers a form in code, and the integration test
+covers what CoreX decides (the field, the declaration, the enqueue) on real WordPress. What a
+browser would add is the script tag on a served page and the token round trip against a stood-in
+provider.
+
+**Left open.**
+
+- Turnstile and hCaptcha still place no widget; that is slice 4, and until then a protected
+  code-defined form on a site that chose one is accepted without a token, as a flow is
+  (DECISIONS #258).
+- The four add-ons that check `captcha_token` on their own routes (bookings, careers, newsletter,
+  profile) have nothing that produces one. Out of this spec's scope and still true.
+- `captcha.action`, the global setting, has no reader.
+- A code-defined form stores no spam evidence. A flow records the provider's verdict with the
+  submission; a code-defined form's listeners are handed the answers and nothing else.
+
+## #277 — A site draws a form from parts CoreX publishes, and the stock form is drawn from the same ones
+
+Date: 2026-10-08 · Spec: 104 (a code-defined form's wording, markup and protection), slice 3 · Issue: #248 · Status: Final
+
+A form whose design was not the stock form's needed its own renderer, and writing one meant
+reproducing what the front-end runtime reads (the endpoint, the security token, the exported
+schema, the messages, an error place per field, a status place, the trap field) from four classes
+none of which said a site could rely on it.
+
+**The seam is `Form::markup(FormParts $parts): ?string`.** `null`, the default, is the stock
+form. `FormParts` is handed to the form for one render and supplies each piece by name:
+`attributes()`, `hidden()`, `status()`, `fieldAttributes()`, `error()`, `control()`, `label()`,
+`field()`, `submit()`. Not a filter on the rendered HTML and not a theme template, for the reason
+in #274: corex-forms fires no WordPress hook, and a method on the form's own class is typed and
+is the form's alone.
+
+**The stock form is composed from the same parts.** `FormBlockRenderer` builds a `FormParts` and
+either hands it to the form or draws the stock form with it. A part a site uses is therefore the
+part CoreX uses, and the two cannot drift. Two recorded forms pin the stock output byte for byte:
+the shipped contact form, and a form with one field of every kind and every presentation knob.
+They were recorded from the renderer before it was changed and pass after.
+
+**What a site passes in cannot displace what CoreX sets.** `attributes()` and `control()` take
+the site's own attributes; a `class` is added to CoreX's and any other name CoreX already set
+keeps CoreX's value. A site cannot point the form at another endpoint or give a control another
+field's name by accident. `submit()` stays `type="submit"` whatever it is passed.
+
+**A form that would fail silently is not shown.** If a form's markup lacks `attributes()`,
+`hidden()` or `status()`, a visitor gets nothing, `_doing_it_wrong()` reports which, and somebody
+who can edit posts sees a notice naming the missing parts in the form's place. The check looks for
+one mark of each part in the returned HTML. It does not parse the site's design and does not check
+each field's wrapper: a field with no error place still submits and is still refused by the
+server, and its message has nowhere to go. Left open below.
+
+**No `challenge()` part yet.** The plan lists one for a visible widget. reCAPTCHA v3 shows none and
+its token field is in `hidden()`. The part arrives with the widget, in slice 4.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The stock form against its two recordings, before and after the renderer was changed | identical |
+| `tests/Unit/Forms/FormPartsTest.php` | 10 passed |
+| `FormBlockRenderTest`: a form's own markup; a missing part as a visitor and as an editor | 16 passed |
+| `corex-runtime-hand-drawn-form.test.js`: the real runtime against the hand-drawn form the PHP test pins | 2 passed: an empty submission writes "This field is required." into the site's error place, marks the hand-written control invalid and sends nothing; a valid one posts the answers and the trap field to the form's endpoint with the security token and confirms in the site's status place |
+| `FormBlockRenderingTest` on real WordPress | 5 passed: a form's own markup through `do_blocks()` with WordPress's escaping; one missing two parts renders nothing signed out and reports "hidden(), status()" |
+| `tests/Unit` / Jest / `tests/Integration/Forms` | 2349 / 722 in 65 suites / 71 |
+
+**Not run.** No browser. The tasks named a Playwright test in light and dark, left-to-right and
+right-to-left (T037); it was not written, for the reason in #276: the browser suite has no
+fixture that registers a form in code. In its place the runtime is run in jsdom against the
+markup the contract really produces. What that does not show is anything visual: a hand-drawn
+form's layout is the site's own stylesheet, and the stock styles a site may inherit through the
+`corex-form` class were not looked at on one. The parts tests were written after the parts.
+
+**Left open.**
+
+- A field whose wrapper or error place a site left out is not detected.
+- `.corex-form__notice`, the editor's notice, has no style of its own.
+- With JavaScript off a form does not submit, stock or hand-drawn: it has no `action`. The runtime
+  guide said it fell back to the submit route. It says what happens now; nothing was built.
+- The runtime guide's contract for "anything else that renders a form" is documentation of what
+  the runtime reads, not a second supported way to build a code-defined form.
+
+## #278 — Turnstile and hCaptcha show their widget, and a submission without their token is refused
+
+Date: 2026-10-08 · Spec: 104 (a code-defined form's wording, markup and protection), slice 4 · Issue: #264 · Status: Final
+
+Both providers could be chosen, given keys and tested, and nothing placed their widget on any
+form. For a day a submission without their token was let through on purpose (#258), because
+refusing it refused every submission. This places the widget and ends that allowance in the same
+change, as the spec required (FR-032): a provider that can be selected now challenges.
+
+**One script for both.** The two providers have the same shape: load their script with explicit
+rendering, ask it to render into an element with a site key, and take a token in a callback.
+`corex-captcha-widget.js` renders into each `.corex-form__challenge`, writes the token into that
+form's `captcha_token` field, holds a submission made before the visitor has passed (with a
+message, before the runtime's handler sends anything), and resets the widget once the server has
+answered, because a token is spent by one submission. A refusal by the browser's own check sends
+nothing, so the token is kept. Each provider is handed the container its documentation names:
+Turnstile a selector, hCaptcha the element.
+
+**Load order.** CoreX's script is enqueued first and the provider's depends on it, because the
+provider calls `corexCaptchaWidgetReady` by name when it has loaded. The script also tries on
+`DOMContentLoaded`, for a provider that was already there. A place is rendered once.
+
+**The site key is on the form.** Each challenge place carries `data-corex-sitekey`. Nothing is
+localized but two messages.
+
+**For a form drawn by hand** the place is `FormParts::challenge()`: empty unless the form is
+protected and the provider shows a widget, and required then (the missing-part check names it).
+A hand-drawn form made in slice 3's way has to add it to be protected by one of these two.
+
+**What was removed.** `FormChallengeContextFactory::driverPlacesNoWidget()` and the allowance in
+`SubmissionChallenge`; `CaptchaDiagnostic::NO_WIDGET`; the `captcha.widget` gap in the admin's
+capability facts; the sentence in the driver setting's help. `providerConfigured()` is true for
+all three providers with a secret.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The flipped tests before the change: an empty token under Turnstile and hCaptcha; the diagnostic for both | 4 failed |
+| `tests/Unit/Forms` and `tests/Unit/Captcha` after | 286 passed; the stock form still byte-identical |
+| `tests/Unit` / Jest | 2356 / 732 in 66 suites |
+| `corex-captcha-widget.test.js`, the provider stood in for | 10 passed |
+| `ProtectedCodeFormTest` on real WordPress, each provider | the block carries the token field and, for Turnstile and hCaptcha, the challenge place with the site key; the add-on enqueues that provider's two scripts |
+| **Turnstile's real script**, its published always-pass test key, on a throwaway local page with CoreX's script and a bare form | rendered; `XXXX.DUMMY.TOKEN.XXXX` written into the field; the submission reached the form's own handler; after `corex:form:success` the field was empty, a submission was held with "Please complete the challenge before sending.", and a new token arrived after the reset |
+| **hCaptcha's real script**, its published test key, the same page | loaded and rendered its frame into the place; no token, because its test widget waits for a click |
+
+**Not run.**
+
+- hCaptcha's token round trip. Its widget needs a person to click it and I do not complete
+  challenges, test key or not. Rendering against the real script is what was seen.
+- Neither provider's server-side check with a real token. `RemoteCaptcha` is unchanged and was
+  not called against a provider.
+- A CoreX page. The live check used a bare form on a local page, not a flow or a Form block on
+  the development install, whose captcha settings were not changed. So the widget was not seen
+  inside the form's grid, in either theme or direction; the stylesheet rule for the place is
+  unverified by eye.
+- The browser suite locally.
+
+**Left open.**
+
+- Somebody should submit one protected form on a real site with each provider before relying on
+  it. That is the gap between what was checked and what was built.
+- The four add-ons that check `captcha_token` on their own routes still have nothing that
+  produces one.
+- `captcha.action`, the global setting, still has no reader.
+- An invisible or managed-size widget is not offered; the provider's default is used.

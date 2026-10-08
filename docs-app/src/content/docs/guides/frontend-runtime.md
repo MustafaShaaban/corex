@@ -78,17 +78,29 @@ Corex.forms.bind( formEl ); // idempotent; the runtime also auto-binds every .co
 against — see [Create a form](/guides/forms/)), validates on submit with the **same rules**,
 renders per-field errors into `[data-corex-field] .corex-form__error`, prevents duplicate
 submits, posts via `Corex.api`, and renders the server's authoritative errors. It fires
-`corex:form:success` / `corex:form:error` on the form with `{ envelope }`.
+`corex:form:success` / `corex:form:error` on the form; the table under Events says what each carries.
 
 > The server is always authoritative. Client validation is instant feedback only; a submission
 > that passes the client is still validated server-side.
 
 ### Adding a validated custom form
 
-Render a `<form class="corex-form">` carrying `data-corex-endpoint`, `data-corex-nonce`, and a
-`data-corex-schema` (a JSON array of `{ name, required, rules }`), with each field wrapped in
-`[data-corex-field="<name>"]` containing a `.corex-form__error` element and a
-`.corex-form__status` region. The runtime binds it automatically — no per-form JavaScript.
+For a form defined in code, do not write these attributes by hand: the form's `markup()` is handed
+them as parts. See [Draw a form your own way](/guides/forms/#draw-a-form-your-own-way).
+
+What the runtime reads, for anything else that renders a form:
+
+- `<form class="corex-form">` with `data-corex-endpoint`, `data-corex-nonce` and
+  `data-corex-schema` (a JSON array of `{ name, type, label, required, rules }`);
+- `data-corex-messages`, a JSON object of rule name to message. Optional: without it the
+  runtime uses its own English table;
+- `data-corex-success` and `data-corex-error`, what the status region says. Without them it
+  shows the server's message when there is one, and otherwise nothing;
+- each field in a wrapper `[data-corex-field="<name>"]` that holds a `.corex-form__error` element;
+- one `.corex-form__status` region.
+
+Every named control in the form is sent, the trap field and a challenge token among them. The
+runtime binds the form automatically — no per-form JavaScript.
 
 ### Loading, status, and styling
 
@@ -104,11 +116,14 @@ and use logical properties, so they are RTL-correct by default.
 | Event | Target | Detail |
 |---|---|---|
 | `corex:request:start` / `corex:request:end` | `document` | `{ url, method, ok? }` |
-| `corex:form:success` / `corex:form:error` | the form | `{ envelope }` |
+| `corex:form:success` | the form | `{ envelope }` |
+| `corex:form:error` | the form | `{ envelope }` when the server refused; `{ errors, fields }` when the browser's own check did |
+| `corex:form:redirect` | the form | `{ url, success }` |
+| `corex:form:custom-success` | the form | `{ success }` |
 
 ## Degradation
 
-With JavaScript disabled the form falls back to the server-authoritative submit route and the
-accessible error regions remain in the markup; only the instant client validation is lost.
+With JavaScript disabled a form does not submit: it has no `action`, so the browser posts it to the
+page it is on, which nothing handles. The submit route takes JSON from the runtime.
 Without `wp.apiFetch`, `Corex.api` uses `fetch`; without `wp.i18n`, strings fall back to their
 English source.

@@ -8,6 +8,24 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **Turnstile and hCaptcha show their widget on a protected form** (spec 104, slice 4; closes
+  #264), on a flow and on a form defined in code. It sits above the button; the form sends the
+  token the widget gives; the provider's script loads only on a page with a protected form. A
+  submission made before the visitor has passed is held in the browser with a message
+  (DECISIONS #278).
+- **A site draws a form its own way** (spec 104, slice 3; closes #248). Override `markup()` on
+  the form's class. It is handed the form's parts (`attributes()`, `hidden()`, `status()`,
+  `fieldAttributes()`, `error()`, `control()`, `label()`, `field()`, `submit()`) and returns the
+  form's HTML. A form built from them validates, submits, shows each error where the site put it
+  and is challenged, with no script of the site's own. A form that supplies no markup is the
+  stock form, byte for byte what it was. The forms guide has the contract and a complete example
+  (DECISIONS #277).
+- **A form defined in code can ask for the site's challenge** (spec 104, slice 2; part of #264).
+  Return `['captcha' => 'on']` from the form's `protection()`. With reCAPTCHA configured, the
+  form carries a token field, its page loads the provider's script, and a submission is checked
+  before any answer is judged. One that fails is answered `422` with `code: "challenge_failed"`,
+  stores nothing and runs no listener. Off by default, so no existing form changes (DECISIONS
+  #276).
 - **A form defined in code says what it reads** (spec 104, slice 1; part of #248). Override
   `submitLabel()`, `successMessage()` and `errorMessage()` on the form's class. Each is empty by
   default, which is CoreX's own wording, so a form that states nothing reads "Send" and "Thank
@@ -33,6 +51,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **A PDF is written with the fonts that are installed.** The PDF library stopped a document
+  with "Cannot find TTF TrueType font file" at the first text in a script whose font file was
+  missing. CoreX tells it which fonts are there, and it writes the rest in its default font.
+- **The shared-host builder ships a few of the PDF library's fonts by default**, and
+  `--pdf-fonts=all` ships them all. The owner's first client site is updated by a zip uploaded
+  by hand, and the whole set took that zip from 27MB to 71MB.
 - **The build and test toolchain is `@wordpress/scripts` 36** (was 34). It no longer ships Jest,
   so Jest, its jsdom environment, the WordPress preset and the Babel transform are this
   repository's own dev dependencies, and `npm run test:js` runs `wp-scripts test-unit-jest`. The
@@ -65,6 +89,8 @@ All notable changes to Corex are documented here. The format follows
   plain text box and sent as HTML, and nothing turned a line break into markup: three paragraphs
   reached the recipient as one block. A blank line is a new paragraph now and a line break is a
   line break. Read from the code while specifying the reply editor (spec 106, slice 0).
+- **Two protected forms that share a name each ask the provider for their own action.** The
+  reCAPTCHA script looked the action up by the form's name; it reads it from the submitted form.
 - **With the mail queue on, a send still waited for the mail server on a site without Action
   Scheduler** (#271). The `mail_queue` flag deferred a send only where Action Scheduler was
   installed, and CoreX does not ship it, so a form's response waited for both of its
@@ -98,6 +124,21 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A site with Turnstile or hCaptcha selected and keys saved starts challenging when it takes
+  this**, and refuses a protected form's submission that carries no token. Until now such a site
+  challenged nobody and refused nothing. Submit one protected form after updating: the widget was
+  checked against each provider's own script on a test page, not on a site. reCAPTCHA is
+  unchanged.
+- **A hand-drawn form protected by Turnstile or hCaptcha needs `$parts->challenge()`** in its
+  markup, before its button. It prints nothing for any other form, so it is safe to add always.
+- **The provider test no longer answers `no_widget`**, and the admin no longer lists a
+  `captcha.widget` gap. `FormChallengeContextFactory::driverPlacesNoWidget()` is gone.
+- **A site with its own form renderer can replace it with `Form::markup()`.** A renderer that
+  reproduced CoreX's attributes by hand keeps working; it is no longer needed, and it is what
+  breaks when those attributes change.
+- **`FormBlockRenderer`'s constructor takes two more optional arguments**, and `ProtectionStage`'s
+  takes a `SubmissionChallenge`, for code that constructs either itself. Both are built by the
+  container on a site that does not.
 - **A site with `mail_queue` on and no Action Scheduler starts deferring its mail** when it takes
   this. A message leaves on the next WP-Cron run, not inside the request. A site that sets
   `DISABLE_WP_CRON` must run `wp-cron.php` from its own scheduler, or its mail waits; with the
@@ -125,10 +166,15 @@ All notable changes to Corex are documented here. The format follows
   `@wordpress/babel-preset-default`. Both are installed at the repository root, where a site's
   config resolves them. A site that calls `jest` itself is not affected.
 - **A new production dependency: `mpdf/mpdf` ^8.3** (GPL-2.0-only), with its own dependencies. Run
-  `composer install` after taking this. It adds about 94MB to `vendor/`, 88MB of it fonts. **The
-  shared-host package is about 191MB unpacked with it, 92MB of that mPDF**, so it nearly doubles
-  what is uploaded. The fonts are kept whole: they are what writes Arabic and every other script
-  a form can be answered in.
+  `composer install` after taking this. It adds about 94MB to `vendor/`, 88MB of it fonts.
+- **The shared-host package keeps the PDF library's fonts for Latin, Greek, Cyrillic, Hebrew and
+  Arabic-script text, and leaves the rest out**: 33MB zipped and 117MB unpacked, measured on the
+  framework alone, where every font made it 71MB and 191MB. A PDF from such a site prints text
+  in any other script (Chinese, Japanese, Korean, Thai, the Indic scripts) as empty boxes; the
+  workbook and the CSV hold it as it is. `npm run build:dist -- --pdf-fonts=all` keeps every
+  font. `corex-release.json` says which was built, as `pdf_fonts`. A site installed with
+  Composer has every font.
+- **`PdfExportWriter` takes a third argument, `PdfFonts`**, for code that constructs it.
 - **The shared-host builder removes from the packaged `vendor/` what a package may never hold**
   (`.github`, `tests`, `.git`, `node_modules` and the rest of its forbidden list). Composer
   installs a package as its author shipped it, mPDF ships a `.github`, and the package was

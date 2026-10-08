@@ -11,9 +11,14 @@ namespace Corex\Forms\Block;
 defined('ABSPATH') || exit;
 
 use Corex\Blocks\BlockRenderer;
+use Corex\Forms\Form;
 use Corex\Forms\FormRegistry;
+use Corex\Forms\Schema\FieldSchema;
 use Corex\Forms\Schema\SchemaExporter;
 use Corex\Forms\Schema\SchemaResolver;
+use Corex\Forms\Submission\CaptchaAction;
+use Corex\Forms\Submission\CodeFormProtection;
+use Corex\Forms\Submission\FormChallengeContextFactory;
 use Corex\Forms\Submission\FormSubmissionService;
 
 /**
@@ -30,6 +35,8 @@ final class FormBlockRenderer implements BlockRenderer
         private readonly SchemaExporter $exporter,
         private readonly FieldRenderer $fieldRenderer,
         private readonly ?FlowBlockRenderer $flowRenderer = null,
+        private readonly ?FormChallengeContextFactory $challenge = null,
+        private readonly ?ProtectedFormRegistry $protectedForms = null,
     ) {
     }
 
@@ -68,34 +75,116 @@ final class FormBlockRenderer implements BlockRenderer
         // Resolve the schema once: it both renders the fields and is exported to the
         // client so JS validates against the SAME definition the server enforces.
         $schema = $this->resolver->resolve($form->fields());
+        $token  = $this->challengeField($form);
+        $parts  = $this->partsOf($form, $schema, $token);
+        $own    = $form->markup($parts);
 
+        return $own === null ? $this->stockForm($parts, $schema) : $this->ownMarkup($form, $parts, $own);
+    }
+
+    /**
+     * @param array<string,FieldSchema> $schema
+     * @param string                    $token  The token field of a protected form; empty for any other.
+     */
+    private function partsOf(Form $form, array $schema, string $token): FormParts
+    {
+        return new FormParts(
+            $form->slug,
+            [
+                'class'               => 'corex-form',
+                'method'              => 'post',
+                'novalidate'          => 'novalidate',
+                'enctype'             => 'multipart/form-data',
+                'data-corex-form'     => $form->slug,
+                'data-corex-endpoint' => esc_url(rest_url('corex/v1/forms/' . $form->slug)),
+                'data-corex-nonce'    => wp_create_nonce('wp_rest'),
+                'data-corex-success'  => self::stated($form->successMessage(), __('Thank you — your message has been sent.', 'corex')),
+                'data-corex-error'    => self::stated($form->errorMessage(), __('Please review the highlighted fields and try again.', 'corex')),
+                'data-corex-schema'   => (string) wp_json_encode($this->exporter->toArray($schema)),
+                'data-corex-messages' => ValidationMessages::toAttribute(),
+            ],
+            $schema,
+            sprintf(
+                '<input type="text" name="%s" class="corex-form__hp" tabindex="-1" autocomplete="off" aria-hidden="true" value="" />',
+                esc_attr(FormSubmissionService::HONEYPOT_KEY),
+            ) . $token,
+            self::stated($form->submitLabel(), __('Send', 'corex')),
+            $this->fieldRenderer,
+            $token === '' || $this->challenge === null
+                ? ''
+                : ChallengeTokenField::widgetPlace($this->challenge->widgetProvider(), $this->challenge->siteKey()),
+        );
+    }
+
+    /**
+     * The form CoreX draws for a form that draws none of its own.
+     *
+     * @param array<string,FieldSchema> $schema
+     */
+    private function stockForm(FormParts $parts, array $schema): string
+    {
         $fields = '';
 
-        foreach ($schema as $field) {
-            $fields .= $this->fieldRenderer->render($slug, $field);
+        foreach (array_keys($schema) as $name) {
+            $fields .= $parts->field($name);
+        }
+
+        return '<form ' . $parts->attributes() . '>' . $fields . $parts->hidden() . $parts->challenge()
+            . $parts->submit() . $parts->status() . '</form>';
+    }
+
+    /**
+     * A form's own markup, when it holds what the form cannot work without (spec 104, FR-024).
+     *
+     * Otherwise nobody is handed a form that would fail silently: a visitor gets nothing, and
+     * somebody who can edit the page is told which part is missing.
+     */
+    private function ownMarkup(Form $form, FormParts $parts, string $markup): string
+    {
+        $missing = $parts->missingFrom($markup);
+
+        if ($missing === []) {
+            return $markup;
+        }
+
+        _doing_it_wrong(
+            esc_html($form::class . '::markup'),
+            esc_html(sprintf('The markup of the form "%s" is missing: %s.', $form->slug, implode(', ', $missing))),
+            '0.44.0',
+        );
+
+        if (! current_user_can('edit_posts')) {
+            return '';
         }
 
         return sprintf(
-            '<form class="corex-form" method="post" novalidate enctype="multipart/form-data"'
-            . ' data-corex-form="%1$s" data-corex-endpoint="%2$s"'
-            . ' data-corex-nonce="%3$s" data-corex-success="%4$s" data-corex-error="%5$s" data-corex-schema="%6$s"'
-            . ' data-corex-messages="%10$s">'
-            . '%7$s'
-            . '<input type="text" name="%8$s" class="corex-form__hp" tabindex="-1" autocomplete="off" aria-hidden="true" value="" />'
-            . '<button type="submit" class="corex-form__submit">%9$s</button>'
-            . '<p class="corex-form__status" role="status" aria-live="polite"></p>'
-            . '</form>',
-            esc_attr($slug),
-            esc_url(rest_url('corex/v1/forms/' . $slug)),
-            esc_attr(wp_create_nonce('wp_rest')),
-            esc_attr(self::stated($form->successMessage(), __('Thank you — your message has been sent.', 'corex'))),
-            esc_attr(self::stated($form->errorMessage(), __('Please review the highlighted fields and try again.', 'corex'))),
-            esc_attr((string) wp_json_encode($this->exporter->toArray($schema))),
-            $fields,
-            esc_attr(FormSubmissionService::HONEYPOT_KEY),
-            esc_html(self::stated($form->submitLabel(), __('Send', 'corex'))),
-            esc_attr(ValidationMessages::toAttribute()),
+            '<p class="corex-form__notice" role="alert">%s</p>',
+            esc_html(sprintf(
+                /* translators: 1: the form's name, 2: a list of method names. */
+                __('The form "%1$s" is not shown to visitors: its markup is missing %2$s.', 'corex'),
+                $form->label(),
+                implode(', ', $missing),
+            )),
         );
+    }
+
+    /**
+     * The token field of a form that asked to be protected, on a site with a provider to ask.
+     * Declaring the form is what loads the provider's script on this page, and on no other
+     * (spec 104, FR-011).
+     */
+    private function challengeField(Form $form): string
+    {
+        $protection = CodeFormProtection::of($form);
+
+        if ($this->challenge === null || $this->protectedForms === null || ! $this->challenge->isProtected($protection)) {
+            return '';
+        }
+
+        $action = CaptchaAction::forFlow($form->slug, isset($protection['action']) ? (string) $protection['action'] : null);
+        $this->protectedForms->declare($form->slug, $action);
+
+        return ChallengeTokenField::render($action);
     }
 
     /**

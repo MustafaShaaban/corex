@@ -24,6 +24,15 @@ use Corex\Support\Config\ConfigInterface;
  */
 final class CaptchaAssetController
 {
+    /**
+     * The provider's own script, asked to render nothing until it is told where and to call
+     * CoreX's function when it has loaded.
+     */
+    private const WIDGET_APIS = [
+        'turnstile' => 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=corexCaptchaWidgetReady',
+        'hcaptcha'  => 'https://js.hcaptcha.com/1/api.js?render=explicit&onload=corexCaptchaWidgetReady',
+    ];
+
     public function __construct(
         private readonly ProtectedFormRegistry $registry,
         private readonly ConfigInterface $config,
@@ -42,14 +51,24 @@ final class CaptchaAssetController
             return; // no protected form on this page — load nothing
         }
 
-        $driver = (string) $this->config->get('captcha.driver', 'none');
+        $driver  = (string) $this->config->get('captcha.driver', 'none');
         $siteKey = (string) $this->config->get('captcha.site_key', '');
-        if ($driver !== 'recaptcha' || $siteKey === '') {
+        if ($siteKey === '') {
             return; // provider not configured — the honeypot still guards, but there is nothing to load
         }
 
-        $base = dirname(__DIR__) . '/corex-captcha.php';
+        if ($driver === 'recaptcha') {
+            $this->enqueueRecaptcha($siteKey);
+        } elseif (isset(self::WIDGET_APIS[$driver])) {
+            $this->enqueueWidget($driver);
+        }
+    }
 
+    /**
+     * reCAPTCHA v3 shows nothing: its script asks for a token as the visitor submits.
+     */
+    private function enqueueRecaptcha(string $siteKey): void
+    {
         // The provider library. Registered once by handle, so multiple protected forms on one page
         // share a single script tag (FR-008).
         wp_enqueue_script(
@@ -62,7 +81,7 @@ final class CaptchaAssetController
 
         wp_enqueue_script(
             'corex-captcha-v3',
-            plugins_url('assets/corex-captcha-v3.js', $base),
+            plugins_url('assets/corex-captcha-v3.js', $this->pluginFile()),
             ['corex-recaptcha-v3-api'],
             COREX_CAPTCHA_VERSION,
             true,
@@ -70,12 +89,47 @@ final class CaptchaAssetController
 
         wp_localize_script('corex-captcha-v3', 'corexCaptchaV3', [
             'siteKey' => $siteKey,
-            'forms'   => $this->registry->all(),
             'i18n'    => [
                 // Translated server-side and handed to the buildless client, which has no
                 // wp-i18n runtime of its own.
                 'error' => __('We could not verify your submission. Please try again.', 'corex'),
             ],
         ]);
+    }
+
+    /**
+     * Turnstile and hCaptcha show a widget. CoreX's script is loaded first and the provider's
+     * after it, because the provider calls CoreX's function by name once it has loaded. The site
+     * key is not sent here: each form's challenge place carries it.
+     */
+    private function enqueueWidget(string $driver): void
+    {
+        wp_enqueue_script(
+            'corex-captcha-widget',
+            plugins_url('assets/corex-captcha-widget.js', $this->pluginFile()),
+            [],
+            COREX_CAPTCHA_VERSION,
+            true,
+        );
+
+        wp_localize_script('corex-captcha-widget', 'corexCaptchaWidget', [
+            'i18n' => [
+                'incomplete' => __('Please complete the challenge before sending.', 'corex'),
+                'error'      => __('We could not verify your submission. Please try again.', 'corex'),
+            ],
+        ]);
+
+        wp_enqueue_script(
+            'corex-captcha-' . $driver . '-api',
+            self::WIDGET_APIS[$driver],
+            ['corex-captcha-widget'],
+            null,
+            true,
+        );
+    }
+
+    private function pluginFile(): string
+    {
+        return dirname(__DIR__) . '/corex-captcha.php';
     }
 }

@@ -24,14 +24,8 @@ final class CaptchaDiagnostic
     public const NETWORK_ERROR  = 'network_error';
     public const NOT_APPLICABLE = 'not_applicable';
 
-    /** The keys are good and nothing uses them: no widget for this driver is placed on a form. */
-    public const NO_WIDGET      = 'no_widget';
-
     private const KEY_DRIVERS    = ['recaptcha', 'turnstile', 'hcaptcha'];
     private const SECRET_ERRORS  = ['invalid-input-secret', 'missing-input-secret'];
-
-    /** Drivers with a verifier and no browser side yet. Accepted keys for one protect nothing. */
-    private const WITHOUT_WIDGET = ['turnstile', 'hcaptcha'];
 
     private function __construct(
         public readonly string $kind,
@@ -64,7 +58,7 @@ final class CaptchaDiagnostic
             return self::ofKind(self::NETWORK_ERROR);
         }
 
-        return $verified === true ? self::accepted($driver) : self::ofKind(self::INVALID_KEYS);
+        return $verified === true ? self::ofKind(self::OK) : self::ofKind(self::INVALID_KEYS);
     }
 
     /**
@@ -90,7 +84,7 @@ final class CaptchaDiagnostic
             return self::ofKind(self::NETWORK_ERROR);
         }
         if (($body['success'] ?? false) === true) {
-            return self::accepted($driver);
+            return self::ofKind(self::OK);
         }
 
         $codes = (array) ($body['error-codes'] ?? $body['error_codes'] ?? []);
@@ -100,17 +94,7 @@ final class CaptchaDiagnostic
         }
 
         // A token-only error (our probe token) means the secret was accepted — keys are valid.
-        return self::accepted($driver);
-    }
-
-    /**
-     * The provider accepted the keys. Whether that means a form is protected depends on whether
-     * anything places the provider's widget. "Keys accepted" for one that nothing places told an
-     * operator their forms were challenged when they were not.
-     */
-    private static function accepted(string $driver): self
-    {
-        return self::ofKind(in_array($driver, self::WITHOUT_WIDGET, true) ? self::NO_WIDGET : self::OK);
+        return self::ofKind(self::OK);
     }
 
     private static function messageFor(string $kind): string
@@ -120,7 +104,6 @@ final class CaptchaDiagnostic
             self::MISSING_KEYS   => __('Add the site key and secret key for this driver.', 'corex'),
             self::INVALID_KEYS   => __('The captcha provider rejected the keys — double-check them.', 'corex'),
             self::NETWORK_ERROR  => __('Could not reach the captcha provider — check connectivity and try again.', 'corex'),
-            self::NO_WIDGET      => __('The keys were accepted, but CoreX does not place this provider’s widget on its forms yet, so it challenges nobody. Forms are still guarded by the trap field. Choose reCAPTCHA for a challenge.', 'corex'),
             default              => __('This driver needs no keys to test.', 'corex'),
         };
     }

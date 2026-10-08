@@ -145,10 +145,8 @@ final readonly class FlowBlockRenderer implements BlockRenderer
         );
         $this->protectedForms->declare($flow->slug, $action);
 
-        return sprintf(
-            '<input type="hidden" name="captcha_token" value="" class="corex-form__captcha-token" data-corex-captcha-action="%s" />',
-            esc_attr($action),
-        );
+        return ChallengeTokenField::render($action)
+            . ChallengeTokenField::widgetPlace($this->challenge->widgetProvider(), $this->challenge->siteKey());
     }
 
     private function successMessage(Flow $flow, FlowVersion $version): string

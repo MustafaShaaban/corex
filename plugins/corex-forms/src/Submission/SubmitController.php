@@ -103,7 +103,11 @@ final class SubmitController
      */
     private function sanitizeShape(array $schema): array
     {
-        $shape = [FormSubmissionService::HONEYPOT_KEY => 'sanitize_text_field'];
+        $shape = [
+            FormSubmissionService::HONEYPOT_KEY => 'sanitize_text_field',
+            // Kept for the service to check and drop. Without it a protected form's token never arrives.
+            SubmissionChallenge::TOKEN_KEY      => 'sanitize_text_field',
+        ];
 
         foreach ($schema as $name => $field) {
             $shape[$name] = match ($field->type) {
@@ -211,6 +215,13 @@ final class SubmitController
             $body['values'] = $response->value; // back-compat mirror (one release)
 
             return new WP_REST_Response($body, 200);
+        }
+
+        if ($response->value instanceof SubmissionRefusal) {
+            return new WP_REST_Response(
+                ResponseEnvelope::error($response->value->code, $response->reason)->toArray(),
+                $response->status,
+            );
         }
 
         $errors = is_array($response->value) ? $response->value : [];

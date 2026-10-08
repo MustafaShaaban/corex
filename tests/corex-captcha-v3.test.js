@@ -32,10 +32,7 @@ let executeCalls;
 
 beforeEach( () => {
 	executeCalls = [];
-	window.corexCaptchaV3 = {
-		siteKey: 'site-key',
-		forms: { contact: 'corex_form_contact' },
-	};
+	window.corexCaptchaV3 = { siteKey: 'site-key' };
 	window.grecaptcha = {
 		ready: ( cb ) => cb(),
 		execute: jest.fn( ( key, opts ) => {
@@ -147,4 +144,42 @@ it( 'shows a recoverable message and does not submit when the token cannot be fe
 	);
 	// The form is still usable — the busy lock cleared.
 	expect( form.dataset.corexCaptchaBusy ).toBeUndefined();
+} );
+
+// Spec 104 (FR-017): the action used to be looked up by the form's name, in a map with one
+// entry per name. A form built in the admin and a form defined in code can share a name.
+it( 'asks for the action its own token field names, when two forms share a name', async () => {
+	document.body.innerHTML = `
+		<form class="corex-form" data-corex-form="contact" id="flow">
+			<input type="hidden" name="captcha_token" value="" data-corex-captcha-action="lead_flow" />
+		</form>
+		<form class="corex-form" data-corex-form="contact" id="code">
+			<input type="hidden" name="captcha_token" value="" data-corex-captcha-action="lead_code" />
+		</form>
+	`;
+	loadScript();
+
+	document
+		.getElementById( 'code' )
+		.dispatchEvent(
+			new Event( 'submit', { cancelable: true, bubbles: true } )
+		);
+	await flush();
+
+	expect( executeCalls ).toEqual( [ 'lead_code' ] );
+} );
+
+it( 'leaves a form with no token field alone', async () => {
+	document.body.innerHTML = `<form class="corex-form" data-corex-form="newsletter"></form>`;
+	loadScript();
+
+	const submitted = new Event( 'submit', {
+		cancelable: true,
+		bubbles: true,
+	} );
+	document.querySelector( '.corex-form' ).dispatchEvent( submitted );
+	await flush();
+
+	expect( executeCalls ).toHaveLength( 0 );
+	expect( submitted.defaultPrevented ).toBe( false );
 } );

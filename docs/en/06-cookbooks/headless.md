@@ -32,6 +32,10 @@ curl -X POST https://corex.example.com/wp-json/corex/v1/forms/contact \
 The nonce + throttle + sanitize middleware still apply (Principle VII) — a headless client is only another
 caller of the same secured route.
 
+A form that is protected by a challenge expects the provider's token in the body, as `captcha_token`, obtained by
+the client from the provider for the action `corex_form_<slug>` (or the action the form states). Without a token the
+provider accepts, the answer is `422` with `"code": "challenge_failed"`.
+
 ## Example 2 — read site/structure via the WP 7.0 Abilities surface
 
 Corex registers read-only, capability-gated **abilities** (`corex/list-blocks`, `corex/site-info`) exposed in

@@ -56,6 +56,84 @@ The wording is printed as text: markup in it is shown, not interpreted. A submit
 but spaces is replaced by "Send", because a button needs a name. Translate the strings with your
 own text domain.
 
+## Protect a form
+
+A form defined in code is challenged by the site's provider when it says so:
+
+```php
+public function protection(): array
+{
+    return ['captcha' => 'on'];
+}
+```
+
+It is off by default. With it on, and reCAPTCHA configured under **CoreX → Settings → Captcha**:
+
+- the form carries a hidden `captcha_token` field, and its page loads the provider's script. A
+  page with no protected form loads nothing from the provider;
+- a submission's token is checked on the server before any answer is judged. One that fails is
+  answered `422` with `code: "challenge_failed"` and the message "We could not verify your
+  submission. Please try again.", which the form shows in its status line. Nothing is stored and
+  no listener runs;
+- the token is not stored and is not handed to a listener.
+
+Add `'action'` or `'threshold'` to the array to override what a scoring provider is asked to
+check; without them the action is `corex_form_<slug>` and the threshold is the site's. On a site
+with no provider configured, a protected form is accepted under the trap field, the security token
+and the rate limit, as every form is.
+
+With Turnstile or hCaptcha configured, the form also shows that provider's widget above its
+button, and a submission made before the visitor has passed is held in the browser with a
+message. A form that [draws itself](#draw-a-form-your-own-way) puts `$parts->challenge()` where
+the widget should appear; it prints nothing unless the form is protected by one of those two.
+
+## Draw a form your own way
+
+A form whose design is not the stock form's writes its own markup. Override `markup()`; it is
+handed the form's parts and returns HTML built from them. Returning `null`, the default, is the
+stock form.
+
+```php
+use Corex\Forms\Block\FormParts;
+
+public function markup(FormParts $parts): ?string
+{
+    return '<form ' . $parts->attributes(['class' => 'lead-card']) . '>'
+        . '<div class="lead-card__row" ' . $parts->fieldAttributes('phone') . '>'
+        . $parts->label('phone')
+        . '<input type="tel" class="lead-card__input" ' . $parts->control('phone') . ' />'
+        . $parts->error('phone')
+        . '</div>'
+        . $parts->field('note')
+        . $parts->hidden()
+        . '<footer>' . $parts->submit(['class' => 'lead-card__go']) . $parts->status() . '</footer>'
+        . '</form>';
+}
+```
+
+| Part | Gives | Required |
+|---|---|---|
+| `attributes(array $extra = [])` | The `<form>` element's attributes: the class the runtime binds, the endpoint, the security token, the schema, the messages and the form's wording. A `class` in `$extra` is added; nothing CoreX sets can be replaced | yes, on the `<form>` |
+| `hidden()` | The trap field, and the token field when the form [is protected](#protect-a-form) | yes, inside the form |
+| `status()` | Where the confirmation and the general error are announced | yes, inside the form |
+| `fieldAttributes($name)` | What a field's wrapper carries so its error can be found | on each field's wrapper |
+| `error($name)` | Where that field's error is written, inside its wrapper | for each field |
+| `control($name, array $extra = [])` | A hand-written control's `id`, `name`, `aria-describedby`, and `required` when it applies. You add the element, its `type` and your classes | for each control you write |
+| `challenge()` | Where Turnstile's or hCaptcha's widget is shown. Empty for any other form | when the form is protected by one of them |
+| `label($name)` | The field's label, tied to its control | |
+| `field($name)` | The whole field as the stock form draws it | |
+| `submit(array $extra = [])` | The submit button with the form's label. A `class` is added | |
+
+Every part is already escaped. Your own text is yours to escape.
+
+A form built this way validates in the browser, submits, shows each error in the place you put it,
+and is challenged, with no script of your own. Asking for a field the form does not have throws.
+
+If the markup leaves out `attributes()`, `hidden()` or `status()` (or `challenge()` when it is
+needed), the form is not shown to
+visitors: it would fail without saying so. Somebody who can edit the page sees a notice naming
+what is missing, and WordPress reports it as a developer notice.
+
 ## Field definition reference
 
 | Key | Values |

@@ -22,6 +22,7 @@ use Corex\Config\Export\ExportSheet;
 use Corex\Config\Export\ExportWriters;
 use Corex\Config\Export\PdfExportLayout;
 use Corex\Config\Export\PdfExportWriter;
+use Corex\Config\Export\PdfFonts;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -165,7 +166,7 @@ it('offers PDF among the formats only when it can be written', function () {
             return sys_get_temp_dir();
         }
     };
-    $with = new ExportWriters(static fn (): bool => false, new PdfExportWriter(pdfLayout(), $directory));
+    $with = new ExportWriters(static fn (): bool => false, new PdfExportWriter(pdfLayout(), $directory, new PdfFonts([])));
     $without = new ExportWriters(static fn (): bool => false);
 
     expect($without->available())->toBe(['xlsx', 'csv'])

@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Integration test: the admin says when a captcha provider has keys and challenges nobody.
+ * Integration test: what the admin lists as a gap for the site's captcha provider.
  *
- * Turnstile and hCaptcha can be chosen and given keys. No widget for either is placed on a form.
- * "Selected but its keys are missing" was the only captcha gap listed, so a site with the keys
- * saved read as protected. Reported 2026-10-07 from the first client site.
+ * Turnstile and hCaptcha could be chosen and given keys while no widget for either was placed on a
+ * form, and for a while the admin listed that as its own gap (reported 2026-10-07 from the first
+ * client site). Both widgets are placed now (spec 104), so the only captcha gap is missing keys.
  *
  * @package Corex\Tests\Integration\DataModels
  */
@@ -38,18 +38,13 @@ function gapsWithCaptcha(string $driver, string $secret): array
     return array_column($facts['gaps'], 'key');
 }
 
-it('lists a provider that has keys and no widget as a gap', function (string $driver) {
-    expect(gapsWithCaptcha($driver, 'a-secret'))->toContain('captcha.widget')
-        ->not->toContain('captcha.keys');
-})->with(['turnstile', 'hcaptcha']);
-
-it('lists the missing keys first, for a provider that has none', function () {
-    expect(gapsWithCaptcha('turnstile', ''))->toContain('captcha.keys')
-        ->not->toContain('captcha.widget');
+it('lists the missing keys, for a provider that has none', function () {
+    expect(gapsWithCaptcha('turnstile', ''))->toContain('captcha.keys');
 });
 
-it('lists neither for the provider whose widget is placed', function () {
-    expect(gapsWithCaptcha('recaptcha', 'a-secret'))
-        ->not->toContain('captcha.widget')
-        ->not->toContain('captcha.keys');
-});
+it('lists no captcha gap for a provider whose keys are saved', function (string $driver) {
+    expect(array_filter(
+        gapsWithCaptcha($driver, 'a-secret'),
+        static fn (string $key): bool => str_starts_with($key, 'captcha.'),
+    ))->toBe([]);
+})->with(['recaptcha', 'turnstile', 'hcaptcha']);

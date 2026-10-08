@@ -28,19 +28,23 @@ final readonly class FormChallengeContextFactory
 {
     private const DEFAULT_THRESHOLD = 0.3;
 
-    /** CoreX's own drivers that have a verifier and no browser side yet. */
-    private const DRIVERS_WITHOUT_WIDGET = ['turnstile', 'hcaptcha'];
+    /** The providers CoreX places a challenge for. A token is checked for any driver that is bound. */
+    private const PLACED_DRIVERS = ['recaptcha', 'turnstile', 'hcaptcha'];
+
+    /** Those of them whose challenge is a widget the visitor sees. reCAPTCHA v3 shows none. */
+    private const WIDGET_DRIVERS = ['turnstile', 'hcaptcha'];
 
     public function __construct(private ConfigInterface $config, private ClientAddress $client)
     {
     }
 
-    public function forContext(SubmissionPipelineContext $pipeline): ChallengeContext
+    /**
+     * @param array<string,mixed> $protection The form's declaration, as `FlowProtection::normalize()` answers.
+     */
+    public function forForm(string $slug, array $protection): ChallengeContext
     {
-        $protection = FlowProtection::normalize($pipeline->version->configuration->protection);
-
         $action = CaptchaAction::forFlow(
-            $pipeline->flow->slug,
+            $slug,
             isset($protection['action']) ? (string) $protection['action'] : null,
         );
 
@@ -72,15 +76,21 @@ final readonly class FormChallengeContextFactory
     }
 
     /**
-     * Whether the configured driver is one CoreX can verify a token for and places no widget for.
-     *
-     * Turnstile and hCaptcha can be chosen and given keys, and nothing on a form produces their
-     * token: no script is loaded and no token field is rendered. A submission that arrives without
-     * one has not failed a challenge. It was never set one.
+     * The provider whose widget a protected form shows, or '' when the provider shows none.
      */
-    public function driverPlacesNoWidget(): bool
+    public function widgetProvider(): string
     {
-        return in_array((string) $this->config->get('captcha.driver', 'none'), self::DRIVERS_WITHOUT_WIDGET, true);
+        $driver = (string) $this->config->get('captcha.driver', 'none');
+
+        return in_array($driver, self::WIDGET_DRIVERS, true) ? $driver : '';
+    }
+
+    /**
+     * The key the provider's widget is rendered with. It is public by design; the secret is not.
+     */
+    public function siteKey(): string
+    {
+        return (string) $this->config->get('captcha.site_key', '');
     }
 
     public function providerConfigured(): bool
@@ -88,7 +98,7 @@ final readonly class FormChallengeContextFactory
         $driver = (string) $this->config->get('captcha.driver', 'none');
         $secret = (string) $this->config->get('captcha.secret', '');
 
-        return $driver === 'recaptcha' && $secret !== '';
+        return in_array($driver, self::PLACED_DRIVERS, true) && $secret !== '';
     }
 
     private function globalThreshold(): float
