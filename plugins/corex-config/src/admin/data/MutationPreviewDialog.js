@@ -1,5 +1,6 @@
 import { Button, Modal } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
+import { workingProps } from '../components/working.js';
 
 function mutationLabel( operation ) {
 	const labels = {
@@ -60,9 +61,8 @@ export default function MutationPreviewDialog( {
 				</Button>
 				<Button
 					variant="primary"
-					isBusy={ Boolean( pending ) }
-					disabled={ Boolean( pending ) }
 					onClick={ apply }
+					{ ...workingProps( Boolean( pending ) ) }
 				>
 					{ __( 'Confirm and apply', 'corex' ) }
 				</Button>
