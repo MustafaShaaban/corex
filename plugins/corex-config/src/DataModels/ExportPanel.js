@@ -1,32 +1,43 @@
 import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
-import { Button, CheckboxControl } from '@wordpress/components';
+import { Button } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
-import { dataEndpoint } from '../admin/dataClient.js';
-import { dataModelsApi, downloadArtifact } from './dataModelsApi.js';
+import CorexTime from '../admin/components/CorexTime.js';
+import DataExportDialog from './DataExportDialog.js';
+import { dataExportRequests, downloadArtifact } from './dataModelsApi.js';
 import { actionSources } from './modelClient.js';
 import SourceSelect from './SourceSelect.js';
-import CorexSelect from '../admin/components/CorexSelect.js';
 
-function exportRunLabel( run ) {
+function scopeName( scope ) {
 	const scopes = {
-		all: __( 'All accessible', 'corex' ),
+		all: __( 'Everything', 'corex' ),
 		filtered: __( 'Current filters', 'corex' ),
 		selected: __( 'Selected rows', 'corex' ),
 	};
-	const states = {
-		queued: __( 'Queued', 'corex' ),
-		completed: __( 'Completed', 'corex' ),
-	};
-	return sprintf(
-		/* translators: 1: export ID, 2: scope, 3: format, 4: state. */
-		__( '#%1$d · %2$s · %3$s · %4$s', 'corex' ),
-		run.id,
-		scopes[ run.scope ] || run.scope,
-		run.format.toUpperCase(),
-		states[ run.state ] || run.state
-	);
+
+	return scopes[ scope ] || scope;
 }
 
+function stateName( state ) {
+	const states = {
+		queued: __( 'Not finished', 'corex' ),
+		completed: __( 'Ready', 'corex' ),
+	};
+
+	return states[ state ] || state;
+}
+
+/**
+ * The Export tab: a source to choose, the export dialog, and what was exported before.
+ *
+ * It was a second export form of its own that queued a job and said to refresh the history. It
+ * opens the dialog the Records tab opens (spec 103, D12c), over everything in the source, and its
+ * history reloads when an export was made.
+ *
+ * @param {Object}        props
+ * @param {Object}        props.config  The screen's `{restUrl, nonce}`.
+ * @param {Array<Object>} props.sources The sources this person can see.
+ * @return {import('react').ReactElement} The tab's panel.
+ */
 export default function ExportPanel( { config, sources } ) {
 	const candidates = useMemo(
 		() => actionSources( sources, 'export_csv' ),
@@ -34,95 +45,36 @@ export default function ExportPanel( { config, sources } ) {
 	);
 	const [ sourceKey, setSourceKey ] = useState( candidates[ 0 ]?.key || '' );
 	const source = sources.find( ( item ) => item.key === sourceKey );
-	const [ columns, setColumns ] = useState(
-		source?.fields.map( ( field ) => field.key ) || []
-	);
-	const [ format, setFormat ] = useState( 'csv' );
-	const [ acknowledged, setAcknowledged ] = useState( false );
+	const [ exporting, setExporting ] = useState( false );
 	const [ history, setHistory ] = useState( [] );
 	const [ notice, setNotice ] = useState( '' );
-	const [ busy, setBusy ] = useState( false );
+	const requests = useMemo(
+		() => dataExportRequests( config, sourceKey ),
+		[ config, sourceKey ]
+	);
 
 	const load = useCallback( async () => {
 		if ( ! sourceKey ) {
 			return;
 		}
 		try {
-			const payload = await dataModelsApi(
-				config,
-				'get',
-				dataEndpoint( config.restUrl, sourceKey, 'export' )
-			);
-			setHistory( payload.exports || [] );
+			setHistory( ( await requests.history() ).exports || [] );
+			setNotice( '' );
 		} catch ( error ) {
 			setNotice( error.message );
 		}
-	}, [ config, sourceKey ] );
+	}, [ requests, sourceKey ] );
 
 	useEffect( () => {
 		load();
 	}, [ load ] );
-	useEffect( () => {
-		setColumns( source?.fields.map( ( field ) => field.key ) || [] );
-		setFormat( 'csv' );
-		setAcknowledged( false );
-	}, [ source ] );
 
-	const personal = source?.fields.some(
-		( field ) =>
-			columns.includes( field.key ) &&
-			field.personal_data_class !== 'none'
-	);
-	const submit = async () => {
-		setBusy( true );
-		try {
-			await dataModelsApi(
-				config,
-				'post',
-				dataEndpoint( config.restUrl, sourceKey, 'export' ),
-				{
-					scope: 'all',
-					selected_ids: [],
-					query: {},
-					columns,
-					format,
-					personal_data_acknowledged: acknowledged,
-				}
-			);
-			setNotice(
-				__(
-					'Export queued. Refresh history when the job completes.',
-					'corex'
-				)
-			);
-			await load();
-		} catch ( error ) {
-			setNotice( error.message );
-		} finally {
-			setBusy( false );
-		}
-	};
 	const download = async ( run ) => {
-		setBusy( true );
 		try {
-			const payload = await dataModelsApi(
-				config,
-				'get',
-				dataEndpoint(
-					config.restUrl,
-					sourceKey,
-					'export-download',
-					run.id
-				)
-			);
-			const artifact = payload.artifact;
-			if ( artifact.encoding === 'base64' ) {
-				downloadArtifact( artifact );
-			}
+			downloadArtifact( ( await requests.download( run.id ) ).artifact );
+			setNotice( '' );
 		} catch ( error ) {
 			setNotice( error.message );
-		} finally {
-			setBusy( false );
 		}
 	};
 
@@ -143,7 +95,7 @@ export default function ExportPanel( { config, sources } ) {
 				<h2>{ __( 'Model exports', 'corex' ) }</h2>
 				<p>
 					{ __(
-						'Choose only the fields you need. Export history remains scoped to your account.',
+						'Export every record of a model here. To export the rows you ticked or the filters you set, use Export on the Records tab.',
 						'corex'
 					) }
 				</p>
@@ -153,69 +105,40 @@ export default function ExportPanel( { config, sources } ) {
 				value={ sourceKey }
 				onChange={ setSourceKey }
 			/>
-			<fieldset className="corex-data-models__columns">
-				<legend>{ __( 'Columns', 'corex' ) }</legend>
-				{ source?.fields.map( ( field ) => (
-					<CheckboxControl
-						key={ field.key }
-						label={ field.label }
-						checked={ columns.includes( field.key ) }
-						onChange={ ( checked ) =>
-							setColumns( ( current ) =>
-								checked
-									? [ ...current, field.key ]
-									: current.filter(
-											( key ) => key !== field.key
-									  )
-							)
-						}
-					/>
-				) ) }
-			</fieldset>
-			<CorexSelect
-				label={ __( 'Format', 'corex' ) }
-				value={ format }
-				onChange={ setFormat }
-				block
-				options={ [
-					{ label: __( 'CSV', 'corex' ), value: 'csv' },
-					...( source?.actions.export_xlsx?.visible
-						? [ { label: __( 'XLSX', 'corex' ), value: 'xlsx' } ]
-						: [] ),
-				] }
-			/>
-			{ personal && (
-				<CheckboxControl
-					label={ __(
-						'I acknowledge this export contains personal data.',
-						'corex'
+			<div>
+				<Button
+					variant="primary"
+					onClick={ () => setExporting( true ) }
+				>
+					{ sprintf(
+						/* translators: %s: the name of a data source, e.g. "Contacts". */
+						__( 'Export %s…', 'corex' ),
+						source?.label || ''
 					) }
-					checked={ acknowledged }
-					onChange={ setAcknowledged }
-				/>
-			) }
-			<Button
-				variant="primary"
-				isBusy={ busy }
-				onClick={ submit }
-				disabled={
-					busy || ! columns.length || ( personal && ! acknowledged )
-				}
-			>
-				{ __( 'Queue export', 'corex' ) }
-			</Button>
-			{ notice && <p role="status">{ notice }</p> }
+				</Button>
+			</div>
+			{ notice && <p role="alert">{ notice }</p> }
 			<div className="corex-data-models__history-head">
 				<h3>{ __( 'Export history', 'corex' ) }</h3>
-				<Button variant="secondary" onClick={ load } disabled={ busy }>
-					{ __( 'Refresh', 'corex' ) }
-				</Button>
 			</div>
 			{ history.length ? (
 				<ul className="corex-data-models__history">
 					{ history.map( ( run ) => (
 						<li key={ run.id }>
-							<span>{ exportRunLabel( run ) }</span>
+							<span>
+								{ sprintf(
+									/* translators: 1: what an export covered. 2: its format. 3: a number of records. 4: whether its file is ready. */
+									__( '%1$s · %2$s · %3$s · %4$s', 'corex' ),
+									scopeName( run.scope ),
+									String( run.format ).toUpperCase(),
+									Number(
+										run.exported_rows || run.record_count
+									).toLocaleString(),
+									stateName( run.state )
+								) }
+								{ ' · ' }
+								<CorexTime value={ run.created_at } />
+							</span>
 							{ run.state === 'completed' && (
 								<Button
 									variant="link"
@@ -229,6 +152,14 @@ export default function ExportPanel( { config, sources } ) {
 				</ul>
 			) : (
 				<p>{ __( 'No exports yet.', 'corex' ) }</p>
+			) }
+			{ exporting && source && (
+				<DataExportDialog
+					config={ config }
+					source={ source }
+					close={ () => setExporting( false ) }
+					onExported={ load }
+				/>
 			) }
 		</section>
 	);

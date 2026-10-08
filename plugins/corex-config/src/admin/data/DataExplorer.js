@@ -5,7 +5,7 @@ import { __ } from '@wordpress/i18n';
 import { viewState } from '../dataClient.js';
 import BulkBar from './BulkBar.js';
 import BulkEditDialog from './BulkEditDialog.js';
-import ExportDialog from './ExportDialog.js';
+import DataExportDialog from '../../DataModels/DataExportDialog.js';
 import MutationPreviewDialog from './MutationPreviewDialog.js';
 import Pagination from './Pagination.js';
 import QueryBar from './QueryBar.js';
@@ -161,11 +161,12 @@ export default function DataExplorer( { config } ) {
 				/>
 			) }
 			{ exporting && (
-				<ExportDialog
+				<DataExportDialog
+					config={ config }
 					source={ explorer.source }
-					state={ explorer.state }
+					selectedIds={ explorer.state.selected }
+					query={ explorer.state.query }
 					close={ () => setExporting( false ) }
-					create={ explorer.createExport }
 				/>
 			) }
 			{ explorer.state.preview && (

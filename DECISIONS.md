@@ -6996,6 +6996,93 @@ What was run:
 workbook was, in slice 3, and this is the same writer. The two screens were not looked at with
 "XLSX" now among their formats.
 
+## #266 — The Data export is the Submissions export's dialog, made from the same parts
+
+Date: 2026-10-08 · Spec: 103 (submissions inbox and exports), slice 7b · Status: Final
+
+FR-048 asks the Data export to meet what the Submissions export meets, and the story behind it
+says why: somebody who has used one should be able to use the other without learning it. The
+audit (DECISIONS #265) found two Data exports on the screen and that neither handed over a file.
+
+**The parts were lifted out, not copied.** The scopes, the columns, the format, the
+confirmation, the outcome and the footer were written inside the Submissions dialog. They are in
+`admin/components/export/ExportParts.js` now, and both dialogs are made from them. A second copy
+of that markup would have been a second place to drift. Each export supplies its own words: what
+its scopes cover, what a column is, "submissions" or "records".
+
+**So was the waiting.** `runExport()` asks for the export, takes its steps on request, reports how
+far it has got, and saves the file. It was the body of a click handler and had no test of its
+own. It has nine: saved, not started, failed in the job's words, failed without any, cancelled, a
+step that could not be asked for, a step that moved nothing, an export that does not finish, a
+file that cannot be fetched.
+
+**The Submissions dialog was moved onto them with its behaviour unchanged**, and its nine browser
+tests are the evidence: they passed before, after the styles moved, and after the parts moved.
+
+**The styles moved to the shell.** The dialog's rules lived in the Submissions inbox's stylesheet,
+which the Data screen does not load. They are in `corex-admin-shell.css`, beside the dialog they
+belong to.
+
+**The Export tab opens the dialog too.** It has no rows and no filters behind it, so there the
+dialog offers everything, counted, and nothing else. Its page keeps the history, which reloads
+when an export was made; the "Refresh" button is gone. A scope that cannot apply is left out there
+and shown disabled on the Records tab, where ticking a row would make it apply.
+
+**Columns keep the source's order**, whatever order they are ticked in. That order is the order of
+the file's columns, and ticking "Name" last should not move it to the end.
+
+**A refusal is said in the server's words.** "There is nothing to export." says more than "The
+export could not be started."
+
+**Found by the browser test: an export that stops when a record arrives.** The Export tab's test
+exports everything in a model. Run beside the inbox's tests, which submit forms, it stopped with
+"Bounded job counters are inconsistent.": the last batch held more records than were left of
+the count, and the job will not count past its total. The Submissions export cuts each batch to
+what is left; the Data export never did, before this spec or after slice 7a. It does now, and a
+unit test has a record arrive between two batches. An export holds what was counted when it was
+asked for.
+
+**Found by measuring the new dialog: a name smaller than its description.** A scope's name and a
+column's name took WordPress's 13px; the line under each was set to 14px. The Submissions dialog
+has been that way since v0.43.2. The spacing review of that dialog (DECISIONS #257) measured gaps
+and alignment and did not measure text sizes. The dialog has its own text size now, and the Data
+dialog's browser test asserts that a name is not smaller than its description.
+
+**Not done.** The Data dialog has no "Recent exports" inside it; the history is on the Export
+tab, as it was, without sizes, expiry or deletion (FR-048 does not list them). PDF is slice 6, for
+both. The wording functions of the Data dialog were written with their tests, not after a failing
+run of them.
+
+What was measured on the Data screen, and is asserted by its browser test:
+
+| Measured | Result |
+|---|---|
+| Between the dialog's parts | 24px, all of them |
+| A radio against the first line of its scope's name | level |
+| A checkbox against its column's name | level |
+| A choice's name against the line describing it | 14px and 14px; it was 13px and 14px |
+| The file type control | 40px tall |
+| On opening | focus is in the dialog |
+| After Escape | focus is on "Export records" |
+
+Looked at in dark, light, right-to-left and at 480px wide.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The arriving-record test, before the batch was cut | failed: "Bounded job counters are inconsistent." |
+| `DataExportServiceTest` | 16 passed |
+| `runExport.test.js` | 9 passed |
+| `dataExportState.test.js` | 31 passed |
+| Jest, `plugins/corex-config` | 396 passed |
+| `submissions-inbox.spec.js`, a browser, after each of the three moves | 9 passed each time |
+| `data-management.spec.js`, a browser | 8 passed, the two export tests among them: a workbook and a CSV saved from the Records tab, a CSV from the Export tab |
+| The Data, inbox and admin-controls specs together, so that forms are submitted during the export | 1 failed before the batch was cut; 26 passed after |
+
+**Not run.** A screen reader. The Export tab's page itself was not measured, only the dialog it
+opens.
+
 ## #267 — The shared-host package's project root is `wp-content/`, and Composer generates its autoloader there
 
 Date: 2026-10-08 · Spec: 061 (the shared-host `dist` builder) · Status: Final

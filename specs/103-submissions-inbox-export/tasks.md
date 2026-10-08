@@ -123,9 +123,9 @@ Slice 7a, the server:
 
 Slice 7b, the dialog:
 
-- [ ] T103 One dialog on `CorexDialog` for the Records tab and the Export tab, in the same order as the Submissions export (D12c)
-- [ ] T104 Playwright: one Data export end to end
-- [ ] T105 Rendered check, measured; guards; notes
+- [x] T103 One dialog on `CorexDialog` for the Records tab and the Export tab, in the same order as the Submissions export (D12c)
+- [x] T104 Playwright: one Data export end to end
+- [x] T105 Rendered check, measured; guards; notes
 
 ## Dependencies
 
