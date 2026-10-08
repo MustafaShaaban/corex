@@ -58,7 +58,7 @@ is delivered in seven slices, one pull request each:
 | 6 | PDF | not started; needs a spike on a library that renders Arabic |
 | 7a | The Data export: the audit, and its file and flow on the server | done, in v0.43.4 (DECISIONS #265). The audit found two export surfaces, neither handing over a file, and that Excel was never reachable |
 | 7b | The Data export: one dialog for both surfaces | done (DECISIONS #266), unreleased. It is the Submissions export's dialog, from shared parts. Found on the way: in both dialogs a choice's name was a pixel smaller than the line describing it |
-| — | The Data export of Form submissions: each answer under its column, and a ticked row with its summary | done (DECISIONS #270), unreleased. Found in a real export after 7b: every answer's column was empty. A source now hands an export its own rows (`ExportableDataSource`); a client's own exportable source has to implement it, which is under Client impact |
+| — | The Data export of Form submissions: each answer under its column, and a ticked row with its summary | done (#290, DECISIONS #270), unreleased. Found in a real export after 7b: every answer's column was empty. A source now hands an export its own rows (`ExportableDataSource`); a client's own exportable source has to implement it, which is under Client impact |
 
 Two readings in the spec are the owner's to overrule: that opening a submission marks it read
 (built that way in slice 4, with "Mark unread" in the pane's header), and that "signed off with
