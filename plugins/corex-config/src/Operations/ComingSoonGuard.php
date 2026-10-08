@@ -100,6 +100,7 @@ final class ComingSoonGuard
         wp_dequeue_script('admin-bar');
         add_filter('body_class', [$this, 'servedBodyClasses']);
         add_action('wp_enqueue_scripts', [$this, 'enqueuePageAssets']);
+        ComingSoonHead::quiet();
     }
 
     /**

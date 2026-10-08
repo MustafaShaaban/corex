@@ -403,9 +403,10 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   left out of a package now (DECISIONS #280). Third-party `README.md` and `composer.json` files
   and `vendor/composer/installed.json` are not, and the package ships no server rule, because
   the host owns its `.htaccess`. Nothing tells an operator to refuse requests into it.
-- **From the audit of the first site on shared hosting, not done:** the coming-soon page prints
-  WordPress's generator tag, the RSD link, feed links and the emoji script; the REST index lists
-  every `corex/v1` route to anybody; there is no setting for security headers.
+- **From the audit of the first site on shared hosting, not done:** the REST index lists every
+  `corex/v1` route to anybody (each answers 401 or 403); there is no setting for security
+  headers. The coming-soon page's head is fixed; what its browser test asserts was run in CI
+  and not locally, where the spec needs fixtures the whole suite sets up.
 - **Turnstile and hCaptcha were not submitted through on a real site.** Their widget is placed
   and a tokenless submission is refused (DECISIONS #278). What was seen is each provider's own
   script rendering into a bare form on a local page, and Turnstile's token cycle there. Nobody
