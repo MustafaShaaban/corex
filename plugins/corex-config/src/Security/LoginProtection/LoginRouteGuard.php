@@ -46,6 +46,12 @@ final class LoginRouteGuard
     private string $requestPath = '';
 
     /**
+     * Whether this is an admin request that will be answered as a missing page, and has not been
+     * answered yet. While it is, nothing is told where the login is.
+     */
+    private bool $sealed = false;
+
+    /**
      * @param bool $unguarded The documented break-glass (COREX_LOGIN_UNGUARD in wp-config.php),
      *                        resolved by the container. Injected rather than read from the
      *                        constant here so recovery is testable: the previous test passed
@@ -93,6 +99,9 @@ final class LoginRouteGuard
         // in place it redirected them to the *custom slug* instead — handing the secret to anyone
         // who guessed /login, which is the first thing anyone guesses (DECISIONS #140).
         remove_action('template_redirect', 'wp_redirect_admin_locations', 1000);
+
+        // The first moment the login state is knowable, and before anything core hooks there.
+        add_action('setup_theme', [$this, 'sealHiddenAdminRequest'], 1);
     }
 
     /**
@@ -168,20 +177,43 @@ final class LoginRouteGuard
             && rtrim($path, '/') !== '/wp-admin/options.php';
     }
 
+    /**
+     * Keep the slug from an admin request that is going to be hidden, until it is answered.
+     *
+     * The request is answered on wp_loaded, and core does not always wait that long. The
+     * Customizer checks the visitor on setup_theme and calls auth_redirect(); that redirect was
+     * built from the login URL, which is rewritten to the slug, so /wp-admin/customize.php handed
+     * the hidden address to anyone who asked for it (reproduced 2026-10-08, with the report in
+     * {@see isRegistrationForwarder()}).
+     *
+     * From here until the 404 is rendered the URL filters leave the default address alone, so
+     * anything else that bounces this request to the login early sends it to wp-login.php, which
+     * is hidden too. The Customizer's own check is taken off, so this request reaches the 404
+     * every other hidden admin address gets. The rewriting is back on for the 404 itself: a real
+     * missing page links to the slug wherever the theme links to the login, and this one must not
+     * differ.
+     */
+    public function sealHiddenAdminRequest(): void
+    {
+        global $wp_customize;
+
+        $this->sealed = $this->isHiddenAdminRequest();
+
+        if ($this->sealed && is_object($wp_customize)) {
+            remove_action('setup_theme', [$wp_customize, 'setup_theme']);
+        }
+    }
+
     /** Act on the decision {@see captureRequest()} already made. */
     public function serveRequest(): void
     {
+        $this->sealed = false;
+
         if ($this->action === self::HIDE) {
             $this->render404();
         }
 
-        if ($this->hidesAdminArea(
-            is_admin(),
-            is_user_logged_in(),
-            function_exists('wp_doing_ajax') && wp_doing_ajax(),
-            $this->script($this->requestPath),
-            $this->requestPath,
-        )) {
+        if ($this->isHiddenAdminRequest()) {
             $this->render404();
         }
 
@@ -384,7 +416,7 @@ final class LoginRouteGuard
     /** Point a URL that references the default login at the custom slug instead. */
     public function filterLoginUrl(mixed $url): mixed
     {
-        if (! is_string($url) || ! str_contains($url, 'wp-login.php')) {
+        if ($this->sealed || ! is_string($url) || ! str_contains($url, 'wp-login.php')) {
             return $url;
         }
 
@@ -412,7 +444,7 @@ final class LoginRouteGuard
      */
     public function filterSiteUrl(mixed $url, mixed $path = ''): mixed
     {
-        if (! is_string($url) || ! is_string($path) || ! str_contains($path, 'wp-login.php')) {
+        if ($this->sealed || ! is_string($url) || ! is_string($path) || ! str_contains($path, 'wp-login.php')) {
             return $url;
         }
 
@@ -467,9 +499,42 @@ final class LoginRouteGuard
 
     private function isDefaultLoginPath(string $path): bool
     {
-        $trimmed = rtrim($path, '/');
+        // A server that is blind to case runs /WP-LOGIN.PHP as the same file.
+        $path = strtolower($path);
 
-        return str_contains($path, 'wp-login.php') || $trimmed === '/wp-login';
+        return str_contains($path, 'wp-login.php')
+            || rtrim($path, '/') === '/wp-login'
+            || $this->isRegistrationForwarder($path);
+    }
+
+    /**
+     * Addresses that exist only to send a visitor on to the login.
+     *
+     * On a single site wp-signup.php does nothing but redirect to the registration address, and
+     * core's canonical redirect does the same for the long-gone wp-register.php. Both redirects
+     * are rewritten to the slug, so either address handed the hidden login to anyone who asked for
+     * it (reported from a production site, 2026-10-08). Nothing core builds links to them on a
+     * single site. On a network wp-signup.php is the public sign-up page, and wp-register.php
+     * forwards to it, so both are left alone there.
+     */
+    private function isRegistrationForwarder(string $lowercasePath): bool
+    {
+        // By segment, so an install in a subdirectory and a path after the file name both match.
+        $forwards = array_intersect(['wp-signup.php', 'wp-register.php'], explode('/', $lowercasePath)) !== [];
+
+        return $forwards && ! is_multisite();
+    }
+
+    /** Whether the admin area is hidden from whoever is asking. Needs the login state. */
+    private function isHiddenAdminRequest(): bool
+    {
+        return $this->hidesAdminArea(
+            is_admin(),
+            is_user_logged_in(),
+            function_exists('wp_doing_ajax') && wp_doing_ajax(),
+            $this->script($this->requestPath),
+            $this->requestPath,
+        );
     }
 
     private function requestPath(): string

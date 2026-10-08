@@ -55,6 +55,35 @@ it('hides the default login endpoint from logged-in visitors too', function () {
     expect($guard->entryPointFor('/wp-login.php', isAdmin: false))->toBe('hide');
 });
 
+// Reported from a production site on 2026-10-08: with the login hidden, /wp-signup.php answered
+// 302 to the hidden address. On a single site that file only forwards to the registration URL,
+// which is rewritten to the slug; core's canonical redirect does the same for wp-register.php.
+it('hides the addresses that only forward a visitor to the login, on a single site', function (string $path) {
+    Functions\when('is_multisite')->justReturn(false);
+
+    expect((new LoginRouteGuard(routePolicy()))->entryPointFor($path, isAdmin: false))->toBe('hide');
+})->with([
+    'the sign-up file' => '/wp-signup.php',
+    'the sign-up file with a path after it' => '/wp-signup.php/anything',
+    'the sign-up file in capitals, as a case-blind server runs it' => '/WP-SIGNUP.PHP',
+    'the old registration file' => '/wp-register.php',
+]);
+
+it('leaves the sign-up page of a network alone: there it is the public page', function () {
+    Functions\when('is_multisite')->justReturn(true);
+    $guard = new LoginRouteGuard(routePolicy());
+
+    expect($guard->entryPointFor('/wp-signup.php', isAdmin: false))->toBe('pass')
+        ->and($guard->entryPointFor('/wp-register.php', isAdmin: false))->toBe('pass');
+});
+
+it('leaves the forwarding addresses alone when default-endpoint hiding is off', function () {
+    Functions\when('is_multisite')->justReturn(false);
+    $guard = new LoginRouteGuard(routePolicy(['blockDefaultEndpoints' => false]));
+
+    expect($guard->entryPointFor('/wp-signup.php', isAdmin: false))->toBe('pass');
+});
+
 it('serves the custom slug', function () {
     $guard = new LoginRouteGuard(routePolicy(['customSlug' => 'secure-entry']));
 

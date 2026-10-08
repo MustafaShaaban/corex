@@ -262,6 +262,60 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 		expect( login ).toBe( control );
 	} );
 
+	// Reported from a production site on 2026-10-08, and two more found by probing: signed out,
+	// with the login hidden, each of these answered with a redirect to the hidden address. On a
+	// single site wp-signup.php only forwards to the registration URL, core's canonical redirect
+	// does the same for wp-register.php, and the Customizer calls auth_redirect() before the
+	// guard answers. Every one of those URLs is rewritten to the slug.
+	test( 'no well-known address forwards a signed-out visitor to the hidden login', async ( {
+		request,
+	} ) => {
+		const control = await (
+			await request.get( CONTROL, { maxRedirects: 0 } )
+		).text();
+
+		for ( const path of [
+			'/wp-signup.php',
+			'/wp-register.php',
+			'/wp-admin/customize.php',
+		] ) {
+			const response = await request.get( path, { maxRedirects: 0 } );
+
+			expect( response.status(), path ).toBe( 404 );
+			expect( response.headers().location, path ).toBeUndefined();
+		}
+
+		// The two that are not in the admin area are the page that was never there, exactly.
+		for ( const path of [ '/wp-signup.php', '/wp-register.php' ] ) {
+			expect(
+				await ( await request.get( path, { maxRedirects: 0 } ) ).text(),
+				path
+			).toBe( control );
+		}
+
+		// Whatever the rest answer, none says where the login is. wp-activate.php and the two
+		// installer files run without plugins, so CoreX cannot hide them; they are here to hold
+		// that they name the default address and never the hidden one.
+		for ( const path of [
+			'/wp-login.php',
+			'/wp-activate.php',
+			'/wp-admin/',
+			'/wp-admin/index.php',
+			'/wp-admin/profile.php',
+			'/wp-admin/install.php',
+			'/wp-admin/upgrade.php',
+			'/login',
+			'/admin',
+			'/dashboard',
+		] ) {
+			const response = await request.get( path, { maxRedirects: 0 } );
+
+			expect( response.headers().location ?? '', path ).not.toContain(
+				'corex-login'
+			);
+		}
+	} );
+
 	test( 'the hidden admin 404 carries the same emoji styles a real 404 does', async ( {
 		request,
 	} ) => {
