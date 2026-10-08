@@ -117,9 +117,10 @@ Five readings in the spec are the owner's to overrule; they are under its Assump
 ([`specs/107-release-from-admin/spec.md`](specs/107-release-from-admin/spec.md)). It is the first
 of three the owner outlined for the client site that moved to shared hosting (release from the
 admin; data kinds and a safe push; pulling production data down). Nothing is planned or built. It
-ends with three questions that are his: whether it must work where CoreX is not installed yet,
-how much of a failed release's database changes going back undoes, and whether a site's own code
-is always part of the package.
+ends with four questions that are his: whether it must work where CoreX is not installed yet,
+what going back does with a failed release's database changes, whether a site's own code is
+always part of the package, and whether CoreX should back up and restore a whole site at all,
+which he asked for and the outline he accepted recommends against.
 
 Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
 deferred through WP-Cron on a site that has no Action Scheduler, and the queue runs whichever

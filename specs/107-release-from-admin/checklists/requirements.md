@@ -31,7 +31,7 @@
 
 ## Notes
 
-- The one open item: three questions under "Open questions for the owner" stand in for
+- The one open item: four questions under "Open questions for the owner" stand in for
   clarification markers. Each changes scope, none has a default the recorded outline gives, and
   the spec says which reading it is written to. It is not ready for `/speckit-plan` until they
   are answered.
@@ -39,5 +39,7 @@
   its first draft were wrong and were corrected against the source before this was committed:
   CoreX does apply a release's schema changes without a command line (`SchemaSelfHeal`, on the
   first admin page or cron run), and a release holds thirteen add-ons.
-- The outline this spec is the first part of was relayed, and its exact wording was not to hand.
-  Anything beyond the relayed summary is under Assumptions.
+- The outline arrived in full from the hosting session after the first draft and the spec was
+  rewritten to it: what the owner said, what was recommended and accepted, and the one
+  recommendation (no general backup) that he was not asked to agree to in those words, now the
+  fourth question. The host's facts are that session's, not measured here.

@@ -4,18 +4,40 @@
 
 **Created**: 2026-10-08
 
-**Status**: Draft. Not planned and not built. Three questions under "Open questions for the owner"
+**Status**: Draft. Not planned and not built. Four questions under "Open questions for the owner"
 change its scope and are his to answer before a plan is written.
 
 **Input**: The owner's instruction of 2026-10-08, "continue with the muva and peregos asked", and
-the outline he agreed the same day with the session moving the first client site to shared
-hosting. That outline, as it was recorded when it was relayed: (A) install or update a release
-from the admin: upload the package, verify it, swap it in, migrate in PHP, keep the previous
-release; (B) data kinds declared "built in development" or "born in production", so a push never
-writes submissions or leads; (C) pull production data down, optionally anonymised; no general
-backup plugin; in that order. **This spec is A only.** B and C get their own specs. The outline's
-exact wording was asked for again while this was written and had not arrived; where this spec
-says more than the recorded outline, it says so under Assumptions.
+the outline that reached this spec from the session moving the first client site to shared
+hosting. That session sent the outline in full after the first draft was written; this draft
+follows it.
+
+**What the owner asked for, close to his words** (as that session reports them): CoreX should
+take the database backup and give "the full backup and restore behaviour", better than backup
+plugins, because it is ours and understands the framework; it should make migrating a database
+easier; if production has new form submissions a push must not remove them; WordPress posts and
+post types migrate too.
+
+**What was recommended to him in reply, and he accepted with "ok let's do it"**, three parts in
+this order, each useful alone:
+
+- **A. Install or update a release from the admin**: upload the shared-host package, check it
+  against its own description, maintenance on, swap the release-owned folders, run the database
+  migrations from the admin, keep the previous release to go back to. Never overwrite
+  `wp-config.php`, `.htaccess` or uploads.
+- **B. Data kinds and a safe push**: each kind of data flows one way. Built in development
+  (pages, templates, patterns, form definitions, settings) is written by a push; born in
+  production (submissions, leads, the mail log, subscribers, accounts) never is.
+- **C. Pull production data down**, personal data optionally anonymised.
+
+**This spec is A only.** B and C get their own specs.
+
+**One thing in that reply is not his decision yet.** He asked for backup and restore "better than
+backup plugins". The reply recommended the opposite for disaster recovery: leave it to a backup
+plugin or the host, because a backup inside the framework cannot rescue a broken framework, and
+have CoreX snapshot only its own tables before it changes them. He did not object; he was not
+asked to agree to it in those words. This spec is written to the recommendation and lists it as
+the fourth open question.
 
 ## Why this spec exists
 
@@ -31,7 +53,10 @@ from what that move reported:
   (`SchemaSelfHeal`), so a release that adds a table does complete on a host with no command
   line. But it is not a step of the release: until that first admin page or cron run, visitors
   are served new code on the old schema; nobody is shown what changed; and a change that fails
-  is found later, by its symptoms. `wp corex migrate`, which does report, needs a shell.
+  is found later, by its symptoms. `wp corex migrate`, which does report, needs a shell. The
+  hosting session reported this differently, as a release that "cannot be finished on the
+  server". That is the reading of the command; the code says the schema follows on its own. It
+  has not been watched happening on that host.
 - **The in-admin updater CoreX has is not this.** It tells WordPress that one plugin,
   `corex-core`, has a newer version at a URL. A release is four plugins, thirteen add-ons, a
   theme, the command-line package and one shared `vendor/`, all at one version; replacing one of
@@ -46,6 +71,32 @@ from what that move reported:
 
 The gap is not "an updater". It is that the last step of a release, on the host, is done by hand
 with no check and no way back.
+
+## The host this is written for
+
+One shared hosting account serves two client sites. From the hosting session, measured or read
+there unless it says otherwise:
+
+- No SSH, no terminal, no Git, and that is the host's policy on every shared plan. Cron exists,
+  and the owner's rule is no new cron jobs: nothing here may depend on one.
+- A 29.7MB zip of 7,340 entries was uploaded through the host's file manager and unpacked there.
+  PHP's upload, memory and time limits were not read, so an upload through the admin cannot
+  assume them.
+- A burst of requests is answered with an HTML challenge page, status 200, for a short while.
+  Anything that makes many requests in a row has to pace itself and read an unexpected HTML body
+  as "wait and retry", not as an answer.
+- The primary site's web root also holds the second site's folder. Anything that replaces or
+  clears folders must leave what it does not own alone.
+- On the production site `DISALLOW_FILE_MODS` is not set. Whether WP-Cron's loopback request
+  works there is unverified.
+- 300,000 files and 100GB for the account; the previous release kept for going back counts
+  against the first.
+- Sessions were refused file removal and DNS changes on this host, and the owner did those by
+  hand. One upload and one button, by him, fits. Work in the file manager does not.
+
+A bash script written for this site before the move does A's steps by hand order
+(`sites/muva/deploy/server/apply-release.sh` in that client's repository). It is the reference
+for the order of steps and for what is refused. It was not read for this draft.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -237,7 +288,9 @@ to the release that caused it.
 - **FR-020**: Installing MUST replace the framework and the client's own code with the package's,
   as a whole: the site MUST never serve from a mixture of two releases.
 - **FR-021**: Installing MUST NOT change uploads, the database's content, the site's
-  configuration file, or anything the package does not hold.
+  configuration file, its `.htaccess`, or anything the package does not hold. A folder in the
+  web root that the release does not own, another site's among them, MUST be left exactly as it
+  is.
 - **FR-022**: An installation cut off part-way MUST leave the site as one release or the other,
   and the screen MUST say which when it is next opened.
 - **FR-023**: Only one installation may run at a time.
@@ -250,7 +303,13 @@ to the release that caused it.
   applied as part of the installation, before the site is served by the new release, and listed.
   They MUST NOT be left to the first admin page or scheduled run.
 - **FR-031**: Database changes MUST complete on a host with a short request time limit, across
-  requests if they must, showing progress.
+  requests if they must, showing progress. Neither they nor any other step may depend on a
+  scheduled job.
+- **FR-034**: Before a release changes CoreX's own tables, a copy of those tables as they were
+  MUST be kept with the previous release. This is not a backup of the site.
+- **FR-025**: Every step that makes more than one request (an upload in parts, an installation
+  in stages) MUST pace itself, and MUST treat an answer that is not its own as a reason to wait
+  and try again, not as success or as failure.
 - **FR-032**: A failed change MUST be named, MUST stop the release being reported as installed,
   and MUST leave the previous release available.
 - **FR-033**: On a network, every site's database MUST be brought to the release.
@@ -281,7 +340,7 @@ to the release that caused it.
   site's repository built; a host that pulls a release on its own moves ahead of its repository,
   which the deployment guide already forbids.
 - **FR-061**: This MUST NOT back up or restore the database's content or the uploads. That is
-  not a release, and the outline rules out a general backup tool.
+  not a release. Whether CoreX should do it at all is the fourth open question.
 
 ### Key Entities
 
@@ -322,14 +381,24 @@ Each changes what is built. They are not answered by the recorded outline.
    small plugin.
 2. **How much of a failed release's database changes should going back undo?** Files can always
    be put back. A change that added a column can be reversed; one that changed or removed data
-   cannot be, without a copy of the data, and the outline rules out a general backup. This spec
-   is written to reverse what declares itself reversible and to say plainly what is not
-   (FR-041). The alternative is to copy the affected tables before each release, which is a
-   bounded backup the outline may or may not have meant to exclude.
+   cannot be, without a copy of the data. The reply the owner accepted has CoreX "snapshot its
+   own tables before it changes anything", and this spec keeps that copy (FR-034). What is not
+   decided is what going back does with it: put those tables back as they were, losing whatever
+   was written to them since (a submission that arrived after the release), or leave the data
+   and reverse only what declares itself reversible. This spec is written to the second, and to
+   saying plainly what is not reversed (FR-041).
 3. **Is the client's own code part of the package, always?** A package built for a client
    (`build:dist -- --client=<name>`) holds the framework and that site's plugin and theme
    together, and this spec replaces them together (FR-020). If a site's code should be releasable on its own, between framework releases, that
    is a second kind of package.
+
+4. **Backup and restore.** You asked for "the full backup and restore behaviour", better than
+   backup plugins. The reply you accepted with "ok let's do it" recommended against CoreX being
+   the disaster-recovery backup, and it is not clear that was what you were agreeing to. This
+   spec follows the recommendation: CoreX copies its own tables before a release and nothing
+   else, and a backup plugin or the host stays responsible for the site. If you want CoreX to
+   back up and restore the whole site, that is a feature of its own and not part of installing a
+   release.
 
 ## Assumptions
 
@@ -348,8 +417,11 @@ Written without asking; each is the owner's to overrule.
   with its PDF fonts pruned (the changelog's measurement), before a site's own files.
 - **"Those who may manage the site"** is a CoreX ability of its own, granted to administrators,
   not `manage_options` alone.
-- **The way back that does not need the admin** is a file the owner renames or a link he was
-  given, not a command.
+- **The way back that does not need the admin** is a link he was given before he installed,
+  not a command and not work in the host's file manager, which is the kind of step the move to
+  this host showed does not fit.
+- **The host's limits are found out, not assumed.** PHP's upload, memory and time limits there
+  were not read, so the screen reads them and sizes its uploads and its stages to them.
 
 ## Out of Scope
 
