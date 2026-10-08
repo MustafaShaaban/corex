@@ -113,6 +113,14 @@ is the one spec issues #248 and #264 asked for, and both are closed. Four slices
 
 Five readings in the spec are the owner's to overrule; they are under its Assumptions.
 
+**Spec 107, a release installed from the admin on a host with no command line, is a draft**
+([`specs/107-release-from-admin/spec.md`](specs/107-release-from-admin/spec.md)). It is the first
+of three the owner outlined for the client site that moved to shared hosting (release from the
+admin; data kinds and a safe push; pulling production data down). Nothing is planned or built. It
+ends with three questions that are his: whether it must work where CoreX is not installed yet,
+how much of a failed release's database changes going back undoes, and whether a site's own code
+is always part of the package.
+
 Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
 deferred through WP-Cron on a site that has no Action Scheduler, and the queue runs whichever
 dispatcher is bound. A real cron run was not observed; the test fires the hook itself.
