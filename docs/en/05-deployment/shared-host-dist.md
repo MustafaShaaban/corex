@@ -29,7 +29,31 @@ npm run build:dist -- --client=acme --dry-run
 
 # keep every font the PDF library ships (see below)
 npm run build:dist -- --client=acme --pdf-fonts=all
+
+# also write the package as one zip, beside dist/
+npm run build:dist -- --client=acme --zip
 ```
+
+### The zip, and what a package says about itself
+
+`--zip` writes `corex-release-<client or "framework">-<version>-<build time>.zip` in the repository root, with
+the package's contents at the zip's root. Writing it takes longer than the build (about a minute and a half for
+the framework alone). It is the one part of the builder that needs `npm ci` run in the repository root; without
+it the package is still built and verified, and the command says what the zip needs.
+
+`corex-release.json`, at the package's root, describes the package (`schema: 2`):
+
+| Key | Says |
+|---|---|
+| `corex_version`, `built_at`, `client` | which release, when it was built, and for which site (`null` for the framework alone) |
+| `requires` | the lowest `php` and `wordpress` the release runs on, from `corex-core.php`'s headers |
+| `wordpress_version` | the WordPress the package was built with, or `null` when it holds none |
+| `release_paths` | the folders the release owns: each `wp-content/plugins/<name>`, each `wp-content/themes/<name>`, `wp-content/packages`, `wp-content/vendor` |
+| `contents` | for each of those, its `files`, its `bytes`, and a `hash` of both |
+| `plugins`, `themes`, `autoload`, `pdf_fonts` | as before |
+
+`verify:dist` measures the folders again and refuses a package that is no longer what it says. Change a package
+before it is built, not after.
 
 ### The PDF library's fonts
 

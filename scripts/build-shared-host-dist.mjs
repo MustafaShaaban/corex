@@ -42,6 +42,7 @@ import {
 	statSync,
 } from 'node:fs';
 import { join, basename, relative, sep } from 'node:path';
+import { describeFolder } from './release-content-hash.mjs';
 import {
 	PACKAGE_ROOT,
 	planAutoload,
@@ -104,6 +105,9 @@ const SOURCE_DESCRIPTIONS = [ 'README.md', 'composer.json', 'package.json' ];
  * Greek, Cyrillic and Hebrew letters, and the two the library writes Arabic-script languages in.
  */
 const LEAN_PDF_FONTS = [ /^DejaVu/i, /^XB Riyaz/i, /^Lateef/i ];
+
+/** The version of what `corex-release.json` says. A site reads this one and refuses any other. */
+const MANIFEST_SCHEMA = 2;
 
 /** What `--pdf-fonts` may be: the few fonts above, or every font the library ships. */
 const PDF_FONT_SETS = [ 'lean', 'all' ];
@@ -248,11 +252,14 @@ export function buildPlan( cfg ) {
 
 	const manifest = {
 		name: 'corex-shared-host-dist',
+		schema: MANIFEST_SCHEMA,
 		built_at: new Date().toISOString(),
 		corex_version: cfg.version ?? readCorexVersion( repoRoot ),
 		client: client ?? null,
+		requires: readRequirements( repoRoot ),
 		plugins: pluginNames.sort(),
 		themes: themeNames.sort(),
+		release_paths: releasePaths( copies, distDir ),
 		autoload: autoload.manifest,
 		pdf_fonts: pdfFonts,
 		excludes: DEV_EXCLUDES,
@@ -260,6 +267,89 @@ export function buildPlan( cfg ) {
 	};
 
 	return { copies, autoload, manifest, warnings };
+}
+
+/**
+ * The folders a release owns, relative to the package: each plugin and theme it packages, the
+ * command-line package, and the vendor/ Composer generates beside them. A site that installs the
+ * package from its admin replaces these and nothing else (spec 107).
+ *
+ * @param {Array<{to:string,kind:string}>} copies  The copy plan.
+ * @param {string}                         distDir Where the package is written.
+ * @return {string[]} The paths, with forward slashes, sorted.
+ */
+function releasePaths( copies, distDir ) {
+	const owned = copies
+		.filter( ( op ) => op.kind !== 'core' )
+		.map( ( op ) =>
+			relative( distDir, op.to )
+				.split( sep )
+				.join( '/' )
+				// The command-line package is one folder of `packages/`, and the release owns all of it.
+				.replace( /^(wp-content\/packages)\/.*$/, '$1' )
+		);
+
+	return [ ...new Set( [ ...owned, `${ PACKAGE_ROOT }/vendor` ] ) ].sort();
+}
+
+/**
+ * What the release needs to run, from the core plugin's header: the one place it is stated.
+ *
+ * @param {string} repoRoot The repository root to read the plugin from.
+ * @return {{php:string|null, wordpress:string|null}} The lowest PHP and WordPress it runs on.
+ */
+function readRequirements( repoRoot ) {
+	let header = '';
+	try {
+		header = readFileSync(
+			join( repoRoot, 'plugins', 'corex-core', 'corex-core.php' ),
+			'utf8'
+		);
+	} catch {
+		// Stated as unknown below, and refused by a site: a package must say what it needs.
+	}
+	const stated = ( label ) =>
+		header.match( new RegExp( `${ label }:\\s*([0-9.]+)` ) )?.[ 1 ] ?? null;
+
+	return {
+		php: stated( 'Requires PHP' ),
+		wordpress: stated( 'Requires at least' ),
+	};
+}
+
+/**
+ * The WordPress a package was built with, when it holds one.
+ *
+ * @param {string} distDir The package.
+ * @return {string|null} Its version, or null for a package with no WordPress core in it.
+ */
+function packagedWordPressVersion( distDir ) {
+	try {
+		return (
+			readFileSync(
+				join( distDir, 'wp-includes', 'version.php' ),
+				'utf8'
+			).match( /\$wp_version\s*=\s*'([^']+)'/ )?.[ 1 ] ?? null
+		);
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * What each folder of the release holds, measured in the package as it finally is.
+ *
+ * @param {string}   distDir The package.
+ * @param {string[]} paths   The release's folders, relative to it.
+ * @return {Object<string,{files:number,bytes:number,hash:string}>} Each folder's description.
+ */
+function measure( distDir, paths ) {
+	return Object.fromEntries(
+		paths.map( ( path ) => [
+			path,
+			describeFolder( join( distDir, path ) ),
+		] )
+	);
 }
 
 /**
@@ -391,12 +481,93 @@ export function runBuild( plan, distDir, options = {} ) {
 		if ( plan.manifest.pdf_fonts !== 'all' ) {
 			prunePdfFonts( distDir );
 		}
+		// Last, when nothing more will change: what is written here is what a site checks against.
+		plan.manifest.wordpress_version = packagedWordPressVersion( distDir );
+		plan.manifest.contents = measure(
+			distDir,
+			plan.manifest.release_paths
+		);
 		writeFileSync(
 			join( distDir, 'corex-release.json' ),
 			JSON.stringify( plan.manifest, null, 2 ) + '\n'
 		);
 	}
 	return plan;
+}
+
+/**
+ * The zip library, loaded only when a zip is asked for: a plain build runs in a checkout where
+ * `npm ci` has never been run, and has to go on doing so.
+ *
+ * @return {Promise<Object>} The `adm-zip` class.
+ */
+async function zipLibrary() {
+	try {
+		return ( await import( 'adm-zip' ) ).default;
+	} catch ( error ) {
+		if ( error.code !== 'ERR_MODULE_NOT_FOUND' ) {
+			throw error;
+		}
+		throw new Error(
+			'--zip needs the packages of the repository root: run `npm ci` there first. The package itself was built.'
+		);
+	}
+}
+
+/**
+ * Make the one file a site is given: a zip of the package, with its description at the root.
+ *
+ * @param {string} distDir The built package.
+ * @param {string} outDir  Where the zip is written.
+ * @return {Promise<string>} The zip's path.
+ */
+export async function zipPackage( distDir, outDir ) {
+	const AdmZip = await zipLibrary();
+	const manifest = JSON.parse(
+		readFileSync( join( distDir, 'corex-release.json' ), 'utf8' )
+	);
+	const built = manifest.built_at
+		.replace( /[-:]/g, '' )
+		.replace( 'T', '-' )
+		.slice( 0, 15 );
+	const zipFile = join(
+		outDir,
+		`corex-release-${ manifest.client ?? 'framework' }-${ manifest.corex_version }-${ built }.zip`
+	);
+	const zip = new AdmZip();
+
+	zip.addLocalFolder( distDir );
+	zip.writeZip( zipFile );
+
+	return zipFile;
+}
+
+/**
+ * A package must still be what its description measured: a site refuses one that is not.
+ *
+ * @param {string} distDir  The built package.
+ * @param {Object} manifest Its parsed `corex-release.json`.
+ * @return {string[]} One error per folder that differs; none for a manifest that measures nothing.
+ */
+function verifyDescribedContents( distDir, manifest ) {
+	const errors = [];
+
+	if ( manifest.schema !== MANIFEST_SCHEMA ) {
+		return [
+			`corex-release.json is schema ${ manifest.schema ?? 'none' }, not ${ MANIFEST_SCHEMA }: a site would refuse it`,
+		];
+	}
+	for ( const path of manifest.release_paths ?? [] ) {
+		const held = describeFolder( join( distDir, path ) );
+		const said = manifest.contents?.[ path ];
+		if ( ! said || said.hash !== held.hash || said.files !== held.files ) {
+			errors.push(
+				`${ path } is not what corex-release.json says it holds`
+			);
+		}
+	}
+
+	return errors;
 }
 
 /**
@@ -454,6 +625,7 @@ export function verifyDist( distDir ) {
 					'corex-release.json missing plugins/themes arrays'
 				);
 			}
+			errors.push( ...verifyDescribedContents( distDir, m ) );
 		} catch {
 			errors.push( 'corex-release.json is not valid JSON' );
 		}
@@ -593,6 +765,16 @@ if ( isMain ) {
 				? 'dist verified OK'
 				: 'dist verification FAILED:\n  ' + v.errors.join( '\n  ' )
 		);
-		process.exit( v.ok ? 0 : 1 );
+		if ( ! v.ok || ! args.includes( '--zip' ) ) {
+			process.exit( v.ok ? 0 : 1 );
+		}
+		zipPackage( distDir, repoRoot ).then(
+			( zipFile ) =>
+				console.log( `package: ${ relative( repoRoot, zipFile ) }` ),
+			( error ) => {
+				console.error( 'build:dist --zip failed:', error.message );
+				process.exit( 1 );
+			}
+		);
 	}
 }

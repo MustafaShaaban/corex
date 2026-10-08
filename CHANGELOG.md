@@ -8,6 +8,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **A hosting package says what it needs and what it holds, and is one zip** (spec 107, slice
+  1). `corex-release.json` gains the PHP and WordPress the release needs, the WordPress it was
+  built with, every folder the release owns, and each folder's files, bytes and hash.
+  `npm run build:dist -- --zip` writes `corex-release-<client>-<version>-<built>.zip` beside
+  `dist/`. This is the ground for installing a release from the admin; nothing on a site reads
+  it yet (DECISIONS #282).
 - **The Submissions inbox has a trash** (spec 105, slice 1). A submission is moved to it from its
   pane or as a bulk action, after a confirmation that says how many, and the notice that follows
   offers **Undo**. **Trash**, beside **Inbox** above the filters, lists what was moved there with
@@ -152,6 +158,9 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **`npm run verify:dist` refuses a package that was changed after it was built.** A package
+  measures its own folders now. A deploy step that edits `dist/` after `build:dist` (adding a
+  file to a plugin, say) has to do it before, or build again.
 - **Nothing deletes a submission from the trash yet.** One moved there from the inbox stays
   until somebody restores it. The retention panel's "Move to trash" is unchanged: it uses
   WordPress's trash, which WordPress empties after 30 days. Those submissions now show in the

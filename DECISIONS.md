@@ -8193,3 +8193,89 @@ plugin, since removed.
 
 **Left as it was, and worth its own look:** when an action in the pane fails, the inbox shows
 the reason behind the open pane, where it cannot be seen.
+
+## #282 — A release package says what it holds, and four questions about installing one are decided
+
+Date: 2026-10-08 · Spec: 107 (a release installed from the admin), the spec and slice 1 · Status: Final
+
+**The four decisions.** The spec's first drafts ended with four questions that were the owner's.
+He answered them together: "decide the best for me regarding the 4 questions and continue". What
+was decided on that, with the reason and the cost of each, is in the spec under "Decided for the
+owner" and is his to reopen:
+
+1. It works on a site that already runs CoreX. A site's first installation stays a step done by
+   hand, as the first client site's was.
+2. Going back restores the previous release's files and leaves the data. CoreX copies its own
+   tables before a release and never puts the copy back over live tables by itself: that would
+   delete whatever arrived since.
+3. A site's own code is always part of the package, replaced together with the framework.
+4. CoreX is not the site's backup. He had asked for backup and restore "better than backup
+   plugins"; a backup inside the framework is unreachable on the day the framework is broken.
+   What a backup plugin cannot do, a push that never overwrites submissions and pulling
+   production data down, is the next two specs.
+
+**What planning found.** The spec said a site would check "the zip `build:dist` makes" against
+"the checks `verify:dist` runs". Read at `9302016f`: `build:dist` fills a folder and nothing zips
+it; the package's description held no requirement and no measure of its contents; the decisive
+check in `verify:dist` loads the package in a PHP process of its own, which a host with no shell
+cannot start; CoreX's Maintenance mode answers after every plugin has loaded, so it cannot hold
+while plugins are replaced; and nothing of CoreX survives its own folders being swapped. The plan
+answers each (plan.md, D1 to D15). Two of them are this slice.
+
+**Slice 1: the description.** `corex-release.json` is schema 2. It adds what the release needs
+(`requires`, read from `corex-core.php`'s headers, the one place it is stated), the WordPress it
+was built with, `release_paths` (each plugin, each theme, `wp-content/packages`,
+`wp-content/vendor`) and, for each, its files, bytes and a hash. `ReleaseManifest` reads it on a
+site and refuses, each for its own reason: something that is not a package, one built before
+this, one built by a newer CoreX, one that leaves something out, and one that names a folder a
+release does not own.
+
+**Which folders a release may name.** Exactly four shapes: one plugin, one theme, the
+command-line package, the shared code. Not `wp-content/plugins` as a whole, not `uploads`, not
+the must-use plugins, not WordPress itself, not the installer's own place, not a folder inside
+a plugin. Everything a site later does with a package comes from this list, so it is checked
+before anything else is believed.
+
+**The hash, and how two languages are held to it.** SHA-256 over one line per file (path, size,
+the file's SHA-256), sorted as bytes. The builder computes it in Node; a site computes it in PHP
+over what it unpacked. A folder in `tests/Fixtures/Releases/hashed` and its recorded description
+are asserted by a Jest test and by a Pest test, so either implementation drifting from the
+record fails. A third, in Python, written only to check the record, gave the same number.
+`.gitattributes` marks that folder `-text`: its bytes are the test.
+
+**The zip.** `npm run build:dist -- --zip`, named for the client, the version and the build
+time, with the description at its root. `adm-zip` was already installed for other tools and is
+now a named dev dependency, because the builder imports it.
+
+**Only `--zip` loads it.** The first push imported it at the top of the builder, and CI's client
+job failed: that job builds the package before any `npm ci` in the repository root, on purpose,
+and until then the builder had needed nothing but Node. It is loaded when a zip is asked for.
+Without the root's packages, a plain build is unchanged, and `--zip` builds and verifies the
+package and then says what the zip needs. Run with no `node_modules` above it: the builder
+loads, and `zipPackage` gives that sentence.
+
+**`verifyDist` checks the measure too.** A package changed after it was described is refused where
+it is built, before a site would refuse it. Three older tests spoil a built package on purpose
+to test another check; they now measure it again first, so each still fails for its one reason.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The five new builder tests, before the builder changed | failed |
+| `tests/build-shared-host-dist.test.js` and `tests/release-content-hash.test.js` after | 30 passed |
+| `tests/Unit/Releases` | 26 passed |
+| The description a real build writes, read by the class a site reads it with, in a PHP process of its own | understood: version, client, requirements, WordPress version, every release path |
+| The real framework package, built to a scratch folder | schema 2; 19 release paths holding 2,633 files and 27MB; `verifyDist` ok; a 34MB zip. Build 53 seconds, verify 1, zip 89 |
+| `npm run verify:dependencies` | PASS, 6 findings, 6 accepted exceptions |
+
+**Not run.** Nothing on a host. No zip was opened by PHP: reading the zip itself is slice 2.
+
+**Left open.**
+
+- The zip takes 89 seconds to write, longer than the build. `adm-zip` compresses in one thread
+  in JavaScript. Tolerable for something done once a release; noted.
+- A package built before this (schema 1) is refused by a site. There is none to migrate: no
+  site has installed from the admin yet.
+- The plan put the release-owned folders at about 90MB. Measured, they are 27MB; the rest of
+  the 117MB package is WordPress, which a site does not replace.

@@ -124,13 +124,22 @@ cost: it works where CoreX already runs; going back restores files and leaves da
 code is always in the package; CoreX is not the site's backup. Six slices in the plan. Nothing
 reaches a site's files before the fourth.
 
+| Slice | What | State |
+|---|---|---|
+| 1 | The package says what it needs and holds, and is one zip; a site can read and refuse the description | done (DECISIONS #282), unreleased |
+| 2 | A zip is inspected on the site, and every wrong package refused with nothing touched | not started |
+| 3 | The Releases screen: receiving a package in parts, and what it is | not started |
+| 4 | Unpack, verify, swap under WordPress's maintenance answer, finish with the database step | not started |
+| 5 | Going back from the screen, and the record | not started |
+| 6 | The deployment guide | not started |
+
 **Spec 108, the admin shows what is coming while it loads, is planned and not built**
 ([`specs/108-loading-states/`](specs/108-loading-states/spec.md)). The owner asked for a
 skeleton loader on every call and a better loader inside CoreX. Read as three things: a first
 load shows a placeholder in the shape of its content; a refresh keeps the content and marks it
 waiting; an action marks its button. One CoreX loader replaces WordPress's spinner and busy
-button. Twenty surfaces, six slices (the placeholder first, then the loader and every action), the Submissions inbox last and agreed with the session
-building spec 105 there. The readings are under the spec's Assumptions and are his to overrule.
+button. Twenty surfaces, six slices (the placeholder first, then the loader and every
+action), the Submissions inbox last and agreed with the session building spec 105 there. The readings are under the spec's Assumptions and are his to overrule.
 
 Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
 deferred through WP-Cron on a site that has no Action Scheduler, and the queue runs whichever
@@ -467,7 +476,8 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **The Jest suite runs on packages npm marks unsupported**: `@wordpress/jest-preset-default` and
   `@wordpress/jest-console`. Upstream maintains that combination and promises nothing past it;
   moving 64 suites to Vitest is its own piece of work, not started (DECISIONS #272).
-- `npm run lint:js` passes with 54 warnings, from three JSDoc rules new in the toolchain.
+- `npm run lint:js` passes with warnings and no errors (58 on 2026-10-08), all from three JSDoc
+  rules new in the toolchain.
 - **PHP on the CI runner refused a correct argument until the run ended, and the cause is a lead,
   not a proof.** On 2026-10-08 (run 37746210110) `GET corex/v1/flows` answered 200 twenty-eight
   times and then 500 for the rest of the run. The log line: `FlowRestMapper::summary(): Argument
