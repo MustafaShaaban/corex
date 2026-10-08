@@ -37,15 +37,17 @@ if (! defined('COREX_CORE_PATH')) {
 /*
  * Composer autoloader resolution.
  *
- * The authoritative autoloader is generated at the monorepo root. A plugin-local
- * vendor/ is supported for standalone installs. Loading MUST NOT fatal when no
+ * The authoritative autoloader is generated at the monorepo root. In a shared-host
+ * package the same two directories up is wp-content/, where the builder generates
+ * one for that layout (DECISIONS #267). A plugin-local vendor/ is supported for
+ * standalone installs. Loading MUST NOT fatal when no
  * autoloader is present yet (e.g. before `composer install`) — the plugin simply
  * stays dormant until the foundation module (PHASE 5) wires Boot on plugins_loaded.
  */
 (static function (): void {
     $candidates = [
         __DIR__ . '/vendor/autoload.php',             // standalone install
-        dirname(__DIR__, 2) . '/vendor/autoload.php',  // monorepo root
+        dirname(__DIR__, 2) . '/vendor/autoload.php',  // monorepo root, or wp-content/ in a shared-host package
     ];
     foreach ($candidates as $autoload) {
         if (is_file($autoload)) {

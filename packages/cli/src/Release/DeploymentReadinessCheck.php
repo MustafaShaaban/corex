@@ -60,9 +60,9 @@ final class DeploymentReadinessCheck
                 'name' => 'shared-host',
                 'packageShape' => 'Flat WordPress tree with Corex copied into wp-content for hosts without symlink support.',
                 'buildCommands' => [
-                    'composer install --no-dev --optimize-autoloader',
                     'npm run build',
-                    'assemble dist/ WordPress tree',
+                    'npm run build:dist',
+                    'npm run verify:dist',
                 ],
                 'dependencies' => ['PHP 8.3 selector', 'MySQL via host panel', 'SFTP/FTP access'],
                 'secrets' => ['database credentials', 'SFTP credentials', 'WordPress auth salts'],

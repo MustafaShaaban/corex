@@ -6995,3 +6995,121 @@ What was run:
 **Not run.** A produced Data workbook was not opened in a real spreadsheet; the Submissions
 workbook was, in slice 3, and this is the same writer. The two screens were not looked at with
 "XLSX" now among their formats.
+
+## #267 — The shared-host package's project root is `wp-content/`, and Composer generates its autoloader there
+
+Date: 2026-10-08 · Spec: 061 (the shared-host `dist` builder) · Status: Final
+
+Reported by the Muva session from `npm run build:dist -- --client=muva` on v0.43.3, and confirmed
+in the source. The package could not load the framework, and had not been able to since the
+builder was written:
+
+1. Every CoreX plugin's main file requires `vendor/autoload.php` from its own directory or from
+   two directories up. In the package that is `wp-content/plugins/<name>/vendor/` or
+   `wp-content/vendor/`. The builder copied `vendor/` to the package root. No plugin found it.
+2. Composer's generated map is relative to the repository: `plugins/corex-core/src/`,
+   `addons/<name>/src/`, `packages/cli/src/`. The package holds add-ons under
+   `wp-content/plugins/` and did not hold `packages/cli` at all, so a `vendor/` moved by hand
+   would have loaded nothing from an add-on and there was no `wp corex`.
+3. `vendor/` was copied as it stood. The guide said to run `composer install --no-dev` on the
+   checkout first; skipping that put PHPUnit, Pest and Mockery in a web root, and doing it strips
+   a working checkout of its test tools.
+4. `wp/.htaccess` was copied as core. The guide lists it among the files a deploy never overwrites.
+5. `verify:dist` reported "OK". It checked that folders exist. Nothing started a built package.
+
+**Two ways to make it load were considered.**
+
+(a) The builder generates an autoloader whose paths match the packaged layout.
+
+(b) The repository's layout is kept beside WordPress (`plugins/`, `addons/`, `packages/`,
+`vendor/` in the site root) and the folders under `wp-content/plugins/` point at it.
+
+**(a) was taken.** (b) needs the plugin folders to be links or stubs. A shared host with no shell
+cannot be counted on for links: that is the whole reason this package exists. A stub, a small
+plugin file that requires the real one elsewhere, puts the real plugin outside `WP_PLUGIN_DIR`,
+and then `plugins_url()` and `plugin_basename()` cannot place it. `PluginRealpathRegistrar` exists
+because a linked add-on already has that problem, and it solves it by telling WordPress the real
+path behind each link, which a stub does not have. (b) would also put the framework's source in the web root a second time.
+
+**Where the autoloader goes was decided by what the code already does.** All sixteen plugin and
+add-on main files look two directories up. In the package that is `wp-content/`. `Boot` and
+`CoreServiceProvider` take `dirname(COREX_CORE_PATH, 2)` as the project root, and the CLI package
+takes three directories up from its `src/`. So `wp-content/` is the package's project root:
+`wp-content/vendor/` for Composer, `wp-content/packages/cli/` for the CLI. With that, no plugin
+file changes. Only a comment in `corex-core.php` does, to say that the second candidate is also
+the packaged one. The alternative, leaving `vendor/` in the package root and adding a third
+candidate to sixteen files, would have left the CLI's and the core's idea of the root pointing at
+`wp-content/` anyway.
+
+**Composer runs inside the package.** `planAutoload()` translates each `psr-4` entry of the root
+`composer.json` through the copy plan (`addons/corex-email/src/` is copied to
+`wp-content/plugins/corex-email/`, so the entry becomes `plugins/corex-email/src/`). The builder
+writes that `composer.json` and a copy of `composer.lock` into `dist/wp-content/`, runs
+`composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
+--no-plugins` there, and removes the two files. The classmap Composer writes is relative to its
+own directory, so the package can be uploaded anywhere. `require` and `require-dev` are kept as
+they are so the lock file's content hash still matches; `--no-dev` is what keeps the dev packages
+out. `COMPOSER` and `COMPOSER_VENDOR_DIR` are removed from the environment of that one process,
+because either would send the install somewhere other than the package. The checkout's `vendor/`
+is not read.
+
+**Rejected: copying the checkout's `vendor/` and pruning it**, or running
+`composer dump-autoload` over a copy. What is in a checkout's `vendor/` is whatever was last
+installed there, which is not necessarily what the lock file says and usually includes the dev
+packages. The lock file is the statement of what a release runs on.
+
+**Rejected: translating every autoload kind.** Only `psr-4` is used here. `files`, `classmap`,
+`psr-0` and a namespace mapped to several directories stop the build with a message that names
+them, because leaving one out without saying so is the same defect again. A `psr-4` entry whose
+directory is not in the package (another client's site) is left out with a warning.
+
+**The check.** `scripts/shared-host-dist-probe.php` is run by `verifyDist()` in a PHP process of
+its own. It defines `ABSPATH` and the two WordPress functions `corex-core.php` calls while it is
+included, includes the packaged `corex-core.php`, and reports an error unless that file loaded
+`wp-content/vendor/autoload.php`. Then, for every namespace in `corex-release.json`
+(`autoload.psr4`), it walks the packaged directory in order and loads the first class it can,
+which has to come from that directory. A class that extends a WordPress class cannot load there
+and is passed over. Last, every file PHP included has to be inside the package. The verifier also
+fails on a `.htaccess` in the package root and when Composer's `installed.json` says dev packages
+were installed.
+
+The list of namespaces comes from the manifest, which the builder writes. A namespace the builder
+forgot would not be asked for. So the planner refuses to plan when a framework plugin, an add-on
+or the CLI package has a `src/` directory and no namespace mapped to it.
+
+The Jest test builds a small repository whose core plugin file is the real
+`plugins/corex-core/corex-core.php`, so the places that file looks are what is tested. It needs
+`php` and `composer`, which the Jest job already sets up, and downloads nothing.
+
+**The probe does not start WordPress.** It has no database. The `client-site-layout` job does:
+it builds the package for the site `make:site` generates, copies that job's `wp-config.php` into
+it, and requires `Corex\Boot::booted()`, `Corex\Foundation\Application` loaded from
+`dist/wp-content/plugins/corex-core/src/`, and `wp corex routes:list` to run. That job is not a
+required check (`PROGRESS.md`).
+
+**Not in it.**
+
+- `wp-content/vendor/` can be requested over HTTP, as the plugins' own `src/` can. It holds the
+  production packages only. `/wp-content/vendor/autoload.php` answered 200 with an empty body
+  when the package was served here. No deny rule is written into the package: the package
+  carries no `.htaccess` of any kind, and on nginx one would do nothing.
+- The Azure pipeline's agent has no `wp/`, so its package has no WordPress core. That was true
+  before and is listed in `PROGRESS.md`.
+- The package is not checked for the built admin and block bundles.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The new Jest test against the builder as it was | 9 of 12 failed: no autoloader where the core plugin looks, `.htaccess` and `vendor/phpunit` in the package, no CLI package, `verifyDist` accepting all of it |
+| The same test, after | 12 passed |
+| A real build of the whole framework in a copy of the tree that had a development `vendor/` (3,115 files, PHPUnit and Pest among them) and a `wp/.htaccess` | "dist verified OK"; the probe loaded a class from each of 17 namespaces; `wp-content/vendor/` holds 377 files in 2.5 MB; no `.htaccess`; the name and size of every file in the checkout's `vendor/` the same before and after |
+| `verify:dist` on that package with `wp-content/vendor/` moved away | FAILED, naming the autoloader and each namespace |
+| WordPress 7.1.2 installed from that package on a database made for it, PHP 8.3.6 | 16 plugins active; `Corex\Boot::booted()` true; `Application` loaded from the package; `wp corex doctor`, `routes:list` and `mode get` ran |
+| `wp corex make:site Acme --starter` run from the packaged CLI | The site was written from the packaged stubs |
+| The package rebuilt with that site, its plugin and theme switched on, served by `wp server` | `/` 200, `/wp-login.php` 200, `?rest_route=/corex/v1` 200 with the routes |
+
+**Not run.** No package was uploaded to a shared host, and none was served by Apache or
+LiteSpeed. No admin screen was opened: the copy the package was built from had no built bundles.
+The Azure pipeline was not run. The generated site's theme was compiled with the repository's
+`sass` and `wp-scripts`, not from its own `npm install`, which the CI job does.

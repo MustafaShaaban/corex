@@ -12,14 +12,20 @@
  * unit-tested without copying WordPress core. The CLI wires them to the filesystem.
  *
  * What goes in:
- *   - WordPress core from `wp/` (wp-admin, wp-includes, root loaders) — EXCLUDING wp-content + wp-config.php.
+ *   - WordPress core from `wp/` (wp-admin, wp-includes, root loaders) — EXCLUDING wp-content, wp-config.php
+ *     and .htaccess, which belong to the host.
  *   - wp-content/plugins: the framework plugins (plugins/*) + add-ons (addons/corex-*), as real folders.
  *   - wp-content/themes: the CoreX parent theme (theme/) + the client theme (when --client is given).
  *   - the client plugin from sites/<client>/ (when --client is given).
- *   - vendor/ (production autoloader) and a corex-release.json manifest.
+ *   - wp-content/packages/cli: the CLI package, so `wp corex` exists on the host.
+ *   - wp-content/vendor: the production packages and an autoloader generated for this layout by Composer,
+ *     inside the package (see shared-host-dist-autoload.mjs). The checkout's vendor/ is not copied.
+ *   - a corex-release.json manifest.
  *
  * What is always excluded: .git, .github, node_modules, tests, dev tooling, env/secrets, uploads, wp-config.php,
- * debug.log, caches, and agent/.claude state. `dist/` itself is git-ignored and never committed.
+ * .htaccess, debug.log, caches, and agent/.claude state. `dist/` itself is git-ignored and never committed.
+ *
+ * Needs `composer` on the PATH to build and `php` on the PATH to verify.
  */
 
 import {
@@ -33,6 +39,15 @@ import {
 	statSync,
 } from 'node:fs';
 import { join, basename, relative, sep } from 'node:path';
+import {
+	PACKAGE_ROOT,
+	planAutoload,
+	installPackagedVendor,
+	verifyPackagedAutoload,
+} from './shared-host-dist-autoload.mjs';
+
+/** What is in `wp/` and is not WordPress core: the content tree, and the two files a host keeps as its own. */
+const NOT_CORE = [ 'wp-content', 'wp-config.php', '.htaccess' ];
 
 /** Path segments that must never appear in the artifact (matched case-insensitively against any path part). */
 export const FORBIDDEN_SEGMENTS = [
@@ -85,7 +100,7 @@ const isForbidden = ( absPath ) => {
  * Compute the build plan: the list of {from, to, kind} copy operations + the manifest. Pure — no filesystem writes.
  *
  * @param {{repoRoot:string, distDir:string, client?:string|null, version?:string}} cfg The build inputs.
- * @return {{copies:Array<{from:string,to:string,kind:string}>, manifest:object, warnings:string[]}} The plan.
+ * @return {{copies:Array<{from:string,to:string,kind:string}>, autoload:Object, manifest:Object, warnings:string[]}} The plan.
  */
 export function buildPlan( cfg ) {
 	const { repoRoot, distDir, client = null } = cfg;
@@ -93,10 +108,10 @@ export function buildPlan( cfg ) {
 	const warnings = [];
 	const p = ( ...s ) => join( repoRoot, ...s );
 
-	// 1. WordPress core (everything in wp/ except wp-content + wp-config.php).
+	// 1. WordPress core (everything in wp/ that is core).
 	if ( existsSync( p( 'wp' ) ) ) {
 		for ( const entry of readdirSync( p( 'wp' ) ) ) {
-			if ( entry === 'wp-content' || entry === 'wp-config.php' ) {
+			if ( NOT_CORE.includes( entry ) ) {
 				continue;
 			}
 			copies.push( {
@@ -194,18 +209,18 @@ export function buildPlan( cfg ) {
 		}
 	}
 
-	// 5. Production vendor autoloader.
-	if ( existsSync( p( 'vendor' ) ) ) {
+	// 5. The CLI package, where its own idea of the project root is the package's.
+	if ( existsSync( p( 'packages', 'cli' ) ) ) {
 		copies.push( {
-			from: p( 'vendor' ),
-			to: join( distDir, 'vendor' ),
-			kind: 'vendor',
+			from: p( 'packages', 'cli' ),
+			to: join( distDir, PACKAGE_ROOT, 'packages', 'cli' ),
+			kind: 'cli',
 		} );
-	} else {
-		warnings.push(
-			'vendor/ not found — run `composer install --no-dev --optimize-autoloader` before packaging.'
-		);
 	}
+
+	// 6. The autoloader: Composer's map, translated to where the plan above puts each directory.
+	const autoload = planAutoload( repoRoot, distDir, copies );
+	warnings.push( ...autoload.warnings );
 
 	const manifest = {
 		name: 'corex-shared-host-dist',
@@ -214,11 +229,12 @@ export function buildPlan( cfg ) {
 		client: client ?? null,
 		plugins: pluginNames.sort(),
 		themes: themeNames.sort(),
+		autoload: autoload.manifest,
 		excludes: DEV_EXCLUDES,
 		forbidden_segments: FORBIDDEN_SEGMENTS,
 	};
 
-	return { copies, manifest, warnings };
+	return { copies, autoload, manifest, warnings };
 }
 
 /**
@@ -284,6 +300,7 @@ export function runBuild( plan, distDir, options = {} ) {
 		} );
 	}
 	if ( ! dryRun ) {
+		installPackagedVendor( plan.autoload, distDir );
 		writeFileSync(
 			join( distDir, 'corex-release.json' ),
 			JSON.stringify( plan.manifest, null, 2 ) + '\n'
@@ -293,11 +310,19 @@ export function runBuild( plan, distDir, options = {} ) {
 }
 
 /**
- * Verify a built dist tree. Pure-ish (reads only). Returns {ok, errors, checked}.
+ * Verify a built dist tree. Reads only, and runs the probe in a PHP process of its own.
  *
- * @param {string} distDir
+ * Run from the repository root, like the build: that is where the probe is looked for.
+ *
+ * @param {string} distDir The built package.
+ * @return {{ok:boolean, errors:string[]}} Whether the package can be deployed, and why not.
  */
 export function verifyDist( distDir ) {
+	const probeScript = join(
+		process.cwd(),
+		'scripts',
+		'shared-host-dist-probe.php'
+	);
 	const errors = [];
 	const must = [
 		'wp-content',
@@ -323,6 +348,12 @@ export function verifyDist( distDir ) {
 			}
 		}
 	}
+	// An upload of the package must not replace the rewrite rules the host already has.
+	if ( existsSync( join( distDir, '.htaccess' ) ) ) {
+		errors.push(
+			".htaccess is in the package root: uploading it would overwrite the host's own"
+		);
+	}
 	// Manifest must be valid JSON with the expected shape.
 	const manifestPath = join( distDir, 'corex-release.json' );
 	if ( existsSync( manifestPath ) ) {
@@ -341,6 +372,9 @@ export function verifyDist( distDir ) {
 	// Client-asset completeness (spec 062): a theme that ships SCSS/JS sources must also ship the COMPILED
 	// output — otherwise the deploy would serve a half-built client theme. Catches "packaged without building".
 	errors.push( ...verifyClientAssets( distDir ) );
+
+	// Bootability: the packaged core plugin finds the packaged autoloader, and every namespace loads.
+	errors.push( ...verifyPackagedAutoload( distDir, probeScript ) );
 
 	return { ok: errors.length === 0, errors };
 }
@@ -423,7 +457,13 @@ if ( isMain ) {
 	const repoRoot = process.cwd();
 	const distDir = join( repoRoot, 'dist' );
 
-	const plan = buildPlan( { repoRoot, distDir, client } );
+	let plan;
+	try {
+		plan = buildPlan( { repoRoot, distDir, client } );
+	} catch ( error ) {
+		console.error( 'build:dist cannot plan the package:', error.message );
+		process.exit( 1 );
+	}
 	plan.warnings.forEach( ( w ) => console.warn( 'warning:', w ) );
 	console.log(
 		`${ dryRun ? '[dry-run] ' : '' }packaging ${
@@ -441,7 +481,19 @@ if ( isMain ) {
 			) } -> ${ relative( repoRoot, op.to ) }`
 		);
 	}
-	runBuild( plan, distDir, { dryRun } );
+	console.log(
+		`  ${ 'vendor'.padEnd( 14 ) } composer install --no-dev -> ${ join(
+			'dist',
+			PACKAGE_ROOT,
+			'vendor'
+		) } (${ Object.keys( plan.manifest.autoload.psr4 ).length } namespaces)`
+	);
+	try {
+		runBuild( plan, distDir, { dryRun } );
+	} catch ( error ) {
+		console.error( 'build:dist failed:', error.message );
+		process.exit( 1 );
+	}
 	if ( ! dryRun ) {
 		const v = verifyDist( distDir );
 		console.log(
