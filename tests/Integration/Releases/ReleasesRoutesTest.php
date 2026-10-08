@@ -15,6 +15,7 @@ declare(strict_types=1);
 use Corex\Boot;
 use Corex\Config\Releases\InstalledRelease;
 use Corex\Config\Releases\ReleaseDesk;
+use Corex\Config\Releases\ReleaseHostFacts;
 use Corex\Config\Releases\ReleasePackageInspector;
 use Corex\Config\Releases\ReleaseRestGateway;
 use Corex\Config\Releases\ReleasesController;
@@ -171,6 +172,23 @@ it('refuses a wrong package in words, writes down that it did, and does not keep
         ->and($logged[0])->toMatchArray(['event' => 'refused', 'package' => $name, 'reason' => 'other_client', 'by' => get_current_user_id()])
         // FR-003: a package the site will not install is not left on it.
         ->and(releasesRequest('GET', '/releases')->get_data()['data']['packages'])->toBe([]);
+});
+
+it('opens where the site cannot make its folder, and says so in words when a package is sent', function () {
+    // The browser job's site in CI is such a host. Its Releases route answered with PHP's own
+    // error page, which the screen read as "wait and ask again" until it gave up (PR #324).
+    // Here the folder's name is taken by a file, which no system makes a folder of.
+    file_put_contents($this->content . '/corex-releases', '');
+
+    $overview = releasesRequest('GET', '/releases');
+    $sending  = releasesRequest('GET', '/releases/uploads/' . str_repeat('a', 64));
+
+    expect($overview->get_status())->toBe(200)
+        ->and($overview->get_data())->toMatchArray([ReleaseRestGateway::MARK => 1, 'ok' => true])
+        ->and($overview->get_data()['data']['packages'])->toBe([])
+        ->and($sending->get_status())->toBe(422)
+        ->and($sending->get_data())->toMatchArray([ReleaseRestGateway::MARK => 1, 'ok' => false, 'reason' => ReleaseHostFacts::NOT_WRITABLE])
+        ->and($sending->get_data()['message'])->toContain('corex-releases');
 });
 
 it('will not be asked about a file by a path', function (string $package) {

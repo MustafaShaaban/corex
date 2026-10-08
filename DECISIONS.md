@@ -9178,6 +9178,17 @@ route is `?rest_route=/corex/v1/releases/…`, and the upload's `?offset=` after
 offset part of the route. WordPress knows no such route, the answer is unmarked, and the
 client would have asked six times and given up. It joins with `&` there.
 
+**The screen opens on a host where the site cannot write.** Found by this pull request's own
+browser job: there the web server cannot write in `wp-content`, `ReleaseStore::root()` threw a
+`RuntimeException` making its folder, and every request of the Releases routes was answered
+with PHP's error page, which the client rightly read as "wait and ask again" until it gave up.
+Three changes. Listing the packages reads and makes nothing, so the screen opens and its list
+of what stands in the way says the folders cannot be written. A folder that cannot be made, and
+a part that cannot be written, are refusals in words (`not_writable`) through the marked
+answer, not exceptions. And CI gives that site the one folder, `wp-content/corex-releases`,
+so the browser tests can send a package; nothing else under `wp-content` is made writable,
+so the same tests still read the list on a host that has one.
+
 **The statement takes the focus when it arrives.** It is the answer to a button above it, and
 a screen reader is otherwise told nothing. Its heading is focusable and not a control, so it
 has no ring. A refusal is a `CorexErrorState` at panel scale, in the place a statement would
@@ -9197,14 +9208,14 @@ module; it was not moved because that file was another session's while this was 
 |---|---|
 | Jest, `plugins/corex-config/src/Releases` | 50 passed: the client 15, the hash 21, the screen 14 |
 | Jest, everything | 893 passed in 81 suites |
-| Pest, unit suite | 2499 passed |
-| Pest, integration: `Releases`, `Access`, `Admin` | 35 passed |
+| Pest, unit suite | 2501 passed |
+| Pest, integration: `Releases`, `Access`, `Admin` | 36 passed |
 | Playwright, `releases.spec.js` on `http://corex.local` | 10 passed: the layout measured at 1280 and 782 in both themes and both directions (panels 24px apart between the same two edges, a heading 24px in and down, the first line 12px under it, no overflow, every text 4.5:1 or better on its panel); a package sent and stated, with the part held on its way to look at the working button and the bar; a zip that is not a package refused and gone from the list |
 | Playwright, the specs that walk every CoreX route, with Releases added | 50 passed with the above |
 | Looked at | Dark and light at 1280, light right-to-left at 782, the statement and the refusal |
 
 **Not run.** No real package: the largest file sent through the screen was 851 bytes, in one
-part, so resuming was exercised in Jest and never in a browser. No host: nothing here has met
+part, so resuming was exercised in Jest and never in a browser. No client's host: the one host it met was CI's, which cannot write its own folders and is described above; nothing here has met
 a shared host's limits or its challenge page. No screen reader. The network rule that hides
 the menu from a site's own administrator is written and was not opened on a network.
 

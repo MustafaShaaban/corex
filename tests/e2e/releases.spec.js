@@ -203,6 +203,17 @@ for ( const width of [ 1280, 782 ] ) {
 					);
 				expect( overflow ).toBeLessThanOrEqual( 0 );
 
+				// The host is one of two things, and the panel says which: nothing stands in
+				// the way, or a list of what does. A site whose server cannot write its own
+				// folders, as the one these tests meet in CI cannot, shows the list.
+				await expect(
+					panels
+						.nth( 0 )
+						.locator(
+							'.corex-releases__line--quiet, .corex-releases__cautions'
+						)
+				).toHaveCount( 1 );
+
 				// The words can be read on the panel they are on, the quiet ones too.
 				const ground = ( await paint( panels.nth( 0 ) ) ).ground;
 				for ( const words of [
@@ -211,9 +222,13 @@ for ( const width of [ 1280, 782 ] ) {
 					'.corex-releases__line--quiet',
 					'.corex-releases__label',
 				] ) {
-					const { ink } = await paint(
-						page.locator( `.corex-releases ${ words }` ).first()
+					const written = page.locator(
+						`.corex-releases ${ words }`
 					);
+					if ( ( await written.count() ) === 0 ) {
+						continue;
+					}
+					const { ink } = await paint( written.first() );
 					expect(
 						contrast( ink, ground ),
 						`${ words } on its panel`
@@ -255,6 +270,9 @@ test( 'a package sent to the site is read back as a statement', async ( {
 		.locator( '#corex-releases-file' )
 		.setInputFiles( packageFor( client ) );
 	const send = page.getByRole( 'button', { name: 'Send to the site' } );
+	// Brought into view first: a click on a control below the fold scrolls the page, and the
+	// control would then be measured in two places.
+	await send.scrollIntoViewIfNeeded();
 	const atRest = await box( send );
 	await send.click();
 	await partHeld;
