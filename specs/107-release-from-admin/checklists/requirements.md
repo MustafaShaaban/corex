@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,10 +31,10 @@
 
 ## Notes
 
-- The one open item: four questions under "Open questions for the owner" stand in for
-  clarification markers. Each changes scope, none has a default the recorded outline gives, and
-  the spec says which reading it is written to. It is not ready for `/speckit-plan` until they
-  are answered.
+- Four questions stood in for clarification markers through the first two drafts. The owner
+  answered them together on 2026-10-08 ("decide the best for me regarding the 4 questions and
+  continue"); the decisions are in the spec under "Decided for the owner", each with its reason
+  and its cost, and are his to reopen.
 - "Why this spec exists" names what the code does today, read at `9b088117`. Two statements in
   its first draft were wrong and were corrected against the source before this was committed:
   CoreX does apply a release's schema changes without a command line (`SchemaSelfHeal`, on the

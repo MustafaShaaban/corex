@@ -4,8 +4,10 @@
 
 **Created**: 2026-10-08
 
-**Status**: Draft. Not planned and not built. Four questions under "Open questions for the owner"
-change its scope and are his to answer before a plan is written.
+**Status**: Decided and planned. Four questions the first drafts left to the owner were answered
+by him on 2026-10-08 with "decide the best for me regarding the 4 questions and continue"; the
+decisions made on that are under "Decided for the owner". [plan.md](./plan.md) and
+[tasks.md](./tasks.md) follow them.
 
 **Input**: The owner's instruction of 2026-10-08, "continue with the muva and peregos asked", and
 the outline that reached this spec from the session moving the first client site to shared
@@ -32,12 +34,11 @@ this order, each useful alone:
 
 **This spec is A only.** B and C get their own specs.
 
-**One thing in that reply is not his decision yet.** He asked for backup and restore "better than
-backup plugins". The reply recommended the opposite for disaster recovery: leave it to a backup
-plugin or the host, because a backup inside the framework cannot rescue a broken framework, and
-have CoreX snapshot only its own tables before it changes them. He did not object; he was not
-asked to agree to it in those words. This spec is written to the recommendation and lists it as
-the fourth open question.
+**One thing in that reply was not his decision when it was made.** He asked for backup and
+restore "better than backup plugins". The reply recommended the opposite for disaster recovery:
+leave it to a backup plugin or the host, and have CoreX snapshot only its own tables before it
+changes them. He did not object and was not asked to agree to it in those words. It is the
+fourth of the decisions below.
 
 ## Why this spec exists
 
@@ -287,6 +288,11 @@ to the release that caused it.
 
 - **FR-020**: Installing MUST replace the framework and the client's own code with the package's,
   as a whole: the site MUST never serve from a mixture of two releases.
+- **FR-026**: What installing replaces is what the package says it holds: the plugins and themes
+  it names, and the shared code they load. A plugin or theme on the site that the package does
+  not name MUST be left as it is. WordPress itself is not replaced; when the package was built
+  with a different WordPress than the site runs, the screen MUST say so before the owner
+  confirms.
 - **FR-021**: Installing MUST NOT change uploads, the database's content, the site's
   configuration file, its `.htaccess`, or anything the package does not hold. A folder in the
   web root that the release does not own, another site's among them, MUST be left exactly as it
@@ -319,7 +325,9 @@ to the release that caused it.
 - **FR-040**: The release that was replaced MUST be kept, and MUST be restorable from the admin
   in one confirmed action.
 - **FR-041**: Before going back, the owner MUST be told which database changes are reversed and
-  which are not.
+  which are not. Going back MUST NOT replace live tables with the copy kept under FR-034.
+- **FR-044**: The copy of CoreX's tables kept before a release MUST be removed after a stated
+  time, and the screen MUST show that it exists and when it goes.
 - **FR-042**: There MUST be a documented way to restore the previous release that does not need
   the admin to load, and the screen MUST state it before an installation is confirmed.
 - **FR-043**: Kept releases MUST be bounded in number, and the screen MUST show which is running
@@ -340,7 +348,9 @@ to the release that caused it.
   site's repository built; a host that pulls a release on its own moves ahead of its repository,
   which the deployment guide already forbids.
 - **FR-061**: This MUST NOT back up or restore the database's content or the uploads. That is
-  not a release. Whether CoreX should do it at all is the fourth open question.
+  not a release (decision 4).
+- **FR-062**: The Releases screen MUST say that it does not back the site up, and that a backup
+  plugin or the host's backups are what restore a broken site.
 
 ### Key Entities
 
@@ -369,36 +379,49 @@ to the release that caused it.
 - **SC-006**: A package of the size the first client site ships (its own files and media
   included) installs on that host within the host's limits.
 
-## Open questions for the owner
+## Decided for the owner
 
-Each changes what is built. They are not answered by the recorded outline.
+The first drafts ended with four questions that were his. On 2026-10-08 he answered them all at
+once: "decide the best for me regarding the 4 questions and continue". These are the decisions
+made on that, each with why and what it costs. Any of them is his to reopen.
 
-1. **Does this have to work on a site that has no CoreX yet?** "Install" in the outline can mean
-   the first installation on a fresh WordPress. CoreX cannot offer a screen where CoreX is not
-   running, so that needs a small installer of its own, added through WordPress's plugin
-   uploader. This spec is written for a site that already runs CoreX and reads "install" as
-   "install a release". If the first installation is wanted, it is a sixth story and a separate
-   small plugin.
-2. **How much of a failed release's database changes should going back undo?** Files can always
-   be put back. A change that added a column can be reversed; one that changed or removed data
-   cannot be, without a copy of the data. The reply the owner accepted has CoreX "snapshot its
-   own tables before it changes anything", and this spec keeps that copy (FR-034). What is not
-   decided is what going back does with it: put those tables back as they were, losing whatever
-   was written to them since (a submission that arrived after the release), or leave the data
-   and reverse only what declares itself reversible. This spec is written to the second, and to
-   saying plainly what is not reversed (FR-041).
-3. **Is the client's own code part of the package, always?** A package built for a client
-   (`build:dist -- --client=<name>`) holds the framework and that site's plugin and theme
-   together, and this spec replaces them together (FR-020). If a site's code should be releasable on its own, between framework releases, that
-   is a second kind of package.
+1. **It works on a site that already runs CoreX. The first installation stays a step done by
+   hand.** A screen cannot be offered where CoreX is not running, so a first installation needs
+   a separate installer plugin, added through WordPress's own plugin uploader. A site is moved
+   once and updated for years; the first move also carries the site's content, which is not a
+   release. One site has made that move and the second will make it the same way.
+   *Cost:* the second site's first installation is unpacked through the host's file manager, as
+   the first one's was. If a third site comes, the installer plugin is a small spec of its own.
 
-4. **Backup and restore.** You asked for "the full backup and restore behaviour", better than
-   backup plugins. The reply you accepted with "ok let's do it" recommended against CoreX being
-   the disaster-recovery backup, and it is not clear that was what you were agreeing to. This
-   spec follows the recommendation: CoreX copies its own tables before a release and nothing
-   else, and a backup plugin or the host stays responsible for the site. If you want CoreX to
-   back up and restore the whole site, that is a feature of its own and not part of installing a
-   release.
+2. **Going back puts the files back and leaves the data.** Before a release changes CoreX's own
+   tables a copy of those tables is kept (FR-034). Going back restores the previous release's
+   files, reverses the database changes that declare how to be reversed, and says plainly which
+   were not. It never puts the copied tables back over the live ones by itself, because that
+   would delete whatever was written since: a lead that arrived after the release. The copy is
+   kept for a stated time so a person can take from it, and is then removed.
+   *Cost:* after going back from a release whose database changes cannot be reversed, the
+   previous release runs on the newer tables. A release whose changes are not safe that way has
+   to say so in its own notes; the screen shows that before the owner confirms.
+   This is the same rule the outline gives for B: data born in production is never overwritten.
+
+3. **A site's own code is part of the package, always.** A package is built from the site's
+   repository and holds the framework at the version that repository is on, with the site's
+   plugin and theme. They are replaced together, so the site never runs its own code against a
+   framework it was not built and tested with. A package built with no client (the framework
+   alone) is accepted on a site that has no code of its own.
+   *Cost:* a one-line change to the site's theme is a whole package. The package is one upload
+   and one confirmation, which is what this spec exists to make cheap.
+
+4. **CoreX is not the site's backup.** He asked for "the full backup and restore behaviour",
+   better than backup plugins. What a backup is for is the day the site or the framework is
+   broken, and a backup that lives inside the framework is unreachable on that day. So disaster
+   recovery stays with a backup plugin or the host, which work when CoreX does not, and CoreX
+   copies only its own tables before it changes them. What he asked for that a backup plugin
+   cannot do, because it does not know what the data means, is the rest of the outline: a push
+   that never overwrites submissions (B) and pulling production data down (C). Those are where
+   "better than backup plugins" is built, and they are the next two specs.
+   *Cost:* a site still needs a backup plugin or the host's backups, and CoreX says so on the
+   Releases screen instead of implying it has the site covered.
 
 ## Assumptions
 
