@@ -81,7 +81,8 @@ one normaliser for both kinds of form.
 
 `ProtectionStage::verifyCaptcha()` becomes `SubmissionChallenge::verify(token, protection, slug)`
 in `Submission/`, returning the same status and detail it stores today.
-`FormChallengeContextFactory` gains `forForm(slug, protection)`; `forContext()` delegates to it.
+`FormChallengeContextFactory::forContext()` had the stage as its only caller and becomes
+`forForm(slug, protection)`.
 `ProtectionStage` and `FormSubmissionService` both call the service. The stage's behaviour and its
 stored metadata do not change, and its tests are the regression net for the extraction.
 
@@ -90,8 +91,10 @@ stored metadata do not change, and its tests are the regression net for the extr
 In `FormSubmissionService::handle()`, after the trap field and before validation (FR-012). The
 controller only adds `captcha_token` to what the sanitiser keeps. The service removes the token
 before validating, so it is never a value (FR-014). A refusal is
-`Response::reject(message, 422, ['code' => 'challenge_failed'])`, and `SubmitController::toRest()`
-answers with that code in place of the one derived from the status (FR-013). The runtime already
+`Response::reject(message, 422, new SubmissionRefusal('challenge_failed'))`, and
+`SubmitController::toRest()` answers that code in place of the one derived from the status
+(FR-013). A typed payload and not an array: a refusal's array is its field errors, keyed by field
+name, and a form may have a field named `code`. The runtime already
 shows a refusal's message in the status region.
 
 ### D5. The action travels with the form, not with its name (FR-017)

@@ -8,6 +8,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **A form defined in code can ask for the site's challenge** (spec 104, slice 2; part of #264).
+  Return `['captcha' => 'on']` from the form's `protection()`. With reCAPTCHA configured, the
+  form carries a token field, its page loads the provider's script, and a submission is checked
+  before any answer is judged. One that fails is answered `422` with `code: "challenge_failed"`,
+  stores nothing and runs no listener. Off by default, so no existing form changes (DECISIONS
+  #276).
 - **A form defined in code says what it reads** (spec 104, slice 1; part of #248). Override
   `submitLabel()`, `successMessage()` and `errorMessage()` on the form's class. Each is empty by
   default, which is CoreX's own wording, so a form that states nothing reads "Send" and "Thank
@@ -61,6 +67,8 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **Two protected forms that share a name each ask the provider for their own action.** The
+  reCAPTCHA script looked the action up by the form's name; it reads it from the submitted form.
 - **With the mail queue on, a send still waited for the mail server on a site without Action
   Scheduler** (#271). The `mail_queue` flag deferred a send only where Action Scheduler was
   installed, and CoreX does not ship it, so a form's response waited for both of its

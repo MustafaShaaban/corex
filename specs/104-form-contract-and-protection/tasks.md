@@ -18,19 +18,19 @@ touches. Each slice ends with its guards, its rendered check where it has UI, an
 
 ## Slice 2 — A form defined in code is challenged (US2)
 
-- [ ] T010 Run `ProtectionStageTest` and `PerFormProtectionTest` as they are; they are the net for T012
-- [ ] T011 [P] Pest unit: `SubmissionChallenge` — no verifier bound, protection off, a verifying provider passing and failing with its detail, a boolean provider, an empty token (`tests/Unit/Forms/SubmissionChallengeTest.php`)
-- [ ] T012 Extract `SubmissionChallenge` from `ProtectionStage::verifyCaptcha()`; `FormChallengeContextFactory::forForm()`; the stage calls the service; T010 still green
-- [ ] T013 `Form::protection()`, off by default, normalised by `FlowProtection::normalize()` (`Form.php`)
-- [ ] T014 Pest unit: `FormSubmissionService` — a protected form with a rejected or missing token is refused with `challenge_failed`, dispatches nothing; with an accepted token it proceeds and the token is not among the values; an unprotected form is not checked (`tests/Unit/Forms/FormSubmissionServiceTest.php`)
-- [ ] T015 The check in `FormSubmissionService::handle()` after the trap field; `SubmitController` keeps `captcha_token` and answers a refusal's own code
-- [ ] T016 Pest unit: the renderer emits the token input and declares the form when it is protected and a provider is configured; neither otherwise (`FormBlockRenderTest.php`)
-- [ ] T017 `FormBlockRenderer` emits the token input and declares the form
-- [ ] T018 Jest: the reCAPTCHA script takes the action from the submitted form's token input; two forms with one name and different actions each get their own (`tests/corex-captcha-v3.test.js`)
-- [ ] T019 `corex-captcha-v3.js` reads `data-corex-captcha-action`; the localized `forms` map is no longer what decides the action
-- [ ] T020 Integration on real WordPress: `POST corex/v1/forms/{slug}` for a protected form with a stand-in verifier — refused with the code and nothing stored; accepted and stored without the token (`tests/Integration/Forms/SubmitLifecycleTest.php`)
-- [ ] T021 Playwright: a page with a protected code-defined form loads the provider script and a page without one does not, with the provider's host stood in for (`tests/e2e/`)
-- [ ] T022 Docs: forms guide, forms-flows (stop claiming coverage that did not exist), captcha README, headless cookbook (where a token goes); guards; notes
+- [x] T010 Run `ProtectionStageTest` and `PerFormProtectionTest` as they are; they are the net for T012
+- [x] T011 No file of its own: `ProtectionStageTest` drives every branch of the extracted check through the stage, and `FormSubmissionServiceTest` through the service. As planned: [P] Pest unit: `SubmissionChallenge` — no verifier bound, protection off, a verifying provider passing and failing with its detail, a boolean provider, an empty token (`tests/Unit/Forms/SubmissionChallengeTest.php`)
+- [x] T012 Extract `SubmissionChallenge` from `ProtectionStage::verifyCaptcha()`; `FormChallengeContextFactory::forForm()`; the stage calls the service; T010 still green
+- [x] T013 `Form::protection()`, off by default, normalised by `FlowProtection::normalize()` (`Form.php`)
+- [x] T014 Pest unit: `FormSubmissionService` — a protected form with a rejected or missing token is refused with `challenge_failed`, dispatches nothing; with an accepted token it proceeds and the token is not among the values; an unprotected form is not checked (`tests/Unit/Forms/FormSubmissionServiceTest.php`)
+- [x] T015 The check in `FormSubmissionService::handle()` after the trap field; `SubmitController` keeps `captcha_token` and answers a refusal's own code
+- [x] T016 Pest unit: the renderer emits the token input and declares the form when it is protected and a provider is configured; neither otherwise (`FormBlockRenderTest.php`)
+- [x] T017 `FormBlockRenderer` emits the token input and declares the form
+- [x] T018 Jest: the reCAPTCHA script takes the action from the submitted form's token input; two forms with one name and different actions each get their own (`tests/corex-captcha-v3.test.js`)
+- [x] T019 `corex-captcha-v3.js` reads `data-corex-captcha-action`; the localized `forms` map is no longer what decides the action
+- [x] T020 Integration on real WordPress: `POST corex/v1/forms/{slug}` for a protected form with a stand-in verifier — refused with the code and nothing stored; accepted and stored without the token (`tests/Integration/Forms/SubmitLifecycleTest.php`)
+- [x] T021 Not written as a browser test; covered on real WordPress by `ProtectedCodeFormTest` (the field, the declaration, the add-on's enqueue), because the browser suite has no fixture that registers a form in code. Not seen: a served page in a browser (DECISIONS #276). As planned: Playwright: a page with a protected code-defined form loads the provider script and a page without one does not, with the provider's host stood in for (`tests/e2e/`)
+- [x] T022 Docs: forms guide, forms-flows (stop claiming coverage that did not exist), captcha README, headless cookbook (where a token goes); guards; notes
 
 ## Slice 3 — A site draws a form its own way (US3)
 

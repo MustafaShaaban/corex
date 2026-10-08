@@ -56,6 +56,34 @@ The wording is printed as text: markup in it is shown, not interpreted. A submit
 but spaces is replaced by "Send", because a button needs a name. Translate the strings with your
 own text domain.
 
+## Protect a form
+
+A form defined in code is challenged by the site's provider when it says so:
+
+```php
+public function protection(): array
+{
+    return ['captcha' => 'on'];
+}
+```
+
+It is off by default. With it on, and reCAPTCHA configured under **CoreX → Settings → Captcha**:
+
+- the form carries a hidden `captcha_token` field, and its page loads the provider's script. A
+  page with no protected form loads nothing from the provider;
+- a submission's token is checked on the server before any answer is judged. One that fails is
+  answered `422` with `code: "challenge_failed"` and the message "We could not verify your
+  submission. Please try again.", which the form shows in its status line. Nothing is stored and
+  no listener runs;
+- the token is not stored and is not handed to a listener.
+
+Add `'action'` or `'threshold'` to the array to override what a scoring provider is asked to
+check; without them the action is `corex_form_<slug>` and the threshold is the site's. On a site
+with no provider configured, a protected form is accepted under the trap field, the security token
+and the rate limit, as every form is.
+
+Turnstile and hCaptcha place no challenge on a form yet, of either kind.
+
 ## Field definition reference
 
 | Key | Values |
