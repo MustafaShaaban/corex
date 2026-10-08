@@ -69,9 +69,3 @@ End every response with the required SUMMARY/…/NEXT STEP handoff format (see A
 `/speckit-constitution` → `/speckit-specify` → `/speckit-clarify` → `/speckit-plan`
 → `/speckit-tasks` → `/speckit-implement`. Write the spec before the code; review between tasks.
 Module build order: see `docs/internal/COREX-SPECKIT-START.md` ("The rhythm from here").
-
-<!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
-at specs/068-admin-product-functional-completion/plan.md
-<!-- SPECKIT END -->
