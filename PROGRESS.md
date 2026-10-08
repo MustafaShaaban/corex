@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.43.4** — tag `v0.43.4`, reachable from `main`.
+- **Latest published release: v0.43.5** — tag `v0.43.5`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -86,7 +86,7 @@ One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`)
 
 ## Recently landed
 
-On `main` since v0.43.4, not in a release:
+Released in v0.43.5:
 
 - **The 500 on `GET corex/v1/flows` has a name, and it is not a flow** (#286, DECISIONS #268).
   The server log of the run that failed on 2026-10-08 says PHP refused a `FlowVersion` for a
