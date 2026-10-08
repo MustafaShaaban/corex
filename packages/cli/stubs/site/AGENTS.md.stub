@@ -53,6 +53,14 @@ prefix `{{ option_prefix }}`. Import Corex base classes; never use the `Corex\` 
 is the only site in the repository. With more than one site, or to send them elsewhere, set `APP_PATH`,
 `APP_NAMESPACE` and `APP_PREFIX` in the repository's `.env`.
 
-**Specs.** Write this site's specs by hand in `specs/<work-item>-<slug>/`. The `/speckit-*` commands
-write to the repository root (`specs/`, `.specify/feature.json`, the root `CLAUDE.md`), which belongs to
-the framework: running them here shows up as drift in `npm run verify:framework`.
+**Specs.** This site's specs live here, in `specs/<work-item>-<slug>/`. The `/speckit-*` commands work
+in this repository when `/speckit-specify` is told that directory:
+
+```text
+/speckit-specify SPECIFY_FEATURE_DIRECTORY=sites/{{ site_dir }}/specs/<work-item>-<slug> <what to build>
+```
+
+Spec Kit writes the spec there and notes the directory in `.specify/feature.json`, which is not tracked, so
+`/speckit-plan`, `/speckit-tasks` and `/speckit-implement` find it. Number the directory yourself: left to
+choose, Spec Kit counts the framework's `specs/` at the repository root and writes there, which
+`npm run verify:framework` reports as drift.

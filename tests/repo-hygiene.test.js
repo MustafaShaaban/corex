@@ -410,6 +410,50 @@ describe( 'the docs-site mirror of the project status', () => {
 	} );
 } );
 
+describe( "Spec Kit in a repository that is not only the framework's", () => {
+	/**
+	 * In a client repository everything outside `sites/` is the framework's, and a change there is
+	 * drift (spec 102). Running the documented Spec Kit workflow made two such changes on its own:
+	 * `/speckit-specify` wrote the feature it was working on into `.specify/feature.json`, which
+	 * was tracked, and the agent-context hook rewrote a section of the root `CLAUDE.md` (#251).
+	 *
+	 * Where a spec lives was never the problem: Spec Kit takes the directory it is given.
+	 */
+	it( 'keeps the feature being worked on out of the tree', () => {
+		const tracked = execFileSync(
+			'git',
+			[ 'ls-files', '--', '.specify/feature.json' ],
+			{ cwd: repositoryRoot, encoding: 'utf8' }
+		).trim();
+		const ignored = execFileSync(
+			'git',
+			[ 'check-ignore', '.specify/feature.json' ],
+			{ cwd: repositoryRoot, encoding: 'utf8' }
+		).trim();
+
+		expect( tracked ).toBe( '' );
+		expect( ignored ).toBe( '.specify/feature.json' );
+	} );
+
+	it( 'runs no hook that rewrites an agent instruction file', () => {
+		const extensions = fs.readFileSync(
+			path.join( repositoryRoot, '.specify', 'extensions.yml' ),
+			'utf8'
+		);
+		// Each hook is a list item; one that is on says `enabled: true`.
+		const hooksLeftOn = extensions
+			.split( /^\s*- extension:/m )
+			.slice( 1 )
+			.filter( ( hook ) => /^\s*enabled:\s*true\s*$/m.test( hook ) )
+			.map( ( hook ) => hook.match( /command:\s*(\S+)/ )[ 1 ] );
+
+		expect( hooksLeftOn ).toEqual( [] );
+		expect(
+			fs.readFileSync( path.join( repositoryRoot, 'CLAUDE.md' ), 'utf8' )
+		).not.toContain( 'SPECKIT START' );
+	} );
+} );
+
 describe( 'what each release says to a client site', () => {
 	/**
 	 * A client repository takes a release by merging it, and a clean merge proves less than it

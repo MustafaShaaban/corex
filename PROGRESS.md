@@ -83,14 +83,26 @@ Unreleased, reported from the first client site's production host (DECISIONS #27
 login hidden, `/wp-signup.php` redirected a signed-out visitor to the hidden address. Probing
 found the same from `/wp-register.php` and `/wp-admin/customize.php`. All three answer "not
 found" now. A site that hides its login may treat its address as known and choose a new one
-after updating. Reported with it and not built yet: the Submissions inbox cannot trash, restore
-or permanently delete a submission, which needs a spec.
+after updating. Reported with it: the Submissions inbox cannot trash, restore or permanently
+delete a submission. That is spec 105, specified and not planned or built.
+
+Specified on 2026-10-08, neither planned nor built:
+
+- **Spec 105, trash, restore and permanently delete a submission.** Found while specifying: a
+  trashed submission is deleted for good by WordPress after 30 days, with nothing recorded and
+  any uploaded file left on disk; and anonymizing leaves an uploaded file too. What a permanent
+  delete removes was left to CoreX by the owner; the choice is the spec's first assumption.
+- **Spec 106, replies written and sent as designed emails**, the owner's request for Muva and
+  Perego: a rich-text reply, a standard template in CoreX's design, and a client's own template
+  in its place. Found while specifying: a reply sent today loses its line breaks, which is slice
+  0 and does not wait for the rest; CoreX's admin has no rich-text editor; and no email CoreX
+  sends has a plain-text version.
 
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 
-**Spec 104, a code-defined form's wording, markup and protection, is in flight**
+**Spec 104, a code-defined form's wording, markup and protection, is built and unreleased**
 ([`specs/104-form-contract-and-protection/`](specs/104-form-contract-and-protection/spec.md)). It
-is the one spec issues #248 and #264 asked for. Four slices, one pull request each:
+is the one spec issues #248 and #264 asked for, and both are closed. Four slices, one pull request each:
 
 | Slice | What | State |
 |---|---|---|
@@ -383,9 +395,10 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
 
-- **Spec Kit cannot be run in a client repository without drift** (#251, item 1). The scripts write
-  `specs/`, `.specify/feature.json` and the root `CLAUDE.md`, all framework-owned there. A client
-  spec is written by hand under `sites/<client>/specs/`; the generated `AGENTS.md` says so.
+- **Spec Kit was not run end to end in a client repository.** Its state file is no longer
+  tracked and its hook is off, so the two framework files it changed are out of the way, and its
+  own path script takes a site's directory (#251, DECISIONS #279). Nobody has run `/speckit-specify`
+  in Muva or Perego and then `npm run verify:framework`.
 - **Turnstile and hCaptcha were not submitted through on a real site.** Their widget is placed
   and a tokenless submission is refused (DECISIONS #278). What was seen is each provider's own
   script rendering into a bare form on a local page, and Turnstile's token cycle there. Nobody

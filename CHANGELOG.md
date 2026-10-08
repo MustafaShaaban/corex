@@ -85,6 +85,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **Running Spec Kit in a client repository no longer changes a framework file** (#251, item 1).
+  `/speckit-specify` wrote the feature it was working on into `.specify/feature.json`, which was
+  tracked, and a hook rewrote a section of the root `CLAUDE.md`; `npm run verify:framework`
+  reported both as drift, so a site's specs were written by hand. The state file is ignored and
+  no longer in the tree, and the hook is off. A site's spec goes under the site by naming the
+  directory: `/speckit-specify SPECIFY_FEATURE_DIRECTORY=sites/<client>/specs/<work-item>-<slug>`.
+  A newly generated `AGENTS.md` says so (DECISIONS #279).
 - **A reply sent from the Submissions inbox lost its line breaks.** The reply is typed in a
   plain text box and sent as HTML, and nothing turned a line break into markup: three paragraphs
   reached the recipient as one block. A blank line is a new paragraph now and a line break is a
@@ -124,6 +131,11 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **`.specify/feature.json` leaves the tree.** A client repository that takes this stops tracking
+  it; a copy a session wrote stays on disk, ignored. If the merge reports it as changed on both
+  sides, keep the deletion. The `/speckit-*` commands can then be used for a site's specs: see
+  the entry under Fixed. An `AGENTS.md` generated earlier still says to write specs by hand and
+  is the site's to correct.
 - **A site with Turnstile or hCaptcha selected and keys saved starts challenging when it takes
   this**, and refuses a protected form's submission that carries no token. Until now such a site
   challenged nobody and refused nothing. Submit one protected form after updating: the widget was
