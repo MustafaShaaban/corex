@@ -178,6 +178,11 @@ describe( 'whether the export can start', () => {
 			{ chosen: [ 'answers' ] },
 			/personal-data notice/,
 		],
+		[
+			'a PDF is asked for with more than a PDF holds',
+			{ count: 1200, format: 'pdf', pdfMost: 500 },
+			/A PDF holds up to 500 submissions/,
+		],
 	] )( 'cannot when %s', ( _name, change, reason ) => {
 		expect( blockedReason( { ...ready, ...change } ) ).toMatch( reason );
 	} );
@@ -191,6 +196,15 @@ describe( 'whether the export can start', () => {
 				acknowledged: true,
 			} )
 		).toBe( '' );
+	} );
+
+	it( 'can as a workbook with more than a PDF holds, and as a PDF within it', () => {
+		const many = { ...ready, count: 1200, pdfMost: 500 };
+
+		expect( blockedReason( { ...many, format: 'xlsx' } ) ).toBe( '' );
+		expect( blockedReason( { ...many, count: 500, format: 'pdf' } ) ).toBe(
+			''
+		);
 	} );
 
 	it.each( [

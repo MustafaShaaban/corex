@@ -6,6 +6,26 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **An export can be a PDF** (spec 103, slice 6), from the Submissions inbox and from the Data
+  screen. "PDF document (.pdf)" is a third choice under Format. The document is A4, set wide. It
+  opens with what was exported, how many records, and who exported it and when. Every page is
+  headed by the site's name and the export's title, and signed at the foot as CoreX's: the CoreX
+  logo, "Exported with CoreX", the copyright line, and the page's number out of how many. The
+  owner, of what "signed off with the identity" meant: "pdf exported should has the corex logo on
+  it as it has the copyrights of the tool". The heading row repeats on each page. More than eight
+  columns are set out one record at a time, a question beside its answer. Arabic is shaped and
+  joined, a right-to-left site's page reads right to left, and a phone number, a date or an
+  English answer inside it keeps its own order.
+- **A PDF holds up to 500 records.** The dialog says so under the choice, and names the limit in
+  place of starting when the choice holds more; the server refuses the same request. An export's
+  file is written in one request. On the development machine five hundred rows took 6.6 seconds
+  and 68MB, and a thousand took 17.3 seconds and 116MB.
+- **The export's preview answers say which formats the server can write**: a `formats` key with
+  `available` and `pdf_most_records`. PDF is offered only where the library and PHP's `gd` and
+  `mbstring` are present.
+
 ### Changed
 
 - **The Data screen has one export dialog** (spec 103, slice 7b), and it is the Submissions
@@ -29,6 +49,18 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A new production dependency: `mpdf/mpdf` ^8.3** (GPL-2.0-only), with its own dependencies. Run
+  `composer install` after taking this. It adds about 94MB to `vendor/`, 88MB of it fonts, and
+  the same to the shared-host package, whose zip is larger to upload by that much. The fonts are
+  kept whole: they are what writes Arabic and every other script a form can be answered in.
+- **PDF needs PHP's `gd` and `mbstring`.** Without them CoreX works as before and does not offer
+  PDF. mPDF keeps a cache of font data in `uploads/corex-private/exports/pdf-working/`, beside
+  the exports and behind the same protection.
+- **Signatures changed in `Corex\Config\Export`**, for code that builds exports itself:
+  `ExportDocument` takes a third argument, the facts a document opens with; `ExportWriters` is
+  constructed with the PDF writer and has `available()` and `describe()`;
+  `SubmissionExportFiles` and `DataExportFiles` take the new document builders. Nothing changes
+  for a site that only uses the screens.
 - **The Data screen's export looks and behaves differently**: a dialog titled "Export <model>",
   which waits and saves the file, where there was "Create export" and "Queue export". Anything
   that drives that screen by its labels has to follow.

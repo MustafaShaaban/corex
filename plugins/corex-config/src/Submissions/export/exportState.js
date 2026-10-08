@@ -6,6 +6,7 @@
  * browser.
  */
 import { __, _n, sprintf } from '@wordpress/i18n';
+import { tooManyForPdf } from '../../admin/components/export/exportFormats.js';
 
 /** The scopes the export route accepts, in the order the dialog offers them. */
 export const SCOPES = [ 'selected', 'filtered', 'accessible' ];
@@ -288,14 +289,32 @@ export function defaultScope( selectedCount ) {
  * @param {number|null} state.count        Submissions the chosen scope would export; null while unknown.
  * @param {string[]}    state.chosen       Ids of the chosen column choices.
  * @param {boolean}     state.acknowledged Whether the personal-data notice is confirmed.
+ * @param {string}      [state.format]     The chosen format.
+ * @param {number}      [state.pdfMost]    The most submissions one PDF holds.
  * @return {string} The reason, in words.
  */
-export function blockedReason( { count, chosen, acknowledged } ) {
+export function blockedReason( {
+	count,
+	chosen,
+	acknowledged,
+	format = 'xlsx',
+	pdfMost = 0,
+} ) {
 	if ( count === null ) {
 		return __( 'Counting the submissions…', 'corex' );
 	}
 	if ( count === 0 ) {
 		return __( 'There is nothing to export with this choice.', 'corex' );
+	}
+	if ( tooManyForPdf( format, count, pdfMost ) ) {
+		return sprintf(
+			/* translators: %s: the most submissions one PDF holds. */
+			__(
+				'A PDF holds up to %s submissions. Choose fewer, or export a workbook.',
+				'corex'
+			),
+			Number( pdfMost ).toLocaleString()
+		);
 	}
 	if ( chosen.length === 0 ) {
 		return __( 'Choose at least one group of columns.', 'corex' );
