@@ -70,7 +70,9 @@ it('replaces the legacy read-only Data Models renderer with real REST workflows'
     expect($screen)->not->toContain('DataModelsImportController')
         ->and($screen)->not->toContain('validation preview only')
         ->and($app . $panels)->toContain("'import-commit'")
-        ->and($app . $panels)->toContain("'export-download'")
+        // The export's requests are in one place now, for the dialog both tabs open (spec 103).
+        ->and(dataClientSource('plugins/corex-config/src/DataModels/dataModelsApi.js'))->toContain("'export-download'")
+        ->and(dataClientSource('plugins/corex-config/src/DataModels/dataModelsApi.js'))->toContain("'export-advance'")
         ->and($app . $panels)->toContain("'migration-preview'")
         ->and($app . $panels)->toContain("'migration-apply'")
         ->and($app . $panels)->toContain("'migration-rollback'");
