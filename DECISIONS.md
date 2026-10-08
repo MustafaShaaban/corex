@@ -7768,3 +7768,68 @@ rendered check was made of a stated label on a page.
 
 **Left open.** Slices 2 to 4. `captcha.action`, the global setting, has no reader in corex-forms
 or the add-on; found while planning, not changed.
+
+## #275 — The shared-host package keeps a few of the PDF library's fonts, and a PDF is written with what is installed
+
+Date: 2026-10-08 · Spec: 103 (submissions inbox and exports), slice 6, after it merged · Status: Final
+
+DECISIONS #269 kept the PDF library's fonts whole and left pruning to the builder "as a packaging
+choice, not made here". The first client site made the choice necessary the same day: it is
+updated by a zip its owner uploads through a hosting panel's file manager, the largest zip proven
+there is 29.7MB, and it does not collect answers in the scripts most of the weight is for. The
+owner, asked to choose between the whole set, a pruned set and no PDF library in the package:
+"you decide the best for me".
+
+**Measured**, on the framework-only package, zipped with deflate level 6:
+
+| Package | Entries | Unpacked | Zipped |
+|---|---|---|---|
+| Without the PDF library | 6,278 | 99MB | 27MB |
+| Every font | 6,847 | 191MB | 71MB |
+| The default from now on | 6,594 | 117MB | 33MB |
+
+The library's fonts are 87MB. Six of them, for Chinese, Korean and three ancient scripts, are
+54MB.
+
+**Kept by default: DejaVu, XB Riyaz and Lateef**, with every licence file. DejaVu has Latin,
+Greek, Cyrillic and Hebrew letters and is the document's default font; the other two are what the
+library writes Arabic, Persian, Urdu, Pashto and Sindhi in. `--pdf-fonts=all` keeps everything.
+Not offered: naming scripts one by one. Two sets cover the sites there are, and a third can be
+added when a site needs one.
+
+**Not chosen: leaving the library out of the package.** That was the client session's
+preference, and it is the smallest package. But the PDF export was the owner's own request, made
+from that client's inbox, and a package without the library would withhold it from the site it
+was asked for on. Six megabytes of zip buy it back.
+
+**The library does not degrade by itself.** With a font's file missing it throws "Cannot find TTF
+TrueType font file" at the first text that asks for that font, and the whole export fails:
+reproduced before the change, with one Chinese answer. It checks its font list, not the disk. So
+`PdfFonts` gives it the list of fonts whose every file is installed, and the directory they are
+in. A font with its regular file and without its bold is left out, because a bold heading in it
+would stop the document the same way. Text in a script with no font installed is written in the
+default font and prints as empty boxes where that font has no letter.
+
+**Said where it is met.** The guide to the shared-host package has the table and the option; the
+Submissions guide says what a PDF from such a site prints; the package's manifest records which
+set it was built with.
+
+**A site installed with Composer is unchanged**: every font is there, and the list given to the
+library is the library's own.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The library, a directory holding only the kept fonts, its own font list | `MpdfException`: cannot find `Sun-ExtA.ttf` |
+| The same with the list cut to the fonts present | written; Latin, Arabic and Hebrew print, Chinese, Korean, Thai and Hindi are boxes |
+| `PdfFontsTest`, `PdfExportTest` (unit) | pass, with the rest of `tests/Unit` |
+| `PdfExportWithFewFontsTest`, real WordPress, one font family installed, answers in six scripts | a PDF is written |
+| `SubmissionExportFileTest`, real WordPress, every font | 15 passed, the PDF among them |
+| `tests/build-shared-host-dist.test.js` | 16 passed, three of them new |
+| The real package built with the default fonts, then verified by the builder | verified; 117.2MB, 33.4MB zipped |
+| A PDF written with nothing but that package's `vendor/` and its `PdfFonts` | written; English, Greek, Russian, Hebrew, Arabic and Urdu print, Chinese, Korean and Thai are boxes |
+
+**Not run.** The whole integration and browser suites; CI runs both. The 33MB is the framework
+alone: a client's own plugin and theme add to it. Nothing was uploaded to a host, so that the
+host accepts 33MB is not shown, only that it is close to the 29.7MB it has accepted.

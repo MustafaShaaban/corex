@@ -30,8 +30,11 @@ final readonly class PdfExportWriter implements ExportWriter
     /** Where the library keeps the font tables it works out, inside the export directory. */
     private const WORKING_DIRECTORY = 'pdf-working';
 
-    public function __construct(private PdfExportLayout $layout, private ExportDirectory $directory)
-    {
+    public function __construct(
+        private PdfExportLayout $layout,
+        private ExportDirectory $directory,
+        private PdfFonts $fonts,
+    ) {
     }
 
     /**
@@ -60,9 +63,12 @@ final readonly class PdfExportWriter implements ExportWriter
             'default_font' => 'dejavusans',
             'default_font_size' => 9,
             // The font is chosen by the script of the text, so an answer in Arabic, Hebrew or
-            // Chinese is drawn in a font that has its letters.
+            // Chinese is drawn in a font that has its letters, where that font is installed. The
+            // library is told which are: it stops the document at a font whose file is missing.
             'autoScriptToLang' => true,
             'autoLangToFont' => true,
+            'fontDir' => $this->fonts->directories(),
+            'fontdata' => $this->fonts->installed(),
         ]);
         if ($this->layout->rightToLeft()) {
             $pdf->SetDirectionality('rtl');

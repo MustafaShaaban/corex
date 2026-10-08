@@ -33,6 +33,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **A PDF is written with the fonts that are installed.** The PDF library stopped a document
+  with "Cannot find TTF TrueType font file" at the first text in a script whose font file was
+  missing. CoreX tells it which fonts are there, and it writes the rest in its default font.
+- **The shared-host builder ships a few of the PDF library's fonts by default**, and
+  `--pdf-fonts=all` ships them all. The owner's first client site is updated by a zip uploaded
+  by hand, and the whole set took that zip from 27MB to 71MB.
 - **The build and test toolchain is `@wordpress/scripts` 36** (was 34). It no longer ships Jest,
   so Jest, its jsdom environment, the WordPress preset and the Babel transform are this
   repository's own dev dependencies, and `npm run test:js` runs `wp-scripts test-unit-jest`. The
@@ -121,10 +127,15 @@ All notable changes to Corex are documented here. The format follows
   `@wordpress/babel-preset-default`. Both are installed at the repository root, where a site's
   config resolves them. A site that calls `jest` itself is not affected.
 - **A new production dependency: `mpdf/mpdf` ^8.3** (GPL-2.0-only), with its own dependencies. Run
-  `composer install` after taking this. It adds about 94MB to `vendor/`, 88MB of it fonts. **The
-  shared-host package is about 191MB unpacked with it, 92MB of that mPDF**, so it nearly doubles
-  what is uploaded. The fonts are kept whole: they are what writes Arabic and every other script
-  a form can be answered in.
+  `composer install` after taking this. It adds about 94MB to `vendor/`, 88MB of it fonts.
+- **The shared-host package keeps the PDF library's fonts for Latin, Greek, Cyrillic, Hebrew and
+  Arabic-script text, and leaves the rest out**: 33MB zipped and 117MB unpacked, measured on the
+  framework alone, where every font made it 71MB and 191MB. A PDF from such a site prints text
+  in any other script (Chinese, Japanese, Korean, Thai, the Indic scripts) as empty boxes; the
+  workbook and the CSV hold it as it is. `npm run build:dist -- --pdf-fonts=all` keeps every
+  font. `corex-release.json` says which was built, as `pdf_fonts`. A site installed with
+  Composer has every font.
+- **`PdfExportWriter` takes a third argument, `PdfFonts`**, for code that constructs it.
 - **The shared-host builder removes from the packaged `vendor/` what a package may never hold**
   (`.github`, `tests`, `.git`, `node_modules` and the rest of its forbidden list). Composer
   installs a package as its author shipped it, mPDF ships a `.github`, and the package was

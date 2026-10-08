@@ -272,6 +272,82 @@ it( 'removes from the packaged vendor/ what a package may not hold, and keeps th
 	expect( mod.verifyDist( distDir ) ).toEqual( { ok: true, errors: [] } );
 } );
 
+// The PDF library's fonts are 87MB of a package somebody uploads by hand, 54MB of it six fonts for
+// Chinese, Korean and three ancient scripts (measured 2026-10-08: 71MB zipped against 27MB without
+// the library). A package keeps the fonts most sites write in, and all of them when asked.
+describe( 'the PDF library’s fonts', () => {
+	const SHIPPED = [
+		'DejaVuSans.ttf',
+		'DejaVuSerif-Bold.ttf',
+		'XB Riyaz.ttf',
+		'XB RiyazBd.ttf',
+		'LateefRegOT.ttf',
+		'Lateef font OFL.txt',
+		'Sun-ExtA.ttf',
+		'UnBatang_0613.ttf',
+		'FreeSerif.ttf',
+		'Aegean.otf',
+	];
+
+	function withPdfLibrary( distDir ) {
+		const fonts = join(
+			distDir,
+			'wp-content',
+			'vendor',
+			'mpdf',
+			'mpdf',
+			'ttfonts'
+		);
+		mkdirSync( fonts, { recursive: true } );
+		SHIPPED.forEach( ( file ) =>
+			writeFileSync( join( fonts, file ), 'x' )
+		);
+		return fonts;
+	}
+
+	it( 'keeps the fonts for Latin and Arabic text, and every licence beside them', () => {
+		const { distDir } = buildFixture();
+		const fonts = withPdfLibrary( distDir );
+
+		expect( mod.prunePdfFonts( distDir ).sort() ).toEqual( [
+			'Aegean.otf',
+			'FreeSerif.ttf',
+			'Sun-ExtA.ttf',
+			'UnBatang_0613.ttf',
+		] );
+		expect( readdirSync( fonts ).sort() ).toEqual( [
+			'DejaVuSans.ttf',
+			'DejaVuSerif-Bold.ttf',
+			'Lateef font OFL.txt',
+			'LateefRegOT.ttf',
+			'XB Riyaz.ttf',
+			'XB RiyazBd.ttf',
+		] );
+	} );
+
+	it( 'has nothing to remove from a package without the PDF library', () => {
+		const { distDir } = buildFixture();
+
+		expect( mod.prunePdfFonts( distDir ) ).toEqual( [] );
+	} );
+
+	it( 'plans the few fonts unless every font is asked for, and says which in the manifest', () => {
+		const root = makeRepo();
+		const distDir = join( root, 'dist' );
+		const plan = ( pdfFonts ) =>
+			mod.buildPlan( {
+				repoRoot: root,
+				distDir,
+				client: 'acme',
+				pdfFonts,
+			} );
+
+		expect( plan( undefined ).manifest.pdf_fonts ).toBe( 'lean' );
+		expect( plan( 'all' ).manifest.pdf_fonts ).toBe( 'all' );
+		expect( () => plan( 'some' ) ).toThrow( /--pdf-fonts/ );
+	} );
+} );
+
 it( 'packages the CLI with its stubs, the client site, and none of the dev or runtime files', () => {
 	const { distDir } = buildFixture();
 	const packaged = listed( distDir );
