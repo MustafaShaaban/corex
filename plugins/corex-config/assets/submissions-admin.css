@@ -694,11 +694,15 @@
 	gap: var(--corex-admin-space-sm) var(--corex-admin-space-md);
 }
 
-/* Who moved a submission to the trash, under when. */
+/* Who moved a submission to the trash, and the day it will be deleted for
+   good, under when it was moved. They wrap inside the width the date above
+   them takes: on one line each they made the column 150 pixels wider than
+   the table had. */
 .corex-admin .corex-inbox__trashed small {
 	display: block;
 	color: var(--corex-admin-text-muted);
 	font-size: var(--corex-admin-font-xs);
+	white-space: normal;
 }
 
 /* The line a trashed submission's pane opens with. */
