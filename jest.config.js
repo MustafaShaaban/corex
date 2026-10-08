@@ -81,9 +81,9 @@ const notCorexSource = [
 
 module.exports = {
 	preset: '@wordpress/jest-preset-default',
+	// The preset's own transform stops at `.js`, `.jsx`, `.ts` and `.tsx`; the tooling tests import `.mjs`.
 	transform: {
-		'\\.[jt]sx?$': babelTransform,
-		'\\.mjs$': babelTransform,
+		'\\.(?:[jt]sx?|mjs)$': babelTransform,
 	},
 	testPathIgnorePatterns: [
 		'/node_modules/',

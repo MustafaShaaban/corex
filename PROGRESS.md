@@ -81,9 +81,9 @@ carries the same change as a local patch and removes it on its next update.
 
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 
-One dependency pull request is held: #240, `@wordpress/scripts` 34 → 36, a toolchain major that
-wants its own verified pass. It would retire both overrides listed under "Open, and not hidden".
-One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`).
+No dependency pull request is open. `@wordpress/scripts` 36 is taken (DECISIONS #271, unreleased):
+the tests stay on Jest, installed by this repository now that the toolchain no longer ships it,
+and **Node 22.22 is the floor** for building. #243 (`nikic/php-parser` 5.9) is merged.
 
 ## Recently landed
 
@@ -391,10 +391,14 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   `sprintf-js`, installed and not reached. One is `braces` (GHSA-vfj7-8cjw-p6xm), which runs in the
   linter and the build on patterns that come only from tool defaults. None has a release this tree
   can take.
-- **Two overrides hold packages above what their parents ask for**: `lighthouse` at 13 and
-  `postcss-selector-parser` at 7.1.6, in the root and in `docs-app`. Both go when
-  `@wordpress/scripts` 36 is taken, a toolchain major that has not been attempted
-  (Dependabot's #240 proposes it).
+- **One override holds a package above what its parents ask for**: `postcss-selector-parser` at
+  7.1.6, in the root and in `docs-app`. `@wordpress/scripts` 36 did not retire it as expected:
+  `cssnano` 6 still asks for 6.x. Three more hold `js-yaml`, `smol-toml` and `katex` at patched
+  releases under `markdownlint-cli` (DECISIONS #271).
+- **The Jest suite runs on packages npm marks unsupported**: `@wordpress/jest-preset-default` and
+  `@wordpress/jest-console`. Upstream maintains that combination and promises nothing past it;
+  moving 64 suites to Vitest is its own piece of work, not started (DECISIONS #271).
+- `npm run lint:js` passes with 54 warnings, from three JSDoc rules new in the toolchain.
 - **PHP on the CI runner refused a correct argument until the run ended, and the cause is a lead,
   not a proof.** On 2026-10-08 (run 37746210110) `GET corex/v1/flows` answered 200 twenty-eight
   times and then 500 for the rest of the run. The log line: `FlowRestMapper::summary(): Argument
