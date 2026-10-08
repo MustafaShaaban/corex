@@ -73,9 +73,13 @@ A muted, centred placeholder. **Use** when a list/area has no content yet.
 ### Table — `core/table` (+ `is-style-corex-striped`)
 **Use** core/table; apply the striped style for scannability. **Don't use** a table for layout.
 
-### Skeleton / loading — `.corex-skeleton` (CSS utility) / Spinner
-A token-only shimmer placeholder; for React admin screens the `@wordpress/components` Spinner is used. **Use**
-while content loads. **Don't use** indefinitely — show an error or empty state on failure.
+### Skeleton / loading — `.corex-skeleton` (CSS utility)
+A token-only pulsing placeholder for the public site. **Use** while content loads. **Don't use**
+indefinitely — show an error or empty state on failure.
+
+The admin has its own, on the admin's tokens and under another name (`.corex-admin-skeleton`), so that neither
+stylesheet can style the other's: see [Loading states](../admin-experience/#loading-states). The Submissions and
+Data screens still show the `@wordpress/components` Spinner until they are moved to it.
 
 ## Deferred (not yet built)
 

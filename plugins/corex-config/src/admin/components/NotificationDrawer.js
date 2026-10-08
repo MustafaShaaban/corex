@@ -10,13 +10,16 @@ import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import NotificationItem from '../notifications/NotificationItem.js';
+import NotificationSkeleton from '../notifications/NotificationSkeleton.js';
+import CorexLoadable from './CorexLoadable.js';
 
 const FOCUSABLE =
 	'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export default function NotificationDrawer( { open, onClose } ) {
 	const panelRef = useRef( null );
-	const [ status, setStatus ] = useState( 'idle' );
+	// A closed drawer draws nothing, so its first state is the one it opens in.
+	const [ status, setStatus ] = useState( 'loading' );
 	const [ items, setItems ] = useState( [] );
 
 	const load = useCallback( () => {
@@ -134,59 +137,67 @@ export default function NotificationDrawer( { open, onClose } ) {
 						×
 					</button>
 				</header>
-				{ status === 'loading' && (
-					<p className="corex-notification-drawer__state">
-						{ __( 'Loading notifications…', 'corex' ) }
-					</p>
-				) }
-				{ status === 'error' && (
-					<p
-						className="corex-notification-drawer__state"
-						role="alert"
-					>
-						{ __(
-							'Notifications could not be loaded. Try again shortly.',
-							'corex'
-						) }
-					</p>
-				) }
-				{ status === 'ready' && items.length === 0 && (
-					<p className="corex-notification-drawer__state">
-						{ __( 'You’re all caught up.', 'corex' ) }
-					</p>
-				) }
-				{ status === 'ready' && items.length > 0 && (
-					<>
-						<ul className="corex-notification-drawer__list">
-							{ /* The same component the full screen renders (spec 074, FR-4.9). The drawer
+				<CorexLoadable
+					status={ status }
+					skeleton={
+						<NotificationSkeleton place="drawer" count={ 3 } />
+					}
+					loadingLabel={ __( 'Loading notifications…', 'corex' ) }
+					errorMessage={ __(
+						'Notifications could not be loaded.',
+						'corex'
+					) }
+					onRetry={ load }
+				>
+					<DrawerItems
+						items={ items }
+						onMarkRead={ markRead }
+						onMarkAllRead={ markAllRead }
+					/>
+				</CorexLoadable>
+			</div>
+		</div>
+	);
+}
+
+function DrawerItems( { items, onMarkRead, onMarkAllRead } ) {
+	if ( items.length === 0 ) {
+		return (
+			<p className="corex-notification-drawer__state">
+				{ __( 'You’re all caught up.', 'corex' ) }
+			</p>
+		);
+	}
+
+	return (
+		<>
+			<ul className="corex-notification-drawer__list">
+				{ /* The same component the full screen renders (spec 074, FR-4.9). The drawer
 							     used to show its own shorter version of the same record, so what a
 							     notification appeared to want from you depended on where you looked.
 							     `compact` drops the secondary controls — the drawer is a glance, and
 							     dismiss/snooze/resolve belong where you can see what you are acting
 							     on — but every fact about the item is the same one. */ }
-							{ items.map( ( item ) => (
-								<li
-									key={ item.id }
-									className="corex-notification-drawer__item"
-								>
-									<NotificationItem
-										item={ item }
-										compact
-										actions={ { markRead } }
-									/>
-								</li>
-							) ) }
-						</ul>
-						<button
-							type="button"
-							className="corex-notification-drawer__mark-all"
-							onClick={ markAllRead }
-						>
-							{ __( 'Mark all as read', 'corex' ) }
-						</button>
-					</>
-				) }
-			</div>
-		</div>
+				{ items.map( ( item ) => (
+					<li
+						key={ item.id }
+						className="corex-notification-drawer__item"
+					>
+						<NotificationItem
+							item={ item }
+							compact
+							actions={ { markRead: onMarkRead } }
+						/>
+					</li>
+				) ) }
+			</ul>
+			<button
+				type="button"
+				className="corex-notification-drawer__mark-all"
+				onClick={ onMarkAllRead }
+			>
+				{ __( 'Mark all as read', 'corex' ) }
+			</button>
+		</>
 	);
 }

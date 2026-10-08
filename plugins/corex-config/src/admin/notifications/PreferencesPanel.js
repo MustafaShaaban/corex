@@ -9,6 +9,34 @@
 import { useCallback, useEffect, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import CorexLoadable from '../components/CorexLoadable.js';
+import CorexSkeleton, {
+	SkeletonBar,
+	SkeletonBox,
+} from '../components/CorexSkeleton.js';
+
+/** How many rows the placeholder stands in for; the server decides the real number. */
+const PLACEHOLDER_ROWS = 6;
+
+function PreferencesSkeleton() {
+	return (
+		<CorexSkeleton>
+			<ul className="corex-notifications-prefs">
+				{ Array.from( { length: PLACEHOLDER_ROWS }, ( _, index ) => (
+					<li
+						key={ index }
+						className="corex-notifications-prefs__row"
+					>
+						<span className="corex-notifications-prefs__label">
+							<SkeletonBox />
+							<SkeletonBar width="short" />
+						</span>
+					</li>
+				) ) }
+			</ul>
+		</CorexSkeleton>
+	);
+}
 
 export default function PreferencesPanel() {
 	const [ status, setStatus ] = useState( 'loading' );
@@ -49,21 +77,20 @@ export default function PreferencesPanel() {
 		[ rows ]
 	);
 
-	if ( status === 'loading' ) {
-		return (
-			<p className="corex-notifications-screen__state">
-				{ __( 'Loading preferences…', 'corex' ) }
-			</p>
-		);
-	}
-	if ( status === 'error' ) {
-		return (
-			<p className="corex-notifications-screen__state" role="alert">
-				{ __( 'Preferences could not be loaded.', 'corex' ) }
-			</p>
-		);
-	}
+	return (
+		<CorexLoadable
+			status={ status }
+			skeleton={ <PreferencesSkeleton /> }
+			loadingLabel={ __( 'Loading preferences…', 'corex' ) }
+			errorMessage={ __( 'Preferences could not be loaded.', 'corex' ) }
+			onRetry={ load }
+		>
+			<PreferenceRows rows={ rows } onToggle={ toggle } />
+		</CorexLoadable>
+	);
+}
 
+function PreferenceRows( { rows, onToggle } ) {
 	return (
 		<ul className="corex-notifications-prefs">
 			{ rows.map( ( row ) => (
@@ -83,7 +110,7 @@ export default function PreferencesPanel() {
 							checked={ row.enabled }
 							disabled={ row.mandatory }
 							onChange={ ( event ) =>
-								toggle( row.category, event.target.checked )
+								onToggle( row.category, event.target.checked )
 							}
 						/>
 						<span className="corex-notifications-prefs__name">

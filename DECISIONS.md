@@ -8364,3 +8364,89 @@ removed was tested with a store that says so, not with a real file the server co
 Somebody without the permission was tested at the route and in the services, not in the browser.
 A deletion of a submission with a real captured email was tested in two halves, the inbox with a
 recording seam and the add-on by itself, not end to end.
+
+## #284 — A placeholder is drawn inside the content's own markup, and a list is kept while it is replaced
+
+**Date:** 2026-10-08. **Spec:** 108, slice 1 (T001 to T009). **Branch:** `feat/108-loading-pieces`.
+
+The owner asked for a skeleton loader on every call and a better loader inside CoreX. This is
+the first slice: the two shared pieces, and the three Notifications surfaces on them.
+
+**A surface composes its own placeholder.** The plan's first draft had a catalogue of shapes
+(rows, cards, tiles, a pane, a form). What was built is two parts, a bar and a box, that a
+surface puts inside the markup its content uses. The bar is as tall as a line of the element it
+is in (`1lh`), painted as a strip in the middle of that line, so a placeholder card takes its
+padding, its columns and its line heights from the rules the real card takes them from, and
+changes when they do. Measured on the page, against the card that replaced it:
+
+| Surface | Placeholder | Real |
+|---|---|---|
+| Screen card, left to right | same left edge, top and width; 166.7px tall | 171.5px |
+| Screen card, right to left | same left edge, top and width; 166.7px tall | 173.5px |
+| Preferences row | 816 by 52.2px | 816 by 52.2px |
+| Drawer card (wrapped text) | 197px tall | 211px, for the readiness notifications on the test site |
+
+The difference on the screen is the pill round a severity and the chrome of an action button,
+which a bar does not have. The drawer's first placeholder was the screen's and stood 135px
+against 211px; the drawer has a shape of its own now, with the lines its narrower column wraps
+to and no row of actions.
+
+**The delay is CSS.** Nothing is drawn for the first 160ms: the placeholder is held transparent
+by an animation's delay, with the space taken from the first frame. No timer to clear, and the
+same on the two screens that are not React.
+
+**Each animation has its own reduced-motion rule.** The shell's general rule is `.corex-admin *`,
+one class strong; every selector here is stronger, so it would not have reached them. The plan's
+first draft relied on it, and on an ended animation resting on its last frame, which it does
+not without a fill mode. Each part is right when still instead: the band's own place is off
+the block, and the waiting bar spans its edge.
+
+**What is announced.** The sentence region is outside the element marked busy, because
+assistive technology may hold a busy element's announcements until it is no longer busy. A load
+is announced after it has lasted a second, and its end only if its start was. The sentence is
+the surface's own, whole, not assembled from a name.
+
+**Waiting content is inert, and focus goes to the surface.** A row of a list that is being
+replaced takes no action (FR-011). Content that turns inert drops the focus it held and the
+browser sends it to the top of the page; the surface takes it. The pager is outside what waits
+and is now drawn through a refresh: it used to be removed on every page turn, with the focus on
+the button that had just been pressed.
+
+**A slower answer is not kept.** With the list left on screen a second view can be asked for
+before the first has answered. The screen keeps the answer to the last request, whichever
+arrives last. It was not reachable before only because both requests replaced the same line of
+text.
+
+**The class is `.corex-admin-skeleton`.** It was `.corex-skeleton` until the public theme's
+utility of that name was read: a different thing (a pulsing block), in a stylesheet that would
+have painted this one's wrapper if the two were ever loaded together.
+
+**The loader and the working button moved to slice 2.** Nothing in this slice would have called
+them.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The eight Notifications tests, before the surfaces changed | failed |
+| `npx wp-scripts test-unit-jest` | 783 passed, 70 suites |
+| `loading-states` and `notification-center` browser specs, on `corex.local` | 15 passed |
+| The placeholder against its card in dark and light, left to right and right to left | the table above |
+| Reduced motion, in the browser | the band's animation is `none`; no animation on the page repeats |
+| `TokenConsumerContractTest`, `AdminAssetScopingTest` | 8 passed |
+| `wp-scripts lint-js` on the changed files, `lint-style` on the two stylesheets | no errors |
+
+**Not run.** No screen reader. The announcements are asserted as text in a live region, not
+heard. Firefox and Safari were not opened; `lh` and `inert` are in all three engines' current
+releases, which is from their documentation and not from a run here.
+
+**Left open.**
+
+- The placeholder is faint on the dark theme on purpose: the border colour on a raised surface.
+  It is decoration and carries no text; whether it is too faint is the owner's eye to judge.
+- A list's placeholder is four cards (three in the drawer, six rows in preferences) whatever the
+  answer holds, so what is below a list still moves when the answer is longer or shorter.
+- The drawer shows a placeholder on every open. It could keep the last list and mark it
+  waiting; it does not, because a list from the last time it was open is not current.
+- "Mark all as read", and each notification's own actions, still show nothing while their
+  request is out. That is slice 2.

@@ -137,13 +137,23 @@ reaches a site's files before the fourth.
 | 5 | Going back from the screen, and the record | not started |
 | 6 | The deployment guide | not started |
 
-**Spec 108, the admin shows what is coming while it loads, is planned and not built**
+**Spec 108, the admin shows what is coming while it loads, has its first slice built**
 ([`specs/108-loading-states/`](specs/108-loading-states/spec.md)). The owner asked for a
 skeleton loader on every call and a better loader inside CoreX. Read as three things: a first
 load shows a placeholder in the shape of its content; a refresh keeps the content and marks it
 waiting; an action marks its button. One CoreX loader replaces WordPress's spinner and busy
 button. Twenty surfaces, six slices (the placeholder first, then the loader and every
-action), the Submissions inbox last and agreed with the session building spec 105 there. The readings are under the spec's Assumptions and are his to overrule.
+action), the Submissions inbox last and agreed with the session building spec 105 there. The
+readings are under the spec's Assumptions and are his to overrule.
+
+| Slice | What | State |
+|---|---|---|
+| 1 | The placeholder and the wrapper; the Notifications screen, its preferences and the header drawer | done (DECISIONS #284), unreleased |
+| 2 | The loader, and every action outside the Submissions inbox; `isBusy` gone | not started |
+| 3 | Data: records, totals, the search box, a record, export history, migrations | not started |
+| 4 | Forms and flows, Email Studio | not started |
+| 5 | Insights and the setup wizard | not started |
+| 6 | The Submissions inbox, agreed with the spec 105 session first | not started |
 
 Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
 deferred through WP-Cron on a site that has no Action Scheduler, and the queue runs whichever
