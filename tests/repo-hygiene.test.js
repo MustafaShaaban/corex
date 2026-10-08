@@ -410,7 +410,7 @@ describe( 'the docs-site mirror of the project status', () => {
 	} );
 } );
 
-describe( 'Spec Kit in a repository that is not only the framework\'s', () => {
+describe( "Spec Kit in a repository that is not only the framework's", () => {
 	/**
 	 * In a client repository everything outside `sites/` is the framework's, and a change there is
 	 * drift (spec 102). Running the documented Spec Kit workflow made two such changes on its own:
