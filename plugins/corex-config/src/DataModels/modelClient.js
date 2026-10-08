@@ -142,7 +142,7 @@ export function capabilitySummary( source ) {
 					true,
 					__( 'Readable', 'corex' ),
 					__( 'You can browse and search these records.', 'corex' )
-			  )
+				)
 			: entry(
 					'read',
 					false,
@@ -151,7 +151,7 @@ export function capabilitySummary( source ) {
 						'This model does not expose its records for browsing.',
 						'corex'
 					)
-			  ),
+				),
 		can( 'create' ) || can( 'update' )
 			? entry(
 					'write',
@@ -161,7 +161,7 @@ export function capabilitySummary( source ) {
 						'Records can be added and changed from CoreX.',
 						'corex'
 					)
-			  )
+				)
 			: entry(
 					'write',
 					false,
@@ -170,7 +170,7 @@ export function capabilitySummary( source ) {
 						'Records are written by the feature that owns them, not by hand.',
 						'corex'
 					)
-			  ),
+				),
 		can( 'import_dry_run' )
 			? entry(
 					'import',
@@ -180,7 +180,7 @@ export function capabilitySummary( source ) {
 						'You can bring records in from a CSV, with a dry run first.',
 						'corex'
 					)
-			  )
+				)
 			: entry(
 					'import',
 					false,
@@ -189,20 +189,20 @@ export function capabilitySummary( source ) {
 						'This model does not accept imported records.',
 						'corex'
 					)
-			  ),
+				),
 		can( 'export_csv' )
 			? entry(
 					'export',
 					true,
 					__( 'Exportable', 'corex' ),
 					__( 'You can download these records as a CSV.', 'corex' )
-			  )
+				)
 			: entry(
 					'export',
 					false,
 					__( 'No export', 'corex' ),
 					__( 'This model cannot be exported.', 'corex' )
-			  ),
+				),
 		can( 'migrations' )
 			? entry(
 					'migrations',
@@ -212,17 +212,17 @@ export function capabilitySummary( source ) {
 						? __(
 								'Ships schema changes you can preview, apply, and roll back.',
 								'corex'
-						  )
+							)
 						: __(
 								'Ships schema changes you can preview and apply. They cannot be undone.',
 								'corex'
-						  )
-			  )
+							)
+				)
 			: entry(
 					'migrations',
 					false,
 					__( 'No migrations', 'corex' ),
 					__( 'This model ships no schema changes.', 'corex' )
-			  ),
+				),
 	];
 }

@@ -198,8 +198,8 @@ export default function DataExportDialog( {
 			current.includes( key )
 				? current.filter( ( item ) => item !== key )
 				: // Kept in the source's order, whatever order they were ticked in: that is the
-				  // order of the file's columns.
-				  fields
+					// order of the file's columns.
+					fields
 						.map( ( field ) => field.key )
 						.filter(
 							( item ) => item === key || current.includes( item )

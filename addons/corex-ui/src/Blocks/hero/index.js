@@ -55,7 +55,7 @@ function Edit( { attributes, setAttributes } ) {
 										: __(
 												'Add background image',
 												'corex'
-										  ) }
+											) }
 								</Button>
 							) }
 						/>

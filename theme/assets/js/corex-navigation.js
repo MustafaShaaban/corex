@@ -104,7 +104,7 @@
 					root.querySelectorAll(
 						'.corex-header--transparent, .corex-header--sticky'
 					)
-			  )
+				)
 			: [];
 		if ( ! headers.length ) {
 			return;
@@ -151,7 +151,7 @@
 		const toggles = root.querySelectorAll
 			? Array.prototype.slice.call(
 					root.querySelectorAll( '[data-corex-search-toggle]' )
-			  )
+				)
 			: [];
 
 		toggles.forEach( function ( toggle ) {

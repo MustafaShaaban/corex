@@ -11,7 +11,7 @@ truth; WordPress core is never committed.
 
 - **PHP 8.3+** and **WordPress 7.0+**
 - **Composer 2** (PHP dependencies + autoload)
-- **Node 20+** and npm (the block/SCSS/JS build, and these docs)
+- **Node 22.22+** and npm (the block/SCSS/JS build, and these docs)
 - **WP-CLI** (install, activate, and the `wp corex` commands)
 - A local stack: **WAMP/Apache + MySQL**, or **wp-env/Docker**
 

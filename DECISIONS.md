@@ -7581,3 +7581,74 @@ checkout was in use by two other sessions, so this was built and verified from a
 worktree, with the changed class served to its own requests by a temporary must-use plugin,
 since removed. No multisite install was probed: that `wp-signup.php` is left alone there is held
 by a unit test only.
+
+## #272 — `@wordpress/scripts` 36 is taken, and the tests stay on Jest
+
+Date: 2026-10-08 · Spec: none (toolchain) · Status: Final
+
+Dependabot's #240 proposed `@wordpress/scripts` 34 → 36 and was held as "a toolchain major that
+wants its own verified pass" (PROGRESS.md; DECISIONS #244 expected it to retire two overrides).
+It failed three checks. This is that pass, done on
+36.1.0, and #240 is closed in its favour.
+
+**What 36 changed for this repository.**
+
+- It no longer ships Jest, `@wordpress/jest-preset-default` or its Babel transform, and
+  `wp-scripts test-unit-js` now runs Vitest. `config/jest-unit.config.js` and
+  `config/babel-transform`, which `jest.config.js` extended, are gone. That is why #240's Jest
+  job failed: there was no runner.
+- Its default lint config gives test files Vitest's rules.
+- stylelint 17 and its WordPress config refuse the deprecated `clip` property; wp-prettier 3.9
+  formats 33 of our files differently.
+- It declares Node `^22.22.2 || ^24.15.0 || >=26.0.0`.
+
+**Decision: keep Jest.** 64 suites and 715 tests are written to Jest's API and to the WordPress
+preset's console assertions. Upstream documents a supported path for that ("Keep an existing Jest
+suite" in its `vitest-migration.md`) and this follows it: `jest`, `jest-environment-jsdom`,
+`babel-jest`, `@wordpress/jest-preset-default` 14.2.0, `@babel/core` and
+`@wordpress/babel-preset-default` 8.55.0 are root dev dependencies; `jest.config.js` names the
+preset and the transform; `test:js` is `wp-scripts test-unit-jest`; `eslint.config.js` is built
+from `@wordpress/eslint-plugin` with `eslint-plugin-jest` on test files. `react` and `react-dom`
+18.3 are named as dev dependencies because 36 declares them as peers and npm otherwise resolves
+the peer to React 19 against a tree that holds 18.
+
+**What that costs, said plainly.** npm marks `@wordpress/jest-preset-default` and
+`@wordpress/jest-console` "no longer supported". Upstream's words are that maintenance covers the
+adapter and this tested combination and promises no new features and no compatibility with future
+Jest or Node releases. So this is a holding position: the suite moves to Vitest some day, as its
+own piece of work, and nothing forces the day yet.
+
+**Overrides.**
+
+| Override | Before | After | Why |
+|---|---|---|---|
+| `lighthouse` | `^13.5.0` | removed | `@wordpress/e2e-test-utils-playwright` 3 asks for `^13.4.1` itself, and 13.5.0 is what installs |
+| `postcss-selector-parser` | `^7.1.6` | kept | PROGRESS.md said it would go with 36. It does not: `cssnano` 6 still asks for 6.x in five places, and without the override GHSA-rj75-hqrm-r3gf is back |
+| `markdownlint-cli` → `minimatch` | `^3.1.5` | removed | `markdownlint-cli` 0.49 imports `minimatch` as a module; on the pinned 3.x `wp-scripts lint-md-docs` died at import. It asks for 10.2 itself, which carries no advisory |
+| `markdownlint-cli` → `js-yaml`, `smol-toml`; `katex` | none | `^5.4.3`, `^1.9.0`, `^0.18.2` | GHSA-r3ph-w7gj-g6xm, GHSA-r4xh-jqrq-34v2 and GHSA-238p-pmpm-9mq7, each with a patched release its parent's range stops short of. All three arrive with `markdownlint-cli` |
+
+The six bounded exceptions are unchanged.
+
+**Node.** `engines`, the Azure pipeline's `NODE_VERSION`, the readiness command's dependency list
+and four documentation pages said Node 20. They say 22.22 now. GitHub's workflows already asked
+for `'22'`, which resolves above the floor.
+
+What was run, on the development machine (Node 22.14.0, below the new floor; npm warned and every
+command ran):
+
+| Check | Result |
+|---|---|
+| `npm run test:js` | 64 suites, 715 tests passed; `main`'s last CI run on the old toolchain: 64 and 715 |
+| `npm run lint:js` | 0 errors, 54 warnings (`jsdoc/reject-function-type` 35, `jsdoc/reject-any-type` 11, `jsdoc/escape-inline-tags` 8, all new with the toolchain); it was 93 errors before `--fix` and two hand edits |
+| `npm run lint:css` | clean, after `clip-path: inset(50%)` replaced `clip: rect(0, 0, 0, 0)` on `.corex-form__label--hidden` |
+| `npm run build`, 169 files hashed before and after | every JavaScript bundle byte-identical; the 12 corex-forms stylesheets differ by the one declaration; the asset manifests differ in layout (one array entry per line) and so in hash |
+| The asset manifests' dependency lists against an earlier build's | 18 compared, none differ |
+| `npm run verify:dependencies` | PASS, 6 findings, 6 accepted exceptions; 10 findings and 4 unbounded before the overrides |
+| `npx wp-scripts lint-md-docs README.md` | before: `SyntaxError: Named export 'minimatch' not found`; after: runs and reports six style findings in the README, which nothing gates |
+
+**Not run.** The browser suite locally; CI runs it. The hidden label was not looked at in a
+browser: the two declarations are the same visually-hidden technique, and the 1px box with
+`overflow: hidden` does the hiding either way. `docs-app` is a separate npm project and was not
+touched; its `postcss-selector-parser` override stays.
+
+**Left open.** The 54 lint warnings. The README's six markdown findings. Vitest.

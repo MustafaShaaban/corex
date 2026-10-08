@@ -88,7 +88,7 @@
 				? t( 'No score yet' )
 				: escape(
 						t( 'Score' ) + ' ' + score + ' / 100, grade ' + grade
-				  ) ) +
+					) ) +
 			'"><span class="corex-insight-card__grade">' +
 			escape( grade ) +
 			'</span>' +
@@ -98,25 +98,25 @@
 			'</header>' +
 			( error
 				? '<p class="corex-insight-card__error" role="alert">' +
-				  escape( error ) +
-				  '</p>'
+					escape( error ) +
+					'</p>'
 				: '' ) +
 			( result
 				? '<p class="corex-insight-card__summary">' +
-				  escape( result.summary ) +
-				  '</p>'
+					escape( result.summary ) +
+					'</p>'
 				: '' ) +
 			( metrics.length
 				? '<ul class="corex-insight-card__metrics">' +
-				  metrics.map( metricRow ).join( '' ) +
-				  '</ul>'
+					metrics.map( metricRow ).join( '' ) +
+					'</ul>'
 				: '' ) +
 			( recs.length
 				? '<ul class="corex-insight-card__recs">' +
-				  recs
+					recs
 						.map( ( r ) => '<li>' + escape( r ) + '</li>' )
 						.join( '' ) +
-				  '</ul>'
+					'</ul>'
 				: '' ) +
 			'<footer class="corex-insight-card__foot">' +
 			'<button type="button" class="button button-primary" ' +
@@ -218,16 +218,16 @@
 			'<div class="corex-insight-widget__alt">' +
 			( alt.title
 				? '<p class="corex-insight-widget__alt-title">' +
-				  escape( alt.title ) +
-				  '</p>'
+					escape( alt.title ) +
+					'</p>'
 				: '' ) +
 			( alt.message ? '<p>' + escape( alt.message ) + '</p>' : '' ) +
 			( alt.ctaLabel
 				? '<a class="button" href="' +
-				  escape( href ) +
-				  '">' +
-				  escape( alt.ctaLabel ) +
-				  '</a>'
+					escape( href ) +
+					'">' +
+					escape( alt.ctaLabel ) +
+					'</a>'
 				: '' ) +
 			'</div>'
 		);
@@ -253,18 +253,18 @@
 			'</header>' +
 			( widget.note
 				? '<p class="corex-insight-widget__note">' +
-				  escape( widget.note ) +
-				  '</p>'
+					escape( widget.note ) +
+					'</p>'
 				: '' ) +
 			( widget.rows && widget.rows.length
 				? '<ul class="corex-insight-widget__rows">' +
-				  widget.rows.map( widgetRow ).join( '' ) +
-				  '</ul>'
+					widget.rows.map( widgetRow ).join( '' ) +
+					'</ul>'
 				: '' ) +
 			( widget.events && widget.events.length
 				? '<ul class="corex-insight-widget__events">' +
-				  widget.events.map( widgetEvent ).join( '' ) +
-				  '</ul>'
+					widget.events.map( widgetEvent ).join( '' ) +
+					'</ul>'
 				: '' ) +
 			( widget.alt ? widgetAlt( widget.alt ) : '' );
 

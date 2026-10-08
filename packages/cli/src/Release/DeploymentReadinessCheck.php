@@ -32,14 +32,14 @@ final class DeploymentReadinessCheck
                 'name' => 'standard',
                 'packageShape' => 'Tagged Corex framework release deployed with active core plugins, theme, vendor, and assets.',
                 'buildCommands' => ['composer validate --no-check-publish', 'composer test', 'npm run build'],
-                'dependencies' => ['PHP 8.3+', 'Node 20+', 'WP-CLI', 'WordPress 7.0+'],
+                'dependencies' => ['PHP 8.3+', 'Node 22.22+', 'WP-CLI', 'WordPress 7.0+'],
                 'secrets' => ['database credentials', 'mail credentials', 'WordPress auth salts'],
             ]),
             self::profile([
                 'name' => 'full',
                 'packageShape' => 'Full first-party Corex runtime with optional add-ons enabled by Corex feature state.',
                 'buildCommands' => ['composer test', 'npm run build', 'npm run test:js'],
-                'dependencies' => ['PHP 8.3+', 'Node 20+', 'WP-CLI', 'optional add-on plugin files'],
+                'dependencies' => ['PHP 8.3+', 'Node 22.22+', 'WP-CLI', 'optional add-on plugin files'],
                 'secrets' => ['database credentials', 'mail credentials', 'captcha keys', 'WordPress auth salts'],
             ]),
             self::profile([

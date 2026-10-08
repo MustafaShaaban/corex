@@ -273,7 +273,7 @@ describe( 'the tools that walk the tree', () => {
 				process.execPath,
 				[
 					require.resolve( '@wordpress/scripts/bin/wp-scripts.js' ),
-					'test-unit-js',
+					'test-unit-jest',
 					'--showConfig',
 				],
 				{

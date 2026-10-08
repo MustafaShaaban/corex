@@ -173,7 +173,7 @@ function CodeFormRow( { row, submissionsUrl } ) {
 	const filterUrl = submissionsUrl
 		? `${ submissionsUrl }&corex_form=slug:${ encodeURIComponent(
 				row.slug
-		  ) }`
+			) }`
 		: '';
 
 	return (
@@ -197,7 +197,7 @@ function CodeFormRow( { row, submissionsUrl } ) {
 									'corex'
 								),
 								row.submissionCount
-						  ) }
+							) }
 				</span>
 				<span className="corex-flow-list__disclose">
 					{ open
@@ -212,11 +212,11 @@ function CodeFormRow( { row, submissionsUrl } ) {
 							? __(
 									'Another module owns this form, so the visual builder cannot change it. Its fields and rules come from that module.',
 									'corex'
-							  )
+								)
 							: __(
 									'This form is defined in your code through Corex\\Forms\\FormRegistry, so the visual builder cannot change it. Edit the form class to change its fields or rules.',
 									'corex'
-							  ) }
+								) }
 					</p>
 					{ row.fields.length > 0 ? (
 						<table className="corex-flow-list__fields">
@@ -340,11 +340,11 @@ export function FlowList( {
 											'corex'
 										),
 										readOnly
-								  )
+									)
 								: __(
 										'Every form CoreX knows about. Search, filter, and open a flow.',
 										'corex'
-								  ) }
+									) }
 						</p>
 					</div>
 					<form

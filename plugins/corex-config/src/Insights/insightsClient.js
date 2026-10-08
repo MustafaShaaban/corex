@@ -138,7 +138,7 @@ export function normalizeWidgets( payload ) {
 						message: String( widget.alt.message || '' ),
 						ctaLabel: String( widget.alt.ctaLabel || '' ),
 						ctaHref: String( widget.alt.ctaHref || '' ),
-				  }
+					}
 				: null,
 	} ) );
 }

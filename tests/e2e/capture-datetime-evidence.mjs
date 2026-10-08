@@ -157,8 +157,8 @@ for ( const surface of SURFACES ) {
 		followsBrowserTimezone: surface.volatile
 			? 'not comparable (live feed)'
 			: inUtc.length > 0 &&
-			  inUtc.length === inTokyo.length &&
-			  inUtc.some( ( text, index ) => text !== inTokyo[ index ] ),
+				inUtc.length === inTokyo.length &&
+				inUtc.some( ( text, index ) => text !== inTokyo[ index ] ),
 		inTokyo,
 	};
 }

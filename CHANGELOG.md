@@ -28,6 +28,10 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **The build and test toolchain is `@wordpress/scripts` 36** (was 34). It no longer ships Jest,
+  so Jest, its jsdom environment, the WordPress preset and the Babel transform are this
+  repository's own dev dependencies, and `npm run test:js` runs `wp-scripts test-unit-jest`. The
+  built JavaScript is byte-identical to the last build on 34 (DECISIONS #272).
 - **The Data screen has one export dialog** (spec 103, slice 7b), and it is the Submissions
   export's. "Export records" on the Records tab and the Export tab both open it: what to export
   with a count for each choice, the columns, the format, one action, the export's progress, and
@@ -83,6 +87,16 @@ All notable changes to Corex are documented here. The format follows
 - **CoreX cannot hide `/wp-activate.php`, `/wp-admin/install.php` or `/wp-admin/upgrade.php`**:
   WordPress runs them without plugins. They do not name the custom address. A site that wants
   them answered differently needs a rule in its web server.
+- **Building needs Node 22.22 or later** (or 24.15+); it was 20. `@wordpress/scripts` 36 declares
+  it. Run `npm ci` after taking this: the lock file changes throughout. A client repository's own
+  workflow already asks for Node 22.
+- **A site whose own tests run through `wp-scripts test-unit-js` has two lines to change.** That
+  command runs Vitest now, and `@wordpress/scripts/config/jest-unit.config.js` is no longer
+  shipped. In the site's `package.json`, call `wp-scripts test-unit-jest`. In its Jest config,
+  replace the `require()` of that file and the spread of it with what the root `jest.config.js`
+  has: `preset: '@wordpress/jest-preset-default'` and a `transform` that names `babel-jest` with
+  `@wordpress/babel-preset-default`. Both are installed at the repository root, where a site's
+  config resolves them. A site that calls `jest` itself is not affected.
 - **A new production dependency: `mpdf/mpdf` ^8.3** (GPL-2.0-only), with its own dependencies. Run
   `composer install` after taking this. It adds about 94MB to `vendor/`, 88MB of it fonts. **The
   shared-host package is about 191MB unpacked with it, 92MB of that mPDF**, so it nearly doubles

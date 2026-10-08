@@ -66,11 +66,11 @@ function formatDetail( format, pdfMost ) {
 		? __(
 				'Dates and numbers sort and filter. The headings stay in view. Each form is a sheet of its own.',
 				'corex'
-		  )
+			)
 		: __(
 				'Plain text that any spreadsheet or tool opens. Several forms arrive as one file per form, in a zip.',
 				'corex'
-		  );
+			);
 }
 
 function save( artifact ) {
@@ -453,7 +453,7 @@ function RecentExports( { history, describe, download, remove } ) {
 								(
 									history.length - RECENT_SHOWN
 								).toLocaleString()
-						  ) }
+							) }
 				</Button>
 			) }
 		</section>

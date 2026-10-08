@@ -17,7 +17,7 @@ export default function FieldControl( { field, value, onChange } ) {
 					/* translators: %s: personal-data classification. */
 					__( 'Personal data: %s', 'corex' ),
 					field.personal_data_class
-			  )
+				)
 			: undefined;
 	const props = {
 		label: field.label,

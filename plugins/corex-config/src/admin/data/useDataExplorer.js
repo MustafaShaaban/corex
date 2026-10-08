@@ -37,7 +37,7 @@ export function useDataExplorer( config ) {
 					? await window.Corex.api.get( url, { nonce: config.nonce } )
 					: await window.Corex.api[ method ]( url, payload, {
 							nonce: config.nonce,
-					  } );
+						} );
 			if ( ! result?.envelope?.ok ) {
 				throw new Error(
 					message(

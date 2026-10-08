@@ -27,7 +27,7 @@ export default function DataExplorer( { config } ) {
 		rowCount: explorer.state.rows.length,
 		hasQuery: Boolean(
 			explorer.state.query.search ||
-				Object.values( explorer.state.query.filters ).some( Boolean )
+			Object.values( explorer.state.query.filters ).some( Boolean )
 		),
 	} );
 	const openRecord = async ( row ) => {

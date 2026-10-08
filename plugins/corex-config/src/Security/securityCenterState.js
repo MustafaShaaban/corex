@@ -220,7 +220,7 @@ function normalizeLockouts( lockouts = [] ) {
 				// `active` defaulted to true, so a row with no flag was reported as an ongoing lockout.
 				active: lockout.active === true,
 				lockedUntil: lockout.lockedUntil || lockout.locked_until || '',
-		  } ) )
+			} ) )
 		: [];
 }
 
@@ -232,7 +232,7 @@ function normalizeActivity( activity = [] ) {
 				label: event.label || event.kind || 'Security event',
 				tone: event.tone || 'info',
 				occurredAt: event.occurred_at || '',
-		  } ) )
+			} ) )
 		: [];
 }
 

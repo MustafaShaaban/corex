@@ -235,7 +235,7 @@ export function scopeOptions( { counts, selectedCount, filters } ) {
 				: __(
 						'No filter is on, so this is every submission you can see.',
 						'corex'
-				  ),
+					),
 			count: count( 'filtered' ),
 			disabled: false,
 		},
@@ -380,7 +380,7 @@ export function fileFrom( artifact ) {
 		typeof artifact.base64 === 'string'
 			? Uint8Array.from( window.atob( artifact.base64 ), ( character ) =>
 					character.charCodeAt( 0 )
-			  )
+				)
 			: artifact.csv || '';
 
 	return new Blob( [ body ], {
@@ -498,12 +498,12 @@ export function fileNoteOf( entry, formatDate ) {
 					__( 'Deleted by %1$s, %2$s', 'corex' ),
 					entry.removed_by_name,
 					formatDate( entry.removed_at )
-			  )
+				)
 			: sprintf(
 					/* translators: %s: when an exported file was deleted. */
 					__( 'Deleted %s', 'corex' ),
 					formatDate( entry.removed_at )
-			  );
+				);
 	}
 	if ( entry.state === 'expired' ) {
 		return sprintf(

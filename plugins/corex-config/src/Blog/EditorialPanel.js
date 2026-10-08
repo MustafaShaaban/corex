@@ -6,7 +6,7 @@
  * `buildTransitionPayload` was shaping a request nobody sent.
  *
  * The states offered come from the server, which is worth stating because it is not what "editorial
- * workflow" implies: {@see EditorialWorkflowService} has **no transition graph**. It accepts any state
+ * workflow" implies: `EditorialWorkflowService` has **no transition graph**. It accepts any state
  * from any other, so the panel offers every state but the current one rather than inventing a rule the
  * service does not enforce. Its one genuine constraint — `scheduled` needs a timestamp, or the request
  * throws — arrives as `requires_schedule`, so the field is required here instead of failing at the

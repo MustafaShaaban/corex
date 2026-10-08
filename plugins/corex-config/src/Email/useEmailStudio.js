@@ -34,7 +34,7 @@ const emptyDraft = ( layouts ) =>
 				...EMPTY_DRAFT,
 				layout_id: layouts[ 0 ].id,
 				layout_version: layouts[ 0 ].version,
-		  }
+			}
 		: { ...EMPTY_DRAFT };
 
 /**
@@ -242,11 +242,11 @@ function useInsertions( { selection, dispatch, setTab } ) {
 			? __(
 					'Select or create a template before inserting a variable.',
 					'corex'
-			  )
+				)
 			: __(
 					'Select or create a template before inserting a partial.',
 					'corex'
-			  );
+				);
 	const token = ( kind, value ) =>
 		kind === 'variable' ? `{{ ${ value } }}` : `{{> ${ value } }}`;
 	const variableKeys = ( current, kind, value ) =>

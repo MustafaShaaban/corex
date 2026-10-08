@@ -108,7 +108,7 @@ export default function MigrationsPanel( { config, sources } ) {
 							'',
 							'migration-rollback',
 							preview.run_id
-					  )
+						)
 					: dataEndpoint( config.restUrl, '', 'migration-apply' );
 			await dataModelsApi( config, 'post', endpoint, {
 				token: preview.token,
