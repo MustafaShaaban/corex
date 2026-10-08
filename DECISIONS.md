@@ -7507,7 +7507,7 @@ was run from a session worktree through a bootstrap that puts this branch's clas
 the root checkout's, whose plugin entry files are another branch's; CI runs it on this branch
 alone.
 
-## #271 — `@wordpress/scripts` 36 is taken, and the tests stay on Jest
+## #272 — `@wordpress/scripts` 36 is taken, and the tests stay on Jest
 
 Date: 2026-10-08 · Spec: none (toolchain) · Status: Final
 

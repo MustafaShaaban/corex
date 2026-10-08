@@ -81,7 +81,7 @@ carries the same change as a local patch and removes it on its next update.
 
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 
-No dependency pull request is open. `@wordpress/scripts` 36 is taken (DECISIONS #271, unreleased):
+No dependency pull request is open. `@wordpress/scripts` 36 is taken (DECISIONS #272, unreleased):
 the tests stay on Jest, installed by this repository now that the toolchain no longer ships it,
 and **Node 22.22 is the floor** for building. #243 (`nikic/php-parser` 5.9) is merged.
 
@@ -394,10 +394,10 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **One override holds a package above what its parents ask for**: `postcss-selector-parser` at
   7.1.6, in the root and in `docs-app`. `@wordpress/scripts` 36 did not retire it as expected:
   `cssnano` 6 still asks for 6.x. Three more hold `js-yaml`, `smol-toml` and `katex` at patched
-  releases under `markdownlint-cli` (DECISIONS #271).
+  releases under `markdownlint-cli` (DECISIONS #272).
 - **The Jest suite runs on packages npm marks unsupported**: `@wordpress/jest-preset-default` and
   `@wordpress/jest-console`. Upstream maintains that combination and promises nothing past it;
-  moving 64 suites to Vitest is its own piece of work, not started (DECISIONS #271).
+  moving 64 suites to Vitest is its own piece of work, not started (DECISIONS #272).
 - `npm run lint:js` passes with 54 warnings, from three JSDoc rules new in the toolchain.
 - **PHP on the CI runner refused a correct argument until the run ended, and the cause is a lead,
   not a proof.** On 2026-10-08 (run 37746210110) `GET corex/v1/flows` answered 200 twenty-eight

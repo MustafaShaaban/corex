@@ -29,7 +29,7 @@
  * Until `@wordpress/scripts` 36 the preset and this transform came from its
  * `config/jest-unit.config.js` and `config/babel-transform`. It no longer ships Jest, the preset
  * or the transform: a project that keeps Jest installs them itself and names them here
- * (DECISIONS #271).
+ * (DECISIONS #272).
  */
 const babelTransform = [
 	'babel-jest',

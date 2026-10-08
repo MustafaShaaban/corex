@@ -16,7 +16,7 @@
  *
  * They are built from `@wordpress/eslint-plugin` and not taken from
  * `@wordpress/scripts/config/eslint.config.cjs`: since `@wordpress/scripts` 36 that file gives
- * test files Vitest's rules, and this repository's tests are Jest's (DECISIONS #271).
+ * test files Vitest's rules, and this repository's tests are Jest's (DECISIONS #272).
  */
 
 const wpPlugin = require( '@wordpress/eslint-plugin' );

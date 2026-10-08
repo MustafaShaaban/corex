@@ -31,7 +31,7 @@ All notable changes to Corex are documented here. The format follows
 - **The build and test toolchain is `@wordpress/scripts` 36** (was 34). It no longer ships Jest,
   so Jest, its jsdom environment, the WordPress preset and the Babel transform are this
   repository's own dev dependencies, and `npm run test:js` runs `wp-scripts test-unit-jest`. The
-  built JavaScript is byte-identical to the last build on 34 (DECISIONS #271).
+  built JavaScript is byte-identical to the last build on 34 (DECISIONS #272).
 - **The Data screen has one export dialog** (spec 103, slice 7b), and it is the Submissions
   export's. "Export records" on the Records tab and the Export tab both open it: what to export
   with a count for each choice, the columns, the format, one action, the export's progress, and
