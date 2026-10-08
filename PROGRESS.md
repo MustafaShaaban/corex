@@ -88,6 +88,19 @@ or permanently delete a submission, which needs a spec.
 
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 
+**Spec 104, a code-defined form's wording, markup and protection, is in flight**
+([`specs/104-form-contract-and-protection/`](specs/104-form-contract-and-protection/spec.md)). It
+is the one spec issues #248 and #264 asked for. Four slices, one pull request each:
+
+| Slice | What | State |
+|---|---|---|
+| 1 | A form states its button label and its two messages | done (DECISIONS #274), unreleased |
+| 2 | A form defined in code is challenged by the site's provider (reCAPTCHA) | not started |
+| 3 | A site draws a form with its own markup, from published parts. Closes #248 | not started |
+| 4 | Turnstile and hCaptcha place a widget, on flows and on code-defined forms. Closes #264 | not started |
+
+Five readings in the spec are the owner's to overrule; they are under its Assumptions.
+
 Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
 deferred through WP-Cron on a site that has no Action Scheduler, and the queue runs whichever
 dispatcher is bound. A real cron run was not observed; the test fires the hook itself.

@@ -14,7 +14,7 @@ touches. Each slice ends with its guards, its rendered check where it has UI, an
 - [x] T002 `Form::submitLabel()`, `successMessage()`, `errorMessage()` with today's strings as defaults (`plugins/corex-forms/src/Form.php`)
 - [x] T003 `FormBlockRenderer` prints the form's wording (`Block/FormBlockRenderer.php`)
 - [x] T004 Integration: a registered form with stated wording, rendered through the block on real WordPress (`tests/Integration/Forms/FormBlockRenderingTest.php`)
-- [ ] T005 Docs: the forms guide and the corex-forms README name the three methods; guards; notes
+- [x] T005 Docs: the forms guide and the corex-forms README name the three methods; guards; notes
 
 ## Slice 2 — A form defined in code is challenged (US2)
 
