@@ -53,6 +53,7 @@ use Corex\Forms\Submission\FlowSubmissionController;
 use Corex\Forms\Submission\FlowVisitorSubmissionService;
 use Corex\Forms\Submission\FormSubmittedEvent;
 use Corex\Forms\Submission\FormsListController;
+use Corex\Forms\Submission\SubmissionChallenge;
 use Corex\Forms\Submission\SubmissionRepository;
 use Corex\Forms\Submission\SubmitController;
 use Corex\Forms\Submission\Stages\EmailStage;
@@ -175,13 +176,16 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(ClientAddress::class),
             ),
         );
+        // The verifier is the captcha add-on's, and the add-on is optional: without it a form is
+        // guarded by the trap field and the check answers "not configured" (Principle IX).
         $this->container->singleton(
-            ProtectionStage::class,
-            static fn (ContainerInterface $c): ProtectionStage => new ProtectionStage(
+            SubmissionChallenge::class,
+            static fn (ContainerInterface $c): SubmissionChallenge => new SubmissionChallenge(
                 $c->has(ChallengeVerifier::class) ? $c->make(ChallengeVerifier::class) : null,
                 $c->make(FormChallengeContextFactory::class),
             ),
         );
+        $this->container->singleton(ProtectionStage::class);
         $this->container->singleton(StorageStage::class);
         $this->container->singleton(RoutingStage::class);
         $this->container->singleton(
