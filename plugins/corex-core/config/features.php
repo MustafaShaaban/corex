@@ -20,7 +20,7 @@ return [
     'pro' => false,
 
     // Deferred / opt-in capabilities (off until their module is built + enabled).
-    'mail_queue'      => false, // Action Scheduler-backed bulk mail (newsletter sends)
+    'mail_queue'      => false, // Deferred mail: Action Scheduler where installed, WP-Cron otherwise
     'dataviews_admin' => false, // React/DataViews admin UI (tables, setup wizard, health-check)
     'woocommerce_kit' => false, // WooCommerce site kit + woo-guarded features
 ];

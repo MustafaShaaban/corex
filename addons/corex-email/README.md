@@ -105,9 +105,21 @@ redacted recipient plus its HMAC lookup hash, template, state, provider, event, 
 correlation, and parent-attempt relationship. Captured, rejected, sent, failed, queued, bounced, and opened are
 distinct typed states.
 
-The legacy `corex_email_log` remains available for code-defined mail. The `mail_queue` feature flag decorates the
-neutral Mailer seam with Action Scheduler when it is installed; otherwise delivery remains inline. Action Scheduler
-is never a hard dependency.
+The legacy `corex_email_log` remains available for code-defined mail.
+
+With the `mail_queue` feature flag on, a send through the neutral Mailer seam is deferred, so a form's response
+does not wait for the mail server. Action Scheduler takes the queue when it is installed. WP-Cron takes it when it
+is not (`CronMailDispatcher`): each queued message is kept in a non-autoloaded option of its own
+(`corex_mail_queued_<id>`), a single cron event carries its id, and CoreX asks WordPress to run due events as the
+request ends. Action Scheduler is never a hard dependency. With the flag off, delivery is inline.
+
+What WP-Cron does not promise: the message leaves on the site's next cron run, which WordPress starts at most
+once a minute and which a site that sets `DISABLE_WP_CRON` starts from its own scheduler. It suits the few
+messages a form sends. A site that sends to a long list should install Action Scheduler.
+
+A site can bind its own `Corex\Email\Queue\MailQueueDispatcher`. Schedule on `MailQueueDispatcher::HOOK`
+(`corex_mail_send`) from `enqueue()`; CoreX Mail listens on that hook and calls `handle()` on the bound dispatcher
+with the hook's first argument.
 
 ## Security and extension boundaries
 

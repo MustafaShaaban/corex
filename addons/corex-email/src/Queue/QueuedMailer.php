@@ -18,10 +18,9 @@ use Corex\Support\Uuid;
 use DateTimeImmutable;
 
 /**
- * A Mailer decorator that queues a send when the gate allows (Action Scheduler present
+ * A Mailer decorator that queues a send when the gate allows (a queue backend available
  * AND the `mail_queue` flag on), and otherwise delegates to the wrapped engine for an
- * immediate send. Bulk paths (e.g. newsletter publish) get queuing for free; everything
- * else, and any install without the backend/flag, sends inline exactly as before. Like
+ * immediate send. An install without the flag sends inline exactly as before. Like
  * the seam it implements, send() never throws.
  */
 final class QueuedMailer implements AttemptingMailer
@@ -47,7 +46,7 @@ final class QueuedMailer implements AttemptingMailer
                 attemptId: Uuid::v4(),
                 requestId: $request->requestId,
                 state: MailResult::STATE_QUEUED,
-                provider: 'action-scheduler',
+                provider: $this->dispatcher->name(),
                 message: __('The mail attempt was queued.', 'corex'),
                 occurredAt: new DateTimeImmutable('now'),
                 retryable: false,
