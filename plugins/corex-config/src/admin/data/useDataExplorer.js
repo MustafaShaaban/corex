@@ -152,28 +152,6 @@ export function useDataExplorer( config ) {
 		}
 	}, [ config.restUrl, reload, request, state.preview, state.sourceKey ] );
 
-	const createExport = useCallback(
-		async ( exportRequest ) => {
-			dispatch( { type: 'request', request: 'export' } );
-			try {
-				const payload = await request(
-					'post',
-					dataEndpoint( config.restUrl, state.sourceKey, 'export' ),
-					exportRequest
-				);
-				dispatch( {
-					type: 'success',
-					message: __( 'The export was queued.', 'corex' ),
-				} );
-				return payload.export;
-			} catch ( error ) {
-				dispatch( { type: 'error', message: error.message } );
-				return null;
-			}
-		},
-		[ config.restUrl, request, state.sourceKey ]
-	);
-
 	const detail = useCallback(
 		async ( recordId ) => {
 			try {
@@ -208,7 +186,6 @@ export function useDataExplorer( config ) {
 		reload,
 		previewMutation,
 		applyMutation,
-		createExport,
 		detail,
 		can: ( operation ) => canAction( source, operation ),
 	};

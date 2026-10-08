@@ -6,6 +6,7 @@
  * tab.
  */
 
+const fs = require( 'node:fs' );
 const { test, expect } = require( '@playwright/test' );
 const { collectConsoleErrors } = require( './helpers' );
 
@@ -25,6 +26,66 @@ test( 'redirects the retired Data address to the Records tab', async ( {
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
 
+/**
+ * The Export tab opens the same dialog (spec 103, D12c). It was a second export form of its own,
+ * with one scope and no word about it, that said "Refresh history when the job completes."
+ */
+test( 'exports a whole model from the Export tab, and lists it without a refresh', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+	await page.goto( '/wp-admin/admin.php?page=corex-data-models&tab=export' );
+	await expect(
+		page.getByRole( 'heading', { name: 'Model exports' } )
+	).toBeVisible();
+
+	const opener = page.getByRole( 'button', { name: /^Export .+…$/ } );
+	await opener.click();
+	const dialog = page.getByRole( 'dialog' );
+	await expect( dialog ).toBeVisible();
+
+	// There are no rows and no filters behind it here, so everything is the one choice, counted.
+	const scopes = dialog.locator( '.corex-export__scope' );
+	await expect( scopes ).toHaveCount( 1 );
+	await expect( scopes ).toContainText( 'Everything' );
+	await expect( scopes.locator( '.corex-export__count' ) ).toHaveText(
+		/^[\d,]+$/
+	);
+
+	await dialog.getByRole( 'combobox', { name: 'File type' } ).click();
+	await page.getByRole( 'option', { name: 'CSV (.csv)' } ).click();
+	const acknowledgement = dialog.getByText(
+		'I understand this export contains personal data'
+	);
+	if ( await acknowledgement.isVisible().catch( () => false ) ) {
+		await acknowledgement.click();
+	}
+	const arriving = page.waitForEvent( 'download' );
+	await dialog
+		.getByRole( 'button', { name: /^Export [\d,]+ records?$/ } )
+		.click();
+	await arriving;
+	await expect( dialog.getByText( /^Saved .+\.csv\.$/ ) ).toBeVisible();
+	await dialog
+		.getByRole( 'button', { name: 'Close', exact: true } )
+		.last()
+		.click();
+	await expect( dialog ).toBeHidden();
+
+	// The history has it already, ready to download: nothing was refreshed.
+	const newest = page.locator( '.corex-data-models__history li' ).first();
+	await expect( newest ).toContainText( 'Everything' );
+	await expect( newest ).toContainText( 'CSV' );
+	await expect( newest ).toContainText( 'Ready' );
+	await expect(
+		newest.getByRole( 'button', { name: 'Download' } )
+	).toBeVisible();
+	await expect( page.getByRole( 'button', { name: 'Refresh' } ) ).toHaveCount(
+		0
+	);
+
+	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
+} );
 test( 'opens a tab directly from its address', async ( { page } ) => {
 	// Tabs were component state only, so no view here could be linked to or reopened.
 	await page.goto(
@@ -38,7 +99,7 @@ test( 'opens a tab directly from its address', async ( { page } ) => {
 	await expect( page ).toHaveURL( /tab=models/ );
 } );
 
-test( 'queries source records, opens detail, and queues a declared export', async ( {
+test( 'queries source records, opens detail, and exports them from one dialog', async ( {
 	page,
 } ) => {
 	const errors = collectConsoleErrors( page );
@@ -90,15 +151,129 @@ test( 'queries source records, opens detail, and queues a declared export', asyn
 	} );
 	await expect( exportButton ).toBeVisible();
 	await exportButton.click();
-	const dialog = page.getByRole( 'dialog', { name: 'Create export' } );
+	// The dialog the Submissions export uses, over this source's records (spec 103, US10). It
+	// was a WordPress modal that closed and said "The export was queued."
+	const dialog = page.getByRole( 'dialog', {
+		name: `Export ${ fixture.label }`,
+	} );
+	await expect( dialog ).toBeVisible();
+
+	// All three scopes, each with its count before anything is exported (FR-010). No row is
+	// ticked, so the rows cannot be chosen and the filters are what it opens on.
+	const scopes = dialog.locator( '.corex-export__scope' );
+	await expect( scopes ).toHaveCount( 3 );
+	await expect(
+		dialog.locator( '.corex-export__count' ).filter( { hasText: '…' } )
+	).toHaveCount( 0 );
+	await expect( scopes.first() ).toHaveClass( /is-disabled/ );
+	await expect(
+		dialog.locator( '.corex-export__scope.is-chosen' )
+	).toContainText( 'Current filters' );
+
+	const measured = await dialog.evaluate( ( node ) => {
+		const box = ( element ) => element.getBoundingClientRect();
+		const style = ( element ) => window.getComputedStyle( element );
+		const parts = Array.from(
+			node.querySelector( '.corex-dialog__body' ).children
+		);
+		// How far the middle of a control is from the middle of the first line of its name.
+		const offCentre = ( input, name ) =>
+			Math.abs(
+				box( input ).top +
+					box( input ).height / 2 -
+					( box( name ).top +
+						parseFloat( style( name ).lineHeight ) / 2 )
+			);
+
+		return {
+			gaps: parts
+				.slice( 1 )
+				.map( ( part, index ) =>
+					Math.round( box( part ).top - box( parts[ index ] ).bottom )
+				),
+			radios: Array.from(
+				node.querySelectorAll( '.corex-export__scope' )
+			).map( ( scope ) =>
+				offCentre(
+					scope.querySelector( 'input' ),
+					scope.querySelector( '.corex-export__scope-name' )
+				)
+			),
+			checkboxes: Array.from(
+				node.querySelectorAll( '.corex-export__column' )
+			).map( ( column ) =>
+				offCentre(
+					column.querySelector( 'input' ),
+					column.querySelector( 'label' )
+				)
+			),
+			name: parseFloat(
+				style( node.querySelector( '.corex-export__scope-name' ) )
+					.fontSize
+			),
+			detail: parseFloat(
+				style( node.querySelector( '.corex-export__detail' ) ).fontSize
+			),
+			focusInside: node.contains( node.ownerDocument.activeElement ),
+		};
+	} );
+	expect( measured.focusInside ).toBe( true );
+	expect( new Set( measured.gaps ), 'one distance between parts' ).toEqual(
+		new Set( [ 24 ] )
+	);
+	expect( Math.max( ...measured.radios ) ).toBeLessThan( 1 );
+	expect( Math.max( ...measured.checkboxes ) ).toBeLessThan( 1 );
+	// A choice's name is not smaller than the line that describes it. It was, by a pixel.
+	expect( measured.name ).toBeGreaterThanOrEqual( measured.detail );
+
 	const acknowledgement = dialog.getByText(
 		'I understand this export contains personal data'
 	);
 	if ( await acknowledgement.isVisible().catch( () => false ) ) {
 		await acknowledgement.click();
 	}
-	await dialog.getByRole( 'button', { name: 'Queue export' } ).click();
-	await expect( page.getByText( 'The export was queued.' ) ).toBeVisible();
+
+	// One click, and the file arrives (FR-022). Excel first, where the source allows it: no
+	// source did until this slice. A workbook is a zip, which begins with these two bytes.
+	const start = dialog.getByRole( 'button', {
+		name: /^Export [\d,]+ records?$/,
+	} );
+	const workbookArriving = page.waitForEvent( 'download' );
+	await start.click();
+	const workbook = await workbookArriving;
+	expect( workbook.suggestedFilename() ).toMatch(
+		new RegExp( `-${ fixture.key }-\\d{4}-\\d{2}-\\d{2}\\.xlsx$` )
+	);
+	expect(
+		fs
+			.readFileSync( await workbook.path() )
+			.subarray( 0, 2 )
+			.toString( 'latin1' )
+	).toBe( 'PK' );
+	await expect( dialog.getByText( /^Saved .+\.xlsx\.$/ ) ).toBeVisible();
+
+	// The same export as text: it begins with the mark that tells a spreadsheet it is UTF-8.
+	await dialog.getByRole( 'combobox', { name: 'File type' } ).click();
+	await page.getByRole( 'option', { name: 'CSV (.csv)' } ).click();
+	await expect(
+		dialog.getByRole( 'combobox', { name: 'Separator' } )
+	).toBeVisible();
+	const textArriving = page.waitForEvent( 'download' );
+	await start.click();
+	const text = await textArriving;
+	expect( text.suggestedFilename() ).toMatch( /\.csv$/ );
+	expect(
+		fs
+			.readFileSync( await text.path() )
+			.subarray( 0, 3 )
+			.toString( 'hex' )
+	).toBe( 'efbbbf' );
+	await expect( dialog.getByText( /^Saved .+\.csv\.$/ ) ).toBeVisible();
+
+	// Escape leaves, and focus goes back to what opened it (FR-035).
+	await page.keyboard.press( 'Escape' );
+	await expect( dialog ).toBeHidden();
+	await expect( exportButton ).toBeFocused();
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );

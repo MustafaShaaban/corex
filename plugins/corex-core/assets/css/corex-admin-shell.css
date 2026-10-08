@@ -2082,8 +2082,17 @@ body.corex-admin-screen .corex-admin__shell {
 	font-weight: 600;
 }
 
+/* The dialog's own text size. Without it a choice's name took WordPress's
+   13px while the line describing it was set to 14px: the name was the smaller
+   of the two. */
+.corex-admin .corex-export .corex-dialog__body,
+.corex-admin .corex-export .corex-dialog__footer {
+	font-size: var(--corex-admin-font-sm);
+}
+
 .corex-admin .corex-export p {
 	margin: 0;
+	font-size: inherit;
 }
 
 .corex-admin .corex-export__scopes {

@@ -434,18 +434,11 @@
 
 .corex-admin .corex-data-models__run,
 .corex-admin .corex-data-models__migration-list article,
-.corex-admin .corex-data-models__commit,
-.corex-admin .corex-data-models__columns {
+.corex-admin .corex-data-models__commit {
 	padding: var(--corex-admin-space-md);
 	background: var(--corex-admin-surface-alt);
 	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 	border-radius: var(--corex-admin-radius-md);
-}
-
-.corex-admin .corex-data-models__columns {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-	gap: var(--corex-admin-space-sm);
 }
 
 .corex-admin .corex-data-models__migration-list {

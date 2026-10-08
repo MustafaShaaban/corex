@@ -220,6 +220,8 @@ export function dataEndpoint( restUrl, sourceKey, action, id = null ) {
 		'import-commit': `${ source }/imports/${ id }/commit`,
 		'import-report': `${ source }/imports/${ id }/report`,
 		export: `${ source }/exports`,
+		'export-preview': `${ source }/exports/preview`,
+		'export-advance': `${ source }/exports/${ id }/advance`,
 		'export-download': `${ source }/exports/${ id }/download`,
 		migrations: `${ restUrl }/migrations`,
 		'migration-preview': `${ restUrl }/migrations/preview`,
