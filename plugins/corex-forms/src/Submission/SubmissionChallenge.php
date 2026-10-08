@@ -22,6 +22,9 @@ use Corex\Security\VerifyingChallenge;
  */
 final readonly class SubmissionChallenge
 {
+    /** The field a form sends its token in. */
+    public const TOKEN_KEY = 'captcha_token';
+
     public function __construct(
         private ?ChallengeVerifier $captcha = null,
         private ?FormChallengeContextFactory $contextFactory = null,

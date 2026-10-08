@@ -254,6 +254,7 @@ final class FormsServiceProvider extends ServiceProvider
                 $c->make(\Corex\Forms\Validation\Validator::class),
                 $c->make(\Corex\Events\EventDispatcher::class),
                 $c->make(AttachmentStorage::class),
+                $c->make(SubmissionChallenge::class),
             ),
         );
         $this->container->singleton(SubmitController::class);

@@ -70,7 +70,6 @@ final class CaptchaAssetController
 
         wp_localize_script('corex-captcha-v3', 'corexCaptchaV3', [
             'siteKey' => $siteKey,
-            'forms'   => $this->registry->all(),
             'i18n'    => [
                 // Translated server-side and handed to the buildless client, which has no
                 // wp-i18n runtime of its own.

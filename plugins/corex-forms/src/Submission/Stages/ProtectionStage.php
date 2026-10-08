@@ -40,7 +40,7 @@ final readonly class ProtectionStage implements SubmissionStage
     public function execute(SubmissionPipelineContext $context): SubmissionStageResult
     {
         $honeypot = trim((string) ($context->values[FormSubmissionService::HONEYPOT_KEY] ?? ''));
-        $token = trim((string) ($context->values['captcha_token'] ?? ''));
+        $token = trim((string) ($context->values[SubmissionChallenge::TOKEN_KEY] ?? ''));
 
         $captcha = $this->challenge->verify(
             $token,
@@ -66,7 +66,7 @@ final readonly class ProtectionStage implements SubmissionStage
         }
 
         $values = $context->values;
-        unset($values[FormSubmissionService::HONEYPOT_KEY], $values['captcha_token']);
+        unset($values[FormSubmissionService::HONEYPOT_KEY], $values[SubmissionChallenge::TOKEN_KEY]);
 
         return SubmissionStageResult::success(
             $this->key(),
