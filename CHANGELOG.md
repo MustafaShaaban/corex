@@ -71,6 +71,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Security
 
+- **The coming-soon page no longer prints WordPress's generator tag, RSD link, feed links or
+  emoji loader.** A page that says the site is not ready also said which WordPress it runs and
+  where its remote-editing endpoint is, and offered feeds whose addresses the mode redirects back
+  to the page. They are left out for a request that is served the page; a visitor let through
+  to the real site, and the site after launch, get WordPress's head as before. Reported from a
+  production site.
 - **The hosting package no longer puts each plugin's `README.md`, `composer.json` and
   `package.json` in the web root.** Anybody could fetch them and read what is installed and at
   which version. They are left out of CoreX's code and the site's; WordPress core's own are as
