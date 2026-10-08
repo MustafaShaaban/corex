@@ -16,14 +16,15 @@ use Corex\Activity\ActivityService;
 use Corex\Config\Submissions\SubmissionAccessScope;
 use Corex\Config\Submissions\SubmissionTimelineStore;
 use Corex\Config\Submissions\SubmissionTrashService;
-use Corex\Config\Submissions\SubmissionTrashStore;
 use Corex\Config\Submissions\SubmissionWorkflowStore;
+use Corex\Tests\Support\InMemorySubmissionTrash;
 use Corex\Tests\Support\RecordingActivityRepository;
+use Corex\Tests\Support\RecordingSubmissionEmailRecords;
 
 /**
  * An inbox and a trash that are two lists, and what stands on them.
  *
- * @return object{inbox:object,trash:object,timeline:object,activity:RecordingActivityRepository,service:SubmissionTrashService}
+ * @return object{inbox:object,trash:InMemorySubmissionTrash,timeline:object,activity:RecordingActivityRepository,emails:RecordingSubmissionEmailRecords,service:SubmissionTrashService}
  */
 function trashBench(): object
 {
@@ -49,31 +50,7 @@ function trashBench(): object
             throw new BadMethodCallException('The trash does not add notes.');
         }
     };
-    $trash = new class($inbox) implements SubmissionTrashStore {
-        /** @var array<int,array<string,mixed>> */
-        public array $records = [];
-
-        public function __construct(private object $inbox)
-        {
-        }
-
-        public function trash(int $id, int $actorId, string $via): void
-        {
-            $this->records[$id] = $this->inbox->records[$id];
-            unset($this->inbox->records[$id]);
-        }
-
-        public function restore(int $id): void
-        {
-            $this->inbox->records[$id] = $this->records[$id];
-            unset($this->records[$id]);
-        }
-
-        public function findTrashed(int $id): ?array
-        {
-            return $this->records[$id] ?? null;
-        }
-    };
+    $trash = new InMemorySubmissionTrash($inbox);
     $timeline = new class() implements SubmissionTimelineStore {
         /** @var list<array<string,mixed>> */
         public array $events = [];
@@ -89,13 +66,15 @@ function trashBench(): object
         }
     };
     $activity = new RecordingActivityRepository();
+    $emails = new RecordingSubmissionEmailRecords();
 
     return (object) [
         'inbox' => $inbox,
         'trash' => $trash,
         'timeline' => $timeline,
         'activity' => $activity,
-        'service' => new SubmissionTrashService($inbox, $trash, $timeline, new ActivityService($activity)),
+        'emails' => $emails,
+        'service' => new SubmissionTrashService($inbox, $trash, $timeline, new ActivityService($activity), $emails),
     ];
 }
 
@@ -172,5 +151,99 @@ it('does not show or restore another team’s trashed submission', function () {
 
     expect($bench->service->trashed($sales, 11))->toBeNull()
         ->and(fn () => $bench->service->restore($sales, [11]))->toThrow(DomainException::class, 'unavailable')
+        ->and($bench->trash->findTrashed(11))->not->toBeNull();
+});
+
+// ---- Deleting for good (spec 105, US2) ----
+
+/** Somebody who may see everything and delete it. */
+function trashAdministrator(): SubmissionAccessScope
+{
+    return new SubmissionAccessScope(1, true, canDeletePermanently: true);
+}
+
+it('deletes a trashed submission with its files and the copies of its emails, in that order', function () {
+    $bench = trashBench();
+    $bench->service->trash(trashAdministrator(), [10 => 'v1']);
+    $bench->trash->uploads = [10 => [501, 502]];
+    $bench->trash->attempts = [10 => ['aaaa-1', 'aaaa-2']];
+
+    $result = $bench->service->delete(trashAdministrator(), [10]);
+
+    expect($result)->toBe(['deleted' => [10], 'failed' => []])
+        ->and($bench->trash->forgotten)->toBe([501, 502])
+        ->and($bench->emails->forgotten)->toBe([['aaaa-1', 'aaaa-2']])
+        ->and($bench->trash->deleted)->toBe([10])
+        ->and($bench->trash->findTrashed(10))->toBeNull();
+});
+
+it('leaves a submission in the trash when one of its files cannot be removed, and says so', function () {
+    // Deleting it anyway would lose the only record of where that file is (FR-016).
+    $bench = trashBench();
+    $bench->service->trash(trashAdministrator(), [10 => 'v1']);
+    $bench->trash->uploads = [10 => [501, 502]];
+    $bench->trash->unremovable = [502];
+
+    $result = $bench->service->delete(trashAdministrator(), [10]);
+
+    expect($result)->toBe(['deleted' => [], 'failed' => [['id' => 10, 'reason' => 'file_remains']]])
+        ->and($bench->trash->findTrashed(10))->not->toBeNull()
+        ->and($bench->emails->forgotten)->toBe([])
+        ->and($bench->activity->events)->toHaveCount(1); // the trashing, and nothing for a delete that did not happen
+});
+
+it('goes on past one it cannot delete, and reports each', function () {
+    $bench = trashBench();
+    $bench->service->trash(trashAdministrator(), [10 => 'v1', 11 => 'v2']);
+    $bench->trash->uploads = [10 => [501]];
+    $bench->trash->unremovable = [501];
+
+    $result = $bench->service->delete(trashAdministrator(), [10, 11, 99]);
+
+    expect($result['deleted'])->toBe([11])
+        ->and($result['failed'])->toBe([
+            ['id' => 10, 'reason' => 'file_remains'],
+            ['id' => 99, 'reason' => 'not_in_trash'],
+        ]);
+});
+
+it('records a deletion once, with which forms and how many, and nothing a visitor submitted', function () {
+    $bench = trashBench();
+    $bench->service->trash(trashAdministrator(), [10 => 'v1', 11 => 'v2']);
+
+    $bench->service->delete(trashAdministrator(), [10, 11]);
+
+    $deleted = $bench->activity->events[1];
+    $recorded = (string) json_encode([$deleted->context, $deleted->summary, $deleted->targetLabel]);
+
+    expect($bench->activity->events)->toHaveCount(2)
+        ->and($deleted->kind)->toBe('submission.deleted')
+        ->and($deleted->actorId)->toBe(1)
+        ->and($deleted->context)->toMatchArray(['count' => 2, 'by' => 'person', 'not_deleted' => 0])
+        ->and($recorded)->not->toContain('salma@example.com')
+        ->and($recorded)->not->toContain('omar@example.com')
+        ->and($recorded)->not->toContain('Call me');
+});
+
+it('deletes nothing for somebody who manages submissions and may not delete them', function () {
+    $bench = trashBench();
+    $manager = new SubmissionAccessScope(7, true);
+    $bench->service->trash($manager, [10 => 'v1']);
+
+    expect(fn () => $bench->service->delete($manager, [10]))->toThrow(DomainException::class, 'may not')
+        ->and($bench->trash->findTrashed(10))->not->toBeNull()
+        ->and($bench->trash->deleted)->toBe([]);
+});
+
+it('does not delete a submission that is still in the inbox, or another team’s', function () {
+    $bench = trashBench();
+    $bench->service->trash(trashAdministrator(), [11 => 'v2']);
+    $sales = new SubmissionAccessScope(7, false, ['sales'], canDeletePermanently: true);
+
+    $result = $bench->service->delete($sales, [10, 11]);
+
+    expect($result['deleted'])->toBe([])
+        ->and(array_column($result['failed'], 'reason'))->toBe(['not_in_trash', 'not_in_trash'])
+        ->and($bench->inbox->findWorkflow(10))->not->toBeNull()
         ->and($bench->trash->findTrashed(11))->not->toBeNull();
 });

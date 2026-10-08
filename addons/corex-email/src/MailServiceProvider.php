@@ -212,6 +212,12 @@ final class MailServiceProvider extends ServiceProvider
             SubmissionEmailGateway::class,
             static fn (ContainerInterface $c): EmailStudioSubmissionGateway => $c->make(EmailStudioSubmissionGateway::class),
         );
+        // What a deleted submission's emails leave behind here goes with it (spec 105).
+        $this->container->singleton(
+            \Corex\Mail\SubmissionEmailRecords::class,
+            static fn (ContainerInterface $c): \Corex\Email\Studio\EmailStudioSubmissionRecords =>
+                new \Corex\Email\Studio\EmailStudioSubmissionRecords($c->make(WpEmailStudioStore::class)),
+        );
         $this->container->singleton(EmailStudioController::class);
     }
 

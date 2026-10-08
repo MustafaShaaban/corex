@@ -12,24 +12,33 @@ defined('ABSPATH') || exit;
 
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
+use Corex\Mail\SubmissionEmailRecords;
 use DateInterval;
 use DateTimeImmutable;
 use DomainException;
 
 /**
- * Moves submissions to the trash and back (spec 105, US1), and is the only thing that does.
+ * Moves submissions to the trash and back, and deletes them for good from it (spec 105, US1 and
+ * US2). It is the only thing that does.
  *
  * Each action is checked against what the person may see, written into every submission's own
- * history, and recorded once in the activity stream: who, when, how many. Nothing a visitor
- * submitted is put in that record.
+ * history while it has one, and recorded once in the activity stream: who, when, how many.
+ * Nothing a visitor submitted is put in that record.
  */
 final readonly class SubmissionTrashService
 {
+    /** Why a submission was not deleted: it is not in the trash, or not this person's to see. */
+    public const NOT_IN_TRASH = 'not_in_trash';
+
+    /** Why a submission was not deleted: a file uploaded with it could not be removed. */
+    public const FILE_REMAINS = 'file_remains';
+
     public function __construct(
         private SubmissionWorkflowStore $submissions,
         private SubmissionTrashStore $trash,
         private SubmissionTimelineStore $timeline,
         private ActivityService $activity,
+        private SubmissionEmailRecords $emails,
     ) {
     }
 
@@ -71,6 +80,68 @@ final readonly class SubmissionTrashService
         }
 
         $this->record($scope, 'submission.restored', $ids, []);
+    }
+
+    /**
+     * Delete trashed submissions for good: each one's uploaded files, then the copies of its
+     * emails, then the submission and everything stored on it (FR-011).
+     *
+     * One that cannot be deleted does not stop the others (FR-015). A submission whose file could
+     * not be removed is left in the trash: deleting it would lose the only record of where that
+     * file is (FR-016).
+     *
+     * @param list<int> $ids
+     *
+     * @return array{deleted:list<int>,failed:list<array{id:int,reason:string}>}
+     *
+     * @throws DomainException When this person may not delete permanently. Nothing is deleted then.
+     */
+    public function delete(SubmissionAccessScope $scope, array $ids): array
+    {
+        if (! $scope->canDeletePermanently) {
+            throw new DomainException('This actor may not delete submissions permanently.');
+        }
+
+        $deleted = [];
+        $failed = [];
+        $forms = [];
+        foreach ($ids as $id) {
+            $record = $this->trashed($scope, $id);
+            $reason = $record === null ? self::NOT_IN_TRASH : $this->erase($id);
+            if ($reason !== '') {
+                $failed[] = ['id' => $id, 'reason' => $reason];
+
+                continue;
+            }
+            $deleted[] = $id;
+            $forms[] = (string) ($record['form'] ?? '');
+        }
+
+        if ($deleted !== []) {
+            $this->record($scope, 'submission.deleted', $deleted, [
+                'forms' => array_values(array_unique(array_filter($forms))),
+                'by' => 'person',
+                'not_deleted' => count($failed),
+            ]);
+        }
+
+        return ['deleted' => $deleted, 'failed' => $failed];
+    }
+
+    /**
+     * Remove one trashed submission and what is tied to it. Returns why it was not, or ''.
+     */
+    private function erase(int $id): string
+    {
+        foreach ($this->trash->uploadsOf($id) as $attachmentId) {
+            if (! $this->trash->forgetUpload($attachmentId)) {
+                return self::FILE_REMAINS;
+            }
+        }
+        $this->emails->forget($this->trash->emailAttemptsOf($id));
+        $this->trash->delete($id);
+
+        return '';
     }
 
     /**

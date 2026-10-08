@@ -16,10 +16,11 @@ use Corex\Config\Submissions\SubmissionBulkPreviewStore;
 use Corex\Config\Submissions\SubmissionBulkService;
 use Corex\Config\Submissions\SubmissionTimelineStore;
 use Corex\Config\Submissions\SubmissionTrashService;
-use Corex\Config\Submissions\SubmissionTrashStore;
 use Corex\Config\Submissions\SubmissionWorkflowService;
 use Corex\Config\Submissions\SubmissionWorkflowStore;
+use Corex\Tests\Support\InMemorySubmissionTrash;
 use Corex\Tests\Support\RecordingActivityRepository;
+use Corex\Tests\Support\RecordingSubmissionEmailRecords;
 
 function bulkWorkflowStore(array $records): SubmissionWorkflowStore
 {
@@ -100,43 +101,22 @@ function bulkPreviewStore(): SubmissionBulkPreviewStore
 }
 
 /**
- * The trash service over the same records, with a trash that moves a record between two lists.
+ * The trash service over the same records: what leaves the inbox fake goes to a trash beside it.
  *
  * @param SubmissionWorkflowStore $records The fake above: its public `$records` is the inbox.
  */
-function bulkTrash(SubmissionWorkflowStore $records, ?SubmissionTimelineStore $timeline = null, ?ActivityRepository $activity = null): SubmissionTrashService
-{
-    $trash = new class($records) implements SubmissionTrashStore {
-        /** @var array<int,array<string,mixed>> */
-        public array $trashed = [];
-
-        public function __construct(private SubmissionWorkflowStore $inbox)
-        {
-        }
-
-        public function trash(int $id, int $actorId, string $via): void
-        {
-            $this->trashed[$id] = [...$this->inbox->records[$id], 'trashed' => true, 'trashed_by' => $actorId, 'trashed_via' => $via];
-            unset($this->inbox->records[$id]);
-        }
-
-        public function restore(int $id): void
-        {
-            $this->inbox->records[$id] = array_diff_key($this->trashed[$id], ['trashed' => 1, 'trashed_by' => 1, 'trashed_via' => 1]);
-            unset($this->trashed[$id]);
-        }
-
-        public function findTrashed(int $id): ?array
-        {
-            return $this->trashed[$id] ?? null;
-        }
-    };
-
+function bulkTrash(
+    SubmissionWorkflowStore $records,
+    ?SubmissionTimelineStore $timeline = null,
+    ?ActivityRepository $activity = null,
+    ?InMemorySubmissionTrash $trash = null,
+): SubmissionTrashService {
     return new SubmissionTrashService(
         $records,
-        $trash,
+        $trash ?? new InMemorySubmissionTrash($records),
         $timeline ?? bulkTimeline(),
         new ActivityService($activity ?? new RecordingActivityRepository()),
+        new RecordingSubmissionEmailRecords(),
     );
 }
 
@@ -195,7 +175,8 @@ it('rejects empty oversized and unsupported previews', function () {
 
     expect(fn () => $service->preview($scope, 'archive', []))->toThrow(InvalidArgumentException::class, 'selection')
         ->and(fn () => $service->preview($scope, 'archive', range(1, 101)))->toThrow(InvalidArgumentException::class, '100')
-        ->and(fn () => $service->preview($scope, 'delete', [10]))->toThrow(InvalidArgumentException::class, 'action');
+        // 'delete' stood here until spec 105 made deleting for good an action of the trash.
+        ->and(fn () => $service->preview($scope, 'purge', [10]))->toThrow(InvalidArgumentException::class, 'action');
 });
 
 // Spec 105, US1: several submissions go to the trash, and come back, as one bulk action each.
@@ -247,4 +228,44 @@ it('trashes nothing when one of the selection changed after the preview', functi
 
     expect(fn () => $service->apply($scope, $token))->toThrow(DomainException::class, 'changed')
         ->and(array_keys($records->records))->toBe([10, 11, 12]);
+});
+
+// Spec 105, US2: deleting for good is a bulk action of the trash, for somebody who may.
+it('deletes a previewed selection for good, and says which it could not', function () {
+    $records = bulkWorkflowStore(bulkRecords());
+    $trash = new InMemorySubmissionTrash($records);
+    $trash->uploads = [10 => [501], 11 => [502]];
+    $trash->unremovable = [502];
+    $service = new SubmissionBulkService(
+        new SubmissionWorkflowService($records, bulkTimeline()),
+        $records,
+        bulkPreviewStore(),
+        $trashing = bulkTrash($records, trash: $trash),
+    );
+    $scope = new SubmissionAccessScope(7, false, ['sales'], canDeletePermanently: true);
+    $trashing->trash($scope, [10 => 'v1', 11 => 'v2']);
+
+    $result = $service->apply($scope, $service->preview($scope, 'delete', [10, 11])->token);
+
+    expect($result)->toBe([
+        'matched' => 2,
+        'updated' => 1,
+        'failed' => 1,
+        'failures' => [['id' => 11, 'reason' => 'file_remains']],
+    ])
+        ->and($trash->deleted)->toBe([10])
+        ->and(array_keys($trash->records))->toBe([11]);
+});
+
+it('does not preview a permanent delete for somebody who may not, or of what is still in the inbox', function () {
+    $records = bulkWorkflowStore(bulkRecords());
+    $trashing = bulkTrash($records);
+    $service = new SubmissionBulkService(new SubmissionWorkflowService($records, bulkTimeline()), $records, bulkPreviewStore(), $trashing);
+    $manager = new SubmissionAccessScope(7, false, ['sales']);
+    $administrator = new SubmissionAccessScope(7, false, ['sales'], canDeletePermanently: true);
+    $trashing->trash($manager, [10 => 'v1']);
+
+    expect(fn () => $service->preview($manager, 'delete', [10]))->toThrow(DomainException::class, 'may not')
+        // 11 was never trashed: a submission is trashed first (FR-009).
+        ->and(fn () => $service->preview($administrator, 'delete', [11]))->toThrow(DomainException::class, 'unavailable');
 });

@@ -57,8 +57,40 @@ restored it, and the activity stream records each action once, with how many sub
 
 You act only on submissions you may see, in the trash as in the inbox.
 
-Nothing deletes a submission from the trash yet: one moved there from the inbox stays until it is restored.
-Deleting for good, and a trash that empties itself after a stated number of days, are the next parts of this feature.
+A submission moved to the trash from the inbox stays there until it is restored or deleted for good. A trash that
+empties itself after a stated number of days is the next part of this feature.
+
+## Delete for good
+
+A submission is deleted for good from the trash, and only from there: move it to the trash first. Open a trashed
+submission and choose **Delete permanently**, or tick several in the Trash view and choose **Delete permanently** from
+the bulk actions.
+
+The confirmation says how many submissions will be deleted and lists what goes with each:
+
+- the answers, with any hidden fields, campaign data and consent record;
+- team notes and the history of what was done;
+- files that were uploaded with it, from the server's disk;
+- the records and captured copies of emails sent about it, where Email Studio is installed.
+
+It cannot be undone, and the action stays disabled until **I understand this cannot be undone** is ticked.
+
+Two things are not removed, and the confirmation says the first where it applies:
+
+- **Export files made earlier.** A file you exported before may still hold the submission. Each is kept 30 days from
+  the day it was made, and can be deleted sooner under **Export**, **Recent exports**.
+- **Rows of the mail log.** The log of mail sent outside Email Studio records a recipient and a subject and is not tied
+  to a submission, so a row that names the submitter is left to the log's own retention.
+
+If a file uploaded with a submission cannot be removed from disk, that submission is not deleted: it stays in the trash,
+and the notice says how many were not deleted. The others in the same action are.
+
+Deleting for good needs a permission of its own, apart from managing submissions. Administrators have it. It can be
+granted to somebody else under **Access & Abilities**, as the ability to run actions that cannot be undone. Somebody
+without it can restore from the trash and is told why they cannot delete.
+
+The activity stream records each deletion once: who, when, how many, and of which forms. It holds nothing the
+submissions said. A submission's own history is deleted with it, so this entry is the only record that it existed.
 
 ## Notification delivery
 

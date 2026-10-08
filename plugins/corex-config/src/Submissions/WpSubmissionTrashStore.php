@@ -73,6 +73,65 @@ final readonly class WpSubmissionTrashStore implements SubmissionTrashStore
         return $record !== null && ($record['trashed'] ?? false) === true ? $record : null;
     }
 
+    public function uploadsOf(int $id): array
+    {
+        $uploads = [];
+        foreach ((array) get_post_meta($id) as $key => $values) {
+            // An uploaded file's answer is the id of its attachment.
+            $value = str_starts_with((string) $key, 'corex_field_') ? ($values[0] ?? '') : '';
+            if (is_numeric($value) && $this->isFormUpload((int) $value)) {
+                $uploads[] = (int) $value;
+            }
+        }
+
+        return array_values(array_unique($uploads));
+    }
+
+    public function forgetUpload(int $attachmentId): bool
+    {
+        // Only what a visitor uploaded through a form: never an attachment an answer merely
+        // happens to share a number with.
+        return $this->isFormUpload($attachmentId) && wp_delete_attachment($attachmentId, true) instanceof \WP_Post;
+    }
+
+    public function emailAttemptsOf(int $id): array
+    {
+        $emails = (array) get_post_meta($id, 'corex_email_json', true);
+        $delivery = (array) get_post_meta($id, 'corex_notification_delivery', true);
+        $history = (array) get_post_meta($id, 'corex_submission_timeline', true);
+
+        $attempts = [
+            $delivery['attempt_id'] ?? '',
+            ...array_column(array_filter((array) ($emails['bindings'] ?? []), 'is_array'), 'attempt_id'),
+            ...array_map(
+                static fn (array $entry): mixed => $entry['summary']['attempt_id'] ?? '',
+                array_filter($history, static fn (mixed $entry): bool => is_array($entry) && is_array($entry['summary'] ?? null)),
+            ),
+        ];
+
+        return array_values(array_unique(array_filter(
+            array_map(static fn (mixed $attempt): string => is_string($attempt) ? $attempt : '', $attempts),
+        )));
+    }
+
+    public function delete(int $id): void
+    {
+        if ($this->statusOf($id) !== 'trash') {
+            throw new DomainException(__('Submission was not found in the trash.', 'corex'));
+        }
+        if (! wp_delete_post($id, true) instanceof \WP_Post) {
+            throw new RuntimeException(__('The submission could not be deleted.', 'corex'));
+        }
+    }
+
+    /** Whether an attachment is a file a visitor uploaded through a form, kept in protected uploads. */
+    private function isFormUpload(int $attachmentId): bool
+    {
+        return get_post_type($attachmentId) === 'attachment'
+            && get_post_meta($attachmentId, '_corex_protected', true) === '1'
+            && str_starts_with((string) get_post_meta($attachmentId, '_corex_upload_context', true), 'form-');
+    }
+
     /** The post's status, or '' when it is not a submission. */
     private function statusOf(int $id): string
     {

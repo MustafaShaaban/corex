@@ -38,4 +38,33 @@ interface SubmissionTrashStore
      * @return array<string,mixed>|null
      */
     public function findTrashed(int $id): ?array;
+
+    /**
+     * The files that were uploaded with a submission, as attachment ids.
+     *
+     * @return list<int>
+     */
+    public function uploadsOf(int $id): array;
+
+    /**
+     * Remove a file that was uploaded with a submission, from disk and from the media records.
+     * False when it could not be removed, or is not such a file.
+     */
+    public function forgetUpload(int $attachmentId): bool;
+
+    /**
+     * The ids of the email attempts made for a submission: its notifications, and replies to it.
+     *
+     * @return list<string>
+     */
+    public function emailAttemptsOf(int $id): array;
+
+    /**
+     * Delete a trashed submission for good, with everything stored on it. What is stored
+     * elsewhere and tied to it is the caller's to remove first.
+     *
+     * @throws \DomainException  When there is no such submission in the trash.
+     * @throws \RuntimeException When it could not be deleted.
+     */
+    public function delete(int $id): void;
 }

@@ -17,6 +17,7 @@ import CorexSelect from '../../admin/components/CorexSelect.js';
 import CorexTime from '../../admin/components/CorexTime.js';
 import FieldValue from '../../admin/components/FieldValue.js';
 import { DeliveryBadge, STATUS_OPTIONS, StatusBadge } from '../badges.js';
+import { cannotDeleteReason } from '../inbox.js';
 import {
 	answersOf,
 	assignmentOf,
@@ -77,13 +78,22 @@ function Fields( { entries } ) {
 
 /**
  * @param {Object}   props
- * @param {Object}   props.drawer  The pane's state: which submission, loading or not, and the record.
- * @param {Object}   props.inbox   The inbox's data and requests.
- * @param {string}   props.id      The id the row's button says it controls.
- * @param {Function} props.onTrash Called when somebody wants the open submission in the trash.
+ * @param {Object}   props.drawer      The pane's state: which submission, loading or not, and the record.
+ * @param {Object}   props.inbox       The inbox's data and requests.
+ * @param {string}   props.id          The id the row's button says it controls.
+ * @param {Function} props.onTrash     Called when somebody wants the open submission in the trash.
+ * @param {boolean}  [props.mayDelete] Whether this person may delete a submission for good.
+ * @param {Function} props.onDelete    Called when somebody wants the open submission deleted for good.
  * @return {import('react').ReactElement} The pane.
  */
-export default function DetailPane( { drawer, inbox, id, onTrash } ) {
+export default function DetailPane( {
+	drawer,
+	inbox,
+	id,
+	onTrash,
+	mayDelete = false,
+	onDelete,
+} ) {
 	const record = drawer.record;
 
 	if ( ! record ) {
@@ -127,7 +137,12 @@ export default function DetailPane( { drawer, inbox, id, onTrash } ) {
 			{ /* A trashed submission is read and nothing else, until it is restored (spec 105,
 			     FR-006): no reply, no new note, no status or owner to change. */ }
 			{ record.trashed && (
-				<TrashLine record={ record } inbox={ inbox } />
+				<TrashLine
+					record={ record }
+					inbox={ inbox }
+					mayDelete={ mayDelete }
+					onDelete={ onDelete }
+				/>
 			) }
 			<Answers record={ record } />
 			{ ! record.trashed && <Reply record={ record } inbox={ inbox } /> }
@@ -164,12 +179,14 @@ export default function DetailPane( { drawer, inbox, id, onTrash } ) {
  * Says a submission is in the trash, since when and by whom, and offers the one thing that can
  * be done with it there.
  *
- * @param {Object} props
- * @param {Object} props.record The trashed submission.
- * @param {Object} props.inbox  The inbox's requests.
+ * @param {Object}   props
+ * @param {Object}   props.record    The trashed submission.
+ * @param {Object}   props.inbox     The inbox's requests.
+ * @param {boolean}  props.mayDelete Whether this person may delete it for good.
+ * @param {Function} props.onDelete  Called when they ask to.
  * @return {import('react').ReactElement} The line.
  */
-function TrashLine( { record, inbox } ) {
+function TrashLine( { record, inbox, mayDelete, onDelete } ) {
 	return (
 		<div className="corex-pane__trash" role="note">
 			<p>
@@ -191,12 +208,26 @@ function TrashLine( { record, inbox } ) {
 					'corex'
 				) }
 			</p>
-			<Button
-				variant="primary"
-				onClick={ () => inbox.restore( [ record.id ] ) }
-			>
-				{ __( 'Restore', 'corex' ) }
-			</Button>
+			<div className="corex-pane__trash-actions">
+				<Button
+					variant="primary"
+					onClick={ () => inbox.restore( [ record.id ] ) }
+				>
+					{ __( 'Restore', 'corex' ) }
+				</Button>
+				{ mayDelete && (
+					<Button
+						variant="secondary"
+						isDestructive
+						onClick={ onDelete }
+					>
+						{ __( 'Delete permanently', 'corex' ) }
+					</Button>
+				) }
+			</div>
+			{ ! mayDelete && (
+				<p className="corex-pane__muted">{ cannotDeleteReason() }</p>
+			) }
 		</div>
 	);
 }

@@ -28,8 +28,10 @@ decide the best for me".
   nothing is recorded, and a file uploaded with the submission is left on disk with no record
   pointing at it.
 - A submission's answers, notes, history and delivery records are all stored on the submission.
-  Stored elsewhere and tied to it: files uploaded with it, a captured copy of each email about it
-  (kept 30 days, with the full text), mail log rows, and one notification ("assigned to you").
+  Stored elsewhere and tied to it: files uploaded with it, the record and a captured copy of each
+  email about it (kept 30 days, with the full text), and one notification ("assigned to you").
+  The mail log's rows are not tied to a submission: a row holds a recipient and a subject, and
+  neither a submission nor an attempt (found when slice 2 was planned).
 - The Data screen's "Form submissions" source declares that it can delete and has nothing behind
   the declaration, so the screen offers no Delete. A second route can trash a submission by id
   for any administrator, outside the inbox's access rules and with no record.
@@ -82,8 +84,9 @@ do this cannot answer a removal request.
 
 **Independent Test**: submit a form with an uploaded file and have a notification email captured
 for it; trash the submission and delete it permanently; the submission, its answers, notes and
-history, the uploaded file, the captured email and the mail log row are gone, the "assigned to
-you" notification no longer leads anywhere, and the activity stream holds one entry saying a
+history, the uploaded file, the captured email and the record of its attempt are gone, the
+"assigned to you" notification no longer leads anywhere, and the activity stream holds one entry
+saying a
 submission of that form was deleted, by whom and when, with none of its answers.
 
 **Acceptance Scenarios**:
@@ -250,9 +253,11 @@ both are deleted as in User Story 2, and the tool's report says two items were r
   submissions, held by default by administrators and grantable to others. Somebody without it
   MUST see why the action is not available to them.
 - **FR-011**: Permanent deletion MUST remove: the submission with its answers, hidden fields,
-  campaign data, consent record, team notes and history; every file uploaded with it; every
-  captured copy of an email sent about it; the mail log rows of those emails; and MUST leave the
-  "assigned to you" notification pointing at nothing that can be opened.
+  campaign data, consent record, team notes and history; every file uploaded with it; the record
+  and every captured copy of each email sent about it; and MUST leave the "assigned to you"
+  notification pointing at nothing that can be opened. (Corrected 2026-10-08: this said "the mail
+  log rows of those emails". A mail log row is tied to no submission and cannot be selected by
+  one; removing rows by the submitter's address is FR-025's, where the erasure is by address.)
 - **FR-012**: The confirmation MUST list what FR-011 removes in plain words, state that it cannot
   be undone, and require an explicit acknowledgement before it proceeds.
 - **FR-013**: Permanent deletion MUST record one entry in the activity stream: who, when, how
@@ -304,8 +309,8 @@ both are deleted as in User Story 2, and the tool's report says two items were r
   about handling it. Gains a trashed state, apart from its workflow status, with who trashed it
   and when.
 - **Trash**: the trashed submissions a person may see, and the number of days it keeps them.
-- **What is tied to a submission**: uploaded files, captured emails, mail log rows, and the
-  "assigned to you" notification. Removed with it.
+- **What is tied to a submission**: uploaded files, the records and captured copies of its
+  emails, and the "assigned to you" notification. Removed with it, or left leading nowhere.
 - **Activity entry**: the record that a submission was trashed, restored or deleted. Outlives the
   submission and holds nothing it said.
 - **Kept export file**: a copy of submissions made earlier, with its own expiry. Not altered by a

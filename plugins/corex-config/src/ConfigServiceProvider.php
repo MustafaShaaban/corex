@@ -639,6 +639,12 @@ final class ConfigServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): \Corex\Config\Submissions\WpSubmissionTrashStore =>
                 $c->make(\Corex\Config\Submissions\WpSubmissionTrashStore::class),
         );
+        // What the mail system keeps about a submission's emails. Nothing, until the email
+        // add-on binds its own: it is optional, and a deletion must not need it.
+        $this->container->singleton(
+            \Corex\Mail\SubmissionEmailRecords::class,
+            static fn (): \Corex\Mail\NoSubmissionEmailRecords => new \Corex\Mail\NoSubmissionEmailRecords(),
+        );
         $this->container->singleton(\Corex\Config\Submissions\SubmissionTrashService::class);
         $this->container->singleton(SubmissionBulkService::class);
         $this->container->singleton(WpSubmissionExportStore::class);

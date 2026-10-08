@@ -8280,6 +8280,91 @@ What was run:
 - The plan put the release-owned folders at about 90MB. Measured, they are 27MB; the rest of
   the 117MB package is WordPress, which a site does not replace.
 
+## #283 — A submission is deleted for good with what is tied to it, and stays in the trash if a file will not go
+
+Date: 2026-10-08 · Spec: 105 (trash, restore and delete a submission), slice 2 · Status: Final
+
+Slice 1 lost nothing. This is the half that cannot be undone: a site can now remove what somebody
+sent. What a deletion removes was left to CoreX by the owner ("you decide the best for me").
+
+**What is tied to a submission was read from the code, not from the spec.** The answers, notes,
+history and delivery records are post meta and go with the post. Stored elsewhere:
+
+- **Uploaded files** are protected attachments with no parent. An answer's value is the
+  attachment's id. Deleting the post would have left the file on disk with nothing pointing at
+  it. The store finds them by the answer, and takes only an attachment that is marked protected
+  and was uploaded through a form, never one an answer merely shares a number with.
+- **Email attempts and captured copies** are the email add-on's own records, tied by the
+  attempt's id, which the submission holds in three places. A captured copy holds the whole
+  message.
+- **Mail log rows are tied to nothing.** A row holds a recipient and a subject and neither a
+  submission nor an attempt. FR-011 asked for "the mail log rows of those emails"; there is
+  nothing to select them by, and selecting by the submitter's address would remove rows of other
+  submissions. FR-011 is corrected. Removal by address is slice 6's, where the erasure is by
+  address. The guide says what is not removed.
+
+**The inbox does not learn how email is stored.** `SubmissionEmailRecords` is a seam in core,
+bound to "there are none" until the email add-on binds its own, as `SubmissionEmailGateway` is.
+The add-on finds an attempt by its id inside each record's serialized payload and removes a
+record only when it names that attempt itself: the attempt, an attempt made again from it, and
+their captured copies. Removal is an interface of its own, `EmailAttemptRemoval`, not a method
+added to `EmailStudioStore`: four test doubles implement that one and none of them removes.
+
+**The inbox does not need the forms plugin's file store either.** `AttachmentStorage` is bound
+by `corex-forms`, and the inbox works without it. The trash store removes an uploaded file
+itself, with the same refusal: only what is marked as a protected form upload.
+
+**A file that will not go keeps its submission.** Files first, then email records, then the
+post. If a file cannot be removed the submission is left in the trash, because deleting it would
+lose the only record of where the file is. The others in the same action are still deleted, and
+the result names each that was not, with why. Every earlier bulk action was all or nothing; this
+one is not, because half a deletion that says so is better than none.
+
+**A permission of its own.** `SubmissionAccessScope::$canDeletePermanently`, granted to whoever
+holds `corex_run_dangerous_actions` or `manage_options`, filterable. That ability existed and
+nothing in Submissions used it. The list's answer says whether this person may, so the trash can
+offer the action or say why it does not.
+
+**One entry, and it is the only record.** `submission.deleted`: who, when, how many, the forms,
+and `by: person`. The submission's history is deleted with it.
+
+**The notification is left.** "Assigned to you" stays in its recipient's list and leads to an
+inbox that says the submission was not found. Removing one person's notification because of what
+another did is not this feature's.
+
+**The confirmation** lists what goes, says it cannot be undone, and keeps its action disabled
+until a box is ticked. It names kept export files only when the person has one.
+
+**Found by looking: red on brass.** The confirm button was primary and destructive. The shell
+gave every destructive button the error colour as text, and a primary button the action colour
+as ground, so the two together could not be read. The shell gives that combination the primary's
+ink. The Data screen's migration rollback is the same combination and was unreadable the same
+way. The browser test compares the button's ink with another primary button's.
+
+**Found by a test: "not found in the trash" was answered 409.** The status is chosen by words in
+the message, and "in the trash" was looked for before "not found". The order is the other way.
+
+**A test that pinned the old behaviour was changed, on purpose.** `SubmissionBulkServiceTest`
+asserted that `delete` is not a bulk action. It asserts that of an action that still is not one.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `SubmissionDeleteTest` (new), real WordPress: uploads found by their answers, attempt ids, only a trashed one is deleted, the route with a real file on disk, 404 from the inbox, 403 without the permission, the activity entry | 5 passed |
+| `EmailAttemptRemovalTest` (new), real WordPress: the attempt, the one made again from it and their captures go; a record that only quotes the id stays | 1 passed |
+| `tests/Integration/Email` and `tests/Integration/Submissions`, real WordPress | 59 passed |
+| `tests/Unit` | 2374 passed |
+| Jest, `Submissions/__tests__` | 121 passed, 10 of them new |
+| Browser, `submissions-inbox.spec.js`, this branch's inbox | 11 passed, one new: the confirmation's parts one distance apart and its box level with its label in both directions, the action gated by the box, the button's ink |
+| The confirmation and a trashed pane, captured at 1440 and looked at | the unreadable button, fixed |
+
+**Not run.** The whole integration and browser suites; CI runs both. A file that cannot be
+removed was tested with a store that says so, not with a real file the server could not delete.
+Somebody without the permission was tested at the route and in the services, not in the browser.
+A deletion of a submission with a real captured email was tested in two halves, the inbox with a
+recording seam and the add-on by itself, not end to end.
+
 ## #284 — A placeholder is drawn inside the content's own markup, and a list is kept while it is replaced
 
 **Date:** 2026-10-08. **Spec:** 108, slice 1 (T001 to T009). **Branch:** `feat/108-loading-pieces`.
