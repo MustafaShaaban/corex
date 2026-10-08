@@ -1,5 +1,5 @@
 /**
- * Shared-host dist builder (spec 061, FR-061-06; DECISIONS #265).
+ * Shared-host dist builder (spec 061, FR-061-06; DECISIONS #267).
  *
  * The package is built from a small repository on disk and then asked the question a host asks:
  * does it load? `scripts/shared-host-dist-probe.php` answers that in a PHP process of its own,
@@ -41,7 +41,9 @@ const roots = [];
 afterEach( () => {
 	roots
 		.splice( 0 )
-		.forEach( ( root ) => rmSync( root, { recursive: true, force: true } ) );
+		.forEach( ( root ) =>
+			rmSync( root, { recursive: true, force: true } )
+		);
 } );
 
 const phpClass = ( namespace, name, body = '' ) =>
@@ -199,26 +201,6 @@ it( 'plans the framework, the CLI package and the client site, and the namespace
 	} );
 } );
 
-it( 'never plans to copy wp-config.php, .htaccess, the symlinked wp/wp-content tree or the checkout vendor/', () => {
-	const root = makeRepo();
-	const { copies } = mod.buildPlan( {
-		repoRoot: root,
-		distDir: join( root, 'dist' ),
-		client: 'acme',
-	} );
-	const froms = copies.map( ( c ) =>
-		c.from.slice( root.length ).replace( /\\/g, '/' )
-	);
-
-	expect( froms ).toContain( '/wp/wp-load.php' );
-	expect( froms ).not.toContain( '/wp/wp-config.php' );
-	expect( froms ).not.toContain( '/wp/.htaccess' );
-	expect( froms.filter( ( f ) => f.startsWith( '/wp/wp-content' ) ) ).toEqual(
-		[]
-	);
-	expect( froms.filter( ( f ) => f.startsWith( '/vendor' ) ) ).toEqual( [] );
-} );
-
 it( 'refuses to plan a framework plugin whose classes no namespace is mapped to', () => {
 	const root = makeRepo();
 	mkdirSync( join( root, 'addons', 'corex-unmapped', 'src' ), {
@@ -252,17 +234,18 @@ it( 'builds the package vendor/ beside the plugins, and leaves the checkout vend
 	expect( packaged.filter( ( rel ) => /phpunit/.test( rel ) ) ).toEqual( [] );
 	expect( packaged ).not.toContain( 'vendor' );
 	// What Composer was given to work from is not left in the web root.
-	expect( packaged.filter( ( rel ) => /composer\.(json|lock)$/.test( rel ) ) )
-		.toEqual( [] );
+	expect(
+		packaged.filter( ( rel ) => /composer\.(json|lock)$/.test( rel ) )
+	).toEqual( [] );
 	expect( listed( join( root, 'vendor' ) ).sort() ).toEqual( [
 		'autoload.php',
 		'phpunit',
 		'phpunit/phpunit',
 		'phpunit/phpunit/phpunit',
 	] );
-	expect( readFileSync( join( root, 'vendor', 'autoload.php' ), 'utf8' ) ).toBe(
-		'<?php // the checkout autoloader'
-	);
+	expect(
+		readFileSync( join( root, 'vendor', 'autoload.php' ), 'utf8' )
+	).toBe( '<?php // the checkout autoloader' );
 } );
 
 it( 'packages the CLI with its stubs, the client site, and none of the dev or runtime files', () => {
@@ -281,6 +264,8 @@ it( 'packages the CLI with its stubs, the client site, and none of the dev or ru
 	);
 	expect( packaged ).not.toContain( '.htaccess' );
 	expect( packaged ).not.toContain( 'wp-config.php' );
+	// Built from source: what the development install has in its own wp-content is not taken.
+	expect( packaged ).not.toContain( 'wp-content/plugins/symlinked' );
 	expect( packaged ).not.toContain( 'wp-content/packages/build-tools' );
 	expect( packaged ).not.toContain(
 		'wp-content/plugins/corex-core/node_modules'
@@ -288,77 +273,72 @@ it( 'packages the CLI with its stubs, the client site, and none of the dev or ru
 	expect( packaged ).not.toContain( 'wp-content/plugins/corex-core/tests' );
 } );
 
-describe( 'the verifier rejects a package', () => {
-	it( 'with a forbidden path in it', () => {
-		const { distDir } = buildFixture();
-		mkdirSync( join( distDir, 'wp-content/plugins/x/.git' ), {
-			recursive: true,
-		} );
-		writeFileSync(
-			join( distDir, 'wp-content/plugins/x/.git/config' ),
-			'x'
-		);
-
-		const bad = mod.verifyDist( distDir );
-
-		expect( bad.ok ).toBe( false );
-		expect( bad.errors.join( ' ' ) ).toMatch( /forbidden path/ );
-	} );
-
-	it( 'that would overwrite the host .htaccess', () => {
-		const { distDir } = buildFixture();
-		writeFileSync( join( distDir, '.htaccess' ), '# rewrite rules' );
-
-		expect( mod.verifyDist( distDir ).errors ).toEqual( [
-			expect.stringMatching( /\.htaccess/ ),
-		] );
-	} );
-
-	it( 'with no autoloader where its plugins look for one', () => {
-		const { distDir } = buildFixture();
-		rmSync( join( distDir, 'wp-content', 'vendor' ), { recursive: true } );
-
-		const bad = mod.verifyDist( distDir );
-
-		expect( bad.ok ).toBe( false );
-		expect( bad.errors.join( '\n' ) ).toMatch(
-			/corex-core\.php did not load wp-content\/vendor\/autoload\.php/
-		);
-	} );
-
-	it( 'that maps a namespace to a directory it does not hold', () => {
-		const { distDir } = buildFixture();
-		rmSync( join( distDir, 'wp-content', 'plugins', 'corex-ui', 'src' ), {
-			recursive: true,
-		} );
-
-		expect( mod.verifyDist( distDir ).errors ).toEqual( [
+it.each( [
+	[
+		'with a forbidden path in it',
+		( distDir ) => {
+			mkdirSync( join( distDir, 'wp-content/plugins/x/.git' ), {
+				recursive: true,
+			} );
+		},
+		// The verifier prints this path with the separators of the machine it runs on.
+		[
+			expect.stringMatching(
+				/^forbidden path present: wp-content.plugins.x.\.git$/
+			),
+		],
+	],
+	[
+		'that would overwrite the host .htaccess',
+		( distDir ) =>
+			writeFileSync( join( distDir, '.htaccess' ), '# rewrite rules' ),
+		[ expect.stringMatching( /^\.htaccess is in the package root/ ) ],
+	],
+	[
+		'with no autoloader where its plugins look for one',
+		( distDir ) =>
+			rmSync( join( distDir, 'wp-content', 'vendor' ), {
+				recursive: true,
+			} ),
+		expect.arrayContaining( [
+			expect.stringMatching(
+				/^corex-core\.php did not load wp-content\/vendor\/autoload\.php/
+			),
+		] ),
+	],
+	[
+		'that maps a namespace to a directory it does not hold',
+		( distDir ) =>
+			rmSync( join( distDir, 'wp-content/plugins/corex-ui/src' ), {
+				recursive: true,
+			} ),
+		[
 			'no class under Corex\\Ui\\ loads from wp-content/plugins/corex-ui/src/',
-		] );
-	} );
+		],
+	],
+	[
+		'whose vendor/ was installed with dev packages',
+		( distDir ) => {
+			const installed = join(
+				distDir,
+				'wp-content/vendor/composer/installed.json'
+			);
+			writeFileSync(
+				installed,
+				JSON.stringify( {
+					...JSON.parse( readFileSync( installed, 'utf8' ) ),
+					dev: true,
+					'dev-package-names': [ 'phpunit/phpunit' ],
+				} )
+			);
+		},
+		[ expect.stringMatching( /dev packages \(phpunit\/phpunit\)/ ) ],
+	],
+] )( 'the verifier rejects a package %s', ( scenario, spoil, errors ) => {
+	const { distDir } = buildFixture();
+	spoil( distDir );
 
-	it( 'whose vendor/ was installed with dev packages', () => {
-		const { distDir } = buildFixture();
-		const installed = join(
-			distDir,
-			'wp-content',
-			'vendor',
-			'composer',
-			'installed.json'
-		);
-		writeFileSync(
-			installed,
-			JSON.stringify( {
-				...JSON.parse( readFileSync( installed, 'utf8' ) ),
-				dev: true,
-				'dev-package-names': [ 'phpunit/phpunit' ],
-			} )
-		);
-
-		expect( mod.verifyDist( distDir ).errors ).toEqual( [
-			expect.stringMatching( /dev packages.*phpunit\/phpunit/ ),
-		] );
-	} );
+	expect( mod.verifyDist( distDir ) ).toEqual( { ok: false, errors } );
 } );
 
 it( 'fails verification when a client theme ships SCSS/JS source but no compiled output', () => {

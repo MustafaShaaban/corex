@@ -88,6 +88,16 @@ One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`)
 
 On `main` since v0.43.3, not in a release:
 
+- **The shared-host `dist` package loads the framework** (#PRNUM, DECISIONS #267). Reported by the
+  Muva session from a real build on v0.43.3: no plugin found the autoloader, Composer's paths were
+  the repository's, the CLI package was missing, the checkout's dev packages and the development
+  `.htaccess` were shipped, and `verify:dist` said "OK". Composer now generates the autoloader
+  inside the package at `wp-content/vendor/`, where the plugins already look, and
+  `verify:dist` includes the packaged core plugin in a PHP process of its own and fails unless
+  every packaged namespace loads. `client-site-layout` builds the package for a generated site and
+  runs `wp corex` from it. A client has to rebuild its package; the layout change is in the
+  CHANGELOG. **Muva's host move waits on the release that carries this: tell the "MUVA hosting
+  account setup" and "Muva Website directory cleanup" sessions when it is tagged.**
 - **`CONTRIBUTING.md` describes the browser suite as it runs** (#283). "Browser verification"
   named `.github/workflows/e2e.yml`, deleted in 0.41.0, and a local run that started wp-env and
   drove another address. It now describes the `e2e` job of `ci.yml` and what a local run needs, the must-use
@@ -388,7 +398,19 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **The dependency gate is still not a required check**, so a red result on `main` blocks nothing.
   Its weekly run on `main` failed every week from 2026-08-12 to 2026-09-30.
 - **`client-site-layout` is not a required check either** (spec 102). Making it one is an owner
-  setting in branch protection.
+  setting in branch protection. It is also the only place a built `dist` package is started with
+  WordPress and a database (DECISIONS #267); the Jest suite proves that the package loads its
+  classes, on a fixture.
+- **The Azure pipeline builds a package with no WordPress core in it.** The builder takes core from
+  `wp/`, which is git-ignored, and `azure-pipelines.yml` has no step that downloads it. The build
+  prints a warning and `verify:dist` does not ask for core. The pipeline's deploy stage is still a
+  placeholder. The cPanel guide downloads core into `wp/` before building.
+- **Nothing checks that a `dist` package holds the built admin and block bundles.** They are
+  git-ignored build output, and the builder copies what is there. A package built without
+  `npm run build` verifies: the one built for DECISIONS #267 was.
+- **The fixed `dist` package was not uploaded to a shared host.** It was started on a development
+  machine and in CI (DECISIONS #267). Whether a host's PHP, its file permissions and its web server
+  serve it is the `shared-host` profile's blocker, as before.
 - Nothing enforces that `docs/ar/` mirrors `docs/en/`; five pages had no Arabic counterpart from
   spec 087 until 2026-09-04.
 - Arabic typography is proved for layout, not for type.

@@ -29,6 +29,35 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The shared-host `dist` package loads the framework.** It never did. `npm run build:dist`
+  copied the checkout's `vendor/` to the package root, and every CoreX plugin looks for the
+  autoloader in its own directory or two directories up, which in the package is
+  `wp-content/vendor/`. No plugin found one, so all of them stayed dormant. A `vendor/` moved
+  there by hand would not have helped: Composer's map names `addons/<name>/src/` and
+  `packages/cli/src/`, and the package holds add-ons under `plugins/` and did not hold the CLI
+  package at all. Reported from a real build of a client package on v0.43.3. The builder now has
+  Composer generate the autoloader inside the package, at `wp-content/vendor/`, with the
+  repository's namespace map translated to where the package puts each directory (DECISIONS #267).
+- **`wp corex` exists in the package.** `packages/cli/` is packaged at `wp-content/packages/cli/`
+  with its generator stubs.
+- **No dev package is shipped into a web root.** The copied `vendor/` was whatever the checkout
+  had, which on a working checkout includes PHPUnit, Pest and Mockery. The package's `vendor/` is
+  now installed by Composer from `composer.lock` with `--no-dev`, inside `dist/`. The checkout's
+  own `vendor/` is not read and not changed, so there is no longer a reason to run
+  `composer install --no-dev` on a checkout before packaging.
+- **The package no longer contains the development install's `.htaccess`.** It was copied from
+  `wp/` as if it were WordPress core, although the deployment guide lists `.htaccess` among the
+  files a deploy must never overwrite.
+- **`npm run verify:dist` fails for a package that cannot load.** It reported "OK" for all of the
+  above: it checked folders, forbidden names and the manifest. It now runs
+  `scripts/shared-host-dist-probe.php` in a PHP process of its own, which includes the packaged
+  core plugin as WordPress would and requires that it loaded the packaged autoloader, that one
+  class from every packaged plugin, add-on and the CLI package loads from the package, and that
+  nothing was loaded from outside it. It also fails on a `.htaccess` in the package root and on a
+  `vendor/` installed with dev packages. CI builds the package for a generated client site and
+  starts WordPress from it.
+- **The cPanel guide no longer tells you to assemble the tree by hand.** Its `cp -r` commands
+  produced the same package that could not load. It uses the builder and the verifier.
 - **The export dialog printed `[object Object] to [object Object]`** for "Current filters" when
   the inbox was filtered by date. It read a date through a helper that answers the text together
   with its machine form, and printed the pair. In v0.43.2 and v0.43.3.
@@ -113,6 +142,32 @@ request, so WordPress prints its own notice whatever version the install runs.
 
 ### Client impact
 
+- **A shared-host package has to be rebuilt, and its layout changed.** A `dist/` built by v0.43.3
+  or earlier does not load CoreX on a host and should not be uploaded. Rebuild it after taking
+  this: `npm ci && npm run build`, build the client theme, then
+  `npm run build:dist -- --client=<client>` and `npm run verify:dist`. What moved:
+  `vendor/` is at `wp-content/vendor/` and no longer in the package root; `wp-content/packages/cli/`
+  is new; there is no `.htaccess`; `corex-release.json` has an `autoload` section naming the
+  autoloader and every namespace the package loads.
+- **Building a package needs `composer` on the `PATH` and, the first time, the network**, and
+  verifying one needs `php`. The build stops if Composer cannot install. It no longer needs the
+  checkout's `vendor/` and never changes it.
+- **Do not run `composer install --no-dev` on a client checkout to prepare a package.** The guide
+  said to. It strips the test tools from the working tree, and the builder no longer reads that
+  directory.
+- **If a package from an earlier version was ever uploaded, delete `vendor/` from the site root
+  on the host.** Nothing reads it and it holds dev tools inside the web root.
+- **The first upload to a new host brings no `.htaccess`.** On Apache or LiteSpeed, save
+  Settings → Permalinks once so WordPress writes it, or create it by hand. An existing host keeps
+  the one it has.
+- **A root `composer.json` with `files`, `classmap` or `psr-0` autoloading, or a namespace mapped
+  to several directories, stops `build:dist`** with a message naming it. Only `psr-4` entries are
+  translated into the package. A `psr-4` entry for a directory that is not packaged is left out
+  with a warning.
+- **In the package the project root is `wp-content/`.** That is where CoreX would read an optional
+  `.env`, and it is inside the web root: do not put one there on a shared host.
+- **`azure-pipelines.yml` lost its `composer install --no-dev` step.** A client pipeline copied
+  from it can drop the step too; with it the build still works.
 - **Mail starts leaving from the address a message names, with the files it names.** Nothing in
   the framework sets either, so a site that never set one sees no change. A site whose code sets
   `from` on a `MailRequest`, or calls `MessageBuilder::from()` or `attachMedia()`, has been sending

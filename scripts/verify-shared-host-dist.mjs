@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Verify a built shared-host `dist/` tree (spec 061, FR-061-06): required folders present, forbidden
- * paths absent, manifest valid JSON. Exits non-zero on any failure. Run after `npm run build:dist`.
+ * Verify a built shared-host `dist/` tree (spec 061, FR-061-06; DECISIONS #267): required folders
+ * present, forbidden paths and the host's `.htaccess` absent, manifest valid JSON, no dev packages
+ * in the packaged vendor/, and the package loads the framework in a PHP process of its own.
+ * Exits non-zero on any failure. Run from the repository root after `npm run build:dist`.
  */
 
 import { join } from 'node:path';

@@ -62,7 +62,9 @@ Deploy a **built, flat WordPress tree** instead:
 
 1. Assemble a clean tree in `dist/`: WordPress core + a real (non-symlinked) `wp-content` containing the CoreX
    framework theme/plugins/add-ons you actually use **and** the generated client theme/plugin as real folders.
-2. Include production vendor + built assets (`composer install --no-dev --optimize-autoloader`; `npm run build`).
+2. Include production vendor + built assets. `npm run build` builds the assets; `npm run build:dist` (below)
+   installs the production Composer packages inside `dist/wp-content/vendor/` itself, so do not run
+   `composer install --no-dev` on the checkout.
 3. **Exclude** dev-only files: `node_modules`, tests, caches, `.env`, SQL dumps, and local agent state
    (`.corex/`, `PROGRESS.md`-style working files are repo-only).
 4. Migrate the **database** separately (export local → import to the target), run a site-URL search-replace
@@ -80,10 +82,12 @@ There is now a first-class builder for the flat artifact:
 
 ```bash
 npm run build:dist -- --client=acme   # assemble dist/ from repo source (de-symlinked, dev files stripped)
-npm run verify:dist                   # required folders present, forbidden paths absent, manifest valid JSON
+npm run verify:dist                   # the package loads the framework; no dev or host-owned files; manifest valid
 ```
 
-It writes `dist/` (git-ignored, never committed) with a `corex-release.json` manifest. CI split: **GitHub Actions**
+It writes `dist/` (git-ignored, never committed) with a `corex-release.json` manifest. The verifier includes the
+packaged core plugin in a PHP process of its own and fails unless it finds the packaged autoloader and a class from
+every packaged plugin, add-on and the CLI package loads. CI split: **GitHub Actions**
 runs PR/code-quality gates; **Azure Pipelines** (`azure-pipelines.yml`) builds `dist/` and deploys it over SFTP from
 release tags, with credentials in Azure secrets and production runtime files protected. Full guides:
 `docs/en/05-deployment/shared-host-dist.md` and `docs/en/05-deployment/azure-pipelines.md`.
@@ -102,7 +106,7 @@ Spec 055 records these profiles in the readiness check:
 | `full` | First-party Corex runtime with optional add-ons gated by state | `composer test`; `npm run build`; `npm run test:js` | No known blocker |
 | `woo` | Corex plus WooCommerce and Woo kit | `composer test`; `npm run build`; `wp plugin is-installed woocommerce` | No known blocker |
 | `client-site` | Generated client plugin/theme consuming Corex | `wp corex make:site Acme --dir=sites/acme`; `wp corex compliance:check` | No known blocker |
-| `shared-host` | Flat WordPress tree copied to shared hosting | `composer install --no-dev --optimize-autoloader`; assemble `dist/` | Verify PHP extensions, permissions, and no-symlink upload shape |
+| `shared-host` | Flat WordPress tree copied to shared hosting | `npm run build`; `npm run build:dist`; `npm run verify:dist` | Verify PHP extensions, permissions, and no-symlink upload shape |
 | `azure-container` | Production Docker image on Azure App Service | `docker build --target prod -t corex:prod .`; `az webapp config container set` | Requires live Azure and repo secret verification |
 | `local-docker` | Docker Compose local stack | `docker compose up -d --build`; `docker compose exec php composer test` | Requires Docker daemon |
 | `wp-env-stable` | wp-env stable smoke/browser target | `npm run env:start`; `npm run test:e2e`; `npm run env:stop` | Requires Docker/wp-env |

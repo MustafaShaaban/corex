@@ -312,19 +312,17 @@ export function runBuild( plan, distDir, options = {} ) {
 /**
  * Verify a built dist tree. Reads only, and runs the probe in a PHP process of its own.
  *
- * @param {string} distDir               The built package.
- * @param {Object} [options]             Verification options.
- * @param {string} [options.probeScript] The probe to run; the repository's own by default.
+ * Run from the repository root, like the build: that is where the probe is looked for.
+ *
+ * @param {string} distDir The built package.
  * @return {{ok:boolean, errors:string[]}} Whether the package can be deployed, and why not.
  */
-export function verifyDist( distDir, options = {} ) {
-	const {
-		probeScript = join(
-			process.cwd(),
-			'scripts',
-			'shared-host-dist-probe.php'
-		),
-	} = options;
+export function verifyDist( distDir ) {
+	const probeScript = join(
+		process.cwd(),
+		'scripts',
+		'shared-host-dist-probe.php'
+	);
 	const errors = [];
 	const must = [
 		'wp-content',

@@ -535,6 +535,29 @@ jobs:
           rm "$WP/wp-content/themes/acme-theme"
           git checkout -- sites/acme/acme-theme/templates/coming-soon.html
 
+      # DECISIONS #267: the shared-host package was checked for its folders and never started, and
+      # it could not load the framework. This builds it for the generated site, with the checkout's
+      # development vendor/ beside it as a working checkout has, and starts WordPress from the
+      # package: this job's database, the package's own files, and no symlink into the checkout.
+      - name: The shared-host package of the generated site boots, and `wp corex` runs from it
+        run: |
+          set -euo pipefail
+          npm run build:dist -- --client=acme
+          npm run verify:dist
+          test ! -e dist/.htaccess
+          test ! -e dist/wp-content/vendor/phpunit
+          test -d vendor/phpunit
+
+          cp "$GITHUB_WORKSPACE/wp/wp-config.php" dist/wp-config.php
+          wp eval 'exit(\Corex\Boot::booted() ? 0 : 1);' --path=dist
+          wp eval 'echo (new ReflectionClass(\Corex\Foundation\Application::class))->getFileName();' --path=dist \
+            | grep --quiet '/dist/wp-content/plugins/corex-core/src/'
+          wp corex routes:list --path=dist > /dev/null
+          wp plugin activate acme-site --path=dist
+          wp eval 'exit(\Corex\Boot::booted() ? 0 : 1);' --path=dist
+          wp plugin deactivate acme-site --path=dist
+          rm -rf dist
+
       - name: Install the framework's dependencies
         run: npm ci
 

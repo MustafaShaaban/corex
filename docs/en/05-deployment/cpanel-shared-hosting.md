@@ -22,7 +22,7 @@ tree** (the Corex source **copied**, not symlinked, into `wp-content`) and uploa
 |---|---|
 | Profile | `shared-host` |
 | Package shape | Flat WordPress tree with Corex copied into `wp-content` |
-| Build commands | `composer install --no-dev --optimize-autoloader`; `npm run build`; assemble `dist/` |
+| Build commands | `npm run build`; `npm run build:dist`; `npm run verify:dist` |
 | Dependencies | PHP 8.3 selector, MySQL via host panel, SFTP/FTP access |
 | Secrets | Database credentials, SFTP credentials, WordPress salts |
 | Blocker | Verify PHP extensions, file permissions, and the no-symlink upload shape on the actual host |
@@ -31,7 +31,7 @@ tree** (the Corex source **copied**, not symlinked, into `wp-content`) and uploa
 
 ```mermaid
 flowchart LR
-  ci[CI build<br/>composer + npm run build<br/>assemble flat wp/ tree] -->|SFTP upload| ph[public_html<br/>flat WordPress tree]
+  ci[CI build<br/>npm run build<br/>npm run build:dist] -->|SFTP upload| ph[public_html<br/>flat WordPress tree]
   ph --> php[PHP 8.3 selector]
   ph --> mysql[(MySQL via phpMyAdmin)]
   user([HTTPS via cPanel AutoSSL]) --> ph
@@ -39,26 +39,32 @@ flowchart LR
 
 ## Step 1 — Build the deployable tree (on your machine or CI)
 
-Produce a self-contained WordPress directory with the Corex source **copied** in. This mirrors what the
-production Docker image does with `COPY`.
+Produce a self-contained WordPress directory with the Corex source **copied** in. Use the builder; do not copy
+the folders by hand. A hand-made tree with `vendor/` copied to its root does not load the framework: the plugins
+look for the autoloader in `wp-content/vendor/`, and Composer's paths have to be generated for the flat layout.
+[Shared-host dist](./shared-host-dist.md) describes the package and what the verifier proves.
 
 ```bash
-git checkout v0.19.0
-composer install --no-dev --optimize-autoloader
+git checkout <release tag>
 npm ci && npm run build
 
-# assemble a flat tree in ./dist
-wp core download --path=dist --skip-content --locale=en_US
-mkdir -p dist/wp-content/themes/corex dist/wp-content/plugins
-cp -r theme/.            dist/wp-content/themes/corex/
-cp -r plugins/*          dist/wp-content/plugins/
-cp -r addons/*           dist/wp-content/plugins/
-cp -r vendor             dist/vendor
+# the builder takes WordPress core from ./wp; on a machine that has none, download it first
+wp core download --path=wp --skip-content --locale=en_US
+
+npm run build:dist          # add `-- --client=acme` to include the client site in sites/acme/
+npm run verify:dist
 ```
 
 ```text
-(dist/ now contains a complete WordPress with Corex copied into wp-content)
+…
+dist verified OK
+…
+verify-shared-host-dist: OK
 ```
+
+`dist/` now contains a complete WordPress with Corex copied into `wp-content`, the production Composer packages
+in `wp-content/vendor/`, and `wp corex` in `wp-content/packages/cli/`. It contains no `wp-config.php` and no
+`.htaccess`.
 
 ## Step 2 — Create the database (cPanel → MySQL Databases)
 
@@ -144,11 +150,10 @@ trigger: { tags: { include: [ 'v*' ] } }
 pool: { vmImage: 'ubuntu-latest' }
 steps:
   - script: |
-      composer install --no-dev --optimize-autoloader
       npm ci && npm run build
-      wp core download --path=dist --skip-content
-      mkdir -p dist/wp-content/themes/corex dist/wp-content/plugins
-      cp -r theme/. dist/wp-content/themes/corex/ && cp -r plugins/* addons/* dist/wp-content/plugins/ && cp -r vendor dist/vendor
+      wp core download --path=wp --skip-content
+      npm run build:dist
+      npm run verify:dist
   - task: FtpUpload@2
     inputs: { credentialsOption: inputs, serverUrl: 'sftp://<host>', username: $(ftpUser), password: $(ftpPass), rootDirectory: 'dist', remoteDirectory: '/public_html', clean: false }
 ```

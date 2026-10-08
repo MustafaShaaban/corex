@@ -53,9 +53,8 @@ stages:
               php -v
             displayName: 'Select PHP $(PHP_VERSION)'
 
-          - script: composer install --no-dev --optimize-autoloader --no-interaction
-            displayName: 'Composer install (production)'
-
+          # No Composer step: build:dist has Composer install the production packages inside dist/,
+          # from composer.lock, so the package's vendor/ never depends on what a checkout has installed.
           - script: npm ci
             displayName: 'npm ci'
 
@@ -71,7 +70,7 @@ stages:
             displayName: 'Assemble flat dist/ (build:dist)'
 
           - script: npm run verify:dist
-            displayName: 'Verify dist/ (folders present, forbidden paths absent, manifest valid)'
+            displayName: 'Verify dist/ (it loads the framework, no dev or host-owned files, manifest valid)'
 
           - publish: '$(System.DefaultWorkingDirectory)/dist'
             artifact: corex-dist

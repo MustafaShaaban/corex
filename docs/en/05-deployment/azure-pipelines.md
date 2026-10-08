@@ -17,9 +17,11 @@ CoreX splits CI responsibilities:
 ## What the pipeline does
 
 1. Triggers on release tags (`v*`); also runnable manually from the Azure DevOps UI.
-2. **Build stage:** Node 20 + PHP 8.3, `composer install --no-dev --optimize-autoloader`, `npm ci`, `npm run build`,
-   then `npm run build:dist` (optionally `--client=<slug>`), then `npm run verify:dist`. Publishes `dist/` as the
-   `corex-dist` pipeline artifact.
+2. **Build stage:** Node 20 + PHP 8.3, `npm ci`, `npm run build`, then `npm run build:dist` (optionally
+   `--client=<slug>`), then `npm run verify:dist`. There is no Composer step: `build:dist` has Composer install the
+   production packages inside `dist/` (see [Shared-host dist](./shared-host-dist.md#how-the-package-loads-the-framework)),
+   so `composer` must be on the agent's `PATH`.
+   Publishes `dist/` as the `corex-dist` pipeline artifact.
 3. **Deploy stage:** runs only when the `deploy` parameter is `true`, gated by the `corex-production` environment
    (add a **manual approval** check to it in Azure DevOps). Uploads the artifact over SFTP, **excluding** production
    runtime files.

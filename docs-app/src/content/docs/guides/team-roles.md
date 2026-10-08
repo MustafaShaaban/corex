@@ -45,7 +45,7 @@ shared-host builder and is **git-ignored — never committed**. The server recei
 
 ```bash
 npm run build:dist -- --client=acme   # assemble a flat dist/
-npm run verify:dist                   # required folders present, forbidden paths absent, manifest valid
+npm run verify:dist                   # the package loads the framework; no dev or host-owned files; manifest valid
 ```
 
 See [Deploy & distribute](/guides/deployment/) and the handbook deployment pages
