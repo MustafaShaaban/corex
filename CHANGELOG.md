@@ -61,6 +61,10 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A reply sent from the Submissions inbox lost its line breaks.** The reply is typed in a
+  plain text box and sent as HTML, and nothing turned a line break into markup: three paragraphs
+  reached the recipient as one block. A blank line is a new paragraph now and a line break is a
+  line break. Read from the code while specifying the reply editor (spec 106, slice 0).
 - **With the mail queue on, a send still waited for the mail server on a site without Action
   Scheduler** (#271). The `mail_queue` flag deferred a send only where Action Scheduler was
   installed, and CoreX does not ship it, so a form's response waited for both of its

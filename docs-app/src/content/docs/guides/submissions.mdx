@@ -60,7 +60,8 @@ The timeline records a **notification** event alongside the submission event, so
 
 ## Reply and inspect delivery
 
-When the submission contains a valid email address and Email Studio is active, the pane can send a reply. A related
+When the submission contains a valid email address and Email Studio is active, the pane can send a reply. The reply is
+typed as plain text: a blank line starts a new paragraph, and a line break is kept. A related
 retryable template attempt can be resent from its immutable template version and current submission context. **Open
 log** returns the redacted delivery record only when that attempt belongs to the open submission. Development captures
 these messages; Staging and Production still follow Email Studio's provider and live-delivery gates.

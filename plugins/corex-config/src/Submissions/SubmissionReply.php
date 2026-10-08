@@ -20,7 +20,9 @@ final readonly class SubmissionReply
     public function __construct(string $subject, string $htmlBody)
     {
         $this->subject = trim($subject);
-        $this->htmlBody = trim($htmlBody);
+        // The reply is typed in a plain text box and sent as HTML. Without this a line break
+        // was not markup, and three paragraphs reached the recipient as one block.
+        $this->htmlBody = trim(wpautop(trim($htmlBody)));
         if ($this->subject === '' || $this->htmlBody === '') {
             throw new InvalidArgumentException('A submission reply requires a subject and body.');
         }
