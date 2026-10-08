@@ -113,7 +113,7 @@ final class SubmitController
             $shape[$name] = match ($field->type) {
                 'email'    => EmailAnswer::clean(...),
                 'textarea' => 'sanitize_textarea_field',
-                'multi-select' => self::sanitizeList(...),
+                'multi-select', 'checkbox-group' => self::sanitizeList(...),
                 default    => 'sanitize_text_field',
             };
         }

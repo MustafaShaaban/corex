@@ -32,6 +32,11 @@ use InvalidArgumentException;
 final class RuleRegistry
 {
     /**
+     * Rules whose parameter is one value that may have a comma in it, so it is not a list.
+     */
+    private const WHOLE_PARAMETER = ['pattern'];
+
+    /**
      * @var array<string,Rule>
      */
     private array $rules;
@@ -86,13 +91,20 @@ final class RuleRegistry
     /**
      * Split "name:param1,param2" into its name and parameter list.
      *
+     * A `pattern:` is the exception: everything after the colon is the expression, and
+     * `pattern:^\d{2,4}$` split on its comma is two halves of one.
+     *
      * @return array{name:string,params:list<string>}
      */
     public function parse(string $spec): array
     {
         [$name, $rest] = array_pad(explode(':', $spec, 2), 2, null);
 
-        $params = ($rest === null || $rest === '') ? [] : explode(',', $rest);
+        $params = match (true) {
+            $rest === null || $rest === '' => [],
+            in_array($name, self::WHOLE_PARAMETER, true) => [$rest],
+            default => explode(',', $rest),
+        };
 
         return ['name' => (string) $name, 'params' => $params];
     }
