@@ -72,6 +72,89 @@ badges, helper text, setup progress, readiness checks, and loading/empty/error/s
 permission-denied states. It uses logical CSS properties for RTL, collapses at narrow admin widths, has visible focus,
 keeps text contrast at the WCAG 2.2 AA target, and disables non-essential motion under `prefers-reduced-motion`.
 
+## Loading states
+
+A surface that asks the server for its content is in one of four states, and it says which on its own element as
+`data-corex-state`:
+
+| State | What a person sees |
+|---|---|
+| `loading` | A placeholder in the shape of the content. Never the empty state: nothing has been said yet. |
+| `refreshing` | What was there, kept in place, dimmed and out of reach, with a bar along its top edge. |
+| `ready` | The answer, which may be the empty state. |
+| `error` | The shared error state, with **Try again** where asking again can help. |
+
+The Notifications screen, its preferences and the header drawer work this way. The other screens are moved to it
+one at a time; until then they keep the loading sentence or spinner they had.
+
+### In a React screen
+
+`CorexLoadable` is the wrapper and `CorexSkeleton` the placeholder, both in
+`plugins/corex-config/src/admin/components/`:
+
+```jsx
+<CorexLoadable
+	status={ status }
+	skeleton={ <NotificationSkeleton place="screen" count={ 4 } /> }
+	loadingLabel={ __( 'Loading notifications…', 'corex' ) }
+	errorMessage={ __( 'Notifications could not be loaded.', 'corex' ) }
+	onRetry={ load }
+>
+	{ /* the content, including its empty state */ }
+</CorexLoadable>
+```
+
+`status` is the screen's own: `loading` until the first answer, `refreshing` for every load after one has been
+shown, `ready`, or `error`. Leave `onRetry` out where asking again cannot help, and no button is drawn.
+
+A screen draws its placeholder inside the markup its content uses, with a `SkeletonBar` where a line of text will
+be and a `SkeletonBox` where an icon or a checkbox will be:
+
+```jsx
+<CorexSkeleton>
+	<ul className="corex-notifications-prefs">
+		<li className="corex-notifications-prefs__row">
+			<span className="corex-notifications-prefs__label">
+				<SkeletonBox />
+				<SkeletonBar width="short" />
+			</span>
+		</li>
+	</ul>
+</CorexSkeleton>
+```
+
+A bar is as tall as a line of the element it is in, so the row is the height it will be with its text, from the
+same rules. `width` is `full`, `long`, `medium` or `short`. A bar's width is a share of its parent's, so a
+parent that is only as wide as its text (an inline flex label, say) has to be given a width.
+
+### Elsewhere
+
+The class names are the contract, for a screen that is not React: `.corex-admin-skeleton` round the placeholder
+(with `aria-hidden="true"`), `.corex-admin-skeleton__bar` (and `--long`, `--medium`, `--short`),
+`.corex-admin-skeleton__box`, and `.corex-loadable` with `data-corex-state` on the surface and
+`.corex-loadable__body` round what is dimmed. They are styled in the admin shell stylesheet, for anything inside
+`.corex-admin`.
+
+### What it does for you
+
+- Nothing is drawn for the first 160ms of a wait (`--corex-admin-loading-delay`), so a fast answer replaces a
+  placeholder nobody saw. The space is held from the first frame.
+- Under `prefers-reduced-motion` the placeholder is still drawn and nothing moves.
+- The placeholder is hidden from assistive technology. A load that lasts a second is announced with
+  `loadingLabel`, and its end with "Loaded."; a quicker one, and a refresh, are not announced.
+- Content that is `refreshing` is `inert`. If the keyboard's focus was inside it, focus moves to the surface.
+
+### In a browser test
+
+Wait on the state, which fails when a surface never becomes ready:
+
+```js
+await expect( page.locator( '.corex-notifications-screen .corex-loadable' ) )
+	.toHaveAttribute( 'data-corex-state', 'ready' );
+```
+
+Waiting for a loading sentence to be hidden passes when the sentence was never there.
+
 ## Verification boundary
 
 Headless PHP/JS contracts verify asset scoping, native-login preservation, screen shell coverage, text-labelled

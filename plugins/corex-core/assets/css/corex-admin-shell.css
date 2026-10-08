@@ -732,6 +732,13 @@ body.corex-admin-screen .corex-admin__shell {
 	font-size: var(--corex-admin-font-sm);
 }
 
+/* A label is as wide as its text, and a placeholder has none: it is given the
+   row, so the bar standing in for the category's name has a width to be a
+   share of. */
+.corex-admin-skeleton .corex-notifications-prefs__label {
+	flex: 1;
+}
+
 .corex-admin__content {
 	padding: var(--corex-admin-space-xl);
 }
@@ -1303,6 +1310,161 @@ body.corex-admin-screen .corex-admin__shell {
 .corex-admin .corex-state--error .dashicons,
 .corex-admin .corex-state--permission-denied .dashicons {
 	color: var(--corex-admin-error);
+}
+
+/*
+ * Loading (spec 108): the placeholder a surface shows before its first
+ * answer, and the look of content that is about to be replaced.
+ *
+ * Three rules hold for everything here.
+ *
+ * Nothing is drawn for the first moments of a wait. An answer that arrives
+ * inside `--corex-admin-loading-delay` replaces a placeholder nobody saw,
+ * where one drawn at once would flash on every fast request. The delay is an
+ * animation's, so the space is held from the first frame and nothing moves.
+ *
+ * Each animated part is right when it is still: the band's own place is off
+ * the block, so a placeholder that is not moving is a plain block.
+ *
+ * Each has a reduced-motion rule of its own, below. The shell's general one
+ * (`.corex-admin *`) is a single class strong, and every selector here is
+ * stronger, so it would not reach them.
+ */
+.corex-admin .corex-admin-skeleton {
+	animation: corex-loading-appear var(--corex-admin-motion-fast) var(--corex-admin-ease) var(--corex-admin-loading-delay) backwards;
+}
+
+.corex-admin .corex-admin-skeleton__bar,
+.corex-admin .corex-admin-skeleton__box {
+	position: relative;
+	display: block;
+	overflow: hidden;
+	background: var(--corex-admin-skeleton);
+}
+
+/* As tall as a line of the element it is put in, so the element is the height
+   it will be with its text; painted as a bar in the middle of that line. */
+.corex-admin .corex-admin-skeleton__bar {
+	inline-size: 100%;
+	block-size: 1lh;
+	clip-path: inset(calc((1lh - 0.7em) / 2) 0 round var(--corex-admin-radius-sm));
+}
+
+.corex-admin .corex-admin-skeleton__bar--long {
+	inline-size: 80%;
+}
+
+.corex-admin .corex-admin-skeleton__bar--medium {
+	inline-size: 55%;
+}
+
+.corex-admin .corex-admin-skeleton__bar--short {
+	inline-size: 30%;
+}
+
+/* The size of the admin's small icons and of a checkbox. */
+.corex-admin .corex-admin-skeleton__box {
+	flex: none;
+	inline-size: 1rem;
+	block-size: 1rem;
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-admin-skeleton__bar::after,
+.corex-admin .corex-admin-skeleton__box::after {
+	position: absolute;
+	inset: 0;
+	content: "";
+	background: linear-gradient(90deg, transparent, var(--corex-admin-skeleton-shine), transparent);
+	transform: translateX(-100%);
+	animation: corex-admin-skeleton-shimmer var(--corex-admin-motion-shimmer) var(--corex-admin-ease) infinite;
+}
+
+/* The band travels the way the text is read. */
+[dir="rtl"] .corex-admin .corex-admin-skeleton__bar::after,
+[dir="rtl"] .corex-admin .corex-admin-skeleton__box::after {
+	animation-direction: reverse;
+}
+
+.corex-admin .corex-loadable {
+	position: relative;
+}
+
+/* Content that is about to be replaced: still there, dimmed, and (in the
+   markup) inert. The dimming waits as a placeholder does. */
+.corex-admin .corex-loadable[data-corex-state="refreshing"] > .corex-loadable__body {
+	opacity: var(--corex-admin-disabled-opacity);
+	transition: opacity var(--corex-admin-motion-fast) var(--corex-admin-ease) var(--corex-admin-loading-delay);
+}
+
+/* What says "waiting" and not "switched off": a bar along the top edge, in
+   the action colour, outside what is dimmed. */
+.corex-admin .corex-loadable[data-corex-state="refreshing"]::before {
+	position: absolute;
+	inset-block-start: 0;
+	inset-inline: 0;
+	z-index: 1;
+	block-size: 0.125rem;
+	content: "";
+	background: linear-gradient(90deg, transparent, var(--corex-admin-action), transparent) no-repeat;
+	background-size: 40% 100%;
+	border-radius: var(--corex-admin-radius-pill);
+	animation:
+		corex-loading-appear var(--corex-admin-motion-fast) var(--corex-admin-ease) var(--corex-admin-loading-delay) backwards,
+		corex-waiting-bar var(--corex-admin-motion-shimmer) var(--corex-admin-ease) infinite;
+}
+
+[dir="rtl"] .corex-admin .corex-loadable[data-corex-state="refreshing"]::before {
+	animation-direction: normal, reverse;
+}
+
+@keyframes corex-loading-appear {
+
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes corex-admin-skeleton-shimmer {
+
+	to {
+		transform: translateX(100%);
+	}
+}
+
+/* A segment two fifths of the edge wide, from off one end to off the other. */
+@keyframes corex-waiting-bar {
+
+	from {
+		background-position: -67% 0;
+	}
+
+	to {
+		background-position: 167% 0;
+	}
+}
+
+/* Appearing is not movement, so the delay stays and only the fade goes. The
+   band does not cross, and the bar does not travel: it spans the edge. */
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-admin .corex-admin-skeleton {
+		animation-duration: 1ms;
+	}
+
+	.corex-admin .corex-admin-skeleton__bar::after,
+	.corex-admin .corex-admin-skeleton__box::after {
+		animation: none;
+	}
+
+	.corex-admin .corex-loadable[data-corex-state="refreshing"] > .corex-loadable__body {
+		transition-duration: 1ms;
+	}
+
+	.corex-admin .corex-loadable[data-corex-state="refreshing"]::before {
+		background: var(--corex-admin-action);
+		animation: corex-loading-appear 1ms linear var(--corex-admin-loading-delay) backwards;
+	}
 }
 
 /*

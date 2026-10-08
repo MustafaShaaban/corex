@@ -121,6 +121,19 @@ body.corex-admin-screen {
 	--corex-admin-z-modal: var(--wp--custom--z--modal, 1000);
 	--corex-admin-motion-fast: 140ms;
 	--corex-admin-motion-slow: 900ms;
+
+	/* Loading (spec 108). A placeholder is one step off the surface it sits
+	   on, and the band that crosses it one step lighter still: the strong
+	   border here, the soft one in the light theme. Both are colours the admin
+	   already has, so a change to the palette carries them with it. */
+	--corex-admin-skeleton: var(--corex-admin-border);
+	--corex-admin-skeleton-shine: var(--corex-admin-border-strong);
+	--corex-admin-motion-shimmer: 1400ms;
+	--corex-admin-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+	/* How long a wait lasts before anything is drawn to say so. An answer
+	   that beats it shows nothing, where a placeholder would only flash. */
+	--corex-admin-loading-delay: 160ms;
 }
 
 [dir="rtl"] .corex-admin,
@@ -149,6 +162,7 @@ body.corex-admin-screen {
 		--corex-admin-border: #e2e5ea;
 		--corex-admin-border-soft: #eef0f3;
 		--corex-admin-border-strong: #c2c8d1;
+		--corex-admin-skeleton-shine: var(--corex-admin-border-soft);
 		--corex-admin-action: #ad8643;
 		--corex-admin-action-hover: #8b6427;
 		--corex-admin-action-ink: #fff;
@@ -191,6 +205,7 @@ body.corex-admin-screen.corex-appearance-light {
 	--corex-admin-border: #e2e5ea;
 	--corex-admin-border-soft: #eef0f3;
 	--corex-admin-border-strong: #c2c8d1;
+	--corex-admin-skeleton-shine: var(--corex-admin-border-soft);
 	--corex-admin-action: #ad8643;
 	--corex-admin-action-hover: #8b6427;
 	--corex-admin-action-ink: #fff;

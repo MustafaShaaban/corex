@@ -4,12 +4,24 @@
  * The bounded, filtered center: named views (tabs) over the actor's notifications, each mapping to a
  * server-side filter, plus a severity refine, per-item mark-read, and a bulk mark-all. It consumes
  * the same live REST boundary as the header drawer, with honest loading / error / empty states.
+ *
+ * The first load shows a placeholder. Every load after it keeps the list that is on screen until
+ * its replacement arrives (spec 108): a filter or a page turn used to swap the notifications for
+ * a line of text and take the pager, and the focus on it, away with them.
  */
-import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import CorexLoadable from '../components/CorexLoadable.js';
 import CorexSelect from '../components/CorexSelect.js';
 import NotificationItem from './NotificationItem.js';
+import NotificationSkeleton from './NotificationSkeleton.js';
 import PreferencesPanel from './PreferencesPanel.js';
 
 /**
@@ -84,6 +96,9 @@ export default function NotificationsApp() {
 	const [ category, setCategory ] = useState( '' );
 	const [ assignedToMe, setAssignedToMe ] = useState( false );
 	const [ error, setError ] = useState( '' );
+	// Which request was made last. A list that stays on screen lets a second view be asked for
+	// before the first has answered, and the slower answer must not be the one that is kept.
+	const latestRequest = useRef( 0 );
 
 	const activeView = useMemo(
 		() =>
@@ -95,7 +110,12 @@ export default function NotificationsApp() {
 		if ( view === 'preferences' ) {
 			return; // the preferences panel owns its own data
 		}
-		setStatus( 'loading' );
+		const request = ++latestRequest.current;
+		setStatus( ( current ) =>
+			current === 'ready' || current === 'refreshing'
+				? 'refreshing'
+				: 'loading'
+		);
 		const query = new URLSearchParams( {
 			page: String( page ),
 			per_page: String( perPage ),
@@ -112,11 +132,18 @@ export default function NotificationsApp() {
 		}
 		apiFetch( { path: `/corex/v1/notifications?${ query.toString() }` } )
 			.then( ( response ) => {
+				if ( request !== latestRequest.current ) {
+					return;
+				}
 				setItems( response?.data?.items ?? [] );
 				setTotal( response?.data?.total ?? 0 );
 				setStatus( 'ready' );
 			} )
-			.catch( () => setStatus( 'error' ) );
+			.catch( () => {
+				if ( request === latestRequest.current ) {
+					setStatus( 'error' );
+				}
+			} );
 	}, [ view, page, perPage, activeView, severity, category, assignedToMe ] );
 
 	useEffect( () => {
@@ -263,27 +290,6 @@ export default function NotificationsApp() {
 						</button>
 					</div>
 
-					{ status === 'loading' && (
-						<p className="corex-notifications-screen__state">
-							{ __( 'Loading notifications…', 'corex' ) }
-						</p>
-					) }
-					{ status === 'error' && (
-						<p
-							className="corex-notifications-screen__state"
-							role="alert"
-						>
-							{ __(
-								'Notifications could not be loaded.',
-								'corex'
-							) }
-						</p>
-					) }
-					{ status === 'ready' && items.length === 0 && (
-						<p className="corex-notifications-screen__state">
-							{ activeView.empty }
-						</p>
-					) }
 					{ error && (
 						<p
 							className="corex-notifications-screen__state"
@@ -292,50 +298,75 @@ export default function NotificationsApp() {
 							{ error }
 						</p>
 					) }
-					{ status === 'ready' && items.length > 0 && (
-						<ul className="corex-notifications-screen__list">
-							{ items.map( ( item ) => (
-								<li
-									key={ item.id }
-									className="corex-notifications-screen__item"
-								>
-									<NotificationItem
-										item={ item }
-										actions={ itemActions }
-									/>
-								</li>
-							) ) }
-						</ul>
-					) }
+					<CorexLoadable
+						status={ status }
+						skeleton={
+							<NotificationSkeleton place="screen" count={ 4 } />
+						}
+						loadingLabel={ __( 'Loading notifications…', 'corex' ) }
+						errorMessage={ __(
+							'Notifications could not be loaded.',
+							'corex'
+						) }
+						onRetry={ load }
+					>
+						{ items.length === 0 ? (
+							<p className="corex-notifications-screen__state">
+								{ activeView.empty }
+							</p>
+						) : (
+							<ul className="corex-notifications-screen__list">
+								{ items.map( ( item ) => (
+									<li
+										key={ item.id }
+										className="corex-notifications-screen__item"
+									>
+										<NotificationItem
+											item={ item }
+											actions={ itemActions }
+										/>
+									</li>
+								) ) }
+							</ul>
+						) }
+					</CorexLoadable>
 
-					{ status === 'ready' && pages > 1 && (
-						<nav
-							className="corex-notifications-screen__pager"
-							aria-label={ __( 'Notifications pages', 'corex' ) }
-						>
-							<button
-								type="button"
-								disabled={ page <= 1 }
-								onClick={ () =>
-									setPage( ( current ) => current - 1 )
-								}
+					{ /* Outside what is waiting, and there through a refresh: the pager is how
+					     the next page is asked for, and it must still hold the focus when that
+					     page arrives. */ }
+					{ ( status === 'ready' || status === 'refreshing' ) &&
+						pages > 1 && (
+							<nav
+								className="corex-notifications-screen__pager"
+								aria-label={ __(
+									'Notifications pages',
+									'corex'
+								) }
 							>
-								{ __( 'Previous', 'corex' ) }
-							</button>
-							<span>
-								{ __( 'Page', 'corex' ) } { page } / { pages }
-							</span>
-							<button
-								type="button"
-								disabled={ page >= pages }
-								onClick={ () =>
-									setPage( ( current ) => current + 1 )
-								}
-							>
-								{ __( 'Next', 'corex' ) }
-							</button>
-						</nav>
-					) }
+								<button
+									type="button"
+									disabled={ page <= 1 }
+									onClick={ () =>
+										setPage( ( current ) => current - 1 )
+									}
+								>
+									{ __( 'Previous', 'corex' ) }
+								</button>
+								<span>
+									{ __( 'Page', 'corex' ) } { page } /{ ' ' }
+									{ pages }
+								</span>
+								<button
+									type="button"
+									disabled={ page >= pages }
+									onClick={ () =>
+										setPage( ( current ) => current + 1 )
+									}
+								>
+									{ __( 'Next', 'corex' ) }
+								</button>
+							</nav>
+						) }
 				</>
 			) }
 		</div>
