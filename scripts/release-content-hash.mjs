@@ -10,10 +10,11 @@
  * what a site unpacked. A change here is a change there, and to every package already built.
  */
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const sha256 = ( data ) => createHash( 'sha256' ).update( data ).digest( 'hex' );
+const sha256 = ( data ) =>
+	createHash( 'sha256' ).update( data ).digest( 'hex' );
 
 /**
  * Every file under a folder, as its path from the folder with forward slashes.
@@ -22,6 +23,10 @@ const sha256 = ( data ) => createHash( 'sha256' ).update( data ).digest( 'hex' )
  * @return {string[]} The files' relative paths, in no particular order.
  */
 function filesOf( dir ) {
+	// A folder that is not there holds nothing, which is what the PHP side answers too.
+	if ( ! existsSync( dir ) ) {
+		return [];
+	}
 	return readdirSync( dir, { recursive: true, withFileTypes: true } )
 		.filter( ( entry ) => entry.isFile() )
 		.map( ( entry ) =>
@@ -46,7 +51,9 @@ export function describeFolder( dir ) {
 		const content = readFileSync( join( dir, path ) );
 		bytes += content.length;
 		lines.push(
-			Buffer.from( `${ path }\0${ content.length }\0${ sha256( content ) }\n` )
+			Buffer.from(
+				`${ path }\0${ content.length }\0${ sha256( content ) }\n`
+			)
 		);
 	}
 	// As bytes, which is how PHP's `sort()` orders strings: JavaScript's own order differs for

@@ -16,9 +16,8 @@ let describeFolder;
 const made = [];
 
 beforeAll( async () => {
-	( { describeFolder } = await import(
-		'../scripts/release-content-hash.mjs'
-	) );
+	( { describeFolder } =
+		await import( '../scripts/release-content-hash.mjs' ) );
 } );
 
 afterEach( () => {
@@ -53,9 +52,7 @@ it( 'counts the files and the bytes of a folder, however deep', () => {
 	const described = describeFolder( folderOf( plugin ) );
 
 	expect( described.files ).toBe( 3 );
-	expect( described.bytes ).toBe(
-		Object.values( plugin ).join( '' ).length
-	);
+	expect( described.bytes ).toBe( Object.values( plugin ).join( '' ).length );
 	expect( described.hash ).toMatch( /^[0-9a-f]{64}$/ );
 } );
 
@@ -68,16 +65,14 @@ it( 'gives the same hash for the same files, in whatever order they were written
 } );
 
 it.each( [
-	[
-		'a byte of one file',
-		{ ...plugin, 'src/Boot.php': '<?php // b00t' },
-	],
+	[ 'a byte of one file', { ...plugin, 'src/Boot.php': '<?php // b00t' } ],
 	[
 		'a file moved, with its content as it was',
 		{
 			'corex-core.php': plugin[ 'corex-core.php' ],
 			'src/Kernel.php': plugin[ 'src/Boot.php' ],
-			'assets/js/corex-runtime.js': plugin[ 'assets/js/corex-runtime.js' ],
+			'assets/js/corex-runtime.js':
+				plugin[ 'assets/js/corex-runtime.js' ],
 		},
 	],
 	[ 'a file added', { ...plugin, 'src/Extra.php': '' } ],
@@ -93,6 +88,14 @@ it.each( [
 	expect( describeFolder( folderOf( changed ) ).hash ).not.toBe(
 		describeFolder( folderOf( plugin ) ).hash
 	);
+} );
+
+it( 'says a folder that is not there holds nothing', () => {
+	expect( describeFolder( join( FIXTURE, 'no-such-folder' ) ) ).toEqual( {
+		files: 0,
+		bytes: 0,
+		hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+	} );
 } );
 
 it( 'describes the recorded folder as the record says, which the PHP side is held to as well', () => {

@@ -25,6 +25,7 @@ const { tmpdir } = require( 'node:os' );
 const { spawnSync } = require( 'node:child_process' );
 
 const mod = require( '../scripts/build-shared-host-dist.mjs' );
+const { describeFolder } = require( '../scripts/release-content-hash.mjs' );
 
 const REPO = join( __dirname, '..' );
 const PROBE = join( REPO, 'scripts', 'shared-host-dist-probe.php' );
@@ -136,6 +137,7 @@ function makeRepo() {
 	write( 'sites/acme/acme-theme/package.json', '{}' );
 	// minimal wp core
 	write( 'wp/wp-load.php' );
+	write( 'wp/wp-includes/version.php', "<?php\n$wp_version = '7.1.3';\n" );
 	write( 'wp/wp-includes/sodium_compat/composer.json', '{}' ); // WordPress's own, and WordPress's to ship
 	write( 'wp/wp-admin/index.php' );
 	write( 'wp/wp-config.php', 'SECRET' ); // must NOT be packaged
@@ -175,6 +177,25 @@ function probe( distDir ) {
  * @param {string} dir The directory to list.
  * @return {string[]} The relative paths of its files and directories.
  */
+/**
+ * Describe a package again, as a build that had produced it in its present state would have.
+ *
+ * The tests below spoil a built package one way and ask what verification says. Since a package
+ * measures its own folders (spec 107), every such change is also "not what the description says";
+ * measuring again leaves the one fault each test is about.
+ *
+ * @param {string} distDir The package.
+ */
+function describedAgain( distDir ) {
+	const file = join( distDir, 'corex-release.json' );
+	const manifest = JSON.parse( readFileSync( file, 'utf8' ) );
+
+	for ( const path of manifest.release_paths ) {
+		manifest.contents[ path ] = describeFolder( join( distDir, path ) );
+	}
+	writeFileSync( file, JSON.stringify( manifest, null, 2 ) + '\n' );
+}
+
 const listed = ( dir ) =>
 	readdirSync( dir, { recursive: true } ).map( ( rel ) =>
 		rel.replace( /\\/g, '/' )
@@ -271,6 +292,7 @@ it( 'removes from the packaged vendor/ what a package may not hold, and keeps th
 	expect( mod.verifyDist( distDir ).ok ).toBe( false );
 
 	const removed = mod.prunePackagedVendor( distDir );
+	describedAgain( distDir );
 
 	expect( removed.sort() ).toEqual( [
 		'wp-content/vendor/acme/pdf/.github',
@@ -401,6 +423,109 @@ it( 'leaves out the files that only describe CoreX or the site to a developer', 
 	);
 } );
 
+/**
+ * Spec 107 (plan D1, D2). A package is installed from the admin by a site that has only the
+ * package to go on, so the package says what it needs, which folders are the release's, and what
+ * each holds.
+ */
+describe( 'what a package says about itself', () => {
+	const RELEASE_PATHS = [
+		'wp-content/packages',
+		'wp-content/plugins/acme-site',
+		'wp-content/plugins/corex-core',
+		'wp-content/plugins/corex-ui',
+		'wp-content/themes/acme-theme',
+		'wp-content/themes/corex',
+		'wp-content/vendor',
+	];
+	const manifestOf = ( distDir ) =>
+		JSON.parse(
+			readFileSync( join( distDir, 'corex-release.json' ), 'utf8' )
+		);
+
+	it( 'names what it needs, the WordPress it was built with, and every folder a release owns', () => {
+		const { distDir } = buildFixture();
+		const manifest = manifestOf( distDir );
+
+		expect( manifest.schema ).toBe( 2 );
+		expect( manifest.requires ).toEqual( { php: '8.3', wordpress: '7.0' } );
+		expect( manifest.wordpress_version ).toBe( '7.1.3' );
+		expect( manifest.release_paths ).toEqual( RELEASE_PATHS );
+	} );
+
+	it( 'measures each of those folders as it finally is, vendor included', () => {
+		const { distDir } = buildFixture();
+		const manifest = manifestOf( distDir );
+
+		for ( const path of RELEASE_PATHS ) {
+			expect( manifest.contents[ path ] ).toEqual(
+				describeFolder( join( distDir, path ) )
+			);
+		}
+		expect(
+			manifest.contents[ 'wp-content/vendor' ].files
+		).toBeGreaterThan( 0 );
+	} );
+
+	it( 'is read by the class a site reads it with', () => {
+		const { distDir } = buildFixture();
+		const run = spawnSync(
+			'php',
+			[
+				join( REPO, 'tests', 'Support', 'read-release-manifest.php' ),
+				join( distDir, 'corex-release.json' ),
+			],
+			{ encoding: 'utf8' }
+		);
+
+		expect( JSON.parse( run.stdout ) ).toEqual( {
+			version: '9.9.9',
+			client: 'acme',
+			requiresPhp: '8.3',
+			requiresWordPress: '7.0',
+			wordPressVersion: '7.1.3',
+			releasePaths: RELEASE_PATHS,
+		} );
+	} );
+
+	it( 'is refused by verification once a file of the release is not what was measured', () => {
+		const { distDir } = buildFixture();
+		writeFileSync(
+			join( distDir, 'wp-content/plugins/corex-ui/corex-ui.php' ),
+			'<?php // changed after the package was described'
+		);
+
+		expect( mod.verifyDist( distDir ).errors ).toEqual( [
+			'wp-content/plugins/corex-ui is not what corex-release.json says it holds',
+		] );
+	} );
+
+	it( 'becomes one zip, named for what it is, with its description at the root', () => {
+		const AdmZip = require( 'adm-zip' );
+		const { root, distDir } = buildFixture();
+
+		const zipFile = mod.zipPackage( distDir, root );
+		const entries = new AdmZip( zipFile )
+			.getEntries()
+			.map( ( entry ) => entry.entryName );
+
+		expect( zipFile ).toMatch(
+			/corex-release-acme-9\.9\.9-\d{8}-\d{6}\.zip$/
+		);
+		expect( entries ).toEqual(
+			expect.arrayContaining( [
+				'corex-release.json',
+				'wp-content/plugins/corex-core/corex-core.php',
+				'wp-content/vendor/autoload.php',
+			] )
+		);
+		// Nothing wraps it: a zip of a `dist/` folder would put everything one level down.
+		expect( entries.some( ( name ) => name.startsWith( 'dist/' ) ) ).toBe(
+			false
+		);
+	} );
+} );
+
 it.each( [
 	[
 		'with a forbidden path in it',
@@ -465,6 +590,9 @@ it.each( [
 ] )( 'the verifier rejects a package %s', ( scenario, spoil, errors ) => {
 	const { distDir } = buildFixture();
 	spoil( distDir );
+	if ( existsSync( join( distDir, 'corex-release.json' ) ) ) {
+		describedAgain( distDir );
+	}
 
 	expect( mod.verifyDist( distDir ) ).toEqual( { ok: false, errors } );
 } );
