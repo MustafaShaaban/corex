@@ -228,7 +228,7 @@ final readonly class SubmissionExportTable
             'id' => ExportCell::number((int) ($record['id'] ?? 0)),
             'submitted' => $this->submitted((string) ($record['created_at'] ?? '')),
             'form' => ExportCell::text((string) (($record['flow'] ?? '') ?: ($record['form'] ?? ''))),
-            'status' => ExportCell::text($this->status((string) ($record['status'] ?? 'new'))),
+            'status' => ExportCell::text(self::statusName((string) ($record['status'] ?? 'new'))),
             'assigned_to' => ExportCell::text($this->owner($record)),
             'read' => ExportCell::text($this->yesNo(! empty($record['read_at']))),
             'test' => ExportCell::text($this->yesNo(! empty($record['is_test']))),
@@ -250,7 +250,11 @@ final readonly class SubmissionExportTable
             : ExportCell::dateTime($moment->setTimezone(($this->siteTimezone)()));
     }
 
-    private function status(string $status): string
+    /**
+     * A status as a person reads it. Said in the table's Status column and in a document's line
+     * about the filters it was made under.
+     */
+    public static function statusName(string $status): string
     {
         return match ($status) {
             'new' => __('New', 'corex'),

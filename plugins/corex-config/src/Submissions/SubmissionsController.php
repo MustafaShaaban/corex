@@ -194,6 +194,8 @@ final readonly class SubmissionsController
             // The dialog offers the columns that hold personal data only to somebody who may
             // export it. The export itself refuses them regardless.
             'permissions' => ['personal_data' => $this->scope()->canExportPersonalData],
+            // A format is offered only where it can be written, with the most a PDF holds.
+            'formats' => $this->services->exportFormats->describe(),
         ]));
     }
 

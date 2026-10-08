@@ -7348,3 +7348,76 @@ What was run:
 both. No JavaScript changed. Nothing was done to make PHP fail this way on purpose. One green run
 with the JIT off proves nothing about a fault that shows up now and then, and the run with it on
 (2.1 minutes) against the run with it off (2.6) is one sample each, not a measurement.
+
+## #269 — A PDF export is signed as CoreX's, written by mPDF, and holds five hundred records
+
+Date: 2026-10-08 · Spec: 103 (submissions inbox and exports), slice 6 · Status: Final
+
+**What "signed off with the identity" meant.** The spec read it as the site's brand and a block
+naming the person who exported. The owner, asked: "use a corex signature, that what i did mean, pdf
+exported should has the corex logo on it as it has the copyrights of the tool". So every page of
+a PDF carries the CoreX logo, "Exported with CoreX", a copyright line and its page number. The
+site is named in the header, in words. Who exported, and when, is a fact the document opens with,
+not a signature. US8, FR-019 and the assumption were rewritten to say this.
+
+**mPDF, chosen by a spike** (plan D3), on the owner's "use the best one and recommended". The
+test was Arabic: an answer in Arabic has to come out shaped, joined and in order, on a page that
+reads right to left. A trial document was rendered to images and read: mPDF did that from its own
+fonts, and needs PHP's `gd` and `mbstring`. It is GPL-2.0-only; WordPress is GPL too. The other
+candidate was a print-styled page, which is not a file until somebody prints it, and the spec
+asks for a file. No other library was tried.
+
+**What it costs: about 94MB in `vendor/`, 88MB of it fonts**, and the same in the shared-host
+package. The library carries a font for every script it can write and chooses by the text. The
+fonts are kept whole, so a document is right in any language a site collects answers in. Pruning
+the ones a site will never use is a packaging choice, left to the builder and not made here. The
+weight is the first entry under Client impact.
+
+**Five hundred records, said before the export is asked for.** An export is written in one
+request at its last step. On the development machine five hundred rows took 6.6 seconds and
+68MB, and a thousand took 17.3 seconds and 116MB: the cost grows faster than the rows. No host
+was measured. The server refuses a PDF of more,
+and the dialog names the limit under the choice and in place of starting. A workbook has no such
+limit and the sentence points to it. The limit travels with the preview's answer, so the dialog
+and the server cannot disagree about the number.
+
+**PDF is offered where it can be written.** The preview's answer lists the formats the server can
+write. Without the library or either extension the dialog offers a workbook and CSV, as before,
+and nothing fails.
+
+**The logo is an image, rendered from the approved SVG.** mPDF draws the mark's squares exactly
+and mangles the wordmark's outlines. `scripts/generate-logo-print.py` renders
+`corex-contrast.svg` to `corex-lockup-print.png` and records its digest in the manifest under
+`print`; a contract test holds the file to that digest and to the path the PDF is given. Nothing
+was redrawn.
+
+**Direction is decided cell by cell.** On a right-to-left page mPDF reordered every cell: a phone
+number read "9700 699 101 20+", a date and an English sentence likewise. Each cell, heading and
+line of the header and footer is given the direction of its first letter. Seen in the rendered
+page, not inferred.
+
+**More than eight columns are not a table.** They do not fit a page at a size somebody can read.
+Each record is then a block of its own, a question beside its answer, kept on one page.
+
+**The colours are written out.** A PDF has no stylesheet of the site's to read tokens from, so
+`PdfExportLayout` names its ink, rule and tint as constants. The token contract is about what the
+admin and the theme draw; a document on paper is neither.
+
+**Not in the unit suite: a real PDF.** The unit harness wraps file streams, and mPDF's font reads
+come back short under it, as a PHP warning. The layout is tested there as the HTML it hands over;
+a real PDF is written in the integration suite and by the two browser tests.
+
+**Found by looking at a produced document, and not fixed here.** The Data export of Form
+submissions offers a column per answer and leaves each empty, in every format: the source
+declares those fields and its rows do not carry them. A ticked-rows export loses "Submission" as
+well, because ticked rows are read in the detail view's shape. Both predate this slice. Queued as
+a task of its own.
+
+**The shared-host builder prunes the packaged `vendor/`.** CI refused the package of a generated
+client site: mPDF ships its own `.github`, Composer installed it as shipped, and `.github` is a
+path the package may never hold. Copied trees were already filtered as they were copied; nothing
+filtered what Composer installed, because no production package had shipped a forbidden path
+before. `prunePackagedVendor()` removes the forbidden names from the packaged `vendor/` after the
+install. The verifier is unchanged, so a forbidden path anywhere else still refuses the package.
+The real package, built to a scratch directory with this change, verified: 191.1MB unpacked,
+93.9MB of it `vendor/`, 91.9MB of that mPDF. Local checks had not built the package; CI did.

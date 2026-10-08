@@ -33,8 +33,9 @@ input.
 
 ## Export and migration history
 
-Exports support current filters, selected IDs, or all accessible records. Choose explicit columns and CSV or XLSX.
-Personal-data columns require acknowledgement. Work runs as a bounded job; completed private artifacts are available
+Exports support current filters, selected IDs, or all accessible records. Choose explicit columns and CSV, XLSX or
+PDF. A PDF needs the source's CSV export permission, holds up to 500 records, and is offered only where the server can
+write one. Personal-data columns require acknowledgement. Work runs as a bounded job; completed private artifacts are available
 only through the actor-scoped download endpoint. CSV neutralizes spreadsheet formulas and XLSX uses inline strings.
 
 A migration-capable source supplies its own immutable definitions and provider. Preview shows the exact plan,

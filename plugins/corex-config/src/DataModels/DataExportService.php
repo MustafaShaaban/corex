@@ -38,6 +38,12 @@ final readonly class DataExportService
         if ($count === 0) {
             throw new DomainException('There is nothing to export.');
         }
+        if ($request->format === ExportWriters::PDF && $count > ExportWriters::PDF_MOST_RECORDS) {
+            throw new DomainException(sprintf(
+                'A PDF holds up to %d records. Export fewer, or choose a workbook.',
+                ExportWriters::PDF_MOST_RECORDS,
+            ));
+        }
         $run = $this->exports->create(DataExportRun::queued($request, $count, $personal));
 
         return $this->exports->attachJob($run->id, $this->jobs->enqueue($run));

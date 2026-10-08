@@ -21,6 +21,7 @@ import {
 	ExportOutcome,
 	ExportScopes,
 } from '../../admin/components/export/ExportParts.js';
+import { offeredFormats } from '../../admin/components/export/exportFormats.js';
 import { runExport } from '../../admin/components/export/runExport.js';
 import { formatDateTime } from '../../admin/adminDateTime.js';
 import { buildExportPayload } from '../inbox.js';
@@ -42,20 +43,25 @@ import {
 	sizeOf,
 } from './exportState.js';
 
-function formats() {
-	return [
-		{ value: 'xlsx', label: __( 'Excel workbook (.xlsx)', 'corex' ) },
-		{ value: 'csv', label: __( 'CSV (.csv)', 'corex' ) },
-	];
-}
-
 /**
  * What each format is for, in a line under the choice.
  *
- * @param {string} format The chosen format.
+ * @param {string} format  The chosen format.
+ * @param {number} pdfMost The most submissions one PDF holds.
  * @return {string} The line.
  */
-function formatDetail( format ) {
+function formatDetail( format, pdfMost ) {
+	if ( format === 'pdf' ) {
+		return sprintf(
+			/* translators: %s: the most submissions one PDF holds. */
+			__(
+				'A document to keep or print. Every page has the site’s name, its number and CoreX’s signature. Up to %s submissions.',
+				'corex'
+			),
+			Number( pdfMost ).toLocaleString()
+		);
+	}
+
 	return format === 'xlsx'
 		? __(
 				'Dates and numbers sort and filter. The headings stay in view. Each form is a sheet of its own.',
@@ -172,7 +178,14 @@ export default function ExportDialog( {
 	} );
 	const count =
 		options.find( ( option ) => option.value === scope )?.count ?? null;
-	const blocked = blockedReason( { count, chosen: allowed, acknowledged } );
+	const pdfMost = preview?.formats?.pdf_most_records ?? 0;
+	const blocked = blockedReason( {
+		count,
+		chosen: allowed,
+		acknowledged,
+		format,
+		pdfMost,
+	} );
 	const running = run.phase === 'running';
 
 	const report = ( next ) => {
@@ -277,10 +290,10 @@ export default function ExportDialog( {
 			<ExportFormat
 				format={ format }
 				setFormat={ setFormat }
-				formats={ formats() }
+				formats={ offeredFormats( preview?.formats?.available ) }
 				separator={ separator }
 				setSeparator={ setSeparator }
-				detail={ formatDetail( format ) }
+				detail={ formatDetail( format, pdfMost ) }
 				disabled={ running }
 			/>
 

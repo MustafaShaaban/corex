@@ -22,6 +22,7 @@ use Corex\Config\Data\DataSource;
 use Corex\Config\Data\DataSourceService;
 use Corex\Config\Data\FieldAwareDataSource;
 use Corex\Config\Data\QueryableDataSource;
+use Corex\Config\DataModels\DataExportAbout;
 use Corex\Config\DataModels\DataExportFiles;
 use Corex\Config\DataModels\DataExportJobHandler;
 use Corex\Config\DataModels\DataExportJobQueue;
@@ -172,6 +173,10 @@ function dataExportFiles(): array
     return [
         new DataExportFiles(
             new DataExportTable(static fn (): DateTimeZone => new DateTimeZone('UTC')),
+            new DataExportAbout(
+                static fn (int $userId): string => $userId === 7 ? 'Salma Adel' : '',
+                static fn (): DateTimeZone => new DateTimeZone('UTC'),
+            ),
             new ExportWriters(static fn (): bool => false),
             $directory,
         ),
@@ -245,7 +250,7 @@ it('requires personal-data acknowledgement and rejects undeclared columns or for
         ->toThrow(InvalidArgumentException::class, 'column')
         ->and(fn () => $service->request(exportRequest(['format' => 'xlsx'])))
         ->toThrow(DomainException::class, 'support')
-        ->and(fn () => exportRequest(['format' => 'pdf']))
+        ->and(fn () => exportRequest(['format' => 'docx']))
         ->toThrow(InvalidArgumentException::class, 'format')
         ->and(fn () => exportRequest(['separator' => 'pipe']))
         ->toThrow(InvalidArgumentException::class, 'separator');
@@ -418,4 +423,19 @@ it('finishes an export, holding what was counted, when a record arrives in the s
         ->and($job->processed)->toBe(3)
         ->and($service->download(7, $run->id, false)['content'])
         ->toBe("\xEF\xBB\xBFID,Name\r\n1,'=Ada\r\n2,Grace\r\n3,Linus\r\n");
+});
+
+it('refuses a PDF of more records than a PDF is written for, and says what to do instead', function () {
+    [$service, $store, , $sources] = exportService();
+    $source = $sources->authorize(7, 'contacts', DataSourceCapabilities::EXPORT_CSV);
+    for ($id = 4; $id <= ExportWriters::PDF_MOST_RECORDS + 1; $id++) {
+        $source->arrive(['id' => $id, 'name' => 'Person ' . $id, 'email' => '', 'status' => 'active', 'joined' => '', 'tags' => []]);
+    }
+    $everything = ['scope' => 'all', 'query' => [], 'columns' => ['status']];
+
+    expect(fn () => $service->request(exportRequest($everything + ['format' => 'pdf'])))
+        ->toThrow(DomainException::class, 'A PDF holds up to 500 records. Export fewer, or choose a workbook.')
+        ->and($store->runs)->toBe([])
+        // The same export as a workbook is taken.
+        ->and($service->request(exportRequest($everything + ['format' => 'xlsx']))->recordCount)->toBe(501);
 });

@@ -275,6 +275,39 @@ test( 'queries source records, opens detail, and exports them from one dialog', 
 	await expect( dialog ).toBeHidden();
 	await expect( exportButton ).toBeFocused();
 
+	// One ticked row, as a document to file (US8). A PDF holds a stated number of records
+	// (FR-019a), and a source may hold more than that, so this exports the one row.
+	await page
+		.getByRole( 'checkbox', { name: /^Select record / } )
+		.first()
+		.check();
+	await exportButton.click();
+	await expect(
+		dialog.locator( '.corex-export__scope.is-chosen' )
+	).toContainText( 'Selected rows' );
+	await dialog.getByRole( 'combobox', { name: 'File type' } ).click();
+	await page.getByRole( 'option', { name: 'PDF document (.pdf)' } ).click();
+	await expect( dialog.getByText( /Up to 500 records\.$/ ) ).toBeVisible();
+	const acknowledgeAgain = dialog.getByText(
+		'I understand this export contains personal data'
+	);
+	if ( await acknowledgeAgain.isVisible().catch( () => false ) ) {
+		await acknowledgeAgain.click();
+	}
+	const documentArriving = page.waitForEvent( 'download' );
+	await dialog.getByRole( 'button', { name: 'Export 1 record' } ).click();
+	const filed = await documentArriving;
+	expect( filed.suggestedFilename() ).toMatch( /\.pdf$/ );
+	expect(
+		fs
+			.readFileSync( await filed.path() )
+			.subarray( 0, 5 )
+			.toString( 'latin1' )
+	).toBe( '%PDF-' );
+	await expect( dialog.getByText( /^Saved .+\.pdf\.$/ ) ).toBeVisible();
+	await page.keyboard.press( 'Escape' );
+	await expect( dialog ).toBeHidden();
+
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
 

@@ -200,6 +200,8 @@ final readonly class DataManagementController
                 (array) ($safe->input['selected_ids'] ?? []),
                 (array) ($safe->input['query'] ?? []),
             ),
+            // The dialog offers a format only where it can be written, and says the most a PDF holds.
+            'formats' => $this->services->exportFormats->describe(),
         ]));
     }
 

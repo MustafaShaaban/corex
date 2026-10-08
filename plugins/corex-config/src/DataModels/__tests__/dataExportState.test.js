@@ -9,6 +9,7 @@ import {
 	dataBlockedReason,
 	dataColumnChoices,
 	dataExportLabel,
+	dataFormatDetail,
 	dataFormats,
 	dataProgress,
 	dataScopes,
@@ -175,6 +176,21 @@ describe( 'the formats', () => {
 			dataFormats( { actions: {} } ).map( ( format ) => format.value )
 		).toEqual( [ 'csv' ] );
 	} );
+
+	it( 'include a PDF where the server can write one, and a workbook only where the source allows it', () => {
+		const server = [ 'xlsx', 'csv', 'pdf' ];
+		const valuesFor = ( source ) =>
+			dataFormats( source, server ).map( ( format ) => format.value );
+
+		expect(
+			valuesFor( { actions: { export_xlsx: { visible: true } } } )
+		).toEqual( [ 'xlsx', 'csv', 'pdf' ] );
+		expect( valuesFor( { actions: {} } ) ).toEqual( [ 'csv', 'pdf' ] );
+	} );
+
+	it( 'say how many records a PDF holds', () => {
+		expect( dataFormatDetail( 'pdf', 500 ) ).toMatch( /Up to 500 records/ );
+	} );
 } );
 
 describe( 'whether the export can start', () => {
@@ -216,6 +232,16 @@ describe( 'whether the export can start', () => {
 		[
 			'personal data is chosen and confirmed',
 			{ ...ready, personal: true, acknowledged: true },
+			'',
+		],
+		[
+			'a PDF is asked for with more than a PDF holds',
+			{ ...ready, count: 1200, format: 'pdf', pdfMost: 500 },
+			'A PDF holds up to 500 records. Choose fewer, or export a workbook.',
+		],
+		[
+			'a workbook is asked for with more than a PDF holds',
+			{ ...ready, count: 1200, format: 'xlsx', pdfMost: 500 },
 			'',
 		],
 	] )( 'when %s', ( _name, state, reason ) => {
