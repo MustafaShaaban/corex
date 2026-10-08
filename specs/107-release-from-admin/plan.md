@@ -48,8 +48,9 @@ for FTP credentials nobody is there to give, which is why CoreX avoids it alread
 installation needs may live in a folder it replaces; a burst of requests is answered with an
 HTML page that must be read as "wait"
 
-**Scale/Scope**: about 3,000 files and 90MB of release-owned folders out of a 7,000-entry,
-33MB zip; an account allowance of 300,000 files shared by two sites
+**Scale/Scope**: 2,633 files and 27MB of release-owned folders for the framework alone, measured
+in slice 1, out of a 34MB zip that is mostly WordPress; an account allowance of 300,000 files
+shared by two sites
 
 ## What the source does today
 

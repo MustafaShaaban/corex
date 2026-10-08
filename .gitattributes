@@ -9,3 +9,6 @@
 *.woff binary
 *.woff2 binary
 *.ttf binary
+
+# A release folder whose hash is recorded: its bytes are the test (spec 107).
+tests/Fixtures/Releases/hashed/** -text
