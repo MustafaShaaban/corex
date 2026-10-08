@@ -68,7 +68,7 @@ use `Spinner` and 4 uses of `isBusy` to remove
 | Piece | Is |
 |---|---|
 | `CorexSkeleton` | A placeholder, hidden from assistive technology, and its parts: a bar the height of a line of text, and a box |
-| `CorexLoader` | The one indefinite loader, with an optional sentence |
+| The loader | A ring drawn by the styles on a working control. A component for it on its own, with a sentence, is written when a surface needs one; none has yet |
 | `CorexLoadable` | The wrapper a surface puts round its content. Given a status (`loading`, `refreshing`, `ready`, `error`), a name for the content, and a skeleton, it shows the right thing, marks the surface, and announces |
 | `workingProps( working )` | What a button is given while its request is in flight: disabled, busy, and one attribute the styles hang on |
 
@@ -125,10 +125,9 @@ keystroke.
 
 ### D6. The loader (story 4)
 
-A ring: a track in the strong border colour and an arc in the action colour, turning in 900ms
-(`--corex-admin-motion-slow`), drawn with borders so it needs no image and takes
-`currentcolor` inside a button. Under reduced motion it does not turn: the ring with its arc at
-the top, beside its sentence.
+A ring whose colour fades round it to nothing, turning in 900ms (`--corex-admin-motion-slow`):
+a conic gradient with its middle masked out, so it needs no image, in the colour of the control
+it is drawn on. Under reduced motion it does not turn: a ring with a tail.
 
 ### D7. A working button (story 3)
 
@@ -172,7 +171,6 @@ plugins/corex-core/assets/css/corex-admin-tokens.css     # five tokens
 plugins/corex-core/assets/css/corex-admin-shell.css      # .corex-admin-skeleton*, .corex-loadable, .corex-loader, [data-corex-working]
 plugins/corex-config/src/admin/components/
 ├── CorexSkeleton.js
-├── CorexLoader.js
 ├── CorexLoadable.js
 ├── working.js
 └── __tests__/

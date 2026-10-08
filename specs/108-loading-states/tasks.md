@@ -23,25 +23,31 @@ light, left-to-right and right-to-left, 1280 and 782, with the answer held back)
 
 ## Slice 2 — The loader, and every action (US3, US4)
 
-- [ ] T020 [P] Jest: `workingProps` — disabled, busy and marked while working; nothing when not
-- [ ] T021 `.corex-loader` and the working button (`corex-admin-shell.css`): the ring, its still look, a button that keeps its width
-- [ ] T022 `CorexLoader`, `working.js`
-- [ ] T023 Jest, per screen: each control that sends a request is working while it is in flight and sends nothing on a second press
-- [ ] T024 Notifications, Email Studio, the Forms editor, Access, Blog, Security, Data dialogs, Insights, the captcha test: `workingProps`
-- [ ] T025 `isBusy` removed from the admin; a hygiene test that it is not used under `plugins/corex-config/src`
-- [ ] T026 Playwright: a held action shows working and keeps its button's width to the pixel
-- [ ] T027 Guards; UI/UX gate; notes
+An inventory at `f2908076` found 55 controls outside the Submissions inbox that send a request.
+They are done a screen at a time, each in its own pull request.
+
+- [x] T020 [P] Jest: `workingProps` — sends nothing on a second press; keeps its name and says it is busy; leaves alone a control disabled for its own reason
+- [x] T021 The working control and its loader (`corex-admin-shell.css`): the ring, its still look, a button that keeps its width, the colours wp-admin takes from a disabled `.button`, and a control in a WordPress `Modal`
+- [x] T022 `working.js`
+- [x] T023 Notifications (8 controls): each notification's actions, "Mark all as read" on the screen and in the drawer, the preference boxes; the three that failed in silence say why
+- [x] T024 The four `isBusy` buttons (export, the Data confirmation, the import dry-run, the migration confirmation); a hygiene test that `isBusy` is not used under `plugins/corex-config/src`
+- [x] T025 Playwright: a held action shows working, keeps its button's width to the pixel and sends nothing on a second press; the working state reaches a control drawn where a modal is
+- [ ] T026 Email Studio (10) and Forms and flows (8): one flag disables every button on each screen and nothing marks the one that was pressed
+- [ ] T027 Data (12): the mutation preview, the two downloads, the import's remap and commit, the migration previews and refresh
+- [ ] T028 Blog (3), Access (2), Security (2): the labels that change to "Saving…", "Applying…", "Refreshing…" go
+- [ ] T029 The screens that are not React: Insights (1), the setup wizard (3), the captcha test (1), and the forms the server draws
+- [ ] T030 Guards; UI/UX gate; notes, with each part
 
 ## Slice 3 — Data (US1, US2)
 
-- [ ] T030 Jest: `viewState()` — a first load is `loading`; a load with rows on screen is `refreshing`
-- [ ] T031 [P] Jest: `useDebounced` — ten changes inside the pause make one call, with the last value
-- [ ] T032 Records: skeleton rows first, rows kept and waiting after; the two totals waiting with them; the search box debounced and keeping focus; `Spinner` gone from `DataExplorer.js`
-- [ ] T033 A record opens its dialog at once with a placeholder; whether WordPress's `Modal` is inside the admin's token scope is checked first, and the dialog moved to `CorexDialog` if it is not
-- [ ] T034 Export history and migrations: a placeholder, never "no history" before an answer
-- [ ] T035 The source list's failure is said (FR-006)
-- [ ] T036 Playwright: each of these with the answer held back; a page turn and a search keep the rows; ten typed characters send at most two requests
-- [ ] T037 Guards; UI/UX gate; notes
+- [ ] T130 Jest: `viewState()` — a first load is `loading`; a load with rows on screen is `refreshing`
+- [ ] T131 [P] Jest: `useDebounced` — ten changes inside the pause make one call, with the last value
+- [ ] T132 Records: skeleton rows first, rows kept and waiting after; the two totals waiting with them; the search box debounced and keeping focus; `Spinner` gone from `DataExplorer.js`
+- [ ] T133 A record opens its dialog at once with a placeholder; whether WordPress's `Modal` is inside the admin's token scope is checked first, and the dialog moved to `CorexDialog` if it is not
+- [ ] T134 Export history and migrations: a placeholder, never "no history" before an answer
+- [ ] T135 The source list's failure is said (FR-006)
+- [ ] T136 Playwright: each of these with the answer held back; a page turn and a search keep the rows; ten typed characters send at most two requests
+- [ ] T137 Guards; UI/UX gate; notes
 
 ## Slice 4 — Forms and flows, Email Studio (US1, US2)
 
