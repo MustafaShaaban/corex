@@ -71,6 +71,10 @@ All notable changes to Corex are documented here. The format follows
 
 ### Security
 
+- **The hosting package no longer puts each plugin's `README.md`, `composer.json` and
+  `package.json` in the web root.** Anybody could fetch them and read what is installed and at
+  which version. They are left out of CoreX's code and the site's; WordPress core's own are as
+  WordPress ships them. Reported from a production site (DECISIONS #280).
 - **With the login hidden, three well-known addresses handed the hidden address to anyone who
   asked.** Signed out, `/wp-signup.php`, `/wp-register.php` and `/wp-admin/customize.php` each
   answered with a redirect to the custom login address. On a single site the first two only
@@ -131,6 +135,10 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A package built after this holds no `README.md`, `composer.json` or `package.json` under
+  `wp-content/plugins`, `themes` or `packages`.** A site already on a host keeps the ones it
+  has until they are deleted there: unpacking a new package over an old one removes nothing.
+  `wp-content/vendor/` is unchanged and should be refused by the web server.
 - **`.specify/feature.json` leaves the tree.** A client repository that takes this stops tracking
   it; a copy a session wrote stays on disk, ignored. If the merge reports it as changed on both
   sides, keep the deletion. The `/speckit-*` commands can then be used for a site's specs: see

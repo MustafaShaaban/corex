@@ -93,6 +93,13 @@ const DEV_EXCLUDES = [
 ];
 
 /**
+ * What describes CoreX or a site to a developer and to nobody else: left out of every tree that is not
+ * WordPress core. Each sat in a web root where anybody could fetch it, saying what is installed and at
+ * which version, and nothing on a running site reads one. WordPress's own are WordPress's to ship.
+ */
+const SOURCE_DESCRIPTIONS = [ 'README.md', 'composer.json', 'package.json' ];
+
+/**
  * The PDF library's fonts a package keeps unless it is built with `--pdf-fonts=all`: DejaVu, which has Latin,
  * Greek, Cyrillic and Hebrew letters, and the two the library writes Arabic-script languages in.
  */
@@ -275,20 +282,20 @@ function readCorexVersion( repoRoot ) {
 }
 
 /**
- * Filter for cpSync: skip dev-excluded names and any forbidden path.
+ * Filter for cpSync: skip dev-excluded names, any forbidden path, and, outside WordPress core, the
+ * files that only describe the source.
  *
- * @param {string} src The source path cpSync is about to copy.
- * @return {boolean} Whether it belongs in the bundle.
+ * @param {string} kind What is being copied: `core`, or one of CoreX's or the site's trees.
+ * @return {(src: string) => boolean} Whether a path cpSync is about to copy belongs in the bundle.
  */
-function copyFilter( src ) {
-	const name = basename( src );
-	if ( DEV_EXCLUDES.includes( name ) ) {
-		return false;
-	}
-	if ( isForbidden( src ) ) {
-		return false;
-	}
-	return true;
+function copyFilter( kind ) {
+	const leftOut =
+		kind === 'core'
+			? DEV_EXCLUDES
+			: [ ...DEV_EXCLUDES, ...SOURCE_DESCRIPTIONS ];
+
+	return ( src ) =>
+		! leftOut.includes( basename( src ) ) && ! isForbidden( src );
 }
 
 /**
@@ -374,7 +381,7 @@ export function runBuild( plan, distDir, options = {} ) {
 		mkdirSync( join( op.to, '..' ), { recursive: true } );
 		cpSync( op.from, op.to, {
 			recursive: true,
-			filter: copyFilter,
+			filter: copyFilter( op.kind ),
 			force: true,
 		} );
 	}
