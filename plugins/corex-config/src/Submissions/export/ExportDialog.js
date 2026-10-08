@@ -12,8 +12,16 @@ import { useEffect, useId, useRef, useState } from '@wordpress/element';
 import { Button } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexDialog from '../../admin/components/CorexDialog.js';
-import CorexSelect from '../../admin/components/CorexSelect.js';
 import CorexTime from '../../admin/components/CorexTime.js';
+import {
+	ExportCheck,
+	ExportColumns,
+	ExportFooter,
+	ExportFormat,
+	ExportOutcome,
+	ExportScopes,
+} from '../../admin/components/export/ExportParts.js';
+import { runExport } from '../../admin/components/export/runExport.js';
 import { formatDateTime } from '../../admin/adminDateTime.js';
 import { buildExportPayload } from '../inbox.js';
 import {
@@ -33,14 +41,6 @@ import {
 	scopeOptions,
 	sizeOf,
 } from './exportState.js';
-
-/** Steps to wait through before telling the person the export will finish on its own. */
-const STEPS_TO_WAIT = 400;
-
-/** A pause when a step moved nothing: the scheduler is taking that step, and will finish it. */
-const PAUSE_WHEN_IDLE_MS = 700;
-
-const FAILED_STATES = [ 'failed', 'cancelled' ];
 
 function formats() {
 	return [
@@ -67,14 +67,6 @@ function formatDetail( format ) {
 		  );
 }
 
-function separators() {
-	return [
-		{ value: 'comma', label: __( 'Comma', 'corex' ) },
-		{ value: 'semicolon', label: __( 'Semicolon', 'corex' ) },
-		{ value: 'tab', label: __( 'Tab', 'corex' ) },
-	];
-}
-
 function save( artifact ) {
 	const url = URL.createObjectURL( fileFrom( artifact ) );
 	const link = document.createElement( 'a' );
@@ -82,12 +74,6 @@ function save( artifact ) {
 	link.download = artifact.filename;
 	link.click();
 	URL.revokeObjectURL( url );
-}
-
-function pause( milliseconds ) {
-	return new Promise( ( resolve ) => {
-		setTimeout( resolve, milliseconds );
-	} );
 }
 
 /**
@@ -196,85 +182,41 @@ export default function ExportDialog( {
 	};
 
 	const start = async () => {
-		report( {
-			phase: 'running',
-			progress: { processed: 0, total: count },
+		const started = await runExport( {
+			create: async () =>
+				(
+					await inbox.createExport(
+						buildExportPayload( {
+							scope,
+							selectedIds,
+							columns: columnsFor( allowed ),
+							includeTest,
+							acknowledged,
+							filters: query,
+							format,
+							separator,
+						} )
+					)
+				)?.export.id,
+			advance: async ( id ) =>
+				( await inbox.advanceExport( id ) )?.progress,
+			download: async ( id ) => {
+				const downloaded = await inbox.downloadExport( id );
+				return downloaded.envelope.ok
+					? downloaded.envelope.data.artifact
+					: null;
+			},
+			save,
+			report,
+			total: count,
+			notDownloaded: __(
+				'The export is ready, but it could not be downloaded. It is listed under Recent exports.',
+				'corex'
+			),
 		} );
-		const created = await inbox.createExport(
-			buildExportPayload( {
-				scope,
-				selectedIds,
-				columns: columnsFor( allowed ),
-				includeTest,
-				acknowledged,
-				filters: query,
-				format,
-				separator,
-			} )
-		);
-		if ( ! created ) {
-			report( {
-				phase: 'failed',
-				message: __( 'The export could not be started.', 'corex' ),
-			} );
-			return;
-		}
-
-		const id = created.export.id;
-		let progress = { state: 'queued', processed: 0, total: count };
-		for (
-			let step = 0;
-			step < STEPS_TO_WAIT && progress.state !== 'completed';
-			step++
-		) {
-			const before = progress.processed;
-			const advanced = await inbox.advanceExport( id );
-			if (
-				! advanced ||
-				FAILED_STATES.includes( advanced.progress.state )
-			) {
-				report( {
-					phase: 'failed',
-					message:
-						advanced?.progress.error ||
-						__( 'The export stopped before it finished.', 'corex' ),
-				} );
-				refreshHistory();
-				return;
-			}
-			progress = advanced.progress;
-			report( { phase: 'running', progress } );
-			if (
-				progress.state !== 'completed' &&
-				progress.processed === before
-			) {
-				await pause( PAUSE_WHEN_IDLE_MS );
-			}
-		}
-
-		if ( progress.state !== 'completed' ) {
-			report( { phase: 'later' } );
+		if ( started ) {
 			refreshHistory();
-			return;
 		}
-
-		const downloaded = await inbox.downloadExport( id );
-		if ( ! downloaded.envelope.ok ) {
-			report( {
-				phase: 'failed',
-				message: __(
-					'The export is ready, but it could not be downloaded. It is listed under Recent exports.',
-					'corex'
-				),
-			} );
-			refreshHistory();
-			return;
-		}
-
-		const artifact = downloaded.envelope.data.artifact;
-		save( artifact );
-		report( { phase: 'done', artifact } );
-		refreshHistory();
 	};
 
 	const toggle = ( id ) =>
@@ -290,144 +232,38 @@ export default function ExportDialog( {
 			onClose={ close }
 			className="corex-export"
 			footer={
-				<div className="corex-export__footer">
-					<p
-						className="corex-export__summary"
-						role="status"
-						aria-live="polite"
-					>
-						{ blocked }
-					</p>
-					<div className="corex-export__actions">
-						<Button variant="tertiary" onClick={ close }>
-							{ run.phase === 'done' || run.phase === 'later'
-								? __( 'Close', 'corex' )
-								: __( 'Cancel', 'corex' ) }
-						</Button>
-						<Button
-							variant="primary"
-							disabled={ blocked !== '' || running }
-							isBusy={ running }
-							onClick={ start }
-						>
-							{ exportLabel( count ) }
-						</Button>
-					</div>
-				</div>
+				<ExportFooter
+					blocked={ blocked }
+					run={ run }
+					label={ exportLabel( count ) }
+					close={ close }
+					start={ start }
+				/>
 			}
 		>
-			<fieldset className="corex-export__group" disabled={ running }>
-				<legend>{ __( 'What to export', 'corex' ) }</legend>
-				<div className="corex-export__scopes">
-					{ options.map( ( option ) => (
-						<label
-							key={ option.value }
-							className={ [
-								'corex-export__scope',
-								scope === option.value ? 'is-chosen' : '',
-								option.disabled ? 'is-disabled' : '',
-							]
-								.filter( Boolean )
-								.join( ' ' ) }
-							htmlFor={ `${ fieldId }-scope-${ option.value }` }
-						>
-							<input
-								id={ `${ fieldId }-scope-${ option.value }` }
-								type="radio"
-								name={ `${ fieldId }-scope` }
-								value={ option.value }
-								checked={ scope === option.value }
-								disabled={ option.disabled }
-								onChange={ () => setScope( option.value ) }
-								aria-describedby={ `${ fieldId }-scope-${ option.value }-detail` }
-							/>
-							<span className="corex-export__scope-name">
-								{ option.label }
-							</span>
-							<span className="corex-export__count">
-								{ option.count === null
-									? '…'
-									: option.count.toLocaleString() }
-							</span>
-							<span
-								id={ `${ fieldId }-scope-${ option.value }-detail` }
-								className="corex-export__detail"
-							>
-								{ option.detail }
-							</span>
-						</label>
-					) ) }
-				</div>
-				<label
-					className="corex-export__check"
-					htmlFor={ `${ fieldId }-include-test` }
+			<ExportScopes
+				fieldId={ fieldId }
+				options={ options }
+				scope={ scope }
+				setScope={ setScope }
+				disabled={ running }
+			>
+				<ExportCheck
+					id={ `${ fieldId }-include-test` }
+					checked={ includeTest }
+					onChange={ setIncludeTest }
 				>
-					<span className="corex-export__box">
-						<input
-							id={ `${ fieldId }-include-test` }
-							type="checkbox"
-							checked={ includeTest }
-							onChange={ ( event ) =>
-								setIncludeTest( event.target.checked )
-							}
-						/>
-					</span>
-					<span>
-						{ __( 'Include submissions marked as tests', 'corex' ) }
-					</span>
-				</label>
-			</fieldset>
+					{ __( 'Include submissions marked as tests', 'corex' ) }
+				</ExportCheck>
+			</ExportScopes>
 
-			<fieldset className="corex-export__group" disabled={ running }>
-				<legend>{ __( 'Columns', 'corex' ) }</legend>
-				<div className="corex-export__columns">
-					{ choices.map( ( choice ) => (
-						// The label is the choice's name alone. What it holds, and that it is
-						// personal data, describe the checkbox instead of lengthening its name.
-						<div key={ choice.id } className="corex-export__column">
-							<span className="corex-export__box">
-								<input
-									id={ `${ fieldId }-column-${ choice.id }` }
-									type="checkbox"
-									checked={ allowed.includes( choice.id ) }
-									onChange={ () => toggle( choice.id ) }
-									aria-describedby={ [
-										choice.personal
-											? `${ fieldId }-column-${ choice.id }-tag`
-											: '',
-										`${ fieldId }-column-${ choice.id }-hint`,
-									]
-										.filter( Boolean )
-										.join( ' ' ) }
-								/>
-							</span>
-							<div>
-								<span className="corex-export__column-head">
-									<label
-										className="corex-export__column-name"
-										htmlFor={ `${ fieldId }-column-${ choice.id }` }
-									>
-										{ choice.label }
-									</label>
-									{ choice.personal && (
-										<span
-											id={ `${ fieldId }-column-${ choice.id }-tag` }
-											className="corex-export__tag"
-										>
-											{ __( 'Personal data', 'corex' ) }
-										</span>
-									) }
-								</span>
-								<span
-									id={ `${ fieldId }-column-${ choice.id }-hint` }
-									className="corex-export__detail"
-								>
-									{ choice.hint }
-								</span>
-							</div>
-						</div>
-					) ) }
-				</div>
+			<ExportColumns
+				fieldId={ fieldId }
+				choices={ choices }
+				chosen={ allowed }
+				toggle={ toggle }
+				disabled={ running }
+			>
 				{ preview !== null && ! mayExportPersonal && (
 					<p className="corex-export__detail">
 						{ __(
@@ -436,64 +272,42 @@ export default function ExportDialog( {
 						) }
 					</p>
 				) }
-			</fieldset>
+			</ExportColumns>
 
-			<fieldset className="corex-export__group" disabled={ running }>
-				<legend>{ __( 'Format', 'corex' ) }</legend>
-				<div className="corex-export__format">
-					<div className="corex-field">
-						<span>{ __( 'File type', 'corex' ) }</span>
-						<CorexSelect
-							label={ __( 'File type', 'corex' ) }
-							value={ format }
-							options={ formats() }
-							onChange={ setFormat }
-						/>
-					</div>
-					{ /* A separator is a property of text. A workbook has none to choose. */ }
-					{ format === 'csv' && (
-						<div className="corex-field">
-							<span>{ __( 'Separator', 'corex' ) }</span>
-							<CorexSelect
-								label={ __( 'Separator', 'corex' ) }
-								value={ separator }
-								options={ separators() }
-								onChange={ setSeparator }
-							/>
-						</div>
-					) }
-				</div>
-				<p className="corex-export__detail">
-					{ formatDetail( format ) }
-				</p>
-			</fieldset>
+			<ExportFormat
+				format={ format }
+				setFormat={ setFormat }
+				formats={ formats() }
+				separator={ separator }
+				setSeparator={ setSeparator }
+				detail={ formatDetail( format ) }
+				disabled={ running }
+			/>
 
 			{ personal && (
-				<label
-					className="corex-export__check corex-export__notice"
-					htmlFor={ `${ fieldId }-acknowledged` }
+				<ExportCheck
+					id={ `${ fieldId }-acknowledged` }
+					className="corex-export__notice"
+					checked={ acknowledged }
+					disabled={ running }
+					onChange={ setAcknowledged }
 				>
-					<span className="corex-export__box">
-						<input
-							id={ `${ fieldId }-acknowledged` }
-							type="checkbox"
-							checked={ acknowledged }
-							disabled={ running }
-							onChange={ ( event ) =>
-								setAcknowledged( event.target.checked )
-							}
-						/>
-					</span>
-					<span>
-						{ __(
-							'I understand this export contains personal data and will handle it according to policy.',
-							'corex'
-						) }
-					</span>
-				</label>
+					{ __(
+						'I understand this export contains personal data and will handle it according to policy.',
+						'corex'
+					) }
+				</ExportCheck>
 			) }
 
-			<ExportOutcome run={ run } onSaveAgain={ save } />
+			<ExportOutcome
+				run={ run }
+				describeProgress={ progressOf }
+				onSaveAgain={ save }
+				later={ __(
+					'This export is large and is still being written. It will be listed under Recent exports when it is ready; you can close this.',
+					'corex'
+				) }
+			/>
 
 			<RecentExports
 				history={ history }
@@ -514,67 +328,6 @@ export default function ExportDialog( {
 				} }
 			/>
 		</CorexDialog>
-	);
-}
-
-function ExportOutcome( { run, onSaveAgain } ) {
-	if ( run.phase === 'idle' ) {
-		return null;
-	}
-
-	if ( run.phase === 'running' ) {
-		const progress = progressOf( run.progress );
-
-		return (
-			<div className="corex-export__outcome" role="status">
-				<progress
-					className="corex-export__progress"
-					value={ progress.value }
-					max={ progress.max }
-					aria-label={ __( 'Export progress', 'corex' ) }
-				/>
-				<p>{ progress.text }</p>
-			</div>
-		);
-	}
-
-	if ( run.phase === 'done' ) {
-		return (
-			<div className="corex-export__outcome is-success" role="status">
-				<p>
-					{ sprintf(
-						/* translators: %s: the name of the file that was saved. */
-						__( 'Saved %s.', 'corex' ),
-						run.artifact.filename
-					) }
-				</p>
-				<Button
-					variant="link"
-					onClick={ () => onSaveAgain( run.artifact ) }
-				>
-					{ __( 'Save it again', 'corex' ) }
-				</Button>
-			</div>
-		);
-	}
-
-	if ( run.phase === 'later' ) {
-		return (
-			<div className="corex-export__outcome" role="status">
-				<p>
-					{ __(
-						'This export is large and is still being written. It will be listed under Recent exports when it is ready; you can close this.',
-						'corex'
-					) }
-				</p>
-			</div>
-		);
-	}
-
-	return (
-		<div className="corex-export__outcome is-error" role="alert">
-			<p>{ run.message }</p>
-		</div>
 	);
 }
 
