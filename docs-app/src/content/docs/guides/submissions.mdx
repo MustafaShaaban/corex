@@ -36,9 +36,29 @@ refresh instead of overwriting their work.
 
 ## Bulk actions
 
-Select up to 100 visible rows, then preview Mark read, Assign, Mark spam, or Archive. The preview is bound to your user,
+Select up to 100 visible rows, then preview Mark read, Assign, Mark spam, Archive, or Move to trash. The preview is bound to your user,
 the exact selected IDs, and their update timestamps; it expires after five minutes and can be applied once. If any row
 changes or becomes inaccessible, the whole action stops before mutation rather than silently applying a partial result.
+
+## Move to the trash, and restore
+
+To take a submission out of the inbox, open it and choose **Move to trash** under Triage, or tick several rows and
+choose **Move to trash** from the bulk actions. Either asks first and says how many submissions will leave the inbox.
+The notice that follows has **Undo**, which puts them back.
+
+**Trash**, beside **Inbox** above the filters, shows what was moved there, with who moved each submission and when. The
+filters and the search work on it as they do on the inbox. A trashed submission leaves the inbox, its counts, the
+exports and the Data screen's records. It keeps its status, owner, notes and history.
+
+A submission in the trash can be read and nothing else: there is no reply, no new note, and no status or owner to
+change until it is restored. Open it and choose **Restore**, or tick several and restore them as a bulk action, the
+only one the trash offers. It goes back to the inbox as it was. Its history records who moved it to the trash and who
+restored it, and the activity stream records each action once, with how many submissions and none of what they hold.
+
+You act only on submissions you may see, in the trash as in the inbox.
+
+Nothing deletes a submission from the trash yet: one moved there from the inbox stays until it is restored.
+Deleting for good, and a trash that empties itself after a stated number of days, are the next parts of this feature.
 
 ## Notification delivery
 
@@ -125,7 +145,9 @@ window and still holding their personal data. The count excludes marked tests by
 one run. After confirming, choose one operation:
 
 - **Archive** keeps the response and marks its workflow and retention state.
-- **Move to trash** uses WordPress's recoverable trash.
+- **Move to trash** uses WordPress's own trash. The response appears in the inbox's **Trash** view and can be restored
+  there. Unlike a submission moved to the trash from the inbox, WordPress deletes this one for good by itself, 30 days
+  after it was trashed unless the site's `EMPTY_TRASH_DAYS` says otherwise.
 - **Anonymize personal data** removes submitted values, submitter projections, hidden/UTM/consent data, and notes while
   preserving non-personal workflow evidence.
 

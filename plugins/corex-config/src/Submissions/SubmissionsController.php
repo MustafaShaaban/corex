@@ -38,6 +38,8 @@ final readonly class SubmissionsController
         $this->route('/submissions/(?P<id>\d+)/reply', 'POST', 'reply');
         $this->route('/submissions/(?P<id>\d+)/resend', 'POST', 'resend');
         $this->route('/submissions/(?P<id>\d+)/email-log', 'GET', 'emailLog');
+        $this->route('/submissions/(?P<id>\d+)/trash', 'POST', 'trash');
+        $this->route('/submissions/(?P<id>\d+)/restore', 'POST', 'restore');
         $this->route('/submissions/bulk/preview', 'POST', 'bulkPreview');
         $this->route('/submissions/bulk/apply', 'POST', 'bulkApply');
         $this->route('/submissions/exports', 'GET', 'exports');
@@ -67,11 +69,33 @@ final readonly class SubmissionsController
         });
     }
 
+    /** Move one submission to the trash (spec 105). Several go through the bulk routes. */
+    public function trash(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, ['expected_updated_at' => 'sanitize_text_field'], function (Request $safe) use ($request): Response {
+            $id = RouteParam::int($request);
+            $this->services->trash->trash($this->scope(), [$id => (string) ($safe->input['expected_updated_at'] ?? '')]);
+
+            return Response::ok(['trashed' => [$id]]);
+        });
+    }
+
+    public function restore(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, [], function () use ($request): Response {
+            $id = RouteParam::int($request);
+            $this->services->trash->restore($this->scope(), [$id]);
+
+            return Response::ok(['restored' => [$id]]);
+        });
+    }
+
     public function update(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->mutate($request, $this->updateShape(), function (Request $safe) use ($request): Response {
             $scope = $this->scope();
             $id = RouteParam::int($request);
+            $this->refuseTrashed($scope, $id);
             $expected = (string) ($safe->input['expected_updated_at'] ?? '');
             $record = null;
             if (($safe->input['status'] ?? '') !== '') {
@@ -107,7 +131,7 @@ final readonly class SubmissionsController
             'visibility' => 'sanitize_key',
         ], fn (Request $safe): Response => Response::ok(['note' => $this->services->workflow->addNote(
             $this->scope(),
-            RouteParam::int($request),
+            $this->changeable($request),
             (string) ($safe->input['body'] ?? ''),
             (string) ($safe->input['visibility'] ?? 'corex-team'),
         )]));
@@ -120,7 +144,7 @@ final readonly class SubmissionsController
             'body' => 'wp_kses_post',
         ], fn (Request $safe): Response => Response::ok(['result' => $this->services->email->reply(
             $this->scope(),
-            RouteParam::int($request),
+            $this->changeable($request),
             new SubmissionReply((string) ($safe->input['subject'] ?? ''), (string) ($safe->input['body'] ?? '')),
         )->toArray()]));
     }
@@ -130,7 +154,7 @@ final readonly class SubmissionsController
         return $this->gateway->mutate($request, ['attempt_id' => 'sanitize_text_field'], fn (Request $safe): Response =>
             Response::ok(['result' => $this->services->email->resend(
                 $this->scope(),
-                RouteParam::int($request),
+                $this->changeable($request),
                 (string) ($safe->input['attempt_id'] ?? ''),
             )->toArray()]));
     }
@@ -253,6 +277,26 @@ final readonly class SubmissionsController
 
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- carrying a file's bytes in a JSON answer.
         return $artifact + ['base64' => base64_encode($bytes)];
+    }
+
+    /**
+     * A trashed submission can be read and nothing else, and says so (FR-006). Without this the
+     * change is refused as "unavailable", which is true of a submission that never existed too.
+     */
+    private function refuseTrashed(SubmissionAccessScope $scope, int $id): void
+    {
+        if ($this->services->trash->trashed($scope, $id) !== null) {
+            throw new DomainException(__('This submission is in the trash. Restore it to change it.', 'corex'));
+        }
+    }
+
+    /** The id a change is asked for, once it is known not to be in the trash. */
+    private function changeable(WP_REST_Request $request): int
+    {
+        $id = RouteParam::int($request);
+        $this->refuseTrashed($this->scope(), $id);
+
+        return $id;
     }
 
     private function scope(): SubmissionAccessScope

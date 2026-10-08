@@ -818,3 +818,221 @@ test( 'keeps the inbox filters one height, the date range together, and the chec
 		expect( measured.columnOffset, where ).toBeLessThanOrEqual( 0.5 );
 	}
 } );
+
+/**
+ * The trash (spec 105, US1).
+ *
+ * The inbox could not remove a submission: reported from a client's production site, where a
+ * test lead could not be taken out. One goes from its pane and comes back with "Undo"; several go
+ * as a bulk action; the trash lists them with who moved them and when; a trashed submission is
+ * read and nothing else; and it is restored from its pane or in bulk.
+ */
+test( 'moves submissions to the trash and restores them, from the pane, in bulk and with undo', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+	// A second submission under the same address, so there are two to move together.
+	const second = await seedSubmission( page, FLOW_SLUG, EMAIL );
+	expect( second.real.envelope.ok ).toBe( true );
+	// Seeding leaves the page on the form's own screen.
+	await page.goto( '/wp-admin/admin.php?page=corex-submissions' );
+	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await page.getByLabel( 'Search' ).fill( EMAIL );
+	const rows = page.locator( '.corex-inbox__table tbody tr' );
+	// Until the search has been applied the table still holds the unfiltered page.
+	await expect
+		.poll( async () => {
+			const shown = await rows.count();
+			const matching = await rows.filter( { hasText: EMAIL } ).count();
+			return shown >= 2 && shown === matching;
+		} )
+		.toBe( true );
+	const before = await rows.count();
+	// How far the table runs past its frame, to hold the trash's table to the same.
+	const pastItsFrame = () =>
+		page
+			.locator( '.corex-inbox__table-wrap' )
+			.evaluate( ( wrap ) => wrap.scrollWidth - wrap.clientWidth );
+	const inboxPastItsFrame = await pastItsFrame();
+
+	// One, from its pane. It is asked first, and says how many and what becomes of it.
+	await page
+		.getByRole( 'button', { name: new RegExp( EMAIL ) } )
+		.first()
+		.click();
+	const pane = page.locator( '.corex-pane' );
+	// Opening a submission marks it read, which changes it. The first version of this feature
+	// trashed the copy taken at the click and was refused as stale; the read mark is waited for
+	// here so the test meets the submission as a person does.
+	await expect(
+		pane.getByRole( 'button', { name: 'Mark unread' } )
+	).toBeVisible();
+	await pane.getByRole( 'button', { name: 'Move to trash' } ).click();
+	const asking = page.getByRole( 'dialog', { name: 'Move to the trash' } );
+	await expect( asking ).toContainText(
+		'1 submission will leave the inbox. It can be restored from the trash.'
+	);
+	await asking.getByRole( 'button', { name: 'Move to trash' } ).click();
+	const notice = page.locator( '.corex-inbox__notice' );
+	await expect( notice ).toContainText( '1 submission moved to the trash.' );
+	await expect( pane ).toBeHidden();
+	await expect( rows ).toHaveCount( before - 1 );
+
+	// "Undo" puts it back.
+	await notice.getByRole( 'button', { name: 'Undo' } ).click();
+	await expect( notice ).toContainText( '1 submission restored.' );
+	await expect( rows ).toHaveCount( before );
+
+	// Two, as a bulk action.
+	await page
+		.getByLabel( /Select submission/ )
+		.nth( 0 )
+		.check();
+	await page
+		.getByLabel( /Select submission/ )
+		.nth( 1 )
+		.check();
+	await page.getByRole( 'combobox', { name: 'Bulk action' } ).click();
+	await page.getByRole( 'option', { name: 'Move to trash' } ).click();
+	await page.getByRole( 'button', { name: 'Preview action' } ).click();
+	await expect( asking ).toContainText(
+		'2 submissions will leave the inbox. They can be restored from the trash.'
+	);
+	await asking.getByRole( 'button', { name: 'Move to trash' } ).click();
+	await expect( notice ).toContainText( '2 submissions moved to the trash.' );
+	await expect( rows ).toHaveCount( before - 2 );
+
+	// The trash: its own view, with who moved each and when, and nothing to export.
+	const views = page.getByRole( 'group', { name: 'Submissions shown' } );
+	await views.getByRole( 'button', { name: 'Trash' } ).click();
+	await expect(
+		views.getByRole( 'button', { name: 'Trash' } )
+	).toHaveAttribute( 'aria-pressed', 'true' );
+	await expect( page.locator( '.corex-inbox__count' ) ).toHaveText(
+		/^\d+ submissions? in the trash$/
+	);
+	await expect(
+		page.getByRole( 'columnheader', { name: 'Moved to trash' } )
+	).toBeVisible();
+	// It stands where "Notification" does in the inbox. As an eighth column it was cut off at
+	// 1440 pixels, where the inbox's seven fit. Measured: the trash table is as wide as the
+	// inbox's, to within the width of a name under a date (8 pixels at 1280).
+	await expect(
+		page.getByRole( 'columnheader', { name: 'Notification' } )
+	).toHaveCount( 0 );
+	expect(
+		( await pastItsFrame() ) - inboxPastItsFrame,
+		'the trash table is no wider than the inbox table'
+	).toBeLessThanOrEqual( 16 );
+	await expect(
+		page.getByRole( 'button', { name: 'Export', exact: true } )
+	).toHaveCount( 0 );
+	await expect( rows ).toHaveCount( 2 );
+	await expect(
+		rows.first().locator( '.corex-inbox__trashed small' )
+	).not.toBeEmpty();
+
+	// The switch stands on the filters' edge, as far from the heading as from the filters, and
+	// its two buttons are one height. Measured in both directions.
+	for ( const direction of [ 'ltr', 'rtl' ] ) {
+		await page
+			.locator( 'html' )
+			.evaluate(
+				( root, dir ) => root.setAttribute( 'dir', dir ),
+				direction
+			);
+		const measured = await page.evaluate( () => {
+			const box = ( selector ) =>
+				document.querySelector( selector ).getBoundingClientRect();
+			const header = box( '.corex-inbox__header' );
+			const switcher = box( '.corex-inbox__views' );
+			const filters = box( '.corex-inbox__filters' );
+			const rtl = document.documentElement.dir === 'rtl';
+
+			return {
+				above: Math.round( switcher.top - header.bottom ),
+				below: Math.round( filters.top - switcher.bottom ),
+				offEdge: Math.round(
+					rtl
+						? Math.abs( switcher.right - filters.right )
+						: Math.abs( switcher.left - filters.left )
+				),
+				buttons: Array.from(
+					document.querySelectorAll( '.corex-inbox__view' )
+				).map( ( button ) => button.getBoundingClientRect().height ),
+			};
+		} );
+		const where = `in ${ direction }`;
+
+		expect( measured.above, where ).toBe( measured.below );
+		expect( measured.offEdge, where ).toBeLessThanOrEqual( 1 );
+		expect( new Set( measured.buttons ).size, where ).toBe( 1 );
+	}
+	await page
+		.locator( 'html' )
+		.evaluate( ( root ) => root.setAttribute( 'dir', 'ltr' ) );
+
+	// A trashed submission is read and nothing else.
+	await page
+		.getByRole( 'button', { name: new RegExp( EMAIL ) } )
+		.first()
+		.click();
+	const line = pane.locator( '.corex-pane__trash' );
+	await expect( line ).toContainText( 'In the trash.' );
+	await expect( line ).toContainText( 'Moved there by' );
+	await expect(
+		pane.getByRole( 'heading', { name: 'Answers' } )
+	).toBeVisible();
+	for ( const gone of [
+		pane.getByRole( 'button', { name: 'Send reply' } ),
+		pane.getByRole( 'button', { name: 'Add note' } ),
+		pane.getByRole( 'combobox', { name: 'Status' } ),
+		pane.getByRole( 'button', { name: /^Mark (un)?read$/ } ),
+	] ) {
+		await expect( gone ).toHaveCount( 0 );
+	}
+	const padding = await line.evaluate( ( node ) => {
+		const style = window.getComputedStyle( node );
+		return [
+			style.paddingTop,
+			style.paddingBottom,
+			style.paddingInlineStart,
+			style.paddingInlineEnd,
+		];
+	} );
+	expect( new Set( padding ).size, `padding ${ padding.join( ', ' ) }` ).toBe(
+		1
+	);
+
+	// Restored from its pane.
+	await line.getByRole( 'button', { name: 'Restore' } ).click();
+	await expect( notice ).toContainText( '1 submission restored.' );
+	await expect( rows ).toHaveCount( 1 );
+
+	// And the other in bulk, where restoring is the only action there is.
+	await page
+		.getByLabel( /Select submission/ )
+		.first()
+		.check();
+	await expect(
+		page.getByRole( 'combobox', { name: 'Bulk action' } )
+	).toContainText( 'Restore' );
+	await page.getByRole( 'button', { name: 'Preview action' } ).click();
+	const restoring = page.getByRole( 'dialog', {
+		name: 'Restore from the trash',
+	} );
+	await expect( restoring ).toContainText(
+		'1 submission will go back to the inbox, as it was.'
+	);
+	await restoring.getByRole( 'button', { name: 'Restore' } ).click();
+	await expect( notice ).toContainText( '1 submission restored.' );
+	await expect(
+		page.getByRole( 'heading', { name: 'Nothing in the trash' } )
+	).toBeVisible();
+
+	// Back in the inbox, both are there again.
+	await views.getByRole( 'button', { name: 'Inbox' } ).click();
+	await expect( rows ).toHaveCount( before );
+
+	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
+} );

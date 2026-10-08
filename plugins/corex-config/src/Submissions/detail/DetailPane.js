@@ -76,13 +76,14 @@ function Fields( { entries } ) {
 }
 
 /**
- * @param {Object} props
- * @param {Object} props.drawer The pane's state: which submission, loading or not, and the record.
- * @param {Object} props.inbox  The inbox's data and requests.
- * @param {string} props.id     The id the row's button says it controls.
+ * @param {Object}   props
+ * @param {Object}   props.drawer  The pane's state: which submission, loading or not, and the record.
+ * @param {Object}   props.inbox   The inbox's data and requests.
+ * @param {string}   props.id      The id the row's button says it controls.
+ * @param {Function} props.onTrash Called when somebody wants the open submission in the trash.
  * @return {import('react').ReactElement} The pane.
  */
-export default function DetailPane( { drawer, inbox, id } ) {
+export default function DetailPane( { drawer, inbox, id, onTrash } ) {
 	const record = drawer.record;
 
 	if ( ! record ) {
@@ -123,10 +124,21 @@ export default function DetailPane( { drawer, inbox, id } ) {
 			subtitle={ <PaneHeader record={ record } inbox={ inbox } /> }
 			onClose={ inbox.close }
 		>
+			{ /* A trashed submission is read and nothing else, until it is restored (spec 105,
+			     FR-006): no reply, no new note, no status or owner to change. */ }
+			{ record.trashed && (
+				<TrashLine record={ record } inbox={ inbox } />
+			) }
 			<Answers record={ record } />
-			<Reply record={ record } inbox={ inbox } />
-			<Notes record={ record } inbox={ inbox } />
-			<Triage record={ record } inbox={ inbox } />
+			{ ! record.trashed && <Reply record={ record } inbox={ inbox } /> }
+			<Notes
+				record={ record }
+				inbox={ inbox }
+				readOnly={ Boolean( record.trashed ) }
+			/>
+			{ ! record.trashed && (
+				<Triage record={ record } inbox={ inbox } onTrash={ onTrash } />
+			) }
 			<Delivery record={ record } />
 			<TechnicalDetails record={ record } />
 			<History record={ record } />
@@ -145,6 +157,47 @@ export default function DetailPane( { drawer, inbox, id } ) {
 				</span>
 			</footer>
 		</CorexDialog>
+	);
+}
+
+/**
+ * Says a submission is in the trash, since when and by whom, and offers the one thing that can
+ * be done with it there.
+ *
+ * @param {Object} props
+ * @param {Object} props.record The trashed submission.
+ * @param {Object} props.inbox  The inbox's requests.
+ * @return {import('react').ReactElement} The line.
+ */
+function TrashLine( { record, inbox } ) {
+	return (
+		<div className="corex-pane__trash" role="note">
+			<p>
+				<strong>{ __( 'In the trash.', 'corex' ) }</strong>{ ' ' }
+				{ record.trashed_by_name &&
+					sprintf(
+						/* translators: %s: the name of the person who moved the submission to the trash. */
+						__( 'Moved there by %s.', 'corex' ),
+						record.trashed_by_name
+					) }{ ' ' }
+				<CorexTime
+					value={ record.trashed_at }
+					absent={ __( 'When was not recorded.', 'corex' ) }
+				/>
+			</p>
+			<p className="corex-pane__muted">
+				{ __(
+					'Restore it to reply, add a note, or change its status or owner.',
+					'corex'
+				) }
+			</p>
+			<Button
+				variant="primary"
+				onClick={ () => inbox.restore( [ record.id ] ) }
+			>
+				{ __( 'Restore', 'corex' ) }
+			</Button>
+		</div>
 	);
 }
 
@@ -180,19 +233,21 @@ function PaneHeader( { record, inbox } ) {
 				<span className="corex-pane__read">
 					{ read ? __( 'Read', 'corex' ) : __( 'Unread', 'corex' ) }
 				</span>
-				<Button
-					variant="link"
-					onClick={ () =>
-						inbox.update( record.id, {
-							[ read ? 'mark_unread' : 'mark_read' ]: true,
-							expected_updated_at: record.updated_at,
-						} )
-					}
-				>
-					{ read
-						? __( 'Mark unread', 'corex' )
-						: __( 'Mark read', 'corex' ) }
-				</Button>
+				{ ! record.trashed && (
+					<Button
+						variant="link"
+						onClick={ () =>
+							inbox.update( record.id, {
+								[ read ? 'mark_unread' : 'mark_read' ]: true,
+								expected_updated_at: record.updated_at,
+							} )
+						}
+					>
+						{ read
+							? __( 'Mark unread', 'corex' )
+							: __( 'Mark read', 'corex' ) }
+					</Button>
+				) }
 			</div>
 		</div>
 	);
@@ -338,7 +393,7 @@ function Reply( { record, inbox } ) {
 	);
 }
 
-function Notes( { record, inbox } ) {
+function Notes( { record, inbox, readOnly = false } ) {
 	const fieldId = useId();
 	const [ note, setNote ] = useState( '' );
 	const notes = record.notes || [];
@@ -360,39 +415,50 @@ function Notes( { record, inbox } ) {
 					) ) }
 				</ul>
 			) }
-			<div className="corex-field">
-				<label htmlFor={ `${ fieldId }-note` }>
-					{ __( 'Add a note for the team', 'corex' ) }
-				</label>
-				<textarea
-					id={ `${ fieldId }-note` }
-					value={ note }
-					onChange={ ( event ) => setNote( event.target.value ) }
-				/>
-			</div>
-			<div className="corex-pane__actions">
-				<Button
-					variant="secondary"
-					disabled={ ! note.trim() }
-					onClick={ async () => {
-						if (
-							await inbox.addNote( record.id, {
-								body: note,
-								visibility: 'corex-team',
-							} )
-						) {
-							setNote( '' );
-						}
-					} }
-				>
-					{ __( 'Add note', 'corex' ) }
-				</Button>
-			</div>
+			{ readOnly && notes.length === 0 && (
+				<p className="corex-pane__muted">
+					{ __( 'No notes were added.', 'corex' ) }
+				</p>
+			) }
+			{ ! readOnly && (
+				<>
+					<div className="corex-field">
+						<label htmlFor={ `${ fieldId }-note` }>
+							{ __( 'Add a note for the team', 'corex' ) }
+						</label>
+						<textarea
+							id={ `${ fieldId }-note` }
+							value={ note }
+							onChange={ ( event ) =>
+								setNote( event.target.value )
+							}
+						/>
+					</div>
+					<div className="corex-pane__actions">
+						<Button
+							variant="secondary"
+							disabled={ ! note.trim() }
+							onClick={ async () => {
+								if (
+									await inbox.addNote( record.id, {
+										body: note,
+										visibility: 'corex-team',
+									} )
+								) {
+									setNote( '' );
+								}
+							} }
+						>
+							{ __( 'Add note', 'corex' ) }
+						</Button>
+					</div>
+				</>
+			) }
 		</Section>
 	);
 }
 
-function Triage( { record, inbox } ) {
+function Triage( { record, inbox, onTrash } ) {
 	return (
 		<Section title={ __( 'Triage', 'corex' ) }>
 			<div className="corex-pane__triage">
@@ -426,6 +492,11 @@ function Triage( { record, inbox } ) {
 						}
 					/>
 				</div>
+			</div>
+			<div className="corex-pane__actions">
+				<Button variant="secondary" isDestructive onClick={ onTrash }>
+					{ __( 'Move to trash', 'corex' ) }
+				</Button>
 			</div>
 		</Section>
 	);
