@@ -8709,3 +8709,81 @@ themes, left to right only.
   answer to the press.
 - New record, Edit record and Bulk edit are still WordPress modals, white on the dark theme,
   as the record's detail was.
+
+## #291 — A choice field takes what it offers, an empty file part is no file, and a pattern is one expression
+
+**Date:** 2026-10-09. **Spec:** none; four defects reported on 2026-10-08 from a client's contact
+form, each confirmed on `main` before it was changed. **Branch:**
+`fix/forms-choices-and-optional-files`.
+
+**The check on a choice is the validator's, not a rule a form writes.** A field that declares
+`options` has already said what it accepts. A rule (`in:email,phone`) would be the same list
+written a second time, right until somebody edited one of the two, and every form that forgot
+it would stay open. `Validator::validate()` compares the answer with the keys of the field's
+options after the field's own rules pass, and reports `choice`. Both submission paths use that
+validator, so forms defined in code and flows get it together.
+
+What it does at the edges, each one a test:
+
+| Answer | Result |
+|---|---|
+| Empty text, an empty list, absent | left to `required`, as every rule leaves it |
+| A field that declares no options | not compared: a theme that fills a select from its own script declares none |
+| A list sent to a `select` or a `radio` | refused: a single choice has one answer |
+| One plain value sent to a `checkbox-group` | compared as one answer |
+| The option `2025` | accepted as the text `2025`: PHP makes that array key an integer |
+| A `text` field given `options` | not compared: it is not a choice |
+
+The stock form and a flow's form print the keys the check compares with
+(`FieldRenderer::select()` and `group()`), so a visitor using either cannot be refused. A form
+whose markup was written by hand can be, if its values are not the declared keys. That is the
+entry under Client impact.
+
+**A checkbox group is a list on both routes.** `FlowSubmissionController` already cleaned
+`checkbox-group` as a list; `SubmitController` cleaned it as one line of text, and WordPress's
+`sanitize_text_field()` answers an empty string for a list. One word added to the arm that
+`multi-select` already had.
+
+**A file part with no file in it is the field left empty.** Decided in
+`FormSubmissionService`, where a descriptor is put in its field's place, not in the controller
+that reads the request: anything that calls the service gets the same answer. The part is
+dropped before validation, so `required` sees an absent value. It saw a descriptor before,
+which is not an empty value, so a required file left empty passed `required` and failed to be
+stored. CoreX's own script never sent that part (it sends the file's name as text when no file
+is chosen); a browser posting the form itself does, and so does any script that sends
+`new FormData(form)`.
+
+**`pattern:` keeps everything after its colon.** The registry names the rules whose parameter
+is one value (`WHOLE_PARAMETER`, holding `pattern`) and does not split them. The other way was
+for `Pattern` to join its parameters back together with commas. That works and is hidden: the
+exported schema would still hold the two halves, for a browser rule to trip over later. A rule
+an extension registers cannot ask for the same treatment. None does; when one needs it, that is
+the day to let a rule say so.
+
+**`mime:` narrows and cannot widen, and that is left as it is.** The store is built once with
+six types and 10 MB and holds every file to them. A comment said a field's `mime:` widened the
+list and another that `max_size:` raised the limit; the comments were wrong and the code was
+not changed to match them. Letting one line in a form class add a type to what a site stores
+would make the upload policy whatever the last form said. A site that needs a type outside the
+list needs a setting somebody chose on purpose. Not built: nobody has asked for a type, only
+pointed at the comment.
+
+**Reported with these, and already fixed:** a form defined in code had no way to ask for a
+challenge. It has had one on `main` since spec 104, slice 2 (#298), unreleased.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `ChoiceAndFileSubmissionTest` (new), the real route on real WordPress, against `main`'s classes | 4 failed, as reported |
+| The same against this branch | 4 passed |
+| `tests/Integration/Forms`, real WordPress | 77 passed |
+| `tests/Unit` | 2425 passed; 25 new (`ChoiceAnswerTest` 17, `PatternRuleTest` 6, `FileFieldTest` 2) |
+| Jest, the form runtime's four suites | 52 passed |
+| `wp-scripts lint-js` on `corex-runtime.js` | no errors |
+
+**Not run.** No browser test: no screen changed, and the script's only change is one sentence
+in its fallback table. The whole integration and browser suites were left to CI. A real
+multipart post from a browser was not sent; the empty part was given to the route as PHP hands
+it over. The three stored copies of the stock form's markup gained the new message and nothing
+else.

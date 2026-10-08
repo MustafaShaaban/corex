@@ -515,6 +515,8 @@
 					'This value is not in the expected format.',
 					'corex'
 				);
+			case 'choice':
+				return __( 'Choose one of the options offered.', 'corex' );
 			default:
 				return __( 'Please check this field.', 'corex' );
 		}

@@ -151,6 +151,24 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A checkbox group on a form defined in code keeps the boxes that were ticked.** The route
+  cleaned the answer as one line of text, which empties a list, so the field was stored empty
+  whatever the visitor ticked. A flow's form kept them; a form class did not.
+- **A choice field refuses an answer it never offered.** A `select`, `radio`, `multi-select` or
+  `checkbox-group` declares its options and nothing compared the answer with them: a request
+  written by hand could store any text as the visitor's choice. The answer is refused with the
+  error `choice`, on forms defined in code and on flows (DECISIONS #291).
+- **A form can be sent with its optional file left empty.** A browser posting a form as
+  multipart sends a part for every file input, chosen or not. The empty one was treated as an
+  upload and the whole submission was refused with "The file could not be stored." A required
+  file left empty said the same; it says the field is required now.
+- **A `pattern:` rule with a comma in it works.** `pattern:^\d{2,4}$` was cut at the comma into
+  two halves, neither of them an expression, and the rule refused every answer.
+- **The forms guide and two comments no longer say a field can add a file type.** A comment
+  said a field's `mime:` widens what a form accepts, and another that `max_size:` raises the 10
+  MB limit. Neither does: both only narrow. The guide now lists the six types a file field
+  takes and documents `pattern:`, `mime:`, `max_size:` and `url`, which it did not mention.
+
 - **A record's detail shows its fields.** "View" on the Data screen drew the whole record as
   one field named "Record", holding a line of JSON: the route answers `{ record }` and the
   screen read the answer itself as the record. The detail is also a CoreX dialog now; it was
@@ -228,6 +246,16 @@ All notable changes to Corex are documented here. The format follows
   export since v0.43.2.
 
 ### Client impact
+
+- **A form whose markup you wrote yourself must send the option values it declares.** A choice
+  field's answer is compared with the keys of its `options`. The stock form and a flow's form
+  print those keys, so nothing changes for them. A hand-written `select`, radio or checkbox
+  group whose `value`s differ from the declared keys (a label where the key was meant, an
+  "Other" the field does not declare) is refused with `choice` after this. Declare every value
+  the markup can send, or declare no `options` on the field: a field without them is not
+  compared.
+- **A script of your own that reads a form's errors can meet a new one, `choice`.** The form's
+  own messages carry a sentence for it: "Choose one of the options offered."
 
 - **Nothing to do for the Notifications loading states.** No setting, route or stored value
   changes. A browser test of a client's own that waited for "Loading notifications…" or

@@ -147,12 +147,27 @@ final class FormSubmissionService
 
             // Absent stays absent rather than becoming an empty descriptor: `required` must be able
             // to tell "no file was sent" from "a file was sent and it failed".
-            if (isset($files[$name])) {
+            if (isset($files[$name]) && ! self::carriesNoFile($files[$name])) {
                 $input[$name] = $files[$name];
             }
         }
 
         return $input;
+    }
+
+    /**
+     * Whether a file part arrived with no file in it.
+     *
+     * A browser posting a form as multipart sends a part for every file input, chosen or not. An
+     * empty one is the visitor leaving the field empty, which is `required`'s to judge. Passed on as
+     * an upload it got past `required`, because a descriptor is not an empty value, and then failed
+     * to be stored.
+     *
+     * @param array{name?:string,type?:string,size?:int,tmp_name?:string,error?:int} $file
+     */
+    private static function carriesNoFile(array $file): bool
+    {
+        return (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE;
     }
 
     /**
