@@ -11,6 +11,10 @@
 
 declare(strict_types=1);
 
+use Corex\Boot;
+use Corex\Forms\Form;
+use Corex\Forms\FormRegistry;
+
 it('renders the registered contact form for a formSlug block despite the flow defaults', function () {
     expect(WP_Block_Type_Registry::get_instance()->is_registered('corex/form'))->toBeTrue();
 
@@ -34,4 +38,30 @@ it('renders nothing (non-fatal) for a flow block that references an unknown flow
     $html = do_blocks('<!-- wp:corex/form {"source":"flow","flowId":999999} /-->');
 
     expect($html)->toBe('');
+});
+
+// Spec 104, US1 (#248). Through the block as WordPress renders it, with WordPress's own escaping.
+it('renders a registered form with the wording it states', function () {
+    Boot::app()->container()->make(FormRegistry::class)->register(new class extends Form {
+        public string $slug = 'corex-wording-probe';
+
+        protected array $fields = ['phone' => ['type' => 'text', 'rules' => ['required']]];
+
+        public function submitLabel(): string
+        {
+            return 'Request a call';
+        }
+
+        public function successMessage(): string
+        {
+            return 'We will call you <today>.';
+        }
+    });
+
+    $html = do_blocks('<!-- wp:corex/form {"formSlug":"corex-wording-probe"} /-->');
+
+    expect($html)->toContain('<button type="submit" class="corex-form__submit">Request a call</button>')
+        ->and($html)->toContain('data-corex-success="We will call you &lt;today&gt;."')
+        // It states no general error, so that one is CoreX's.
+        ->and($html)->toContain('data-corex-error="Please review the highlighted fields and try again."');
 });
