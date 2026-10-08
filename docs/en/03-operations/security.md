@@ -34,6 +34,16 @@ per-block stylesheets, because whether the front-end asset pipeline registers at
 is still identified as an admin one. Someone comparing response sizes of two "not found" pages can therefore
 still infer that the admin address is handled specially — but not where the login moved to.
 
+On a single site, `/wp-signup.php` gets that same "not found" page, and `/wp-register.php` is answered as a file
+that was never there. Both exist only to forward a visitor to the registration address, which is the custom one.
+(WordPress has no `wp-register.php` file, so a web server that answers missing `.php` files itself, as nginx
+commonly does, never asks WordPress about it.) `/wp-admin/customize.php` is answered like the rest of the admin area. On a network, `/wp-signup.php` is the public sign-up page and is left alone.
+
+Three addresses run before WordPress loads any plugin, so CoreX cannot answer them: `/wp-activate.php`, which
+redirects to `/wp-login.php` (itself hidden), and `/wp-admin/install.php` and `/wp-admin/upgrade.php`, which answer
+that WordPress is already installed. They show that the site runs WordPress. None of them names the custom address.
+Only a rule in the web server can change what they answer.
+
 Hiding is obscurity, not access control. It cuts automated probing; the rate limiting above is what actually
 defends credentials.
 
