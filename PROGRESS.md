@@ -133,6 +133,14 @@ reaches a site's files before the fourth.
 | 5 | Going back from the screen, and the record | not started |
 | 6 | The deployment guide | not started |
 
+**Spec 108, the admin shows what is coming while it loads, is planned and not built**
+([`specs/108-loading-states/`](specs/108-loading-states/spec.md)). The owner asked for a
+skeleton loader on every call and a better loader inside CoreX. Read as three things: a first
+load shows a placeholder in the shape of its content; a refresh keeps the content and marks it
+waiting; an action marks its button. One CoreX loader replaces WordPress's spinner and busy
+button. Twenty surfaces, six slices (the placeholder first, then the loader and every
+action), the Submissions inbox last and agreed with the session building spec 105 there. The readings are under the spec's Assumptions and are his to overrule.
+
 Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
 deferred through WP-Cron on a site that has no Action Scheduler, and the queue runs whichever
 dispatcher is bound. A real cron run was not observed; the test fires the hook itself.
