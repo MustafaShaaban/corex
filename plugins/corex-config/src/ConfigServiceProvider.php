@@ -51,6 +51,13 @@ use Corex\Config\Branding\BrandingService;
 use Corex\Config\Data\DataAdminScreen;
 use Corex\Config\Data\DataController;
 use Corex\Config\Data\DataManagementController;
+use Corex\Config\Releases\InstalledRelease;
+use Corex\Config\Releases\ReleaseDesk;
+use Corex\Config\Releases\ReleasePackageInspector;
+use Corex\Config\Releases\ReleaseRestGateway;
+use Corex\Config\Releases\ReleasesController;
+use Corex\Config\Releases\ReleaseStore;
+use Corex\Config\Releases\ReleaseUpload;
 use Corex\Config\Data\DataManagementServices;
 use Corex\Config\Data\DataRestGateway;
 use Corex\Config\Data\DataAccessPolicy;
@@ -546,6 +553,36 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(DataManagementController::class);
         $this->container->singleton(DataAdminScreen::class);
 
+        // Releases (spec 107): reading a package where it lands, and receiving one. What the
+        // installer keeps is in wp-content/corex-releases/, beside the folders a release
+        // replaces and none of them.
+        $this->container->singleton(ReleaseStore::class, static fn (): ReleaseStore => new ReleaseStore(WP_CONTENT_DIR));
+        $this->container->singleton(InstalledRelease::class, static fn (): InstalledRelease => new InstalledRelease(ABSPATH));
+        $this->container->singleton(
+            ReleasePackageInspector::class,
+            static fn (ContainerInterface $c): ReleasePackageInspector => new ReleasePackageInspector(
+                $c->make(InstalledRelease::class),
+                PHP_VERSION,
+                (string) get_bloginfo('version'),
+            ),
+        );
+        $this->container->singleton(
+            ReleaseUpload::class,
+            static fn (ContainerInterface $c): ReleaseUpload => new ReleaseUpload($c->make(ReleaseStore::class)),
+        );
+        $this->container->singleton(
+            ReleaseDesk::class,
+            static fn (ContainerInterface $c): ReleaseDesk => new ReleaseDesk(
+                $c->make(ReleaseStore::class),
+                $c->make(ReleasePackageInspector::class),
+                $c->make(InstalledRelease::class),
+                // Every folder an installation writes in. The first is where releases are kept.
+                [WP_CONTENT_DIR, WP_PLUGIN_DIR, get_theme_root(), WPMU_PLUGIN_DIR, untrailingslashit(ABSPATH)],
+            ),
+        );
+        $this->container->singleton(ReleaseRestGateway::class);
+        $this->container->singleton(ReleasesController::class);
+
         // Insights: the provider registry (Performance over PSI + Readiness over native signals
         // and an optional Cloudflare scan), the cache, the REST controller, and the screen (spec
         // 037). Secrets come from config (settings/.env) and are never returned in a response.
@@ -990,6 +1027,7 @@ final class ConfigServiceProvider extends ServiceProvider
             $this->container->make(ActivityController::class)->register();
             $this->container->make(JobController::class)->register();
             $this->container->make(DataManagementController::class)->register();
+            $this->container->make(ReleasesController::class)->register();
             $this->container->make(InsightsController::class)->register();
             $this->container->make(BlogProController::class)->register();
             $this->container->make(\Corex\Config\Notifications\NotificationController::class)->register();
