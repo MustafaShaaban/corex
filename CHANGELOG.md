@@ -31,8 +31,17 @@ All notable changes to Corex are documented here. The format follows
   once, in the activity stream, with none of what a visitor submitted.
 - **A trashed submission is CoreX's to keep.** WordPress deletes a post from its trash for good
   after 30 days, and at once on a site set to skip the trash. A submission moved to the trash
-  from the inbox is outside both: it stays until it is restored or deleted for good. A trash
-  that empties itself is the next slice.
+  from the inbox is outside both.
+- **The trash empties itself, on its own clock** (spec 105, slice 3). A trashed submission is
+  deleted for good after a number of days: 30 unless the site sets another under Submission
+  retention, and never when it sets 0. The daily clean-up does it, with everything a deletion by
+  hand removes, and records it in the activity stream as the trash's own doing. The Trash view
+  says how long it keeps a submission and shows each one's day.
+- **WordPress's own trash clean-up no longer deletes a submission.** It deleted any trashed post
+  30 days on, with nothing recorded and a file uploaded with a submission left on disk. A
+  submission trashed WordPress's way is taken onto CoreX's clock, with the date WordPress had.
+- **A submission deleted by anything takes what is tied to it**: a command, another plugin, or
+  WordPress itself. Its uploaded files and the copies of its emails go with it.
 - **A trashed submission can be deleted for good** (spec 105, slice 2), from its pane or as the
   trash's bulk action. The confirmation says how many, lists what goes with a submission, and
   keeps its action disabled until a box is ticked. What goes: the answers with any hidden
@@ -201,10 +210,18 @@ All notable changes to Corex are documented here. The format follows
   default removes nothing) and `Corex\Email\Studio\EmailAttemptRemoval`. Constructors changed:
   `SubmissionAccessScope` takes `canDeletePermanently` last, and `SubmissionTrashService` takes a
   `SubmissionEmailRecords`.
-- **Nothing empties the trash by itself yet.** One moved there from the inbox stays until
-  somebody restores or deletes it. The retention panel's "Move to trash" is unchanged: it uses
-  WordPress's trash, which WordPress empties after 30 days. Those submissions now show in the
-  inbox's Trash view and can be restored from it.
+- **Trashed submissions start being deleted.** After taking this, a submission that has been in
+  the trash more than 30 days is deleted for good at the next daily clean-up, with its files.
+  That includes submissions the retention panel moved to the trash before: they keep the date
+  WordPress recorded. A site that wants to keep them sets **Keep in the trash for days** to 0, or
+  restores them, before the clean-up runs. WordPress would have deleted the same submissions at
+  the same age; the difference is that the files go too and it is recorded.
+- **New option** `corex_trash_submissions_days`; the list's answer gains `trash_days`; a new
+  store in the retention sweep, `submission_trash`. `RetentionController`,
+  `SubmissionsInboxScreen` and `SubmissionQueryService` each take a `SubmissionTrashRetention`.
+- **On a site with `EMPTY_TRASH_DAYS` of 0**, the retention panel's "Move to trash" still deletes
+  on the spot: it trashes WordPress's way, and there WordPress deletes instead. Elsewhere what it
+  trashes shows in the inbox's Trash view, can be restored from it, and is on the trash's clock.
 - **New routes**: `POST corex/v1/submissions/{id}/trash` and `…/{id}/restore`; `view=trash` on
   the list; `trash` and `restore` among the bulk actions. A change asked of a trashed submission
   is answered 409, "This submission is in the trash. Restore it to change it.", where it was 404.

@@ -8450,3 +8450,72 @@ releases, which is from their documentation and not from a run here.
   waiting; it does not, because a list from the last time it was open is not current.
 - "Mark all as read", and each notification's own actions, still show nothing while their
   request is out. That is slice 2.
+
+## #285 — The trash deletes on its own clock, and WordPress's is kept off a submission
+
+Date: 2026-10-08 · Spec: 105 (trash, restore and delete a submission), slice 3 · Status: Final
+
+WordPress empties its trash by itself: every trashed post it has a date for, 30 days on. For a
+submission that meant gone for good with nothing recorded and a file uploaded with it left on
+disk. From slice 1 a submission CoreX trashes carries no such date, so nothing deleted it at all.
+This slice gives the trash a clock of its own.
+
+**Thirty days unless the site says otherwise, and never when it says 0.** WordPress's own
+default, so no site's trash starts behaving differently unasked. The number is saved with the
+retention policy, in the panel it is a neighbour of.
+
+**A date is not stored.** The day a submission is deleted is the day it was trashed plus the
+setting. The sweep and the inbox work it out from the same two numbers, so what the Trash view
+shows and what the sweep does cannot disagree, and changing the setting changes every date.
+
+**The daily sweep deletes through the one service.** `SubmissionTrashRetention` is a store in the
+retention sweep, beside export files and notifications. `SubmissionTrashService::expire()` is
+the same removal as a person's, recorded as `by: expiry` with a cron actor.
+
+**WordPress's clean-up is kept off three ways**, because any one alone leaves a day uncovered:
+a submission CoreX trashes has none of WordPress's dates; one trashed WordPress's way is adopted
+the moment it is trashed, and the ones trashed before this code are adopted by the sweep, each
+with the date WordPress had; and WordPress's clean-up is refused a submission it still has a
+date for.
+
+**The refusal is of the clean-up, by name.** `pre_delete_post` answers "no" for a submission
+only while the `wp_scheduled_delete` action runs. It cannot answer "no" to every deletion of a
+trashed submission: the inbox's own delete goes the same way. A test first called the function
+directly and the submission was deleted, which is how the refusal's reach was found; the test
+runs the action, as WordPress does.
+
+**A submission deleted by anything takes what is tied to it** (`before_delete_post`). That cannot
+be refused without breaking whoever asked, so it is not where "a file that will not go keeps its
+submission" lives. That stays the service's rule, for deletions the inbox makes.
+
+**What this starts deleting, said first under Client impact.** A submission more than 30 days in
+the trash goes at the next clean-up after an update, the retention panel's old ones included.
+WordPress would have deleted the same ones at the same age. A site that wants them sets 0 or
+restores them first.
+
+**Not here, and slice 4's:** on a site with `EMPTY_TRASH_DAYS` of 0, `wp_trash_post()` deletes
+before anything can act. The one caller left is the retention panel. The guide says so.
+
+**Found by the measured browser test: the new line made the table 150 pixels wider.** "Deleted
+for good:" and its date on one line, in a table whose cells do not wrap. The test that holds the
+trash's table to the inbox's width failed. The lines under the date wrap inside the column.
+
+**Found on the way: a test that left its rows behind.** `SubmissionTrashTest` cleaned up "the
+newest 500 submissions that were not there before", and its own are dated a week back. Once the
+install held 500 newer ones it found none, each run left eight in the trash, and the next run
+listed them. It cleans up by the form it gives its rows.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `SubmissionTrashClockTest` (new), real WordPress: the default and the setting, the sweep with a real file, "never", WordPress's clean-up refused, adoption at once and by the sweep, a deletion by something else | 6 passed |
+| `tests/Integration/Submissions`, `Email` and `Retention`, real WordPress, twice in a row | 71 passed both times, nothing left behind |
+| `tests/Unit` | 2410 passed |
+| Jest, `Submissions/__tests__` | 129 passed, 8 of them new |
+| Browser, `submissions-inbox.spec.js`, this branch's inbox | 12 passed, one new; the width check failed once on the new line, as above |
+| The Trash view and the retention panel, captured at 1440 and looked at | as designed |
+
+**Not run.** The whole integration and browser suites; CI runs both. WordPress's real daily
+schedule was not waited for: its action was run by hand. Nothing was run on a site with
+`EMPTY_TRASH_DAYS` of 0, which is a constant.

@@ -197,6 +197,48 @@ file, which the dialog asks the existing history route.
 **Routes**: `DELETE /submissions/{id}` for one; bulk action `delete`, offered in the trash only
 and only to somebody who may.
 
+## Slice 3: the trash's own clock (planned and built 2026-10-08, with slice 2 on main)
+
+### D15. The number of days is a setting, saved with the retention policy
+
+`corex_trash_submissions_days`: 30 where the site has said nothing, WordPress's own default, so
+no site's trash starts behaving differently unasked; 0 for "until somebody deletes it". The field
+stands in the retention panel beside the policy it is a neighbour of, and is saved by the same
+form.
+
+### D16. A date is not stored
+
+A trashed submission has `corex_trashed_at`. The day it is deleted is that plus the setting,
+worked out by the sweep and by the inbox from the same two numbers. Changing the setting changes
+every date at once, which is what somebody changing it means.
+
+### D17. The daily sweep deletes, through the one service
+
+`SubmissionTrashRetention` is a `PrunableStore` in the retention sweep, beside the export files
+and the notifications. It hands the trash's old submissions to
+`SubmissionTrashService::expire()`: the same removal as a person's, recorded as the trash's own
+(`by: expiry`, a cron actor). At most 100 a sweep; the next goes on.
+
+### D18. WordPress's clean-up is kept off a submission three ways
+
+1. A submission CoreX trashes has no `_wp_trash_meta_time` (slice 1).
+2. A submission trashed WordPress's way is adopted the moment it is trashed (`trashed_post`):
+   given CoreX's date from WordPress's, and WordPress's mark removed. The sweep adopts the ones
+   that were trashed before this code existed.
+3. WordPress's clean-up is refused a submission it still has a date for (`pre_delete_post`,
+   while the `wp_scheduled_delete` action runs), which is the day between an old trashing and
+   its adoption.
+
+Not covered here, and slice 4's: on a site with `EMPTY_TRASH_DAYS` of 0 `wp_trash_post()` deletes
+before any of these can act. The one caller left is the retention panel, which slice 4 routes
+through the service.
+
+### D19. A submission deleted by anything takes what is tied to it
+
+`before_delete_post`: files and email copies go with a submission whoever deletes it. It cannot
+be refused without breaking the caller, so it is not the place a file that will not go keeps its
+submission; that stays the service's rule for deletions the inbox makes.
+
 ## What later slices will need from this one
 
 - Slice 2 adds `delete()` to the service and a `SubmissionErasure` that knows what is tied to a

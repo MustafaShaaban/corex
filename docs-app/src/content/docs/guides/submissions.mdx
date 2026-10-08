@@ -57,8 +57,14 @@ restored it, and the activity stream records each action once, with how many sub
 
 You act only on submissions you may see, in the trash as in the inbox.
 
-A submission moved to the trash from the inbox stays there until it is restored or deleted for good. A trash that
-empties itself after a stated number of days is the next part of this feature.
+A submission in the trash is deleted for good after a number of days: 30, unless the site sets another. The Trash view
+says so above its list, and each row shows the day that submission will go. Set the number under **Submission
+retention**, in **Keep in the trash for days**; 0 keeps a trashed submission until somebody restores or deletes it.
+The daily clean-up deletes what is due, with everything a deletion by hand removes, and records it in the activity
+stream as the trash's own doing.
+
+WordPress empties its own trash too, for every kind of post. It does not empty this one: a submission leaves the trash
+on the day the Trash view shows and not before.
 
 ## Delete for good
 
@@ -177,9 +183,9 @@ window and still holding their personal data. The count excludes marked tests by
 one run. After confirming, choose one operation:
 
 - **Archive** keeps the response and marks its workflow and retention state.
-- **Move to trash** uses WordPress's own trash. The response appears in the inbox's **Trash** view and can be restored
-  there. Unlike a submission moved to the trash from the inbox, WordPress deletes this one for good by itself, 30 days
-  after it was trashed unless the site's `EMPTY_TRASH_DAYS` says otherwise.
+- **Move to trash** moves the response to the inbox's **Trash** view, where it can be restored and from which it is
+  deleted for good after the number of days set there. On a site whose WordPress is configured to skip the trash
+  (`EMPTY_TRASH_DAYS` of 0) this action still deletes on the spot; that is the next part of this feature to change.
 - **Anonymize personal data** removes submitted values, submitter projections, hidden/UTM/consent data, and notes while
   preserving non-personal workflow evidence.
 

@@ -88,11 +88,14 @@ delete a submission. That is spec 105, specified and not planned or built.
 
 Specified on 2026-10-08, neither planned nor built:
 
-- **Spec 105, trash, restore and permanently delete a submission.** Slices 1 and 2 of six are
+- **Spec 105, trash, restore and permanently delete a submission.** Slices 1 to 3 of six are
   built. Slice 1 (DECISIONS #281): move to the trash from the pane or in bulk, with undo; a Trash
   view; restore. Slice 2 (DECISIONS #283): delete for good from the trash, with the files and the
   email copies tied to a submission, a permission of its own, and an acknowledged confirmation.
-  Nothing empties the trash by itself yet. Next: slice 3, the trash's own clock. Found while
+  Slice 3 (DECISIONS #285): the trash empties itself after a number of days the site sets, 30
+  by default; WordPress's own clean-up is kept off a submission; a submission deleted by anything
+  takes its files. Next: slice 4, the retention panel and the Data source through the one
+  service, which also ends the on-the-spot deletion on a site that skips the trash. Found while
   planning slice 2: the mail log's rows are tied to no submission, so FR-011 was corrected.
   Found while specifying: a
   trashed submission is deleted for good by WordPress after 30 days, with nothing recorded and
