@@ -11,9 +11,9 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
-use Corex\Email\Queue\ActionSchedulerDispatcher;
 use Corex\Email\Queue\MailQueueDispatcher;
 use Corex\Email\Queue\MailQueueGate;
+use Corex\Email\Queue\MailRequestPayload;
 use Corex\Email\Queue\QueuedMailer;
 use Corex\Mail\Mailer;
 use Corex\Mail\AttemptingMailer;
@@ -74,9 +74,18 @@ function spyDispatcher(bool $available): MailQueueDispatcher
             return $this->available;
         }
 
+        public function name(): string
+        {
+            return 'spy-queue';
+        }
+
         public function enqueue(MailRequest $request): void
         {
             $this->enqueued++;
+        }
+
+        public function handle(array $payload): void
+        {
         }
     };
 }
@@ -120,6 +129,8 @@ it('returns a queued attempt result when dispatch is deferred', function () {
     $result = (new QueuedMailer($inner, new MailQueueGate(queueFlags(true)), $dispatcher))->attempt($request);
 
     expect($result->state)->toBe(MailResult::STATE_QUEUED)
+        // The attempt names the backend that took it, whichever one is bound.
+        ->and($result->provider)->toBe('spy-queue')
         ->and($result->requestId)->toBe($request->requestId)
         ->and($dispatcher->enqueued)->toBe(1);
 });
@@ -161,7 +172,7 @@ it('round-trips a MailRequest through the queue payload', function () {
         replyTo: 'noreply@y.test',
     );
 
-    $restored = ActionSchedulerDispatcher::fromArray(ActionSchedulerDispatcher::toArray($request));
+    $restored = MailRequestPayload::fromArray(MailRequestPayload::toArray($request));
 
     expect($restored->to)->toBe(['x@y.test', 'p@q.test']);
     expect($restored->templateName)->toBe('welcome');

@@ -42,6 +42,7 @@ use Corex\Email\Template\TemplateRegistry;
 use Corex\Email\Template\TemplateRenderer;
 use Corex\Email\Templates\ContactNotificationTemplate;
 use Corex\Email\Queue\ActionSchedulerDispatcher;
+use Corex\Email\Queue\CronMailDispatcher;
 use Corex\Email\Queue\MailQueueDispatcher;
 use Corex\Email\Queue\MailQueueGate;
 use Corex\Email\Queue\QueuedMailer;
@@ -151,14 +152,18 @@ final class MailServiceProvider extends ServiceProvider
 
         $this->container->singleton(
             MailQueueDispatcher::class,
-            static fn (ContainerInterface $c): MailQueueDispatcher => new ActionSchedulerDispatcher(
-                $c->make(RequestMailer::class),
-            ),
+            static function (ContainerInterface $c): MailQueueDispatcher {
+                $actionScheduler = new ActionSchedulerDispatcher($c->make(RequestMailer::class));
+
+                return $actionScheduler->available()
+                    ? $actionScheduler
+                    : new CronMailDispatcher($c->make(RequestMailer::class));
+            },
         );
 
         // The corex-core Mailer seam → the queued decorator (detect-and-defer for Forms,
-        // etc.). It queues only when Action Scheduler is present AND the mail_queue flag
-        // is on; otherwise it sends inline, exactly as before.
+        // etc.). It queues only when the mail_queue flag is on, through Action Scheduler
+        // where that is installed and WP-Cron where it is not; otherwise it sends inline.
         $this->container->singleton(
             Mailer::class,
             static fn (ContainerInterface $c): Mailer => new QueuedMailer(
@@ -225,22 +230,18 @@ final class MailServiceProvider extends ServiceProvider
         // → wp_get_global_settings) and load the `corex` textdomain before `init` — the
         // "translation triggered too early" notice. The handler resolves the dispatcher
         // only when a queued send actually fires (during queue processing, after init).
-        add_action(ActionSchedulerDispatcher::HOOK, [$this, 'runQueuedSend'], 10, 1);
+        add_action(MailQueueDispatcher::HOOK, [$this, 'runQueuedSend'], 10, 1);
     }
 
     /**
-     * Process one queued mail send. Resolves the dispatcher lazily so boot never builds
-     * the mail stack; a no-op when Action Scheduler is not the bound dispatcher.
+     * Process one queued mail send, through whichever dispatcher is bound. Resolves it
+     * lazily so boot never builds the mail stack.
      *
      * @param array<string,mixed> $payload
      */
     public function runQueuedSend(array $payload): void
     {
-        $dispatcher = $this->container->make(MailQueueDispatcher::class);
-
-        if ($dispatcher instanceof ActionSchedulerDispatcher) {
-            $dispatcher->handle($payload);
-        }
+        $this->container->make(MailQueueDispatcher::class)->handle($payload);
     }
 
     /**

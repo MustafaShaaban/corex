@@ -51,5 +51,9 @@ seam returns a per-send result that a capability + nonce-gated action can report
 ## Configure
 
 `COREX_MAIL_DRIVER` (and host/port/credentials) live in `.env`; secrets are documented in
-`.env.example`, never committed. The bulk **mail queue** (Action Scheduler) is gated behind
-the `mail_queue` [feature flag](/guides/configuration/).
+`.env.example`, never committed. The **mail queue** is gated behind the `mail_queue`
+[feature flag](/guides/configuration/). With it on, a send is deferred so the request that
+asked for it does not wait for the mail server: through Action Scheduler where that is
+installed, and through WP-Cron where it is not. On WP-Cron the message leaves on the site's next
+cron run, so it suits the few messages a form sends; install Action Scheduler to send to a long
+list.

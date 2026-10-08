@@ -13,7 +13,7 @@
 
 declare(strict_types=1);
 
-use Corex\Email\Queue\ActionSchedulerDispatcher;
+use Corex\Email\Queue\MailRequestPayload;
 use Corex\Mail\MailRequest;
 
 it('carries no sender by default, so every existing caller is unchanged', function () {
@@ -47,8 +47,8 @@ it('keeps its sender across the queue', function () {
         from: 'info@example.test',
     );
 
-    $restored = ActionSchedulerDispatcher::fromArray(
-        ActionSchedulerDispatcher::toArray($original),
+    $restored = MailRequestPayload::fromArray(
+        MailRequestPayload::toArray($original),
     );
 
     expect($restored->from)->toBe('info@example.test')
@@ -57,8 +57,8 @@ it('keeps its sender across the queue', function () {
 });
 
 it('restores a queued message that carries no sender as carrying none', function () {
-    $restored = ActionSchedulerDispatcher::fromArray(
-        ActionSchedulerDispatcher::toArray(new MailRequest(['someone@example.test'])),
+    $restored = MailRequestPayload::fromArray(
+        MailRequestPayload::toArray(new MailRequest(['someone@example.test'])),
     );
 
     // Not '' — an empty string would reach the driver as a request for a mailbox named nothing.
@@ -89,8 +89,8 @@ it('keeps only real attachment ids', function () {
 });
 
 it('keeps its attachments across the queue', function () {
-    $restored = ActionSchedulerDispatcher::fromArray(
-        ActionSchedulerDispatcher::toArray(new MailRequest(
+    $restored = MailRequestPayload::fromArray(
+        MailRequestPayload::toArray(new MailRequest(
             ['someone@example.test'],
             templateName: 'invoice',
             attachments: [42, 43],

@@ -7652,3 +7652,75 @@ browser: the two declarations are the same visually-hidden technique, and the 1p
 touched; its `postcss-selector-parser` override stays.
 
 **Left open.** The 54 lint warnings. The README's six markdown findings. Vitest.
+
+## #273 — A send is deferred without Action Scheduler, and the queue runs whichever dispatcher is bound
+
+Date: 2026-10-08 · Issue: #271 · Spec: 024 (deferred tail), the mail queue · Status: Final
+
+Reported from a client site whose lead form answered three to four seconds late: both
+notification emails were sent inside the request, with the `mail_queue` flag on.
+
+**What was wrong.** The flag decorates the Mailer seam with `QueuedMailer`, which defers a send
+only when the bound `MailQueueDispatcher` says a backend is available. The only dispatcher was
+`ActionSchedulerDispatcher`, and Action Scheduler is not part of CoreX. On a site without it
+every send was inline, whatever the flag said. A site could not fill the gap either: running a
+queued send was not on the interface, and the worker hook acted only when the bound dispatcher
+was `ActionSchedulerDispatcher`.
+
+**What changed.**
+
+- `CronMailDispatcher` is bound when Action Scheduler is absent, the way bounded jobs already
+  choose between the two (`ConfigServiceProvider`).
+- `MailQueueDispatcher` gains `HOOK` (`corex_mail_send`), `name()` and `handle()`. The worker
+  calls `handle()` on whichever dispatcher is bound.
+- A queued attempt's provider is the dispatcher's name. It was the literal `action-scheduler`.
+- The request's array form moved to `MailRequestPayload`; the static `toArray()`/`fromArray()`
+  on `ActionSchedulerDispatcher` are gone. No caller outside the tests was found in CoreX or in
+  the three client repositories on this machine.
+
+**Why the request is not in the cron event.** WordPress reads the cron array on every request and
+rewrites all of it on every schedule. A queued request is a subject, a body and a context. It
+is kept in an option of its own (`corex_mail_queued_<id>`, not autoloaded) and the event carries
+the id. The id also makes every event distinct: WordPress refuses a second event with the same
+hook and arguments inside ten minutes, which would have dropped the second of two identical
+notifications.
+
+**Why the option is deleted before the send.** A send that stops PHP must not be repeated by a
+later run, and WP-Cron can fire one event twice when two requests spawn it together. So a
+message is sent at most once, and a run that dies mid-send loses that one message. Action
+Scheduler, which records and retries, is still preferred wherever it is installed.
+
+**Why `wp_cron()` on `shutdown`.** WordPress looks for due events when a request starts. An event
+scheduled during a form's request would otherwise wait for the site's next visitor, which on a
+quiet site is exactly when a lead matters. `wp_cron()` honours `DISABLE_WP_CRON` and the
+one-spawn-a-minute lock, so on a site that runs cron from its own scheduler the message waits for
+that.
+
+**When nothing can be scheduled** (the option is not stored, or WordPress refuses the event) the
+message is sent at once. A deferred message nothing will ever run is worse than a slow response.
+
+**Not for long lists.** `PublishNotifier` sends one request per subscriber. Through WP-Cron that
+is two writes per message and a cron array that grows by an entry each, rewritten each time: fine
+for tens, slow for thousands. The README and the guide say to install Action Scheduler for that.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `tests/Unit/Email/CronMailDispatcherTest.php` | 4 passed; with the `delete_option()` before the send removed, the once-only test fails |
+| `tests/Integration/Mail/MailQueueWithoutActionSchedulerTest.php`, real WordPress, flag on | passed: nothing handed to `wp_mail()` inside the request, one event asked for, the hook delivers one message and one log; with the provider binding only `ActionSchedulerDispatcher` it fails on "1 is identical to 0" |
+| `tests/Unit`, `php -d memory_limit=512M vendor/bin/pest --testsuite=Unit` | 2319 passed |
+| `tests/Integration/Mail` | 7 passed |
+
+**Not run.** A real cron run: the integration test catches the event as WordPress is asked to
+schedule it and fires the hook itself, because a real event on a development install could be run
+by another request without the test's stand-in for `wp_mail()`. So the loopback request that
+`wp_cron()` makes was not observed. No measurement of a form's response time was taken on a host.
+
+**Left open.**
+
+- A site with the flag on, `DISABLE_WP_CRON` set and no scheduler of its own accumulates
+  `corex_mail_queued_*` options that nothing sends. Readiness does not look for that.
+- Uninstalling CoreX Mail does not remove options still queued.
+- The client impact of the interface change: a site's own `MailQueueDispatcher` has two methods
+  to add. None is known.
