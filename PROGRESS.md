@@ -88,7 +88,7 @@ One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`)
 
 On `main` since v0.43.3, not in a release:
 
-- **The shared-host `dist` package loads the framework** (#PRNUM, DECISIONS #267). Reported by the
+- **The shared-host `dist` package loads the framework** (#285, DECISIONS #267). Reported by the
   Muva session from a real build on v0.43.3: no plugin found the autoloader, Composer's paths were
   the repository's, the CLI package was missing, the checkout's dev packages and the development
   `.htaccess` were shipped, and `verify:dist` said "OK". Composer now generates the autoloader
