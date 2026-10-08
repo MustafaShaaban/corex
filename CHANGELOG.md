@@ -179,6 +179,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A file sent through a form is stored, on every site.** The attachment store called
+  WordPress's `wp_handle_upload()`, which WordPress loads for an admin page and for nothing
+  else. On a site where nothing else had loaded the admin's files, every submission that
+  carried a file answered 500, "Request could not be processed." It worked where the
+  Newsletter, Bookings or Careers add-on was active, because each creates its table on every
+  request and loads the admin on the way. The store loads what it calls (DECISIONS #295).
 - **A checkbox group on a form defined in code keeps the boxes that were ticked.** The route
   cleaned the answer as one line of text, which empties a list, so the field was stored empty
   whatever the visitor ticked. A flow's form kept them; a form class did not.
@@ -287,6 +293,9 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A site that loads `wp-admin/includes/file.php` itself, to make a form's file upload work,
+  can stop.** The framework loads it where it is needed. Leaving the workaround in place does
+  no harm.
 - **A form whose markup you wrote yourself must send the option values it declares.** A choice
   field's answer is compared with the keys of its `options`. The stock form and a flow's form
   print those keys, so nothing changes for them. A hand-written `select`, radio or checkbox
