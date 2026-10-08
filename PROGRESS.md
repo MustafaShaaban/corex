@@ -115,14 +115,14 @@ is the one spec issues #248 and #264 asked for, and both are closed. Four slices
 
 Five readings in the spec are the owner's to overrule; they are under its Assumptions.
 
-**Spec 107, a release installed from the admin on a host with no command line, is a draft**
-([`specs/107-release-from-admin/spec.md`](specs/107-release-from-admin/spec.md)). It is the first
-of three the owner outlined for the client site that moved to shared hosting (release from the
-admin; data kinds and a safe push; pulling production data down). Nothing is planned or built. It
-ends with four questions that are his: whether it must work where CoreX is not installed yet,
-what going back does with a failed release's database changes, whether a site's own code is
-always part of the package, and whether CoreX should back up and restore a whole site at all,
-which he asked for and the outline he accepted recommends against.
+**Spec 107, a release installed from the admin on a host with no command line, is planned and
+not built** ([`specs/107-release-from-admin/`](specs/107-release-from-admin/spec.md)). It is the
+first of three the owner outlined for the client site that moved to shared hosting (release from
+the admin; data kinds and a safe push; pulling production data down). Four questions were his;
+he answered them with "decide the best for me", and the decisions are in the spec, each with its
+cost: it works where CoreX already runs; going back restores files and leaves data; a site's
+code is always in the package; CoreX is not the site's backup. Six slices in the plan. Nothing
+reaches a site's files before the fourth.
 
 Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
 deferred through WP-Cron on a site that has no Action Scheduler, and the queue runs whichever

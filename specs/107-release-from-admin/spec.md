@@ -427,9 +427,12 @@ made on that, each with why and what it costs. Any of them is his to reopen.
 
 Written without asking; each is the owner's to overrule.
 
-- **The package is the one `build:dist` already makes.** No new format. What is added is that
-  the host reads the description the package already carries, and the checks `verify:dist` runs
-  where the package was built are run again where it lands.
+- **The package is the one `build:dist` makes, as a zip that says more about itself.** Planning
+  found that `build:dist` fills a folder and nothing zips it, and that the package's description
+  holds no requirement and no measure of its contents. The builder gains the zip and those
+  facts (plan D1, D2). The check the builder makes by loading the package in a PHP process of
+  its own cannot be made on a host with no shell; the request that finishes an installation
+  stands in for it (plan D3).
 - **Nothing is downloaded.** No update source, no manifest URL, no check for new versions. The
   notifier CoreX has (spec 034) is left as it is; whether it is kept, removed or made to say only
   "a newer release exists" is not decided here.
@@ -440,6 +443,11 @@ Written without asking; each is the owner's to overrule.
   with its PDF fonts pruned (the changelog's measurement), before a site's own files.
 - **"Those who may manage the site"** is a CoreX ability of its own, granted to administrators,
   not `manage_options` alone.
+- **A visitor during an installation gets WordPress's own maintenance answer**, not CoreX's
+  Maintenance mode. WordPress's is read before any plugin loads, so it holds while plugins are
+  being replaced; CoreX's answers after they have loaded (plan D7).
+- **No database change is reversed today.** CoreX's schema changes declare no way back, so story
+  4's "which changes are reversed and which are not" reads, for now, "none are" (plan D10).
 - **The way back that does not need the admin** is a link he was given before he installed,
   not a command and not work in the host's file manager, which is the kind of step the move to
   this host showed does not fit.
