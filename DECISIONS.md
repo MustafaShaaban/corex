@@ -6988,8 +6988,8 @@ What was run:
 | `DataExportTableTest`, first version of the table | 1 failed: "next week" was written as a date |
 | `DataExportTableTest` | 20 passed |
 | `DataExportServiceTest` | 15 passed |
-| `tests/Unit`, after rebasing onto #277 | 2250 passed |
-| `tests/Integration`, real WordPress | 543 passed |
+| `tests/Unit`, after rebasing onto #279 | 2252 passed |
+| `tests/Integration`, real WordPress, after the same rebase | 544 passed |
 | `data-management.spec.js`, a browser, on the two unchanged screens | 7 passed |
 
 **Not run.** A produced Data workbook was not opened in a real spreadsheet; the Submissions
