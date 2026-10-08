@@ -11,16 +11,16 @@ files before slice 4.
 
 ## Slice 1 — The package says what it holds, and is a zip (US2's ground; plan D1, D2)
 
-- [ ] T001 Jest: a built package's `corex-release.json` has `schema: 2`, `requires` from `corex-core.php`'s headers, `wordpress_version` from the packaged core (or `null`), every release path, and for each its files, bytes and hash (`tests/build-shared-host-dist.test.js`)
-- [ ] T002 [P] Jest: the folder hash — the same for the same files whatever order they are read in; different when a byte, a name or a file changes; paths with forward slashes on every system (`tests/release-content-hash.test.js`)
-- [ ] T003 `scripts/release-content-hash.mjs`; the builder writes the schema 2 manifest after the tree is final (after vendor is installed and pruned)
-- [ ] T004 Jest: `--zip` writes one zip named for the client, version and build time, with `corex-release.json` at its root and every release path in it; `verifyDist` refuses a package whose contents no longer match its manifest
-- [ ] T005 `--zip` in the builder; `verifyDist` checks schema 2 and recomputes `contents`
-- [ ] T006 [P] Pest unit: `ReleaseManifest` — parses a schema 2 manifest; refuses, each with its own reason, one that is not JSON, has no `schema` (built before this), has a release path that leaves the package, or lacks `contents` for a path it names (`tests/Unit/Releases/ReleaseManifestTest.php`)
-- [ ] T007 `ReleaseManifest` (`plugins/corex-config/src/Releases/`)
-- [ ] T008 Pest unit: `ReleaseContentHash` over a real directory in the temp folder agrees with a hash recorded from the Node side for the same files (a fixture written by T002's script, committed)
-- [ ] T009 `ReleaseContentHash`
-- [ ] T010 Docs: `shared-host-dist.md` (the zip, the manifest's new keys); guards; notes
+- [x] T001 Jest: a built package's `corex-release.json` has `schema: 2`, `requires` from `corex-core.php`'s headers, `wordpress_version` from the packaged core (or `null`), every release path, and for each its files, bytes and hash (`tests/build-shared-host-dist.test.js`)
+- [x] T002 [P] Jest: the folder hash — the same for the same files whatever order they are read in; different when a byte, a name or a file changes; paths with forward slashes on every system (`tests/release-content-hash.test.js`)
+- [x] T003 `scripts/release-content-hash.mjs`; the builder writes the schema 2 manifest after the tree is final (after vendor is installed and pruned)
+- [x] T004 Jest: `--zip` writes one zip named for the client, version and build time, with `corex-release.json` at its root and every release path in it; `verifyDist` refuses a package whose contents no longer match its manifest
+- [x] T005 `--zip` in the builder; `verifyDist` checks schema 2 and recomputes `contents`
+- [x] T006 [P] Pest unit: `ReleaseManifest` — parses a schema 2 manifest; refuses, each with its own reason, one that is not JSON, has no `schema` (built before this), has a release path that leaves the package, or lacks `contents` for a path it names (`tests/Unit/Releases/ReleaseManifestTest.php`)
+- [x] T007 `ReleaseManifest` (`plugins/corex-config/src/Releases/`)
+- [x] T008 Pest unit: `ReleaseContentHash` over a real directory in the temp folder agrees with a hash recorded from the Node side for the same files (a fixture written by T002's script, committed)
+- [x] T009 `ReleaseContentHash`
+- [x] T010 Docs: `shared-host-dist.md` (the zip, the manifest's new keys); guards; notes
 
 ## Slice 2 — A package that is wrong is refused, and nothing is touched (US2; D3, D4, D5, D15)
 
