@@ -38,6 +38,7 @@ final class MailService
     {
         $rejection = $this->guard->inspect([
             'subject'  => $message->subject,
+            'from'     => $message->from ?? '',
             'reply-to' => $message->replyTo ?? '',
         ]);
 
@@ -47,6 +48,10 @@ final class MailService
             return $this->result('rejected', $rejection, $message);
         }
 
+        // Every field of the message, and only the recipients changed. This call listed the seven
+        // fields the class had when it was written, so the sender and the attachments added after
+        // it were dropped here on every send (#150). They are passed by name so that a reordered
+        // constructor fails loudly; `MailServiceTest` fails when a field is added and not carried.
         $clean = new EmailMessage(
             $this->valid($message->to),
             $this->valid($message->cc),
@@ -55,6 +60,8 @@ final class MailService
             $message->subject,
             $message->body,
             $message->headers,
+            from: $message->from,
+            attachments: $message->attachments,
         );
 
         if ($clean->to === []) {

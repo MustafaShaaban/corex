@@ -48,3 +48,23 @@ Verification came first, and changed the work twice — one reported defect was 
 - [x] **T040** Full gate: Pest unit + integration, Jest, Playwright, lints, token inventory.
 - [x] **T041** Guards: `wp-guard`, `clean-code-guard`, `test-guard`.
 - [x] **T042** `PROGRESS.md`, `DECISIONS.md`, PR, close #148 / #149 / #150.
+
+## Phase 6 — #150 again: the sender never reached the driver (2026-10-08)
+
+T030 and T031 between them cover six of the seven files in the issue's own table. The seventh is
+`MailService`, which rebuilds the message on its way to the driver. FR-011 and SC-005 were
+marked met on tests that stopped at the request and the queue (T032), so the sender was dropped on
+every send from v0.38.0 to v0.43.3. Spec 081's attachments (its T031, FR-010) merged an hour
+later and were dropped by the same seven arguments. Recorded in DECISIONS #264.
+
+- [x] **T050** Verify against `main`: `MailService::deliver()` still builds the message from seven
+      positional arguments. Confirmed at 390554e1.
+- [x] **T051** A failing test that sends a message with a sender and an attachment through
+      `deliver()` and reads both at the driver. It also fails when a field is added to
+      `EmailMessage` and not carried. A second, in the integration suite, reads what `wp_mail()`
+      is handed for a request sent through the `Mailer` seam.
+- [x] **T052** `deliver()` carries `from` and `attachments`, by name.
+- [x] **T053** The sender goes through `HeaderGuard` beside the subject and reply-to. It was not
+      inspected, which did not matter while it never arrived.
+- [x] **T054** Guards, `CHANGELOG.md` with Client impact, `PROGRESS.md`, `DECISIONS.md`, PR, and a
+      comment on #150 saying why it was closed.
