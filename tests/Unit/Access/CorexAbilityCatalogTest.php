@@ -45,6 +45,21 @@ it('marks critical access abilities and resolves declared implications', functio
         ->toContain(CorexAbility::MANAGE_FORMS, CorexAbility::MANAGE_ACCESS, CorexAbility::MANAGE_SETTINGS, CorexAbility::MANAGE_NOTIFICATIONS);
 });
 
+it('makes installing a release a critical ability of its own, held by whoever manages the admin', function () {
+    // Spec 107, D13. Replacing the site's code is not "operations": a role given the
+    // operations screen, to switch maintenance on and read the security log, is not thereby
+    // given the means to install whatever it uploads.
+    $catalog  = CorexAbilityCatalog::defaults();
+    $releases = $catalog->find(CorexAbility::MANAGE_RELEASES);
+
+    expect($releases)->not->toBeNull()
+        ->and($releases->risk)->toBe(CorexAbility::RISK_CRITICAL)
+        ->and($releases->screenSlugs)->toBe(['corex-releases'])
+        ->and($catalog->expanded([CorexAbility::MANAGE_ADMIN]))->toContain(CorexAbility::MANAGE_RELEASES)
+        ->and($catalog->expanded([CorexAbility::MANAGE_OPERATIONS]))->not->toContain(CorexAbility::MANAGE_RELEASES)
+        ->and($catalog->expanded([CorexAbility::RUN_DANGEROUS_ACTIONS]))->not->toContain(CorexAbility::MANAGE_RELEASES);
+});
+
 it('rejects duplicate and malformed ability definitions', function () {
     $catalog = new CorexAbilityCatalog();
     $ability = new CorexAbility(

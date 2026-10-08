@@ -64,6 +64,22 @@ it('never answers a path outside its place', function (string $area, string $nam
     'an area it does not have'      => ['uploads', 'package.zip'],
 ]);
 
+it('lists the packages it holds, however they came to be there, and nothing else', function () {
+    // A package put in the folder through the host's file manager is offered like one that
+    // was uploaded (D12). A part still arriving, a guard file and somebody's notes are not.
+    $incoming = $this->store->root() . '/incoming';
+    file_put_contents($incoming . '/corex-release-acme-0.44.0-20261008-180000.zip', str_repeat('z', 300));
+    file_put_contents($incoming . '/corex-release-acme-0.45.0-20261101-090000.zip', str_repeat('z', 500));
+    file_put_contents($incoming . '/' . str_repeat('a', 64) . '.part', 'half');
+    file_put_contents($incoming . '/notes.txt', 'ask the host about the disk');
+    file_put_contents($incoming . '/backup.zip', 'not a release');
+
+    expect(array_column($this->store->packages(), 'bytes', 'name'))->toBe([
+        'corex-release-acme-0.44.0-20261008-180000.zip' => 300,
+        'corex-release-acme-0.45.0-20261101-090000.zip' => 500,
+    ]);
+});
+
 it('remembers an installation in progress, and forgets it when told', function () {
     expect($this->store->state())->toBe([]);
 

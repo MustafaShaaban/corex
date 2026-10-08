@@ -108,6 +108,7 @@ final class CorexAbilityCatalog
             CorexAbility::MANAGE_NOTIFICATIONS,
             CorexAbility::MANAGE_SETUP,
             CorexAbility::MANAGE_SETTINGS,
+            CorexAbility::MANAGE_RELEASES,
         ];
 
         return [
@@ -209,6 +210,19 @@ final class CorexAbilityCatalog
                 [],
                 ['corex-operations-security'],
                 ['operations.save', 'security.save'],
+            ),
+            // Its own ability, and not part of managing operations: it replaces the site's
+            // code with what is uploaded (spec 107, D13).
+            self::ability(
+                CorexAbility::MANAGE_RELEASES,
+                'Install releases',
+                'Install a release of the site from the admin, and go back to the one before.',
+                CorexAbility::GROUP_OPERATIONS,
+                CorexAbility::RISK_CRITICAL,
+                false,
+                [],
+                ['corex-releases'],
+                ['releases.install', 'releases.restore'],
             ),
             self::ability(
                 CorexAbility::RUN_DANGEROUS_ACTIONS,

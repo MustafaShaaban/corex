@@ -142,7 +142,7 @@ reaches a site's files before the fourth.
 |---|---|---|
 | 1 | The package says what it needs and holds, and is one zip; a site can read and refuse the description | done (DECISIONS #282), unreleased |
 | 2 | A zip is inspected on the site, and every wrong package refused with nothing touched | done (DECISIONS #293), unreleased. Fourteen wrong packages, each a real zip, each refused for its own reason. Nothing calls it yet: no screen, no route, nothing bound in the container |
-| 3 | The Releases screen: receiving a package in parts, and what it is | not started |
+| 3 | The Releases screen: receiving a package in parts, and what it is | the server's half done (DECISIONS #294), unreleased: the ability, receiving in parts, the five routes. The screen and its client (T031, T036 to T039) are not started |
 | 4 | Unpack, verify, swap under WordPress's maintenance answer, finish with the database step | not started |
 | 5 | Going back from the screen, and the record | not started |
 | 6 | The deployment guide | not started |

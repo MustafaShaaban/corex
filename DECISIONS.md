@@ -9065,3 +9065,72 @@ one yet.
   the site's root; they are given where the screen is built.
 - A package's contents are not checked against its description here. That needs it unpacked,
   which is slice 4, where the folder hash from slice 1 is used.
+
+## #294 — A package is received in parts under its own hash, and every answer of the Releases routes is marked
+
+**Date:** 2026-10-09. **Spec:** 107, slice 3, the server's half (T030, T032 to T035). **Branch:** `feat/107-releases-receive`.
+
+**Installing a release is an ability of its own.** `corex_manage_releases`, critical, held by
+whoever manages the CoreX admin. It is not part of "Manage operations and security": a role
+given that screen, to switch maintenance on and read the security log, is not thereby given
+the means to replace the site's code with what it uploads. On a network the gateway also asks
+for a super administrator on the main site, since a release replaces code every site runs.
+
+**A package is known by the hash of the whole file.** The browser computes it before sending
+anything. The parts are appended to `incoming/<hash>.part`, each saying where it starts. So:
+
+- an upload that was cut off resumes: a part that does not start where the last ended is
+  answered with how much the site holds, and that is where the browser sends from;
+- a part sent twice does no harm, for the same reason;
+- two packages being received cannot touch;
+- and the same number that names the file is the check on it. When the last part is in, the
+  file is hashed on the site. If it is not what was sent it is deleted, not kept to be tried.
+
+The hash names a file, so it is checked for being one: sixty-four lower-case hexadecimal
+digits, which cannot be a path. The package's own name is used only at the end, and only if
+it is what the builder names a package.
+
+**A part is appended under a lock.** Two requests carrying the same part would otherwise both
+find the file the length they expect.
+
+**An upload has no size but what it says.** A part that would take a package past 512MB is
+refused and what had arrived is thrown away. The framework's package is 35MB.
+
+**Every answer is marked, refusals too.** Each of these routes answers
+`{ "corex_release": 1, "ok": …, … }`. A shared host puts pages of its own in front of a site,
+a challenge or a "too many requests", with status 200 and a body that is not this. The screen
+will take an answer as one only if it is marked, and anything else as "wait and ask again"
+(FR-025). A refusal is an answer, so it is marked: an unmarked 422 would be retried for ever.
+
+**The nonce is checked in the gateway though WordPress has used it.** WordPress uses it to
+decide who is asking; without it the request is nobody's and the ability check refuses it.
+The gateway checks it again so that the rule is written where the routes are.
+
+**`ReleaseDesk` is what the controller would otherwise have been.** The controller needs the
+gateway, the upload, the store, the inspector and what is installed. The desk holds the last
+three and answers the screen's two questions: what is here, and what is this package. It
+writes one thing, a line in the installer's log when a package is refused (FR-051).
+
+**How much the browser sends at a time** is half of what the host says it takes in one upload,
+never less than 256KB or more than 4MB. Half, so that the request's own overhead and a
+proxy's lower limit both fit.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `tests/Unit/Releases` | 89 passed |
+| `tests/Integration/Releases`, on real WordPress, through the REST server | 11 passed |
+| The whole unit suite | 2464 passed |
+| The whole integration suite | 588 passed, 1 failed: `SubmissionTrashTest`, "it leaves the inbox and appears in the trash". It fails the same way on `main` on this machine: it expects an empty inbox, and this development site's has twelve submissions of its own. Not this change's, and passing in CI on a fresh install |
+
+**Not run.** No browser has sent a part: the client is the next half. Nothing on a host. The
+network rule (super administrator, main site) is written and not run: the integration test
+that reached it would need the multisite suite.
+
+**Left open.**
+
+- A `.part` file whose upload was abandoned stays in `incoming/`. Retention is slice 5.
+- Free disk space is checked when a package is inspected, not while it is being received.
+- The routes exist with no screen that uses them. They are closed to everybody without the
+  ability, and nothing they do reaches outside `wp-content/corex-releases/`.
