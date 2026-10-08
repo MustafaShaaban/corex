@@ -402,8 +402,18 @@ test( 'on Insights, a screen that is not React, "Run check" works the same way',
 	);
 	await page.goto( '/wp-admin/admin.php?page=corex-insights' );
 
+	// The card as it is once the last results are in: before that its button is held, and
+	// the card is a placeholder's height, not its own.
+	await expect( page.locator( '#corex-insights-app' ) ).toHaveAttribute(
+		'data-corex-state',
+		'ready'
+	);
+
 	const card = page.locator( '.corex-insight-card' ).first();
 	const run = card.getByRole( 'button', { name: 'Run check' } );
+	// Brought into view first: a press scrolls to its button, and a box is measured from
+	// the top of the window.
+	await run.scrollIntoViewIfNeeded();
 	const before = await box( run );
 
 	await run.click();
@@ -810,5 +820,88 @@ test.describe( 'Email Studio', () => {
 		await expect(
 			editor.getByRole( 'button', { name: 'Save immutable draft' } )
 		).toBeVisible();
+	} );
+} );
+
+test.describe( 'the screens that are not React, before their first answers', () => {
+	test( 'Insights does not say "Not run yet" before it knows, and holds its widgets’ place', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route(
+			( url ) =>
+				/corex\/v1\/insights(\/widgets)?(\?|$)/.test(
+					decodeURIComponent( url.href )
+				),
+			( route ) => held.push( route )
+		);
+		await page.goto( '/wp-admin/admin.php?page=corex-insights' );
+
+		const app = page.locator( '#corex-insights-app' );
+		await expect( app ).toHaveAttribute( 'data-corex-state', 'loading' );
+		await expect( app.locator( '.corex-insight-card' ) ).toHaveCount( 2 );
+		await expect( app.getByText( 'Not run yet' ) ).toHaveCount( 0 );
+		const placeholders = app.locator(
+			'.corex-insight-widget.corex-admin-skeleton'
+		);
+		await expect( placeholders ).toHaveCount( 3 );
+		// A placeholder is a widget's width in the grid, and its bars have one too.
+		expect(
+			await placeholders
+				.first()
+				.locator( '.corex-admin-skeleton__bar' )
+				.first()
+				.evaluate( ( bar ) => bar.getBoundingClientRect().width )
+		).toBeGreaterThan( 40 );
+
+		while ( held.length ) {
+			await held.shift().continue();
+		}
+
+		await expect( app ).toHaveAttribute( 'data-corex-state', 'ready' );
+		await expect( placeholders ).toHaveCount( 0 );
+		await expect( app.locator( '.corex-insight-widget' ) ).toHaveCount( 5 );
+	} );
+
+	test( 'the setup wizard shows the step that is coming, not the form for no scripts', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route(
+			( url ) =>
+				/setup\/state(\?|$)/.test( decodeURIComponent( url.href ) ),
+			( route ) => held.push( route )
+		);
+		await page.goto( '/wp-admin/admin.php?page=corex-setup' );
+
+		const app = page.locator( '#corex-setup-app' );
+		await expect( app ).toHaveAttribute( 'data-corex-state', 'loading' );
+		await expect(
+			app.locator( '.corex-setup__panel.corex-admin-skeleton' )
+		).toBeVisible();
+		await expect( page.locator( '.corex-setup-fallback' ) ).toBeHidden();
+
+		await held.shift().continue();
+
+		await expect( app ).toHaveAttribute( 'data-corex-state', 'ready' );
+		await expect( app.locator( '.corex-admin-skeleton' ) ).toHaveCount( 0 );
+		await expect( app.locator( '.corex-setup__step' ) ).toHaveCount( 9 );
+	} );
+
+	test( 'the setup wizard gives the form back when its state cannot be loaded', async ( {
+		page,
+	} ) => {
+		await page.route(
+			( url ) =>
+				/setup\/state(\?|$)/.test( decodeURIComponent( url.href ) ),
+			( route ) => route.abort()
+		);
+		await page.goto( '/wp-admin/admin.php?page=corex-setup' );
+
+		await expect( page.locator( '#corex-setup-app' ) ).toHaveAttribute(
+			'data-corex-state',
+			'error'
+		);
+		await expect( page.locator( '.corex-setup-fallback' ) ).toBeVisible();
 	} );
 } );
