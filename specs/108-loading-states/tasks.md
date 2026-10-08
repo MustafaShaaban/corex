@@ -33,10 +33,10 @@ They are done a screen at a time, each in its own pull request.
 - [x] T024 The four `isBusy` buttons (export, the Data confirmation, the import dry-run, the migration confirmation); a hygiene test that `isBusy` is not used under `plugins/corex-config/src`
 - [x] T025 Playwright: a held action shows working, keeps its button's width to the pixel and sends nothing on a second press; the working state reaches a control drawn where a modal is
 - [x] T026 Email Studio (9) and Forms and flows (7): one flag disabled every button on each screen and nothing marked the one that was pressed. The row that opens a template and the row that opens a flow are loads, and go with slice 4
-- [ ] T027 Data (12): the mutation preview, the two downloads, the import's remap and commit, the migration previews and refresh
-- [ ] T028 Blog (3), Access (2), Security (2): the labels that change to "Saving…", "Applying…", "Refreshing…" go
-- [ ] T029 The screens that are not React: Insights (1), the setup wizard (3), the captcha test (1), and the forms the server draws
-- [ ] T030 Guards; UI/UX gate; notes, with each part
+- [x] T027 Data (11): the four that ask for a change preview, whose dialogs now stay until it is back; the two downloads; the import's remap and commit; the migration previews and refresh. "View", which opens a record, is a load and goes with slice 3
+- [x] T028 Blog (3), Access (2), Security (1): the labels that changed to "Saving…", "Applying…", "Refreshing…" are gone. Security's "Apply mode" is a form the server draws
+- [x] T029 The screens that are not React: Insights (1), the setup wizard (3), the captcha test (1), with the three attributes written by hand. The forms the server draws (Settings, "Apply mode", four others) are left: the page loading is what a person sees
+- [x] T030 Guards; UI/UX gate; notes, with each part
 
 ## Slice 3 — Data (US1, US2)
 
