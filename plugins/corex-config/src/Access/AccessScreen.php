@@ -525,6 +525,8 @@ final class AccessScreen
             'corex-insights'            => __('Insights', 'corex'),
             'setup'                     => __('Setup Wizard', 'corex'),
             'corex-setup'               => __('Setup Wizard', 'corex'),
+            'releases'                  => __('Releases', 'corex'),
+            'corex-releases'            => __('Releases', 'corex'),
         ];
 
         return $labels[$section] ?? $section;

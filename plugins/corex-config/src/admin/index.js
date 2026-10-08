@@ -10,6 +10,7 @@ import '../DataModels/index.js';
 import AccessWorkspace from '../Access/AccessWorkspace.js';
 import BlogProApp from '../Blog/BlogProApp.js';
 import SecurityCenter from '../Security/SecurityCenter.js';
+import '../Releases/index.js';
 import NotificationsApp from './notifications/NotificationsApp.js';
 
 // The notification bell is enhanced by its own entry (src/notification-ui), enqueued on every CoreX

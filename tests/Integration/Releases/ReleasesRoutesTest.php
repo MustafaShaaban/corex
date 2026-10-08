@@ -156,7 +156,7 @@ it('receives a package in parts, keeps it, and says what it is', function () {
         ]);
 });
 
-it('refuses a wrong package in words, and writes down that it did', function () {
+it('refuses a wrong package in words, writes down that it did, and does not keep it', function () {
     $name = 'corex-release-globex-0.44.0-20261008-180000.zip';
     copy(ReleasePackages::package(['client' => 'globex']), $this->store->fileIn('incoming', $name));
 
@@ -166,8 +166,11 @@ it('refuses a wrong package in words, and writes down that it did', function () 
     expect($response->get_status())->toBe(422)
         ->and($response->get_data())->toMatchArray([ReleaseRestGateway::MARK => 1, 'ok' => false, 'reason' => 'other_client'])
         ->and($response->get_data()['message'])->toContain('globex')
+        ->and($response->get_data()['message'])->toContain('removed from the site')
         ->and($logged)->toHaveCount(1)
-        ->and($logged[0])->toMatchArray(['event' => 'refused', 'package' => $name, 'reason' => 'other_client', 'by' => get_current_user_id()]);
+        ->and($logged[0])->toMatchArray(['event' => 'refused', 'package' => $name, 'reason' => 'other_client', 'by' => get_current_user_id()])
+        // FR-003: a package the site will not install is not left on it.
+        ->and(releasesRequest('GET', '/releases')->get_data()['data']['packages'])->toBe([]);
 });
 
 it('will not be asked about a file by a path', function (string $package) {

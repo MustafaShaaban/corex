@@ -26,6 +26,7 @@ const COREX_ROUTES = [
 	[ 'corex-blog-pro', 'Blog Pro' ],
 	[ 'corex-insights', 'Insights' ],
 	[ 'corex-notifications', 'Notifications' ],
+	[ 'corex-releases', 'Releases' ],
 	[ 'corex-guides', 'Guides' ],
 	[ 'corex-setup', 'Setup Wizard' ],
 	[ 'corex-settings-config', 'Settings' ],
