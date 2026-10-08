@@ -6,24 +6,24 @@ Tests are written first and seen to fail. One slice per pull request.
 
 **Server**
 
-- [ ] T001 Pest integration: a submission trashed by CoreX is `trash`, has `corex_trashed_at`,
+- [x] T001 Pest integration: a submission trashed by CoreX is `trash`, has `corex_trashed_at`,
       `corex_trashed_by`, `corex_trashed_via` and no `_wp_trash_meta_time`; WordPress's
       `wp_scheduled_delete()` leaves it; it is trashed, not deleted, with `EMPTY_TRASH_DAYS` 0
-- [ ] T002 `SubmissionTrashStore`, `WpSubmissionTrashStore`
-- [ ] T003 Pest unit: `SubmissionTrashService` trashes and restores inside the scope, refuses
+- [x] T002 `SubmissionTrashStore`, `WpSubmissionTrashStore`
+- [x] T003 Pest unit: `SubmissionTrashService` trashes and restores inside the scope, refuses
       outside it, refuses a stale version, writes history and one activity entry with no
       submitted value
-- [ ] T004 `SubmissionTrashService`; container bindings
-- [ ] T005 Pest integration: the inbox, its count and an export do not hold a trashed
+- [x] T004 `SubmissionTrashService`; container bindings
+- [x] T005 Pest integration: the inbox, its count and an export do not hold a trashed
       submission; `view=trash` lists it with who and when; restoring returns it with status,
       owner, notes and history unchanged
-- [ ] T006 `SubmissionInboxQuery::$trashed`; the reader lists and finds trashed submissions
-- [ ] T007 Pest integration: the two routes are registered and guarded; a change to a trashed
+- [x] T006 `SubmissionInboxQuery::$trashed`; the reader lists and finds trashed submissions
+- [x] T007 Pest integration: the two routes are registered and guarded; a change to a trashed
       submission is answered 409 with "in the trash"
-- [ ] T008 Routes `…/{id}/trash`, `…/{id}/restore`; `view=trash`; the 409
-- [ ] T009 Pest unit: bulk `trash` and bulk `restore` preview and apply; `restore` previews
+- [x] T008 Routes `…/{id}/trash`, `…/{id}/restore`; `view=trash`; the 409
+- [x] T009 Pest unit: bulk `trash` and bulk `restore` preview and apply; `restore` previews
       trashed records
-- [ ] T010 Bulk actions `trash` and `restore`
+- [x] T010 Bulk actions `trash` and `restore`
 
 **Interface**
 

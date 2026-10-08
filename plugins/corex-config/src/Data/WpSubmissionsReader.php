@@ -240,7 +240,10 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
     public function findInbox(int $id, SubmissionAccessScope $scope): ?array
     {
         $post = get_post($id);
-        if (! $post instanceof \WP_Post || $post->post_type !== 'corex_submission' || $post->post_status !== 'private') {
+        // A trashed submission can be read, and found here to be restored. Whatever changes one
+        // asks findWorkflow(), which answers only for a submission that is in the inbox.
+        if (! $post instanceof \WP_Post || $post->post_type !== 'corex_submission'
+            || ! in_array($post->post_status, ['private', 'trash'], true)) {
             return null;
         }
 
@@ -368,7 +371,7 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
     {
         $args = [
             'post_type' => 'corex_submission',
-            'post_status' => 'private',
+            'post_status' => $query->trashed ? 'trash' : 'private',
             'posts_per_page' => $query->perPage,
             'paged' => $query->page,
             'orderby' => 'date',
@@ -542,6 +545,28 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
             'exported_at' => $this->nullableMeta($meta, 'corex_exported_at'),
             'created_at' => (string) $post->post_date_gmt,
             'updated_at' => (string) ($this->metaValue($meta, 'corex_submission_updated_at') ?: $post->post_modified_gmt),
+        ] + $this->trashRecord($post, $meta);
+    }
+
+    /**
+     * Whether the submission is in the trash, and who put it there and when. A submission the
+     * retention panel trashed before spec 105 has no record of either.
+     *
+     * @param array<string,list<mixed>> $meta
+     *
+     * @return array{trashed:bool,trashed_at:string|null,trashed_by:int|null,trashed_by_name:string,trashed_via:string}
+     */
+    private function trashRecord(\WP_Post $post, array $meta): array
+    {
+        $by = $this->nullableInt($meta, 'corex_trashed_by');
+        $user = $by !== null ? get_userdata($by) : false;
+
+        return [
+            'trashed' => $post->post_status === 'trash',
+            'trashed_at' => $this->nullableMeta($meta, 'corex_trashed_at'),
+            'trashed_by' => $by,
+            'trashed_by_name' => $user instanceof \WP_User ? (string) $user->display_name : '',
+            'trashed_via' => (string) $this->metaValue($meta, 'corex_trashed_via'),
         ];
     }
 

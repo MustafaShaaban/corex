@@ -633,6 +633,13 @@ final class ConfigServiceProvider extends ServiceProvider
             SubmissionBulkPreviewStore::class,
             static fn (ContainerInterface $c): WpSubmissionBulkPreviewStore => $c->make(WpSubmissionBulkPreviewStore::class),
         );
+        $this->container->singleton(\Corex\Config\Submissions\WpSubmissionTrashStore::class);
+        $this->container->singleton(
+            \Corex\Config\Submissions\SubmissionTrashStore::class,
+            static fn (ContainerInterface $c): \Corex\Config\Submissions\WpSubmissionTrashStore =>
+                $c->make(\Corex\Config\Submissions\WpSubmissionTrashStore::class),
+        );
+        $this->container->singleton(\Corex\Config\Submissions\SubmissionTrashService::class);
         $this->container->singleton(SubmissionBulkService::class);
         $this->container->singleton(WpSubmissionExportStore::class);
         $this->container->singleton(

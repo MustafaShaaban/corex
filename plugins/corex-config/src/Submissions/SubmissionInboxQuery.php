@@ -22,6 +22,9 @@ final readonly class SubmissionInboxQuery
     /** Marks a `flow` value as a form slug rather than a flow id. */
     public const SLUG_PREFIX = 'slug:';
 
+    public const VIEW_INBOX = 'inbox';
+    public const VIEW_TRASH = 'trash';
+
     private const MAX_PAGE_SIZE = 100;
 
     private function __construct(
@@ -40,6 +43,8 @@ final readonly class SubmissionInboxQuery
         public bool $includeTest,
         public int $page,
         public int $perPage,
+        /** The trash and not the inbox: a view of its own, beside the filters (spec 105). */
+        public bool $trashed = false,
     ) {
     }
 
@@ -81,7 +86,18 @@ final readonly class SubmissionInboxQuery
             includeTest: filter_var($input['include_test'] ?? false, FILTER_VALIDATE_BOOL),
             page: max(1, (int) ($input['page'] ?? 1)),
             perPage: min(self::MAX_PAGE_SIZE, max(1, (int) ($input['per_page'] ?? 20))),
+            trashed: self::view((string) ($input['view'] ?? '')) === self::VIEW_TRASH,
         );
+    }
+
+    private static function view(string $value): string
+    {
+        $value = trim($value);
+        if (! in_array($value, ['', self::VIEW_INBOX, self::VIEW_TRASH], true)) {
+            throw new InvalidArgumentException('The submission view is invalid.');
+        }
+
+        return $value;
     }
 
     private static function date(string $value): string
