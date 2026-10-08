@@ -198,7 +198,12 @@ final class FlowRepository
             ?? throw UnreadableFlowRecord::missingDraft($flow->id, $flow->currentDraftVersion);
     }
 
-    /** @param array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>} $record */
+    /**
+     * `Exception`, and not `Throwable`: what a stored value can cause is a refused argument or a
+     * date that will not parse. An `Error` says the code is wrong, and stays what it is.
+     *
+     * @param array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>} $record
+     */
     private function flow(array $record): Flow
     {
         try {

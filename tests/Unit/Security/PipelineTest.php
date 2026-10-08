@@ -110,6 +110,8 @@ it('fails closed and logs when a middleware throws (handler never runs)', functi
         ->and($ran->getArrayCopy())->toBe([]);
 });
 
+// This line was the only record of the 500 the browser job met on 2026-10-08 (run 37746210110).
+// Its message happened to name the method; a date that will not parse names nothing.
 it('logs what was thrown and where, so the generic 500 can be traced from the log alone', function () {
     $logger = new BootLogger(debug: false);
     $thrownAt = __LINE__ + 4;

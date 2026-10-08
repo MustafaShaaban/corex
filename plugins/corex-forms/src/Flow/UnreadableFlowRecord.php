@@ -23,8 +23,8 @@ use Exception;
 final class UnreadableFlowRecord extends DomainException
 {
     private function __construct(
-        public readonly int $recordId,
-        public readonly string $why,
+        private readonly int $recordId,
+        private readonly string $why,
         ?Exception $previous = null,
     ) {
         parent::__construct(

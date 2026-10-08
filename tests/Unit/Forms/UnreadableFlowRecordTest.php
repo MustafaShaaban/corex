@@ -84,6 +84,15 @@ function storedFlowPayload(): array
     ];
 }
 
+function flowListingService(FlowRepository $repository): FlowService
+{
+    return new FlowService($repository, new FlowConfigurationValidator(
+        new FieldTypeRegistry(),
+        new RuleRegistry(),
+        new SuccessStateRegistry(),
+    ));
+}
+
 dataset('payloads that cannot be read', [
     'the payload never arrived' => [[]],
     'a date that cannot be parsed' => [['created_at' => 'the day before yesterday-ish'] + storedFlowPayload()],
@@ -128,7 +137,9 @@ it('never skips a version it cannot read, so the number it holds cannot be given
 
 it('does not take a fault in the code for a record it cannot read', function () {
     // A store that hands back something no store may: the name is not a string. That is a
-    // TypeError, which says the code is wrong, and it has to stay as loud as it was.
+    // TypeError, which says the code is wrong, and it has to stay as loud as it was. The 500 the
+    // browser job met on 2026-10-08 (run 37746210110) was a TypeError PHP raised from its own
+    // opcode cache; left out and logged as a warning, it would have read as an empty list.
     $faulty = new class implements FlowStore {
         public function create(string $type, string $slug, string $name, int $parentId, array $payload): int
         {
@@ -164,11 +175,7 @@ it('lists a flow beside its draft, and leaves out one whose draft was never stor
     $readable = storedFlow($this->repository, 'readable');
     // Saved, and then nothing: the request that would have stored its first draft did not.
     $draftless = $this->store->create('flow', 'draftless', 'Draftless', 0, storedFlowPayload());
-    $service = new FlowService($this->repository, new FlowConfigurationValidator(
-        new FieldTypeRegistry(),
-        new RuleRegistry(),
-        new SuccessStateRegistry(),
-    ));
+    $service = flowListingService($this->repository);
 
     $listing = $service->listing('', '');
 
@@ -179,14 +186,10 @@ it('lists a flow beside its draft, and leaves out one whose draft was never stor
         ->and($this->logger->messages()[0]['message'])->toContain('record ' . $draftless);
 });
 
-it('narrows the listing by name, slug and state as the list always has', function () {
+it('narrows the listing by a search in any case, and by state, as the list always has', function () {
     storedFlow($this->repository, 'contact-sales');
     storedFlow($this->repository, 'newsletter');
-    $service = new FlowService($this->repository, new FlowConfigurationValidator(
-        new FieldTypeRegistry(),
-        new RuleRegistry(),
-        new SuccessStateRegistry(),
-    ));
+    $service = flowListingService($this->repository);
 
     $slugs = static fn (array $listing): array => array_map(
         static fn (array $entry): string => $entry['flow']->slug,
