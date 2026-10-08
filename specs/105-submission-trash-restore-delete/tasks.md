@@ -39,22 +39,22 @@ Tests are written first and seen to fail. One slice per pull request.
 
 **Server**
 
-- [ ] T017 Pest unit: the scope carries `canDeletePermanently`; without it `delete()` refuses and
+- [x] T017 Pest unit: the scope carries `canDeletePermanently`; without it `delete()` refuses and
       deletes nothing
-- [ ] T018 The scope, the policy and its filter (D8)
-- [ ] T019 Pest integration: a submission with an uploaded file is deleted with the file; the
+- [x] T018 The scope, the policy and its filter (D8)
+- [x] T019 Pest integration: a submission with an uploaded file is deleted with the file; the
       store finds its uploads and its email attempt ids; only a trashed one can be deleted
-- [ ] T020 `SubmissionTrashStore::uploadsOf()`, `emailAttemptsOf()`, `delete()`
-- [ ] T021 Pest unit: `delete()` removes files, then email records, then the submission; a file
+- [x] T020 `SubmissionTrashStore::uploadsOf()`, `emailAttemptsOf()`, `delete()`
+- [x] T021 Pest unit: `delete()` removes files, then email records, then the submission; a file
       that cannot be removed leaves the submission in the trash and is reported; one failure
       does not stop the others; one activity entry with no submitted value
-- [ ] T022 `SubmissionTrashService::delete()`; `SubmissionEmailRecords` and its no-op (D10, D11, D12)
+- [x] T022 `SubmissionTrashService::delete()`; `SubmissionEmailRecords` and its no-op (D10, D11, D12)
 - [ ] T023 Pest unit and integration: the add-on forgets an attempt and its captured copy by
       attempt id; `EmailStudioStore::delete()`
 - [ ] T024 The add-on's `SubmissionEmailRecords`; `EmailStudioStore::delete()`
-- [ ] T025 Pest integration: `DELETE /submissions/{id}` is registered and guarded, deletes a
+- [x] T025 Pest integration: `DELETE /submissions/{id}` is registered and guarded, deletes a
       trashed submission, and refuses one in the inbox and a person who may not
-- [ ] T026 The route; bulk action `delete` with a result that says what was not deleted
+- [x] T026 The route; bulk action `delete` with a result that says what was not deleted
 
 **Interface**
 

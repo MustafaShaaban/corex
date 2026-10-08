@@ -94,8 +94,10 @@ final readonly class SubmissionRestGateway
         } catch (DomainException $exception) {
             $message = strtolower($exception->getMessage());
             $status = match (true) {
-                str_contains($message, 'changed'), str_contains($message, 'in the trash') => 409,
+                str_contains($message, 'may not') => 403,
+                // Before "in the trash": "not found in the trash" is something that is not there.
                 str_contains($message, 'not found'), str_contains($message, 'unavailable') => 404,
+                str_contains($message, 'changed'), str_contains($message, 'in the trash') => 409,
                 default => 422,
             };
 

@@ -26,6 +26,8 @@ final readonly class SubmissionAccessScope
         public array $roleKeys = [],
         public bool $canViewRestrictedNotes = false,
         public bool $canExportPersonalData = false,
+        /** Deleting a submission for good: apart from managing the inbox (spec 105, FR-010). */
+        public bool $canDeletePermanently = false,
     ) {
         if ($this->actorId < 1) {
             throw new \InvalidArgumentException('A submission access scope requires an actor.');

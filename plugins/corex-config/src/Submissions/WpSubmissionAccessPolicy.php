@@ -42,6 +42,13 @@ final class WpSubmissionAccessPolicy implements SubmissionAccessPolicy
                 current_user_can('manage_options'),
                 $actorId,
             ),
+            // Managing an inbox and destroying its records are different responsibilities. The
+            // ability is the one the Access screen grants for actions that cannot be undone.
+            canDeletePermanently: (bool) apply_filters(
+                'corex_submission_delete_permanently',
+                current_user_can(CorexAbility::RUN_DANGEROUS_ACTIONS) || current_user_can('manage_options'),
+                $actorId,
+            ),
         );
     }
 

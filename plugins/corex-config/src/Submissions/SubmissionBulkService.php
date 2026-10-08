@@ -19,7 +19,10 @@ use InvalidArgumentException;
 final readonly class SubmissionBulkService
 {
     private const MAX_RECORDS = 100;
-    private const ACTIONS = ['mark_read', 'assign', 'mark_spam', 'archive', 'trash', 'restore'];
+    private const ACTIONS = ['mark_read', 'assign', 'mark_spam', 'archive', 'trash', 'restore', 'delete'];
+
+    /** The actions that are taken on what is in the trash. */
+    private const ON_TRASHED = ['restore', 'delete'];
 
     public function __construct(
         private SubmissionWorkflowService $workflow,
@@ -38,6 +41,9 @@ final readonly class SubmissionBulkService
     ): SubmissionBulkPreview {
         $ids = $this->ids($submissionIds);
         $this->assertAction($action, $parameters);
+        if ($action === 'delete' && ! $scope->canDeletePermanently) {
+            throw new DomainException('This actor may not delete submissions permanently.');
+        }
         $records = [];
         foreach ($ids as $id) {
             $record = $this->selected($scope, $action, $id);
@@ -50,7 +56,11 @@ final readonly class SubmissionBulkService
         return $this->previews->issue($scope->actorId, $action, $records, $parameters);
     }
 
-    /** @return array{matched:int,updated:int,failed:int} */
+    /**
+     * @return array{matched:int,updated:int,failed:int,failures?:list<array{id:int,reason:string}>}
+     *         `failures` only for a delete, the one action that goes on past a submission it
+     *         could not act on.
+     */
     public function apply(SubmissionAccessScope $scope, string $token): array
     {
         $preview = $this->previews->consume($token, $scope->actorId);
@@ -58,6 +68,16 @@ final readonly class SubmissionBulkService
             throw new DomainException('The bulk preview expired or was already used.');
         }
         $this->preflight($scope, $preview);
+        if ($preview->action === 'delete') {
+            $result = $this->trash->delete($scope, $preview->submissionIds);
+
+            return [
+                'matched' => $preview->count(),
+                'updated' => count($result['deleted']),
+                'failed' => count($result['failed']),
+                'failures' => $result['failed'],
+            ];
+        }
         match ($preview->action) {
             // One action, recorded once: the trash service takes the whole selection.
             'trash' => $this->trash->trash($scope, $preview->expectedVersions),
@@ -76,7 +96,7 @@ final readonly class SubmissionBulkService
      */
     private function selected(SubmissionAccessScope $scope, string $action, int $id): ?array
     {
-        if ($action === 'restore') {
+        if (in_array($action, self::ON_TRASHED, true)) {
             return $this->trash->trashed($scope, $id);
         }
         $record = $this->submissions->findWorkflow($id);
