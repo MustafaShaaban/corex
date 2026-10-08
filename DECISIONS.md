@@ -8772,7 +8772,7 @@ placeholders; they are built from the same bars as the ones that were. No screen
   these two screens. It was looked at here and on Email Studio.
 - The catalog's placeholder is four rows whatever the site has.
 
-## #291 — A choice field takes what it offers, an empty file part is no file, and a pattern is one expression
+## #292 — A choice field takes what it offers, an empty file part is no file, and a pattern is one expression
 
 **Date:** 2026-10-09. **Spec:** none; four defects reported on 2026-10-08 from a client's contact
 form, each confirmed on `main` before it was changed. **Branch:**

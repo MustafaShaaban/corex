@@ -163,7 +163,7 @@ All notable changes to Corex are documented here. The format follows
 - **A choice field refuses an answer it never offered.** A `select`, `radio`, `multi-select` or
   `checkbox-group` declares its options and nothing compared the answer with them: a request
   written by hand could store any text as the visitor's choice. The answer is refused with the
-  error `choice`, on forms defined in code and on flows (DECISIONS #291).
+  error `choice`, on forms defined in code and on flows (DECISIONS #292).
 - **A form can be sent with its optional file left empty.** A browser posting a form as
   multipart sends a part for every file input, chosen or not. The empty one was treated as an
   upload and the whole submission was refused with "The file could not be stored." A required
