@@ -33,10 +33,39 @@ function corexUnregisterGuard(LoginRouteGuard $guard): void
     foreach (['login_url', 'logout_url', 'lostpassword_url', 'register_url', 'wp_redirect', 'site_option_welcome_email'] as $hook) {
         remove_filter($hook, [$guard, 'filterLoginUrl'], 20);
     }
+
+    remove_action('setup_theme', [$guard, 'sealHiddenAdminRequest'], 1);
+}
+
+/**
+ * Put this request in the admin area, asked for by the given user (0 for nobody), and let the
+ * guard decide about it as it does on setup_theme.
+ *
+ * @return object What stands where the Customizer does, with its check hooked as core hooks it.
+ */
+function corexAskForCustomizer(LoginRouteGuard $guard, int $userId): object
+{
+    $customizer = new class () {
+        public function setup_theme(): void
+        {
+        }
+    };
+
+    set_current_screen('dashboard');
+    wp_set_current_user($userId);
+    $_SERVER['REQUEST_URI'] = '/wp-admin/customize.php';
+    $GLOBALS['wp_customize'] = $customizer;
+    add_action('setup_theme', [$customizer, 'setup_theme']);
+
+    $guard->captureRequest();
+    $guard->sealHiddenAdminRequest();
+
+    return $customizer;
 }
 
 beforeEach(function () {
     $this->previousLoginSettings = get_option(LoginProtectionSettingsStore::OPTION, null);
+    $this->previousRequestUri = $_SERVER['REQUEST_URI'] ?? '';
 
     update_option(LoginProtectionSettingsStore::OPTION, [
         'enabled' => true,
@@ -50,6 +79,14 @@ beforeEach(function () {
 
 afterEach(function () {
     corexUnregisterGuard($this->guard);
+
+    // What corexAskForCustomizer() set, where a test used it.
+    if (isset($GLOBALS['wp_customize'])) {
+        remove_action('setup_theme', [$GLOBALS['wp_customize'], 'setup_theme']);
+    }
+    unset($GLOBALS['wp_customize'], $GLOBALS['current_screen']);
+    $_SERVER['REQUEST_URI'] = $this->previousRequestUri;
+    wp_set_current_user(0);
 
     if ($this->previousLoginSettings === null) {
         delete_option(LoginProtectionSettingsStore::OPTION);
@@ -125,6 +162,30 @@ it('rewrites the login address inside the multisite welcome email without mangli
         ->and($filtered)->toContain('Welcome!')
         ->and($filtered)->toContain('Thanks,')
         ->and($filtered)->toContain('BLOG_URL');
+});
+
+// Reproduced on 2026-10-08, signed out, with the login hidden: /wp-admin/customize.php answered 302
+// to the hidden address. The Customizer checks the visitor on setup_theme and calls
+// auth_redirect(), long before the guard answers the request on wp_loaded.
+it('tells an anonymous admin request nothing about the slug before it is answered', function () {
+    $customizer = corexAskForCustomizer($this->guard, 0);
+
+    expect(wp_login_url(admin_url('customize.php'), true))->toContain('wp-login.php')
+        ->and(wp_login_url())->not->toContain('team-login')
+        ->and(apply_filters('wp_redirect', site_url('wp-login.php?reauth=1'), 302))->not->toContain('team-login')
+        ->and(site_url('wp-login.php', 'login'))->not->toContain('team-login')
+        // And the check that would have redirected is taken off, so the request reaches the 404.
+        ->and(has_action('setup_theme', [$customizer, 'setup_theme']))->toBeFalse();
+});
+
+it('keeps the slug for a signed-in admin request, and leaves the Customizer its check', function () {
+    $administrator = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
+
+    $customizer = corexAskForCustomizer($this->guard, $administrator);
+
+    expect(wp_login_url())->toContain('team-login')
+        ->and(wp_logout_url())->toContain('team-login')
+        ->and(has_action('setup_theme', [$customizer, 'setup_theme']))->not->toBeFalse();
 });
 
 it('leaves URLs that have nothing to do with the login alone', function () {

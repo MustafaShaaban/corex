@@ -36,6 +36,20 @@ All notable changes to Corex are documented here. The format follows
   the job completes." Neither handed over a file.
 - **The Export tab's history reloads when an export was made.** Its "Refresh" button is gone.
 
+### Security
+
+- **With the login hidden, three well-known addresses handed the hidden address to anyone who
+  asked.** Signed out, `/wp-signup.php`, `/wp-register.php` and `/wp-admin/customize.php` each
+  answered with a redirect to the custom login address. On a single site the first two only
+  forward a visitor to the registration URL, and the Customizer sends a signed-out visitor to the
+  login before CoreX answers the request; every one of those URLs is rewritten to the custom
+  address. `/wp-signup.php` now gets the same "not found" page as `/wp-login.php`, byte for byte;
+  `/wp-register.php` answers as any `.php` file that was never there does on that server; and
+  the third is answered like the rest of the admin area. On a network `/wp-signup.php` is the
+  public sign-up page and is left alone. Reported from a production site; the other two were
+  found by probing. In every release since v0.34.0, on a site with "Hide wp-login.php and
+  wp-admin" on. Hiding is obscurity, and the failed-login throttling was not affected.
+
 ### Fixed
 
 - **A Data export of Form submissions left every answer's column empty**, in CSV and in Excel.
@@ -60,6 +74,15 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A site that hides its login should take this**, and may treat its login address as known if
+  the site has been public: anyone who asked for `/wp-signup.php` was told it. Choosing a new
+  address on the Security screen after updating is the remedy.
+- **`/wp-signup.php` and `/wp-register.php` answer 404 on a single site with the login hidden.**
+  A link or a server rule that sent visitors to either has to point at the registration address
+  WordPress gives (`wp_registration_url()`), which still works.
+- **CoreX cannot hide `/wp-activate.php`, `/wp-admin/install.php` or `/wp-admin/upgrade.php`**:
+  WordPress runs them without plugins. They do not name the custom address. A site that wants
+  them answered differently needs a rule in its web server.
 - **A new production dependency: `mpdf/mpdf` ^8.3** (GPL-2.0-only), with its own dependencies. Run
   `composer install` after taking this. It adds about 94MB to `vendor/`, 88MB of it fonts. **The
   shared-host package is about 191MB unpacked with it, 92MB of that mPDF**, so it nearly doubles

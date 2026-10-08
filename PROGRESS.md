@@ -79,6 +79,13 @@ v0.43.3, and #150 had been closed with the defect in place. A site that names a 
 sending from it when it takes this, which is the first entry under Client impact. That client
 carries the same change as a local patch and removes it on its next update.
 
+Unreleased, reported from the first client site's production host (DECISIONS #271): with the
+login hidden, `/wp-signup.php` redirected a signed-out visitor to the hidden address. Probing
+found the same from `/wp-register.php` and `/wp-admin/customize.php`. All three answer "not
+found" now. A site that hides its login may treat its address as known and choose a new one
+after updating. Reported with it and not built yet: the Submissions inbox cannot trash, restore
+or permanently delete a submission, which needs a spec.
+
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 
 One dependency pull request is held: #240, `@wordpress/scripts` 34 → 36, a toolchain major that

@@ -7506,3 +7506,78 @@ What was run:
 was run from a session worktree through a bootstrap that puts this branch's classes in front of
 the root checkout's, whose plugin entry files are another branch's; CI runs it on this branch
 alone.
+
+## #271 — A hidden login is not handed out by the addresses that forward to it
+
+Date: 2026-10-08 · Spec: 069 (login protection), a defect · Status: Final
+
+Reported from a production site that hides its login: signed out, `/wp-signup.php` answered 302
+to the hidden address. Reproduced on the development install with hiding switched on for the
+probe, and two more found the same way:
+
+| Asked for, signed out | Before | After |
+|---|---|---|
+| `/wp-signup.php` | 302 to the hidden address | 404, the same bytes as a page that was never there |
+| `/wp-register.php` | 301 to the hidden address | 404, the same bytes as a `.php` file that was never there |
+| `/wp-admin/customize.php` | 302 to the hidden address | 404, as `/wp-admin/` answers |
+
+**One cause.** Hiding is safe because every URL core builds for the login is rewritten to the
+custom address (DECISIONS #140). That same rewriting turns any redirect core aims at the login
+into a redirect to the secret. On a single site `wp-signup.php` does nothing but
+`wp_redirect( wp_registration_url() )`; `redirect_canonical()` does the same for
+`wp-register.php`; and the Customizer calls `auth_redirect()` on `setup_theme`, long before the
+guard answers the request on `wp_loaded`.
+
+**The two forwarding addresses are default endpoints now**, on a single site, whatever the
+registration setting: nothing core builds links to them there, and the registration address
+itself still works. On a network `wp-signup.php` is the public sign-up page, and
+`wp-register.php` forwards to it, so both are left alone.
+
+**An admin request that will be hidden is told nothing until it is answered.** On `setup_theme`,
+the first moment the login state is knowable and before core's own hooks there, the guard decides
+whether this request is one it will hide. If it is, the URL filters leave the default address
+alone until the 404 is rendered, so anything that bounces the request to the login early sends it
+to `wp-login.php`, which is hidden too. The Customizer's own check is taken off for that request,
+so it reaches the 404. The rewriting is back on for the 404 itself: a real missing page links to
+the custom address wherever the theme links to the login, and this one must not differ.
+
+**Not decided at `plugins_loaded`.** The login state could be read there, and reading it would
+fix the current user before a plugin that authenticates differently had hooked in.
+
+**Not a general rule against redirecting a signed-out visitor to the login.** A theme that
+protects a members' page with `auth_redirect()` sends its visitors to the custom address on
+purpose. Refusing that would break the site to protect an address it chose to show.
+
+**What CoreX cannot hide.** `/wp-activate.php`, `/wp-admin/install.php` and
+`/wp-admin/upgrade.php` run with `WP_INSTALLING`, so WordPress loads no plugin for them. The
+first redirects to `/wp-login.php?action=register`, which is hidden; the other two answer 200.
+They show the site is WordPress and never name the custom address. Only the web server can
+answer them differently, and CoreX writes no server rule. The guide says so.
+
+**Seen on the way, and WordPress's own:** `/?wp_customize=on`, signed out, answers 500 with or
+without CoreX's hiding. It names nothing.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| A probe of 19 well-known addresses, signed out, hiding on, unchanged code | three redirects to the hidden address, as in the table |
+| The same probe with the changed guard served to the probe's requests only | none; the three answer 404 |
+| `LoginRouteGuardTest`, new cases, before the change | 4 failed |
+| `tests/Unit` | 2304 passed |
+| `LoginUrlRewritingTest` on real WordPress, with the changed guard | 11 passed |
+| The browser test "no well-known address forwards a signed-out visitor to the hidden login", unchanged guard | failed: `/wp-signup.php` answered 302 |
+| The five browser tests of a hidden endpoint, changed guard | 5 passed |
+
+**What CI corrected.** The first version of the browser test compared `/wp-register.php` with a
+WordPress "not found" page, byte for byte, and failed in CI on a fix that held. `wp-register.php`
+is not a file. Apache, on the development install, hands a missing `.php` to WordPress; CI's
+nginx answers it itself and WordPress is never asked, so there the address could not leak before
+the fix either. The test compares it with what the server answers for a `.php` file that was
+never there. Status and the absence of a redirect were right on both servers.
+
+**Not run.** The whole integration suite and the whole browser suite; CI runs both. The root
+checkout was in use by two other sessions, so this was built and verified from a scratch
+worktree, with the changed class served to its own requests by a temporary must-use plugin,
+since removed. No multisite install was probed: that `wp-signup.php` is left alone there is held
+by a unit test only.
