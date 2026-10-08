@@ -16,8 +16,11 @@ The submissions source implements the same actor-scoped query and detail contrac
 direct IDs pass through its access policy. An operation is visible only when the source declares it, supplies the
 required adapter, and maps it to an ability the current actor has.
 
-Exports support the current filter, selected rows, or all accessible rows. Choose explicit columns and acknowledge
-personal-data fields. The file is a CSV or an Excel workbook, headed by each field's label. A value is written as
+**Export records** on the Records tab opens the export dialog over the model in view. Under **What to export** it
+offers the rows you ticked, the current filters in words, or everything, each with how many records it holds. Choose
+the columns and acknowledge personal-data fields. The dialog shows the export's progress and saves the file when it is
+ready; there is nothing to refresh. The **Export** tab opens the same dialog for a whole model, and lists what was
+exported before with a **Download** for each file that is ready. The file is a CSV or an Excel workbook, headed by each field's label. A value is written as
 what its field is declared to be: a number as a number, a date and time as one, a switch as Yes or No, a list as its
 items. An export of no records is refused. CoreX writes the file in a bounded job, keeps it in the private uploads
 directory, and exposes completed downloads through the authorized REST endpoint.
