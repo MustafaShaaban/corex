@@ -55,7 +55,7 @@ is delivered in seven slices, one pull request each:
 | — | Spacing review of the dialog and the filters, on the owner's request | done (DECISIONS #257). Measured, fixed, and kept measured by two browser tests |
 | 4 | The detail pane | done, in v0.43.3 (DECISIONS #259). Measured, and kept measured by a browser test. Not in it: to whom a notification went and where a failure can be fixed (T074b), which the server does not record |
 | 5 | Export history: size, expiry, delete | done, in v0.43.4 (DECISIONS #262). A file is kept 30 days and removed by the daily retention sweep. Found on the way: the dialog printed `[object Object]` for a date filter |
-| 6 | PDF | done (DECISIONS #269), unreleased. mPDF, chosen by a spike; every page signed as CoreX's, which is what the owner meant; up to 500 records. The shared-host package keeps the library's fonts for Latin, Greek, Cyrillic, Hebrew and Arabic-script text and leaves the rest out unless built with `--pdf-fonts=all`: 33MB zipped where every font made it 71MB (DECISIONS #274). Produced documents were rendered and looked at, left-to-right, right-to-left and wide. Found on the way: the Data export of Form submissions leaves its per-answer columns empty, and a ticked row loses "Submission" too, in every format (queued as its own task) |
+| 6 | PDF | done (DECISIONS #269), unreleased. mPDF, chosen by a spike; every page signed as CoreX's, which is what the owner meant; up to 500 records. The shared-host package keeps the library's fonts for Latin, Greek, Cyrillic, Hebrew and Arabic-script text and leaves the rest out unless built with `--pdf-fonts=all`: 33MB zipped where every font made it 71MB (DECISIONS #275). Produced documents were rendered and looked at, left-to-right, right-to-left and wide. Found on the way: the Data export of Form submissions leaves its per-answer columns empty, and a ticked row loses "Submission" too, in every format (queued as its own task) |
 | 7a | The Data export: the audit, and its file and flow on the server | done, in v0.43.4 (DECISIONS #265). The audit found two export surfaces, neither handing over a file, and that Excel was never reachable |
 | 7b | The Data export: one dialog for both surfaces | done (DECISIONS #266), unreleased. It is the Submissions export's dialog, from shared parts. Found on the way: in both dialogs a choice's name was a pixel smaller than the line describing it |
 | — | The Data export of Form submissions: each answer under its column, and a ticked row with its summary | done (#290, DECISIONS #270), unreleased. Found in a real export after 7b: every answer's column was empty. A source now hands an export its own rows (`ExportableDataSource`); a client's own exportable source has to implement it, which is under Client impact |
@@ -87,6 +87,19 @@ after updating. Reported with it and not built yet: the Submissions inbox cannot
 or permanently delete a submission, which needs a spec.
 
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
+
+**Spec 104, a code-defined form's wording, markup and protection, is in flight**
+([`specs/104-form-contract-and-protection/`](specs/104-form-contract-and-protection/spec.md)). It
+is the one spec issues #248 and #264 asked for. Four slices, one pull request each:
+
+| Slice | What | State |
+|---|---|---|
+| 1 | A form states its button label and its two messages | done (DECISIONS #274), unreleased |
+| 2 | A form defined in code is challenged by the site's provider (reCAPTCHA) | not started |
+| 3 | A site draws a form with its own markup, from published parts. Closes #248 | not started |
+| 4 | Turnstile and hCaptcha place a widget, on flows and on code-defined forms. Closes #264 | not started |
+
+Five readings in the spec are the owner's to overrule; they are under its Assumptions.
 
 Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
 deferred through WP-Cron on a site that has no Action Scheduler, and the queue runs whichever

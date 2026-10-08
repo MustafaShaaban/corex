@@ -29,6 +29,33 @@ final class ContactForm extends Form
 
 Register it with the `FormRegistry` in a provider's `boot()`.
 
+## What a form reads
+
+A form states its own wording by overriding three methods. Each returns an empty string by default,
+which means CoreX's own wording: "Send", "Thank you — your message has been sent." and "Please
+review the highlighted fields and try again."
+
+```php
+public function submitLabel(): string
+{
+    return __('Request a call', 'my-site');
+}
+
+public function successMessage(): string
+{
+    return __('Thank you. We will call you within one working day.', 'my-site');
+}
+
+public function errorMessage(): string
+{
+    return __('Check the highlighted answers and try again.', 'my-site');
+}
+```
+
+The wording is printed as text: markup in it is shown, not interpreted. A submit label of nothing
+but spaces is replaced by "Send", because a button needs a name. Translate the strings with your
+own text domain.
+
 ## Field definition reference
 
 | Key | Values |

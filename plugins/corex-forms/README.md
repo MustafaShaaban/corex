@@ -96,6 +96,10 @@ final class ContactForm extends Form
 }
 ```
 
+A form states its own wording by overriding `submitLabel()`, `successMessage()` and `errorMessage()`. Each returns
+an empty string by default, which means CoreX's own: "Send", "Thank you — your message has been sent." and "Please
+review the highlighted fields and try again." The wording is printed as text.
+
 Select **Registered form** in the Form block to render this compatibility path. It posts to
 `POST /wp-json/corex/v1/forms/{slug}` and retains the event-listener lifecycle. New administratively managed forms
 should use persisted flows.

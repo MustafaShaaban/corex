@@ -7725,7 +7725,51 @@ by another request without the test's stand-in for `wp_mail()`. So the loopback 
 - The client impact of the interface change: a site's own `MailQueueDispatcher` has two methods
   to add. None is known.
 
-## #274 — The shared-host package keeps a few of the PDF library's fonts, and a PDF is written with what is installed
+## #274 — A code-defined form gets a contract, starting with what it reads (spec 104)
+
+Date: 2026-10-08 · Spec: 104 (a code-defined form's wording, markup and protection), slice 1 · Issues: #248, #264 · Status: Final
+
+Issues #248 and #264 each said they wanted a spec and not a patch, and that they overlap. Spec 104
+is that spec: a form defined in code states its wording, states that it is protected, and may
+supply its own markup from parts CoreX publishes; then Turnstile and hCaptcha get a widget. Four
+slices. This is the first.
+
+**Nobody was asked the five readings the spec is written to.** They are under its Assumptions and
+are the owner's to overrule: wording and protection are stated in the form's code and not in the
+block's settings; markup is supplied per form and not through a site-wide filter or a theme
+template; protection is opt-in for a code-defined form; Turnstile and hCaptcha are placed as their
+visible widget; no provider is called by a test.
+
+**Why per form and not a filter.** corex-forms and the captcha add-on fire no WordPress hook at
+all. They extend through the container, their registries and events. A filter on the rendered form
+would be the first, and would hand every plugin on the site every form's markup as a string. A
+method on the form's own class is typed, is found by reading the class, and cannot be reached by
+code that does not own the form.
+
+**Slice 1: three methods, empty by default.** `Form::submitLabel()`, `successMessage()` and
+`errorMessage()` return `''`, and the renderer reads empty as CoreX's own wording. The plan first
+had the defaults return the stock strings. That needed the stock label written twice, once as the
+default and once in the renderer for a form whose label is blank; with empty as the default each
+string is written once. A label of nothing but spaces is CoreX's label: a button with no name
+cannot be operated by voice.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `tests/Unit/Forms/FormBlockRenderTest.php` before the change | 2 failed (stated wording, markup as text), 6 passed |
+| The same, after | 8 passed |
+| `tests/Integration/Forms/FormBlockRenderingTest.php`, real WordPress | 4 passed; a form stating "Request a call" is rendered with it through `do_blocks()`, and a `<` in its confirmation is escaped by WordPress |
+| `tests/Unit` | 2323 passed |
+
+**Not run.** The browser suite: the markup of a form that states nothing is unchanged, and the
+three strings reach the page through attributes and a text node the runtime already reads. No
+rendered check was made of a stated label on a page.
+
+**Left open.** Slices 2 to 4. `captcha.action`, the global setting, has no reader in corex-forms
+or the add-on; found while planning, not changed.
+
+## #275 — The shared-host package keeps a few of the PDF library's fonts, and a PDF is written with what is installed
 
 Date: 2026-10-08 · Spec: 103 (submissions inbox and exports), slice 6, after it merged · Status: Final
 
