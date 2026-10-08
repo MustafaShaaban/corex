@@ -101,7 +101,7 @@ function notification( id, title ) {
 
 const state = () =>
 	container.querySelector( '.corex-loadable' ).dataset.corexState;
-const placeholder = () => container.querySelector( '.corex-skeleton' );
+const placeholder = () => container.querySelector( '.corex-admin-skeleton' );
 const titles = () =>
 	[ ...container.querySelectorAll( '.corex-notification__title' ) ]
 		.map( ( title ) => title.textContent )

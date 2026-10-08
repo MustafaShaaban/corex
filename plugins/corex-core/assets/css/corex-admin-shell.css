@@ -735,7 +735,7 @@ body.corex-admin-screen .corex-admin__shell {
 /* A label is as wide as its text, and a placeholder has none: it is given the
    row, so the bar standing in for the category's name has a width to be a
    share of. */
-.corex-skeleton .corex-notifications-prefs__label {
+.corex-admin-skeleton .corex-notifications-prefs__label {
 	flex: 1;
 }
 
@@ -1322,12 +1322,12 @@ body.corex-admin-screen .corex-admin__shell {
  * (`.corex-admin *`) is a single class strong, and every selector here is
  * stronger, so it would not reach them.
  */
-.corex-admin .corex-skeleton {
+.corex-admin .corex-admin-skeleton {
 	animation: corex-loading-appear var(--corex-admin-motion-fast) var(--corex-admin-ease) var(--corex-admin-loading-delay) backwards;
 }
 
-.corex-admin .corex-skeleton__bar,
-.corex-admin .corex-skeleton__box {
+.corex-admin .corex-admin-skeleton__bar,
+.corex-admin .corex-admin-skeleton__box {
 	position: relative;
 	display: block;
 	overflow: hidden;
@@ -1336,45 +1336,45 @@ body.corex-admin-screen .corex-admin__shell {
 
 /* As tall as a line of the element it is put in, so the element is the height
    it will be with its text; painted as a bar in the middle of that line. */
-.corex-admin .corex-skeleton__bar {
+.corex-admin .corex-admin-skeleton__bar {
 	inline-size: 100%;
 	block-size: 1lh;
 	clip-path: inset(calc((1lh - 0.7em) / 2) 0 round var(--corex-admin-radius-sm));
 }
 
-.corex-admin .corex-skeleton__bar--long {
+.corex-admin .corex-admin-skeleton__bar--long {
 	inline-size: 80%;
 }
 
-.corex-admin .corex-skeleton__bar--medium {
+.corex-admin .corex-admin-skeleton__bar--medium {
 	inline-size: 55%;
 }
 
-.corex-admin .corex-skeleton__bar--short {
+.corex-admin .corex-admin-skeleton__bar--short {
 	inline-size: 30%;
 }
 
 /* The size of the admin's small icons and of a checkbox. */
-.corex-admin .corex-skeleton__box {
+.corex-admin .corex-admin-skeleton__box {
 	flex: none;
 	inline-size: 1rem;
 	block-size: 1rem;
 	border-radius: var(--corex-admin-radius-sm);
 }
 
-.corex-admin .corex-skeleton__bar::after,
-.corex-admin .corex-skeleton__box::after {
+.corex-admin .corex-admin-skeleton__bar::after,
+.corex-admin .corex-admin-skeleton__box::after {
 	position: absolute;
 	inset: 0;
 	content: "";
 	background: linear-gradient(90deg, transparent, var(--corex-admin-skeleton-shine), transparent);
 	transform: translateX(-100%);
-	animation: corex-skeleton-shimmer var(--corex-admin-motion-shimmer) var(--corex-admin-ease) infinite;
+	animation: corex-admin-skeleton-shimmer var(--corex-admin-motion-shimmer) var(--corex-admin-ease) infinite;
 }
 
 /* The band travels the way the text is read. */
-[dir="rtl"] .corex-admin .corex-skeleton__bar::after,
-[dir="rtl"] .corex-admin .corex-skeleton__box::after {
+[dir="rtl"] .corex-admin .corex-admin-skeleton__bar::after,
+[dir="rtl"] .corex-admin .corex-admin-skeleton__box::after {
 	animation-direction: reverse;
 }
 
@@ -1417,7 +1417,7 @@ body.corex-admin-screen .corex-admin__shell {
 	}
 }
 
-@keyframes corex-skeleton-shimmer {
+@keyframes corex-admin-skeleton-shimmer {
 
 	to {
 		transform: translateX(100%);
@@ -1440,12 +1440,12 @@ body.corex-admin-screen .corex-admin__shell {
    band does not cross, and the bar does not travel: it spans the edge. */
 @media (prefers-reduced-motion: reduce) {
 
-	.corex-admin .corex-skeleton {
+	.corex-admin .corex-admin-skeleton {
 		animation-duration: 1ms;
 	}
 
-	.corex-admin .corex-skeleton__bar::after,
-	.corex-admin .corex-skeleton__box::after {
+	.corex-admin .corex-admin-skeleton__bar::after,
+	.corex-admin .corex-admin-skeleton__box::after {
 		animation: none;
 	}
 

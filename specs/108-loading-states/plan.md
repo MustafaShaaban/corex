@@ -169,7 +169,7 @@ No violation needs justifying.
 
 ```text
 plugins/corex-core/assets/css/corex-admin-tokens.css     # five tokens
-plugins/corex-core/assets/css/corex-admin-shell.css      # .corex-skeleton*, .corex-loadable, .corex-loader, [data-corex-working]
+plugins/corex-core/assets/css/corex-admin-shell.css      # .corex-admin-skeleton*, .corex-loadable, .corex-loader, [data-corex-working]
 plugins/corex-config/src/admin/components/
 ├── CorexSkeleton.js
 ├── CorexLoader.js
@@ -181,7 +181,7 @@ plugins/corex-config/src/<Feature>/…                     # each surface
 plugins/corex-config/assets/insights.js                  # the class names as markup
 addons/corex-kit-company/assets/setup-wizard.js
 tests/e2e/loading-states.spec.js                         # each surface, its answer held back
-docs-app/src/content/docs/guides/admin-loading-states.md # the pieces, for whoever adds a screen
+docs-app/src/content/docs/design-system/admin-experience.md # "Loading states": the pieces, for whoever adds a screen
 ```
 
 ## Slices

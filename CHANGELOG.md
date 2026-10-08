@@ -8,6 +8,14 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **Notifications show what is coming while they load** (spec 108, slice 1). The Notifications
+  screen, its preferences and the header drawer show a placeholder in the shape of their content
+  until the first answer, where each showed a sentence, and none shows "nothing here" before it
+  has been told so. A filter, a view or a page turn keeps the list on screen, dimmed and out of
+  reach, until its replacement arrives, where the list was removed for a line of text; the pager
+  stays, and keeps the focus. A load that fails says so with **Try again**. Nothing moves for a
+  person who asked for reduced motion. The pieces (`CorexLoadable`, `CorexSkeleton`) are shared,
+  and the other admin screens are moved to them in later slices (DECISIONS #284).
 - **A hosting package says what it needs and what it holds, and is one zip** (spec 107, slice
   1). `corex-release.json` gains the PHP and WordPress the release needs, the WordPress it was
   built with, every folder the release owns, and each folder's files, bytes and hash.
@@ -158,6 +166,10 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **Nothing to do for the Notifications loading states.** No setting, route or stored value
+  changes. A browser test of a client's own that waited for "Loading notifications…" or
+  "Loading preferences…" to be hidden will still pass, for the wrong reason: the sentence is no
+  longer drawn. Wait on `.corex-loadable[data-corex-state="ready"]`.
 - **`npm run verify:dist` refuses a package that was changed after it was built.** A package
   measures its own folders now. A deploy step that edits `dist/` after `build:dist` (adding a
   file to a plugin, say) has to do it before, or build again.

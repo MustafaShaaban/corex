@@ -21,7 +21,7 @@
  */
 export default function CorexSkeleton( { children } ) {
 	return (
-		<div className="corex-skeleton" aria-hidden="true">
+		<div className="corex-admin-skeleton" aria-hidden="true">
 			{ children }
 		</div>
 	);
@@ -37,7 +37,7 @@ export default function CorexSkeleton( { children } ) {
 export function SkeletonBar( { width = 'full' } ) {
 	return (
 		<span
-			className={ `corex-skeleton__bar corex-skeleton__bar--${ width }` }
+			className={ `corex-admin-skeleton__bar corex-admin-skeleton__bar--${ width }` }
 		/>
 	);
 }
@@ -48,5 +48,5 @@ export function SkeletonBar( { width = 'full' } ) {
  * @return {Element} The box.
  */
 export function SkeletonBox() {
-	return <span className="corex-skeleton__box" />;
+	return <span className="corex-admin-skeleton__box" />;
 }

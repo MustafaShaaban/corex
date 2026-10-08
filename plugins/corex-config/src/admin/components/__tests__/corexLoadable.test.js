@@ -57,7 +57,7 @@ function show( props ) {
 const surface = () => container.querySelector( '.corex-loadable' );
 const body = () => container.querySelector( '.corex-loadable__body' );
 const content = () => container.querySelector( '[data-test="content"]' );
-const placeholder = () => container.querySelector( '.corex-skeleton' );
+const placeholder = () => container.querySelector( '.corex-admin-skeleton' );
 const announced = () =>
 	container.querySelector( '[role="status"].screen-reader-text' ).textContent;
 

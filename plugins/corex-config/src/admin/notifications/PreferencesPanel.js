@@ -29,7 +29,7 @@ function PreferencesSkeleton() {
 					>
 						<span className="corex-notifications-prefs__label">
 							<SkeletonBox />
-							<SkeletonBar width="medium" />
+							<SkeletonBar width="short" />
 						</span>
 					</li>
 				) ) }

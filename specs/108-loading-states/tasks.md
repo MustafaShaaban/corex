@@ -11,15 +11,15 @@ light, left-to-right and right-to-left, 1280 and 782, with the answer held back)
 
 ## Slice 1 — The placeholder, the wrapper, and Notifications (US1, US2)
 
-- [ ] T001 [P] Jest: `CorexSkeleton` — hidden from assistive technology, and holds nothing a screen reader would read
-- [ ] T002 [P] Jest: `CorexLoadable` — `loading` shows the skeleton and not the children; `ready` the children; `refreshing` the children, inert; `error` the shared error state with its retry; `data-corex-state` and `aria-busy` for each; a load that lasts is announced at its start and its end, a quick one and a refresh are not; focus that was inside refreshing content moves to the surface
-- [ ] T003 The five tokens, in both themes (`corex-admin-tokens.css`)
-- [ ] T004 `.corex-skeleton*` and `.corex-loadable` (`corex-admin-shell.css`): the shimmer, the delay before showing, the waiting bar; each with its own reduced-motion rule and a still look that reads as what it is
-- [ ] T005 `CorexSkeleton`, `CorexLoadable`
-- [ ] T006 Jest: Notifications — the list keeps its items while it reloads; preferences and the drawer show a placeholder and never "all caught up" before an answer; a failure shows the shared error state with a retry
-- [ ] T007 Notifications list, preferences and drawer on the shared pieces
-- [ ] T008 Playwright (`loading-states.spec.js`): the Notifications screen and the drawer with the answer held back — a placeholder, then content, and what is below the list does not move by more than 4px; under reduced motion nothing is animating; both themes, both directions
-- [ ] T009 The token inventory; `docs-app` guide for the pieces; guards; UI/UX gate; notes
+- [x] T001 [P] Jest: `CorexSkeleton` — hidden from assistive technology, and holds nothing a screen reader would read
+- [x] T002 [P] Jest: `CorexLoadable` — `loading` shows the skeleton and not the children; `ready` the children; `refreshing` the children, inert; `error` the shared error state with its retry; `data-corex-state` and `aria-busy` for each; a load that lasts is announced at its start and its end, a quick one and a refresh are not; focus that was inside refreshing content moves to the surface
+- [x] T003 The five tokens, in both themes (`corex-admin-tokens.css`)
+- [x] T004 `.corex-admin-skeleton*` and `.corex-loadable` (`corex-admin-shell.css`): the shimmer, the delay before showing, the waiting bar; each with its own reduced-motion rule and a still look that reads as what it is
+- [x] T005 `CorexSkeleton`, `CorexLoadable`
+- [x] T006 Jest: Notifications — the list keeps its items while it reloads; preferences and the drawer show a placeholder and never "all caught up" before an answer; a failure shows the shared error state with a retry
+- [x] T007 Notifications list, preferences and drawer on the shared pieces
+- [x] T008 Playwright (`loading-states.spec.js`): the Notifications screen and the drawer with the answer held back — a placeholder, then content; the first placeholder card has the left edge, the top and the width of the card that replaces it, and a height within 8px of it; under reduced motion nothing is animating; both themes, both directions
+- [x] T009 The token inventory; the pieces documented on the docs site (Design System, Admin experience, "Loading states"); guards; UI/UX gate; notes
 
 ## Slice 2 — The loader, and every action (US3, US4)
 

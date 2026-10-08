@@ -120,10 +120,12 @@ for ( const theme of THEMES ) {
 			).toHaveCount( 0 );
 
 			const placeholderCard = surface
-				.locator( '.corex-skeleton .corex-notifications-screen__item' )
+				.locator(
+					'.corex-admin-skeleton .corex-notifications-screen__item'
+				)
 				.first();
 			const bar = placeholderCard
-				.locator( '.corex-skeleton__bar' )
+				.locator( '.corex-admin-skeleton__bar' )
 				.first();
 			await expect( placeholderCard ).toBeVisible();
 
@@ -186,7 +188,7 @@ test( 'a list that is being replaced stays on screen, dimmed, and out of reach',
 
 	await expect( surface ).toHaveAttribute( 'data-corex-state', 'refreshing' );
 	await expect( title ).toBeVisible();
-	await expect( surface.locator( '.corex-skeleton' ) ).toHaveCount( 0 );
+	await expect( surface.locator( '.corex-admin-skeleton' ) ).toHaveCount( 0 );
 
 	const body = surface.locator( '.corex-loadable__body' );
 	await expect( body ).toHaveAttribute( 'inert', '' );
@@ -216,7 +218,7 @@ test( 'nothing moves for a person who asked for reduced motion', async ( {
 	const surface = page.locator(
 		'.corex-notifications-screen .corex-loadable'
 	);
-	const bar = surface.locator( '.corex-skeleton__bar' ).first();
+	const bar = surface.locator( '.corex-admin-skeleton__bar' ).first();
 	await expect( bar ).toBeVisible();
 
 	// The placeholder is still drawn: a plain block, with no band crossing it.
@@ -268,7 +270,9 @@ test( 'the drawer shows a placeholder, and never "all caught up", before its ans
 	);
 	await expect( surface ).toHaveAttribute( 'data-corex-state', 'loading' );
 	await expect(
-		surface.locator( '.corex-skeleton .corex-notification-drawer__item' )
+		surface.locator(
+			'.corex-admin-skeleton .corex-notification-drawer__item'
+		)
 	).toHaveCount( 3 );
 	await expect( page.getByText( 'all caught up' ) ).toHaveCount( 0 );
 
