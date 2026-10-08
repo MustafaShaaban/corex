@@ -132,8 +132,8 @@ it('stores a submission the provider accepts, without its token', function () {
         ->and(wp_json_encode(get_post_meta($storedId)))->not->toContain('good-token');
 });
 
-it('renders the token field through the block, and the page then loads the script of the provider', function () {
-    update_option('corex_captcha_driver', 'recaptcha');
+it('renders the token field through the block, and the page then loads the scripts of the provider', function (string $driver, array $scripts, bool $widget) {
+    update_option('corex_captcha_driver', $driver);
     update_option('corex_captcha_secret', 'a-secret');
     update_option('corex_captcha_site_key', 'a-site-key');
 
@@ -141,18 +141,21 @@ it('renders the token field through the block, and the page then loads the scrip
 
     expect($html)->toContain('name="captcha_token"')
         ->and($html)->toContain('data-corex-captcha-action="corex_form_corex_protected_probe"')
+        ->and(str_contains($html, 'data-corex-challenge="' . $driver . '" data-corex-sitekey="a-site-key"'))->toBe($widget)
         ->and(Boot::app()->container()->make(ProtectedFormRegistry::class)->all())
         ->toHaveKey(PROTECTED_PROBE);
 
     // What the captcha add-on does in the footer of a page that rendered a protected form.
     Boot::app()->container()->make(CaptchaAssetController::class)->enqueue();
+    $enqueued = array_map(static fn (string $handle): bool => wp_script_is($handle, 'enqueued'), $scripts);
+    array_map('wp_dequeue_script', $scripts);
 
-    expect(wp_script_is('corex-recaptcha-v3-api', 'enqueued'))->toBeTrue()
-        ->and(wp_script_is('corex-captcha-v3', 'enqueued'))->toBeTrue();
-
-    wp_dequeue_script('corex-captcha-v3');
-    wp_dequeue_script('corex-recaptcha-v3-api');
-})->skip(
+    expect($enqueued)->toBe(array_fill(0, count($scripts), true));
+})->with([
+    'reCAPTCHA, which shows nothing' => ['recaptcha', ['corex-recaptcha-v3-api', 'corex-captcha-v3'], false],
+    'Turnstile'                      => ['turnstile', ['corex-captcha-widget', 'corex-captcha-turnstile-api'], true],
+    'hCaptcha'                       => ['hcaptcha', ['corex-captcha-widget', 'corex-captcha-hcaptcha-api'], true],
+])->skip(
     fn (): bool => ! class_exists(CaptchaAssetController::class),
     'The captcha add-on is not active on this install.',
 );

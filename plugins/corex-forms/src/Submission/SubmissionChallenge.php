@@ -54,14 +54,7 @@ final readonly class SubmissionChallenge
             return SubmissionChallengeOutcome::decided($verification->passed(), $verification->toArray());
         }
 
-        // Turnstile and hCaptcha have a verifier and no widget: nothing on the form produces their
-        // token. Refusing a submission for lacking it rejected every submission of every flow on a
-        // site that had chosen one. A token that does arrive is still verified below.
-        if ($token === '' && $this->contextFactory?->driverPlacesNoWidget()) {
-            return SubmissionChallengeOutcome::notConfigured();
-        }
-
-        // Boolean path (turnstile/hcaptcha with a token, or a custom driver).
+        // A provider that answers yes or no (Turnstile, hCaptcha, a site's own). No token is a no.
         return SubmissionChallengeOutcome::decided($this->captcha->verify($token));
     }
 }

@@ -143,6 +143,26 @@ select.corex-form__input[multiple] {
 	background-color: var(--wp--preset--color--primary);
 }
 
+/*
+ * Where a provider's challenge is shown (Turnstile, hCaptcha). The widget is
+ * the provider's own frame, with a fixed size. It starts at the inline start,
+ * so it sits under the fields in both directions, and may not push the form
+ * wider than its column.
+ */
+.corex-form__challenge {
+	grid-column: 1 / -1;
+	justify-self: start;
+	max-inline-size: 100%;
+	overflow-x: auto;
+}
+
+/* Told to an editor of the page when a form's own markup cannot work. */
+.corex-form__notice {
+	padding: var(--wp--preset--spacing--30);
+	color: var(--wp--preset--color--error);
+	border: 1px solid currentcolor; /* corex-token-allow: hairline */
+}
+
 .corex-form__status {
 	margin-block-start: var(--wp--preset--spacing--30);
 	color: var(--wp--preset--color--ink);

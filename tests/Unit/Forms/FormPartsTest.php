@@ -82,19 +82,27 @@ it('refuses to supply a part for a field the form does not have', function () {
         ->toThrow(InvalidArgumentException::class, 'The form "lead" has no field named "email".');
 });
 
-it('names the parts a form\'s own markup is missing', function (string $markup, bool $protected, array $missing) {
-    expect(FormParts::missingFrom($markup, $protected))->toBe($missing);
-})->with([
-    'nothing missing' => [
-        '<form data-corex-endpoint="x"><input class="corex-form__hp"><p class="corex-form__status"></p></form>', false, [],
-    ],
-    'no status place, no hidden fields' => [
-        '<form data-corex-endpoint="x"></form>', false, ['hidden()', 'status()'],
-    ],
-    'a bare form' => [
-        '<form><input class="corex-form__hp"><p class="corex-form__status"></p></form>', false, ['attributes()'],
-    ],
-    'a protected form whose hidden fields were written by hand, without the token' => [
-        '<form data-corex-endpoint="x"><input class="corex-form__hp"><p class="corex-form__status"></p></form>', true, ['hidden()'],
-    ],
-]);
+it('names the parts a form\'s own markup is missing', function (string $hidden, string $challenge, string $markup, array $missing) {
+    $parts = new FormParts('lead', [], [], $hidden, 'Send', new FieldRenderer(), $challenge);
+
+    expect($parts->missingFrom($markup))->toBe($missing);
+})->with(function (): array {
+    $trap      = '<input class="corex-form__hp">';
+    $token     = '<input class="corex-form__captcha-token">';
+    $widget    = '<div class="corex-form__challenge"></div>';
+    $open      = '<form data-corex-endpoint="x">';
+    $status    = '<p class="corex-form__status"></p>';
+
+    return [
+        'nothing missing'                                  => [$trap, '', $open . $trap . $status, []],
+        'no status place and no hidden fields'             => [$trap, '', $open, ['hidden()', 'status()']],
+        'a bare form element'                              => [$trap, '', '<form>' . $trap . $status, ['attributes()']],
+        'a protected form whose trap field was written by hand, so it has no token field' => [
+            $trap . $token, '', $open . $trap . $status, ['hidden()'],
+        ],
+        'a form that shows a challenge and has no place for it' => [
+            $trap . $token, $widget, $open . $trap . $token . $status, ['challenge()'],
+        ],
+        'a form that shows a challenge, complete'          => [$trap . $token, $widget, $open . $trap . $token . $widget . $status, []],
+    ];
+});

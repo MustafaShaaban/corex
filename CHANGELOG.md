@@ -8,6 +8,11 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **Turnstile and hCaptcha show their widget on a protected form** (spec 104, slice 4; closes
+  #264), on a flow and on a form defined in code. It sits above the button; the form sends the
+  token the widget gives; the provider's script loads only on a page with a protected form. A
+  submission made before the visitor has passed is held in the browser with a message
+  (DECISIONS #278).
 - **A site draws a form its own way** (spec 104, slice 3; closes #248). Override `markup()` on
   the form's class. It is handed the form's parts (`attributes()`, `hidden()`, `status()`,
   `fieldAttributes()`, `error()`, `control()`, `label()`, `field()`, `submit()`) and returns the
@@ -115,6 +120,15 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A site with Turnstile or hCaptcha selected and keys saved starts challenging when it takes
+  this**, and refuses a protected form's submission that carries no token. Until now such a site
+  challenged nobody and refused nothing. Submit one protected form after updating: the widget was
+  checked against each provider's own script on a test page, not on a site. reCAPTCHA is
+  unchanged.
+- **A hand-drawn form protected by Turnstile or hCaptcha needs `$parts->challenge()`** in its
+  markup, before its button. It prints nothing for any other form, so it is safe to add always.
+- **The provider test no longer answers `no_widget`**, and the admin no longer lists a
+  `captcha.widget` gap. `FormChallengeContextFactory::driverPlacesNoWidget()` is gone.
 - **A site with its own form renderer can replace it with `Form::markup()`.** A renderer that
   reproduced CoreX's attributes by hand keeps working; it is no longer needed, and it is what
   breaks when those attributes change.

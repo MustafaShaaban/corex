@@ -7960,3 +7960,70 @@ form's layout is the site's own stylesheet, and the stock styles a site may inhe
   guide said it fell back to the submit route. It says what happens now; nothing was built.
 - The runtime guide's contract for "anything else that renders a form" is documentation of what
   the runtime reads, not a second supported way to build a code-defined form.
+
+## #278 — Turnstile and hCaptcha show their widget, and a submission without their token is refused
+
+Date: 2026-10-08 · Spec: 104 (a code-defined form's wording, markup and protection), slice 4 · Issue: #264 · Status: Final
+
+Both providers could be chosen, given keys and tested, and nothing placed their widget on any
+form. For a day a submission without their token was let through on purpose (#258), because
+refusing it refused every submission. This places the widget and ends that allowance in the same
+change, as the spec required (FR-032): a provider that can be selected now challenges.
+
+**One script for both.** The two providers have the same shape: load their script with explicit
+rendering, ask it to render into an element with a site key, and take a token in a callback.
+`corex-captcha-widget.js` renders into each `.corex-form__challenge`, writes the token into that
+form's `captcha_token` field, holds a submission made before the visitor has passed (with a
+message, before the runtime's handler sends anything), and resets the widget once the server has
+answered, because a token is spent by one submission. A refusal by the browser's own check sends
+nothing, so the token is kept. Each provider is handed the container its documentation names:
+Turnstile a selector, hCaptcha the element.
+
+**Load order.** CoreX's script is enqueued first and the provider's depends on it, because the
+provider calls `corexCaptchaWidgetReady` by name when it has loaded. The script also tries on
+`DOMContentLoaded`, for a provider that was already there. A place is rendered once.
+
+**The site key is on the form.** Each challenge place carries `data-corex-sitekey`. Nothing is
+localized but two messages.
+
+**For a form drawn by hand** the place is `FormParts::challenge()`: empty unless the form is
+protected and the provider shows a widget, and required then (the missing-part check names it).
+A hand-drawn form made in slice 3's way has to add it to be protected by one of these two.
+
+**What was removed.** `FormChallengeContextFactory::driverPlacesNoWidget()` and the allowance in
+`SubmissionChallenge`; `CaptchaDiagnostic::NO_WIDGET`; the `captcha.widget` gap in the admin's
+capability facts; the sentence in the driver setting's help. `providerConfigured()` is true for
+all three providers with a secret.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The flipped tests before the change: an empty token under Turnstile and hCaptcha; the diagnostic for both | 4 failed |
+| `tests/Unit/Forms` and `tests/Unit/Captcha` after | 286 passed; the stock form still byte-identical |
+| `tests/Unit` / Jest | 2356 / 732 in 66 suites |
+| `corex-captcha-widget.test.js`, the provider stood in for | 10 passed |
+| `ProtectedCodeFormTest` on real WordPress, each provider | the block carries the token field and, for Turnstile and hCaptcha, the challenge place with the site key; the add-on enqueues that provider's two scripts |
+| **Turnstile's real script**, its published always-pass test key, on a throwaway local page with CoreX's script and a bare form | rendered; `XXXX.DUMMY.TOKEN.XXXX` written into the field; the submission reached the form's own handler; after `corex:form:success` the field was empty, a submission was held with "Please complete the challenge before sending.", and a new token arrived after the reset |
+| **hCaptcha's real script**, its published test key, the same page | loaded and rendered its frame into the place; no token, because its test widget waits for a click |
+
+**Not run.**
+
+- hCaptcha's token round trip. Its widget needs a person to click it and I do not complete
+  challenges, test key or not. Rendering against the real script is what was seen.
+- Neither provider's server-side check with a real token. `RemoteCaptcha` is unchanged and was
+  not called against a provider.
+- A CoreX page. The live check used a bare form on a local page, not a flow or a Form block on
+  the development install, whose captcha settings were not changed. So the widget was not seen
+  inside the form's grid, in either theme or direction; the stylesheet rule for the place is
+  unverified by eye.
+- The browser suite locally.
+
+**Left open.**
+
+- Somebody should submit one protected form on a real site with each provider before relying on
+  it. That is the gap between what was checked and what was built.
+- The four add-ons that check `captcha_token` on their own routes still have nothing that
+  produces one.
+- `captcha.action`, the global setting, still has no reader.
+- An invisible or managed-size widget is not offered; the provider's default is used.

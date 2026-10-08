@@ -382,3 +382,16 @@ it('tells somebody who can edit the page which parts a form\'s markup is missing
         '<p class="corex-form__notice" role="alert">The form &quot;Broken form&quot; is not shown to visitors: its markup is missing hidden(), status().</p>',
     );
 });
+
+// Spec 104, US4 (#264).
+it('gives a protected form a place for the widget of a provider that shows one, before its button', function () {
+    $html = renderRegisteredForm(
+        callbackForm(protected: true),
+        ['formSlug' => 'callback'],
+        ['captcha.driver' => 'turnstile', 'captcha.secret' => 'a-secret', 'captcha.site_key' => 'a-site-key'],
+    );
+
+    expect($html)->toContain(
+        '<div class="corex-form__challenge" data-corex-challenge="turnstile" data-corex-sitekey="a-site-key"></div><button type="submit"',
+    );
+});

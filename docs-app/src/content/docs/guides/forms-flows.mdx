@@ -63,6 +63,11 @@ its Protection tab; when it declares neither, its action derives deterministical
 an added layer, not a replacement — and the secret key never reaches the browser. If a form has no provider configured,
 it still works; only the honeypot guards it.
 
+With **Turnstile** or **hCaptcha** configured, a protected form shows that provider's widget above its button. The
+token the widget gives is sent with the form and checked on the server; a submission made before the visitor has
+passed is held in the browser with a message, and one that reaches the server without a valid token is refused.
+Neither scores a visitor, so the threshold and the action do not apply to them.
+
 ## Stored evidence
 
 Each accepted submission records its flow and version, submitted values, hidden and UTM metadata, consent snapshot, spam

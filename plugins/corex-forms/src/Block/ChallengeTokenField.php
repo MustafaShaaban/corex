@@ -22,6 +22,21 @@ use Corex\Forms\Submission\SubmissionChallenge;
  */
 final class ChallengeTokenField
 {
+    /**
+     * Where a provider's widget is rendered, for a provider that shows one. The add-on's script
+     * finds it, asks the provider to draw there, and writes the token into the form's field.
+     */
+    public static function widgetPlace(string $provider, string $siteKey): string
+    {
+        return $provider === ''
+            ? ''
+            : sprintf(
+                '<div class="corex-form__challenge" data-corex-challenge="%s" data-corex-sitekey="%s"></div>',
+                esc_attr($provider),
+                esc_attr($siteKey),
+            );
+    }
+
     public static function render(string $action): string
     {
         return sprintf(
