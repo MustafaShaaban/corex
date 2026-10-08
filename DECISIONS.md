@@ -8451,7 +8451,7 @@ releases, which is from their documentation and not from a run here.
 - "Mark all as read", and each notification's own actions, still show nothing while their
   request is out. That is slice 2.
 
-## #285 — The trash deletes on its own clock, and WordPress's is kept off a submission
+## #286 — The trash deletes on its own clock, and WordPress's is kept off a submission
 
 Date: 2026-10-08 · Spec: 105 (trash, restore and delete a submission), slice 3 · Status: Final
 

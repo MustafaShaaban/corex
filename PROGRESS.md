@@ -92,7 +92,7 @@ Specified on 2026-10-08, neither planned nor built:
   built. Slice 1 (DECISIONS #281): move to the trash from the pane or in bulk, with undo; a Trash
   view; restore. Slice 2 (DECISIONS #283): delete for good from the trash, with the files and the
   email copies tied to a submission, a permission of its own, and an acknowledged confirmation.
-  Slice 3 (DECISIONS #285): the trash empties itself after a number of days the site sets, 30
+  Slice 3 (DECISIONS #286): the trash empties itself after a number of days the site sets, 30
   by default; WordPress's own clean-up is kept off a submission; a submission deleted by anything
   takes its files. Next: slice 4, the retention panel and the Data source through the one
   service, which also ends the on-the-spot deletion on a site that skips the trash. Found while
