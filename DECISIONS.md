@@ -7113,3 +7113,151 @@ What was run:
 LiteSpeed. No admin screen was opened: the copy the package was built from had no built bundles.
 The Azure pipeline was not run. The generated site's theme was compiled with the repository's
 `sass` and `wp-scripts`, not from its own `npm install`, which the CI job does.
+
+## #268 — The 500 on `GET corex/v1/flows` was PHP's compiled copy of a method, not a flow; and a flow that cannot be read is left out of a list
+
+Date: 2026-10-08 · Pull request #286 · Run 37746210110, first attempt · Status: the fault is named; its cause is a lead, not a proof
+
+The report: `GET corex/v1/flows` answers 500 `flow_error`, "Request could not be processed.", now
+and then in the browser job, and goes on doing so until the run ends. On 2026-10-08 eight
+`submissions-inbox` specs failed on it on #282. The brief's guess was a stored flow that cannot be
+read, left by an earlier test or half-written while another worker read it.
+
+**What was true.** The guess is wrong. The owner allowed the failed attempt's artifact to be
+downloaded, and `test-results/server-logs/php-error.log` has the same line sixteen times, from
+07:57:51 UTC to 07:58:03:
+
+    Middleware pipeline error: Corex\Forms\Flow\FlowRestMapper::summary(): Argument #2 ($version)
+    must be of type , Corex\Forms\Flow\FlowVersion given, called in
+    .../plugins/corex-forms/src/Flow/FlowController.php on line 52
+
+The method is declared `summary(Flow $flow, FlowVersion $version)`. PHP was handed a `FlowVersion`
+and refused it against a type whose name it printed as an empty string. No stored value can do
+that: the argument was built and was of the right class, and the type it failed is in the
+compiled method, not in the database. The nginx access log from the same artifact gives the
+order. `GET corex/v1/flows` answered 200 with one flow's summary twenty-eight times, from 07:56:05
+to 07:57:49, through that same method. The seed then created flow 28, read it, published it,
+submitted to it and ran its marked test, every one answered 200. From 07:57:51 the list answered
+500, twice per test: once for the Forms screen and once for the seed's search. `php-fpm.log` shows
+no worker dying and no restart in that time.
+
+A method that is correct on disk, worked for a minute and three quarters, and then fails for
+every worker until the run ends, with a type name PHP itself cannot print, is the copy of that
+method that php-fpm's workers share: what OPcache holds. That is a reading of the evidence.
+Nobody looked inside it while it was in that state, and the runner is gone.
+
+**The lead: the job was running PHP's JIT.** The step this pull request adds printed OPcache's
+status on its first run, a run that passed: 52 of 128 MB used, nothing wasted, no restart of any
+kind, the string buffer 94% full (7.5 of 8 MB), and `"jit": {"enabled": true, "on": true,
+"opt_level": 5, "buffer_size": 268435440}`. That is the tracing JIT with a 256 MB buffer. PHP's
+default is no JIT, and nothing in the workflow asks for one. The setting is in
+`/etc/php/8.3/fpm/conf.d/99-pecl.ini` on the runner: an override in a file read just before it
+left the JIT on, the same override in a file read just after it switched the JIT off, and
+php-fpm lists no file between the two. That file is not in this repository and was not read.
+Who writes it was not established; the provisioning action sets PHP up with
+`shivammathur/setup-php`, which is the first place to look. A JIT rewrites a method into machine code once it has run
+often enough, and keeps the result where every worker uses it. A method that answers
+twenty-eight times and then fails for every worker is what a wrong rewrite would look like.
+
+**What is not known.** Whether that is what happened. The JIT is a lead because it fits and
+because it is the one thing in that status a default PHP does not have. Nothing shows it
+compiled that method, and the string buffer near its limit is a second thing an ordinary run
+has. A search turned up reports against older PHP versions of type checks that fail under
+OPcache until php-fpm is restarted. None was read closely, and none was matched to this version
+or shown to be this fault. The three failures of 2026-10-04 on #211 (DECISIONS #228) look the
+same from outside, and their log was not kept, so they are assumed to be this and not shown to
+be.
+
+**No test reproduces it, and none was written to pretend to.** The brief asked for the failure
+in a test first. A PHP test cannot make PHP forget a parameter's type. Before the artifact was
+asked for, the seed's eight requests were replayed against the development install, one PHP
+process per request as a browser makes them, twice, and every one answered 200. Reading the code
+had also shown that every state a half-written flow can be in answers 422, not 500.
+
+**What was done about the 500.**
+
+- `Pipeline::run()` logs the exception's class and the file and line beside its message. This
+  time the message named the method. A date that will not parse names nothing.
+- The browser job prints the last 40 lines of PHP's error log and php-fpm's own OPcache status
+  (asked through a probe request, since the command line has a separate cache) in its output, on
+  every run. A failed run is read there first, and the artifact has to be asked for and expires
+  in seven days. An ordinary run's status is the thing to compare the next failure with.
+- The job's php-fpm runs with the JIT off (`opcache.jit=disable`, in a `conf.d` file named to be
+  read last), and a step asks php-fpm whether it is, prints where php-fpm reads its settings
+  from, and stops the job if the JIT is on. That step failed the first time it ran, which is how
+  the file that overruled the first attempt was found. This is the one change to how the
+  job runs PHP. It is taken on a lead and not on a proof, for three reasons: no site CoreX is
+  written for runs a JIT unless somebody turned one on, so the job tested a PHP its users do not
+  have; it costs nothing the suite needs; and it can be shown wrong. If the fault returns with
+  the JIT off, the status printed beside it is the next evidence.
+- OPcache itself stays on, at the runner's limits. Switching it off would slow each request that
+  reaches PHP (about 1,300 of the 13,299 in the failed run; the rest were files nginx served) by
+  an amount nobody has measured, in a suite with specs that are sensitive to time. Raising the
+  string buffer would be a second change on a second guess.
+
+**The weakness the brief described is real, and separate.** Ruling flows out meant reading every
+way a flow is read. One stored flow that cannot be built into a `Flow` failed every list:
+
+- `WpFlowStore::create()` wrote the type row first and the payload last. The type row is what a
+  list selects by. A request that stopped between them left a flow with no payload, and
+  `FlowRepository::all()` threw for all of them: 422 on the route, for every flow.
+- A stored date that will not parse threw a `DateMalformedStringException`, which the gateway
+  does not map: 500.
+- `FormCatalog`, the Overview count and the Insights count catch whatever `all()` throws and
+  show no flows, without a word.
+
+That was fixed here because the brief asked for it and it could be shown failing first. It did
+not cause the 500 and does not prevent it.
+
+**Decision: left out and logged, not shown as broken.** A flow that cannot be read is left out of
+`FlowRepository::all()`, and the log gets a warning with the record's post id and what was wrong
+with it. The Forms list leaves out, the same way, a flow whose current draft is not stored or
+cannot be read. Reasons:
+
+- Every reader of the list gets the flows that work. Before, one bad record took the Forms
+  screen, the form filters and the counts down together.
+- A row for a flow that cannot be opened, edited or published from the screen is a row that
+  does nothing. The builder reads a flow through the same code that just refused it.
+- Showing it properly is a screen change: a state for the row, what it says, how the operator
+  removes the record. That is its own piece of work and was not hidden inside a defect fix.
+
+What it costs: the record stays stored and nothing on a screen says so. Its slug stays taken, so
+creating a flow with that slug is refused with "A flow already uses this slug." and the reason is
+only in the log. That is recorded under Client impact in the changelog.
+
+Three limits on the leaving-out, each with a test:
+
+- Only what a stored value can cause is treated as unreadable: a refused argument, a date that
+  will not parse (`catch (Exception)`). A `TypeError` is not caught. Had it been, the fault this
+  entry opens with would have reached the screen as an empty list with a warning beside it.
+- A version that cannot be read is never left out of `versions()`. Its number is part of what
+  cannot be read, and `appendVersion()` asks that list whether a number is taken.
+- Reading one flow by id or slug still refuses, with `UnreadableFlowRecord` (422, naming the
+  record). Leaving out is for lists.
+
+**The write path.** `WpFlowStore::create()` writes the payload, then the slug, then the type. Until
+the type is there the record is in no list and `FlowRepository::find()` answers null for it, so a
+request that stops part-way leaves a post nothing reads. If any of the three writes fails the post
+is deleted and the call throws. Not done: `FlowService::create()` still stores the flow and then
+its first draft as two steps with nothing joining them, so a request that stops between them
+leaves a flow without a draft. The Forms list now leaves that flow out and says so in the log. The
+orphan post an interrupted `create()` leaves is not swept.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The seed's eight requests replayed on the development install, one process each, twice | every answer 200; the 500 did not occur |
+| `PipelineTest`, new case, before the change | failed: the line was `Middleware pipeline error: boom` |
+| `UnreadableFlowRecordTest`, before the change | 9 failed, 1 passed (the one that keeps a `TypeError` loud) |
+| The three new `FlowControllerTest` cases against unchanged code, real WordPress | 3 failed: the list answered 422; the half-written record was listed; no exception |
+| `tests/Unit` | 2263 passed |
+| The 13 files under `tests/Integration` that mention flows, real WordPress, this branch's classes | 76 passed |
+| OPcache's status, printed by the first CI run of this pull request (166 specs passed) | JIT on, tracing, 256 MB; no restart; string buffer 94% full |
+| The step that asks php-fpm about the JIT, with the override in `99-corex-no-jit.ini` | failed, as it is meant to: the JIT was still on |
+| The same step with the override in `zzz-corex-no-jit.ini`, and CI on that commit | JIT off (`opcache.jit` is `disable`, buffer 0); 166 specs passed in 2.6 minutes; all six jobs passed |
+
+**Not run.** The whole integration suite and the browser suite were not run locally; CI runs
+both. No JavaScript changed. Nothing was done to make PHP fail this way on purpose. One green run
+with the JIT off proves nothing about a fault that shows up now and then, and the run with it on
+(2.1 minutes) against the run with it off (2.6) is one sample each, not a measurement.

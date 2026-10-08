@@ -351,8 +351,9 @@ jobs:
           # to come from.
           #
           # Named to be read last. PHP reads a directory of settings in name order and the last
-          # file to set a value wins; the first attempt, `99-corex-no-jit.ini`, was read and
-          # overruled, which the step below is there to catch.
+          # file to set a value wins. The runner's `99-pecl.ini` is where the JIT is switched on:
+          # the first attempt, `99-corex-no-jit.ini`, is read just before it and was overruled,
+          # which the step below is there to catch.
           echo 'opcache.jit=disable' | sudo tee /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
           echo 'opcache.jit_buffer_size=0' | sudo tee -a /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
           # restart, not start: installing the package already started it, with the old pool.
