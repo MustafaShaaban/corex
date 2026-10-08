@@ -41,7 +41,17 @@ final class Pipeline
         try {
             return $next($request);
         } catch (Throwable $e) {
-            $this->logger->error(sprintf('Middleware pipeline error: %s', $e->getMessage()));
+            // The caller is told nothing, so this line is the whole record of what went wrong.
+            // The class and the place are in it because a message alone does not always say
+            // either: "Failed to parse time string" names no caller, and a TypeError that PHP
+            // raised from a damaged cache reads like a fault in the code it names.
+            $this->logger->error(sprintf(
+                'Middleware pipeline error: %s: %s (%s:%d)',
+                $e::class,
+                $e->getMessage(),
+                basename($e->getFile()),
+                $e->getLine(),
+            ));
 
             return Response::reject('Request could not be processed.', 500);
         }

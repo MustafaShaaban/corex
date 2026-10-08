@@ -151,6 +151,13 @@ The job sets `COREX_E2E_FRESH_INSTALL`, which skips three tests by title: `CANNO
 `tests/e2e/playwright.config.js` lists them and says why. Two of the three are the block-editor tests of the
 smoke and of the sweep, so those two are checked only by a local run.
 
+**When a spec fails on an HTTP 500**, what threw is in the server's log and not in the spec's output. CoreX
+answers an exception behind a REST route with `Request could not be processed.` and writes the exception's
+class, its message and the file and line to PHP's error log. The job prints the last 40 lines of that log, and
+what php-fpm's OPcache reports about itself, in the step **Print the server's errors and the state of PHP's
+opcode cache**. That step runs on every run, passing or not. When a spec fails, the same files are in the
+`playwright-report` artifact under `test-results/server-logs/`.
+
 ### Locally
 
 The suite starts no site. It drives one that is already served, with the CoreX theme, the plugins and the

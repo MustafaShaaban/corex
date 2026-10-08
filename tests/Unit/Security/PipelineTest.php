@@ -109,3 +109,19 @@ it('fails closed and logs when a middleware throws (handler never runs)', functi
         ->and($logger->messages())->not->toBeEmpty()
         ->and($ran->getArrayCopy())->toBe([]);
 });
+
+it('logs what was thrown and where, so the generic 500 can be traced from the log alone', function () {
+    $logger = new BootLogger(debug: false);
+    $thrownAt = __LINE__ + 4;
+
+    $response = (new Pipeline($logger))->run(
+        new Request('GET'),
+        fn (Request $r): Response => throw new DomainException('boom'),
+    );
+
+    expect($response->reason)->toBe('Request could not be processed.')
+        ->and($logger->messages())->toBe([[
+            'level' => 'error',
+            'message' => sprintf('Middleware pipeline error: DomainException: boom (PipelineTest.php:%d)', $thrownAt),
+        ]]);
+});

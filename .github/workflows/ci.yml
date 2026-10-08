@@ -400,6 +400,34 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" test-results/server-logs
           wc -l test-results/server-logs/* || true
 
+      # The same evidence, in the job's own output, where a failed run is read first.
+      #
+      # On 2026-10-08 eight inbox specs failed on "HTTP 500 flow_error", and what had thrown was
+      # one line in an artifact that has to be asked for and expires in a week. That line said a
+      # FlowVersion had been refused by a parameter declared FlowVersion, against a type PHP
+      # printed as an empty string: the opcode cache's copy of the method, not the code and not
+      # anything stored. The same request had answered 200 two seconds earlier, twenty-eight
+      # times, and went on failing until the run ended, as a cache shared by every worker would.
+      #
+      # So the tail of PHP's log is printed here, and beside it what the opcode cache says about
+      # itself, asked through php-fpm because the command line has a cache of its own: whether it
+      # filled, whether it restarted and when, and how much of its string buffer is left. What
+      # set the fault off is not known. The next run that meets it will carry the answer, and
+      # every run before then says what an ordinary one looks like.
+      - name: Print the server's errors and the state of PHP's opcode cache
+        if: ${{ !cancelled() }}
+        run: |
+          echo "::group::PHP error log, last 40 lines"
+          tail -n 40 test-results/server-logs/php-error.log || true
+          echo "::endgroup::"
+
+          echo '<?php header( "Content-Type: application/json" ); echo json_encode( function_exists( "opcache_get_status" ) ? opcache_get_status( false ) : array( "opcache" => "not loaded" ) );' > wp/corex-opcache-probe.php
+          curl -s -o test-results/server-logs/opcache-status.json http://127.0.0.1:8080/corex-opcache-probe.php || true
+          rm -f wp/corex-opcache-probe.php
+          echo "::group::OPcache status, as php-fpm reports it"
+          jq . test-results/server-logs/opcache-status.json || cat test-results/server-logs/opcache-status.json || true
+          echo "::endgroup::"
+
       - name: Upload the report when the browser tests fail
         if: failure()
         uses: actions/upload-artifact@v7
