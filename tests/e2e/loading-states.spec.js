@@ -13,6 +13,7 @@
  * `npx playwright install`. Uses the saved admin session.
  */
 const { test, expect } = require( '@playwright/test' );
+const { seedSubmission } = require( './helpers' );
 
 test.use( { storageState: require( './global-setup' ).STORAGE_STATE } );
 
@@ -903,5 +904,183 @@ test.describe( 'the screens that are not React, before their first answers', () 
 			'error'
 		);
 		await expect( page.locator( '.corex-setup-fallback' ) ).toBeVisible();
+	} );
+} );
+
+const INBOX = '/wp-admin/admin.php?page=corex-submissions';
+
+// The list of submissions, however the site spells its routes: not one submission, and not
+// the exports.
+const isInboxList = ( url ) =>
+	/corex\/v1\/submissions(\?|&|$)/.test( decodeURIComponent( url.href ) );
+const isOneSubmission = ( url ) =>
+	/corex\/v1\/submissions\/\d+(\?|&|$)/.test(
+		decodeURIComponent( url.href )
+	);
+
+/**
+ * Hold the requests that match until the gate is opened, and again once it is closed.
+ *
+ * @param {import('@playwright/test').Page} page    The page.
+ * @param {(url: URL) => boolean}           matches Which requests.
+ * @return {Promise<{open: () => Promise<void>, close: () => void}>} The gate.
+ */
+async function gateOn( page, matches ) {
+	const held = [];
+	let closed = true;
+
+	await page.route( matches, ( route ) =>
+		closed ? held.push( route ) : route.continue()
+	);
+
+	return {
+		open: async () => {
+			closed = false;
+			await Promise.all(
+				held.splice( 0 ).map( ( route ) => route.continue() )
+			);
+		},
+		close: () => {
+			closed = true;
+		},
+	};
+}
+
+test.describe( 'the Submissions inbox', () => {
+	// Wide enough that a row is one line and the table does not scroll.
+	test.use( { viewport: { width: 1900, height: 1000 } } );
+
+	test.beforeEach( async ( { page } ) => {
+		// An inbox with a row in it, on a site that may have none.
+		const seeded = await seedSubmission( page, 'corex-loading-e2e' );
+		expect( seeded.real.envelope.ok ).toBe( true );
+	} );
+
+	test( 'shows rows that are not there yet, the height of the rows that replace them, and no count before there is one', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route( isInboxList, ( route ) => held.push( route ) );
+		await page.goto( INBOX );
+
+		const surface = page.locator( '.corex-inbox .corex-loadable' );
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		await expect( page.getByText( 'No matching submissions' ) ).toHaveCount(
+			0
+		);
+		const count = page.locator( '.corex-inbox__count' );
+		await expect( count.locator( '.corex-admin-skeleton' ) ).toHaveCount(
+			1
+		);
+		await expect( count ).not.toContainText( 'accessible' );
+
+		const height = async ( locator ) => ( await box( locator ) ).height;
+		const before = {
+			row: await height(
+				surface.locator( '.corex-admin-skeleton tbody tr' ).first()
+			),
+			head: await height(
+				surface.locator( '.corex-admin-skeleton thead tr' )
+			),
+			count: await box( count ),
+		};
+
+		await held.shift().continue();
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+		await expect( count ).toContainText( 'accessible' );
+
+		expect( {
+			row: await height( surface.locator( 'tbody tr' ).first() ),
+			head: await height( surface.locator( 'thead tr' ) ),
+			count: {
+				...( await box( count ) ),
+				// A count is as wide as what it says; the line it is on does not move.
+				width: before.count.width,
+			},
+		} ).toEqual( before );
+	} );
+
+	test( 'keeps its rows, and holds its count, while a filter is applied', async ( {
+		page,
+	} ) => {
+		await page.goto( INBOX );
+		const surface = page.locator( '.corex-inbox .corex-loadable' );
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+		const rows = await surface.locator( 'tbody tr' ).count();
+		expect( rows ).toBeGreaterThan( 0 );
+
+		const held = [];
+		await page.route( isInboxList, ( route ) => held.push( route ) );
+		await page.getByLabel( 'Include marked tests' ).check();
+
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'refreshing'
+		);
+		await expect( surface.locator( 'tbody tr' ) ).toHaveCount( rows );
+		await expect( surface.locator( '.corex-admin-skeleton' ) ).toHaveCount(
+			0
+		);
+		await expect( page.locator( '.corex-inbox__count' ) ).toHaveAttribute(
+			'data-corex-waiting',
+			'true'
+		);
+
+		await held.shift().continue();
+
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+		await expect(
+			page.locator( '.corex-inbox__count' )
+		).not.toHaveAttribute( 'data-corex-waiting', 'true' );
+	} );
+
+	test( 'the pane shows a submission’s shape before the submission, and a pressed control works until the pane is current', async ( {
+		page,
+	} ) => {
+		await page.goto( INBOX );
+		const surface = page.locator( '.corex-inbox .corex-loadable' );
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		const gate = await gateOn( page, isOneSubmission );
+		await surface.locator( '.corex-inbox__row-button' ).first().click();
+
+		const pane = page.locator( '.corex-pane' );
+		await expect(
+			pane.locator( '.corex-admin-skeleton .corex-pane__section' )
+		).toHaveCount( 2 );
+		await expect( pane.getByText( 'Loading the submission…' ) ).toHaveCount(
+			0
+		);
+
+		// Let it be read, and let opening it mark it read, which is a change of its own.
+		await gate.open();
+		await expect(
+			pane.getByRole( 'heading', { name: 'Answers' } )
+		).toBeVisible();
+		const unread = pane.getByRole( 'button', { name: 'Mark unread' } );
+		await expect( unread ).toBeEnabled();
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		gate.close();
+		const atRest = await box( unread );
+		await unread.click();
+
+		await expect( unread ).toHaveAttribute( 'data-corex-working', 'true' );
+		expect( await box( unread ) ).toEqual( atRest );
+		await expect(
+			pane.getByRole( 'button', { name: 'Move to trash' } )
+		).toBeDisabled();
+
+		await gate.open();
+
+		await expect(
+			pane.getByRole( 'button', { name: 'Mark read' } )
+		).toBeEnabled();
+		await expect(
+			pane.getByRole( 'button', { name: 'Move to trash' } )
+		).toBeEnabled();
 	} );
 } );

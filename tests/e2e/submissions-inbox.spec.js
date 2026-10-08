@@ -19,7 +19,10 @@ test.beforeEach( async ( { page } ) => {
 	await expect(
 		page.getByRole( 'heading', { name: 'Submission Inbox' } )
 	).toBeVisible();
-	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
 } );
 
 /**
@@ -118,7 +121,10 @@ test( 'opens pre-filtered when Forms & Flows links to one form’s submissions',
 	await expect(
 		page.getByRole( 'heading', { name: 'Submission Inbox' } )
 	).toBeVisible();
-	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
 
 	await expect( page.getByRole( 'combobox', { name: 'Form' } ) ).toHaveText(
 		/Contact/i
@@ -836,7 +842,10 @@ test( 'moves submissions to the trash and restores them, from the pane, in bulk 
 	expect( second.real.envelope.ok ).toBe( true );
 	// Seeding leaves the page on the form's own screen.
 	await page.goto( '/wp-admin/admin.php?page=corex-submissions' );
-	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
 	await page.getByLabel( 'Search' ).fill( EMAIL );
 	const rows = page.locator( '.corex-inbox__table tbody tr' );
 	// Until the search has been applied the table still holds the unfiltered page.
@@ -1051,7 +1060,10 @@ test( 'deletes submissions for good from the trash, after an acknowledged confir
 	const second = await seedSubmission( page, FLOW_SLUG, EMAIL );
 	expect( second.real.envelope.ok ).toBe( true );
 	await page.goto( '/wp-admin/admin.php?page=corex-submissions' );
-	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
 	await page.getByLabel( 'Search' ).fill( EMAIL );
 	const rows = page.locator( '.corex-inbox__table tbody tr' );
 	await expect
@@ -1196,7 +1208,10 @@ test( 'deletes submissions for good from the trash, after an acknowledged confir
 		.getByRole( 'group', { name: 'Submissions shown' } )
 		.getByRole( 'button', { name: 'Inbox' } )
 		.click();
-	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );

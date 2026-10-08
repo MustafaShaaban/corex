@@ -548,4 +548,23 @@ describe( "WordPress's striped busy button", () => {
 
 		expect( users ).toEqual( [] );
 	} );
+
+	// The same for a wait (spec 108, FR-001): a placeholder in the shape of what is coming, from
+	// `CorexLoadable`, where WordPress's spinner beside a sentence used to be. The inbox and its
+	// pane were the last two to have one.
+	it( 'has no spinner beside it either', () => {
+		const users = trackedFiles
+			.filter(
+				( file ) =>
+					/^plugins\/corex-config\/src\/.+\.js$/.test( file ) &&
+					! file.includes( '/__tests__/' )
+			)
+			.filter( ( file ) =>
+				/\bSpinner\b/.test(
+					fs.readFileSync( path.join( repositoryRoot, file ), 'utf8' )
+				)
+			);
+
+		expect( users ).toEqual( [] );
+	} );
 } );
