@@ -524,3 +524,28 @@ describe( 'what each release says to a client site', () => {
 		expect( says && ! unreleased.body.includes( HEADING ) ).toBe( false );
 	} );
 } );
+
+/**
+ * A control whose request is on its way looks one way across the admin (spec 108, FR-020): the
+ * CoreX loader over a button that keeps its width, from `workingProps`. `isBusy` is WordPress's
+ * own answer, a striped button in WordPress's colours, and four screens had it while others
+ * changed their label or showed nothing. It is not a lint rule because nothing is wrong with the
+ * prop itself; it is wrong here.
+ */
+describe( "WordPress's striped busy button", () => {
+	it( 'is not what an admin screen shows while it works', () => {
+		const users = trackedFiles
+			.filter(
+				( file ) =>
+					/^plugins\/corex-config\/src\/.+\.js$/.test( file ) &&
+					! file.includes( '/__tests__/' )
+			)
+			.filter( ( file ) =>
+				/\bisBusy\b/.test(
+					fs.readFileSync( path.join( repositoryRoot, file ), 'utf8' )
+				)
+			);
+
+		expect( users ).toEqual( [] );
+	} );
+} );
