@@ -8027,3 +8027,97 @@ What was run:
   produces one.
 - `captcha.action`, the global setting, still has no reader.
 - An invisible or managed-size widget is not offered; the provider's default is used.
+
+## #279 — Spec Kit in a client repository: its state is not tracked, its hook is off, and its directory is named
+
+Date: 2026-10-08 · Issue: #251, item 1 · Spec: 102 (update-safe client sites) · Status: Final
+
+In a client repository everything outside `sites/` is the framework's, and a change there is
+drift. Running the documented Spec Kit workflow there made such changes, so a generated site's
+guide said to write specs by hand. The issue named three writes and asked for the scripts to be
+taught a per-site root, which it said wanted its own spec. Read again, two of the three were not
+about where a spec lives, and the third needs no change to a script.
+
+| What the issue named | What it is | What changed |
+|---|---|---|
+| `/speckit-specify` persists the active feature to `.specify/feature.json`, which is tracked | One checkout's working state. On `main` it named a single feature, whatever each checkout was working on | Ignored and removed from the tree. Spec Kit's scripts read it when it is there and fall back to the branch name when it is not |
+| The `agent-context` extension rewrites the managed section of the root `CLAUDE.md` | An optional hook, run after `/speckit-specify` and `/speckit-plan` | Both hooks are `enabled: false`. The section it kept still said to read spec 068's plan, with spec 104 in flight; it is removed |
+| `common.ps1` resolves the specs directory as `<repo root>/specs` | True only when nothing names a directory. `Get-FeaturePathsEnv` takes `SPECIFY_FEATURE_DIRECTORY` first, then the state file, and only then the branch name | Nothing in Spec Kit. The generated `AGENTS.md` gives the command: `/speckit-specify SPECIFY_FEATURE_DIRECTORY=sites/<client>/specs/<work-item>-<slug> …` |
+
+**Why not teach the scripts a per-site root.** `.specify/scripts/` is Spec Kit's, vendored. A patch
+there is a fork to carry through every Spec Kit update, to do what an existing override already
+does. What a client loses by naming the directory is automatic numbering, which counted the
+framework's `specs/` and was wrong for a site anyway.
+
+**Why the hook goes for the framework too.** It is the same file in both repositories, and a
+client cannot turn it off without drift. In the framework its output had been stale since
+spec 068 with nobody noticing, which is its own answer to whether it was used. `CLAUDE.md` already
+says to read the active spec and `PROGRESS.md`.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The three new assertions, before the change | failed: the state file tracked, both hooks on, the guide saying "by hand" |
+| After: `tests/repo-hygiene.test.js`, `tests/repository-ownership.test.js`, `tests/Unit/Cli` | 77 and 168 passed |
+| Spec Kit's own `check-prerequisites.ps1 -Json -PathsOnly`, with `SPECIFY_FEATURE_DIRECTORY=sites/acme/specs/001-lead-form` | `FEATURE_DIR`, `FEATURE_SPEC`, `IMPL_PLAN` and `TASKS` all under `sites\acme\specs\001-lead-form` |
+| The same script with no variable and the state file naming that directory | the same paths; `git status` shows no change to the state file |
+
+**Not run.** The whole workflow in a real client repository: no `/speckit-specify` was run in
+Muva or Perego, and `npm run verify:framework` was not run there after one. What is shown is
+that Spec Kit's path resolution takes a site's directory and that the two files it used to
+change are no longer the framework's to protect. A client repository created before this still
+tracks `.specify/feature.json` until it takes the release that removes it.
+
+**Left open.** A site generated before this keeps the old paragraph in its `AGENTS.md`; that file
+is the client's. `.agents/skills/` and `.claude/skills/` still describe the hook as something that
+may run; they are Spec Kit's text.
+
+## #280 — The hosting package leaves out what only describes the source
+
+Date: 2026-10-08 · Spec: none (packaging) · Status: Final
+
+Reported from the first site on shared hosting, by fetching them: each plugin's `README.md` and
+`composer.json` could be read from the web. They say what is installed and at which version to
+anybody who asks. Not a way in by itself, and the first thing somebody looking for one reads.
+
+**What is left out.** `README.md`, `composer.json` and `package.json`, from every tree the
+builder copies that is not WordPress core: CoreX's plugins and add-ons, its theme, the
+command-line package, and a client's plugin and theme. Nothing on a running site reads one. The
+only readers are release commands (`wp corex version`, `wp corex readiness`), which read the
+repository's root files and are not run on a host.
+
+**WordPress core is left as it ships.** Core carries its own (`wp-includes/sodium_compat/composer.json`
+among them). They are WordPress's, the same on every WordPress site, and removing them would
+make the packaged core differ from the release it claims to be.
+
+**`vendor/` is left as Composer installs it**, and that is the part not fixed: 28 `README.md`
+and `composer.json` files of third-party packages are still in a real package, and
+`vendor/composer/installed.json` lists every package and version. Removing files from another
+project's package is how a later update breaks; the answer for a directory nobody should fetch
+from is a server rule, and the package ships none by design, because the host owns its
+`.htaccess`.
+
+An older assertion in the builder's tests said no `composer.json` exists anywhere in a package.
+It meant the one Composer is given to work from, in `wp-content/`, and was true of everything
+only because the fixture's WordPress had none. It asserts what it meant.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The new test on the unchanged builder | failed, listing seven files in the fixture's plugins, themes and command-line package |
+| `tests/build-shared-host-dist.test.js` after | 17 passed |
+| The real package, built to a scratch directory | 3,036 entries under `wp-content/`; none of the three names outside `vendor/`; 28 inside it |
+| `verifyDist` on that package, and the probe that loads it in a PHP process of its own | `ok: true`, no errors; every namespace loaded |
+
+**Not run.** No package was uploaded to a host, and no request was made to one for these paths.
+
+**Left open.**
+
+- `wp-content/vendor/` can be fetched from: third-party `README.md` and `composer.json`, and
+  `vendor/composer/installed.json`. A host should refuse requests into it. Nothing in CoreX
+  says so to an operator, and no rule is shipped.
+- From the same audit and not done: the coming-soon page still prints WordPress's generator tag,
+  the RSD link, feed links and the emoji script; the REST index lists every `corex/v1` route to
+  anybody (they answer 401 or 403); CoreX has no setting for security headers.
