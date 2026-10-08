@@ -8,6 +8,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **Forms and flows, and Email Studio, show what is coming while they load** (spec 108, slice
+  4). The catalog of forms shows rows that are not there yet, where it showed "Loading forms…"
+  over whatever it had; opening a flow shows the editor that is coming, where the catalog
+  stayed, disabled, until the flow arrived. Email Studio shows a placeholder under its tabs
+  until it has been read; choosing a template shows the editor that is coming, and marks the
+  template that was chosen (DECISIONS #290).
 - **The Data screen shows what is coming while it loads** (spec 108, slice 3). The records list
   shows rows that are not there yet, the height of the rows that replace them, where it showed
   WordPress's spinner. A sort, a filter, a search or a page turn keeps the rows on screen,
@@ -151,6 +157,14 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A disabled button in the CoreX admin is the button, dimmed.** WordPress paints every
+  disabled button a pale grey: a light box on the dark theme, on every screen that disables
+  its buttons while it loads.
+- **Email Studio on a site with no templates no longer takes the open form away on every
+  save** to say "Loading Email Studio…". Whether the studio had been read was guessed from
+  whether it had any templates.
+- **Choosing an email template twice in a row** asked for both, and the slower answer was the
+  one left in the editor. Templates are chosen one at a time.
 - **A record's detail shows its fields.** "View" on the Data screen drew the whole record as
   one field named "Record", holding a line of JSON: the route answers `{ record }` and the
   screen read the answer itself as the record. The detail is also a CoreX dialog now; it was
