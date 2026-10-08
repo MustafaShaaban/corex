@@ -21,7 +21,10 @@ use Corex\Config\Data\DataRegistry;
 use Corex\Config\Data\DataSource;
 use Corex\Config\Data\DataSourceService;
 use Corex\Config\Data\ExportableDataSource;
+use Corex\Config\Data\FieldAwareDataSource;
+use Corex\Config\Data\QueryableDataSource;
 use Corex\Config\Data\SubmissionsSource;
+use Corex\Config\DataModels\DataExportAbout;
 use Corex\Config\DataModels\DataExportFiles;
 use Corex\Config\DataModels\DataExportJobHandler;
 use Corex\Config\DataModels\DataExportJobQueue;
@@ -39,6 +42,7 @@ use Corex\Tests\Support\InMemorySubmissionsReader;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
+    Functions\when('_n')->alias(static fn (string $one, string $many, int $count): string => $count === 1 ? $one : $many);
     Functions\when('wp_json_encode')->alias('json_encode');
     Functions\when('wp_delete_file')->alias('unlink');
     Functions\when('sanitize_key')->alias(static fn (string $key): string => strtolower($key));
@@ -192,6 +196,10 @@ function dataExportFiles(): array
     return [
         new DataExportFiles(
             new DataExportTable(static fn (): DateTimeZone => new DateTimeZone('UTC')),
+            new DataExportAbout(
+                static fn (int $userId): string => $userId === 7 ? 'Salma Adel' : '',
+                static fn (): DateTimeZone => new DateTimeZone('UTC'),
+            ),
             new ExportWriters(static fn (): bool => false),
             $directory,
         ),
@@ -265,7 +273,7 @@ it('requires personal-data acknowledgement and rejects undeclared columns or for
         ->toThrow(InvalidArgumentException::class, 'column')
         ->and(fn () => $service->request(exportRequest(['format' => 'xlsx'])))
         ->toThrow(DomainException::class, 'support')
-        ->and(fn () => exportRequest(['format' => 'pdf']))
+        ->and(fn () => exportRequest(['format' => 'docx']))
         ->toThrow(InvalidArgumentException::class, 'format')
         ->and(fn () => exportRequest(['separator' => 'pipe']))
         ->toThrow(InvalidArgumentException::class, 'separator');
@@ -487,4 +495,19 @@ it('writes the same answers into a workbook', function () {
     expect($cells)->toContain('sam@example.com')
         ->and($cells)->toContain('Hello')
         ->and($cells)->toContain('email: sam@example.com · name: Sam · message: Hello');
+});
+
+it('refuses a PDF of more records than a PDF is written for, and says what to do instead', function () {
+    [$service, $store, , $sources] = exportService();
+    $source = $sources->authorize(7, 'contacts', DataSourceCapabilities::EXPORT_CSV);
+    for ($id = 4; $id <= ExportWriters::PDF_MOST_RECORDS + 1; $id++) {
+        $source->arrive(['id' => $id, 'name' => 'Person ' . $id, 'email' => '', 'status' => 'active', 'joined' => '', 'tags' => []]);
+    }
+    $everything = ['scope' => 'all', 'query' => [], 'columns' => ['status']];
+
+    expect(fn () => $service->request(exportRequest($everything + ['format' => 'pdf'])))
+        ->toThrow(DomainException::class, 'A PDF holds up to 500 records. Export fewer, or choose a workbook.')
+        ->and($store->runs)->toBe([])
+        // The same export as a workbook is taken.
+        ->and($service->request(exportRequest($everything + ['format' => 'xlsx']))->recordCount)->toBe(501);
 });

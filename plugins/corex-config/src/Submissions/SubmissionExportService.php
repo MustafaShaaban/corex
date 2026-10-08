@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
+use Corex\Config\Export\ExportWriters;
 use DateInterval;
 use DateTimeImmutable;
 use DomainException;
@@ -38,6 +39,12 @@ final readonly class SubmissionExportService
             : $this->countQuery($scope, $request);
         if ($recordCount === 0) {
             throw new DomainException('There is nothing to export.');
+        }
+        if ($request->format === ExportWriters::PDF && $recordCount > ExportWriters::PDF_MOST_RECORDS) {
+            throw new DomainException(sprintf(
+                'A PDF holds up to %d submissions. Export fewer, or choose a workbook.',
+                ExportWriters::PDF_MOST_RECORDS,
+            ));
         }
         $run = $this->exports->create(SubmissionExportRun::queued($scope->actorId, $request, $recordCount));
         $run = $this->exports->attachJob($run->id, $this->jobs->enqueue($run));

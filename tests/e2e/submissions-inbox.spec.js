@@ -236,6 +236,42 @@ test( 'filters works assigns notes bulk actions and audits personal-data exports
 		dialog.getByRole( 'heading', { name: 'Recent exports' } )
 	).toBeVisible();
 
+	// And as a document to file (US8). The dialog says how many a PDF holds before it is asked
+	// for, and its parts stay one distance apart under the longer line.
+	await dialog.getByRole( 'combobox', { name: 'File type' } ).click();
+	await page.getByRole( 'option', { name: 'PDF document (.pdf)' } ).click();
+	await expect(
+		dialog.getByText( /Up to 500 submissions\.$/ )
+	).toBeVisible();
+	const gapsWithPdf = await dialog
+		.locator( '.corex-dialog__body' )
+		.evaluate( ( body ) =>
+			Array.from( body.children )
+				.slice( 1 )
+				.map( ( section ) =>
+					Math.round(
+						section.getBoundingClientRect().top -
+							section.previousElementSibling.getBoundingClientRect()
+								.bottom
+					)
+				)
+		);
+	expect(
+		new Set( gapsWithPdf ).size,
+		`section gaps ${ gapsWithPdf.join( ', ' ) }`
+	).toBe( 1 );
+	const documentArriving = page.waitForEvent( 'download' );
+	await start.click();
+	const filed = await documentArriving;
+	expect( filed.suggestedFilename() ).toMatch( /\.pdf$/ );
+	expect(
+		fs
+			.readFileSync( await filed.path() )
+			.subarray( 0, 5 )
+			.toString( 'latin1' )
+	).toBe( '%PDF-' );
+	await expect( dialog.getByText( /^Saved .+\.pdf\.$/ ) ).toBeVisible();
+
 	// The page behind an open dialog cannot be reached, so it is closed first.
 	await dialog
 		.getByRole( 'button', { name: 'Close', exact: true } )

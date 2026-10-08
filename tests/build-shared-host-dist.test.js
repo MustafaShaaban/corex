@@ -248,6 +248,30 @@ it( 'builds the package vendor/ beside the plugins, and leaves the checkout vend
 	).toBe( '<?php // the checkout autoloader' );
 } );
 
+// Reported by CI on 2026-10-08: mPDF ships its own `.github`, Composer installed it as shipped,
+// and the package was refused for holding a forbidden path.
+it( 'removes from the packaged vendor/ what a package may not hold, and keeps the rest', () => {
+	const { distDir } = buildFixture();
+	const shipped = join( distDir, 'wp-content', 'vendor', 'acme', 'pdf' );
+	const write = ( rel ) => {
+		mkdirSync( join( shipped, rel, '..' ), { recursive: true } );
+		writeFileSync( join( shipped, rel ), 'x' );
+	};
+	write( '.github/workflows/tests.yml' );
+	write( 'tests/WriterTest.php' );
+	write( 'src/Writer.php' );
+	expect( mod.verifyDist( distDir ).ok ).toBe( false );
+
+	const removed = mod.prunePackagedVendor( distDir );
+
+	expect( removed.sort() ).toEqual( [
+		'wp-content/vendor/acme/pdf/.github',
+		'wp-content/vendor/acme/pdf/tests',
+	] );
+	expect( existsSync( join( shipped, 'src', 'Writer.php' ) ) ).toBe( true );
+	expect( mod.verifyDist( distDir ) ).toEqual( { ok: true, errors: [] } );
+} );
+
 it( 'packages the CLI with its stubs, the client site, and none of the dev or runtime files', () => {
 	const { distDir } = buildFixture();
 	const packaged = listed( distDir );

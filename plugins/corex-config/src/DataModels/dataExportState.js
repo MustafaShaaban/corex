@@ -5,6 +5,10 @@
  * its fields. The parts are shared; the words are these, tested without a browser.
  */
 import { __, _n, sprintf } from '@wordpress/i18n';
+import {
+	offeredFormats,
+	tooManyForPdf,
+} from '../admin/components/export/exportFormats.js';
 
 /** The most rows one selected export may hold; the route refuses more. */
 export const SELECTION_LIMIT = 500;
@@ -156,32 +160,40 @@ export function dataColumnChoices( fields ) {
 
 /**
  * The formats a source can be exported in. Excel is first where it is offered, as it is in the
- * Submissions export.
+ * Submissions export; a source says for itself whether it can be a workbook.
  *
- * @param {Object} source The source, with the actions this person may take on it.
+ * @param {Object}             source    The source, with the actions this person may take on it.
+ * @param {string[]|undefined} available The formats the server can write where it runs.
  * @return {Array<{value:string,label:string}>} The formats.
  */
-export function dataFormats( source ) {
-	const csv = { value: 'csv', label: __( 'CSV (.csv)', 'corex' ) };
+export function dataFormats( source, available ) {
+	const allowed = ( format ) =>
+		format !== 'xlsx' || Boolean( source?.actions?.export_xlsx?.visible );
 
-	return source?.actions?.export_xlsx?.visible
-		? [
-				{
-					value: 'xlsx',
-					label: __( 'Excel workbook (.xlsx)', 'corex' ),
-				},
-				csv,
-		  ]
-		: [ csv ];
+	return offeredFormats( available ).filter( ( format ) =>
+		allowed( format.value )
+	);
 }
 
 /**
  * What each format is for, in a line under the choice.
  *
- * @param {string} format The chosen format.
+ * @param {string} format    The chosen format.
+ * @param {number} [pdfMost] The most records one PDF holds.
  * @return {string} The line.
  */
-export function dataFormatDetail( format ) {
+export function dataFormatDetail( format, pdfMost = 0 ) {
+	if ( format === 'pdf' ) {
+		return sprintf(
+			/* translators: %s: the most records one PDF holds. */
+			__(
+				'A document to keep or print. Every page has the site’s name, its number and CoreX’s signature. Up to %s records.',
+				'corex'
+			),
+			Number( pdfMost ).toLocaleString()
+		);
+	}
+
 	return format === 'xlsx'
 		? __(
 				'Dates and numbers sort and filter. The headings stay in view.',
@@ -199,6 +211,8 @@ export function dataFormatDetail( format ) {
  * @param {boolean}     state.personal     Whether a chosen column holds personal data.
  * @param {boolean}     state.acknowledged Whether the personal-data notice is confirmed.
  * @param {string}      state.problem      Why the counts could not be asked for; '' when they could.
+ * @param {string}      [state.format]     The chosen format.
+ * @param {number}      [state.pdfMost]    The most records one PDF holds.
  * @return {string} The reason, in words.
  */
 export function dataBlockedReason( {
@@ -207,6 +221,8 @@ export function dataBlockedReason( {
 	personal,
 	acknowledged,
 	problem,
+	format = 'csv',
+	pdfMost = 0,
 } ) {
 	if ( problem ) {
 		return problem;
@@ -216,6 +232,16 @@ export function dataBlockedReason( {
 	}
 	if ( count === 0 ) {
 		return __( 'There is nothing to export with this choice.', 'corex' );
+	}
+	if ( tooManyForPdf( format, count, pdfMost ) ) {
+		return sprintf(
+			/* translators: %s: the most records one PDF holds. */
+			__(
+				'A PDF holds up to %s records. Choose fewer, or export a workbook.',
+				'corex'
+			),
+			Number( pdfMost ).toLocaleString()
+		);
 	}
 	if ( columns.length === 0 ) {
 		return __( 'Choose at least one column.', 'corex' );

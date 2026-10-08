@@ -67,5 +67,18 @@
       "client_site_default": false,
       "description": "Lockup using the AA-darkened brass #ad8643 core for light / high-contrast backgrounds."
     }
-  ]
+  ],
+  "print": {
+    "path": "plugins/corex-config/assets/brand/corex-lockup-print.png",
+    "filename": "corex-lockup-print.png",
+    "rendered_from": "plugins/corex-config/assets/brand/corex-contrast.svg",
+    "ink": "#14151a",
+    "pixels": [
+      1361,
+      384
+    ],
+    "sha256": "9e3d9d6afe8a6bb9b504e360fb5191dd0c98b51abd3caf5d0d3afbf0956ac793",
+    "generator": "scripts/generate-logo-print.py",
+    "description": "The light-ground lockup as a raster image, for documents CoreX writes as PDF. The PDF library cannot draw the wordmark's outlines from the SVG."
+  }
 }

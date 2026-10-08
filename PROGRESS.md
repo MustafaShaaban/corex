@@ -55,15 +55,15 @@ is delivered in seven slices, one pull request each:
 | — | Spacing review of the dialog and the filters, on the owner's request | done (DECISIONS #257). Measured, fixed, and kept measured by two browser tests |
 | 4 | The detail pane | done, in v0.43.3 (DECISIONS #259). Measured, and kept measured by a browser test. Not in it: to whom a notification went and where a failure can be fixed (T074b), which the server does not record |
 | 5 | Export history: size, expiry, delete | done, in v0.43.4 (DECISIONS #262). A file is kept 30 days and removed by the daily retention sweep. Found on the way: the dialog printed `[object Object]` for a date filter |
-| 6 | PDF | not started; needs a spike on a library that renders Arabic |
+| 6 | PDF | done (DECISIONS #269), unreleased. mPDF, chosen by a spike; every page signed as CoreX's, which is what the owner meant; up to 500 records. Produced documents were rendered and looked at, left-to-right, right-to-left and wide. Found on the way: the Data export of Form submissions leaves its per-answer columns empty, and a ticked row loses "Submission" too, in every format (queued as its own task) |
 | 7a | The Data export: the audit, and its file and flow on the server | done, in v0.43.4 (DECISIONS #265). The audit found two export surfaces, neither handing over a file, and that Excel was never reachable |
 | 7b | The Data export: one dialog for both surfaces | done (DECISIONS #266), unreleased. It is the Submissions export's dialog, from shared parts. Found on the way: in both dialogs a choice's name was a pixel smaller than the line describing it |
 | — | The Data export of Form submissions: each answer under its column, and a ticked row with its summary | done (#290, DECISIONS #270), unreleased. Found in a real export after 7b: every answer's column was empty. A source now hands an export its own rows (`ExportableDataSource`); a client's own exportable source has to implement it, which is under Client impact |
 
-Two readings in the spec are the owner's to overrule: that opening a submission marks it read
-(built that way in slice 4, with "Mark unread" in the pane's header), and that "signed off with
-the identity" on the PDF means the brand identity plus a sign-off block naming the person who
-exported it.
+One reading in the spec is the owner's to overrule: that opening a submission marks it read
+(built that way in slice 4, with "Mark unread" in the pane's header). The other was answered on
+2026-10-08: "signed off with the identity" on the PDF means CoreX's signature, its logo and
+copyright line on every page.
 
 Released in v0.43.3 beside slice 4, both reported from the first client site after it took
 v0.43.2 (DECISIONS #260): the submissions and flow routes now carry a permission callback, so

@@ -97,3 +97,21 @@ it('documents accessible usage without imposing product identity on client sites
             ->and($asset['client_site_default'] ?? null)->toBeFalse();
     }
 });
+
+it('signs a PDF with the approved lockup, as the image the manifest records', function () {
+    $manifest = ThemeContract::json('plugins/corex-config/assets/brand/logo-manifest.json');
+    $print = $manifest['print'];
+    $image = ThemeContract::root() . '/' . $print['path'];
+
+    // The image is rendered from an approved asset, never drawn again: a change to either is a
+    // change to the other, made with the generator the manifest names.
+    expect(array_column($manifest['assets'], 'path'))->toContain($print['rendered_from'])
+        ->and(ThemeContract::root() . '/' . $print['generator'])->toBeFile()
+        ->and($image)->toBeFile()
+        ->and(hash_file('sha256', $image))->toBe($print['sha256'])
+        ->and(array_slice((array) getimagesize($image), 0, 2))->toBe($print['pixels']);
+
+    // And it is the image a PDF is signed with.
+    expect((string) file_get_contents(ThemeContract::root() . '/plugins/corex-config/src/ConfigServiceProvider.php'))
+        ->toContain("'/assets/brand/" . $print['filename'] . "'");
+});

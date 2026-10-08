@@ -11,9 +11,7 @@ namespace Corex\Config\Submissions;
 defined('ABSPATH') || exit;
 
 use Corex\Config\Export\ExportDirectory;
-use Corex\Config\Export\ExportDocument;
 use Corex\Config\Export\ExportFile;
-use Corex\Config\Export\ExportSheet;
 use Corex\Config\Export\ExportWriters;
 
 /**
@@ -27,8 +25,7 @@ final readonly class SubmissionExportFiles
     public const SEVERAL_FORMS = 'submissions';
 
     public function __construct(
-        private SubmissionExportTable $table,
-        private SubmissionQuestions $questions,
+        private SubmissionExportDocuments $documents,
         private ExportWriters $writers,
         private ExportDirectory $directory,
     ) {
@@ -48,30 +45,15 @@ final readonly class SubmissionExportFiles
      */
     public function finish(SubmissionExportRun $run): array
     {
-        $spool  = $this->spool($run);
-        $forms  = $spool->forms();
-        $sheets = [];
-
-        foreach ($forms as $slug => $name) {
-            $sheets[] = $this->table->sheet($name, $spool->of($slug), $this->questions->for($slug), $run->columns);
-        }
-
-        $file = $this->writers
+        $spool = $this->spool($run);
+        $forms = $spool->forms();
+        $file  = $this->writers
             ->for($run->format, $run->separator)
-            ->write(new ExportDocument(self::SEVERAL_FORMS, $sheets ?: [$this->emptySheet($run)]), $this->target($run));
+            ->write($this->documents->for($run, $spool), $this->target($run));
 
         $spool->discard();
 
         return ['file' => $file, 'subject' => count($forms) === 1 ? (string) array_key_first($forms) : self::SEVERAL_FORMS];
-    }
-
-    /**
-     * Every submission the export was to hold went out of reach while it ran. The file still has
-     * its headings, so what was asked for is plain from it.
-     */
-    private function emptySheet(SubmissionExportRun $run): ExportSheet
-    {
-        return $this->table->sheet(self::SEVERAL_FORMS, [], [], $run->columns);
     }
 
     private function spool(SubmissionExportRun $run): SubmissionExportSpool

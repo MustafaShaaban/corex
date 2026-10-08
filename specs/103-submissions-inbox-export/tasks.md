@@ -104,12 +104,13 @@ Slice 2a ends here (DECISIONS #254). T030, T031 and everything below is slice 2b
 
 ## Slice 6 — PDF (US8)
 
-- [ ] T090 Spike: a PHP library that shapes Arabic and what it adds to the distribution, against a print-styled document; the result recorded in `plan.md` and `DECISIONS.md` before any code
-- [ ] T091 Pest unit: the document's parts — identity, title, filters, count, who and when, page numbers, the sign-off block
-- [ ] T092 `PdfExportWriter`
-- [ ] T093 Brand name and logo from the brand settings, with the site title as the fallback
-- [ ] T094 One produced document opened and printed, with Arabic answers; what was seen recorded
-- [ ] T095 PDF in the dialog; guards; notes
+- [x] T090 Spike: a PHP library that shapes Arabic and what it adds to the distribution, against a print-styled document; the result recorded in `plan.md` before any code (mPDF; plan D3)
+- [x] T091 Pest unit: the document's parts — the site's name, title, filters, count, who and when, page numbers, CoreX's signature
+- [x] T092 `PdfExportWriter`
+- [x] T093 CoreX's signature: the lockup as a print image, and the copyright line (the owner's answer of 2026-10-08, in place of the brand logo and the sign-off block)
+- [x] T093b No PDF for more records than one step can write; the dialog says so (FR-019a)
+- [x] T094 One produced document opened and printed, with Arabic answers; what was seen recorded
+- [x] T095 PDF in the dialog; guards; notes
 
 ## Slice 7 — The Data export (US10)
 

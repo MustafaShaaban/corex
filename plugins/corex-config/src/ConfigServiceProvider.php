@@ -659,11 +659,36 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Config\Export\ExportDirectory::class,
             \Corex\Config\Export\ProtectedExportDirectory::class,
         );
+        // A PDF is headed by the site's name and signed as CoreX's (spec 103, FR-019). The name
+        // and the direction are asked when a document is written: neither is settled at boot.
+        $this->container->singleton(
+            \Corex\Config\Export\PdfExportLayout::class,
+            static fn (): \Corex\Config\Export\PdfExportLayout =>
+                new \Corex\Config\Export\PdfExportLayout(
+                    static fn (): string => wp_specialchars_decode((string) get_bloginfo('name'), ENT_QUOTES),
+                    static fn (): bool => is_rtl(),
+                    dirname(__DIR__) . '/assets/brand/corex-lockup-print.png',
+                    static fn (): \DateTimeImmutable => new \DateTimeImmutable('now', wp_timezone()),
+                ),
+        );
+        $this->container->singleton(\Corex\Config\Export\PdfExportWriter::class);
         $this->container->singleton(
             \Corex\Config\Export\ExportWriters::class,
-            static fn (): \Corex\Config\Export\ExportWriters =>
-                new \Corex\Config\Export\ExportWriters(static fn (): bool => is_rtl()),
+            static fn (ContainerInterface $c): \Corex\Config\Export\ExportWriters =>
+                new \Corex\Config\Export\ExportWriters(
+                    static fn (): bool => is_rtl(),
+                    $c->make(\Corex\Config\Export\PdfExportWriter::class),
+                ),
         );
+        $this->container->singleton(
+            \Corex\Config\Submissions\SubmissionExportAbout::class,
+            static fn (ContainerInterface $c): \Corex\Config\Submissions\SubmissionExportAbout =>
+                new \Corex\Config\Submissions\SubmissionExportAbout(
+                    $c->make(\Corex\Config\Submissions\SubmissionOwnerNames::class),
+                    static fn (): \DateTimeZone => wp_timezone(),
+                ),
+        );
+        $this->container->singleton(\Corex\Config\Submissions\SubmissionExportDocuments::class);
         $this->container->singleton(
             \Corex\Config\Submissions\SubmissionExportTable::class,
             static fn (ContainerInterface $c): \Corex\Config\Submissions\SubmissionExportTable =>
@@ -718,6 +743,18 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Config\DataModels\DataExportTable::class,
             static fn (): \Corex\Config\DataModels\DataExportTable =>
                 new \Corex\Config\DataModels\DataExportTable(static fn (): \DateTimeZone => wp_timezone()),
+        );
+        $this->container->singleton(
+            \Corex\Config\DataModels\DataExportAbout::class,
+            static fn (): \Corex\Config\DataModels\DataExportAbout =>
+                new \Corex\Config\DataModels\DataExportAbout(
+                    static function (int $userId): string {
+                        $user = get_userdata($userId);
+
+                        return $user instanceof \WP_User ? (string) $user->display_name : '';
+                    },
+                    static fn (): \DateTimeZone => wp_timezone(),
+                ),
         );
         $this->container->singleton(\Corex\Config\DataModels\DataExportFiles::class);
         $this->container->singleton(DataExportService::class);

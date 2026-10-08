@@ -78,9 +78,20 @@ Campaign data, Consent record, Team notes. The file has one row per submission a
 the question the form asked. Personal-data columns require both the export permission and an explicit
 acknowledgement. Marked tests remain excluded unless you tick **Include submissions marked as tests**.
 
-Under **Format**, choose **Excel workbook (.xlsx)** or **CSV (.csv)**. A workbook has a sheet per form, real dates and
-numbers, and a frozen heading row. A CSV opens correctly in a spreadsheet, with a choice of separator: comma,
-semicolon or tab.
+Under **Format**, choose **Excel workbook (.xlsx)**, **CSV (.csv)** or **PDF document (.pdf)**. A workbook has a sheet
+per form, real dates and numbers, and a frozen heading row. A CSV opens correctly in a spreadsheet, with a choice of
+separator: comma, semicolon or tab.
+
+A PDF is a document to keep or print, on A4 pages set wide. It opens with what was exported, how many submissions, and
+who exported it and when. Every page is headed by the site's name and the export's title, and signed at the foot with
+the CoreX logo, "Exported with CoreX", the copyright line and the page's number out of how many. The heading row is
+repeated on each page. An export of more than eight columns is set out one submission at a time, each question beside
+its answer, because that many columns do not fit a page. On a right-to-left site the page reads right to left, and a
+phone number, a date or a Latin-script answer inside it keeps its own order.
+
+A PDF holds up to 500 submissions. The dialog says so under the choice, and names the limit instead of starting when
+the choice holds more: export fewer, or choose a workbook. PDF is offered only where the server can write one, which
+needs PHP's `gd` and `mbstring` extensions.
 
 The dialog shows the export's progress and saves the file when it is ready; there is nothing to refresh. History
 records the actor, scope, columns, row count, and time, while the shared activity stream records the compliance event

@@ -19,7 +19,8 @@
  *   - the client plugin from sites/<client>/ (when --client is given).
  *   - wp-content/packages/cli: the CLI package, so `wp corex` exists on the host.
  *   - wp-content/vendor: the production packages and an autoloader generated for this layout by Composer,
- *     inside the package (see shared-host-dist-autoload.mjs). The checkout's vendor/ is not copied.
+ *     inside the package (see shared-host-dist-autoload.mjs). The checkout's vendor/ is not copied. What a
+ *     package ships that the artifact may never hold (its own .github, tests) is removed after the install.
  *   - a corex-release.json manifest.
  *
  * What is always excluded: .git, .github, node_modules, tests, dev tooling, env/secrets, uploads, wp-config.php,
@@ -274,6 +275,36 @@ function copyFilter( src ) {
 }
 
 /**
+ * Remove from the packaged vendor/ what the package may never hold.
+ *
+ * A copied tree is filtered as it is copied. Composer installs a package as its author shipped it, and
+ * one may ship its own `.github` or `tests`: mPDF does, and the package was refused for it.
+ *
+ * @param {string} distDir The package being built.
+ * @return {string[]} What was removed, relative to the package and written with forward slashes.
+ */
+export function prunePackagedVendor( distDir ) {
+	const forbidden = FORBIDDEN_SEGMENTS.map( ( seg ) => seg.toLowerCase() );
+	const removed = [];
+	const prune = ( dir ) => {
+		for ( const entry of readdirSync( dir ) ) {
+			const abs = join( dir, entry );
+			if ( forbidden.includes( entry.toLowerCase() ) ) {
+				rmSync( abs, { recursive: true, force: true } );
+				removed.push(
+					relative( distDir, abs ).split( sep ).join( '/' )
+				);
+			} else if ( statSync( abs ).isDirectory() ) {
+				prune( abs );
+			}
+		}
+	};
+	prune( join( distDir, PACKAGE_ROOT, 'vendor' ) );
+
+	return removed;
+}
+
+/**
  * Execute the plan. Writes nothing when dryRun is true.
  *
  * @param {Object}  plan             The plan from `buildPlan`.
@@ -301,6 +332,7 @@ export function runBuild( plan, distDir, options = {} ) {
 	}
 	if ( ! dryRun ) {
 		installPackagedVendor( plan.autoload, distDir );
+		prunePackagedVendor( distDir );
 		writeFileSync(
 			join( distDir, 'corex-release.json' ),
 			JSON.stringify( plan.manifest, null, 2 ) + '\n'

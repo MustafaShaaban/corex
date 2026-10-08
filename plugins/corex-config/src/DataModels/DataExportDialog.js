@@ -62,7 +62,9 @@ export default function DataExportDialog( {
 	const showing = useRef( true );
 	const withRows = query !== null;
 	const fields = useMemo( () => source?.fields || [], [ source ] );
-	const formats = dataFormats( source );
+	const [ offered, setOffered ] = useState( null );
+	const formats = dataFormats( source, offered?.available );
+	const pdfMost = offered?.pdf_most_records ?? 0;
 	const requests = useMemo(
 		() => dataExportRequests( config, source?.key ),
 		[ config, source?.key ]
@@ -97,6 +99,7 @@ export default function DataExportDialog( {
 			.then( ( data ) => {
 				if ( showing.current ) {
 					setCounts( data.counts );
+					setOffered( data.formats || null );
 				}
 			} )
 			.catch( ( error ) => {
@@ -125,6 +128,8 @@ export default function DataExportDialog( {
 		personal,
 		acknowledged,
 		problem,
+		format,
+		pdfMost,
 	} );
 	const running = run.phase === 'running';
 
@@ -242,7 +247,7 @@ export default function DataExportDialog( {
 				formats={ formats }
 				separator={ separator }
 				setSeparator={ setSeparator }
-				detail={ dataFormatDetail( format ) }
+				detail={ dataFormatDetail( format, pdfMost ) }
 				disabled={ running }
 			/>
 
