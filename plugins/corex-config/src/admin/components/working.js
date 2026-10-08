@@ -7,7 +7,7 @@
  *
  * The same three attributes, written by hand, are how a screen that is not React does it.
  */
-import { createContext } from '@wordpress/element';
+import { createContext, useCallback, useState } from '@wordpress/element';
 
 /**
  * The name of the control whose request is in flight on this screen, or `''`.
@@ -20,6 +20,29 @@ import { createContext } from '@wordpress/element';
  *     <button disabled={ busy } { ...workingProps( pending === 'draft' ) }>
  */
 export const PendingControl = createContext( '' );
+
+/**
+ * Which control's request is out, for a component that sends its own.
+ *
+ * `during( name, task )` names the control for the whole of the task, with whatever the task
+ * reads after it writes, and through its failure: the control that was pressed works until the
+ * screen is current again, and the others can wait on `pending !== ''`.
+ *
+ * @return {Array} `[ pending, during ]`: the name, or `''`; and the function that runs a task under one.
+ */
+export function usePending() {
+	const [ pending, setPending ] = useState( '' );
+	const during = useCallback( async ( control, task ) => {
+		setPending( control );
+		try {
+			return await task();
+		} finally {
+			setPending( '' );
+		}
+	}, [] );
+
+	return [ pending, during ];
+}
 
 /**
  * Spread after the control's own props. A control that is not working is given nothing, so a

@@ -1,9 +1,4 @@
-import {
-	useCallback,
-	useEffect,
-	useReducer,
-	useState,
-} from '@wordpress/element';
+import { useCallback, useEffect, useReducer } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import {
 	buildFlowListUrl,
@@ -12,6 +7,7 @@ import {
 	flowReducer,
 	initialFlowState,
 } from './flowEditor.js';
+import { usePending } from '../admin/components/working.js';
 
 function failureMessage( result ) {
 	return result.envelope.message || __( 'The flow request failed.', 'corex' );
@@ -23,15 +19,7 @@ export function useFlows( config ) {
 	// is which of them was pressed. It covers the whole command, with the reads that follow a
 	// write, so the button works until the screen is current again and not only until the
 	// first answer.
-	const [ pending, setPending ] = useState( '' );
-	const during = async ( control, command ) => {
-		setPending( control );
-		try {
-			return await command();
-		} finally {
-			setPending( '' );
-		}
-	};
+	const [ pending, during ] = usePending();
 
 	const load = useCallback(
 		async ( search = '', lifecycle = '', message = '' ) => {

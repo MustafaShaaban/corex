@@ -16,10 +16,12 @@ import { useId, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import { buildTransitionPayload } from './blogProState.js';
+import { workingProps } from '../admin/components/working.js';
 
 export default function EditorialPanel( {
 	editorial,
 	busy = false,
+	working = false,
 	onTransition,
 } ) {
 	const [ target, setTarget ] = useState( '' );
@@ -167,10 +169,9 @@ export default function EditorialPanel( {
 						className="button button-primary"
 						data-corex-blog-transition
 						disabled={ ! ready || busy }
+						{ ...workingProps( working ) }
 					>
-						{ busy
-							? __( 'Applying…', 'corex' )
-							: __( 'Apply', 'corex' ) }
+						{ __( 'Apply', 'corex' ) }
 					</button>
 				</form>
 			) }

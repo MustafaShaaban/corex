@@ -56,3 +56,62 @@ describe( 'resultFromEnvelope', () => {
 		} );
 	} );
 } );
+
+/**
+ * The button itself (spec 108): while its test is on its way it is the admin's one working
+ * control, and it cannot ask twice. It was disabled, with a sentence beside it, and looked like
+ * a button that had been switched off.
+ */
+describe( 'the "Test verification" button while its request is out', () => {
+	let answer;
+	let sent;
+
+	beforeEach( () => {
+		sent = 0;
+		document.body.innerHTML = '<input id="captcha.secret" />';
+		window.corexCaptcha = {
+			restUrl: 'https://x.test/wp-json/corex/v1',
+			nonce: 'n',
+		};
+		window.Corex = {
+			api: {
+				post: () => {
+					sent += 1;
+					return new Promise( ( resolve ) => {
+						answer = resolve;
+					} );
+				},
+			},
+		};
+		jest.isolateModules( () => {
+			require( '../captcha-admin.js' );
+		} );
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		delete window.corexCaptcha;
+		delete window.Corex;
+	} );
+
+	it( 'works, asks once, and is itself again when the provider has answered', async () => {
+		const button = document.querySelector( '.corex-captcha-test__button' );
+
+		button.click();
+		button.click();
+
+		expect( sent ).toBe( 1 );
+		expect( button.textContent ).toBe( 'Test verification' );
+		expect( button.getAttribute( 'aria-busy' ) ).toBe( 'true' );
+		expect( button.dataset.corexWorking ).toBe( 'true' );
+
+		answer( { envelope: { ok: true, message: 'Captcha verified.' } } );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect( button.disabled ).toBe( false );
+		expect( button.hasAttribute( 'data-corex-working' ) ).toBe( false );
+		expect(
+			document.querySelector( '.corex-captcha-test__result' ).textContent
+		).toBe( 'Captcha verified.' );
+	} );
+} );

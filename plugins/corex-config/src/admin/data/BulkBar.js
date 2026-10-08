@@ -1,7 +1,9 @@
 import { Button } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
+import { usePending, workingProps } from '../components/working.js';
 
 export default function BulkBar( { explorer, edit, exportRows } ) {
+	const [ pending, during ] = usePending();
 	const count = explorer.state.selected.length;
 	if ( ! count ) {
 		return null;
@@ -30,11 +32,14 @@ export default function BulkBar( { explorer, edit, exportRows } ) {
 					isDestructive
 					variant="secondary"
 					onClick={ () =>
-						explorer.previewMutation(
-							'bulk_delete',
-							explorer.state.selected
+						during( 'delete', () =>
+							explorer.previewMutation(
+								'bulk_delete',
+								explorer.state.selected
+							)
 						)
 					}
+					{ ...workingProps( pending === 'delete' ) }
 				>
 					{ __( 'Delete', 'corex' ) }
 				</Button>

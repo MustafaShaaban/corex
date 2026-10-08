@@ -15,8 +15,10 @@ All notable changes to Corex are documented here. The format follows
   one another. The four buttons that showed WordPress's striped "busy" (export, the Data
   confirmation, the import dry-run, the migration confirmation) show it too. In Email Studio
   and in Forms and flows, where every button on the screen was disabled together while any
-  request was out, the one that was pressed shows it and the others wait (DECISIONS #285,
-  #287). The remaining admin screens follow.
+  request was out, the one that was pressed shows it and the others wait. The Data screen's
+  import, migrations, export history and record dialogs, Blog Pro, access requests, the
+  Security save, Insights, the setup wizard and the captcha test have it too, and none of them
+  changes its label to "Saving…" any more (DECISIONS #285, #287, #288).
 - **Notifications show what is coming while they load** (spec 108, slice 1). The Notifications
   screen, its preferences and the header drawer show a placeholder in the shape of their content
   until the first answer, where each showed a sentence, and none shows "nothing here" before it
@@ -142,6 +144,18 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A Data dialog no longer vanishes while its change is being worked out.** New record, Edit
+  record, Bulk edit and a record's Delete closed on the press and left nothing on screen until
+  the confirmation appeared. Each stays, with its button working, until there is something to
+  confirm.
+- **Downloading an export or a rejection report twice by pressing twice.** Both sent, and
+  saved, a second file. The button waits for the first.
+- **On the Migrations tab, "Refresh" and "Preview rollback" could be pressed while another
+  request was out**, and the confirm button showed "busy" whichever had been pressed.
+- **Deciding two access requests quickly** handed the first one's buttons back before its
+  answer. Decisions are taken one at a time.
+- **The setup wizard's "Next" said nothing while it fetched the plan**, and asked again on a
+  second press.
 - **"Mark all as read" and a notification preference say when they failed.** Both swallowed a
   failed request: the button did nothing, or the box went back to what it was, with no word of
   why. The server's reason is shown beside them.

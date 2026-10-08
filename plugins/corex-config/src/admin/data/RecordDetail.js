@@ -2,9 +2,11 @@ import { Button, Modal } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import FieldValue from '../components/FieldValue.js';
 import recordRows from './recordRows.js';
+import { usePending, workingProps } from '../components/working.js';
 
 export default function RecordDetail( { explorer, record, close, edit } ) {
 	const rows = recordRows( record, explorer.source?.fields );
+	const [ pending, during ] = usePending();
 
 	return (
 		<Modal
@@ -28,11 +30,19 @@ export default function RecordDetail( { explorer, record, close, edit } ) {
 				</dl>
 			) }
 			<div className="corex-data__dialog-actions">
-				<Button variant="tertiary" onClick={ close }>
+				<Button
+					variant="tertiary"
+					onClick={ close }
+					disabled={ pending !== '' }
+				>
 					{ __( 'Close', 'corex' ) }
 				</Button>
 				{ explorer.can( 'update' ) && (
-					<Button variant="secondary" onClick={ edit }>
+					<Button
+						variant="secondary"
+						onClick={ edit }
+						disabled={ pending !== '' }
+					>
 						{ __( 'Edit', 'corex' ) }
 					</Button>
 				) }
@@ -40,10 +50,15 @@ export default function RecordDetail( { explorer, record, close, edit } ) {
 					<Button
 						isDestructive
 						variant="secondary"
-						onClick={ () => {
-							explorer.previewMutation( 'delete', [ record.id ] );
-							close();
-						} }
+						onClick={ () =>
+							during( 'delete', async () => {
+								await explorer.previewMutation( 'delete', [
+									record.id,
+								] );
+								close();
+							} )
+						}
+						{ ...workingProps( pending === 'delete' ) }
 					>
 						{ __( 'Delete', 'corex' ) }
 					</Button>

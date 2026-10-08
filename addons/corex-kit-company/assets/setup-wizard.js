@@ -267,10 +267,10 @@
 		const back = root.querySelector( '#corex-setup-back' );
 		const next = root.querySelector( '#corex-setup-next' );
 		if ( back ) {
-			back.addEventListener( 'click', () => go( state.index - 1 ) );
+			back.addEventListener( 'click', () => go( state.index - 1, back ) );
 		}
 		if ( next ) {
-			next.addEventListener( 'click', () => go( state.index + 1 ) );
+			next.addEventListener( 'click', () => go( state.index + 1, next ) );
 		}
 		root.querySelectorAll( 'input[name="corex-kit"]' ).forEach( ( el ) =>
 			el.addEventListener( 'change', ( e ) => {
@@ -301,9 +301,33 @@
 		}
 	}
 
-	async function go( index ) {
+	/**
+	 * The admin's one working state (spec 108), on a button this script drew: it cannot be
+	 * pressed again, says it is busy, and the styles draw the loader over its label. The step
+	 * is drawn again when the answer arrives, which is what ends it.
+	 *
+	 * @param {HTMLButtonElement|null} button The button that was pressed.
+	 */
+	function showWorking( button ) {
+		if ( ! button ) {
+			return;
+		}
+		root.querySelectorAll( '.corex-setup__nav button' ).forEach(
+			( other ) => {
+				other.disabled = true;
+			}
+		);
+		button.disabled = true;
+		button.setAttribute( 'aria-busy', 'true' );
+		button.setAttribute( 'data-corex-working', 'true' );
+	}
+
+	async function go( index, pressed ) {
 		// Fetch the plan preview when entering the plan step.
 		if ( STEPS[ index ] === 'plan' && state.kit ) {
+			// The step used to stay as it was, with nothing said, until the plan arrived, and
+			// a second press asked for it again.
+			showWorking( pressed );
 			const res = await api.get(
 				`${ restUrl }/plan?kit=${ encodeURIComponent(
 					state.kit
@@ -317,11 +341,7 @@
 	}
 
 	function doApply() {
-		const button = root.querySelector( '#corex-setup-apply' );
-		if ( button ) {
-			button.disabled = true;
-			button.textContent = t( 'Applying…' );
-		}
+		showWorking( root.querySelector( '#corex-setup-apply' ) );
 		api.post(
 			`${ restUrl }/apply`,
 			{

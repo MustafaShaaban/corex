@@ -9,7 +9,7 @@ import { createRoot } from '@wordpress/element';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { act } from 'react';
 
-import { workingProps } from '../working.js';
+import { usePending, workingProps } from '../working.js';
 
 let container;
 let root;
@@ -69,4 +69,54 @@ it( 'leaves alone a control that is disabled for a reason of its own', () => {
 	expect( button.disabled ).toBe( true );
 	expect( button.hasAttribute( 'aria-busy' ) ).toBe( false );
 	expect( button.hasAttribute( 'data-corex-working' ) ).toBe( false );
+} );
+
+describe( 'usePending', () => {
+	let pending;
+	let during;
+
+	function Probe() {
+		[ pending, during ] = usePending();
+		return null;
+	}
+
+	beforeEach( () => {
+		act( () => {
+			root.render( <Probe /> );
+		} );
+	} );
+
+	it( 'names the control for the whole of its task, and no longer', async () => {
+		let finish;
+		let outcome;
+
+		act( () => {
+			outcome = during(
+				'commit',
+				() => new Promise( ( resolve ) => ( finish = resolve ) )
+			);
+		} );
+		expect( pending ).toBe( 'commit' );
+
+		await act( async () => {
+			finish( 'queued' );
+		} );
+
+		expect( pending ).toBe( '' );
+		await expect( outcome ).resolves.toBe( 'queued' );
+	} );
+
+	it( 'lets go of the control when its task fails, and does not hide the failure', async () => {
+		let outcome;
+
+		await act( async () => {
+			outcome = during( 'commit', () =>
+				Promise.reject( new Error( 'refused' ) )
+			);
+			await outcome.catch( () => {} );
+		} );
+
+		expect( pending ).toBe( '' );
+		await expect( outcome ).rejects.toThrow( 'refused' );
+	} );
 } );

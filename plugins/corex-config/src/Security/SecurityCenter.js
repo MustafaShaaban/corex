@@ -8,6 +8,7 @@ import {
 	securityEndpoint,
 	securityReducer,
 } from './securityCenterState.js';
+import { workingProps } from '../admin/components/working.js';
 
 /**
  * Which panels belong to which section of the screen (spec 077, FR-001).
@@ -288,12 +289,10 @@ function LoginPolicy( {
 				<button
 					type="button"
 					className="button button-primary"
-					disabled={ saving }
 					onClick={ save }
+					{ ...workingProps( saving ) }
 				>
-					{ saving
-						? __( 'Saving…', 'corex' )
-						: __( 'Save login protection', 'corex' ) }
+					{ __( 'Save login protection', 'corex' ) }
 				</button>
 			</div>
 		</section>

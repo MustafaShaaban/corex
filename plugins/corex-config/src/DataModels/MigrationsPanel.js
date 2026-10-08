@@ -5,7 +5,7 @@ import { dataEndpoint } from '../admin/dataClient.js';
 import { dataModelsApi } from './dataModelsApi.js';
 import { actionSources, migrationState } from './modelClient.js';
 import SourceSelect from './SourceSelect.js';
-import { workingProps } from '../admin/components/working.js';
+import { usePending, workingProps } from '../admin/components/working.js';
 
 function historyLabel( run ) {
 	const states = {
@@ -34,7 +34,11 @@ export default function MigrationsPanel( { config, sources } ) {
 	const [ history, setHistory ] = useState( [] );
 	const [ preview, setPreview ] = useState( null );
 	const [ notice, setNotice ] = useState( '' );
-	const [ busy, setBusy ] = useState( false );
+	// Which request is out. It was one flag: "Refresh" was disabled by it and never set it,
+	// "Preview rollback" set it and was not disabled by it, and the confirm button showed it
+	// whichever had been pressed.
+	const [ pending, during ] = usePending();
+	const busy = pending !== '';
 
 	const load = useCallback( async () => {
 		if ( ! sourceKey ) {
@@ -59,7 +63,6 @@ export default function MigrationsPanel( { config, sources } ) {
 	}, [ load ] );
 
 	const previewApply = async ( definition ) => {
-		setBusy( true );
 		try {
 			const payload = await dataModelsApi(
 				config,
@@ -74,12 +77,9 @@ export default function MigrationsPanel( { config, sources } ) {
 			setPreview( payload.preview );
 		} catch ( error ) {
 			setNotice( error.message );
-		} finally {
-			setBusy( false );
 		}
 	};
 	const previewRollback = async ( run ) => {
-		setBusy( true );
 		try {
 			const payload = await dataModelsApi(
 				config,
@@ -95,12 +95,9 @@ export default function MigrationsPanel( { config, sources } ) {
 			setPreview( payload.preview );
 		} catch ( error ) {
 			setNotice( error.message );
-		} finally {
-			setBusy( false );
 		}
 	};
 	const confirm = async () => {
-		setBusy( true );
 		try {
 			const endpoint =
 				preview.action === 'rollback'
@@ -123,8 +120,6 @@ export default function MigrationsPanel( { config, sources } ) {
 			await load();
 		} catch ( error ) {
 			setNotice( error.message );
-		} finally {
-			setBusy( false );
 		}
 	};
 
@@ -184,7 +179,14 @@ export default function MigrationsPanel( { config, sources } ) {
 						<Button
 							variant="primary"
 							disabled={ busy }
-							onClick={ () => previewApply( plan.key ) }
+							onClick={ () =>
+								during( `apply:${ plan.key }`, () =>
+									previewApply( plan.key )
+								)
+							}
+							{ ...workingProps(
+								pending === `apply:${ plan.key }`
+							) }
 						>
 							{ __( 'Preview migration', 'corex' ) }
 						</Button>
@@ -193,7 +195,12 @@ export default function MigrationsPanel( { config, sources } ) {
 			</div>
 			<div className="corex-data-models__history-head">
 				<h3>{ __( 'Migration history', 'corex' ) }</h3>
-				<Button variant="secondary" onClick={ load } disabled={ busy }>
+				<Button
+					variant="secondary"
+					onClick={ () => during( 'refresh', load ) }
+					disabled={ busy }
+					{ ...workingProps( pending === 'refresh' ) }
+				>
 					{ __( 'Refresh', 'corex' ) }
 				</Button>
 			</div>
@@ -207,7 +214,16 @@ export default function MigrationsPanel( { config, sources } ) {
 									<Button
 										variant="link"
 										isDestructive
-										onClick={ () => previewRollback( run ) }
+										disabled={ busy }
+										onClick={ () =>
+											during(
+												`rollback:${ run.id }`,
+												() => previewRollback( run )
+											)
+										}
+										{ ...workingProps(
+											pending === `rollback:${ run.id }`
+										) }
 									>
 										{ __( 'Preview rollback', 'corex' ) }
 									</Button>
@@ -250,8 +266,9 @@ export default function MigrationsPanel( { config, sources } ) {
 						<Button
 							variant="primary"
 							isDestructive={ preview.action === 'rollback' }
-							onClick={ confirm }
-							{ ...workingProps( busy ) }
+							disabled={ busy }
+							onClick={ () => during( 'confirm', confirm ) }
+							{ ...workingProps( pending === 'confirm' ) }
 						>
 							{ preview.action === 'rollback'
 								? __( 'Queue rollback', 'corex' )

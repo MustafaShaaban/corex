@@ -6,6 +6,7 @@ import DataExportDialog from './DataExportDialog.js';
 import { dataExportRequests, downloadArtifact } from './dataModelsApi.js';
 import { actionSources } from './modelClient.js';
 import SourceSelect from './SourceSelect.js';
+import { usePending, workingProps } from '../admin/components/working.js';
 
 function scopeName( scope ) {
 	const scopes = {
@@ -68,6 +69,8 @@ export default function ExportPanel( { config, sources } ) {
 	useEffect( () => {
 		load();
 	}, [ load ] );
+
+	const [ pending, during ] = usePending();
 
 	const download = async ( run ) => {
 		try {
@@ -142,7 +145,16 @@ export default function ExportPanel( { config, sources } ) {
 							{ run.state === 'completed' && (
 								<Button
 									variant="link"
-									onClick={ () => download( run ) }
+									// A second press used to fetch, and save, the file again.
+									disabled={ pending !== '' }
+									onClick={ () =>
+										during( `download:${ run.id }`, () =>
+											download( run )
+										)
+									}
+									{ ...workingProps(
+										pending === `download:${ run.id }`
+									) }
 								>
 									{ __( 'Download', 'corex' ) }
 								</Button>

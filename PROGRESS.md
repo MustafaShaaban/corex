@@ -149,7 +149,7 @@ readings are under the spec's Assumptions and are his to overrule.
 | Slice | What | State |
 |---|---|---|
 | 1 | The placeholder and the wrapper; the Notifications screen, its preferences and the header drawer | done (DECISIONS #284), unreleased |
-| 2 | The loader, and every action outside the Submissions inbox; `isBusy` gone | in progress (DECISIONS #285), unreleased. Done: the loader and the working button, Notifications, the four former `isBusy` buttons, Email Studio, Forms and flows (DECISIONS #287). Of 55 controls that send a request, 28 are on it; left: Data 12, Blog 3, Access 2, Security 2, the setup wizard 3, the captcha test and Settings 2, Insights 1, and the two rows that open a template and a flow, which are loads and go with slice 4 |
+| 2 | The loader, and every action outside the Submissions inbox; `isBusy` gone | done (DECISIONS #285, #287, #288), unreleased. Of 55 controls that send a request, 50 are on the one working state. The other five are not buttons to mark: the three rows that open a record, a template and a flow are loads and get a placeholder in slices 3 and 4, and two are forms the server draws, where the page loading is the answer |
 | 3 | Data: records, totals, the search box, a record, export history, migrations | not started |
 | 4 | Forms and flows, Email Studio | not started |
 | 5 | Insights and the setup wizard | not started |

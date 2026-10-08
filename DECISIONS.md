@@ -8560,3 +8560,71 @@ What was run:
 creates, saves, publishes and tests a flow at full speed and still passes.
 
 **Left open.** 27 of the 55 controls: tasks T027 to T029, and the two rows.
+
+## #288 — The rest of the admin's actions, and five controls that are not buttons to mark
+
+**Date:** 2026-10-08. **Spec:** 108, slice 2 (T027 to T030). **Branch:** `feat/108-working-data`.
+
+Twenty-two more controls: Data 11, Blog Pro 3, access requests 2, the Security save 1, Insights
+1, the setup wizard 3, the captcha test 1. With them 50 of the 55 controls the inventory found
+are on the one working state, and slice 2 is done.
+
+**`usePending`.** A component that sends its own requests keeps the name of the control whose
+request is out, and `during( name, task )` holds it for the whole of the task. It is what Forms
+and flows wrote for itself in the last part (#287), moved beside `workingProps` when a second
+caller arrived; ten components use it now.
+
+**It replaced flags that were wrong, not only flags that were silent.**
+
+- The import panel had one status for three requests and showed it on "Run dry-run" whichever
+  had been pressed.
+- Blog Pro had one flag: "Refresh" read "Refreshing…" while a post was being moved.
+- The Migrations tab's "Refresh" was disabled by the flag and never set it; "Preview
+  rollback" set it and was not disabled by it.
+- Access requests kept one id: deciding a second request while the first was out handed the
+  first one's buttons back before its answer. All decisions wait for the one that is out. Two
+  at once would be faster and is not worth a wrong button.
+
+**A dialog that asks for a change preview stays until it has one.** New record, Edit record,
+Bulk edit and a record's Delete closed on the press. Nothing was on screen until the
+confirmation appeared, and if the request failed the only sign was a notice on the page behind
+where the dialog had been. Each stays with its button working and closes when the preview is
+back, or has failed: the failure is still said on the page, as before.
+
+**The labels that changed are gone.** "Saving…", "Applying…", "Refreshing…", "Running…".
+A changed label changes the button's width, and a person looking for "Save" finds a button
+that says something else.
+
+**Screens that are not React write the three attributes.** Insights puts them in the markup it
+draws its card from; the setup wizard and the captcha test set them on the node. The captcha
+test keeps the sentence beside its button: that is what a screen reader is told, and where the
+outcome is said.
+
+**Five controls are not converted, on purpose.**
+
+- "View" on a Data row, the row that opens an email template, the row that opens a flow.
+  Each asks for something to show. What they need is the placeholder of what they open
+  (slices 3 and 4); a row replaced by a ring says less than the row did.
+- "Save settings" and Security's "Apply mode" are forms the server draws and the browser
+  posts. The page loading is what a person sees, and a script that marked the button would
+  have to know whether another script had stopped the post. Four more such forms were found
+  by search and are left for the same reason.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `npx wp-scripts test-unit-jest` | 813 passed, 75 suites |
+| `loading-states` on `corex.local`, each with its request held: Insights' "Run check" (keeps its box, loader drawn, enabled again); the wizard's "Next" (working, "Back" held, one request) | 12 passed |
+| Nine browser specs, every one that touches a converted screen: `loading-states`, `data-management`, `blog-pro`, `access-request`, `operations-security`, `setup-settings-insights`, `forms-flow`, `email-studio`, `notification-center` | 66 passed |
+| New Jest: `usePending` (2), a record's Delete stays until the preview is back (1), the captcha button (1) | passed |
+
+**Not run.** The Data dialogs, Blog Pro, access requests and the Security save were not
+watched with a request held back; their browser specs pass at full speed. No screen reader.
+
+**Left open.**
+
+- WordPress's component library does not load under Jest in this repository, which is why no
+  test here had rendered a component that uses it. The one that does now stands plain elements
+  in for `Button` and `Modal`.
+- The setup wizard's "Apply plan" still says nothing when it fails (issue #313).

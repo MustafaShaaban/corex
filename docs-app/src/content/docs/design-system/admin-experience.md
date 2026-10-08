@@ -173,6 +173,21 @@ const pending = useContext( PendingControl );
 <button disabled={ busy } { ...workingProps( pending === 'draft' ) }>
 ```
 
+A component that sends its own requests gets the name from `usePending`, also in that file:
+
+```jsx
+const [ pending, during ] = usePending();
+
+<Button
+	disabled={ pending !== '' }
+	onClick={ () => during( 'commit', commit ) }
+	{ ...workingProps( pending === 'commit' ) }
+>
+```
+
+`during` names the control for the whole of the task, through its failure, and returns what the task returns.
+For a row of a list, put the row's id in the name.
+
 Keep it working until the screen is current again. A save is a write and then a read of what was written, and a
 button that stops after the write looks finished while the screen still shows what was there before.
 
