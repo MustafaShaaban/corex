@@ -1,4 +1,5 @@
-import { useMemo, useState } from '@wordpress/element';
+import { useContext, useMemo, useState } from '@wordpress/element';
+import { PendingControl, workingProps } from '../admin/components/working.js';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import CorexTime from '../admin/components/CorexTime.js';
@@ -54,6 +55,7 @@ function sourceLabel( source ) {
 }
 
 function NewFlowForm( { busy, ownerId, onCreate } ) {
+	const pending = useContext( PendingControl );
 	const submit = async ( event ) => {
 		event.preventDefault();
 		const form = new FormData( event.currentTarget );
@@ -93,7 +95,11 @@ function NewFlowForm( { busy, ownerId, onCreate } ) {
 					{ __( 'Description', 'corex' ) }
 					<textarea id="corex-flow-description" name="description" />
 				</label>
-				<button className="button button-primary" disabled={ busy }>
+				<button
+					className="button button-primary"
+					disabled={ busy }
+					{ ...workingProps( pending === 'create' ) }
+				>
 					{ __( 'Create draft', 'corex' ) }
 				</button>
 			</form>
@@ -299,6 +305,7 @@ export function FlowList( {
 	const [ lifecycle, setLifecycle ] = useState( '' );
 	const [ applied, setApplied ] = useState( { search: '', lifecycle: '' } );
 	const busy = status === 'loading' || status === 'mutating';
+	const pending = useContext( PendingControl );
 
 	const rows = useMemo(
 		() => catalogRows( flows, catalog, applied ),
@@ -376,6 +383,7 @@ export function FlowList( {
 							type="submit"
 							className="button"
 							disabled={ busy }
+							{ ...workingProps( pending === 'filters' ) }
 						>
 							{ __( 'Apply filters', 'corex' ) }
 						</button>

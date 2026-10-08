@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useReducer } from '@wordpress/element';
+import {
+	useCallback,
+	useEffect,
+	useReducer,
+	useState,
+} from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import {
 	buildFlowListUrl,
@@ -14,6 +19,19 @@ function failureMessage( result ) {
 
 export function useFlows( config ) {
 	const [ state, dispatch ] = useReducer( flowReducer, initialFlowState );
+	// The control whose command is out. One status disables every button on the screen; this
+	// is which of them was pressed. It covers the whole command, with the reads that follow a
+	// write, so the button works until the screen is current again and not only until the
+	// first answer.
+	const [ pending, setPending ] = useState( '' );
+	const during = async ( control, command ) => {
+		setPending( control );
+		try {
+			return await command();
+		} finally {
+			setPending( '' );
+		}
+	};
 
 	const load = useCallback(
 		async ( search = '', lifecycle = '', message = '' ) => {
@@ -154,14 +172,16 @@ export function useFlows( config ) {
 	return {
 		state,
 		dispatch,
-		load,
+		pending,
+		load: ( search, lifecycle ) =>
+			during( 'filters', () => load( search, lifecycle ) ),
 		select,
-		create,
-		saveDraft,
-		publish: () => transition( 'publish' ),
-		unpublish: () => transition( 'unpublish' ),
-		close: () => transition( 'close' ),
-		test,
+		create: ( values ) => during( 'create', () => create( values ) ),
+		saveDraft: () => during( 'saveDraft', saveDraft ),
+		publish: () => during( 'publish', () => transition( 'publish' ) ),
+		unpublish: () => during( 'unpublish', () => transition( 'unpublish' ) ),
+		close: () => during( 'close', () => transition( 'close' ) ),
+		test: () => during( 'test', test ),
 	};
 }
 
