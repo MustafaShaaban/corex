@@ -85,6 +85,41 @@ XLSX and PDF implementations chosen by format. They live in a namespace both exp
   nothing and is not a file until the person prints it. The spec asks for a document "to file", so
   the library is the presumption and the spike has to show its weight is acceptable.
 
+### D3, the PDF spike (2026-10-08)
+
+The owner: "you can use any pdf library use the best one and recommended".
+
+**mPDF 8.3.** It is the PHP library that shapes and reorders Arabic, which FR-021 requires, and it
+is GPL like WordPress. It needs PHP's `gd` and `mbstring`, which WordPress already asks for. A
+print-styled page was the other candidate; it is not a file until somebody prints it, and the spec
+asks for a file.
+
+What a trial document showed, rendered to images and read:
+
+| Asked | Seen |
+|---|---|
+| Arabic answers | joined and in the right order, alone and inside an English sentence |
+| A right-to-left site | the columns mirror; an English sentence and a phone number in a cell were reordered until the cell was given its own direction |
+| "Page N of M" | on every page |
+| The CoreX mark, from its SVG | drawn exactly |
+| The CoreX wordmark, from its SVG | mangled: the outlines of "o" and "e" are filled wrongly |
+| 500 rows, as one table | 6.6s, 68MB |
+| 1,000 rows, as one table | 17.3s, 116MB |
+
+So:
+
+- **The logo on a PDF is a raster image** made from the approved light-ground lockup by
+  `scripts/generate-logo-print.py`, and recorded in the brand manifest. Nothing is redrawn.
+- **A PDF holds up to 500 records** (FR-019a). The cost grows faster than the rows, and the last
+  step of an export has one request to write the file in. A larger export is a workbook.
+- **Each cell is given the direction of what it holds**, and is aligned to the page's start.
+
+**What it weighs.** 94MB in `vendor/`, 88MB of it fonts: the library carries a font for every
+script it can write, Chinese, Japanese and Korean among them, and chooses by the text. The fonts
+are kept whole, so a document is right in any language a site collects answers in. The
+shared-host package grows by that much. Pruning fonts a site will never use is a packaging choice
+and is left to the builder.
+
 **D4 — Files, not post meta.** An export's file is written to the protected uploads area
 (`Corex\Security\Upload\ProtectedUploads`), named at random, and its path recorded on the run.
 Binary formats and large exports do not belong in a meta row. The download streams the file with

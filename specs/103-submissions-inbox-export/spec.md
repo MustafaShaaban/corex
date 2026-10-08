@@ -259,26 +259,25 @@ the names.
 
 ### User Story 8 — A document to file (Priority: P3)
 
-The owner chooses PDF and receives a document a client can keep: the site's name and logo, a title,
-what was exported and under which filters, who exported it and when, the submissions laid out to be
-read, page numbers, and a sign-off block at the end.
+The owner chooses PDF and receives a document a client can keep: the site's name, a title, what
+was exported and under which filters, who exported it and when, the submissions laid out to be
+read, page numbers, and CoreX's signature on every page: its logo and its copyright line.
 
 **Why this priority**: Asked for by name, and the one format with a layout of its own. It depends on
 the content the earlier stories settle.
 
 **Independent Test**: Export five submissions as PDF and print it; every page carries the site's
-identity and a page number, and the last carries the sign-off.
+name, a page number and CoreX's signature.
 
 **Acceptance Scenarios**:
 
-1. **Given** the site has a name and a logo set in its brand settings, **When** a PDF is exported,
-   **Then** both appear on it.
+1. **Given** a site, **When** a PDF is exported, **Then** the site's name heads every page.
 2. **Given** a PDF export, **When** it is read, **Then** it states the form or forms, the filters
    used, the number of submissions, the person who exported it and the date and time.
 3. **Given** a PDF of several pages, **When** it is printed, **Then** each page is numbered as
    "page N of M" and no submission's answers are split from their question.
-4. **Given** the end of the document, **When** it is read, **Then** it has a sign-off block with the
-   exporting person's name, the date, and a line to sign.
+4. **Given** any page of the document, **When** it is read, **Then** it carries the CoreX logo and
+   a copyright line naming CoreX.
 5. **Given** a site with no extra plugin installed, **When** PDF is chosen, **Then** it works.
 6. **Given** answers in Arabic, **When** the PDF is produced, **Then** they read correctly and in
    the right direction.
@@ -398,9 +397,11 @@ choices, the same formats and the same behaviour on completion.
   spreadsheet, and MUST offer a choice of separator.
 - **FR-018**: When a text export covers several forms, the dialog MUST say before the export how
   they will be delivered, and MUST deliver them that way.
-- **FR-019**: The PDF format MUST carry the site's name and logo, a title, what was exported and
-  under which filters, the number of records, who exported it and when, page numbers, and a sign-off
-  block naming the exporting person with a place to sign.
+- **FR-019**: The PDF format MUST carry the site's name, a title, what was exported and under which
+  filters, the number of records, who exported it and when, page numbers, and CoreX's signature on
+  every page: the CoreX logo and a copyright line.
+- **FR-019a**: A PDF MUST NOT be offered for more records than it can be written for in one step,
+  and the dialog MUST say what the most is and offer the workbook instead.
 - **FR-020**: Every format MUST work on a site with no optional plugin installed.
 - **FR-021**: Every format MUST render right-to-left text correctly.
 
@@ -518,9 +519,10 @@ choices, the same formats and the same behaviour on completion.
 - **Opening a submission marks it read.** It is what an inbox does, and the separate "Mark read"
   click is one of the things that made the pane feel disorganised. The header keeps a way to mark it
   unread. The owner has not confirmed this.
-- **"Signed off with the identity" means** the site's brand identity on the document, and a block at
-  its end with the exporting person's name, the date and a line for a signature. The owner has not
-  confirmed this reading. A cryptographic signature is not in scope.
+- **"Signed off with the identity" means CoreX's own signature.** The owner, 2026-10-08: "use a
+  corex signature, that what i did mean, pdf exported should has the corex logo on it as it has the
+  copyrights of the tool". The earlier reading here, the site's brand and a block for the exporting
+  person to sign, was wrong and is withdrawn. A cryptographic signature is not in scope.
 - **Several forms in one text export** arrive as one file per form inside a single archive, since
   each form has its own columns. One file with the union of every form's columns is the alternative
   and was judged harder to read.
