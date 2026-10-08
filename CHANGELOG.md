@@ -8,6 +8,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **Insights and the setup wizard show what is coming while they load** (spec 108, slice 5).
+  An Insights card shows a placeholder until the last results have arrived, where it read "Not
+  run yet" about a check that may have been run an hour before; the widgets under the cards
+  hold their place, where the screen was two cards and then seven. The setup wizard shows the
+  step that is coming, where the form for a browser without scripts stood and was then
+  swapped for the wizard (DECISIONS #291).
 - **Forms and flows, and Email Studio, show what is coming while they load** (spec 108, slice
   4). The catalog of forms shows rows that are not there yet, where it showed "Loading forms…"
   over whatever it had; opening a flow shows the editor that is coming, where the catalog
@@ -157,6 +163,11 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **Insights says when its last results, or its widgets, could not be loaded.** Both failed
+  in silence: the cards went on reading "Not run yet", and the widgets were simply not there.
+  The widgets offer **Try again**.
+- **The setup wizard gives the plain form back when it cannot load.** A script that could not
+  read the wizard's state gave up without a word.
 - **A disabled button in the CoreX admin is the button, dimmed.** WordPress paints every
   disabled button a pale grey: a light box on the dark theme, on every screen that disables
   its buttons while it loads.
