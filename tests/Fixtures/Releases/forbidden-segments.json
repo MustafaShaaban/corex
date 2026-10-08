@@ -1,0 +1,14 @@
+[
+	".git",
+	".github",
+	"node_modules",
+	"tests",
+	"__tests__",
+	".claude",
+	".agents",
+	".specify",
+	".env",
+	"wp-config.php",
+	"debug.log",
+	".DS_Store"
+]

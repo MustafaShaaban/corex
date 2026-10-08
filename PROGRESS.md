@@ -138,7 +138,7 @@ reaches a site's files before the fourth.
 | Slice | What | State |
 |---|---|---|
 | 1 | The package says what it needs and holds, and is one zip; a site can read and refuse the description | done (DECISIONS #282), unreleased |
-| 2 | A zip is inspected on the site, and every wrong package refused with nothing touched | not started |
+| 2 | A zip is inspected on the site, and every wrong package refused with nothing touched | done (DECISIONS #293), unreleased. Fourteen wrong packages, each a real zip, each refused for its own reason. Nothing calls it yet: no screen, no route, nothing bound in the container |
 | 3 | The Releases screen: receiving a package in parts, and what it is | not started |
 | 4 | Unpack, verify, swap under WordPress's maintenance answer, finish with the database step | not started |
 | 5 | Going back from the screen, and the record | not started |

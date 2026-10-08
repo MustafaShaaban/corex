@@ -26,6 +26,15 @@ final class ReleaseRefused extends DomainException
     public const INCOMPLETE    = 'incomplete';
     public const UNSAFE_PATH   = 'unsafe_path';
 
+    /* What a package is refused for once it is a file on the site (spec 107, plan D3). */
+    public const NOT_A_ZIP       = 'not_a_zip';
+    public const OTHER_CLIENT    = 'other_client';
+    public const NEEDS_PHP       = 'needs_php';
+    public const NEEDS_WORDPRESS = 'needs_wordpress';
+    public const MISSING_FOLDER  = 'missing_folder';
+    public const UNSAFE_ENTRY    = 'unsafe_entry';
+    public const FORBIDDEN_ENTRY = 'forbidden_entry';
+
     public function __construct(public readonly string $reason, string $message)
     {
         parent::__construct($message);

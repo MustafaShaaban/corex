@@ -8,6 +8,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **A site can read a release package and refuse a wrong one** (spec 107, slice 2). The
+  checks a package gets where it lands, before anything of it is unpacked: it is a zip, it
+  describes itself, it is for this site's client, this host can run it, it holds every folder
+  it says it does, and nothing in it would be written outside the package. Each refusal is a
+  sentence an administrator can act on. Also here: what stops a host installing at all, and
+  the installer's own folder, `wp-content/corex-releases/`. Nothing on a site calls any of it
+  yet; the screen is the next slice (DECISIONS #293).
 - **Insights and the setup wizard show what is coming while they load** (spec 108, slice 5).
   An Insights card shows a placeholder until the last results have arrived, where it read "Not
   run yet" about a check that may have been run an hour before; the widgets under the cards
