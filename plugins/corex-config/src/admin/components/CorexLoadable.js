@@ -84,13 +84,13 @@ function useFocusKeptOnSurface( status ) {
 }
 
 /**
- * @param {Object}   props              Component props.
- * @param {string}   props.status       `loading`, `refreshing`, `ready` or `error`.
- * @param {Element}  props.skeleton     The surface's placeholder, a `CorexSkeleton`.
- * @param {string}   props.loadingLabel The surface's loading sentence, for a screen reader.
- * @param {string}   props.errorMessage What to say when there is no answer.
+ * @param {Object}     props              Component props.
+ * @param {string}     props.status       `loading`, `refreshing`, `ready` or `error`.
+ * @param {Element}    props.skeleton     The surface's placeholder, a `CorexSkeleton`.
+ * @param {string}     props.loadingLabel The surface's loading sentence, for a screen reader.
+ * @param {string}     props.errorMessage What to say when there is no answer.
  * @param {() => void} [props.onRetry]    Asks again. Left out where asking again cannot help.
- * @param {Element}  props.children     The content, including its empty state.
+ * @param {Element}    props.children     The content, including its empty state.
  * @return {Element} The surface.
  */
 export default function CorexLoadable( {
