@@ -8,6 +8,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **A release package can be given to a site, in parts, and read there** (spec 107, slice 3,
+  the server's half). Five routes under `corex/v1/releases`: what is installed and what the
+  host cannot do; a package received in parts, which goes on from where it stopped if the
+  connection drops and is kept only if it is the file that was sent; and what a package on the
+  site is, or why it is refused. A new ability, `corex_manage_releases`, holds them. There is
+  no screen yet, and nothing here installs anything (DECISIONS #294).
 - **A site can read a release package and refuse a wrong one** (spec 107, slice 2). The
   checks a package gets where it lands, before anything of it is unpacked: it is a zip, it
   describes itself, it is for this site's client, this host can run it, it holds every folder
@@ -296,6 +302,13 @@ All notable changes to Corex are documented here. The format follows
 - **A site that loads `wp-admin/includes/file.php` itself, to make a form's file upload work,
   can stop.** The framework loads it where it is needed. Leaving the workaround in place does
   no harm.
+- **A new ability, `corex_manage_releases`.** Whoever manages the CoreX admin holds it. A role
+  given only "Manage operations and security" does not: installing a release is not part of
+  that. On a network it also needs a super administrator, on the main site.
+- **New routes**: `GET corex/v1/releases`, `GET` and `POST corex/v1/releases/uploads/{hash}`,
+  `POST …/uploads/{hash}/complete`, `POST corex/v1/releases/inspect`. A package they receive is
+  kept in `wp-content/corex-releases/incoming/`, a new folder, closed to a web server. A backup
+  that copies all of `wp-content` will copy it.
 - **A form whose markup you wrote yourself must send the option values it declares.** A choice
   field's answer is compared with the keys of its `options`. The stock form and a flow's form
   print those keys, so nothing changes for them. A hand-written `select`, radio or checkbox

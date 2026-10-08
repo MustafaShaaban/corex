@@ -41,6 +41,9 @@ final class ReleaseStore
 
     private const LOG_KEEPS = 50;
 
+    /** What the builder names a package. */
+    private const PACKAGES = 'corex-release-*.zip';
+
     /**
      * @param string $contentDir The site's `wp-content` folder.
      */
@@ -87,6 +90,22 @@ final class ReleaseStore
         }
 
         return $this->root() . '/' . $area . '/' . $name;
+    }
+
+    /**
+     * The packages in `incoming/`, by name: uploaded, or put there by hand.
+     *
+     * @return list<array{name:string,bytes:int}>
+     */
+    public function packages(): array
+    {
+        $packages = [];
+
+        foreach (glob($this->root() . '/incoming/' . self::PACKAGES) ?: [] as $file) {
+            $packages[] = ['name' => basename($file), 'bytes' => (int) filesize($file)];
+        }
+
+        return $packages;
     }
 
     /**
