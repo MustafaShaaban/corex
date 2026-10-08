@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useReducer } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { buildInboxUrl, inboxReducer, initialInboxState } from './inbox.js';
+import {
+	buildInboxUrl,
+	inboxReducer,
+	initialInboxState,
+	trashNotice,
+} from './inbox.js';
 
 function message( result ) {
 	return (
@@ -12,7 +17,7 @@ export function useInbox( config, filters ) {
 	const [ state, dispatch ] = useReducer( inboxReducer, initialInboxState );
 
 	const load = useCallback(
-		async ( success = '' ) => {
+		async ( success = '', undo = [] ) => {
 			dispatch( { type: 'loading' } );
 			const result = await window.Corex.api.get(
 				buildInboxUrl( config.restUrl, filters ),
@@ -24,7 +29,7 @@ export function useInbox( config, filters ) {
 			}
 			dispatch( { type: 'loaded', page: result.envelope.data } );
 			if ( success ) {
-				dispatch( { type: 'message', message: success } );
+				dispatch( { type: 'message', message: success, undo } );
 			}
 			return true;
 		},
@@ -105,7 +110,8 @@ export function useInbox( config, filters ) {
 	const openAndRead = useCallback(
 		async ( id ) => {
 			const record = await open( id );
-			if ( record && ! record.read_at ) {
+			// A trashed submission is read and nothing else: looking at it changes nothing.
+			if ( record && ! record.read_at && ! record.trashed ) {
 				const marked = await mutate(
 					`/${ id }`,
 					{
@@ -183,11 +189,50 @@ export function useInbox( config, filters ) {
 				submission_ids: ids,
 				parameters,
 			} ),
-		applyBulk: async ( token ) => {
+		applyBulk: async ( token, done = {} ) => {
 			const result = await mutate( '/bulk/apply', { token } );
 			if ( result ) {
 				dispatch( { type: 'selectionChanged', ids: [] } );
-				await load( __( 'Bulk action applied.', 'corex' ) );
+				await load(
+					done.message || __( 'Bulk action applied.', 'corex' ),
+					done.undo || []
+				);
+			}
+			return result;
+		},
+		// One submission, from its pane (spec 105). The notice that follows offers to undo it.
+		trash: async ( record ) => {
+			const result = await mutate( `/${ record.id }/trash`, {
+				expected_updated_at: record.updated_at,
+			} );
+			if ( result ) {
+				dispatch( { type: 'drawerClosed' } );
+				await load( trashNotice( 'trash', 1 ), [ record.id ] );
+			}
+			return result;
+		},
+		// One or several, from the trash or from "Undo". Several go the way a bulk action does,
+		// without a second confirmation: the person has just asked for exactly this.
+		restore: async ( ids ) => {
+			let result = null;
+			if ( ids.length === 1 ) {
+				result = await mutate( `/${ ids[ 0 ] }/restore`, {} );
+			} else {
+				const previewed = await mutate( '/bulk/preview', {
+					action: 'restore',
+					submission_ids: ids,
+					parameters: {},
+				} );
+				result =
+					previewed &&
+					( await mutate( '/bulk/apply', {
+						token: previewed.preview.token,
+					} ) );
+			}
+			if ( result ) {
+				dispatch( { type: 'drawerClosed' } );
+				dispatch( { type: 'selectionChanged', ids: [] } );
+				await load( trashNotice( 'restore', ids.length ) );
 			}
 			return result;
 		},

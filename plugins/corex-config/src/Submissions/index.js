@@ -7,7 +7,7 @@ import {
 	useState,
 } from '@wordpress/element';
 import { Button, Spinner } from '@wordpress/components';
-import { __, _n, sprintf } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import CorexDialog from '../admin/components/CorexDialog.js';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import CorexTime from '../admin/components/CorexTime.js';
@@ -21,21 +21,21 @@ import {
 	StatusBadge,
 } from './badges.js';
 import {
+	VIEW_INBOX,
+	VIEW_TRASH,
+	bulkActionsFor,
 	inboxFiltersFromUrl,
 	inboxSubmissionFromUrl,
 	toggleSubmission,
+	trashConfirmation,
+	trashNotice,
+	viewCount,
 } from './inbox.js';
 import { useInbox } from './useInbox.js';
 
 const config = window.corexSubmissions || { restUrl: '', nonce: '', flows: [] };
 // Empty when the forms add-on is absent (Principle IX) — the form filter simply does not render.
 const FLOWS = Array.isArray( config.flows ) ? config.flows : [];
-const BULK_ACTIONS = [
-	{ value: 'mark_read', label: __( 'Mark read', 'corex' ) },
-	{ value: 'assign', label: __( 'Assign', 'corex' ) },
-	{ value: 'mark_spam', label: __( 'Mark spam', 'corex' ) },
-	{ value: 'archive', label: __( 'Archive', 'corex' ) },
-];
 const OWNER_TYPES = [
 	{ value: 'user', label: __( 'User', 'corex' ) },
 	{ value: 'team', label: __( 'Team', 'corex' ) },
@@ -52,6 +52,7 @@ function App() {
 		dateFrom: '',
 		dateTo: '',
 		includeTest: false,
+		view: VIEW_INBOX,
 		page: 1,
 		perPage: 25,
 		...inboxFiltersFromUrl(
@@ -82,6 +83,21 @@ function App() {
 	} );
 	const [ preview, setPreview ] = useState( null );
 	const [ exportOpen, setExportOpen ] = useState( false );
+	// Whether somebody asked to move the open submission to the trash, until they confirm or
+	// cancel. Not the record itself: opening a submission marks it read, which changes it, and a
+	// copy taken at the click was refused as stale when the confirmation came.
+	const [ trashing, setTrashing ] = useState( false );
+	const view = filters.view;
+	const actions = bulkActionsFor( view );
+	// What was chosen in the other view is not offered in this one.
+	const action = actions.some( ( item ) => item.value === bulkAction )
+		? bulkAction
+		: actions[ 0 ].value;
+	const setView = ( next ) => {
+		inbox.dispatch( { type: 'selectionChanged', ids: [] } );
+		inbox.close();
+		setFilters( ( current ) => ( { ...current, view: next, page: 1 } ) );
+	};
 	const updateFilter = ( key, value ) =>
 		setFilters( ( current ) => ( {
 			...current,
@@ -92,12 +108,21 @@ function App() {
 	return (
 		<div className="corex-inbox" data-status={ inbox.state.status }>
 			<InboxHeader
+				view={ view }
 				total={ inbox.state.total }
 				onExport={ () => setExportOpen( true ) }
 			/>
 			{ inbox.state.message && (
 				<div className="corex-inbox__notice is-success" role="status">
-					{ inbox.state.message }
+					<span>{ inbox.state.message }</span>
+					{ inbox.state.undo.length > 0 && (
+						<Button
+							variant="link"
+							onClick={ () => inbox.restore( inbox.state.undo ) }
+						>
+							{ __( 'Undo', 'corex' ) }
+						</Button>
+					) }
 				</div>
 			) }
 			{ inbox.state.error && (
@@ -107,6 +132,7 @@ function App() {
 					onRetry={ inbox.load }
 				/>
 			) }
+			<Views view={ view } setView={ setView } />
 			<Filters
 				filters={ filters }
 				update={ updateFilter }
@@ -114,7 +140,8 @@ function App() {
 			/>
 			<BulkToolbar
 				count={ inbox.state.selectedIds.length }
-				action={ bulkAction }
+				actions={ actions }
+				action={ action }
 				setAction={ setBulkAction }
 				owner={ bulkOwner }
 				setOwner={ setBulkOwner }
@@ -122,17 +149,20 @@ function App() {
 					inbox.dispatch( { type: 'selectionChanged', ids: [] } )
 				}
 				onPreview={ async () => {
+					const ids = inbox.state.selectedIds;
 					const data = await inbox.previewBulk(
-						bulkAction,
-						inbox.state.selectedIds,
-						bulkAction === 'assign' ? bulkOwner : {}
+						action,
+						ids,
+						action === 'assign' ? bulkOwner : {}
 					);
 					if ( data ) {
-						setPreview( data.preview );
+						// The ids are kept with the preview: they are what "Undo" restores.
+						setPreview( { ...data.preview, ids } );
 					}
 				} }
 			/>
 			<InboxTable
+				view={ view }
 				state={ inbox.state }
 				dispatch={ inbox.dispatch }
 				open={ inbox.open }
@@ -147,6 +177,7 @@ function App() {
 					id={ DRAWER_ID }
 					drawer={ inbox.state.drawer }
 					inbox={ inbox }
+					onTrash={ () => setTrashing( true ) }
 				/>
 			) }
 			{ preview && (
@@ -154,8 +185,20 @@ function App() {
 					preview={ preview }
 					close={ () => setPreview( null ) }
 					apply={ async () => {
-						await inbox.applyBulk( preview.token );
+						await inbox.applyBulk(
+							preview.token,
+							bulkOutcome( preview )
+						);
 						setPreview( null );
+					} }
+				/>
+			) }
+			{ trashing && inbox.state.drawer.record && (
+				<ConfirmTrash
+					close={ () => setTrashing( false ) }
+					apply={ async () => {
+						await inbox.trash( inbox.state.drawer.record );
+						setTrashing( false );
 					} }
 				/>
 			) }
@@ -173,7 +216,64 @@ function App() {
 	);
 }
 
-function InboxHeader( { total, onExport } ) {
+/**
+ * What the inbox says after a bulk action that moved submissions to the trash or out of it. The
+ * trash is undone from its notice; the other actions keep their own.
+ *
+ * @param {Object} preview The confirmed preview, with the ids it was made for.
+ * @return {{message?:string,undo?:number[]}} What to say, and what "Undo" restores.
+ */
+function bulkOutcome( preview ) {
+	if ( preview.action === 'trash' ) {
+		return {
+			message: trashNotice( 'trash', preview.count ),
+			undo: preview.ids,
+		};
+	}
+	if ( preview.action === 'restore' ) {
+		return { message: trashNotice( 'restore', preview.count ) };
+	}
+
+	return {};
+}
+
+/**
+ * The inbox and its trash, as two views of one list (spec 105). Two buttons that say which is
+ * pressed, not tabs: the filters and the table under them are the same in both.
+ *
+ * @param {Object}   props
+ * @param {string}   props.view    The view shown.
+ * @param {Function} props.setView Shows the other.
+ * @return {import('react').ReactElement} The switch.
+ */
+function Views( { view, setView } ) {
+	const views = [
+		{ value: VIEW_INBOX, label: __( 'Inbox', 'corex' ) },
+		{ value: VIEW_TRASH, label: __( 'Trash', 'corex' ) },
+	];
+
+	return (
+		<div
+			className="corex-inbox__views"
+			role="group"
+			aria-label={ __( 'Submissions shown', 'corex' ) }
+		>
+			{ views.map( ( item ) => (
+				<button
+					key={ item.value }
+					type="button"
+					className="corex-inbox__view"
+					aria-pressed={ view === item.value }
+					onClick={ () => setView( item.value ) }
+				>
+					{ item.label }
+				</button>
+			) ) }
+		</div>
+	);
+}
+
+function InboxHeader( { view, total, onExport } ) {
 	// The three lines are one stack, so their spacing is the stack's job. They used to be loose
 	// children of a bare <div> whose only separation came from a margin on each <p>, which is why
 	// the eyebrow, the title, and the count read as one compressed block.
@@ -185,21 +285,15 @@ function InboxHeader( { total, onExport } ) {
 				</p>
 				<h2>{ __( 'Submission Inbox', 'corex' ) }</h2>
 				<p className="corex-inbox__count">
-					{ sprintf(
-						/* translators: %d: number of submissions this user may see. */
-						_n(
-							'%d accessible submission',
-							'%d accessible submissions',
-							total,
-							'corex'
-						),
-						total
-					) }
+					{ viewCount( view, total ) }
 				</p>
 			</div>
-			<Button variant="primary" onClick={ onExport }>
-				{ __( 'Export', 'corex' ) }
-			</Button>
+			{ /* An export is of what is in the inbox. The trash holds what was taken out of it. */ }
+			{ view === VIEW_INBOX && (
+				<Button variant="primary" onClick={ onExport }>
+					{ __( 'Export', 'corex' ) }
+				</Button>
+			) }
 		</header>
 	);
 }
@@ -368,7 +462,7 @@ function BulkToolbar( props ) {
 			<CorexSelect
 				label={ __( 'Bulk action', 'corex' ) }
 				value={ props.action }
-				options={ BULK_ACTIONS }
+				options={ props.actions }
 				onChange={ props.setAction }
 			/>
 			{ props.action === 'assign' && (
@@ -419,7 +513,8 @@ function rowClassName( item, openId ) {
 		.join( ' ' );
 }
 
-function InboxTable( { state, dispatch, open } ) {
+function InboxTable( { view, state, dispatch, open } ) {
+	const trash = view === VIEW_TRASH;
 	const openId = state.drawer.open ? state.drawer.id : 0;
 	const all =
 		state.items.length > 0 &&
@@ -435,12 +530,21 @@ function InboxTable( { state, dispatch, open } ) {
 	if ( state.status !== 'loading' && state.items.length === 0 ) {
 		return (
 			<div className="corex-inbox__state">
-				<h3>{ __( 'No matching submissions', 'corex' ) }</h3>
+				<h3>
+					{ trash
+						? __( 'Nothing in the trash', 'corex' )
+						: __( 'No matching submissions', 'corex' ) }
+				</h3>
 				<p>
-					{ __(
-						'Change the filters or wait for a published flow to receive a response.',
-						'corex'
-					) }
+					{ trash
+						? __(
+								'A submission moved to the trash is listed here, and can be restored.',
+								'corex'
+							)
+						: __(
+								'Change the filters or wait for a published flow to receive a response.',
+								'corex'
+							) }
 				</p>
 			</div>
 		);
@@ -470,9 +574,16 @@ function InboxTable( { state, dispatch, open } ) {
 						<th>{ __( 'Submitter', 'corex' ) }</th>
 						<th>{ __( 'Flow', 'corex' ) }</th>
 						<th>{ __( 'Status', 'corex' ) }</th>
-						<th>{ __( 'Notification', 'corex' ) }</th>
+						{ /* Whether a notification went out says nothing of a submission in the
+						     trash, and with an eighth column the table ran past its edge. */ }
+						{ ! trash && (
+							<th>{ __( 'Notification', 'corex' ) }</th>
+						) }
 						<th>{ __( 'Owner', 'corex' ) }</th>
 						<th>{ __( 'Received', 'corex' ) }</th>
+						{ trash && (
+							<th>{ __( 'Moved to trash', 'corex' ) }</th>
+						) }
 					</tr>
 				</thead>
 				<tbody>
@@ -538,9 +649,11 @@ function InboxTable( { state, dispatch, open } ) {
 							<td>
 								<StatusBadge status={ item.status } />
 							</td>
-							<td>
-								<DeliveryBadge delivery={ item.delivery } />
-							</td>
+							{ ! trash && (
+								<td>
+									<DeliveryBadge delivery={ item.delivery } />
+								</td>
+							) }
 							<td>
 								{ item.owner_type === 'none'
 									? __( 'Unassigned', 'corex' )
@@ -552,6 +665,17 @@ function InboxTable( { state, dispatch, open } ) {
 									absent={ __( 'Not recorded', 'corex' ) }
 								/>
 							</td>
+							{ trash && (
+								<td className="corex-inbox__trashed">
+									<CorexTime
+										value={ item.trashed_at }
+										absent={ __( 'Not recorded', 'corex' ) }
+									/>
+									{ item.trashed_by_name && (
+										<small>{ item.trashed_by_name }</small>
+									) }
+								</td>
+							) }
 						</tr>
 					) ) }
 				</tbody>
@@ -591,10 +715,20 @@ function Pagination( { state, filters, update } ) {
 	);
 }
 
-function ConfirmBulk( { preview, close, apply } ) {
+/**
+ * Asked before the open submission is moved to the trash (spec 105, FR-002).
+ *
+ * @param {Object}   props
+ * @param {Function} props.close Leaves without moving it.
+ * @param {Function} props.apply Moves it.
+ * @return {import('react').ReactElement} The dialog.
+ */
+function ConfirmTrash( { close, apply } ) {
+	const words = trashConfirmation( 'trash', 1 );
+
 	return (
 		<CorexDialog
-			title={ __( 'Confirm bulk action', 'corex' ) }
+			title={ words.title }
 			onClose={ close }
 			footer={
 				<div className="corex-inbox__modal-actions">
@@ -602,18 +736,52 @@ function ConfirmBulk( { preview, close, apply } ) {
 						{ __( 'Cancel', 'corex' ) }
 					</Button>
 					<Button variant="primary" onClick={ apply }>
-						{ __( 'Confirm and apply', 'corex' ) }
+						{ words.confirm }
+					</Button>
+				</div>
+			}
+		>
+			<p>{ words.body }</p>
+		</CorexDialog>
+	);
+}
+
+function ConfirmBulk( { preview, close, apply } ) {
+	// Moving to the trash and out of it say what becomes of the submissions. The older actions
+	// keep the sentence they had.
+	const words = [ 'trash', 'restore' ].includes( preview.action )
+		? trashConfirmation( preview.action, preview.count )
+		: null;
+
+	return (
+		<CorexDialog
+			title={ words ? words.title : __( 'Confirm bulk action', 'corex' ) }
+			onClose={ close }
+			footer={
+				<div className="corex-inbox__modal-actions">
+					<Button variant="tertiary" onClick={ close }>
+						{ __( 'Cancel', 'corex' ) }
+					</Button>
+					<Button variant="primary" onClick={ apply }>
+						{ words
+							? words.confirm
+							: __( 'Confirm and apply', 'corex' ) }
 					</Button>
 				</div>
 			}
 		>
 			<p>
-				{ sprintf(
-					/* translators: 1: bulk action name, 2: number of submissions affected. */
-					__( '%1$s will affect exactly %2$d submissions.', 'corex' ),
-					preview.action,
-					preview.count
-				) }
+				{ words
+					? words.body
+					: sprintf(
+							/* translators: 1: bulk action name, 2: number of submissions affected. */
+							__(
+								'%1$s will affect exactly %2$d submissions.',
+								'corex'
+							),
+							preview.action,
+							preview.count
+						) }
 			</p>
 		</CorexDialog>
 	);

@@ -1,3 +1,9 @@
+import { __, _n, sprintf } from '@wordpress/i18n';
+
+/** The two views of the inbox (spec 105): what is in it, and what was moved to the trash. */
+export const VIEW_INBOX = 'inbox';
+export const VIEW_TRASH = 'trash';
+
 export const initialInboxState = {
 	status: 'idle',
 	items: [],
@@ -7,6 +13,8 @@ export const initialInboxState = {
 	selectedIds: [],
 	error: '',
 	message: '',
+	// The submissions the last action moved to the trash: what "Undo" puts back.
+	undo: [],
 	drawer: {
 		open: false,
 		id: 0,
@@ -19,7 +27,13 @@ export const initialInboxState = {
 export function inboxReducer( state, action ) {
 	switch ( action.type ) {
 		case 'loading':
-			return { ...state, status: 'loading', error: '', message: '' };
+			return {
+				...state,
+				status: 'loading',
+				error: '',
+				message: '',
+				undo: [],
+			};
 		case 'loaded': {
 			const page = normalizeInboxPage( action.page );
 			const visible = new Set( page.items.map( ( item ) => item.id ) );
@@ -38,7 +52,12 @@ export function inboxReducer( state, action ) {
 		case 'selectionChanged':
 			return { ...state, selectedIds: action.ids };
 		case 'message':
-			return { ...state, message: action.message || '', error: '' };
+			return {
+				...state,
+				message: action.message || '',
+				undo: Array.isArray( action.undo ) ? action.undo : [],
+				error: '',
+			};
 		case 'detailLoading':
 			return {
 				...state,
@@ -145,6 +164,7 @@ export function buildInboxUrl( base, filters ) {
 		[ 'date_from', filters.dateFrom ],
 		[ 'date_to', filters.dateTo ],
 		[ 'include_test', filters.includeTest ? '1' : '' ],
+		[ 'view', filters.view === VIEW_TRASH ? VIEW_TRASH : '' ],
 		[ 'page', filters.page ],
 		[ 'per_page', filters.perPage ],
 	];
@@ -206,4 +226,129 @@ export function buildExportPayload( options ) {
 		format: options.format || 'csv',
 		separator: options.separator || 'comma',
 	};
+}
+
+/**
+ * The bulk actions a view offers. In the trash a submission can only be restored: nothing else
+ * may change it while it is there (spec 105, FR-006).
+ *
+ * @param {string} view `inbox` or `trash`.
+ * @return {Array<{value:string,label:string}>} The actions, in the order they are offered.
+ */
+export function bulkActionsFor( view ) {
+	if ( view === VIEW_TRASH ) {
+		return [ { value: 'restore', label: __( 'Restore', 'corex' ) } ];
+	}
+
+	return [
+		{ value: 'mark_read', label: __( 'Mark read', 'corex' ) },
+		{ value: 'assign', label: __( 'Assign', 'corex' ) },
+		{ value: 'mark_spam', label: __( 'Mark spam', 'corex' ) },
+		{ value: 'archive', label: __( 'Archive', 'corex' ) },
+		{ value: 'trash', label: __( 'Move to trash', 'corex' ) },
+	];
+}
+
+/**
+ * What a person is asked before submissions are moved to the trash or out of it: how many, and
+ * what becomes of them (FR-002).
+ *
+ * @param {string} action `trash` or `restore`.
+ * @param {number} count  How many submissions.
+ * @return {{title:string,body:string,confirm:string}} The dialog's words.
+ */
+export function trashConfirmation( action, count ) {
+	if ( action === 'restore' ) {
+		return {
+			title: __( 'Restore from the trash', 'corex' ),
+			body: sprintf(
+				/* translators: %d: number of submissions. */
+				_n(
+					'%d submission will go back to the inbox, as it was.',
+					'%d submissions will go back to the inbox, as they were.',
+					count,
+					'corex'
+				),
+				count
+			),
+			confirm: __( 'Restore', 'corex' ),
+		};
+	}
+
+	return {
+		title: __( 'Move to the trash', 'corex' ),
+		body: sprintf(
+			/* translators: %d: number of submissions. */
+			_n(
+				'%d submission will leave the inbox. It can be restored from the trash.',
+				'%d submissions will leave the inbox. They can be restored from the trash.',
+				count,
+				'corex'
+			),
+			count
+		),
+		confirm: __( 'Move to trash', 'corex' ),
+	};
+}
+
+/**
+ * What the inbox says once submissions have been moved to the trash or restored.
+ *
+ * @param {string} action `trash` or `restore`.
+ * @param {number} count  How many submissions.
+ * @return {string} The notice.
+ */
+export function trashNotice( action, count ) {
+	return action === 'restore'
+		? sprintf(
+				/* translators: %d: number of submissions. */
+				_n(
+					'%d submission restored.',
+					'%d submissions restored.',
+					count,
+					'corex'
+				),
+				count
+			)
+		: sprintf(
+				/* translators: %d: number of submissions. */
+				_n(
+					'%d submission moved to the trash.',
+					'%d submissions moved to the trash.',
+					count,
+					'corex'
+				),
+				count
+			);
+}
+
+/**
+ * How many submissions a view holds, in words, under the inbox's title.
+ *
+ * @param {string} view  `inbox` or `trash`.
+ * @param {number} total How many the person may see there.
+ * @return {string} The line.
+ */
+export function viewCount( view, total ) {
+	return view === VIEW_TRASH
+		? sprintf(
+				/* translators: %d: number of submissions in the trash. */
+				_n(
+					'%d submission in the trash',
+					'%d submissions in the trash',
+					total,
+					'corex'
+				),
+				total
+			)
+		: sprintf(
+				/* translators: %d: number of submissions this user may see. */
+				_n(
+					'%d accessible submission',
+					'%d accessible submissions',
+					total,
+					'corex'
+				),
+				total
+			);
 }

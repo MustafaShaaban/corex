@@ -645,3 +645,74 @@
 		flex-direction: column;
 	}
 }
+
+/*
+ * The inbox and its trash (spec 105): two views of one list, chosen by two
+ * buttons that say which is pressed. Not tabs: what is under them is the same
+ * filters and the same table.
+ */
+.corex-admin .corex-inbox__views {
+	display: inline-flex;
+	justify-self: start;
+	gap: var(--corex-admin-space-2xs);
+	padding: var(--corex-admin-space-2xs);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+	background: var(--corex-admin-surface);
+}
+
+.corex-admin .corex-inbox__view {
+	min-block-size: var(--corex-admin-control-height);
+	padding-block: 0;
+	padding-inline: var(--corex-admin-space-md);
+	border: 0;
+	border-radius: var(--corex-admin-radius-sm);
+	color: var(--corex-admin-text-muted);
+	background: transparent;
+	font: inherit;
+	font-size: var(--corex-admin-font-sm);
+	cursor: pointer;
+}
+
+.corex-admin .corex-inbox__view[aria-pressed="true"] {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-raised);
+	font-weight: 600;
+}
+
+.corex-admin .corex-inbox__view:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+/* A notice with something to do beside what it says: "Undo". */
+.corex-admin .corex-inbox__notice {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+}
+
+/* Who moved a submission to the trash, under when. */
+.corex-admin .corex-inbox__trashed small {
+	display: block;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+}
+
+/* The line a trashed submission's pane opens with. */
+.corex-admin .corex-pane__trash {
+	display: grid;
+	justify-items: start;
+	gap: var(--corex-admin-space-sm);
+	padding: var(--corex-admin-space-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-sm);
+	background: var(--corex-admin-surface);
+}
+
+.corex-admin .corex-pane__trash p {
+	margin: 0;
+}
