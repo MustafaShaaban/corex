@@ -19,12 +19,13 @@ use InvalidArgumentException;
 final readonly class SubmissionBulkService
 {
     private const MAX_RECORDS = 100;
-    private const ACTIONS = ['mark_read', 'assign', 'mark_spam', 'archive'];
+    private const ACTIONS = ['mark_read', 'assign', 'mark_spam', 'archive', 'trash', 'restore'];
 
     public function __construct(
         private SubmissionWorkflowService $workflow,
         private SubmissionWorkflowStore $submissions,
         private SubmissionBulkPreviewStore $previews,
+        private SubmissionTrashService $trash,
     ) {
     }
 
@@ -39,8 +40,8 @@ final readonly class SubmissionBulkService
         $this->assertAction($action, $parameters);
         $records = [];
         foreach ($ids as $id) {
-            $record = $this->submissions->findWorkflow($id);
-            if ($record === null || ! $scope->allows($record)) {
+            $record = $this->selected($scope, $action, $id);
+            if ($record === null) {
                 throw new DomainException('One or more selected submissions are unavailable.');
             }
             $records[] = ['id' => $id, 'updated_at' => (string) $record['updated_at']];
@@ -57,11 +58,30 @@ final readonly class SubmissionBulkService
             throw new DomainException('The bulk preview expired or was already used.');
         }
         $this->preflight($scope, $preview);
-        foreach ($preview->submissionIds as $id) {
-            $this->applyOne($scope, $preview, $id);
-        }
+        match ($preview->action) {
+            // One action, recorded once: the trash service takes the whole selection.
+            'trash' => $this->trash->trash($scope, $preview->expectedVersions),
+            'restore' => $this->trash->restore($scope, $preview->submissionIds),
+            default => array_map(fn (int $id) => $this->applyOne($scope, $preview, $id), $preview->submissionIds),
+        };
 
         return ['matched' => $preview->count(), 'updated' => $preview->count(), 'failed' => 0];
+    }
+
+    /**
+     * The selected submission where this action looks for it: the trash for a restore, the inbox
+     * for everything else. Null when it is not there or not this person's to act on.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function selected(SubmissionAccessScope $scope, string $action, int $id): ?array
+    {
+        if ($action === 'restore') {
+            return $this->trash->trashed($scope, $id);
+        }
+        $record = $this->submissions->findWorkflow($id);
+
+        return $record !== null && $scope->allows($record) ? $record : null;
     }
 
     /** @param list<int> $submissionIds @return list<int> */
@@ -96,9 +116,9 @@ final readonly class SubmissionBulkService
     private function preflight(SubmissionAccessScope $scope, SubmissionBulkPreview $preview): void
     {
         foreach ($preview->submissionIds as $id) {
-            $record = $this->submissions->findWorkflow($id);
+            $record = $this->selected($scope, $preview->action, $id);
             $expected = $preview->expectedVersions[$id] ?? '';
-            if ($record === null || ! $scope->allows($record) || ! hash_equals((string) $record['updated_at'], $expected)) {
+            if ($record === null || ! hash_equals((string) $record['updated_at'], $expected)) {
                 throw new DomainException('A selected submission changed or became unavailable.');
             }
         }

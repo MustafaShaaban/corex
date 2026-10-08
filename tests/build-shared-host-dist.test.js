@@ -123,11 +123,20 @@ function makeRepo() {
 	// a dev/runtime path that must be excluded by the copy filter
 	write( 'plugins/corex-core/node_modules/dep/index.js' );
 	write( 'plugins/corex-core/tests/Thing.test.php' );
+	// what a package describes itself with in a repository, and a web server would hand to anyone
+	write( 'plugins/corex-core/README.md' );
+	write( 'plugins/corex-core/composer.json', '{}' );
+	write( 'addons/corex-ui/package.json', '{}' );
+	write( 'theme/README.md' );
+	write( 'packages/cli/README.md' );
 	// client source (target layout)
 	write( 'sites/acme/acme-site/acme-site.php' );
+	write( 'sites/acme/acme-site/README.md' );
 	write( 'sites/acme/acme-theme/style.css' );
+	write( 'sites/acme/acme-theme/package.json', '{}' );
 	// minimal wp core
 	write( 'wp/wp-load.php' );
+	write( 'wp/wp-includes/sodium_compat/composer.json', '{}' ); // WordPress's own, and WordPress's to ship
 	write( 'wp/wp-admin/index.php' );
 	write( 'wp/wp-config.php', 'SECRET' ); // must NOT be packaged
 	write( 'wp/.htaccess', '# the development install rewrite rules' ); // nor this: the host has its own
@@ -233,10 +242,9 @@ it( 'builds the package vendor/ beside the plugins, and leaves the checkout vend
 	expect( packaged ).toContain( 'wp-content/vendor/autoload.php' );
 	expect( packaged.filter( ( rel ) => /phpunit/.test( rel ) ) ).toEqual( [] );
 	expect( packaged ).not.toContain( 'vendor' );
-	// What Composer was given to work from is not left in the web root.
-	expect(
-		packaged.filter( ( rel ) => /composer\.(json|lock)$/.test( rel ) )
-	).toEqual( [] );
+	// What Composer was given to work from is not left beside the vendor/ it made.
+	expect( packaged ).not.toContain( 'wp-content/composer.json' );
+	expect( packaged ).not.toContain( 'wp-content/composer.lock' );
 	expect( listed( join( root, 'vendor' ) ).sort() ).toEqual( [
 		'autoload.php',
 		'phpunit',
@@ -371,6 +379,26 @@ it( 'packages the CLI with its stubs, the client site, and none of the dev or ru
 		'wp-content/plugins/corex-core/node_modules'
 	);
 	expect( packaged ).not.toContain( 'wp-content/plugins/corex-core/tests' );
+} );
+
+/**
+ * Reported from the first site on shared hosting: every plugin's `README.md` and `composer.json`
+ * could be fetched from the web. They say what is installed and at which version, to anybody,
+ * and nothing on a running site reads them.
+ */
+it( 'leaves out the files that only describe CoreX or the site to a developer', () => {
+	const { distDir } = buildFixture();
+	const described = listed( join( distDir, 'wp-content' ) ).filter(
+		( path ) =>
+			! path.startsWith( 'vendor/' ) &&
+			/(^|\/)(README\.md|composer\.json|package\.json)$/.test( path )
+	);
+
+	expect( described ).toEqual( [] );
+	// What WordPress ships is WordPress's, and is left as it came.
+	expect( listed( distDir ) ).toContain(
+		'wp-includes/sodium_compat/composer.json'
+	);
 } );
 
 it.each( [

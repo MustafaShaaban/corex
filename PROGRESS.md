@@ -88,7 +88,9 @@ delete a submission. That is spec 105, specified and not planned or built.
 
 Specified on 2026-10-08, neither planned nor built:
 
-- **Spec 105, trash, restore and permanently delete a submission.** Found while specifying: a
+- **Spec 105, trash, restore and permanently delete a submission.** Slice 1 of six is built
+  (DECISIONS #281): move to the trash from the pane or in bulk, with undo; a Trash view; restore.
+  Nothing deletes from the trash yet. Next: slice 2, delete for good. Found while specifying: a
   trashed submission is deleted for good by WordPress after 30 days, with nothing recorded and
   any uploaded file left on disk; and anonymizing leaves an uploaded file too. What a permanent
   delete removes was left to CoreX by the owner; the choice is the spec's first assumption.
@@ -408,6 +410,14 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   tracked and its hook is off, so the two framework files it changed are out of the way, and its
   own path script takes a site's directory (#251, DECISIONS #279). Nobody has run `/speckit-specify`
   in Muva or Perego and then `npm run verify:framework`.
+- **A hosting package's `vendor/` can be fetched from the web.** CoreX's own describing files are
+  left out of a package now (DECISIONS #280). Third-party `README.md` and `composer.json` files
+  and `vendor/composer/installed.json` are not, and the package ships no server rule, because
+  the host owns its `.htaccess`. Nothing tells an operator to refuse requests into it.
+- **From the audit of the first site on shared hosting, not done:** the REST index lists every
+  `corex/v1` route to anybody (each answers 401 or 403); there is no setting for security
+  headers. The coming-soon page's head is fixed; what its browser test asserts was run in CI
+  and not locally, where the spec needs fixtures the whole suite sets up.
 - **Turnstile and hCaptcha were not submitted through on a real site.** Their widget is placed
   and a tokenless submission is refused (DECISIONS #278). What was seen is each provider's own
   script rendering into a bare form on a local page, and Turnstile's token cycle there. Nobody

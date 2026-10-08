@@ -26,6 +26,7 @@ final readonly class SubmissionControllerServices
         public ExportWriters $exportFormats,
         public SubmissionEmailService $email,
         public SubmissionAccessPolicy $access,
+        public SubmissionTrashService $trash,
     ) {
     }
 }

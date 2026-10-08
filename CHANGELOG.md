@@ -8,6 +8,17 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **The Submissions inbox has a trash** (spec 105, slice 1). A submission is moved to it from its
+  pane or as a bulk action, after a confirmation that says how many, and the notice that follows
+  offers **Undo**. **Trash**, beside **Inbox** above the filters, lists what was moved there with
+  who moved it and when. A trashed submission is read and nothing else until it is restored, from
+  its pane or in bulk, exactly as it was. Reported from a client's production site, where a test
+  lead could not be taken out of the inbox. Each action is in the submission's own history and,
+  once, in the activity stream, with none of what a visitor submitted.
+- **A trashed submission is CoreX's to keep.** WordPress deletes a post from its trash for good
+  after 30 days, and at once on a site set to skip the trash. A submission moved to the trash
+  from the inbox is outside both: it stays until it is restored. Deleting for good and a trash
+  that empties itself are the next slices.
 - **Turnstile and hCaptcha show their widget on a protected form** (spec 104, slice 4; closes
   #264), on a flow and on a form defined in code. It sits above the button; the form sends the
   token the widget gives; the provider's script loads only on a page with a protected form. A
@@ -71,6 +82,16 @@ All notable changes to Corex are documented here. The format follows
 
 ### Security
 
+- **The coming-soon page no longer prints WordPress's generator tag, RSD link, feed links or
+  emoji loader.** A page that says the site is not ready also said which WordPress it runs and
+  where its remote-editing endpoint is, and offered feeds whose addresses the mode redirects back
+  to the page. They are left out for a request that is served the page; a visitor let through
+  to the real site, and the site after launch, get WordPress's head as before. Reported from a
+  production site.
+- **The hosting package no longer puts each plugin's `README.md`, `composer.json` and
+  `package.json` in the web root.** Anybody could fetch them and read what is installed and at
+  which version. They are left out of CoreX's code and the site's; WordPress core's own are as
+  WordPress ships them. Reported from a production site (DECISIONS #280).
 - **With the login hidden, three well-known addresses handed the hidden address to anyone who
   asked.** Signed out, `/wp-signup.php`, `/wp-register.php` and `/wp-admin/customize.php` each
   answered with a redirect to the custom login address. On a single site the first two only
@@ -92,6 +113,10 @@ All notable changes to Corex are documented here. The format follows
   no longer in the tree, and the hook is off. A site's spec goes under the site by naming the
   directory: `/speckit-specify SPECIFY_FEATURE_DIRECTORY=sites/<client>/specs/<work-item>-<slug>`.
   A newly generated `AGENTS.md` says so (DECISIONS #279).
+- **A reply sent from the Submissions inbox lost its line breaks.** The reply is typed in a
+  plain text box and sent as HTML, and nothing turned a line break into markup: three paragraphs
+  reached the recipient as one block. A blank line is a new paragraph now and a line break is a
+  line break. Read from the code while specifying the reply editor (spec 106, slice 0).
 - **Two protected forms that share a name each ask the provider for their own action.** The
   reCAPTCHA script looked the action up by the form's name; it reads it from the submitted form.
 - **With the mail queue on, a send still waited for the mail server on a site without Action
@@ -127,6 +152,23 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **Nothing deletes a submission from the trash yet.** One moved there from the inbox stays
+  until somebody restores it. The retention panel's "Move to trash" is unchanged: it uses
+  WordPress's trash, which WordPress empties after 30 days. Those submissions now show in the
+  inbox's Trash view and can be restored from it.
+- **New routes**: `POST corex/v1/submissions/{id}/trash` and `…/{id}/restore`; `view=trash` on
+  the list; `trash` and `restore` among the bulk actions. A change asked of a trashed submission
+  is answered 409, "This submission is in the trash. Restore it to change it.", where it was 404.
+- **A submission's record has five more fields**: `trashed`, `trashed_at`, `trashed_by`,
+  `trashed_by_name`, `trashed_via`.
+- **Constructors changed**, for code that builds these itself: `SubmissionBulkService` and
+  `SubmissionControllerServices` each take a `SubmissionTrashService`.
+- **The admin bundle and the inbox's stylesheet changed.** `build/` is git-ignored: rebuild
+  `plugins/corex-config` after taking this.
+- **A package built after this holds no `README.md`, `composer.json` or `package.json` under
+  `wp-content/plugins`, `themes` or `packages`.** A site already on a host keeps the ones it
+  has until they are deleted there: unpacking a new package over an old one removes nothing.
+  `wp-content/vendor/` is unchanged and should be refused by the web server.
 - **`.specify/feature.json` leaves the tree.** A client repository that takes this stops tracking
   it; a copy a session wrote stays on disk, ignored. If the merge reports it as changed on both
   sides, keep the deletion. The `/speckit-*` commands can then be used for a site's specs: see

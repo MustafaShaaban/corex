@@ -284,6 +284,14 @@ test( 'a signed-out visitor gets the coming-soon page at home and a redirect eve
 	expect( html ).not.toMatch( /<meta[^>]+name=["']robots["'][^>]*noindex/ );
 	expect( html ).not.toContain( 'corex-coming-soon-bar' );
 
+	// The page says the site is not ready. It does not also say which WordPress it runs, where
+	// its remote-editing endpoint is, or offer feeds that only redirect back here. Reported from
+	// the first site that used the mode in public.
+	expect( html ).not.toMatch( /<meta[^>]+name=["']generator["']/ );
+	expect( html ).not.toMatch( /rel=["']EditURI["']/ );
+	expect( html ).not.toMatch( /type=["']application\/rss\+xml["']/ );
+	expect( html ).not.toContain( 'wpemojiSettings' );
+
 	// With a campaign tag it is still the home URL.
 	expect( ( await client.get( '/?utm_source=launch' ) ).status() ).toBe(
 		200
