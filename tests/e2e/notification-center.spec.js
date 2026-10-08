@@ -199,11 +199,13 @@ test( 'the Notifications screen offers the three views and switches between them
 			'aria-current',
 			'true'
 		);
-		// A view that errored renders the alert state instead of a list or an empty state, so this
-		// is what tells us the server-side filter behind the tab actually answered.
+		// A view that errored is in the `error` state and never reaches `ready`, so this is what
+		// tells us the server-side filter behind the tab actually answered. It used to be read
+		// from the absence of an alert paragraph, which the shared error state (spec 108) no
+		// longer draws: the check would have gone on passing with nothing left to find.
 		await expect(
-			page.locator( '.corex-notifications-screen__state[role="alert"]' )
-		).toHaveCount( 0 );
+			page.locator( '.corex-notifications-screen .corex-loadable' )
+		).toHaveAttribute( 'data-corex-state', 'ready' );
 	}
 } );
 
