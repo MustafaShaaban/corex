@@ -5,6 +5,7 @@ import { dataEndpoint } from '../admin/dataClient.js';
 import { dataModelsApi } from './dataModelsApi.js';
 import { actionSources, migrationState } from './modelClient.js';
 import SourceSelect from './SourceSelect.js';
+import { workingProps } from '../admin/components/working.js';
 
 function historyLabel( run ) {
 	const states = {
@@ -249,9 +250,8 @@ export default function MigrationsPanel( { config, sources } ) {
 						<Button
 							variant="primary"
 							isDestructive={ preview.action === 'rollback' }
-							isBusy={ busy }
-							disabled={ busy }
 							onClick={ confirm }
+							{ ...workingProps( busy ) }
 						>
 							{ preview.action === 'rollback'
 								? __( 'Queue rollback', 'corex' )

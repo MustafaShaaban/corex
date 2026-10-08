@@ -144,6 +144,31 @@ The class names are the contract, for a screen that is not React: `.corex-admin-
   `loadingLabel`, and its end with "Loaded."; a quicker one, and a refresh, are not announced.
 - Content that is `refreshing` is `inert`. If the keyboard's focus was inside it, focus moves to the surface.
 
+### A control that is working
+
+A button whose request is on its way is given `workingProps`, from
+`plugins/corex-config/src/admin/components/working.js`, spread after its own props:
+
+```jsx
+<button type="button" disabled={ ! dirty } onClick={ save } { ...workingProps( saving ) }>
+	{ __( 'Save changes', 'corex' ) }
+</button>
+```
+
+While `saving` is true the button is disabled, says it is busy to assistive technology, and shows the CoreX loader
+in its own colour in place of its label. The label stays in the layout, so the button keeps its width and its name;
+do not change the label to "Saving…". When `saving` is false nothing is added, so a `disabled` the button has for
+a reason of its own is left alone.
+
+Say the outcome where the action was taken: a failure the person cannot see is the same as a button that did
+nothing.
+
+On a screen that is not React, write the three attributes by hand: `disabled`, `aria-busy="true"` and
+`data-corex-working="true"`. They are styled for any control on a CoreX admin screen, including one in a WordPress
+`Modal`, which is drawn outside `.corex-admin`.
+
+WordPress's `isBusy` is not used in the admin; a test fails if it comes back.
+
 ### In a browser test
 
 Wait on the state, which fails when a surface never becomes ready:

@@ -281,3 +281,74 @@ test( 'the drawer shows a placeholder, and never "all caught up", before its ans
 	await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
 	await expect( page.getByText( 'all caught up' ) ).toBeVisible();
 } );
+
+test( 'a working button keeps its width, shows the loader, and cannot be pressed again', async ( {
+	page,
+} ) => {
+	// The request is answered here and never reaches the site: a test that marked every
+	// notification on a developer's site as read would be one nobody ran twice.
+	const sent = [];
+	await page.route(
+		( url ) => decodeURIComponent( url.href ).includes( 'read-all' ),
+		( route ) => sent.push( route )
+	);
+	await page.goto( NOTIFICATIONS );
+	await expect(
+		page.locator( '.corex-notifications-screen .corex-loadable' )
+	).toHaveAttribute( 'data-corex-state', 'ready' );
+
+	const button = page.getByRole( 'button', { name: 'Mark all as read' } );
+	const before = await box( button );
+
+	await button.click();
+
+	await expect( button ).toHaveAttribute( 'data-corex-working', 'true' );
+	await expect( button ).toBeDisabled();
+	await expect( button ).toHaveAttribute( 'aria-busy', 'true' );
+	// Busy, not switched off: it is not dimmed as a disabled control is.
+	await expect( button ).toHaveCSS( 'opacity', '1' );
+	expect( await box( button ) ).toEqual( before );
+	expect(
+		await button.evaluate(
+			( element ) =>
+				window.getComputedStyle( element, '::after' ).animationName
+		)
+	).toBe( 'corex-loader-turn' );
+
+	// A press that lands anyway sends nothing.
+	await button.click( { force: true } );
+	expect( sent ).toHaveLength( 1 );
+
+	await sent[ 0 ].fulfill( { json: { success: true, data: {} } } );
+
+	await expect( button ).not.toHaveAttribute( 'data-corex-working', 'true' );
+	await expect( button ).toBeEnabled();
+} );
+
+test( 'the working state reaches a control drawn where WordPress puts a modal', async ( {
+	page,
+} ) => {
+	// A WordPress `Modal` is drawn at the end of <body>, outside the admin's own wrapper,
+	// and the first rules for a working control were scoped to that wrapper: the two
+	// confirm buttons in such modals were disabled and showed nothing.
+	await page.goto( NOTIFICATIONS );
+
+	const animation = await page.evaluate( () => {
+		const button = document.createElement( 'button' );
+		button.type = 'button';
+		button.disabled = true;
+		button.setAttribute( 'data-corex-working', 'true' );
+		button.textContent = 'Confirm and apply';
+		document.body.appendChild( button );
+
+		return {
+			insideWrapper: Boolean( button.closest( '.corex-admin' ) ),
+			name: window.getComputedStyle( button, '::after' ).animationName,
+		};
+	} );
+
+	expect( animation ).toEqual( {
+		insideWrapper: false,
+		name: 'corex-loader-turn',
+	} );
+} );

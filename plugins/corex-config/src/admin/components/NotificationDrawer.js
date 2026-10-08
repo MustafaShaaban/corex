@@ -11,7 +11,9 @@ import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import NotificationItem from '../notifications/NotificationItem.js';
 import NotificationSkeleton from '../notifications/NotificationSkeleton.js';
+import CorexErrorState from './CorexErrorState.js';
 import CorexLoadable from './CorexLoadable.js';
+import { workingProps } from './working.js';
 
 const FOCUSABLE =
 	'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -21,6 +23,8 @@ export default function NotificationDrawer( { open, onClose } ) {
 	// A closed drawer draws nothing, so its first state is the one it opens in.
 	const [ status, setStatus ] = useState( 'loading' );
 	const [ items, setItems ] = useState( [] );
+	const [ markingAll, setMarkingAll ] = useState( false );
+	const [ failure, setFailure ] = useState( '' );
 
 	const load = useCallback( () => {
 		setStatus( 'loading' );
@@ -100,9 +104,18 @@ export default function NotificationDrawer( { open, onClose } ) {
 	}, [] );
 
 	const markAllRead = useCallback( () => {
+		setFailure( '' );
+		setMarkingAll( true );
 		apiFetch( { path: '/corex/v1/notifications/read-all', method: 'POST' } )
 			.then( () => setItems( [] ) )
-			.catch( () => {} );
+			// It used to fail in silence: the button did nothing, and nothing said so.
+			.catch( ( reason ) =>
+				setFailure(
+					reason?.message ||
+						__( 'That action could not be completed.', 'corex' )
+				)
+			)
+			.finally( () => setMarkingAll( false ) );
 	}, [] );
 
 	if ( ! open ) {
@@ -151,6 +164,8 @@ export default function NotificationDrawer( { open, onClose } ) {
 				>
 					<DrawerItems
 						items={ items }
+						markingAll={ markingAll }
+						failure={ failure }
 						onMarkRead={ markRead }
 						onMarkAllRead={ markAllRead }
 					/>
@@ -160,7 +175,13 @@ export default function NotificationDrawer( { open, onClose } ) {
 	);
 }
 
-function DrawerItems( { items, onMarkRead, onMarkAllRead } ) {
+function DrawerItems( {
+	items,
+	markingAll,
+	failure,
+	onMarkRead,
+	onMarkAllRead,
+} ) {
 	if ( items.length === 0 ) {
 		return (
 			<p className="corex-notification-drawer__state">
@@ -195,9 +216,13 @@ function DrawerItems( { items, onMarkRead, onMarkAllRead } ) {
 				type="button"
 				className="corex-notification-drawer__mark-all"
 				onClick={ onMarkAllRead }
+				{ ...workingProps( markingAll ) }
 			>
 				{ __( 'Mark all as read', 'corex' ) }
 			</button>
+			{ failure && (
+				<CorexErrorState scale="action" message={ failure } />
+			) }
 		</>
 	);
 }

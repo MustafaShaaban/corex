@@ -8450,3 +8450,71 @@ releases, which is from their documentation and not from a run here.
   waiting; it does not, because a list from the last time it was open is not current.
 - "Mark all as read", and each notification's own actions, still show nothing while their
   request is out. That is slice 2.
+
+## #285 — A working control shows the loader in its own colour, and the loader is drawn nowhere else yet
+
+**Date:** 2026-10-08. **Spec:** 108, slice 2 (T020 to T025). **Branch:** `feat/108-loader-and-actions`.
+
+The second half of what the owner asked for: "loader inside coreX will take a better effect".
+
+**What was there.** An inventory of the admin outside the Submissions inbox, at `f2908076`,
+found 55 controls that send a request. While theirs was out: 4 showed WordPress's striped
+`isBusy`, 5 changed their label ("Saving…"), 24 were only disabled, 1 wrote "Testing…" in a
+span beside itself, and 21 showed nothing, most of which could be pressed again and sent again.
+
+**One look.** `workingProps( working )` gives a control three attributes: `disabled`,
+`aria-busy` and `data-corex-working`. The styles do the rest. The label keeps its place and
+only its fill is made transparent (`-webkit-text-fill-color`), which leaves `currentcolor` for
+the loader drawn over it: so the loader is the button's own ink, whatever the button, and the
+button keeps its width to the pixel and its name. Measured on five kinds of button, each was
+the same width working as not.
+
+**The loader** is a ring whose colour fades round it to nothing: a conic gradient with its
+middle masked out, on a pseudo-element. Under reduced motion it does not turn.
+
+**Three things the page showed that the plan did not know.**
+
+- wp-admin paints every disabled `.button` grey with `!important`. A working brass button
+  became a pale box on the dark theme. A working `.button` restates the colours it has when it
+  is not working, with `!important`, because nothing less answers wp-admin's.
+- A disabled control in the admin is dimmed to 58%. A working one is not: it is busy, not
+  switched off.
+- WordPress draws a `Modal` at the end of `<body>`, outside `.corex-admin`, where the first
+  rules did not reach. Two of the four buttons moved off `isBusy` are in such modals and would
+  have been disabled with nothing drawn. The rules are scoped to the screen's body class as
+  well. The inventory found this by reading; a browser test holds it.
+
+**No loader on its own yet.** The plan had a `CorexLoader` component, the ring with a sentence.
+Nothing calls for one: every place a spinner stands today is getting a placeholder in a later
+slice. It is written when a surface needs it.
+
+**Notifications, whole.** Each notification's actions, "Mark all as read" in both places and
+the preference boxes. One action on a notification at a time: the pressed control works and the
+others wait, since what they would act on is about to change. The preference boxes wait for one
+another too, because each change sends every category as it is on screen and a second sent
+before the first had answered undid it. "Mark all as read" (both) and a preference change
+swallowed a failed request; each says the server's reason now.
+
+**A test, not a lint rule, keeps `isBusy` out.** Nothing is wrong with the prop; it is wrong
+here.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `npx wp-scripts test-unit-jest` | 801 passed, 72 suites |
+| `loading-states` browser spec on `corex.local` | 9 passed: a held "Mark all as read" keeps its box, shows the loader, is not dimmed and sends nothing on a second press; a control appended to `<body>` gets the loader |
+| Five kinds of button, working and not, dark and light, on the page | the same width each; looked at |
+| `TokenConsumerContractTest`, `AdminAssetScopingTest` | 8 passed |
+
+**Not run.** No screen reader. The two buttons in WordPress modals were not opened in their
+modals: the rule that reaches them is tested on a control placed where a modal is drawn.
+
+**Left open.**
+
+- 43 of the 55 controls: tasks T026 to T029.
+- On the screens with one busy flag for every button (Email Studio, Forms and flows, the
+  import panel, Blog), marking only the pressed control needs the flag to say which. That is
+  the work of T026 to T028, not a change to `workingProps`.
+- The inventory also read six things that look broken and are not this spec's: they are in
+  issue form, as leads from reading and not as reproduced defects.

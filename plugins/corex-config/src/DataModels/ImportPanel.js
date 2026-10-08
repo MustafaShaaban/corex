@@ -6,6 +6,7 @@ import { dataModelsApi, downloadArtifact } from './dataModelsApi.js';
 import { actionSources, importSummary } from './modelClient.js';
 import SourceSelect from './SourceSelect.js';
 import CorexSelect from '../admin/components/CorexSelect.js';
+import { workingProps } from '../admin/components/working.js';
 
 export default function ImportPanel( { config, sources } ) {
 	const candidates = useMemo(
@@ -179,8 +180,8 @@ export default function ImportPanel( { config, sources } ) {
 			<Button
 				variant="primary"
 				onClick={ upload }
-				disabled={ ! file || status === 'loading' }
-				isBusy={ status === 'loading' }
+				disabled={ ! file }
+				{ ...workingProps( status === 'loading' ) }
 			>
 				{ __( 'Run dry-run', 'corex' ) }
 			</Button>
