@@ -40,14 +40,14 @@ They are done a screen at a time, each in its own pull request.
 
 ## Slice 3 — Data (US1, US2)
 
-- [ ] T130 Jest: `viewState()` — a first load is `loading`; a load with rows on screen is `refreshing`
-- [ ] T131 [P] Jest: `useDebounced` — ten changes inside the pause make one call, with the last value
-- [ ] T132 Records: skeleton rows first, rows kept and waiting after; the two totals waiting with them; the search box debounced and keeping focus; `Spinner` gone from `DataExplorer.js`
-- [ ] T133 A record opens its dialog at once with a placeholder; whether WordPress's `Modal` is inside the admin's token scope is checked first, and the dialog moved to `CorexDialog` if it is not
-- [ ] T134 Export history and migrations: a placeholder, never "no history" before an answer
-- [ ] T135 The source list's failure is said (FR-006)
-- [ ] T136 Playwright: each of these with the answer held back; a page turn and a search keep the rows; ten typed characters send at most two requests
-- [ ] T137 Guards; UI/UX gate; notes
+- [x] T130 Jest: `viewState()` — a first load is `loading`; a load with rows on screen is `refreshing`
+- [x] T131 [P] Jest: `useDebounced` — ten changes inside the pause make one call, with the last value; nothing is asked after the screen has gone
+- [x] T132 Records: skeleton rows first, rows kept and waiting after; the total waiting with them; the search box debounced and keeping focus; a slower answer not kept; `Spinner` gone from `DataExplorer.js`
+- [x] T133 A record opens its dialog at once with a placeholder. WordPress's `Modal` is outside the admin's token scope, so the detail moved to `CorexDialog`
+- [x] T134 Export history and migrations: a placeholder, never "no history" before an answer; a failed load said where the list is, with a retry
+- [x] T135 The source list's failure is said (FR-006)
+- [x] T136 Playwright: the list, a record and the export history with the answer held back; a sort keeps the rows; ten typed characters send one request
+- [x] T137 Guards; UI/UX gate; notes
 
 ## Slice 4 — Forms and flows, Email Studio (US1, US2)
 

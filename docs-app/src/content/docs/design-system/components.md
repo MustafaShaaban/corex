@@ -78,8 +78,8 @@ A token-only pulsing placeholder for the public site. **Use** while content load
 indefinitely — show an error or empty state on failure.
 
 The admin has its own, on the admin's tokens and under another name (`.corex-admin-skeleton`), so that neither
-stylesheet can style the other's: see [Loading states](../admin-experience/#loading-states). The Submissions and
-Data screens still show the `@wordpress/components` Spinner until they are moved to it.
+stylesheet can style the other's: see [Loading states](../admin-experience/#loading-states). The Submissions
+screen still shows the `@wordpress/components` Spinner until it is moved to it.
 
 ## Deferred (not yet built)
 

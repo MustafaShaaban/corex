@@ -6,6 +6,8 @@ import { dataModelsApi } from './dataModelsApi.js';
 import { actionSources, migrationState } from './modelClient.js';
 import SourceSelect from './SourceSelect.js';
 import { usePending, workingProps } from '../admin/components/working.js';
+import CorexLoadable from '../admin/components/CorexLoadable.js';
+import HistorySkeleton, { loadingFrom } from './HistorySkeleton.js';
 
 function historyLabel( run ) {
 	const states = {
@@ -32,6 +34,10 @@ export default function MigrationsPanel( { config, sources } ) {
 	const [ sourceKey, setSourceKey ] = useState( candidates[ 0 ]?.key || '' );
 	const [ plans, setPlans ] = useState( [] );
 	const [ history, setHistory ] = useState( [] );
+	const [ status, setStatus ] = useState( 'loading' );
+	// What the server said when the list could not be read. It is the list's failure, and is
+	// said where the list is, with a way to ask again; the notice above is for actions.
+	const [ loadFailure, setLoadFailure ] = useState( '' );
 	const [ preview, setPreview ] = useState( null );
 	const [ notice, setNotice ] = useState( '' );
 	// Which request is out. It was one flag: "Refresh" was disabled by it and never set it,
@@ -50,11 +56,14 @@ export default function MigrationsPanel( { config, sources } ) {
 				'',
 				'migrations'
 			) }?source=${ encodeURIComponent( sourceKey ) }`;
+			setStatus( loadingFrom );
 			const payload = await dataModelsApi( config, 'get', url );
 			setPlans( payload.migrations || [] );
 			setHistory( payload.history || [] );
+			setStatus( 'ready' );
 		} catch ( error ) {
-			setNotice( error.message );
+			setLoadFailure( error.message );
+			setStatus( 'error' );
 		}
 	}, [ config, sourceKey ] );
 
@@ -204,36 +213,52 @@ export default function MigrationsPanel( { config, sources } ) {
 					{ __( 'Refresh', 'corex' ) }
 				</Button>
 			</div>
-			{ history.length ? (
-				<ul className="corex-data-models__history">
-					{ history.map( ( run ) => (
-						<li key={ run.id }>
-							<span>{ historyLabel( run ) }</span>
-							{ run.state === 'applied' &&
-								run.definition.rollback_supported && (
-									<Button
-										variant="link"
-										isDestructive
-										disabled={ busy }
-										onClick={ () =>
-											during(
-												`rollback:${ run.id }`,
-												() => previewRollback( run )
-											)
-										}
-										{ ...workingProps(
-											pending === `rollback:${ run.id }`
-										) }
-									>
-										{ __( 'Preview rollback', 'corex' ) }
-									</Button>
-								) }
-						</li>
-					) ) }
-				</ul>
-			) : (
-				<p>{ __( 'No migration runs yet.', 'corex' ) }</p>
-			) }
+			<CorexLoadable
+				status={ status }
+				skeleton={ <HistorySkeleton /> }
+				loadingLabel={ __( 'Loading the migration history…', 'corex' ) }
+				errorMessage={ __(
+					'The migrations could not be loaded.',
+					'corex'
+				) }
+				errorDetail={ loadFailure }
+				onRetry={ load }
+			>
+				{ history.length ? (
+					<ul className="corex-data-models__history">
+						{ history.map( ( run ) => (
+							<li key={ run.id }>
+								<span>{ historyLabel( run ) }</span>
+								{ run.state === 'applied' &&
+									run.definition.rollback_supported && (
+										<Button
+											variant="link"
+											isDestructive
+											disabled={ busy }
+											onClick={ () =>
+												during(
+													`rollback:${ run.id }`,
+													() => previewRollback( run )
+												)
+											}
+											{ ...workingProps(
+												pending ===
+													`rollback:${ run.id }`
+											) }
+										>
+											{ __(
+												'Preview rollback',
+												'corex'
+											) }
+										</Button>
+									) }
+							</li>
+						) ) }
+					</ul>
+				) : (
+					<p>{ __( 'No migration runs yet.', 'corex' ) }</p>
+				) }
+			</CorexLoadable>
 			{ preview && (
 				<Modal
 					title={

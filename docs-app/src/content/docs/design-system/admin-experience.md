@@ -84,8 +84,8 @@ A surface that asks the server for its content is in one of four states, and it 
 | `ready` | The answer, which may be the empty state. |
 | `error` | The shared error state, with **Try again** where asking again can help. |
 
-The Notifications screen, its preferences and the header drawer work this way. The other screens are moved to it
-one at a time; until then they keep the loading sentence or spinner they had.
+The Notifications screen, its preferences, the header drawer and the Data screen work this way. The other screens
+are moved to it one at a time; until then they keep the loading sentence or spinner they had.
 
 ### In a React screen
 
@@ -106,6 +106,18 @@ one at a time; until then they keep the loading sentence or spinner they had.
 
 `status` is the screen's own: `loading` until the first answer, `refreshing` for every load after one has been
 shown, `ready`, or `error`. Leave `onRetry` out where asking again cannot help, and no button is drawn.
+`errorTitle` names what failed where the sentence alone does not, and `errorDetail` carries whatever the server
+said.
+
+A list that stays on screen while it is replaced can be asked for twice before it has answered once. Keep the
+answer to the request that is current, and drop the others: an effect's cleanup, or a counter, is enough.
+
+What stands beside a waiting list and belongs to the same answer, a total above a table, takes
+`data-corex-waiting="true"` while the list is `refreshing`, and is dimmed with it.
+
+A search box asks when typing pauses. `useDebounced( callback, 300 )`, in
+`plugins/corex-config/src/admin/useDebounced.js`, returns a function to call on every change; keep what is typed
+in the component's own state so the box shows it at once.
 
 A screen draws its placeholder inside the markup its content uses, with a `SkeletonBar` where a line of text will
 be and a `SkeletonBox` where an icon or a checkbox will be:
@@ -122,6 +134,8 @@ be and a `SkeletonBox` where an icon or a checkbox will be:
 	</ul>
 </CorexSkeleton>
 ```
+
+Where a `div` may not go, in a paragraph or a heading, `<CorexSkeleton as="span">` draws a `span`.
 
 A bar is as tall as a line of the element it is in, so the row is the height it will be with its text, from the
 same rules. `width` is `full`, `long`, `medium` or `short`. A bar's width is a share of its parent's, so a

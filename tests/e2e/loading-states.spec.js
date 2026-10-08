@@ -456,3 +456,207 @@ test( 'in the setup wizard, the step that waits for its plan says so', async ( {
 
 	await expect( next ).not.toHaveAttribute( 'data-corex-working', 'true' );
 } );
+
+const DATA = '/wp-admin/admin.php?page=corex-data-models&tab=records';
+
+// A request for a source's rows: not the list of sources, and not one record.
+const isRecordRows = ( url ) => {
+	const href = decodeURIComponent( url.href );
+	return (
+		/corex\/v1\/data\/[a-z0-9_-]+(\?|&)/.test( href ) &&
+		! /data\/(sources|migrations)/.test( href ) &&
+		/per_page=/.test( href )
+	);
+};
+
+test.describe( 'the Data records list', () => {
+	// Wide enough that a row is one line: a row that wraps is as tall as what it holds.
+	test.use( { viewport: { width: 1900, height: 1000 } } );
+
+	test( 'shows rows that are not there yet, the height of the rows that replace them', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route( isRecordRows, ( route ) => held.push( route ) );
+		await page.goto( DATA );
+
+		const surface = page.locator(
+			'.corex-data__panel-body .corex-loadable'
+		);
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		// Neither "nothing here" nor a count nobody has made.
+		await expect( page.getByText( 'No records yet.' ) ).toHaveCount( 0 );
+		await expect(
+			page.locator( '.corex-data__metric .corex-admin-skeleton' )
+		).toHaveCount( 1 );
+
+		const placeholderRow = surface
+			.locator( '.corex-admin-skeleton tbody tr' )
+			.first();
+		const placeholderHead = surface.locator(
+			'.corex-admin-skeleton thead tr'
+		);
+		const before = {
+			row: await box( placeholderRow ),
+			head: await box( placeholderHead ),
+		};
+
+		await held.shift().continue();
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		const after = {
+			row: await box( surface.locator( 'tbody tr' ).first() ),
+			head: await box( surface.locator( 'thead tr' ) ),
+		};
+		expect( after ).toEqual( before );
+	} );
+
+	test( 'keeps its rows, and holds its total, while it is sorted', async ( {
+		page,
+	} ) => {
+		await page.goto( DATA );
+		const surface = page.locator(
+			'.corex-data__panel-body .corex-loadable'
+		);
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+		const rows = await surface.locator( 'tbody tr' ).count();
+		expect( rows ).toBeGreaterThan( 0 );
+
+		const held = [];
+		await page.route( isRecordRows, ( route ) => held.push( route ) );
+		await surface.locator( '.corex-data__sort' ).first().click();
+
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'refreshing'
+		);
+		await expect( surface.locator( 'tbody tr' ) ).toHaveCount( rows );
+		await expect( surface.locator( '.corex-admin-skeleton' ) ).toHaveCount(
+			0
+		);
+		await expect( page.locator( '.corex-data__metrics' ) ).toHaveAttribute(
+			'data-corex-waiting',
+			'true'
+		);
+
+		await held.shift().continue();
+
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+		await expect(
+			page.locator( '.corex-data__metrics' )
+		).not.toHaveAttribute( 'data-corex-waiting', 'true' );
+	} );
+
+	test( 'asks once for ten letters typed without a pause, and keeps the box', async ( {
+		page,
+	} ) => {
+		await page.goto( DATA );
+		await expect(
+			page.locator( '.corex-data__panel-body .corex-loadable' )
+		).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		let asked = 0;
+		page.on( 'request', ( request ) => {
+			if ( isRecordRows( new URL( request.url() ) ) ) {
+				asked += 1;
+			}
+		} );
+
+		const search = page.getByRole( 'textbox', { name: 'Search records' } );
+		await search.pressSequentially( 'contact fo', { delay: 40 } );
+
+		await expect(
+			page.locator( '.corex-data__panel-body .corex-loadable' )
+		).toHaveAttribute( 'data-corex-state', 'ready' );
+		await page.waitForTimeout( 600 );
+
+		// SC-004 allows two. Typed at this pace it is one.
+		expect( asked ).toBe( 1 );
+		await expect( search ).toBeFocused();
+		await expect( search ).toHaveValue( 'contact fo' );
+	} );
+
+	test( 'opens a record on the press, and draws its fields as fields', async ( {
+		page,
+	} ) => {
+		await page.goto( DATA );
+		await expect(
+			page.locator( '.corex-data__panel-body .corex-loadable' )
+		).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		const held = [];
+		await page.route(
+			( url ) =>
+				/corex\/v1\/data\/[a-z0-9_-]+\/\d+(\?|$)/.test(
+					decodeURIComponent( url.href )
+				),
+			( route ) => held.push( route )
+		);
+		await page.getByRole( 'button', { name: 'View' } ).first().click();
+
+		// It used to open when the record did: the press showed nothing.
+		const dialog = page.getByRole( 'dialog', { name: 'Record detail' } );
+		await expect( dialog ).toBeVisible();
+		const surface = dialog.locator( '.corex-loadable' );
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		await expect(
+			dialog.getByText( 'This record has no readable fields.' )
+		).toHaveCount( 0 );
+
+		// The real route answers, untouched: this is the comparison between the screen and
+		// the route that serves it which no test made, while the screen read the answer one
+		// level too shallow and drew a record as a single field named "Record".
+		await held.shift().continue();
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		const labels = await dialog
+			.locator( '.corex-data__field dt' )
+			.allTextContents();
+		expect( labels.length ).toBeGreaterThan( 1 );
+		expect( labels ).not.toContain( 'Record' );
+		await expect(
+			dialog.locator( '.corex-data__field dd' ).first()
+		).not.toContainText( '{"' );
+	} );
+
+	test( 'does not say "No exports yet." before the export history has answered', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route(
+			( url ) =>
+				/corex\/v1\/data\/[a-z0-9_-]+\/exports(\?|$)/.test(
+					decodeURIComponent( url.href )
+				),
+			( route ) =>
+				route.request().method() === 'GET'
+					? held.push( route )
+					: route.continue()
+		);
+		await page.goto(
+			'/wp-admin/admin.php?page=corex-data-models&tab=export'
+		);
+
+		const surface = page.locator(
+			'.corex-data-models__workspace .corex-loadable'
+		);
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		await expect(
+			surface.locator( '.corex-admin-skeleton li' )
+		).toHaveCount( 3 );
+		await expect( page.getByText( 'No exports yet.' ) ).toHaveCount( 0 );
+
+		await held.shift().continue();
+
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+	} );
+} );

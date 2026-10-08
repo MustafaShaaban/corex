@@ -12,15 +12,14 @@ import { act } from 'react';
 import RecordDetail from '../RecordDetail.js';
 
 // WordPress's component library does not load under Jest here (its rich-text package refuses
-// at import), so its button and its modal are stood in for by the elements they draw. What is
-// under test is what this screen gives them, which passes straight through.
+// at import), so its button is stood in for by the element it draws. What is under test is
+// what this screen gives it, which passes straight through.
 jest.mock( '@wordpress/components', () => ( {
 	Button: ( { variant, isDestructive, children, ...rest } ) => (
 		<button type="button" { ...rest }>
 			{ children }
 		</button>
 	),
-	Modal: ( { children } ) => <div role="dialog">{ children }</div>,
 } ) );
 
 let root;
@@ -79,4 +78,31 @@ it( 'stays, with Delete working and the rest held, until there is something to c
 	} );
 
 	expect( closed ).toBe( 1 );
+} );
+
+it( 'opens before its record has arrived, with nothing to act on yet', () => {
+	act( () => {
+		root.render(
+			<RecordDetail
+				explorer={ {
+					source: { fields: [] },
+					can: () => true,
+					previewMutation: () => {},
+				} }
+				record={ null }
+				close={ () => {} }
+				edit={ () => {} }
+			/>
+		);
+	} );
+
+	expect(
+		document.body.querySelector( '.corex-loadable' ).dataset.corexState
+	).toBe( 'loading' );
+	expect( document.body.textContent ).not.toContain(
+		'This record has no readable fields.'
+	);
+	expect( button( 'Edit' ).disabled ).toBe( true );
+	expect( button( 'Delete' ).disabled ).toBe( true );
+	expect( button( 'Close' ).disabled ).toBe( false );
 } );

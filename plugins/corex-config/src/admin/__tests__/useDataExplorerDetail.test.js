@@ -1,14 +1,15 @@
 /**
- * `detail()` returns the record the endpoint sent (#149 item 1a).
+ * `detail()` returns the record the endpoint sent.
  *
- * This file exists because the test that already covered the detail modal could not fail. It calls
- * `recordRows()` directly with a well-formed record, and `recordRows()` was never the broken part —
- * the hook above it unwrapped a `record` key that `DataController::show()` does not emit, so the
- * modal received `undefined` for every source on every install, and the unit test stayed green
- * throughout.
+ * This drives the real hook against a stubbed transport and asserts on what a caller gets:
+ * `recordRows()`, which the detail's other test covers, was never the broken part.
  *
- * So this drives the real hook against a stubbed transport and asserts on what a caller gets. It is
- * the layer the other test skips, and the only layer where the defect lived.
+ * The transport here answers what the site answers: `{ record }`, from
+ * `DataManagementController::show()`, read off a running site on 2026-10-08 and held on the
+ * server's side by `DataManagementControllerTest`. It used to answer a bare record, written
+ * from `DataController::show()`, a controller that is bound and not registered. So this file
+ * passed while every record's detail showed one field named "Record" holding a line of JSON.
+ * A stub is only as true as what it was copied from.
  *
  * Rendered through `createRoot` + `act`, as the other component tests do — the repo has no
  * testing-library dependency and this does not add one.
@@ -19,7 +20,7 @@ import { act } from 'react';
 
 import { useDataExplorer } from '../data/useDataExplorer.js';
 
-/** What `DataController::show()` actually returns: the record at the envelope root. */
+/** One record, as a source returns it. The route sends it under `record`. */
 const SUBMISSION_RECORD = {
 	id: 7,
 	date: '2026-07-28T09:00:00+00:00',
@@ -70,11 +71,11 @@ afterEach( () => {
 	delete window.Corex;
 } );
 
-it( 'resolves to the record itself, not to a key the endpoint never sends', async () => {
+it( 'resolves to the record itself, out of the answer that carries it', async () => {
 	const explorer = mountExplorer( async ( url ) =>
 		url.endsWith( '/sources' )
 			? { envelope: { ok: true, data: { sources: CONFIG.sources } } }
-			: { envelope: { ok: true, data: SUBMISSION_RECORD } }
+			: { envelope: { ok: true, data: { record: SUBMISSION_RECORD } } }
 	);
 
 	let record;
@@ -82,8 +83,8 @@ it( 'resolves to the record itself, not to a key the endpoint never sends', asyn
 		record = await explorer().detail( 7 );
 	} );
 
-	// The assertion the old test could not make. Before the fix this was `undefined`, and the
-	// modal rendered its empty state — a sentence that reads as a fact about the record.
+	// Read one level too shallow this is `{ record: {…} }`, and the detail draws the whole
+	// record as one field named "Record".
 	expect( record ).toEqual( SUBMISSION_RECORD );
 	expect( record.fields ).toHaveLength( 1 );
 } );
@@ -94,7 +95,7 @@ it( 'asks the detail route for the record it was given', async () => {
 		seen.push( url );
 		return url.endsWith( '/sources' )
 			? { envelope: { ok: true, data: { sources: CONFIG.sources } } }
-			: { envelope: { ok: true, data: SUBMISSION_RECORD } };
+			: { envelope: { ok: true, data: { record: SUBMISSION_RECORD } } };
 	} );
 
 	await act( async () => {
