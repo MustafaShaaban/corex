@@ -8,6 +8,7 @@
 
 declare(strict_types=1);
 
+use Brain\Monkey\Functions;
 use Corex\Config\Submissions\SubmissionAccessScope;
 use Corex\Config\Submissions\SubmissionEmailService;
 use Corex\Config\Submissions\SubmissionReply;
@@ -113,6 +114,9 @@ it('sends a reply only to the accessible submission address and timelines the re
     $timeline = submissionEmailTimeline();
     $service = new SubmissionEmailService(emailWorkflowStore(), $gateway, $timeline);
     $scope = new SubmissionAccessScope(7, false, ['sales']);
+    // WordPress turns typed line breaks into markup; that is tested against WordPress itself, in
+    // SubmissionReplyLineBreaksTest. Here the reply is already marked up.
+    Functions\when('wpautop')->returnArg();
 
     $result = $service->reply($scope, 31, new SubmissionReply('Re: Contact', '<p>Thanks, Sam.</p>'));
 

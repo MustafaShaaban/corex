@@ -92,6 +92,10 @@ All notable changes to Corex are documented here. The format follows
   no longer in the tree, and the hook is off. A site's spec goes under the site by naming the
   directory: `/speckit-specify SPECIFY_FEATURE_DIRECTORY=sites/<client>/specs/<work-item>-<slug>`.
   A newly generated `AGENTS.md` says so (DECISIONS #279).
+- **A reply sent from the Submissions inbox lost its line breaks.** The reply is typed in a
+  plain text box and sent as HTML, and nothing turned a line break into markup: three paragraphs
+  reached the recipient as one block. A blank line is a new paragraph now and a line break is a
+  line break. Read from the code while specifying the reply editor (spec 106, slice 0).
 - **Two protected forms that share a name each ask the provider for their own action.** The
   reCAPTCHA script looked the action up by the form's name; it reads it from the submitted form.
 - **With the mail queue on, a send still waited for the mail server on a site without Action
