@@ -120,9 +120,13 @@
 				: '' ) +
 			'<footer class="corex-insight-card__foot">' +
 			'<button type="button" class="button button-primary" ' +
-			( loading ? 'disabled' : '' ) +
+			// The admin's one working state (spec 108): the label stays, so the button keeps
+			// its width, and the styles draw the loader over it from these attributes.
+			( loading
+				? 'disabled aria-busy="true" data-corex-working="true"'
+				: '' ) +
 			'>' +
-			( loading ? t( 'Running…' ) : t( 'Run check' ) ) +
+			t( 'Run check' ) +
 			'</button>' +
 			'<span class="corex-insight-card__time">' +
 			escape( checkedAt ) +

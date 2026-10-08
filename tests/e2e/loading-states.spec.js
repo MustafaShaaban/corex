@@ -390,3 +390,69 @@ test( 'in Email Studio the button that was pressed is the one that works', async
 	await expect( create ).not.toHaveAttribute( 'data-corex-working', 'true' );
 	await expect( create ).toBeEnabled();
 } );
+
+test( 'on Insights, a screen that is not React, "Run check" works the same way', async ( {
+	page,
+} ) => {
+	// Held and then dropped: no check is run on the site by this test.
+	const sent = [];
+	await page.route(
+		( url ) => /insights\/run(\?|$)/.test( decodeURIComponent( url.href ) ),
+		( route ) => sent.push( route )
+	);
+	await page.goto( '/wp-admin/admin.php?page=corex-insights' );
+
+	const card = page.locator( '.corex-insight-card' ).first();
+	const run = card.getByRole( 'button', { name: 'Run check' } );
+	const before = await box( run );
+
+	await run.click();
+
+	// The card is drawn again as markup, so this is a new button with the same name.
+	await expect( run ).toHaveAttribute( 'data-corex-working', 'true' );
+	await expect( run ).toBeDisabled();
+	expect( await box( run ) ).toEqual( before );
+	expect(
+		await run.evaluate(
+			( element ) =>
+				window.getComputedStyle( element, '::after' ).animationName
+		)
+	).toBe( 'corex-loader-turn' );
+
+	await sent[ 0 ].abort();
+
+	await expect( run ).toBeEnabled();
+	await expect( run ).not.toHaveAttribute( 'data-corex-working', 'true' );
+} );
+
+test( 'in the setup wizard, the step that waits for its plan says so', async ( {
+	page,
+} ) => {
+	// "Next" used to do nothing visible until the plan arrived, and asked again on a second
+	// press. The request is let through at the end: it reads, and changes nothing.
+	const held = [];
+	await page.route(
+		( url ) => /setup\/plan(\?|&|$)/.test( decodeURIComponent( url.href ) ),
+		( route ) => held.push( route )
+	);
+	await page.goto( '/wp-admin/admin.php?page=corex-setup' );
+	await expect(
+		page.locator( '#corex-setup-app .corex-setup__panel' )
+	).toBeVisible();
+
+	const next = page.locator( '#corex-setup-next' );
+	// Welcome, Brand, Kit and Demo ask the server for nothing; the step after them is the plan.
+	for ( let step = 0; step < 6 && held.length === 0; step++ ) {
+		await next.click();
+		await page.waitForTimeout( 150 );
+	}
+
+	expect( held ).toHaveLength( 1 );
+	await expect( next ).toHaveAttribute( 'data-corex-working', 'true' );
+	await expect( next ).toBeDisabled();
+	await expect( page.locator( '#corex-setup-back' ) ).toBeDisabled();
+
+	await held[ 0 ].continue();
+
+	await expect( next ).not.toHaveAttribute( 'data-corex-working', 'true' );
+} );

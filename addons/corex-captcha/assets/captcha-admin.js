@@ -71,7 +71,11 @@
 		( anchor.closest( 'td' ) || anchor.parentNode ).appendChild( wrap );
 
 		button.addEventListener( 'click', function () {
+			// The admin's one working state (spec 108). The sentence beside the button stays:
+			// it is what a screen reader is told, and where the outcome is said.
 			button.disabled = true;
+			button.setAttribute( 'aria-busy', 'true' );
+			button.setAttribute( 'data-corex-working', 'true' );
 			result.className = 'corex-captcha-test__result';
 			result.textContent = __( 'Testing…', 'corex' );
 
@@ -99,6 +103,8 @@
 				} )
 				.then( function () {
 					button.disabled = false;
+					button.removeAttribute( 'aria-busy' );
+					button.removeAttribute( 'data-corex-working' );
 				} );
 		} );
 	}
