@@ -25,10 +25,12 @@ import {
 	VIEW_TRASH,
 	bulkActionsFor,
 	deleteConfirmation,
+	deletesAt,
 	inboxFiltersFromUrl,
 	inboxSubmissionFromUrl,
 	toggleSubmission,
 	trashConfirmation,
+	trashKeeps,
 	trashNotice,
 	viewCount,
 } from './inbox.js';
@@ -169,6 +171,11 @@ function App() {
 					}
 				} }
 			/>
+			{ view === VIEW_TRASH && (
+				<p className="corex-inbox__trash-keeps">
+					{ trashKeeps( inbox.state.trashDays ) }
+				</p>
+			) }
 			<InboxTable
 				view={ view }
 				state={ inbox.state }
@@ -696,6 +703,23 @@ function InboxTable( { view, state, dispatch, open } ) {
 									/>
 									{ item.trashed_by_name && (
 										<small>{ item.trashed_by_name }</small>
+									) }
+									{ deletesAt(
+										item.trashed_at,
+										state.trashDays
+									) && (
+										<small>
+											{ __(
+												'Deleted for good:',
+												'corex'
+											) }{ ' ' }
+											<CorexTime
+												value={ deletesAt(
+													item.trashed_at,
+													state.trashDays
+												) }
+											/>
+										</small>
 									) }
 								</td>
 							) }

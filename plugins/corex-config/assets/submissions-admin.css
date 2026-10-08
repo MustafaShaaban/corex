@@ -772,3 +772,10 @@
 .corex-admin .corex-inbox__acknowledge label {
 	font-weight: 600;
 }
+
+/* How long the trash keeps a submission, said once above its table. */
+.corex-admin .corex-inbox__trash-keeps {
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
