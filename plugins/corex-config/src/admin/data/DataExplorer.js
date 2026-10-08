@@ -45,7 +45,9 @@ function awaitsFirstAnswer( explorer ) {
 
 export default function DataExplorer( { config } ) {
 	const explorer = useDataExplorer( config );
-	const [ record, setRecord ] = useState( null );
+	// The record whose detail is open: its id from the press, and the record itself when it
+	// has arrived. The dialog opens on the press; it used to open when the record did.
+	const [ open, setOpen ] = useState( null );
 	const [ editor, setEditor ] = useState( null );
 	const [ bulkEdit, setBulkEdit ] = useState( false );
 	const [ exporting, setExporting ] = useState( false );
@@ -60,10 +62,16 @@ export default function DataExplorer( { config } ) {
 		),
 	} );
 	const openRecord = async ( row ) => {
-		const detail = await explorer.detail( row.id );
-		if ( detail ) {
-			setRecord( detail );
-		}
+		setOpen( { id: row.id, record: null } );
+		const record = await explorer.detail( row.id );
+		setOpen( ( current ) => {
+			// Closed, or another record opened, while this one was on its way.
+			if ( current?.id !== row.id ) {
+				return current;
+			}
+			// One that could not be read closes the dialog; the notice says why.
+			return record ? { id: row.id, record } : null;
+		} );
 	};
 
 	if ( explorer.catalogStatus === 'error' && ! explorer.source ) {
@@ -193,14 +201,14 @@ export default function DataExplorer( { config } ) {
 					<Pagination explorer={ explorer } />
 				</section>
 			</main>
-			{ record && (
+			{ open && (
 				<RecordDetail
 					explorer={ explorer }
-					record={ record }
-					close={ () => setRecord( null ) }
+					record={ open.record }
+					close={ () => setOpen( null ) }
 					edit={ () => {
-						setEditor( record );
-						setRecord( null );
+						setEditor( open.record );
+						setOpen( null );
 					} }
 				/>
 			) }

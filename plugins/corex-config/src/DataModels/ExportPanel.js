@@ -7,6 +7,8 @@ import { dataExportRequests, downloadArtifact } from './dataModelsApi.js';
 import { actionSources } from './modelClient.js';
 import SourceSelect from './SourceSelect.js';
 import { usePending, workingProps } from '../admin/components/working.js';
+import CorexLoadable from '../admin/components/CorexLoadable.js';
+import HistorySkeleton, { loadingFrom } from './HistorySkeleton.js';
 
 function scopeName( scope ) {
 	const scopes = {
@@ -48,6 +50,10 @@ export default function ExportPanel( { config, sources } ) {
 	const source = sources.find( ( item ) => item.key === sourceKey );
 	const [ exporting, setExporting ] = useState( false );
 	const [ history, setHistory ] = useState( [] );
+	const [ status, setStatus ] = useState( 'loading' );
+	// What the server said when the list could not be read. It is the list's failure, and is
+	// said where the list is, with a way to ask again; the notice above is for actions.
+	const [ loadFailure, setLoadFailure ] = useState( '' );
 	const [ notice, setNotice ] = useState( '' );
 	const requests = useMemo(
 		() => dataExportRequests( config, sourceKey ),
@@ -58,11 +64,14 @@ export default function ExportPanel( { config, sources } ) {
 		if ( ! sourceKey ) {
 			return;
 		}
+		setStatus( loadingFrom );
 		try {
 			setHistory( ( await requests.history() ).exports || [] );
 			setNotice( '' );
+			setStatus( 'ready' );
 		} catch ( error ) {
-			setNotice( error.message );
+			setLoadFailure( error.message );
+			setStatus( 'error' );
 		}
 	}, [ requests, sourceKey ] );
 
@@ -124,47 +133,64 @@ export default function ExportPanel( { config, sources } ) {
 			<div className="corex-data-models__history-head">
 				<h3>{ __( 'Export history', 'corex' ) }</h3>
 			</div>
-			{ history.length ? (
-				<ul className="corex-data-models__history">
-					{ history.map( ( run ) => (
-						<li key={ run.id }>
-							<span>
-								{ sprintf(
-									/* translators: 1: what an export covered. 2: its format. 3: a number of records. 4: whether its file is ready. */
-									__( '%1$s · %2$s · %3$s · %4$s', 'corex' ),
-									scopeName( run.scope ),
-									String( run.format ).toUpperCase(),
-									Number(
-										run.exported_rows || run.record_count
-									).toLocaleString(),
-									stateName( run.state )
-								) }
-								{ ' · ' }
-								<CorexTime value={ run.created_at } />
-							</span>
-							{ run.state === 'completed' && (
-								<Button
-									variant="link"
-									// A second press used to fetch, and save, the file again.
-									disabled={ pending !== '' }
-									onClick={ () =>
-										during( `download:${ run.id }`, () =>
-											download( run )
-										)
-									}
-									{ ...workingProps(
-										pending === `download:${ run.id }`
+			<CorexLoadable
+				status={ status }
+				skeleton={ <HistorySkeleton /> }
+				loadingLabel={ __( 'Loading the export history…', 'corex' ) }
+				errorMessage={ __(
+					'The export history could not be loaded.',
+					'corex'
+				) }
+				errorDetail={ loadFailure }
+				onRetry={ load }
+			>
+				{ history.length ? (
+					<ul className="corex-data-models__history">
+						{ history.map( ( run ) => (
+							<li key={ run.id }>
+								<span>
+									{ sprintf(
+										/* translators: 1: what an export covered. 2: its format. 3: a number of records. 4: whether its file is ready. */
+										__(
+											'%1$s · %2$s · %3$s · %4$s',
+											'corex'
+										),
+										scopeName( run.scope ),
+										String( run.format ).toUpperCase(),
+										Number(
+											run.exported_rows ||
+												run.record_count
+										).toLocaleString(),
+										stateName( run.state )
 									) }
-								>
-									{ __( 'Download', 'corex' ) }
-								</Button>
-							) }
-						</li>
-					) ) }
-				</ul>
-			) : (
-				<p>{ __( 'No exports yet.', 'corex' ) }</p>
-			) }
+									{ ' · ' }
+									<CorexTime value={ run.created_at } />
+								</span>
+								{ run.state === 'completed' && (
+									<Button
+										variant="link"
+										// A second press used to fetch, and save, the file again.
+										disabled={ pending !== '' }
+										onClick={ () =>
+											during(
+												`download:${ run.id }`,
+												() => download( run )
+											)
+										}
+										{ ...workingProps(
+											pending === `download:${ run.id }`
+										) }
+									>
+										{ __( 'Download', 'corex' ) }
+									</Button>
+								) }
+							</li>
+						) ) }
+					</ul>
+				) : (
+					<p>{ __( 'No exports yet.', 'corex' ) }</p>
+				) }
+			</CorexLoadable>
 			{ exporting && source && (
 				<DataExportDialog
 					config={ config }
