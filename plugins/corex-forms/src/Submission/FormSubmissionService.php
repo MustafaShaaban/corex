@@ -11,6 +11,7 @@ namespace Corex\Forms\Submission;
 defined('ABSPATH') || exit;
 
 use Corex\Events\EventDispatcher;
+use Corex\Forms\Form;
 use Corex\Forms\FormRegistry;
 use Corex\Forms\Schema\SchemaResolver;
 use Corex\Forms\Validation\Validator;
@@ -40,6 +41,8 @@ final class FormSubmissionService
          * to remove.
          */
         private readonly ?AttachmentStorage $attachments = null,
+        /** Optional for the same reason. Without it no form is challenged. */
+        private readonly ?SubmissionChallenge $challenge = null,
     ) {
     }
 
@@ -81,6 +84,16 @@ final class FormSubmissionService
             return Response::reject(__('Submission rejected.', 'corex'), 422);
         }
 
+        if ($this->failsChallenge($form, $input)) {
+            return Response::reject(
+                __('We could not verify your submission. Please try again.', 'corex'),
+                422,
+                new SubmissionRefusal(SubmissionRefusal::CHALLENGE_FAILED),
+            );
+        }
+        // The token has done its work. It is not an answer, and no listener is handed it.
+        unset($input[SubmissionChallenge::TOKEN_KEY]);
+
         $schema = $this->resolver->resolve($form->fields());
 
         // Descriptors are validated in place, so `mime` and `max_size` see the real file. Nothing
@@ -100,6 +113,20 @@ final class FormSubmissionService
         $this->events->dispatch(new FormSubmittedEvent($slug, $values));
 
         return Response::ok($values);
+    }
+
+    /**
+     * @param array<string,mixed> $input
+     */
+    private function failsChallenge(Form $form, array $input): bool
+    {
+        if ($this->challenge === null) {
+            return false;
+        }
+
+        $token = trim((string) ($input[SubmissionChallenge::TOKEN_KEY] ?? ''));
+
+        return ! $this->challenge->verify($token, $form->slug, CodeFormProtection::of($form))->passed;
     }
 
     /**

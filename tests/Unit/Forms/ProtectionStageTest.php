@@ -13,6 +13,7 @@ use Corex\Forms\Flow\FlowVersion;
 use Corex\Forms\Submission\FormChallengeContextFactory;
 use Corex\Forms\Submission\FormSubmissionService;
 use Corex\Forms\Submission\Stages\ProtectionStage;
+use Corex\Forms\Submission\SubmissionChallenge;
 use Corex\Forms\Submission\SubmissionPipelineContext;
 use Corex\Security\ChallengeContext;
 use Corex\Security\ChallengeVerification;
@@ -29,6 +30,12 @@ beforeEach(function () {
     Functions\when('sanitize_text_field')->alias(static fn (string $v): string => trim($v));
     Functions\when('sanitize_key')->alias(static fn (string $k): string => (string) preg_replace('/[^a-z0-9_\-]/', '', strtolower($k)));
 });
+
+/** The stage as the container builds it: around the one check both kinds of form share (spec 104). */
+function protectionStage(?ChallengeVerifier $verifier = null, ?FormChallengeContextFactory $factory = null): ProtectionStage
+{
+    return new ProtectionStage(new SubmissionChallenge($verifier, $factory));
+}
 
 /** @param array<string,mixed> $protection */
 function protectionContext(array $values, array $protection = []): SubmissionPipelineContext
@@ -70,7 +77,7 @@ it('verifies and removes a configured captcha token before storage', function ()
             return $token === 'valid-token';
         }
     };
-    $result = (new ProtectionStage($verifier))->execute(protectionContext([
+    $result = (protectionStage($verifier))->execute(protectionContext([
         'email' => 'visitor@example.com',
         'captcha_token' => 'valid-token',
     ]));
@@ -87,14 +94,14 @@ it('fails closed when the configured captcha rejects or receives no token', func
             return false;
         }
     };
-    $result = (new ProtectionStage($verifier))->execute(protectionContext(['captcha_token' => $token]));
+    $result = (protectionStage($verifier))->execute(protectionContext(['captcha_token' => $token]));
 
     expect($result->failed())->toBeTrue()
         ->and($result->context->metadata['spam']['captcha'])->toBe('failed');
 })->with(['invalid-token', '']);
 
 it('records captcha as not configured when the optional verifier is absent', function () {
-    $result = (new ProtectionStage())->execute(protectionContext(['email' => 'visitor@example.com']));
+    $result = (protectionStage())->execute(protectionContext(['email' => 'visitor@example.com']));
 
     expect($result->failed())->toBeFalse()
         ->and($result->context->metadata['spam']['captcha'])->toBe('not_configured');
@@ -132,7 +139,7 @@ it('judges a scored token against the server-derived action and threshold, and p
     $verdict = ChallengeVerification::pass(0.9, 0.3, 'corex_form_protected', 'corex.local');
     $factory = challengeContextFactory(['captcha.driver' => 'recaptcha', 'captcha.secret' => 's', 'captcha.allowed_hostnames' => 'corex.local']);
 
-    $result = (new ProtectionStage(scoredVerifier($verdict, $seen), $factory))->execute(
+    $result = (protectionStage(scoredVerifier($verdict, $seen), $factory))->execute(
         protectionContext(['email' => 'v@example.com', 'captcha_token' => 'tok'])
     );
 
@@ -154,7 +161,7 @@ it('fails closed and records the typed reason when the score is below threshold'
     );
     $factory = challengeContextFactory(['captcha.driver' => 'recaptcha', 'captcha.secret' => 's']);
 
-    $result = (new ProtectionStage(scoredVerifier($verdict), $factory))->execute(
+    $result = (protectionStage(scoredVerifier($verdict), $factory))->execute(
         protectionContext(['captcha_token' => 'weak'])
     );
 
@@ -168,7 +175,7 @@ it('applies a per-form threshold override rather than the global default', funct
     $verdict = ChallengeVerification::pass(0.8, 0.7, 'corex_form_protected', 'corex.local');
     $factory = challengeContextFactory(['captcha.driver' => 'recaptcha', 'captcha.secret' => 's', 'captcha.score_threshold' => 0.3]);
 
-    (new ProtectionStage(scoredVerifier($verdict, $seen), $factory))->execute(
+    (protectionStage(scoredVerifier($verdict, $seen), $factory))->execute(
         protectionContext(['captcha_token' => 'tok'], ['captcha' => 'on', 'threshold' => 0.7])
     );
 
@@ -180,7 +187,7 @@ it('skips the provider for a form that opts out, keeping only the honeypot', fun
     $verdict = ChallengeVerification::fail(ChallengeVerification::OUTCOME_PROVIDER_REJECTED, 'x', 0.3, 'no');
     $factory = challengeContextFactory(['captcha.driver' => 'recaptcha', 'captcha.secret' => 's']);
 
-    $result = (new ProtectionStage(scoredVerifier($verdict), $factory))->execute(
+    $result = (protectionStage(scoredVerifier($verdict), $factory))->execute(
         protectionContext(['email' => 'v@example.com'], ['captcha' => 'off'])
     );
 
@@ -192,7 +199,7 @@ it('still fails a filled honeypot even when captcha passes', function () {
     $verdict = ChallengeVerification::pass(0.9, 0.3, 'corex_form_protected', 'corex.local');
     $factory = challengeContextFactory(['captcha.driver' => 'recaptcha', 'captcha.secret' => 's']);
 
-    $result = (new ProtectionStage(scoredVerifier($verdict), $factory))->execute(
+    $result = (protectionStage(scoredVerifier($verdict), $factory))->execute(
         protectionContext(['captcha_token' => 'tok', 'corex_hp' => 'i-am-a-bot'])
     );
 
@@ -219,7 +226,7 @@ function tokenOnlyVerifier(): ChallengeVerifier
 }
 
 it('does not refuse a submission for lacking a token no widget was placed to produce', function (string $driver) {
-    $stage = new ProtectionStage(tokenOnlyVerifier(), challengeContextFactory([
+    $stage = protectionStage(tokenOnlyVerifier(), challengeContextFactory([
         'captcha.driver' => $driver,
         'captcha.secret' => 'a-secret',
     ]));
@@ -232,7 +239,7 @@ it('does not refuse a submission for lacking a token no widget was placed to pro
 })->with(['turnstile', 'hcaptcha']);
 
 it('still verifies a token for such a driver when a site sends one', function (string $token, bool $rejected) {
-    $stage = new ProtectionStage(tokenOnlyVerifier(), challengeContextFactory([
+    $stage = protectionStage(tokenOnlyVerifier(), challengeContextFactory([
         'captcha.driver' => 'turnstile',
         'captcha.secret' => 'a-secret',
     ]));
@@ -247,7 +254,7 @@ it('still verifies a token for such a driver when a site sends one', function (s
 
 it('still refuses a missing token for a driver that is not one of these', function () {
     // A site's own driver places its own widget. A submission without its token is a failed challenge.
-    $stage = new ProtectionStage(tokenOnlyVerifier(), challengeContextFactory([
+    $stage = protectionStage(tokenOnlyVerifier(), challengeContextFactory([
         'captcha.driver' => 'acme-challenge',
         'captcha.secret' => 'a-secret',
     ]));
@@ -256,7 +263,7 @@ it('still refuses a missing token for a driver that is not one of these', functi
 });
 
 it('still refuses a filled trap field under such a driver', function () {
-    $stage = new ProtectionStage(tokenOnlyVerifier(), challengeContextFactory([
+    $stage = protectionStage(tokenOnlyVerifier(), challengeContextFactory([
         'captcha.driver' => 'turnstile',
         'captcha.secret' => 'a-secret',
     ]));

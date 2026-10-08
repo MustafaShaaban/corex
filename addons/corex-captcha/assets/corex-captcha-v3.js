@@ -10,13 +10,16 @@
  * submission, fetches a brand-new token for that form's action, writes it into the hidden field,
  * then lets the submission proceed. A token is therefore generated at submit time and never at
  * page load (FR-002), and each form uses its own action (FR-008).
+ *
+ * A protected form is one that carries the token field, and the action to ask for is the one that
+ * field names. It was looked up by the form's name, and a form built in the admin and a form
+ * defined in code can share a name (spec 104).
  */
 ( function () {
 	'use strict';
 
 	const config = window.corexCaptchaV3 || {};
 	const siteKey = config.siteKey || '';
-	const forms = config.forms || {};
 	const i18n = config.i18n || {};
 	const errorMessage =
 		i18n.error || 'We could not verify your submission. Please try again.';
@@ -59,7 +62,9 @@
 		} );
 	}
 
-	function guard( form, action ) {
+	function guard( form, field ) {
+		const action = field.getAttribute( 'data-corex-captcha-action' );
+
 		form.addEventListener(
 			'submit',
 			function ( event ) {
@@ -80,12 +85,7 @@
 
 				freshToken( action ).then(
 					function ( token ) {
-						const field = form.querySelector(
-							'input[name="captcha_token"]'
-						);
-						if ( field ) {
-							field.value = token;
-						}
+						field.value = token;
 						delete form.dataset.corexCaptchaBusy;
 						form.dataset.corexCaptchaReady = '1';
 						// Re-submit; the capture guard now lets it pass to the runtime.
@@ -111,14 +111,11 @@
 	}
 
 	function init() {
-		const nodes = document.querySelectorAll(
-			'.corex-form[data-corex-form]'
+		const fields = document.querySelectorAll(
+			'.corex-form input[name="captcha_token"][data-corex-captcha-action]'
 		);
-		Array.prototype.forEach.call( nodes, function ( form ) {
-			const slug = form.getAttribute( 'data-corex-form' );
-			if ( slug && Object.prototype.hasOwnProperty.call( forms, slug ) ) {
-				guard( form, forms[ slug ] );
-			}
+		Array.prototype.forEach.call( fields, function ( field ) {
+			guard( field.form, field );
 		} );
 	}
 

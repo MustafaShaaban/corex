@@ -113,7 +113,7 @@ final readonly class FlowSubmissionController
     {
         $shape = [
             FormSubmissionService::HONEYPOT_KEY => 'sanitize_text_field',
-            'captcha_token' => 'sanitize_text_field',
+            SubmissionChallenge::TOKEN_KEY => 'sanitize_text_field',
             'utm_source' => 'sanitize_text_field',
             'utm_medium' => 'sanitize_text_field',
             'utm_campaign' => 'sanitize_text_field',

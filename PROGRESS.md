@@ -95,7 +95,7 @@ is the one spec issues #248 and #264 asked for. Four slices, one pull request ea
 | Slice | What | State |
 |---|---|---|
 | 1 | A form states its button label and its two messages | done (DECISIONS #274), unreleased |
-| 2 | A form defined in code is challenged by the site's provider (reCAPTCHA) | not started |
+| 2 | A form defined in code is challenged by the site's provider (reCAPTCHA) | done (DECISIONS #276), unreleased. Opt-in per form. No provider was called and no browser saw it; an integration test on real WordPress stands in for the provider |
 | 3 | A site draws a form with its own markup, from published parts. Closes #248 | not started |
 | 4 | Turnstile and hCaptcha place a widget, on flows and on code-defined forms. Closes #264 | not started |
 

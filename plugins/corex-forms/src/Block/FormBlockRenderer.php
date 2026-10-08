@@ -11,9 +11,13 @@ namespace Corex\Forms\Block;
 defined('ABSPATH') || exit;
 
 use Corex\Blocks\BlockRenderer;
+use Corex\Forms\Form;
 use Corex\Forms\FormRegistry;
 use Corex\Forms\Schema\SchemaExporter;
 use Corex\Forms\Schema\SchemaResolver;
+use Corex\Forms\Submission\CaptchaAction;
+use Corex\Forms\Submission\CodeFormProtection;
+use Corex\Forms\Submission\FormChallengeContextFactory;
 use Corex\Forms\Submission\FormSubmissionService;
 
 /**
@@ -30,6 +34,8 @@ final class FormBlockRenderer implements BlockRenderer
         private readonly SchemaExporter $exporter,
         private readonly FieldRenderer $fieldRenderer,
         private readonly ?FlowBlockRenderer $flowRenderer = null,
+        private readonly ?FormChallengeContextFactory $challenge = null,
+        private readonly ?ProtectedFormRegistry $protectedForms = null,
     ) {
     }
 
@@ -82,6 +88,7 @@ final class FormBlockRenderer implements BlockRenderer
             . ' data-corex-messages="%10$s">'
             . '%7$s'
             . '<input type="text" name="%8$s" class="corex-form__hp" tabindex="-1" autocomplete="off" aria-hidden="true" value="" />'
+            . '%11$s'
             . '<button type="submit" class="corex-form__submit">%9$s</button>'
             . '<p class="corex-form__status" role="status" aria-live="polite"></p>'
             . '</form>',
@@ -95,7 +102,27 @@ final class FormBlockRenderer implements BlockRenderer
             esc_attr(FormSubmissionService::HONEYPOT_KEY),
             esc_html(self::stated($form->submitLabel(), __('Send', 'corex'))),
             esc_attr(ValidationMessages::toAttribute()),
+            $this->challengeField($form),
         );
+    }
+
+    /**
+     * The token field of a form that asked to be protected, on a site with a provider to ask.
+     * Declaring the form is what loads the provider's script on this page, and on no other
+     * (spec 104, FR-011).
+     */
+    private function challengeField(Form $form): string
+    {
+        $protection = CodeFormProtection::of($form);
+
+        if ($this->challenge === null || $this->protectedForms === null || ! $this->challenge->isProtected($protection)) {
+            return '';
+        }
+
+        $action = CaptchaAction::forFlow($form->slug, isset($protection['action']) ? (string) $protection['action'] : null);
+        $this->protectedForms->declare($form->slug, $action);
+
+        return ChallengeTokenField::render($action);
     }
 
     /**

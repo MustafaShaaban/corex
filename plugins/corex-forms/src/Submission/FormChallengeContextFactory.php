@@ -35,12 +35,13 @@ final readonly class FormChallengeContextFactory
     {
     }
 
-    public function forContext(SubmissionPipelineContext $pipeline): ChallengeContext
+    /**
+     * @param array<string,mixed> $protection The form's declaration, as `FlowProtection::normalize()` answers.
+     */
+    public function forForm(string $slug, array $protection): ChallengeContext
     {
-        $protection = FlowProtection::normalize($pipeline->version->configuration->protection);
-
         $action = CaptchaAction::forFlow(
-            $pipeline->flow->slug,
+            $slug,
             isset($protection['action']) ? (string) $protection['action'] : null,
         );
 

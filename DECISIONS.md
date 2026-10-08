@@ -7817,6 +7817,45 @@ set it was built with.
 **A site installed with Composer is unchanged**: every font is there, and the list given to the
 library is the library's own.
 
+## #276 — A form defined in code is challenged by the same check a flow is
+
+Date: 2026-10-08 · Spec: 104 (a code-defined form's wording, markup and protection), slice 2 · Issue: #264 · Status: Final
+
+A site that chose reCAPTCHA and saved its keys had its flows protected and its code-defined forms
+not: nothing let such a form ask, its page loaded no provider script, and the submit route's
+sanitiser dropped a token before anything could check it.
+
+**One check.** `ProtectionStage::verifyCaptcha()` is now `SubmissionChallenge::verify(token, slug,
+protection)`, returning a `SubmissionChallengeOutcome`. The flow pipeline's stage calls it and
+stores what it stored before; `FormSubmissionService` calls it for a code-defined form. The stage's
+twelve tests run with every assertion unchanged, through a helper that builds the stage as the
+container does. `FormChallengeContextFactory::forContext()` had one caller and is now
+`forForm(slug, protection)`.
+
+**Opt-in, and why the default differs from a flow's.** A flow is protected unless its Protection
+tab says off. `Form::protection()` returns `['captcha' => 'off']` and a form opts in with `'on'`;
+`CodeFormProtection::of()` reads anything else as off. A form drawn by a site before this cannot
+carry a token. Had code-defined forms inherited the site default, such a form would have refused
+every submission on the day its site took this release with a provider configured. Not asked of
+the owner; it is under the spec's Assumptions.
+
+**Where the check sits.** After the trap field and before validation, so a submission that fails
+it has no answer judged, nothing stored and no listener run. The token is removed from the input
+before validation: it is not an answer and reaches no listener.
+
+**A refusal with its own code.** The route derived a refusal's `code` from its HTTP status, so a
+failed challenge would have read `error`, like an unknown form. A refusal's payload was either
+nothing or the field errors, keyed by field name, so a code could not ride in that array: a form
+with a field named `code` would collide with it. `SubmissionRefusal` is a typed payload, and
+`SubmitController` answers its code. The response is `422`, `code: "challenge_failed"`, and the
+message the provider script already shows when it cannot get a token.
+
+**The action travels with the form.** The reCAPTCHA script looked the action up in a map keyed by
+the form's name, and a flow and a code-defined form can share a name. It reads the action from
+the submitted form's own token field now, which already carried it and was read by nothing. The
+map is no longer sent to the page. `ProtectedFormRegistry` still answers the only question the
+asset controller asks of it: does this page hold a protected form.
+
 What was run:
 
 | Check | Result |
@@ -7833,3 +7872,27 @@ What was run:
 **Not run.** The whole integration and browser suites; CI runs both. The 33MB is the framework
 alone: a client's own plugin and theme add to it. Nothing was uploaded to a host, so that the
 host accepts 33MB is not shown, only that it is close to the 29.7MB it has accepted.
+| `tests/Unit/Forms` after the extraction, before anything was built on it | 219 passed |
+| `FormSubmissionServiceTest`, the five new cases before the service changed | all failed (the service took no challenge) |
+| `tests/Unit/Forms`, after | 227 passed |
+| `tests/corex-captcha-v3.test.js`, the shared-name case before the script changed | failed; 7 passed after |
+| `tests/Integration/Forms/ProtectedCodeFormTest.php`, real WordPress, the provider stood in for | 3 passed: refused with the code and nothing stored; stored without the token; the block as the container wires it carries the field, declares the form, and the add-on then enqueues both scripts |
+| `tests/Unit` / Jest / `tests/Integration/Forms` and `Mail` | 2331 / 717 in 64 suites / 77 |
+
+**Not run.** No provider was called: a real reCAPTCHA token was never obtained or verified here.
+No browser saw a protected code-defined form. The browser test the tasks named (T021) was not
+written: the browser suite has no fixture that registers a form in code, and the integration test
+covers what CoreX decides (the field, the declaration, the enqueue) on real WordPress. What a
+browser would add is the script tag on a served page and the token round trip against a stood-in
+provider.
+
+**Left open.**
+
+- Turnstile and hCaptcha still place no widget; that is slice 4, and until then a protected
+  code-defined form on a site that chose one is accepted without a token, as a flow is
+  (DECISIONS #258).
+- The four add-ons that check `captcha_token` on their own routes (bookings, careers, newsletter,
+  profile) have nothing that produces one. Out of this spec's scope and still true.
+- `captcha.action`, the global setting, has no reader.
+- A code-defined form stores no spam evidence. A flow records the provider's verdict with the
+  submission; a code-defined form's listeners are handed the answers and nothing else.

@@ -74,8 +74,9 @@ saved **before** its notification is attempted, so a mail failure can never lose
 
 ## What CoreX Forms covers
 
-This pipeline covers submissions made through the official CoreX Forms interfaces: visual flows, CoreX form blocks,
-code-registered forms that use the CoreX Forms contracts, and the Bookings/Profile integrations built on them. It does
+This pipeline covers submissions made through visual flows. A form defined in code has a shorter one: the security
+token, the rate limit, the trap field, the challenge when the form [asks for it](/guides/forms/#protect-a-form), its
+answers' rules, and then its own listeners. It stores no spam evidence and no delivery outcome. It does
 **not** cover third-party form plugins, custom PHP that bypasses CoreX, direct `wp_mail()` calls made outside the
 pipeline, or the WordPress login form. A transport accepting a message is never proof it reached an inbox — see
 [Email Studio](/guides/email-studio/#sending-and-transport).

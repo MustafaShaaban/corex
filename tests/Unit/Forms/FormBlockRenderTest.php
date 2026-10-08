@@ -14,12 +14,37 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Forms\Block\FieldRenderer;
 use Corex\Forms\Block\FormBlockRenderer;
+use Corex\Forms\Block\ProtectedFormRegistry;
 use Corex\Forms\Form;
 use Corex\Forms\FormRegistry;
 use Corex\Forms\Forms\ContactForm;
 use Corex\Forms\Schema\SchemaExporter;
 use Corex\Forms\Schema\SchemaResolver;
+use Corex\Forms\Submission\FormChallengeContextFactory;
 use Corex\Forms\Validation\RuleRegistry;
+use Corex\Http\RemoteAddress;
+use Corex\Support\Config\ConfigInterface;
+
+/** @param array<string,mixed> $values */
+function siteSettings(array $values): ConfigInterface
+{
+    return new class($values) implements ConfigInterface {
+        /** @param array<string,mixed> $values */
+        public function __construct(private array $values)
+        {
+        }
+
+        public function get(string $key, mixed $default = null): mixed
+        {
+            return $this->values[$key] ?? $default;
+        }
+
+        public function has(string $key): bool
+        {
+            return array_key_exists($key, $this->values);
+        }
+    };
+}
 
 function renderContactForm(array $attributes): string
 {
@@ -55,8 +80,15 @@ function formThatReads(string $submitLabel, string $success = '', string $error 
     };
 }
 
-function renderRegisteredForm(Form $form, array $attributes): string
-{
+/**
+ * @param array<string,mixed> $settings The site's captcha settings.
+ */
+function renderRegisteredForm(
+    Form $form,
+    array $attributes,
+    array $settings = [],
+    ?ProtectedFormRegistry $declared = null,
+): string {
     Functions\when('__')->returnArg();
     Functions\when('esc_html__')->returnArg();
     Functions\when('esc_attr__')->returnArg();
@@ -80,6 +112,8 @@ function renderRegisteredForm(Form $form, array $attributes): string
         new SchemaResolver(new RuleRegistry()),
         new SchemaExporter(),
         new FieldRenderer(),
+        challenge: new FormChallengeContextFactory(siteSettings($settings), new RemoteAddress()),
+        protectedForms: $declared ?? new ProtectedFormRegistry(),
     );
 
     return $renderer->render($attributes, '', (object) []);
@@ -164,3 +198,52 @@ it('keeps the stock label when a form states a blank one, so the button has a na
 
     expect($html)->toContain('<button type="submit" class="corex-form__submit">Send</button>');
 });
+
+// Spec 104, US2 (#264): only a flow carried the token field and declared itself, so a form
+// defined in code got neither a token nor the provider's script.
+
+/** A callback form that does, or does not, say it is protected. */
+function callbackForm(bool $protected): Form
+{
+    return new class($protected) extends Form {
+        public string $slug = 'callback';
+
+        protected array $fields = ['phone' => ['type' => 'text', 'rules' => ['required']]];
+
+        public function __construct(private bool $protected)
+        {
+        }
+
+        public function protection(): array
+        {
+            return $this->protected ? ['captcha' => 'on'] : parent::protection();
+        }
+    };
+}
+
+it('carries a token field and declares itself when it is protected and a provider is configured', function () {
+    $declared = new ProtectedFormRegistry();
+
+    $html = renderRegisteredForm(
+        callbackForm(protected: true),
+        ['formSlug' => 'callback'],
+        ['captcha.driver' => 'recaptcha', 'captcha.secret' => 'a-secret'],
+        $declared,
+    );
+
+    expect($html)
+        ->toContain('<input type="hidden" name="captcha_token" value="" class="corex-form__captcha-token" data-corex-captcha-action="corex_form_callback" />')
+        ->and($declared->all())->toBe(['callback' => 'corex_form_callback']);
+});
+
+it('carries no token field and declares nothing', function (bool $protected, array $settings) {
+    $declared = new ProtectedFormRegistry();
+
+    $html = renderRegisteredForm(callbackForm($protected), ['formSlug' => 'callback'], $settings, $declared);
+
+    expect($html)->not->toContain('captcha_token')
+        ->and($declared->isEmpty())->toBeTrue();
+})->with([
+    'when the form did not ask, whatever the site configured' => [false, ['captcha.driver' => 'recaptcha', 'captcha.secret' => 'a-secret']],
+    'when the form asked and the site has no provider'        => [true, []],
+]);

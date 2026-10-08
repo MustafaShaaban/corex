@@ -100,6 +100,9 @@ A form states its own wording by overriding `submitLabel()`, `successMessage()` 
 an empty string by default, which means CoreX's own: "Send", "Thank you — your message has been sent." and "Please
 review the highlighted fields and try again." The wording is printed as text.
 
+A form asks for the site's challenge by returning `['captcha' => 'on']` from `protection()`; it is off by default.
+Its token is checked before any answer is judged, and a refusal answers `422` with `code: "challenge_failed"`.
+
 Select **Registered form** in the Form block to render this compatibility path. It posts to
 `POST /wp-json/corex/v1/forms/{slug}` and retains the event-listener lifecycle. New administratively managed forms
 should use persisted flows.

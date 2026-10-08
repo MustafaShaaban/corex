@@ -72,6 +72,20 @@ abstract class Form
     }
 
     /**
+     * Whether a submission must pass the site's challenge provider. Off by default: return
+     * `['captcha' => 'on']` to ask for it. `action` and `threshold` may be added for a provider
+     * that scores a visitor; without them the action is derived from the slug and the threshold
+     * is the site's. On a site with no provider configured a protected form is accepted under
+     * the trap field, the security token and the rate limit, as every form is.
+     *
+     * @return array{captcha?:string,action?:string,threshold?:float}
+     */
+    public function protection(): array
+    {
+        return ['captcha' => 'off'];
+    }
+
+    /**
      * Listener service ids for this form's submissions. The default set stores the
      * submission and emails a notification; concrete forms may override.
      *
