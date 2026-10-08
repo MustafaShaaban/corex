@@ -2,6 +2,11 @@
 # Transient owner goal/handoff file — an instruction input, never a repo deliverable.
 /COREX-FINAL-PRE-SITE-GOAL.md
 
+# ───────────────────────── Spec Kit session state ───────────────
+# Which feature `/speckit-*` is working on, written by `/speckit-specify`. It is one checkout's
+# state, not source: tracked, it was drift in every client repository that used Spec Kit (#251).
+/.specify/feature.json
+
 # ───────────────────────── Dependencies ─────────────────────────
 /vendor/
 **/vendor/

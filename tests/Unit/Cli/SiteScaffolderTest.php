@@ -215,8 +215,9 @@ it('documents the theme’s asset pipeline only for a site that has one', functi
 
 /**
  * The generated AGENTS.md told a client to follow Spec Kit and said the `make:*` generators write
- * into the client plugin. Spec Kit writes to the repository root, which the framework owns, and
- * the generators wrote elsewhere (#251). It now says where each thing goes.
+ * into the client plugin. The generators wrote elsewhere, and Spec Kit, run as documented, changed
+ * two files the framework owns (#251). It says where each thing goes, and how Spec Kit is given
+ * the site's own specs directory.
  */
 it('tells a client where its specs and generated code go', function () {
     $base = tempSiteBase();
@@ -225,5 +226,6 @@ it('tells a client where its specs and generated code go', function () {
     expect((string) file_get_contents($base . '/AGENTS.md'))
         ->toContain('acme-site/src')
         ->toContain('APP_PATH')
-        ->toContain('by hand');
+        ->toContain('SPECIFY_FEATURE_DIRECTORY=sites/' . basename($base) . '/specs/')
+        ->not->toContain('by hand');
 });

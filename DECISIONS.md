@@ -8027,3 +8027,48 @@ What was run:
   produces one.
 - `captcha.action`, the global setting, still has no reader.
 - An invisible or managed-size widget is not offered; the provider's default is used.
+
+## #279 — Spec Kit in a client repository: its state is not tracked, its hook is off, and its directory is named
+
+Date: 2026-10-08 · Issue: #251, item 1 · Spec: 102 (update-safe client sites) · Status: Final
+
+In a client repository everything outside `sites/` is the framework's, and a change there is
+drift. Running the documented Spec Kit workflow there made such changes, so a generated site's
+guide said to write specs by hand. The issue named three writes and asked for the scripts to be
+taught a per-site root, which it said wanted its own spec. Read again, two of the three were not
+about where a spec lives, and the third needs no change to a script.
+
+| What the issue named | What it is | What changed |
+|---|---|---|
+| `/speckit-specify` persists the active feature to `.specify/feature.json`, which is tracked | One checkout's working state. On `main` it named a single feature, whatever each checkout was working on | Ignored and removed from the tree. Spec Kit's scripts read it when it is there and fall back to the branch name when it is not |
+| The `agent-context` extension rewrites the managed section of the root `CLAUDE.md` | An optional hook, run after `/speckit-specify` and `/speckit-plan` | Both hooks are `enabled: false`. The section it kept still said to read spec 068's plan, with spec 104 in flight; it is removed |
+| `common.ps1` resolves the specs directory as `<repo root>/specs` | True only when nothing names a directory. `Get-FeaturePathsEnv` takes `SPECIFY_FEATURE_DIRECTORY` first, then the state file, and only then the branch name | Nothing in Spec Kit. The generated `AGENTS.md` gives the command: `/speckit-specify SPECIFY_FEATURE_DIRECTORY=sites/<client>/specs/<work-item>-<slug> …` |
+
+**Why not teach the scripts a per-site root.** `.specify/scripts/` is Spec Kit's, vendored. A patch
+there is a fork to carry through every Spec Kit update, to do what an existing override already
+does. What a client loses by naming the directory is automatic numbering, which counted the
+framework's `specs/` and was wrong for a site anyway.
+
+**Why the hook goes for the framework too.** It is the same file in both repositories, and a
+client cannot turn it off without drift. In the framework its output had been stale since
+spec 068 with nobody noticing, which is its own answer to whether it was used. `CLAUDE.md` already
+says to read the active spec and `PROGRESS.md`.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The three new assertions, before the change | failed: the state file tracked, both hooks on, the guide saying "by hand" |
+| After: `tests/repo-hygiene.test.js`, `tests/repository-ownership.test.js`, `tests/Unit/Cli` | 77 and 168 passed |
+| Spec Kit's own `check-prerequisites.ps1 -Json -PathsOnly`, with `SPECIFY_FEATURE_DIRECTORY=sites/acme/specs/001-lead-form` | `FEATURE_DIR`, `FEATURE_SPEC`, `IMPL_PLAN` and `TASKS` all under `sites\acme\specs\001-lead-form` |
+| The same script with no variable and the state file naming that directory | the same paths; `git status` shows no change to the state file |
+
+**Not run.** The whole workflow in a real client repository: no `/speckit-specify` was run in
+Muva or Perego, and `npm run verify:framework` was not run there after one. What is shown is
+that Spec Kit's path resolution takes a site's directory and that the two files it used to
+change are no longer the framework's to protect. A client repository created before this still
+tracks `.specify/feature.json` until it takes the release that removes it.
+
+**Left open.** A site generated before this keeps the old paragraph in its `AGENTS.md`; that file
+is the client's. `.agents/skills/` and `.claude/skills/` still describe the hook as something that
+may run; they are Spec Kit's text.
