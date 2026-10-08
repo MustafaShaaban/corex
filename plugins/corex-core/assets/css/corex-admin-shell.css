@@ -1419,77 +1419,56 @@ body.corex-admin-screen .corex-admin__shell {
 }
 
 /*
- * The loader (spec 108, story 4): CoreX's one indefinite indicator, where
- * WordPress's spinner and its striped busy button used to be.
- *
- * A ring whose colour fades round it to nothing, turning. It is one
- * element and no image: a conic gradient, with its middle masked out. The
- * colour is `--corex-loader-ink`, the action colour on its own and the
- * button's own colour inside a button.
- *
- * Still, it is a ring with a tail, which is what it is for a person who asked
- * for no motion.
- */
-.corex-admin .corex-loader,
-.corex-admin [data-corex-working]::after {
-	inline-size: 1.25em;
-	block-size: 1.25em;
-	background: conic-gradient(from 90deg, transparent 10%, var(--corex-loader-ink, var(--corex-admin-action)));
-	border-radius: var(--corex-admin-radius-pill);
-	-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 0.1875em), #000 calc(100% - 0.125em)); /* corex-token-allow: mask shape, not a colour */
-	mask: radial-gradient(farthest-side, transparent calc(100% - 0.1875em), #000 calc(100% - 0.125em)); /* corex-token-allow: mask shape, not a colour */
-	animation: corex-loader-turn var(--corex-admin-motion-slow) linear infinite;
-}
-
-.corex-admin .corex-loader {
-	display: inline-block;
-	flex: none;
-	vertical-align: middle;
-}
-
-/* The loader with the sentence that says what is being waited for. */
-.corex-admin .corex-loader-line {
-	display: inline-flex;
-	align-items: center;
-	gap: var(--corex-admin-space-xs);
-	color: var(--corex-admin-text-muted);
-	font-size: var(--corex-admin-font-sm);
-}
-
-/*
- * A working control (`workingProps`): its request is on its way.
+ * A working control (`workingProps`): its request is on its way (spec 108,
+ * stories 3 and 4). One look across the admin, where WordPress's striped
+ * busy button, a changed label, or nothing at all used to be.
  *
  * The label stays in the layout, so the control keeps its width to the pixel
  * and its name; only its fill is made transparent, which leaves the control's
  * own colour for the loader drawn over it. It is disabled, and not dimmed as
  * a disabled control is: it is busy, not switched off.
+ *
+ * The loader is a ring whose colour fades round it to nothing, turning. One
+ * pseudo-element and no image: a conic gradient with its middle masked out.
+ * Still, it is a ring with a tail, which is what it is for a person who asked
+ * for no motion.
+ *
+ * Scoped to the screen as well as to the admin's wrapper: WordPress draws a
+ * `Modal` at the end of <body>, outside the wrapper, and a confirm button in
+ * one is as much a working control as any other.
  */
-.corex-admin [data-corex-working] {
+:is(.corex-admin, .corex-admin-screen) [data-corex-working] {
 	position: relative;
 	opacity: 1;
 	cursor: progress;
 	-webkit-text-fill-color: transparent;
 }
 
-.corex-admin [data-corex-working]::after {
+:is(.corex-admin, .corex-admin-screen) [data-corex-working]::after {
 	position: absolute;
 	inset: 0;
+	inline-size: 1.25em;
+	block-size: 1.25em;
 	margin: auto;
 	content: "";
-	--corex-loader-ink: currentcolor;
+	background: conic-gradient(from 90deg, transparent 10%, currentcolor);
+	border-radius: var(--corex-admin-radius-pill);
+	-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 0.1875em), #000 calc(100% - 0.125em)); /* corex-token-allow: mask shape, not a colour */
+	mask: radial-gradient(farthest-side, transparent calc(100% - 0.1875em), #000 calc(100% - 0.125em)); /* corex-token-allow: mask shape, not a colour */
+	animation: corex-loader-turn var(--corex-admin-motion-slow) linear infinite;
 }
 
 /* wp-admin paints every disabled `.button` grey, with `!important`, so a
    working one looked switched off: a pale box on the dark theme where the
    brass button had been. It keeps the colours it has when it is not working;
    nothing less than `!important` answers wp-admin's. */
-.corex-admin .button[data-corex-working] {
+:is(.corex-admin, .corex-admin-screen) .button[data-corex-working] {
 	color: var(--corex-admin-text) !important;
 	background: var(--corex-admin-surface-raised) !important;
 	border-color: var(--corex-admin-border) !important;
 }
 
-.corex-admin .button-primary[data-corex-working] {
+:is(.corex-admin, .corex-admin-screen) .button-primary[data-corex-working] {
 	color: var(--corex-admin-action-ink) !important;
 	background: var(--corex-admin-action) !important;
 	border-color: var(--corex-admin-action) !important;
@@ -1550,8 +1529,7 @@ body.corex-admin-screen .corex-admin__shell {
 		animation: corex-loading-appear 1ms linear var(--corex-admin-loading-delay) backwards;
 	}
 
-	.corex-admin .corex-loader,
-	.corex-admin [data-corex-working]::after {
+	:is(.corex-admin, .corex-admin-screen) [data-corex-working]::after {
 		animation: none;
 	}
 }

@@ -324,3 +324,31 @@ test( 'a working button keeps its width, shows the loader, and cannot be pressed
 	await expect( button ).not.toHaveAttribute( 'data-corex-working', 'true' );
 	await expect( button ).toBeEnabled();
 } );
+
+test( 'the working state reaches a control drawn where WordPress puts a modal', async ( {
+	page,
+} ) => {
+	// A WordPress `Modal` is drawn at the end of <body>, outside the admin's own wrapper,
+	// and the first rules for a working control were scoped to that wrapper: the two
+	// confirm buttons in such modals were disabled and showed nothing.
+	await page.goto( NOTIFICATIONS );
+
+	const animation = await page.evaluate( () => {
+		const button = document.createElement( 'button' );
+		button.type = 'button';
+		button.disabled = true;
+		button.setAttribute( 'data-corex-working', 'true' );
+		button.textContent = 'Confirm and apply';
+		document.body.appendChild( button );
+
+		return {
+			insideWrapper: Boolean( button.closest( '.corex-admin' ) ),
+			name: window.getComputedStyle( button, '::after' ).animationName,
+		};
+	} );
+
+	expect( animation ).toEqual( {
+		insideWrapper: false,
+		name: 'corex-loader-turn',
+	} );
+} );
