@@ -90,7 +90,9 @@ its answer, because that many columns do not fit a page. On a right-to-left site
 phone number, a date or a Latin-script answer inside it keeps its own order.
 
 A PDF holds up to 500 submissions. The dialog says so under the choice, and names the limit instead of starting when
-the choice holds more: export fewer, or choose a workbook. PDF is offered only where the server can write one, which
+the choice holds more: export fewer, or choose a workbook. On a site installed from the shared-host package, text in a script whose font the package was built without
+prints as empty boxes in a PDF; the workbook and the CSV hold it as it is (see the shared-host package's
+`--pdf-fonts`). PDF is offered only where the server can write one, which
 needs PHP's `gd` and `mbstring` extensions.
 
 The dialog shows the export's progress and saves the file when it is ready; there is nothing to refresh. History

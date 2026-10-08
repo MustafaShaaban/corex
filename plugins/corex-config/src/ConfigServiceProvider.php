@@ -671,6 +671,12 @@ final class ConfigServiceProvider extends ServiceProvider
                     static fn (): \DateTimeImmutable => new \DateTimeImmutable('now', wp_timezone()),
                 ),
         );
+        // Resolved only where a PDF is written, so the library's classes are asked for only where
+        // the library is.
+        $this->container->singleton(
+            \Corex\Config\Export\PdfFonts::class,
+            static fn (): \Corex\Config\Export\PdfFonts => \Corex\Config\Export\PdfFonts::shippedWithLibrary(),
+        );
         $this->container->singleton(\Corex\Config\Export\PdfExportWriter::class);
         $this->container->singleton(
             \Corex\Config\Export\ExportWriters::class,
