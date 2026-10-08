@@ -37,6 +37,12 @@ final class InMemorySubmissionTrash implements SubmissionTrashStore
     /** @var list<int> The submissions deleted for good, in order. */
     public array $deleted = [];
 
+    /** @var array<int,string> When each trashed submission went in, where a test says. */
+    public array $trashedAt = [];
+
+    /** How many times the trash was asked to adopt what WordPress trashed. */
+    public int $adoptions = 0;
+
     public function __construct(private object $inbox)
     {
     }
@@ -76,6 +82,20 @@ final class InMemorySubmissionTrash implements SubmissionTrashStore
     public function emailAttemptsOf(int $id): array
     {
         return $this->attempts[$id] ?? [];
+    }
+
+    public function trashedBefore(\DateTimeImmutable $cutoff, int $limit): array
+    {
+        $before = array_filter($this->trashedAt, static fn (string $at): bool => new \DateTimeImmutable($at) < $cutoff);
+
+        return array_slice(array_keys($before), 0, $limit);
+    }
+
+    public function adoptWordPressTrash(int $limit): int
+    {
+        $this->adoptions++;
+
+        return 0;
     }
 
     public function delete(int $id): void

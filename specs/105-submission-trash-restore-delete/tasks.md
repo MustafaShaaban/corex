@@ -70,6 +70,22 @@ Tests are written first and seen to fail. One slice per pull request.
 
 ## Slice 3: the trash's own clock (US3; FR-017 to FR-020)
 
+- [x] T032 Pest unit: the number of days (30 by default, 0 for never, sanitised); the sweep
+      deletes what went in before the cutoff and adopts first; `expire()` records `by: expiry`
+- [x] T033 `SubmissionTrashRetention`; `SubmissionTrashService::expire()` and `forgetTiedData()`;
+      the sweep takes the new store
+- [x] T034 Pest integration: the sweep deletes an old trashed submission with its file and
+      leaves a recent one; "never" deletes nothing; WordPress's clean-up is kept off; a
+      submission trashed WordPress's way is adopted at once; one deleted by something else takes
+      its file
+- [x] T035 `SubmissionTrashStore::trashedBefore()` and `adoptWordPressTrash()`;
+      `SubmissionDeletionGuard`
+- [x] T036 The setting in the retention panel; `trash_days` in the list's answer
+- [x] T037 Jest: the line that says how long; the day a submission is deleted
+- [x] T038 The line above the trash; each row's date
+- [x] T039 Playwright: the setting is saved, the trash says it, a row has its date; measured
+- [x] T040 Guards; the guide; CHANGELOG with Client impact; PROGRESS; DECISIONS
+
 ## Slice 4: one way to remove (US4; FR-021 to FR-023)
 
 ## Slice 5: anonymize removes the files (US5; FR-024)

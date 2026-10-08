@@ -31,6 +31,7 @@ final class SubmissionsInboxScreen
         private readonly AdminPage $page,
         private readonly SubmissionRetention $retention,
         private readonly FlowFilterOptions $flows,
+        private readonly SubmissionTrashRetention $trash,
     ) {
     }
 
@@ -140,6 +141,10 @@ final class SubmissionsInboxScreen
             . '<label for="corex-retention-days">' . esc_html__('Keep for days (0 = forever)', 'corex') . '</label>'
             . '<input id="corex-retention-days" type="number" name="corex_retention_days" min="0" max="'
             . esc_attr((string) RetentionSettings::MAX_DAYS) . '" value="' . esc_attr((string) $days) . '" />'
+            // How long the trash keeps a submission before deleting it for good (spec 105, FR-018).
+            . '<label for="corex-trash-days">' . esc_html__('Keep in the trash for days (0 = until somebody deletes it)', 'corex') . '</label>'
+            . '<input id="corex-trash-days" type="number" name="corex_trash_days" min="0" max="'
+            . esc_attr((string) RetentionSettings::MAX_DAYS) . '" value="' . esc_attr((string) $this->trash->retentionDays()) . '" />'
             . '<button type="submit" class="button button-primary">' . esc_html__('Save policy', 'corex') . '</button>'
             . '</form>' . $prune . '</section>';
     }

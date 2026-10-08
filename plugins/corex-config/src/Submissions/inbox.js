@@ -17,6 +17,8 @@ export const initialInboxState = {
 	undo: [],
 	// Whether this person may delete a submission for good, as the server says.
 	mayDelete: false,
+	// How many days the trash keeps a submission; 0 for until somebody deletes it.
+	trashDays: 0,
 	drawer: {
 		open: false,
 		id: 0,
@@ -197,6 +199,7 @@ export function normalizeInboxPage( payload = {} ) {
 		items,
 		total: Math.max( 0, Number( payload.total ) || 0 ),
 		mayDelete: Boolean( payload.can_delete_permanently ),
+		trashDays: Math.max( 0, Number( payload.trash_days ) || 0 ),
 		page: Math.max( 1, Number( payload.page ) || 1 ),
 		perPage: Math.max( 1, Number( payload.per_page ) || 25 ),
 	};
@@ -462,4 +465,45 @@ export function cannotDeleteReason() {
 		'Deleting a submission for good needs a permission you do not have. An administrator can grant it under Access & Abilities, or delete it for you.',
 		'corex'
 	);
+}
+
+/**
+ * How long the trash keeps a submission, in a line above the trash (spec 105, FR-004).
+ *
+ * @param {number} days The number of days; 0 for until somebody deletes it.
+ * @return {string} The line.
+ */
+export function trashKeeps( days ) {
+	return days > 0
+		? sprintf(
+				/* translators: %d: number of days. */
+				_n(
+					'A submission in the trash is deleted for good %d day after it was moved there.',
+					'A submission in the trash is deleted for good %d days after it was moved there.',
+					days,
+					'corex'
+				),
+				days
+			)
+		: __(
+				'A submission in the trash stays there until somebody restores it or deletes it for good.',
+				'corex'
+			);
+}
+
+/**
+ * The day a trashed submission will be deleted for good: the trash's period counted from the
+ * day it went in, which is how the server decides too.
+ *
+ * @param {string|null} trashedAt When it was moved to the trash.
+ * @param {number}      days      How many days the trash keeps a submission; 0 for no limit.
+ * @return {string} The moment, as an ISO date and time; '' when there is none to give.
+ */
+export function deletesAt( trashedAt, days ) {
+	const from = trashedAt ? new Date( trashedAt ) : null;
+	if ( ! from || Number.isNaN( from.getTime() ) || ! ( days > 0 ) ) {
+		return '';
+	}
+
+	return new Date( from.getTime() + days * 86400000 ).toISOString();
 }

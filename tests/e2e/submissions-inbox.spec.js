@@ -4,7 +4,7 @@
 
 const fs = require( 'node:fs' );
 const { test, expect } = require( '@playwright/test' );
-const { collectConsoleErrors, seedSubmission } = require( './helpers' );
+const { collectConsoleErrors, seedSubmission, wpEval } = require( './helpers' );
 
 const FLOW_SLUG = 'corex-inbox-e2e';
 // Unique per run so the seeded submission is searchable to exactly one row on a shared site
@@ -928,8 +928,9 @@ test( 'moves submissions to the trash and restores them, from the pane, in bulk 
 		page.getByRole( 'button', { name: 'Export', exact: true } )
 	).toHaveCount( 0 );
 	await expect( rows ).toHaveCount( 2 );
+	// Who moved it, under when. The day it will be deleted for good stands under that.
 	await expect(
-		rows.first().locator( '.corex-inbox__trashed small' )
+		rows.first().locator( '.corex-inbox__trashed small' ).first()
 	).not.toBeEmpty();
 
 	// The switch stands on the filters' edge, as far from the heading as from the filters, and
@@ -1196,6 +1197,104 @@ test( 'deletes submissions for good from the trash, after an acknowledged confir
 		.getByRole( 'button', { name: 'Inbox' } )
 		.click();
 	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+
+	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
+} );
+
+/**
+ * The trash's own clock (spec 105, US3).
+ *
+ * The trash says how long it keeps a submission and when each one in it will be deleted for good,
+ * and the site sets that number of days beside its retention policy.
+ */
+test( 'says how long the trash keeps a submission, and takes the number of days the site sets', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+	const OPTION = 'corex_trash_submissions_days';
+	const before = wpEval(
+		`echo wp_json_encode( get_option( "${ OPTION }", null ) );`
+	);
+	test.skip(
+		before === null,
+		'WP-CLI is not reachable, so the setting could not be put back afterwards.'
+	);
+
+	try {
+		// The setting, beside the retention policy it is saved with.
+		const days = page.getByLabel(
+			'Keep in the trash for days (0 = until somebody deletes it)'
+		);
+		await days.fill( '45' );
+		await page.getByRole( 'button', { name: 'Save policy' } ).click();
+		await expect(
+			page.getByRole( 'heading', { name: 'Submission Inbox' } )
+		).toBeVisible();
+		await expect( days ).toHaveValue( '45' );
+
+		// One submission into the trash, to have a date to read.
+		await page.getByLabel( 'Search' ).fill( EMAIL );
+		await page
+			.getByRole( 'button', { name: new RegExp( EMAIL ) } )
+			.first()
+			.click();
+		const pane = page.locator( '.corex-pane' );
+		await expect(
+			pane.getByRole( 'button', { name: 'Mark unread' } )
+		).toBeVisible();
+		await pane.getByRole( 'button', { name: 'Move to trash' } ).click();
+		await page
+			.getByRole( 'dialog', { name: 'Move to the trash' } )
+			.getByRole( 'button', { name: 'Move to trash' } )
+			.click();
+		const notice = page.locator( '.corex-inbox__notice' );
+		await expect( notice ).toContainText( 'moved to the trash' );
+
+		await page
+			.getByRole( 'group', { name: 'Submissions shown' } )
+			.getByRole( 'button', { name: 'Trash' } )
+			.click();
+		const keeps = page.locator( '.corex-inbox__trash-keeps' );
+		await expect( keeps ).toHaveText(
+			'A submission in the trash is deleted for good 45 days after it was moved there.'
+		);
+		const row = page.locator( '.corex-inbox__table tbody tr' ).first();
+		await expect( row.locator( '.corex-inbox__trashed' ) ).toContainText(
+			'Deleted for good:'
+		);
+
+		// The line stands as far from the filters as from the table: the inbox's one gap.
+		const gaps = await page.evaluate( () => {
+			const box = ( selector ) =>
+				document.querySelector( selector ).getBoundingClientRect();
+			const line = box( '.corex-inbox__trash-keeps' );
+
+			return {
+				above: Math.round(
+					line.top - box( '.corex-inbox__filters' ).bottom
+				),
+				below: Math.round(
+					box( '.corex-inbox__table-wrap' ).top - line.bottom
+				),
+			};
+		} );
+		expect( gaps.above ).toBe( gaps.below );
+
+		// Put it back, so the inbox is left as it was found.
+		await row.getByRole( 'button', { name: new RegExp( EMAIL ) } ).click();
+		await pane.getByRole( 'button', { name: 'Restore' } ).click();
+		await expect( notice ).toContainText( 'restored' );
+	} finally {
+		if ( JSON.parse( before ) === null ) {
+			wpEval( `delete_option( "${ OPTION }" );` );
+		} else {
+			wpEval(
+				`update_option( "${ OPTION }", ${ Number(
+					JSON.parse( before )
+				) }, false );`
+			);
+		}
+	}
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );

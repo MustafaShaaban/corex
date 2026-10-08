@@ -18,11 +18,19 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Activity\ActivityService;
 use Corex\Config\Retention\RetentionController;
 use Corex\Config\Retention\RetentionSettings;
 use Corex\Config\Retention\SubmissionRetention;
 use Corex\Config\Retention\SubmissionRetentionStore;
+use Corex\Config\Submissions\SubmissionTimelineStore;
+use Corex\Config\Submissions\SubmissionTrashRetention;
+use Corex\Config\Submissions\SubmissionTrashService;
+use Corex\Config\Submissions\SubmissionWorkflowStore;
 use Corex\Security\Admin\AdminGuard;
+use Corex\Tests\Support\InMemorySubmissionTrash;
+use Corex\Tests\Support\RecordingActivityRepository;
+use Corex\Tests\Support\RecordingSubmissionEmailRecords;
 
 /**
  * Post a confirmed prune and return the query string the handler redirects with.
@@ -39,10 +47,23 @@ function pruneRedirectQuery(array $post): array
     $_POST = $post + [RetentionController::NONCE => 'nonce-value', 'corex_confirm' => '1'];
 
     $settings   = new RetentionSettings();
+    $trash      = new InMemorySubmissionTrash(new stdClass());
     $controller = new RetentionController(
         new AdminGuard(),
         new SubmissionRetention($settings, Mockery::mock(SubmissionRetentionStore::class)),
         $settings,
+        // The trash's own window is saved by the same form. A prune does not touch it.
+        new SubmissionTrashRetention(
+            $trash,
+            new SubmissionTrashService(
+                Mockery::mock(SubmissionWorkflowStore::class),
+                $trash,
+                Mockery::mock(SubmissionTimelineStore::class),
+                new ActivityService(new RecordingActivityRepository()),
+                new RecordingSubmissionEmailRecords(),
+            ),
+            $settings,
+        ),
     );
 
     try {

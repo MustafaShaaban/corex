@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Retention;
 
 use Corex\Admin\StandalonePage;
+use Corex\Config\Submissions\SubmissionTrashRetention;
 use Corex\Security\Admin\AdminGuard;
 
 defined('ABSPATH') || exit;
@@ -31,6 +32,7 @@ final class RetentionController
         private readonly AdminGuard $guard,
         private readonly SubmissionRetention $retention,
         private readonly RetentionSettings $settings,
+        private readonly SubmissionTrashRetention $trash,
     ) {
     }
 
@@ -46,6 +48,10 @@ final class RetentionController
 
         $days = isset($_POST['corex_retention_days']) ? (int) $_POST['corex_retention_days'] : 0;
         $this->retention->setDays($days);
+        // Left as it is when the form did not send it: an older page, or another form.
+        if (isset($_POST['corex_trash_days'])) {
+            $this->trash->setDays((int) $_POST['corex_trash_days']);
+        }
 
         $this->redirect('retention-saved');
     }
