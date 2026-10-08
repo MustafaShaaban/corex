@@ -6,6 +6,41 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **The Data screen has one export dialog** (spec 103, slice 7b), and it is the Submissions
+  export's. "Export records" on the Records tab and the Export tab both open it: what to export
+  with a count for each choice, the columns, the format, one action, the export's progress, and
+  the file when it is ready. The Records tab had a WordPress modal that closed and said "The export
+  was queued." The Export tab had a second form, with one scope, that said "Refresh history when
+  the job completes." Neither handed over a file.
+- **The Export tab's history reloads when an export was made.** Its "Refresh" button is gone.
+
+### Fixed
+
+- **A Data export stopped when a record arrived in the source while it was being written**, with
+  "Bounded job counters are inconsistent." The last batch then held more than what was left to
+  export, and the job refuses to count past its total. A batch is cut to what was counted when
+  the export was asked for, as the Submissions export's has been. On a site that receives
+  submissions while somebody exports all of them, that was every such export.
+- **In the export dialog, a choice's name was smaller than the line describing it**: 13px,
+  WordPress's size, above a line set to 14px. The dialog has its own text size. In the Submissions
+  export since v0.43.2.
+
+### Client impact
+
+- **The Data screen's export looks and behaves differently**: a dialog titled "Export <model>",
+  which waits and saves the file, where there was "Create export" and "Queue export". Anything
+  that drives that screen by its labels has to follow.
+- **The export dialog's styles moved** from `plugins/corex-config/assets/submissions-admin.css` to
+  `plugins/corex-core/assets/css/corex-admin-shell.css`. The class names are unchanged.
+- **`.corex-data__column-picker` and `.corex-data-models__columns` are no longer styled**: nothing
+  CoreX draws uses them.
+- **The Data explorer's `createExport` is gone**, with `admin/data/ExportDialog.js`. They are
+  internal to the admin bundle.
+- **The admin bundle changed.** `build/` is git-ignored: rebuild `plugins/corex-config` after
+  taking this.
+
 ## [0.43.5] — 2026-10-08
 
 One change on top of v0.43.4. The 500 that failed the browser job now and then was PHP refusing
@@ -92,13 +127,7 @@ starts sending from it. Read Client impact before taking it.
 - **The Data export can be asked how much it would export**, and can take its steps on request:
   `POST corex/v1/data/{source}/exports/preview` answers the count for the selected rows, the
   filters and everything; `POST corex/v1/data/{source}/exports/{id}/advance` takes one step now.
-- **The Data screen has one export dialog** (spec 103, slice 7b), and it is the Submissions
-  export's. "Export records" on the Records tab and the Export tab both open it: what to export
-  with a count for each choice, the columns, the format, one action, the export's progress, and
-  the file when it is ready. The Records tab had a WordPress modal that closed and said "The export
-  was queued." The Export tab had a second form, with one scope, that said "Refresh history when
-  the job completes." Neither handed over a file.
-- **The Export tab's history reloads when an export was made.** Its "Refresh" button is gone.
+  The screens that use them come with slice 7b.
 
 ### Fixed
 
@@ -137,14 +166,6 @@ starts sending from it. Read Client impact before taking it.
 - **A download from "Recent exports" that failed said nothing.** It says so now.
 - **An export whose file is no longer on the server is not offered for download.** It was listed
   with a "Download" that could only fail. It reads "No file to download."
-- **In the export dialog, a choice's name was smaller than the line describing it**: 13px,
-  WordPress's size, above a line set to 14px. The dialog has its own text size. In the Submissions
-  export since v0.43.2.
-- **A Data export stopped when a record arrived in the source while it was being written**, with
-  "Bounded job counters are inconsistent." The last batch then held more than what was left to
-  export, and the job refuses to count past its total. A batch is cut to what was counted when
-  the export was asked for, as the Submissions export's has been. On a site that receives
-  submissions while somebody exports all of them, that was every such export.
 - **A Data export wrote a list as the word "Array"**, with a PHP warning: every value was written
   as `(string) $value`. A value is now written as what its field is declared to be: a number as a
   number, a date and time as one, a switch as Yes or No, a list as its items.
@@ -285,15 +306,6 @@ request, so WordPress prints its own notice whatever version the install runs.
 - **In a Data export, a switch reads "Yes" or "No"** where it read `1` or nothing, and a date and
   time reads `2026-10-07 09:30` where it read as it was stored.
 - **"XLSX" appears as a format on the Data screen** for submissions and managed tables.
-- **The Data screen's export looks and behaves differently**: a dialog titled "Export <model>",
-  which waits and saves the file, where there was "Create export" and "Queue export". Anything
-  that drives that screen by its labels has to follow.
-- **The export dialog's styles moved** from `plugins/corex-config/assets/submissions-admin.css` to
-  `plugins/corex-core/assets/css/corex-admin-shell.css`. The class names are unchanged.
-- **`.corex-data__column-picker` and `.corex-data-models__columns` are no longer styled**: nothing
-  CoreX draws uses them.
-- **The Data explorer's `createExport` is gone**, with `admin/data/ExportDialog.js`. They are
-  internal to the admin bundle.
 - **`DataExportStore` changed**: `saveArtifact()` is gone, `saveFile()` and `file()` are new.
   **`DataExportJobQueue` has a second method, `advance()`.** `DataExportArtifact` and
   `DataExportArtifactWriter` are removed. Code that implements or uses them has to follow.
