@@ -6,6 +6,17 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.43.5] — 2026-10-08
+
+One change on top of v0.43.4. The 500 that failed the browser job now and then was PHP refusing
+a correct argument, and nothing in CoreX or in anything stored: the job now says what threw in
+its own output and runs without PHP's JIT, which the runner had switched on unasked. Found while
+ruling flows out, and fixed with it: one stored flow that cannot be read no longer empties every
+list of flows, and storing a flow can no longer leave half of one.
+
+For a site it is a patch, unless its own code builds a `FlowRepository`, calls
+`FlowService::search()` or reads the text of the pipeline's log line. Client impact has those.
+
 ### Fixed
 
 - **One stored flow that could not be read emptied every list of flows.** A flow is a post and
