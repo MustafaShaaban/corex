@@ -2,11 +2,10 @@
  * Corex E2E smoke — the three flows the compliance review (P4) named:
  *   1. Insert a corex/* block in the editor (it is recognised, not "unsupported").
  *   2. Submit the front-end contact form (shared-schema validation + AJAX).
- *   3. Apply a kit in the setup wizard (flags on, modules active, demo home seeded).
+ *   3. Reach a real kit in the setup wizard. Applying one is setup-settings-insights.spec.js.
  *
- * ENVIRONMENT-GATED: needs Apache up (http://corex.local) + `npx playwright install`.
- * Admin creds come from env (defaults match the dev box in PROGRESS "Environment quick
- * reference"); override with COREX_ADMIN_USER / COREX_ADMIN_PASS.
+ * ENVIRONMENT-GATED: needs a served site and a browser; see the header of playwright.config.js.
+ * The admin session comes from global-setup.js, which reads COREX_ADMIN_USER / COREX_ADMIN_PASS.
  */
 const { test, expect } = require( '@playwright/test' );
 
