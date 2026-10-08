@@ -1,6 +1,10 @@
 import { createRoot, render, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { TABS } from './emailStudioClient.js';
+import CorexLoadable from '../admin/components/CorexLoadable.js';
+import CorexSkeleton, {
+	SkeletonBar,
+} from '../admin/components/CorexSkeleton.js';
+import { TABS, studioStatus } from './emailStudioClient.js';
 import { Notice, StudioTabs } from './components/index.js';
 import { StudioPanel } from './StudioPanel.js';
 import { useEmailStudio } from './useEmailStudio.js';
@@ -28,14 +32,33 @@ function translatedTabs() {
 	return TABS.map( ( tab ) => ( { ...tab, label: labels[ tab.key ] } ) );
 }
 
+const PLACEHOLDER_LINES = [ 'medium', 'full', 'long', 'full', 'medium' ];
+
+function StudioSkeleton() {
+	return (
+		<CorexSkeleton>
+			<section className="corex-surface">
+				{ PLACEHOLDER_LINES.map( ( width, line ) => (
+					<p key={ line }>
+						<SkeletonBar width={ width } />
+					</p>
+				) ) }
+			</section>
+		</CorexSkeleton>
+	);
+}
+
 function StudioContent( { tab, studio } ) {
-	const isInitialLoad =
-		studio.state.status === 'loading' &&
-		studio.state.data.templates.length === 0;
-	return isInitialLoad ? (
-		<p role="status">{ __( 'Loading Email Studio…', 'corex' ) }</p>
-	) : (
-		<StudioPanel tab={ tab } studio={ studio } config={ config } />
+	return (
+		<CorexLoadable
+			status={ studioStatus( studio.state ) }
+			skeleton={ <StudioSkeleton /> }
+			loadingLabel={ __( 'Loading Email Studio…', 'corex' ) }
+			errorMessage={ __( 'Email Studio could not be loaded.', 'corex' ) }
+			onRetry={ () => studio.load() }
+		>
+			<StudioPanel tab={ tab } studio={ studio } config={ config } />
+		</CorexLoadable>
 	);
 }
 

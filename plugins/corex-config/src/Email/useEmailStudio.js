@@ -135,13 +135,18 @@ function useStudioApi( config ) {
 		[ config.nonce, config.restUrl, load ]
 	);
 
-	return { state, dispatch, post };
+	return { state, dispatch, post, load };
 }
 
 function useTemplateSelection( { config, layouts, dispatch } ) {
 	const [ detail, setDetail ] = useState( null );
 	const [ draft, setDraft ] = useState( EMPTY_DRAFT );
 	const [ errors, setErrors ] = useState( {} );
+	// The id of the template that was chosen from the list and has not arrived. The editor
+	// went on showing the last one, with nothing to say another was coming. Set by
+	// chooseTemplate(), the list's own way in: a save reads its template again through
+	// selectTemplate(), and must not take the open editor away to do it.
+	const [ selecting, setSelecting ] = useState( null );
 	const selectTemplate = useCallback(
 		async ( template ) => {
 			const result = await window.Corex.api.get(
@@ -164,7 +169,25 @@ function useTemplateSelection( { config, layouts, dispatch } ) {
 		[ config.nonce, config.restUrl, dispatch, layouts ]
 	);
 
-	return { detail, draft, errors, setDraft, setErrors, selectTemplate };
+	const chooseTemplate = async ( template ) => {
+		setSelecting( template.id );
+		try {
+			await selectTemplate( template );
+		} finally {
+			setSelecting( null );
+		}
+	};
+
+	return {
+		detail,
+		draft,
+		errors,
+		selecting,
+		setDraft,
+		setErrors,
+		selectTemplate,
+		chooseTemplate,
+	};
 }
 
 function draftChangeHandler( setDraft ) {

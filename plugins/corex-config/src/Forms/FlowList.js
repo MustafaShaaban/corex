@@ -6,6 +6,7 @@ import CorexSelect from '../admin/components/CorexSelect.js';
 import CorexTime from '../admin/components/CorexTime.js';
 import { FlowRowsSkeleton } from './FlowSkeletons.js';
 import {
+	catalogStatus,
 	catalogRows,
 	readOnlyCount,
 	SOURCE_CODE_FORM,
@@ -291,27 +292,6 @@ function CodeFormRow( { row, submissionsUrl } ) {
 			) }
 		</li>
 	);
-}
-
-/**
- * What the catalog is, as the four states a loadable surface has.
- *
- * Until the flows have been answered once there is nothing to show but a placeholder, or the
- * failure. After that the rows stay through every request, and a failure is said in the notice
- * above the list, over rows that are still true.
- *
- * @param {Object}  state        The screen's state.
- * @param {string}  state.status The reducer's status.
- * @param {boolean} state.listed Whether the flows have ever been answered.
- * @return {string} `loading`, `refreshing`, `ready` or `error`.
- */
-export function catalogStatus( { status, listed } ) {
-	if ( ! listed ) {
-		return status === 'error' ? 'error' : 'loading';
-	}
-	return status === 'loading' || status === 'mutating'
-		? 'refreshing'
-		: 'ready';
 }
 
 export function FlowList( {

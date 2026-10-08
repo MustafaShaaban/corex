@@ -660,3 +660,155 @@ test.describe( 'the Data records list', () => {
 		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
 	} );
 } );
+
+test.describe( 'Forms and flows', () => {
+	const FORMS = '/wp-admin/admin.php?page=corex-forms';
+	const isFlowList = ( url ) =>
+		/corex\/v1\/flows(\?|$)/.test( decodeURIComponent( url.href ) );
+	const isOneFlow = ( url ) =>
+		/corex\/v1\/flows\/\d+(\?|$)/.test( decodeURIComponent( url.href ) );
+
+	test( 'shows a catalog that is coming, and never "no forms" before its answer', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route( isFlowList, ( route ) => held.push( route ) );
+		await page.goto( FORMS );
+
+		const surface = page.locator(
+			'.corex-flow-list__catalog .corex-loadable'
+		);
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		await expect(
+			surface.locator( '.corex-admin-skeleton .corex-flow-list__row' )
+		).toHaveCount( 4 );
+		await expect(
+			page.getByText( 'No forms match this view.' )
+		).toHaveCount( 0 );
+
+		await held.shift().continue();
+
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+		await expect( surface.locator( '.corex-admin-skeleton' ) ).toHaveCount(
+			0
+		);
+	} );
+
+	test( 'shows the editor that is coming when a flow is opened', async ( {
+		page,
+	} ) => {
+		await page.goto( FORMS );
+		const surface = page.locator(
+			'.corex-flow-list__catalog .corex-loadable'
+		);
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+		const row = surface
+			.locator( '.corex-flow-list__row.is-editable > button' )
+			.first();
+		// A site with no flow built in the admin has nothing to open.
+		test.skip(
+			( await row.count() ) === 0,
+			'this site has no editable flow to open'
+		);
+
+		const held = [];
+		await page.route( isOneFlow, ( route ) => held.push( route ) );
+		await row.click();
+
+		// The catalog used to stay, disabled, until the flow arrived.
+		await expect( page.locator( '.corex-flow-list' ) ).toHaveCount( 0 );
+		const placeholder = page.locator(
+			'.corex-admin-skeleton .corex-flow-editor__toolbar'
+		);
+		await expect( placeholder ).toBeVisible();
+		// Its bars have a width: they are a share of a heading that has none of its own.
+		expect(
+			await placeholder
+				.locator( '.corex-admin-skeleton__bar' )
+				.first()
+				.evaluate( ( bar ) => bar.getBoundingClientRect().width )
+		).toBeGreaterThan( 40 );
+
+		await held.shift().continue();
+
+		await expect(
+			page.locator( '.corex-flow-editor__actions' )
+		).toBeVisible();
+		await expect( page.locator( '.corex-admin-skeleton' ) ).toHaveCount(
+			0
+		);
+	} );
+} );
+
+test.describe( 'Email Studio', () => {
+	const STUDIO = '/wp-admin/admin.php?page=corex-email-studio';
+	const isOverview = ( url ) =>
+		/corex\/v1\/email-studio(\?|$)/.test( decodeURIComponent( url.href ) );
+	const isOneTemplate = ( url ) =>
+		/email-studio\/templates\/\d+(\?|$)/.test(
+			decodeURIComponent( url.href )
+		);
+
+	test( 'shows a studio that is coming, with its tabs already there', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route( isOverview, ( route ) => held.push( route ) );
+		await page.goto( STUDIO );
+
+		const surface = page.locator( '.corex-email-app > .corex-loadable' );
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		await expect(
+			surface.locator( '.corex-admin-skeleton__bar' ).first()
+		).toBeVisible();
+		await expect(
+			page.getByRole( 'button', { name: 'Templates', exact: true } )
+		).toBeVisible();
+
+		await held.shift().continue();
+
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+	} );
+
+	test( 'shows the editor that is coming when a template is chosen', async ( {
+		page,
+	} ) => {
+		await page.goto( STUDIO );
+		await expect(
+			page.locator( '.corex-email-app > .corex-loadable' )
+		).toHaveAttribute( 'data-corex-state', 'ready' );
+		await page
+			.getByRole( 'button', { name: 'Templates', exact: true } )
+			.click();
+		const rows = page.locator( '.corex-email-app__list button' );
+		test.skip(
+			( await rows.count() ) === 0,
+			'this site has no email template to choose'
+		);
+
+		const held = [];
+		await page.route( isOneTemplate, ( route ) => held.push( route ) );
+		await rows.first().click();
+
+		const editor = page.locator( '.corex-email-app__editor' );
+		await expect( editor.locator( '.corex-admin-skeleton' ) ).toBeVisible();
+		// One at a time: a second press asked again, and the slower answer was kept.
+		await expect( rows.first() ).toBeDisabled();
+		await expect( rows.first() ).toHaveClass( /is-active/ );
+
+		await held.shift().continue();
+
+		await expect( editor.locator( '.corex-admin-skeleton' ) ).toHaveCount(
+			0
+		);
+		await expect(
+			editor.getByRole( 'button', { name: 'Save immutable draft' } )
+		).toBeVisible();
+	} );
+} );

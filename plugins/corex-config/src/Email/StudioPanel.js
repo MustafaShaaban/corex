@@ -21,8 +21,9 @@ function templates( studio, busy ) {
 			detail={ studio.selection.detail }
 			draft={ studio.selection.draft }
 			errors={ studio.selection.errors }
+			selecting={ studio.selection.selecting }
 			busy={ busy }
-			onSelect={ studio.selection.selectTemplate }
+			onSelect={ studio.selection.chooseTemplate }
 			onCreate={ studio.commands.createTemplate }
 			onDraftChange={ studio.onDraftChange }
 			onSaveDraft={ studio.commands.saveDraft }
