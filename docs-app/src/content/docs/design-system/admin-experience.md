@@ -163,6 +163,19 @@ a reason of its own is left alone.
 Say the outcome where the action was taken: a failure the person cannot see is the same as a button that did
 nothing.
 
+Where one flag disables every button on a screen while any request is out (Email Studio, Forms and flows), only
+the button that was pressed works; the others wait. The screen provides the name of the control whose request is
+out through `PendingControl`, from the same file, and each button compares it with its own:
+
+```jsx
+const pending = useContext( PendingControl );
+
+<button disabled={ busy } { ...workingProps( pending === 'draft' ) }>
+```
+
+Keep it working until the screen is current again. A save is a write and then a read of what was written, and a
+button that stops after the write looks finished while the screen still shows what was there before.
+
 On a screen that is not React, write the three attributes by hand: `disabled`, `aria-busy="true"` and
 `data-corex-working="true"`. They are styled for any control on a CoreX admin screen, including one in a WordPress
 `Modal`, which is drawn outside `.corex-admin`.

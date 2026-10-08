@@ -13,8 +13,10 @@ All notable changes to Corex are documented here. The format follows
   width. On the Notifications screen every action has it: each notification's own, **Mark all
   as read** on the screen and in the header drawer, and the preference boxes, which now wait for
   one another. The four buttons that showed WordPress's striped "busy" (export, the Data
-  confirmation, the import dry-run, the migration confirmation) show it too. The other admin
-  screens follow (DECISIONS #285).
+  confirmation, the import dry-run, the migration confirmation) show it too. In Email Studio
+  and in Forms and flows, where every button on the screen was disabled together while any
+  request was out, the one that was pressed shows it and the others wait (DECISIONS #285,
+  #287). The remaining admin screens follow.
 - **Notifications show what is coming while they load** (spec 108, slice 1). The Notifications
   screen, its preferences and the header drawer show a placeholder in the shape of their content
   until the first answer, where each showed a sentence, and none shows "nothing here" before it

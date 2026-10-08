@@ -8518,3 +8518,45 @@ modals: the rule that reaches them is tested on a control placed where a modal i
   the work of T026 to T028, not a change to `workingProps`.
 - The inventory also read six things that look broken and are not this spec's: they are in
   issue form, as leads from reading and not as reproduced defects.
+
+## #287 — On a screen with one busy flag, the control that was pressed is named, and works until the screen is current
+
+**Date:** 2026-10-08. **Spec:** 108, slice 2 (T026). **Branch:** `feat/108-working-email-forms`.
+
+Email Studio and Forms and flows each have one flag for every request. It disabled every button
+on the screen together, and after "Save immutable draft" the button beside it, "Activate latest
+draft", looked exactly the same. Sixteen controls.
+
+**The screen says which.** `PendingControl` is a context holding the name of the control whose
+request is out. The screen provides it once, and each button compares it with its own name and
+spreads `workingProps`. The other choice was a prop through every panel: nine components in
+Email Studio, for one string.
+
+**Where the name comes from differs, because the two screens differ.**
+
+- Email Studio posts everything through one function that already takes the kind of thing it
+  posts. Its reducer keeps that kind as `pending` from the press until the studio has been read
+  again, has failed, or has only something to say.
+- Forms and flows' commands are a write and then one or two reads, each of which moves the
+  status on its own. A name kept in the reducer was over at the first read. The hook wraps each
+  command instead, so the name lasts for the whole of it: "Save draft" works through the read
+  that follows the write.
+
+**Two rows are not in it.** The row that opens a template and the row that opens a flow send a
+request too, but what they need is the placeholder of what they open, which is slice 4. A row
+whose whole text is replaced by a ring says less than the row did.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `emailStudioWorking`: the name through the reload, over at each end; the pressed button works and the others are only held | 5 passed |
+| `flowsWorking`: "Save draft" works through the read after the write; a refused write stops it | 3 passed |
+| `npx wp-scripts test-unit-jest` | 809 passed, 74 suites |
+| `forms-flow` and `email-studio` browser specs on `corex.local` | 6 passed |
+| `loading-states`: Email Studio's "Create" with its request held, then dropped | keeps its box to the pixel; the only control on the tab that says it is working; enabled again after |
+
+**Not run.** Forms and flows was not watched with a request held back: its browser spec
+creates, saves, publishes and tests a flow at full speed and still passes.
+
+**Left open.** 27 of the 55 controls: tasks T027 to T029, and the two rows.
