@@ -428,6 +428,20 @@ it( 'leaves out the files that only describe CoreX or the site to a developer', 
  * package to go on, so the package says what it needs, which folders are the release's, and what
  * each holds.
  */
+it( 'refuses the same path parts a site refuses when it is given a package', () => {
+	// Two lists in two languages: the builder's, and `ReleasePackageInspector::FORBIDDEN_SEGMENTS`
+	// on a site, which does not take a package's word for how it was built. One recorded file
+	// holds each to the other; `ReleasePackageInspectorTest` reads it on the site's side.
+	const recorded = JSON.parse(
+		readFileSync(
+			join( __dirname, 'Fixtures/Releases/forbidden-segments.json' ),
+			'utf8'
+		)
+	);
+
+	expect( mod.FORBIDDEN_SEGMENTS ).toEqual( recorded );
+} );
+
 describe( 'what a package says about itself', () => {
 	const RELEASE_PATHS = [
 		'wp-content/packages',

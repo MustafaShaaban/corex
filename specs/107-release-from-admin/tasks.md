@@ -24,16 +24,16 @@ files before slice 4.
 
 ## Slice 2 — A package that is wrong is refused, and nothing is touched (US2; D3, D4, D5, D15)
 
-- [ ] T020 [P] Pest unit: `ReleaseStore` — creates its place with guard files, answers paths, reads and writes state and log, caps the log, never answers a path outside its place
-- [ ] T021 `ReleaseStore`
-- [ ] T022 [P] Pest unit: `ReleaseHostFacts` — each fact that prevents an installation, named: file changes not allowed, no `ZipArchive`, a folder not writable, too little space where it is reported
-- [ ] T023 `ReleaseHostFacts`
-- [ ] T024 [P] Pest unit: `InstalledRelease` — from the option; from `corex-release.json` in the site's root when there is no option; unknown when there is neither
-- [ ] T025 `InstalledRelease`
-- [ ] T026 Pest unit, with real zips built in the temp folder: `ReleasePackageInspector` refuses, each named for what is wrong — not a zip; no manifest at the root (a zip of a `dist/` folder); schema 1; another client; PHP or WordPress too old; a release path missing from the zip; an entry that leaves its folder; a forbidden segment; and answers the statement of FR-010 for a good one, and that an older release needs saying twice
-- [ ] T027 `ReleasePackageInspector`, `ReleaseInspection`
-- [ ] T028 Pest unit: after every refusal in T026 nothing exists outside the installer's place that did not before
-- [ ] T029 Guards; notes
+- [x] T020 [P] Pest unit: `ReleaseStore` — creates its place with guard files, answers paths, reads and writes state and log, caps the log, never answers a path outside its place
+- [x] T021 `ReleaseStore`
+- [x] T022 [P] Pest unit: `ReleaseHostFacts` — each fact that prevents an installation, named: file changes not allowed, no `ZipArchive`, a folder not writable, too little space where it is reported. And on real WordPress: what the host says of itself
+- [x] T023 `ReleaseHostFacts`
+- [x] T024 [P] Pest unit: `InstalledRelease` — from the option; from `corex-release.json` in the site's root when there is no option; unknown when there is neither
+- [x] T025 `InstalledRelease`
+- [x] T026 Pest unit, with real zips built in the temp folder: `ReleasePackageInspector` refuses, each named for what is wrong — not a zip; no manifest at the root (a zip of a `dist/` folder); schema 1; another client; PHP or WordPress too old; a release path missing from the zip; an entry that leaves its folder; a forbidden segment; and answers the statement of FR-010 for a good one, and that an older release needs saying twice
+- [x] T027 `ReleasePackageInspector`, `ReleaseInspection`
+- [x] T028 Pest unit: after every refusal in T026 nothing exists in the site that did not before (the same test: the site's folder is listed before and after)
+- [x] T029 Guards; notes
 
 ## Slice 3 — A package is received and read on the screen (US1, receiving; D12, D13)
 

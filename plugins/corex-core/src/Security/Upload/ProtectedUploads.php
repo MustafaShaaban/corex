@@ -48,8 +48,23 @@ final class ProtectedUploads
 
         $path = trailingslashit($uploads['basedir']) . self::DIRECTORY;
 
+        return self::guard($path) ? $path : '';
+    }
+
+    /**
+     * Make a folder and close it to a web server, wherever it is.
+     *
+     * For a folder CoreX keeps things in that are not for visitors and are not uploads: a
+     * release being installed lives beside `uploads/`, not in it, and wants the same three files.
+     *
+     * @param string $path absolute path to the folder
+     *
+     * @return bool false when the folder cannot be made
+     */
+    public static function guard(string $path): bool
+    {
         if (! wp_mkdir_p($path)) {
-            return '';
+            return false;
         }
 
         self::write($path . '/.htaccess', "Require all denied\n<IfModule !mod_authz_core.c>\nOrder allow,deny\nDeny from all\n</IfModule>\n");
@@ -66,7 +81,7 @@ final class ProtectedUploads
             . "</authorization></system.webServer></configuration>\n",
         );
 
-        return $path;
+        return true;
     }
 
     /**

@@ -8837,3 +8837,82 @@ What was run:
 - The Submissions inbox is the one screen left (slice 6), with the export dialog it shares
   with the Data screen, whose counts read "…" until they arrive. It waits on the session that
   is building in the inbox.
+
+## #293 — A package is read where it lands and refused for what is wrong with it, by code that writes nothing
+
+**Date:** 2026-10-09. **Spec:** 107, slice 2 (T020 to T029). **Branch:** `feat/107-package-inspected`.
+
+Four classes under `plugins/corex-config/src/Releases/`, and no way to reach them yet: the
+screen and its routes are slice 3. This slice is the part that has to be right before anything
+is allowed to call it.
+
+**The inspector reads and does nothing else.** `ReleasePackageInspector::inspect()` opens the
+zip read-only, reads its description and its list of entries, and closes it. It has no path it
+could write to. FR-016 says a refusal leaves the site as it was; here that is true because of
+what the class is, and the test that lists the site's folder before and after each refusal is
+there for the day somebody gives it one.
+
+**In order, stopping at the first.** It is a zip; its description is at the top and can be
+relied on; it is for this site's client; this host's PHP and WordPress are new enough; it holds
+every folder it says it holds; no entry would be written outside the package; no entry is a
+thing a release never holds. Fourteen wrong packages in the test, each a real zip built in the
+temp folder.
+
+**The commonest wrong package gets its own sentence.** `dist/` zipped by hand puts everything
+one folder down. "There is no corex-release.json" would be true and useless; it says the zip
+holds a folder that holds the package, and what to zip instead.
+
+**A site does not take a package's word for how it was built.** The builder refuses `.git`,
+`wp-config.php` and ten more when it makes a package, and writes that list into the package.
+The site has the list of its own and checks every entry against it. Two lists in two
+languages: one recorded file, `tests/Fixtures/Releases/forbidden-segments.json`, and a test
+on each side that its list is that file.
+
+**Whose site it is, three ways.** A package for another client, the framework alone offered to
+a client's site (which would remove the site's code), and a client's package offered to a
+site that is the framework alone: each a whole sentence. A site that cannot say what it is
+(`InstalledRelease::isKnown()` is false: nothing recorded and no description in its root)
+compares nothing, and the inspection says the client has to be confirmed by name. "Does not
+know" is not the same answer as "the framework alone", and the class keeps them apart.
+
+**The host's facts are read in one place and judged in another.** `ReleaseHostFacts` is a value:
+whether files may be changed, whether a zip can be opened, which folders cannot be written, how
+much room there is. `ofThisHost()` reads them; `blockers()` says what each one prevents and
+what to do. The judging is tested with made-up facts, the reading on real WordPress.
+
+**A folder that is not there is judged by the one above it.** A site may have no must-use
+plugins folder, and an installation makes it. Asked whether the missing folder is writable,
+WordPress said yes on Windows and no on Linux: the first version of the integration test was
+written on one and would have failed on the other. What is asked now is whether it could be
+made.
+
+**The plan's upload and time limits are not in it.** D15 lists them. Nothing here uses them;
+receiving a package in parts is slice 3, and they arrive with what reads them.
+
+**The installer's place is made by the class that closes private uploads.**
+`ProtectedUploads::guard( $path )` is the three deny files, for any folder; `ensure()` calls it
+for the uploads one as before. `ReleaseStore` is `wp-content/corex-releases/` with three
+folders, a state file written beside itself and moved into place, and a log of the last fifty
+things that happened. A file in it is named, never placed: a name with a slash, a backslash or
+`..` is refused.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `tests/Unit/Releases` | 69 passed |
+| `tests/Integration/Releases`, on real WordPress | 3 passed |
+| The whole unit suite | 2443 passed |
+| The integration tests of the classes that use `ProtectedUploads` | 29 passed |
+| `tests/build-shared-host-dist.test.js`, with the shared list | 23 passed |
+| The framework's real package, built and zipped in a scratch folder, read by the inspector in a PHP process of its own | a 35MB zip, every entry of it read in about 150ms: accepted on a site that does not know what it is (client to confirm) and on the framework alone (0.43.5 over 0.43.0; 2,650 files, 28MB in the folders it owns); refused for a client's site, as the framework alone |
+
+**Not run.** Nothing on a host. No package was received by a site: there is no way to give it
+one yet.
+
+**Left open.**
+
+- Nothing is bound in the container. The inspector needs the PHP and WordPress versions and
+  the site's root; they are given where the screen is built.
+- A package's contents are not checked against its description here. That needs it unpacked,
+  which is slice 4, where the folder hash from slice 1 is used.
