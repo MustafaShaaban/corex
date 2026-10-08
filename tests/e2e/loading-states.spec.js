@@ -578,4 +578,85 @@ test.describe( 'the Data records list', () => {
 		await expect( search ).toBeFocused();
 		await expect( search ).toHaveValue( 'contact fo' );
 	} );
+
+	test( 'opens a record on the press, and draws its fields as fields', async ( {
+		page,
+	} ) => {
+		await page.goto( DATA );
+		await expect(
+			page.locator( '.corex-data__panel-body .corex-loadable' )
+		).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		const held = [];
+		await page.route(
+			( url ) =>
+				/corex\/v1\/data\/[a-z0-9_-]+\/\d+(\?|$)/.test(
+					decodeURIComponent( url.href )
+				),
+			( route ) => held.push( route )
+		);
+		await page.getByRole( 'button', { name: 'View' } ).first().click();
+
+		// It used to open when the record did: the press showed nothing.
+		const dialog = page.getByRole( 'dialog', { name: 'Record detail' } );
+		await expect( dialog ).toBeVisible();
+		const surface = dialog.locator( '.corex-loadable' );
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		await expect(
+			dialog.getByText( 'This record has no readable fields.' )
+		).toHaveCount( 0 );
+
+		// The real route answers, untouched: this is the comparison between the screen and
+		// the route that serves it which no test made, while the screen read the answer one
+		// level too shallow and drew a record as a single field named "Record".
+		await held.shift().continue();
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		const labels = await dialog
+			.locator( '.corex-data__field dt' )
+			.allTextContents();
+		expect( labels.length ).toBeGreaterThan( 1 );
+		expect( labels ).not.toContain( 'Record' );
+		await expect(
+			dialog.locator( '.corex-data__field dd' ).first()
+		).not.toContainText( '{"' );
+	} );
+
+	test( 'does not say "No exports yet." before the export history has answered', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route(
+			( url ) =>
+				/corex\/v1\/data\/[a-z0-9_-]+\/exports(\?|$)/.test(
+					decodeURIComponent( url.href )
+				),
+			( route ) =>
+				route.request().method() === 'GET'
+					? held.push( route )
+					: route.continue()
+		);
+		await page.goto(
+			'/wp-admin/admin.php?page=corex-data-models&tab=export'
+		);
+
+		const surface = page.locator(
+			'.corex-data-models__workspace .corex-loadable'
+		);
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		await expect(
+			surface.locator( '.corex-admin-skeleton li' )
+		).toHaveCount( 3 );
+		await expect( page.getByText( 'No exports yet.' ) ).toHaveCount( 0 );
+
+		await held.shift().continue();
+
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+	} );
 } );

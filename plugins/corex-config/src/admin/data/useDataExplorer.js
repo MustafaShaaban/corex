@@ -179,20 +179,20 @@ export function useDataExplorer( config ) {
 	const detail = useCallback(
 		async ( recordId ) => {
 			try {
-				// `request()` has already unwrapped the envelope to `envelope.data`, and
-				// `DataController::show()` puts the record there directly — there is no `record`
-				// key to reach through. Unwrapping a second level returned `undefined` for every
-				// source, so the modal has never displayed a field (#149).
+				// The route answers `{ record }`: `DataManagementController::show()`, the one
+				// that is registered, and `DataManagementControllerTest` holds it to that.
 				//
-				// Spec 080 made that harder to see rather than easier: before it, the symptom was a
-				// modal full of em dashes, which reads as broken. After it, `recordRows(undefined)`
-				// returns [] and the modal says "This record has no readable fields" — a sentence
-				// that reads as a true statement about the record. A better empty state made the
-				// bug more plausible.
-				return await request(
+				// This read the answer itself as the record, on the word of a comment about
+				// `DataController::show()`, which returns a record bare. That controller is
+				// bound and has not been registered since the other one arrived. So the
+				// detail showed one field, "Record", holding the whole record as a line of
+				// JSON, with a passing test: the test's transport answered what the comment
+				// said, and nothing compared either with the route that serves the screen.
+				const answer = await request(
 					'get',
 					`${ config.restUrl }/${ state.sourceKey }/${ recordId }`
 				);
+				return answer.record ?? null;
 			} catch ( error ) {
 				dispatch( { type: 'error', message: error.message } );
 				return null;
