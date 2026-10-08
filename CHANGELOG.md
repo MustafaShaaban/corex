@@ -8,6 +8,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **A site can read a release package and refuse a wrong one** (spec 107, slice 2). The
+  checks a package gets where it lands, before anything of it is unpacked: it is a zip, it
+  describes itself, it is for this site's client, this host can run it, it holds every folder
+  it says it does, and nothing in it would be written outside the package. Each refusal is a
+  sentence an administrator can act on. Also here: what stops a host installing at all, and
+  the installer's own folder, `wp-content/corex-releases/`. Nothing on a site calls any of it
+  yet; the screen is the next slice (DECISIONS #293).
 - **Forms and flows, and Email Studio, show what is coming while they load** (spec 108, slice
   4). The catalog of forms shows rows that are not there yet, where it showed "Loading forms…"
   over whatever it had; opening a flow shows the editor that is coming, where the catalog
