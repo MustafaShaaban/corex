@@ -38,6 +38,19 @@ final class CvTestForm extends Form
     ];
 }
 
+final class EnquiryTestForm extends Form
+{
+    public string $slug = 'enquire';
+
+    /**
+     * @var array<string,array{type?:string,rules?:list<string>,label?:string}>
+     */
+    protected array $fields = [
+        'name'  => ['type' => 'text', 'rules' => ['required']],
+        'brief' => ['type' => 'file', 'rules' => ['mime:application/pdf']],
+    ];
+}
+
 /**
  * Records what it was asked to store, and can be told to refuse.
  */
@@ -76,6 +89,7 @@ function fileSubmissionService(AttachmentStorage $attachments): FormSubmissionSe
 {
     $forms = new FormRegistry();
     $forms->register(new CvTestForm());
+    $forms->register(new EnquiryTestForm());
 
     return new FormSubmissionService(
         $forms,
@@ -84,6 +98,16 @@ function fileSubmissionService(AttachmentStorage $attachments): FormSubmissionSe
         new EventDispatcher(new ListenerProvider(), new BootLogger(false)),
         $attachments,
     );
+}
+
+/**
+ * What PHP hands over for a file input the visitor left empty, in a form posted as multipart.
+ *
+ * @return array{name:string,type:string,tmp_name:string,error:int,size:int}
+ */
+function emptyFilePart(): array
+{
+    return ['name' => '', 'type' => '', 'tmp_name' => '', 'error' => UPLOAD_ERR_NO_FILE, 'size' => 0];
 }
 
 /**
@@ -175,6 +199,40 @@ it('treats an absent upload as absent', function () {
         ['name' => 'Sam'],
         FormSubmissionService::HONEYPOT_KEY,
         [],
+    );
+
+    expect($response->isOk())->toBeFalse()
+        ->and($response->value['cv'] ?? null)->toBe('required');
+});
+
+/**
+ * A browser posting a form as multipart sends a part for every file input, chosen or not. The
+ * empty one was passed on as an upload, got past `required` because it is not an empty value, and
+ * then could not be stored: an optional file refused the whole submission with "The file could not
+ * be stored.", and a required one said the same where it meant "required". Reported on 2026-10-08
+ * from a client site.
+ */
+it('takes a submission whose optional file was left empty', function () {
+    $store = new SpyAttachmentStore();
+
+    $response = fileSubmissionService($store)->handle(
+        'enquire',
+        ['name' => 'Sam'],
+        FormSubmissionService::HONEYPOT_KEY,
+        ['brief' => emptyFilePart()],
+    );
+
+    expect($response->isOk())->toBeTrue()
+        ->and($response->value)->toBe(['name' => 'Sam'])
+        ->and($store->storedContexts)->toBe([]);
+});
+
+it('says a required file is missing when its part arrives empty', function () {
+    $response = fileSubmissionService(new SpyAttachmentStore())->handle(
+        'apply',
+        ['name' => 'Sam'],
+        FormSubmissionService::HONEYPOT_KEY,
+        ['cv' => emptyFilePart()],
     );
 
     expect($response->isOk())->toBeFalse()

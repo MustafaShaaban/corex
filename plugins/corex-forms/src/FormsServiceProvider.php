@@ -102,7 +102,7 @@ final class FormsServiceProvider extends ServiceProvider
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => ['docx'],
     ];
 
-    /** 10 MB. A form that needs more says so with `max_size:`. */
+    /** 10 MB. A field's `max_size:` can ask for less, not for more: the store checks this one. */
     private const UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
 
     public function register(): void
@@ -237,9 +237,11 @@ final class FormsServiceProvider extends ServiceProvider
         );
         // The attachment store is built here rather than autowired: it needs an UploadValidator,
         // and that needs an allow-list and a size cap, which are policy rather than dependencies.
-        // The defaults are deliberately narrow — a form declaring `mime:` widens them per field,
-        // and a framework that accepted anything by default would be handing every site an upload
-        // endpoint they did not ask for (spec 081).
+        // The list is deliberately narrow, and it is the outer limit: a field's `mime:` narrows it
+        // for that field and cannot add to it, because the store is built once, here, and holds
+        // every file to this list whatever the field declared. A framework that accepted anything
+        // by default would be handing every site an upload endpoint they did not ask for (spec
+        // 081). This comment said `mime:` widened the list until 2026-10-09, and nothing did.
         $this->container->singleton(
             AttachmentStorage::class,
             static fn (): AttachmentStorage => new AttachmentStore(

@@ -43,6 +43,7 @@ final class ValidationMessages
             'max' => __('This value is too long.', 'corex'),
             'min' => __('This value is too short.', 'corex'),
             'pattern' => __('This value is not in the expected format.', 'corex'),
+            'choice' => __('Choose one of the options offered.', 'corex'),
             'default' => __('Please check this field.', 'corex'),
         ];
     }

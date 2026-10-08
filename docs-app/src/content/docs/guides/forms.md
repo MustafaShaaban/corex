@@ -139,8 +139,8 @@ what is missing, and WordPress reports it as a developer notice.
 | Key | Values |
 |---|---|
 | `type` | `text` `email` `number` `tel` `url` `password` `date` `file` `textarea` `select` `radio` `checkbox` `checkbox-group` `toggle` |
-| `rules` | `required` `email` `max_length:N` `min_length:N` `max:N` `min:N` `numeric` `phone` `phone:national` |
-| `options` | `value => label` (for `select`/`radio`/`checkbox-group`) |
+| `rules` | `required` `email` `url` `max_length:N` `min_length:N` `max:N` `min:N` `numeric` `phone` `phone:national` `pattern:EXPRESSION` `mime:TYPE,TYPE` `max_size:MEGABYTES` |
+| `options` | `value => label` (for `select`/`radio`/`checkbox-group`). The field accepts these values and no other |
 | `label_mode` | `visible` (default) `hidden` `inline` |
 | `width` | `full` (default) `half` `third` `two-thirds` `quarter` (12-col grid) |
 | `class` | extra class on the control |
@@ -167,6 +167,34 @@ trunk `0` cannot be dialled without knowing the country. `phone:national` accept
 ```php
 'phone' => ['type' => 'tel', 'rules' => ['phone']],           // +20 101 699 9700
 'phone' => ['type' => 'tel', 'rules' => ['phone:national']],  // +20 101 699 9700 or 010 1699 9700
+```
+
+**A choice field takes only the answers it offers.** A `select`, `radio` or `checkbox-group` that
+declares `options` refuses any other value with the error `choice`, so a form that routes an enquiry
+by the option chosen can trust the value. There is no rule to write. An unanswered field is left to
+`required`, and a field that declares no options is not compared with anything. A `checkbox-group`
+is stored as the list of every box ticked.
+
+```php
+'reply_by' => ['type' => 'radio', 'rules' => ['required'], 'options' => ['email' => 'Email', 'phone' => 'Phone']],
+'services' => ['type' => 'checkbox-group', 'options' => ['design' => 'Design', 'web' => 'Web']],
+```
+
+**`pattern:` is one expression: everything after the first colon.** It is a PCRE expression matched
+anywhere in the answer, so anchor it with `^` and `$` to describe the whole answer. A comma or a
+colon inside it is part of it. The server checks it; the browser does not.
+
+```php
+'postcode' => ['type' => 'text', 'rules' => ['pattern:^\d{4,5}$']],
+```
+
+**A `file` field takes PDF, JPEG, PNG, WebP, DOC and DOCX, up to 10 MB.** `mime:` narrows that list
+for one field and `max_size:` lowers the limit for one field, in megabytes. Neither can add a type
+or raise the limit: a type outside the list is refused when the file is stored, whatever the field
+declares. A file field without `required` can be left empty.
+
+```php
+'cv' => ['type' => 'file', 'rules' => ['required', 'mime:application/pdf', 'max_size:2']],
 ```
 
 ## Place the block

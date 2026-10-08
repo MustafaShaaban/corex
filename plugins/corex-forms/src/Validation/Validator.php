@@ -55,8 +55,44 @@ final class Validator
                     break;
                 }
             }
+
+            if (! isset($errors[$name]) && ! $this->isOffered($field, $value)) {
+                $errors[$name] = 'choice';
+            }
         }
 
         return new ValidationResult($errors === [], $errors, $normalized);
+    }
+
+    /**
+     * Whether an answer to a choice field is among the options the field declares.
+     *
+     * Not a rule a form writes: a field that declares its options has said what it accepts, and a
+     * form that had to repeat them in a rule would be right until somebody edited one of the two.
+     *
+     * An empty answer is left to `required`, as every rule leaves it. A field that declares no
+     * options has nothing to be compared with, and a theme that fills a select from its own script
+     * declares none.
+     */
+    private function isOffered(FieldSchema $field, mixed $value): bool
+    {
+        if (! $field->isChoice() || $field->options === [] || $value === null || $value === '' || $value === []) {
+            return true;
+        }
+
+        if (is_array($value) && ! $field->takesSeveralAnswers()) {
+            return false;
+        }
+
+        // PHP turns the array key '2025' into an integer, and the answer arrives as a string.
+        $offered = array_map('strval', array_keys($field->options));
+
+        foreach ((array) $value as $answer) {
+            if (! is_scalar($answer) || ! in_array((string) $answer, $offered, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

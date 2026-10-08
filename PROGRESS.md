@@ -86,6 +86,13 @@ found" now. A site that hides its login may treat its address as known and choos
 after updating. Reported with it: the Submissions inbox cannot trash, restore or permanently
 delete a submission. That is spec 105, specified and not planned or built.
 
+Unreleased, reported on 2026-10-08 from the same client's contact form (DECISIONS #292): on a
+form defined in code a checkbox group was stored empty, a choice field took any text as its
+answer, an optional file left empty refused the whole submission, and a `pattern:` with a comma in
+it refused every answer. All four are fixed. A fifth was a comment, not a defect in behaviour: a
+field's `mime:` narrows the six file types a form takes and cannot add one, and the guide says so
+now. A site that needs a type outside the list has no way to ask for it; nobody has.
+
 Specified on 2026-10-08, neither planned nor built:
 
 - **Spec 105, trash, restore and permanently delete a submission.** Slices 1 and 2 of six are

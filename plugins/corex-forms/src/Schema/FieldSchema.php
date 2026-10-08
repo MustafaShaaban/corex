@@ -59,4 +59,12 @@ final class FieldSchema
     {
         return in_array($this->type, ['select', 'multi-select', 'radio', 'checkbox-group'], true);
     }
+
+    /**
+     * Whether the answer to this field is a list: every option ticked or selected, not one of them.
+     */
+    public function takesSeveralAnswers(): bool
+    {
+        return in_array($this->type, ['multi-select', 'checkbox-group'], true);
+    }
 }
