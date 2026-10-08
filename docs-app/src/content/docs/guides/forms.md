@@ -82,7 +82,10 @@ check; without them the action is `corex_form_<slug>` and the threshold is the s
 with no provider configured, a protected form is accepted under the trap field, the security token
 and the rate limit, as every form is.
 
-Turnstile and hCaptcha place no challenge on a form yet, of either kind.
+With Turnstile or hCaptcha configured, the form also shows that provider's widget above its
+button, and a submission made before the visitor has passed is held in the browser with a
+message. A form that [draws itself](#draw-a-form-your-own-way) puts `$parts->challenge()` where
+the widget should appear; it prints nothing unless the form is protected by one of those two.
 
 ## Draw a form your own way
 
@@ -116,6 +119,7 @@ public function markup(FormParts $parts): ?string
 | `fieldAttributes($name)` | What a field's wrapper carries so its error can be found | on each field's wrapper |
 | `error($name)` | Where that field's error is written, inside its wrapper | for each field |
 | `control($name, array $extra = [])` | A hand-written control's `id`, `name`, `aria-describedby`, and `required` when it applies. You add the element, its `type` and your classes | for each control you write |
+| `challenge()` | Where Turnstile's or hCaptcha's widget is shown. Empty for any other form | when the form is protected by one of them |
 | `label($name)` | The field's label, tied to its control | |
 | `field($name)` | The whole field as the stock form draws it | |
 | `submit(array $extra = [])` | The submit button with the form's label. A `class` is added | |
@@ -125,7 +129,8 @@ Every part is already escaped. Your own text is yours to escape.
 A form built this way validates in the browser, submits, shows each error in the place you put it,
 and is challenged, with no script of your own. Asking for a field the form does not have throws.
 
-If the markup leaves out `attributes()`, `hidden()` or `status()`, the form is not shown to
+If the markup leaves out `attributes()`, `hidden()` or `status()` (or `challenge()` when it is
+needed), the form is not shown to
 visitors: it would fail without saying so. Somebody who can edit the page sees a notice naming
 what is missing, and WordPress reports it as a developer notice.
 

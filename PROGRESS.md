@@ -97,7 +97,7 @@ is the one spec issues #248 and #264 asked for. Four slices, one pull request ea
 | 1 | A form states its button label and its two messages | done (DECISIONS #274), unreleased |
 | 2 | A form defined in code is challenged by the site's provider (reCAPTCHA) | done (DECISIONS #276), unreleased. Opt-in per form. No provider was called and no browser saw it; an integration test on real WordPress stands in for the provider |
 | 3 | A site draws a form with its own markup, from published parts. Closes #248 | done (DECISIONS #277), unreleased. The stock form is drawn from the same parts and is byte-identical. No browser saw a hand-drawn form; the runtime was run against one in jsdom |
-| 4 | Turnstile and hCaptcha place a widget, on flows and on code-defined forms. Closes #264 | not started |
+| 4 | Turnstile and hCaptcha place a widget, on flows and on code-defined forms. Closes #264 | done (DECISIONS #278), unreleased. Checked against each provider's real script on a local test page: Turnstile's whole cycle, hCaptcha's rendering only. Not seen on a CoreX page |
 
 Five readings in the spec are the owner's to overrule; they are under its Assumptions.
 
@@ -386,9 +386,14 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **Spec Kit cannot be run in a client repository without drift** (#251, item 1). The scripts write
   `specs/`, `.specify/feature.json` and the root `CLAUDE.md`, all framework-owned there. A client
   spec is written by hand under `sites/<client>/specs/`; the generated `AGENTS.md` says so.
-- **Turnstile and hCaptcha have a verifier and no widget.** They can be chosen and given keys, and
-  nothing places their challenge on a form. Choosing one no longer rejects submissions, and the
-  admin says it challenges nobody (DECISIONS #258). Placing the widgets belongs with #264.
+- **Turnstile and hCaptcha were not submitted through on a real site.** Their widget is placed
+  and a tokenless submission is refused (DECISIONS #278). What was seen is each provider's own
+  script rendering into a bare form on a local page, and Turnstile's token cycle there. Nobody
+  has completed an hCaptcha challenge through CoreX, and neither was seen inside a CoreX form.
+- **Four add-ons check a challenge token nothing produces**: bookings, careers, newsletter and
+  profile each verify `captcha_token` on their own route, and no widget or script is placed for
+  them. With a provider configured they refuse on a missing token. Read from the code while
+  planning spec 104; out of that spec's scope.
 - **A message sent from Email Studio cannot name its sender** (#150, the third of its three
   mailboxes). An operator's reply from the Submissions inbox, a routed email and a message
   composed in Email Studio are built in `EmailStudioSubmissionGateway`, `EmailRouteMessageFactory` and `EmailStudioController`

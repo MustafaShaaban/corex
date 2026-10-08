@@ -46,12 +46,12 @@ touches. Each slice ends with its guards, its rendered check where it has UI, an
 
 ## Slice 4 — Turnstile and hCaptcha challenge a visitor (US4)
 
-- [ ] T040 [P] Jest: the widget script — renders once per form, writes the token, resets after a submission, reports an unreachable provider, loads the provider script once for two forms (`addons/corex-captcha/assets/__tests__/`)
-- [ ] T041 `corex-captcha-widget.js`; `FormParts::challenge()` and the flow renderer place `.corex-form__challenge` for a widget provider
-- [ ] T042 Pest unit: `CaptchaAssetController` enqueues the right script for each provider and nothing without a protected form (`tests/Unit/Captcha/`)
-- [ ] T043 `CaptchaAssetController` for all three providers
-- [ ] T044 Pest unit: with Turnstile or hCaptcha an empty token is refused; `providerConfigured()` is true for all three with a secret (`ProtectionStageTest`, `SubmissionChallengeTest`)
-- [ ] T045 Remove `DRIVERS_WITHOUT_WIDGET` and the empty-token allowance; `CaptchaDiagnostic` answers `ok`; the `captcha.widget` gap, the setting's help and their tests corrected
-- [ ] T046 Styles for the challenge container, tokens and logical properties; rendered check in light and dark, LTR and RTL, with each provider's test keys
-- [ ] T047 By hand, once, with each provider's published test keys: a pass and a forced failure, recorded in DECISIONS as what was seen
-- [ ] T048 Docs: captcha README's driver table, configuration guide (`no_widget` gone), security guides, PROGRESS's open item removed; the four add-ons with their own token check recorded as open; guards; notes
+- [x] T040 [P] Jest: the widget script — renders once per form, writes the token, resets after a submission, reports an unreachable provider, loads the provider script once for two forms (`addons/corex-captcha/assets/__tests__/`)
+- [x] T041 `corex-captcha-widget.js`; `FormParts::challenge()` and the flow renderer place `.corex-form__challenge` for a widget provider
+- [x] T042 On real WordPress, in `ProtectedCodeFormTest`, for each provider (the controller only calls WordPress's script functions, so a unit test would assert its own stubs). As planned: Pest unit: `CaptchaAssetController` enqueues the right script for each provider and nothing without a protected form (`tests/Unit/Captcha/`)
+- [x] T043 `CaptchaAssetController` for all three providers
+- [x] T044 Pest unit: with Turnstile or hCaptcha an empty token is refused; `providerConfigured()` is true for all three with a secret (`ProtectionStageTest`, `SubmissionChallengeTest`)
+- [x] T045 Remove `DRIVERS_WITHOUT_WIDGET` and the empty-token allowance; `CaptchaDiagnostic` answers `ok`; the `captcha.widget` gap, the setting's help and their tests corrected
+- [x] T046 The rule is written, with tokens and logical properties, and linted. The rendered check was NOT done: no CoreX page was opened with a widget on it (DECISIONS #278). As planned: Styles for the challenge container, tokens and logical properties; rendered check in light and dark, LTR and RTL, with each provider's test keys
+- [x] T047 Done in part, on a local test page with each provider's real script: Turnstile's whole token cycle; hCaptcha rendering only, since its widget needs a click. No forced failure and no server-side check were run. As planned: By hand, once, with each provider's published test keys: a pass and a forced failure, recorded in DECISIONS as what was seen
+- [x] T048 Docs: captcha README's driver table, configuration guide (`no_widget` gone), security guides, PROGRESS's open item removed; the four add-ons with their own token check recorded as open; guards; notes

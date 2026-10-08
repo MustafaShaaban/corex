@@ -76,7 +76,9 @@ when nothing remains). Status is derived from your existing settings — nothing
 ## Captcha
 
 Pick a driver (none / honeypot / reCAPTCHA v3 / Turnstile / hCaptcha). Key-based drivers show a
-**site key** and a write-only **secret**, plus a score threshold and action for reCAPTCHA v3. A
+**site key** and a write-only **secret**, plus a score threshold and action for reCAPTCHA v3.
+reCAPTCHA v3 shows a visitor nothing; Turnstile and hCaptcha show their widget above a protected
+form's button. A
 **Test verification** button (added by the Corex Captcha add-on, next to the secret field) probes
 the configured provider and shows a specific, actionable result inline — `ok`, `missing_keys`
 (naming what to add), `invalid_keys`, or `network_error` — through the standard response envelope.

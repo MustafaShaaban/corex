@@ -10,7 +10,7 @@ Optional add-on; requires `corex-core`.
 | `none` (default) | Always passes (the form honeypot + throttle still guard). |
 | `honeypot` | Passes when the hidden field is empty; fails when filled. |
 | `recaptcha` | **reCAPTCHA v3** — scored and typed. Verifies `success`, an exact hostname allowlist, the form's server-derived action, token age, one-time use, and a score threshold. **Fail-closed.** |
-| `turnstile` / `hcaptcha` | Posts the token to the provider; passes only on a confirmed `success`. **Fail-closed.** |
+| `turnstile` / `hcaptcha` | Shows the provider's widget above a protected form's button, sends its token with the form, and posts the token to the provider; passes only on a confirmed `success`. **Fail-closed**: a submission with no token is refused. |
 
 ### reCAPTCHA v3
 
