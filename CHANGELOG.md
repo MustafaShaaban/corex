@@ -140,6 +140,11 @@ starts sending from it. Read Client impact before taking it.
 - **In the export dialog, a choice's name was smaller than the line describing it**: 13px,
   WordPress's size, above a line set to 14px. The dialog has its own text size. In the Submissions
   export since v0.43.2.
+- **A Data export stopped when a record arrived in the source while it was being written**, with
+  "Bounded job counters are inconsistent." The last batch then held more than what was left to
+  export, and the job refuses to count past its total. A batch is cut to what was counted when
+  the export was asked for, as the Submissions export's has been. On a site that receives
+  submissions while somebody exports all of them, that was every such export.
 - **A Data export wrote a list as the word "Array"**, with a PHP warning: every value was written
   as `(string) $value`. A value is now written as what its field is declared to be: a number as a
   number, a date and time as one, a switch as Yes or No, a list as its items.

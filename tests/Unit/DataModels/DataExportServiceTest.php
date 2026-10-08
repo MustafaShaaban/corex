@@ -52,6 +52,8 @@ function exportService(bool $xlsx = true): array
             ['id' => 3, 'name' => 'Linus', 'email' => 'linus@example.com', 'status' => 'active', 'joined' => '2026-10-05 17:45:00', 'tags' => ['beta'], 'secret' => 'drop'],
         ];
         public function __construct(private bool $xlsx) {}
+        /** A record that arrives in the source after an export of it was counted. */
+        public function arrive(array $record): void { $this->records[] = $record; }
         public function key(): string { return 'contacts'; }
         public function label(): string { return 'Contacts'; }
         public function columns(): array { return [['id' => 'name', 'label' => 'Name'], ['id' => 'email', 'label' => 'Email'], ['id' => 'status', 'label' => 'Status']]; }
@@ -392,4 +394,28 @@ it('still hands back an export made before files were kept on disk', function ()
         'content' => "Name,Status\r\nLinus,active\r\n",
     ])->and(fn () => $service->download(7, $run->id, false, 'other-source'))
         ->toThrow(DomainException::class, 'unavailable');
+});
+
+it('finishes an export, holding what was counted, when a record arrives in the source while it is written', function () {
+    [$service, $store, , $sources, $activity] = exportService();
+    [$files] = dataExportFiles();
+    $run = $service->request(exportRequest(['scope' => 'all', 'query' => [], 'columns' => ['id', 'name']]));
+    $now = new DateTimeImmutable('2026-07-04T12:00:00+00:00');
+    $job = BoundedJob::queued(DataExportJobHandler::KIND, 7, $run->recordCount, $run->inputHash, $now)->withId(52)->start($now);
+    $handler = new DataExportJobHandler($sources, $store, $files, new ActivityService($activity));
+
+    // Two of the three that were counted. Then a fourth arrives, so the second batch holds two
+    // records where one was expected: the job counted past its total and stopped with "Bounded
+    // job counters are inconsistent." Found in a browser run, where other tests were submitting
+    // forms while everything was being exported (2026-10-08).
+    $job = $handler->handle($job, 2);
+    $sources->authorize(7, 'contacts', DataSourceCapabilities::EXPORT_CSV)->arrive(
+        ['id' => 4, 'name' => 'Late', 'email' => 'late@example.com', 'status' => 'active', 'joined' => '', 'tags' => []],
+    );
+    $job = $handler->handle($job, 2);
+
+    expect($job->state)->toBe(BoundedJob::STATE_COMPLETED)
+        ->and($job->processed)->toBe(3)
+        ->and($service->download(7, $run->id, false)['content'])
+        ->toBe("\xEF\xBB\xBFID,Name\r\n1,'=Ada\r\n2,Grace\r\n3,Linus\r\n");
 });

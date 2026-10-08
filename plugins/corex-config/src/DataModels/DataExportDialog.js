@@ -164,8 +164,12 @@ export default function DataExportDialog( {
 						)
 					)
 				)?.export.id,
+			// A step the server refused is a stopped export, with the server's reason for it.
 			advance: async ( id ) =>
-				( await quietly( () => requests.advance( id ) ) )?.progress,
+				( await quietly( () => requests.advance( id ) ) )?.progress || {
+					state: 'failed',
+					error: refusal,
+				},
 			download: async ( id ) =>
 				( await quietly( () => requests.download( id ) ) )?.artifact,
 			save: downloadArtifact,

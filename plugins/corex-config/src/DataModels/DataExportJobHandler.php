@@ -44,7 +44,14 @@ final readonly class DataExportJobHandler implements JobHandler
             throw new DomainException('The data source export adapter is unavailable.');
         }
         $limit = max(1, min(100, $batchSize));
-        $rows = $this->rows($source, $run, $job->processed, $limit);
+        // No more than was counted when the export was asked for. A record that arrives in the
+        // source while it is written makes the last batch larger than what is left, and the job
+        // refuses to count past its total.
+        $rows = array_slice(
+            $this->rows($source, $run, $job->processed, $limit),
+            0,
+            max(0, $job->total - $job->processed),
+        );
         if ($rows === [] && $job->processed < $job->total) {
             throw new DomainException('The data export scope changed before completion.');
         }

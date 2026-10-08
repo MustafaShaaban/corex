@@ -7034,6 +7034,14 @@ the file's columns, and ticking "Name" last should not move it to the end.
 **A refusal is said in the server's words.** "There is nothing to export." says more than "The
 export could not be started."
 
+**Found by the browser test: an export that stops when a record arrives.** The Export tab's test
+exports everything in a model. Run beside the inbox's tests, which submit forms, it stopped with
+"Bounded job counters are inconsistent.": the last batch held more records than were left of
+the count, and the job will not count past its total. The Submissions export cuts each batch to
+what is left; the Data export never did, before this spec or after slice 7a. It does now, and a
+unit test has a record arrive between two batches. An export holds what was counted when it was
+asked for.
+
 **Found by measuring the new dialog: a name smaller than its description.** A scope's name and a
 column's name took WordPress's 13px; the line under each was set to 14px. The Submissions dialog
 has been that way since v0.43.2. The spacing review of that dialog (DECISIONS #257) measured gaps
@@ -7063,11 +7071,14 @@ What was run:
 
 | Check | Result |
 |---|---|
+| The arriving-record test, before the batch was cut | failed: "Bounded job counters are inconsistent." |
+| `DataExportServiceTest` | 16 passed |
 | `runExport.test.js` | 9 passed |
 | `dataExportState.test.js` | 31 passed |
 | Jest, `plugins/corex-config` | 396 passed |
 | `submissions-inbox.spec.js`, a browser, after each of the three moves | 9 passed each time |
 | `data-management.spec.js`, a browser | 8 passed, the two export tests among them: a workbook and a CSV saved from the Records tab, a CSV from the Export tab |
+| The Data, inbox and admin-controls specs together, so that forms are submitted during the export | 1 failed before the batch was cut; 26 passed after |
 
 **Not run.** A screen reader. The Export tab's page itself was not measured, only the dialog it
 opens.
