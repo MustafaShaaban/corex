@@ -500,11 +500,11 @@ describe( 'what a package says about itself', () => {
 		] );
 	} );
 
-	it( 'becomes one zip, named for what it is, with its description at the root', () => {
+	it( 'becomes one zip, named for what it is, with its description at the root', async () => {
 		const AdmZip = require( 'adm-zip' );
 		const { root, distDir } = buildFixture();
 
-		const zipFile = mod.zipPackage( distDir, root );
+		const zipFile = await mod.zipPackage( distDir, root );
 		const entries = new AdmZip( zipFile )
 			.getEntries()
 			.map( ( entry ) => entry.entryName );

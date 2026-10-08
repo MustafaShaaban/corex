@@ -38,7 +38,8 @@ npm run build:dist -- --client=acme --zip
 
 `--zip` writes `corex-release-<client or "framework">-<version>-<build time>.zip` in the repository root, with
 the package's contents at the zip's root. Writing it takes longer than the build (about a minute and a half for
-the framework alone).
+the framework alone). It is the one part of the builder that needs `npm ci` run in the repository root; without
+it the package is still built and verified, and the command says what the zip needs.
 
 `corex-release.json`, at the package's root, describes the package (`schema: 2`):
 

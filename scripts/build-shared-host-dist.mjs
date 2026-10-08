@@ -42,7 +42,6 @@ import {
 	statSync,
 } from 'node:fs';
 import { join, basename, relative, sep } from 'node:path';
-import AdmZip from 'adm-zip';
 import { describeFolder } from './release-content-hash.mjs';
 import {
 	PACKAGE_ROOT,
@@ -497,13 +496,33 @@ export function runBuild( plan, distDir, options = {} ) {
 }
 
 /**
+ * The zip library, loaded only when a zip is asked for: a plain build runs in a checkout where
+ * `npm ci` has never been run, and has to go on doing so.
+ *
+ * @return {Promise<Object>} The `adm-zip` class.
+ */
+async function zipLibrary() {
+	try {
+		return ( await import( 'adm-zip' ) ).default;
+	} catch ( error ) {
+		if ( error.code !== 'ERR_MODULE_NOT_FOUND' ) {
+			throw error;
+		}
+		throw new Error(
+			'--zip needs the packages of the repository root: run `npm ci` there first. The package itself was built.'
+		);
+	}
+}
+
+/**
  * Make the one file a site is given: a zip of the package, with its description at the root.
  *
  * @param {string} distDir The built package.
  * @param {string} outDir  Where the zip is written.
- * @return {string} The zip's path.
+ * @return {Promise<string>} The zip's path.
  */
-export function zipPackage( distDir, outDir ) {
+export async function zipPackage( distDir, outDir ) {
+	const AdmZip = await zipLibrary();
 	const manifest = JSON.parse(
 		readFileSync( join( distDir, 'corex-release.json' ), 'utf8' )
 	);
@@ -746,11 +765,16 @@ if ( isMain ) {
 				? 'dist verified OK'
 				: 'dist verification FAILED:\n  ' + v.errors.join( '\n  ' )
 		);
-		if ( v.ok && args.includes( '--zip' ) ) {
-			console.log(
-				`package: ${ relative( repoRoot, zipPackage( distDir, repoRoot ) ) }`
-			);
+		if ( ! v.ok || ! args.includes( '--zip' ) ) {
+			process.exit( v.ok ? 0 : 1 );
 		}
-		process.exit( v.ok ? 0 : 1 );
+		zipPackage( distDir, repoRoot ).then(
+			( zipFile ) =>
+				console.log( `package: ${ relative( repoRoot, zipFile ) }` ),
+			( error ) => {
+				console.error( 'build:dist --zip failed:', error.message );
+				process.exit( 1 );
+			}
+		);
 	}
 }

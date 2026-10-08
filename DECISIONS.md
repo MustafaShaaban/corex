@@ -8247,6 +8247,13 @@ record fails. A third, in Python, written only to check the record, gave the sam
 time, with the description at its root. `adm-zip` was already installed for other tools and is
 now a named dev dependency, because the builder imports it.
 
+**Only `--zip` loads it.** The first push imported it at the top of the builder, and CI's client
+job failed: that job builds the package before any `npm ci` in the repository root, on purpose,
+and until then the builder had needed nothing but Node. It is loaded when a zip is asked for.
+Without the root's packages, a plain build is unchanged, and `--zip` builds and verifies the
+package and then says what the zip needs. Run with no `node_modules` above it: the builder
+loads, and `zipPackage` gives that sentence.
+
 **`verifyDist` checks the measure too.** A package changed after it was described is refused where
 it is built, before a site would refuse it. Three older tests spoil a built package on purpose
 to test another check; they now measure it again first, so each still fails for its one reason.
