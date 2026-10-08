@@ -26,7 +26,27 @@ npm run build:dist -- --client=acme
 
 # preview the plan without writing anything
 npm run build:dist -- --client=acme --dry-run
+
+# keep every font the PDF library ships (see below)
+npm run build:dist -- --client=acme --pdf-fonts=all
 ```
+
+### The PDF library's fonts
+
+An export can be a PDF, and the library that writes it ships a font for every script it can write: 87MB, of
+which 54MB is six fonts for Chinese, Korean and three ancient scripts. A package is uploaded by hand, so by
+default it keeps the fonts for Latin, Greek, Cyrillic and Hebrew text (DejaVu) and for Arabic-script
+languages (XB Riyaz and Lateef), with every font licence. Measured on the framework alone, 2026-10-08:
+
+| Package | Unpacked | Zipped |
+|---|---|---|
+| The default fonts | 117MB | 33MB |
+| `--pdf-fonts=all` | 191MB | 71MB |
+
+With the default fonts a PDF is still written whatever an answer is written in: text in a script whose font
+is not in the package prints as empty boxes, and the same export as a workbook or a CSV holds it as it is.
+Build with `--pdf-fonts=all` for a site that collects answers in Chinese, Japanese, Korean, Thai or an
+Indic script and files them as PDF. `corex-release.json` records which was built, as `pdf_fonts`.
 
 Under the hood: `scripts/build-shared-host-dist.mjs` (bash wrapper: `scripts/build-shared-host-dist.sh`). It
 empties `dist/` and assembles, into it:
