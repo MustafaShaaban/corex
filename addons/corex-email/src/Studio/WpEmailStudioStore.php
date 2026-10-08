@@ -13,8 +13,14 @@ defined('ABSPATH') || exit;
 /**
  * Private WordPress persistence for Email Studio assets and immutable events.
  */
-final class WpEmailStudioStore implements EmailStudioStore
+final class WpEmailStudioStore implements EmailStudioStore, EmailAttemptRemoval
 {
+    /** The kinds of record that are about one attempt to send an email. */
+    private const ATTEMPT_RECORDS = ['email_attempt', 'captured_email'];
+
+    /** Where a record names the attempt it is about, or the attempt it was made again from. */
+    private const ATTEMPT_KEYS = ['attempt_id', 'uuid', 'parent_attempt_id'];
+
     public const POST_TYPE = 'corex_email_asset';
 
     private const META_TYPE    = '_corex_email_asset_type';
@@ -85,6 +91,38 @@ final class WpEmailStudioStore implements EmailStudioStore
         }
 
         return $this->record($post);
+    }
+
+    public function forgetAttempt(string $attemptId): int
+    {
+        if ($attemptId === '') {
+            return 0;
+        }
+
+        // A record's payload is one serialized value, so the id is looked for inside it and each
+        // match is then read: a record is removed only when it names this attempt itself.
+        $candidates = new \WP_Query([
+            'post_type'              => self::POST_TYPE,
+            'post_status'            => 'private',
+            'posts_per_page'         => self::MAX_RECORDS,
+            'no_found_rows'          => true,
+            'update_post_term_cache' => false,
+            'meta_query'             => [
+                ['key' => self::META_TYPE, 'value' => self::ATTEMPT_RECORDS, 'compare' => 'IN'],
+                ['key' => self::META_PAYLOAD, 'value' => $attemptId, 'compare' => 'LIKE'],
+            ],
+        ]);
+
+        $removed = 0;
+        foreach ($candidates->posts as $post) {
+            $payload = (array) get_post_meta($post->ID, self::META_PAYLOAD, true);
+            $named = array_intersect_key($payload, array_flip(self::ATTEMPT_KEYS));
+            if (in_array($attemptId, $named, true) && wp_delete_post($post->ID, true) instanceof \WP_Post) {
+                $removed++;
+            }
+        }
+
+        return $removed;
     }
 
     public function findBySlug(string $type, string $slug): ?array

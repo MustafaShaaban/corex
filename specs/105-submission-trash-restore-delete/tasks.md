@@ -49,9 +49,9 @@ Tests are written first and seen to fail. One slice per pull request.
       that cannot be removed leaves the submission in the trash and is reported; one failure
       does not stop the others; one activity entry with no submitted value
 - [x] T022 `SubmissionTrashService::delete()`; `SubmissionEmailRecords` and its no-op (D10, D11, D12)
-- [ ] T023 Pest unit and integration: the add-on forgets an attempt and its captured copy by
+- [x] T023 Pest unit and integration: the add-on forgets an attempt and its captured copy by
       attempt id; `EmailStudioStore::delete()`
-- [ ] T024 The add-on's `SubmissionEmailRecords`; `EmailStudioStore::delete()`
+- [x] T024 The add-on's `SubmissionEmailRecords`; `EmailStudioStore::delete()`
 - [x] T025 Pest integration: `DELETE /submissions/{id}` is registered and guarded, deletes a
       trashed submission, and refuses one in the inbox and a person who may not
 - [x] T026 The route; bulk action `delete` with a result that says what was not deleted
