@@ -88,13 +88,21 @@ final class FormBlockRenderer implements BlockRenderer
             esc_attr($slug),
             esc_url(rest_url('corex/v1/forms/' . $slug)),
             esc_attr(wp_create_nonce('wp_rest')),
-            esc_attr__('Thank you — your message has been sent.', 'corex'),
-            esc_attr__('Please review the highlighted fields and try again.', 'corex'),
+            esc_attr(self::stated($form->successMessage(), __('Thank you — your message has been sent.', 'corex'))),
+            esc_attr(self::stated($form->errorMessage(), __('Please review the highlighted fields and try again.', 'corex'))),
             esc_attr((string) wp_json_encode($this->exporter->toArray($schema))),
             $fields,
             esc_attr(FormSubmissionService::HONEYPOT_KEY),
-            esc_html__('Send', 'corex'),
+            esc_html(self::stated($form->submitLabel(), __('Send', 'corex'))),
             esc_attr(ValidationMessages::toAttribute()),
         );
+    }
+
+    /**
+     * The wording a form states, or CoreX's own when it states none (spec 104, FR-002, FR-004).
+     */
+    private static function stated(string $wording, string $stock): string
+    {
+        return trim($wording) === '' ? $stock : $wording;
     }
 }

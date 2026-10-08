@@ -8,6 +8,11 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **A form defined in code says what it reads** (spec 104, slice 1; part of #248). Override
+  `submitLabel()`, `successMessage()` and `errorMessage()` on the form's class. Each is empty by
+  default, which is CoreX's own wording, so a form that states nothing reads "Send" and "Thank
+  you — your message has been sent." as before. Stated wording is printed as text (DECISIONS
+  #274).
 - **An export can be a PDF** (spec 103, slice 6), from the Submissions inbox and from the Data
   screen. "PDF document (.pdf)" is a third choice under Format. The document is A4, set wide. It
   opens with what was exported, how many records, and who exported it and when. Every page is

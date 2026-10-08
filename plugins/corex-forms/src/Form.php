@@ -14,8 +14,8 @@ use Corex\Forms\Listeners\SendEmailListener;
 use Corex\Forms\Listeners\StoreSubmissionListener;
 
 /**
- * A code-defined form: its slug, its field definitions, and the listeners that
- * handle its submissions. The single source feeding the schema resolver, the
+ * A code-defined form: its slug, its field definitions, its wording, and the listeners
+ * that handle its submissions. The single source feeding the schema resolver, the
  * submit endpoint, and the block. A concrete form sets $slug and $fields.
  */
 abstract class Form
@@ -42,6 +42,33 @@ abstract class Form
     public function label(): string
     {
         return $this->slug === '' ? '' : ucwords(str_replace(['-', '_'], ' ', $this->slug));
+    }
+
+    /**
+     * What the submit button reads. Empty, the default, is CoreX's own label; so is a label
+     * of nothing but spaces, because a button needs a name.
+     */
+    public function submitLabel(): string
+    {
+        return '';
+    }
+
+    /**
+     * What a visitor is told when a submission is accepted. Empty, the default, is CoreX's
+     * own confirmation.
+     */
+    public function successMessage(): string
+    {
+        return '';
+    }
+
+    /**
+     * What a visitor is told, beside each field's own message, when a submission is refused
+     * for its answers. Empty, the default, is CoreX's own wording.
+     */
+    public function errorMessage(): string
+    {
+        return '';
     }
 
     /**
