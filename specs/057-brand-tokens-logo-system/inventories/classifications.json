@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 1143,
+    "consumer_records": 1144,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -720,7 +720,8 @@
         "--corex-admin-text-subtle",
         "--corex-admin-touch-target",
         "--corex-admin-warning",
-        "--corex-admin-warning-soft"
+        "--corex-admin-warning-soft",
+        "--corex-loader-ink"
       ]
     }
   ],

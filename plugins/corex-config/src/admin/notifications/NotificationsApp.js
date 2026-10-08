@@ -20,6 +20,7 @@ import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import CorexLoadable from '../components/CorexLoadable.js';
 import CorexSelect from '../components/CorexSelect.js';
+import { workingProps } from '../components/working.js';
 import NotificationItem from './NotificationItem.js';
 import NotificationSkeleton from './NotificationSkeleton.js';
 import PreferencesPanel from './PreferencesPanel.js';
@@ -96,6 +97,10 @@ export default function NotificationsApp() {
 	const [ category, setCategory ] = useState( '' );
 	const [ assignedToMe, setAssignedToMe ] = useState( false );
 	const [ error, setError ] = useState( '' );
+	// The control with a request out on each notification, by id, and whether "Mark all as
+	// read" has one.
+	const [ working, setWorking ] = useState( {} );
+	const [ markingAll, setMarkingAll ] = useState( false );
 	// Which request was made last. A list that stays on screen lets a second view be asked for
 	// before the first has answered, and the slower answer must not be the one that is kept.
 	const latestRequest = useRef( 0 );
@@ -157,8 +162,9 @@ export default function NotificationsApp() {
 	 * been registered on the REST controller since v0.35.0 with nothing calling them.
 	 */
 	const act = useCallback(
-		( id, action, body ) => {
+		( id, control, action, body ) => {
 			setError( '' );
+			setWorking( ( current ) => ( { ...current, [ id ]: control } ) );
 			apiFetch( {
 				path: `/corex/v1/notifications/${ id }/${ action }`,
 				method: 'POST',
@@ -170,6 +176,15 @@ export default function NotificationsApp() {
 						failure?.message ||
 							__( 'That action could not be completed.', 'corex' )
 					)
+				)
+				.finally( () =>
+					setWorking( ( current ) =>
+						Object.fromEntries(
+							Object.entries( current ).filter(
+								( [ key ] ) => key !== String( id )
+							)
+						)
+					)
 				);
 		},
 		[ load ]
@@ -177,30 +192,40 @@ export default function NotificationsApp() {
 
 	const itemActions = useMemo(
 		() => ( {
-			markRead: ( id ) => act( id, 'read' ),
-			markUnread: ( id ) => act( id, 'unread' ),
-			dismiss: ( id ) => act( id, 'dismiss' ),
+			markRead: ( id ) => act( id, 'markRead', 'read' ),
+			markUnread: ( id ) => act( id, 'markUnread', 'unread' ),
+			dismiss: ( id ) => act( id, 'dismiss', 'dismiss' ),
 			// A day is the snooze the store already understands; the control says so rather than
 			// leaving the person to guess how long "snooze" lasts.
 			// The parameter is `until` — the name the route reads. This sent `snoozed_until`, the
 			// name of the *column*, so `futureDate('')` returned null and every snooze answered
 			// 422 invalid_snooze. A dead control that looked alive (spec 087, FR-015).
 			snooze: ( id ) =>
-				act( id, 'snooze', {
+				act( id, 'snooze', 'snooze', {
 					until: new Date( Date.now() + 86400000 ).toISOString(),
 				} ),
-			resolve: ( id ) => act( id, 'resolve', { reason: 'manual' } ),
+			resolve: ( id ) =>
+				act( id, 'resolve', 'resolve', { reason: 'manual' } ),
 		} ),
 		[ act ]
 	);
 
 	const markAllRead = useCallback( () => {
+		setError( '' );
+		setMarkingAll( true );
 		apiFetch( {
 			path: '/corex/v1/notifications/read-all',
 			method: 'POST',
 		} )
 			.then( load )
-			.catch( () => {} );
+			// It used to fail in silence: the button did nothing, and nothing said so.
+			.catch( ( failure ) =>
+				setError(
+					failure?.message ||
+						__( 'That action could not be completed.', 'corex' )
+				)
+			)
+			.finally( () => setMarkingAll( false ) );
 	}, [ load ] );
 
 	const chooseView = useCallback( ( id ) => {
@@ -285,6 +310,7 @@ export default function NotificationsApp() {
 							type="button"
 							className="corex-notifications-screen__mark-all"
 							onClick={ markAllRead }
+							{ ...workingProps( markingAll ) }
 						>
 							{ __( 'Mark all as read', 'corex' ) }
 						</button>
@@ -324,6 +350,7 @@ export default function NotificationsApp() {
 										<NotificationItem
 											item={ item }
 											actions={ itemActions }
+											working={ working[ item.id ] }
 										/>
 									</li>
 								) ) }

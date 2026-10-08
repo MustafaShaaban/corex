@@ -217,6 +217,106 @@ describe( 'the notification drawer', () => {
 	} );
 } );
 
+describe( 'a control whose request is on its way', () => {
+	const button = ( name ) =>
+		[ ...container.querySelectorAll( 'button' ) ].find(
+			( candidate ) => candidate.textContent.trim() === name
+		);
+	const isWorking = ( name ) =>
+		button( name ).dataset.corexWorking === 'true';
+
+	it( 'cannot be sent twice from a notification, and its other actions wait for it', async () => {
+		mount( <NotificationsApp /> );
+		await answer( requests[ 0 ], {
+			items: [ notification( 1, 'A submission was not delivered' ) ],
+			total: 1,
+		} );
+
+		press( 'Mark read' );
+		press( 'Mark read' );
+		press( 'Dismiss' );
+
+		expect( requests.map( ( request ) => request.path ) ).toEqual( [
+			expect.stringContaining( '/notifications?' ),
+			'/corex/v1/notifications/1/read',
+		] );
+		expect( isWorking( 'Mark read' ) ).toBe( true );
+		expect( button( 'Dismiss' ).disabled ).toBe( true );
+	} );
+
+	it( 'cannot be sent twice from "Mark all as read", and says when it failed', async () => {
+		mount( <NotificationsApp /> );
+		await answer( requests[ 0 ], {
+			items: [ notification( 1, 'A submission was not delivered' ) ],
+			total: 1,
+		} );
+
+		press( 'Mark all as read' );
+		press( 'Mark all as read' );
+
+		expect( requests ).toHaveLength( 2 );
+		expect( isWorking( 'Mark all as read' ) ).toBe( true );
+
+		await fail( requests[ 1 ] );
+
+		expect( isWorking( 'Mark all as read' ) ).toBe( false );
+		expect( container.querySelector( '[role="alert"]' ).textContent ).toBe(
+			'offline'
+		);
+	} );
+
+	it( 'holds every preference until the one that was changed has been saved', async () => {
+		// Each change sends every category as it is on screen. A second, sent before the
+		// first had answered, would send the first one back to what it was.
+		mount( <PreferencesPanel /> );
+		await answer( requests[ 0 ], {
+			preferences: [
+				{ category: 'editorial', enabled: false, mandatory: false },
+				{ category: 'jobs', enabled: false, mandatory: false },
+			],
+		} );
+		const boxes = () => [
+			...container.querySelectorAll( 'input[type="checkbox"]' ),
+		];
+
+		act( () => boxes()[ 0 ].click() );
+
+		expect( boxes().map( ( box ) => box.disabled ) ).toEqual( [
+			true,
+			true,
+		] );
+
+		await fail( requests[ 1 ] );
+
+		expect( boxes().map( ( box ) => box.disabled ) ).toEqual( [
+			false,
+			false,
+		] );
+		expect( container.querySelector( '[role="alert"]' ).textContent ).toBe(
+			'offline'
+		);
+	} );
+
+	it( 'cannot be sent twice from the drawer, and says when it failed', async () => {
+		mount( <NotificationDrawer open onClose={ () => {} } /> );
+		await answer( requests[ 0 ], {
+			items: [ notification( 1, 'A submission was not delivered' ) ],
+		} );
+
+		press( 'Mark all as read' );
+		press( 'Mark all as read' );
+
+		expect( requests ).toHaveLength( 2 );
+
+		await fail( requests[ 1 ] );
+
+		expect( isWorking( 'Mark all as read' ) ).toBe( false );
+		expect( container.querySelector( '[role="alert"]' ).textContent ).toBe(
+			'offline'
+		);
+	} );
+} );
+
 it.each( [
 	[
 		'the Notifications screen',
