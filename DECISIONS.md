@@ -7896,3 +7896,67 @@ provider.
 - `captcha.action`, the global setting, has no reader.
 - A code-defined form stores no spam evidence. A flow records the provider's verdict with the
   submission; a code-defined form's listeners are handed the answers and nothing else.
+
+## #277 — A site draws a form from parts CoreX publishes, and the stock form is drawn from the same ones
+
+Date: 2026-10-08 · Spec: 104 (a code-defined form's wording, markup and protection), slice 3 · Issue: #248 · Status: Final
+
+A form whose design was not the stock form's needed its own renderer, and writing one meant
+reproducing what the front-end runtime reads (the endpoint, the security token, the exported
+schema, the messages, an error place per field, a status place, the trap field) from four classes
+none of which said a site could rely on it.
+
+**The seam is `Form::markup(FormParts $parts): ?string`.** `null`, the default, is the stock
+form. `FormParts` is handed to the form for one render and supplies each piece by name:
+`attributes()`, `hidden()`, `status()`, `fieldAttributes()`, `error()`, `control()`, `label()`,
+`field()`, `submit()`. Not a filter on the rendered HTML and not a theme template, for the reason
+in #274: corex-forms fires no WordPress hook, and a method on the form's own class is typed and
+is the form's alone.
+
+**The stock form is composed from the same parts.** `FormBlockRenderer` builds a `FormParts` and
+either hands it to the form or draws the stock form with it. A part a site uses is therefore the
+part CoreX uses, and the two cannot drift. Two recorded forms pin the stock output byte for byte:
+the shipped contact form, and a form with one field of every kind and every presentation knob.
+They were recorded from the renderer before it was changed and pass after.
+
+**What a site passes in cannot displace what CoreX sets.** `attributes()` and `control()` take
+the site's own attributes; a `class` is added to CoreX's and any other name CoreX already set
+keeps CoreX's value. A site cannot point the form at another endpoint or give a control another
+field's name by accident. `submit()` stays `type="submit"` whatever it is passed.
+
+**A form that would fail silently is not shown.** If a form's markup lacks `attributes()`,
+`hidden()` or `status()`, a visitor gets nothing, `_doing_it_wrong()` reports which, and somebody
+who can edit posts sees a notice naming the missing parts in the form's place. The check looks for
+one mark of each part in the returned HTML. It does not parse the site's design and does not check
+each field's wrapper: a field with no error place still submits and is still refused by the
+server, and its message has nowhere to go. Left open below.
+
+**No `challenge()` part yet.** The plan lists one for a visible widget. reCAPTCHA v3 shows none and
+its token field is in `hidden()`. The part arrives with the widget, in slice 4.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The stock form against its two recordings, before and after the renderer was changed | identical |
+| `tests/Unit/Forms/FormPartsTest.php` | 10 passed |
+| `FormBlockRenderTest`: a form's own markup; a missing part as a visitor and as an editor | 16 passed |
+| `corex-runtime-hand-drawn-form.test.js`: the real runtime against the hand-drawn form the PHP test pins | 2 passed: an empty submission writes "This field is required." into the site's error place, marks the hand-written control invalid and sends nothing; a valid one posts the answers and the trap field to the form's endpoint with the security token and confirms in the site's status place |
+| `FormBlockRenderingTest` on real WordPress | 5 passed: a form's own markup through `do_blocks()` with WordPress's escaping; one missing two parts renders nothing signed out and reports "hidden(), status()" |
+| `tests/Unit` / Jest / `tests/Integration/Forms` | 2346 / 719 in 65 suites / 71 |
+
+**Not run.** No browser. The tasks named a Playwright test in light and dark, left-to-right and
+right-to-left (T037); it was not written, for the reason in #276: the browser suite has no
+fixture that registers a form in code. In its place the runtime is run in jsdom against the
+markup the contract really produces. What that does not show is anything visual: a hand-drawn
+form's layout is the site's own stylesheet, and the stock styles a site may inherit through the
+`corex-form` class were not looked at on one. The parts tests were written after the parts.
+
+**Left open.**
+
+- A field whose wrapper or error place a site left out is not detected.
+- `.corex-form__notice`, the editor's notice, has no style of its own.
+- With JavaScript off a form does not submit, stock or hand-drawn: it has no `action`. The runtime
+  guide said it fell back to the submit route. It says what happens now; nothing was built.
+- The runtime guide's contract for "anything else that renders a form" is documentation of what
+  the runtime reads, not a second supported way to build a code-defined form.

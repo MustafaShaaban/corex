@@ -8,6 +8,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **A site draws a form its own way** (spec 104, slice 3; closes #248). Override `markup()` on
+  the form's class. It is handed the form's parts (`attributes()`, `hidden()`, `status()`,
+  `fieldAttributes()`, `error()`, `control()`, `label()`, `field()`, `submit()`) and returns the
+  form's HTML. A form built from them validates, submits, shows each error where the site put it
+  and is challenged, with no script of the site's own. A form that supplies no markup is the
+  stock form, byte for byte what it was. The forms guide has the contract and a complete example
+  (DECISIONS #277).
 - **A form defined in code can ask for the site's challenge** (spec 104, slice 2; part of #264).
   Return `['captcha' => 'on']` from the form's `protection()`. With reCAPTCHA configured, the
   form carries a token field, its page loads the provider's script, and a submission is checked
@@ -108,6 +115,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A site with its own form renderer can replace it with `Form::markup()`.** A renderer that
+  reproduced CoreX's attributes by hand keeps working; it is no longer needed, and it is what
+  breaks when those attributes change.
+- **`FormBlockRenderer`'s constructor takes two more optional arguments**, and `ProtectionStage`'s
+  takes a `SubmissionChallenge`, for code that constructs either itself. Both are built by the
+  container on a site that does not.
 - **A site with `mail_queue` on and no Action Scheduler starts deferring its mail** when it takes
   this. A message leaves on the next WP-Cron run, not inside the request. A site that sets
   `DISABLE_WP_CRON` must run `wp-cron.php` from its own scheduler, or its mail waits; with the

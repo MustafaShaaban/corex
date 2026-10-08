@@ -34,15 +34,15 @@ touches. Each slice ends with its guards, its rendered check where it has UI, an
 
 ## Slice 3 — A site draws a form its own way (US3)
 
-- [ ] T030 Pest unit, written against `main`'s renderer first: the stock output for the contact form and for a form with every field type, byte for byte (`tests/Unit/Forms/FormBlockRenderTest.php`)
-- [ ] T031 [P] Pest unit: each `FormParts` method — attributes with extra classes merged and escaped, hidden fields with and without protection, a field, a control's attributes, an error place, status, submit (`tests/Unit/Forms/FormPartsTest.php`)
-- [ ] T032 `FormParts`; `FieldRenderer`'s pieces reachable through it (`Block/`)
-- [ ] T033 `FormBlockRenderer` composes the stock form from `FormParts`; T030 still green
-- [ ] T034 `Form::markup(FormParts): ?string`; the renderer uses it when it is not null
-- [ ] T035 Pest unit: markup missing a required part — an editor is told which, a visitor gets nothing, the failure is logged
-- [ ] T036 The missing-part check and notice (`FormBlockRenderer`)
-- [ ] T037 Playwright: a hand-drawn form — an empty submission puts each error in the site's place and marks the control invalid; a valid one is confirmed in the site's status place; light and dark, LTR and RTL
-- [ ] T038 Docs: a "Draw a form your own way" section in the forms guide with a complete example; `frontend-runtime.md` corrected to the real contract (messages, wording, trap field, events); guards; notes
+- [x] T030 Pest unit, written against `main`'s renderer first: the stock output for the contact form and for a form with every field type, byte for byte (`tests/Unit/Forms/FormBlockRenderTest.php`)
+- [x] T031 [P] Pest unit: each `FormParts` method — attributes with extra classes merged and escaped, hidden fields with and without protection, a field, a control's attributes, an error place, status, submit (`tests/Unit/Forms/FormPartsTest.php`)
+- [x] T032 `FormParts`; `FieldRenderer`'s pieces reachable through it (`Block/`)
+- [x] T033 `FormBlockRenderer` composes the stock form from `FormParts`; T030 still green
+- [x] T034 `Form::markup(FormParts): ?string`; the renderer uses it when it is not null
+- [x] T035 Pest unit: markup missing a required part — an editor is told which, a visitor gets nothing, the failure is logged
+- [x] T036 The missing-part check and notice (`FormBlockRenderer`)
+- [x] T037 Not written as a browser test, for T021's reason. In its place `corex-runtime-hand-drawn-form.test.js` runs the real runtime in jsdom against the hand-drawn form the PHP test pins. Not seen: anything visual, in either theme or direction (DECISIONS #277). As planned: Playwright: a hand-drawn form — an empty submission puts each error in the site's place and marks the control invalid; a valid one is confirmed in the site's status place; light and dark, LTR and RTL
+- [x] T038 Docs: a "Draw a form your own way" section in the forms guide with a complete example; `frontend-runtime.md` corrected to the real contract (messages, wording, trap field, events); guards; notes
 
 ## Slice 4 — Turnstile and hCaptcha challenge a visitor (US4)
 

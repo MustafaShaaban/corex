@@ -96,7 +96,7 @@ is the one spec issues #248 and #264 asked for. Four slices, one pull request ea
 |---|---|---|
 | 1 | A form states its button label and its two messages | done (DECISIONS #274), unreleased |
 | 2 | A form defined in code is challenged by the site's provider (reCAPTCHA) | done (DECISIONS #276), unreleased. Opt-in per form. No provider was called and no browser saw it; an integration test on real WordPress stands in for the provider |
-| 3 | A site draws a form with its own markup, from published parts. Closes #248 | not started |
+| 3 | A site draws a form with its own markup, from published parts. Closes #248 | done (DECISIONS #277), unreleased. The stock form is drawn from the same parts and is byte-identical. No browser saw a hand-drawn form; the runtime was run against one in jsdom |
 | 4 | Turnstile and hCaptcha place a widget, on flows and on code-defined forms. Closes #264 | not started |
 
 Five readings in the spec are the owner's to overrule; they are under its Assumptions.
