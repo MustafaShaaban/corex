@@ -87,6 +87,12 @@ One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`)
 
 On `main` since v0.43.3, not in a release:
 
+- **`CONTRIBUTING.md` describes the browser suite as it runs** (#283). "Browser verification"
+  named `.github/workflows/e2e.yml`, deleted in 0.41.0, and a local run that started wp-env and
+  drove another address. It now describes the `e2e` job of `ci.yml` and what a local run needs, the must-use
+  fixtures among them, documented in that one place. Comments in `tests/e2e/` that said the same
+  are corrected; no code changed. The section's "Locally" part says the setup script makes the
+  copy, since #281.
 - **What WordPress prints before the page is inside the CoreX shell** (#277, DECISIONS #263).
   The core update nag sat in a band above the shell and pushed every CoreX screen 54px down, on
   any install with a core update pending; CI installs the latest WordPress and never saw it. The
@@ -344,6 +350,11 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   set it (DECISIONS #250).
 - Three browser specs are excluded from a fresh-install run — two block-editor specs and the flow
   builder. The list lives in `tests/e2e/playwright.config.js` with the evidence for each.
+- **`npm run env:start` appears not to read `wp-env.json`.** The script is `wp-env start` with no
+  `--config`, and `@wordpress/env` 11.16.0 looks for `.wp-env.json` (`lib/config/parse-config.js`).
+  Read from the source, not run: no Docker run was made. If it holds, the wp-env setup guide
+  starts a WordPress with none of CoreX mapped. `README.md` and
+  `docs/internal/COREX-FRAMEWORK.md` also still say wp-env matches CI, which uses none.
 - **The hidden `/wp-admin/` 404 is distinguishable from a real one by its inline styles.** It carries
   block styles for CoreX blocks that are not on the page; a real 404 does not. Structurally
   unreachable from here — `wp_should_load_separate_core_block_assets()` returns false on `is_admin()`

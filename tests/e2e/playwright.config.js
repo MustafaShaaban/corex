@@ -1,18 +1,24 @@
 /**
- * Playwright config for the Corex E2E smoke.
+ * Playwright config for the CoreX browser suite: every spec under tests/e2e/.
  *
- * ENVIRONMENT-GATED: requires a running site at COREX_BASE_URL and valid CoreX admin
- * credentials in COREX_ADMIN_USER / COREX_ADMIN_PASS. To run locally:
- *   1. Start full WAMP from the tray (so http://corex.local serves).
- *   2. npx playwright install chromium
- *   3. npm run test:e2e
+ * ENVIRONMENT-GATED: the suite starts no site. It requires one already served at COREX_BASE_URL
+ * (default http://corex.local) and an administrator's credentials in COREX_ADMIN_USER /
+ * COREX_ADMIN_PASS (the defaults, and COREX_LOGIN_PATH, are in global-setup.js). To run locally:
+ *   1. Serve the install (on the WAMP setup: start WAMP, so http://corex.local serves) with the
+ *      bundles built: npm run build.
+ *   2. Have every tests/e2e/fixtures/corex-e2e-*.php in its wp-content/mu-plugins/.
+ *      scripts/setup-wordpress.ps1 copies them into ./wp; copy them into any other install.
+ *   3. npx playwright install chromium
+ *   4. npm run test:e2e
  *
  * A few specs also reach the install through WP-CLI (`wpEval` in helpers.js), to set up what has
  * no route and to remove the rows they leave. That acts on `./wp`; set COREX_WP_PATH when
  * COREX_BASE_URL serves an install somewhere else. Without WP-CLI those steps are skipped.
  *
- * Kept out of the default `npm test` / CI lanes that lack a browser; wire into CI behind a
- * job that boots WP (wp-env) first.
+ * In CI this is the `e2e` job of .github/workflows/ci.yml, on every pull request: that job
+ * provisions a WordPress, seeds it, serves it with nginx and php-fpm, and sets
+ * COREX_E2E_FRESH_INSTALL, which applies the exclusions below. CONTRIBUTING.md, "Browser
+ * verification", has both runs in full.
  */
 const { defineConfig, devices } = require( '@playwright/test' );
 
@@ -25,11 +31,14 @@ const { STORAGE_STATE } = require( './global-setup' );
  * other tests pass perfectly well on a clean install. Excluding whole files threw away real
  * coverage — security-access.spec.js has one environment-dependent test and a dozen good ones.
  *
- * Two causes, both environmental rather than defects:
- *   - missing fixtures: stored submissions, declared data sources — these assume a developer
- *     install that has been used;
- *   - the block editor: Gutenberg never becomes interactive under PHP's built-in server (raising
- *     PHP_CLI_SERVER_WORKERS from 4 to 12 changed nothing, so it is not throughput).
+ * Three tests are left, with two causes, neither traced to its root (the entries say what was
+ * ruled out):
+ *   - the block editor: whichever spec opens it first in a fresh CI browser does not see the
+ *     inserter. The server is ruled out: the job has run on PHP's built-in server and on nginx
+ *     with php-fpm, which it uses now, and the two behave identically;
+ *   - the flow builder, which times out mid-interaction and has not been shown to be
+ *     environmental.
+ * Nothing is excluded for a missing fixture any more: the job seeds what those specs needed.
  *
  * Treat every reason here as a hypothesis until CI disproves it. This list was once eleven entries
  * and most were wrong: tests blamed on missing content actually failed because the CI site had

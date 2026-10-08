@@ -461,8 +461,9 @@ async function signIn( page, user, password ) {
 /**
  * The WCAG contrast ratio between two computed colours.
  *
- * `admin-controls.spec.js` and `coming-soon.spec.js` each carry a copy of this from before it was
- * here. A new spec takes this one.
+ * The one copy: every spec that measures a contrast takes it from here. It throws on a value with
+ * no numbers in it (`none`, a `url()` paint), so a measurement of nothing fails instead of passing
+ * as black.
  *
  * @param {string} first  A computed `rgb()` or `rgba()` colour.
  * @param {string} second Another.

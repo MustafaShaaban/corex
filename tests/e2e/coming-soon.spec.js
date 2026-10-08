@@ -14,7 +14,7 @@
  * into Coming soon, reviewed, and taken out again.
  */
 const { test, expect, request: apiRequest } = require( '@playwright/test' );
-const { signInAs } = require( './helpers' );
+const { contrast, signInAs } = require( './helpers' );
 const { STORAGE_STATE } = require( './global-setup' );
 
 const SCREEN =
@@ -118,36 +118,6 @@ async function expectRedirectHome( response, baseURL ) {
 	expect( response.headers()[ 'cache-control' ] || '' ).toContain(
 		'no-cache'
 	);
-}
-
-/**
- * The WCAG contrast ratio between two computed colours.
- *
- * @param {string} first  A computed `rgb()` or `rgba()` colour.
- * @param {string} second Another.
- * @return {number} The ratio, from 1 to 21.
- */
-function contrast( first, second ) {
-	const luminance = ( colour ) => {
-		const [ red, green, blue ] = colour
-			.match( /[\d.]+/g )
-			.slice( 0, 3 )
-			.map( ( channel ) => {
-				const value = Number( channel ) / 255;
-
-				return value <= 0.03928
-					? value / 12.92
-					: Math.pow( ( value + 0.055 ) / 1.055, 2.4 );
-			} );
-
-		return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-	};
-	const [ lighter, darker ] = [
-		luminance( first ),
-		luminance( second ),
-	].sort( ( a, b ) => b - a );
-
-	return ( lighter + 0.05 ) / ( darker + 0.05 );
 }
 
 /**
