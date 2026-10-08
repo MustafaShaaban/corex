@@ -19,6 +19,9 @@ export const TABS = [
 export const initialEmailStudioState = {
 	status: 'idle',
 	mutating: false,
+	// The action whose request is out, by the name it is posted under, so that the button that
+	// was pressed can say so. Every button is disabled by `mutating`; this is which one.
+	pending: '',
 	message: '',
 	data: normalizeOverview( {} ),
 };
@@ -54,16 +57,23 @@ export function emailStudioReducer( state, action ) {
 				...state,
 				status: 'ready',
 				mutating: false,
+				pending: '',
 				message: action.message || '',
 				data: normalizeOverview( action.payload ),
 			};
 		case 'mutating':
-			return { ...state, mutating: true, message: '' };
+			return {
+				...state,
+				mutating: true,
+				pending: action.control || '',
+				message: '',
+			};
 		case 'failed':
 			return {
 				...state,
 				status: 'error',
 				mutating: false,
+				pending: '',
 				message: action.message || '',
 			};
 		case 'notice':
@@ -71,6 +81,7 @@ export function emailStudioReducer( state, action ) {
 				...state,
 				status: 'ready',
 				mutating: false,
+				pending: '',
 				message: action.message || '',
 			};
 		default:
