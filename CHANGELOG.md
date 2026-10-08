@@ -8,6 +8,17 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **The Submissions inbox has a trash** (spec 105, slice 1). A submission is moved to it from its
+  pane or as a bulk action, after a confirmation that says how many, and the notice that follows
+  offers **Undo**. **Trash**, beside **Inbox** above the filters, lists what was moved there with
+  who moved it and when. A trashed submission is read and nothing else until it is restored, from
+  its pane or in bulk, exactly as it was. Reported from a client's production site, where a test
+  lead could not be taken out of the inbox. Each action is in the submission's own history and,
+  once, in the activity stream, with none of what a visitor submitted.
+- **A trashed submission is CoreX's to keep.** WordPress deletes a post from its trash for good
+  after 30 days, and at once on a site set to skip the trash. A submission moved to the trash
+  from the inbox is outside both: it stays until it is restored. Deleting for good and a trash
+  that empties itself are the next slices.
 - **Turnstile and hCaptcha show their widget on a protected form** (spec 104, slice 4; closes
   #264), on a flow and on a form defined in code. It sits above the button; the form sends the
   token the widget gives; the provider's script loads only on a page with a protected form. A
@@ -141,6 +152,19 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **Nothing deletes a submission from the trash yet.** One moved there from the inbox stays
+  until somebody restores it. The retention panel's "Move to trash" is unchanged: it uses
+  WordPress's trash, which WordPress empties after 30 days. Those submissions now show in the
+  inbox's Trash view and can be restored from it.
+- **New routes**: `POST corex/v1/submissions/{id}/trash` and `…/{id}/restore`; `view=trash` on
+  the list; `trash` and `restore` among the bulk actions. A change asked of a trashed submission
+  is answered 409, "This submission is in the trash. Restore it to change it.", where it was 404.
+- **A submission's record has five more fields**: `trashed`, `trashed_at`, `trashed_by`,
+  `trashed_by_name`, `trashed_via`.
+- **Constructors changed**, for code that builds these itself: `SubmissionBulkService` and
+  `SubmissionControllerServices` each take a `SubmissionTrashService`.
+- **The admin bundle and the inbox's stylesheet changed.** `build/` is git-ignored: rebuild
+  `plugins/corex-config` after taking this.
 - **A package built after this holds no `README.md`, `composer.json` or `package.json` under
   `wp-content/plugins`, `themes` or `packages`.** A site already on a host keeps the ones it
   has until they are deleted there: unpacking a new package over an old one removes nothing.

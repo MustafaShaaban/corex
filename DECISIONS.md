@@ -8121,3 +8121,75 @@ What was run:
 - From the same audit and not done: the coming-soon page still prints WordPress's generator tag,
   the RSD link, feed links and the emoji script; the REST index lists every `corex/v1` route to
   anybody (they answer 401 or 403); CoreX has no setting for security headers.
+
+## #281 — A trashed submission is CoreX's: its own record, and none of WordPress's trash clock
+
+Date: 2026-10-08 · Spec: 105 (trash, restore and delete a submission), slice 1 · Status: Final
+
+Reported from a client's production site: the inbox could not remove a submission, so a test lead
+stayed in it. Slice 1 is the half that loses nothing: move to the trash, and restore.
+
+**The post is `trash`, and CoreX put it there.** Every read of submissions asks for `private`
+posts: the inbox, its counts, the exports, the Data source, retention, insights. A trashed
+submission that is `trash` is out of all of them with no query changed and none forgotten. A flag
+on a `private` post would have needed a clause in each, and the first one missed puts a trashed
+lead in an export.
+
+**Not with `wp_trash_post()`.** It deletes on the spot when `EMPTY_TRASH_DAYS` is 0. And it writes
+`_wp_trash_meta_time`, the one thing WordPress's daily `wp_scheduled_delete()` selects a trashed
+post by: 30 days later the submission is gone for good, with nothing recorded and a file uploaded
+with it left on disk. `WpSubmissionTrashStore` sets the status itself and writes
+`corex_trashed_at`, `corex_trashed_by` and `corex_trashed_via`. A test runs WordPress's clean-up
+beside a post trashed the WordPress way, which it takes, and one trashed by CoreX, which it
+leaves.
+
+**So nothing deletes a submission from the trash yet.** That is deliberate for this slice and
+said in the guide and under Client impact. Slice 2 deletes for good; slice 3 gives the trash its
+own clock and adopts what the retention panel trashed the old way.
+
+**One service removes.** `SubmissionTrashService` checks the person's scope, pins the version
+they were shown, writes each submission's history, and records one activity entry per action:
+who, when, how many, the ids. No submitted value, name or address. Several submissions are all
+checked before any is moved, so a stale or forbidden one moves nothing.
+
+**The trash is a view, not a status.** `view=trash` on the list. A submission keeps its status,
+owner, notes and history while it is there. It can be opened and read; everything that changes a
+submission asks `findWorkflow()`, which answers only for the inbox, so a trashed one refuses
+every change without a service to teach. The controller says why: 409, "This submission is in
+the trash", where the refusal was a 404 that is also true of a submission that never existed.
+
+**Bulk trash and restore are bulk actions**, through the two-step preview that already bounds a
+selection and refuses a stale one. **Undo is restore**: one mechanism.
+
+**Found in the browser: the pane trashed a stale copy.** Opening a submission marks it read,
+which changes it. The confirmation held the record as it was at the click, and the server refused
+it: 409, "changed after it was loaded", with the dialog gone and nothing said. The pane trashes
+the submission as it is when the person confirms. The unit and integration tests could not have
+seen this; the first browser run did.
+
+**Found by looking: an eighth column was cut off.** "Moved to trash" was added to the table's
+seven and ran past its frame at 1440 pixels. It stands where "Notification" does in the inbox,
+which says nothing of a trashed submission. Measured at 1280, 1440 and 1680: the trash table is
+as wide as the inbox's to within 8 pixels. The inbox's own table runs 108 pixels past its frame
+at 1280 and scrolls there; that is how it was and is not changed here.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `SubmissionTrashTest`, real WordPress: the record, WordPress's clean-up, the two views by scope, restore, the routes and their guard, the 409 | 8 passed |
+| `tests/Integration/Submissions`, real WordPress, after merging main | 46 passed |
+| `tests/Unit`, after merging main | 2365 passed |
+| Jest, `Submissions/__tests__` | 111 passed, 17 of them new |
+| Browser, the trash test, first run | failed: the route answered 409 for the stale copy |
+| Browser, `submissions-inbox.spec.js`, this branch's inbox | 10 passed, the nine that were there and the new one |
+| The Trash view and a trashed submission's pane, captured at 1440 and looked at | the cut-off column, fixed; the rest as designed |
+
+**Not run.** The whole integration and browser suites; CI runs both. `EMPTY_TRASH_DAYS` of 0 was
+not exercised: it is a constant, and the store never calls the function that reads it. A person
+restricted to one team was tested in the service and the reader, not through the browser. Built
+from a scratch worktree with the inbox served to the tests' own requests by a temporary must-use
+plugin, since removed.
+
+**Left as it was, and worth its own look:** when an action in the pane fails, the inbox shows
+the reason behind the open pane, where it cannot be seen.

@@ -27,13 +27,13 @@ Tests are written first and seen to fail. One slice per pull request.
 
 **Interface**
 
-- [ ] T011 Jest: the inbox state has a view; the URL carries it; the actions offered depend on it
-- [ ] T012 The Inbox and Trash views; the trash's "trashed by, on" column
-- [ ] T013 "Move to trash" in the pane and the bulk actions, with confirmation and "Undo"
-- [ ] T014 "Restore" in the trash; the pane read-only for a trashed submission
-- [ ] T015 Playwright: trash one from the pane and undo; trash several, open the trash, restore
+- [x] T011 Jest: the inbox state has a view; the URL carries it; the actions offered depend on it
+- [x] T012 The Inbox and Trash views; the trash's "trashed by, on" column
+- [x] T013 "Move to trash" in the pane and the bulk actions, with confirmation and "Undo"
+- [x] T014 "Restore" in the trash; the pane read-only for a trashed submission
+- [x] T015 Playwright: trash one from the pane and undo; trash several, open the trash, restore
       one; measured spacing of the view switch and the trash line, both directions
-- [ ] T016 Guards; the guide; CHANGELOG with Client impact; PROGRESS; DECISIONS
+- [x] T016 Guards; the guide; CHANGELOG with Client impact; PROGRESS; DECISIONS
 
 ## Slice 2: delete permanently (US2; FR-009 to FR-016)
 
