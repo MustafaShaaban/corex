@@ -14,7 +14,7 @@
  * 2. **Print a slug.** States arrive as `{ key, label }` from the server, which owns the vocabulary
  *    (spec 075, FR-2).
  */
-import { useCallback, useReducer, useState } from '@wordpress/element';
+import { useCallback, useReducer } from '@wordpress/element';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import EditorialPanel from './EditorialPanel.js';
@@ -29,6 +29,7 @@ import {
 	initialBlogState,
 	normalizeAnalytics,
 } from './blogProState.js';
+import { usePending, workingProps } from '../admin/components/working.js';
 
 /**
  * Seconds, said the way a person would say them.
@@ -67,7 +68,10 @@ export default function BlogProApp( { config = {} } ) {
 			? config.shareControls
 			: [],
 	} );
-	const [ busy, setBusy ] = useState( false );
+	// Which request is out. It was one flag, set by all three, so "Refresh" read
+	// "Refreshing…" while a post was being moved and "Apply" read "Applying…" during a refresh.
+	const [ pending, during ] = usePending();
+	const busy = pending !== '';
 
 	const hasAnalytics = Boolean( config.analytics?.has_data );
 	const selectedPost = config.selectedPost || null;
@@ -78,14 +82,11 @@ export default function BlogProApp( { config = {} } ) {
 	 * The reducer's `loaded` case had no caller either; this is it.
 	 */
 	const refresh = useCallback( async () => {
-		setBusy( true );
 		try {
 			const payload = await loadBlogData( config, config.selectedPostId );
 			dispatch( { type: 'loaded', payload } );
 		} catch ( failure ) {
 			dispatch( { type: 'error', message: failure.message } );
-		} finally {
-			setBusy( false );
 		}
 	}, [ config ] );
 
@@ -98,7 +99,6 @@ export default function BlogProApp( { config = {} } ) {
 	 */
 	const applyTransition = useCallback(
 		async ( payload ) => {
-			setBusy( true );
 			try {
 				const editorial = await transitionPost(
 					config,
@@ -109,8 +109,6 @@ export default function BlogProApp( { config = {} } ) {
 				await refresh();
 			} catch ( failure ) {
 				dispatch( { type: 'error', message: failure.message } );
-			} finally {
-				setBusy( false );
 			}
 		},
 		[ config, refresh ]
@@ -118,7 +116,6 @@ export default function BlogProApp( { config = {} } ) {
 
 	const applyModeration = useCallback(
 		async ( commentId, action ) => {
-			setBusy( true );
 			try {
 				const result = await moderateComment(
 					config,
@@ -135,8 +132,6 @@ export default function BlogProApp( { config = {} } ) {
 				await refresh();
 			} catch ( failure ) {
 				dispatch( { type: 'error', message: failure.message } );
-			} finally {
-				setBusy( false );
 			}
 		},
 		[ config, refresh ]
@@ -203,12 +198,11 @@ export default function BlogProApp( { config = {} } ) {
 					type="button"
 					className="corex-blog-pro__refresh"
 					data-corex-blog-refresh
-					onClick={ refresh }
+					onClick={ () => during( 'refresh', refresh ) }
 					disabled={ busy }
+					{ ...workingProps( pending === 'refresh' ) }
 				>
-					{ busy
-						? __( 'Refreshing…', 'corex' )
-						: __( 'Refresh', 'corex' ) }
+					{ __( 'Refresh', 'corex' ) }
 				</button>
 			</div>
 
@@ -281,7 +275,12 @@ export default function BlogProApp( { config = {} } ) {
 					<EditorialPanel
 						editorial={ state.editorial }
 						busy={ busy }
-						onTransition={ applyTransition }
+						working={ pending === 'transition' }
+						onTransition={ ( payload ) =>
+							during( 'transition', () =>
+								applyTransition( payload )
+							)
+						}
 					/>
 				</Card>
 
@@ -300,7 +299,12 @@ export default function BlogProApp( { config = {} } ) {
 					<ModerationPanel
 						comments={ state.comments }
 						busy={ busy }
-						onModerate={ applyModeration }
+						pending={ pending }
+						onModerate={ ( commentId, action ) =>
+							during( `moderate:${ commentId }:${ action }`, () =>
+								applyModeration( commentId, action )
+							)
+						}
 					/>
 				</Card>
 
