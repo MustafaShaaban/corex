@@ -90,10 +90,9 @@ On `main` since v0.43.3, not in a release:
 - **`CONTRIBUTING.md` describes the browser suite as it runs** (#283). "Browser verification"
   named `.github/workflows/e2e.yml`, deleted in 0.41.0, and a local run that started wp-env and
   drove another address. It now describes the `e2e` job of `ci.yml` and what a local run needs, the must-use
-  fixtures among them: copied by hand, documented in that one place. Comments in `tests/e2e/`
-  that said the same are corrected; no code changed. #281 is open and makes
-  `scripts/setup-wordpress.ps1` copy the fixtures; when it lands, the section's "Locally" part
-  can say the script does it.
+  fixtures among them, documented in that one place. Comments in `tests/e2e/` that said the same
+  are corrected; no code changed. The section's "Locally" part says the setup script makes the
+  copy, since #281.
 - **What WordPress prints before the page is inside the CoreX shell** (#277, DECISIONS #263).
   The core update nag sat in a band above the shell and pushed every CoreX screen 54px down, on
   any install with a core update pending; CI installs the latest WordPress and never saw it. The
@@ -101,6 +100,13 @@ On `main` since v0.43.3, not in a release:
   the shell prints it under the page header, drawn as a CoreX alert. Nothing is hidden.
   `admin-core-notices.spec.js` asks for a pending update through a fixture and measures the
   result on every route, in dark and light, in both directions, at four widths.
+- **`scripts/setup-wordpress.ps1` installs the browser suite's fixtures** (#281). Two files said it
+  copied `tests/e2e/fixtures/corex-e2e-client-guide.php` into `wp/wp-content/mu-plugins/` and it
+  had no such step; the second fixture, `corex-e2e-core-notices.php`, said to copy it by hand. The
+  script now copies every `tests/e2e/fixtures/corex-e2e-*.php` into the single-site install, and
+  the browser job in CI copies the same pattern in one step. Not into `-Multisite`, and not into
+  an install with a client site linked, where the commands are printed instead. Run for real
+  against a throwaway database in all three cases. Both docblocks say the same thing now.
 
 Released in v0.43.3: the submission detail pane (spec 103 slice 4, DECISIONS #259) and three
 reports from the first client site's v0.43.2 update: route permission callbacks and the

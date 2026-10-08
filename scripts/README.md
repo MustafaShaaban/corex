@@ -17,8 +17,15 @@ pwsh ./scripts/setup-wordpress.ps1 -SiteUrl http://corex.local -AdminEmail you@e
 ```
 
 What it does: installs WordPress into `./wp` (gitignored) → generates `wp-config.php` → creates the
-DB → installs the site → junctions `theme/` and `plugins/*` into `wp/wp-content/` → activates the
-Corex theme + plugins → verifies. It auto-detects the WAMP MySQL client and puts it on `PATH`.
+DB → installs the site → junctions `theme/` and `plugins/*` into `wp/wp-content/` → copies the
+browser suite's fixtures into `wp/wp-content/mu-plugins/` → activates the Corex theme + plugins →
+installs the Corex schema → verifies. It auto-detects the WAMP MySQL client and puts it on `PATH`.
+
+The fixtures are every `tests/e2e/fixtures/corex-e2e-*.php`: must-use plugins the Playwright specs
+rely on, and the same files the browser job in `.github/workflows/ci.yml` copies. They are copied,
+not linked, so re-run the script after editing one. `-Multisite` copies none, and neither does a
+run that links a client site: a must-use plugin is active as soon as the file is there, so the
+commands to copy them are printed at the end instead.
 
 In a client repository it also junctions every client plugin and theme under `sites/` into that
 install — `sites/<client>/<x>-site` and `<x>-theme`, or the older `sites/<client>/plugins/*` and

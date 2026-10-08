@@ -21,8 +21,13 @@ defined('ABSPATH') || exit;
  * reach for first.
  *
  * An mu-plugin so it is active from the moment WordPress loads, with no activation step for a
- * provisioning script to forget. Copied into `wp/wp-content/mu-plugins/` by
- * `.github/workflows/ci.yml` and by `scripts/setup-wordpress.ps1`.
+ * provisioning script to forget.
+ *
+ * Every `tests/e2e/fixtures/corex-e2e-*.php` is copied into `wp/wp-content/mu-plugins/` by the
+ * browser job in `.github/workflows/ci.yml`, and on a development install by
+ * `scripts/setup-wordpress.ps1`. The script copies into the single-site install only, and not
+ * once a client site is linked there: it prints the command instead. A copy does not follow an
+ * edit, so run the script again after changing this file.
  */
 add_filter('corex_guides', static function (array $guides): array {
     if (! class_exists(\Corex\Guides\Guide::class)) {

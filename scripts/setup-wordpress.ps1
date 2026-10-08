@@ -12,7 +12,12 @@
 
     Steps: ensure the MySQL client is on PATH -> download WP core into ./wp -> create wp-config.php
     -> create the database -> install WordPress -> junction theme/ and plugins/* into
-    wp/wp-content -> activate the Corex theme + plugins -> verify.
+    wp/wp-content -> copy the browser suite's fixtures into wp/wp-content/mu-plugins -> activate
+    the Corex theme + plugins -> install the Corex schema -> verify.
+
+    The fixtures are every tests/e2e/fixtures/corex-e2e-*.php, the files the browser job in
+    .github/workflows/ci.yml copies. They go into the single-site install only, and not into one
+    that has a client site linked: there the command to copy them is printed at the end.
 
     In a client repository it also junctions every client plugin and theme under sites/ into the
     single-site install (spec 102). Those are linked and not activated: switching a client's
@@ -224,6 +229,37 @@ if ($clientLinks.Count -gt 0) {
     }
 }
 
+# The browser suite's fixtures: every tests/e2e/fixtures/corex-e2e-*.php, as a must-use plugin of
+# the single-site install, which is the one the suite drives. Copied, as the browser job in
+# .github/workflows/ci.yml copies the same files, and copied again on every run, so a re-run is
+# what refreshes a fixture that was edited. Copied rather than linked: a junction is for a
+# directory, and a symbolic link to a file needs elevation.
+#
+# Not into -Multisite, for the reason no client site is linked there: that install mirrors
+# .github/actions/provision-wordpress, which installs no must-use plugin.
+#
+# And not once a client site is linked. A must-use plugin is active from the moment the file is
+# there, which is the one thing this script does not do to a client's install: the client-guide
+# fixture would put a guide of its own on that site's Guides screen. The command is printed at
+# the end instead, for whoever runs the framework's browser suite against that install.
+$fixturesDir = Join-Path $Root 'tests\e2e\fixtures'
+$e2eFixtures = @()
+if (-not $Multisite -and (Test-Path $fixturesDir)) {
+    $e2eFixtures = @(Get-ChildItem $fixturesDir -Filter 'corex-e2e-*.php' -File)
+}
+$copyFixtures = $e2eFixtures.Count -gt 0 -and $clientLinks.Count -eq 0
+if ($copyFixtures) {
+    $muPluginsDir = Join-Path $WpPath 'wp-content\mu-plugins'
+    New-Item -ItemType Directory -Force -Path $muPluginsDir | Out-Null
+    Write-Host "Copying browser-test fixtures -> wp-content\mu-plugins:"
+    foreach ($fixture in $e2eFixtures) {
+        # -ErrorAction Stop: under 'Continue' a failed copy is a red line the run carries on past.
+        try   { Copy-Item $fixture.FullName -Destination $muPluginsDir -Force -ErrorAction Stop }
+        catch { Fail ("Could not copy {0} into mu-plugins: {1}" -f $fixture.Name, $_.Exception.Message) }
+        Write-Host ("  copied    {0}" -f $fixture.Name)
+    }
+}
+
 # --- 6. Activate theme + plugins ---
 # corex-core FIRST. corex-blocks and corex-config declare "Requires Plugins: corex-core", and WP-CLI
 # activates in the order it is given — an alphabetical list puts both ahead of what they depend on
@@ -335,6 +371,13 @@ if ($clientLinks.Count -gt 0) {
     foreach ($link in $clientLinks) {
         Write-Host ("  wp {0} activate {1} --path={2}" -f $link.Kind, $link.Name, $WpDir)
     }
+}
+if ($e2eFixtures.Count -gt 0 -and -not $copyFixtures) {
+    $muPluginsRel = Join-Path $WpDir 'wp-content\mu-plugins'
+    Write-Host "`nThe browser suite's fixtures were not copied: a must-use plugin is active as soon as it is there."
+    Write-Host "To run the framework's browser suite against this install:"
+    Write-Host "  New-Item -ItemType Directory -Force $muPluginsRel | Out-Null"
+    Write-Host "  Copy-Item tests\e2e\fixtures\corex-e2e-*.php $muPluginsRel"
 }
 Write-Host "`nSite : $SiteUrl"
 Write-Host "Admin: $SiteUrl/wp-admin/  ($AdminUser)"

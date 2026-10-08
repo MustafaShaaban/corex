@@ -83,7 +83,7 @@ async function openWith( page, slug, notices ) {
 	// and every measurement below would pass on a page that has nothing on it.
 	await expect(
 		page.locator( INFO ),
-		`${ slug }: core-notices fixture missing — copy tests/e2e/fixtures/corex-e2e-core-notices.php into wp/wp-content/mu-plugins/`
+		`${ slug }: core-notices fixture missing — run scripts/setup-wordpress.ps1, or copy tests/e2e/fixtures/corex-e2e-core-notices.php into wp/wp-content/mu-plugins/`
 	).toHaveCount( 1 );
 
 	// WordPress's own script adds this button, in the pass that moves notices to its marker. Its

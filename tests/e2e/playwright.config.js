@@ -6,7 +6,8 @@
  * COREX_ADMIN_PASS (the defaults, and COREX_LOGIN_PATH, are in global-setup.js). To run locally:
  *   1. Serve the install (on the WAMP setup: start WAMP, so http://corex.local serves) with the
  *      bundles built: npm run build.
- *   2. Copy every tests/e2e/fixtures/corex-e2e-*.php into its wp-content/mu-plugins/.
+ *   2. Have every tests/e2e/fixtures/corex-e2e-*.php in its wp-content/mu-plugins/.
+ *      scripts/setup-wordpress.ps1 copies them into ./wp; copy them into any other install.
  *   3. npx playwright install chromium
  *   4. npm run test:e2e
  *

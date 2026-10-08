@@ -159,8 +159,6 @@ add-ons active, which is the install `scripts/setup-wordpress.ps1` makes. Then, 
 ```bash
 npm run build                        # the bundles are not committed
 npx playwright install chromium      # the browser, once
-mkdir -p wp/wp-content/mu-plugins    # the must-use fixtures (below)
-cp tests/e2e/fixtures/corex-e2e-*.php wp/wp-content/mu-plugins/
 npm run test:e2e
 ```
 
@@ -174,10 +172,18 @@ The suite reads where the site is, and who signs in, from the environment:
 | `COREX_WP_PATH` | `./wp` | `COREX_BASE_URL` serves an install somewhere else. A few specs reach the install through WP-CLI, and skip those steps where WP-CLI is not available |
 
 **The must-use fixtures.** Every `tests/e2e/fixtures/corex-e2e-*.php` has to be in `wp-content/mu-plugins/` of
-the install the suite drives. The `mkdir` and `cp` above make the same copy the CI job makes, for an install in
-`./wp`; for an install anywhere else, copy the files into its `wp-content/mu-plugins/`. They are copies, so make
-them again after editing a fixture. A must-use plugin is active as soon as the file is there, and one of these
-adds a guide to the Guides screen, so copy them only into an install kept for development.
+the install the suite drives. `scripts/setup-wordpress.ps1` copies them into `./wp` on every run, the same copy
+the CI job makes. It copies none into the `-Multisite` install, and none once a client site under `sites/` is
+linked: there it prints the commands instead. For an install made any other way, make the copy yourself:
+
+```bash
+mkdir -p wp/wp-content/mu-plugins
+cp tests/e2e/fixtures/corex-e2e-*.php wp/wp-content/mu-plugins/
+```
+
+They are copies, so run the script, or make the copy, again after editing a fixture. A must-use plugin is
+active as soon as the file is there, and one of these adds a guide to the Guides screen, so copy them only
+into an install kept for development.
 
 **Other installs.** The Docker entrypoint (`docker/php/entrypoint.sh`) and the manual steps of the
 [Linux](docs/en/00-getting-started/linux.md) and [macOS](docs/en/00-getting-started/macos.md) guides link the

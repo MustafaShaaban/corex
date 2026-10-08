@@ -28,8 +28,13 @@ defined('ABSPATH') || exit;
  * neither read nor written. Without the query argument this file does nothing, and it does
  * nothing for somebody who may not update core.
  *
- * An mu-plugin so it is active with no activation step. Copied into `wp/wp-content/mu-plugins/`
- * by `.github/workflows/ci.yml`; on a development install, copy it there by hand.
+ * An mu-plugin so it is active with no activation step.
+ *
+ * Every `tests/e2e/fixtures/corex-e2e-*.php` is copied into `wp/wp-content/mu-plugins/` by the
+ * browser job in `.github/workflows/ci.yml`, and on a development install by
+ * `scripts/setup-wordpress.ps1`. The script copies into the single-site install only, and not
+ * once a client site is linked there: it prints the command instead. A copy does not follow an
+ * edit, so run the script again after changing this file.
  */
 add_action('admin_init', static function (): void {
     // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- a read-only switch for one page load; it changes nothing that is stored.

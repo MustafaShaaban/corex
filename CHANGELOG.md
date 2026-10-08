@@ -27,6 +27,21 @@ All notable changes to Corex are documented here. The format follows
 - **A download from "Recent exports" that failed said nothing.** It says so now.
 - **An export whose file is no longer on the server is not offered for download.** It was listed
   with a "Download" that could only fail. It reads "No file to download."
+- **`scripts/setup-wordpress.ps1` installs the browser suite's fixtures, as two files said it
+  did.** The docblock of `tests/e2e/fixtures/corex-e2e-client-guide.php` and a comment in
+  `tests/e2e/admin-help-tab.spec.js` both said the script copied that fixture into
+  `wp/wp-content/mu-plugins/`. The script had no such step, so on a development install "a guide
+  registered by a client plugin still appears" failed until somebody copied the file by hand. The
+  second fixture, `corex-e2e-core-notices.php`, said to copy it by hand. The script now copies
+  every `tests/e2e/fixtures/corex-e2e-*.php` there, on every run, so a re-run refreshes a fixture
+  that was edited. The browser job in `.github/workflows/ci.yml` copies the same pattern in one
+  step where it named each file in a step of its own, so a fixture added to the directory reaches
+  both. The two docblocks now say the same thing, and `CONTRIBUTING.md` and the header of
+  `tests/e2e/playwright.config.js` say the script makes the copy.
+
+  Two installs get no copy. `-Multisite` does not, because that install mirrors
+  `.github/actions/provision-wordpress`, which installs no must-use plugin. A run that links a
+  client site does not either, and prints the commands instead.
 - **A message's sender and its attachments never reached the mail driver** (#150). A sender set
   with `MailRequest::$from` or `MessageBuilder::from()`, and files added with `attachments` or
   `attachMedia()`, were accepted, kept across the queue, and dropped on every send: the mail left
@@ -122,6 +137,16 @@ request, so WordPress prints its own notice whatever version the install runs.
   `AdminPage::open()`.
 - **The notice change asks nothing of a site on update**, and nothing to rebuild: the shell's
   stylesheet is not a built file.
+- **Re-running `scripts/setup-wordpress.ps1` in a repository with a site under `sites/` copies no
+  browser-test fixture.** A must-use plugin is active as soon as the file is there, and the
+  client-guide fixture adds a guide named "Client plugin guide" to the Guides screen. To run the
+  framework's browser suite against such an install, use the two commands the script prints at
+  the end.
+- **A new client repository gets the fixtures on its first run**, because the procedure runs the
+  script before `wp corex make:site` and there is no site to recognise yet. They are
+  `wp/wp-content/mu-plugins/corex-e2e-*.php`; delete them if that install is ever shown to
+  anyone but a developer. The dist builder packages neither `tests/` nor the install's
+  `wp-content`, so they reach no artifact.
 
 
 ## [0.43.3] — 2026-10-07
