@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 1134,
+    "consumer_records": 1135,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -706,6 +706,7 @@
         "--corex-admin-space-xs",
         "--corex-admin-state-border",
         "--corex-admin-success",
+        "--corex-admin-success-soft",
         "--corex-admin-surface",
         "--corex-admin-surface-alt",
         "--corex-admin-surface-raised",

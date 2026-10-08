@@ -2062,6 +2062,323 @@ body.corex-admin-screen .corex-admin__shell {
 	margin-inline-end: -1px;
 }
 
+/* The export dialog (spec 103): what to export, which columns, the format,
+   then one line and one button. It is here, and not with the Submissions
+   inbox it was written for, because the Data screen opens the same dialog. */
+.corex-admin .corex-export__group {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	min-inline-size: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.corex-admin .corex-export__group > legend {
+	margin-block-end: var(--corex-admin-space-sm);
+	padding: 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-md);
+	font-weight: 600;
+}
+
+.corex-admin .corex-export p {
+	margin: 0;
+}
+
+.corex-admin .corex-export__scopes {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+}
+
+/* Two lines each, so a little more between them than within them. */
+.corex-admin .corex-export__columns {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+}
+
+/*
+ * WordPress gives a checkbox and a radio a negative top margin, for sitting in
+ * a line of text. In a grid or a flex row that lifts them off the line they
+ * belong to. Here each stands in a box one line tall and is centred in it, so
+ * it is level with the first line of its label whatever size the input is.
+ */
+.corex-admin .corex-export input[type="checkbox"],
+.corex-admin .corex-export input[type="radio"] {
+	flex: none;
+	margin: 0;
+}
+
+.corex-admin .corex-export__box {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	block-size: 1lh;
+}
+
+/* Each scope is one target: its name, its count, and what it covers. */
+.corex-admin .corex-export__scope {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-sm);
+	align-items: center;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	cursor: pointer;
+}
+
+.corex-admin .corex-export__scope.is-chosen {
+	background: color-mix(in srgb, var(--corex-admin-action) 8%, var(--corex-admin-surface));
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-export__scope.is-disabled {
+	color: var(--corex-admin-text-muted);
+	cursor: not-allowed;
+}
+
+.corex-admin .corex-export__scope:focus-within {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-admin .corex-export__scope-name,
+.corex-admin .corex-export__column-name {
+	font-weight: 600;
+}
+
+.corex-admin .corex-export__count {
+	color: var(--corex-admin-text-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.corex-admin .corex-export__detail {
+	display: block;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-export__scope .corex-export__detail {
+	grid-column: 2 / -1;
+}
+
+.corex-admin .corex-export__check {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-export__column {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: var(--corex-admin-space-sm);
+	align-items: start;
+}
+
+.corex-admin .corex-export__column-name {
+	cursor: pointer;
+}
+
+.corex-admin .corex-export__column-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-export__tag {
+	padding-inline: var(--corex-admin-space-xs);
+	color: var(--corex-admin-warning);
+	background: var(--corex-admin-warning-soft);
+	border-radius: var(--corex-admin-radius-pill);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+}
+
+/* The file type, and beside it whatever that type lets a person choose. */
+.corex-admin .corex-export__format {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 16rem));
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-export__notice {
+	align-items: flex-start;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	background: var(--corex-admin-warning-soft);
+	border-inline-start: var(--corex-admin-space-2xs) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-export__outcome {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	justify-items: start;
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	background: var(--corex-admin-surface);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-export__outcome.is-success {
+	background: var(--corex-admin-success-soft);
+}
+
+.corex-admin .corex-export__outcome.is-error {
+	background: var(--corex-admin-error-soft);
+}
+
+.corex-admin .corex-export__outcome p {
+	margin: 0;
+}
+
+.corex-admin .corex-export__progress {
+	inline-size: 100%;
+	accent-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-export__recent h3 {
+	margin: 0 0 var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-xs);
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-export__recent ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+/* One past export: what it was on the left, what can be done with it on the
+   right, and a rule between one export and the next. On a narrow dialog the
+   actions go under the text. */
+.corex-admin .corex-export__entry {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: start;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);
+	margin: 0;
+	padding-block: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-export__entry:first-child {
+	padding-block-start: 0;
+}
+
+.corex-admin .corex-export__entry:last-child {
+	padding-block-end: 0;
+	border-block-end: 0;
+}
+
+.corex-admin .corex-export__entry-text {
+	display: grid;
+	flex: 1 1 16rem; /* corex-token-allow: the measure under which the actions wrap below the text */
+	gap: var(--corex-admin-space-2xs);
+	min-inline-size: 0;
+}
+
+/* WordPress sizes a paragraph itself; these are the entry's size. */
+.corex-admin .corex-export__entry-text p {
+	font-size: inherit;
+}
+
+/* What the export covered is its name. One whose file is gone is not a thing
+   to act on, and is written quieter. */
+.corex-admin .corex-export__entry-what {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.corex-admin .corex-export__entry:not(.is-ready) .corex-export__entry-what {
+	color: var(--corex-admin-text-muted);
+}
+
+/* Facts side by side, spaced and not punctuated: a separator at the end of a
+   wrapped line belongs to nothing. */
+.corex-admin .corex-export__entry-facts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-export__entry-text .corex-export__entry-file {
+	font-size: var(--corex-admin-font-xs);
+}
+
+/* Never narrower than what is in it: squeezed, the last button's label ran
+   past the edge of the dialog. */
+.corex-admin .corex-export__entry-actions {
+	display: flex;
+	flex: none;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-xs) var(--corex-admin-space-md);
+	max-inline-size: 100%;
+}
+
+/* stylelint-disable-next-line no-descending-specificity */
+.corex-admin .corex-export__entry-actions .components-button {
+	flex: none;
+}
+
+/* A link is a line of text, and still something a finger has to hit. This is
+   the smallest target WCAG 2.2 accepts (2.5.8). */
+/* stylelint-disable-next-line no-descending-specificity */
+.corex-admin .corex-export__entry-actions .components-button.is-link,
+.corex-admin .corex-export__recent-more.components-button.is-link {
+	min-block-size: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-export__recent-more {
+	margin-block-start: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-export__recent-problem {
+	margin-block-end: var(--corex-admin-space-xs);
+	color: var(--corex-admin-error);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-export__recent h3:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+/* Why the export cannot start, beside the buttons. It shares their row, so
+   the buttons do not move when it has nothing to say and no band is left
+   empty above them. On a narrow dialog it takes a row of its own. */
+.corex-admin .corex-export__footer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-export__summary {
+	flex: 1 1 14rem; /* corex-token-allow: the measure the reason keeps before it takes a row of its own */
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+/* Kept at the end of the row, and at the end of a row of their own when the
+   reason beside them has taken the first. */
+.corex-admin .corex-export__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: var(--corex-admin-space-sm);
+	margin-inline-start: auto;
+}
+
 /*
  * What WordPress prints before the page: core's update nag and every
  * notice hooked on `admin_notices`. ScreenNotices (corex-config) captures
