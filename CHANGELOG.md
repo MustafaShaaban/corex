@@ -6,6 +6,19 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.43.4] — 2026-10-08
+
+The shared-host `dist` package loads the framework, which it never did, and that is why this is
+released today: a client's move to a host with no shell was waiting on a package that boots. A
+package built by an earlier version has to be rebuilt, and its layout changed.
+
+It also holds what had landed since v0.43.3: the export history with expiry and delete, the Data
+export written as a readable CSV or Excel file kept on disk, mail leaving from the sender a
+message names with its attachments, and WordPress's own notices drawn inside the CoreX shell. Like
+the two releases before it, it carries a patch number and is more than a patch for a site: two
+interfaces changed, exports already on a site start expiring, and a site that names a mail sender
+starts sending from it. Read Client impact before taking it.
+
 ### Added
 
 - **The export history says what each export was** (spec 103, slice 5). It was a date, a count
