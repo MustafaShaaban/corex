@@ -8772,6 +8772,72 @@ placeholders; they are built from the same bars as the ones that were. No screen
   these two screens. It was looked at here and on Email Studio.
 - The catalog's placeholder is four rows whatever the site has.
 
+## #291 — The two screens that are not React, and a card that cannot know how tall it will be
+
+**Date:** 2026-10-09. **Spec:** 108, slice 5 (T050 to T053). **Branch:** `feat/108-insights-wizard-placeholders`.
+
+Insights and the setup wizard are plain scripts that draw markup. They cannot import the
+wrapper, so they write what it writes: the placeholder's class names, `data-corex-state` and
+`aria-busy` on the root, the placeholder hidden from assistive technology.
+
+**An Insights card does not know whether it has been run until the last results arrive.** It
+drew "Not run yet" and a dash at once and filled in afterwards, so for as long as the request
+took a check that had been run said it never had. It draws a placeholder for its score, a few
+lines for its body and one for when it was last checked. Its button is held until the results
+are in: a check started before them would be overwritten by them.
+
+**It cannot know how tall it will be.** On the test site a waiting card is 319px and the card
+that replaces it 524px, because that site's results carry measures and recommendations; a
+site that has never run a check has a card shorter than the placeholder. The placeholder is
+the middle of the two. SC-002 asks that nothing outside a surface moves by more than a few
+pixels, and here it does, by what the answer holds. That is said, not hidden: the criterion
+is met where the shape is known and not here.
+
+**The widgets hold their place with three placeholders**, though the server decides how many
+there are (five on the test site). The screen was two cards and then seven.
+
+**Both of the screen's silent failures are said.** The last results failing is said on each
+card, in the slot a failed check already used. The widgets failing is the shared error
+state's markup, where they would have been, with a retry.
+
+**The wizard hides the no-script form the moment its script runs**, and draws the step that
+is coming. The form used to stand until the wizard's state arrived and then be swapped for
+it, which is two different screens in a row. If the state cannot be read, the form comes
+back: it is the one thing on the screen that still works.
+
+**The plan step is not a placeholder.** The spec lists it. Since slice 2 the "Next" that
+asks for the plan is working until the plan has arrived, and the step is drawn with it. A
+step shown first and filled in after would be a second way of saying the same wait.
+
+**A bar with no width draws nothing, three times.** A bar is a share of its parent. In this
+slice the card's score and its "last checked" were as wide as their text, which a placeholder
+has none of; in the last it was the flow editor's toolbar, and before that a preference's
+label. Each was seen in a screenshot, not in a test, until the tests were given a width to
+check. The docs say it now.
+
+**And one mistake of mine.** The rule that gave the score a width was inserted in the middle
+of a selector list, which made the card's header and footer 3rem wide blocks. The linter
+passed it. It was the screenshot that showed a score box under its title.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `npx wp-scripts test-unit-jest` | 834 passed, 77 suites |
+| `insights-loading`: five tests driving the real script against held answers | passed |
+| `loading-states`, `setup-settings-insights`, `smoke` on `corex.local` | 33 passed |
+| Held back and looked at, dark theme: the Insights cards and widgets, the wizard | as intended, after the two fixes above |
+
+**Not run.** The light theme and right-to-left for these two screens. No screen reader.
+
+**Left open.**
+
+- The wizard announces nothing while it loads; Insights does. The wizard's wait is one
+  request on a screen whose heading has already been read.
+- The Submissions inbox is the one screen left (slice 6), with the export dialog it shares
+  with the Data screen, whose counts read "…" until they arrive. It waits on the session that
+  is building in the inbox.
+
 ## #292 — A choice field takes what it offers, an empty file part is no file, and a pattern is one expression
 
 **Date:** 2026-10-09. **Spec:** none; four defects reported on 2026-10-08 from a client's contact

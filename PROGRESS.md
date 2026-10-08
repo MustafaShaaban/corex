@@ -159,7 +159,7 @@ readings are under the spec's Assumptions and are his to overrule.
 | 2 | The loader, and every action outside the Submissions inbox; `isBusy` gone | done (DECISIONS #285, #287, #288), unreleased. Of 55 controls that send a request, 50 are on the one working state. The other five are not buttons to mark: the three rows that open a record, a template and a flow are loads and get a placeholder in slices 3 and 4, and two are forms the server draws, where the page loading is the answer |
 | 3 | Data: records, totals, the search box, a record, export history, migrations | done (DECISIONS #289), unreleased. A placeholder row is the height of a real one (48px, measured at a width where a row is one line); the two tiles are the same height loading and ready. Found on the way and fixed: a record's detail was drawing the record as one line of JSON |
 | 4 | Forms and flows, Email Studio | done (DECISIONS #290), unreleased. A catalog placeholder row is 85px to a real row's 90px. Both screens are read once and stay: a save reads them again behind the button that is working |
-| 5 | Insights and the setup wizard | not started |
+| 5 | Insights and the setup wizard | done (DECISIONS #291), unreleased. The two screens that are not React, with the admin's class names written as markup. A waiting Insights card is 319px to a card with results' 524px on the test site: a card cannot know how much its result will say |
 | 6 | The Submissions inbox, agreed with the spec 105 session first | not started |
 
 Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
