@@ -153,7 +153,7 @@ reaches a site's files before the fourth.
 | 5 | Going back from the screen, and the record | not started |
 | 6 | The deployment guide | not started |
 
-**Spec 108, the admin shows what is coming while it loads, has its first slice built**
+**Spec 108, the admin shows what is coming while it loads, is built: all six slices**
 ([`specs/108-loading-states/`](specs/108-loading-states/spec.md)). The owner asked for a
 skeleton loader on every call and a better loader inside CoreX. Read as three things: a first
 load shows a placeholder in the shape of its content; a refresh keeps the content and marks it
@@ -169,7 +169,7 @@ readings are under the spec's Assumptions and are his to overrule.
 | 3 | Data: records, totals, the search box, a record, export history, migrations | done (DECISIONS #289), unreleased. A placeholder row is the height of a real one (48px, measured at a width where a row is one line); the two tiles are the same height loading and ready. Found on the way and fixed: a record's detail was drawing the record as one line of JSON |
 | 4 | Forms and flows, Email Studio | done (DECISIONS #290), unreleased. A catalog placeholder row is 85px to a real row's 90px. Both screens are read once and stay: a save reads them again behind the button that is working |
 | 5 | Insights and the setup wizard | done (DECISIONS #291), unreleased. The two screens that are not React, with the admin's class names written as markup. A waiting Insights card is 319px to a card with results' 524px on the test site: a card cannot know how much its result will say |
-| 6 | The Submissions inbox, agreed with the spec 105 session first | not started |
+| 6 | The Submissions inbox, agreed with the spec 105 session first | done (DECISIONS #298), unreleased. The list, the pane, every action in both, and the export dialog's counts and past exports. A placeholder row is 61px to a real row's 61px. WordPress's spinner is gone from the admin's scripts, and a test keeps it out. Found on the way: a first load that failed said the inbox was empty, and the trash showed the inbox's rows under its own headings while it loaded |
 
 Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
 deferred through WP-Cron on a site that has no Action Scheduler, and the queue runs whichever

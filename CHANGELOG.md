@@ -8,6 +8,17 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **The Submissions inbox shows what is coming while it loads** (spec 108, slice 6, the last).
+  The list is a table of placeholder rows until its first answer, and keeps its rows, dimmed,
+  while a filter or a page is on its way; the count above it waits with them. An open
+  submission is drawn as its sections until it is read. In the export dialog a count that has
+  not arrived is a bar where the number will be, and the past exports are drawn as coming until
+  they are known. WordPress's spinner is no longer used anywhere in the CoreX admin
+  (DECISIONS #298).
+- **Every action in the inbox marks the control that was pressed and cannot be sent twice**:
+  Undo, the bulk preview, the three confirmations, and in the pane: restore, mark read or
+  unread, send reply, resend, open log, add note, status and owner. In the pane one request is
+  out at a time, and the others wait until the submission has been read back.
 - **A release package can be given to a site, in parts, and read there** (spec 107, slice 3,
   the server's half). Five routes under `corex/v1/releases`: what is installed and what the
   host cannot do; a package received in parts, which goes on from where it stopped if the
@@ -185,6 +196,15 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **An inbox that could not be loaded said it was empty.** A first load that failed drew "No
+  matching submissions" under its error. The error stands where the rows would be, once, with
+  a way to ask again.
+- **The inbox said "0 accessible submissions" before it had been answered.** Nothing is said
+  of a count until there is one.
+- **Switching to the trash showed the inbox's rows under the trash's headings** until the
+  trash arrived, and the other way round. Each view is drawn as coming until it is answered.
+- **A past export could be downloaded or deleted twice by pressing twice** in the Submissions
+  export dialog.
 - **A file sent through a form is stored, on every site.** The attachment store called
   WordPress's `wp_handle_upload()`, which WordPress loads for an admin page and for nothing
   else. On a site where nothing else had loaded the admin's files, every submission that

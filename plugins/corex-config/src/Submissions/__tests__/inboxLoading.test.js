@@ -321,3 +321,47 @@ describe( 'an action above the list', () => {
 		expect( asked( aChange ) ).toBe( 2 );
 	} );
 } );
+
+describe( 'the export dialog', () => {
+	const theCounts = ( call ) => call.url === '/exports/preview';
+	const thePastExports = ( call ) =>
+		call.method === 'get' && call.url === '/exports';
+	const dialog = () => document.body.querySelector( '.corex-export' );
+
+	beforeEach( async () => {
+		await answer( theList, ok( page( row( 41, 'Salma' ) ) ) );
+		press( 'Export' );
+	} );
+
+	it( 'shows a bar where each count will be, and the number when it is known', async () => {
+		expect(
+			dialog().querySelectorAll(
+				'.corex-export__count .corex-admin-skeleton'
+			).length
+		).toBeGreaterThan( 0 );
+
+		await answer(
+			theCounts,
+			ok( { counts: { selected: 0, filtered: 60, accessible: 904 } } )
+		);
+
+		expect(
+			dialog().querySelector(
+				'.corex-export__count .corex-admin-skeleton'
+			)
+		).toBeNull();
+		expect( dialog().textContent ).toContain( '904' );
+	} );
+
+	it( 'shows past exports as coming until it knows, and nothing for somebody who has made none', async () => {
+		expect(
+			dialog().querySelector(
+				'.corex-admin-skeleton .corex-export__recent'
+			)
+		).not.toBeNull();
+
+		await answer( thePastExports, ok( { exports: [] } ) );
+
+		expect( dialog().querySelector( '.corex-export__recent' ) ).toBeNull();
+	} );
+} );

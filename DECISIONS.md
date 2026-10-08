@@ -9203,3 +9203,83 @@ What was run:
 
 **Not run.** The whole integration and browser suites; CI runs both. No upload was made on a
 multisite install or through the Careers add-on's own route, which uses the same store.
+
+## #298 — The inbox is drawn as coming until it is answered, and its pane sends one request at a time
+
+**Date:** 2026-10-09. **Spec:** 108, slice 6, the last (T060 to T064). **Branch:** `feat/108-inbox-loading`.
+
+**Agreed first (T060).** The session building spec 105 chose the order: its last change to the
+inbox (#311) merged, then this slice, and it opens nothing under `src/Submissions` or the
+shared export parts until this is pushed.
+
+**A view is known or it is not.** The inbox's state gained `hasPage`: whether the view on
+screen has been answered at all. `listStatus()` reads the four states a loadable surface has
+from it. Until a view is answered the list is placeholder rows, the count is a bar, and the
+pager and the trash's "kept for" line are not drawn, since each is a statement about an answer.
+This removed two things the screen was saying that it did not know: "No matching
+submissions" under the error of a first load that failed, and "0 accessible submissions"
+before any answer.
+
+**The inbox and its trash are two lists.** Switching used to keep the other view's rows on
+screen under the new view's headings until the answer came. `viewChanged` forgets them, so the
+trash is drawn as coming, not as the inbox with a different column.
+
+**A failure is said in one place.** With no rows there is nothing to keep, and the error
+stands where they would be, with the retry. With rows on screen it is said above them, as
+before, and the rows stay: they are still what the site last answered.
+
+**`data-status` on the screen is unchanged.** The browser specs wait on it, and five of them
+waited instead for the sentence "Loading submissions…" to go. There is no such sentence on
+screen any more (a screen reader is told after a second), so those waits passed at once and
+two tests measured the placeholder. They wait on `data-status` now.
+
+**The pane sends one request at a time.** Every change to a submission names the state it was
+made on (`expected_updated_at`), so a second one sent before the first has been read back is
+refused as stale. The pane holds one `usePending()`: the control that was pressed is the one
+that works, and every other control in the pane waits until the list and the submission have
+been read again. The two selects are switched off for that time; a select has no loader of
+its own.
+
+**The confirmations each hold their own.** Move to trash, delete for good and the bulk
+confirmation: the confirming button works until the dialog closes, and Cancel waits with it.
+`ConfirmDelete` had a flag of its own for this; it is the shared one now.
+
+**The placeholder row uses the row's button.** As a `span` it took the table's font, and a
+row was 65px to a real row's 61px: a button has WordPress's own font size. As a disabled
+button it is 61px. The placeholder table is `table-layout: fixed`, since its cells hold
+nothing to take a width from and a bar is a share of its cell.
+
+**A count that has not arrived is a bar, in both export dialogs.** The shared part printed
+"…". The bar is given the room a few digits take, since a number is what gives that cell its
+width. The counts are still asked for again when "include tests" changes, and are bars again
+until they come: the numbers before the change are the wrong numbers.
+
+**Past exports are drawn as coming, and may then not be there.** Somebody who has made no
+export sees two placeholder entries and then nothing. The spec asks for the placeholder;
+showing nothing until the list is known is how the section used to appear out of nowhere
+under a form that was being filled in.
+
+**No spinner is left.** `tests/repo-hygiene.test.js` fails if a script under
+`plugins/corex-config/src` names WordPress's `Spinner`, beside the test that does the same for
+`isBusy`.
+
+**Verification.**
+
+| What | Result |
+|---|---|
+| Jest, `plugins/corex-config/src/Submissions` | 139 passed; the new suite is 10, on the whole screen with the network held |
+| Jest, everything | 854 passed in 79 suites |
+| Pest, unit suite | 2508 passed |
+| Playwright, the inbox in `loading-states.spec.js` | 3 passed: placeholder and real rows and headings the same height and the count line where it was; rows kept and the count waiting while a filter is applied; the pane's placeholder, then a pressed control working at the same size with the others off |
+| Playwright, `submissions-inbox.spec.js`, `loading-states.spec.js`, `admin-controls.spec.js`, `data-management.spec.js` together | 54 passed, 2 failed. One is "moves submissions to the trash and restores them", on "the trash table is no wider than the inbox table" (27px over, 16 allowed): it fails on `main` on this machine too (63px), and the column it measures holds a date, whose width changes with the hour. The other is a Data export's download timing out, which this machine does when several specs run at once: `data-management.spec.js` alone is 8 passed |
+| Looked at | The list, the pane and the export dialog, each held while it waited, dark, 1280 |
+
+**Not run.** Light theme and right-to-left were not looked at for these placeholders; they are
+the shared bars the other five slices measured in both. No screen reader.
+
+**Left open.**
+
+- Opening an unread submission marks it read without going through the pane's one-at-a-time
+  rule: a control pressed in that moment can still be refused as stale. It was so before.
+- "Open log" says nothing when the log cannot be read. It was so before.
+- The trash-width test above is the spec 105 session's, and has been reported to it.
