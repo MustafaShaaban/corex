@@ -28,13 +28,25 @@ beforeEach(function () {
     $this->trash = new WpSubmissionTrashStore($this->reader);
     $this->administrator = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
     wp_set_current_user($this->administrator);
+    // Before as well as after: these tests list everything of their form, and a run that was
+    // stopped, or one made before the clean-up below was right, leaves rows a later run would list.
+    deleteTrashTestSubmissions();
 });
 
 afterEach(function () {
-    // By the form these tests give their submissions, in the inbox or in the trash. Not "the
-    // newest posts that were not here before": these are dated a week back, and once the install
-    // held 500 newer submissions that way found none of them, and each run left its own behind
-    // to be listed by the next.
+    deleteTrashTestSubmissions();
+    wp_set_current_user(0);
+});
+
+/**
+ * Delete every submission of the form these tests give theirs, in the inbox or in the trash.
+ *
+ * Not "the newest posts that were not here before": these are dated a week back, and once the
+ * install held 500 newer submissions that way found none of them, and each run left its own behind
+ * to be listed by the next.
+ */
+function deleteTrashTestSubmissions(): void
+{
     $ids = get_posts([
         'post_type' => 'corex_submission',
         'post_status' => ['private', 'trash'],
@@ -46,8 +58,7 @@ afterEach(function () {
     foreach ($ids as $id) {
         wp_delete_post((int) $id, true);
     }
-    wp_set_current_user(0);
-});
+}
 
 function trashableSubmission(string $team = 'sales', string $email = 'salma@example.com'): int
 {

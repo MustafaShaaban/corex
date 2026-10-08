@@ -8571,7 +8571,9 @@ trash's table to the inbox's width failed. The lines under the date wrap inside 
 **Found on the way: a test that left its rows behind.** `SubmissionTrashTest` cleaned up "the
 newest 500 submissions that were not there before", and its own are dated a week back. Once the
 install held 500 newer ones it found none, each run left eight in the trash, and the next run
-listed them. It cleans up by the form it gives its rows.
+listed them. It cleans up by the form it gives its rows, before each test as well as after:
+the other framework session met twelve of those rows on the shared development site on
+2026-10-09, where the test that lists the whole inbox of that form failed on them.
 
 What was run:
 
