@@ -349,8 +349,12 @@ jobs:
           # the one thing in that state a default PHP does not have. That it was the cause is
           # not proved. Off, the job serves what a site serves, and the fault has one place fewer
           # to come from.
-          echo 'opcache.jit=disable' | sudo tee /etc/php/8.3/fpm/conf.d/99-corex-no-jit.ini > /dev/null
-          echo 'opcache.jit_buffer_size=0' | sudo tee -a /etc/php/8.3/fpm/conf.d/99-corex-no-jit.ini > /dev/null
+          #
+          # Named to be read last. PHP reads a directory of settings in name order and the last
+          # file to set a value wins; the first attempt, `99-corex-no-jit.ini`, was read and
+          # overruled, which the step below is there to catch.
+          echo 'opcache.jit=disable' | sudo tee /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
+          echo 'opcache.jit_buffer_size=0' | sudo tee -a /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
           # restart, not start: installing the package already started it, with the old pool.
           sudo systemctl restart php8.3-fpm
           sudo nginx -t
@@ -381,11 +385,13 @@ jobs:
       # be a setting nobody has.
       - name: Prove the JIT is off
         run: |
-          echo '<?php echo json_encode( opcache_get_status( false )["jit"]["on"] ?? null );' > wp/corex-jit-probe.php
+          echo '<?php echo json_encode( array( "jit_on" => opcache_get_status( false )["jit"]["on"] ?? null, "opcache.jit" => ini_get( "opcache.jit" ), "opcache.jit_buffer_size" => ini_get( "opcache.jit_buffer_size" ), "settings_file" => php_ini_loaded_file(), "settings_read_after_it" => php_ini_scanned_files() ) );' > wp/corex-jit-probe.php
           answer=$(curl -sf http://127.0.0.1:8080/corex-jit-probe.php)
           rm wp/corex-jit-probe.php
-          if [ "$answer" != "false" ]; then
-            echo "php-fpm was asked whether the JIT is on and answered: ${answer:-nothing}"
+          # Printed whatever the answer, so that where php-fpm reads its settings from is on record.
+          echo "$answer" | jq . || echo "$answer"
+          if [ "$(echo "$answer" | jq '.jit_on')" != "false" ]; then
+            echo "php-fpm says the JIT is not off."
             exit 1
           fi
 
