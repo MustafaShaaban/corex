@@ -56,6 +56,17 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **With the mail queue on, a send still waited for the mail server on a site without Action
+  Scheduler** (#271). The `mail_queue` flag deferred a send only where Action Scheduler was
+  installed, and CoreX does not ship it, so a form's response waited for both of its
+  notification emails: three to four seconds on the site that reported it. WP-Cron takes the
+  queue now where Action Scheduler is absent. The message is kept in an option of its own, a
+  single cron event carries its id, and WordPress is asked to run due events as the request
+  ends. Action Scheduler is still used wherever it is installed, and is what a site that sends
+  to a long list wants (DECISIONS #273).
+- **A mail queue dispatcher a site bound itself was never run.** The queue's hook acted only
+  when the bound dispatcher was the Action Scheduler one. It calls `handle()` on whichever is
+  bound.
 - **A Data export of Form submissions left every answer's column empty**, in CSV and in Excel.
   The dialog offered a column for each answer (Email, Name, Message) and the file had the heading
   and nothing under it: a real one read `"2026-10-08 13:28",corex-inbox-e2e,"email:
@@ -78,6 +89,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **A site with `mail_queue` on and no Action Scheduler starts deferring its mail** when it takes
+  this. A message leaves on the next WP-Cron run, not inside the request. A site that sets
+  `DISABLE_WP_CRON` must run `wp-cron.php` from its own scheduler, or its mail waits; with the
+  flag off nothing changes.
+- **`Corex\Email\Queue\MailQueueDispatcher` has two more methods**, `name()` and `handle()`, and
+  the constant `HOOK`. A site's own dispatcher has to add both methods. `toArray()` and
+  `fromArray()` moved from `ActionSchedulerDispatcher` to `MailRequestPayload`.
 - **A site that hides its login should take this**, and may treat its login address as known if
   the site has been public: anyone who asked for `/wp-signup.php` was told it. Choosing a new
   address on the Security screen after updating is the remedy.

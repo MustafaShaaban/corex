@@ -88,6 +88,10 @@ or permanently delete a submission, which needs a spec.
 
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 
+Issue #271 is fixed and unreleased (DECISIONS #273): with the `mail_queue` flag on, a send is
+deferred through WP-Cron on a site that has no Action Scheduler, and the queue runs whichever
+dispatcher is bound. A real cron run was not observed; the test fires the hook itself.
+
 No dependency pull request is open. `@wordpress/scripts` 36 is taken (DECISIONS #272, unreleased):
 the tests stay on Jest, installed by this repository now that the toolchain no longer ships it,
 and **Node 22.22 is the floor** for building. #243 (`nikic/php-parser` 5.9) is merged.
