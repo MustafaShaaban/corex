@@ -117,7 +117,7 @@ the renderer for one form on one render, and is the published contract (FR-021):
 | `control(string $name, array $extra = [])` | the attributes a hand-written control needs: id, name, required, `aria-describedby` |
 | `fieldAttributes(string $name)` | what a field's wrapper must carry for an error to find it |
 | `label(string $name)`, `error(string $name)` | a field's label; the place its error is written |
-| `challenge()` | where a visible challenge is placed; empty when the form shows none |
+| `challenge()` | where a visible challenge is placed; empty when the form shows none. Arrives with the widget, in slice 4 |
 | `status()` | the region the confirmation and the general error are announced in |
 | `submit(array $extra = [])` | the button, with the form's label |
 
