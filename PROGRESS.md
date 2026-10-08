@@ -83,8 +83,20 @@ Unreleased, reported from the first client site's production host (DECISIONS #27
 login hidden, `/wp-signup.php` redirected a signed-out visitor to the hidden address. Probing
 found the same from `/wp-register.php` and `/wp-admin/customize.php`. All three answer "not
 found" now. A site that hides its login may treat its address as known and choose a new one
-after updating. Reported with it and not built yet: the Submissions inbox cannot trash, restore
-or permanently delete a submission, which needs a spec.
+after updating. Reported with it: the Submissions inbox cannot trash, restore or permanently
+delete a submission. That is spec 105, specified and not planned or built.
+
+Specified on 2026-10-08, neither planned nor built:
+
+- **Spec 105, trash, restore and permanently delete a submission.** Found while specifying: a
+  trashed submission is deleted for good by WordPress after 30 days, with nothing recorded and
+  any uploaded file left on disk; and anonymizing leaves an uploaded file too. What a permanent
+  delete removes was left to CoreX by the owner; the choice is the spec's first assumption.
+- **Spec 106, replies written and sent as designed emails**, the owner's request for Muva and
+  Perego: a rich-text reply, a standard template in CoreX's design, and a client's own template
+  in its place. Found while specifying: a reply sent today loses its line breaks, which is slice
+  0 and does not wait for the rest; CoreX's admin has no rich-text editor; and no email CoreX
+  sends has a plain-text version.
 
 Spec 101 (coming-soon mode) and spec 102 (update-safe client sites) are both in v0.43.0.
 
