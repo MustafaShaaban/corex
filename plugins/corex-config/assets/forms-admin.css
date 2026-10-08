@@ -74,6 +74,12 @@
 	gap: var(--corex-admin-space-md);
 }
 
+/* The toolbar's heading is as wide as its text, and a placeholder has none: it
+   is given the row, so its bars have a width to be a share of. */
+.corex-admin .corex-admin-skeleton .corex-flow-editor__toolbar > div {
+	flex: 1;
+}
+
 .corex-admin .corex-flow-list__filters,
 .corex-admin .corex-flow-editor__actions,
 .corex-admin .corex-flow-editor__add-field {

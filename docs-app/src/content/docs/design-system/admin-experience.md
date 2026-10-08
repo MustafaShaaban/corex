@@ -84,8 +84,13 @@ A surface that asks the server for its content is in one of four states, and it 
 | `ready` | The answer, which may be the empty state. |
 | `error` | The shared error state, with **Try again** where asking again can help. |
 
-The Notifications screen, its preferences, the header drawer and the Data screen work this way. The other screens
-are moved to it one at a time; until then they keep the loading sentence or spinner they had.
+The Notifications screen, its preferences, the header drawer, the Data screen, Forms and flows and Email Studio
+work this way. The other screens are moved to it one at a time; until then they keep the loading sentence or
+spinner they had.
+
+Not every reload is a refresh. A screen that reads itself again after a save, behind the button that is working,
+stays `ready`: the button already says what is happening, and content that turned inert would take the focus
+off it. `refreshing` is for a list a person asked to see differently.
 
 ### In a React screen
 
@@ -136,6 +141,9 @@ be and a `SkeletonBox` where an icon or a checkbox will be:
 ```
 
 Where a `div` may not go, in a paragraph or a heading, `<CorexSkeleton as="span">` draws a `span`.
+
+A placeholder drawn in a button's markup, for the button's grid, uses a disabled `button`: it cannot be pressed
+or tabbed to, and inside a placeholder it is not dimmed.
 
 A bar is as tall as a line of the element it is in, so the row is the height it will be with its text, from the
 same rules. `width` is `full`, `long`, `medium` or `short`. A bar's width is a share of its parent's, so a

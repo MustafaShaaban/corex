@@ -1342,6 +1342,12 @@ body.corex-admin-screen .corex-admin__shell {
 	background: var(--corex-admin-skeleton);
 }
 
+/* A placeholder drawn in a button's markup, for the button's grid, is not a
+   control that has been switched off: it is not dimmed as one is. */
+.corex-admin .corex-admin-skeleton button:disabled {
+	opacity: 1;
+}
+
 /* As tall as a line of the element it is put in, so the element is the height
    it will be with its text; painted as a bar in the middle of that line. */
 .corex-admin .corex-admin-skeleton__bar {
@@ -1465,16 +1471,20 @@ body.corex-admin-screen .corex-admin__shell {
 	animation: corex-loader-turn var(--corex-admin-motion-slow) linear infinite;
 }
 
-/* wp-admin paints every disabled `.button` grey, with `!important`, so a
-   working one looked switched off: a pale box on the dark theme where the
-   brass button had been. It keeps the colours it has when it is not working;
-   nothing less than `!important` answers wp-admin's. */
+/* wp-admin paints every disabled `.button` a pale grey, with `!important`:
+   a light box on the dark theme where the button had been, on every screen
+   that disables its buttons while it loads. A disabled CoreX button keeps the
+   colours it has when it is not disabled, and is dimmed by the rule that dims
+   every disabled control; a working one keeps them and is not dimmed. Nothing
+   less than `!important` answers wp-admin's. */
+.corex-admin .button:disabled,
 :is(.corex-admin, .corex-admin-screen) .button[data-corex-working] {
 	color: var(--corex-admin-text) !important;
 	background: var(--corex-admin-surface-raised) !important;
 	border-color: var(--corex-admin-border) !important;
 }
 
+.corex-admin .button-primary:disabled,
 :is(.corex-admin, .corex-admin-screen) .button-primary[data-corex-working] {
 	color: var(--corex-admin-action-ink) !important;
 	background: var(--corex-admin-action) !important;

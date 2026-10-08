@@ -163,7 +163,10 @@ export function useFlows( config ) {
 		pending,
 		load: ( search, lifecycle ) =>
 			during( 'filters', () => load( search, lifecycle ) ),
-		select,
+		// Named for the flow it opens, so the screen can draw the editor's placeholder while
+		// it is fetched. The commands above call the unnamed one: they are already named.
+		select: ( flowId ) =>
+			during( `open:${ flowId }`, () => select( flowId ) ),
 		create: ( values ) => during( 'create', () => create( values ) ),
 		saveDraft: () => during( 'saveDraft', saveDraft ),
 		publish: () => during( 'publish', () => transition( 'publish' ) ),

@@ -8710,6 +8710,68 @@ themes, left to right only.
 - New record, Edit record and Bulk edit are still WordPress modals, white on the dark theme,
   as the record's detail was.
 
+## #290 — Forms and flows and Email Studio are read once and stay, and a disabled button is the button, dimmed
+
+**Date:** 2026-10-09. **Spec:** 108, slice 4 (T040 to T044). **Branch:** `feat/108-forms-email-placeholders`.
+
+**Whether a screen has ever been answered is a fact it keeps, not one it guesses.** Email
+Studio told a first load from a later one by whether it had any templates. A new site that had
+been read has none, so every save there took the open form away to say "Loading Email
+Studio…". Forms and flows had no way to tell at all, and said "No forms match this view."
+whenever its list was empty and nothing was in flight, including the moment before it asked.
+Each state has a flag now, set by its first answer.
+
+**The catalog waits whole.** The forms defined in code are known when the page is drawn; the
+flows are asked for. The list used to show the first and then grow and reorder when the second
+arrived. It is a placeholder until both are known. After that its rows stay through a filter or
+a new flow, dimmed and inert.
+
+**Opening a flow, and choosing a template, show what is coming.** The flow's command has a name
+(`open:` and its id), and while it is out the screen draws the editor's placeholder where the
+catalog was. A template chosen from the list marks its row and draws the editor's placeholder.
+The marking is done where a person chooses, not where the studio reads a template again after a
+save: that would have replaced the open editor on every save.
+
+**A reload behind a working button is not a refresh.** After a save both screens read
+themselves again. Marking that `refreshing` would turn the screen inert and move the focus off
+the button that was pressed, to say what the button is already saying. They stay `ready`.
+Forms and flows' catalog is `refreshing` for a filter and for a new flow, whose buttons are
+outside it.
+
+**A disabled button was a pale box.** wp-admin paints every disabled `.button` light grey with
+`!important`. On the dark theme "Create draft" was a white-ish block for as long as the screen
+loaded, which this slice's first screenshot showed more plainly than anything it was there to
+show. A disabled `.button` in the CoreX admin keeps its own colours and is dimmed by the rule
+that dims every disabled control.
+
+**A placeholder drawn in a button's markup is a disabled button**, so its cells sit in the
+button's grid from the button's own rule; inside a placeholder it is not dimmed.
+
+Measured on the page:
+
+| | Placeholder | Real |
+|---|---|---|
+| A catalog row | 85px | 90px |
+| The editor's toolbar bars | have a width | were 0 wide at first: a share of a heading as wide as its text, which a placeholder has none of |
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `npx wp-scripts test-unit-jest` | 829 passed, 76 suites |
+| `loading-states`, `forms-flow`, `email-studio` on `corex.local` | 27 passed, none skipped |
+| Held back: the catalog, opening a flow, the studio's first load, a chosen template | each a placeholder, then its content; never "No forms match this view." first |
+| Looked at, dark theme: the catalog, the editor on its way, the studio, a chosen template | as intended, after the two fixes in the table above and the button |
+
+**Not run.** The light theme and right-to-left were not looked at for this slice's four
+placeholders; they are built from the same bars as the ones that were. No screen reader.
+
+**Left open.**
+
+- Every disabled `.button` in the CoreX admin changes colour with this, not only the ones on
+  these two screens. It was looked at here and on Email Studio.
+- The catalog's placeholder is four rows whatever the site has.
+
 ## #291 — A choice field takes what it offers, an empty file part is no file, and a pattern is one expression
 
 **Date:** 2026-10-09. **Spec:** none; four defects reported on 2026-10-08 from a client's contact
