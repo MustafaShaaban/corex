@@ -77,6 +77,11 @@ final class AttachmentStore implements AttachmentStorage
             return $uploads;
         };
 
+        // WordPress reads this file for an admin page and for nothing else, and this runs on a REST
+        // request from the front end. Without it `wp_handle_upload()` does not exist there, unless
+        // something else on the site happened to load the admin's files first.
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+
         add_filter('upload_dir', $intoProtected);
         // `test_form` off because the caller is a REST route, not a form post with WordPress's own
         // `action` field. Every other check `wp_handle_upload` makes is left on.
