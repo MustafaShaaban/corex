@@ -102,8 +102,8 @@ write only accepted rows from the confirmed checksum. Migration previews show th
 snapshot before queueing. Unsupported actions are omitted rather than presented as dead controls.
 
 The base `DataSource` remains read compatible. Add-ons opt into richer behavior with `QueryableDataSource`,
-`FieldAwareDataSource`, `CapabilityAwareDataSource`, `WritableDataSource`, or `MigrationAwareDataSource`; the UI never
-infers a write path without the matching adapter. See the
+`FieldAwareDataSource`, `ExportableDataSource`, `CapabilityAwareDataSource`, `WritableDataSource`, or
+`MigrationAwareDataSource`; the UI never infers a write path, or an export, without the matching adapter. See the
 [Data management guide](../../docs-app/src/content/docs/guides/data-management.mdx) for the extension contracts and
 safety model.
 

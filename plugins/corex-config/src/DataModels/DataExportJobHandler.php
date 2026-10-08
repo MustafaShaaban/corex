@@ -9,8 +9,7 @@ use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
 use Corex\Config\Data\DataQuery;
 use Corex\Config\Data\DataSourceService;
-use Corex\Config\Data\FieldAwareDataSource;
-use Corex\Config\Data\QueryableDataSource;
+use Corex\Config\Data\ExportableDataSource;
 use Corex\Jobs\BoundedJob;
 use Corex\Jobs\JobHandler;
 use DateTimeImmutable;
@@ -40,7 +39,7 @@ final readonly class DataExportJobHandler implements JobHandler
             throw new DomainException('The queued data export is unavailable.');
         }
         $source = $this->sources->authorize($job->actorId, $run->sourceKey, DataExportService::operationFor($run->format));
-        if (! $source instanceof QueryableDataSource || ! $source instanceof FieldAwareDataSource) {
+        if (! $source instanceof ExportableDataSource) {
             throw new DomainException('The data source export adapter is unavailable.');
         }
         $limit = max(1, min(100, $batchSize));
@@ -75,20 +74,22 @@ final readonly class DataExportJobHandler implements JobHandler
         return $advanced->complete('data-export:' . $run->id, new DateTimeImmutable('now'));
     }
 
-    /** @return list<array<string,mixed>> */
-    private function rows(QueryableDataSource $source, DataExportRun $run, int $offset, int $limit): array
+    /**
+     * The next batch, as the rows the source hands an export. However the records were chosen,
+     * they are read in that one shape: which shape a cell is read from is the source's to know.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function rows(ExportableDataSource $source, DataExportRun $run, int $offset, int $limit): array
     {
         if ($run->scope === DataExportRequest::SCOPE_SELECTED) {
-            return array_values(array_filter(array_map(
-                static fn (int $id): ?array => $source->record($id),
-                array_slice($run->selectedIds, $offset, $limit),
-            )));
+            return $source->exportRowsOf(array_slice($run->selectedIds, $offset, $limit));
         }
         $input = $run->scope === DataExportRequest::SCOPE_FILTERED ? $run->query : [];
         $input['page'] = intdiv($offset, $limit) + 1;
         $input['per_page'] = $limit;
 
-        return $source->query(DataQuery::from($input));
+        return $source->exportRows(DataQuery::from($input));
     }
 
     private function audit(DataExportRun $run, int $rows): void

@@ -18,9 +18,19 @@ use Corex\Data\DataSourceCapabilities;
  * The reference DataSource: stored form submissions (`corex_submission` posts). Shapes each
  * record into id/date/form/summary; the WP_Query + meta access lives in the injected reader
  * so this shaping is unit-tested headlessly (spec 030).
+ *
+ * A submission has three shapes here, each for one reader: the table's row (a summary of the
+ * answers), the detail view's record (each answer, labelled) and the export's row (each answer
+ * under the field declared for it). They are shaped in this class and nowhere else.
  */
-final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSource, TrendableDataSource, CapabilityAwareDataSource, FieldAwareDataSource
+final class SubmissionsSource implements ExportableDataSource, SchemaAwareDataSource, TrendableDataSource, CapabilityAwareDataSource
 {
+    /** The fields every submission has. An answer keyed like one of them gets no field of its own. */
+    private const OWN_FIELDS = ['date', 'form', 'summary'];
+
+    /** How many recent submissions are read to learn which answers there are. */
+    private const ANSWER_SAMPLE = 50;
+
     public function __construct(private readonly SubmissionsReader $reader)
     {
     }
@@ -52,15 +62,7 @@ final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSou
      */
     public function rows(int $page, int $perPage): array
     {
-        return array_map(
-            fn (array $record): array => [
-                'id'      => $record['id'],
-                'date'    => $record['date'],
-                'form'    => $record['form'],
-                'summary' => $this->summarize($record['fields']),
-            ],
-            $this->reader->page(max(1, $page), max(1, $perPage)),
-        );
+        return array_map($this->tableRow(...), $this->reader->page(max(1, $page), max(1, $perPage)));
     }
 
     public function total(): int
@@ -73,15 +75,17 @@ final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSou
      */
     public function query(DataQuery $query): array
     {
-        return array_map(
-            fn (array $record): array => [
-                'id'      => $record['id'],
-                'date'    => $record['date'],
-                'form'    => $record['form'],
-                'summary' => $this->summarize($record['fields']),
-            ],
-            $this->reader->query($query),
-        );
+        return array_map($this->tableRow(...), $this->reader->query($query));
+    }
+
+    public function exportRows(DataQuery $query): array
+    {
+        return $this->asExportRows($this->reader->query($query));
+    }
+
+    public function exportRowsOf(array $ids): array
+    {
+        return $this->asExportRows(array_values(array_filter(array_map($this->reader->find(...), $ids))));
     }
 
     public function count(DataQuery $query): int
@@ -152,16 +156,11 @@ final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSou
             new DataField('form', __('Form', 'corex'), DataField::TYPE_FORM, false, true, true, ['equals'], false, DataField::PERSONAL_NONE, [], []),
             new DataField('summary', __('Submission', 'corex'), DataField::TYPE_TEXTAREA, false, true, true, [], false, DataField::PERSONAL_CONTENT, [], []),
         ];
-        foreach ($this->reader->fieldKeys(50) as $key) {
-            $fieldKey = sanitize_key($key);
-            if (preg_match('/^[a-z][a-z0-9_-]*$/', $fieldKey) !== 1
-                || in_array($fieldKey, ['date', 'form', 'summary'], true)) {
-                continue;
-            }
-            $type = $this->inferType($key);
+        foreach ($this->answerFields() as $fieldKey => $answerKey) {
+            $type = $this->inferType($answerKey);
             $fields[] = new DataField(
                 key: $fieldKey,
-                label: ucwords(str_replace(['_', '-'], ' ', $key)),
+                label: ucwords(str_replace(['_', '-'], ' ', $answerKey)),
                 type: $type,
                 required: false,
                 nullable: true,
@@ -197,7 +196,7 @@ final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSou
             ['name' => __('Form', 'corex'), 'type' => 'form'],
         ];
 
-        foreach ($this->reader->fieldKeys(50) as $key) {
+        foreach ($this->reader->fieldKeys(self::ANSWER_SAMPLE) as $key) {
             $schema[] = [
                 'name' => ucwords(str_replace(['_', '-'], ' ', $key)),
                 'type' => $this->inferType($key),
@@ -241,6 +240,98 @@ final class SubmissionsSource implements QueryableDataSource, SchemaAwareDataSou
         }
 
         return $out;
+    }
+
+    /**
+     * The row the Records table shows: the answers as one summary, because which answers there
+     * are differs from form to form and a table has one set of columns.
+     *
+     * @param array{id:int,date:string,form:string,fields:array<string,mixed>} $record
+     *
+     * @return array{id:int,date:string,form:string,summary:string}
+     */
+    private function tableRow(array $record): array
+    {
+        return [
+            'id'      => $record['id'],
+            'date'    => $record['date'],
+            'form'    => $record['form'],
+            'summary' => $this->summarize($record['fields']),
+        ];
+    }
+
+    /**
+     * @param list<array{id:int,date:string,form:string,fields:array<string,mixed>}> $records
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function asExportRows(array $records): array
+    {
+        $unanswered = array_fill_keys(array_keys($this->answerFields()), '');
+
+        return array_map(fn (array $record): array => $this->exportRow($record, $unanswered), $records);
+    }
+
+    /**
+     * The row an export writes: a value under every field `fields()` declares, and nothing else.
+     * An answer is handed over as it was stored; what a list reads as in a cell is the export's
+     * to say, as it is for every other source.
+     *
+     * @param array{id:int,date:string,form:string,fields:array<string,mixed>} $record
+     * @param array<string,string>                                            $unanswered Every answer field, empty.
+     *
+     * @return array<string,mixed>
+     */
+    private function exportRow(array $record, array $unanswered): array
+    {
+        $row = [
+            'date'    => $record['date'],
+            'form'    => $record['form'],
+            'summary' => $this->summarize($record['fields']),
+        ] + $unanswered;
+
+        foreach ($record['fields'] as $answerKey => $value) {
+            $fieldKey = $this->fieldKey((string) $answerKey);
+            // Only into a declared field that is still empty: where two answers' keys differ only
+            // in how they were written, the first is the one the column holds.
+            if ($fieldKey !== null && ($row[$fieldKey] ?? null) === '') {
+                $row[$fieldKey] = $value;
+            }
+        }
+
+        return $row;
+    }
+
+    /**
+     * The field each answer is declared as, read from recent submissions: field key => the
+     * answer's key as it was submitted. `fields()` and the export row are both built from this,
+     * so a column the export offers is a column the row fills.
+     *
+     * @return array<string,string>
+     */
+    private function answerFields(): array
+    {
+        $fields = [];
+        foreach ($this->reader->fieldKeys(self::ANSWER_SAMPLE) as $answerKey) {
+            // Cast, here and for a record's own answers: PHP keys an array by integer where a
+            // key is all digits, so an answer keyed "1" arrives as 1.
+            $fieldKey = $this->fieldKey((string) $answerKey);
+            if ($fieldKey !== null && ! isset($fields[$fieldKey])) {
+                $fields[$fieldKey] = (string) $answerKey;
+            }
+        }
+
+        return $fields;
+    }
+
+    /** The key of the field an answer is read under, or null when it has no field of its own. */
+    private function fieldKey(string $answerKey): ?string
+    {
+        $fieldKey = sanitize_key($answerKey);
+
+        return preg_match('/^[a-z][a-z0-9_-]*$/', $fieldKey) === 1 && ! in_array($fieldKey, self::OWN_FIELDS, true)
+            ? $fieldKey
+            : null;
     }
 
     /**

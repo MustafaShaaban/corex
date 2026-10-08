@@ -16,8 +16,7 @@ use Corex\Config\Data\DataQuery;
 use Corex\Config\Data\DataRegistry;
 use Corex\Config\Data\DataSource;
 use Corex\Config\Data\DataSourceService;
-use Corex\Config\Data\FieldAwareDataSource;
-use Corex\Config\Data\QueryableDataSource;
+use Corex\Config\Data\ExportableDataSource;
 use Corex\Config\Data\WritableDataSource;
 use Corex\Config\DataModels\DataImportRequest;
 use Corex\Config\DataModels\MigrationAwareDataSource;
@@ -84,7 +83,7 @@ beforeEach(function () {
         public function snapshot(MigrationDefinition $definition): string { $this->calls[] = 'snapshot'; return 'snapshot-rest'; }
         public function execute(MigrationDefinition $definition, string $snapshotId, bool $rollback): OperationResult { $this->calls[] = $rollback ? 'rollback' : 'apply'; return dataOperation([]); }
     };
-    $source = new class($adapter, $migration) implements DataSource, QueryableDataSource, CapabilityAwareDataSource, FieldAwareDataSource, WritableDataSource, MigrationAwareDataSource {
+    $source = new class($adapter, $migration) implements DataSource, ExportableDataSource, CapabilityAwareDataSource, WritableDataSource, MigrationAwareDataSource {
         public function __construct(private DataWriteAdapter $adapter, private MigrationProvider $migration) {}
         public function key(): string { return 'rest-contacts'; }
         public function label(): string { return 'REST Contacts'; }
@@ -95,6 +94,8 @@ beforeEach(function () {
         public function query(DataQuery $query): array { return $this->rows($query->page, $query->perPage); }
         public function count(DataQuery $query): int { return $this->total(); }
         public function record(int $id): ?array { return $this->adapter->records[$id] ?? null; }
+        public function exportRows(DataQuery $query): array { return $this->query($query); }
+        public function exportRowsOf(array $ids): array { return array_values(array_intersect_key($this->adapter->records, array_flip($ids))); }
         public function writeAdapter(): DataWriteAdapter { return $this->adapter; }
         public function migrationProvider(): MigrationProvider { return $this->migration; }
         public function fields(): array { return [

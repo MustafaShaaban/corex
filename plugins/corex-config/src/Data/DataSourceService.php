@@ -141,7 +141,7 @@ final readonly class DataSourceService
             return $source instanceof WritableDataSource && $source instanceof FieldAwareDataSource;
         }
         if (in_array($operation, [DataSourceCapabilities::EXPORT_CSV, DataSourceCapabilities::EXPORT_XLSX], true)) {
-            return $source instanceof QueryableDataSource && $source instanceof FieldAwareDataSource;
+            return $source instanceof ExportableDataSource;
         }
         if (in_array($operation, [DataSourceCapabilities::MIGRATIONS, DataSourceCapabilities::ROLLBACK], true)) {
             return $source instanceof MigrationAwareDataSource;
