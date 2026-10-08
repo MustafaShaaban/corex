@@ -37,7 +37,36 @@ Tests are written first and seen to fail. One slice per pull request.
 
 ## Slice 2: delete permanently (US2; FR-009 to FR-016)
 
-Planned when slice 1 is in.
+**Server**
+
+- [ ] T017 Pest unit: the scope carries `canDeletePermanently`; without it `delete()` refuses and
+      deletes nothing
+- [ ] T018 The scope, the policy and its filter (D8)
+- [ ] T019 Pest integration: a submission with an uploaded file is deleted with the file; the
+      store finds its uploads and its email attempt ids; only a trashed one can be deleted
+- [ ] T020 `SubmissionTrashStore::uploadsOf()`, `emailAttemptsOf()`, `delete()`
+- [ ] T021 Pest unit: `delete()` removes files, then email records, then the submission; a file
+      that cannot be removed leaves the submission in the trash and is reported; one failure
+      does not stop the others; one activity entry with no submitted value
+- [ ] T022 `SubmissionTrashService::delete()`; `SubmissionEmailRecords` and its no-op (D10, D11, D12)
+- [ ] T023 Pest unit and integration: the add-on forgets an attempt and its captured copy by
+      attempt id; `EmailStudioStore::delete()`
+- [ ] T024 The add-on's `SubmissionEmailRecords`; `EmailStudioStore::delete()`
+- [ ] T025 Pest integration: `DELETE /submissions/{id}` is registered and guarded, deletes a
+      trashed submission, and refuses one in the inbox and a person who may not
+- [ ] T026 The route; bulk action `delete` with a result that says what was not deleted
+
+**Interface**
+
+- [ ] T027 Jest: the trash offers "Delete permanently" only to somebody who may; the
+      confirmation's words; the result's words when some were not deleted
+- [ ] T028 "Delete permanently" in a trashed submission's pane and in the trash's bulk actions;
+      the confirmation with its list, its acknowledgement and the export files line (D14)
+- [ ] T029 What somebody who may not delete is told (FR-010)
+- [ ] T030 Playwright: delete one from its pane and several in bulk; the acknowledgement gates
+      the action; measured spacing of the confirmation, both directions
+- [ ] T031 Guards; the guide; spec FR-011 corrected (D9); CHANGELOG with Client impact; PROGRESS;
+      DECISIONS
 
 ## Slice 3: the trash's own clock (US3; FR-017 to FR-020)
 

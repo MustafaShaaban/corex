@@ -125,6 +125,78 @@ Permanent deletion's own permission (FR-010) arrives with slice 2, as
 source (they keep doing what they do today until slice 4); files, captured mail and
 notifications (they stay with the trashed submission, as they must for a restore).
 
+## Slice 2: delete for good (planned 2026-10-08, with slice 1 on main)
+
+### D8. Who may
+
+`SubmissionAccessScope::$canDeletePermanently`. The policy grants it to somebody who holds
+`CorexAbility::RUN_DANGEROUS_ACTIONS` or `manage_options`, through the filter
+`corex_submission_delete_permanently`. That ability exists and nothing in Submissions used it;
+it is what the Access screen already lets a site grant. The inbox is told whether the person may,
+so it can say why the action is not there (FR-010).
+
+### D9. What is tied to a submission, and who knows it
+
+Read from the code on 2026-10-08:
+
+| Tied to it | Where | How it is found |
+|---|---|---|
+| Answers, hidden fields, campaign data, consent, notes, history, delivery records | post meta | they go with the post |
+| Files uploaded with it | protected attachments, `post_parent` 0 | an answer's value is the attachment's id; the attachment has `_corex_protected` and an upload context beginning `form-` |
+| Email attempts and captured copies | the email add-on's own posts | by attempt id: the submission's `corex_email_json` bindings, its headline delivery, and its history's `email` entries |
+| "Assigned to you" notification | the notifications table | `source_type = submission`, `source_id` |
+
+The store answers `uploadsOf(id)` and `emailAttemptsOf(id)`; the service removes them.
+
+**Mail log rows are not tied to a submission.** A row of `corex_email_log` holds a recipient and
+a subject and no submission or attempt id; it is written for mail sent through the older `Mailer`
+path. FR-011 said "the mail log rows of those emails". There is nothing to select them by, and
+selecting by the submitter's address would remove rows of other submissions. So this slice
+removes attempts and captured copies, which are tied and are where the text of an email is kept,
+and the spec's FR-011 is corrected to say what is true. A log row that names the submitter is
+left to the log's own retention, and to slice 6, where an erasure is by address.
+
+### D10. The email add-on fills a seam
+
+`Corex\Mail\SubmissionEmailRecords::forget(list<string> $attemptIds): void`, in core. Bound to
+a no-op in `corex-config`, as `SubmissionEmailGateway` is bound to "unavailable"; the add-on
+binds its own, which deletes the attempt and the captured copy for each id. `EmailStudioStore`
+gains `delete(int $id)`: it could create, update and find, and never remove.
+
+### D11. Order, and what a failure leaves
+
+For each submission: its files, then its email records, then the post. If a file cannot be
+removed the submission is not deleted: deleting the post would lose the only pointer to the
+file. It stays in the trash and the result names it and why (FR-016). One failure does not stop
+the others (FR-015).
+
+`delete()` returns what was deleted and what was not, each with its reason. The bulk action
+reports the same, where every earlier bulk action was all or nothing.
+
+### D12. The record
+
+One activity entry per action: `submission.deleted`, who, when, how many, the form slugs, and
+`by: person`. Slice 3 writes the same entry with `by: expiry`. No submitted value (FR-013). The
+submission's own history goes with it, which is why this entry is the only record there is.
+
+### D13. The notification
+
+Left in place, pointing at a submission that is gone: its link opens the inbox, which says the
+submission was not found. Deleting another person's notification because of something a third
+person did is not this feature's to do, and FR-011 asks only that it lead to nothing that can be
+opened.
+
+### D14. The confirmation
+
+A dialog that lists what is removed in plain words, says it cannot be undone, and keeps its
+action disabled until a checkbox is ticked (FR-012). It says that export files made earlier may
+still hold the submission, that they expire 30 days after they were made, and that they are
+deleted under Export, Recent exports (FR-014): shown whenever the person has any kept export
+file, which the dialog asks the existing history route.
+
+**Routes**: `DELETE /submissions/{id}` for one; bulk action `delete`, offered in the trash only
+and only to somebody who may.
+
 ## What later slices will need from this one
 
 - Slice 2 adds `delete()` to the service and a `SubmissionErasure` that knows what is tied to a
