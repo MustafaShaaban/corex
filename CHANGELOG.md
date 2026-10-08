@@ -50,9 +50,15 @@ All notable changes to Corex are documented here. The format follows
 ### Client impact
 
 - **A new production dependency: `mpdf/mpdf` ^8.3** (GPL-2.0-only), with its own dependencies. Run
-  `composer install` after taking this. It adds about 94MB to `vendor/`, 88MB of it fonts, and
-  the same to the shared-host package, whose zip is larger to upload by that much. The fonts are
-  kept whole: they are what writes Arabic and every other script a form can be answered in.
+  `composer install` after taking this. It adds about 94MB to `vendor/`, 88MB of it fonts. **The
+  shared-host package is about 191MB unpacked with it, 92MB of that mPDF**, so it nearly doubles
+  what is uploaded. The fonts are kept whole: they are what writes Arabic and every other script
+  a form can be answered in.
+- **The shared-host builder removes from the packaged `vendor/` what a package may never hold**
+  (`.github`, `tests`, `.git`, `node_modules` and the rest of its forbidden list). Composer
+  installs a package as its author shipped it, mPDF ships a `.github`, and the package was
+  refused for it. A production package that loads code from a directory named `tests` would lose
+  it; none does today, and the verifier already refused such a package.
 - **PDF needs PHP's `gd` and `mbstring`.** Without them CoreX works as before and does not offer
   PDF. mPDF keeps a cache of font data in `uploads/corex-private/exports/pdf-working/`, beside
   the exports and behind the same protection.

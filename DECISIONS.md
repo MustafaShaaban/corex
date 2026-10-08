@@ -7412,3 +7412,12 @@ submissions offers a column per answer and leaves each empty, in every format: t
 declares those fields and its rows do not carry them. A ticked-rows export loses "Submission" as
 well, because ticked rows are read in the detail view's shape. Both predate this slice. Queued as
 a task of its own.
+
+**The shared-host builder prunes the packaged `vendor/`.** CI refused the package of a generated
+client site: mPDF ships its own `.github`, Composer installed it as shipped, and `.github` is a
+path the package may never hold. Copied trees were already filtered as they were copied; nothing
+filtered what Composer installed, because no production package had shipped a forbidden path
+before. `prunePackagedVendor()` removes the forbidden names from the packaged `vendor/` after the
+install. The verifier is unchanged, so a forbidden path anywhere else still refuses the package.
+The real package, built to a scratch directory with this change, verified: 191.1MB unpacked,
+93.9MB of it `vendor/`, 91.9MB of that mPDF. Local checks had not built the package; CI did.
