@@ -357,18 +357,44 @@
 		} );
 	}
 
+	/*
+	 * Until the wizard's state has arrived (spec 108): the step that is coming, as a
+	 * placeholder, where the form for a browser without scripts used to stand and then be
+	 * swapped for the wizard. The admin's class names, written as markup: this screen is not
+	 * React.
+	 */
+	const fallback = document.querySelector( '.corex-setup-fallback' );
+	const bar = ( width ) =>
+		`<span class="corex-admin-skeleton__bar corex-admin-skeleton__bar--${ width }"></span>`;
+
+	if ( fallback ) {
+		fallback.hidden = true;
+	}
+	root.setAttribute( 'data-corex-state', 'loading' );
+	root.setAttribute( 'aria-busy', 'true' );
+	root.innerHTML =
+		`<section class="corex-setup__panel corex-surface corex-admin-skeleton" aria-hidden="true">` +
+		`<h2>${ bar( 'medium' ) }</h2>` +
+		`<p>${ bar( 'full' ) }</p><p>${ bar( 'long' ) }</p>` +
+		`</section>`;
+
 	api.get( `${ restUrl }/state`, { nonce } ).then( ( res ) => {
+		root.removeAttribute( 'aria-busy' );
 		if ( ! res.envelope.ok ) {
+			// The wizard cannot be drawn. The form the server drew still works: it comes
+			// back, where it used to be left on screen by a script that had given up
+			// without a word.
+			root.setAttribute( 'data-corex-state', 'error' );
+			root.innerHTML = '';
+			if ( fallback ) {
+				fallback.hidden = false;
+			}
 			return;
 		}
+		root.setAttribute( 'data-corex-state', 'ready' );
 		state.config = res.envelope.data.config;
 		state.progress = res.envelope.data.progress;
 		state.kit = ( state.config.kits[ 0 ] || {} ).name || '';
-		// The JS wizard has taken over — hide the no-JS server fallback.
-		const fallback = document.querySelector( '.corex-setup-fallback' );
-		if ( fallback ) {
-			fallback.hidden = true;
-		}
 		render();
 	} );
 } )( window.wp, window.corexSetup );
