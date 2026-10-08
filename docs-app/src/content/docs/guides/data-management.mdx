@@ -59,9 +59,18 @@ The source can implement:
 - `FieldAwareDataSource` for typed fields, validation, aliases, filter operators, sorting, write flags, and personal-data
   classes.
 - `QueryableDataSource` for `query(DataQuery $query)`, `count(DataQuery $query)`, and `record(int $id)`.
+- `ExportableDataSource` for `exportRows(DataQuery $query)` and `exportRowsOf(array $ids)`. It extends
+  `QueryableDataSource` and `FieldAwareDataSource`, and it is the adapter for the export capabilities: a source that
+  declares `exportCsv` or `exportXlsx` without it is not offered an export.
 - `CapabilityAwareDataSource` for a `DataSourceCapabilities` declaration and operation-to-ability map.
 - `WritableDataSource` for a `DataWriteAdapter` that owns create, update, and delete persistence.
 - `MigrationAwareDataSource` for a `MigrationProvider` that declares plans, snapshots, executes, and rolls back.
+
+An export row is not the row the table shows. `query()` answers rows keyed by column id, `record()` answers what the
+detail view shows, and `exportRows()` / `exportRowsOf()` answer rows keyed by field key, with a value (or `''`) under
+every key `fields()` declares. An export reads each cell from the row by the field's key, so a field the row does not
+carry is an empty column. Where a source's fields are its columns, as for a managed table, `exportRows()` can return
+`query()`.
 
 Declaring a capability without its concrete adapter does not expose the action. Keep data access inside the adapter,
 prepare variable SQL, cap page sizes, and return only declared fields. Optional integrations must degrade by omitting

@@ -8,8 +8,7 @@ defined('ABSPATH') || exit;
 use Corex\Config\Data\DataQuery;
 use Corex\Config\Data\DataQueryService;
 use Corex\Config\Data\DataSourceService;
-use Corex\Config\Data\FieldAwareDataSource;
-use Corex\Config\Data\QueryableDataSource;
+use Corex\Config\Data\ExportableDataSource;
 use Corex\Config\Export\ExportWriters;
 use Corex\Data\DataField;
 use Corex\Data\DataSourceCapabilities;
@@ -30,8 +29,8 @@ final readonly class DataExportService
     public function request(DataExportRequest $request): DataExportRun
     {
         $source = $this->sources->authorize($request->actorId, $request->sourceKey, self::operationFor($request->format));
-        if (! $source instanceof QueryableDataSource || ! $source instanceof FieldAwareDataSource) {
-            throw new DomainException('The data source does not provide an export query and field schema.');
+        if (! $source instanceof ExportableDataSource) {
+            throw new DomainException('The data source does not provide export rows and a field schema.');
         }
         $personal = $this->validateColumns($request, $source->fields());
         $count = $this->count($request);

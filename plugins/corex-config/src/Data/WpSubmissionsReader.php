@@ -175,6 +175,11 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
             'meta_query'     => $this->nonTestClause(),
         ]);
 
+        // One query for every sampled submission's meta, where reading each in turn was one query
+        // each. A query for ids alone does not load meta, and an export asks for these keys with
+        // every batch it writes.
+        update_postmeta_cache($query->posts);
+
         $keys = [];
         foreach ($query->posts as $id) {
             foreach (array_keys(get_post_meta((int) $id)) as $metaKey) {

@@ -20,8 +20,8 @@ use Corex\Config\Data\DataQueryService;
 use Corex\Config\Data\DataRegistry;
 use Corex\Config\Data\DataSource;
 use Corex\Config\Data\DataSourceService;
-use Corex\Config\Data\FieldAwareDataSource;
-use Corex\Config\Data\QueryableDataSource;
+use Corex\Config\Data\ExportableDataSource;
+use Corex\Config\Data\SubmissionsSource;
 use Corex\Config\DataModels\DataExportFiles;
 use Corex\Config\DataModels\DataExportJobHandler;
 use Corex\Config\DataModels\DataExportJobQueue;
@@ -35,17 +35,22 @@ use Corex\Config\Export\ExportWriters;
 use Corex\Data\DataField;
 use Corex\Data\DataSourceCapabilities;
 use Corex\Jobs\BoundedJob;
+use Corex\Tests\Support\InMemorySubmissionsReader;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
     Functions\when('wp_json_encode')->alias('json_encode');
     Functions\when('wp_delete_file')->alias('unlink');
+    Functions\when('sanitize_key')->alias(static fn (string $key): string => strtolower($key));
 });
 
-/** @return array{DataExportService,DataExportStore,DataExportJobQueue,DataSourceService,ActivityRepository} */
-function exportService(bool $xlsx = true): array
+/**
+ * A source whose three shapes differ, as a real one's may: the row its table shows, the record its
+ * detail view shows, and the row it hands an export.
+ */
+function contactsSource(bool $xlsx = true): DataSource
 {
-    $source = new class($xlsx) implements DataSource, QueryableDataSource, CapabilityAwareDataSource, FieldAwareDataSource {
+    return new class($xlsx) implements DataSource, ExportableDataSource, CapabilityAwareDataSource {
         private array $records = [
             ['id' => 1, 'name' => '=Ada', 'email' => 'ada@example.com', 'status' => 'active', 'joined' => '2026-10-07 09:30:00', 'tags' => ['vip', 'beta'], 'secret' => 'drop'],
             ['id' => 2, 'name' => 'Grace', 'email' => 'grace@example.com', 'status' => 'inactive', 'joined' => '2026-10-06 08:00:00', 'tags' => [], 'secret' => 'drop'],
@@ -67,11 +72,21 @@ function exportService(bool $xlsx = true): array
             return array_slice($rows, ($query->page - 1) * $query->perPage, $query->perPage);
         }
         public function count(DataQuery $query): int { return count($this->matching($query)); }
+        /** The detail view's shape: labelled pairs, with nothing under a field's key. */
         public function record(int $id): ?array
         {
-            foreach ($this->records as $record) if ($record['id'] === $id) return $record;
+            foreach ($this->records as $record) {
+                if ($record['id'] === $id) {
+                    return ['id' => $id, 'fields' => [['label' => 'Name', 'value' => $record['name']]]];
+                }
+            }
 
             return null;
+        }
+        public function exportRows(DataQuery $query): array { return $this->query($query); }
+        public function exportRowsOf(array $ids): array
+        {
+            return array_values(array_filter($this->records, static fn (array $record): bool => in_array($record['id'], $ids, true)));
         }
         public function capabilities(): DataSourceCapabilities
         {
@@ -100,8 +115,13 @@ function exportService(bool $xlsx = true): array
                 ($query->filters['status'] ?? '') === '' || $record['status'] === $query->filters['status']));
         }
     };
+}
+
+/** @return array{DataExportService,DataExportStore,DataExportJobQueue,DataSourceService,ActivityRepository} */
+function exportService(bool $xlsx = true, ?DataSource $source = null): array
+{
     $registry = new DataRegistry();
-    $registry->register($source);
+    $registry->register($source ?? contactsSource($xlsx));
     $policy = new class implements DataAccessPolicy {
         public function allows(int $actorId, string $ability): bool { return $actorId === 7; }
     };
@@ -184,9 +204,9 @@ function dataExportFiles(): array
  *
  * @return array{download:array{filename:string,mime:string,content:string},run:DataExportRun,states:list<string>,directory:string,store:DataExportStore,events:list<ActivityEvent>}
  */
-function runDataExport(array $request = [], int $batchSize = 25): array
+function runDataExport(array $request = [], int $batchSize = 25, ?DataSource $source = null): array
 {
-    [$service, $store, , $sources, $activity] = exportService();
+    [$service, $store, , $sources, $activity] = exportService(source: $source);
     [$files, $directory] = dataExportFiles();
     $run = $service->request(exportRequest($request));
     $now = new DateTimeImmutable('2026-07-04T12:00:00+00:00');
@@ -418,4 +438,53 @@ it('finishes an export, holding what was counted, when a record arrives in the s
         ->and($job->processed)->toBe(3)
         ->and($service->download(7, $run->id, false)['content'])
         ->toBe("\xEF\xBB\xBFID,Name\r\n1,'=Ada\r\n2,Grace\r\n3,Linus\r\n");
+});
+
+/**
+ * The Form submissions source CoreX ships, exported (found in a real export, 2026-10-08).
+ *
+ * The file began `Submitted,Form,Submission,Email,Name,Message` and every row ended `,,,`: the
+ * dialog offered a column for each answer and nothing filled it. A ticked row lost "Submission"
+ * as well, because it was read as the detail view shows it.
+ */
+function submissionsToExport(): SubmissionsSource
+{
+    return new SubmissionsSource(new InMemorySubmissionsReader([
+        ['id' => 7, 'date' => '2026-10-08 13:28:00', 'form' => 'contact', 'fields' => [
+            'email' => 'sam@example.com', 'name' => 'Sam', 'message' => 'Hello',
+        ]],
+        ['id' => 8, 'date' => '2026-10-08 14:00:00', 'form' => 'callback', 'fields' => ['name' => 'Mona']],
+    ]));
+}
+
+it('writes each answer of a form submission under its own column, however the records were chosen', function (array $choice, string $lines) {
+    $export = runDataExport(
+        $choice + ['source_key' => 'submissions', 'columns' => ['date', 'form', 'summary', 'email', 'name', 'message']],
+        source: submissionsToExport(),
+    );
+
+    expect($export['download']['content'])
+        ->toBe("\xEF\xBB\xBFSubmitted,Form,Submission,Email,Name,Message\r\n" . $lines);
+})->with(function (): array {
+    $contact = '"2026-10-08 13:28",contact,"email: sam@example.com · name: Sam · message: Hello",sam@example.com,Sam,Hello' . "\r\n";
+    // No email and no message on this form: two empty cells, in their columns.
+    $callback = '"2026-10-08 14:00",callback,"name: Mona",,Mona,' . "\r\n";
+
+    return [
+        'the ticked rows' => [['scope' => 'selected', 'selected_ids' => [7], 'query' => []], $contact],
+        'the filtered rows' => [['scope' => 'filtered', 'query' => ['filters' => ['form' => 'contact']]], $contact],
+        'everything' => [['scope' => 'all', 'query' => []], $contact . $callback],
+    ];
+});
+
+it('writes the same answers into a workbook', function () {
+    $export = runDataExport(
+        ['source_key' => 'submissions', 'columns' => ['summary', 'email', 'message'], 'format' => 'xlsx', 'scope' => 'selected', 'selected_ids' => [7], 'query' => []],
+        source: submissionsToExport(),
+    );
+    $cells = dataWorkbookPart($export['download']['content'], 'xl/worksheets/sheet1.xml');
+
+    expect($cells)->toContain('sam@example.com')
+        ->and($cells)->toContain('Hello')
+        ->and($cells)->toContain('email: sam@example.com · name: Sam · message: Hello');
 });

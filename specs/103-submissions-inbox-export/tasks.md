@@ -127,6 +127,12 @@ Slice 7b, the dialog:
 - [x] T104 Playwright: one Data export end to end
 - [x] T105 Rendered check, measured; guards; notes
 
+After 7b, a defect found in a real export of Form submissions (D12e):
+
+- [x] T106 Failing tests first: the source's export rows (Pest unit), the export through the job for ticked, filtered and all records in CSV and Excel (Pest unit), and a stored submission exported through the routes and read back (integration)
+- [x] T107 `ExportableDataSource`, implemented by the submissions source and the managed-table source; the job and the service read export rows only; the export capabilities need it as their adapter
+- [x] T108 Guards; the guide, the changelog and its Client impact; notes
+
 ## Dependencies
 
 - Slice 1 depends on nothing.

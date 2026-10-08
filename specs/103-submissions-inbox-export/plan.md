@@ -193,6 +193,18 @@ there it offers "everything" and lists what was exported before.
 writers, files on disk, a preview with counts, a step taken on request, no file for no records, a
 file name that says what it holds). The two existing surfaces keep working on it. 7b: the dialog.
 
+**D12e. The export row is the source's (found in a real export after 7b, 2026-10-08).** The export
+offers a column for every field a source declares and reads each cell from the row by the field's
+key. It took those rows from `query()`, which answers the Records table's rows, keyed by column,
+and for ticked records from `record()`, which answers the detail view. Form submissions declare a
+field for each answer and show one summary in their table, so every answer's column was empty in
+every format, and a ticked row lost its summary too. A source that can be exported now implements
+`ExportableDataSource`: `exportRows(DataQuery)` and `exportRowsOf(ids)`, each row holding a value
+under every key `fields()` declares. The job reads nothing else, whatever the scope. It is the
+adapter for the export capabilities, as `WritableDataSource` is for writes: a source that
+declares an export without it is not offered one. The Records table keeps its three columns and
+the detail view its labelled pairs.
+
 **Not in this slice.** Expiry and deletion of Data exports: FR-048 does not list FR-028 to FR-031.
 A Data export's file is kept until somebody adds it to the retention sweep, as its post meta was
 kept. That is worth doing and is not this slice.

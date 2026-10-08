@@ -27,7 +27,7 @@ use Corex\Data\DataSourceCapabilities;
  * to. Writes and migrations arrive through {@see WritableTableDataSource}, which is the subclass
  * the registry builds when — and only when — the declaration asks for them.
  */
-class TableDataSource implements QueryableDataSource, SchemaAwareDataSource, CapabilityAwareDataSource, FieldAwareDataSource
+class TableDataSource implements ExportableDataSource, SchemaAwareDataSource, CapabilityAwareDataSource
 {
     public function __construct(
         protected readonly ManagedTable $table,
@@ -99,6 +99,20 @@ class TableDataSource implements QueryableDataSource, SchemaAwareDataSource, Cap
         $record = $this->reader->find($this->table->name, $this->table->columnIds(), $id);
 
         return $record === null ? null : $this->shapeRow($record);
+    }
+
+    /**
+     * A managed table's fields are its columns, so the row its table shows is the row an export
+     * writes.
+     */
+    public function exportRows(DataQuery $query): array
+    {
+        return $this->query($query);
+    }
+
+    public function exportRowsOf(array $ids): array
+    {
+        return array_values(array_filter(array_map($this->record(...), $ids)));
     }
 
     /**
