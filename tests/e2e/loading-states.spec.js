@@ -352,3 +352,41 @@ test( 'the working state reaches a control drawn where WordPress puts a modal', 
 		name: 'corex-loader-turn',
 	} );
 } );
+
+test( 'in Email Studio the button that was pressed is the one that works', async ( {
+	page,
+} ) => {
+	// The request is held and then dropped: nothing is created on the site by this test.
+	const sent = [];
+	await page.route(
+		( url ) =>
+			/email-studio\/templates(\?|$)/.test(
+				decodeURIComponent( url.href )
+			),
+		( route ) =>
+			route.request().method() === 'POST'
+				? sent.push( route )
+				: route.continue()
+	);
+	await page.goto( '/wp-admin/admin.php?page=corex-email-studio' );
+	await page
+		.getByRole( 'button', { name: 'Templates', exact: true } )
+		.click();
+	await page.getByLabel( 'New template slug' ).fill( 'held-by-a-test' );
+	await page.getByLabel( 'Name', { exact: true } ).fill( 'Held by a test' );
+
+	const create = page.getByRole( 'button', { name: 'Create', exact: true } );
+	const before = await box( create );
+
+	await create.click();
+
+	await expect( create ).toHaveAttribute( 'data-corex-working', 'true' );
+	expect( await box( create ) ).toEqual( before );
+	// Every other button on the tab waits, and none of them says it is the one working.
+	await expect( page.locator( '[data-corex-working]' ) ).toHaveCount( 1 );
+
+	await sent[ 0 ].abort();
+
+	await expect( create ).not.toHaveAttribute( 'data-corex-working', 'true' );
+	await expect( create ).toBeEnabled();
+} );

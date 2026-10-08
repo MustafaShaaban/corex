@@ -1,5 +1,9 @@
-import { useState } from '@wordpress/element';
+import { useContext, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
+import {
+	PendingControl,
+	workingProps,
+} from '../../admin/components/working.js';
 import { Field } from './shared.js';
 
 function AssetActions( { item, onEdit, onInsert } ) {
@@ -82,6 +86,7 @@ function editorTitle( editing ) {
 }
 
 function AssetEditor( { editing, fields, busy, onSubmit, onCancel } ) {
+	const pending = useContext( PendingControl );
 	const fieldValue = ( name ) =>
 		editing?.regions?.[ name ] ?? editing?.[ name ] ?? '';
 	const submit = async ( event ) => {
@@ -113,7 +118,13 @@ function AssetEditor( { editing, fields, busy, onSubmit, onCancel } ) {
 					/>
 				) ) }
 				<div className="corex-email-app__actions is-wide">
-					<button className="button button-primary" disabled={ busy }>
+					<button
+						className="button button-primary"
+						disabled={ busy }
+						{ ...workingProps(
+							[ 'layouts', 'partials' ].includes( pending )
+						) }
+					>
 						{ __( 'Save revision', 'corex' ) }
 					</button>
 					{ editing && (

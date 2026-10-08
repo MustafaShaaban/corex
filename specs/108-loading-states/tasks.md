@@ -32,7 +32,7 @@ They are done a screen at a time, each in its own pull request.
 - [x] T023 Notifications (8 controls): each notification's actions, "Mark all as read" on the screen and in the drawer, the preference boxes; the three that failed in silence say why
 - [x] T024 The four `isBusy` buttons (export, the Data confirmation, the import dry-run, the migration confirmation); a hygiene test that `isBusy` is not used under `plugins/corex-config/src`
 - [x] T025 Playwright: a held action shows working, keeps its button's width to the pixel and sends nothing on a second press; the working state reaches a control drawn where a modal is
-- [ ] T026 Email Studio (10) and Forms and flows (8): one flag disables every button on each screen and nothing marks the one that was pressed
+- [x] T026 Email Studio (9) and Forms and flows (7): one flag disabled every button on each screen and nothing marked the one that was pressed. The row that opens a template and the row that opens a flow are loads, and go with slice 4
 - [ ] T027 Data (12): the mutation preview, the two downloads, the import's remap and commit, the migration previews and refresh
 - [ ] T028 Blog (3), Access (2), Security (2): the labels that change to "Saving…", "Applying…", "Refreshing…" go
 - [ ] T029 The screens that are not React: Insights (1), the setup wizard (3), the captcha test (1), and the forms the server draws

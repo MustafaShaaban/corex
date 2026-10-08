@@ -1,3 +1,8 @@
+import { useContext } from '@wordpress/element';
+import {
+	PendingControl,
+	workingProps,
+} from '../../admin/components/working.js';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../../admin/components/CorexSelect.js';
 import { Field } from './shared.js';
@@ -97,6 +102,7 @@ function TemplateSelect( { templates } ) {
 }
 
 function RouteForm( { templates, busy, onSave } ) {
+	const pending = useContext( PendingControl );
 	return (
 		<section className="corex-surface corex-email-app__editor">
 			<h2>{ __( 'Bind a trigger', 'corex' ) }</h2>
@@ -162,7 +168,11 @@ function RouteForm( { templates, busy, onSave } ) {
 					{ __( 'Route enabled', 'corex' ) }
 				</label>
 				<div className="corex-email-app__actions is-wide">
-					<button className="button button-primary" disabled={ busy }>
+					<button
+						className="button button-primary"
+						disabled={ busy }
+						{ ...workingProps( pending === 'routes' ) }
+					>
 						{ __( 'Save route', 'corex' ) }
 					</button>
 				</div>

@@ -1,6 +1,12 @@
+import { useContext } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import {
+	PendingControl,
+	workingProps,
+} from '../../admin/components/working.js';
 
 export function TestTab( { busy, result, onRun } ) {
+	const pending = useContext( PendingControl );
 	return (
 		<section className="corex-flow-editor__panel">
 			<h2>{ __( 'Marked test submission', 'corex' ) }</h2>
@@ -15,6 +21,7 @@ export function TestTab( { busy, result, onRun } ) {
 				className="button button-primary"
 				disabled={ busy }
 				onClick={ onRun }
+				{ ...workingProps( pending === 'test' ) }
 			>
 				{ __( 'Run marked test', 'corex' ) }
 			</button>

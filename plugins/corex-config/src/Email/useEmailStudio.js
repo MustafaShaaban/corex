@@ -116,7 +116,7 @@ function useStudioApi( config ) {
 	}, [ load ] );
 	const post = useCallback(
 		async ( kind, data, id, successMessage ) => {
-			dispatch( { type: 'mutating' } );
+			dispatch( { type: 'mutating', control: kind } );
 			const result = await window.Corex.api.post(
 				buildEndpoint( config.restUrl, kind, id ),
 				data,
@@ -385,7 +385,7 @@ function useHealth( { config, state, dispatch, selection } ) {
 		setHealth( null );
 	}, [ selection.detail?.template.id ] );
 	const runHealth = async () => {
-		dispatch( { type: 'mutating' } );
+		dispatch( { type: 'mutating', control: 'health' } );
 		const endpoint = buildEndpoint(
 			config.restUrl,
 			'health',

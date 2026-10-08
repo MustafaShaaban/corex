@@ -1,3 +1,8 @@
+import { useContext } from '@wordpress/element';
+import {
+	PendingControl,
+	workingProps,
+} from '../../admin/components/working.js';
 import { __, sprintf } from '@wordpress/i18n';
 import { Notice } from './shared.js';
 
@@ -26,6 +31,7 @@ function HealthResults( { health } ) {
 }
 
 export function HealthPanel( { detail, health, busy, onRun } ) {
+	const pending = useContext( PendingControl );
 	return (
 		<section className="corex-surface corex-email-app__editor">
 			<h2>{ __( 'Template health', 'corex' ) }</h2>
@@ -45,6 +51,7 @@ export function HealthPanel( { detail, health, busy, onRun } ) {
 						className="button button-primary"
 						disabled={ busy || detail.template.draft_version < 1 }
 						onClick={ onRun }
+						{ ...workingProps( pending === 'health' ) }
 					>
 						{ __( 'Run health checks', 'corex' ) }
 					</button>
