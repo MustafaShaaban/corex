@@ -54,9 +54,17 @@ final class WpFlowStore implements FlowStore
             throw new DomainException($id->get_error_message());
         }
 
-        update_post_meta($id, self::META_TYPE, $type);
-        update_post_meta($id, self::META_SLUG, $slug);
-        update_post_meta($id, self::META_PAYLOAD, $payload);
+        // The type goes in last. It is what `query()` selects a record by, so until it is there
+        // the record is in no list, and a request that stops part-way leaves a post nothing reads.
+        // Written first, as it was, it left a flow without its payload for every reader to meet.
+        $stored = update_post_meta($id, self::META_PAYLOAD, $payload)
+            && update_post_meta($id, self::META_SLUG, $slug)
+            && update_post_meta($id, self::META_TYPE, $type);
+        if (! $stored) {
+            wp_delete_post($id, true);
+
+            throw new DomainException(__('Flow record could not be stored.', 'corex'));
+        }
 
         return $id;
     }

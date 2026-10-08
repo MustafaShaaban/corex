@@ -22,6 +22,7 @@ use Corex\Forms\Flow\Flow;
 use Corex\Forms\Flow\FlowRepository;
 use Corex\Forms\Form;
 use Corex\Forms\FormRegistry;
+use Corex\Support\BootLogger;
 use Corex\Tests\Fixtures\Forms\InMemoryFlowStore;
 
 function catalogFlow(string $slug, string $name, string $state = Flow::STATE_PUBLISHED): Flow
@@ -64,7 +65,7 @@ function catalogCodeForm(string $slug, array $fields = []): Form
 /** @param list<Flow> $flows */
 function catalogFor(array $flows = [], array $codeForms = [], array $providers = [], ?SubmissionCounts $counts = null): FormCatalog
 {
-    $repository = new FlowRepository(new InMemoryFlowStore());
+    $repository = new FlowRepository(new InMemoryFlowStore(), new BootLogger(debug: false));
     foreach ($flows as $flow) {
         $repository->save($flow);
     }
@@ -255,7 +256,7 @@ it('uses the counts the boundary supplies, and zero is a real zero', function ()
 it('picks up a form registered after the catalog was first read', function () {
     // The catalog is a container singleton and caches its result, so a plugin registering a form
     // on a later hook than the first read would otherwise never appear at all.
-    $repository = new Corex\Forms\Flow\FlowRepository(new InMemoryFlowStore());
+    $repository = new Corex\Forms\Flow\FlowRepository(new InMemoryFlowStore(), new BootLogger(debug: false));
     $registry   = new FormRegistry();
     $registry->register(catalogCodeForm('contact'));
 

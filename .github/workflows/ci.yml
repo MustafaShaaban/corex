@@ -341,6 +341,21 @@ jobs:
           sudo chown www-data:www-data /var/log/corex-php-error.log
           echo 'php_admin_flag[log_errors] = on' | sudo tee -a /etc/php/8.3/fpm/pool.d/www.conf > /dev/null
           echo 'php_admin_value[error_log] = /var/log/corex-php-error.log' | sudo tee -a /etc/php/8.3/fpm/pool.d/www.conf > /dev/null
+          # No JIT. The runner's php-fpm came with the tracing JIT on and a 256 MB buffer, which
+          # this job never asked for and PHP does not do by default. On 2026-10-08 a method that
+          # had answered twenty-eight times began refusing a correct argument, for every worker,
+          # until the run ended (see the step that prints the opcode cache's state, below). A JIT
+          # is the part of PHP that rewrites a method once it has run often enough, and it is
+          # the one thing in that state a default PHP does not have. That it was the cause is
+          # not proved. Off, the job serves what a site serves, and the fault has one place fewer
+          # to come from.
+          #
+          # Named to be read last. PHP reads a directory of settings in name order and the last
+          # file to set a value wins. The runner's `99-pecl.ini` is where the JIT is switched on:
+          # the first attempt, `99-corex-no-jit.ini`, is read just before it and was overruled,
+          # which the step below is there to catch.
+          echo 'opcache.jit=disable' | sudo tee /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
+          echo 'opcache.jit_buffer_size=0' | sudo tee -a /etc/php/8.3/fpm/conf.d/zzz-corex-no-jit.ini > /dev/null
           # restart, not start: installing the package already started it, with the old pool.
           sudo systemctl restart php8.3-fpm
           sudo nginx -t
@@ -363,6 +378,21 @@ jobs:
           rm wp/corex-log-probe.php
           if ! sudo grep -q 'corex-ci-log-probe' /var/log/corex-php-error.log; then
             echo "PHP's error log is not reaching /var/log/corex-php-error.log"
+            exit 1
+          fi
+
+      # The same rule for the JIT: asked of php-fpm itself, on every run, before a spec depends
+      # on the answer. A file in a directory the next runner image does not read would otherwise
+      # be a setting nobody has.
+      - name: Prove the JIT is off
+        run: |
+          echo '<?php echo json_encode( array( "jit_on" => opcache_get_status( false )["jit"]["on"] ?? null, "opcache.jit" => ini_get( "opcache.jit" ), "opcache.jit_buffer_size" => ini_get( "opcache.jit_buffer_size" ), "settings_file" => php_ini_loaded_file(), "settings_read_after_it" => php_ini_scanned_files() ) );' > wp/corex-jit-probe.php
+          answer=$(curl -sf http://127.0.0.1:8080/corex-jit-probe.php)
+          rm wp/corex-jit-probe.php
+          # Printed whatever the answer, so that where php-fpm reads its settings from is on record.
+          echo "$answer" | jq . || echo "$answer"
+          if [ "$(echo "$answer" | jq '.jit_on')" != "false" ]; then
+            echo "php-fpm says the JIT is not off."
             exit 1
           fi
 
@@ -399,6 +429,36 @@ jobs:
           sudo cp /var/log/corex-php-error.log test-results/server-logs/php-error.log || true
           sudo chown -R "$(id -u):$(id -g)" test-results/server-logs
           wc -l test-results/server-logs/* || true
+
+      # The same evidence, in the job's own output, where a failed run is read first.
+      #
+      # On 2026-10-08 eight inbox specs failed on "HTTP 500 flow_error", and what had thrown was
+      # one line in an artifact that has to be asked for and expires in a week. That line said a
+      # FlowVersion had been refused by a parameter declared FlowVersion, against a type PHP
+      # printed as an empty string: the opcode cache's copy of the method, not the code and not
+      # anything stored. The same request had answered 200 two seconds earlier, twenty-eight
+      # times, and went on failing until the run ended, as a cache shared by every worker would.
+      #
+      # So the tail of PHP's log is printed here, and beside it what the opcode cache says about
+      # itself, asked through php-fpm because the command line has a cache of its own: whether it
+      # filled, whether it restarted and when, how much of its string buffer is left, and whether
+      # the JIT is on. The first run that printed it is how the JIT was found on at all; an
+      # ordinary run also ends with about six per cent of the string buffer free, and no restart.
+      # What set the fault off is not proved. If it comes back with the JIT off, this is where
+      # the next lead is.
+      - name: Print the server's errors and the state of PHP's opcode cache
+        if: ${{ !cancelled() }}
+        run: |
+          echo "::group::PHP error log, last 40 lines"
+          tail -n 40 test-results/server-logs/php-error.log || true
+          echo "::endgroup::"
+
+          echo '<?php header( "Content-Type: application/json" ); echo json_encode( function_exists( "opcache_get_status" ) ? opcache_get_status( false ) : array( "opcache" => "not loaded" ) );' > wp/corex-opcache-probe.php
+          curl -s -o test-results/server-logs/opcache-status.json http://127.0.0.1:8080/corex-opcache-probe.php || true
+          rm -f wp/corex-opcache-probe.php
+          echo "::group::OPcache status, as php-fpm reports it"
+          jq . test-results/server-logs/opcache-status.json || cat test-results/server-logs/opcache-status.json || true
+          echo "::endgroup::"
 
       - name: Upload the report when the browser tests fail
         if: failure()

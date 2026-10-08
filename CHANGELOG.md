@@ -6,6 +6,49 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **One stored flow that could not be read emptied every list of flows.** A flow is a post and
+  three rows of post meta. A flow whose payload was missing, or held a date that would not parse,
+  made `GET corex/v1/flows` answer 422 or 500 for all of them, and the Forms screen listed none.
+  The form filter on Submissions and on Data, and the flow counts on Overview and Insights, read
+  the same list and showed no flows without saying why. Such a flow is now left out, the others
+  are listed, and PHP's error log names the record and what was wrong with it
+  (`Stored flow record 31267 could not be read and was left out (...)`). A flow that points at a
+  draft that was never stored is left out of the Forms list the same way.
+- **Storing a flow could leave half of one.** The row a list selects a flow by was written first
+  and the payload last, so a request that stopped between them left a flow no reader could build.
+  The selecting row is written last. A write that fails stores nothing and the request is
+  refused.
+- **The log line for a 500 behind a CoreX REST route says what threw.** It was
+  `Middleware pipeline error:` and the exception's message. It now carries the exception's class
+  and the file and line as well.
+- **The browser job prints what the server said, and serves the suite without PHP's JIT.** It
+  prints the last 40 lines of PHP's error log and php-fpm's OPcache status in its own output on
+  every run. Eight inbox specs failed on 2026-10-08 on a 500 whose cause was one line in an
+  artifact. That line showed PHP refusing a correct argument against a type it could not name,
+  and nothing wrong in CoreX or in anything stored (DECISIONS #268). The first status the job
+  printed showed the runner's php-fpm running the tracing JIT, which nothing had asked for. The
+  job now switches it off and checks that it is off. That the JIT caused the fault is not proved.
+
+### Client impact
+
+- **`GET corex/v1/flows` leaves out a flow it cannot read**, where it answered 422 or 500 and
+  listed none. A site that has such a record sees its other flows again on the Forms screen and in
+  the form filters. The record is still stored and its slug is still taken, so a new flow cannot
+  use that slug. PHP's error log names the record's post id; to free the slug, delete that
+  `corex_flow_record` post.
+- **`GET corex/v1/flows/{id}` for such a flow answers 422 with "Stored flow record N could not be
+  read."** It answered 422 with the reader's own message, or 500.
+- **`FlowRepository` takes a `BootLogger` as its second constructor argument, and
+  `FlowService::search()` is now `listing()`**, which returns each flow beside its current draft.
+  Code that takes either from the container is unaffected. Code that builds the repository itself
+  or calls `search()` has to change.
+- **`WpFlowStore::create()` throws a `DomainException` when a row cannot be written.** It returned
+  the post id of a record without that row.
+- **Anything that matches the text `Middleware pipeline error: ` followed by a message** now finds
+  the exception's class before the message and `(File.php:line)` after it.
+
 ## [0.43.4] — 2026-10-08
 
 The shared-host `dist` package loads the framework, which it never did, and that is why this is

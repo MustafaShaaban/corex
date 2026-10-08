@@ -13,6 +13,7 @@ use Corex\Forms\Flow\Flow;
 use Corex\Forms\Flow\FlowConfiguration;
 use Corex\Forms\Flow\FlowRepository;
 use Corex\Forms\Flow\FlowVersion;
+use Corex\Support\BootLogger;
 use Corex\Tests\Fixtures\Forms\InMemoryFlowStore;
 
 beforeEach(function () {
@@ -148,7 +149,7 @@ it('checksums canonical configuration snapshots independent of associative key o
 });
 
 it('persists flow metadata and append-only versions through the storage seam', function () {
-    $repository = new FlowRepository(new InMemoryFlowStore());
+    $repository = new FlowRepository(new InMemoryFlowStore(), new BootLogger(debug: false));
     $flow = flowFixture();
     $configuration = new FlowConfiguration(
         schema: [['uuid' => 'field-1', 'key' => 'email', 'type' => 'email']],

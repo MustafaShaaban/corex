@@ -23,6 +23,7 @@ use Corex\Forms\Submission\FormChallengeContextFactory;
 use Corex\Forms\Validation\RuleRegistry;
 use Corex\Http\RemoteAddress;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Support\BootLogger;
 use Corex\Tests\Fixtures\Forms\InMemoryFlowStore;
 
 function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED): FlowBlockRenderer
@@ -41,7 +42,7 @@ function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED): FlowBlockRend
     Functions\when('rest_url')->alias(static fn (string $path): string => 'https://example.test/wp-json/' . $path);
     Functions\when('wp_json_encode')->alias(static fn (mixed $data): string => (string) json_encode($data));
 
-    $repository = new FlowRepository(new InMemoryFlowStore());
+    $repository = new FlowRepository(new InMemoryFlowStore(), new BootLogger(debug: false));
     $now = new DateTimeImmutable('2026-07-04T10:00:00+00:00');
     $flow = $repository->save(new Flow(
         id: 0,

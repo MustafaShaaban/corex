@@ -86,6 +86,18 @@ One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`)
 
 ## Recently landed
 
+On `main` since v0.43.4, not in a release:
+
+- **The 500 on `GET corex/v1/flows` has a name, and it is not a flow** (#286, DECISIONS #268).
+  The server log of the run that failed on 2026-10-08 says PHP refused a `FlowVersion` for a
+  parameter declared `FlowVersion`, against a type it printed as an empty string: PHP's compiled
+  copy of the method. The pipeline's log line now carries the exception's class and place, and the
+  browser job prints the log's tail and OPcache's status on every run. The first status it printed
+  showed the runner's php-fpm running the tracing JIT; the job now runs without it. That the JIT
+  was the cause is not proved; see "Open, and not hidden". Separately, and found while ruling
+  flows out: one stored flow that cannot be read no longer empties every list of flows, and
+  storing a flow can no longer leave half of one.
+
 Released in v0.43.4. [`CHANGELOG.md`](CHANGELOG.md) has the entry and its Client impact; beside
 what is listed here it holds spec 103 slices 5 and 7a and the mail fix for #150, which are under
 "In flight" above:
@@ -382,13 +394,18 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   `postcss-selector-parser` at 7.1.6, in the root and in `docs-app`. Both go when
   `@wordpress/scripts` 36 is taken, a toolchain major that has not been attempted
   (Dependabot's #240 proposes it).
-- **Something behind `GET corex/v1/flows` threw on 2026-10-04, and nobody knows what.** Three
-  `submissions-inbox` specs in a row got "Request could not be processed." on #211, with nothing
-  else running, straight after a seed that had succeeded. Every exception the flow code raises on
-  purpose is answered with a 409 or a 422, so this was one it does not expect. The message went to a
-  log CI did not keep. It keeps it now, in a file the job names and proves with a probe line on
-  every run. `seedSubmission` reports the server's answer instead of a `TypeError`, so the next
-  occurrence names itself (DECISIONS #228).
+- **PHP on the CI runner refused a correct argument until the run ended, and the cause is a lead,
+  not a proof.** On 2026-10-08 (run 37746210110) `GET corex/v1/flows` answered 200 twenty-eight
+  times and then 500 for the rest of the run. The log line: `FlowRestMapper::summary(): Argument
+  #2 ($version) must be of type , Corex\Forms\Flow\FlowVersion given`. The parameter is declared
+  `FlowVersion`. Eight `submissions-inbox` specs failed on it. Three failed the same way on
+  2026-10-04 on #211, when the log was not kept, so that one is assumed and not shown to be the
+  same fault. Nothing in CoreX can produce that message, and no test can reproduce it. The job's
+  php-fpm was running the tracing JIT with a 256 MB buffer, which nothing in the workflow asks
+  for; since #286 the job switches it off and checks. If the fault comes back with the JIT off,
+  the JIT was not it: the job prints OPcache's status on every run (memory, string buffer,
+  restarts, the JIT), and an ordinary run ends with the 8 MB string buffer 94% full, which is the
+  next thing to look at. Re-running the job has cleared it each time (DECISIONS #228 and #268).
 - **`max:N` and `min:N` decide what to measure from what the answer looks like.** `2025` in a text
   field is compared as a number. Left as it is by DECISIONS #241, which names the alternative
   (compare as a number only beside `numeric`) and why it is a behaviour change, not a fix.

@@ -12,6 +12,7 @@ use Corex\Forms\Flow\FlowController;
 use Corex\Forms\Flow\WpFlowStore;
 use Corex\Forms\Submission\FlowSubmissionController;
 use Corex\Boot;
+use Corex\Support\BootLogger;
 use Corex\Tests\Support\CreatedPosts;
 use Corex\Tests\Support\NotificationRows;
 use Corex\Tests\Support\WatchedTransients;
@@ -222,4 +223,60 @@ it('rejects an unpublished visitor flow without creating a submission', function
             'posts_per_page' => 500,
             'fields' => 'ids',
         ])))->toBe($before);
+});
+
+it('answers the flow list with the flows it can read when one stored flow has no payload', function () {
+    $this->controller->create(flowRestRequest('POST', '/corex/v1/flows', flowRestPayload()));
+    // A record the list selects, with no payload: what storing a flow left behind when the
+    // request stopped after its first write, and what a row edited by hand can still be.
+    $damaged = wp_insert_post([
+        'post_type' => WpFlowStore::POST_TYPE,
+        'post_status' => 'private',
+        'post_title' => 'Stopped part-way',
+    ]);
+    update_post_meta($damaged, '_corex_flow_type', 'flow');
+    update_post_meta($damaged, '_corex_flow_slug', 'integration-stopped');
+
+    $listed = $this->controller->index(flowRestRequest('GET', '/corex/v1/flows'));
+
+    $slugs = array_column($listed->get_data()['data']['flows'] ?? [], 'slug');
+    $warnings = array_column(Boot::app()->container()->make(BootLogger::class)->messages(), 'message');
+    expect($listed->get_status())->toBe(200)
+        ->and($slugs)->toContain('integration-flow')
+        ->and($slugs)->not->toContain('integration-stopped')
+        ->and(implode("\n", $warnings))->toContain(sprintf('Stored flow record %d could not be read', $damaged));
+});
+
+it('leaves nothing a list can see when storing a flow stops after its first write', function () {
+    // The stand-in for a request that was killed: the first meta row lands, and nothing after it runs.
+    $stop = static function (int $metaId, int $postId): void {
+        if (get_post_type($postId) === WpFlowStore::POST_TYPE) {
+            throw new RuntimeException('The request ended here.');
+        }
+    };
+    add_action('added_post_meta', $stop, 10, 2);
+    try {
+        $this->store->create('flow', 'integration-interrupted', 'Interrupted', 0, ['state' => 'draft']);
+    } catch (RuntimeException) {
+        // Expected: that is the interruption.
+    } finally {
+        remove_action('added_post_meta', $stop, 10);
+    }
+
+    expect($this->posts->ids())->toHaveCount(1)
+        ->and(array_column($this->store->all('flow'), 'id'))->not->toContain($this->posts->ids()[0]);
+});
+
+it('stores no flow at all when its payload cannot be written', function () {
+    $refuse = static fn (mixed $check, int $postId, string $key): mixed => $key === '_corex_flow_payload' ? false : $check;
+    add_filter('add_post_metadata', $refuse, 10, 3);
+    try {
+        expect(fn () => $this->store->create('flow', 'integration-unwritten', 'Unwritten', 0, ['state' => 'draft']))
+            ->toThrow(DomainException::class);
+    } finally {
+        remove_filter('add_post_metadata', $refuse, 10);
+    }
+
+    expect($this->posts->ids())->toHaveCount(1)
+        ->and(get_post($this->posts->ids()[0]))->toBeNull();
 });

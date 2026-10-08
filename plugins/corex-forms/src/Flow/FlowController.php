@@ -49,8 +49,8 @@ final readonly class FlowController
         return $this->gateway->read($request, function () use ($request): Response {
             $filters = $this->mapper->listFilters($request);
             $flows = array_map(
-                fn (Flow $flow): array => $this->mapper->summary($flow, $this->services->flows->currentVersion($flow)),
-                $this->services->flows->search($filters['query'], $filters['state']),
+                fn (array $entry): array => $this->mapper->summary($entry['flow'], $entry['version']),
+                $this->services->flows->listing($filters['query'], $filters['state']),
             );
 
             return Response::ok(['flows' => $flows]);
