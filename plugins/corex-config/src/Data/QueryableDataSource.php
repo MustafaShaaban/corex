@@ -13,9 +13,13 @@ defined('ABSPATH') || exit;
 /**
  * A {@see DataSource} that can answer a {@see DataQuery} — search / filter / sort /
  * paginate — and return a single record for the detail view (spec 045). Sources that
- * support it (form submissions) implement this; the Data screen + export use the query
- * path when a source is queryable and fall back to plain pagination otherwise (OCP — the
- * existing `DataSource` and its consumers are unchanged).
+ * support it (form submissions) implement this; the Data screen uses the query path when a
+ * source is queryable and falls back to plain pagination otherwise (OCP — the existing
+ * `DataSource` and its consumers are unchanged).
+ *
+ * Neither shape here is what an export writes: `query()` answers the table's rows, keyed by
+ * column, and `record()` answers the detail view. A source that can be exported says what an
+ * export row is through {@see ExportableDataSource}.
  */
 interface QueryableDataSource extends DataSource
 {

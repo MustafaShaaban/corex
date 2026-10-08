@@ -43,7 +43,8 @@ All notable changes to Corex are documented here. The format follows
   answered with a redirect to the custom login address. On a single site the first two only
   forward a visitor to the registration URL, and the Customizer sends a signed-out visitor to the
   login before CoreX answers the request; every one of those URLs is rewritten to the custom
-  address. The first two now get the same "not found" page as `/wp-login.php`, byte for byte, and
+  address. `/wp-signup.php` now gets the same "not found" page as `/wp-login.php`, byte for byte;
+  `/wp-register.php` answers as any `.php` file that was never there does on that server; and
   the third is answered like the rest of the admin area. On a network `/wp-signup.php` is the
   public sign-up page and is left alone. Reported from a production site; the other two were
   found by probing. In every release since v0.34.0, on a site with "Hide wp-login.php and
@@ -51,6 +52,17 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A Data export of Form submissions left every answer's column empty**, in CSV and in Excel.
+  The dialog offered a column for each answer (Email, Name, Message) and the file had the heading
+  and nothing under it: a real one read `"2026-10-08 13:28",corex-inbox-e2e,"email:
+  someone@example.com",,,`. The export read each cell from the Records table's row, which holds a
+  date, a form and one summary. A source now hands an export its own rows, with a value under
+  every field it declares.
+- **A Data export of ticked Form submissions also lost the "Submission" column.** Ticked records
+  were read as the detail view shows them, which has no summary. Ticked, filtered and "everything"
+  are read the same way now.
+- **Two answers whose keys differ only in capitals were offered as two columns with one key.**
+  They are one column, holding whichever of the two a submission has.
 - **A Data export stopped when a record arrived in the source while it was being written**, with
   "Bounded job counters are inconsistent." The last batch then held more than what was left to
   export, and the job refuses to count past its total. A batch is cut to what was counted when
@@ -89,6 +101,14 @@ All notable changes to Corex are documented here. The format follows
   constructed with the PDF writer and has `available()` and `describe()`;
   `SubmissionExportFiles` and `DataExportFiles` take the new document builders. Nothing changes
   for a site that only uses the screens.
+- **A data source of your own that declares an export has to implement `ExportableDataSource`**
+  (`Corex\Config\Data`), or the Data screen stops offering "Export records" for it. It was enough
+  to implement `QueryableDataSource` and `FieldAwareDataSource`. Add `exportRows(DataQuery $query)`
+  and `exportRowsOf(array $ids)`, each returning rows keyed by field key with a value under every
+  key `fields()` declares. Where your fields are your table's columns, `exportRows()` can return
+  `query()`. Managed tables and Form submissions need nothing: CoreX implements it for both.
+- **A Form submissions export from CoreX Data made before this has empty answer columns.** Export
+  again; the old file is not rewritten.
 - **The Data screen's export looks and behaves differently**: a dialog titled "Export <model>",
   which waits and saves the file, where there was "Create export" and "Queue export". Anything
   that drives that screen by its labels has to follow.

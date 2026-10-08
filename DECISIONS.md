@@ -7422,6 +7422,91 @@ install. The verifier is unchanged, so a forbidden path anywhere else still refu
 The real package, built to a scratch directory with this change, verified: 191.1MB unpacked,
 93.9MB of it `vendor/`, 91.9MB of that mPDF. Local checks had not built the package; CI did.
 
+## #270 — An export row is the source's to shape, and a source says so through `ExportableDataSource`
+
+Date: 2026-10-08 · Spec: 103 (submissions inbox and exports), after slice 7b · Status: Final
+
+Found by opening a real export of "Form submissions" from CoreX Data. The file began
+`Submitted,Form,Submission,Email,Name,Message` and its row read `"2026-10-08
+13:28",corex-inbox-e2e,"email: someone@example.com",,,`. A ticked row lost "Submission" as well.
+
+**What was wrong.** A source has three shapes. `query()` answers the row its table shows, keyed by
+column. `record()` answers what its detail view shows. An export needs a third: a value under
+every field the source declares, because the dialog offers a column per declared field and
+`DataExportTable` reads each cell from the row by the field's key. Nothing asked for that third
+shape. `DataExportJobHandler` took `query()` rows for a filtered or whole export and `record()`
+for ticked rows. For a managed table the three happen to be one shape, so its exports were right.
+Form submissions declare a field per answer, show one summary in their table and labelled pairs
+in their detail view, so neither shape the job read held an answer under its key.
+
+**The row shape belongs to the source.** `Corex\Config\Data\ExportableDataSource` extends
+`QueryableDataSource` and `FieldAwareDataSource` and adds `exportRows(DataQuery $query)` and
+`exportRowsOf(array $ids)`. Each row holds a value, or `''`, under every key `fields()` declares.
+The job reads those two and nothing else, so the scope a record was chosen through cannot change
+what is written for it. `SubmissionsSource` builds `fields()` and the export row from one private
+map of answer key to field key, so a column the dialog offers is a column the row fills.
+`TableDataSource` returns its table rows, which is what its fields are.
+
+**It is the export's adapter, and that changes what a third-party source must do.**
+`DataSourceService::hasAdapter()` answered yes for an export when a source was queryable and had
+fields. It asks for `ExportableDataSource` now, as it asks for `WritableDataSource` before a
+write. A source that declares `exportCsv` or `exportXlsx` without it is reported `no_adapter` and
+the screen does not offer the export. The other choice was to keep reading `query()` and
+`record()` from a source that has not said what its export row is. That keeps the defect for
+exactly the sources nobody here can test, and writes a file that looks complete. Not offering the
+export is the failure a person can see. No add-on in this repository registers such a source; the
+two test fixtures that did were changed. It is the first entry under Client impact.
+
+**Not changed, and checked.**
+
+- The Records table shows Date, Form and Submission for form submissions, not a column per
+  answer. `RecordsTable.js` renders `columns()`, and `tableRow()` is the same four keys as before.
+  That is intended: which answers exist differs from form to form, and a table has one set of
+  columns. The export dialog is where single answers are chosen.
+- The record dialog still gets `record()`: labelled pairs for a submission, the flat row for a
+  managed table, which its editor reads. Unit tests pin the table's row, the detail view's
+  record and the export's row for both sources.
+- Personal-data classes are as they were declared: an answer whose key reads as an email or a
+  phone is contact data, one that reads as a message is content, and the summary is content. A
+  unit test pins them. An answer keyed `name` is still classed as none; that is how it was
+  declared and it is not this change's to decide.
+- `TableDataSource::record()` already returned the row shape, so a ticked managed-table export was
+  right before. It no longer depends on that.
+
+**Changed on the way.**
+
+- Two answers whose keys become the same field key (`Email` and `email`) were declared as two
+  fields with one key. They are one field, and a row takes whichever the submission has.
+- `WpSubmissionsReader::fieldKeys()` read the meta of each sampled submission with a query of its
+  own. An export now asks for those keys with every batch, so the meta is loaded for all of them
+  with one call to `update_postmeta_cache()`.
+
+**Left open.**
+
+- A managed table's attachment column is written to an export as the JSON the screen renders a
+  link from (`{"id":…,"name":…,"url":…,"missing":…}`). It was so before this change. What an
+  attachment should read as in a file is a decision nobody has made.
+- A ticked export whose record is deleted between two batches re-reads a record: the job's offset
+  is the count of rows written, not of ids consumed. A selection is at most one page, and a batch
+  holds a page, so it needs a batch size below the selection to happen.
+- PDF (slice 6, pull request #289) is not on `main`. Its writer takes the same sheet the CSV and
+  Excel writers take, so it gets these rows when it lands; this branch did not run it.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The export through the real job, real `SubmissionsSource`, before the change (Pest unit) | ticked: `"2026-10-08 13:28",contact,,,,`; filtered and everything: summary present, answers empty; the workbook the same |
+| A stored submission exported through the routes on real WordPress, the root checkout's unchanged classes | 2 failed, the same two ways |
+| The same integration test on this branch's classes (the run prints which file each class came from) | 2 passed |
+| `tests/Unit`, `php -d memory_limit=512M vendor/bin/pest` | 2275 passed |
+| `tests/Integration`, real WordPress, this branch's classes | 549 passed |
+
+**Not run.** The browser suite: no JavaScript, stylesheet or markup changed. The integration suite
+was run from a session worktree through a bootstrap that puts this branch's classes in front of
+the root checkout's, whose plugin entry files are another branch's; CI runs it on this branch
+alone.
+
 ## #271 — A hidden login is not handed out by the addresses that forward to it
 
 Date: 2026-10-08 · Spec: 069 (login protection), a defect · Status: Final
@@ -7433,7 +7518,7 @@ probe, and two more found the same way:
 | Asked for, signed out | Before | After |
 |---|---|---|
 | `/wp-signup.php` | 302 to the hidden address | 404, the same bytes as a page that was never there |
-| `/wp-register.php` | 301 to the hidden address | 404, the same bytes |
+| `/wp-register.php` | 301 to the hidden address | 404, the same bytes as a `.php` file that was never there |
 | `/wp-admin/customize.php` | 302 to the hidden address | 404, as `/wp-admin/` answers |
 
 **One cause.** Hiding is safe because every URL core builds for the login is rewritten to the
@@ -7483,6 +7568,13 @@ What was run:
 | `LoginUrlRewritingTest` on real WordPress, with the changed guard | 11 passed |
 | The browser test "no well-known address forwards a signed-out visitor to the hidden login", unchanged guard | failed: `/wp-signup.php` answered 302 |
 | The five browser tests of a hidden endpoint, changed guard | 5 passed |
+
+**What CI corrected.** The first version of the browser test compared `/wp-register.php` with a
+WordPress "not found" page, byte for byte, and failed in CI on a fix that held. `wp-register.php`
+is not a file. Apache, on the development install, hands a missing `.php` to WordPress; CI's
+nginx answers it itself and WordPress is never asked, so there the address could not leak before
+the fix either. The test compares it with what the server answers for a `.php` file that was
+never there. Status and the absence of a redirect were right on both servers.
 
 **Not run.** The whole integration suite and the whole browser suite; CI runs both. The root
 checkout was in use by two other sessions, so this was built and verified from a scratch

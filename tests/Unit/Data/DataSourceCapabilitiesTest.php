@@ -12,10 +12,12 @@ use Corex\Data\DataField;
 use Corex\Data\DataSourceCapabilities;
 use Corex\Config\Data\CapabilityAwareDataSource;
 use Corex\Config\Data\DataAccessPolicy;
+use Corex\Config\Data\DataQuery;
 use Corex\Config\Data\DataRegistry;
 use Corex\Config\Data\DataSource;
 use Corex\Config\Data\DataSourceService;
 use Corex\Config\Data\FieldAwareDataSource;
+use Corex\Config\Data\QueryableDataSource;
 use Corex\Config\Data\WritableDataSource;
 use Corex\Data\DataWriteAdapter;
 use Corex\Operations\OperationResult;
@@ -207,6 +209,43 @@ it('hides declared write actions when the source has no real write adapter', fun
         ->and($actions['export_xlsx']['reason'])->toBe('no_adapter')
         ->and($actions['migrations']['reason'])->toBe('no_adapter')
         ->and($actions['rollback']['reason'])->toBe('no_adapter');
+});
+
+it('offers no export for a source that can be queried and has fields, and has no export rows to hand over', function () {
+    // What such a source's rows are keyed by is its table's columns, and what an export reads a
+    // cell by is a field's key. Where the two differ, every such column was written empty.
+    $registry = new DataRegistry();
+    $registry->register(new class() implements QueryableDataSource, CapabilityAwareDataSource, FieldAwareDataSource {
+        public function key(): string { return 'ledger'; }
+        public function label(): string { return 'Ledger'; }
+        public function columns(): array { return []; }
+        public function rows(int $page, int $perPage): array { return []; }
+        public function total(): int { return 0; }
+        public function delete(int $id): bool { return false; }
+        public function query(DataQuery $query): array { return []; }
+        public function count(DataQuery $query): int { return 0; }
+        public function record(int $id): ?array { return null; }
+        public function fields(): array { return []; }
+        public function capabilities(): DataSourceCapabilities
+        {
+            return new DataSourceCapabilities(
+                sourceKey: 'ledger', read: true, query: true, schema: false, detail: true,
+                create: false, update: false, delete: false, bulkUpdate: false, bulkDelete: false,
+                importDryRun: false, importCommit: false, exportCsv: true, exportXlsx: true,
+                migrations: false, rollback: false, maxPageSize: 20,
+                permissionMap: [],
+            );
+        }
+    });
+    $policy = new class() implements DataAccessPolicy {
+        public function allows(int $actorId, string $ability): bool { return true; }
+    };
+
+    $actions = (new DataSourceService($registry, $policy))->describe(7, 'ledger')['actions'];
+
+    expect($actions['query']['visible'])->toBeTrue()
+        ->and($actions['export_csv'])->toBe(['supported' => false, 'allowed' => false, 'visible' => false, 'reason' => 'no_adapter'])
+        ->and($actions['export_xlsx'])->toBe($actions['export_csv']);
 });
 
 function dataCapabilitySource(): DataSource

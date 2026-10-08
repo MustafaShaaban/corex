@@ -140,3 +140,25 @@ it('lets a managed table be exported as Excel by the people who may export it as
     expect($capabilities->supports('export_xlsx'))->toBeTrue()
         ->and($capabilities->permissionMap['export_xlsx'])->toBe($capabilities->permissionMap['export_csv']);
 });
+
+it('hands an export the row its table shows, for a query and for records asked for by id', function () {
+    // A managed table's fields are its columns, so its export row is its table row. A ticked
+    // record used to be read as the detail view shows it, which for this source happened to be
+    // the same shape (spec 103, US10).
+    $source = source(tableReader([
+        ['id' => 5, 'number' => 'INV-1', 'total' => '100', 'secret' => 'drop'],
+        ['id' => 6, 'number' => 'INV-2'],
+    ], 2));
+    $declared = array_map(static fn ($field): string => $field->key, $source->fields());
+
+    $rows = $source->exportRows(\Corex\Config\Data\DataQuery::from([]));
+
+    expect($declared)->toBe(['number', 'total'])
+        ->and($rows)->toBe([
+            ['id' => 5, 'number' => 'INV-1', 'total' => '100'],
+            // A column the stored row lacks is an empty cell, and still a cell.
+            ['id' => 6, 'number' => 'INV-2', 'total' => ''],
+        ])
+        // In the order asked for; a record that is gone is left out.
+        ->and($source->exportRowsOf([6, 404, 5]))->toBe([$rows[1], $rows[0]]);
+});

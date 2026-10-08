@@ -285,13 +285,28 @@ test.describe( 'a hidden endpoint is indistinguishable from a page that was neve
 			expect( response.headers().location, path ).toBeUndefined();
 		}
 
-		// The two that are not in the admin area are the page that was never there, exactly.
-		for ( const path of [ '/wp-signup.php', '/wp-register.php' ] ) {
-			expect(
-				await ( await request.get( path, { maxRedirects: 0 } ) ).text(),
-				path
-			).toBe( control );
-		}
+		// wp-signup.php is a file WordPress has, so the answer is CoreX's: the page that was
+		// never there, exactly.
+		expect(
+			await (
+				await request.get( '/wp-signup.php', { maxRedirects: 0 } )
+			).text()
+		).toBe( control );
+
+		// wp-register.php is not a file. Apache hands it to WordPress, and nginx answers a missing
+		// `.php` itself without asking WordPress: CI's does, and this test compared it with a
+		// WordPress page and failed there on a fix that held. Its baseline is what this server
+		// answers for a `.php` file that was never there.
+		const neverAFile = await (
+			await request.get( '/corex-definitely-not-a-file.php', {
+				maxRedirects: 0,
+			} )
+		).text();
+		expect(
+			await (
+				await request.get( '/wp-register.php', { maxRedirects: 0 } )
+			).text()
+		).toBe( neverAFile );
 
 		// Whatever the rest answer, none says where the login is. wp-activate.php and the two
 		// installer files run without plugins, so CoreX cannot hide them; they are here to hold
