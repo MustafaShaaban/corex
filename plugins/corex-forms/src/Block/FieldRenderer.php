@@ -26,8 +26,8 @@ final class FieldRenderer
 
     public function render(string $slug, FieldSchema $field): string
     {
-        $id = 'corex-' . $slug . '-' . $field->name;
-        $error = sprintf('<span class="corex-form__error" id="%s-error" role="alert"></span>', esc_attr($id));
+        $id = $this->id($slug, $field);
+        $error = $this->errorPlace($slug, $field);
 
         if ($field->type === 'step') {
             return sprintf(
@@ -56,6 +56,54 @@ final class FieldRenderer
             $this->help($id, $field),
             $error,
         );
+    }
+
+    /**
+     * The id a field's control carries. Its label, its help text and its error place are all
+     * tied to it.
+     */
+    public function id(string $slug, FieldSchema $field): string
+    {
+        return 'corex-' . $slug . '-' . $field->name;
+    }
+
+    /**
+     * Where the runtime writes a field's error. It is announced when it is written.
+     */
+    public function errorPlace(string $slug, FieldSchema $field): string
+    {
+        return sprintf(
+            '<span class="corex-form__error" id="%s-error" role="alert"></span>',
+            esc_attr($this->id($slug, $field)),
+        );
+    }
+
+    /**
+     * A field's label, tied to its control.
+     */
+    public function labelFor(string $slug, FieldSchema $field): string
+    {
+        return $this->label($this->id($slug, $field), $field);
+    }
+
+    /**
+     * What a control written by hand has to carry to be this field's: its id and name, the
+     * places that describe it, and that it is required.
+     *
+     * @return array<string,string> Attribute name to value, unescaped. `required` is present only when it applies.
+     */
+    public function controlAttributes(string $slug, FieldSchema $field): array
+    {
+        $id         = $this->id($slug, $field);
+        $attributes = [
+            'id'               => $id,
+            'name'             => $field->name,
+            'aria-describedby' => $this->describedBy($id, $field),
+        ];
+
+        return $field->required
+            ? $attributes + ['required' => 'required', 'aria-required' => 'true']
+            : $attributes;
     }
 
     private function control(string $id, FieldSchema $field): string

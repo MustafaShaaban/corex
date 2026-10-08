@@ -14,6 +14,7 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Forms\Block\FieldRenderer;
 use Corex\Forms\Block\FormBlockRenderer;
+use Corex\Forms\Block\FormParts;
 use Corex\Forms\Block\ProtectedFormRegistry;
 use Corex\Forms\Form;
 use Corex\Forms\FormRegistry;
@@ -247,3 +248,137 @@ it('carries no token field and declares nothing', function (bool $protected, arr
     'when the form did not ask, whatever the site configured' => [false, ['captcha.driver' => 'recaptcha', 'captcha.secret' => 'a-secret']],
     'when the form asked and the site has no provider'        => [true, []],
 ]);
+
+// Spec 104, US3 (SC-007). The stock form is about to be composed from parts a site may also use.
+// What a form that supplies no markup of its own prints must not move by a byte: these two files
+// were written from the renderer as it stood before that change.
+
+/** One field of every kind the renderer draws, with each presentation knob used somewhere. */
+function everyFieldForm(): Form
+{
+    return new class extends Form {
+        public string $slug = 'every-field';
+
+        protected array $fields = [
+            'intro'    => ['type' => 'step', 'label' => 'About you', 'help_text' => 'Two minutes.'],
+            'name'     => ['type' => 'text', 'label' => 'Name', 'rules' => ['required', 'max_length:120'], 'placeholder' => 'Your name'],
+            'email'    => ['type' => 'email', 'label' => 'Email', 'rules' => ['required', 'email'], 'width' => 'half'],
+            'phone'    => ['type' => 'phone', 'label' => 'Phone', 'rules' => ['phone:national'], 'width' => 'half', 'help_text' => 'With its area code.'],
+            'site'     => ['type' => 'url', 'label' => 'Website', 'label_mode' => 'hidden'],
+            'age'      => ['type' => 'number', 'label' => 'Age', 'rules' => ['numeric', 'min:18'], 'class' => 'is-narrow'],
+            'secret'   => ['type' => 'password', 'label' => 'Passphrase'],
+            'day'      => ['type' => 'date', 'label' => 'Day'],
+            'hour'     => ['type' => 'time', 'label' => 'Hour'],
+            'cv'       => ['type' => 'file', 'label' => 'CV', 'rules' => ['mime:application/pdf']],
+            'source'   => ['type' => 'hidden', 'default_value' => 'landing'],
+            'message'  => ['type' => 'textarea', 'label' => 'Message', 'rules' => ['required'], 'attrs' => ['rows' => '6']],
+            'topic'    => ['type' => 'select', 'label' => 'Topic', 'options' => ['sales' => 'Sales', 'help' => 'Help'], 'default_value' => 'help'],
+            'tags'     => ['type' => 'multi-select', 'label' => 'Tags', 'options' => ['a' => 'A', 'b' => 'B']],
+            'contact'  => ['type' => 'radio', 'label' => 'Contact by', 'options' => ['email' => 'Email', 'phone' => 'Phone'], 'rules' => ['required']],
+            'days'     => ['type' => 'checkbox-group', 'label' => 'Days', 'options' => ['mon' => 'Monday', 'tue' => 'Tuesday']],
+            'agree'    => ['type' => 'checkbox', 'label' => 'I agree', 'rules' => ['required']],
+            'news'     => ['type' => 'toggle', 'label' => 'Send me news', 'label_mode' => 'inline'],
+            'consent'  => ['type' => 'consent', 'label' => 'I consent'],
+            'stars'    => ['type' => 'rating', 'label' => 'Rating'],
+        ];
+    };
+}
+
+it('prints the stock form as it always has', function (Form $form, string $recorded) {
+    $html = renderRegisteredForm($form, ['formSlug' => $form->slug]);
+
+    expect($html)->toBe(file_get_contents(dirname(__DIR__, 2) . '/fixtures/Forms/' . $recorded));
+})->with([
+    'the shipped contact form'       => [fn (): Form => new ContactForm(), 'stock-contact-form.html'],
+    'a form with every kind of field' => [fn (): Form => everyFieldForm(), 'stock-every-field-form.html'],
+]);
+
+// Spec 104, US3 (#248): a form whose design is not the stock form's draws itself from the parts.
+
+/** A lead form drawn as a card: one control written by hand, one stock field, its own classes. */
+function handDrawnForm(): Form
+{
+    return new class extends Form {
+        public string $slug = 'lead';
+
+        protected array $fields = [
+            'phone' => ['type' => 'phone', 'label' => 'Phone', 'rules' => ['required']],
+            'note'  => ['type' => 'textarea', 'label' => 'Note'],
+        ];
+
+        public function submitLabel(): string
+        {
+            return 'Request a call';
+        }
+
+        public function markup(FormParts $parts): ?string
+        {
+            return '<form ' . $parts->attributes(['class' => 'lead-card']) . '>'
+                . '<div class="lead-card__row" ' . $parts->fieldAttributes('phone') . '>'
+                . $parts->label('phone')
+                . '<input type="tel" class="lead-card__input" ' . $parts->control('phone') . ' />'
+                . $parts->error('phone')
+                . '</div>'
+                . $parts->field('note')
+                . $parts->hidden()
+                . '<footer class="lead-card__foot">' . $parts->submit(['class' => 'lead-card__go']) . $parts->status() . '</footer>'
+                . '</form>';
+        }
+    };
+}
+
+/** A form whose markup forgot the status place and the hidden fields. */
+function formWithPartsMissing(): Form
+{
+    return new class extends Form {
+        public string $slug = 'broken';
+
+        protected array $fields = ['phone' => ['type' => 'text']];
+
+        public function label(): string
+        {
+            return 'Broken form';
+        }
+
+        public function markup(FormParts $parts): ?string
+        {
+            return '<form ' . $parts->attributes() . '>' . $parts->field('phone') . $parts->submit() . '</form>';
+        }
+    };
+}
+
+it('shows a form its own markup in place of the stock form', function () {
+    $html = renderRegisteredForm(handDrawnForm(), ['formSlug' => 'lead']);
+
+    expect($html)
+        ->toStartWith('<form class="corex-form lead-card" method="post" novalidate')
+        ->toContain('<div class="lead-card__row" data-corex-field="phone" data-corex-visibility="visible">')
+        ->toContain('<input type="tel" class="lead-card__input" id="corex-lead-phone" name="phone" aria-describedby="corex-lead-phone-error" required aria-required="true" />')
+        ->toContain('<button type="submit" class="corex-form__submit lead-card__go">Request a call</button>')
+        // The same page the browser tests of the runtime are run against: see handDrawnForm.test.js.
+        ->toBe(file_get_contents(dirname(__DIR__, 2) . '/fixtures/Forms/hand-drawn-form.html'));
+});
+
+it('shows a visitor nothing when a form\'s markup is missing a part, and says which to the developer', function () {
+    Functions\when('current_user_can')->justReturn(false);
+    $reported = [];
+    Functions\when('_doing_it_wrong')->alias(function (string $where, string $what) use (&$reported): void {
+        $reported[] = $what;
+    });
+
+    $html = renderRegisteredForm(formWithPartsMissing(), ['formSlug' => 'broken']);
+
+    expect($html)->toBe('')
+        ->and($reported)->toBe(['The markup of the form &quot;broken&quot; is missing: hidden(), status().']);
+});
+
+it('tells somebody who can edit the page which parts a form\'s markup is missing', function () {
+    Functions\when('current_user_can')->alias(static fn (string $capability): bool => $capability === 'edit_posts');
+    Functions\when('_doing_it_wrong')->justReturn(null);
+
+    $html = renderRegisteredForm(formWithPartsMissing(), ['formSlug' => 'broken']);
+
+    expect($html)->toBe(
+        '<p class="corex-form__notice" role="alert">The form &quot;Broken form&quot; is not shown to visitors: its markup is missing hidden(), status().</p>',
+    );
+});

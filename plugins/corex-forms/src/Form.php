@@ -10,6 +10,7 @@ namespace Corex\Forms;
 
 defined('ABSPATH') || exit;
 
+use Corex\Forms\Block\FormParts;
 use Corex\Forms\Listeners\SendEmailListener;
 use Corex\Forms\Listeners\StoreSubmissionListener;
 
@@ -83,6 +84,19 @@ abstract class Form
     public function protection(): array
     {
         return ['captcha' => 'off'];
+    }
+
+    /**
+     * The form's own markup, built from the parts it is handed; `null`, the default, is the
+     * form CoreX draws.
+     *
+     * The markup must hold `$parts->attributes()` on its `<form>`, and `$parts->hidden()` and
+     * `$parts->status()` inside it. Each field needs a wrapper carrying
+     * `$parts->fieldAttributes($name)` that holds its control and `$parts->error($name)`.
+     */
+    public function markup(FormParts $parts): ?string
+    {
+        return null;
     }
 
     /**
