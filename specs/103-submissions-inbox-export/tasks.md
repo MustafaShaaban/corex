@@ -113,12 +113,19 @@ Slice 2a ends here (DECISIONS #254). T030, T031 and everything below is slice 2b
 
 ## Slice 7 — The Data export (US10)
 
-- [ ] T100 Audit `DataModels/ExportPanel.js` and its services against FR-048's list; add the findings to `plan.md`
-- [ ] T101 The Data export writes through `Export/` writers and stores through `ExportFileStore`
-- [ ] T102 Preview with a count, the advance route, the streamed download
-- [ ] T103 Its dialog on `CorexDialog`, in the same order as the Submissions export
+Slice 7a, the server:
+
+- [x] T100 Audit `DataModels/ExportPanel.js` and its services against FR-048's list; add the findings to `plan.md` (D12: there are two surfaces, and Excel was never reachable)
+- [x] T101 The Data export builds typed cells from the source's field types, writes through `Export/` writers and keeps its file in `ExportDirectory` (D12a)
+- [x] T101b Excel for the sources CoreX ships (D12b)
+- [x] T102 Preview with a count for each scope; a step taken on request; no file for no records; a file name for the site, the source and the date
+- [x] T102b Pest unit and integration for the above; guards; notes
+
+Slice 7b, the dialog:
+
+- [ ] T103 One dialog on `CorexDialog` for the Records tab and the Export tab, in the same order as the Submissions export (D12c)
 - [ ] T104 Playwright: one Data export end to end
-- [ ] T105 Rendered check; guards; notes
+- [ ] T105 Rendered check, measured; guards; notes
 
 ## Dependencies
 

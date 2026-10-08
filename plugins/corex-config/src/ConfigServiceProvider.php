@@ -77,7 +77,6 @@ use Corex\Config\DataModels\DataImportService;
 use Corex\Config\DataModels\DataImportStore;
 use Corex\Config\DataModels\WpDataImportJobQueue;
 use Corex\Config\DataModels\WpDataImportStore;
-use Corex\Config\DataModels\DataExportArtifactWriter;
 use Corex\Config\DataModels\DataExportJobHandler;
 use Corex\Config\DataModels\DataExportJobQueue;
 use Corex\Config\DataModels\DataExportService;
@@ -715,7 +714,12 @@ final class ConfigServiceProvider extends ServiceProvider
             DataExportJobQueue::class,
             static fn (ContainerInterface $c): WpDataExportJobQueue => $c->make(WpDataExportJobQueue::class),
         );
-        $this->container->singleton(DataExportArtifactWriter::class);
+        $this->container->singleton(
+            \Corex\Config\DataModels\DataExportTable::class,
+            static fn (): \Corex\Config\DataModels\DataExportTable =>
+                new \Corex\Config\DataModels\DataExportTable(static fn (): \DateTimeZone => wp_timezone()),
+        );
+        $this->container->singleton(\Corex\Config\DataModels\DataExportFiles::class);
         $this->container->singleton(DataExportService::class);
         $this->container->singleton(DataExportJobHandler::class);
         $this->container->singleton(WpMigrationPreviewStore::class);

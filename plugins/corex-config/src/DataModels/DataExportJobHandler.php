@@ -11,13 +11,14 @@ use Corex\Config\Data\DataQuery;
 use Corex\Config\Data\DataSourceService;
 use Corex\Config\Data\FieldAwareDataSource;
 use Corex\Config\Data\QueryableDataSource;
-use Corex\Data\DataSourceCapabilities;
 use Corex\Jobs\BoundedJob;
 use Corex\Jobs\JobHandler;
 use DateTimeImmutable;
 use DomainException;
 
-/** Resumable source query to private CSV/XLSX artifact handler. */
+/**
+ * Gathers a Data export a batch at a time, and writes its file when the last batch has arrived.
+ */
 final readonly class DataExportJobHandler implements JobHandler
 {
     public const KIND = 'data.export';
@@ -25,7 +26,7 @@ final readonly class DataExportJobHandler implements JobHandler
     public function __construct(
         private DataSourceService $sources,
         private DataExportStore $exports,
-        private DataExportArtifactWriter $writer,
+        private DataExportFiles $files,
         private ActivityService $activity,
     ) {
     }
@@ -38,8 +39,7 @@ final readonly class DataExportJobHandler implements JobHandler
         if ($run === null || $run->state !== DataExportRun::STATE_QUEUED) {
             throw new DomainException('The queued data export is unavailable.');
         }
-        $operation = $run->format === 'xlsx' ? DataSourceCapabilities::EXPORT_XLSX : DataSourceCapabilities::EXPORT_CSV;
-        $source = $this->sources->authorize($job->actorId, $run->sourceKey, $operation);
+        $source = $this->sources->authorize($job->actorId, $run->sourceKey, DataExportService::operationFor($run->format));
         if (! $source instanceof QueryableDataSource || ! $source instanceof FieldAwareDataSource) {
             throw new DomainException('The data source export adapter is unavailable.');
         }
@@ -49,20 +49,19 @@ final readonly class DataExportJobHandler implements JobHandler
             throw new DomainException('The data export scope changed before completion.');
         }
         $processed = $job->processed + count($rows);
-        $final = $processed === $job->total;
-        $fields = $this->fields($source, $run->columns);
-        $artifact = $this->writer->append(
-            DataExportArtifact::start($run->format, $this->exports->artifact($run->id) ?? ''),
-            $fields,
-            $rows,
-            $final,
-        );
-        $this->exports->saveArtifact($run->id, $artifact->content);
+        $this->files->collect($run, $rows);
         $advanced = $job->advance((string) $processed, $processed, $processed, 0, null, new DateTimeImmutable('now'));
-        if (! $final) {
+        if ($processed < $job->total) {
             return $advanced;
         }
 
+        // The source's name names the sheet; its key does when it has none to give.
+        $file = $this->files->finish($run, $source->label() ?: $run->sourceKey, $source->fields());
+        $this->exports->saveFile($run->id, [
+            'path' => $file->path,
+            'extension' => $file->extension,
+            'content_type' => $file->contentType,
+        ]);
         $this->exports->finish($run->id, $processed);
         $this->audit($run, $processed);
 
@@ -83,17 +82,6 @@ final readonly class DataExportJobHandler implements JobHandler
         $input['per_page'] = $limit;
 
         return $source->query(DataQuery::from($input));
-    }
-
-    /** @param list<string> $columns @return list<array{key:string,label:string}> */
-    private function fields(FieldAwareDataSource $source, array $columns): array
-    {
-        $labels = [];
-        foreach ($source->fields() as $field) {
-            $labels[$field->key] = $field->label;
-        }
-
-        return array_map(static fn (string $key): array => ['key' => $key, 'label' => $labels[$key]], $columns);
     }
 
     private function audit(DataExportRun $run, int $rows): void

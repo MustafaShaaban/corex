@@ -17,8 +17,10 @@ direct IDs pass through its access policy. An operation is visible only when the
 required adapter, and maps it to an ability the current actor has.
 
 Exports support the current filter, selected rows, or all accessible rows. Choose explicit columns and acknowledge
-personal-data fields. CoreX queues a bounded private artifact and exposes completed downloads through the authorized
-REST endpoint.
+personal-data fields. The file is a CSV or an Excel workbook, headed by each field's label. A value is written as
+what its field is declared to be: a number as a number, a date and time as one, a switch as Yes or No, a list as its
+items. An export of no records is refused. CoreX writes the file in a bounded job, keeps it in the private uploads
+directory, and exposes completed downloads through the authorized REST endpoint.
 
 For query parameters, mutation previews, CSV imports, exports, migrations, and writing a custom source adapter, see
 [Data management and adapters](/guides/data-management/).

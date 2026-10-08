@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace Corex\Config\DataModels;
 defined('ABSPATH') || exit;
 
+use Corex\Config\Export\ExportDirectory;
 use RuntimeException;
 
-/** Private WordPress export history and binary-safe artifact persistence. */
+/** Private WordPress export history, and where each export's file is. */
 final class WpDataExportStore implements DataExportStore
 {
+    public function __construct(private readonly ExportDirectory $directory)
+    {
+    }
+
+    private const FILE = '_corex_data_export_file';
     public const POST_TYPE = 'corex_data_export';
     private const PAYLOAD = '_corex_data_export_payload';
     private const HASH = '_corex_data_export_hash';
@@ -83,12 +89,36 @@ final class WpDataExportStore implements DataExportStore
         return array_values(array_filter(array_map(fn (int $id): ?DataExportRun => $this->find($id), array_map('intval', get_posts($args)))));
     }
 
-    public function saveArtifact(int $id, string $artifact): void
+    public function saveFile(int $id, array $file): void
     {
         if ($this->find($id) === null) {
             throw new RuntimeException(__('Data export was not found.', 'corex'));
         }
-        update_post_meta($id, self::ARTIFACT, base64_encode($artifact));
+        // Only the file's name is kept. A full path would not survive: WordPress strips
+        // backslashes from stored meta, which is every separator of a Windows path, and an
+        // absolute path stops being true the day a site is moved.
+        update_post_meta($id, self::FILE, ['name' => basename($file['path'])] + array_diff_key($file, ['path' => true]));
+    }
+
+    public function file(int $id): ?array
+    {
+        if ($this->find($id) === null) {
+            return null;
+        }
+        $file = get_post_meta($id, self::FILE, true);
+        if (! is_array($file) || ! is_string($file['name'] ?? null) || $file['name'] === '') {
+            return null;
+        }
+        $path = $this->directory->path() . '/' . basename($file['name']);
+        if (! is_file($path)) {
+            return null;
+        }
+
+        return [
+            'path' => $path,
+            'extension' => (string) ($file['extension'] ?? ''),
+            'content_type' => (string) ($file['content_type'] ?? ''),
+        ];
     }
 
     public function artifact(int $id): ?string

@@ -10,6 +10,7 @@ use Corex\Config\Data\DataQueryService;
 use Corex\Config\Data\DataSourceService;
 use Corex\Config\Data\FieldAwareDataSource;
 use Corex\Config\Data\QueryableDataSource;
+use Corex\Config\Export\ExportWriters;
 use Corex\Data\DataField;
 use Corex\Data\DataSourceCapabilities;
 use DomainException;
@@ -28,18 +29,56 @@ final readonly class DataExportService
 
     public function request(DataExportRequest $request): DataExportRun
     {
-        $operation = $request->format === 'xlsx'
-            ? DataSourceCapabilities::EXPORT_XLSX
-            : DataSourceCapabilities::EXPORT_CSV;
-        $source = $this->sources->authorize($request->actorId, $request->sourceKey, $operation);
+        $source = $this->sources->authorize($request->actorId, $request->sourceKey, self::operationFor($request->format));
         if (! $source instanceof QueryableDataSource || ! $source instanceof FieldAwareDataSource) {
             throw new DomainException('The data source does not provide an export query and field schema.');
         }
         $personal = $this->validateColumns($request, $source->fields());
         $count = $this->count($request);
+        if ($count === 0) {
+            throw new DomainException('There is nothing to export.');
+        }
         $run = $this->exports->create(DataExportRun::queued($request, $count, $personal));
 
         return $this->exports->attachJob($run->id, $this->jobs->enqueue($run));
+    }
+
+    /**
+     * How many records each scope would export, before anything is exported.
+     *
+     * @param list<int>           $selectedIds
+     * @param array<string,mixed> $query       The filters in force.
+     *
+     * @return array{selected:int,filtered:int,all:int}
+     */
+    public function preview(int $actorId, string $sourceKey, array $selectedIds, array $query): array
+    {
+        $this->sources->authorize($actorId, $sourceKey, DataSourceCapabilities::EXPORT_CSV);
+        $selected = 0;
+        foreach ($selectedIds as $id) {
+            $selected += $this->queries->detail($actorId, $sourceKey, (int) $id) === null ? 0 : 1;
+        }
+
+        return [
+            DataExportRequest::SCOPE_SELECTED => $selected,
+            DataExportRequest::SCOPE_FILTERED => $this->total($actorId, $sourceKey, $query),
+            DataExportRequest::SCOPE_ALL => $this->total($actorId, $sourceKey, []),
+        ];
+    }
+
+    /**
+     * Takes one step of an export now, for the person waiting on it.
+     *
+     * @return array{state:string,processed:int,total:int,error:string}
+     */
+    public function advance(int $actorId, int $runId, bool $manageAll, string $sourceKey): array
+    {
+        $run = $this->exports->find($runId);
+        if ($run === null || (! $manageAll && $run->actorId !== $actorId) || $run->sourceKey !== $sourceKey) {
+            throw new DomainException('The data export is unavailable.');
+        }
+
+        return $this->jobs->advance($run->jobId);
     }
 
     /** @return list<DataExportRun> */
@@ -48,24 +87,53 @@ final readonly class DataExportService
         return $this->exports->history($actorId, $manageAll, min(100, max(1, $limit)));
     }
 
-    /** @return array{filename:string,mime:string,content:string} */
+    /**
+     * A finished export, for the person who made it or one who may manage every export.
+     *
+     * @return array{filename:string,mime:string,content:string} Named for what it holds and the
+     *         day it was made; the caller adds the site.
+     */
     public function download(int $actorId, int $runId, bool $manageAll, string $sourceKey = ''): array
     {
         $run = $this->exports->find($runId);
-        $artifact = $this->exports->artifact($runId);
         if ($run === null || $run->state !== DataExportRun::STATE_COMPLETED
-            || (! $manageAll && $run->actorId !== $actorId) || $artifact === null
+            || (! $manageAll && $run->actorId !== $actorId)
             || ($sourceKey !== '' && $run->sourceKey !== $sourceKey)) {
             throw new DomainException('The data export artifact is unavailable.');
         }
 
+        $file = $this->exports->file($runId);
+        $name = sprintf('%s-%s', $run->sourceKey, $run->createdAt->format('Y-m-d'));
+        if ($file !== null) {
+            return [
+                'filename' => $name . '.' . $file['extension'],
+                'mime' => $file['content_type'],
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- a local file CoreX wrote, handed back as the answer.
+                'content' => (string) file_get_contents($file['path']),
+            ];
+        }
+
+        // An export made before files were kept on disk has only what was stored with it.
+        $artifact = $this->exports->artifact($runId);
+        if ($artifact === null) {
+            throw new DomainException('The data export artifact is unavailable.');
+        }
+
         return [
-            'filename' => sprintf('corex-%s-%d.%s', $run->sourceKey, $run->id, $run->format),
-            'mime' => $run->format === 'xlsx'
+            'filename' => $name . '.' . $run->format,
+            'mime' => $run->format === ExportWriters::XLSX
                 ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                : 'text/csv',
+                : 'text/csv; charset=utf-8',
             'content' => $artifact,
         ];
+    }
+
+    /** The source operation a format is allowed under. */
+    public static function operationFor(string $format): string
+    {
+        return $format === ExportWriters::XLSX
+            ? DataSourceCapabilities::EXPORT_XLSX
+            : DataSourceCapabilities::EXPORT_CSV;
     }
 
     /** @param list<DataField> $fields @return list<string> */
@@ -104,8 +172,17 @@ final readonly class DataExportService
 
             return count($request->selectedIds);
         }
-        $query = DataQuery::from($request->scope === DataExportRequest::SCOPE_FILTERED ? $request->query : []);
 
-        return (int) $this->queries->query($request->actorId, $request->sourceKey, $query)['total'];
+        return $this->total(
+            $request->actorId,
+            $request->sourceKey,
+            $request->scope === DataExportRequest::SCOPE_FILTERED ? $request->query : [],
+        );
+    }
+
+    /** @param array<string,mixed> $query */
+    private function total(int $actorId, string $sourceKey, array $query): int
+    {
+        return (int) $this->queries->query($actorId, $sourceKey, DataQuery::from($query))['total'];
     }
 }

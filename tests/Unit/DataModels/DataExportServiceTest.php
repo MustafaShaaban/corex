@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Column-scoped export job/history tests (spec 068 T121 / FR-062, FR-068).
+ * Column-scoped export job/history tests (spec 068 T121 / FR-062, FR-068), and the file a Data
+ * export writes (spec 103, US10).
  *
  * @package Corex\Tests\Unit\DataModels
  */
@@ -21,31 +22,24 @@ use Corex\Config\Data\DataSource;
 use Corex\Config\Data\DataSourceService;
 use Corex\Config\Data\FieldAwareDataSource;
 use Corex\Config\Data\QueryableDataSource;
-use Corex\Config\DataModels\DataExportArtifactWriter;
-use Corex\Config\DataModels\DataExportArtifact;
+use Corex\Config\DataModels\DataExportFiles;
 use Corex\Config\DataModels\DataExportJobHandler;
 use Corex\Config\DataModels\DataExportJobQueue;
 use Corex\Config\DataModels\DataExportRequest;
 use Corex\Config\DataModels\DataExportRun;
 use Corex\Config\DataModels\DataExportService;
 use Corex\Config\DataModels\DataExportStore;
+use Corex\Config\DataModels\DataExportTable;
+use Corex\Config\Export\ExportDirectory;
+use Corex\Config\Export\ExportWriters;
 use Corex\Data\DataField;
 use Corex\Data\DataSourceCapabilities;
 use Corex\Jobs\BoundedJob;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
-});
-
-it('provides durable filtered selected and all export contracts', function () {
-    expect(class_exists(Corex\Config\DataModels\DataExportService::class))->toBeTrue()
-        ->and(class_exists(Corex\Config\DataModels\DataExportRequest::class))->toBeTrue()
-        ->and(class_exists(Corex\Config\DataModels\DataExportRun::class))->toBeTrue()
-        ->and(interface_exists(Corex\Config\DataModels\DataExportStore::class))->toBeTrue()
-        ->and(interface_exists(Corex\Config\DataModels\DataExportJobQueue::class))->toBeTrue()
-        ->and(class_exists(Corex\Config\DataModels\DataExportJobHandler::class))->toBeTrue()
-        ->and(class_exists(Corex\Config\DataModels\DataExportArtifact::class))->toBeTrue()
-        ->and(class_exists(Corex\Config\DataModels\DataExportArtifactWriter::class))->toBeTrue();
+    Functions\when('wp_json_encode')->alias('json_encode');
+    Functions\when('wp_delete_file')->alias('unlink');
 });
 
 /** @return array{DataExportService,DataExportStore,DataExportJobQueue,DataSourceService,ActivityRepository} */
@@ -53,9 +47,9 @@ function exportService(bool $xlsx = true): array
 {
     $source = new class($xlsx) implements DataSource, QueryableDataSource, CapabilityAwareDataSource, FieldAwareDataSource {
         private array $records = [
-            ['id' => 1, 'name' => '=Ada', 'email' => 'ada@example.com', 'status' => 'active', 'secret' => 'drop'],
-            ['id' => 2, 'name' => 'Grace', 'email' => 'grace@example.com', 'status' => 'inactive', 'secret' => 'drop'],
-            ['id' => 3, 'name' => 'Linus', 'email' => 'linus@example.com', 'status' => 'active', 'secret' => 'drop'],
+            ['id' => 1, 'name' => '=Ada', 'email' => 'ada@example.com', 'status' => 'active', 'joined' => '2026-10-07 09:30:00', 'tags' => ['vip', 'beta'], 'secret' => 'drop'],
+            ['id' => 2, 'name' => 'Grace', 'email' => 'grace@example.com', 'status' => 'inactive', 'joined' => '2026-10-06 08:00:00', 'tags' => [], 'secret' => 'drop'],
+            ['id' => 3, 'name' => 'Linus', 'email' => 'linus@example.com', 'status' => 'active', 'joined' => '2026-10-05 17:45:00', 'tags' => ['beta'], 'secret' => 'drop'],
         ];
         public function __construct(private bool $xlsx) {}
         public function key(): string { return 'contacts'; }
@@ -90,9 +84,12 @@ function exportService(bool $xlsx = true): array
         public function fields(): array
         {
             return [
+                new DataField('id', 'ID', DataField::TYPE_ID, false, true, true, [], true, DataField::PERSONAL_NONE, [], []),
                 new DataField('name', 'Name', DataField::TYPE_TEXT, true, false, true, ['contains'], true, DataField::PERSONAL_IDENTITY, [], []),
                 new DataField('email', 'Email', DataField::TYPE_EMAIL, true, false, true, ['equals'], true, DataField::PERSONAL_CONTACT, [], []),
                 new DataField('status', 'Status', DataField::TYPE_SELECT, false, true, true, ['equals'], true, DataField::PERSONAL_NONE, ['options' => ['active', 'inactive']], []),
+                new DataField('joined', 'Joined', DataField::TYPE_DATETIME, false, true, true, [], true, DataField::PERSONAL_NONE, [], []),
+                new DataField('tags', 'Tags', DataField::TYPE_JSON, false, true, true, [], false, DataField::PERSONAL_NONE, [], []),
             ];
         }
         private function matching(DataQuery $query): array
@@ -110,19 +107,28 @@ function exportService(bool $xlsx = true): array
     $queries = new DataQueryService($registry, $sources);
     $store = new class implements DataExportStore {
         /** @var array<int,DataExportRun> */ public array $runs = [];
+        /** @var array<int,array{path:string,extension:string,content_type:string}> */ public array $files = [];
         /** @var array<int,string> */ public array $artifacts = [];
         public function create(DataExportRun $run): DataExportRun { $run = $run->withId(count($this->runs) + 1); return $this->runs[$run->id] = $run; }
         public function attachJob(int $id, int $jobId): DataExportRun { return $this->runs[$id] = $this->runs[$id]->withJob($jobId); }
         public function find(int $id): ?DataExportRun { return $this->runs[$id] ?? null; }
         public function findByHash(string $hash): ?DataExportRun { foreach ($this->runs as $run) if ($run->inputHash === $hash) return $run; return null; }
         public function history(int $actorId, bool $manageAll, int $limit): array { return array_slice(array_values(array_filter($this->runs, static fn (DataExportRun $run): bool => $manageAll || $run->actorId === $actorId)), 0, $limit); }
-        public function saveArtifact(int $id, string $artifact): void { $this->artifacts[$id] = $artifact; }
+        public function saveFile(int $id, array $file): void { $this->files[$id] = $file; }
+        public function file(int $id): ?array { return $this->files[$id] ?? null; }
         public function artifact(int $id): ?string { return $this->artifacts[$id] ?? null; }
         public function finish(int $id, int $rows): void { $this->runs[$id] = $this->runs[$id]->completed($rows); }
     };
     $queue = new class implements DataExportJobQueue {
         /** @var list<DataExportRun> */ public array $runs = [];
+        /** @var list<int> */ public array $advanced = [];
         public function enqueue(DataExportRun $run): int { $this->runs[] = $run; return 52; }
+        public function advance(int $jobId): array
+        {
+            $this->advanced[] = $jobId;
+
+            return ['state' => 'running', 'processed' => 100, 'total' => 250, 'error' => ''];
+        }
     };
     $activity = new class implements ActivityRepository {
         /** @var list<ActivityEvent> */ public array $events = [];
@@ -142,6 +148,78 @@ function exportRequest(array $changes = []): DataExportRequest
         'query' => ['filters' => ['status' => 'active']], 'selected_ids' => [],
         'columns' => ['name', 'status'], 'format' => 'csv', 'personal_data_acknowledged' => true,
     ]);
+}
+
+/** The real table, writers and working file, in a scratch directory of its own. */
+function dataExportFiles(): array
+{
+    $directory = new class implements ExportDirectory {
+        private string $path = '';
+
+        public function path(): string
+        {
+            if ($this->path === '') {
+                $this->path = sys_get_temp_dir() . '/corex_data_export_' . uniqid('', true);
+                mkdir($this->path);
+            }
+
+            return $this->path;
+        }
+    };
+
+    return [
+        new DataExportFiles(
+            new DataExportTable(static fn (): DateTimeZone => new DateTimeZone('UTC')),
+            new ExportWriters(static fn (): bool => false),
+            $directory,
+        ),
+        $directory,
+    ];
+}
+
+/**
+ * Runs an export's job to the end, a batch at a time, as the runner would.
+ *
+ * @return array{download:array{filename:string,mime:string,content:string},run:DataExportRun,states:list<string>,directory:string,store:DataExportStore,events:list<ActivityEvent>}
+ */
+function runDataExport(array $request = [], int $batchSize = 25): array
+{
+    [$service, $store, , $sources, $activity] = exportService();
+    [$files, $directory] = dataExportFiles();
+    $run = $service->request(exportRequest($request));
+    $now = new DateTimeImmutable('2026-07-04T12:00:00+00:00');
+    $job = BoundedJob::queued(DataExportJobHandler::KIND, 7, $run->recordCount, $run->inputHash, $now)->withId(52)->start($now);
+    $handler = new DataExportJobHandler($sources, $store, $files, new ActivityService($activity));
+    $states = [];
+    do {
+        $job = $handler->handle($job, $batchSize);
+        $states[] = $job->state;
+    } while ($job->state !== BoundedJob::STATE_COMPLETED && count($states) < 10);
+
+    return [
+        'download' => $service->download(7, $run->id, false),
+        'run' => $store->find($run->id),
+        'states' => $states,
+        'directory' => $directory->path(),
+        'store' => $store,
+        'events' => $activity->events,
+    ];
+}
+
+/** One part of a written workbook, as text. */
+function dataWorkbookPart(string $workbook, string $part): string
+{
+    $path = tempnam(sys_get_temp_dir(), 'corex-xlsx-test-');
+    file_put_contents($path, $workbook);
+    $zip = new ZipArchive();
+    $opened = $zip->open($path);
+    $xml = $opened === true ? (string) $zip->getFromName($part) : '';
+    if ($opened === true) {
+        $zip->close();
+    }
+    unlink($path);
+
+    return $xml;
 }
 
 it('queues a column-scoped filtered export with truthful count and personal-data classes', function () {
@@ -164,7 +242,11 @@ it('requires personal-data acknowledgement and rejects undeclared columns or for
         ->and(fn () => $service->request(exportRequest(['columns' => ['secret']])))
         ->toThrow(InvalidArgumentException::class, 'column')
         ->and(fn () => $service->request(exportRequest(['format' => 'xlsx'])))
-        ->toThrow(DomainException::class, 'support');
+        ->toThrow(DomainException::class, 'support')
+        ->and(fn () => exportRequest(['format' => 'pdf']))
+        ->toThrow(InvalidArgumentException::class, 'format')
+        ->and(fn () => exportRequest(['separator' => 'pipe']))
+        ->toThrow(InvalidArgumentException::class, 'separator');
 });
 
 it('validates exact selected records and scopes history and downloads to the actor', function () {
@@ -182,43 +264,132 @@ it('validates exact selected records and scopes history and downloads to the act
         ->toThrow(DomainException::class, 'unavailable');
 });
 
-it('streams only selected columns into a formula-safe artifact and completes history', function () {
+it('refuses an export that would hold nothing, and queues nothing for it', function () {
+    [$service, $store, $queue] = exportService();
+
+    expect(fn () => $service->request(exportRequest(['query' => ['filters' => ['status' => 'archived']]])))
+        ->toThrow(DomainException::class, 'There is nothing to export.')
+        ->and($store->runs)->toBe([])
+        ->and($queue->runs)->toBe([]);
+});
+
+it('counts what each scope would export, before it is exported', function () {
+    [$service] = exportService();
+
+    expect($service->preview(7, 'contacts', [1, 99], ['filters' => ['status' => 'active']]))
+        ->toBe(['selected' => 1, 'filtered' => 2, 'all' => 3])
+        ->and(fn () => $service->preview(8, 'contacts', [], []))
+        ->toThrow(DomainException::class, 'permission');
+});
+
+it('treats the same request made twice as two exports', function () {
+    [$service, $store] = exportService();
+    $first = $service->request(exportRequest());
+    $second = $service->request(exportRequest());
+
+    expect($first->inputHash)->not->toBe($second->inputHash)
+        ->and($store->findByHash($first->inputHash)?->id)->toBe($first->id)
+        ->and($store->findByHash($second->inputHash)?->id)->toBe($second->id);
+});
+
+it('takes a step of an export for the person who made it, and for nobody else', function () {
+    [$service, , $queue] = exportService();
+    $run = $service->request(exportRequest());
+
+    expect($service->advance(7, $run->id, false, 'contacts'))->toBe(['state' => 'running', 'processed' => 100, 'total' => 250, 'error' => ''])
+        ->and($queue->advanced)->toBe([52])
+        ->and(fn () => $service->advance(8, $run->id, false, 'contacts'))->toThrow(DomainException::class, 'unavailable')
+        ->and(fn () => $service->advance(7, $run->id, false, 'orders'))->toThrow(DomainException::class, 'unavailable')
+        ->and($queue->advanced)->toBe([52]);
+});
+
+it('writes only the columns asked for, as a CSV a spreadsheet opens, and completes the history', function () {
+    $export = runDataExport();
+    $download = $export['download'];
+
+    expect($export['states'])->toBe([BoundedJob::STATE_COMPLETED])
+        ->and($download['filename'])->toBe('contacts-' . $export['run']->createdAt->format('Y-m-d') . '.csv')
+        ->and($download['mime'])->toBe('text/csv; charset=utf-8')
+        // The mark that tells a spreadsheet the file is UTF-8, then the labels, then the rows; a
+        // value a spreadsheet would run as a formula is kept from running.
+        ->and($download['content'])->toBe("\xEF\xBB\xBFName,Status\r\n'=Ada,active\r\nLinus,active\r\n")
+        ->and($export['run']->state)->toBe(DataExportRun::STATE_COMPLETED)
+        ->and($export['run']->exportedRows)->toBe(2)
+        ->and($export['events'][0]->kind)->toBe('data.export.completed');
+});
+
+it('keeps the file on disk and leaves no working file behind', function () {
+    $export = runDataExport();
+    $stored = $export['store']->file($export['run']->id);
+
+    expect(is_file($stored['path']))->toBeTrue()
+        ->and(dirname($stored['path']))->toBe($export['directory'])
+        ->and(glob($export['directory'] . '/*.ndjson'))->toBe([]);
+});
+
+it('never writes a field that was not asked for, to the export or to its working file', function () {
     [$service, $store, , $sources, $activity] = exportService();
+    [$files, $directory] = dataExportFiles();
     $run = $service->request(exportRequest());
     $now = new DateTimeImmutable('2026-07-04T12:00:00+00:00');
     $job = BoundedJob::queued(DataExportJobHandler::KIND, 7, 2, $run->inputHash, $now)->withId(52)->start($now);
-    $handler = new DataExportJobHandler($sources, $store, new DataExportArtifactWriter(), new ActivityService($activity));
 
-    $result = $handler->handle($job, 25);
-    $download = $service->download(7, $run->id, false);
+    // One record of two: the job is not finished, so the working file is still there to read.
+    (new DataExportJobHandler($sources, $store, $files, new ActivityService($activity)))->handle($job, 1);
+    $working = (string) file_get_contents(glob($directory->path() . '/*.ndjson')[0]);
 
-    expect($result->state)->toBe(BoundedJob::STATE_COMPLETED)
-        ->and($download['filename'])->toBe('corex-contacts-1.csv')
-        ->and($download['mime'])->toBe('text/csv')
-        ->and($download['content'])->toContain("Name,Status\r\n'=Ada,active\r\nLinus,active\r\n")
-        ->and($download['content'])->not->toContain('example.com')->not->toContain('drop')
-        ->and(fn () => $service->download(7, $run->id, false, 'other-source'))
-        ->toThrow(DomainException::class, 'unavailable')
-        ->and($store->find($run->id)?->state)->toBe(DataExportRun::STATE_COMPLETED)
-        ->and($activity->events[0]->kind)->toBe('data.export.completed');
+    expect($working)->toContain('=Ada')
+        ->and($working)->not->toContain('example.com')
+        ->and($working)->not->toContain('drop');
 });
 
-it('builds a valid inline-string XLSX artifact without formula cells', function () {
-    $artifact = (new DataExportArtifactWriter())->append(
-        DataExportArtifact::start('xlsx'),
-        [['key' => 'name', 'label' => 'Name']],
-        [['name' => '=1+2'], ['name' => 'Ada & Grace']],
-        true,
-    )->content;
-    $path = tempnam(sys_get_temp_dir(), 'corex-xlsx-test-');
-    file_put_contents($path, $artifact);
-    $zip = new ZipArchive();
-    $opened = $zip->open($path);
-    $sheet = $opened === true ? (string) $zip->getFromName('xl/worksheets/sheet1.xml') : '';
-    if ($opened === true) $zip->close();
-    unlink($path);
+it('gathers an export over several batches and writes one file', function () {
+    $export = runDataExport(['query' => [], 'scope' => 'all', 'columns' => ['id', 'name']], batchSize: 1);
 
-    expect(substr($artifact, 0, 2))->toBe('PK')
-        ->and($sheet)->toContain('=1+2')->toContain('Ada &amp; Grace')
+    expect($export['states'])->toBe([BoundedJob::STATE_RUNNING, BoundedJob::STATE_RUNNING, BoundedJob::STATE_COMPLETED])
+        ->and($export['download']['content'])->toBe("\xEF\xBB\xBFID,Name\r\n1,'=Ada\r\n2,Grace\r\n3,Linus\r\n");
+});
+
+it('parts the values with the separator that was asked for', function () {
+    $export = runDataExport(['separator' => 'semicolon']);
+
+    expect($export['download']['content'])->toContain("Name;Status\r\n");
+});
+
+it('writes a list as its items, never as the word Array', function () {
+    $export = runDataExport(['columns' => ['name', 'tags']]);
+
+    expect($export['download']['content'])->toContain("'=Ada,\"vip, beta\"\r\n")
+        ->and($export['download']['content'])->not->toContain('Array');
+});
+
+it('writes a workbook with numbers as numbers and dates as dates, under the source’s name', function () {
+    $export = runDataExport(['format' => 'xlsx', 'columns' => ['id', 'name', 'joined']]);
+    $download = $export['download'];
+    $sheet = dataWorkbookPart($download['content'], 'xl/worksheets/sheet1.xml');
+
+    expect($download['filename'])->toEndWith('.xlsx')
+        ->and($download['mime'])->toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        ->and(dataWorkbookPart($download['content'], 'xl/workbook.xml'))->toContain('name="Contacts"')
+        // The heading stays in view, and the id is a number a spreadsheet can sum.
+        ->and($sheet)->toContain('state="frozen"')
+        ->and($sheet)->toContain('<v>1</v>')
+        // 7 October 2026 at 09:30, as the day number a spreadsheet keeps a date in.
+        ->and($sheet)->toContain('<v>46302.39583333</v>')
+        // Text that begins with "=" is text: there is no formula in the sheet.
+        ->and($sheet)->toContain('=Ada')
         ->and($sheet)->not->toContain('<f>');
+});
+
+it('still hands back an export made before files were kept on disk', function () {
+    [$service, $store] = exportService();
+    $run = $service->request(exportRequest());
+    $store->artifacts[$run->id] = "Name,Status\r\nLinus,active\r\n";
+    $store->finish($run->id, 1);
+
+    expect($service->download(7, $run->id, false))->toMatchArray([
+        'mime' => 'text/csv; charset=utf-8',
+        'content' => "Name,Status\r\nLinus,active\r\n",
+    ])->and(fn () => $service->download(7, $run->id, false, 'other-source'))
+        ->toThrow(DomainException::class, 'unavailable');
 });

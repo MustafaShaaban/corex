@@ -124,6 +124,79 @@ task removes expired files.
 **D12 — Data export.** Audited at the start of its slice against FR-048's list; the findings are
 added to this plan before any code.
 
+### D12, the audit (2026-10-08, at `390554e1`)
+
+**There are two Data exports on the screen, and one behind them.** The plan named
+`DataModels/ExportPanel.js`. There is also `admin/data/ExportDialog.js`, opened from the Records
+tab. They post to the same route and neither finishes the job:
+
+| | Records tab: `admin/data/ExportDialog.js` | Export tab: `DataModels/ExportPanel.js` |
+|---|---|---|
+| What it is | a WordPress `Modal`, portalled outside `.corex-admin` | a panel in the page |
+| Scopes | all three, as a select, with no count and no word about the filters | `all`, always; no choice |
+| On "Queue export" | closes and says "The export was queued." | says "Export queued. Refresh history when the job completes." |
+| Getting the file | go to the other tab | press "Refresh", then "Download" |
+| History | none | `#12 · All accessible · CSV · Completed` |
+
+**Excel has never been offered.** Both offer "XLSX" when the source's `export_xlsx` action is
+visible. Every source CoreX ships declares `exportXlsx: false` (`SubmissionsSource`,
+`TableDataSource`, and the registry's default). The spec's note that the Data export "already has
+an xlsx writer" is true of `DataExportArtifactWriter` and of no site: nothing reaches it.
+
+Against FR-048's list:
+
+| Requirement | Today |
+|---|---|
+| FR-010 three scopes, each with its count | no count anywhere; one surface has one scope |
+| FR-014 no file for no records | not refused: an export of nothing is queued and written |
+| FR-015 Excel and CSV (PDF with slice 6) | CSV. Excel is unreachable |
+| FR-016 dates as dates, numbers as numbers, frozen header, filter, widths | the unreachable writer writes every cell as text, one sheet named "Export", none of the rest |
+| FR-017 CSV opens in a spreadsheet; a choice of separator | no byte-order mark, so Arabic opens as mojibake; comma only |
+| FR-018 several forms in a text export | does not apply: a Data export is of one source |
+| FR-020 no optional plugin | the unreachable writer needs PHP's `zip` extension; `Export\XlsxExportWriter` does not |
+| FR-021 right-to-left | see FR-017; no sheet direction |
+| FR-022 the file arrives | never: see the table above |
+| FR-023 progress; closing does not stop it | no progress. Closing does not stop it |
+| FR-024 a failure in words, retryable | the server's message is shown; nothing to retry but starting again |
+| FR-025 named for the site, what it holds, the date | `corex-<source>-<id>.csv` |
+| FR-026 capability, confirmation, activity entry kept | all three exist and are kept |
+| FR-032 to FR-035 the dialog | a WordPress `Modal` and `CheckboxControl`s; not the order, not CoreX's controls |
+
+Found beside the list:
+
+- **A value that is a list is written as the word "Array"**, with a PHP warning: every cell is
+  `(string) $row[$key]`.
+- **The file lives in post meta**, base64, and is read, added to and written back whole on every
+  batch. D4 already says where a file belongs.
+- **The same request made twice in one second is one export**: the run's hash is not salted. Slice
+  2 fixed the same fault in the Submissions export.
+- **A third export is still registered and nothing links to it**: `Data\DataExportController`, an
+  `admin_post_corex_data_export` handler from spec 045 that streams a CSV. It is left as it is;
+  removing a route is its own change.
+
+**D12a. One writer, one place for files.** The Data export builds an `ExportDocument` of typed
+cells from the source's declared field types and writes it through `ExportWriters` into
+`ExportDirectory`, as the Submissions export does. `DataExportArtifactWriter` goes. The rows of an
+export in progress are kept in a working file between batches; `SubmissionExportSpool`'s reading
+and writing become `Export\ExportSpool`, which both exports use.
+
+**D12b. Excel for every source that can be exported.** `SubmissionsSource` and `TableDataSource`
+declare `exportXlsx`, under the ability that already guards their CSV. A source a client wrote
+declares its own, as it does today.
+
+**D12c. One dialog.** The Records tab and the Export tab open the same dialog, on `CorexDialog`, in
+the order of the Submissions export: what to export with counts, the columns, the format, the
+confirmation, one action, progress, the saved file. The Export tab has no rows and no filters, so
+there it offers "everything" and lists what was exported before.
+
+**D12d. Two pull requests.** 7a: the file and the flow on the server (typed cells, the shared
+writers, files on disk, a preview with counts, a step taken on request, no file for no records, a
+file name that says what it holds). The two existing surfaces keep working on it. 7b: the dialog.
+
+**Not in this slice.** Expiry and deletion of Data exports: FR-048 does not list FR-028 to FR-031.
+A Data export's file is kept until somebody adds it to the retention sweep, as its post meta was
+kept. That is worth doing and is not this slice.
+
 ## Constitution Check
 
 | Principle | How this plan meets it |
@@ -178,7 +251,8 @@ Each is one pull request and leaves `main` releasable.
 | 4 | US5 | The detail pane. |
 | 5 | US9 | History: size, expiry, delete, cleanup. |
 | 6 | US8 | PDF, after its spike. |
-| 7 | US10 | The Data export audit and its adoption of slices 2, 3, 5 and 6. |
+| 7a | US10 | The Data export audit; its file and flow on the server (D12a, D12b). |
+| 7b | US10 | The Data export's dialog (D12c). |
 
 ## Risks
 
