@@ -7943,7 +7943,7 @@ What was run:
 | `FormBlockRenderTest`: a form's own markup; a missing part as a visitor and as an editor | 16 passed |
 | `corex-runtime-hand-drawn-form.test.js`: the real runtime against the hand-drawn form the PHP test pins | 2 passed: an empty submission writes "This field is required." into the site's error place, marks the hand-written control invalid and sends nothing; a valid one posts the answers and the trap field to the form's endpoint with the security token and confirms in the site's status place |
 | `FormBlockRenderingTest` on real WordPress | 5 passed: a form's own markup through `do_blocks()` with WordPress's escaping; one missing two parts renders nothing signed out and reports "hidden(), status()" |
-| `tests/Unit` / Jest / `tests/Integration/Forms` | 2346 / 719 in 65 suites / 71 |
+| `tests/Unit` / Jest / `tests/Integration/Forms` | 2349 / 722 in 65 suites / 71 |
 
 **Not run.** No browser. The tasks named a Playwright test in light and dark, left-to-right and
 right-to-left (T037); it was not written, for the reason in #276: the browser suite has no
