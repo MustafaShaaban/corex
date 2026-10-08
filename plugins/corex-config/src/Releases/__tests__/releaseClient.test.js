@@ -10,6 +10,8 @@
  * The network is the one thing replaced: `fetch` answers what each test scripts, in order, and
  * waiting takes no time.
  */
+import { createHash } from 'node:crypto';
+
 import {
 	createReleaseClient,
 	ReleaseRefusedError,
@@ -44,10 +46,11 @@ const challengePage = response(
 /**
  * A client over a scripted network.
  *
- * @param {Array} answers What `fetch` answers, in order; a function is called with the request.
+ * @param {Array}  answers   What `fetch` answers, in order; a function is called with the request.
+ * @param {string} [restUrl] Where the site says its Releases routes are.
  * @return {Object} `{ client, sent, waited }`.
  */
-function scripted( answers ) {
+function scripted( answers, restUrl = REST ) {
 	const sent = [];
 	const waited = [];
 	const fetch = async ( url, init ) => {
@@ -64,7 +67,7 @@ function scripted( answers ) {
 
 	return {
 		client: createReleaseClient( {
-			restUrl: REST,
+			restUrl,
 			nonce: 'a-nonce',
 			fetch,
 			wait: async ( ms ) => waited.push( ms ),
@@ -204,6 +207,27 @@ describe( 'sending a package', () => {
 		} );
 	} );
 
+	it( 'adds to the address as the site spells it, where its routes are a query', async () => {
+		// Without pretty permalinks a route is `?rest_route=…`. A second `?` would make the
+		// offset part of the route, and WordPress would know no such route.
+		const plain =
+			'https://acme.test/index.php?rest_route=/corex/v1/releases';
+		const { client, sent } = scripted(
+			[
+				marked( { received: 8 } ),
+				marked( { received: 10 } ),
+				marked( { package: 'kept.zip' } ),
+			],
+			plain
+		);
+
+		await upload( client );
+
+		expect( sent[ 1 ].url ).toBe(
+			`${ plain }/uploads/${ sha256 }&offset=8`
+		);
+	} );
+
 	it( 'goes on from where the site says it stopped', async () => {
 		// Part of it arrived in an earlier attempt: nothing that is there is sent again.
 		const { client, sent } = scripted( [
@@ -256,6 +280,32 @@ describe( 'sending a package', () => {
 		} );
 
 		expect( progress ).toEqual( [ 0, 4, 8, 10 ] );
+	} );
+
+	it( 'names the upload by the file’s hash on a page where the browser computes none', async () => {
+		// A page that is not served over HTTPS has no `crypto.subtle`, and neither has this
+		// one: the hash is the client's own, read from the file a part at a time.
+		expect( window.crypto?.subtle ).toBeUndefined();
+		const held = Uint8Array.from( bytes );
+		const onDisk = {
+			name: 'corex-release-acme-0.44.0-20261008-180000.zip',
+			size: held.length,
+			slice: ( from, to ) => ( {
+				arrayBuffer: async () => held.slice( from, to ).buffer,
+			} ),
+		};
+		const { client, sent } = scripted( [
+			marked( { received: 10 } ),
+			marked( { package: 'kept.zip' } ),
+		] );
+
+		await client.upload( onDisk, { partBytes: 4 } );
+
+		expect( sent[ 0 ].url ).toBe(
+			`${ REST }/uploads/${ createHash( 'sha256' )
+				.update( held )
+				.digest( 'hex' ) }`
+		);
 	} );
 
 	it( 'stops when the site refuses the package, with the site’s words', async () => {

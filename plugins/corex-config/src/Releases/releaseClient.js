@@ -13,6 +13,7 @@
  */
 
 import { __, sprintf } from '@wordpress/i18n';
+import { createSha256 } from './sha256.js';
 
 /** The key every answer of the Releases routes carries (`ReleaseRestGateway::MARK`). */
 const MARK = 'corex_release';
@@ -21,6 +22,9 @@ const MARK = 'corex_release';
 const FIRST_WAIT_MS = 1000;
 
 const DEFAULT_TRIES = 6;
+
+/** How much of a file is read at a time where the hash is computed here. */
+const HASHED_AT_A_TIME = 4 * 1024 * 1024;
 
 /** The site answered, and the answer was no: wrong package, damaged upload, not allowed. */
 export class ReleaseRefusedError extends Error {
@@ -78,10 +82,23 @@ const sleep = ( ms ) => new Promise( ( resolve ) => setTimeout( resolve, ms ) );
 /**
  * The SHA-256 of a file, as sixty-four lower-case hexadecimal digits.
  *
+ * The browser computes it where it will: on a page served over HTTPS, or from the machine
+ * itself. On any other page it has no `crypto.subtle` at all, and the hash is computed here,
+ * a part of the file at a time.
+ *
  * @param {File} file The file.
  * @return {Promise<string>} Its hash.
  */
 async function sha256Of( file ) {
+	if ( ! window.crypto?.subtle ) {
+		const sha256 = createSha256();
+		for ( let at = 0; at < file.size; at += HASHED_AT_A_TIME ) {
+			const part = file.slice( at, at + HASHED_AT_A_TIME );
+			sha256.update( new Uint8Array( await part.arrayBuffer() ) );
+		}
+		return sha256.hex();
+	}
+
 	const digest = await window.crypto.subtle.digest(
 		'SHA-256',
 		await file.arrayBuffer()
@@ -185,6 +202,10 @@ export function createReleaseClient( {
 		return answer.data;
 	}
 
+	// A site without pretty permalinks spells its routes as a query
+	// (`?rest_route=/corex/v1/releases`): what a request adds of its own joins with `&`.
+	const querySign = restUrl.includes( '?' ) ? '&' : '?';
+
 	const json = ( body ) => ( {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -211,11 +232,14 @@ export function createReleaseClient( {
 		onProgress( held );
 
 		while ( held < file.size ) {
-			const answer = await ask( `${ route }?offset=${ held }`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/octet-stream' },
-				body: file.slice( held, held + partBytes ),
-			} );
+			const answer = await ask(
+				`${ route }${ querySign }offset=${ held }`,
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/octet-stream' },
+					body: file.slice( held, held + partBytes ),
+				}
+			);
 
 			// Out of step is the site saying how much it holds: the answer to a part
 			// that arrived when its own answer did not. Anything else that is a no ends it.
