@@ -48,6 +48,19 @@
 	border-inline-start-color: var(--corex-admin-error);
 }
 
+/* A card's score and its "last checked" are as wide as their text, and a
+   placeholder has none: each is given a width, so its bar has one. */
+.corex-admin .corex-insight-card__score .corex-admin-skeleton {
+	display: block;
+	inline-size: var(--corex-admin-space-2xl);
+}
+
+.corex-admin .corex-insight-card__time .corex-admin-skeleton {
+	display: inline-block;
+	inline-size: calc(var(--corex-admin-space-2xl) * 2);
+	vertical-align: middle;
+}
+
 .corex-admin .corex-insight-card__head,
 .corex-admin .corex-insight-card__foot,
 .corex-admin .corex-insight-card__metric {
@@ -139,6 +152,12 @@
 	align-items: flex-start;
 	justify-content: space-between;
 	gap: var(--corex-admin-space-sm);
+}
+
+/* A widget's heading is as wide as its text, and a placeholder has none: it is
+   given the row, so its bars have a width to be a share of. */
+.corex-admin .corex-insight-widget.corex-admin-skeleton .corex-insight-widget__head > div {
+	flex: 1;
 }
 
 .corex-admin .corex-insight-widget__head h2 {

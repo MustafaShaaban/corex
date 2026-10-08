@@ -84,9 +84,9 @@ A surface that asks the server for its content is in one of four states, and it 
 | `ready` | The answer, which may be the empty state. |
 | `error` | The shared error state, with **Try again** where asking again can help. |
 
-The Notifications screen, its preferences, the header drawer, the Data screen, Forms and flows and Email Studio
-work this way. The other screens are moved to it one at a time; until then they keep the loading sentence or
-spinner they had.
+Every CoreX admin screen that asks the server for its content works this way, except the Submissions inbox,
+which keeps its spinner, and the export dialog it shares with the Data screen, whose counts read "…" until they
+arrive. Both are moved together.
 
 Not every reload is a refresh. A screen that reads itself again after a save, behind the button that is working,
 stays `ready`: the button already says what is happening, and content that turned inert would take the focus
@@ -156,6 +156,16 @@ The class names are the contract, for a screen that is not React: `.corex-admin-
 `.corex-admin-skeleton__box`, and `.corex-loadable` with `data-corex-state` on the surface and
 `.corex-loadable__body` round what is dimmed. They are styled in the admin shell stylesheet, for anything inside
 `.corex-admin`.
+
+Insights (`plugins/corex-config/assets/insights.js`) and the setup wizard
+(`addons/corex-kit-company/assets/setup-wizard.js`) are written this way and are the examples to copy. Three
+things the React wrapper does are done by hand there: `data-corex-state` and `aria-busy` on the screen's root;
+the placeholder's `aria-hidden`; and, in Insights, a visually hidden `role="status"` line that says a load has
+started once it has lasted a second, and that it ended.
+
+A bar is a share of its parent's width. Where the parent is only as wide as its text (a heading in a flex row, a
+score beside a title), give the parent a width in the screen's stylesheet, or the bar has none and nothing is
+drawn.
 
 ### What it does for you
 

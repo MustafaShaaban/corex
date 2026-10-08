@@ -8840,3 +8840,148 @@ placeholders; they are built from the same bars as the ones that were. No screen
 - Every disabled `.button` in the CoreX admin changes colour with this, not only the ones on
   these two screens. It was looked at here and on Email Studio.
 - The catalog's placeholder is four rows whatever the site has.
+
+## #291 — The two screens that are not React, and a card that cannot know how tall it will be
+
+**Date:** 2026-10-09. **Spec:** 108, slice 5 (T050 to T053). **Branch:** `feat/108-insights-wizard-placeholders`.
+
+Insights and the setup wizard are plain scripts that draw markup. They cannot import the
+wrapper, so they write what it writes: the placeholder's class names, `data-corex-state` and
+`aria-busy` on the root, the placeholder hidden from assistive technology.
+
+**An Insights card does not know whether it has been run until the last results arrive.** It
+drew "Not run yet" and a dash at once and filled in afterwards, so for as long as the request
+took a check that had been run said it never had. It draws a placeholder for its score, a few
+lines for its body and one for when it was last checked. Its button is held until the results
+are in: a check started before them would be overwritten by them.
+
+**It cannot know how tall it will be.** On the test site a waiting card is 319px and the card
+that replaces it 524px, because that site's results carry measures and recommendations; a
+site that has never run a check has a card shorter than the placeholder. The placeholder is
+the middle of the two. SC-002 asks that nothing outside a surface moves by more than a few
+pixels, and here it does, by what the answer holds. That is said, not hidden: the criterion
+is met where the shape is known and not here.
+
+**The widgets hold their place with three placeholders**, though the server decides how many
+there are (five on the test site). The screen was two cards and then seven.
+
+**Both of the screen's silent failures are said.** The last results failing is said on each
+card, in the slot a failed check already used. The widgets failing is the shared error
+state's markup, where they would have been, with a retry.
+
+**The wizard hides the no-script form the moment its script runs**, and draws the step that
+is coming. The form used to stand until the wizard's state arrived and then be swapped for
+it, which is two different screens in a row. If the state cannot be read, the form comes
+back: it is the one thing on the screen that still works.
+
+**The plan step is not a placeholder.** The spec lists it. Since slice 2 the "Next" that
+asks for the plan is working until the plan has arrived, and the step is drawn with it. A
+step shown first and filled in after would be a second way of saying the same wait.
+
+**A bar with no width draws nothing, three times.** A bar is a share of its parent. In this
+slice the card's score and its "last checked" were as wide as their text, which a placeholder
+has none of; in the last it was the flow editor's toolbar, and before that a preference's
+label. Each was seen in a screenshot, not in a test, until the tests were given a width to
+check. The docs say it now.
+
+**And one mistake of mine.** The rule that gave the score a width was inserted in the middle
+of a selector list, which made the card's header and footer 3rem wide blocks. The linter
+passed it. It was the screenshot that showed a score box under its title.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `npx wp-scripts test-unit-jest` | 834 passed, 77 suites |
+| `insights-loading`: five tests driving the real script against held answers | passed |
+| `loading-states`, `setup-settings-insights`, `smoke` on `corex.local` | 33 passed |
+| Held back and looked at, dark theme: the Insights cards and widgets, the wizard | as intended, after the two fixes above |
+
+**Not run.** The light theme and right-to-left for these two screens. No screen reader.
+
+**Left open.**
+
+- The wizard announces nothing while it loads; Insights does. The wizard's wait is one
+  request on a screen whose heading has already been read.
+- The Submissions inbox is the one screen left (slice 6), with the export dialog it shares
+  with the Data screen, whose counts read "…" until they arrive. It waits on the session that
+  is building in the inbox.
+
+## #293 — A package is read where it lands and refused for what is wrong with it, by code that writes nothing
+
+**Date:** 2026-10-09. **Spec:** 107, slice 2 (T020 to T029). **Branch:** `feat/107-package-inspected`.
+
+Four classes under `plugins/corex-config/src/Releases/`, and no way to reach them yet: the
+screen and its routes are slice 3. This slice is the part that has to be right before anything
+is allowed to call it.
+
+**The inspector reads and does nothing else.** `ReleasePackageInspector::inspect()` opens the
+zip read-only, reads its description and its list of entries, and closes it. It has no path it
+could write to. FR-016 says a refusal leaves the site as it was; here that is true because of
+what the class is, and the test that lists the site's folder before and after each refusal is
+there for the day somebody gives it one.
+
+**In order, stopping at the first.** It is a zip; its description is at the top and can be
+relied on; it is for this site's client; this host's PHP and WordPress are new enough; it holds
+every folder it says it holds; no entry would be written outside the package; no entry is a
+thing a release never holds. Fourteen wrong packages in the test, each a real zip built in the
+temp folder.
+
+**The commonest wrong package gets its own sentence.** `dist/` zipped by hand puts everything
+one folder down. "There is no corex-release.json" would be true and useless; it says the zip
+holds a folder that holds the package, and what to zip instead.
+
+**A site does not take a package's word for how it was built.** The builder refuses `.git`,
+`wp-config.php` and ten more when it makes a package, and writes that list into the package.
+The site has the list of its own and checks every entry against it. Two lists in two
+languages: one recorded file, `tests/Fixtures/Releases/forbidden-segments.json`, and a test
+on each side that its list is that file.
+
+**Whose site it is, three ways.** A package for another client, the framework alone offered to
+a client's site (which would remove the site's code), and a client's package offered to a
+site that is the framework alone: each a whole sentence. A site that cannot say what it is
+(`InstalledRelease::isKnown()` is false: nothing recorded and no description in its root)
+compares nothing, and the inspection says the client has to be confirmed by name. "Does not
+know" is not the same answer as "the framework alone", and the class keeps them apart.
+
+**The host's facts are read in one place and judged in another.** `ReleaseHostFacts` is a value:
+whether files may be changed, whether a zip can be opened, which folders cannot be written, how
+much room there is. `ofThisHost()` reads them; `blockers()` says what each one prevents and
+what to do. The judging is tested with made-up facts, the reading on real WordPress.
+
+**A folder that is not there is judged by the one above it.** A site may have no must-use
+plugins folder, and an installation makes it. Asked whether the missing folder is writable,
+WordPress said yes on Windows and no on Linux: the first version of the integration test was
+written on one and would have failed on the other. What is asked now is whether it could be
+made.
+
+**The plan's upload and time limits are not in it.** D15 lists them. Nothing here uses them;
+receiving a package in parts is slice 3, and they arrive with what reads them.
+
+**The installer's place is made by the class that closes private uploads.**
+`ProtectedUploads::guard( $path )` is the three deny files, for any folder; `ensure()` calls it
+for the uploads one as before. `ReleaseStore` is `wp-content/corex-releases/` with three
+folders, a state file written beside itself and moved into place, and a log of the last fifty
+things that happened. A file in it is named, never placed: a name with a slash, a backslash or
+`..` is refused.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `tests/Unit/Releases` | 69 passed |
+| `tests/Integration/Releases`, on real WordPress | 3 passed |
+| The whole unit suite | 2443 passed |
+| The integration tests of the classes that use `ProtectedUploads` | 29 passed |
+| `tests/build-shared-host-dist.test.js`, with the shared list | 23 passed |
+| The framework's real package, built and zipped in a scratch folder, read by the inspector in a PHP process of its own | a 35MB zip, every entry of it read in about 150ms: accepted on a site that does not know what it is (client to confirm) and on the framework alone (0.43.5 over 0.43.0; 2,650 files, 28MB in the folders it owns); refused for a client's site, as the framework alone |
+
+**Not run.** Nothing on a host. No package was received by a site: there is no way to give it
+one yet.
+
+**Left open.**
+
+- Nothing is bound in the container. The inspector needs the PHP and WordPress versions and
+  the site's root; they are given where the screen is built.
+- A package's contents are not checked against its description here. That needs it unpacked,
+  which is slice 4, where the folder hash from slice 1 is used.

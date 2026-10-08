@@ -59,10 +59,10 @@ They are done a screen at a time, each in its own pull request.
 
 ## Slice 5 — Insights and the setup wizard (US1)
 
-- [ ] T050 Jest: the Insights cards say "loading", not "not run yet", until the results arrive; the widgets hold their place
-- [ ] T051 Insights, with the class names as markup; its two silent failures said
-- [ ] T052 The setup wizard's state and plan step
-- [ ] T053 Playwright; guards; UI/UX gate; notes
+- [x] T050 Jest: the Insights cards do not say "Not run yet" before the results arrive; the widgets hold their place; the screen is ready only when both have answered; each failure is said
+- [x] T051 Insights, with the class names as markup; its two silent failures said
+- [x] T052 The setup wizard's state: the step that is coming, and the plain form back when it cannot be loaded. Its plan step is not a placeholder: "Next" works until the plan has arrived (slice 2), and the step is drawn with its plan
+- [x] T053 Playwright; guards; UI/UX gate; notes
 
 ## Slice 6 — Submissions (US1, US2, US3), with spec 105's session
 

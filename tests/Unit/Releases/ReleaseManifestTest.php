@@ -14,6 +14,7 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Config\Releases\ReleaseManifest;
 use Corex\Config\Releases\ReleaseRefused;
+use Corex\Tests\Support\ReleasePackages;
 
 beforeEach(function () {
     Functions\when('__')->returnArg();
@@ -26,27 +27,7 @@ beforeEach(function () {
  */
 function releaseDescription(array $changes = []): string
 {
-    $description = array_merge([
-        'name'              => 'corex-shared-host-dist',
-        'schema'            => 2,
-        'built_at'          => '2026-10-08T18:00:00.000Z',
-        'corex_version'     => '0.44.0',
-        'client'            => 'acme',
-        'plugins'           => ['acme-site', 'corex-core'],
-        'themes'            => ['corex'],
-        'requires'          => ['php' => '8.3', 'wordpress' => '7.0'],
-        'wordpress_version' => '7.1.3',
-        'release_paths'     => ['wp-content/plugins/acme-site', 'wp-content/plugins/corex-core', 'wp-content/themes/corex', 'wp-content/vendor'],
-        'contents'          => [
-            'wp-content/plugins/acme-site'  => ['files' => 2, 'bytes' => 40, 'hash' => str_repeat('a', 64)],
-            'wp-content/plugins/corex-core' => ['files' => 9, 'bytes' => 900, 'hash' => str_repeat('b', 64)],
-            'wp-content/themes/corex'       => ['files' => 4, 'bytes' => 400, 'hash' => str_repeat('c', 64)],
-            'wp-content/vendor'             => ['files' => 30, 'bytes' => 3000, 'hash' => str_repeat('d', 64)],
-        ],
-        'autoload' => ['file' => 'wp-content/vendor/autoload.php', 'psr4' => ['Corex\\' => 'wp-content/plugins/corex-core/src/']],
-    ], $changes);
-
-    return (string) json_encode(array_filter($description, static fn (mixed $value): bool => $value !== null));
+    return (string) json_encode(ReleasePackages::description($changes));
 }
 
 it('reads what a package says it is', function () {
