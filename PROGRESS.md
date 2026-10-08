@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.43.3** — tag `v0.43.3`, reachable from `main`.
+- **Latest published release: v0.43.4** — tag `v0.43.4`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -54,9 +54,9 @@ is delivered in seven slices, one pull request each:
 | 3 | Excel | done (DECISIONS #256). A produced workbook and a produced CSV were opened in Excel |
 | — | Spacing review of the dialog and the filters, on the owner's request | done (DECISIONS #257). Measured, fixed, and kept measured by two browser tests |
 | 4 | The detail pane | done, in v0.43.3 (DECISIONS #259). Measured, and kept measured by a browser test. Not in it: to whom a notification went and where a failure can be fixed (T074b), which the server does not record |
-| 5 | Export history: size, expiry, delete | done (DECISIONS #262), unreleased. A file is kept 30 days and removed by the daily retention sweep. Found on the way: the dialog printed `[object Object]` for a date filter |
+| 5 | Export history: size, expiry, delete | done, in v0.43.4 (DECISIONS #262). A file is kept 30 days and removed by the daily retention sweep. Found on the way: the dialog printed `[object Object]` for a date filter |
 | 6 | PDF | not started; needs a spike on a library that renders Arabic |
-| 7a | The Data export: the audit, and its file and flow on the server | done (DECISIONS #265), unreleased. The audit found two export surfaces, neither handing over a file, and that Excel was never reachable |
+| 7a | The Data export: the audit, and its file and flow on the server | done, in v0.43.4 (DECISIONS #265). The audit found two export surfaces, neither handing over a file, and that Excel was never reachable |
 | 7b | The Data export: one dialog for both surfaces | not started |
 
 Two readings in the spec are the owner's to overrule: that opening a submission marks it read
@@ -71,7 +71,7 @@ v0.43.2 (DECISIONS #260): the submissions and flow routes now carry a permission
 the same site (DECISIONS #261): `CommandRegistrationTest` asserted the framework's namespace and so
 failed in a client's repository after v0.43.2; it holds in both now.
 
-Unreleased, reported from a client site that runs three mailboxes (issue #150, DECISIONS #264): a
+Released in v0.43.4, reported from a client site that runs three mailboxes (issue #150, DECISIONS #264): a
 message's sender and its attachments now reach the mail driver. `MailService::deliver()` rebuilt
 every message without them, so both were accepted and dropped on every send from v0.38.0 to
 v0.43.3, and #150 had been closed with the defect in place. A site that names a sender starts
@@ -86,7 +86,9 @@ One routine Dependabot pull request is open beside it (#243, `nikic/php-parser`)
 
 ## Recently landed
 
-On `main` since v0.43.3, not in a release:
+Released in v0.43.4. [`CHANGELOG.md`](CHANGELOG.md) has the entry and its Client impact; beside
+what is listed here it holds spec 103 slices 5 and 7a and the mail fix for #150, which are under
+"In flight" above:
 
 - **The shared-host `dist` package loads the framework** (#285, DECISIONS #267). Reported by the
   Muva session from a real build on v0.43.3: no plugin found the autoloader, Composer's paths were
@@ -96,8 +98,7 @@ On `main` since v0.43.3, not in a release:
   `verify:dist` includes the packaged core plugin in a PHP process of its own and fails unless
   every packaged namespace loads. `client-site-layout` builds the package for a generated site and
   runs `wp corex` from it. A client has to rebuild its package; the layout change is in the
-  CHANGELOG. **Muva's host move waits on the release that carries this: tell the "MUVA hosting
-  account setup" and "Muva Website directory cleanup" sessions when it is tagged.**
+  CHANGELOG. Muva's host move was waiting on this release.
 - **`CONTRIBUTING.md` describes the browser suite as it runs** (#283). "Browser verification"
   named `.github/workflows/e2e.yml`, deleted in 0.41.0, and a local run that started wp-env and
   drove another address. It now describes the `e2e` job of `ci.yml` and what a local run needs, the must-use
