@@ -15,6 +15,7 @@ import { TemplatePanel } from '../components/TemplatePanel.js';
 import {
 	emailStudioReducer,
 	initialEmailStudioState,
+	studioStatus,
 } from '../emailStudioClient.js';
 
 describe( 'the action that is out', () => {
@@ -108,5 +109,114 @@ describe( 'the template editor while a request is out', () => {
 		expect( button( 'Create' ).hasAttribute( 'data-corex-working' ) ).toBe(
 			false
 		);
+	} );
+} );
+
+describe( 'whether the studio is still loading', () => {
+	const read = ( payload ) =>
+		emailStudioReducer( initialEmailStudioState, {
+			type: 'loaded',
+			payload,
+		} );
+
+	it( 'is, until it has been read once', () => {
+		const asking = emailStudioReducer( initialEmailStudioState, {
+			type: 'load',
+		} );
+
+		expect( studioStatus( initialEmailStudioState ) ).toBe( 'loading' );
+		expect( studioStatus( asking ) ).toBe( 'loading' );
+	} );
+
+	it( 'is not again on a studio with no templates, when a save reads it once more', () => {
+		// "No templates yet" was how a first load was told from a later one, and it is also
+		// true of a new site that has been read: every save there took the open form away.
+		const empty = read( { templates: [] } );
+		const readingAgain = emailStudioReducer( empty, { type: 'load' } );
+
+		expect( studioStatus( readingAgain ) ).toBe( 'ready' );
+	} );
+
+	it( 'is a failure only if it has never been read', () => {
+		const failed = { type: 'failed', message: 'Nope' };
+
+		expect(
+			studioStatus(
+				emailStudioReducer( initialEmailStudioState, failed )
+			)
+		).toBe( 'error' );
+		// A save that fails says so in the notice, over a studio that is still there.
+		expect( studioStatus( emailStudioReducer( read( {} ), failed ) ) ).toBe(
+			'ready'
+		);
+	} );
+} );
+
+describe( 'a template chosen from the list', () => {
+	let container;
+	let root;
+
+	beforeEach( () => {
+		global.IS_REACT_ACT_ENVIRONMENT = true;
+		container = document.createElement( 'div' );
+		document.body.appendChild( container );
+		root = createRoot( container );
+	} );
+
+	afterEach( () => {
+		act( () => root.unmount() );
+		document.body.innerHTML = '';
+	} );
+
+	it( 'shows the editor that is coming, not the last one, and cannot be chosen twice', () => {
+		const welcome = {
+			id: 3,
+			name: 'Welcome',
+			slug: 'welcome',
+			status: 'draft',
+		};
+		const receipt = {
+			id: 4,
+			name: 'Receipt',
+			slug: 'receipt',
+			status: 'draft',
+		};
+
+		act( () => {
+			root.render(
+				<TemplatePanel
+					templates={ [ welcome, receipt ] }
+					layouts={ [] }
+					detail={ { template: { ...welcome, draft_version: 1 } } }
+					draft={ {
+						subject: 'Welcome aboard',
+						html_body: '',
+						plain_text: '',
+						plain_text_mode: 'auto',
+						layout_slug: '',
+						variable_keys: [],
+					} }
+					errors={ {} }
+					selecting={ 4 }
+					onSelect={ () => {} }
+					onCreate={ () => {} }
+					onDraftChange={ () => {} }
+					onSaveDraft={ () => {} }
+					onActivate={ () => {} }
+				/>
+			);
+		} );
+
+		const editor = container.querySelector( '.corex-email-app__editor' );
+		const rail = [
+			...container.querySelectorAll( '.corex-email-app__list button' ),
+		];
+
+		expect(
+			editor.querySelector( '.corex-admin-skeleton' )
+		).not.toBeNull();
+		expect( editor.textContent ).not.toContain( 'Welcome' );
+		expect( rail.map( ( row ) => row.disabled ) ).toEqual( [ true, true ] );
+		expect( rail[ 1 ].className ).toBe( 'is-active' );
 	} );
 } );

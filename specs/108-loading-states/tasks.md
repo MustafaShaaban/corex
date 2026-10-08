@@ -51,11 +51,11 @@ They are done a screen at a time, each in its own pull request.
 
 ## Slice 4 — Forms and flows, Email Studio (US1, US2)
 
-- [ ] T040 Jest: the Forms catalog and the Email Studio panel through `CorexLoadable`; the Email heuristic that re-showed "loading" on a site with no templates is gone
-- [ ] T041 Forms catalog and opening a flow
-- [ ] T042 Email Studio and a template chosen from the list
-- [ ] T043 `helpers.js` and the specs that wait on a loading sentence move to `data-corex-state`
-- [ ] T044 Playwright; guards; UI/UX gate; notes
+- [x] T040 Jest: what the catalog is in each of its seven situations; whether Email Studio is still loading, with the guess from "no templates" gone; a chosen template shows the editor that is coming and cannot be chosen twice
+- [x] T041 Forms catalog and opening a flow
+- [x] T042 Email Studio and a template chosen from the list
+- [x] T043 `helpers.js` and `email-studio.spec.js`, which waited on a loading sentence, wait on `data-corex-state`
+- [x] T044 Playwright; guards; UI/UX gate; notes
 
 ## Slice 5 — Insights and the setup wizard (US1)
 

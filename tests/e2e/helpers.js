@@ -117,7 +117,9 @@ async function seedSubmission(
 	email = defaultEmail()
 ) {
 	await page.goto( '/wp-admin/admin.php?page=corex-forms' );
-	await helperExpect( page.getByText( 'Loading forms…' ) ).toBeHidden();
+	await helperExpect(
+		page.locator( '.corex-flow-list__catalog .corex-loadable' )
+	).toHaveAttribute( 'data-corex-state', 'ready' );
 	return page.evaluate(
 		async ( fixture ) => {
 			const api = window.Corex.api;

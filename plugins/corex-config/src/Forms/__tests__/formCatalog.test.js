@@ -3,6 +3,7 @@
  */
 import {
 	catalogRows,
+	catalogStatus,
 	readOnlyCount,
 	SOURCE_CODE_FORM,
 	SOURCE_EXTERNAL,
@@ -168,4 +169,49 @@ it( 'survives missing or malformed inputs', () => {
 	expect( catalogRows( undefined, undefined ) ).toEqual( [] );
 	expect( catalogRows( null, [ null, {}, { slug: '' } ] ) ).toEqual( [] );
 	expect( readOnlyCount( undefined ) ).toBe( 0 );
+} );
+
+describe( 'what the catalog is while it waits', () => {
+	it.each( [
+		[
+			'a placeholder, before the flows have ever been answered',
+			'idle',
+			false,
+			'loading',
+		],
+		[
+			'a placeholder, while they are first asked for',
+			'loading',
+			false,
+			'loading',
+		],
+		[
+			'the failure, if that first answer never came',
+			'error',
+			false,
+			'error',
+		],
+		[
+			'its rows, kept, while they are filtered',
+			'loading',
+			true,
+			'refreshing',
+		],
+		[
+			'its rows, kept, while a flow is created',
+			'mutating',
+			true,
+			'refreshing',
+		],
+		[ 'its rows', 'ready', true, 'ready' ],
+		// The notice above the list says what failed; the rows under it are still true.
+		[
+			'its rows still, when a later request fails',
+			'error',
+			true,
+			'ready',
+		],
+	] )( 'is %s', ( _what, status, listed, expected ) => {
+		expect( catalogStatus( { status, listed } ) ).toBe( expected );
+	} );
 } );

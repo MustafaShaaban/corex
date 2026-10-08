@@ -1,9 +1,12 @@
 import { useContext, useMemo, useState } from '@wordpress/element';
 import { PendingControl, workingProps } from '../admin/components/working.js';
 import { __, _n, sprintf } from '@wordpress/i18n';
+import CorexLoadable from '../admin/components/CorexLoadable.js';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import CorexTime from '../admin/components/CorexTime.js';
+import { FlowRowsSkeleton } from './FlowSkeletons.js';
 import {
+	catalogStatus,
 	catalogRows,
 	readOnlyCount,
 	SOURCE_CODE_FORM,
@@ -296,6 +299,7 @@ export function FlowList( {
 	catalog = [],
 	submissionsUrl = '',
 	status,
+	listed,
 	ownerId,
 	onLoad,
 	onCreate,
@@ -389,34 +393,43 @@ export function FlowList( {
 						</button>
 					</form>
 				</header>
-				{ /* Announced whenever a request is in flight, not only on an empty list. Code
-				     forms render from localised data with no request at all, so gating the
-				     loading state on an empty list meant the flows half could load with no
-				     indication that anything was still coming. */ }
-				{ busy ? (
-					<p role="status">{ __( 'Loading forms…', 'corex' ) }</p>
-				) : null }
-				{ ! busy && rows.length === 0 ? (
-					<p>{ __( 'No forms match this view.', 'corex' ) }</p>
-				) : null }
-				<ul className="corex-flow-list__rows">
-					{ rows.map( ( row ) =>
-						row.editable ? (
-							<FlowRow
-								key={ row.key }
-								row={ row }
-								busy={ busy }
-								onSelect={ onSelect }
-							/>
-						) : (
-							<CodeFormRow
-								key={ row.key }
-								row={ row }
-								submissionsUrl={ submissionsUrl }
-							/>
-						)
+				{ /* The whole catalog waits for the flows, though the forms defined in code
+				     are known at once: a list that grew and changed its order when the flows
+				     arrived was two lists shown one after the other. */ }
+				<CorexLoadable
+					status={ catalogStatus( { status, listed } ) }
+					skeleton={ <FlowRowsSkeleton /> }
+					loadingLabel={ __( 'Loading forms…', 'corex' ) }
+					errorMessage={ __(
+						'The forms could not be loaded.',
+						'corex'
 					) }
-				</ul>
+					onRetry={ () =>
+						onLoad( applied.search, applied.lifecycle )
+					}
+				>
+					{ rows.length === 0 ? (
+						<p>{ __( 'No forms match this view.', 'corex' ) }</p>
+					) : null }
+					<ul className="corex-flow-list__rows">
+						{ rows.map( ( row ) =>
+							row.editable ? (
+								<FlowRow
+									key={ row.key }
+									row={ row }
+									busy={ busy }
+									onSelect={ onSelect }
+								/>
+							) : (
+								<CodeFormRow
+									key={ row.key }
+									row={ row }
+									submissionsUrl={ submissionsUrl }
+								/>
+							)
+						) }
+					</ul>
+				</CorexLoadable>
 			</section>
 		</div>
 	);
