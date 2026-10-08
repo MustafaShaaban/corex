@@ -17,8 +17,21 @@ All notable changes to Corex are documented here. The format follows
   once, in the activity stream, with none of what a visitor submitted.
 - **A trashed submission is CoreX's to keep.** WordPress deletes a post from its trash for good
   after 30 days, and at once on a site set to skip the trash. A submission moved to the trash
-  from the inbox is outside both: it stays until it is restored. Deleting for good and a trash
-  that empties itself are the next slices.
+  from the inbox is outside both: it stays until it is restored or deleted for good. A trash
+  that empties itself is the next slice.
+- **A trashed submission can be deleted for good** (spec 105, slice 2), from its pane or as the
+  trash's bulk action. The confirmation says how many, lists what goes with a submission, and
+  keeps its action disabled until a box is ticked. What goes: the answers with any hidden
+  fields, campaign data and consent record; notes and history; files uploaded with it, from
+  disk; and, where Email Studio is installed, the records and captured copies of emails sent
+  about it. A site can now answer a request to remove what somebody sent.
+- **Deleting for good needs a permission of its own.** Administrators have it; anybody else gets
+  it with the ability to run actions that cannot be undone, under Access & Abilities, or through
+  the filter `corex_submission_delete_permanently`. Somebody who manages the inbox without it can
+  restore from the trash and is told why they cannot delete.
+- **A deletion is recorded once in the activity stream**: who, when, how many, of which forms.
+  Nothing the submissions said. A submission whose uploaded file cannot be removed from disk is
+  left in the trash and counted in the notice, and the rest of the selection is still deleted.
 - **Turnstile and hCaptcha show their widget on a protected form** (spec 104, slice 4; closes
   #264), on a flow and on a form defined in code. It sits above the button; the form sends the
   token the widget gives; the provider's script loads only on a page with a protected form. A
@@ -106,6 +119,10 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A button that was both primary and destructive could not be read**: the error colour as
+  text on the action colour as ground, red on brass. It keeps the primary's ink. Seen in a
+  capture of the new delete confirmation; the Data screen's migration rollback has the same
+  combination and was unreadable the same way.
 - **Running Spec Kit in a client repository no longer changes a framework file** (#251, item 1).
   `/speckit-specify` wrote the feature it was working on into `.specify/feature.json`, which was
   tracked, and a hook rewrote a section of the root `CLAUDE.md`; `npm run verify:framework`
@@ -152,8 +169,19 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
-- **Nothing deletes a submission from the trash yet.** One moved there from the inbox stays
-  until somebody restores it. The retention panel's "Move to trash" is unchanged: it uses
+- **A permanent delete cannot be undone, and takes files off the disk.** It is offered only in
+  the trash and only after an acknowledged confirmation. Export files made earlier are not
+  rewritten: they are named in the confirmation and expire after 30 days. Rows of the mail log
+  are not tied to a submission and are not removed.
+- **New route**: `DELETE corex/v1/submissions/{id}`, for a trashed submission, answered 403 for
+  somebody who may not; `delete` among the trash's bulk actions, whose result gains `failures`.
+  The list's answer gains `can_delete_permanently`.
+- **New seams**: `Corex\Mail\SubmissionEmailRecords` (the email add-on binds its own; the
+  default removes nothing) and `Corex\Email\Studio\EmailAttemptRemoval`. Constructors changed:
+  `SubmissionAccessScope` takes `canDeletePermanently` last, and `SubmissionTrashService` takes a
+  `SubmissionEmailRecords`.
+- **Nothing empties the trash by itself yet.** One moved there from the inbox stays until
+  somebody restores or deletes it. The retention panel's "Move to trash" is unchanged: it uses
   WordPress's trash, which WordPress empties after 30 days. Those submissions now show in the
   inbox's Trash view and can be restored from it.
 - **New routes**: `POST corex/v1/submissions/{id}/trash` and `…/{id}/restore`; `view=trash` on

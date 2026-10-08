@@ -58,14 +58,14 @@ Tests are written first and seen to fail. One slice per pull request.
 
 **Interface**
 
-- [ ] T027 Jest: the trash offers "Delete permanently" only to somebody who may; the
+- [x] T027 Jest: the trash offers "Delete permanently" only to somebody who may; the
       confirmation's words; the result's words when some were not deleted
-- [ ] T028 "Delete permanently" in a trashed submission's pane and in the trash's bulk actions;
+- [x] T028 "Delete permanently" in a trashed submission's pane and in the trash's bulk actions;
       the confirmation with its list, its acknowledgement and the export files line (D14)
-- [ ] T029 What somebody who may not delete is told (FR-010)
-- [ ] T030 Playwright: delete one from its pane and several in bulk; the acknowledgement gates
+- [x] T029 What somebody who may not delete is told (FR-010)
+- [x] T030 Playwright: delete one from its pane and several in bulk; the acknowledgement gates
       the action; measured spacing of the confirmation, both directions
-- [ ] T031 Guards; the guide; spec FR-011 corrected (D9); CHANGELOG with Client impact; PROGRESS;
+- [x] T031 Guards; the guide; spec FR-011 corrected (D9); CHANGELOG with Client impact; PROGRESS;
       DECISIONS
 
 ## Slice 3: the trash's own clock (US3; FR-017 to FR-020)
