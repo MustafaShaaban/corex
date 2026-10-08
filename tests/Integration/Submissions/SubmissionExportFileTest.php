@@ -477,3 +477,57 @@ it('shows a person their own exports and nobody else’s, unless they manage eve
         ->and(fn () => $history->delete($somebodyElse, $id))->toThrow(DomainException::class, 'The submission export is unavailable.')
         ->and(is_file($export['path']))->toBeTrue();
 });
+
+/**
+ * A PDF, written for real (spec 103, US8). The unit suite tests what the document says; its
+ * harness wraps file streams and the PDF library's font reads come back short through it, so the
+ * file itself is written here.
+ */
+it('exports submissions as a PDF, where the server can write one', function () {
+    if (! Corex\Config\Export\PdfExportWriter::supported()) {
+        $this->markTestSkipped('The PDF library or the PHP extensions it needs are not installed.');
+    }
+    $this->posts[] = $arabic = seedContactSubmission(
+        ['name' => 'سلمى عادل', 'email' => 'salma@example.com', 'message' => 'أريد موقعاً لشركتي. متى يمكن أن نبدأ؟'],
+        '2026-10-07 09:30:00',
+    );
+    $this->posts[] = $english = seedContactSubmission(
+        ['name' => 'Omar Hassan', 'email' => 'omar@example.com', 'message' => 'A website, please.'],
+        '2026-10-07 10:00:00',
+    );
+
+    $offered = $this->controller->previewExport(exportRouteRequest('POST', '/corex/v1/submissions/exports/preview', [
+        'selected_ids' => [$arabic, $english],
+    ]))->get_data()['data']['formats'];
+
+    $export = $this->controller->createExport(exportRouteRequest('POST', '/corex/v1/submissions/exports', [
+        'scope' => 'selected',
+        'selected_ids' => [$arabic, $english],
+        'columns' => ['id', 'submitted', 'answers'],
+        'personal_data_acknowledged' => true,
+        'format' => 'pdf',
+    ]))->get_data()['data']['export'];
+    $this->posts[] = (int) $export['id'];
+    $this->jobs[]  = (int) $export['job_id'];
+
+    $advance = exportRouteRequest('POST', '/corex/v1/submissions/exports/' . $export['id'] . '/advance');
+    $advance->set_url_params(['export' => $export['id']]);
+    $progress = $this->controller->advanceExport($advance)->get_data()['data']['progress'];
+
+    $stored = $this->container->make(WpSubmissionExportStore::class)->file((int) $export['id']);
+    $this->files[] = (string) ($stored['path'] ?? '');
+
+    $download = exportRouteRequest('GET', '/corex/v1/submissions/exports/' . $export['id'] . '/download');
+    $download->set_url_params(['export' => $export['id']]);
+    $artifact = $this->controller->downloadExport($download)->get_data()['data']['artifact'];
+    $document = (string) base64_decode($artifact['base64'], true);
+
+    expect($offered)->toBe(['available' => ['xlsx', 'csv', 'pdf'], 'pdf_most_records' => 500])
+        ->and($progress)->toMatchArray(['state' => 'completed', 'error' => ''])
+        ->and($artifact['filename'])->toEndWith('-contact-' . gmdate('Y-m-d') . '.pdf')
+        ->and($artifact['content_type'])->toBe('application/pdf')
+        ->and(substr($document, 0, 5))->toBe('%PDF-')
+        // Signed as CoreX's: the library records who made the file.
+        ->and($document)->toContain('/Creator')
+        ->and(strlen($document))->toBeGreaterThan(20000);
+});

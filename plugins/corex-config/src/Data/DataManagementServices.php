@@ -10,6 +10,7 @@ use Corex\Config\DataModels\DataCsvParser;
 use Corex\Config\DataModels\DataImportService;
 use Corex\Config\DataModels\DataImportStore;
 use Corex\Config\DataModels\ImportReportWriter;
+use Corex\Config\Export\ExportWriters;
 use Corex\Config\DataModels\MigrationService;
 
 /** Explicit application services consumed by the thin Data REST boundary. */
@@ -24,6 +25,7 @@ final readonly class DataManagementServices
         public DataImportStore $importRuns,
         public ImportReportWriter $importReports,
         public DataExportService $exports,
+        public ExportWriters $exportFormats,
         public MigrationService $migrations,
     ) {
     }

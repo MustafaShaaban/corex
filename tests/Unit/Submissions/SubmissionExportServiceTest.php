@@ -23,6 +23,8 @@ use Corex\Config\Submissions\SubmissionExportSource;
 use Corex\Config\Submissions\SubmissionExportStore;
 use Corex\Config\Export\ExportDirectory;
 use Corex\Config\Export\ExportWriters;
+use Corex\Config\Submissions\SubmissionExportAbout;
+use Corex\Config\Submissions\SubmissionExportDocuments;
 use Corex\Config\Submissions\SubmissionExportFiles;
 use Corex\Config\Submissions\SubmissionExportTable;
 use Corex\Config\Submissions\SubmissionOwnerNames;
@@ -358,9 +360,14 @@ function exportFiles(): SubmissionExportFiles
         }
     };
 
+    $timezone = static fn (): DateTimeZone => new DateTimeZone('UTC');
+
     return new SubmissionExportFiles(
-        new SubmissionExportTable($owners, static fn (): DateTimeZone => new DateTimeZone('UTC')),
-        $questions,
+        new SubmissionExportDocuments(
+            new SubmissionExportTable($owners, $timezone),
+            $questions,
+            new SubmissionExportAbout($owners, $timezone),
+        ),
         new ExportWriters(static fn (): bool => false),
         $directory,
     );
@@ -821,3 +828,20 @@ it('refuses a reason for removing a file that it does not know', function () {
 
     $run->withoutFile('misplaced', 7, new DateTimeImmutable('now'));
 })->throws(InvalidArgumentException::class);
+
+it('refuses a PDF of more submissions than a PDF is written for, and takes the same export as a workbook', function () {
+    [$activity] = exportActivity();
+    $store = exportStore();
+    $records = [];
+    for ($id = 1; $id <= ExportWriters::PDF_MOST_RECORDS + 1; $id++) {
+        $records[$id] = ['id' => $id, 'form' => 'contact', 'is_test' => false];
+    }
+    $service = new SubmissionExportService(exportReader($records), $store, exportQueue(), $activity);
+    $scope = new SubmissionAccessScope(7, true);
+    $everything = ['scope' => 'accessible', 'columns' => ['id']];
+
+    expect(fn () => $service->request($scope, SubmissionExportRequest::from($everything + ['format' => 'pdf'])))
+        ->toThrow(DomainException::class, 'A PDF holds up to 500 submissions. Export fewer, or choose a workbook.')
+        ->and($store->runs)->toBe([])
+        ->and($service->request($scope, SubmissionExportRequest::from($everything + ['format' => 'xlsx']))->recordCount)->toBe(501);
+});

@@ -28,6 +28,7 @@ final readonly class DataExportFiles
 {
     public function __construct(
         private DataExportTable $table,
+        private DataExportAbout $about,
         private ExportWriters $writers,
         private ExportDirectory $directory,
     ) {
@@ -58,7 +59,11 @@ final readonly class DataExportFiles
         $file  = $this->writers
             ->for($run->format, $run->separator)
             ->write(
-                new ExportDocument($label, [$this->table->sheet($label, $fields, $run->columns, $spool->records())]),
+                new ExportDocument(
+                    $label,
+                    [$this->table->sheet($label, $fields, $run->columns, $spool->records())],
+                    $this->about->facts($run, $fields),
+                ),
                 $this->target($run),
             );
 

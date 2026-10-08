@@ -5,8 +5,9 @@
     "license": "GPL-2.0-or-later",
     "homepage": "https://github.com/MustafaShaaban/corex",
     "require": {
-        "nikic/php-parser": "^5.0",
         "php": ">=8.3",
+        "mpdf/mpdf": "^8.3",
+        "nikic/php-parser": "^5.0",
         "psr/container": "^2.0",
         "vlucas/phpdotenv": "^5.6"
     },
