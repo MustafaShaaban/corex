@@ -88,6 +88,24 @@ Tests are written first and seen to fail. One slice per pull request.
 
 ## Slice 4: one way to remove (US4; FR-021 to FR-023)
 
+- [x] T041 Read every caller of `wp_trash_post()` and of a data source's `delete()`: two, the
+      retention panel and the Data screen's source; the route that reached the second is not
+      registered, and the registered one cannot perform it
+- [x] T042 Pest unit: `trashForRetention()` moves what is due and the person's, as the retention
+      run, with history and one activity entry; leaves what is not theirs; records nothing for
+      nothing
+- [x] T043 `SubmissionTrashStore::VIA_RETENTION`; `SubmissionRetentionTrash`;
+      `SubmissionTrashService::trashForRetention()`
+- [x] T044 Pest unit: the retention loop hands the run to the trash once, as the person
+- [x] T045 `SubmissionRetention` takes the person and the trash; `RetentionController` asks the
+      inbox's access policy who they are; `trashForRetention()` and `trash()` gone from the reader
+- [x] T046 Pest integration: a run on real WordPress leaves each submission in CoreX's trash
+      with no WordPress clock, a history entry and one record; a submission outside the person's
+      view stays
+- [x] T047 The Data source declares no delete and performs none; Pest unit
+- [x] T048 Pest unit: nothing in CoreX calls `wp_trash_post()`
+- [x] T049 Guards; the guide; CHANGELOG with Client impact; PROGRESS; DECISIONS
+
 ## Slice 5: anonymize removes the files (US5; FR-024)
 
 ## Slice 6: WordPress's erasure and export (US6; FR-025)

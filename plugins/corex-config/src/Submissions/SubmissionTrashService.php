@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
+use Corex\Config\Retention\SubmissionRetentionTrash;
 use Corex\Mail\SubmissionEmailRecords;
 use DateInterval;
 use DateTimeImmutable;
@@ -25,7 +26,7 @@ use DomainException;
  * history while it has one, and recorded once in the activity stream: who, when, how many.
  * Nothing a visitor submitted is put in that record.
  */
-final readonly class SubmissionTrashService
+final readonly class SubmissionTrashService implements SubmissionRetentionTrash
 {
     /** Why a submission was not deleted: it is not in the trash, or not this person's to see. */
     public const NOT_IN_TRASH = 'not_in_trash';
@@ -54,11 +55,36 @@ final readonly class SubmissionTrashService
             $this->assertCurrent($scope, $this->submissions->findWorkflow($id), $version);
         }
         foreach (array_keys($versions) as $id) {
-            $this->trash->trash($id, $scope->actorId, $via);
-            $this->timeline->append($id, 'trash', 'success', ['actor_id' => $scope->actorId, 'via' => $via]);
+            $this->moveToTrash($scope, $id, $via);
         }
 
         $this->record($scope, 'submission.trashed', array_keys($versions), ['via' => $via]);
+    }
+
+    /**
+     * The retention panel's "Move to trash": what is due, and this person's to act on.
+     *
+     * One that is not theirs is left where it is and the rest are moved. A selection in the inbox
+     * is refused as a whole for that, because the person chose those rows; here they chose
+     * "everything that is due", and nothing was shown to them that could have changed since.
+     */
+    public function trashForRetention(SubmissionAccessScope $scope, array $ids): int
+    {
+        $moved = [];
+        foreach ($ids as $id) {
+            $record = $this->submissions->findWorkflow($id);
+            if ($record === null || ! $scope->allows($record)) {
+                continue;
+            }
+            $this->moveToTrash($scope, $id, SubmissionTrashStore::VIA_RETENTION);
+            $moved[] = $id;
+        }
+
+        if ($moved !== []) {
+            $this->record($scope, 'submission.trashed', $moved, ['via' => SubmissionTrashStore::VIA_RETENTION]);
+        }
+
+        return count($moved);
     }
 
     /**
@@ -210,6 +236,12 @@ final readonly class SubmissionTrashService
         if (! hash_equals((string) $record['updated_at'], $version)) {
             throw new DomainException('The submission changed after it was loaded.');
         }
+    }
+
+    private function moveToTrash(SubmissionAccessScope $scope, int $id, string $via): void
+    {
+        $this->trash->trash($id, $scope->actorId, $via);
+        $this->timeline->append($id, 'trash', 'success', ['actor_id' => $scope->actorId, 'via' => $via]);
     }
 
     /**

@@ -24,8 +24,6 @@ interface SubmissionsReader
 
     public function total(): int;
 
-    public function trash(int $id): bool;
-
     /**
      * The records matching a query (search / form filter / sort / pagination), spec 045.
      *

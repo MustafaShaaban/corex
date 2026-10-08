@@ -18,6 +18,9 @@ interface SubmissionTrashStore
     /** Trashed by somebody in the inbox. */
     public const VIA_INBOX = 'inbox';
 
+    /** Trashed by the retention panel's "Move to trash", for being older than the site keeps. */
+    public const VIA_RETENTION = 'retention';
+
     /** Trashed the WordPress way, before the inbox had a trash, and taken onto its clock since. */
     public const VIA_WORDPRESS = 'wordpress';
 

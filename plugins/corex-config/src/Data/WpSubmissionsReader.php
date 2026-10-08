@@ -75,16 +75,6 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         return (int) $query->found_posts;
     }
 
-    public function trash(int $id): bool
-    {
-        return get_post_type($id) === 'corex_submission' && wp_trash_post($id) !== false;
-    }
-
-    public function trashForRetention(int $id): bool
-    {
-        return $this->trash($id);
-    }
-
     public function archiveForRetention(int $id): bool
     {
         if (get_post_type($id) !== 'corex_submission') {

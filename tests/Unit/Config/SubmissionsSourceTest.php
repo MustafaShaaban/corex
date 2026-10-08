@@ -44,8 +44,18 @@ it('returns an empty list when there are no submissions', function () {
     expect((new SubmissionsSource(new InMemorySubmissionsReader([])))->rows(1, 20))->toBe([]);
 });
 
-it('deletes by trashing the underlying record', function () {
-    expect((new SubmissionsSource(new InMemorySubmissionsReader([])))->delete(42))->toBeTrue();
+/**
+ * It declared a delete and trashed the record the WordPress way: outside the inbox's access rules,
+ * with nothing in the submission's history and nothing recorded (spec 105, FR-022). A submission
+ * is removed in the inbox.
+ */
+it('removes nothing, and does not say it can', function () {
+    $source = new SubmissionsSource(new InMemorySubmissionsReader([]));
+
+    expect($source->delete(42))->toBeFalse()
+        ->and($source->capabilities()->delete)->toBeFalse()
+        ->and($source->capabilities()->bulkDelete)->toBeFalse()
+        ->and($source->capabilities()->permissionMap)->not->toHaveKey('delete');
 });
 
 it('answers a query with the same id/date/form/summary shaping', function () {
