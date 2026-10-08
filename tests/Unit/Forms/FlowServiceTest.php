@@ -21,6 +21,7 @@ use Corex\Forms\Flow\FlowConfigurationValidator;
 use Corex\Forms\Schema\FieldTypeRegistry;
 use Corex\Forms\Success\SuccessStateRegistry;
 use Corex\Forms\Validation\RuleRegistry;
+use Corex\Support\BootLogger;
 use Corex\Tests\Fixtures\Forms\InMemoryFlowStore;
 
 beforeEach(function () {
@@ -48,7 +49,7 @@ function publishableFlowConfiguration(): FlowConfiguration
 /** @return array{0:FlowService,1:FlowRepository,2:Flow} */
 function flowServiceFixture(FlowConfiguration $configuration): array
 {
-    $repository = new FlowRepository(new InMemoryFlowStore());
+    $repository = new FlowRepository(new InMemoryFlowStore(), new BootLogger(debug: false));
     $flow = $repository->save(new Flow(
         id: 0,
         uuid: '8cb9b4cb-5103-4e3d-9dde-58fac287ca26',

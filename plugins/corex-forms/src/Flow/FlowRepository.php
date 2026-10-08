@@ -10,8 +10,10 @@ namespace Corex\Forms\Flow;
 
 defined('ABSPATH') || exit;
 
+use Corex\Support\BootLogger;
 use DateTimeImmutable;
 use DomainException;
+use Exception;
 
 /**
  * Owns flow and append-only version persistence.
@@ -21,8 +23,10 @@ final class FlowRepository
     private const TYPE_FLOW = 'flow';
     private const TYPE_VERSION = 'flow_version';
 
-    public function __construct(private readonly FlowStore $store)
-    {
+    public function __construct(
+        private readonly FlowStore $store,
+        private readonly BootLogger $logger,
+    ) {
     }
 
     public function save(Flow $flow): Flow
@@ -78,10 +82,46 @@ final class FlowRepository
         return $record === null ? null : $this->flow($record);
     }
 
-    /** @return list<Flow> */
+    /**
+     * Every flow that can be read.
+     *
+     * A record that cannot be is left out and named in the log. Each reader of this list used to
+     * get every flow or an exception, so one record without its payload emptied the Forms screen,
+     * the form filter on Submissions and Data, and the flow counts, all at once.
+     *
+     * @return list<Flow>
+     */
     public function all(): array
     {
-        return array_map($this->flow(...), $this->store->all(self::TYPE_FLOW));
+        $flows = [];
+        foreach ($this->store->all(self::TYPE_FLOW) as $record) {
+            try {
+                $flows[] = $this->flow($record);
+            } catch (UnreadableFlowRecord $unreadable) {
+                $this->logger->warning($unreadable->report());
+            }
+        }
+
+        return $flows;
+    }
+
+    /**
+     * Every readable flow beside the draft it points at, for a list that shows both.
+     *
+     * @return list<array{flow:Flow,version:FlowVersion}>
+     */
+    public function allWithDraft(): array
+    {
+        $listing = [];
+        foreach ($this->all() as $flow) {
+            try {
+                $listing[] = ['flow' => $flow, 'version' => $this->draftOf($flow)];
+            } catch (UnreadableFlowRecord $unreadable) {
+                $this->logger->warning($unreadable->report());
+            }
+        }
+
+        return $listing;
     }
 
     public function findVersion(int $flowId, int $versionNumber): ?FlowVersion
@@ -95,7 +135,14 @@ final class FlowRepository
         return null;
     }
 
-    /** @return list<FlowVersion> */
+    /**
+     * Every version of a flow, or none of them.
+     *
+     * A version that cannot be read is not left out the way a flow is in `all()`. Its number is
+     * part of what cannot be read, and `appendVersion()` asks this list whether a number is taken.
+     *
+     * @return list<FlowVersion>
+     */
     public function versions(int $flowId): array
     {
         $versions = array_map($this->version(...), $this->store->all(self::TYPE_VERSION, $flowId));
@@ -145,8 +192,34 @@ final class FlowRepository
         ];
     }
 
+    private function draftOf(Flow $flow): FlowVersion
+    {
+        return $this->findVersion($flow->id, $flow->currentDraftVersion)
+            ?? throw UnreadableFlowRecord::missingDraft($flow->id, $flow->currentDraftVersion);
+    }
+
     /** @param array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>} $record */
     private function flow(array $record): Flow
+    {
+        try {
+            return $this->flowFrom($record);
+        } catch (Exception $reason) {
+            throw UnreadableFlowRecord::because($record['id'], $reason);
+        }
+    }
+
+    /** @param array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>} $record */
+    private function version(array $record): FlowVersion
+    {
+        try {
+            return $this->versionFrom($record);
+        } catch (Exception $reason) {
+            throw UnreadableFlowRecord::because($record['id'], $reason);
+        }
+    }
+
+    /** @param array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>} $record */
+    private function flowFrom(array $record): Flow
     {
         $payload = $record['payload'];
 
@@ -174,7 +247,7 @@ final class FlowRepository
     }
 
     /** @param array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>} $record */
-    private function version(array $record): FlowVersion
+    private function versionFrom(array $record): FlowVersion
     {
         $payload = $record['payload'];
 

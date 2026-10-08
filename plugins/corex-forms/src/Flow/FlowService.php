@@ -63,12 +63,18 @@ final readonly class FlowService
         return $this->flows->all();
     }
 
-    /** @return list<Flow> */
-    public function search(string $query, string $state): array
+    /**
+     * The flows a list shows, each beside the draft it would open, narrowed by name or slug and by
+     * state. A stored flow that cannot be read is not in it; the repository says which in the log.
+     *
+     * @return list<array{flow:Flow,version:FlowVersion}>
+     */
+    public function listing(string $query, string $state): array
     {
         return array_values(array_filter(
-            $this->flows->all(),
-            static function (Flow $flow) use ($query, $state): bool {
+            $this->flows->allWithDraft(),
+            static function (array $entry) use ($query, $state): bool {
+                $flow = $entry['flow'];
                 $matchesState = $state === '' || $flow->state === $state;
                 $matchesQuery = $query === ''
                     || stripos($flow->name, $query) !== false
