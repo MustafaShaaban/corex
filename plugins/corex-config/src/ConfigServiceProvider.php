@@ -256,6 +256,7 @@ final class ConfigServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): \Corex\Config\Retention\RetentionSweep => new \Corex\Config\Retention\RetentionSweep([
                 $c->make(\Corex\Config\Retention\NotificationRetention::class),
                 $c->make(\Corex\Config\Submissions\SubmissionExportRetention::class),
+                $c->make(\Corex\Config\Submissions\SubmissionTrashRetention::class),
             ]),
         );
         $this->container->singleton(\Corex\Config\Retention\RetentionScheduler::class);
@@ -620,6 +621,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Config\Submissions\SubmissionAccessPolicy::class),
                 $c->make(\Corex\Config\Submissions\SubmissionQuestions::class),
                 $c->make(\Corex\Config\Submissions\SubmissionOwnerNames::class),
+                $c->make(\Corex\Config\Submissions\SubmissionTrashRetention::class),
             ),
         );
         $this->container->singleton(SubmissionWorkflowService::class);
@@ -646,6 +648,8 @@ final class ConfigServiceProvider extends ServiceProvider
             static fn (): \Corex\Mail\NoSubmissionEmailRecords => new \Corex\Mail\NoSubmissionEmailRecords(),
         );
         $this->container->singleton(\Corex\Config\Submissions\SubmissionTrashService::class);
+        $this->container->singleton(\Corex\Config\Submissions\SubmissionTrashRetention::class);
+        $this->container->singleton(\Corex\Config\Submissions\SubmissionDeletionGuard::class);
         $this->container->singleton(SubmissionBulkService::class);
         $this->container->singleton(WpSubmissionExportStore::class);
         $this->container->singleton(
@@ -905,6 +909,9 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(\Corex\Config\Notifications\NotificationBell::class)->register();
         $this->container->make(\Corex\Config\Notifications\NotificationToolbar::class)->register();
         $this->container->make(\Corex\Config\Retention\RetentionScheduler::class)->register();
+        // On every request, cron and command line included: that is where a submission is deleted
+        // by something other than the inbox.
+        $this->container->make(\Corex\Config\Submissions\SubmissionDeletionGuard::class)->register();
         $this->container->make(\Corex\Config\Notifications\CommandCenterWidget::class)->register();
         $this->container->make(\Corex\Config\Notifications\OptionalDashboardWidgets::class)->register();
         add_action('init', [$this->container->make(WpSubmissionExportStore::class), 'registerPostType']);

@@ -247,3 +247,44 @@ it('does not delete a submission that is still in the inbox, or another team’s
         ->and($bench->inbox->findWorkflow(10))->not->toBeNull()
         ->and($bench->trash->findTrashed(11))->not->toBeNull();
 });
+
+// ---- The trash's own clock (spec 105, US3) ----
+
+it('deletes what the trash has kept long enough, and records it as the trash’s own doing', function () {
+    $bench = trashBench();
+    $bench->service->trash(trashAdministrator(), [10 => 'v1', 11 => 'v2']);
+    $bench->trash->uploads = [10 => [501]];
+    $bench->trash->attempts = [10 => ['aaaa-1']];
+
+    $deleted = $bench->service->expire([10, 11, 99]);
+
+    $entry = $bench->activity->events[1];
+
+    expect($deleted)->toBe(2)
+        ->and($bench->trash->deleted)->toBe([10, 11])
+        ->and($bench->trash->forgotten)->toBe([501])
+        ->and($bench->emails->forgotten[0])->toBe(['aaaa-1'])
+        ->and($entry->kind)->toBe('submission.deleted')
+        ->and($entry->actorKind)->toBe('cron')
+        ->and($entry->actorId)->toBe(0)
+        ->and($entry->context)->toMatchArray(['count' => 2, 'by' => 'expiry', 'not_deleted' => 1]);
+});
+
+it('records nothing when the trash had nothing old enough', function () {
+    $bench = trashBench();
+
+    expect($bench->service->expire([]))->toBe(0)
+        ->and($bench->activity->events)->toBe([]);
+});
+
+it('removes what is tied to a submission that something else is deleting', function () {
+    $bench = trashBench();
+    $bench->trash->uploads = [10 => [501, 502]];
+    $bench->trash->attempts = [10 => ['aaaa-1']];
+
+    expect($bench->service->forgetTiedData(10))->toBeTrue()
+        ->and($bench->trash->forgotten)->toBe([501, 502])
+        ->and($bench->emails->forgotten)->toBe([['aaaa-1']])
+        // The submission is whoever is deleting it's to delete.
+        ->and($bench->inbox->findWorkflow(10))->not->toBeNull();
+});

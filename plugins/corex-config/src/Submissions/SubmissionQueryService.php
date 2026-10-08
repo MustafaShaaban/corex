@@ -26,10 +26,11 @@ final readonly class SubmissionQueryService
         private SubmissionAccessPolicy $access,
         private ?SubmissionQuestions $questions = null,
         private ?SubmissionOwnerNames $owners = null,
+        private ?SubmissionTrashRetention $trash = null,
     ) {
     }
 
-    /** @return array{items:list<array<string,mixed>>,total:int,page:int,per_page:int,can_delete_permanently:bool} */
+    /** @return array{items:list<array<string,mixed>>,total:int,page:int,per_page:int,can_delete_permanently:bool,trash_days:int} */
     public function query(int $actorId, SubmissionInboxQuery $query): array
     {
         $scope = $this->scope($actorId);
@@ -42,6 +43,8 @@ final readonly class SubmissionQueryService
             'per_page' => $query->perPage,
             // So the inbox can offer a permanent delete, or say why it does not (spec 105, FR-010).
             'can_delete_permanently' => $scope->canDeletePermanently,
+            // How many days the trash keeps a submission; 0 for until somebody deletes it.
+            'trash_days' => $this->trash?->retentionDays() ?? 0,
         ];
     }
 

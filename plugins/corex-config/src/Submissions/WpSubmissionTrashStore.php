@@ -114,6 +114,55 @@ final readonly class WpSubmissionTrashStore implements SubmissionTrashStore
         )));
     }
 
+    public function trashedBefore(\DateTimeImmutable $cutoff, int $limit): array
+    {
+        // The date is written by trash() in one form and one time zone, so it sorts as text.
+        return $this->trashedIds($limit, [
+            'key' => 'corex_trashed_at',
+            'value' => $cutoff->setTimezone(new \DateTimeZone('UTC'))->format(DATE_ATOM),
+            'compare' => '<',
+        ]);
+    }
+
+    public function adoptWordPressTrash(int $limit): int
+    {
+        $ids = $this->trashedIds($limit, ['key' => '_wp_trash_meta_time', 'compare' => 'EXISTS'], [
+            'key' => 'corex_trashed_at',
+            'compare' => 'NOT EXISTS',
+        ]);
+        foreach ($ids as $id) {
+            update_post_meta($id, 'corex_trashed_at', gmdate(DATE_ATOM, (int) get_post_meta($id, '_wp_trash_meta_time', true)));
+            update_post_meta($id, 'corex_trashed_via', self::VIA_WORDPRESS);
+            foreach (self::WORDPRESS_RECORD as $key) {
+                delete_post_meta($id, $key);
+            }
+        }
+
+        return count($ids);
+    }
+
+    /**
+     * @param array<string,mixed> ...$clauses
+     *
+     * @return list<int>
+     */
+    private function trashedIds(int $limit, array ...$clauses): array
+    {
+        $found = new \WP_Query([
+            'post_type' => self::POST_TYPE,
+            'post_status' => 'trash',
+            'posts_per_page' => max(1, $limit),
+            'orderby' => 'ID',
+            'order' => 'ASC',
+            'fields' => 'ids',
+            'no_found_rows' => true,
+            'update_post_term_cache' => false,
+            'meta_query' => ['relation' => 'AND', ...$clauses],
+        ]);
+
+        return array_map('intval', $found->posts);
+    }
+
     public function delete(int $id): void
     {
         if ($this->statusOf($id) !== 'trash') {

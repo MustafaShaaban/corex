@@ -129,16 +129,61 @@ final readonly class SubmissionTrashService
     }
 
     /**
+     * Delete trashed submissions because the trash kept them as long as it keeps anything
+     * (FR-017). The same removal as a person's, recorded as the trash's own.
+     *
+     * @param list<int> $ids
+     *
+     * @return int How many were deleted.
+     */
+    public function expire(array $ids): int
+    {
+        $deleted = [];
+        $forms = [];
+        foreach ($ids as $id) {
+            $record = $this->trash->findTrashed($id);
+            if ($record !== null && $this->erase($id) === '') {
+                $deleted[] = $id;
+                $forms[] = (string) ($record['form'] ?? '');
+            }
+        }
+        if ($deleted !== []) {
+            $this->recordAs(ActivityEvent::ACTOR_CRON, 0, 'CoreX retention', 'submission.deleted', $deleted, [
+                'forms' => array_values(array_unique(array_filter($forms))),
+                'by' => 'expiry',
+                'not_deleted' => count($ids) - count($deleted),
+            ]);
+        }
+
+        return count($deleted);
+    }
+
+    /**
+     * Remove what is tied to a submission and stored apart from it: its uploaded files, and the
+     * copies of its emails. For a submission that something else is deleting (FR-020).
+     *
+     * @return bool False when a file could not be removed.
+     */
+    public function forgetTiedData(int $id): bool
+    {
+        foreach ($this->trash->uploadsOf($id) as $attachmentId) {
+            if (! $this->trash->forgetUpload($attachmentId)) {
+                return false;
+            }
+        }
+        $this->emails->forget($this->trash->emailAttemptsOf($id));
+
+        return true;
+    }
+
+    /**
      * Remove one trashed submission and what is tied to it. Returns why it was not, or ''.
      */
     private function erase(int $id): string
     {
-        foreach ($this->trash->uploadsOf($id) as $attachmentId) {
-            if (! $this->trash->forgetUpload($attachmentId)) {
-                return self::FILE_REMAINS;
-            }
+        if (! $this->forgetTiedData($id)) {
+            return self::FILE_REMAINS;
         }
-        $this->emails->forget($this->trash->emailAttemptsOf($id));
         $this->trash->delete($id);
 
         return '';
@@ -173,13 +218,22 @@ final readonly class SubmissionTrashService
      */
     private function record(SubmissionAccessScope $scope, string $kind, array $ids, array $context): void
     {
+        $this->recordAs(ActivityEvent::ACTOR_USER, $scope->actorId, 'User #' . $scope->actorId, $kind, $ids, $context);
+    }
+
+    /**
+     * @param list<int>           $ids
+     * @param array<string,mixed> $context
+     */
+    private function recordAs(string $actorKind, int $actorId, string $actorLabel, string $kind, array $ids, array $context): void
+    {
         $one = count($ids) === 1;
         $now = new DateTimeImmutable('now');
 
         $this->activity->record(
-            actorId: $scope->actorId,
-            actorKind: ActivityEvent::ACTOR_USER,
-            actorLabel: 'User #' . $scope->actorId,
+            actorId: $actorId,
+            actorKind: $actorKind,
+            actorLabel: $actorLabel,
             area: ActivityEvent::AREA_SUBMISSIONS,
             kind: $kind,
             targetType: 'submission',

@@ -18,6 +18,9 @@ interface SubmissionTrashStore
     /** Trashed by somebody in the inbox. */
     public const VIA_INBOX = 'inbox';
 
+    /** Trashed the WordPress way, before the inbox had a trash, and taken onto its clock since. */
+    public const VIA_WORDPRESS = 'wordpress';
+
     /**
      * @param string $via What trashed it: one of the `VIA_*` names.
      *
@@ -58,6 +61,21 @@ interface SubmissionTrashStore
      * @return list<string>
      */
     public function emailAttemptsOf(int $id): array;
+
+    /**
+     * The submissions that went into the trash before a moment, oldest first.
+     *
+     * @return list<int>
+     */
+    public function trashedBefore(\DateTimeImmutable $cutoff, int $limit): array;
+
+    /**
+     * Take onto CoreX's clock the submissions WordPress's own trash holds: give each the date
+     * WordPress recorded, and remove the mark WordPress's clean-up would delete it by.
+     *
+     * @return int How many were adopted.
+     */
+    public function adoptWordPressTrash(int $limit): int;
 
     /**
      * Delete a trashed submission for good, with everything stored on it. What is stored
