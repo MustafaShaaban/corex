@@ -1036,3 +1036,166 @@ test( 'moves submissions to the trash and restores them, from the pane, in bulk 
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
+
+/**
+ * Deleting for good (spec 105, US2).
+ *
+ * Only from the trash, only after a confirmation that lists what goes with the submission and
+ * has a box to tick, and for one from its pane or several as the trash's bulk action.
+ */
+test( 'deletes submissions for good from the trash, after an acknowledged confirmation', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+	const second = await seedSubmission( page, FLOW_SLUG, EMAIL );
+	expect( second.real.envelope.ok ).toBe( true );
+	await page.goto( '/wp-admin/admin.php?page=corex-submissions' );
+	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await page.getByLabel( 'Search' ).fill( EMAIL );
+	const rows = page.locator( '.corex-inbox__table tbody tr' );
+	await expect
+		.poll( async () => {
+			const shown = await rows.count();
+			const matching = await rows.filter( { hasText: EMAIL } ).count();
+			return shown >= 2 && shown === matching;
+		} )
+		.toBe( true );
+	const notice = page.locator( '.corex-inbox__notice' );
+
+	// The inbox does not offer it: a submission is trashed first.
+	await page
+		.getByLabel( /Select submission/ )
+		.nth( 0 )
+		.check();
+	await page
+		.getByLabel( /Select submission/ )
+		.nth( 1 )
+		.check();
+	await page.getByRole( 'combobox', { name: 'Bulk action' } ).click();
+	await expect(
+		page.getByRole( 'option', { name: 'Delete permanently' } )
+	).toHaveCount( 0 );
+	await page.getByRole( 'option', { name: 'Move to trash' } ).click();
+	await page.getByRole( 'button', { name: 'Preview action' } ).click();
+	await page
+		.getByRole( 'dialog', { name: 'Move to the trash' } )
+		.getByRole( 'button', { name: 'Move to trash' } )
+		.click();
+	await expect( notice ).toContainText( '2 submissions moved to the trash.' );
+
+	await page
+		.getByRole( 'group', { name: 'Submissions shown' } )
+		.getByRole( 'button', { name: 'Trash' } )
+		.click();
+	await expect( rows ).toHaveCount( 2 );
+
+	// One, from its pane.
+	await page
+		.getByRole( 'button', { name: new RegExp( EMAIL ) } )
+		.first()
+		.click();
+	const pane = page.locator( '.corex-pane' );
+	await pane.getByRole( 'button', { name: 'Delete permanently' } ).click();
+	const asking = page.getByRole( 'dialog', { name: 'Delete permanently' } );
+	await expect( asking ).toContainText(
+		'1 submission will be deleted for good. This cannot be undone.'
+	);
+	await expect( asking.getByRole( 'listitem' ) ).toHaveCount( 4 );
+	const confirm = asking.getByRole( 'button', {
+		name: 'Delete 1 submission',
+	} );
+	// Nothing is deleted until the box is ticked.
+	await expect( confirm ).toBeDisabled();
+
+	// Its parts are one distance apart, and the box stands level with the first line of what it
+	// asks. Measured in both directions.
+	for ( const direction of [ 'ltr', 'rtl' ] ) {
+		await page
+			.locator( 'html' )
+			.evaluate(
+				( root, dir ) => root.setAttribute( 'dir', dir ),
+				direction
+			);
+		const measured = await asking
+			.locator( '.corex-inbox__deletion' )
+			.evaluate( ( node ) => {
+				const box = ( element ) => element.getBoundingClientRect();
+				const parts = Array.from( node.children );
+				const input = node.querySelector(
+					'.corex-inbox__acknowledge input'
+				);
+				const label = node.querySelector(
+					'.corex-inbox__acknowledge label'
+				);
+				const range = document.createRange();
+				range.selectNodeContents( label );
+				const line = range.getClientRects()[ 0 ];
+
+				return {
+					gaps: parts
+						.slice( 1 )
+						.map( ( part, index ) =>
+							Math.round(
+								box( part ).top - box( parts[ index ] ).bottom
+							)
+						),
+					offLine: Math.abs(
+						box( input ).top +
+							box( input ).height / 2 -
+							( line.top + line.height / 2 )
+					),
+				};
+			} );
+		const where = `in ${ direction }`;
+
+		expect(
+			new Set( measured.gaps ).size,
+			`${ where }: gaps ${ measured.gaps.join( ', ' ) }`
+		).toBe( 1 );
+		expect( measured.offLine, where ).toBeLessThanOrEqual( 1.5 );
+	}
+	await page
+		.locator( 'html' )
+		.evaluate( ( root ) => root.setAttribute( 'dir', 'ltr' ) );
+
+	await asking.getByLabel( 'I understand this cannot be undone' ).check();
+	await expect( confirm ).toBeEnabled();
+	// Its letters are the primary button's, on the primary button's ground. They were the error
+	// colour, red on brass, which could not be read: seen in a capture of this dialog.
+	const inkOf = ( button ) =>
+		button.evaluate( ( node ) => window.getComputedStyle( node ).color );
+	expect( await inkOf( confirm ) ).toBe(
+		await inkOf( pane.getByRole( 'button', { name: 'Restore' } ) )
+	);
+	await confirm.click();
+	await expect( notice ).toContainText( '1 submission deleted for good.' );
+	await expect( pane ).toBeHidden();
+	await expect( rows ).toHaveCount( 1 );
+
+	// The other, as the trash's bulk action.
+	await page
+		.getByLabel( /Select submission/ )
+		.first()
+		.check();
+	await page.getByRole( 'combobox', { name: 'Bulk action' } ).click();
+	await page.getByRole( 'option', { name: 'Delete permanently' } ).click();
+	await page.getByRole( 'button', { name: 'Preview action' } ).click();
+	await expect( asking ).toContainText(
+		'1 submission will be deleted for good. This cannot be undone.'
+	);
+	await asking.getByLabel( 'I understand this cannot be undone' ).check();
+	await asking.getByRole( 'button', { name: 'Delete 1 submission' } ).click();
+	await expect( notice ).toContainText( '1 submission deleted for good.' );
+	await expect(
+		page.getByRole( 'heading', { name: 'Nothing in the trash' } )
+	).toBeVisible();
+
+	// Gone from the inbox too: neither can be found there.
+	await page
+		.getByRole( 'group', { name: 'Submissions shown' } )
+		.getByRole( 'button', { name: 'Inbox' } )
+		.click();
+	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+
+	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
+} );

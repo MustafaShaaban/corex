@@ -2,6 +2,7 @@ import { useCallback, useEffect, useReducer } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import {
 	buildInboxUrl,
+	deleteNotice,
 	inboxReducer,
 	initialInboxState,
 	trashNotice,
@@ -235,6 +236,43 @@ export function useInbox( config, filters ) {
 				await load( trashNotice( 'restore', ids.length ) );
 			}
 			return result;
+		},
+		// Delete for good, from the trash (spec 105, US2). One goes by its own route; several go
+		// the way a bulk action does. The dialog that calls this is the confirmation.
+		destroy: async ( ids ) => {
+			let deleted = 0;
+			let failed = 0;
+			if ( ids.length === 1 ) {
+				const result = await window.Corex.api.delete(
+					`${ config.restUrl }/${ ids[ 0 ] }`,
+					{ nonce: config.nonce }
+				);
+				if ( ! result.envelope.ok ) {
+					dispatch( { type: 'failed', message: message( result ) } );
+					return null;
+				}
+				deleted = 1;
+			} else {
+				const previewed = await mutate( '/bulk/preview', {
+					action: 'delete',
+					submission_ids: ids,
+					parameters: {},
+				} );
+				const applied =
+					previewed &&
+					( await mutate( '/bulk/apply', {
+						token: previewed.preview.token,
+					} ) );
+				if ( ! applied ) {
+					return null;
+				}
+				deleted = Number( applied.result.updated ) || 0;
+				failed = Number( applied.result.failed ) || 0;
+			}
+			dispatch( { type: 'drawerClosed' } );
+			dispatch( { type: 'selectionChanged', ids: [] } );
+			await load( deleteNotice( deleted, failed ) );
+			return { deleted, failed };
 		},
 		createExport: ( data ) => mutate( '/exports', data ),
 		previewExport: ( data ) => mutate( '/exports/preview', data ),

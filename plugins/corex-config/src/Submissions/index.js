@@ -24,6 +24,7 @@ import {
 	VIEW_INBOX,
 	VIEW_TRASH,
 	bulkActionsFor,
+	deleteConfirmation,
 	inboxFiltersFromUrl,
 	inboxSubmissionFromUrl,
 	toggleSubmission,
@@ -88,7 +89,9 @@ function App() {
 	// copy taken at the click was refused as stale when the confirmation came.
 	const [ trashing, setTrashing ] = useState( false );
 	const view = filters.view;
-	const actions = bulkActionsFor( view );
+	// The ids somebody asked to delete for good, until they confirm or cancel.
+	const [ deleting, setDeleting ] = useState( null );
+	const actions = bulkActionsFor( view, inbox.state.mayDelete );
 	// What was chosen in the other view is not offered in this one.
 	const action = actions.some( ( item ) => item.value === bulkAction )
 		? bulkAction
@@ -150,6 +153,11 @@ function App() {
 				}
 				onPreview={ async () => {
 					const ids = inbox.state.selectedIds;
+					// A permanent delete has a confirmation of its own, which lists what goes.
+					if ( action === 'delete' ) {
+						setDeleting( ids );
+						return;
+					}
 					const data = await inbox.previewBulk(
 						action,
 						ids,
@@ -178,6 +186,10 @@ function App() {
 					drawer={ inbox.state.drawer }
 					inbox={ inbox }
 					onTrash={ () => setTrashing( true ) }
+					mayDelete={ inbox.state.mayDelete }
+					onDelete={ () =>
+						setDeleting( [ inbox.state.drawer.record.id ] )
+					}
 				/>
 			) }
 			{ preview && (
@@ -199,6 +211,17 @@ function App() {
 					apply={ async () => {
 						await inbox.trash( inbox.state.drawer.record );
 						setTrashing( false );
+					} }
+				/>
+			) }
+			{ deleting && (
+				<ConfirmDelete
+					count={ deleting.length }
+					loadExports={ inbox.loadExports }
+					close={ () => setDeleting( null ) }
+					apply={ async () => {
+						await inbox.destroy( deleting );
+						setDeleting( null );
 					} }
 				/>
 			) }
@@ -742,6 +765,95 @@ function ConfirmTrash( { close, apply } ) {
 			}
 		>
 			<p>{ words.body }</p>
+		</CorexDialog>
+	);
+}
+
+/**
+ * Asked before submissions are deleted for good (spec 105, FR-012 and FR-014): what goes with
+ * them, that it cannot be undone, and a box to tick before the action can be taken.
+ *
+ * @param {Object}   props
+ * @param {number}   props.count       How many submissions.
+ * @param {Function} props.loadExports Asks for the export files that are kept.
+ * @param {Function} props.close       Leaves without deleting.
+ * @param {Function} props.apply       Deletes.
+ * @return {import('react').ReactElement} The dialog.
+ */
+function ConfirmDelete( { count, loadExports, close, apply } ) {
+	const words = deleteConfirmation( count );
+	const acknowledgeId = useId();
+	const [ acknowledged, setAcknowledged ] = useState( false );
+	const [ working, setWorking ] = useState( false );
+	// Said only where there is a kept export file for it to be true of.
+	const [ keptExports, setKeptExports ] = useState( false );
+	useEffect( () => {
+		let showing = true;
+		loadExports().then( ( result ) => {
+			const entries = result?.envelope?.data?.exports;
+			if ( showing && Array.isArray( entries ) ) {
+				setKeptExports(
+					entries.some( ( entry ) => entry.state === 'ready' )
+				);
+			}
+		} );
+		return () => {
+			showing = false;
+		};
+	}, [ loadExports ] );
+
+	return (
+		<CorexDialog
+			title={ words.title }
+			onClose={ close }
+			footer={
+				<div className="corex-inbox__modal-actions">
+					<Button variant="tertiary" onClick={ close }>
+						{ __( 'Cancel', 'corex' ) }
+					</Button>
+					<Button
+						variant="primary"
+						isDestructive
+						disabled={ ! acknowledged || working }
+						onClick={ async () => {
+							setWorking( true );
+							await apply();
+						} }
+					>
+						{ words.confirm }
+					</Button>
+				</div>
+			}
+		>
+			<div className="corex-inbox__deletion">
+				<p>{ words.body }</p>
+				<div>
+					<p>{ __( 'What goes with it:', 'corex' ) }</p>
+					<ul>
+						{ words.removes.map( ( line ) => (
+							<li key={ line }>{ line }</li>
+						) ) }
+					</ul>
+				</div>
+				{ keptExports && (
+					<p className="corex-inbox__deletion-note">
+						{ words.exports }
+					</p>
+				) }
+				<div className="corex-inbox__acknowledge">
+					<input
+						id={ acknowledgeId }
+						type="checkbox"
+						checked={ acknowledged }
+						onChange={ ( event ) =>
+							setAcknowledged( event.target.checked )
+						}
+					/>
+					<label htmlFor={ acknowledgeId }>
+						{ words.acknowledge }
+					</label>
+				</div>
+			</div>
 		</CorexDialog>
 	);
 }

@@ -88,9 +88,13 @@ delete a submission. That is spec 105, specified and not planned or built.
 
 Specified on 2026-10-08, neither planned nor built:
 
-- **Spec 105, trash, restore and permanently delete a submission.** Slice 1 of six is built
-  (DECISIONS #281): move to the trash from the pane or in bulk, with undo; a Trash view; restore.
-  Nothing deletes from the trash yet. Next: slice 2, delete for good. Found while specifying: a
+- **Spec 105, trash, restore and permanently delete a submission.** Slices 1 and 2 of six are
+  built. Slice 1 (DECISIONS #281): move to the trash from the pane or in bulk, with undo; a Trash
+  view; restore. Slice 2 (DECISIONS #283): delete for good from the trash, with the files and the
+  email copies tied to a submission, a permission of its own, and an acknowledged confirmation.
+  Nothing empties the trash by itself yet. Next: slice 3, the trash's own clock. Found while
+  planning slice 2: the mail log's rows are tied to no submission, so FR-011 was corrected.
+  Found while specifying: a
   trashed submission is deleted for good by WordPress after 30 days, with nothing recorded and
   any uploaded file left on disk; and anonymizing leaves an uploaded file too. What a permanent
   delete removes was left to CoreX by the owner; the choice is the spec's first assumption.

@@ -716,3 +716,59 @@
 .corex-admin .corex-pane__trash p {
 	margin: 0;
 }
+
+/* A trashed submission's two actions, side by side. */
+.corex-admin .corex-pane__trash-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-sm);
+}
+
+/*
+ * The confirmation before a permanent delete (spec 105): what goes, a note
+ * about copies, and the box that has to be ticked. One distance between its
+ * parts, none of it from a paragraph's own margin.
+ */
+.corex-admin .corex-inbox__deletion {
+	display: grid;
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-inbox__deletion p,
+.corex-admin .corex-inbox__deletion ul {
+	margin: 0;
+}
+
+.corex-admin .corex-inbox__deletion ul {
+	padding-inline-start: var(--corex-admin-space-lg);
+	list-style: disc;
+}
+
+.corex-admin .corex-inbox__deletion li {
+	margin-block: var(--corex-admin-space-2xs) 0;
+}
+
+.corex-admin .corex-inbox__deletion-note {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-inbox__acknowledge {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--corex-admin-space-sm);
+	padding: var(--corex-admin-space-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-sm);
+	background: var(--corex-admin-surface);
+}
+
+.corex-admin .corex-inbox__acknowledge input {
+	margin: 0;
+	flex: none;
+}
+
+.corex-admin .corex-inbox__acknowledge label {
+	font-weight: 600;
+}

@@ -38,6 +38,7 @@ final readonly class SubmissionsController
         $this->route('/submissions/(?P<id>\d+)/reply', 'POST', 'reply');
         $this->route('/submissions/(?P<id>\d+)/resend', 'POST', 'resend');
         $this->route('/submissions/(?P<id>\d+)/email-log', 'GET', 'emailLog');
+        $this->route('/submissions/(?P<id>\d+)', 'DELETE', 'destroy');
         $this->route('/submissions/(?P<id>\d+)/trash', 'POST', 'trash');
         $this->route('/submissions/(?P<id>\d+)/restore', 'POST', 'restore');
         $this->route('/submissions/bulk/preview', 'POST', 'bulkPreview');
@@ -77,6 +78,22 @@ final readonly class SubmissionsController
             $this->services->trash->trash($this->scope(), [$id => (string) ($safe->input['expected_updated_at'] ?? '')]);
 
             return Response::ok(['trashed' => [$id]]);
+        });
+    }
+
+    /**
+     * Delete one trashed submission for good (spec 105, US2). Several go through the bulk routes.
+     */
+    public function destroy(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, [], function () use ($request): Response {
+            $id = RouteParam::int($request);
+            $result = $this->services->trash->delete($this->scope(), [$id]);
+            if ($result['failed'] !== []) {
+                throw new DomainException($this->notDeleted($result['failed'][0]['reason']));
+            }
+
+            return Response::ok(['deleted' => $result['deleted']]);
         });
     }
 
@@ -288,6 +305,14 @@ final readonly class SubmissionsController
         if ($this->services->trash->trashed($scope, $id) !== null) {
             throw new DomainException(__('This submission is in the trash. Restore it to change it.', 'corex'));
         }
+    }
+
+    /** Why a submission was not deleted, in words. */
+    private function notDeleted(string $reason): string
+    {
+        return $reason === SubmissionTrashService::FILE_REMAINS
+            ? __('A file uploaded with this submission could not be removed, so the submission was not deleted.', 'corex')
+            : __('Submission was not found in the trash.', 'corex');
     }
 
     /** The id a change is asked for, once it is known not to be in the trash. */

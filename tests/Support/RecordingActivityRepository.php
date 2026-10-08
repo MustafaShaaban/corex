@@ -32,7 +32,7 @@ final class RecordingActivityRepository implements ActivityRepository
 
     public function query(array $filters = [], int $page = 1, int $perPage = 20): array
     {
-        return ['items' => $this->events, 'total' => count($this->events)];
+        return $this->events;
     }
 
     public function pruneExpired(DateTimeImmutable $now, int $limit = 500): int

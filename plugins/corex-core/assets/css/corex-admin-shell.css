@@ -979,6 +979,14 @@ body.corex-admin-screen .corex-admin__shell {
 	color: var(--corex-admin-error);
 }
 
+/* A primary button that is also destructive keeps the primary's ink. The rule
+   above gave it the error colour as text, on the action colour as ground: red
+   on brass, which could not be read. What it does is said by its words. */
+.corex-admin .components-button.is-primary.is-destructive,
+.corex-admin .components-button.is-primary.is-destructive:hover:not(:disabled) {
+	color: var(--corex-admin-action-ink);
+}
+
 .corex-admin :where(button, input, select, textarea):disabled,
 .corex-admin [aria-disabled="true"] {
 	opacity: var(--corex-admin-disabled-opacity);
