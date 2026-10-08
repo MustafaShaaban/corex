@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 1143,
+    "consumer_records": 1145,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -616,6 +616,7 @@
         "--corex-admin-radius-sm",
         "--corex-admin-shadow-lg",
         "--corex-admin-shadow-sm",
+        "--corex-admin-space-2xl",
         "--corex-admin-space-2xs",
         "--corex-admin-space-lg",
         "--corex-admin-space-md",

@@ -11,6 +11,7 @@ import {
 	TestSendPanel,
 	VariablesPanel,
 } from './components/index.js';
+import { PendingControl } from '../admin/components/working.js';
 
 function templates( studio, busy ) {
 	return (
@@ -20,8 +21,9 @@ function templates( studio, busy ) {
 			detail={ studio.selection.detail }
 			draft={ studio.selection.draft }
 			errors={ studio.selection.errors }
+			selecting={ studio.selection.selecting }
 			busy={ busy }
-			onSelect={ studio.selection.selectTemplate }
+			onSelect={ studio.selection.chooseTemplate }
 			onCreate={ studio.commands.createTemplate }
 			onDraftChange={ studio.onDraftChange }
 			onSaveDraft={ studio.commands.saveDraft }
@@ -152,5 +154,9 @@ const PANEL_RENDERERS = {
 export function StudioPanel( { tab, studio, config } ) {
 	const busy = studio.state.mutating || studio.state.status === 'loading';
 	const renderPanel = PANEL_RENDERERS[ tab ] ?? PANEL_RENDERERS.overview;
-	return renderPanel( studio, busy, config );
+	return (
+		<PendingControl.Provider value={ studio.state.pending }>
+			{ renderPanel( studio, busy, config ) }
+		</PendingControl.Provider>
+	);
 }

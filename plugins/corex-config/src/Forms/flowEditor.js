@@ -8,6 +8,9 @@ const FLOW_ACTIONS = [ 'preview', 'publish', 'unpublish', 'close', 'test' ];
 
 export const initialFlowState = {
 	status: 'idle',
+	// Whether the list of flows has been answered at all. Until it has, an empty list is not
+	// "no forms": it is a question nobody has answered.
+	listed: false,
 	flows: [],
 	selected: null,
 	draft: null,
@@ -36,6 +39,7 @@ export function flowReducer( state, action ) {
 				...state,
 				...normalizeFlowPayload( action.payload ),
 				status: 'ready',
+				listed: true,
 				message: action.message || '',
 			};
 		case 'selected':

@@ -1,4 +1,5 @@
-import { useState } from '@wordpress/element';
+import { useContext, useState } from '@wordpress/element';
+import { PendingControl, workingProps } from '../admin/components/working.js';
 import { __ } from '@wordpress/i18n';
 import {
 	addField,
@@ -23,6 +24,7 @@ export function FlowEditorPanel( { studio, onBack } ) {
 	const { state } = studio;
 	const { draft, extensions } = state;
 	const busy = state.status === 'loading' || state.status === 'mutating';
+	const pending = useContext( PendingControl );
 	const changeDraft = ( next ) =>
 		studio.dispatch( { type: 'draft_changed', payload: next } );
 	const changeConfiguration = ( key, value ) =>
@@ -53,6 +55,7 @@ export function FlowEditorPanel( { studio, onBack } ) {
 						className="button button-primary"
 						disabled={ busy }
 						onClick={ studio.saveDraft }
+						{ ...workingProps( pending === 'saveDraft' ) }
 					>
 						{ __( 'Save draft', 'corex' ) }
 					</button>
@@ -62,6 +65,7 @@ export function FlowEditorPanel( { studio, onBack } ) {
 							className="button"
 							disabled={ busy }
 							onClick={ studio.publish }
+							{ ...workingProps( pending === 'publish' ) }
 						>
 							{ __( 'Publish', 'corex' ) }
 						</button>
@@ -72,6 +76,7 @@ export function FlowEditorPanel( { studio, onBack } ) {
 							className="button"
 							disabled={ busy }
 							onClick={ studio.unpublish }
+							{ ...workingProps( pending === 'unpublish' ) }
 						>
 							{ __( 'Move to draft', 'corex' ) }
 						</button>
@@ -82,6 +87,7 @@ export function FlowEditorPanel( { studio, onBack } ) {
 							className="button"
 							disabled={ busy }
 							onClick={ studio.close }
+							{ ...workingProps( pending === 'close' ) }
 						>
 							{ __( 'Close', 'corex' ) }
 						</button>

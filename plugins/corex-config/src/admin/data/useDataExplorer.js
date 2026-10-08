@@ -25,6 +25,10 @@ export function useDataExplorer( config ) {
 		( source ) => source.access === 'allowed'
 	);
 	const [ catalog, setCatalog ] = useState( initialCatalog );
+	// Whether the list of sources has been read. It failed in silence: with no source there
+	// is nothing to load, and the screen said "No records yet." about a request that had
+	// never been answered.
+	const [ catalogStatus, setCatalogStatus ] = useState( 'loading' );
 	const [ state, dispatch ] = useReducer(
 		dataReducer,
 		initialDataState( initialSource?.key || '' )
@@ -51,13 +55,19 @@ export function useDataExplorer( config ) {
 		[ config.nonce ]
 	);
 
-	useEffect( () => {
+	const loadCatalog = useCallback( () => {
+		setCatalogStatus( 'loading' );
 		request( 'get', `${ config.restUrl }/sources` )
-			.then( ( payload ) =>
-				setCatalog( normalizeCatalog( payload.sources ) )
-			)
-			.catch( () => undefined );
+			.then( ( payload ) => {
+				setCatalog( normalizeCatalog( payload.sources ) );
+				setCatalogStatus( 'ready' );
+			} )
+			.catch( () => setCatalogStatus( 'error' ) );
 	}, [ config.restUrl, request ] );
+
+	useEffect( () => {
+		loadCatalog();
+	}, [ loadCatalog ] );
 
 	useEffect( () => {
 		if ( state.sourceKey ) {
@@ -75,26 +85,40 @@ export function useDataExplorer( config ) {
 		if ( ! state.sourceKey ) {
 			return;
 		}
+		// Rows stay on screen while their replacement is fetched, so a second page or a
+		// second search can be asked for before the first has answered. Only the answer to
+		// the query that is current is kept.
+		let current = true;
 		dispatch( { type: 'loading' } );
 		request(
 			'get',
 			buildListUrl( config.restUrl, state.sourceKey, state.query )
 		)
-			.then( ( payload ) =>
-				dispatch( {
-					type: 'loaded',
-					payload: {
-						...payload,
-						rows: ( payload.rows || [] ).map( ( row, index ) => ( {
-							id: row.id ?? index,
-							...row,
-						} ) ),
-					},
-				} )
+			.then(
+				( payload ) =>
+					current &&
+					dispatch( {
+						type: 'loaded',
+						payload: {
+							...payload,
+							rows: ( payload.rows || [] ).map(
+								( row, index ) => ( {
+									id: row.id ?? index,
+									...row,
+								} )
+							),
+						},
+					} )
 			)
-			.catch( ( error ) =>
-				dispatch( { type: 'error', message: error.message } )
+			.catch(
+				( error ) =>
+					current &&
+					dispatch( { type: 'error', message: error.message } )
 			);
+
+		return () => {
+			current = false;
+		};
 	}, [ config.restUrl, request, state.sourceKey, state.query ] );
 
 	const source = useMemo(
@@ -155,20 +179,20 @@ export function useDataExplorer( config ) {
 	const detail = useCallback(
 		async ( recordId ) => {
 			try {
-				// `request()` has already unwrapped the envelope to `envelope.data`, and
-				// `DataController::show()` puts the record there directly — there is no `record`
-				// key to reach through. Unwrapping a second level returned `undefined` for every
-				// source, so the modal has never displayed a field (#149).
+				// The route answers `{ record }`: `DataManagementController::show()`, the one
+				// that is registered, and `DataManagementControllerTest` holds it to that.
 				//
-				// Spec 080 made that harder to see rather than easier: before it, the symptom was a
-				// modal full of em dashes, which reads as broken. After it, `recordRows(undefined)`
-				// returns [] and the modal says "This record has no readable fields" — a sentence
-				// that reads as a true statement about the record. A better empty state made the
-				// bug more plausible.
-				return await request(
+				// This read the answer itself as the record, on the word of a comment about
+				// `DataController::show()`, which returns a record bare. That controller is
+				// bound and has not been registered since the other one arrived. So the
+				// detail showed one field, "Record", holding the whole record as a line of
+				// JSON, with a passing test: the test's transport answered what the comment
+				// said, and nothing compared either with the route that serves the screen.
+				const answer = await request(
 					'get',
 					`${ config.restUrl }/${ state.sourceKey }/${ recordId }`
 				);
+				return answer.record ?? null;
 			} catch ( error ) {
 				dispatch( { type: 'error', message: error.message } );
 				return null;
@@ -179,6 +203,8 @@ export function useDataExplorer( config ) {
 
 	return {
 		catalog,
+		catalogStatus,
+		loadCatalog,
 		source,
 		state,
 		dispatch,

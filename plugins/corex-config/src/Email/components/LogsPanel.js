@@ -1,9 +1,14 @@
-import { useState } from '@wordpress/element';
+import { useContext, useState } from '@wordpress/element';
+import {
+	PendingControl,
+	workingProps,
+} from '../../admin/components/working.js';
 import { __ } from '@wordpress/i18n';
 import CorexTime from '../../admin/components/CorexTime.js';
 import { Field } from './shared.js';
 
 function RetryEditor( { retry, busy, onResend, onCancel } ) {
+	const pending = useContext( PendingControl );
 	const submit = async ( event ) => {
 		event.preventDefault();
 		const form = new FormData( event.currentTarget );
@@ -47,7 +52,11 @@ function RetryEditor( { retry, busy, onResend, onCancel } ) {
 					required
 				/>
 				<div className="corex-email-app__actions is-wide">
-					<button className="button button-primary" disabled={ busy }>
+					<button
+						className="button button-primary"
+						disabled={ busy }
+						{ ...workingProps( pending === 'resend' ) }
+					>
 						{ __( 'Create retry attempt', 'corex' ) }
 					</button>
 					<button

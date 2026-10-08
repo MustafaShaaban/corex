@@ -8451,6 +8451,74 @@ releases, which is from their documentation and not from a run here.
 - "Mark all as read", and each notification's own actions, still show nothing while their
   request is out. That is slice 2.
 
+## #285 — A working control shows the loader in its own colour, and the loader is drawn nowhere else yet
+
+**Date:** 2026-10-08. **Spec:** 108, slice 2 (T020 to T025). **Branch:** `feat/108-loader-and-actions`.
+
+The second half of what the owner asked for: "loader inside coreX will take a better effect".
+
+**What was there.** An inventory of the admin outside the Submissions inbox, at `f2908076`,
+found 55 controls that send a request. While theirs was out: 4 showed WordPress's striped
+`isBusy`, 5 changed their label ("Saving…"), 24 were only disabled, 1 wrote "Testing…" in a
+span beside itself, and 21 showed nothing, most of which could be pressed again and sent again.
+
+**One look.** `workingProps( working )` gives a control three attributes: `disabled`,
+`aria-busy` and `data-corex-working`. The styles do the rest. The label keeps its place and
+only its fill is made transparent (`-webkit-text-fill-color`), which leaves `currentcolor` for
+the loader drawn over it: so the loader is the button's own ink, whatever the button, and the
+button keeps its width to the pixel and its name. Measured on five kinds of button, each was
+the same width working as not.
+
+**The loader** is a ring whose colour fades round it to nothing: a conic gradient with its
+middle masked out, on a pseudo-element. Under reduced motion it does not turn.
+
+**Three things the page showed that the plan did not know.**
+
+- wp-admin paints every disabled `.button` grey with `!important`. A working brass button
+  became a pale box on the dark theme. A working `.button` restates the colours it has when it
+  is not working, with `!important`, because nothing less answers wp-admin's.
+- A disabled control in the admin is dimmed to 58%. A working one is not: it is busy, not
+  switched off.
+- WordPress draws a `Modal` at the end of `<body>`, outside `.corex-admin`, where the first
+  rules did not reach. Two of the four buttons moved off `isBusy` are in such modals and would
+  have been disabled with nothing drawn. The rules are scoped to the screen's body class as
+  well. The inventory found this by reading; a browser test holds it.
+
+**No loader on its own yet.** The plan had a `CorexLoader` component, the ring with a sentence.
+Nothing calls for one: every place a spinner stands today is getting a placeholder in a later
+slice. It is written when a surface needs it.
+
+**Notifications, whole.** Each notification's actions, "Mark all as read" in both places and
+the preference boxes. One action on a notification at a time: the pressed control works and the
+others wait, since what they would act on is about to change. The preference boxes wait for one
+another too, because each change sends every category as it is on screen and a second sent
+before the first had answered undid it. "Mark all as read" (both) and a preference change
+swallowed a failed request; each says the server's reason now.
+
+**A test, not a lint rule, keeps `isBusy` out.** Nothing is wrong with the prop; it is wrong
+here.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `npx wp-scripts test-unit-jest` | 801 passed, 72 suites |
+| `loading-states` browser spec on `corex.local` | 9 passed: a held "Mark all as read" keeps its box, shows the loader, is not dimmed and sends nothing on a second press; a control appended to `<body>` gets the loader |
+| Five kinds of button, working and not, dark and light, on the page | the same width each; looked at |
+| `TokenConsumerContractTest`, `AdminAssetScopingTest` | 8 passed |
+
+**Not run.** No screen reader. The two buttons in WordPress modals were not opened in their
+modals: the rule that reaches them is tested on a control placed where a modal is drawn.
+
+**Left open.**
+
+- 43 of the 55 controls: tasks T026 to T029.
+- On the screens with one busy flag for every button (Email Studio, Forms and flows, the
+  import panel, Blog), marking only the pressed control needs the flag to say which. That is
+  the work of T026 to T028, not a change to `workingProps`.
+- The inventory also read six things that look broken and are not this spec's: they are in
+  issue form, as leads from reading and not as reproduced defects.
+
 ## #286 — The trash deletes on its own clock, and WordPress's is kept off a submission
 
 Date: 2026-10-08 · Spec: 105 (trash, restore and delete a submission), slice 3 · Status: Final
@@ -8519,3 +8587,256 @@ What was run:
 **Not run.** The whole integration and browser suites; CI runs both. WordPress's real daily
 schedule was not waited for: its action was run by hand. Nothing was run on a site with
 `EMPTY_TRASH_DAYS` of 0, which is a constant.
+
+## #287 — On a screen with one busy flag, the control that was pressed is named, and works until the screen is current
+
+**Date:** 2026-10-08. **Spec:** 108, slice 2 (T026). **Branch:** `feat/108-working-email-forms`.
+
+Email Studio and Forms and flows each have one flag for every request. It disabled every button
+on the screen together, and after "Save immutable draft" the button beside it, "Activate latest
+draft", looked exactly the same. Sixteen controls.
+
+**The screen says which.** `PendingControl` is a context holding the name of the control whose
+request is out. The screen provides it once, and each button compares it with its own name and
+spreads `workingProps`. The other choice was a prop through every panel: nine components in
+Email Studio, for one string.
+
+**Where the name comes from differs, because the two screens differ.**
+
+- Email Studio posts everything through one function that already takes the kind of thing it
+  posts. Its reducer keeps that kind as `pending` from the press until the studio has been read
+  again, has failed, or has only something to say.
+- Forms and flows' commands are a write and then one or two reads, each of which moves the
+  status on its own. A name kept in the reducer was over at the first read. The hook wraps each
+  command instead, so the name lasts for the whole of it: "Save draft" works through the read
+  that follows the write.
+
+**Two rows are not in it.** The row that opens a template and the row that opens a flow send a
+request too, but what they need is the placeholder of what they open, which is slice 4. A row
+whose whole text is replaced by a ring says less than the row did.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `emailStudioWorking`: the name through the reload, over at each end; the pressed button works and the others are only held | 5 passed |
+| `flowsWorking`: "Save draft" works through the read after the write; a refused write stops it | 3 passed |
+| `npx wp-scripts test-unit-jest` | 809 passed, 74 suites |
+| `forms-flow` and `email-studio` browser specs on `corex.local` | 6 passed |
+| `loading-states`: Email Studio's "Create" with its request held, then dropped | keeps its box to the pixel; the only control on the tab that says it is working; enabled again after |
+
+**Not run.** Forms and flows was not watched with a request held back: its browser spec
+creates, saves, publishes and tests a flow at full speed and still passes.
+
+**Left open.** 27 of the 55 controls: tasks T027 to T029, and the two rows.
+
+## #288 — The rest of the admin's actions, and five controls that are not buttons to mark
+
+**Date:** 2026-10-08. **Spec:** 108, slice 2 (T027 to T030). **Branch:** `feat/108-working-data`.
+
+Twenty-two more controls: Data 11, Blog Pro 3, access requests 2, the Security save 1, Insights
+1, the setup wizard 3, the captcha test 1. With them 50 of the 55 controls the inventory found
+are on the one working state, and slice 2 is done.
+
+**`usePending`.** A component that sends its own requests keeps the name of the control whose
+request is out, and `during( name, task )` holds it for the whole of the task. It is what Forms
+and flows wrote for itself in the last part (#287), moved beside `workingProps` when a second
+caller arrived; ten components use it now.
+
+**It replaced flags that were wrong, not only flags that were silent.**
+
+- The import panel had one status for three requests and showed it on "Run dry-run" whichever
+  had been pressed.
+- Blog Pro had one flag: "Refresh" read "Refreshing…" while a post was being moved.
+- The Migrations tab's "Refresh" was disabled by the flag and never set it; "Preview
+  rollback" set it and was not disabled by it.
+- Access requests kept one id: deciding a second request while the first was out handed the
+  first one's buttons back before its answer. All decisions wait for the one that is out. Two
+  at once would be faster and is not worth a wrong button.
+
+**A dialog that asks for a change preview stays until it has one.** New record, Edit record,
+Bulk edit and a record's Delete closed on the press. Nothing was on screen until the
+confirmation appeared, and if the request failed the only sign was a notice on the page behind
+where the dialog had been. Each stays with its button working and closes when the preview is
+back, or has failed: the failure is still said on the page, as before.
+
+**The labels that changed are gone.** "Saving…", "Applying…", "Refreshing…", "Running…".
+A changed label changes the button's width, and a person looking for "Save" finds a button
+that says something else.
+
+**Screens that are not React write the three attributes.** Insights puts them in the markup it
+draws its card from; the setup wizard and the captcha test set them on the node. The captcha
+test keeps the sentence beside its button: that is what a screen reader is told, and where the
+outcome is said.
+
+**Five controls are not converted, on purpose.**
+
+- "View" on a Data row, the row that opens an email template, the row that opens a flow.
+  Each asks for something to show. What they need is the placeholder of what they open
+  (slices 3 and 4); a row replaced by a ring says less than the row did.
+- "Save settings" and Security's "Apply mode" are forms the server draws and the browser
+  posts. The page loading is what a person sees, and a script that marked the button would
+  have to know whether another script had stopped the post. Four more such forms were found
+  by search and are left for the same reason.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `npx wp-scripts test-unit-jest` | 813 passed, 75 suites |
+| `loading-states` on `corex.local`, each with its request held: Insights' "Run check" (keeps its box, loader drawn, enabled again); the wizard's "Next" (working, "Back" held, one request) | 12 passed |
+| Nine browser specs, every one that touches a converted screen: `loading-states`, `data-management`, `blog-pro`, `access-request`, `operations-security`, `setup-settings-insights`, `forms-flow`, `email-studio`, `notification-center` | 66 passed |
+| New Jest: `usePending` (2), a record's Delete stays until the preview is back (1), the captcha button (1) | passed |
+
+**Not run.** The Data dialogs, Blog Pro, access requests and the Security save were not
+watched with a request held back; their browser specs pass at full speed. No screen reader.
+
+**Left open.**
+
+- WordPress's component library does not load under Jest in this repository, which is why no
+  test here had rendered a component that uses it. The one that does now stands plain elements
+  in for `Button` and `Modal`.
+- The setup wizard's "Apply plan" still says nothing when it fails (issue #313).
+
+## #289 — The Data screen's placeholders, and a record that was being drawn as one line of JSON
+
+**Date:** 2026-10-08. **Spec:** 108, slice 3 (T130 to T137). **Branch:** `feat/108-data-placeholders`.
+
+**The records list.** `viewState()` is `loading` only while there is nothing on screen to keep;
+with rows it is `refreshing`, and the rows stay, dimmed and inert, through a sort, a filter, a
+search or a page turn. The placeholder is the table's own markup with bars in its cells.
+Which columns a source shows is part of the answer, so the placeholder cannot know them; it
+has the selection box and the action every source has, and four bars between.
+
+Measured on the page, at a width where a row is one line:
+
+| | Placeholder | Real |
+|---|---|---|
+| Header row | 41.8px | 41.8px |
+| Body row | 48.0px | 48.0px |
+| A tile, loading and ready | 112.0px | 112.0px |
+
+The body row was 43.5px until the bar in its last cell was given the height of the button it
+stands for: a row is as tall as its button, not its text. At a narrower width a real row wraps
+to as many lines as its values need and no placeholder can know that.
+
+**Nothing asked yet is loading, not empty.** Between the screen opening and the first request
+being sent, and for as long as the list of sources was unread, the list's state was "idle" and
+was read as an empty source: "No records yet." about a question nobody had asked. A source
+list that failed left it there for good. That state is loading while an answer is coming, and
+a source list that cannot be read says so with a retry.
+
+**A slower answer is not kept.** Rows that stay on screen let a second query be made before
+the first has answered. The effect that asks keeps only the answer to the query that is current.
+
+**The search box asks when typing pauses**, 300ms, through `useDebounced`. What is typed is
+the box's own state, so it shows at once and keeps its focus; it is reset with the source, by
+key. Ten letters typed at 40ms apart send one request. They sent ten.
+
+**The record's detail moved to `CorexDialog`.** It was WordPress's `Modal`, which is drawn
+outside `.corex-admin`: a placeholder in it would have been the dark theme's colours on a white
+box, because none of the admin's styles or tokens reach it. The task said to check first. The
+detail opens on the press with a placeholder for its fields and fills in when the record
+arrives; one that cannot be read closes it, and the notice on the page says why.
+
+**And its record was being read wrong.** With the dialog in front of me the ready state showed
+one field, named "Record", holding the whole record as a line of JSON. The route answers
+`{ record }` (`DataManagementController::show()`, which is the one registered, and whose
+integration test holds it to that). The screen read the answer itself as the record, on the
+word of a comment about `DataController::show()`, a controller that is bound in the container
+and not registered. Its unit test passed, because the test's transport answered what the
+comment said. The read is fixed, the test's transport answers what the site was seen to
+answer, and a browser test opens a record against the real route and checks its fields are
+drawn as fields: the comparison between the screen and the route that serves it, which
+nothing made.
+
+**The two tiles read "Fields4".** The label and the number were bare inline elements. The
+stylesheet has had classes for a label over a number all along; they were not on the elements.
+They are now, which is also what lets a placeholder stand in for the number without making the
+tile taller.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `npx wp-scripts test-unit-jest` | 818 passed, 76 suites |
+| `loading-states` and `data-management` on `corex.local` | 25 passed |
+| Held back and measured: the list, a record, the export history | the table above; a record opens before it arrives and never says "no readable fields" first; the history never says "No exports yet." first |
+| A sort with its answer held | rows kept, the surface `refreshing`, the total waiting |
+| Ten letters typed without a pause | one request; the box keeps its focus and its text |
+| `TokenConsumerContractTest`, `AdminAssetScopingTest` | 8 passed |
+
+**Not run.** The migration history was not watched held back; it uses the placeholder and the
+code path the export history does. No screen reader. The record dialog was looked at in both
+themes, left to right only.
+
+**Left open.**
+
+- `Corex\Config\Data\DataController` is bound in the container and registers nothing. It
+  misled a comment and a test; it should be removed or said to be dead. Added to issue #313.
+- "View" on a row is still not marked while its record is fetched: the dialog opening is the
+  answer to the press.
+- New record, Edit record and Bulk edit are still WordPress modals, white on the dark theme,
+  as the record's detail was.
+
+## #290 — Forms and flows and Email Studio are read once and stay, and a disabled button is the button, dimmed
+
+**Date:** 2026-10-09. **Spec:** 108, slice 4 (T040 to T044). **Branch:** `feat/108-forms-email-placeholders`.
+
+**Whether a screen has ever been answered is a fact it keeps, not one it guesses.** Email
+Studio told a first load from a later one by whether it had any templates. A new site that had
+been read has none, so every save there took the open form away to say "Loading Email
+Studio…". Forms and flows had no way to tell at all, and said "No forms match this view."
+whenever its list was empty and nothing was in flight, including the moment before it asked.
+Each state has a flag now, set by its first answer.
+
+**The catalog waits whole.** The forms defined in code are known when the page is drawn; the
+flows are asked for. The list used to show the first and then grow and reorder when the second
+arrived. It is a placeholder until both are known. After that its rows stay through a filter or
+a new flow, dimmed and inert.
+
+**Opening a flow, and choosing a template, show what is coming.** The flow's command has a name
+(`open:` and its id), and while it is out the screen draws the editor's placeholder where the
+catalog was. A template chosen from the list marks its row and draws the editor's placeholder.
+The marking is done where a person chooses, not where the studio reads a template again after a
+save: that would have replaced the open editor on every save.
+
+**A reload behind a working button is not a refresh.** After a save both screens read
+themselves again. Marking that `refreshing` would turn the screen inert and move the focus off
+the button that was pressed, to say what the button is already saying. They stay `ready`.
+Forms and flows' catalog is `refreshing` for a filter and for a new flow, whose buttons are
+outside it.
+
+**A disabled button was a pale box.** wp-admin paints every disabled `.button` light grey with
+`!important`. On the dark theme "Create draft" was a white-ish block for as long as the screen
+loaded, which this slice's first screenshot showed more plainly than anything it was there to
+show. A disabled `.button` in the CoreX admin keeps its own colours and is dimmed by the rule
+that dims every disabled control.
+
+**A placeholder drawn in a button's markup is a disabled button**, so its cells sit in the
+button's grid from the button's own rule; inside a placeholder it is not dimmed.
+
+Measured on the page:
+
+| | Placeholder | Real |
+|---|---|---|
+| A catalog row | 85px | 90px |
+| The editor's toolbar bars | have a width | were 0 wide at first: a share of a heading as wide as its text, which a placeholder has none of |
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `npx wp-scripts test-unit-jest` | 829 passed, 76 suites |
+| `loading-states`, `forms-flow`, `email-studio` on `corex.local` | 27 passed, none skipped |
+| Held back: the catalog, opening a flow, the studio's first load, a chosen template | each a placeholder, then its content; never "No forms match this view." first |
+| Looked at, dark theme: the catalog, the editor on its way, the studio, a chosen template | as intended, after the two fixes in the table above and the button |
+
+**Not run.** The light theme and right-to-left were not looked at for this slice's four
+placeholders; they are built from the same bars as the ones that were. No screen reader.
+
+**Left open.**
+
+- Every disabled `.button` in the CoreX admin changes colour with this, not only the ones on
+  these two screens. It was looked at here and on Email Studio.
+- The catalog's placeholder is four rows whatever the site has.

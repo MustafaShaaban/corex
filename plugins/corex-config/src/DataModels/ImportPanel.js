@@ -6,6 +6,7 @@ import { dataModelsApi, downloadArtifact } from './dataModelsApi.js';
 import { actionSources, importSummary } from './modelClient.js';
 import SourceSelect from './SourceSelect.js';
 import CorexSelect from '../admin/components/CorexSelect.js';
+import { usePending, workingProps } from '../admin/components/working.js';
 
 export default function ImportPanel( { config, sources } ) {
 	const candidates = useMemo(
@@ -18,6 +19,9 @@ export default function ImportPanel( { config, sources } ) {
 	const [ mappings, setMappings ] = useState( {} );
 	const [ acknowledged, setAcknowledged ] = useState( false );
 	const [ status, setStatus ] = useState( '' );
+	// Which of the panel's four requests is out. `status` says only that one is, and it said
+	// so on "Run dry-run" whichever button had been pressed.
+	const [ pending, during ] = usePending();
 	// The file input is named by its own `for`/`id` pair rather than by being wrapped: a
 	// wrapping <label> is not announced by every assistive technology WordPress supports.
 	const fileInputId = useId();
@@ -178,9 +182,9 @@ export default function ImportPanel( { config, sources } ) {
 			</label>
 			<Button
 				variant="primary"
-				onClick={ upload }
-				disabled={ ! file || status === 'loading' }
-				isBusy={ status === 'loading' }
+				onClick={ () => during( 'upload', upload ) }
+				disabled={ ! file || pending !== '' }
+				{ ...workingProps( pending === 'upload' ) }
 			>
 				{ __( 'Run dry-run', 'corex' ) }
 			</Button>
@@ -237,8 +241,9 @@ export default function ImportPanel( { config, sources } ) {
 							) ) }
 							<Button
 								variant="secondary"
-								onClick={ remap }
-								disabled={ status === 'loading' }
+								onClick={ () => during( 'remap', remap ) }
+								disabled={ pending !== '' }
+								{ ...workingProps( pending === 'remap' ) }
 							>
 								{ __( 'Re-run with mapping', 'corex' ) }
 							</Button>
@@ -263,7 +268,12 @@ export default function ImportPanel( { config, sources } ) {
 										</li>
 									) ) }
 							</ul>
-							<Button variant="secondary" onClick={ report }>
+							<Button
+								variant="secondary"
+								onClick={ () => during( 'report', report ) }
+								disabled={ pending !== '' }
+								{ ...workingProps( pending === 'report' ) }
+							>
 								{ __( 'Download rejection report', 'corex' ) }
 							</Button>
 						</>
@@ -282,9 +292,10 @@ export default function ImportPanel( { config, sources } ) {
 								<Button
 									variant="primary"
 									disabled={
-										! acknowledged || status === 'loading'
+										! acknowledged || pending !== ''
 									}
-									onClick={ commit }
+									onClick={ () => during( 'commit', commit ) }
+									{ ...workingProps( pending === 'commit' ) }
 								>
 									{ __( 'Commit approved rows', 'corex' ) }
 								</Button>

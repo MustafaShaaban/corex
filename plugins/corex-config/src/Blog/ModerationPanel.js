@@ -14,6 +14,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import CorexTime from '../admin/components/CorexTime.js';
+import { workingProps } from '../admin/components/working.js';
 
 const ACTIONS = [
 	{ key: 'approve', label: __( 'Approve', 'corex' ), destructive: false },
@@ -24,6 +25,7 @@ const ACTIONS = [
 export default function ModerationPanel( {
 	comments = [],
 	busy = false,
+	pending = '',
 	onModerate,
 } ) {
 	if ( comments.length === 0 ) {
@@ -90,6 +92,10 @@ export default function ModerationPanel( {
 											action.key
 										)
 									}
+									{ ...workingProps(
+										pending ===
+											`moderate:${ comment.comment_id }:${ action.key }`
+									) }
 								>
 									{ action.label }
 								</button>

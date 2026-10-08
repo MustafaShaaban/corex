@@ -9,7 +9,9 @@
 import { useCallback, useEffect, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import CorexErrorState from '../components/CorexErrorState.js';
 import CorexLoadable from '../components/CorexLoadable.js';
+import { workingProps } from '../components/working.js';
 import CorexSkeleton, {
 	SkeletonBar,
 	SkeletonBox,
@@ -41,6 +43,9 @@ function PreferencesSkeleton() {
 export default function PreferencesPanel() {
 	const [ status, setStatus ] = useState( 'loading' );
 	const [ rows, setRows ] = useState( [] );
+	// The category whose change is on its way, and what was said if the last one failed.
+	const [ saving, setSaving ] = useState( '' );
+	const [ failure, setFailure ] = useState( '' );
 
 	const load = useCallback( () => {
 		setStatus( 'loading' );
@@ -64,6 +69,8 @@ export default function PreferencesPanel() {
 				categories[ row.category ] =
 					row.category === category ? enabled : row.enabled;
 			} );
+			setFailure( '' );
+			setSaving( category );
 			apiFetch( {
 				path: '/corex/v1/notifications/preferences',
 				method: 'POST',
@@ -72,7 +79,14 @@ export default function PreferencesPanel() {
 				.then( ( response ) =>
 					setRows( response?.data?.preferences ?? [] )
 				)
-				.catch( () => {} );
+				// It used to fail in silence: the box went back to what it was, unexplained.
+				.catch( ( reason ) =>
+					setFailure(
+						reason?.message ||
+							__( 'That preference could not be saved.', 'corex' )
+					)
+				)
+				.finally( () => setSaving( '' ) );
 		},
 		[ rows ]
 	);
@@ -85,12 +99,19 @@ export default function PreferencesPanel() {
 			errorMessage={ __( 'Preferences could not be loaded.', 'corex' ) }
 			onRetry={ load }
 		>
-			<PreferenceRows rows={ rows } onToggle={ toggle } />
+			{ failure && (
+				<CorexErrorState scale="action" message={ failure } />
+			) }
+			<PreferenceRows
+				rows={ rows }
+				saving={ saving }
+				onToggle={ toggle }
+			/>
 		</CorexLoadable>
 	);
 }
 
-function PreferenceRows( { rows, onToggle } ) {
+function PreferenceRows( { rows, saving, onToggle } ) {
 	return (
 		<ul className="corex-notifications-prefs">
 			{ rows.map( ( row ) => (
@@ -108,7 +129,10 @@ function PreferenceRows( { rows, onToggle } ) {
 							id={ `corex-notification-pref-${ row.category }` }
 							type="checkbox"
 							checked={ row.enabled }
-							disabled={ row.mandatory }
+							// Each change sends every category, read from what is on screen, so
+							// a second sent before the first has answered would undo it.
+							disabled={ row.mandatory || Boolean( saving ) }
+							{ ...workingProps( saving === row.category ) }
 							onChange={ ( event ) =>
 								onToggle( row.category, event.target.checked )
 							}

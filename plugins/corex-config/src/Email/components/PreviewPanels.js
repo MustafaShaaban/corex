@@ -1,3 +1,8 @@
+import { useContext } from '@wordpress/element';
+import {
+	PendingControl,
+	workingProps,
+} from '../../admin/components/working.js';
 import { __, sprintf } from '@wordpress/i18n';
 import { Field, Notice } from './shared.js';
 
@@ -81,6 +86,7 @@ function resultTone( state ) {
 }
 
 export function TestSendPanel( { delivery, draft, busy, lastResult, onSend } ) {
+	const pending = useContext( PendingControl );
 	const local =
 		delivery.environment === 'development' ||
 		delivery.environment === 'local';
@@ -121,7 +127,11 @@ export function TestSendPanel( { delivery, draft, busy, lastResult, onSend } ) {
 					required
 				/>
 				<div className="corex-email-app__actions is-wide">
-					<button className="button button-primary" disabled={ busy }>
+					<button
+						className="button button-primary"
+						disabled={ busy }
+						{ ...workingProps( pending === 'test' ) }
+					>
 						{ __( 'Run test', 'corex' ) }
 					</button>
 				</div>

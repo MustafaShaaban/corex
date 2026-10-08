@@ -3,11 +3,13 @@ import { Button, Modal } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import FieldControl, { writableFields } from './FieldControl.js';
 import CorexSelect from '../components/CorexSelect.js';
+import { usePending, workingProps } from '../components/working.js';
 
 export default function BulkEditDialog( { source, count, close, preview } ) {
 	const fields = writableFields( source );
 	const [ fieldKey, setFieldKey ] = useState( fields[ 0 ]?.key || '' );
 	const [ fieldValue, setFieldValue ] = useState( '' );
+	const [ pending, during ] = usePending();
 	const field = fields.find( ( candidate ) => candidate.key === fieldKey );
 
 	return (
@@ -43,16 +45,23 @@ export default function BulkEditDialog( { source, count, close, preview } ) {
 				/>
 			) }
 			<div className="corex-data__dialog-actions">
-				<Button variant="tertiary" onClick={ close }>
+				<Button
+					variant="tertiary"
+					onClick={ close }
+					disabled={ pending !== '' }
+				>
 					{ __( 'Cancel', 'corex' ) }
 				</Button>
 				<Button
 					variant="primary"
 					disabled={ ! fieldKey }
-					onClick={ () => {
-						preview( { [ fieldKey ]: fieldValue } );
-						close();
-					} }
+					onClick={ () =>
+						during( 'preview', async () => {
+							await preview( { [ fieldKey ]: fieldValue } );
+							close();
+						} )
+					}
+					{ ...workingProps( pending === 'preview' ) }
 				>
 					{ __( 'Preview bulk edit', 'corex' ) }
 				</Button>

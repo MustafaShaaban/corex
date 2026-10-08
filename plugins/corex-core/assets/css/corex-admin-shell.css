@@ -1342,6 +1342,12 @@ body.corex-admin-screen .corex-admin__shell {
 	background: var(--corex-admin-skeleton);
 }
 
+/* A placeholder drawn in a button's markup, for the button's grid, is not a
+   control that has been switched off: it is not dimmed as one is. */
+.corex-admin .corex-admin-skeleton button:disabled {
+	opacity: 1;
+}
+
 /* As tall as a line of the element it is put in, so the element is the height
    it will be with its text; painted as a bar in the middle of that line. */
 .corex-admin .corex-admin-skeleton__bar {
@@ -1397,6 +1403,13 @@ body.corex-admin-screen .corex-admin__shell {
 	transition: opacity var(--corex-admin-motion-fast) var(--corex-admin-ease) var(--corex-admin-loading-delay);
 }
 
+/* What stands beside a waiting surface and belongs to the same answer, a
+   total over a table, waits with it. */
+.corex-admin [data-corex-waiting] {
+	opacity: var(--corex-admin-disabled-opacity);
+	transition: opacity var(--corex-admin-motion-fast) var(--corex-admin-ease) var(--corex-admin-loading-delay);
+}
+
 /* What says "waiting" and not "switched off": a bar along the top edge, in
    the action colour, outside what is dimmed. */
 .corex-admin .corex-loadable[data-corex-state="refreshing"]::before {
@@ -1416,6 +1429,73 @@ body.corex-admin-screen .corex-admin__shell {
 
 [dir="rtl"] .corex-admin .corex-loadable[data-corex-state="refreshing"]::before {
 	animation-direction: normal, reverse;
+}
+
+/*
+ * A working control (`workingProps`): its request is on its way (spec 108,
+ * stories 3 and 4). One look across the admin, where WordPress's striped
+ * busy button, a changed label, or nothing at all used to be.
+ *
+ * The label stays in the layout, so the control keeps its width to the pixel
+ * and its name; only its fill is made transparent, which leaves the control's
+ * own colour for the loader drawn over it. It is disabled, and not dimmed as
+ * a disabled control is: it is busy, not switched off.
+ *
+ * The loader is a ring whose colour fades round it to nothing, turning. One
+ * pseudo-element and no image: a conic gradient with its middle masked out.
+ * Still, it is a ring with a tail, which is what it is for a person who asked
+ * for no motion.
+ *
+ * Scoped to the screen as well as to the admin's wrapper: WordPress draws a
+ * `Modal` at the end of <body>, outside the wrapper, and a confirm button in
+ * one is as much a working control as any other.
+ */
+:is(.corex-admin, .corex-admin-screen) [data-corex-working] {
+	position: relative;
+	opacity: 1;
+	cursor: progress;
+	-webkit-text-fill-color: transparent;
+}
+
+:is(.corex-admin, .corex-admin-screen) [data-corex-working]::after {
+	position: absolute;
+	inset: 0;
+	inline-size: 1.25em;
+	block-size: 1.25em;
+	margin: auto;
+	content: "";
+	background: conic-gradient(from 90deg, transparent 10%, currentcolor);
+	border-radius: var(--corex-admin-radius-pill);
+	-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 0.1875em), #000 calc(100% - 0.125em)); /* corex-token-allow: mask shape, not a colour */
+	mask: radial-gradient(farthest-side, transparent calc(100% - 0.1875em), #000 calc(100% - 0.125em)); /* corex-token-allow: mask shape, not a colour */
+	animation: corex-loader-turn var(--corex-admin-motion-slow) linear infinite;
+}
+
+/* wp-admin paints every disabled `.button` a pale grey, with `!important`:
+   a light box on the dark theme where the button had been, on every screen
+   that disables its buttons while it loads. A disabled CoreX button keeps the
+   colours it has when it is not disabled, and is dimmed by the rule that dims
+   every disabled control; a working one keeps them and is not dimmed. Nothing
+   less than `!important` answers wp-admin's. */
+.corex-admin .button:disabled,
+:is(.corex-admin, .corex-admin-screen) .button[data-corex-working] {
+	color: var(--corex-admin-text) !important;
+	background: var(--corex-admin-surface-raised) !important;
+	border-color: var(--corex-admin-border) !important;
+}
+
+.corex-admin .button-primary:disabled,
+:is(.corex-admin, .corex-admin-screen) .button-primary[data-corex-working] {
+	color: var(--corex-admin-action-ink) !important;
+	background: var(--corex-admin-action) !important;
+	border-color: var(--corex-admin-action) !important;
+}
+
+@keyframes corex-loader-turn {
+
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 @keyframes corex-loading-appear {
@@ -1457,13 +1537,18 @@ body.corex-admin-screen .corex-admin__shell {
 		animation: none;
 	}
 
-	.corex-admin .corex-loadable[data-corex-state="refreshing"] > .corex-loadable__body {
+	.corex-admin .corex-loadable[data-corex-state="refreshing"] > .corex-loadable__body,
+	.corex-admin [data-corex-waiting] {
 		transition-duration: 1ms;
 	}
 
 	.corex-admin .corex-loadable[data-corex-state="refreshing"]::before {
 		background: var(--corex-admin-action);
 		animation: corex-loading-appear 1ms linear var(--corex-admin-loading-delay) backwards;
+	}
+
+	:is(.corex-admin, .corex-admin-screen) [data-corex-working]::after {
+		animation: none;
 	}
 }
 

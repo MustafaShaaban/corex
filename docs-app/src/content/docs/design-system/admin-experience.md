@@ -84,8 +84,13 @@ A surface that asks the server for its content is in one of four states, and it 
 | `ready` | The answer, which may be the empty state. |
 | `error` | The shared error state, with **Try again** where asking again can help. |
 
-The Notifications screen, its preferences and the header drawer work this way. The other screens are moved to it
-one at a time; until then they keep the loading sentence or spinner they had.
+The Notifications screen, its preferences, the header drawer, the Data screen, Forms and flows and Email Studio
+work this way. The other screens are moved to it one at a time; until then they keep the loading sentence or
+spinner they had.
+
+Not every reload is a refresh. A screen that reads itself again after a save, behind the button that is working,
+stays `ready`: the button already says what is happening, and content that turned inert would take the focus
+off it. `refreshing` is for a list a person asked to see differently.
 
 ### In a React screen
 
@@ -106,6 +111,18 @@ one at a time; until then they keep the loading sentence or spinner they had.
 
 `status` is the screen's own: `loading` until the first answer, `refreshing` for every load after one has been
 shown, `ready`, or `error`. Leave `onRetry` out where asking again cannot help, and no button is drawn.
+`errorTitle` names what failed where the sentence alone does not, and `errorDetail` carries whatever the server
+said.
+
+A list that stays on screen while it is replaced can be asked for twice before it has answered once. Keep the
+answer to the request that is current, and drop the others: an effect's cleanup, or a counter, is enough.
+
+What stands beside a waiting list and belongs to the same answer, a total above a table, takes
+`data-corex-waiting="true"` while the list is `refreshing`, and is dimmed with it.
+
+A search box asks when typing pauses. `useDebounced( callback, 300 )`, in
+`plugins/corex-config/src/admin/useDebounced.js`, returns a function to call on every change; keep what is typed
+in the component's own state so the box shows it at once.
 
 A screen draws its placeholder inside the markup its content uses, with a `SkeletonBar` where a line of text will
 be and a `SkeletonBox` where an icon or a checkbox will be:
@@ -122,6 +139,11 @@ be and a `SkeletonBox` where an icon or a checkbox will be:
 	</ul>
 </CorexSkeleton>
 ```
+
+Where a `div` may not go, in a paragraph or a heading, `<CorexSkeleton as="span">` draws a `span`.
+
+A placeholder drawn in a button's markup, for the button's grid, uses a disabled `button`: it cannot be pressed
+or tabbed to, and inside a placeholder it is not dimmed.
 
 A bar is as tall as a line of the element it is in, so the row is the height it will be with its text, from the
 same rules. `width` is `full`, `long`, `medium` or `short`. A bar's width is a share of its parent's, so a
@@ -143,6 +165,59 @@ The class names are the contract, for a screen that is not React: `.corex-admin-
 - The placeholder is hidden from assistive technology. A load that lasts a second is announced with
   `loadingLabel`, and its end with "Loaded."; a quicker one, and a refresh, are not announced.
 - Content that is `refreshing` is `inert`. If the keyboard's focus was inside it, focus moves to the surface.
+
+### A control that is working
+
+A button whose request is on its way is given `workingProps`, from
+`plugins/corex-config/src/admin/components/working.js`, spread after its own props:
+
+```jsx
+<button type="button" disabled={ ! dirty } onClick={ save } { ...workingProps( saving ) }>
+	{ __( 'Save changes', 'corex' ) }
+</button>
+```
+
+While `saving` is true the button is disabled, says it is busy to assistive technology, and shows the CoreX loader
+in its own colour in place of its label. The label stays in the layout, so the button keeps its width and its name;
+do not change the label to "Saving…". When `saving` is false nothing is added, so a `disabled` the button has for
+a reason of its own is left alone.
+
+Say the outcome where the action was taken: a failure the person cannot see is the same as a button that did
+nothing.
+
+Where one flag disables every button on a screen while any request is out (Email Studio, Forms and flows), only
+the button that was pressed works; the others wait. The screen provides the name of the control whose request is
+out through `PendingControl`, from the same file, and each button compares it with its own:
+
+```jsx
+const pending = useContext( PendingControl );
+
+<button disabled={ busy } { ...workingProps( pending === 'draft' ) }>
+```
+
+A component that sends its own requests gets the name from `usePending`, also in that file:
+
+```jsx
+const [ pending, during ] = usePending();
+
+<Button
+	disabled={ pending !== '' }
+	onClick={ () => during( 'commit', commit ) }
+	{ ...workingProps( pending === 'commit' ) }
+>
+```
+
+`during` names the control for the whole of the task, through its failure, and returns what the task returns.
+For a row of a list, put the row's id in the name.
+
+Keep it working until the screen is current again. A save is a write and then a read of what was written, and a
+button that stops after the write looks finished while the screen still shows what was there before.
+
+On a screen that is not React, write the three attributes by hand: `disabled`, `aria-busy="true"` and
+`data-corex-working="true"`. They are styled for any control on a CoreX admin screen, including one in a WordPress
+`Modal`, which is drawn outside `.corex-admin`.
+
+WordPress's `isBusy` is not used in the admin; a test fails if it comes back.
 
 ### In a browser test
 

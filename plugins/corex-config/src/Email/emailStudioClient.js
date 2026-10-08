@@ -18,7 +18,14 @@ export const TABS = [
 
 export const initialEmailStudioState = {
 	status: 'idle',
+	// Whether the studio has been read at all. It was guessed from "no templates yet", which
+	// is also true of a studio that has been read and has none: every save on a new site
+	// took the open form away to say "Loading Email Studio…".
+	loaded: false,
 	mutating: false,
+	// The action whose request is out, by the name it is posted under, so that the button that
+	// was pressed can say so. Every button is disabled by `mutating`; this is which one.
+	pending: '',
 	message: '',
 	data: normalizeOverview( {} ),
 };
@@ -45,6 +52,20 @@ export function normalizeOverview( payload ) {
 	};
 }
 
+/**
+ * The studio is read once, and after that it is on screen for good: a save reads it again
+ * behind the button that is working, and takes nothing away.
+ *
+ * @param {Object} state The studio's state.
+ * @return {string} `loading`, `error` or `ready`.
+ */
+export function studioStatus( state ) {
+	if ( state.loaded ) {
+		return 'ready';
+	}
+	return state.status === 'error' ? 'error' : 'loading';
+}
+
 export function emailStudioReducer( state, action ) {
 	switch ( action.type ) {
 		case 'load':
@@ -53,17 +74,25 @@ export function emailStudioReducer( state, action ) {
 			return {
 				...state,
 				status: 'ready',
+				loaded: true,
 				mutating: false,
+				pending: '',
 				message: action.message || '',
 				data: normalizeOverview( action.payload ),
 			};
 		case 'mutating':
-			return { ...state, mutating: true, message: '' };
+			return {
+				...state,
+				mutating: true,
+				pending: action.control || '',
+				message: '',
+			};
 		case 'failed':
 			return {
 				...state,
 				status: 'error',
 				mutating: false,
+				pending: '',
 				message: action.message || '',
 			};
 		case 'notice':
@@ -71,6 +100,7 @@ export function emailStudioReducer( state, action ) {
 				...state,
 				status: 'ready',
 				mutating: false,
+				pending: '',
 				message: action.message || '',
 			};
 		default:

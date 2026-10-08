@@ -1,5 +1,7 @@
+import { useState } from '@wordpress/element';
 import { Button, TextControl } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
+import { useDebounced } from '../useDebounced.js';
 import CorexSelect from '../components/CorexSelect.js';
 
 function fieldFilterLabel( fieldLabel ) {
@@ -30,6 +32,9 @@ function choicesFor( field, flows ) {
 	];
 }
 
+/** How long typing has to stop for before the server is asked. */
+const SEARCH_PAUSE_MS = 300;
+
 export default function QueryBar( {
 	explorer,
 	openCreate,
@@ -37,6 +42,14 @@ export default function QueryBar( {
 	flows = [],
 } ) {
 	const { state, source } = explorer;
+	// What is typed is shown at once and asked for when typing pauses. Every letter was a
+	// request, and each one took the rows away to say "loading".
+	const [ typed, setTyped ] = useState( state.query.search );
+	const search = useDebounced(
+		( value ) =>
+			explorer.dispatch( { type: 'query', patch: { search: value } } ),
+		SEARCH_PAUSE_MS
+	);
 	const filters = ( source?.fields || [] ).filter( ( field ) =>
 		field.filter_operators?.includes( 'equals' )
 	);
@@ -53,13 +66,11 @@ export default function QueryBar( {
 					hideLabelFromVision
 					label={ __( 'Search records', 'corex' ) }
 					placeholder={ __( 'Search…', 'corex' ) }
-					value={ state.query.search }
-					onChange={ ( search ) =>
-						explorer.dispatch( {
-							type: 'query',
-							patch: { search },
-						} )
-					}
+					value={ typed }
+					onChange={ ( value ) => {
+						setTyped( value );
+						search( value );
+					} }
 				/>
 				{ filters.slice( 0, 2 ).map( ( field ) => {
 					const patch = ( fieldValue ) =>

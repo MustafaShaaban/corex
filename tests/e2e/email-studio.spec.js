@@ -11,7 +11,9 @@ test.beforeEach( async ( { page } ) => {
 	await expect(
 		page.getByRole( 'heading', { name: 'CoreX Email Studio' } )
 	).toBeVisible();
-	await expect( page.getByText( 'Loading Email Studio…' ) ).toBeHidden();
+	await expect(
+		page.locator( '.corex-email-app > .corex-loadable' )
+	).toHaveAttribute( 'data-corex-state', 'ready' );
 } );
 
 test( 'loads every functional section without console errors', async ( {

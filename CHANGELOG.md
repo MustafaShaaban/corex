@@ -8,6 +8,30 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **Forms and flows, and Email Studio, show what is coming while they load** (spec 108, slice
+  4). The catalog of forms shows rows that are not there yet, where it showed "Loading forms…"
+  over whatever it had; opening a flow shows the editor that is coming, where the catalog
+  stayed, disabled, until the flow arrived. Email Studio shows a placeholder under its tabs
+  until it has been read; choosing a template shows the editor that is coming, and marks the
+  template that was chosen (DECISIONS #290).
+- **The Data screen shows what is coming while it loads** (spec 108, slice 3). The records list
+  shows rows that are not there yet, the height of the rows that replace them, where it showed
+  WordPress's spinner. A sort, a filter, a search or a page turn keeps the rows on screen,
+  dimmed and out of reach, with the total above them; the search box asks when typing pauses,
+  not for every letter. A record opens on the press, with a placeholder where its fields will
+  be. The export history and the migration history show a placeholder, where each said "none
+  yet" until its answer said otherwise (DECISIONS #289).
+- **A button that is working shows the CoreX loader and cannot be pressed twice** (spec 108,
+  slice 2, first part). A ring in the button's own colour, in place of its label, at the same
+  width. On the Notifications screen every action has it: each notification's own, **Mark all
+  as read** on the screen and in the header drawer, and the preference boxes, which now wait for
+  one another. The four buttons that showed WordPress's striped "busy" (export, the Data
+  confirmation, the import dry-run, the migration confirmation) show it too. In Email Studio
+  and in Forms and flows, where every button on the screen was disabled together while any
+  request was out, the one that was pressed shows it and the others wait. The Data screen's
+  import, migrations, export history and record dialogs, Blog Pro, access requests, the
+  Security save, Insights, the setup wizard and the captcha test have it too, and none of them
+  changes its label to "Saving…" any more (DECISIONS #285, #287, #288).
 - **Notifications show what is coming while they load** (spec 108, slice 1). The Notifications
   screen, its preferences and the header drawer show a placeholder in the shape of their content
   until the first answer, where each showed a sentence, and none shows "nothing here" before it
@@ -142,6 +166,42 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A disabled button in the CoreX admin is the button, dimmed.** WordPress paints every
+  disabled button a pale grey: a light box on the dark theme, on every screen that disables
+  its buttons while it loads.
+- **Email Studio on a site with no templates no longer takes the open form away on every
+  save** to say "Loading Email Studio…". Whether the studio had been read was guessed from
+  whether it had any templates.
+- **Choosing an email template twice in a row** asked for both, and the slower answer was the
+  one left in the editor. Templates are chosen one at a time.
+- **A record's detail shows its fields.** "View" on the Data screen drew the whole record as
+  one field named "Record", holding a line of JSON: the route answers `{ record }` and the
+  screen read the answer itself as the record. The detail is also a CoreX dialog now; it was
+  WordPress's own, unstyled, white on the dark theme.
+- **The two totals above the records read "Fields" and "4", not "Fields4".** The label and the
+  number were drawn on one line with nothing between them.
+- **The Data screen says when its list of sources could not be loaded**, with a way to ask
+  again. It said "No records yet." about a request that had failed.
+- **A slower answer no longer replaces a newer one on the Data screen.** Two searches or two
+  page turns in quick succession could leave the first one's rows on screen.
+- **A Data dialog no longer vanishes while its change is being worked out.** New record, Edit
+  record, Bulk edit and a record's Delete closed on the press and left nothing on screen until
+  the confirmation appeared. Each stays, with its button working, until there is something to
+  confirm.
+- **Downloading an export or a rejection report twice by pressing twice.** Both sent, and
+  saved, a second file. The button waits for the first.
+- **On the Migrations tab, "Refresh" and "Preview rollback" could be pressed while another
+  request was out**, and the confirm button showed "busy" whichever had been pressed.
+- **Deciding two access requests quickly** handed the first one's buttons back before its
+  answer. Decisions are taken one at a time.
+- **The setup wizard's "Next" said nothing while it fetched the plan**, and asked again on a
+  second press.
+- **"Mark all as read" and a notification preference say when they failed.** Both swallowed a
+  failed request: the button did nothing, or the box went back to what it was, with no word of
+  why. The server's reason is shown beside them.
+- **Two notification preferences changed quickly no longer undo one another.** Each change
+  sends every category as it is on screen, so a second sent before the first had answered sent
+  the first one back. The boxes wait for the change that is on its way.
 - **A button that was both primary and destructive could not be read**: the error colour as
   text on the action colour as ground, red on brass. It keeps the primary's ink. Seen in a
   capture of the new delete confirmation; the Data screen's migration rollback has the same

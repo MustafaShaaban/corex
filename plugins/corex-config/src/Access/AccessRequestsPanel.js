@@ -14,6 +14,7 @@ import { useState } from '@wordpress/element';
 import CorexErrorState from '../admin/components/CorexErrorState.js';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexTime from '../admin/components/CorexTime.js';
+import { usePending, workingProps } from '../admin/components/working.js';
 
 /**
  * Approve or deny a request through the CoreX access API.
@@ -51,11 +52,12 @@ async function decide( config, id, approved ) {
 
 export default function AccessRequestsPanel( { config } ) {
 	const [ requests, setRequests ] = useState( config?.requests || [] );
-	const [ busyId, setBusyId ] = useState( 0 );
+	// One decision at a time. It was one id: deciding a second request while the first was
+	// out handed the first one's buttons back before its answer.
+	const [ pending, during ] = usePending();
 	const [ error, setError ] = useState( '' );
 
 	const onDecide = async ( id, approved ) => {
-		setBusyId( id );
 		setError( '' );
 
 		try {
@@ -67,8 +69,6 @@ export default function AccessRequestsPanel( { config } ) {
 			);
 		} catch ( failure ) {
 			setError( failure.message );
-		} finally {
-			setBusyId( 0 );
 		}
 	};
 
@@ -114,20 +114,30 @@ export default function AccessRequestsPanel( { config } ) {
 								<button
 									type="button"
 									className="button button-primary"
-									disabled={ busyId === request.id }
+									disabled={ pending !== '' }
 									onClick={ () =>
-										onDecide( request.id, true )
+										during( `approve:${ request.id }`, () =>
+											onDecide( request.id, true )
+										)
 									}
+									{ ...workingProps(
+										pending === `approve:${ request.id }`
+									) }
 								>
 									{ __( 'Approve', 'corex' ) }
 								</button>
 								<button
 									type="button"
 									className="button"
-									disabled={ busyId === request.id }
+									disabled={ pending !== '' }
 									onClick={ () =>
-										onDecide( request.id, false )
+										during( `deny:${ request.id }`, () =>
+											onDecide( request.id, false )
+										)
 									}
+									{ ...workingProps(
+										pending === `deny:${ request.id }`
+									) }
 								>
 									{ __( 'Deny', 'corex' ) }
 								</button>

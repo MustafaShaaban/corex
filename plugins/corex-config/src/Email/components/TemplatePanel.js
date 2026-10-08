@@ -1,9 +1,25 @@
 import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../../admin/components/CorexSelect.js';
 import CorexTime from '../../admin/components/CorexTime.js';
+import { useContext } from '@wordpress/element';
+import {
+	PendingControl,
+	workingProps,
+} from '../../admin/components/working.js';
+import CorexSkeleton, {
+	SkeletonBar,
+} from '../../admin/components/CorexSkeleton.js';
 import { Field } from './shared.js';
 
-function TemplateRail( { templates, selectedId, busy, onCreate, onSelect } ) {
+function TemplateRail( {
+	templates,
+	selectedId,
+	selecting = null,
+	busy,
+	onCreate,
+	onSelect,
+} ) {
+	const pending = useContext( PendingControl );
 	return (
 		<section className="corex-surface corex-email-app__rail-card">
 			<h2>{ __( 'Templates', 'corex' ) }</h2>
@@ -28,7 +44,11 @@ function TemplateRail( { templates, selectedId, busy, onCreate, onSelect } ) {
 						required
 					/>
 				</label>
-				<button className="button button-primary" disabled={ busy }>
+				<button
+					className="button button-primary"
+					disabled={ busy }
+					{ ...workingProps( pending === 'templates' ) }
+				>
 					{ __( 'Create', 'corex' ) }
 				</button>
 			</form>
@@ -38,8 +58,13 @@ function TemplateRail( { templates, selectedId, busy, onCreate, onSelect } ) {
 						<button
 							type="button"
 							className={
-								selectedId === template.id ? 'is-active' : ''
+								( selecting ?? selectedId ) === template.id
+									? 'is-active'
+									: ''
 							}
+							// One at a time: a second press asked again, and the slower
+							// answer was the one left in the editor.
+							disabled={ selecting !== null }
 							onClick={ () => onSelect( template ) }
 						>
 							<strong>{ template.name }</strong>
@@ -198,16 +223,51 @@ function DraftFields( { layouts, draft, errors, onChange } ) {
 	);
 }
 
+const EDITOR_FIELDS = 4;
+
+/**
+ * The editor, for a template that was chosen and has not arrived: its heading, and a label
+ * over a field for each of its fields.
+ *
+ * @return {Element} The editor's placeholder.
+ */
+function TemplateEditorSkeleton() {
+	return (
+		<CorexSkeleton>
+			<header>
+				<div>
+					<h2>
+						<SkeletonBar width="medium" />
+					</h2>
+					<SkeletonBar width="short" />
+				</div>
+			</header>
+			{ Array.from( { length: EDITOR_FIELDS }, ( _, field ) => (
+				<p key={ field }>
+					<SkeletonBar width="short" />
+					<SkeletonBar width="full" />
+				</p>
+			) ) }
+		</CorexSkeleton>
+	);
+}
+
 function TemplateEditor( {
 	layouts,
 	detail,
 	draft,
 	errors,
+	selecting = null,
 	busy,
 	onChange,
 	onSave,
 	onActivate,
 } ) {
+	const pending = useContext( PendingControl );
+	if ( selecting !== null ) {
+		return <TemplateEditorSkeleton />;
+	}
+
 	if ( ! detail ) {
 		return (
 			<p>{ __( 'Select or create a template to edit it.', 'corex' ) }</p>
@@ -232,7 +292,11 @@ function TemplateEditor( {
 				onChange={ onChange }
 			/>
 			<div className="corex-email-app__actions">
-				<button className="button button-primary" disabled={ busy }>
+				<button
+					className="button button-primary"
+					disabled={ busy }
+					{ ...workingProps( pending === 'draft' ) }
+				>
 					{ __( 'Save immutable draft', 'corex' ) }
 				</button>
 				{ detail.template.draft_version > 0 && (
@@ -243,6 +307,7 @@ function TemplateEditor( {
 						onClick={ () =>
 							onActivate( detail.template.draft_version )
 						}
+						{ ...workingProps( pending === 'activate' ) }
 					>
 						{ __( 'Activate latest draft', 'corex' ) }
 					</button>
@@ -258,6 +323,7 @@ export function TemplatePanel( props ) {
 			<TemplateRail
 				templates={ props.templates }
 				selectedId={ props.detail?.template?.id }
+				selecting={ props.selecting }
 				busy={ props.busy }
 				onCreate={ props.onCreate }
 				onSelect={ props.onSelect }
@@ -268,6 +334,7 @@ export function TemplatePanel( props ) {
 					detail={ props.detail }
 					draft={ props.draft }
 					errors={ props.errors }
+					selecting={ props.selecting }
 					busy={ props.busy }
 					onChange={ props.onDraftChange }
 					onSave={ props.onSaveDraft }

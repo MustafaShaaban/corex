@@ -106,10 +106,18 @@ describe( 'allRowsSelected', () => {
 } );
 
 describe( 'viewState', () => {
-	it( 'classifies loading and error first', () => {
+	it( 'is loading only while there is nothing on screen to keep', () => {
+		// Spec 108: a page turn, a sort or a search used to take the rows away to say
+		// "loading". Rows that are there stay, and are marked as waiting.
+		expect(
+			viewState( { status: 'loading', rowCount: 0, hasQuery: false } )
+		).toBe( 'loading' );
 		expect(
 			viewState( { status: 'loading', rowCount: 5, hasQuery: false } )
-		).toBe( 'loading' );
+		).toBe( 'refreshing' );
+	} );
+
+	it( 'says a failed load failed, whatever was asked for', () => {
 		expect(
 			viewState( { status: 'error', rowCount: 0, hasQuery: true } )
 		).toBe( 'error' );

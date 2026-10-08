@@ -11,6 +11,7 @@
  */
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { CorexRelativeTime } from '../components/CorexTime.js';
+import { workingProps } from '../components/working.js';
 
 /** Severity said in words. Colour reinforces the label; it never carries the meaning alone. */
 const SEVERITY_LABELS = {
@@ -87,7 +88,16 @@ export default function NotificationItem( {
 	item,
 	actions = {},
 	compact = false,
+	// Which of this notification's controls has a request out: a key of `actions`.
+	working,
 } ) {
+	// One action on a notification at a time. The control that was pressed shows that it is
+	// working; the others wait for it, since what they would act on is about to change.
+	const controlProps = ( control ) =>
+		working === control
+			? workingProps( true )
+			: { disabled: Boolean( working ) };
+
 	const severity = item.severity || 'information';
 	const state = item.user_state || {};
 	const occurrences = Number( item.occurrences ) || 1;
@@ -205,6 +215,7 @@ export default function NotificationItem( {
 					<button
 						type="button"
 						onClick={ () => actions.markRead( item.id ) }
+						{ ...controlProps( 'markRead' ) }
 					>
 						{ __( 'Mark read', 'corex' ) }
 					</button>
@@ -213,6 +224,7 @@ export default function NotificationItem( {
 					<button
 						type="button"
 						onClick={ () => actions.markUnread( item.id ) }
+						{ ...controlProps( 'markUnread' ) }
 					>
 						{ __( 'Mark unread', 'corex' ) }
 					</button>
@@ -221,6 +233,7 @@ export default function NotificationItem( {
 					<button
 						type="button"
 						onClick={ () => actions.snooze( item.id ) }
+						{ ...controlProps( 'snooze' ) }
 					>
 						{ __( 'Snooze for a day', 'corex' ) }
 					</button>
@@ -229,6 +242,7 @@ export default function NotificationItem( {
 					<button
 						type="button"
 						onClick={ () => actions.dismiss( item.id ) }
+						{ ...controlProps( 'dismiss' ) }
 					>
 						{ __( 'Dismiss', 'corex' ) }
 					</button>
@@ -240,6 +254,7 @@ export default function NotificationItem( {
 						type="button"
 						className="is-destructive"
 						onClick={ () => actions.resolve( item.id ) }
+						{ ...controlProps( 'resolve' ) }
 					>
 						{ __( 'Mark resolved', 'corex' ) }
 					</button>

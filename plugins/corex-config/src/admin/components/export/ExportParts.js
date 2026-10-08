@@ -9,6 +9,7 @@
 import { Button } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../CorexSelect.js';
+import { workingProps } from '../working.js';
 
 /**
  * The scopes, each with its count and what it covers.
@@ -359,9 +360,9 @@ export function ExportFooter( { blocked, run, label, close, start } ) {
 				</Button>
 				<Button
 					variant="primary"
-					disabled={ blocked !== '' || running }
-					isBusy={ running }
+					disabled={ blocked !== '' }
 					onClick={ start }
+					{ ...workingProps( running ) }
 				>
 					{ label }
 				</Button>

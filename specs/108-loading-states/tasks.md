@@ -23,33 +23,39 @@ light, left-to-right and right-to-left, 1280 and 782, with the answer held back)
 
 ## Slice 2 — The loader, and every action (US3, US4)
 
-- [ ] T020 [P] Jest: `workingProps` — disabled, busy and marked while working; nothing when not
-- [ ] T021 `.corex-loader` and the working button (`corex-admin-shell.css`): the ring, its still look, a button that keeps its width
-- [ ] T022 `CorexLoader`, `working.js`
-- [ ] T023 Jest, per screen: each control that sends a request is working while it is in flight and sends nothing on a second press
-- [ ] T024 Notifications, Email Studio, the Forms editor, Access, Blog, Security, Data dialogs, Insights, the captcha test: `workingProps`
-- [ ] T025 `isBusy` removed from the admin; a hygiene test that it is not used under `plugins/corex-config/src`
-- [ ] T026 Playwright: a held action shows working and keeps its button's width to the pixel
-- [ ] T027 Guards; UI/UX gate; notes
+An inventory at `f2908076` found 55 controls outside the Submissions inbox that send a request.
+They are done a screen at a time, each in its own pull request.
+
+- [x] T020 [P] Jest: `workingProps` — sends nothing on a second press; keeps its name and says it is busy; leaves alone a control disabled for its own reason
+- [x] T021 The working control and its loader (`corex-admin-shell.css`): the ring, its still look, a button that keeps its width, the colours wp-admin takes from a disabled `.button`, and a control in a WordPress `Modal`
+- [x] T022 `working.js`
+- [x] T023 Notifications (8 controls): each notification's actions, "Mark all as read" on the screen and in the drawer, the preference boxes; the three that failed in silence say why
+- [x] T024 The four `isBusy` buttons (export, the Data confirmation, the import dry-run, the migration confirmation); a hygiene test that `isBusy` is not used under `plugins/corex-config/src`
+- [x] T025 Playwright: a held action shows working, keeps its button's width to the pixel and sends nothing on a second press; the working state reaches a control drawn where a modal is
+- [x] T026 Email Studio (9) and Forms and flows (7): one flag disabled every button on each screen and nothing marked the one that was pressed. The row that opens a template and the row that opens a flow are loads, and go with slice 4
+- [x] T027 Data (11): the four that ask for a change preview, whose dialogs now stay until it is back; the two downloads; the import's remap and commit; the migration previews and refresh. "View", which opens a record, is a load and goes with slice 3
+- [x] T028 Blog (3), Access (2), Security (1): the labels that changed to "Saving…", "Applying…", "Refreshing…" are gone. Security's "Apply mode" is a form the server draws
+- [x] T029 The screens that are not React: Insights (1), the setup wizard (3), the captcha test (1), with the three attributes written by hand. The forms the server draws (Settings, "Apply mode", four others) are left: the page loading is what a person sees
+- [x] T030 Guards; UI/UX gate; notes, with each part
 
 ## Slice 3 — Data (US1, US2)
 
-- [ ] T030 Jest: `viewState()` — a first load is `loading`; a load with rows on screen is `refreshing`
-- [ ] T031 [P] Jest: `useDebounced` — ten changes inside the pause make one call, with the last value
-- [ ] T032 Records: skeleton rows first, rows kept and waiting after; the two totals waiting with them; the search box debounced and keeping focus; `Spinner` gone from `DataExplorer.js`
-- [ ] T033 A record opens its dialog at once with a placeholder; whether WordPress's `Modal` is inside the admin's token scope is checked first, and the dialog moved to `CorexDialog` if it is not
-- [ ] T034 Export history and migrations: a placeholder, never "no history" before an answer
-- [ ] T035 The source list's failure is said (FR-006)
-- [ ] T036 Playwright: each of these with the answer held back; a page turn and a search keep the rows; ten typed characters send at most two requests
-- [ ] T037 Guards; UI/UX gate; notes
+- [x] T130 Jest: `viewState()` — a first load is `loading`; a load with rows on screen is `refreshing`
+- [x] T131 [P] Jest: `useDebounced` — ten changes inside the pause make one call, with the last value; nothing is asked after the screen has gone
+- [x] T132 Records: skeleton rows first, rows kept and waiting after; the total waiting with them; the search box debounced and keeping focus; a slower answer not kept; `Spinner` gone from `DataExplorer.js`
+- [x] T133 A record opens its dialog at once with a placeholder. WordPress's `Modal` is outside the admin's token scope, so the detail moved to `CorexDialog`
+- [x] T134 Export history and migrations: a placeholder, never "no history" before an answer; a failed load said where the list is, with a retry
+- [x] T135 The source list's failure is said (FR-006)
+- [x] T136 Playwright: the list, a record and the export history with the answer held back; a sort keeps the rows; ten typed characters send one request
+- [x] T137 Guards; UI/UX gate; notes
 
 ## Slice 4 — Forms and flows, Email Studio (US1, US2)
 
-- [ ] T040 Jest: the Forms catalog and the Email Studio panel through `CorexLoadable`; the Email heuristic that re-showed "loading" on a site with no templates is gone
-- [ ] T041 Forms catalog and opening a flow
-- [ ] T042 Email Studio and a template chosen from the list
-- [ ] T043 `helpers.js` and the specs that wait on a loading sentence move to `data-corex-state`
-- [ ] T044 Playwright; guards; UI/UX gate; notes
+- [x] T040 Jest: what the catalog is in each of its seven situations; whether Email Studio is still loading, with the guess from "no templates" gone; a chosen template shows the editor that is coming and cannot be chosen twice
+- [x] T041 Forms catalog and opening a flow
+- [x] T042 Email Studio and a template chosen from the list
+- [x] T043 `helpers.js` and `email-studio.spec.js`, which waited on a loading sentence, wait on `data-corex-state`
+- [x] T044 Playwright; guards; UI/UX gate; notes
 
 ## Slice 5 — Insights and the setup wizard (US1)
 

@@ -281,3 +281,534 @@ test( 'the drawer shows a placeholder, and never "all caught up", before its ans
 	await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
 	await expect( page.getByText( 'all caught up' ) ).toBeVisible();
 } );
+
+test( 'a working button keeps its width, shows the loader, and cannot be pressed again', async ( {
+	page,
+} ) => {
+	// The request is answered here and never reaches the site: a test that marked every
+	// notification on a developer's site as read would be one nobody ran twice.
+	const sent = [];
+	await page.route(
+		( url ) => decodeURIComponent( url.href ).includes( 'read-all' ),
+		( route ) => sent.push( route )
+	);
+	await page.goto( NOTIFICATIONS );
+	await expect(
+		page.locator( '.corex-notifications-screen .corex-loadable' )
+	).toHaveAttribute( 'data-corex-state', 'ready' );
+
+	const button = page.getByRole( 'button', { name: 'Mark all as read' } );
+	const before = await box( button );
+
+	await button.click();
+
+	await expect( button ).toHaveAttribute( 'data-corex-working', 'true' );
+	await expect( button ).toBeDisabled();
+	await expect( button ).toHaveAttribute( 'aria-busy', 'true' );
+	// Busy, not switched off: it is not dimmed as a disabled control is.
+	await expect( button ).toHaveCSS( 'opacity', '1' );
+	expect( await box( button ) ).toEqual( before );
+	expect(
+		await button.evaluate(
+			( element ) =>
+				window.getComputedStyle( element, '::after' ).animationName
+		)
+	).toBe( 'corex-loader-turn' );
+
+	// A press that lands anyway sends nothing.
+	await button.click( { force: true } );
+	expect( sent ).toHaveLength( 1 );
+
+	await sent[ 0 ].fulfill( { json: { success: true, data: {} } } );
+
+	await expect( button ).not.toHaveAttribute( 'data-corex-working', 'true' );
+	await expect( button ).toBeEnabled();
+} );
+
+test( 'the working state reaches a control drawn where WordPress puts a modal', async ( {
+	page,
+} ) => {
+	// A WordPress `Modal` is drawn at the end of <body>, outside the admin's own wrapper,
+	// and the first rules for a working control were scoped to that wrapper: the two
+	// confirm buttons in such modals were disabled and showed nothing.
+	await page.goto( NOTIFICATIONS );
+
+	const animation = await page.evaluate( () => {
+		const button = document.createElement( 'button' );
+		button.type = 'button';
+		button.disabled = true;
+		button.setAttribute( 'data-corex-working', 'true' );
+		button.textContent = 'Confirm and apply';
+		document.body.appendChild( button );
+
+		return {
+			insideWrapper: Boolean( button.closest( '.corex-admin' ) ),
+			name: window.getComputedStyle( button, '::after' ).animationName,
+		};
+	} );
+
+	expect( animation ).toEqual( {
+		insideWrapper: false,
+		name: 'corex-loader-turn',
+	} );
+} );
+
+test( 'in Email Studio the button that was pressed is the one that works', async ( {
+	page,
+} ) => {
+	// The request is held and then dropped: nothing is created on the site by this test.
+	const sent = [];
+	await page.route(
+		( url ) =>
+			/email-studio\/templates(\?|$)/.test(
+				decodeURIComponent( url.href )
+			),
+		( route ) =>
+			route.request().method() === 'POST'
+				? sent.push( route )
+				: route.continue()
+	);
+	await page.goto( '/wp-admin/admin.php?page=corex-email-studio' );
+	await page
+		.getByRole( 'button', { name: 'Templates', exact: true } )
+		.click();
+	await page.getByLabel( 'New template slug' ).fill( 'held-by-a-test' );
+	await page.getByLabel( 'Name', { exact: true } ).fill( 'Held by a test' );
+
+	const create = page.getByRole( 'button', { name: 'Create', exact: true } );
+	const before = await box( create );
+
+	await create.click();
+
+	await expect( create ).toHaveAttribute( 'data-corex-working', 'true' );
+	expect( await box( create ) ).toEqual( before );
+	// Every other button on the tab waits, and none of them says it is the one working.
+	await expect( page.locator( '[data-corex-working]' ) ).toHaveCount( 1 );
+
+	await sent[ 0 ].abort();
+
+	await expect( create ).not.toHaveAttribute( 'data-corex-working', 'true' );
+	await expect( create ).toBeEnabled();
+} );
+
+test( 'on Insights, a screen that is not React, "Run check" works the same way', async ( {
+	page,
+} ) => {
+	// Held and then dropped: no check is run on the site by this test.
+	const sent = [];
+	await page.route(
+		( url ) => /insights\/run(\?|$)/.test( decodeURIComponent( url.href ) ),
+		( route ) => sent.push( route )
+	);
+	await page.goto( '/wp-admin/admin.php?page=corex-insights' );
+
+	const card = page.locator( '.corex-insight-card' ).first();
+	const run = card.getByRole( 'button', { name: 'Run check' } );
+	const before = await box( run );
+
+	await run.click();
+
+	// The card is drawn again as markup, so this is a new button with the same name.
+	await expect( run ).toHaveAttribute( 'data-corex-working', 'true' );
+	await expect( run ).toBeDisabled();
+	expect( await box( run ) ).toEqual( before );
+	expect(
+		await run.evaluate(
+			( element ) =>
+				window.getComputedStyle( element, '::after' ).animationName
+		)
+	).toBe( 'corex-loader-turn' );
+
+	await sent[ 0 ].abort();
+
+	await expect( run ).toBeEnabled();
+	await expect( run ).not.toHaveAttribute( 'data-corex-working', 'true' );
+} );
+
+test( 'in the setup wizard, the step that waits for its plan says so', async ( {
+	page,
+} ) => {
+	// "Next" used to do nothing visible until the plan arrived, and asked again on a second
+	// press. The request is let through at the end: it reads, and changes nothing.
+	const held = [];
+	await page.route(
+		( url ) => /setup\/plan(\?|&|$)/.test( decodeURIComponent( url.href ) ),
+		( route ) => held.push( route )
+	);
+	await page.goto( '/wp-admin/admin.php?page=corex-setup' );
+	await expect(
+		page.locator( '#corex-setup-app .corex-setup__panel' )
+	).toBeVisible();
+
+	const next = page.locator( '#corex-setup-next' );
+	// Welcome, Brand, Kit and Demo ask the server for nothing; the step after them is the plan.
+	for ( let step = 0; step < 6 && held.length === 0; step++ ) {
+		await next.click();
+		await page.waitForTimeout( 150 );
+	}
+
+	expect( held ).toHaveLength( 1 );
+	await expect( next ).toHaveAttribute( 'data-corex-working', 'true' );
+	await expect( next ).toBeDisabled();
+	await expect( page.locator( '#corex-setup-back' ) ).toBeDisabled();
+
+	await held[ 0 ].continue();
+
+	await expect( next ).not.toHaveAttribute( 'data-corex-working', 'true' );
+} );
+
+const DATA = '/wp-admin/admin.php?page=corex-data-models&tab=records';
+
+// A request for a source's rows: not the list of sources, and not one record.
+const isRecordRows = ( url ) => {
+	const href = decodeURIComponent( url.href );
+	return (
+		/corex\/v1\/data\/[a-z0-9_-]+(\?|&)/.test( href ) &&
+		! /data\/(sources|migrations)/.test( href ) &&
+		/per_page=/.test( href )
+	);
+};
+
+test.describe( 'the Data records list', () => {
+	// Wide enough that a row is one line: a row that wraps is as tall as what it holds.
+	test.use( { viewport: { width: 1900, height: 1000 } } );
+
+	test( 'shows rows that are not there yet, the height of the rows that replace them', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route( isRecordRows, ( route ) => held.push( route ) );
+		await page.goto( DATA );
+
+		const surface = page.locator(
+			'.corex-data__panel-body .corex-loadable'
+		);
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		// Neither "nothing here" nor a count nobody has made.
+		await expect( page.getByText( 'No records yet.' ) ).toHaveCount( 0 );
+		await expect(
+			page.locator( '.corex-data__metric .corex-admin-skeleton' )
+		).toHaveCount( 1 );
+
+		const placeholderRow = surface
+			.locator( '.corex-admin-skeleton tbody tr' )
+			.first();
+		const placeholderHead = surface.locator(
+			'.corex-admin-skeleton thead tr'
+		);
+		const before = {
+			row: await box( placeholderRow ),
+			head: await box( placeholderHead ),
+		};
+
+		await held.shift().continue();
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		const after = {
+			row: await box( surface.locator( 'tbody tr' ).first() ),
+			head: await box( surface.locator( 'thead tr' ) ),
+		};
+		expect( after ).toEqual( before );
+	} );
+
+	test( 'keeps its rows, and holds its total, while it is sorted', async ( {
+		page,
+	} ) => {
+		await page.goto( DATA );
+		const surface = page.locator(
+			'.corex-data__panel-body .corex-loadable'
+		);
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+		const rows = await surface.locator( 'tbody tr' ).count();
+		expect( rows ).toBeGreaterThan( 0 );
+
+		const held = [];
+		await page.route( isRecordRows, ( route ) => held.push( route ) );
+		await surface.locator( '.corex-data__sort' ).first().click();
+
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'refreshing'
+		);
+		await expect( surface.locator( 'tbody tr' ) ).toHaveCount( rows );
+		await expect( surface.locator( '.corex-admin-skeleton' ) ).toHaveCount(
+			0
+		);
+		await expect( page.locator( '.corex-data__metrics' ) ).toHaveAttribute(
+			'data-corex-waiting',
+			'true'
+		);
+
+		await held.shift().continue();
+
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+		await expect(
+			page.locator( '.corex-data__metrics' )
+		).not.toHaveAttribute( 'data-corex-waiting', 'true' );
+	} );
+
+	test( 'asks once for ten letters typed without a pause, and keeps the box', async ( {
+		page,
+	} ) => {
+		await page.goto( DATA );
+		await expect(
+			page.locator( '.corex-data__panel-body .corex-loadable' )
+		).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		let asked = 0;
+		page.on( 'request', ( request ) => {
+			if ( isRecordRows( new URL( request.url() ) ) ) {
+				asked += 1;
+			}
+		} );
+
+		const search = page.getByRole( 'textbox', { name: 'Search records' } );
+		await search.pressSequentially( 'contact fo', { delay: 40 } );
+
+		await expect(
+			page.locator( '.corex-data__panel-body .corex-loadable' )
+		).toHaveAttribute( 'data-corex-state', 'ready' );
+		await page.waitForTimeout( 600 );
+
+		// SC-004 allows two. Typed at this pace it is one.
+		expect( asked ).toBe( 1 );
+		await expect( search ).toBeFocused();
+		await expect( search ).toHaveValue( 'contact fo' );
+	} );
+
+	test( 'opens a record on the press, and draws its fields as fields', async ( {
+		page,
+	} ) => {
+		await page.goto( DATA );
+		await expect(
+			page.locator( '.corex-data__panel-body .corex-loadable' )
+		).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		const held = [];
+		await page.route(
+			( url ) =>
+				/corex\/v1\/data\/[a-z0-9_-]+\/\d+(\?|$)/.test(
+					decodeURIComponent( url.href )
+				),
+			( route ) => held.push( route )
+		);
+		await page.getByRole( 'button', { name: 'View' } ).first().click();
+
+		// It used to open when the record did: the press showed nothing.
+		const dialog = page.getByRole( 'dialog', { name: 'Record detail' } );
+		await expect( dialog ).toBeVisible();
+		const surface = dialog.locator( '.corex-loadable' );
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		await expect(
+			dialog.getByText( 'This record has no readable fields.' )
+		).toHaveCount( 0 );
+
+		// The real route answers, untouched: this is the comparison between the screen and
+		// the route that serves it which no test made, while the screen read the answer one
+		// level too shallow and drew a record as a single field named "Record".
+		await held.shift().continue();
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+
+		const labels = await dialog
+			.locator( '.corex-data__field dt' )
+			.allTextContents();
+		expect( labels.length ).toBeGreaterThan( 1 );
+		expect( labels ).not.toContain( 'Record' );
+		await expect(
+			dialog.locator( '.corex-data__field dd' ).first()
+		).not.toContainText( '{"' );
+	} );
+
+	test( 'does not say "No exports yet." before the export history has answered', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route(
+			( url ) =>
+				/corex\/v1\/data\/[a-z0-9_-]+\/exports(\?|$)/.test(
+					decodeURIComponent( url.href )
+				),
+			( route ) =>
+				route.request().method() === 'GET'
+					? held.push( route )
+					: route.continue()
+		);
+		await page.goto(
+			'/wp-admin/admin.php?page=corex-data-models&tab=export'
+		);
+
+		const surface = page.locator(
+			'.corex-data-models__workspace .corex-loadable'
+		);
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		await expect(
+			surface.locator( '.corex-admin-skeleton li' )
+		).toHaveCount( 3 );
+		await expect( page.getByText( 'No exports yet.' ) ).toHaveCount( 0 );
+
+		await held.shift().continue();
+
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+	} );
+} );
+
+test.describe( 'Forms and flows', () => {
+	const FORMS = '/wp-admin/admin.php?page=corex-forms';
+	const isFlowList = ( url ) =>
+		/corex\/v1\/flows(\?|$)/.test( decodeURIComponent( url.href ) );
+	const isOneFlow = ( url ) =>
+		/corex\/v1\/flows\/\d+(\?|$)/.test( decodeURIComponent( url.href ) );
+
+	test( 'shows a catalog that is coming, and never "no forms" before its answer', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route( isFlowList, ( route ) => held.push( route ) );
+		await page.goto( FORMS );
+
+		const surface = page.locator(
+			'.corex-flow-list__catalog .corex-loadable'
+		);
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		await expect(
+			surface.locator( '.corex-admin-skeleton .corex-flow-list__row' )
+		).toHaveCount( 4 );
+		await expect(
+			page.getByText( 'No forms match this view.' )
+		).toHaveCount( 0 );
+
+		await held.shift().continue();
+
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+		await expect( surface.locator( '.corex-admin-skeleton' ) ).toHaveCount(
+			0
+		);
+	} );
+
+	test( 'shows the editor that is coming when a flow is opened', async ( {
+		page,
+	} ) => {
+		await page.goto( FORMS );
+		const surface = page.locator(
+			'.corex-flow-list__catalog .corex-loadable'
+		);
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+		const row = surface
+			.locator( '.corex-flow-list__row.is-editable > button' )
+			.first();
+		// A site with no flow built in the admin has nothing to open.
+		test.skip(
+			( await row.count() ) === 0,
+			'this site has no editable flow to open'
+		);
+
+		const held = [];
+		await page.route( isOneFlow, ( route ) => held.push( route ) );
+		await row.click();
+
+		// The catalog used to stay, disabled, until the flow arrived.
+		await expect( page.locator( '.corex-flow-list' ) ).toHaveCount( 0 );
+		const placeholder = page.locator(
+			'.corex-admin-skeleton .corex-flow-editor__toolbar'
+		);
+		await expect( placeholder ).toBeVisible();
+		// Its bars have a width: they are a share of a heading that has none of its own.
+		expect(
+			await placeholder
+				.locator( '.corex-admin-skeleton__bar' )
+				.first()
+				.evaluate( ( bar ) => bar.getBoundingClientRect().width )
+		).toBeGreaterThan( 40 );
+
+		await held.shift().continue();
+
+		await expect(
+			page.locator( '.corex-flow-editor__actions' )
+		).toBeVisible();
+		await expect( page.locator( '.corex-admin-skeleton' ) ).toHaveCount(
+			0
+		);
+	} );
+} );
+
+test.describe( 'Email Studio', () => {
+	const STUDIO = '/wp-admin/admin.php?page=corex-email-studio';
+	const isOverview = ( url ) =>
+		/corex\/v1\/email-studio(\?|$)/.test( decodeURIComponent( url.href ) );
+	const isOneTemplate = ( url ) =>
+		/email-studio\/templates\/\d+(\?|$)/.test(
+			decodeURIComponent( url.href )
+		);
+
+	test( 'shows a studio that is coming, with its tabs already there', async ( {
+		page,
+	} ) => {
+		const held = [];
+		await page.route( isOverview, ( route ) => held.push( route ) );
+		await page.goto( STUDIO );
+
+		const surface = page.locator( '.corex-email-app > .corex-loadable' );
+		await expect( surface ).toHaveAttribute(
+			'data-corex-state',
+			'loading'
+		);
+		await expect(
+			surface.locator( '.corex-admin-skeleton__bar' ).first()
+		).toBeVisible();
+		await expect(
+			page.getByRole( 'button', { name: 'Templates', exact: true } )
+		).toBeVisible();
+
+		await held.shift().continue();
+
+		await expect( surface ).toHaveAttribute( 'data-corex-state', 'ready' );
+	} );
+
+	test( 'shows the editor that is coming when a template is chosen', async ( {
+		page,
+	} ) => {
+		await page.goto( STUDIO );
+		await expect(
+			page.locator( '.corex-email-app > .corex-loadable' )
+		).toHaveAttribute( 'data-corex-state', 'ready' );
+		await page
+			.getByRole( 'button', { name: 'Templates', exact: true } )
+			.click();
+		const rows = page.locator( '.corex-email-app__list button' );
+		test.skip(
+			( await rows.count() ) === 0,
+			'this site has no email template to choose'
+		);
+
+		const held = [];
+		await page.route( isOneTemplate, ( route ) => held.push( route ) );
+		await rows.first().click();
+
+		const editor = page.locator( '.corex-email-app__editor' );
+		await expect( editor.locator( '.corex-admin-skeleton' ) ).toBeVisible();
+		// One at a time: a second press asked again, and the slower answer was kept.
+		await expect( rows.first() ).toBeDisabled();
+		await expect( rows.first() ).toHaveClass( /is-active/ );
+
+		await held.shift().continue();
+
+		await expect( editor.locator( '.corex-admin-skeleton' ) ).toHaveCount(
+			0
+		);
+		await expect(
+			editor.getByRole( 'button', { name: 'Save immutable draft' } )
+		).toBeVisible();
+	} );
+} );
