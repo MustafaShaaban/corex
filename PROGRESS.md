@@ -399,6 +399,13 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   tracked and its hook is off, so the two framework files it changed are out of the way, and its
   own path script takes a site's directory (#251, DECISIONS #279). Nobody has run `/speckit-specify`
   in Muva or Perego and then `npm run verify:framework`.
+- **A hosting package's `vendor/` can be fetched from the web.** CoreX's own describing files are
+  left out of a package now (DECISIONS #280). Third-party `README.md` and `composer.json` files
+  and `vendor/composer/installed.json` are not, and the package ships no server rule, because
+  the host owns its `.htaccess`. Nothing tells an operator to refuse requests into it.
+- **From the audit of the first site on shared hosting, not done:** the coming-soon page prints
+  WordPress's generator tag, the RSD link, feed links and the emoji script; the REST index lists
+  every `corex/v1` route to anybody; there is no setting for security headers.
 - **Turnstile and hCaptcha were not submitted through on a real site.** Their widget is placed
   and a tokenless submission is refused (DECISIONS #278). What was seen is each provider's own
   script rendering into a bare form on a local page, and Turnstile's token cycle there. Nobody

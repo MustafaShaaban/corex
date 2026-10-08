@@ -114,6 +114,14 @@ agent/`.claude`/`.agents`/`.specify` state. The Composer dev packages (Pest, Bra
 require, PHPUnit and Mockery among them) are never installed into the package. `dist/` is git-ignored and **must
 never be committed**.
 
+`README.md`, `composer.json` and `package.json` are left out of CoreX's plugins, add-ons, theme and command-line
+package, and out of a client's plugin and theme: a web server would hand them to anybody, and nothing on a running
+site reads them. WordPress core's own are packaged as WordPress ships them.
+
+`wp-content/vendor/` is packaged as Composer installs it, third-party `README.md` and `composer.json` files and
+`vendor/composer/installed.json` included. Nothing in it is meant to be requested: refuse requests into
+`wp-content/vendor/` in the host's own server configuration. The package ships no `.htaccess` of its own.
+
 ## Verify
 
 ```bash
