@@ -252,12 +252,12 @@
 			( canBack
 				? `<button type="button" class="button" id="corex-setup-back">${ escape(
 						t( 'Back' )
-				  ) }</button>`
+					) }</button>`
 				: '' ) +
 			( canNext
 				? `<button type="button" class="button button-primary" id="corex-setup-next">${ escape(
 						t( 'Next' )
-				  ) }</button>`
+					) }</button>`
 				: '' ) +
 			`</footer></section>`;
 		wire();

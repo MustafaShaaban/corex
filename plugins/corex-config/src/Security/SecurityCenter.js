@@ -110,7 +110,7 @@ function LaunchChecklist( { state } ) {
 								/* translators: %d: number of blocking readiness checks. */
 								__( '%d blocker(s)', 'corex' ),
 								blockingCount
-						  )
+							)
 						: __( 'Ready', 'corex' ) }
 				</span>
 			</header>

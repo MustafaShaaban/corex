@@ -36,8 +36,8 @@ Each profile records its package shape, build commands, dependencies, secrets, a
 | Profile | Package shape | Build commands | Dependencies | Secrets | Current blocker |
 |---|---|---|---|---|---|
 | `minimal` | Corex source, production vendor, and built assets for WordPress | `composer install --no-dev --optimize-autoloader`; `npm ci`; `npm run build` | PHP 8.3+, MySQL/MariaDB, WordPress 7.0+ | DB credentials, WP salts | None known |
-| `standard` | Tagged Corex framework release with active core plugins and theme | `composer validate --no-check-publish`; `composer test`; `npm run build` | PHP 8.3+, Node 20+, WP-CLI, WordPress 7.0+ | DB, mail, WP salts | None known |
-| `full` | First-party Corex runtime with optional add-ons gated by Corex state | `composer test`; `npm run build`; `npm run test:js` | PHP 8.3+, Node 20+, WP-CLI, add-on files | DB, mail, captcha, WP salts | None known |
+| `standard` | Tagged Corex framework release with active core plugins and theme | `composer validate --no-check-publish`; `composer test`; `npm run build` | PHP 8.3+, Node 22.22+, WP-CLI, WordPress 7.0+ | DB, mail, WP salts | None known |
+| `full` | First-party Corex runtime with optional add-ons gated by Corex state | `composer test`; `npm run build`; `npm run test:js` | PHP 8.3+, Node 22.22+, WP-CLI, add-on files | DB, mail, captcha, WP salts | None known |
 | `woo` | Corex plus WooCommerce and Woo kit when the dependency exists | `composer test`; `npm run build`; `wp plugin is-installed woocommerce` | WooCommerce, PHP 8.3+, WordPress 7.0+ | DB, payment keys, WP salts | None known |
 | `client-site` | Generated client plugin/theme consuming a Corex release | `wp corex make:site Acme --dir=sites/acme`; `wp corex compliance:check` | Corex release package, PHP 8.3+, WordPress 7.0+ | Client DB, mail, WP salts | None known |
 | `shared-host` | Flat WordPress tree with Corex copied into `wp-content` | `npm run build`; `npm run build:dist`; `npm run verify:dist` | PHP selector, MySQL panel, SFTP/FTP | DB, SFTP, WP salts | Verify PHP extensions, permissions, and no-symlink upload shape |

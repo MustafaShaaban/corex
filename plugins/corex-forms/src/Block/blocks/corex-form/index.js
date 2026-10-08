@@ -43,7 +43,7 @@ function Edit( { attributes, setAttributes } ) {
 						label: form.label,
 						value: form.slug,
 					} ) ),
-			  ];
+				];
 	const value =
 		source === 'flow'
 			? String( attributes.flowId || 0 )

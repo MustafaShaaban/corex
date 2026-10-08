@@ -43,7 +43,7 @@
 			? window.wp.i18n.__
 			: function ( text ) {
 					return text;
-			  };
+				};
 
 	function init() {
 		const config = window.corexCaptcha;

@@ -13,9 +13,14 @@
  *
  * Providing any `eslint.config.*` makes wp-scripts stop passing its own `--config`, so the
  * WordPress defaults have to be re-exported here rather than inherited implicitly.
+ *
+ * They are built from `@wordpress/eslint-plugin` and not taken from
+ * `@wordpress/scripts/config/eslint.config.cjs`: since `@wordpress/scripts` 36 that file gives
+ * test files Vitest's rules, and this repository's tests are Jest's (DECISIONS #271).
  */
 
-const wpScriptsConfig = require( '@wordpress/scripts/config/eslint.config.cjs' );
+const wpPlugin = require( '@wordpress/eslint-plugin' );
+const jestPlugin = require( 'eslint-plugin-jest' );
 const {
 	clientOwned,
 	localOnly,
@@ -63,7 +68,32 @@ module.exports = [
 			...localOnly,
 		],
 	},
-	...wpScriptsConfig,
+
+	/*
+	 * ESLint's own file discovery covers `.js`, `.mjs` and `.cjs`. Every other extension has to
+	 * be named before a config below applies to it.
+	 */
+	{ files: [ '**/*.jsx' ] },
+	...wpPlugin.configs.recommended,
+	{
+		languageOptions: {
+			parserOptions: {
+				requireConfigFile: false,
+				babelOptions: {
+					presets: [
+						require.resolve( '@wordpress/babel-preset-default' ),
+					],
+				},
+			},
+		},
+	},
+	{
+		...jestPlugin.configs[ 'flat/recommended' ],
+		files: [
+			'**/@(test|__tests__)/**/*.{js,jsx,mjs,cjs}',
+			'**/*.@(test|spec).{js,jsx,mjs,cjs}',
+		],
+	},
 
 	/*
 	 * `@wordpress/*` imports are build-time externals, not npm dependencies.

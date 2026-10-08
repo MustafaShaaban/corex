@@ -178,7 +178,7 @@ export function draftFromDetail( detail ) {
 				flow: detail.flow,
 				version: current,
 				configuration: current.configuration,
-		  }
+			}
 		: null;
 }
 

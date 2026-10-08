@@ -77,7 +77,7 @@ function editorTitle( editing ) {
 				/* translators: %s: Email asset name. */
 				__( 'Revise %s', 'corex' ),
 				editing.name
-		  )
+			)
 		: __( 'Create a new revision', 'corex' );
 }
 

@@ -7,7 +7,7 @@ export async function dataModelsApi( config, method, url, payload ) {
 			? await window.Corex.api.get( url, { nonce: config.nonce } )
 			: await window.Corex.api[ method ]( url, payload, {
 					nonce: config.nonce,
-			  } );
+				} );
 	if ( ! response?.envelope?.ok ) {
 		throw new Error(
 			response?.envelope?.message || __( 'The request failed.', 'corex' )
@@ -22,7 +22,7 @@ export function downloadArtifact( artifact ) {
 		artifact.encoding === 'base64'
 			? Uint8Array.from( window.atob( artifact.content ), ( value ) =>
 					value.charCodeAt( 0 )
-			  )
+				)
 			: artifact.content;
 	const url = URL.createObjectURL(
 		new Blob( [ content ], { type: artifact.mime } )

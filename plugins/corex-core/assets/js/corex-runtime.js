@@ -32,7 +32,7 @@
 			? wp.i18n.__
 			: function ( text ) {
 					return text;
-			  };
+				};
 
 	function emit( target, name, detail ) {
 		target.dispatchEvent(
@@ -175,7 +175,7 @@
 		const timer = controller
 			? window.setTimeout( function () {
 					controller.abort();
-			  }, timeoutMs )
+				}, timeoutMs )
 			: null;
 
 		const headers = { Accept: 'application/json' };

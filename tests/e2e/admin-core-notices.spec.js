@@ -119,7 +119,7 @@ function measure( page ) {
 		const drawn = region
 			? [ ...region.children ].filter(
 					( child ) => box( child ).height > 0
-			  )
+				)
 			: [];
 		const firstBlock = [ ...content.children ].find(
 			( child ) => box( child ).height > 0
@@ -367,11 +367,11 @@ test.describe( 'with a core update pending', () => {
 								height: at.height,
 								insideEnd: rtl
 									? at.left -
-									  outer.left -
-									  parseFloat( style.borderLeftWidth )
+										outer.left -
+										parseFloat( style.borderLeftWidth )
 									: outer.right -
-									  at.right -
-									  parseFloat( style.borderRightWidth ),
+										at.right -
+										parseFloat( style.borderRightWidth ),
 								offLine:
 									at.top +
 									at.height / 2 -

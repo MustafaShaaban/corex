@@ -128,7 +128,7 @@ export default function NotificationItem( {
 							{ item.rendered?.title ?? '' }
 						</a>
 					) : (
-						item.rendered?.title ?? ''
+						( item.rendered?.title ?? '' )
 					) }
 				</p>
 				<p className="corex-notification__text">

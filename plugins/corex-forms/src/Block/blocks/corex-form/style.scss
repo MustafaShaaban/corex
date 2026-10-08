@@ -54,7 +54,7 @@
 	padding: 0;
 	margin: -1px; /* corex-token-allow: screen-reader-only reset */
 	overflow: hidden;
-	clip: rect(0, 0, 0, 0);
+	clip-path: inset(50%);
 	white-space: nowrap;
 	border: 0;
 }

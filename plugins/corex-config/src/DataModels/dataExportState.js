@@ -118,7 +118,7 @@ export function dataScopes( { counts, selectedCount, filters, withRows } ) {
 				: __(
 						'No filter is on, so this is every record you can see.',
 						'corex'
-				  ),
+					),
 			count: count( SCOPE_FILTERED ),
 			disabled: false,
 		},
@@ -198,7 +198,7 @@ export function dataFormatDetail( format, pdfMost = 0 ) {
 		? __(
 				'Dates and numbers sort and filter. The headings stay in view.',
 				'corex'
-		  )
+			)
 		: __( 'Plain text that any spreadsheet or tool opens.', 'corex' );
 }
 
@@ -323,7 +323,7 @@ export function buildDataExportPayload( chosen ) {
 						filters: { ...( chosen.query?.filters || {} ) },
 						sort: chosen.query?.sort || '',
 						dir: chosen.query?.dir || '',
-				  }
+					}
 				: {},
 		columns: [ ...chosen.columns ],
 		format: chosen.format,

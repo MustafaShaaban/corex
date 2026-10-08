@@ -277,7 +277,7 @@ const staleExceptionViolations = ( exceptionMap, usedExceptionKeys ) =>
 						policyEntry,
 						'Policy exception has no matching current advisory.'
 					),
-			  ]
+				]
 	);
 
 export function evaluatePolicy(
@@ -325,7 +325,7 @@ const auditPayloadMatches = ( ecosystem, payload ) =>
 	ecosystem === 'composer'
 		? Object.prototype.hasOwnProperty.call( payload, 'advisories' )
 		: payload?.vulnerabilities &&
-		  typeof payload.vulnerabilities === 'object';
+			typeof payload.vulnerabilities === 'object';
 
 const normalizedAuditFindings = ( ecosystem, payload ) =>
 	ecosystem === 'composer'

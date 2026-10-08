@@ -1,8 +1,8 @@
 /**
  * Jest config for Corex JS unit tests (block editor scripts + the shared form validator).
  *
- * Extends @wordpress/scripts' default unit config (JSX transform, jsdom, the wp babel
- * preset) and excludes the local WordPress installs under `wp/` and `wp-ms/` (the multisite
+ * Uses the WordPress Jest preset (jsdom, CSS mocks, console assertions) with the WordPress
+ * Babel preset as its transform, and excludes the local WordPress installs under `wp/` and `wp-ms/` (the multisite
  * one) so the run covers only Corex source — not the WooCommerce/core tests that ship inside
  * a WP checkout.
  *
@@ -25,7 +25,16 @@
  * twice — all nine of this repository's, on a suite that passed. The same anchoring applies,
  * for the same reason.
  */
-const defaultConfig = require( '@wordpress/scripts/config/jest-unit.config.js' );
+/*
+ * Until `@wordpress/scripts` 36 the preset and this transform came from its
+ * `config/jest-unit.config.js` and `config/babel-transform`. It no longer ships Jest, the preset
+ * or the transform: a project that keeps Jest installs them itself and names them here
+ * (DECISIONS #271).
+ */
+const babelTransform = [
+	'babel-jest',
+	{ presets: [ '@wordpress/babel-preset-default' ] },
+];
 const {
 	clientOwned,
 	localOnly,
@@ -71,12 +80,10 @@ const notCorexSource = [
 ];
 
 module.exports = {
-	...defaultConfig,
+	preset: '@wordpress/jest-preset-default',
 	transform: {
-		...defaultConfig.transform,
-		'\\.mjs$': require.resolve(
-			'@wordpress/scripts/config/babel-transform'
-		),
+		'\\.[jt]sx?$': babelTransform,
+		'\\.mjs$': babelTransform,
 	},
 	testPathIgnorePatterns: [
 		'/node_modules/',

@@ -461,7 +461,7 @@ function InboxTable( { state, dispatch, open } ) {
 											? []
 											: state.items.map(
 													( item ) => item.id
-											  ),
+												),
 									} )
 								}
 								aria-label={ __( 'Select page', 'corex' ) }

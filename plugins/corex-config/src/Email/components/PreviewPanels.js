@@ -93,7 +93,7 @@ export function TestSendPanel( { delivery, draft, busy, lastResult, onSend } ) {
 					: __(
 							'This test follows the configured provider and live-delivery gate.',
 							'corex'
-					  ) }
+						) }
 			</p>
 			<form
 				key={ `${ draft.subject }-${ draft.html_body }` }

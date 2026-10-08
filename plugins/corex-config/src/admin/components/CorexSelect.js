@@ -78,7 +78,7 @@ export default function CorexSelect( {
 
 	const selectedLabel = isEmpty
 		? emptyLabel
-		: options[ selectedIndex ]?.label ?? '';
+		: ( options[ selectedIndex ]?.label ?? '' );
 
 	const close = useCallback( () => {
 		setOpen( false );

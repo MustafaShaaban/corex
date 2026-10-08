@@ -5,7 +5,7 @@
  * The defect these exist to hold down: **read is not resolved**. v0.35.0 filtered "Requires
  * attention" on the actor's unread state, so reading a production-readiness blocker took it off the
  * attention list while the blocker was still true. The server decides the view now
- * ({@see NotificationView}, covered by NotificationViewTest.php); what is asserted here is that the
+ * (`NotificationView`, covered by NotificationViewTest.php); what is asserted here is that the
  * rendered item says the same thing — that looking at something never changes what it says about
  * itself.
  *

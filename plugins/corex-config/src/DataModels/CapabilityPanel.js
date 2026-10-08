@@ -71,7 +71,7 @@ export default function CapabilityPanel( { report } ) {
 						? __(
 								'These are configured far enough to look done, and are not.',
 								'corex'
-						  )
+							)
 						: undefined
 				}
 			>

@@ -198,7 +198,7 @@ export function untrackedReason( record ) {
 		: __(
 				'This form is defined in code. It sends its notification without recording it here, so there is nothing to show.',
 				'corex'
-		  );
+			);
 }
 
 /**
@@ -239,7 +239,7 @@ function assignmentLine( to, record ) {
 				/* translators: %s: the person a submission was assigned to. */
 				__( 'Assigned to %s', 'corex' ),
 				person.label
-		  )
+			)
 		: __( 'Assignment changed', 'corex' );
 }
 
