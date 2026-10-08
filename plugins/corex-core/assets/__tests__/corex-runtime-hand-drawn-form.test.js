@@ -1,7 +1,7 @@
 /**
  * The runtime against a form a site drew itself (spec 104 US3; issue #248).
  *
- * The markup is not written here. It is `tests/fixtures/Forms/hand-drawn-form.html`, which the
+ * The markup is not written here. It is `tests/Fixtures/Forms/hand-drawn-form.html`, which the
  * PHP test of the renderer asserts is exactly what a form's own `markup()` produces from the
  * published parts. So this is the real runtime against the real output of the contract: a class
  * of the site's own on the form, a control written by hand in a wrapper of the site's own, the
@@ -18,7 +18,7 @@ const FORM = path.join(
 	'..',
 	'..',
 	'tests',
-	'fixtures',
+	'Fixtures',
 	'Forms',
 	'hand-drawn-form.html'
 );

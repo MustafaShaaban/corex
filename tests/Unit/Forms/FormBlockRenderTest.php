@@ -287,7 +287,7 @@ function everyFieldForm(): Form
 it('prints the stock form as it always has', function (Form $form, string $recorded) {
     $html = renderRegisteredForm($form, ['formSlug' => $form->slug]);
 
-    expect($html)->toBe(file_get_contents(dirname(__DIR__, 2) . '/fixtures/Forms/' . $recorded));
+    expect($html)->toBe(file_get_contents(dirname(__DIR__, 2) . '/Fixtures/Forms/' . $recorded));
 })->with([
     'the shipped contact form'       => [fn (): Form => new ContactForm(), 'stock-contact-form.html'],
     'a form with every kind of field' => [fn (): Form => everyFieldForm(), 'stock-every-field-form.html'],
@@ -356,7 +356,7 @@ it('shows a form its own markup in place of the stock form', function () {
         ->toContain('<input type="tel" class="lead-card__input" id="corex-lead-phone" name="phone" aria-describedby="corex-lead-phone-error" required aria-required="true" />')
         ->toContain('<button type="submit" class="corex-form__submit lead-card__go">Request a call</button>')
         // The same page the browser tests of the runtime are run against: see handDrawnForm.test.js.
-        ->toBe(file_get_contents(dirname(__DIR__, 2) . '/fixtures/Forms/hand-drawn-form.html'));
+        ->toBe(file_get_contents(dirname(__DIR__, 2) . '/Fixtures/Forms/hand-drawn-form.html'));
 });
 
 it('shows a visitor nothing when a form\'s markup is missing a part, and says which to the developer', function () {
