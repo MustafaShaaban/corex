@@ -9135,6 +9135,75 @@ that reached it would need the multisite suite.
 - The routes exist with no screen that uses them. They are closed to everybody without the
   ability, and nothing they do reaches outside `wp-content/corex-releases/`.
 
+## #295 — The attachment store loads the WordPress file it calls, and a test reads the source for the next one
+
+**Date:** 2026-10-09. **Spec:** none; a defect reported from a client's site on v0.43.5 and
+reproduced before it was changed. **Branch:** `fix/upload-store-loads-file-api`.
+
+**The defect.** `AttachmentStore::store()` calls `wp_handle_upload()`. WordPress defines it in
+`wp-admin/includes/file.php`, which it reads for an admin page and for nothing else. The store
+runs on a REST request from the front end, where the function does not exist: PHP threw, the
+pipeline caught it, and every submission that carried a file answered 500, "Request could not
+be processed." The same method already loaded `wp-admin/includes/image.php` for the line after.
+
+**Why nothing here saw it.** On the development site and in CI the function was there. The
+Newsletter, Bookings and Careers add-ons each call `Migrator::create()` on `init`, on every
+request, and that loads `wp-admin/includes/upgrade.php`, which loads the rest of the admin's
+files with it. A site with none of the three has no such luck. The unit tests give the store a
+stand-in, and a test that calls the real store cannot pass WordPress's check that the file was
+uploaded over HTTP, so no test ran the line.
+
+**The fix is one line: the store loads the file before it calls the function.**
+
+**The test reads the source.** `AdminOnlyFunctionsTest` lists 26 functions WordPress defines
+under `wp-admin/includes/` and the file each lives in, finds every call to one in CoreX's own
+PHP (from the tokens, so a comment or a string that names one is not a call), and fails for a
+file that calls one and loads neither its file nor one that loads everything
+(`upgrade.php`, `admin.php`). It named the attachment store and nothing else; the four other
+files that call one load what they call. It is a list, so it knows only the functions on it. A call to
+one that is not on it will pass, and the list is where to add it.
+
+A test that ran a real upload would have been better and cannot be written in this suite:
+`wp_handle_upload()` accepts only a file PHP received over HTTP. The browser suite could carry
+one; no shipped form has a file field for it to use. Not built here.
+
+**Checked by hand, over HTTP, on the development site.** With a header of my own a temporary
+must-use plugin left every plugin out but `corex-core`, `corex-forms` and `corex-config`,
+registered a form with two file fields, and reported whether `wp_handle_upload()` existed
+before the route ran. A real PDF and a real PNG were posted as multipart, signed out:
+
+| Attachment store | The function before the route | Answer |
+|---|---|---|
+| `main`'s | missing | 500, and the log line the client reported, word for word |
+| This branch's | missing | 200, both files stored |
+
+Both attachments were private, marked as CoreX's, in the protected directory, with their
+metadata (the PNG's width and height, each one's size). `wp-admin/includes/image.php` was
+enough for both: nothing asked for `media.php`. The two attachments were then removed through
+the store and the temporary plugin deleted.
+
+**Found on the way, not fixed here.** Three add-ons run `dbDelta()` on every request to make
+sure a table exists. That is a cost on every page of a site that has one of them, and it is
+what hid this defect. It is its own change: when it is made, nothing will be loading the
+admin's files by accident any more, which is the state this fix is for.
+
+**Reported with it, not built here.** A rule on an optional field is never asked about a value
+that is absent, so a rule of a site's own that means "at least one of these three" cannot
+refuse a hand-made request that leaves all three out. A browser sends them empty and is
+refused. It is recorded as an issue.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `AdminOnlyFunctionsTest` (new) before the fix | 1 failed, naming the attachment store; its 8 cases of a call against a mention passed |
+| The same after | 9 passed |
+| `tests/Unit` | 2487 passed |
+| A real multipart post, signed out, PDF and PNG, as above | 500 on `main`'s store, 200 on this one |
+
+**Not run.** The whole integration and browser suites; CI runs both. No upload was made on a
+multisite install or through the Careers add-on's own route, which uses the same store.
+
 ## #296 — The Releases screen states what it knows, a refused package is removed, and the client hashes where the browser will not
 
 **Date:** 2026-10-09. **Spec:** 107, slice 3, the screen (T031, T036 to T039). **Branch:** `feat/107-releases-screen`.

@@ -193,6 +193,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A file sent through a form is stored, on every site.** The attachment store called
+  WordPress's `wp_handle_upload()`, which WordPress loads for an admin page and for nothing
+  else. On a site where nothing else had loaded the admin's files, every submission that
+  carried a file answered 500, "Request could not be processed." It worked where the
+  Newsletter, Bookings or Careers add-on was active, because each creates its table on every
+  request and loads the admin on the way. The store loads what it calls (DECISIONS #295).
 - **A checkbox group on a form defined in code keeps the boxes that were ticked.** The route
   cleaned the answer as one line of text, which empties a list, so the field was stored empty
   whatever the visitor ticked. A flow's form kept them; a form class did not.
@@ -308,6 +314,9 @@ All notable changes to Corex are documented here. The format follows
   `wp-content/corex-releases/incoming/` that is read and refused (not a package, another
   client's, a PHP or WordPress the host does not have) is deleted, whether it was uploaded or
   put there by hand. The refusal says so. Keep your own copy of a package.
+- **A site that loads `wp-admin/includes/file.php` itself, to make a form's file upload work,
+  can stop.** The framework loads it where it is needed. Leaving the workaround in place does
+  no harm.
 - **A new ability, `corex_manage_releases`.** Whoever manages the CoreX admin holds it. A role
   given only "Manage operations and security" does not: installing a release is not part of
   that. On a network it also needs a super administrator, on the main site.

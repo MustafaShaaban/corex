@@ -93,6 +93,12 @@ it refused every answer. All four are fixed. A fifth was a comment, not a defect
 field's `mime:` narrows the six file types a form takes and cannot add one, and the guide says so
 now. A site that needs a type outside the list has no way to ask for it; nobody has.
 
+Unreleased, reported from that client's site on 2026-10-09 (DECISIONS #295): every file sent
+through a form answered 500 there. The attachment store called `wp_handle_upload()` without
+loading the file that defines it. It is fixed, and a test reads the source for any other call to
+a function WordPress loads only in its admin; there was no other. Found on the way and not
+fixed: the Newsletter, Bookings and Careers add-ons run `dbDelta()` on every request.
+
 Specified on 2026-10-08, neither planned nor built:
 
 - **Spec 105, trash, restore and permanently delete a submission.** Slices 1 to 3 of six are
