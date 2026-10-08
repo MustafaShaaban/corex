@@ -21,7 +21,8 @@ use InvalidArgumentException;
  * challenged as the stock one is, and keeps doing so when CoreX changes.
  *
  * A form cannot work without {@see self::attributes()} on its `<form>`, {@see self::hidden()}
- * inside it, and {@see self::status()} inside it. Every field needs a wrapper carrying
+ * inside it, and {@see self::status()} inside it; nor, when it shows a challenge, without
+ * {@see self::challenge()}. Every field needs a wrapper carrying
  * {@see self::fieldAttributes()} that holds its control and its {@see self::error()}.
  *
  * Every method returns markup or attributes that are already escaped.
@@ -40,25 +41,29 @@ final readonly class FormParts
         private string $hidden,
         private string $submitLabel,
         private FieldRenderer $fields,
+        private string $challenge = '',
     ) {
     }
 
     /**
-     * Which of the parts a form cannot work without are absent from a form's own markup, named
-     * as the methods that supply them.
+     * Which of the parts this form cannot work without are absent from its own markup, named as
+     * the methods that supply them.
      *
      * @return list<string>
      */
-    public static function missingFrom(string $markup, bool $protected): array
+    public function missingFrom(string $markup): array
     {
         $required = [
             'attributes()' => 'data-corex-endpoint="',
             'hidden()'     => 'class="corex-form__hp"',
             'status()'     => 'corex-form__status',
         ];
-        if ($protected) {
+        if (str_contains($this->hidden, 'corex-form__captcha-token')) {
             // The token field is the last thing hidden() prints, so its presence shows the whole part is there.
             $required['hidden()'] = 'class="corex-form__captcha-token"';
+        }
+        if ($this->challenge !== '') {
+            $required['challenge()'] = 'class="corex-form__challenge"';
         }
 
         return array_keys(array_filter(
@@ -93,6 +98,16 @@ final readonly class FormParts
     public function hidden(): string
     {
         return $this->hidden;
+    }
+
+    /**
+     * Where the provider's challenge is shown, for a protected form on a site whose provider
+     * shows one (Turnstile, hCaptcha). Empty otherwise, so it is always safe to print. Put it
+     * before the submit button.
+     */
+    public function challenge(): string
+    {
+        return $this->challenge;
     }
 
     /**

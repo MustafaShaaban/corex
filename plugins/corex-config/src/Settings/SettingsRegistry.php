@@ -127,7 +127,7 @@ final class SettingsRegistry implements FieldSections
                             'turnstile' => 'Cloudflare Turnstile',
                             'hcaptcha'  => 'hCaptcha',
                         ],
-                        'help' => 'Choose a provider, Honeypot (no keys), or None to disable. Only reCAPTCHA places a challenge on CoreX forms today: Turnstile and hCaptcha keys can be saved and tested, and no widget for either is placed yet.',
+                        'help' => 'Choose a provider, Honeypot (no keys), or None to disable. reCAPTCHA scores a visitor without showing anything; Turnstile and hCaptcha show their widget above a protected form’s button.',
                     ],
                     'captcha.site_key' => [
                         'label'         => 'Site key',

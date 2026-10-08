@@ -145,7 +145,8 @@ final readonly class FlowBlockRenderer implements BlockRenderer
         );
         $this->protectedForms->declare($flow->slug, $action);
 
-        return ChallengeTokenField::render($action);
+        return ChallengeTokenField::render($action)
+            . ChallengeTokenField::widgetPlace($this->challenge->widgetProvider(), $this->challenge->siteKey());
     }
 
     private function successMessage(Flow $flow, FlowVersion $version): string

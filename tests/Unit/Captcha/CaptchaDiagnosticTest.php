@@ -52,20 +52,19 @@ it('reports ok when the provider accepted the keys outright', function () {
 });
 
 /**
- * "The captcha keys were accepted" was the answer for Turnstile and hCaptcha too. It is true of
- * the keys and false of the site: nothing places either widget, so nobody is challenged.
+ * For a while accepted Turnstile or hCaptcha keys answered `no_widget`: nothing placed either
+ * widget, so good keys protected nobody. Both are placed now (spec 104).
  */
-it('does not call a driver ready when its keys are good and nothing places its widget', function (string $driver) {
+it('calls a provider ready when its keys are accepted, whichever provider it is', function (string $driver) {
     $outright  = CaptchaDiagnostic::fromVerifyResponse($driver, true, true, ['success' => true]);
     $probeOnly = CaptchaDiagnostic::fromVerifyResponse($driver, true, true, ['success' => false, 'error-codes' => ['invalid-input-response']]);
 
-    expect($outright->kind)->toBe(CaptchaDiagnostic::NO_WIDGET)
-        ->and($probeOnly->kind)->toBe(CaptchaDiagnostic::NO_WIDGET)
-        ->and(CaptchaDiagnostic::classify($driver, true, true, true)->kind)->toBe(CaptchaDiagnostic::NO_WIDGET)
-        ->and($outright->message)->toContain('challenges nobody');
-})->with(['turnstile', 'hcaptcha']);
+    expect($outright->kind)->toBe(CaptchaDiagnostic::OK)
+        ->and($probeOnly->kind)->toBe(CaptchaDiagnostic::OK)
+        ->and(CaptchaDiagnostic::classify($driver, true, true, true)->kind)->toBe(CaptchaDiagnostic::OK);
+})->with(['recaptcha', 'turnstile', 'hcaptcha']);
 
-it('still says what is wrong with such a driver’s keys before saying nothing uses them', function () {
+it('says what is wrong with a provider’s keys', function () {
     expect(CaptchaDiagnostic::fromVerifyResponse('turnstile', true, false, null)->kind)->toBe(CaptchaDiagnostic::MISSING_KEYS)
         ->and(CaptchaDiagnostic::fromVerifyResponse('turnstile', true, true, ['success' => false, 'error-codes' => ['invalid-input-secret']])->kind)
         ->toBe(CaptchaDiagnostic::INVALID_KEYS);

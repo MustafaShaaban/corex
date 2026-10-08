@@ -26,7 +26,7 @@ use Corex\Support\Config\ConfigInterface;
 use Corex\Support\BootLogger;
 use Corex\Tests\Fixtures\Forms\InMemoryFlowStore;
 
-function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED): FlowBlockRenderer
+function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED, array $settings = []): FlowBlockRenderer
 {
     Functions\when('__')->returnArg();
     Functions\when('esc_html__')->returnArg();
@@ -91,15 +91,21 @@ function flowBlockRenderer(string $state = Flow::STATE_PUBLISHED): FlowBlockRend
 
     $resolver = new SchemaResolver(new RuleRegistry());
 
-    $config = new class implements ConfigInterface {
+    // With no settings, no captcha is configured and forms render unprotected.
+    $config = new class($settings) implements ConfigInterface {
+        /** @param array<string,mixed> $settings */
+        public function __construct(private array $settings)
+        {
+        }
+
         public function get(string $key, mixed $default = null): mixed
         {
-            return $default; // no captcha configured — forms render unprotected
+            return $this->settings[$key] ?? $default;
         }
 
         public function has(string $key): bool
         {
-            return false;
+            return array_key_exists($key, $this->settings);
         }
     };
 
@@ -171,3 +177,21 @@ it('keeps the Form block compatible while defaulting it to persisted flow render
         ->toContain('corex-flow--form')
         ->toContain('/corex/v1/flows/1/submit');
 });
+
+// Spec 104, US4 (#264): Turnstile and hCaptcha could be chosen and nothing placed their widget.
+it('gives a protected flow a place for the widget of a provider that shows one', function (string $driver, bool $shown) {
+    $html = flowBlockRenderer(settings: [
+        'captcha.driver'   => $driver,
+        'captcha.secret'   => 'a-secret',
+        'captcha.site_key' => 'a-site-key',
+    ])->render(['flowSlug' => 'newsletter', 'variant' => 'flow'], '', (object) []);
+
+    $place = '<div class="corex-form__challenge" data-corex-challenge="' . $driver . '" data-corex-sitekey="a-site-key"></div>';
+
+    expect($html)->toContain('name="captcha_token"')
+        ->and(str_contains($html, $place . '<button type="submit"'))->toBe($shown);
+})->with([
+    'turnstile' => ['turnstile', true],
+    'hcaptcha'  => ['hcaptcha', true],
+    'recaptcha, which shows nothing' => ['recaptcha', false],
+]);

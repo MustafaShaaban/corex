@@ -79,7 +79,7 @@ final class FormBlockRenderer implements BlockRenderer
         $parts  = $this->partsOf($form, $schema, $token);
         $own    = $form->markup($parts);
 
-        return $own === null ? $this->stockForm($parts, $schema) : $this->ownMarkup($form, $own, $token !== '');
+        return $own === null ? $this->stockForm($parts, $schema) : $this->ownMarkup($form, $parts, $own);
     }
 
     /**
@@ -110,6 +110,9 @@ final class FormBlockRenderer implements BlockRenderer
             ) . $token,
             self::stated($form->submitLabel(), __('Send', 'corex')),
             $this->fieldRenderer,
+            $token === '' || $this->challenge === null
+                ? ''
+                : ChallengeTokenField::widgetPlace($this->challenge->widgetProvider(), $this->challenge->siteKey()),
         );
     }
 
@@ -126,7 +129,8 @@ final class FormBlockRenderer implements BlockRenderer
             $fields .= $parts->field($name);
         }
 
-        return '<form ' . $parts->attributes() . '>' . $fields . $parts->hidden() . $parts->submit() . $parts->status() . '</form>';
+        return '<form ' . $parts->attributes() . '>' . $fields . $parts->hidden() . $parts->challenge()
+            . $parts->submit() . $parts->status() . '</form>';
     }
 
     /**
@@ -135,9 +139,9 @@ final class FormBlockRenderer implements BlockRenderer
      * Otherwise nobody is handed a form that would fail silently: a visitor gets nothing, and
      * somebody who can edit the page is told which part is missing.
      */
-    private function ownMarkup(Form $form, string $markup, bool $protected): string
+    private function ownMarkup(Form $form, FormParts $parts, string $markup): string
     {
-        $missing = FormParts::missingFrom($markup, $protected);
+        $missing = $parts->missingFrom($markup);
 
         if ($missing === []) {
             return $markup;
