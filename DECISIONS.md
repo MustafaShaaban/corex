@@ -8628,3 +8628,84 @@ watched with a request held back; their browser specs pass at full speed. No scr
   test here had rendered a component that uses it. The one that does now stands plain elements
   in for `Button` and `Modal`.
 - The setup wizard's "Apply plan" still says nothing when it fails (issue #313).
+
+## #289 — The Data screen's placeholders, and a record that was being drawn as one line of JSON
+
+**Date:** 2026-10-08. **Spec:** 108, slice 3 (T130 to T137). **Branch:** `feat/108-data-placeholders`.
+
+**The records list.** `viewState()` is `loading` only while there is nothing on screen to keep;
+with rows it is `refreshing`, and the rows stay, dimmed and inert, through a sort, a filter, a
+search or a page turn. The placeholder is the table's own markup with bars in its cells.
+Which columns a source shows is part of the answer, so the placeholder cannot know them; it
+has the selection box and the action every source has, and four bars between.
+
+Measured on the page, at a width where a row is one line:
+
+| | Placeholder | Real |
+|---|---|---|
+| Header row | 41.8px | 41.8px |
+| Body row | 48.0px | 48.0px |
+| A tile, loading and ready | 112.0px | 112.0px |
+
+The body row was 43.5px until the bar in its last cell was given the height of the button it
+stands for: a row is as tall as its button, not its text. At a narrower width a real row wraps
+to as many lines as its values need and no placeholder can know that.
+
+**Nothing asked yet is loading, not empty.** Between the screen opening and the first request
+being sent, and for as long as the list of sources was unread, the list's state was "idle" and
+was read as an empty source: "No records yet." about a question nobody had asked. A source
+list that failed left it there for good. That state is loading while an answer is coming, and
+a source list that cannot be read says so with a retry.
+
+**A slower answer is not kept.** Rows that stay on screen let a second query be made before
+the first has answered. The effect that asks keeps only the answer to the query that is current.
+
+**The search box asks when typing pauses**, 300ms, through `useDebounced`. What is typed is
+the box's own state, so it shows at once and keeps its focus; it is reset with the source, by
+key. Ten letters typed at 40ms apart send one request. They sent ten.
+
+**The record's detail moved to `CorexDialog`.** It was WordPress's `Modal`, which is drawn
+outside `.corex-admin`: a placeholder in it would have been the dark theme's colours on a white
+box, because none of the admin's styles or tokens reach it. The task said to check first. The
+detail opens on the press with a placeholder for its fields and fills in when the record
+arrives; one that cannot be read closes it, and the notice on the page says why.
+
+**And its record was being read wrong.** With the dialog in front of me the ready state showed
+one field, named "Record", holding the whole record as a line of JSON. The route answers
+`{ record }` (`DataManagementController::show()`, which is the one registered, and whose
+integration test holds it to that). The screen read the answer itself as the record, on the
+word of a comment about `DataController::show()`, a controller that is bound in the container
+and not registered. Its unit test passed, because the test's transport answered what the
+comment said. The read is fixed, the test's transport answers what the site was seen to
+answer, and a browser test opens a record against the real route and checks its fields are
+drawn as fields: the comparison between the screen and the route that serves it, which
+nothing made.
+
+**The two tiles read "Fields4".** The label and the number were bare inline elements. The
+stylesheet has had classes for a label over a number all along; they were not on the elements.
+They are now, which is also what lets a placeholder stand in for the number without making the
+tile taller.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `npx wp-scripts test-unit-jest` | 818 passed, 76 suites |
+| `loading-states` and `data-management` on `corex.local` | 25 passed |
+| Held back and measured: the list, a record, the export history | the table above; a record opens before it arrives and never says "no readable fields" first; the history never says "No exports yet." first |
+| A sort with its answer held | rows kept, the surface `refreshing`, the total waiting |
+| Ten letters typed without a pause | one request; the box keeps its focus and its text |
+| `TokenConsumerContractTest`, `AdminAssetScopingTest` | 8 passed |
+
+**Not run.** The migration history was not watched held back; it uses the placeholder and the
+code path the export history does. No screen reader. The record dialog was looked at in both
+themes, left to right only.
+
+**Left open.**
+
+- `Corex\Config\Data\DataController` is bound in the container and registers nothing. It
+  misled a comment and a test; it should be removed or said to be dead. Added to issue #313.
+- "View" on a row is still not marked while its record is fetched: the dialog opening is the
+  answer to the press.
+- New record, Edit record and Bulk edit are still WordPress modals, white on the dark theme,
+  as the record's detail was.

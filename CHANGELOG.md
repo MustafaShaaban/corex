@@ -8,6 +8,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **The Data screen shows what is coming while it loads** (spec 108, slice 3). The records list
+  shows rows that are not there yet, the height of the rows that replace them, where it showed
+  WordPress's spinner. A sort, a filter, a search or a page turn keeps the rows on screen,
+  dimmed and out of reach, with the total above them; the search box asks when typing pauses,
+  not for every letter. A record opens on the press, with a placeholder where its fields will
+  be. The export history and the migration history show a placeholder, where each said "none
+  yet" until its answer said otherwise (DECISIONS #289).
 - **A button that is working shows the CoreX loader and cannot be pressed twice** (spec 108,
   slice 2, first part). A ring in the button's own colour, in place of its label, at the same
   width. On the Notifications screen every action has it: each notification's own, **Mark all
@@ -144,6 +151,16 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A record's detail shows its fields.** "View" on the Data screen drew the whole record as
+  one field named "Record", holding a line of JSON: the route answers `{ record }` and the
+  screen read the answer itself as the record. The detail is also a CoreX dialog now; it was
+  WordPress's own, unstyled, white on the dark theme.
+- **The two totals above the records read "Fields" and "4", not "Fields4".** The label and the
+  number were drawn on one line with nothing between them.
+- **The Data screen says when its list of sources could not be loaded**, with a way to ask
+  again. It said "No records yet." about a request that had failed.
+- **A slower answer no longer replaces a newer one on the Data screen.** Two searches or two
+  page turns in quick succession could leave the first one's rows on screen.
 - **A Data dialog no longer vanishes while its change is being worked out.** New record, Edit
   record, Bulk edit and a record's Delete closed on the press and left nothing on screen until
   the confirmation appeared. Each stays, with its button working, until there is something to

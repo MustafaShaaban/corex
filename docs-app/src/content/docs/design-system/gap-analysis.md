@@ -29,7 +29,7 @@ and **z-index** — were added in 054. All groups are documented under [Foundati
 | Alert, Badge, Breadcrumbs, Copyright | exists-good | `corex/*` blocks |
 | Accordion, Tabs | exists-good | `corex/accordion` (native `<details>`), `corex/tabs` (CSS-only) |
 | Card, Section, Empty state | block-style | `is-style-corex-card` / `-section` / `-empty` on `core/group` |
-| Skeleton / loading | block-style | token-only `.corex-skeleton` on the public site; in the admin `CorexLoadable` and `CorexSkeleton` (Notifications so far), with Spinner from `@wordpress/components` left on Submissions and Data |
+| Skeleton / loading | block-style | token-only `.corex-skeleton` on the public site; in the admin `CorexLoadable` and `CorexSkeleton` (Notifications and Data so far), with Spinner from `@wordpress/components` left on Submissions |
 | Striped table | block-style | `is-style-corex-striped` on `core/table` |
 | Button (secondary / ghost) | block-style | styles on `core/button` (primary is theme.json default) |
 | Button, Link, Search, Dropdown/menu, Pagination, Table, List, Image | document-core | core blocks (`core/button`, `core/search`, `core/navigation`, `core/query-pagination`, `core/table`, …) |
