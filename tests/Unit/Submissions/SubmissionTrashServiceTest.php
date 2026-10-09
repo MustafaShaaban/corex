@@ -288,3 +288,52 @@ it('removes what is tied to a submission that something else is deleting', funct
         // The submission is whoever is deleting it's to delete.
         ->and($bench->inbox->findWorkflow(10))->not->toBeNull();
 });
+
+/**
+ * The retention panel's "Move to trash" (spec 105, US4; FR-021, FR-023).
+ *
+ * It called `wp_trash_post()` on every due submission: nothing in a submission's history, nothing
+ * in the activity stream, whoever the person was and whatever they could see, and on a site that
+ * sets `EMPTY_TRASH_DAYS` to 0 a deletion on the spot. It goes through the service like the inbox.
+ */
+it('moves what retention found due to the trash as the retention run, with one entry for the run', function () {
+    $bench = trashBench();
+
+    $moved = $bench->service->trashForRetention(new SubmissionAccessScope(7, true), [10, 11]);
+
+    expect($moved)->toBe(2)
+        ->and($bench->inbox->records)->toBe([])
+        ->and($bench->trash->findTrashed(10)['trashed_via'])->toBe('retention')
+        ->and($bench->trash->findTrashed(11)['trashed_by'])->toBe(7)
+        ->and(array_column($bench->timeline->events, 'summary'))->toBe([
+            ['actor_id' => 7, 'via' => 'retention'],
+            ['actor_id' => 7, 'via' => 'retention'],
+        ])
+        ->and($bench->activity->events)->toHaveCount(1)
+        ->and($bench->activity->events[0]->kind)->toBe('submission.trashed')
+        ->and($bench->activity->events[0]->actorId)->toBe(7)
+        ->and($bench->activity->events[0]->context)->toBe(['count' => 2, 'submission_ids' => [10, 11], 'via' => 'retention']);
+});
+
+/**
+ * Not refused as a whole, the way a selection in the inbox is: the person chose "everything that
+ * is due", not these rows, and what is due and theirs is still theirs to move.
+ */
+it('leaves a due submission the person may not see where it is, and one that is gone', function () {
+    $bench = trashBench();
+
+    $moved = $bench->service->trashForRetention(new SubmissionAccessScope(7, false, ['sales']), [10, 11, 99]);
+
+    expect($moved)->toBe(1)
+        ->and($bench->trash->findTrashed(10))->not->toBeNull()
+        ->and($bench->inbox->findWorkflow(11))->not->toBeNull()
+        ->and($bench->activity->events[0]->context)->toBe(['count' => 1, 'submission_ids' => [10], 'via' => 'retention']);
+});
+
+it('records nothing for a retention run that moved nothing', function () {
+    $bench = trashBench();
+
+    expect($bench->service->trashForRetention(new SubmissionAccessScope(7, false, ['press']), [10, 11]))->toBe(0)
+        ->and($bench->timeline->events)->toBe([])
+        ->and($bench->activity->events)->toBe([]);
+});

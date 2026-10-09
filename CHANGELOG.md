@@ -166,6 +166,11 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **The retention panel's "Move to trash" is the inbox's trash** (spec 105, slice 4). Each
+  submission it moves says so in its history, with who ran it; the activity stream has one
+  entry for the run; and a person whose view of the inbox is limited moves only what they can
+  see. It trashed the WordPress way before: nothing recorded, anybody's submissions, and on a
+  site that sets `EMPTY_TRASH_DAYS` to 0 a deletion on the spot (DECISIONS #297).
 - **A PDF is written with the fonts that are installed.** The PDF library stopped a document
   with "Cannot find TTF TrueType font file" at the first text in a script whose font file was
   missing. CoreX tells it which fonts are there, and it writes the rest in its default font.
@@ -210,6 +215,9 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The Data screen no longer offers to delete a form submission.** The button was drawn
+  because the source said it could delete, and pressing it was refused: the route needs a write
+  adapter the source never had. A submission is removed in the inbox.
 - **An inbox that could not be loaded said it was empty.** A first load that failed drew "No
   matching submissions" under its error. The error stands where the rows would be, once, with
   a way to ask again.
@@ -342,6 +350,17 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **On a site that sets `EMPTY_TRASH_DAYS` to 0, the retention panel's "Move to trash" no
+  longer deletes on the spot.** The submissions go to the inbox's Trash and are deleted for
+  good after **Keep in the trash for days** (30 unless the site set another). A site that
+  relied on the immediate deletion deletes them from the Trash view, or sets a short number of
+  days.
+- **Code of your own that trashed a submission through CoreX's reader has to change.**
+  `WpSubmissionsReader::trash()` and `trashForRetention()` are gone, with their lines in
+  `SubmissionsReader` and `SubmissionRetentionStore`; `SubmissionRetention::prune()` and
+  `applyIds()` take the person's `SubmissionAccessScope` first. Use
+  `SubmissionTrashService::trash()`. The `submissions` data source answers `delete: false`, and
+  its `delete()` returns false.
 - **A new admin screen, CoreX → Releases**, for whoever holds `corex_manage_releases`. It reads
   and receives; it installs nothing yet. On a network only a super administrator sees it, on
   the main site.

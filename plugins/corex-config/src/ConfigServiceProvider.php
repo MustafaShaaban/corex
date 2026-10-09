@@ -641,6 +641,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 new \Corex\Config\Retention\SubmissionRetention(
                     $c->make(\Corex\Config\Retention\RetentionSettings::class),
                     $c->make(SubmissionRetentionStore::class),
+                    $c->make(\Corex\Config\Submissions\SubmissionTrashService::class),
                 ),
         );
         $this->container->singleton(\Corex\Config\Retention\RetentionController::class);

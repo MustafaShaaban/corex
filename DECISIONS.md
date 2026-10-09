@@ -9204,6 +9204,77 @@ What was run:
 **Not run.** The whole integration and browser suites; CI runs both. No upload was made on a
 multisite install or through the Careers add-on's own route, which uses the same store.
 
+## #297 — Retention's "Move to trash" is the inbox's trash, and nothing trashes a submission the WordPress way
+
+**Date:** 2026-10-09. **Spec:** 105, slice 4 (T041 to T049; FR-021 to FR-023). **Branch:**
+`feat/105-one-way-to-remove`.
+
+**What was there.** Two things trashed a submission with `wp_trash_post()`, beside the inbox's
+own trash: the retention panel's "Move to trash", and the Data screen's Form submissions
+source. Neither wrote anything into the submission's history or the activity stream, neither
+asked what the person could see, and both put WordPress's clock on the submission, which
+slice 3 then had to take off again. On a site that sets `EMPTY_TRASH_DAYS` to 0,
+`wp_trash_post()` deletes instead.
+
+**Retention asks the trash service, once for the run.** `SubmissionRetention` still finds what
+is due. It hands the ids and the person to `SubmissionRetentionTrash`, an interface in the
+retention package that `SubmissionTrashService` implements, because the service is final and
+the retention loop is tested without it. One call for the run, not one for each submission: a
+run is what the activity stream records.
+
+**A due submission that is not the person's is left, and the rest are moved.** A selection in
+the inbox is refused as a whole when one row is not the person's, because they chose those
+rows. Here they chose "everything that is due". Refusing the run for one submission they cannot
+see would also tell them it exists.
+
+**The person is the one signed in.** `RetentionController` asks the inbox's access policy for
+their scope, as the inbox's own routes do. `prune()` and `applyIds()` take it first, for every
+action, so there is one signature; only "Move to trash" uses it in this slice.
+
+**The reader cannot trash any more.** `trash()` and `trashForRetention()` are removed from
+`WpSubmissionsReader` and from the two interfaces that named them. They were the last calls to
+`wp_trash_post()` in CoreX. `OneWayToTrashTest` reads the source for another; put back on the
+old reader it fails and names the file.
+
+**The Data source declared a delete nothing could perform.** It answered `delete: true`, so
+the Data screen drew Delete on a submission's detail. The route behind that button
+(`DataManagementController`, through `DataMutationService`) refuses a source that has no write
+adapter, and this source never had one. The code that did perform it, `DataController`'s
+`DELETE` route, calls the source's `delete()`, and that controller is bound in the container
+and not registered (it is already in issue #313 as dead). So the delete was offered, refused
+when pressed, and reachable only from a route that does not exist. The source declares
+`delete: false` and its `delete()` returns false, which the interface defines as "not
+permitted". No script changed: the button is drawn from the declaration.
+
+**On a site that skips the trash.** Nothing calls `wp_trash_post()`, so nothing is deleted on
+the spot any more. That site's "Move to trash" now keeps a submission for the trash's own
+number of days. It is the entry under Client impact, because it is a change somebody may have
+been relying on.
+
+**Left as it was.** Archive and Anonymize from the panel still act on every due submission,
+whoever runs them. FR-023 is about removal; anonymizing is slice 5, and it is the place to
+decide whether the panel's other two actions follow the person's view as well.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| `tests/Unit` | 2503 passed |
+| `OneWayToTrashTest` (new) with the old reader put back | 1 failed, naming `WpSubmissionsReader.php` |
+| `tests/Integration/Retention`, `Submissions`, `Privacy`, `Data`, real WordPress | 104 passed |
+| Of those, new: a run leaves two submissions in CoreX's trash with no WordPress clock, a history entry each and one record; a submission outside the person's view stays | 2 passed |
+
+**Not seen failing first.** The service's and the loop's unit tests were written before the
+code and first run after it. Against `main`'s classes the integration tests fail on the
+changed signatures, which says nothing about behaviour. The scan is the one test seen red for
+the reason it exists.
+
+**Not run.** The whole integration and browser suites; CI runs both. No browser test was
+added: the retention form and its result notice are unchanged, and the Data screen's Delete
+button is drawn from the declaration that changed. The refusal for somebody the access policy
+gives no scope ends in `exit` and has no test, like the refusal beside it. Nothing was run on
+a site with `EMPTY_TRASH_DAYS` of 0: it is a constant.
+
 ## #299 — An add-on declares its table and the migration runner creates it, so no request runs `dbDelta()`
 
 **Date:** 2026-10-09. **Spec:** none; the finding recorded at the end of #295.

@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Corex\Config\Retention;
 
+use Corex\Config\Submissions\SubmissionAccessScope;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -17,6 +19,10 @@ defined('ABSPATH') || exit;
  * It never acts without a caller-supplied confirmation (enforced at {@see RetentionController}) and never bypasses the trash
  * (trashed records are recoverable). The loop is separated from the WordPress query so it stays
  * unit-testable.
+ *
+ * "Move to trash" is the inbox's trash, asked for through {@see SubmissionRetentionTrash}: the same
+ * access rules, the same history on each submission and one entry in the activity stream for the
+ * run (spec 105, US4). Nothing here trashes a submission itself.
  *
  * A submission is due while it is older than the window and still holds its personal data. Trashing
  * takes it out of the stored set and anonymizing finishes it; archiving does neither, so an archived
@@ -31,6 +37,7 @@ final class SubmissionRetention
     public function __construct(
         private readonly RetentionSettings $settings,
         private readonly SubmissionRetentionStore $reader,
+        private readonly SubmissionRetentionTrash $trash,
     ) {
     }
 
@@ -69,35 +76,40 @@ final class SubmissionRetention
      * Returns the number handled. The caller MUST have verified capability + nonce + confirmation
      * before calling this.
      */
-    public function prune(string $action = 'trash', bool $includeTest = false): int
+    public function prune(SubmissionAccessScope $scope, string $action = 'trash', bool $includeTest = false): int
     {
         $skip = $this->settings->statesToSkip($action);
 
-        return $this->applyIds($action, $this->oldIds($this->days(), $includeTest, $skip));
+        return $this->applyIds($scope, $action, $this->oldIds($this->days(), $includeTest, $skip));
     }
 
     /**
-     * Apply the action to the given submission ids via the shared reader; returns how many it was
-     * applied to. Separated from the query so the loop is unit-testable with a stub reader.
+     * Apply the action to the given submission ids; returns how many it was applied to. Separated
+     * from the query so the loop is unit-testable with a stub reader.
+     *
+     * The trash is asked once for the whole run, as the person running it: it records a run, and
+     * a call for each submission would record one each.
      *
      * @param list<int> $ids
      */
-    public function applyIds(string $action, array $ids): int
+    public function applyIds(SubmissionAccessScope $scope, string $action, array $ids): int
     {
         $this->settings->assertAction($action);
-        $removed = 0;
+        if ($action === 'trash') {
+            return $ids === [] ? 0 : $this->trash->trashForRetention($scope, array_map('intval', $ids));
+        }
+
+        $applied = 0;
         foreach ($ids as $id) {
-            $applied = match ($action) {
-                'archive' => $this->reader->archiveForRetention((int) $id),
-                'anonymize' => $this->reader->anonymizeForRetention((int) $id),
-                default => $this->reader->trashForRetention((int) $id),
-            };
-            if ($applied) {
-                $removed++;
+            $done = $action === 'archive'
+                ? $this->reader->archiveForRetention((int) $id)
+                : $this->reader->anonymizeForRetention((int) $id);
+            if ($done) {
+                $applied++;
             }
         }
 
-        return $removed;
+        return $applied;
     }
 
     /**

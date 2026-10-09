@@ -23,6 +23,9 @@ use Corex\Config\Retention\RetentionController;
 use Corex\Config\Retention\RetentionSettings;
 use Corex\Config\Retention\SubmissionRetention;
 use Corex\Config\Retention\SubmissionRetentionStore;
+use Corex\Config\Retention\SubmissionRetentionTrash;
+use Corex\Config\Submissions\SubmissionAccessPolicy;
+use Corex\Config\Submissions\SubmissionAccessScope;
 use Corex\Config\Submissions\SubmissionTimelineStore;
 use Corex\Config\Submissions\SubmissionTrashRetention;
 use Corex\Config\Submissions\SubmissionTrashService;
@@ -50,7 +53,11 @@ function pruneRedirectQuery(array $post): array
     $trash      = new InMemorySubmissionTrash(new stdClass());
     $controller = new RetentionController(
         new AdminGuard(),
-        new SubmissionRetention($settings, Mockery::mock(SubmissionRetentionStore::class)),
+        new SubmissionRetention(
+            $settings,
+            Mockery::mock(SubmissionRetentionStore::class),
+            Mockery::mock(SubmissionRetentionTrash::class),
+        ),
         $settings,
         // The trash's own window is saved by the same form. A prune does not touch it.
         new SubmissionTrashRetention(
@@ -64,6 +71,14 @@ function pruneRedirectQuery(array $post): array
             ),
             $settings,
         ),
+        // Whoever is signed in may see every submission. What a narrower person may move is the
+        // trash service's to decide, and is tested there.
+        new class() implements SubmissionAccessPolicy {
+            public function scopeFor(int $actorId): ?SubmissionAccessScope
+            {
+                return new SubmissionAccessScope($actorId, true);
+            }
+        },
     );
 
     try {
@@ -79,6 +94,7 @@ function pruneRedirectQuery(array $post): array
 
 beforeEach(function () {
     Functions\when('current_user_can')->justReturn(true);
+    Functions\when('get_current_user_id')->justReturn(7);
     Functions\when('wp_verify_nonce')->justReturn(1);
     Functions\when('wp_unslash')->returnArg();
     Functions\when('sanitize_text_field')->returnArg();

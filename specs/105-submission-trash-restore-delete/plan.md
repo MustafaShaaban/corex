@@ -248,3 +248,34 @@ submission; that stays the service's rule for deletions the inbox makes.
   It also adopts submissions trashed by `wp_trash_post()` before this feature: they have
   `_wp_trash_meta_time` and no `corex_trashed_at`.
 - Slice 4 routes the retention panel and the Data source through the service.
+
+## Slice 4: one way to remove (planned 2026-10-09, with slice 3 on main)
+
+### D20. Retention asks the trash service, once for the run
+
+`SubmissionRetention` finds what is due, as before. For "Move to trash" it hands the ids and the
+person to `SubmissionRetentionTrash`, an interface in the retention package that
+`SubmissionTrashService` implements. The service moves each one the person may act on, writes each
+one's history, and records the run once. A due submission that is not theirs is left and the rest
+are moved: the person chose "everything that is due", not rows, so there is no selection to refuse
+as a whole and no version to compare.
+
+`RetentionController` asks `SubmissionAccessPolicy` for the person's scope. Nobody without one
+reaches the retention service.
+
+### D21. The reader cannot trash
+
+`WpSubmissionsReader::trash()` and `trashForRetention()` are removed, with their lines in
+`SubmissionsReader` and `SubmissionRetentionStore`. They were the last calls to
+`wp_trash_post()`. A test reads the source for another.
+
+### D22. The Data source declares no delete
+
+`SubmissionsSource` declared `delete: true`. The Data screen drew a Delete button on a
+submission from that, and the route behind the button refuses a source that has no write adapter,
+which this one never had. The only code that performed the delete was `DataController`, which is
+bound in the container and not registered. The source declares `delete: false`, and its
+`delete()` answers the interface's "not permitted".
+
+**Not in slice 4**: Archive and Anonymize from the panel still act on every due submission,
+whoever runs them. Anonymize is slice 5.

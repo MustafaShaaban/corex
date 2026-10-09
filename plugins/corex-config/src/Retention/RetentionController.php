@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Corex\Config\Retention;
 
 use Corex\Admin\StandalonePage;
+use Corex\Config\Submissions\SubmissionAccessPolicy;
 use Corex\Config\Submissions\SubmissionTrashRetention;
 use Corex\Security\Admin\AdminGuard;
 
@@ -33,6 +34,7 @@ final class RetentionController
         private readonly SubmissionRetention $retention,
         private readonly RetentionSettings $settings,
         private readonly SubmissionTrashRetention $trash,
+        private readonly SubmissionAccessPolicy $access,
     ) {
     }
 
@@ -76,25 +78,36 @@ final class RetentionController
             return;
         }
 
+        // What this person may see in the inbox is what they may move out of it (spec 105, FR-023).
+        $scope = $this->access->scopeFor(get_current_user_id());
+        if ($scope === null) {
+            $this->refuse();
+        }
+
         $includeTest = isset($_POST['corex_include_test']) && $_POST['corex_include_test'] === '1';
-        $removed = $this->retention->prune($action, $includeTest);
+        $removed = $this->retention->prune($scope, $action, $includeTest);
         $this->redirect('retention-pruned', ['corex_count' => $removed, 'corex_action' => $action]);
     }
 
     private function assertAllowed(string $action): void
     {
         if (! $this->guard->verifiedPost(self::NONCE, $action)) {
-            status_header(403);
-            nocache_headers();
-            header('Content-Type: text/html; charset=' . get_bloginfo('charset'));
-            echo StandalonePage::fromCore()->notice( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- StandalonePage returns a fully-escaped self-contained document.
-                __('Access denied', 'corex'),
-                __('You are not allowed to change retention, or your link expired.', 'corex'),
-                admin_url('admin.php?page=corex-submissions'),
-                __('Back to Submissions', 'corex'),
-            );
-            exit;
+            $this->refuse();
         }
+    }
+
+    private function refuse(): never
+    {
+        status_header(403);
+        nocache_headers();
+        header('Content-Type: text/html; charset=' . get_bloginfo('charset'));
+        echo StandalonePage::fromCore()->notice( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- StandalonePage returns a fully-escaped self-contained document.
+            __('Access denied', 'corex'),
+            __('You are not allowed to change retention, or your link expired.', 'corex'),
+            admin_url('admin.php?page=corex-submissions'),
+            __('Back to Submissions', 'corex'),
+        );
+        exit;
     }
 
     /**

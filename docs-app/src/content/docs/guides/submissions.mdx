@@ -184,8 +184,10 @@ one run. After confirming, choose one operation:
 
 - **Archive** keeps the response and marks its workflow and retention state.
 - **Move to trash** moves the response to the inbox's **Trash** view, where it can be restored and from which it is
-  deleted for good after the number of days set there. On a site whose WordPress is configured to skip the trash
-  (`EMPTY_TRASH_DAYS` of 0) this action still deletes on the spot; that is the next part of this feature to change.
+  deleted for good after the number of days set there. It is the same trash as the inbox's own: each response's
+  history says the retention run moved it and who ran it, the activity stream has one entry for the run, and a
+  person whose view of the inbox is limited moves only the responses they can see. It does not depend on how
+  WordPress's own trash is configured (`EMPTY_TRASH_DAYS`).
 - **Anonymize personal data** removes submitted values, submitter projections, hidden/UTM/consent data, and notes while
   preserving non-personal workflow evidence.
 
