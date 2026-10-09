@@ -50,6 +50,26 @@ it('is what a package unpacked by hand left in the site, when nothing was record
         ->and($installed->client())->toBe('acme');
 });
 
+it('says which folders the running release owns, and only folders a release can own', function () {
+    // An installation moves these out when the next release no longer holds them. What is
+    // recorded is a stored value, so a folder no release owns is not passed on from it.
+    ($this->recorded)([
+        'corex_version' => '0.44.0',
+        'release_paths' => ['wp-content/plugins/corex-core', 'wp-content/uploads', 'wp-content/themes/corex', '../elsewhere', 7],
+    ]);
+
+    expect((new InstalledRelease($this->site))->ownedFolders())->toBe(['wp-content/plugins/corex-core', 'wp-content/themes/corex']);
+});
+
+it('owns nothing it can name, where the release did not say or is not known', function (mixed $recorded) {
+    ($this->recorded)($recorded);
+
+    expect((new InstalledRelease($this->site))->ownedFolders())->toBe([]);
+})->with([
+    'a release older than the list'  => [['corex_version' => '0.43.5']],
+    'a site that knows no release'   => [false],
+]);
+
 it('knows it is the framework alone, which is not the same as not knowing', function () {
     ($this->recorded)(['corex_version' => '0.44.0', 'client' => null]);
 

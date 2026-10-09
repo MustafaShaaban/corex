@@ -11,7 +11,10 @@ namespace Corex\Config\Releases;
 defined('ABSPATH') || exit;
 
 use Corex\Security\Upload\ProtectedUploads;
+use FilesystemIterator;
 use InvalidArgumentException;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 /**
  * The installer's own place on a site: `wp-content/corex-releases/` (spec 107, plan D5).
@@ -82,6 +85,39 @@ final class ReleaseStore
     }
 
     /**
+     * One of the three folders, made if it was not there.
+     *
+     * @throws InvalidArgumentException For a folder this place does not have.
+     * @throws ReleaseRefused           When the host will not let the place be made.
+     */
+    public function folder(string $area): string
+    {
+        if (! in_array($area, self::AREAS, true)) {
+            throw new InvalidArgumentException('The release store has no folder named ' . $area);
+        }
+
+        return $this->root() . '/' . $area;
+    }
+
+    /**
+     * Remove everything one of the three folders holds, and leave the folder.
+     *
+     * @throws InvalidArgumentException For a folder this place does not have.
+     */
+    public function empty(string $area): void
+    {
+        $entries = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($this->folder($area), FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($entries as $entry) {
+            // The paths are this class's own, under the installer's folder.
+            $entry->isDir() ? rmdir($entry->getPathname()) : unlink($entry->getPathname()); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
+        }
+    }
+
+    /**
      * Where a file of the given name is kept in one of the three folders.
      *
      * A name, never a path: what a package is called comes from an upload, and a name that
@@ -91,15 +127,11 @@ final class ReleaseStore
      */
     public function fileIn(string $area, string $name): string
     {
-        if (! in_array($area, self::AREAS, true)) {
-            throw new InvalidArgumentException('The release store has no folder named ' . $area);
-        }
-
         if ($name === '' || $name === '.' || $name === '..' || preg_match('#[/\\\\\x00]#', $name) === 1) {
             throw new InvalidArgumentException('A file in the release store is named, not placed: ' . $name);
         }
 
-        return $this->root() . '/' . $area . '/' . $name;
+        return $this->folder($area) . '/' . $name;
     }
 
     /**

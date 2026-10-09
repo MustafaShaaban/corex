@@ -9534,3 +9534,70 @@ the shared bars the other five slices measured in both. No screen reader.
 - Opening an unread submission marks it read without going through the pane's one-at-a-time
   rule: a control pressed in that moment can still be refused as stale. It was so before.
 - "Open log" says nothing when the log cannot be read. It was so before.
+
+## #300 — A release is unpacked beside the site and swapped in by renames that are written down first
+
+**Date:** 2026-10-09. **Spec:** 107, slice 4, the first part (T040 to T043). **Branch:** `feat/107-staging`.
+
+Slice 4 is seventeen tasks and the first to change a site's files. It is built in parts, each
+tested before the next: this is the two that move bytes. Nothing calls them yet.
+
+**Only what a release owns is unpacked, and not onto the site.** `ReleaseStaging` writes the
+package's release paths into `staging/` in the installer's own folder. A package also holds
+WordPress itself, which an installation does not replace and this does not unpack. A request
+unpacks for eight seconds and answers the entry the next one starts from: a host commonly cuts
+a request off at thirty, and a release is thousands of files. At least one entry is dealt with
+however little time there is, so every request gets somewhere.
+
+**Each folder is held to the package's own description before anything moves.** Files, bytes
+and hash, by the rule the builder writes them with (`ReleaseContentHash`). A folder that
+differs in any of the three is a refusal, and the whole of `staging/` is emptied: a package
+that is wrong in one folder is not installed in the others.
+
+**The unpacking checks the name it writes.** The inspection already refuses a package holding
+`..` in a path. Unpacking asks the same rule again (`ReleaseEntryName`, one place for both),
+because it is the one that writes and does not rely on having been asked second.
+
+**The swap is a list of renames, in a journal, before it is a rename.** For each folder of the
+release: the running one out to `previous/`, the staged one in. A folder the running release
+recorded as its own and this one does not hold: out. A folder the package does not name is
+never touched. `previous/journal.json` holds every rename, marked `started` before it is made
+and `done` after, each write made beside the file and moved over it.
+
+**Cut off, it settles itself.** A request that dies between two renames leaves the journal
+saying which were made. One that dies during a rename leaves it `started`, and the folders
+answer: it was made if the folder is gone from where it was and is where it was going.
+`settle()` then makes the renames that are left. Six moments were tried, from before the first
+rename to after the last one unmarked; each ends with the site whole on the new release.
+
+**A folder that will not move puts the others back.** The renames that were made are reversed,
+last first, and the refusal names the folder; the release is still unpacked, so the same
+installation can be tried again. If one of them will not go back either, that is a third
+outcome and it is said as one: the site is part one release and part the other, these folders
+are not where they belong. The first draft said "the site is as it was" in that case, which
+was the one case where it was not.
+
+**What the running release owned is a stored value.** An installation will record its
+`release_paths`, and the next one reads them to know what to move out. `InstalledRelease`
+passes on only folders a release can own, and the swap asks the same rule again before it
+moves one, so a wrong record is not a way to have `wp-content/uploads` moved out of a site.
+
+**One previous release is kept.** A swap empties `previous/` before it begins.
+
+**Verification.**
+
+| What | Result |
+|---|---|
+| Pest, `tests/Unit/Releases` | 117 passed: staging 9, swap 14, the installed release's folders 3, and what was there |
+| Pest, unit suite | 2543 passed |
+| Pest, integration, `Releases` | 12 passed |
+| Broken on purpose | Without asking the folders what was started, three of the cut-off cases fail. Without the owned-folder rule in the swap, the test that feeds it `wp-content/uploads` fails |
+
+**Not run.** No real package: the fixture release is five files. No host. Renames across a
+real `wp-content` on Windows, where a folder with an open file will not move, were not tried;
+the temp directory has no such file.
+
+**Left open.**
+
+- The eight seconds is a guess at what hosts allow, and nothing measures it.
+- `STUCK` can be reached and is said plainly, but the recovery it points to is the next part.

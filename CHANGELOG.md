@@ -8,6 +8,12 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **A release can be unpacked beside a site, checked, and put in place by renames that are
+  written down first** (spec 107, slice 4, the first part). Only the folders a release owns
+  are unpacked, into the installer's own folder, a request at a time; each is compared with
+  what the package says it holds before any folder of the site moves. The swap is a list of
+  renames in a journal: cut off half way, the next request finishes it, or puts every folder
+  back when one will not move. Nothing calls it yet: no route, no screen (DECISIONS #300).
 - **The Submissions inbox shows what is coming while it loads** (spec 108, slice 6, the last).
   The list is a table of placeholder rows until its first answer, and keeps its rows, dimmed,
   while a filter or a page is on its way; the count above it waits with them. An open

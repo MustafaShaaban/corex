@@ -50,10 +50,10 @@ files before slice 4.
 
 ## Slice 4 — The release is installed (US1, US3; D6 to D11, D14)
 
-- [ ] T040 [P] Pest unit: `ReleaseStaging` — unpacks only release paths; resumes from its cursor; a staged folder whose bytes or hash differ from the manifest is refused and staging emptied
-- [ ] T041 `ReleaseStaging`
-- [ ] T042 [P] Pest unit: `ReleaseJournal` and `ReleaseSwap` over real folders — swaps every path; a folder the package does not name is left; a folder the installed release owned and the package dropped goes to `previous/`; cut off after any rename, the next call finishes or undoes and says which; a rename that fails undoes what was done
-- [ ] T043 `ReleaseJournal`, `ReleaseSwap`
+- [x] T040 [P] Pest unit: `ReleaseStaging` — unpacks only release paths; resumes from its cursor; a staged folder whose bytes or hash differ from the manifest is refused and staging emptied
+- [x] T041 `ReleaseStaging`
+- [x] T042 [P] Pest unit: `ReleaseJournal` and `ReleaseSwap` over real folders — swaps every path; a folder the package does not name is left; a folder the installed release owned and the package dropped goes to `previous/`; cut off after any rename, the next call finishes or undoes and says which; a rename that fails undoes what was done
+- [x] T043 `ReleaseJournal`, `ReleaseSwap`
 - [ ] T044 [P] Pest unit: `ReleaseMaintenance` — writes a `.maintenance` WordPress will honour, that lets through only a request carrying the key; removes it; the key is never in the file, only its hash
 - [ ] T045 `ReleaseMaintenance`
 - [ ] T046 [P] Pest unit: the recovery plugin, included in a process with no CoreX — with the key it puts every folder back and removes `.maintenance`; without it, or with a wrong one, it does nothing and says nothing

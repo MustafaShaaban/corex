@@ -85,6 +85,15 @@ final readonly class ReleaseManifest
     }
 
     /**
+     * Whether a release can own this folder at all. Asked of a package's description, and again
+     * of anything else that names a folder to be moved.
+     */
+    public static function owns(string $path): bool
+    {
+        return preg_match(self::OWNED, $path) === 1;
+    }
+
+    /**
      * What a folder of the release holds, as the builder measured it.
      *
      * @return array{files:int,bytes:int,hash:string}
@@ -165,7 +174,7 @@ final readonly class ReleaseManifest
         }
 
         foreach ($paths as $path) {
-            if (preg_match(self::OWNED, $path) !== 1) {
+            if (! self::owns($path)) {
                 throw new ReleaseRefused(
                     ReleaseRefused::UNSAFE_PATH,
                     sprintf(
