@@ -10,6 +10,10 @@
  */
 import { useEffect, useId, useRef, useState } from '@wordpress/element';
 import { Button } from '@wordpress/components';
+import CorexSkeleton, {
+	SkeletonBar,
+} from '../../admin/components/CorexSkeleton.js';
+import { usePending, workingProps } from '../../admin/components/working.js';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexDialog from '../../admin/components/CorexDialog.js';
 import CorexTime from '../../admin/components/CorexTime.js';
@@ -376,8 +380,13 @@ function RecentExports( { history, describe, download, remove } ) {
 	const [ showAll, setShowAll ] = useState( false );
 	const [ confirming, setConfirming ] = useState( 0 );
 	const [ problem, setProblem ] = useState( '' );
+	// The file whose download or deletion is out, so neither is sent twice.
+	const [ pending, during ] = usePending();
 
-	if ( ! history || history.length === 0 ) {
+	if ( history === null ) {
+		return <RecentExportsSkeleton />;
+	}
+	if ( history.length === 0 ) {
 		return null;
 	}
 
@@ -419,16 +428,24 @@ function RecentExports( { history, describe, download, remove } ) {
 							{ item.state === 'ready' && (
 								<PastExportActions
 									confirming={ confirming === item.id }
+									pending={ pending }
+									working={ pending === `file:${ item.id }` }
 									ask={ () => setConfirming( item.id ) }
 									keep={ () => setConfirming( 0 ) }
-									deleteFile={ () => deleteFile( item.id ) }
+									deleteFile={ () =>
+										during( `file:${ item.id }`, () =>
+											deleteFile( item.id )
+										)
+									}
 									download={ () =>
-										attempt(
-											download,
-											item.id,
-											__(
-												'The file could not be downloaded.',
-												'corex'
+										during( `file:${ item.id }`, () =>
+											attempt(
+												download,
+												item.id,
+												__(
+													'The file could not be downloaded.',
+													'corex'
+												)
 											)
 										)
 									}
@@ -457,6 +474,38 @@ function RecentExports( { history, describe, download, remove } ) {
 				</Button>
 			) }
 		</section>
+	);
+}
+
+/**
+ * The placeholder for the past exports, while they are asked for (spec 108, slice 6): the
+ * section's own markup with two entries in it. Somebody who has made none sees it go.
+ *
+ * @return {import('react').ReactElement} The placeholder.
+ */
+function RecentExportsSkeleton() {
+	return (
+		<CorexSkeleton>
+			<div className="corex-export__recent">
+				<h3>
+					<SkeletonBar width="short" />
+				</h3>
+				<ul>
+					{ [ 0, 1 ].map( ( entry ) => (
+						<li className="corex-export__entry" key={ entry }>
+							<div className="corex-export__entry-text">
+								<p className="corex-export__entry-what">
+									<SkeletonBar width="long" />
+								</p>
+								<p className="corex-export__entry-facts">
+									<SkeletonBar width="medium" />
+								</p>
+							</div>
+						</li>
+					) ) }
+				</ul>
+			</div>
+		</CorexSkeleton>
 	);
 }
 
@@ -495,7 +544,15 @@ function PastExport( { item, describe } ) {
 	);
 }
 
-function PastExportActions( { confirming, ask, keep, deleteFile, download } ) {
+function PastExportActions( {
+	confirming,
+	pending,
+	working,
+	ask,
+	keep,
+	deleteFile,
+	download,
+} ) {
 	if ( confirming ) {
 		return (
 			<div
@@ -508,12 +565,18 @@ function PastExportActions( { confirming, ask, keep, deleteFile, download } ) {
 					variant="secondary"
 					isDestructive
 					onClick={ deleteFile }
+					{ ...workingProps( working ) }
 				>
 					{ __( 'Delete file', 'corex' ) }
 				</Button>
 				{ /* The safe answer is the one focus lands on. */ }
-				{ /* eslint-disable-next-line jsx-a11y/no-autofocus */ }
-				<Button variant="tertiary" onClick={ keep } autoFocus>
+				<Button
+					variant="tertiary"
+					disabled={ pending !== '' }
+					onClick={ keep }
+					// eslint-disable-next-line jsx-a11y/no-autofocus
+					autoFocus
+				>
 					{ __( 'Keep it', 'corex' ) }
 				</Button>
 			</div>
@@ -522,10 +585,20 @@ function PastExportActions( { confirming, ask, keep, deleteFile, download } ) {
 
 	return (
 		<div className="corex-export__entry-actions">
-			<Button variant="link" onClick={ download }>
+			<Button
+				variant="link"
+				disabled={ pending !== '' }
+				onClick={ download }
+				{ ...workingProps( working ) }
+			>
 				{ __( 'Download', 'corex' ) }
 			</Button>
-			<Button variant="link" isDestructive onClick={ ask }>
+			<Button
+				variant="link"
+				isDestructive
+				disabled={ pending !== '' }
+				onClick={ ask }
+			>
 				{ __( 'Delete', 'corex' ) }
 			</Button>
 		</div>

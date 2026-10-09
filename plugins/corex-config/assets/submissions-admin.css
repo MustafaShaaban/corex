@@ -278,6 +278,26 @@
 	cursor: default;
 }
 
+/* A placeholder's cells hold nothing to take a width from, and a bar is a
+   share of its cell: the columns are given theirs, the box for a checkbox
+   the room a checkbox takes. Its rows open nothing. */
+.corex-admin .corex-admin-skeleton .corex-inbox__table {
+	table-layout: fixed;
+}
+
+.corex-admin .corex-admin-skeleton .corex-inbox__table tr > :first-child {
+	inline-size: var(--corex-admin-space-2xl);
+}
+
+.corex-admin .corex-admin-skeleton .corex-inbox__table tr > :nth-child(2) {
+	inline-size: 30%;
+}
+
+.corex-admin .corex-admin-skeleton .corex-inbox__table tbody tr,
+.corex-admin .corex-admin-skeleton .corex-inbox__row-button {
+	cursor: default;
+}
+
 /* A measure for the sender: a long address is cut with an ellipsis, not run
    under the next column. The pane shows it whole. */
 .corex-admin .corex-inbox__row-button {
@@ -448,11 +468,16 @@
 	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
 }
 
-.corex-admin .corex-pane__waiting {
-	display: flex;
-	align-items: center;
-	gap: var(--corex-admin-space-sm);
-	color: var(--corex-admin-text-muted);
+/* The placeholder for a submission that is being read is a box around
+   the parts, so it spaces and rules them as the pane does its own. */
+.corex-admin .corex-pane .corex-admin-skeleton {
+	display: grid;
+	gap: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-pane .corex-admin-skeleton > * + * {
+	padding-block-start: var(--corex-admin-space-lg);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border);
 }
 
 .corex-admin .corex-pane__header {

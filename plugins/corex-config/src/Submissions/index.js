@@ -6,14 +6,20 @@ import {
 	useRef,
 	useState,
 } from '@wordpress/element';
-import { Button, Spinner } from '@wordpress/components';
+import { Button } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexDialog from '../admin/components/CorexDialog.js';
 import CorexSelect from '../admin/components/CorexSelect.js';
 import CorexTime from '../admin/components/CorexTime.js';
 import CorexErrorState from '../admin/components/CorexErrorState.js';
+import CorexLoadable from '../admin/components/CorexLoadable.js';
+import CorexSkeleton, {
+	SkeletonBar,
+} from '../admin/components/CorexSkeleton.js';
+import { usePending, workingProps } from '../admin/components/working.js';
 import DetailPane from './detail/DetailPane.js';
 import ExportDialog from './export/ExportDialog.js';
+import InboxSkeleton from './InboxSkeleton.js';
 import {
 	DeliveryBadge,
 	STATUS_LABELS,
@@ -28,6 +34,7 @@ import {
 	deletesAt,
 	inboxFiltersFromUrl,
 	inboxSubmissionFromUrl,
+	listStatus,
 	toggleSubmission,
 	trashConfirmation,
 	trashKeeps,
@@ -46,7 +53,7 @@ const OWNER_TYPES = [
 	{ value: 'none', label: __( 'Unassigned', 'corex' ) },
 ];
 
-function App() {
+export function InboxApp() {
 	const [ filters, setFilters ] = useState( () => ( {
 		search: '',
 		flow: '',
@@ -99,10 +106,12 @@ function App() {
 		? bulkAction
 		: actions[ 0 ].value;
 	const setView = ( next ) => {
-		inbox.dispatch( { type: 'selectionChanged', ids: [] } );
-		inbox.close();
+		inbox.dispatch( { type: 'viewChanged' } );
 		setFilters( ( current ) => ( { ...current, view: next, page: 1 } ) );
 	};
+	// The control above the list whose request is out: Undo, or the bulk preview.
+	const [ pending, during ] = usePending();
+	const status = listStatus( inbox.state );
 	const updateFilter = ( key, value ) =>
 		setFilters( ( current ) => ( {
 			...current,
@@ -115,6 +124,7 @@ function App() {
 			<InboxHeader
 				view={ view }
 				total={ inbox.state.total }
+				status={ status }
 				onExport={ () => setExportOpen( true ) }
 			/>
 			{ inbox.state.message && (
@@ -123,18 +133,24 @@ function App() {
 					{ inbox.state.undo.length > 0 && (
 						<Button
 							variant="link"
-							onClick={ () => inbox.restore( inbox.state.undo ) }
+							disabled={ pending !== '' }
+							onClick={ () =>
+								during( 'undo', () =>
+									inbox.restore( inbox.state.undo )
+								)
+							}
+							{ ...workingProps( pending === 'undo' ) }
 						>
 							{ __( 'Undo', 'corex' ) }
 						</Button>
 					) }
 				</div>
 			) }
-			{ inbox.state.error && (
+			{ inbox.state.error && status !== 'error' && (
 				<CorexErrorState
 					scale="action"
 					message={ inbox.state.error }
-					onRetry={ inbox.load }
+					onRetry={ () => inbox.load() }
 				/>
 			) }
 			<Views view={ view } setView={ setView } />
@@ -150,6 +166,7 @@ function App() {
 				setAction={ setBulkAction }
 				owner={ bulkOwner }
 				setOwner={ setBulkOwner }
+				pending={ pending }
 				onClear={ () =>
 					inbox.dispatch( { type: 'selectionChanged', ids: [] } )
 				}
@@ -160,10 +177,12 @@ function App() {
 						setDeleting( ids );
 						return;
 					}
-					const data = await inbox.previewBulk(
-						action,
-						ids,
-						action === 'assign' ? bulkOwner : {}
+					const data = await during( 'preview', () =>
+						inbox.previewBulk(
+							action,
+							ids,
+							action === 'assign' ? bulkOwner : {}
+						)
 					);
 					if ( data ) {
 						// The ids are kept with the preview: they are what "Undo" restores.
@@ -171,22 +190,36 @@ function App() {
 					}
 				} }
 			/>
-			{ view === VIEW_TRASH && (
+			{ view === VIEW_TRASH && inbox.state.hasPage && (
 				<p className="corex-inbox__trash-keeps">
 					{ trashKeeps( inbox.state.trashDays ) }
 				</p>
 			) }
-			<InboxTable
-				view={ view }
-				state={ inbox.state }
-				dispatch={ inbox.dispatch }
-				open={ inbox.open }
-			/>
-			<Pagination
-				state={ inbox.state }
-				filters={ filters }
-				update={ updateFilter }
-			/>
+			<CorexLoadable
+				status={ status }
+				skeleton={ <InboxSkeleton /> }
+				loadingLabel={ __( 'Loading submissions…', 'corex' ) }
+				errorTitle={ __(
+					'The submissions could not be loaded',
+					'corex'
+				) }
+				errorMessage={ inbox.state.error }
+				onRetry={ () => inbox.load() }
+			>
+				<InboxTable
+					view={ view }
+					state={ inbox.state }
+					dispatch={ inbox.dispatch }
+					open={ inbox.open }
+				/>
+			</CorexLoadable>
+			{ inbox.state.hasPage && (
+				<Pagination
+					state={ inbox.state }
+					filters={ filters }
+					update={ updateFilter }
+				/>
+			) }
 			{ inbox.state.drawer.open && (
 				<DetailPane
 					id={ DRAWER_ID }
@@ -303,7 +336,7 @@ function Views( { view, setView } ) {
 	);
 }
 
-function InboxHeader( { view, total, onExport } ) {
+function InboxHeader( { view, total, status, onExport } ) {
 	// The three lines are one stack, so their spacing is the stack's job. They used to be loose
 	// children of a bare <div> whose only separation came from a margin on each <p>, which is why
 	// the eyebrow, the title, and the count read as one compressed block.
@@ -314,9 +347,22 @@ function InboxHeader( { view, total, onExport } ) {
 					{ __( 'Team workspace', 'corex' ) }
 				</p>
 				<h2>{ __( 'Submission Inbox', 'corex' ) }</h2>
-				<p className="corex-inbox__count">
-					{ viewCount( view, total ) }
-				</p>
+				{ status !== 'error' && (
+					<p
+						className="corex-inbox__count"
+						data-corex-waiting={
+							status === 'refreshing' ? 'true' : undefined
+						}
+					>
+						{ status === 'loading' ? (
+							<CorexSkeleton as="span">
+								<SkeletonBar width="long" />
+							</CorexSkeleton>
+						) : (
+							viewCount( view, total )
+						) }
+					</p>
+				) }
 			</div>
 			{ /* An export is of what is in the inbox. The trash holds what was taken out of it. */ }
 			{ view === VIEW_INBOX && (
@@ -521,10 +567,19 @@ function BulkToolbar( props ) {
 					/>
 				</>
 			) }
-			<Button variant="primary" onClick={ props.onPreview }>
+			<Button
+				variant="primary"
+				disabled={ props.pending !== '' }
+				onClick={ props.onPreview }
+				{ ...workingProps( props.pending === 'preview' ) }
+			>
 				{ __( 'Preview action', 'corex' ) }
 			</Button>
-			<Button variant="tertiary" onClick={ props.onClear }>
+			<Button
+				variant="tertiary"
+				disabled={ props.pending !== '' }
+				onClick={ props.onClear }
+			>
 				{ __( 'Clear selection', 'corex' ) }
 			</Button>
 		</div>
@@ -549,15 +604,7 @@ function InboxTable( { view, state, dispatch, open } ) {
 	const all =
 		state.items.length > 0 &&
 		state.items.every( ( item ) => state.selectedIds.includes( item.id ) );
-	if ( state.status === 'loading' && state.items.length === 0 ) {
-		return (
-			<div className="corex-inbox__state">
-				<Spinner />
-				{ __( 'Loading submissions…', 'corex' ) }
-			</div>
-		);
-	}
-	if ( state.status !== 'loading' && state.items.length === 0 ) {
+	if ( state.items.length === 0 ) {
 		return (
 			<div className="corex-inbox__state">
 				<h3>
@@ -772,6 +819,7 @@ function Pagination( { state, filters, update } ) {
  */
 function ConfirmTrash( { close, apply } ) {
 	const words = trashConfirmation( 'trash', 1 );
+	const [ pending, during ] = usePending();
 
 	return (
 		<CorexDialog
@@ -779,10 +827,18 @@ function ConfirmTrash( { close, apply } ) {
 			onClose={ close }
 			footer={
 				<div className="corex-inbox__modal-actions">
-					<Button variant="tertiary" onClick={ close }>
+					<Button
+						variant="tertiary"
+						disabled={ pending !== '' }
+						onClick={ close }
+					>
 						{ __( 'Cancel', 'corex' ) }
 					</Button>
-					<Button variant="primary" onClick={ apply }>
+					<Button
+						variant="primary"
+						onClick={ () => during( 'apply', apply ) }
+						{ ...workingProps( pending === 'apply' ) }
+					>
 						{ words.confirm }
 					</Button>
 				</div>
@@ -808,7 +864,7 @@ function ConfirmDelete( { count, loadExports, close, apply } ) {
 	const words = deleteConfirmation( count );
 	const acknowledgeId = useId();
 	const [ acknowledged, setAcknowledged ] = useState( false );
-	const [ working, setWorking ] = useState( false );
+	const [ pending, during ] = usePending();
 	// Said only where there is a kept export file for it to be true of.
 	const [ keptExports, setKeptExports ] = useState( false );
 	useEffect( () => {
@@ -832,17 +888,19 @@ function ConfirmDelete( { count, loadExports, close, apply } ) {
 			onClose={ close }
 			footer={
 				<div className="corex-inbox__modal-actions">
-					<Button variant="tertiary" onClick={ close }>
+					<Button
+						variant="tertiary"
+						disabled={ pending !== '' }
+						onClick={ close }
+					>
 						{ __( 'Cancel', 'corex' ) }
 					</Button>
 					<Button
 						variant="primary"
 						isDestructive
-						disabled={ ! acknowledged || working }
-						onClick={ async () => {
-							setWorking( true );
-							await apply();
-						} }
+						disabled={ ! acknowledged }
+						onClick={ () => during( 'apply', apply ) }
+						{ ...workingProps( pending === 'apply' ) }
 					>
 						{ words.confirm }
 					</Button>
@@ -888,6 +946,7 @@ function ConfirmBulk( { preview, close, apply } ) {
 	const words = [ 'trash', 'restore' ].includes( preview.action )
 		? trashConfirmation( preview.action, preview.count )
 		: null;
+	const [ pending, during ] = usePending();
 
 	return (
 		<CorexDialog
@@ -895,10 +954,18 @@ function ConfirmBulk( { preview, close, apply } ) {
 			onClose={ close }
 			footer={
 				<div className="corex-inbox__modal-actions">
-					<Button variant="tertiary" onClick={ close }>
+					<Button
+						variant="tertiary"
+						disabled={ pending !== '' }
+						onClick={ close }
+					>
 						{ __( 'Cancel', 'corex' ) }
 					</Button>
-					<Button variant="primary" onClick={ apply }>
+					<Button
+						variant="primary"
+						onClick={ () => during( 'apply', apply ) }
+						{ ...workingProps( pending === 'apply' ) }
+					>
 						{ words
 							? words.confirm
 							: __( 'Confirm and apply', 'corex' ) }
@@ -926,8 +993,8 @@ function ConfirmBulk( { preview, close, apply } ) {
 const root = document.getElementById( 'corex-submissions-app' );
 if ( root ) {
 	if ( typeof createRoot === 'function' ) {
-		createRoot( root ).render( <App /> );
+		createRoot( root ).render( <InboxApp /> );
 	} else {
-		render( <App />, root );
+		render( <InboxApp />, root );
 	}
 }

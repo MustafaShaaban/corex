@@ -9,6 +9,7 @@
 import { Button } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexSelect from '../CorexSelect.js';
+import CorexSkeleton, { SkeletonBar } from '../CorexSkeleton.js';
 import { workingProps } from '../working.js';
 
 /**
@@ -61,9 +62,13 @@ export function ExportScopes( {
 							{ option.label }
 						</span>
 						<span className="corex-export__count">
-							{ option.count === null
-								? '…'
-								: option.count.toLocaleString() }
+							{ option.count === null ? (
+								<CorexSkeleton as="span">
+									<SkeletonBar />
+								</CorexSkeleton>
+							) : (
+								option.count.toLocaleString()
+							) }
 						</span>
 						<span
 							id={ `${ fieldId }-scope-${ option.value }-detail` }

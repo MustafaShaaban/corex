@@ -2423,6 +2423,14 @@ body.corex-admin-screen .corex-admin__shell {
 	font-variant-numeric: tabular-nums;
 }
 
+/* A count that has not arrived: the bar has no number to take a width from,
+   so it is given the room a few digits take. */
+.corex-admin .corex-export__count .corex-admin-skeleton {
+	display: inline-block;
+	inline-size: var(--corex-admin-space-xl);
+	vertical-align: bottom;
+}
+
 .corex-admin .corex-export__detail {
 	display: block;
 	color: var(--corex-admin-text-muted);
