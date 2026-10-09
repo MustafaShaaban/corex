@@ -66,8 +66,8 @@ They are done a screen at a time, each in its own pull request.
 
 ## Slice 6 — Submissions (US1, US2, US3), with spec 105's session
 
-- [ ] T060 Agree the order of changes to `Submissions/index.js`, `useInbox.js`, `inbox.js` and `detail/DetailPane.js` with that session
-- [ ] T061 Jest: the list keeps its rows on a refresh and shows a skeleton on a first load; the header count waits; the pane shows its skeleton; each pane action is working and cannot be sent twice
-- [ ] T062 The list, the pane, both export dialogs (counts and past exports); the last two `Spinner` uses gone, and a hygiene test that none is imported under `plugins/corex-config/src`
-- [ ] T063 Playwright: as slice 3's, for the inbox; the existing inbox specs still wait on `data-status`
-- [ ] T064 Guards; UI/UX gate; notes
+- [x] T060 Agree the order of changes to `Submissions/index.js`, `useInbox.js`, `inbox.js` and `detail/DetailPane.js` with that session
+- [x] T061 Jest: the list keeps its rows on a refresh and shows a skeleton on a first load; the header count waits; the pane shows its skeleton; each pane action is working and cannot be sent twice
+- [x] T062 The list, the pane, both export dialogs (counts and past exports); the last two `Spinner` uses gone, and a hygiene test that none is imported under `plugins/corex-config/src`
+- [x] T063 Playwright: as slice 3's, for the inbox; the existing inbox specs still wait on `data-status`
+- [x] T064 Guards; UI/UX gate; notes

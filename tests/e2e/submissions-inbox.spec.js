@@ -19,7 +19,10 @@ test.beforeEach( async ( { page } ) => {
 	await expect(
 		page.getByRole( 'heading', { name: 'Submission Inbox' } )
 	).toBeVisible();
-	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
 } );
 
 /**
@@ -118,7 +121,10 @@ test( 'opens pre-filtered when Forms & Flows links to one form’s submissions',
 	await expect(
 		page.getByRole( 'heading', { name: 'Submission Inbox' } )
 	).toBeVisible();
-	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
 
 	await expect( page.getByRole( 'combobox', { name: 'Form' } ) ).toHaveText(
 		/Contact/i
@@ -836,7 +842,10 @@ test( 'moves submissions to the trash and restores them, from the pane, in bulk 
 	expect( second.real.envelope.ok ).toBe( true );
 	// Seeding leaves the page on the form's own screen.
 	await page.goto( '/wp-admin/admin.php?page=corex-submissions' );
-	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
 	await page.getByLabel( 'Search' ).fill( EMAIL );
 	const rows = page.locator( '.corex-inbox__table tbody tr' );
 	// Until the search has been applied the table still holds the unfiltered page.
@@ -848,12 +857,48 @@ test( 'moves submissions to the trash and restores them, from the pane, in bulk 
 		} )
 		.toBe( true );
 	const before = await rows.count();
-	// How far the table runs past its frame, to hold the trash's table to the same.
-	const pastItsFrame = () =>
-		page
-			.locator( '.corex-inbox__table-wrap' )
-			.evaluate( ( wrap ) => wrap.scrollWidth - wrap.clientWidth );
-	const inboxPastItsFrame = await pastItsFrame();
+	// The table's shape, taken with its frame squeezed until the table runs past it: every
+	// column is then as narrow as what is in it allows, whatever else the site holds and
+	// however wide the window is. `spare` is how much wider the "Moved to trash" column is
+	// than the widest date in it: nothing, while the lines under the date wrap inside it.
+	const tableShape = () =>
+		page.locator( '.corex-inbox__table-wrap' ).evaluate( ( wrap ) => {
+			const width = wrap.style.inlineSize;
+			wrap.style.inlineSize = '320px';
+
+			const cells = Array.from(
+				wrap.querySelectorAll( 'tbody td.corex-inbox__trashed' )
+			);
+			const inside = ( cell ) => {
+				const style = window.getComputedStyle( cell );
+				return (
+					cell.getBoundingClientRect().width -
+					parseFloat( style.paddingInlineStart ) -
+					parseFloat( style.paddingInlineEnd ) -
+					parseFloat( style.borderInlineStartWidth ) -
+					parseFloat( style.borderInlineEndWidth )
+				);
+			};
+			const shape = {
+				columns: wrap.querySelectorAll( 'thead th' ).length,
+				spare:
+					cells.length === 0
+						? 0
+						: inside( cells[ 0 ] ) -
+							Math.max(
+								...cells.map(
+									( cell ) =>
+										cell
+											.querySelector( ':scope > time' )
+											.getBoundingClientRect().width
+								)
+							),
+			};
+
+			wrap.style.inlineSize = width;
+			return shape;
+		} );
+	const inboxShape = await tableShape();
 
 	// One, from its pane. It is asked first, and says how many and what becomes of it.
 	await page
@@ -914,16 +959,34 @@ test( 'moves submissions to the trash and restores them, from the pane, in bulk 
 	await expect(
 		page.getByRole( 'columnheader', { name: 'Moved to trash' } )
 	).toBeVisible();
-	// It stands where "Notification" does in the inbox. As an eighth column it was cut off at
-	// 1440 pixels, where the inbox's seven fit. Measured: the trash table is as wide as the
-	// inbox's, to within the width of a name under a date (8 pixels at 1280).
+	// It stands where "Notification" does in the inbox: as an eighth column it was cut off at
+	// 1440 pixels, where the inbox's seven fit. And it is a date's width. The name and the
+	// "Deleted for good" line under the date once made it 150 pixels wider, in a table whose
+	// cells do not wrap; they wrap inside the column now.
+	//
+	// This compared how far each table ran past its frame, until 2026-10-09. That is a date
+	// against whatever the Notification cell says: 8 pixels apart on one install, 68 on another.
 	await expect(
 		page.getByRole( 'columnheader', { name: 'Notification' } )
 	).toHaveCount( 0 );
+	// The trash's own rows, not the placeholder that stands for them: a placeholder has no
+	// such cell, and the measurement below would pass on nothing.
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
 	expect(
-		( await pastItsFrame() ) - inboxPastItsFrame,
-		'the trash table is no wider than the inbox table'
-	).toBeLessThanOrEqual( 16 );
+		await page.locator( 'td.corex-inbox__trashed' ).count()
+	).toBeGreaterThan( 0 );
+	const trashShape = await tableShape();
+	expect(
+		trashShape.columns,
+		'the trash has the inbox’s number of columns'
+	).toBe( inboxShape.columns );
+	expect(
+		trashShape.spare,
+		'the lines under the date it was trashed wrap inside its column'
+	).toBeLessThanOrEqual( 1 );
 	await expect(
 		page.getByRole( 'button', { name: 'Export', exact: true } )
 	).toHaveCount( 0 );
@@ -1051,7 +1114,10 @@ test( 'deletes submissions for good from the trash, after an acknowledged confir
 	const second = await seedSubmission( page, FLOW_SLUG, EMAIL );
 	expect( second.real.envelope.ok ).toBe( true );
 	await page.goto( '/wp-admin/admin.php?page=corex-submissions' );
-	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
 	await page.getByLabel( 'Search' ).fill( EMAIL );
 	const rows = page.locator( '.corex-inbox__table tbody tr' );
 	await expect
@@ -1196,7 +1262,10 @@ test( 'deletes submissions for good from the trash, after an acknowledged confir
 		.getByRole( 'group', { name: 'Submissions shown' } )
 		.getByRole( 'button', { name: 'Inbox' } )
 		.click();
-	await expect( page.getByText( 'Loading submissions…' ) ).toBeHidden();
+	await expect( page.locator( '.corex-inbox' ) ).toHaveAttribute(
+		'data-status',
+		'ready'
+	);
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );

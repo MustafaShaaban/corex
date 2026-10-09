@@ -9,10 +9,12 @@
  * Escape and hands focus back to the row it was opened from.
  */
 import { useId, useState } from '@wordpress/element';
-import { Button, Spinner } from '@wordpress/components';
+import { Button } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexDialog from '../../admin/components/CorexDialog.js';
-import CorexErrorState from '../../admin/components/CorexErrorState.js';
+import CorexLoadable from '../../admin/components/CorexLoadable.js';
+import { usePending, workingProps } from '../../admin/components/working.js';
+import PaneSkeleton from './PaneSkeleton.js';
 import CorexSelect from '../../admin/components/CorexSelect.js';
 import CorexTime from '../../admin/components/CorexTime.js';
 import FieldValue from '../../admin/components/FieldValue.js';
@@ -95,6 +97,10 @@ export default function DetailPane( {
 	onDelete,
 } ) {
 	const record = drawer.record;
+	// The pane's control whose request is out. One at a time: each change names the state of the
+	// submission it was made on, and a second sent before the first is read back is refused.
+	const [ pending, during ] = usePending();
+	const work = { pending, during };
 
 	if ( ! record ) {
 		return (
@@ -105,20 +111,15 @@ export default function DetailPane( {
 				title={ __( 'Submission', 'corex' ) }
 				onClose={ inbox.close }
 			>
-				{ drawer.status === 'loading' ? (
-					<div className="corex-pane__waiting" role="status">
-						<Spinner />
-						{ __( 'Loading the submission…', 'corex' ) }
-					</div>
-				) : (
-					<CorexErrorState
-						scale="panel"
-						message={
-							drawer.error ||
-							__( 'The submission could not be loaded.', 'corex' )
-						}
-					/>
-				) }
+				<CorexLoadable
+					status={ drawer.status === 'loading' ? 'loading' : 'error' }
+					skeleton={ <PaneSkeleton /> }
+					loadingLabel={ __( 'Loading the submission…', 'corex' ) }
+					errorMessage={
+						drawer.error ||
+						__( 'The submission could not be loaded.', 'corex' )
+					}
+				/>
 			</CorexDialog>
 		);
 	}
@@ -131,7 +132,9 @@ export default function DetailPane( {
 			title={
 				record.submitter_name || __( 'Anonymous submission', 'corex' )
 			}
-			subtitle={ <PaneHeader record={ record } inbox={ inbox } /> }
+			subtitle={
+				<PaneHeader record={ record } inbox={ inbox } work={ work } />
+			}
 			onClose={ inbox.close }
 		>
 			{ /* A trashed submission is read and nothing else, until it is restored (spec 105,
@@ -140,19 +143,28 @@ export default function DetailPane( {
 				<TrashLine
 					record={ record }
 					inbox={ inbox }
+					work={ work }
 					mayDelete={ mayDelete }
 					onDelete={ onDelete }
 				/>
 			) }
 			<Answers record={ record } />
-			{ ! record.trashed && <Reply record={ record } inbox={ inbox } /> }
+			{ ! record.trashed && (
+				<Reply record={ record } inbox={ inbox } work={ work } />
+			) }
 			<Notes
 				record={ record }
 				inbox={ inbox }
+				work={ work }
 				readOnly={ Boolean( record.trashed ) }
 			/>
 			{ ! record.trashed && (
-				<Triage record={ record } inbox={ inbox } onTrash={ onTrash } />
+				<Triage
+					record={ record }
+					inbox={ inbox }
+					work={ work }
+					onTrash={ onTrash }
+				/>
 			) }
 			<Delivery record={ record } />
 			<TechnicalDetails record={ record } />
@@ -182,11 +194,12 @@ export default function DetailPane( {
  * @param {Object}   props
  * @param {Object}   props.record    The trashed submission.
  * @param {Object}   props.inbox     The inbox's requests.
+ * @param {Object}   props.work      The pane's `{ pending, during }`: which control's request is out.
  * @param {boolean}  props.mayDelete Whether this person may delete it for good.
  * @param {Function} props.onDelete  Called when they ask to.
  * @return {import('react').ReactElement} The line.
  */
-function TrashLine( { record, inbox, mayDelete, onDelete } ) {
+function TrashLine( { record, inbox, work, mayDelete, onDelete } ) {
 	return (
 		<div className="corex-pane__trash" role="note">
 			<p>
@@ -211,7 +224,12 @@ function TrashLine( { record, inbox, mayDelete, onDelete } ) {
 			<div className="corex-pane__trash-actions">
 				<Button
 					variant="primary"
-					onClick={ () => inbox.restore( [ record.id ] ) }
+					onClick={ () =>
+						work.during( 'restore', () =>
+							inbox.restore( [ record.id ] )
+						)
+					}
+					{ ...workingProps( work.pending === 'restore' ) }
 				>
 					{ __( 'Restore', 'corex' ) }
 				</Button>
@@ -219,6 +237,7 @@ function TrashLine( { record, inbox, mayDelete, onDelete } ) {
 					<Button
 						variant="secondary"
 						isDestructive
+						disabled={ work.pending !== '' }
 						onClick={ onDelete }
 					>
 						{ __( 'Delete permanently', 'corex' ) }
@@ -232,7 +251,7 @@ function TrashLine( { record, inbox, mayDelete, onDelete } ) {
 	);
 }
 
-function PaneHeader( { record, inbox } ) {
+function PaneHeader( { record, inbox, work } ) {
 	const contact = contactOf( record );
 	const read = Boolean( record.read_at );
 
@@ -267,12 +286,17 @@ function PaneHeader( { record, inbox } ) {
 				{ ! record.trashed && (
 					<Button
 						variant="link"
+						disabled={ work.pending !== '' }
 						onClick={ () =>
-							inbox.update( record.id, {
-								[ read ? 'mark_unread' : 'mark_read' ]: true,
-								expected_updated_at: record.updated_at,
-							} )
+							work.during( 'read', () =>
+								inbox.update( record.id, {
+									[ read ? 'mark_unread' : 'mark_read' ]:
+										true,
+									expected_updated_at: record.updated_at,
+								} )
+							)
 						}
+						{ ...workingProps( work.pending === 'read' ) }
 					>
 						{ read
 							? __( 'Mark unread', 'corex' )
@@ -316,7 +340,7 @@ function Answers( { record } ) {
 	);
 }
 
-function Reply( { record, inbox } ) {
+function Reply( { record, inbox, work } ) {
 	const fieldId = useId();
 	const [ reply, setReply ] = useState( { subject: '', body: '' } );
 	const [ log, setLog ] = useState( null );
@@ -370,8 +394,17 @@ function Reply( { record, inbox } ) {
 					<div className="corex-pane__actions">
 						<Button
 							variant="secondary"
-							disabled={ ! reply.subject || ! reply.body }
-							onClick={ () => inbox.reply( record.id, reply ) }
+							disabled={
+								! reply.subject ||
+								! reply.body ||
+								work.pending !== ''
+							}
+							onClick={ () =>
+								work.during( 'reply', () =>
+									inbox.reply( record.id, reply )
+								)
+							}
+							{ ...workingProps( work.pending === 'reply' ) }
 						>
 							{ __( 'Send reply', 'corex' ) }
 						</Button>
@@ -387,26 +420,48 @@ function Reply( { record, inbox } ) {
 								<Button
 									variant="link"
 									onClick={ () =>
-										inbox.resend(
-											record.id,
-											email.attempt_id
+										work.during(
+											`resend:${ email.attempt_id }`,
+											() =>
+												inbox.resend(
+													record.id,
+													email.attempt_id
+												)
 										)
 									}
-									disabled={ ! email.retryable }
+									disabled={
+										! email.retryable || work.pending !== ''
+									}
+									{ ...workingProps(
+										work.pending ===
+											`resend:${ email.attempt_id }`
+									) }
 								>
 									{ __( 'Resend', 'corex' ) }
 								</Button>
 								<Button
 									variant="link"
-									onClick={ async () => {
-										const result = await inbox.log(
-											record.id,
-											email.attempt_id
-										);
-										if ( result.envelope.ok ) {
-											setLog( result.envelope.data.log );
-										}
-									} }
+									disabled={ work.pending !== '' }
+									onClick={ () =>
+										work.during(
+											`log:${ email.attempt_id }`,
+											async () => {
+												const result = await inbox.log(
+													record.id,
+													email.attempt_id
+												);
+												if ( result.envelope.ok ) {
+													setLog(
+														result.envelope.data.log
+													);
+												}
+											}
+										)
+									}
+									{ ...workingProps(
+										work.pending ===
+											`log:${ email.attempt_id }`
+									) }
 								>
 									{ __( 'Open log', 'corex' ) }
 								</Button>
@@ -424,7 +479,7 @@ function Reply( { record, inbox } ) {
 	);
 }
 
-function Notes( { record, inbox, readOnly = false } ) {
+function Notes( { record, inbox, work, readOnly = false } ) {
 	const fieldId = useId();
 	const [ note, setNote ] = useState( '' );
 	const notes = record.notes || [];
@@ -468,17 +523,20 @@ function Notes( { record, inbox, readOnly = false } ) {
 					<div className="corex-pane__actions">
 						<Button
 							variant="secondary"
-							disabled={ ! note.trim() }
-							onClick={ async () => {
-								if (
-									await inbox.addNote( record.id, {
-										body: note,
-										visibility: 'corex-team',
-									} )
-								) {
-									setNote( '' );
-								}
-							} }
+							disabled={ ! note.trim() || work.pending !== '' }
+							onClick={ () =>
+								work.during( 'note', async () => {
+									if (
+										await inbox.addNote( record.id, {
+											body: note,
+											visibility: 'corex-team',
+										} )
+									) {
+										setNote( '' );
+									}
+								} )
+							}
+							{ ...workingProps( work.pending === 'note' ) }
 						>
 							{ __( 'Add note', 'corex' ) }
 						</Button>
@@ -489,7 +547,7 @@ function Notes( { record, inbox, readOnly = false } ) {
 	);
 }
 
-function Triage( { record, inbox, onTrash } ) {
+function Triage( { record, inbox, work, onTrash } ) {
 	return (
 		<Section title={ __( 'Triage', 'corex' ) }>
 			<div className="corex-pane__triage">
@@ -500,11 +558,14 @@ function Triage( { record, inbox, onTrash } ) {
 						value={ record.status }
 						options={ STATUS_OPTIONS }
 						block
+						disabled={ work.pending !== '' }
 						onChange={ ( status ) =>
-							inbox.update( record.id, {
-								status,
-								expected_updated_at: record.updated_at,
-							} )
+							work.during( 'status', () =>
+								inbox.update( record.id, {
+									status,
+									expected_updated_at: record.updated_at,
+								} )
+							)
 						}
 					/>
 				</div>
@@ -515,17 +576,25 @@ function Triage( { record, inbox, onTrash } ) {
 						value={ ownerValue( record ) }
 						options={ ownerOptions( record ) }
 						block
+						disabled={ work.pending !== '' }
 						onChange={ ( value ) =>
-							inbox.update( record.id, {
-								...assignmentOf( value ),
-								expected_updated_at: record.updated_at,
-							} )
+							work.during( 'owner', () =>
+								inbox.update( record.id, {
+									...assignmentOf( value ),
+									expected_updated_at: record.updated_at,
+								} )
+							)
 						}
 					/>
 				</div>
 			</div>
 			<div className="corex-pane__actions">
-				<Button variant="secondary" isDestructive onClick={ onTrash }>
+				<Button
+					variant="secondary"
+					isDestructive
+					disabled={ work.pending !== '' }
+					onClick={ onTrash }
+				>
 					{ __( 'Move to trash', 'corex' ) }
 				</Button>
 			</div>

@@ -6,6 +6,12 @@ export const VIEW_TRASH = 'trash';
 
 export const initialInboxState = {
 	status: 'idle',
+	// Whether the view shown has been answered at all. Until it has, nothing is known of it:
+	// not that it is empty, not how many it holds.
+	hasPage: false,
+	// Whether the read that is out is for other rows than these (a filter, a page), and not
+	// the same rows read again behind a change.
+	asked: false,
 	items: [],
 	total: 0,
 	page: 1,
@@ -34,6 +40,7 @@ export function inboxReducer( state, action ) {
 			return {
 				...state,
 				status: 'loading',
+				asked: Boolean( action.asked ),
 				error: '',
 				message: '',
 				undo: [],
@@ -45,6 +52,7 @@ export function inboxReducer( state, action ) {
 				...state,
 				...page,
 				status: 'ready',
+				hasPage: true,
 				selectedIds: state.selectedIds.filter( ( id ) =>
 					visible.has( id )
 				),
@@ -92,6 +100,16 @@ export function inboxReducer( state, action ) {
 					error: action.message || '',
 				},
 			};
+		// The inbox and its trash are two lists. What was read of one says nothing of the other.
+		case 'viewChanged':
+			return {
+				...state,
+				hasPage: false,
+				items: [],
+				total: 0,
+				selectedIds: [],
+				drawer: { ...initialInboxState.drawer },
+			};
 		case 'drawerClosed':
 			return {
 				...state,
@@ -100,6 +118,24 @@ export function inboxReducer( state, action ) {
 		default:
 			return state;
 	}
+}
+
+/**
+ * The list's state as a loadable surface has one (spec 108): a placeholder until the view has
+ * been answered, its rows kept and waiting while others are on their way, and an error in
+ * their place only when there were never any. Rows read again behind a change to a submission
+ * are not waiting: they are the same rows, and stay in reach. A request that fails after that is said above the
+ * rows, which are still what the site last answered.
+ *
+ * @param {Object} state The inbox's state.
+ * @return {string} `loading`, `refreshing`, `ready` or `error`.
+ */
+export function listStatus( state ) {
+	if ( ! state.hasPage ) {
+		return state.status === 'error' ? 'error' : 'loading';
+	}
+
+	return state.status === 'loading' && state.asked ? 'refreshing' : 'ready';
 }
 
 /**

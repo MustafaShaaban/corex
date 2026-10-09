@@ -17,9 +17,12 @@ function message( result ) {
 export function useInbox( config, filters ) {
 	const [ state, dispatch ] = useReducer( inboxReducer, initialInboxState );
 
+	// `asked` says somebody asked for other rows: a filter, a page, the other view. Those
+	// rows wait, dimmed and out of reach, for the ones that replace them. Read again behind a
+	// change to a submission, the same rows stay in reach: a row pressed in that moment opens.
 	const load = useCallback(
-		async ( success = '', undo = [] ) => {
-			dispatch( { type: 'loading' } );
+		async ( success = '', undo = [], asked = false ) => {
+			dispatch( { type: 'loading', asked } );
 			const result = await window.Corex.api.get(
 				buildInboxUrl( config.restUrl, filters ),
 				{ nonce: config.nonce }
@@ -38,7 +41,7 @@ export function useInbox( config, filters ) {
 	);
 
 	useEffect( () => {
-		load();
+		load( '', [], true );
 	}, [ load ] );
 
 	const open = useCallback(
