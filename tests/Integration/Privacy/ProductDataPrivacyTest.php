@@ -196,7 +196,7 @@ it('anonymizes personal data on the retention window and never prunes when disab
     // Disabled retention prunes nothing.
     $retention->setDays(0);
     expect($retention->preview()['willPrune'])->toBeFalse()
-        ->and($retention->prune('anonymize'))->toBe(0);
+        ->and($retention->prune(new SubmissionAccessScope(7, true), 'anonymize'))->toBe(0);
 
     // A 30-day window measures only the aged record. Asserted on its own, before anything is
     // pruned: if the narrowing above ever stops applying, the test fails here and the prune never
@@ -204,7 +204,7 @@ it('anonymizes personal data on the retention window and never prunes when disab
     $retention->setDays(30);
     expect($retention->preview()['count'])->toBe(1);
 
-    expect($retention->prune('anonymize'))->toBe(1)
+    expect($retention->prune(new SubmissionAccessScope(7, true), 'anonymize'))->toBe(1)
         ->and(get_post_meta($agedId, 'corex_retention_state', true))->toBe('anonymized')
         ->and(get_post_meta($agedId, 'corex_submitter_email', true))->toBe('')
         ->and(get_post_meta($agedId, 'corex_submitter_name', true))->toBe('')

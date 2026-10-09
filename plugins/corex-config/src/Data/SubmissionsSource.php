@@ -112,9 +112,14 @@ final class SubmissionsSource implements ExportableDataSource, SchemaAwareDataSo
         ];
     }
 
+    /**
+     * Not from here. A submission is removed in the inbox, which checks who may, writes it into the
+     * submission's history and records it (spec 105, FR-022); this used to trash it the WordPress
+     * way with none of that. The answer is the interface's own "not permitted".
+     */
     public function delete(int $id): bool
     {
-        return $this->reader->trash($id);
+        return false;
     }
 
     public function capabilities(): DataSourceCapabilities
@@ -127,7 +132,7 @@ final class SubmissionsSource implements ExportableDataSource, SchemaAwareDataSo
             detail: true,
             create: false,
             update: false,
-            delete: true,
+            delete: false,
             bulkUpdate: false,
             bulkDelete: false,
             importDryRun: false,
@@ -142,7 +147,6 @@ final class SubmissionsSource implements ExportableDataSource, SchemaAwareDataSo
                 DataSourceCapabilities::QUERY      => CorexAbility::MANAGE_SUBMISSIONS,
                 DataSourceCapabilities::SCHEMA     => CorexAbility::MANAGE_SUBMISSIONS,
                 DataSourceCapabilities::DETAIL     => CorexAbility::MANAGE_SUBMISSIONS,
-                DataSourceCapabilities::DELETE     => CorexAbility::MANAGE_SUBMISSIONS,
                 DataSourceCapabilities::EXPORT_CSV => CorexAbility::MANAGE_SUBMISSIONS,
                 DataSourceCapabilities::EXPORT_XLSX => CorexAbility::MANAGE_SUBMISSIONS,
             ],

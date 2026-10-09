@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
+use Corex\Tests\Support\SavedOption;
 
 /**
  * The integration suite runs against a real developer install, so these options belong to somebody.
@@ -33,25 +34,9 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    restoreOperationsOption('corex_operations_mode', $this->savedMode);
-    restoreOperationsOption('corex_operations_mode_log', $this->savedLog);
+    SavedOption::restore('corex_operations_mode', $this->savedMode);
+    SavedOption::restore('corex_operations_mode_log', $this->savedLog);
 });
-
-/**
- * Put an option back exactly as it was, including "it did not exist".
- *
- * @param mixed $saved The value read before the test, or null when the option was absent.
- */
-function restoreOperationsOption(string $key, mixed $saved): void
-{
-    if ($saved === null) {
-        delete_option($key);
-
-        return;
-    }
-
-    update_option($key, $saved, false);
-}
 
 it('records a real change', function () {
     $this->store->set('staging', 1);

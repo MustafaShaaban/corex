@@ -37,11 +37,6 @@ final class InMemorySubmissionsReader implements SubmissionsReader
         return $this->total ?? count($this->records);
     }
 
-    public function trash(int $id): bool
-    {
-        return $id > 0;
-    }
-
     public function query(DataQuery $query): array
     {
         return array_slice($this->matching($query), ($query->page - 1) * $query->perPage, $query->perPage);

@@ -12,8 +12,6 @@ defined('ABSPATH') || exit;
 
 interface SubmissionRetentionStore
 {
-    public function trashForRetention(int $id): bool;
-
     public function archiveForRetention(int $id): bool;
 
     public function anonymizeForRetention(int $id): bool;
