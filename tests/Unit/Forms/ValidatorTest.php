@@ -122,3 +122,55 @@ it('counts characters for a quantity that is declared only as text', function ()
     expect(validate(['quantity' => ['type' => 'text', 'rules' => ['max:10']]], ['quantity' => '99999'])->errors)
         ->toBe([]);
 });
+
+/**
+ * A rule about several fields sits on optional ones, and an optional field left out of the
+ * request was skipped with every rule on it: a request written by hand that left out all three
+ * of "at least one of these" was accepted (#323). A rule now says it wants to be asked.
+ *
+ * @param array<string,mixed> $values
+ */
+function validateWith(string $name, \Corex\Forms\Validation\Rule $rule, array $values): \Corex\Forms\Validation\ValidationResult
+{
+    $registry = new RuleRegistry();
+    $registry->register($name, $rule);
+
+    $schema = (new SchemaResolver($registry))->resolve([
+        'phone' => ['rules' => [$name]],
+        'email' => ['rules' => ['email']],
+    ]);
+
+    return (new Validator($registry))->validate($schema, $values);
+}
+
+function aWayToReply(): \Corex\Forms\Validation\RuleForAbsentValue
+{
+    return new class () implements \Corex\Forms\Validation\RuleForAbsentValue {
+        public function validate(mixed $value, array $params, array $allValues): ?string
+        {
+            return ($value ?? '') === '' && ($allValues['email'] ?? '') === '' ? 'reply' : null;
+        }
+    };
+}
+
+it('asks a rule that wants to know about an optional field left out of the request', function () {
+    expect(validateWith('reply', aWayToReply(), [])->errors)->toBe(['phone' => 'reply']);
+});
+
+it('hands that rule the rest of the request, so it can pass on another field', function () {
+    $result = validateWith('reply', aWayToReply(), ['email' => 'm@example.com']);
+
+    expect($result->errors)->toBe([])
+        ->and($result->values)->toBe(['email' => 'm@example.com']); // the absent field is still not stored
+});
+
+it('does not hand an absent value to a rule that did not ask for one', function () {
+    $refusesEverything = new class () implements \Corex\Forms\Validation\Rule {
+        public function validate(mixed $value, array $params, array $allValues): ?string
+        {
+            return 'asked';
+        }
+    };
+
+    expect(validateWith('strict', $refusesEverything, [])->errors)->toBe([]);
+});
