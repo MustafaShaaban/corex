@@ -14,8 +14,8 @@ use Corex\Bookings\Templates\CallRequestConfirmTemplate;
 use Corex\Bookings\Templates\CallRequestLeaderTemplate;
 use Corex\Captcha\Captcha;
 use Corex\Container\ContainerInterface;
-use Corex\Database\Schema\Migrator;
-use Corex\Database\Schema\Table;
+use Corex\Database\Schema\SchemaComponent;
+use Corex\Database\Schema\SchemaRegistry;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Foundation\ServiceProvider;
 use Corex\Mail\Mailer;
@@ -27,9 +27,16 @@ use WP_REST_Response;
 /**
  * Wires the call-request flow: the bindings, the requests table, the request REST
  * route, and the email templates. Leaders come from `bookings.leaders` config.
+ *
+ * The table is declared, not created: the migration runner creates it when the version stored
+ * for the site differs from the one here, from an admin page, cron, `wp corex migrate` or a
+ * network's new site. Change the columns and raise the version with them.
  */
 final class BookingsServiceProvider extends ServiceProvider
 {
+    private const SCHEMA_OPTION = 'corex_bookings_schema_version';
+    private const SCHEMA_VERSION = '1';
+
     public function register(): void
     {
         $this->container->singleton(CallRequestRepository::class);
@@ -57,18 +64,19 @@ final class BookingsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->container->make(SchemaRegistry::class)->register(new SchemaComponent(
+            'bookings',
+            self::SCHEMA_VERSION,
+            [(new CallRequestTable())->schema()],
+            self::SCHEMA_OPTION,
+        ));
+
         add_action('init', [$this, 'install']);
         add_action('rest_api_init', [$this, 'registerRoute']);
     }
 
     public function install(): void
     {
-        $this->container->make(Migrator::class)->create(
-            (new Table('call_requests'))
-                ->id()->string('leader_id', 60)->string('name')->string('email')->string('phone', 60)
-                ->string('preferred_time', 100)->text('message')->string('status', 20)->timestamps()
-        );
-
         if ($this->container->has(TemplateRegistry::class)) {
             $registry = $this->container->make(TemplateRegistry::class);
             $registry->register(new CallRequestLeaderTemplate());

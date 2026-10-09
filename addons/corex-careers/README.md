@@ -16,6 +16,9 @@ Job postings + a secure application flow with a pipeline. Optional add-on; build
   side effects**.
 - A valid application is stored in the `corex_applications` custom table and **HR + the applicant are
   emailed** (Corex Mail).
+  The table is created on the site's first admin page or cron run after the
+  add-on is activated, or by `wp corex migrate`. An add-on activated from the command line has no
+  table until one of those.
 - Applications move through a **pipeline** — `new → reviewing → interviewed → offer → hired / rejected`
   — and only valid transitions are allowed (`StatusFlow`).
 

@@ -193,6 +193,15 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The Newsletter, Bookings and Careers add-ons no longer run `dbDelta()` on every request.**
+  Each created its table on `init`: every front-end, REST and admin request of a site with one
+  of them loaded WordPress's admin files and asked the database to describe a table that was
+  already there. Each now declares its table to the migration runner the foundation tables
+  use. A table is created from an admin page or cron, by `wp corex migrate`, or when a network
+  gets a new site, and only when the version stored for the site differs from the code's. On a
+  network, deleting a site also removes the add-on's table, where the add-on is loaded in the
+  request that deletes it. What the add-ons register on `init` (the post type, taxonomies,
+  the Data screen's tables, the email templates) is unchanged (DECISIONS #299).
 - **A file sent through a form is stored, on every site.** The attachment store called
   WordPress's `wp_handle_upload()`, which WordPress loads for an admin page and for nothing
   else. On a site where nothing else had loaded the admin's files, every submission that
@@ -314,6 +323,29 @@ All notable changes to Corex are documented here. The format follows
   `wp-content/corex-releases/incoming/` that is read and refused (not a package, another
   client's, a PHP or WordPress the host does not have) is deleted, whether it was uploaded or
   put there by hand. The refusal says so. Keep your own copy of a package.
+- **A site with Newsletter, Bookings or Careers: nothing to do where somebody opens wp-admin
+  or cron runs.** The tables are already there. The first admin page or cron run after the
+  update checks each once and stores three options, `corex_newsletter_schema_version`,
+  `corex_bookings_schema_version` and `corex_careers_schema_version`, one per add-on that is
+  active. Deploy steps that already run `wp corex migrate` do the same.
+- **An add-on activated from the command line has no table until `wp corex migrate` runs, or
+  until the first admin page or cron run.** Before this, any request created it. A provisioning
+  script that activates Newsletter, Bookings or Careers with `wp plugin activate` and then
+  writes to its table has to run `wp corex migrate` in between. The framework's own
+  `scripts/setup-wordpress.ps1` and CI already do.
+- **On a network, an add-on that is active on one site only is migrated by that site.** Its
+  own admin pages and cron do it. From the command line use `wp corex migrate --url=<site>`:
+  `--network` started from a site without the add-on does not know the add-on's table.
+- **Code of your own that relied on WordPress's admin functions being loaded on the front end
+  must load them.** On a site with one of these add-ons every request used to load
+  `wp-admin/includes/`. It no longer does. A call to `get_plugins()`, `wp_handle_upload()`,
+  `dbDelta()` and the like outside wp-admin needs its `require_once` first. The framework's own
+  code was checked against every function WordPress defines there.
+- **A table a site creates itself is not changed by this.** `Migrator::create()` works as it
+  did. A site plugin that calls it from a hook pays the same price on every request that the
+  add-ons did; guard the call with a version option of your own. Registering a component with
+  `SchemaRegistry` from `Corex::onReady()` reaches `wp corex migrate` and a network's new
+  sites, and not the check an admin page runs, which has finished by then.
 - **A site that loads `wp-admin/includes/file.php` itself, to make a form's file upload work,
   can stop.** The framework loads it where it is needed. Leaving the workaround in place does
   no harm.

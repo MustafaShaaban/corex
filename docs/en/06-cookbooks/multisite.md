@@ -110,6 +110,14 @@ resolves `wp_2_corex_activity` with no further help. Two things follow.
 not write tables — so a site activated entirely through WP-CLI has no CoreX tables until the first admin
 request, a cron run, or an explicit migrate. Provisioning that never loads wp-admin should call it.
 
+**An add-on's table follows the add-on.** Newsletter, Bookings and Careers each own a table and declare
+it to the same runner, so it is created the same way: on the first admin request or cron run of a site
+that has the add-on, by `wp corex migrate`, or on `wp_initialize_site`. No request creates it otherwise.
+Which tables a run knows about is decided by the site the run started on, because that is the site whose
+add-ons were loaded. Where an add-on is active on one site only, migrate that site by its own address;
+`--network` started from a site without the add-on does not create the add-on's table anywhere, and
+started from a site with it creates the table on every site.
+
 **An existing network is migrated explicitly**, because installing an update does not visit every site:
 
 ```bash

@@ -104,10 +104,15 @@ abstract class TestCase extends IntegrationTestCase
      * Boot WordPress in a separate request so add-on providers resolve for that site's activation
      * state instead of reusing the test runner's main-site Boot singleton.
      *
+     * `$arguments` are passed to WP-CLI as they are: `--context=admin` makes the request an admin
+     * one, which is where CoreX brings a site's schema up to date.
+     *
+     * @param list<string> $arguments
+     *
      * @return array<string, mixed>
      * @throws JsonException
      */
-    protected function wpCliJson(int $siteId, string $php): array
+    protected function wpCliJson(int $siteId, string $php, array $arguments = []): array
     {
         $root = dirname(__DIR__, 2);
         // Forward slashes, deliberately. Composer's wp.bat shim ends in `sh "%BIN_TARGET%" %*`, so
@@ -135,6 +140,7 @@ abstract class TestCase extends IntegrationTestCase
             '--path=' . $rootPath . '/wp-ms',
             '--url=' . get_site_url($siteId),
             '--skip-themes',
+            ...$arguments,
         ];
         $descriptors = [
             0 => ['pipe', 'r'],
