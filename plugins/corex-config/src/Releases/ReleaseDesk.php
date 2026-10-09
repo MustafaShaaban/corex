@@ -14,8 +14,9 @@ defined('ABSPATH') || exit;
  * What the Releases screen asks before anything is installed: what is on this site, what this
  * host can do, and what a given package is (spec 107, US1 and US2; FR-010, FR-017).
  *
- * It reads. The one thing it writes is a line in the installer's log when a package is refused
- * (FR-051): who offered it, when, and why it was not taken.
+ * It reads, until a package is refused. Then it writes a line in the installer's log (FR-051:
+ * who offered it, when, and why it was not taken) and removes the package: one the site will
+ * not install is not left on it (FR-003).
  */
 final class ReleaseDesk
 {
@@ -64,7 +65,7 @@ final class ReleaseDesk
      *
      * @return array<string,mixed> The statement of FR-010, and what on this host stands in the way of installing it.
      *
-     * @throws ReleaseRefused When the package is not one this site should install.
+     * @throws ReleaseRefused When the package is not one this site should install. It is gone from the site by then.
      */
     public function inspect(string $name, int $actorId): array
     {
@@ -87,8 +88,13 @@ final class ReleaseDesk
                 'by'      => $actorId,
                 'at'      => gmdate('c'),
             ]);
+            unlink($file);
 
-            throw $refused;
+            throw new ReleaseRefused($refused->reason, sprintf(
+                /* translators: %s: why a package was refused, as one or more whole sentences. */
+                __('%s The package was removed from the site.', 'corex'),
+                $refused->getMessage(),
+            ));
         }
 
         return [

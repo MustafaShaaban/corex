@@ -56,6 +56,7 @@ use Corex\Config\Releases\ReleaseDesk;
 use Corex\Config\Releases\ReleasePackageInspector;
 use Corex\Config\Releases\ReleaseRestGateway;
 use Corex\Config\Releases\ReleasesController;
+use Corex\Config\Releases\ReleasesScreen;
 use Corex\Config\Releases\ReleaseStore;
 use Corex\Config\Releases\ReleaseUpload;
 use Corex\Config\Data\DataManagementServices;
@@ -583,6 +584,7 @@ final class ConfigServiceProvider extends ServiceProvider
         );
         $this->container->singleton(ReleaseRestGateway::class);
         $this->container->singleton(ReleasesController::class);
+        $this->container->singleton(ReleasesScreen::class);
 
         // Insights: the provider registry (Performance over PSI + Readiness over native signals
         // and an optional Cloudflare scan), the cache, the REST controller, and the screen (spec
@@ -1027,6 +1029,7 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->make(DataAdminScreen::class)->register();
         $this->container->make(InsightsScreen::class)->register();
         $this->container->make(\Corex\Config\Notifications\NotificationsScreen::class)->register();
+        $this->container->make(ReleasesScreen::class)->register();
         $this->container->make(OptionPageScreen::class)->register();
         $this->container->make(\Corex\Config\Data\DataExportController::class)->register(); // CSV export (spec 045)
 

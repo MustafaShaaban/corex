@@ -230,6 +230,16 @@ jobs:
           mkdir -p wp/wp-content/mu-plugins
           cp tests/e2e/fixtures/corex-e2e-*.php wp/wp-content/mu-plugins/
 
+      # A browser test gives the Releases screen a package, and the site keeps it in
+      # wp-content/corex-releases. php-fpm runs as www-data here and can write nowhere under
+      # wp-content, so the one folder is made for it. Everything else stays as it is: a site
+      # that cannot write its own plugins and themes is what the screen's list of what stands
+      # in the way is for, and the same tests read that list.
+      - name: Give the site a folder to keep a release in
+        run: |
+          mkdir -p wp/wp-content/corex-releases
+          chmod -R a+rwx wp/wp-content/corex-releases
+
       - name: Seed browser-test fixtures
         run: |
           # /contact/ carrying the registered contact form. corex/form with no flowId or flowSlug
