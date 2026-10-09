@@ -13,7 +13,8 @@ defined('ABSPATH') || exit;
 use Corex\Captcha\Captcha;
 use Corex\Container\ContainerInterface;
 use Corex\Database\Schema\ManagedTables;
-use Corex\Database\Schema\Migrator;
+use Corex\Database\Schema\SchemaComponent;
+use Corex\Database\Schema\SchemaRegistry;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Foundation\ServiceProvider;
 use Corex\Mail\Mailer;
@@ -34,9 +35,16 @@ use WP_REST_Response;
  * Wires the newsletter: bindings, the subscribers table, the `newsletter_topic`
  * taxonomy, the confirm/unsubscribe link handler, the subscribe REST route, the
  * on-publish notifier, and the email templates (when Corex Mail is active).
+ *
+ * The table is declared, not created: the migration runner creates it when the version stored
+ * for the site differs from the one here, from an admin page, cron, `wp corex migrate` or a
+ * network's new site. Change the columns and raise the version with them.
  */
 final class NewsletterServiceProvider extends ServiceProvider
 {
+    private const SCHEMA_OPTION = 'corex_newsletter_schema_version';
+    private const SCHEMA_VERSION = '1';
+
     public function register(): void
     {
         $this->container->singleton(
@@ -73,6 +81,13 @@ final class NewsletterServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->container->make(SchemaRegistry::class)->register(new SchemaComponent(
+            'newsletter',
+            self::SCHEMA_VERSION,
+            [(new SubscriberTable())->schema()],
+            self::SCHEMA_OPTION,
+        ));
+
         add_action('init', [$this, 'install']);
         add_action('init', [$this, 'handleLinks']);
         add_action('rest_api_init', [$this, 'registerRoute']);
@@ -81,14 +96,12 @@ final class NewsletterServiceProvider extends ServiceProvider
     }
 
     /**
-     * Create the subscribers table, register the topic taxonomy, and register the
-     * email templates with Corex Mail.
+     * Declare the subscribers table to the Data screen, register the topic taxonomy, and
+     * register the email templates with Corex Mail.
      */
     public function install(): void
     {
         $table = new SubscriberTable();
-
-        $this->container->make(Migrator::class)->create($table->schema());
 
         // Subscribers is the framework's reference writable model (spec 074): declaring it managed
         // is what puts it in Corex → Data, and its declaration is what makes the Import and
