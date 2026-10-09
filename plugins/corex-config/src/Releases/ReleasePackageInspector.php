@@ -207,19 +207,9 @@ final class ReleasePackageInspector
         }
     }
 
-    /**
-     * An entry is written where its name says. One that climbs with `..`, starts at the root
-     * or names a drive would be written outside the folder the package is unpacked to.
-     */
     private function refuseAnEntryThatLeavesThePackage(string $name): void
     {
-        $leaves = str_starts_with($name, '/')
-            || str_contains($name, '\\')
-            || str_contains($name, "\0")
-            || preg_match('#^[A-Za-z]:#', $name) === 1
-            || in_array('..', explode('/', $name), true);
-
-        if ($leaves) {
+        if (ReleaseEntryName::leavesThePackage($name)) {
             throw new ReleaseRefused(ReleaseRefused::UNSAFE_ENTRY, sprintf(
                 /* translators: %s: the path of a file inside the package. */
                 __('This package holds a file whose path leaves the package (%s). It was not unpacked.', 'corex'),

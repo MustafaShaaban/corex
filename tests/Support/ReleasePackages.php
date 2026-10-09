@@ -101,6 +101,72 @@ final class ReleasePackages
         return self::zip(array_merge($entries, $more));
     }
 
+    /**
+     * A package whose description is true of it: each folder's count, bytes and hash are worked
+     * out from the files given, by the rule the builder follows and not by the class a site
+     * checks them with.
+     *
+     * @param array<string,string> $files Each file's path in the package, under a release path, and what it holds.
+     * @param array<string,string> $more  Entries the description says nothing of: WordPress's own files, say.
+     */
+    public static function faithful(array $files, array $more = []): string
+    {
+        $paths = array_values(array_filter(self::PATHS, static fn (string $path): bool => self::under($path, $files) !== []));
+
+        return self::zip(array_merge(
+            ['corex-release.json' => (string) json_encode(self::description([
+                'release_paths' => $paths,
+                'contents'      => array_combine($paths, array_map(
+                    static fn (string $path): array => self::holds(self::under($path, $files)),
+                    $paths,
+                )),
+            ]))],
+            $files,
+            $more,
+        ));
+    }
+
+    /**
+     * @param array<string,string> $files
+     *
+     * @return array<string,string> The files under a release path, by their path inside it.
+     */
+    private static function under(string $path, array $files): array
+    {
+        $under = [];
+
+        foreach ($files as $name => $holds) {
+            if (str_starts_with($name, $path . '/')) {
+                $under[substr($name, strlen($path) + 1)] = $holds;
+            }
+        }
+
+        return $under;
+    }
+
+    /**
+     * What the builder writes for a folder (plan D2): one line per file, sorted as bytes, hashed.
+     *
+     * @param array<string,string> $files
+     *
+     * @return array{files:int,bytes:int,hash:string}
+     */
+    private static function holds(array $files): array
+    {
+        $lines = [];
+
+        foreach ($files as $name => $holds) {
+            $lines[] = $name . "\0" . strlen($holds) . "\0" . hash('sha256', $holds) . "\n";
+        }
+        sort($lines, SORT_STRING);
+
+        return [
+            'files' => count($files),
+            'bytes' => array_sum(array_map('strlen', $files)),
+            'hash'  => hash('sha256', implode('', $lines)),
+        ];
+    }
+
     /** Remove every zip this made, and the empty file `tempnam()` left beside each. */
     public static function clean(): void
     {

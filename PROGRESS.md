@@ -159,7 +159,7 @@ reaches a site's files before the fourth.
 | 1 | The package says what it needs and holds, and is one zip; a site can read and refuse the description | done (DECISIONS #282), unreleased |
 | 2 | A zip is inspected on the site, and every wrong package refused with nothing touched | done (DECISIONS #293), unreleased. Fourteen wrong packages, each a real zip, each refused for its own reason. Nothing calls it yet: no screen, no route, nothing bound in the container |
 | 3 | The Releases screen: receiving a package in parts, and what it is | done (DECISIONS #294, #296), unreleased. CoreX → Releases says what is running and what the host cannot do, sends a package in parts and states what it is, or gives the refusal in the site's words; a refused package is removed. Seen in a browser on the local site with a package of 851 bytes. No real package and no host yet, and nothing installs |
-| 4 | Unpack, verify, swap under WordPress's maintenance answer, finish with the database step | not started |
+| 4 | Unpack, verify, swap under WordPress's maintenance answer, finish with the database step | in progress, unreleased. Built (DECISIONS #300): a package is unpacked into the installer's own folder a request at a time and each folder held to the package's description; the swap, by renames written in a journal first, finishes or undoes itself after being cut off. Tested over real folders in a temp directory. Nothing calls either yet: no route, no screen, nothing bound. Still owed: the maintenance answer, the recovery file, the table copies, the database step, the installation that ties them together, the screen |
 | 5 | Going back from the screen, and the record | not started |
 | 6 | The deployment guide | not started |
 

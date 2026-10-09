@@ -57,6 +57,23 @@ final class InstalledRelease
     }
 
     /**
+     * The folders the running release said it holds. An installation moves one of these out
+     * when the next release does not hold it. None, for a release that did not say or a site
+     * that does not know: nothing is then moved but what the next release replaces.
+     *
+     * @return list<string>
+     */
+    public function ownedFolders(): array
+    {
+        $paths = $this->described()['release_paths'] ?? [];
+
+        return array_values(array_filter(
+            is_array($paths) ? $paths : [],
+            static fn (mixed $path): bool => is_string($path) && ReleaseManifest::owns($path),
+        ));
+    }
+
+    /**
      * @return array<string,mixed>|null The description, or null when the site has none it can rely on.
      */
     private function described(): ?array
