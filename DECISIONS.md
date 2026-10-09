@@ -9523,7 +9523,7 @@ undone.
 | Jest, everything | 905 passed in 82 suites |
 | Pest, unit suite | 2517 passed |
 | Playwright, the inbox in `loading-states.spec.js` | 3 passed: placeholder and real rows and headings the same height and the count line where it was; rows kept and the count waiting while a filter is applied; the pane's placeholder, then a pressed control working at the same size with the others off |
-| Playwright, `submissions-inbox.spec.js` | 12 passed, with the width expectation replaced (below). Before that, with `loading-states`, `admin-controls` and `data-management` run together: 54 passed, 2 failed, the old width expectation and a Data export download timing out under load (`data-management.spec.js` alone: 8 passed) |
+| Playwright, `submissions-inbox.spec.js` | 12 passed, with the width expectation replaced (above). Before that, with `loading-states`, `admin-controls` and `data-management` run together: 54 passed, 2 failed, the old width expectation and a Data export download timing out under load (`data-management.spec.js` alone: 8 passed) |
 | Looked at | The list, the pane and the export dialog, each held while it waited, dark, 1280 |
 
 **Not run.** Light theme and right-to-left were not looked at for these placeholders; they are
