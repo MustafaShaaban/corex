@@ -9601,3 +9601,66 @@ the temp directory has no such file.
 
 - The eight seconds is a guess at what hosts allow, and nothing measures it.
 - `STUCK` can be reached and is said plainly, but the recovery it points to is the next part.
+
+## #301 — Visitors get WordPress's own maintenance answer, and the way back is a file that needs no CoreX
+
+**Date:** 2026-10-09. **Spec:** 107, slice 4, the second part (T044 to T047). **Branch:** `feat/107-maintenance-recovery`.
+
+The two things an installation writes outside its own folder before it moves anything. Nothing
+calls them yet.
+
+**`.maintenance` in the site's root, as WordPress reads it.** WordPress includes that file
+before it loads any plugin and answers "briefly unavailable" itself, so no request runs a site
+that is part one release and part another, and nothing of CoreX has to be working for that to
+hold. The file sets `$upgrading`; WordPress stops honouring it ten minutes after that time,
+which is its rule and is left alone.
+
+**It lets one request through: the one carrying the installation's key.** In the header
+`X-Corex-Release-Key`, as the finishing request sends it, or in the address as
+`corex_release_key`, as the recovery link does. Only the key's SHA-256 is in the file.
+
+**`$upgrading` is written as a float.** WordPress lets a request through maintenance when it
+carries the MD5 of `$upgrading`, if that is an integer: its plugin editor's check for fatal
+errors. The time an installation began can be guessed, and that request would run a
+half-replaced site. A float is compared with the time the same way and is not an integer.
+
+**The way back is a must-use plugin with everything it needs written into it.**
+`wp-content/mu-plugins/corex-release-recovery.php`. WordPress loads must-use plugins before
+ordinary ones, so it runs when the release just installed does not load. It calls nothing of
+CoreX: the key's hash, where the journal and the maintenance file are, and the journal's own
+words (`done`, `pending`, `undone`, `stuck`) are written in as values when it is made. Asked
+with `corex_release_key` and `corex_release_recover`, it makes the swap's renames the other
+way, last first, marks the journal, removes `.maintenance`, says what it did in plain text and
+ends the request, so WordPress does not go on to load plugins from folders that have just
+moved. To any other request it does nothing and says nothing.
+
+**It keeps the site in maintenance when a folder will not go back,** and names the folder and
+where it is. Out of maintenance, such a site would be served half of each release.
+
+**Its text is English.** It is read by whoever is recovering a site whose plugins did not
+load, and the translations are in one of them.
+
+**An installation does not start without either.** A root that cannot be written, or a
+must-use folder that cannot be made, is a refusal in words (`not_writable`).
+
+**Verification.**
+
+| What | Result |
+|---|---|
+| Pest, `ReleaseMaintenanceTest` | 8 passed. The file is read the way `wp_is_maintenance_mode()` reads it: included in a function with `$upgrading` global, in maintenance while that is under ten minutes old |
+| Pest, `ReleaseRecoveryPluginTest` | 10 passed. The plugin is run in a PHP process of its own with `ABSPATH` defined and nothing else loaded, on a site in the temp folder that has just been swapped: with the key every folder is back and `.maintenance` gone; with no key, a wrong key, or the key without the request to recover, it prints nothing and changes nothing |
+| Each new test file on its own | passes: none borrows a helper another file defines |
+| Pest, unit suite | 2561 passed |
+
+**Not run.** No real WordPress has read this `.maintenance` or loaded this plugin: that is the
+integration and browser tests of the part that ties an installation together. The MD5 way
+through was reasoned from `wp-includes/load.php` in WordPress 7.1.3 and the test asserts only
+that `$upgrading` is not an integer.
+
+**Left open.**
+
+- After the recovery file has run, the site still records the newer release as installed. Going
+  back from the screen, and putting that record right, is slice 5.
+- The key is in the recovery link's address, so it reaches the server's access log. It goes
+  on working for as long as the recovery file is there, which is as long as the previous
+  release is kept. Whoever can read that log can read the site's files.

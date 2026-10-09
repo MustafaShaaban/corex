@@ -54,10 +54,10 @@ files before slice 4.
 - [x] T041 `ReleaseStaging`
 - [x] T042 [P] Pest unit: `ReleaseJournal` and `ReleaseSwap` over real folders — swaps every path; a folder the package does not name is left; a folder the installed release owned and the package dropped goes to `previous/`; cut off after any rename, the next call finishes or undoes and says which; a rename that fails undoes what was done
 - [x] T043 `ReleaseJournal`, `ReleaseSwap`
-- [ ] T044 [P] Pest unit: `ReleaseMaintenance` — writes a `.maintenance` WordPress will honour, that lets through only a request carrying the key; removes it; the key is never in the file, only its hash
-- [ ] T045 `ReleaseMaintenance`
-- [ ] T046 [P] Pest unit: the recovery plugin, included in a process with no CoreX — with the key it puts every folder back and removes `.maintenance`; without it, or with a wrong one, it does nothing and says nothing
-- [ ] T047 The stub; `ReleaseRecoveryPlugin` writes and removes it; an installation is refused when it cannot be written
+- [x] T044 [P] Pest unit: `ReleaseMaintenance` — writes a `.maintenance` WordPress will honour, that lets through only a request carrying the key; removes it; the key is never in the file, only its hash
+- [x] T045 `ReleaseMaintenance`
+- [x] T046 [P] Pest unit: the recovery plugin, included in a process with no CoreX — with the key it puts every folder back and removes `.maintenance`; without it, or with a wrong one, it does nothing and says nothing
+- [x] T047 The stub; `ReleaseRecoveryPlugin` writes and removes it; an installation is refused when it cannot be written
 - [ ] T048 [P] Pest unit: `ReleaseTableCopies` — one copy per registered table, named so it can be found and dated; nothing is renamed over a live table
 - [ ] T049 `ReleaseTableCopies`
 - [ ] T050 Pest integration: `ReleaseFinisher` — a component behind its version is migrated and listed with from and to; one already current says no change was needed; a failure is named, the release is not recorded as installed, and `.maintenance` stays until going back

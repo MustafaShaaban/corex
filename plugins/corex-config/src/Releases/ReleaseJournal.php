@@ -91,12 +91,18 @@ final class ReleaseJournal
         return (string) ($this->read()['refused'] ?? '');
     }
 
+    /** Where the journal is, for the recovery file that reads it when CoreX cannot. */
+    public function file(): string
+    {
+        return $this->store->fileIn('previous', self::FILE);
+    }
+
     /**
      * @return array<string,mixed>
      */
     private function read(): array
     {
-        $file = $this->store->fileIn('previous', self::FILE);
+        $file = $this->file();
         $held = is_file($file) ? json_decode((string) file_get_contents($file), true) : null;
 
         return is_array($held) ? $held : [];
@@ -110,7 +116,7 @@ final class ReleaseJournal
      */
     private function write(array $journal): void
     {
-        $file    = $this->store->fileIn('previous', self::FILE);
+        $file    = $this->file();
         $written = $file . '.' . bin2hex(random_bytes(4)) . '.tmp';
 
         // Direct writes, as the store's own: nothing here can stop to ask for credentials.
