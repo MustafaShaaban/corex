@@ -8975,7 +8975,7 @@ What was run:
 | Check | Result |
 |---|---|
 | `ChoiceAndFileSubmissionTest` (new), the real route on real WordPress, against `main`'s classes | 4 failed, as reported |
-| The same against this branch | 4 passed |
+| The same against this branch | 3 passed |
 | `tests/Integration/Forms`, real WordPress | 77 passed |
 | `tests/Unit` | 2425 passed; 25 new (`ChoiceAnswerTest` 17, `PatternRuleTest` 6, `FileFieldTest` 2) |
 | Jest, the form runtime's four suites | 52 passed |
@@ -9203,6 +9203,145 @@ What was run:
 
 **Not run.** The whole integration and browser suites; CI runs both. No upload was made on a
 multisite install or through the Careers add-on's own route, which uses the same store.
+
+## #299 — An add-on declares its table and the migration runner creates it, so no request runs `dbDelta()`
+
+**Date:** 2026-10-09. **Spec:** none; the finding recorded at the end of #295.
+**Branch:** `fix/addon-tables-migrate-when-needed`.
+
+**The defect.** The Newsletter, Bookings and Careers add-ons each hooked `install()` to `init`,
+and `install()` called `Migrator::create()`. That is `dbDelta()`: it loads
+`wp-admin/includes/upgrade.php`, which loads the rest of the admin's files, and asks the
+database to describe the table. It ran on every front-end, REST, admin, cron and command-line
+request of a site with one of the three. It is also what hid #295.
+
+**The mechanism was already there.** Spec 100 gave the foundation tables a registry
+(`SchemaRegistry`), a runner that creates a component's tables only when the version stored for
+the site differs (`SiteMigrationRunner`), and four callers: the self-heal on an admin page or
+cron, `wp corex migrate`, `wp_initialize_site`, and `wpmu_drop_tables` for a deleted site. Each
+add-on now registers a `SchemaComponent` when it boots, and `install()` no longer creates
+anything. The option names are `corex_newsletter_schema_version`,
+`corex_bookings_schema_version` and `corex_careers_schema_version`, each at version `1`. Nothing
+new was invented. A version option read inside each add-on's `install()` was the other way to
+do it; it would have written schema from a front-end request, which spec 100 forbids (FR-035),
+and left a network's new and deleted sites to each add-on.
+
+**What `install()` still does on `init`** is what was to be kept: the job post type and its
+taxonomies, the newsletter's taxonomy, the two tables' declarations to the Data screen, the
+block, and the email templates. Bookings wrote its columns inside the provider; they are in
+`CallRequestTable` now, because the runner has to be handed them.
+
+**The provider that heals now boots last.** The self-heal runs inside
+`MultisiteServiceProvider::boot()`, and it creates the tables of the components registered by
+then. That provider was the last of the core providers, and add-ons are appended after the
+core list, so an add-on's component would have been registered after the heal had run and
+its table never created by an admin page. `Boot::providersForState()` now appends that
+provider after the add-ons. Declaring in `register()` would also have put the component in
+time, and was not done: `ServiceProvider::register()` is documented as binding and nothing
+else. This was seen, not only reasoned: during the checks below one run mixed this branch's
+providers with the old order by accident, and the admin request created no table.
+
+**What changes for a site.**
+
+- A site that has the tables: the first admin page or cron run after the update runs `dbDelta()`
+  once per add-on, changes nothing, and stores the version. No later request runs it.
+- An add-on activated in wp-admin: the request after the activation is an admin page, and
+  creates the table.
+- An add-on activated with WP-CLI: no table until `wp corex migrate`, an admin page or cron.
+  Before, the next request of any kind created it. This is the rule the foundation tables have
+  had since spec 100; `scripts/setup-wordpress.ps1` and the CI action already run
+  `wp corex migrate` after activating.
+- A network: a site made by a request that has the add-on gets the table as WordPress
+  initializes it, and loses it as WordPress deletes it. Before, a deleted site's add-on tables
+  were left in the database.
+
+**Not built, and written down.**
+
+- Which components a request knows is decided by the add-ons of the site it started on. An
+  add-on active on one site of a network is healed by that site's own admin pages and cron, and
+  by `wp corex migrate --url=<site>`. `wp corex migrate --network` started from a site without
+  the add-on does not create the add-on's table anywhere; started from a site with it, it
+  creates the table on every site, the ones without the add-on included (`pendingSiteIds()`
+  listed all four sites of the fixture from such a site). A site deleted by a request without
+  the add-on keeps the add-on's table. This is how the registry has worked since spec 100 and
+  it showed only now, because the foundation is network-active wherever it is used. The
+  multisite cookbook says so.
+- Between activating an add-on from CoreX's Add-ons screen and the next admin page or cron run
+  there is no table. The activating request is itself an admin page, and the add-on is not
+  loaded in it.
+- A site plugin registers on `corex_booted`, after the heal. A component it registers there is
+  seen by `wp corex migrate` and by a network's new sites, and not by the admin heal.
+- No test activates an add-on network-wide: the fixture network has none of the three, and the
+  test makes its own site and activates them there.
+
+**Checked beyond the three add-ons.** With the accident gone, a call to an admin-only function
+without its `require` fails on a site where it used to pass. `AdminOnlyFunctionsTest` knows 26
+functions. A script of the moment read every function WordPress 7.1 defines under
+`wp-admin/includes/` and nowhere in `wp-includes/` (804), and every call to one in CoreX's own
+PHP. What it found without a `require`: `add_menu_page()`, `add_submenu_page()` and
+`wp_add_dashboard_widget()`, all on admin hooks, and `get_current_screen()` four times, each
+behind `function_exists()` or on an admin hook. Nothing to fix. The script is not in the
+repository: a list of 804 names from one WordPress version is not a test to keep.
+
+**The tests.**
+
+- `tests/Unit/Addons/AddonTableDeclarationTest.php`: each provider registers its component when
+  it boots, and its `install()` creates nothing and registers what it did before.
+- `tests/Unit/Foundation/BootTest.php`: the provider that heals is last, after the add-ons.
+- `tests/Integration/Schema/AddonTablesTest.php`, on real WordPress. Two of its three load
+  WordPress in a PHP process of their own, because the test process has already run tests that
+  create tables: a front-end request does not have `dbDelta()` and sends no `DESCRIBE`,
+  `CREATE TABLE` or `ALTER TABLE`; nor does the second admin request. The third gives a site
+  without the tables all three, with the versions stored, and a second run sends no schema
+  statement. It does not drop the install's own tables to do so: the migrator reads the table
+  prefix each time it names one, which is how a network's sites are told apart, so the test
+  runs under another prefix and removes what it made.
+- `tests/Multisite/AddonTablesTest.php`, on a real network, each step a WP-CLI request of the
+  site: it makes a site and activates the three add-ons on it; a plain request finds no table
+  and no `dbDelta()`; a request in WP-CLI's admin context creates the three under that site's
+  prefix and stores the versions; the next plain request has no `dbDelta()`; the main site is
+  as it was; a site made from that site gets the tables and loses them when deleted.
+  `wpCliJson()` takes extra WP-CLI arguments for the admin context.
+
+**Measured on the development site**, one front-end load of WordPress in a PHP process, the
+three add-ons active, before and after:
+
+| | The providers on `main` | This branch |
+|---|---|---|
+| `dbDelta()` defined after the load | yes | no |
+| Files loaded from `wp-admin/includes/` | 34 | 2 |
+| Files loaded in all | 1196 | 1165 |
+| Queries | 17 | 11 |
+| `DESCRIBE` statements | 3 | 0 |
+
+The two files that remain are `plugin.php` and `class-wp-site-health.php`, loaded on purpose
+by other code. The time of one load was not a measurement: 795ms and 756ms, one run each.
+
+With the three version options deleted, as on a site that has just taken the release: a
+front-end request wrote nothing and loaded nothing; the first admin request ran `dbDelta()`
+for the three tables and stored the versions; the second ran nothing.
+
+What was run:
+
+| Check | Result |
+|---|---|
+| The new unit tests before the change | 7 failed: nothing declared, three tables created on `init`, the healing provider not last |
+| `tests/Unit` after | 2515 passed |
+| `tests/Integration/Schema` against the providers on `main` | 3 failed |
+| The same against this branch | 3 passed |
+| `tests/Integration`: Newsletter, Bookings, Careers, Foundation, Data, DataModels, Blocks, Email, `BootContextsTest` | 75 passed |
+| `tests/Multisite/AddonTablesTest.php` against the providers on `main` | failed: no component for the site |
+| `tests/Multisite`, all seven files, against this branch | 7 passed |
+
+**How the real-WordPress tests were run here.** The development installs load the framework
+from the root checkout, which another session holds on another branch. The integration and
+multisite tests ran against those installs with this branch's changed classes served to the
+test processes alone, through a PHP `auto_prepend_file` set by an environment variable. The
+root checkout was not touched. The development site's database now holds the three version
+options, and the network is as it was.
+
+**Not run.** The whole integration suite and the browser suite; CI runs both, on installs
+provisioned fresh, where the add-ons' tables exist only because `wp corex migrate` made them.
 
 ## #298 — The inbox is drawn as coming until it is answered, and its pane sends one request at a time
 

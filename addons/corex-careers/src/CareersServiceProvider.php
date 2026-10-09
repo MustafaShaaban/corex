@@ -24,7 +24,8 @@ use Corex\Careers\Templates\ApplicationReceivedTemplate;
 use Corex\Careers\Templates\NewApplicationTemplate;
 use Corex\Container\ContainerInterface;
 use Corex\Database\Schema\ManagedTables;
-use Corex\Database\Schema\Migrator;
+use Corex\Database\Schema\SchemaComponent;
+use Corex\Database\Schema\SchemaRegistry;
 use Corex\Email\Template\TemplateRegistry;
 use Corex\Foundation\ServiceProvider;
 use Corex\Mail\Mailer;
@@ -38,9 +39,16 @@ use WP_REST_Response;
 /**
  * Wires careers: the job CPT + taxonomies, the applications table, the corex/jobs
  * block, the application service, the apply REST route, and the email templates.
+ *
+ * The table is declared, not created: the migration runner creates it when the version stored
+ * for the site differs from the one here, from an admin page, cron, `wp corex migrate` or a
+ * network's new site. Change the columns and raise the version with them.
  */
 final class CareersServiceProvider extends ServiceProvider
 {
+    private const SCHEMA_OPTION = 'corex_careers_schema_version';
+    private const SCHEMA_VERSION = '1';
+
     private const CV_TYPES = [
         'application/pdf' => ['pdf'],
         'application/msword' => ['doc'],
@@ -75,6 +83,13 @@ final class CareersServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->container->make(SchemaRegistry::class)->register(new SchemaComponent(
+            'careers',
+            self::SCHEMA_VERSION,
+            [(new ApplicationTable())->schema()],
+            self::SCHEMA_OPTION,
+        ));
+
         add_action('init', [$this, 'install']);
         add_action('rest_api_init', [$this, 'registerRoute']);
     }
@@ -100,15 +115,11 @@ final class CareersServiceProvider extends ServiceProvider
             ]);
         }
 
-        $applications = new ApplicationTable();
-
-        $this->container->make(Migrator::class)->create($applications->schema());
-
         // Registered as managed, so applications are visible on the Data screen at all (#138 item
         // 14). The table was created and migrated and never registered, so every application a site
         // received went somewhere no admin surface reads — compounding the CV that was never stored
         // in the first place.
-        $this->container->make(ManagedTables::class)->register($applications->managed());
+        $this->container->make(ManagedTables::class)->register((new ApplicationTable())->managed());
 
         $registrar = $this->container->make(DynamicBlockRegistrar::class);
         $built = dirname(__DIR__) . '/build/blocks';

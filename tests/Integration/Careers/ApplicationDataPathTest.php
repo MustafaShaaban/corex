@@ -2,7 +2,7 @@
 
 /**
  * Integration test: the application data path on real ./wp (spec 014 US2: FR-003, SC-002).
- * The provider creates the corex_applications table on init; this stores an application
+ * The migration runner created the corex_applications table; this stores an application
  * through the real custom-table store and confirms the notification path. Mail is intercepted.
  *
  * **The attachment store is substituted, and that is deliberate.** Since spec 081 the service

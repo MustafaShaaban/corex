@@ -62,10 +62,16 @@ final class Boot
         NavigationServiceProvider::class,
         FormsServiceProvider::class,
         AbilitiesProvider::class,
-        // Last by design: ConfigServiceProvider registers its SchemaComponent during boot
-        // before multisite self-heal reads the registry on both install shapes (spec 100 FR-035).
-        MultisiteServiceProvider::class,
     ];
+
+    /**
+     * Boots after every other provider, add-ons included: its boot runs the schema self-heal,
+     * which creates the tables of the components declared by then. ConfigServiceProvider and each
+     * add-on that owns a table declare theirs while they boot (spec 100 FR-035, DECISIONS #299).
+     *
+     * @var class-string<\Corex\Foundation\ServiceProvider>
+     */
+    private const SCHEMA_HEALING_PROVIDER = MultisiteServiceProvider::class;
 
     private static bool $booted = false;
 
@@ -149,9 +155,11 @@ final class Boot
      */
     public static function providersForState(AddonRuntimeState $state): array
     {
-        return (new AddonProviderResolver((new AddonProviderRegistry())->all()))
+        $providers = (new AddonProviderResolver((new AddonProviderRegistry())->all()))
             ->resolve(self::CORE_PROVIDERS, $state)
             ->providerClasses();
+
+        return [...$providers, self::SCHEMA_HEALING_PROVIDER];
     }
 
     private static function runtimeState(RuntimeContexts $contexts): AddonRuntimeState
