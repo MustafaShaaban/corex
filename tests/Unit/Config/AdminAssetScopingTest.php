@@ -65,6 +65,7 @@ it('keeps every CoreX admin stylesheet scoped and on the admin adapter', functio
         'plugins/corex-config/assets/addons.css',
         'plugins/corex-config/assets/data.css',
         'plugins/corex-config/assets/insights.css',
+        'plugins/corex-config/assets/releases.css',
         'addons/corex-captcha/assets/captcha-admin.css',
     ];
 

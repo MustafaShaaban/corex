@@ -1,0 +1,203 @@
+/** CoreX Releases: a package sent and read; scoped to the CoreX shell. */
+
+/* The screen is a column of panels. The loadable, its body and its
+   placeholder are each a box around some of them, so each is the same
+   column: a panel is the same distance from the next whichever box it is in. */
+.corex-admin .corex-releases,
+.corex-admin .corex-releases .corex-loadable__body,
+.corex-admin .corex-releases .corex-admin-skeleton {
+	display: grid;
+	gap: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-releases__panel {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	padding: var(--corex-admin-space-lg);
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-md);
+}
+
+.corex-admin .corex-releases__heading {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-display);
+	font-size: var(--corex-admin-font-lg);
+	font-weight: 600;
+	line-height: var(--corex-admin-line-tight);
+}
+
+/* The statement's heading takes the focus when the statement arrives. It is
+   not a control, so the ring that says "this can be pressed" is left off. */
+.corex-admin .corex-releases__heading:focus {
+	outline: none;
+}
+
+.corex-admin .corex-releases__line {
+	max-inline-size: var(--corex-admin-measure);
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+}
+
+.corex-admin .corex-releases__line--quiet {
+	color: var(--corex-admin-text-muted);
+}
+
+/* What stands in the way, or has to be known first: a list set apart by the
+   warning colour, in words; the colour is not what says it. */
+.corex-admin .corex-releases__cautions {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	max-inline-size: var(--corex-admin-measure);
+	margin: 0;
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+	list-style: none;
+	background: var(--corex-admin-warning-soft);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-warning);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-releases__cautions li {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+/* The file, and the button that sends it. The label is a line of its own. */
+.corex-admin .corex-releases__send {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+}
+
+.corex-admin .corex-releases__label {
+	flex-basis: 100%;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+}
+
+.corex-admin .corex-releases__file {
+	flex: 1;
+	min-inline-size: 0;
+	min-block-size: var(--corex-admin-control-height);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+}
+
+/* The browser's own button for choosing a file, given the look of the
+   admin's secondary button: it is the first thing pressed on this screen. */
+.corex-admin .corex-releases__file::file-selector-button {
+	min-block-size: var(--corex-admin-control-height);
+	margin-inline-end: var(--corex-admin-space-sm);
+	padding-block: var(--corex-admin-space-xs);
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-body);
+	font-size: var(--corex-admin-font-sm);
+	font-weight: 600;
+	cursor: pointer;
+	background: var(--corex-admin-surface-raised);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border-strong);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-releases__file:not(:disabled)::file-selector-button:hover {
+	background: var(--corex-admin-surface-alt);
+}
+
+.corex-admin .corex-releases__file:disabled::file-selector-button {
+	cursor: default;
+	opacity: var(--corex-admin-disabled-opacity);
+}
+
+.corex-admin .corex-releases__file:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+.corex-admin .corex-releases__progress {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-releases__progress progress {
+	inline-size: 100%;
+	accent-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-releases__packages {
+	display: grid;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+/* One package: its name, its size, and what can be done with it at the end
+   of the row. A long name breaks; on a narrow screen the button goes under. */
+.corex-admin .corex-releases__held {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	margin: 0;
+	padding-block: var(--corex-admin-space-sm);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-releases__held:first-child {
+	padding-block-start: 0;
+	border-block-start: 0;
+}
+
+.corex-admin .corex-releases__held:last-child {
+	padding-block-end: 0;
+}
+
+.corex-admin .corex-releases__package {
+	flex: 1;
+	min-inline-size: 0;
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-sm);
+	overflow-wrap: anywhere;
+}
+
+.corex-admin .corex-releases__size {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	white-space: nowrap;
+}
+
+/* The statement: each fact a name over its value, as many across as fit. */
+.corex-admin .corex-releases__facts {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+	gap: var(--corex-admin-space-md);
+	margin: 0;
+}
+
+.corex-admin .corex-releases__fact dt {
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-releases__fact dd {
+	margin: var(--corex-admin-space-2xs) 0 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-md);
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}

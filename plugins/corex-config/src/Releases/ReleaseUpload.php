@@ -10,8 +10,6 @@ namespace Corex\Config\Releases;
 
 defined('ABSPATH') || exit;
 
-use RuntimeException;
-
 /**
  * Receives a release package in parts (spec 107, plan D12).
  *
@@ -69,7 +67,7 @@ final class ReleaseUpload
      * @param string $bytes  The part.
      *
      * @throws ReleaseUploadOutOfStep When the part does not start where the last one ended.
-     * @throws ReleaseRefused         When the hash is not one, or the package has grown past what a release can be.
+     * @throws ReleaseRefused         When the hash is not one, the package has grown past what a release can be, or the host will not let it be written.
      */
     public function append(string $sha256, int $offset, string $bytes): int
     {
@@ -79,7 +77,10 @@ final class ReleaseUpload
         // find the file the length they expect.
         $file = fopen($part, 'c+b'); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
         if ($file === false) {
-            throw new RuntimeException('A part of the package could not be written: ' . $part);
+            throw new ReleaseRefused(
+                ReleaseHostFacts::NOT_WRITABLE,
+                __('The site could not write the package in the folder it keeps releases in. Ask the host to let the site write in wp-content/corex-releases.', 'corex'),
+            );
         }
 
         try {

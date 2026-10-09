@@ -38,15 +38,15 @@ files before slice 4.
 ## Slice 3 — A package is received and read on the screen (US1, receiving; D12, D13)
 
 - [x] T030 Pest unit: `corex_manage_releases` is in the catalog, critical, implied by managing the admin, and not by managing operations
-- [ ] T031 The Releases screen in the admin shell's four maps (the ability itself is done, with T030)
+- [x] T031 The Releases screen in the admin shell's four maps (the ability itself is done, with T030)
 - [x] T032 [P] Pest unit: `ReleaseUpload` — parts appended in order; a part at the wrong offset refused with the offset it has; the whole file's hash checked at the end; a second upload does not disturb the first; names cannot leave `incoming/`; a hash that is not one is refused; a package that grows past the limit is thrown away
 - [x] T033 `ReleaseUpload`
 - [x] T034 Pest integration: the routes — refused without the ability or the nonce; a zip put in `incoming/` is listed; a package is received in parts, kept, inspected and its statement answered; a refusal is in words and is written down
 - [x] T035 `ReleasesController`, `ReleaseRestGateway`, `ReleaseDesk`, bindings
-- [ ] T036 [P] Jest: the installer's client — takes only an answer with the installer's mark; reads an HTML 200 as "wait"; backs off and resumes an upload from the offset the server answers; gives up after a stated number of tries and says so
-- [ ] T037 The client; the screen: the host's facts, the running release, receive, the statement, each refusal in words
-- [ ] T038 Playwright: the screen in both themes and both directions, at 1280 and 782; an upload of a small fixture package to its statement; measured spacing
-- [ ] T039 Guards; UI/UX gate; notes
+- [x] T036 [P] Jest: the installer's client — takes only an answer with the installer's mark; reads an HTML 200 as "wait"; backs off and resumes an upload from the offset the server answers; gives up after a stated number of tries and says so
+- [x] T037 The client; the screen: the host's facts, the running release, receive, the statement, each refusal in words
+- [x] T038 Playwright: the screen in both themes and both directions, at 1280 and 782; an upload of a small fixture package to its statement; measured spacing
+- [x] T039 Guards; UI/UX gate; notes
 
 ## Slice 4 — The release is installed (US1, US3; D6 to D11, D14)
 

@@ -8,6 +8,14 @@ All notable changes to Corex are documented here. The format follows
 
 ### Added
 
+- **CoreX → Releases: a screen that says what a site is running and reads a package given to
+  it** (spec 107, slice 3). It says which release the site is running and for whom, and what
+  on the host stands in the way of installing one. A package is chosen and sent in parts, with
+  how much of it the site holds as its progress; it goes on from where it stopped if the
+  connection drops. Once it is there the screen states what it is before anything changes: its
+  release, when it was built and for whom, what it would replace, how many files and how much
+  room. A package the site will not take is refused in the site's own words. Nothing is
+  installed from this screen yet, and the statement says so (DECISIONS #296).
 - **A release package can be given to a site, in parts, and read there** (spec 107, slice 3,
   the server's half). Five routes under `corex/v1/releases`: what is installed and what the
   host cannot do; a package received in parts, which goes on from where it stopped if the
@@ -327,6 +335,13 @@ All notable changes to Corex are documented here. The format follows
   `applyIds()` take the person's `SubmissionAccessScope` first. Use
   `SubmissionTrashService::trash()`. The `submissions` data source answers `delete: false`, and
   its `delete()` returns false.
+- **A new admin screen, CoreX → Releases**, for whoever holds `corex_manage_releases`. It reads
+  and receives; it installs nothing yet. On a network only a super administrator sees it, on
+  the main site.
+- **A package the site refuses is removed from it.** A zip in
+  `wp-content/corex-releases/incoming/` that is read and refused (not a package, another
+  client's, a PHP or WordPress the host does not have) is deleted, whether it was uploaded or
+  put there by hand. The refusal says so. Keep your own copy of a package.
 - **A site with Newsletter, Bookings or Careers: nothing to do where somebody opens wp-admin
   or cron runs.** The tables are already there. The first admin page or cron run after the
   update checks each once and stores three options, `corex_newsletter_schema_version`,

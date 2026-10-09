@@ -15,9 +15,12 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Config\Releases\ReleaseHostFacts;
+use Corex\Config\Releases\ReleaseRefused;
 use Corex\Config\Releases\ReleaseStore;
 
 beforeEach(function () {
+    Functions\when('__')->returnArg();
     Functions\when('wp_mkdir_p')->alias(static fn (string $path): bool => is_dir($path) || mkdir($path, 0777, true));
     Functions\when('wp_json_encode')->alias('json_encode');
 
@@ -78,6 +81,28 @@ it('lists the packages it holds, however they came to be there, and nothing else
         'corex-release-acme-0.44.0-20261008-180000.zip' => 300,
         'corex-release-acme-0.45.0-20261101-090000.zip' => 500,
     ]);
+});
+
+it('makes nothing in order to say which packages it holds', function () {
+    // Asking is not a reason to write. On a host where the site cannot make its folder the
+    // screen still has to open, to say so (FR-017).
+    expect($this->store->packages())->toBe([])
+        ->and(is_dir($this->content . '/corex-releases'))->toBeFalse();
+});
+
+it('says in words that it has nowhere to keep a release, where the host will not let it make the place', function () {
+    // The browser job's site in CI is such a host: its web server cannot write in wp-content,
+    // and the route answered with PHP's own error page there (PR #324).
+    Functions\when('wp_mkdir_p')->justReturn(false);
+
+    try {
+        $this->store->root();
+    } catch (ReleaseRefused $refused) {
+        expect($refused->reason)->toBe(ReleaseHostFacts::NOT_WRITABLE)
+            ->and($refused->getMessage())->toContain('corex-releases');
+    }
+
+    expect(isset($refused))->toBeTrue();
 });
 
 it('remembers an installation in progress, and forgets it when told', function () {

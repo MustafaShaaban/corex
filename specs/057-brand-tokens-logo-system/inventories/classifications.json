@@ -3,7 +3,7 @@
   "authority": "theme/theme.json",
   "summary": {
     "definitions": 77,
-    "consumer_records": 1146,
+    "consumer_records": 1182,
     "retained": 56,
     "added": 10,
     "aliased": 11,
@@ -573,6 +573,7 @@
         "plugins/corex-config/assets/forms-admin.scss",
         "plugins/corex-config/assets/insights.css",
         "plugins/corex-config/assets/operations-security.css",
+        "plugins/corex-config/assets/releases.css",
         "plugins/corex-config/assets/submissions-admin.css",
         "plugins/corex-config/assets/submissions-admin.scss"
       ],
@@ -608,6 +609,7 @@
         "--corex-admin-line-tight",
         "--corex-admin-link",
         "--corex-admin-link-hover",
+        "--corex-admin-measure",
         "--corex-admin-motion-fast",
         "--corex-admin-overlay",
         "--corex-admin-radius-lg",
