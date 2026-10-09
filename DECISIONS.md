@@ -9501,6 +9501,16 @@ export sees two placeholder entries and then nothing. The spec asks for the plac
 showing nothing until the list is known is how the section used to appear out of nowhere
 under a form that was being filled in.
 
+**The trash's width test measures what it was written for.** It compared how far the trash's
+table and the inbox's each ran past their frame, and allowed 16px. That is a date against
+whatever the Notification cell says: 27px on this machine, 68px in this pull request's CI
+run, and on `main` it had been passing on the inbox's stale rows under the trash's headings,
+which the placeholder took away. The session that owns the test (spec 105) wrote the
+replacement and it is carried here as written: the trash has the inbox's number of columns,
+and with the frame squeezed the "Moved to trash" column is no wider than the date in it, so
+the lines under the date wrap inside it. That session saw it fail by 97px with the wrapping
+undone.
+
 **No spinner is left.** `tests/repo-hygiene.test.js` fails if a script under
 `plugins/corex-config/src` names WordPress's `Spinner`, beside the test that does the same for
 `isBusy`.
@@ -9513,7 +9523,7 @@ under a form that was being filled in.
 | Jest, everything | 905 passed in 82 suites |
 | Pest, unit suite | 2517 passed |
 | Playwright, the inbox in `loading-states.spec.js` | 3 passed: placeholder and real rows and headings the same height and the count line where it was; rows kept and the count waiting while a filter is applied; the pane's placeholder, then a pressed control working at the same size with the others off |
-| Playwright, `submissions-inbox.spec.js`, `loading-states.spec.js`, `admin-controls.spec.js`, `data-management.spec.js` together | 54 passed, 2 failed. One is "moves submissions to the trash and restores them", on "the trash table is no wider than the inbox table" (27px over, 16 allowed): it fails on `main` on this machine too (63px), and the column it measures holds a date, whose width changes with the hour. The other is a Data export's download timing out, which this machine does when several specs run at once: `data-management.spec.js` alone is 8 passed |
+| Playwright, `submissions-inbox.spec.js` | 12 passed, with the width expectation replaced (below). Before that, with `loading-states`, `admin-controls` and `data-management` run together: 54 passed, 2 failed, the old width expectation and a Data export download timing out under load (`data-management.spec.js` alone: 8 passed) |
 | Looked at | The list, the pane and the export dialog, each held while it waited, dark, 1280 |
 
 **Not run.** Light theme and right-to-left were not looked at for these placeholders; they are
@@ -9524,4 +9534,3 @@ the shared bars the other five slices measured in both. No screen reader.
 - Opening an unread submission marks it read without going through the pane's one-at-a-time
   rule: a control pressed in that moment can still be refused as stale. It was so before.
 - "Open log" says nothing when the log cannot be read. It was so before.
-- The trash-width test above is the spec 105 session's, and has been reported to it.
