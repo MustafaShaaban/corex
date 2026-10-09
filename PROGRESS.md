@@ -96,8 +96,18 @@ now. A site that needs a type outside the list has no way to ask for it; nobody 
 Unreleased, reported from that client's site on 2026-10-09 (DECISIONS #295): every file sent
 through a form answered 500 there. The attachment store called `wp_handle_upload()` without
 loading the file that defines it. It is fixed, and a test reads the source for any other call to
-a function WordPress loads only in its admin; there was no other. Found on the way and not
-fixed: the Newsletter, Bookings and Careers add-ons run `dbDelta()` on every request.
+a function WordPress loads only in its admin; there was no other. Found on the way: the
+Newsletter, Bookings and Careers add-ons run `dbDelta()` on every request.
+
+Unreleased, that finding fixed (branch `fix/addon-tables-migrate-when-needed`, DECISIONS #299):
+the three add-ons declare their tables to the migration runner the foundation already uses, and
+no request creates one. A table is created from an admin page or cron, by `wp corex migrate`,
+or when a network gets a site, and only when the version stored for the site differs. On the
+development site a front-end request loaded 34 of the admin's files and described three tables;
+it loads 2 and describes none. The provider that runs the self-heal now boots after the
+add-ons. An add-on activated from the command line has no table until one of those three
+happens, which is under Client impact. Not built: an add-on that is active on one site of a
+network is not known to a run started from another site.
 
 Specified on 2026-10-08, neither planned nor built:
 

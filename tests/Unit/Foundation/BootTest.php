@@ -10,11 +10,15 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use Corex\Bookings\BookingsServiceProvider;
 use Corex\Boot;
 use Corex\Captcha\CaptchaServiceProvider;
+use Corex\Careers\CareersServiceProvider;
 use Corex\Foundation\Application;
 use Corex\Foundation\AddonRuntimeState;
+use Corex\Multisite\MultisiteServiceProvider;
 use Corex\Multisite\PluginActivationInspector;
+use Corex\Newsletter\NewsletterServiceProvider;
 use Corex\Support\Facades\Corex;
 use Corex\Ui\UiServiceProvider;
 
@@ -54,4 +58,24 @@ it('builds boot providers from runtime add-on state', function () {
 
     expect($providers)->toContain(\Corex\Foundation\CoreServiceProvider::class, UiServiceProvider::class)
         ->and($providers)->not->toContain(CaptchaServiceProvider::class);
+});
+
+// The schema self-heal runs when MultisiteServiceProvider boots, and it creates the tables of the
+// components declared by then. An add-on declares its table when it boots, so an add-on that
+// booted after it would have a table nothing ever created (DECISIONS #299).
+it('boots the provider that heals the schema after every add-on', function () {
+    $providers = Boot::providersForState(new AddonRuntimeState(
+        activeSlugs: ['corex-newsletter', 'corex-bookings', 'corex-careers'],
+        installedPluginFiles: [
+            'corex-newsletter/corex-newsletter.php',
+            'corex-bookings/corex-bookings.php',
+            'corex-careers/corex-careers.php',
+        ],
+    ));
+
+    expect($providers)->toContain(
+        NewsletterServiceProvider::class,
+        BookingsServiceProvider::class,
+        CareersServiceProvider::class,
+    )->and(end($providers))->toBe(MultisiteServiceProvider::class);
 });
