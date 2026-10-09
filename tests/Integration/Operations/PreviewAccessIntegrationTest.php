@@ -23,6 +23,7 @@ use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OptionPreviewAccessStore;
 use Corex\Config\Operations\PreviewAccess;
 use Corex\Config\Operations\PreviewAccessStore;
+use Corex\Tests\Support\AdminScreen;
 
 function corexPreviewAccess(): PreviewAccess
 {
@@ -246,7 +247,7 @@ it('gives a browser with preview access nothing in the admin that a stranger doe
     // sees no signed-in user, and it is WordPress that guards the admin.
     $token = corexPreviewAccess()->create(1, $this->now);
     $_COOKIE[PreviewAccess::COOKIE] = corexPreviewAccess()->grant($token, $this->now);
-    set_current_screen('dashboard');
+    AdminScreen::set('dashboard');
 
     $decision = corexPreviewVisit('/wp-admin/');
 

@@ -21,6 +21,7 @@ use Corex\Config\Operations\ComingSoonDecision;
 use Corex\Config\Operations\ComingSoonGuard;
 use Corex\Config\Operations\ComingSoonTemplate;
 use Corex\Config\Operations\OperationsMode;
+use Corex\Tests\Support\AdminScreen;
 
 const COREX_COMING_SOON_MODE_OPTION = 'corex_operations_mode';
 
@@ -256,7 +257,7 @@ it('publishes no sitemap when WordPress is set to discourage search engines', fu
 });
 
 it('never intercepts the admin', function () {
-    set_current_screen('dashboard');
+    AdminScreen::set('dashboard');
 
     expect(is_admin())->toBeTrue()
         ->and(corexComingSoonVisit('/about/', ['pagename' => 'about'])->outcome)->toBe(ComingSoonDecision::PASS);

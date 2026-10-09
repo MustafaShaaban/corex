@@ -164,6 +164,8 @@ it('tells a reader without the capability that they may not moderate', function 
 
     wp_set_current_user($this->actorId);
     wp_delete_comment($commentId, true);
+    // WordPress loads this for an admin page and for nothing else.
+    require_once ABSPATH . 'wp-admin/includes/user.php';
     wp_delete_user((int) $subscriber);
 });
 
@@ -180,5 +182,7 @@ it('closes the analytics route to an actor who cannot edit posts', function () {
     ))->toBeFalse();
 
     wp_set_current_user($this->actorId);
+    // WordPress loads this for an admin page and for nothing else.
+    require_once ABSPATH . 'wp-admin/includes/user.php';
     wp_delete_user((int) $subscriber);
 });

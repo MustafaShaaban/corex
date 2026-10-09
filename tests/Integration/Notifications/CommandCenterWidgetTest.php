@@ -12,6 +12,7 @@
 declare(strict_types=1);
 
 use Corex\Config\Notifications\CommandCenterWidget;
+use Corex\Tests\Support\AdminScreen;
 use Corex\Tests\Support\NotificationRows;
 
 /** The prefix of every key the readiness producer writes. */
@@ -34,13 +35,15 @@ afterEach(function () {
 
     // The registration test sets an admin screen (`dashboard`); restore a front-end screen so a later
     // test's is_admin() is not left true (which would, e.g., make MaintenanceGuard stop blocking).
-    set_current_screen('front');
+    AdminScreen::set('front');
     wp_set_current_user(0);
 });
 
 it('registers a dashboard widget for an administrator', function () {
+    // wp_add_dashboard_widget() is in the first and calls add_meta_box(), which is in the second.
     require_once ABSPATH . 'wp-admin/includes/dashboard.php';
-    set_current_screen('dashboard');
+    require_once ABSPATH . 'wp-admin/includes/template.php';
+    AdminScreen::set('dashboard');
     global $wp_meta_boxes;
     unset($wp_meta_boxes['dashboard']);
 

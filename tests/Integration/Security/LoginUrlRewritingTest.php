@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 use Corex\Config\Security\LoginProtection\LoginProtectionSettingsStore;
 use Corex\Config\Security\LoginProtection\LoginRouteGuard;
+use Corex\Tests\Support\AdminScreen;
 
 /**
  * Detach exactly this guard's filters.
@@ -51,7 +52,7 @@ function corexAskForCustomizer(LoginRouteGuard $guard, int $userId): object
         }
     };
 
-    set_current_screen('dashboard');
+    AdminScreen::set('dashboard');
     wp_set_current_user($userId);
     $_SERVER['REQUEST_URI'] = '/wp-admin/customize.php';
     $GLOBALS['wp_customize'] = $customizer;

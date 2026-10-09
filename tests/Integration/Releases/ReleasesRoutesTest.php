@@ -93,6 +93,8 @@ it('is closed to somebody who may not install releases', function () {
     try {
         $status = releasesRequest('GET', '/releases')->get_status();
     } finally {
+        // WordPress loads this for an admin page and for nothing else.
+        require_once ABSPATH . 'wp-admin/includes/user.php';
         wp_delete_user((int) $editor);
     }
 

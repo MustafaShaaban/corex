@@ -81,6 +81,8 @@ it('refuses somebody signed in who cannot manage submissions', function () {
     wp_set_current_user((int) $subscriber);
 
     $response = $this->server->dispatch(new WP_REST_Request('GET', '/corex/v1/submissions'));
+    // WordPress loads this for an admin page and for nothing else.
+    require_once ABSPATH . 'wp-admin/includes/user.php';
     wp_delete_user((int) $subscriber);
 
     expect($response->get_status())->toBe(403)
