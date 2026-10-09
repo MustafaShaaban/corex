@@ -13,6 +13,11 @@
  * every request and loads the whole admin on the way. No test with a stubbed `wp_handle_upload()`
  * can see that, so this one reads the source.
  *
+ * It reads the tests too. Once no add-on loaded the admin by accident (DECISIONS #299), ten
+ * integration test files turned out to call `wp_delete_user()` or `set_current_screen()` without
+ * loading them: each failed when run alone, and passed in the whole suite only because an earlier
+ * test had loaded the admin for a reason of its own.
+ *
  * @package Corex\Tests\Unit\Foundation
  */
 
@@ -52,16 +57,17 @@ const ADMIN_ONLY_FUNCTIONS = [
     'wp_delete_user' => 'user.php',
     'get_editable_roles' => 'user.php',
     'post_exists' => 'post.php',
+    'set_current_screen' => 'screen.php',
 ];
 
 /**
- * @return list<string> absolute paths of CoreX's own PHP source
+ * @return list<string> absolute paths of CoreX's own PHP source, its tests included
  */
 function corexPhpSourceFiles(): array
 {
     $files = [];
 
-    foreach (['plugins', 'addons', 'packages', 'theme'] as $relativeRoot) {
+    foreach (['plugins', 'addons', 'packages', 'theme', 'tests'] as $relativeRoot) {
         $root = ThemeContract::root() . '/' . $relativeRoot;
         if (! is_dir($root)) {
             continue;

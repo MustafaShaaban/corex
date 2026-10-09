@@ -17,6 +17,7 @@ use Corex\Config\Operations\ComingSoonGuard;
 use Corex\Config\Operations\ComingSoonNotice;
 use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
+use Corex\Tests\Support\AdminScreen;
 
 /** A fresh notice: the container's has printed-once state that must not leak between tests. */
 function corexComingSoonNotice(): ComingSoonNotice
@@ -207,7 +208,7 @@ it('queues its stylesheet, and the tokens it is drawn with, only on a response t
 });
 
 it('puts the message in the toolbar in the admin, for everybody who is served the real site', function () {
-    set_current_screen('dashboard');
+    AdminScreen::set('dashboard');
 
     wp_set_current_user(corexComingSoonNoticeAdministrator());
     $forAdministrator = corexComingSoonToolbar(corexComingSoonNotice());
@@ -228,7 +229,7 @@ it('adds nothing to the toolbar in another mode, on the front end, or for a user
     wp_set_current_user(corexComingSoonNoticeAdministrator());
     $onTheFrontEnd = corexComingSoonToolbar(corexComingSoonNotice());
 
-    set_current_screen('dashboard');
+    AdminScreen::set('dashboard');
     update_option('corex_operations_mode', OperationsMode::MAINTENANCE);
     $inAnotherMode = corexComingSoonToolbar(corexComingSoonNotice());
 

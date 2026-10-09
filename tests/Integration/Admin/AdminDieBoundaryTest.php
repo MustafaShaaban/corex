@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 use Corex\Admin\Errors\AdminDieHandler;
 use Corex\Boot;
+use Corex\Tests\Support\AdminScreen;
 
 /**
  * The filters WordPress consults for every non-HTML caller. CoreX must appear on none of them.
@@ -57,7 +58,7 @@ it('hands a front-end wp_die back to WordPress', function () {
 
     $wasAdmin = $GLOBALS['current_screen'] ?? null;
     unset($GLOBALS['current_screen']);
-    set_current_screen('front');
+    AdminScreen::set('front');
 
     expect($handler->handlerFor('_default_wp_die_handler'))->toBe('_default_wp_die_handler');
 
@@ -69,7 +70,7 @@ it('hands a front-end wp_die back to WordPress', function () {
 it('takes an admin wp_die', function () {
     $handler = Boot::app()->container()->make(AdminDieHandler::class);
 
-    set_current_screen('dashboard');
+    AdminScreen::set('dashboard');
 
     expect($handler->handlerFor('_default_wp_die_handler'))->not->toBe('_default_wp_die_handler');
 });

@@ -19,6 +19,7 @@ use Corex\Config\Operations\OperationsMode;
 use Corex\Config\Operations\OperationsModeStore;
 use Corex\Config\Settings\SettingsStore;
 use Corex\Database\Schema\Migrator;
+use Corex\Tests\Support\AdminScreen;
 
 /**
  * Opt a widget in exactly the way the settings screen does — writing the option the Config engine
@@ -33,8 +34,10 @@ function optInToWidget(string $widgetId, bool $on): void
 /** Register onto a clean dashboard and return the ids that landed on it. */
 function registeredDashboardIds(OptionalDashboardWidgets $widgets): array
 {
+    // wp_add_dashboard_widget() is in the first and calls add_meta_box(), which is in the second.
     require_once ABSPATH . 'wp-admin/includes/dashboard.php';
-    set_current_screen('dashboard');
+    require_once ABSPATH . 'wp-admin/includes/template.php';
+    AdminScreen::set('dashboard');
     global $wp_meta_boxes;
     unset($wp_meta_boxes['dashboard']);
 
@@ -96,7 +99,7 @@ afterEach(function () {
     }
 
     // Leave a front-end screen behind: a lingering admin screen leaks into later tests.
-    set_current_screen('front');
+    AdminScreen::set('front');
     wp_set_current_user(0);
 });
 
