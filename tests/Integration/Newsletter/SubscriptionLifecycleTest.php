@@ -2,7 +2,7 @@
 
 /**
  * Integration test: the subscriber data path on real ./wp (spec 013 US1: FR-001, FR-002, SC-001).
- * The provider creates the corex_subscribers table on init; this exercises subscribe → confirm
+ * The migration runner created the corex_subscribers table; this exercises subscribe → confirm
  * through the real custom-table store. The mail send is intercepted.
  *
  * @package Corex\Tests\Integration\Newsletter

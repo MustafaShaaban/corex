@@ -2,7 +2,7 @@
 
 /**
  * Integration test: the call-request data path on real ./wp (spec 015 US1: FR-003, SC-001).
- * The provider creates the corex_call_requests table on init; this stores a request through the
+ * The migration runner created the corex_call_requests table; this stores a request through the
  * real custom-table store with a configured leader. Mail is intercepted.
  *
  * @package Corex\Tests\Integration\Bookings

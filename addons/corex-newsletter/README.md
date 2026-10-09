@@ -17,6 +17,9 @@ corex-core (custom tables, events), Corex Mail (008), and Corex Captcha (012).
 ## Data + security
 
 - Subscribers live in a `corex_subscribers` custom table (topics as JSON, status, consent, timestamps).
+  The table is created on the site's first admin page or cron run after the
+  add-on is activated, or by `wp corex migrate`. An add-on activated from the command line has no
+  table until one of those.
 - Confirm/unsubscribe use **HMAC-signed tokens** (`TokenSigner`, secret from `newsletter.secret` or
   `wp_salt`); a tampered token verifies to nothing. The email links carry their own auth (no nonce).
 - The `newsletter_topic` taxonomy on posts is the shared topic set.

@@ -11,6 +11,9 @@ tables), Corex Mail (008), and Corex Captcha (012).
 3. A valid request (known leader + valid contact) is stored in the `corex_call_requests` custom table,
    and the **leader is notified** + the **visitor confirmed** (Corex Mail). A rejected request has
    **zero side effects**.
+   The table is created on the site's first admin page or cron run after the
+   add-on is activated, or by `wp corex migrate`. An add-on activated from the command line has no
+   table until one of those.
 
 ## Tests
 

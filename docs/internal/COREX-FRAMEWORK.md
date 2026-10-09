@@ -136,7 +136,11 @@ network-activated add-on, on every site, with the Network Plugins screen still r
 **Schema.** `SchemaRegistry` holds `SchemaComponent`s; `SiteMigrationRunner` applies them per site, in
 batches, continuing past a failing site rather than stopping. `SiteLifecycleSubscriber` installs on
 `wp_initialize_site` and returns the tables through `wpmu_drop_tables` so WordPress removes them with its own
-cleanup. Existing networks migrate explicitly with `wp corex migrate --network`.
+cleanup. Existing networks migrate explicitly with `wp corex migrate --network`. A provider that owns a
+table registers its component while it boots: `ConfigServiceProvider` for the foundation, and the
+Newsletter, Bookings and Careers add-ons for theirs. `MultisiteServiceProvider`, whose boot runs the
+self-heal, boots after every other provider, add-ons included, so the heal sees all of them. No provider
+calls `Migrator::create()` from a hook: that is `dbDelta()` on every request.
 
 **Config.** The resolution chain gains two network layers around the site option, so precedence is
 `.env` → network **lock** → site option → network **default** → code default. Both network layers read

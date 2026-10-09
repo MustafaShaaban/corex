@@ -23,6 +23,10 @@ use Corex\Foundation\ServiceProvider;
  * Binds schema orchestration during the register pass, then enables only the
  * network-specific hooks during boot. Self-heal runs for both install shapes so
  * removing ConfigServiceProvider's direct installer cannot regress single-site.
+ *
+ * Boot puts this provider after every other, add-ons included: the self-heal creates the
+ * tables of the components registered by the time it runs, and an add-on registers its own
+ * while it boots (DECISIONS #299).
  */
 final class MultisiteServiceProvider extends ServiceProvider
 {
