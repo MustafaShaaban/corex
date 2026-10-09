@@ -12,7 +12,6 @@ defined('ABSPATH') || exit;
 
 use Corex\Security\Upload\ProtectedUploads;
 use InvalidArgumentException;
-use RuntimeException;
 
 /**
  * The installer's own place on a site: `wp-content/corex-releases/` (spec 107, plan D5).
@@ -54,14 +53,19 @@ final class ReleaseStore
     /**
      * The place itself, made if it was not there and closed to a web server.
      *
-     * @throws RuntimeException When the host will not let it be made.
+     * @throws ReleaseRefused When the host will not let it be made: said in words, since a
+     *                        person at the screen is who has to ask the host about it.
      */
     public function root(): string
     {
-        $root = rtrim($this->contentDir, '/\\') . '/' . self::DIRECTORY;
+        $root = $this->place();
 
         if (! ProtectedUploads::guard($root)) {
-            throw new RuntimeException('The folder for releases could not be made: ' . $root);
+            throw new ReleaseRefused(ReleaseHostFacts::NOT_WRITABLE, sprintf(
+                /* translators: %s: a folder's path on the server. */
+                __('The site could not make the folder it keeps releases in: %s. Ask the host to let the site write in its wp-content folder.', 'corex'),
+                $root,
+            ));
         }
 
         foreach (self::AREAS as $area) {
@@ -69,6 +73,12 @@ final class ReleaseStore
         }
 
         return $root;
+    }
+
+    /** Where the place is, whether or not it has been made. */
+    private function place(): string
+    {
+        return rtrim($this->contentDir, '/\\') . '/' . self::DIRECTORY;
     }
 
     /**
@@ -95,13 +105,16 @@ final class ReleaseStore
     /**
      * The packages in `incoming/`, by name: uploaded, or put there by hand.
      *
+     * It reads and makes nothing. This is asked when the screen opens, and the screen has to
+     * open on a host where the place cannot be made, to say so.
+     *
      * @return list<array{name:string,bytes:int}>
      */
     public function packages(): array
     {
         $packages = [];
 
-        foreach (glob($this->root() . '/incoming/' . self::PACKAGES) ?: [] as $file) {
+        foreach (glob($this->place() . '/incoming/' . self::PACKAGES) ?: [] as $file) {
             $packages[] = ['name' => basename($file), 'bytes' => (int) filesize($file)];
         }
 

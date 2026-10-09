@@ -145,8 +145,8 @@ is the one spec issues #248 and #264 asked for, and both are closed. Four slices
 
 Five readings in the spec are the owner's to overrule; they are under its Assumptions.
 
-**Spec 107, a release installed from the admin on a host with no command line, is planned and
-not built** ([`specs/107-release-from-admin/`](specs/107-release-from-admin/spec.md)). It is the
+**Spec 107, a release installed from the admin on a host with no command line, has three of its
+six slices built** ([`specs/107-release-from-admin/`](specs/107-release-from-admin/spec.md)). It is the
 first of three the owner outlined for the client site that moved to shared hosting (release from
 the admin; data kinds and a safe push; pulling production data down). Four questions were his;
 he answered them with "decide the best for me", and the decisions are in the spec, each with its
@@ -158,7 +158,7 @@ reaches a site's files before the fourth.
 |---|---|---|
 | 1 | The package says what it needs and holds, and is one zip; a site can read and refuse the description | done (DECISIONS #282), unreleased |
 | 2 | A zip is inspected on the site, and every wrong package refused with nothing touched | done (DECISIONS #293), unreleased. Fourteen wrong packages, each a real zip, each refused for its own reason. Nothing calls it yet: no screen, no route, nothing bound in the container |
-| 3 | The Releases screen: receiving a package in parts, and what it is | the server's half done (DECISIONS #294), unreleased: the ability, receiving in parts, the five routes. The screen and its client (T031, T036 to T039) are not started |
+| 3 | The Releases screen: receiving a package in parts, and what it is | done (DECISIONS #294, #296), unreleased. CoreX → Releases says what is running and what the host cannot do, sends a package in parts and states what it is, or gives the refusal in the site's words; a refused package is removed. Seen in a browser on the local site with a package of 851 bytes. No real package and no host yet, and nothing installs |
 | 4 | Unpack, verify, swap under WordPress's maintenance answer, finish with the database step | not started |
 | 5 | Going back from the screen, and the record | not started |
 | 6 | The deployment guide | not started |

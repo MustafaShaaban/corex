@@ -9343,6 +9343,97 @@ options, and the network is as it was.
 **Not run.** The whole integration suite and the browser suite; CI runs both, on installs
 provisioned fresh, where the add-ons' tables exist only because `wp corex migrate` made them.
 
+## #296 — The Releases screen states what it knows, a refused package is removed, and the client hashes where the browser will not
+
+**Date:** 2026-10-09. **Spec:** 107, slice 3, the screen (T031, T036 to T039). **Branch:** `feat/107-releases-screen`.
+
+**The screen is three panels and an answer.** What is running and what the host cannot do;
+sending a package; the packages the site holds. Under them, when a package has been read: the
+statement of what it is, or the refusal. The statement is FR-010's list as a list (release,
+built, built for, replaces, files, size) and then whatever has to be known first: that it is
+older than what is running, that the site cannot say whose it is so nothing was compared, and
+what on the host stands in the way of this package.
+
+**Where an Install button will be there is a sentence.** "Reading a package changes nothing on
+the site. Installing one from this screen is not part of this release of CoreX yet." A button
+that does nothing, or a disabled one with no reason, would be the dead control the design
+mission rules out. Slice 4 replaces the sentence.
+
+**A refused package is removed, by the desk that refuses it** (FR-003). `ReleaseDesk::inspect()`
+writes the refusal down, deletes the file from `incoming/`, and adds "The package was removed
+from the site." to the reason. Without it a refused zip stayed in the list with a "Read this
+package" button until slice 5's sweep, which is how this was found: in a screenshot, not in a
+test. It applies to a zip put there by hand as much as to an upload, and to a refusal that is
+the host's doing (a PHP it does not have) as much as to one that is the package's. The cost is
+that such a package is sent again once the host is put right. A package that is not there any
+more is not a refusal of a package and removes nothing.
+
+**After a refusal the list is asked for again, and only the last asking's answer is kept.**
+Sending a package asks for the list and reads the package at once; a refusal asks for the list
+a second time while the first asking may still be out. The earlier answer, arriving last,
+would put the removed package back on the screen. `useOverview` numbers its askings.
+
+**The client computes SHA-256 itself where the browser will not.** `crypto.subtle` exists only
+on a page served over HTTPS or from the machine itself. The local site is neither, which is
+how it was met; a site whose certificate has not been issued yet is neither, and that is a
+site that has just moved hosts. `sha256.js` is FIPS 180-4 as written, given the file four
+megabytes at a time, used only when `crypto.subtle` is absent. It is held to Node's own for
+every length around a block's edge and however the message is cut. Over 192 MB it took 3.1
+seconds in Node and gave Node's hash.
+
+**The client adds to an address as the site spells it.** On a site without pretty permalinks a
+route is `?rest_route=/corex/v1/releases/…`, and the upload's `?offset=` after it made the
+offset part of the route. WordPress knows no such route, the answer is unmarked, and the
+client would have asked six times and given up. It joins with `&` there.
+
+**The screen opens on a host where the site cannot write.** Found by this pull request's own
+browser job: there the web server cannot write in `wp-content`, `ReleaseStore::root()` threw a
+`RuntimeException` making its folder, and every request of the Releases routes was answered
+with PHP's error page, which the client rightly read as "wait and ask again" until it gave up.
+Three changes. Listing the packages reads and makes nothing, so the screen opens and its list
+of what stands in the way says the folders cannot be written. A folder that cannot be made, and
+a part that cannot be written, are refusals in words (`not_writable`) through the marked
+answer, not exceptions. And CI gives that site the one folder, `wp-content/corex-releases`,
+so the browser tests can send a package; nothing else under `wp-content` is made writable,
+so the same tests still read the list on a host that has one.
+
+**The statement takes the focus when it arrives.** It is the answer to a button above it, and
+a screen reader is otherwise told nothing. Its heading is focusable and not a control, so it
+has no ring. A refusal is a `CorexErrorState` at panel scale, in the place a statement would
+be, and announces itself.
+
+**The screen has a stylesheet of its own** (`assets/releases.css`), loaded on its screen only,
+on the admin's tokens with no raw value in it. The browser's own "Choose File" button is given
+the look of the admin's secondary button through `::file-selector-button`.
+
+**A size is worded by the function that already words one.** `sizeOf` is imported from the
+Submissions export's state, so "35 MB" is said one way in the admin. It belongs in a shared
+module; it was not moved because that file was another session's while this was written.
+
+**Verification.**
+
+| What | Result |
+|---|---|
+| Jest, `plugins/corex-config/src/Releases` | 50 passed: the client 15, the hash 21, the screen 14 |
+| Jest, everything | 893 passed in 81 suites |
+| Pest, unit suite | 2501 passed |
+| Pest, integration: `Releases`, `Access`, `Admin` | 36 passed |
+| Playwright, `releases.spec.js` on `http://corex.local` | 10 passed: the layout measured at 1280 and 782 in both themes and both directions (panels 24px apart between the same two edges, a heading 24px in and down, the first line 12px under it, no overflow, every text 4.5:1 or better on its panel); a package sent and stated, with the part held on its way to look at the working button and the bar; a zip that is not a package refused and gone from the list |
+| Playwright, the specs that walk every CoreX route, with Releases added | 50 passed with the above |
+| Looked at | Dark and light at 1280, light right-to-left at 782, the statement and the refusal |
+
+**Not run.** No real package: the largest file sent through the screen was 851 bytes, in one
+part, so resuming was exercised in Jest and never in a browser. No client's host: the one host it met was CI's, which cannot write its own folders and is described above; nothing here has met
+a shared host's limits or its challenge page. No screen reader. The network rule that hides
+the menu from a site's own administrator is written and was not opened on a network.
+
+**Left open.**
+
+- The admin's shared script is 249 KiB, past the 244 KiB at which webpack starts to hint. It
+  is a hint and nothing enforces it; this screen added to a bundle that was already at the line.
+- The bar that says how far a package has got is not announced as it moves.
+- A `.part` file whose upload was abandoned stays in `incoming/`. Retention is slice 5.
+
 ## #298 — The inbox is drawn as coming until it is answered, and its pane sends one request at a time
 
 **Date:** 2026-10-09. **Spec:** 108, slice 6, the last (T060 to T064). **Branch:** `feat/108-inbox-loading`.
@@ -9362,6 +9453,18 @@ before any answer.
 **The inbox and its trash are two lists.** Switching used to keep the other view's rows on
 screen under the new view's headings until the answer came. `viewChanged` forgets them, so the
 trash is drawn as coming, not as the inbox with a different column.
+
+**Rows wait only when other rows were asked for.** A filter, a page, the other view: the rows
+on screen are about to be replaced, so they are dimmed and out of reach. Opening an unread
+submission, or changing one, also reads the list again, and those are the same rows. In the
+first push they were taken out of reach too, and a row pressed in that moment did nothing:
+this pull request's browser job, on a slower machine than mine, closed one submission, pressed
+the next row and waited for a pane that never opened. The read now says whether it was
+`asked` for, and only that one is `refreshing`. `data-status` goes `loading` then `ready` for
+both, as it always did.
+
+**"Try again" was handing its own press to `load()`,** which took it for the sentence to
+announce. On `main` too. It calls `load()` with nothing.
 
 **A failure is said in one place.** With no rows there is nothing to keep, and the error
 stands where they would be, with the retry. With rows on screen it is said above them, as
@@ -9406,9 +9509,9 @@ under a form that was being filled in.
 
 | What | Result |
 |---|---|
-| Jest, `plugins/corex-config/src/Submissions` | 139 passed; the new suite is 10, on the whole screen with the network held |
-| Jest, everything | 854 passed in 79 suites |
-| Pest, unit suite | 2508 passed |
+| Jest, `plugins/corex-config/src/Submissions` | 140 passed; the new suite is 11, on the whole screen with the network held |
+| Jest, everything | 905 passed in 82 suites |
+| Pest, unit suite | 2517 passed |
 | Playwright, the inbox in `loading-states.spec.js` | 3 passed: placeholder and real rows and headings the same height and the count line where it was; rows kept and the count waiting while a filter is applied; the pane's placeholder, then a pressed control working at the same size with the others off |
 | Playwright, `submissions-inbox.spec.js`, `loading-states.spec.js`, `admin-controls.spec.js`, `data-management.spec.js` together | 54 passed, 2 failed. One is "moves submissions to the trash and restores them", on "the trash table is no wider than the inbox table" (27px over, 16 allowed): it fails on `main` on this machine too (63px), and the column it measures holds a date, whose width changes with the hour. The other is a Data export's download timing out, which this machine does when several specs run at once: `data-management.spec.js` alone is 8 passed |
 | Looked at | The list, the pane and the export dialog, each held while it waited, dark, 1280 |
