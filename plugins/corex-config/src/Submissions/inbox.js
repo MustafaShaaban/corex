@@ -9,6 +9,9 @@ export const initialInboxState = {
 	// Whether the view shown has been answered at all. Until it has, nothing is known of it:
 	// not that it is empty, not how many it holds.
 	hasPage: false,
+	// Whether the read that is out is for other rows than these (a filter, a page), and not
+	// the same rows read again behind a change.
+	asked: false,
 	items: [],
 	total: 0,
 	page: 1,
@@ -37,6 +40,7 @@ export function inboxReducer( state, action ) {
 			return {
 				...state,
 				status: 'loading',
+				asked: Boolean( action.asked ),
 				error: '',
 				message: '',
 				undo: [],
@@ -118,8 +122,9 @@ export function inboxReducer( state, action ) {
 
 /**
  * The list's state as a loadable surface has one (spec 108): a placeholder until the view has
- * been answered, its rows kept and waiting while they are read again, and an error in their
- * place only when there were never any. A request that fails after that is said above the
+ * been answered, its rows kept and waiting while others are on their way, and an error in
+ * their place only when there were never any. Rows read again behind a change to a submission
+ * are not waiting: they are the same rows, and stay in reach. A request that fails after that is said above the
  * rows, which are still what the site last answered.
  *
  * @param {Object} state The inbox's state.
@@ -130,7 +135,7 @@ export function listStatus( state ) {
 		return state.status === 'error' ? 'error' : 'loading';
 	}
 
-	return state.status === 'loading' ? 'refreshing' : 'ready';
+	return state.status === 'loading' && state.asked ? 'refreshing' : 'ready';
 }
 
 /**

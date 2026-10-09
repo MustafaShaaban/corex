@@ -150,7 +150,7 @@ export function InboxApp() {
 				<CorexErrorState
 					scale="action"
 					message={ inbox.state.error }
-					onRetry={ inbox.load }
+					onRetry={ () => inbox.load() }
 				/>
 			) }
 			<Views view={ view } setView={ setView } />
@@ -204,7 +204,7 @@ export function InboxApp() {
 					'corex'
 				) }
 				errorMessage={ inbox.state.error }
-				onRetry={ inbox.load }
+				onRetry={ () => inbox.load() }
 			>
 				<InboxTable
 					view={ view }

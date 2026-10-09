@@ -215,6 +215,14 @@ describe( 'the list', () => {
 		press( 'Try again' );
 
 		expect( asked( theList ) ).toBe( 2 );
+
+		// The answer is the rows, and nothing is announced: asking again is not a success
+		// with something to say. (The press itself used to be taken for the message.)
+		await answer( theList, ok( page( row( 41, 'Salma' ) ) ) );
+
+		expect( list().dataset.corexState ).toBe( 'ready' );
+		expect( container.textContent ).toContain( 'Salma' );
+		expect( container.querySelector( '.corex-inbox__notice' ) ).toBeNull();
 	} );
 
 	it( 'shows what is coming for the trash, not the inbox’s rows under the trash’s headings', async () => {
@@ -268,6 +276,24 @@ describe( 'the pane', () => {
 			button( 'Add note' ).hasAttribute( 'data-corex-working' )
 		).toBe( false );
 		expect( button( 'Mark unread' ).disabled ).toBe( false );
+	} );
+
+	it( 'leaves the rows in reach while they are read again behind a change', async () => {
+		// Opening a submission, or changing one, reads the list again. Nobody asked for
+		// other rows, and a row pressed in that moment has to open: taken out of reach, the
+		// press did nothing (found by the browser tests on a slower machine, PR #326).
+		await openSalma();
+		await answer( theSubmission, ok( { submission } ) );
+		press( 'Mark unread' );
+		await answer( aChange, ok( {} ) );
+
+		expect( asked( theList ) ).toBe( 2 );
+		expect( list().dataset.corexState ).toBe( 'ready' );
+		expect(
+			list()
+				.querySelector( '.corex-loadable__body' )
+				.hasAttribute( 'inert' )
+		).toBe( false );
 	} );
 
 	it( 'asks once when a confirmation is pressed twice', async () => {
