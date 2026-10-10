@@ -9794,3 +9794,26 @@ read; applying asks the server for the plan again.
 | Playwright, the pane | the reason is in the pane and in the viewport after a note is refused, once on the page, and above the list after Escape |
 | Playwright, the specs of every screen touched | 48 passed on the development site: `security-access`, `access-request`, `notification-center`, `setup-settings-insights`, `blog-pro`, `submissions-inbox` |
 | The preview dialog, looked at | two rows 12px apart, both buttons 42px high, on the dark theme at 1280px |
+
+## #303 — A stored value is read one way: a list as its items, on the Data screen as in the export
+
+**Date:** 2026-10-10. **Branch:** `fix/data-list-answers-read-as-lists`.
+
+Found while reading which framework files a client site patches, before it takes v0.44.0. One
+of them is `SubmissionsSource`: an answer with several choices is stored as a list, and the
+Data screen printed a record's detail and its summary with `wp_json_encode()`. The client had
+carried the fix since v0.38; the issue it cites (#149) was closed for the other things it
+reported. Since DECISIONS #292 a checkbox group on a form defined in code is stored as a list
+too, so every site with one would have met it on taking this release.
+
+**The rule existed already, in the export.** `DataExportTable` wrote a list of plain values as
+its items and anything deeper as JSON. The rule is now `Corex\Config\Data\ReadableValue::of()`
+and both use it, so the screen and the file cannot disagree again.
+
+**Two things change with it on the Data screen.** An answer that was never given reads blank,
+where it read `null`. A keyed or nested answer is still JSON, on purpose, and its text is no
+longer escaped: Arabic reads as Arabic, where it read a `\\u` escape for every letter.
+
+**Verification.** Pest, unit suite: 2566 passed. One existing expectation held the JSON form of
+a summary and was changed with the behaviour.
+

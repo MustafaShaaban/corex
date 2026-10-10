@@ -81,6 +81,29 @@ it('renders a single record as readable label -> value fields', function () {
         ->and($record['fields'][1]['label'])->toBe('Email');
 });
 
+/**
+ * An answer with several choices is stored as a list, and the Data screen printed it as JSON:
+ * `["brand-identity","motion-graphics"]`. A client site carried the fix as a local patch from
+ * v0.38 to v0.43.5; since checkbox groups are stored as lists (DECISIONS #292) every site with
+ * one would have met it.
+ */
+it('reads an answer with several choices as its choices, in the record and in the summary', function () {
+    $source = new SubmissionsSource(new InMemorySubmissionsReader([
+        ['id' => 7, 'date' => '2026-06-13', 'form' => 'brief', 'fields' => ['services' => ['brand-identity', 'motion-graphics']]],
+    ]));
+
+    expect($source->record(7)['fields'][0])->toBe(['label' => 'Services', 'value' => 'brand-identity, motion-graphics'])
+        ->and($source->query(DataQuery::from([]))[0]['summary'])->toBe('services: brand-identity, motion-graphics');
+});
+
+it('keeps a keyed answer whole, since joining it would drop what each part is', function () {
+    $source = new SubmissionsSource(new InMemorySubmissionsReader([
+        ['id' => 7, 'date' => '2026-06-13', 'form' => 'brief', 'fields' => ['utm' => ['source' => 'نشرة']]],
+    ]));
+
+    expect($source->record(7)['fields'][0]['value'])->toBe('{"source":"نشرة"}');
+});
+
 it('returns null for an unknown record', function () {
     expect((new SubmissionsSource(new InMemorySubmissionsReader([])))->record(999))->toBeNull();
 });
@@ -161,7 +184,7 @@ it('hands an export a value under every field it declares, and under nothing els
         ->and($rows[0])->toBe([
             'date' => '2026-10-08 13:28:00',
             'form' => 'contact',
-            'summary' => 'email: sam@example.com · name: Sam · message: Hello · topics: ["web","brand"]',
+            'summary' => 'email: sam@example.com · name: Sam · message: Hello · topics: web, brand',
             'email' => 'sam@example.com',
             'name' => 'Sam',
             'message' => 'Hello',
