@@ -1,6 +1,6 @@
 # Corex — what works, what is partial, what is not built
 
-**Version 0.43.5** · updated 2026-10-04
+**Version 0.44.0** · updated 2026-10-10
 
 This page exists so you do not have to read the git history to find out what you are adopting.
 Everything below is traceable to something in this repository — a spec, a policy file, a test
@@ -29,8 +29,8 @@ the same reason — so the next such gap is found by a reader, not by a customer
 | Module | Status | Notes |
 |---|---|---|
 | `corex-core` | **Stable** | Container (PSR-11), layered config (`.env` → options → defaults), routing, middleware, security, cache, jobs, notifications, mail seams, admin shell. |
-| `corex-config` | **Stable** | The admin product: settings, data models, submissions inbox, access, operations, notifications, insights, blog tools. Operations has five modes; Coming soon serves a launch page the theme owns, with a preview link for people without an account (spec 101). |
-| `corex-forms` | **Stable** | Schema, validation, flow builder, submission pipeline, routing, delivery. File uploads closed in spec 081. |
+| `corex-config` | **Stable** | The admin product: settings, data models, submissions inbox, access, operations, notifications, insights, blog tools. Operations has five modes; Coming soon serves a launch page the theme owns, with a preview link for people without an account (spec 101). A submission can be moved to a trash, restored and deleted for good (spec 105, four of six slices). Exports are CSV, Excel or PDF (spec 103). The role matrix can be previewed and applied. **Partial:** the Releases screen reads a release package and says what it is, and installs nothing yet (spec 107, three of six slices). |
+| `corex-forms` | **Stable** | Schema, validation, flow builder, submission pipeline, routing, delivery. File uploads closed in spec 081. A form defined in code states its wording, can be drawn with a site's own markup, and is challenged by reCAPTCHA, Turnstile or hCaptcha (spec 104); the two widget providers were not submitted through on a real site. |
 | `corex-blocks` | **Stable** | Server-rendered blocks with the shared provider/renderer split. |
 | `theme/` | **Stable** | FSE block theme. Presentation only — deactivating it breaks presentation, never data. |
 | `packages/cli` | **Stable** | `wp corex make:*` generators, `version`, `docs:generate`, release packaging. `make:site` generates what a client repository needs to take framework updates; `npm run verify:framework` checks it (spec 102). |
