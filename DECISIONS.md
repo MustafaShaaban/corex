@@ -9812,7 +9812,7 @@ and both use it, so the screen and the file cannot disagree again.
 
 **Two things change with it on the Data screen.** An answer that was never given reads blank,
 where it read `null`. A keyed or nested answer is still JSON, on purpose, and its text is no
-longer escaped: Arabic reads as Arabic, where it read `ن`.
+longer escaped: Arabic reads as Arabic, where it read a `\\u` escape for every letter.
 
 **Verification.** Pest, unit suite: 2566 passed. One existing expectation held the JSON form of
 a summary and was changed with the behaviour.
