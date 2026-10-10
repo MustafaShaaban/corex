@@ -146,13 +146,16 @@ export function InboxApp() {
 					) }
 				</div>
 			) }
-			{ inbox.state.error && status !== 'error' && (
-				<CorexErrorState
-					scale="action"
-					message={ inbox.state.error }
-					onRetry={ () => inbox.load() }
-				/>
-			) }
+			{ /* While the pane is open it covers this, and says the reason itself (#306). */ }
+			{ inbox.state.error &&
+				status !== 'error' &&
+				! inbox.state.drawer.open && (
+					<CorexErrorState
+						scale="action"
+						message={ inbox.state.error }
+						onRetry={ () => inbox.load() }
+					/>
+				) }
 			<Views view={ view } setView={ setView } />
 			<Filters
 				filters={ filters }

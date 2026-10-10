@@ -8,10 +8,11 @@
  * It is a drawer form of `CorexDialog`, so the browser moves focus in, keeps it there, closes on
  * Escape and hands focus back to the row it was opened from.
  */
-import { useId, useState } from '@wordpress/element';
+import { useEffect, useId, useRef, useState } from '@wordpress/element';
 import { Button } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import CorexDialog from '../../admin/components/CorexDialog.js';
+import CorexErrorState from '../../admin/components/CorexErrorState.js';
 import CorexLoadable from '../../admin/components/CorexLoadable.js';
 import { usePending, workingProps } from '../../admin/components/working.js';
 import PaneSkeleton from './PaneSkeleton.js';
@@ -137,6 +138,9 @@ export default function DetailPane( {
 			}
 			onClose={ inbox.close }
 		>
+			{ inbox.state.error && (
+				<PaneFailure reason={ inbox.state.error } />
+			) }
 			{ /* A trashed submission is read and nothing else, until it is restored (spec 105,
 			     FR-006): no reply, no new note, no status or owner to change. */ }
 			{ record.trashed && (
@@ -184,6 +188,30 @@ export default function DetailPane( {
 				</span>
 			</footer>
 		</CorexDialog>
+	);
+}
+
+/**
+ * Why the last action in the pane did not happen, said in the pane.
+ *
+ * The inbox draws the same reason above its list, which the open pane covers: whoever pressed
+ * the button saw it stop working and was told nothing (#306). The pane's controls are spread
+ * over more than one screen of it, so the reason is also brought into view.
+ *
+ * @param {Object} props        Component props.
+ * @param {string} props.reason What the server said.
+ * @return {Element} The reason, announced.
+ */
+function PaneFailure( { reason } ) {
+	const place = useRef( null );
+	useEffect( () => {
+		place.current.scrollIntoView( { block: 'nearest' } );
+	}, [ reason ] );
+
+	return (
+		<div ref={ place } className="corex-pane__failure">
+			<CorexErrorState scale="action" message={ reason } />
+		</div>
 	);
 }
 
