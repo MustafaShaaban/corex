@@ -353,7 +353,7 @@ final class SubmissionsSource implements ExportableDataSource, SchemaAwareDataSo
         foreach ($fields as $name => $value) {
             $out[] = [
                 'label' => ucwords(str_replace(['_', '-'], ' ', (string) $name)),
-                'value' => is_scalar($value) ? (string) $value : (string) wp_json_encode($value),
+                'value' => ReadableValue::of($value),
             ];
         }
 
@@ -369,7 +369,7 @@ final class SubmissionsSource implements ExportableDataSource, SchemaAwareDataSo
     {
         $parts = [];
         foreach ($fields as $name => $value) {
-            $parts[] = $name . ': ' . (is_scalar($value) ? (string) $value : (string) wp_json_encode($value));
+            $parts[] = $name . ': ' . ReadableValue::of($value);
         }
 
         return implode(' · ', $parts);

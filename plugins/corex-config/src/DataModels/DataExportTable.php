@@ -11,6 +11,7 @@ namespace Corex\Config\DataModels;
 defined('ABSPATH') || exit;
 
 use Closure;
+use Corex\Config\Data\ReadableValue;
 use Corex\Config\Export\ExportCell;
 use Corex\Config\Export\ExportSheet;
 use Corex\Data\DataField;
@@ -106,7 +107,8 @@ final readonly class DataExportTable
             }
         }
 
-        return ExportCell::text($this->words($value));
+        // A list as its items, anything deeper as what it holds: as the Data screen reads it.
+        return ExportCell::text(ReadableValue::of($value));
     }
 
     private function truthy(mixed $value): bool
@@ -131,29 +133,5 @@ final readonly class DataExportTable
             // Not a date and time a reader would recognise: it is written as it was stored.
             return null;
         }
-    }
-
-    /**
-     * Any other value as text: a list as its items, anything deeper as what it holds.
-     */
-    private function words(mixed $value): string
-    {
-        if ($value === null) {
-            return '';
-        }
-        if (is_scalar($value)) {
-            return (string) $value;
-        }
-        if (is_array($value) && array_is_list($value) && $this->allScalar($value)) {
-            return implode(', ', array_map('strval', $value));
-        }
-
-        return (string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    }
-
-    /** @param list<mixed> $items */
-    private function allScalar(array $items): bool
-    {
-        return array_filter($items, static fn (mixed $item): bool => ! is_scalar($item)) === [];
     }
 }

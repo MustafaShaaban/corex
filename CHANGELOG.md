@@ -239,6 +239,11 @@ and a rebuild of `plugins/corex-config`.
 
 ### Fixed
 
+- **An answer with several choices reads as its choices on the Data screen.** A multi-select or
+  a checkbox group is stored as a list, and a record's detail and its summary printed it as
+  JSON: `["brand-identity","motion-graphics"]`. It reads `brand-identity, motion-graphics`, as
+  the export already wrote it. An answer that was never given is blank, where it read `null`
+  (DECISIONS #303).
 - **The role matrix on CoreX → Access & Abilities can be saved** (#313). "Preview changes" was
   a button with nothing behind it: an ability could be set to Allow or Deny for a role and
   nothing sent it. It now shows each ability with what it is and what it would become, says
@@ -398,6 +403,9 @@ and a rebuild of `plugins/corex-config`.
 
 ### Client impact
 
+- **A site that patched `SubmissionsSource` so a list answer reads as a list can drop the
+  patch.** The framework does it now, for the record's detail and the summary. Take the
+  framework's file when the merge reports a conflict there.
 - **`Corex\Config\Data\DataController` is removed.** It was bound in the container and
   registered no route since `DataManagementController` took the Data screen's routes over;
   nothing in CoreX called it. Code of your own that resolved it has to use the registered
