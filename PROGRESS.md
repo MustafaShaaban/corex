@@ -100,6 +100,9 @@ long: read it before a client site takes the release. In short:
   nothing where Action Scheduler was absent; three add-ons ran `dbDelta()` on every request.
 - **The last three open issues** (#306, #313, #323; DECISIONS #302). With them the role matrix
   on Access & Abilities can be saved for the first time.
+- **An answer with several choices reads as its choices on the Data screen** (DECISIONS #303),
+  where it was printed as JSON. A client site carried that as a patch to a framework file and
+  can drop it.
 
 Earlier releases are in [`CHANGELOG.md`](CHANGELOG.md), each with its decisions.
 
