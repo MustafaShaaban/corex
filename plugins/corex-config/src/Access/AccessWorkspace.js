@@ -1,7 +1,11 @@
 import { useReducer } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import AccessChangeDialog from './AccessChangeDialog.js';
 import AccessRequestsPanel from './AccessRequestsPanel.js';
+import CorexErrorState from '../admin/components/CorexErrorState.js';
 import CorexSelect from '../admin/components/CorexSelect.js';
+import { usePending, workingProps } from '../admin/components/working.js';
+import { applyRoleChanges, previewRoleChanges } from './accessClient.js';
 import {
 	accessReducer,
 	buildRoleChanges,
@@ -13,6 +17,22 @@ const EFFECTS = [
 	{ value: 'allow', label: __( 'Allow', 'corex' ) },
 	{ value: 'deny', label: __( 'Deny', 'corex' ) },
 ];
+
+/**
+ * Why a cell cannot be edited, in words. The server gives a code, and the code was printed.
+ *
+ * @param {string} reason `locked_definition` from the matrix, or `missing_role` for a role it has no cell for.
+ * @return {string} The reason, translated.
+ */
+function lockedReason( reason ) {
+	return reason === 'locked_definition'
+		? __( 'Locked: this ability cannot be changed.', 'corex' )
+		: __( 'This role cannot be given this ability here.', 'corex' );
+}
+
+const effectLabel = ( effect ) =>
+	EFFECTS.find( ( candidate ) => candidate.value === effect )?.label ||
+	effect;
 
 export default function AccessWorkspace( { config } ) {
 	const [ state, dispatch ] = useReducer(
@@ -26,6 +46,40 @@ export default function AccessWorkspace( { config } ) {
 	);
 	const selectedRole = state.selectedRole || state.roles[ 0 ]?.key || '';
 	const changes = buildRoleChanges( state.rows, state.draft, selectedRole );
+	const [ pending, during ] = usePending();
+
+	const preview = async () => {
+		try {
+			const answer = await previewRoleChanges(
+				config,
+				selectedRole,
+				changes
+			);
+			dispatch( {
+				type: 'preview',
+				preview: { ...answer, role: selectedRole },
+			} );
+		} catch ( reason ) {
+			dispatch( { type: 'error', message: reason.message } );
+		}
+	};
+	// A refusal is thrown, so the dialog says it where "Apply changes" was pressed.
+	const apply = async () => {
+		const result = await applyRoleChanges(
+			config,
+			state.preview.role,
+			state.preview
+		);
+		if ( result.state !== 'completed' ) {
+			throw new Error( result.message );
+		}
+		dispatch( {
+			type: 'applied',
+			role: state.preview.role,
+			changes: state.preview.changes,
+			message: result.message,
+		} );
+	};
 
 	return (
 		<section
@@ -43,10 +97,37 @@ export default function AccessWorkspace( { config } ) {
 					type="button"
 					className="button button-primary"
 					disabled={ Object.keys( changes ).length === 0 }
+					onClick={ () => during( 'preview', preview ) }
+					{ ...workingProps( pending === 'preview' ) }
 				>
 					{ __( 'Preview changes', 'corex' ) }
 				</button>
 			</header>
+			{ state.notice?.tone === 'success' && (
+				<p className="corex-access__notice" role="status">
+					{ state.notice.message }
+				</p>
+			) }
+			{ state.notice?.tone === 'error' && (
+				<CorexErrorState
+					scale="action"
+					message={ state.notice.message }
+				/>
+			) }
+			{ state.preview && (
+				<AccessChangeDialog
+					preview={ state.preview }
+					roleName={
+						state.roles.find(
+							( role ) => role.key === state.preview.role
+						)?.name || state.preview.role
+					}
+					rows={ state.rows }
+					effectLabel={ effectLabel }
+					onApply={ apply }
+					onClose={ () => dispatch( { type: 'preview' } ) }
+				/>
+			) }
 			{ state.conflicts.length ? (
 				<p className="corex-access__muted">
 					{ __(
@@ -116,7 +197,7 @@ export default function AccessWorkspace( { config } ) {
 										/>
 										{ cell.reason ? (
 											<span className="corex-access__muted">
-												{ cell.reason }
+												{ lockedReason( cell.reason ) }
 											</span>
 										) : null }
 									</td>

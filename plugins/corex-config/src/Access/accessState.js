@@ -81,10 +81,12 @@ export function accessReducer( state = initialAccessState(), action = {} ) {
 		case 'preview':
 			return { ...state, preview: action.preview || null, notice: null };
 		case 'applied':
+			// What was applied is what the role has now. The staged choices of the other
+			// roles stay staged: nothing was said about them.
 			return {
 				...state,
+				rows: withEffects( state.rows, action.role, action.changes ),
 				preview: null,
-				draft: {},
 				notice: {
 					tone: 'success',
 					message: action.message || 'Access updated.',
@@ -123,6 +125,42 @@ export function buildRoleChanges( originalRows, draft, role ) {
 		}
 	} );
 	return changes;
+}
+
+/**
+ * A staged change in words a person can check: which ability, from what, to what.
+ *
+ * @param {Array}  rows    The matrix rows.
+ * @param {string} role    The role's key.
+ * @param {Object} changes Ability key => effect.
+ * @return {Array<{key:string,label:string,from:string,to:string}>} One line per changed ability.
+ */
+export function describeChanges( rows, role, changes ) {
+	return ( rows || [] )
+		.filter( ( row ) => row.key in ( changes || {} ) )
+		.map( ( row ) => ( {
+			key: row.key,
+			label: row.label,
+			from: row.cells?.[ role ]?.effect || 'inherit',
+			to: changes[ row.key ],
+		} ) );
+}
+
+function withEffects( rows, role, changes ) {
+	return rows.map( ( row ) =>
+		row.key in ( changes || {} ) && row.cells[ role ]
+			? {
+					...row,
+					cells: {
+						...row.cells,
+						[ role ]: {
+							...row.cells[ role ],
+							effect: changes[ row.key ],
+						},
+					},
+				}
+			: row
+	);
 }
 
 function setEffect( state, role, ability, effect ) {

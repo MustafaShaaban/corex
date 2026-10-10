@@ -90,19 +90,6 @@ export default function NotificationDrawer( { open, onClose } ) {
 		return () => panel.removeEventListener( 'keydown', onKeyDown );
 	}, [ open, onClose ] );
 
-	const markRead = useCallback( ( id ) => {
-		apiFetch( {
-			path: `/corex/v1/notifications/${ id }/read`,
-			method: 'POST',
-		} )
-			.then( () =>
-				setItems( ( current ) =>
-					current.filter( ( item ) => item.id !== id )
-				)
-			)
-			.catch( () => {} );
-	}, [] );
-
 	const markAllRead = useCallback( () => {
 		setFailure( '' );
 		setMarkingAll( true );
@@ -166,7 +153,6 @@ export default function NotificationDrawer( { open, onClose } ) {
 						items={ items }
 						markingAll={ markingAll }
 						failure={ failure }
-						onMarkRead={ markRead }
 						onMarkAllRead={ markAllRead }
 					/>
 				</CorexLoadable>
@@ -175,13 +161,7 @@ export default function NotificationDrawer( { open, onClose } ) {
 	);
 }
 
-function DrawerItems( {
-	items,
-	markingAll,
-	failure,
-	onMarkRead,
-	onMarkAllRead,
-} ) {
+function DrawerItems( { items, markingAll, failure, onMarkAllRead } ) {
 	if ( items.length === 0 ) {
 		return (
 			<p className="corex-notification-drawer__state">
@@ -196,19 +176,18 @@ function DrawerItems( {
 				{ /* The same component the full screen renders (spec 074, FR-4.9). The drawer
 							     used to show its own shorter version of the same record, so what a
 							     notification appeared to want from you depended on where you looked.
-							     `compact` drops the secondary controls — the drawer is a glance, and
-							     dismiss/snooze/resolve belong where you can see what you are acting
-							     on — but every fact about the item is the same one. */ }
+							     `compact` drops the item's own controls — the drawer is a glance, and
+							     mark read/dismiss/snooze/resolve belong where you can see what you
+							     are acting on — but every fact about the item is the same one. The
+							     drawer was handed a "mark read" all the same, which `compact` never
+							     drew and which swallowed its own failure (#313); "Mark all as read"
+							     below is the drawer's one action. */ }
 				{ items.map( ( item ) => (
 					<li
 						key={ item.id }
 						className="corex-notification-drawer__item"
 					>
-						<NotificationItem
-							item={ item }
-							compact
-							actions={ { markRead: onMarkRead } }
-						/>
+						<NotificationItem item={ item } compact />
 					</li>
 				) ) }
 			</ul>

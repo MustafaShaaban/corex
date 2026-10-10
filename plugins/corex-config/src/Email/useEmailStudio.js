@@ -402,7 +402,7 @@ function useDeliveryCommands( { post, selection } ) {
 	return { lastResult, testSend, resend };
 }
 
-function useHealth( { config, state, dispatch, selection } ) {
+function useHealth( { config, dispatch, selection } ) {
 	const [ health, setHealth ] = useState( null );
 	useEffect( () => {
 		setHealth( null );
@@ -426,7 +426,10 @@ function useHealth( { config, state, dispatch, selection } ) {
 			return;
 		}
 		setHealth( result.envelope.data.health );
-		dispatch( { type: 'loaded', payload: state.data } );
+		// The request is over and the studio is as it was. It used to be "loaded" again from
+		// its own state, which is not what the server sends: read a second time, "Recent test
+		// sends" came out empty (#313).
+		dispatch( { type: 'notice' } );
 	};
 
 	return { health, runHealth };
@@ -475,7 +478,6 @@ export function useEmailStudio( config, setTab ) {
 	const delivery = useDeliveryCommands( { post: api.post, selection } );
 	const health = useHealth( {
 		config,
-		state: api.state,
 		dispatch: api.dispatch,
 		selection,
 	} );

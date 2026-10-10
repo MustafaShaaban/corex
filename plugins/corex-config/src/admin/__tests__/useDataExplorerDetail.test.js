@@ -7,8 +7,9 @@
  * The transport here answers what the site answers: `{ record }`, from
  * `DataManagementController::show()`, read off a running site on 2026-10-08 and held on the
  * server's side by `DataManagementControllerTest`. It used to answer a bare record, written
- * from `DataController::show()`, a controller that is bound and not registered. So this file
- * passed while every record's detail showed one field named "Record" holding a line of JSON.
+ * from `DataController::show()`, a controller that was bound and not registered, and has since
+ * been removed. So this file passed while every record's detail showed one field named "Record"
+ * holding a line of JSON.
  * A stub is only as true as what it was copied from.
  *
  * Rendered through `createRoot` + `act`, as the other component tests do — the repo has no

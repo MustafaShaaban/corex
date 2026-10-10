@@ -194,6 +194,12 @@ and **Node 22.22 is the floor** for building. #243 (`nikic/php-parser` 5.9) is m
 
 ## Recently landed
 
+Unreleased, 2026-10-10: **no issue and no pull request is open.** The three that were (#306, a
+failed pane action said nothing; #313, seven admin leads read in code; #323, a form rule never
+asked about an absent optional field) are closed by one change (DECISIONS #302). With it the
+role matrix on Access & Abilities can be saved for the first time: "Preview changes" had no
+handler.
+
 Released in v0.43.5:
 
 - **The 500 on `GET corex/v1/flows` has a name, and it is not a flow** (#286, DECISIONS #268).

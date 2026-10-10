@@ -532,6 +532,66 @@ test( 'reads a submission in the pane: the answer first, the parts evenly spaced
  * It also sets a date range first. The dialog put the filters in force into words with a date
  * helper that answers an object, and printed "[object Object] to [object Object]".
  */
+test( 'says why an action in the pane failed in the pane itself, where it can be seen', async ( {
+	page,
+} ) => {
+	// The reason was drawn above the list, which the open pane covers: whoever pressed the
+	// button saw it stop working and nothing else (#306). A unit test cannot see "covered".
+	await page.setViewportSize( { width: 1280, height: 720 } );
+	await page.getByLabel( 'Search' ).fill( EMAIL );
+	await page
+		.locator( '.corex-inbox__table tbody tr' )
+		.filter( { hasText: EMAIL } )
+		.first()
+		.getByRole( 'button' )
+		.click();
+	const pane = page.locator( '.corex-pane' );
+	// Opening it marks it read, which is a change of its own: waited for, so the only change
+	// refused below is the note.
+	await expect(
+		pane.getByRole( 'button', { name: 'Mark unread' } )
+	).toBeVisible();
+
+	const refused = 'The note could not be kept.';
+	await page.route(
+		( url ) =>
+			decodeURIComponent( url.href ).includes( 'corex/v1/submissions' ),
+		( route ) =>
+			route.request().method() === 'GET'
+				? route.fallback()
+				: route.fulfill( {
+						status: 500,
+						contentType: 'application/json',
+						body: JSON.stringify( {
+							code: 'corex_e2e_refused',
+							message: refused,
+						} ),
+					} )
+	);
+
+	// Notes are at the foot of the pane, a screen below where the reason is drawn.
+	await pane.locator( 'textarea[id$="-note"]' ).fill( 'Called her.' );
+	await pane.getByRole( 'button', { name: 'Add note' } ).click();
+
+	const reason = page.getByRole( 'alert' ).filter( { hasText: refused } );
+	await expect( reason ).toHaveCount( 1 );
+	await expect( pane.locator( '.corex-pane__failure' ) ).toContainText(
+		refused
+	);
+	await expect( reason ).toBeInViewport();
+	await expect(
+		pane.getByRole( 'button', { name: 'Add note' } )
+	).toBeEnabled();
+
+	// Closed, the same reason is above the list: it was not said only to whoever had the
+	// pane open at that moment.
+	await page.keyboard.press( 'Escape' );
+	await expect( pane ).toHaveCount( 0 );
+	await expect(
+		page.locator( '.corex-inbox > .corex-error-state' )
+	).toContainText( refused );
+} );
+
 test( 'lists what was exported before, says what became of each file, and deletes one when asked', async ( {
 	page,
 } ) => {
