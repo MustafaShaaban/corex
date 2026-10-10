@@ -6,6 +6,24 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.44.0] — 2026-10-10
+
+A release to stand on: everything built since v0.43.5, with no pull request and no issue left
+open behind it. A submission can be moved to a trash, restored and deleted for good, and the
+trash empties itself. Exports can be PDF. A form defined in code states its own wording, can be
+drawn with a site's own markup, and is challenged by reCAPTCHA, Turnstile or hCaptcha. The admin
+shows what is coming while it loads, and every action marks the control that was pressed. The
+role matrix on Access & Abilities can be saved, which it never could. CoreX → Releases reads a
+release package given to a site and says what it is; **it installs nothing yet**.
+
+It is a minor release with a long Client impact, because it is many changes taken at once. Read
+that section before a site takes this. The ones that act on a running site without being asked:
+a submission in the trash for more than 30 days starts being deleted, with its files; a site
+with Turnstile or hCaptcha keys saved starts challenging; a site with the mail queue on and no
+Action Scheduler starts deferring its mail to WP-Cron; and a choice field refuses a value its
+`options` do not declare. Building needs `npm ci`, `composer install` (a new dependency, mPDF)
+and a rebuild of `plugins/corex-config`.
+
 ### Added
 
 - **A release can be unpacked beside a site, checked, and put in place by renames that are
@@ -475,9 +493,6 @@ All notable changes to Corex are documented here. The format follows
 - **New option** `corex_trash_submissions_days`; the list's answer gains `trash_days`; a new
   store in the retention sweep, `submission_trash`. `RetentionController`,
   `SubmissionsInboxScreen` and `SubmissionQueryService` each take a `SubmissionTrashRetention`.
-- **On a site with `EMPTY_TRASH_DAYS` of 0**, the retention panel's "Move to trash" still deletes
-  on the spot: it trashes WordPress's way, and there WordPress deletes instead. Elsewhere what it
-  trashes shows in the inbox's Trash view, can be restored from it, and is on the trash's clock.
 - **New routes**: `POST corex/v1/submissions/{id}/trash` and `…/{id}/restore`; `view=trash` on
   the list; `trash` and `restore` among the bulk actions. A change asked of a trashed submission
   is answered 409, "This submission is in the trash. Restore it to change it.", where it was 404.
