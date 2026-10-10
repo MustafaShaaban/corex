@@ -9735,3 +9735,62 @@ that `$upgrading` is not an integer.
 - The key is in the recovery link's address, so it reaches the server's access log. It goes
   on working for as long as the recovery file is there, which is as long as the previous
   release is kept. Whoever can read that log can read the site's files.
+
+## #302 — The three open issues are closed: a role change can be applied, a pane says why, and a rule can ask about an absent field
+
+**Date:** 2026-10-10. **Issues:** #306, #313, #323. **Branch:** `fix/closeout-open-issues`.
+
+The owner asked for nothing to be left open before the client sites take a release. Each of
+#313's leads had been read in code and not reproduced; each was reproduced by a test before it
+was changed, or shown to be dead code.
+
+**The role matrix is applied through the routes that were already there.** `previewRole` and
+`applyRole` were complete and tested, and nothing called them: "Preview changes" had no
+handler. The screen now asks for the preview, shows each ability with what it is and what it
+would be, and applies it. The confirmation the apply route wants (the operation, the preview's
+hash, who, and when it lapses) is built by the screen from the preview it showed, five minutes
+ahead. That is the route's existing contract and it is kept: the server recomputes the hash
+from the changes sent and checks who is asking, so what is applied is what was previewed by
+that person. It is not a token the server issued; a stricter confirmation would be a change to
+the route, and was not made here.
+
+**A blocked change is not offered for confirmation.** Where the safety policy refuses (a
+locked ability, a change that would lock the person out, the last administrator with full
+access), the dialog says which ability and why, and has no "Apply changes".
+
+**The notification drawer's "mark read" is removed, not drawn.** The drawer passed a handler
+that `compact` never showed. Drawing it would have gone against what
+`notificationItem.test.js` holds the drawer to: the same facts as the screen, with the item's
+controls dropped. "Mark all as read" stays the drawer's one action.
+
+**`Corex\Config\Data\DataController` is removed.** Bound, never registered, and the source of a
+wrong comment and a wrong test stub on the Data screen (DECISIONS #289). Its unit test went with
+it: it held a class nothing serves from.
+
+**A failed action in the pane is said in the pane, and only there while it is open.** The
+inbox's copy above the list waits until the pane is closed, so the reason is announced once.
+It is brought into view, because the pane's controls run to more than one screen.
+
+**A rule opts in to an absent value; the validator does not hand one to every rule.** #323
+asked for a way for a site's rule about several fields to run when its optional field is left
+out of a request. `RuleForAbsentValue` extends `Rule` and adds nothing: implementing it is the
+whole statement. Running every rule on an absent value was refused, as the issue said it
+should be: a site's rule written before this has never been handed `null` for an absent
+optional field. The browser needs no counterpart: it sends every field, and skips a rule it
+does not know.
+
+**Left as they are.** The Access reducer still carries `modal` and `requestQueueLoaded`, which
+nothing dispatches. The wizard's plan step can still be passed after its plan could not be
+read; applying asks the server for the plan again.
+
+**Verification.**
+
+| What | Result |
+|---|---|
+| Pest, unit suite | 2564 passed |
+| Jest, whole suite | 918 passed in 86 suites; `lint-js` has no error |
+| Jest, each fix | fails on the code as it was, for the flow form, the Email Studio health check and the pane's reason (run); the others were written beside the fix |
+| Playwright, the role matrix against the real routes on the development site | a change to the Editor role previewed, applied, and still there after a reload; the role and its audit event put back afterwards |
+| Playwright, the pane | the reason is in the pane and in the viewport after a note is refused, once on the page, and above the list after Escape |
+| Playwright, the specs of every screen touched | 48 passed on the development site: `security-access`, `access-request`, `notification-center`, `setup-settings-insights`, `blog-pro`, `submissions-inbox` |
+| The preview dialog, looked at | two rows 12px apart, both buttons 42px high, on the dark theme at 1280px |

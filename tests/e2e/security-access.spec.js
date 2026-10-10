@@ -162,6 +162,94 @@ test.describe( 'the Access REST workflow', () => {
 	} );
 } );
 
+test.describe( 'the role matrix', () => {
+	// The Editor role's own row for one ability, on an install that may be a developer's: kept
+	// before the test and put back after it, with the audit event the change writes.
+	const GRANTS =
+		'global $wpdb; $migrator = new \\Corex\\Database\\Schema\\Migrator();' +
+		' $table = $migrator->fullName( \\Corex\\Config\\Access\\AccessTables::ROLE_GRANTS );' +
+		' $activity = $migrator->fullName( \\Corex\\Config\\Activity\\ActivityTable::NAME );' +
+		" $mine = [ 'role_key' => 'editor', 'ability_key' => 'corex_manage_forms' ];";
+	let before;
+
+	test.beforeEach( () => {
+		before = wpEval(
+			GRANTS +
+				' echo base64_encode( (string) wp_json_encode( [' +
+				' "row" => $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE role_key = %s AND ability_key = %s", $mine["role_key"], $mine["ability_key"] ), ARRAY_A ),' +
+				' "event" => (int) $wpdb->get_var( "SELECT MAX(id) FROM {$activity}" ),' +
+				' ] ) );'
+		);
+	} );
+
+	test.afterEach( () => {
+		if ( ! before ) {
+			return;
+		}
+		wpEval(
+			GRANTS +
+				` $kept = json_decode( base64_decode( '${ before }' ), true );` +
+				' $wpdb->delete( $table, $mine );' +
+				' if ( is_array( $kept["row"] ) ) { $wpdb->insert( $table, $kept["row"] ); }' +
+				' $wpdb->query( $wpdb->prepare( "DELETE FROM {$activity} WHERE id > %d AND kind = %s AND target_type = %s AND target_id = %s", $kept["event"], "access.role.changed", "role", "editor" ) );'
+		);
+	} );
+
+	// "Preview changes" was a primary button with no handler: the matrix could be edited and
+	// nothing could save it (#313). This is the whole way through, against the real routes.
+	test( 'previews a change to a role, applies it, and still shows it after a reload', async ( {
+		page,
+	} ) => {
+		test.skip( ! before, 'WP-CLI is needed to put the role back.' );
+		const errors = collectConsoleErrors( page );
+		const chooseEditor = async () => {
+			await page
+				.locator( '.corex-access__mode-label .corex-select__button' )
+				.click();
+			await page
+				.locator( '.corex-access__mode-label' )
+				.getByRole( 'option', { name: 'Editor', exact: true } )
+				.click();
+		};
+		const row = page.locator( '.corex-access__matrix tbody tr' ).filter( {
+			has: page.locator( 'code', { hasText: /^corex_manage_forms$/ } ),
+		} );
+		const choice = row.locator( '.corex-select__button' );
+
+		await page.goto( '/wp-admin/admin.php?page=corex-access&tab=matrix' );
+		await chooseEditor();
+		const was = ( await choice.innerText() ).trim();
+		const next = was === 'Allow' ? 'Inherit' : 'Allow';
+
+		await choice.click();
+		await row.getByRole( 'option', { name: next, exact: true } ).click();
+		await page.getByRole( 'button', { name: 'Preview changes' } ).click();
+
+		const dialog = page.getByRole( 'dialog', {
+			name: 'Changes to Editor',
+		} );
+		await expect( dialog ).toContainText( `${ was } → ${ next }` );
+
+		await dialog.getByRole( 'button', { name: 'Apply changes' } ).click();
+
+		await expect( dialog ).toHaveCount( 0 );
+		await expect( page.locator( '.corex-access__notice' ) ).toHaveText(
+			'The role abilities were updated.'
+		);
+		await expect(
+			page.getByRole( 'button', { name: 'Preview changes' } )
+		).toBeDisabled();
+
+		// What the server drew, not what the screen remembered.
+		await page.reload();
+		await chooseEditor();
+		await expect( choice ).toHaveText( next );
+		expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual(
+			[]
+		);
+	} );
+} );
+
 test.describe( 'a hidden endpoint is indistinguishable from a page that was never there', () => {
 	// The whole point of hiding is that a probe learns nothing, so these must run signed OUT —
 	// the project-wide storageState would authenticate them and skip the guard entirely.

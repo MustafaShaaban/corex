@@ -319,6 +319,55 @@ describe( 'the pane', () => {
 	} );
 } );
 
+describe( 'an action in the pane that fails', () => {
+	const pane = () => document.body.querySelector( '.corex-pane' );
+	const reasons = () =>
+		[ ...container.querySelectorAll( '[role="alert"]' ) ].filter(
+			( alert ) =>
+				alert.textContent.includes( 'Somebody else changed it.' )
+		);
+	// The pane is a dialog written inside the inbox, so "above the list" is whatever is not in it.
+	const inThePane = () =>
+		reasons().filter( ( alert ) => alert.closest( '.corex-pane' ) ).length;
+	const aboveTheList = () => reasons().length - inThePane();
+
+	// jsdom lays nothing out, so it has nothing to scroll.
+	beforeAll( () => {
+		window.Element.prototype.scrollIntoView = () => {};
+	} );
+	afterAll( () => {
+		delete window.Element.prototype.scrollIntoView;
+	} );
+
+	// The reason was drawn in the inbox's notice area, which the open pane covers: whoever
+	// pressed the button saw it stop working and nothing else (#306).
+	it( 'says why in the pane, where the button was pressed, and once', async () => {
+		await openSalma();
+		await answer( theSubmission, ok( { submission } ) );
+
+		press( 'Mark unread' );
+		await answer( aChange, failed( 'Somebody else changed it.' ) );
+
+		expect( inThePane() ).toBe( 1 );
+		expect( aboveTheList() ).toBe( 0 );
+		expect( button( 'Mark unread' ).disabled ).toBe( false );
+	} );
+
+	it( 'still says why above the list once the pane is closed', async () => {
+		await openSalma();
+		await answer( theSubmission, ok( { submission } ) );
+		press( 'Mark unread' );
+		await answer( aChange, failed( 'Somebody else changed it.' ) );
+
+		act( () => {
+			pane().querySelector( '.corex-dialog__close' ).click();
+		} );
+
+		expect( pane() ).toBeNull();
+		expect( aboveTheList() ).toBe( 1 );
+	} );
+} );
+
 describe( 'an action above the list', () => {
 	it( 'marks Undo while it puts a submission back', async () => {
 		await openSalma();

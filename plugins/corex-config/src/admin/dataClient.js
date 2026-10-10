@@ -25,7 +25,7 @@ function appendQuery( params, query ) {
 }
 
 /**
- * The REST list URL for a source, carrying the params DataController::queryFrom() sanitises
+ * The REST list URL for a source, carrying the params `DataManagementController` sanitises
  * (search/form/sort/dir/page/per_page). Paging is always sent; the rest only when set.
  *
  * @param {string} restUrl   REST base, e.g. .../wp-json/corex/v1/data

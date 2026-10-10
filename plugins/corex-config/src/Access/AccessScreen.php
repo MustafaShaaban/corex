@@ -85,6 +85,8 @@ final class AccessScreen
         wp_localize_script('corex-access', 'corexAccess', [
             'restUrl' => esc_url_raw(rest_url('corex/v1/access')),
             'nonce' => wp_create_nonce('wp_rest'),
+            // Who is confirming a role change: the server checks the confirmation against it.
+            'actorId' => get_current_user_id(),
             'matrix' => $this->matrix->editableCorexMatrix($this->editableRoles(), $this->roleEffects(), $this->activePlugins()),
             'requests' => $this->pending->all(),
             'audit' => $this->audit->entries(),

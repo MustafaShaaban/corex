@@ -395,6 +395,41 @@
 	margin-block-end: 0;
 }
 
+/* A change that was applied, said above the matrix it changed. */
+.corex-admin .corex-access__notice {
+	margin: 0;
+	padding: var(--corex-admin-space-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-success);
+	border-radius: var(--corex-admin-radius-sm);
+	background: var(--corex-admin-surface);
+}
+
+/* The preview of a change: each ability, what it is and what it would be. */
+.corex-admin .corex-access__changes {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-access__changes li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-md);
+	margin: 0;
+}
+
+.corex-admin .corex-access__dialog-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: var(--corex-admin-space-sm);
+}
+
 .corex-admin .corex-access__mode-label {
 	font-weight: 600;
 }

@@ -15,8 +15,9 @@ use Corex\Forms\Schema\FieldSchema;
 /**
  * Runs a resolved schema against a payload. Pure: no WordPress. For each declared
  * field it applies the rules in order and records at most one error — the first to
- * fail (bail per field). An absent optional field is valid and not stored; values
- * for fields not in the schema are ignored (FR-002, FR-003).
+ * fail (bail per field). An absent optional field is not stored, and only a rule that
+ * implements `RuleForAbsentValue` is asked about it; values for fields not in the schema
+ * are ignored (FR-002, FR-003).
  */
 final class Validator
 {
@@ -35,19 +36,22 @@ final class Validator
 
         foreach ($schema as $name => $field) {
             $present = array_key_exists($name, $values);
-
-            if (! $present && ! $field->required) {
-                continue;
-            }
-
-            $value = $present ? $values[$name] : null;
+            // An optional field left out of the request: only a rule that asked to be told runs.
+            $leftOut = ! $present && ! $field->required;
+            $value   = $present ? $values[$name] : null;
 
             if ($present) {
                 $normalized[$name] = $value;
             }
 
             foreach ($field->rules as $spec) {
-                $error = $this->rules->get($spec['rule'])->validate($value, $spec['params'], $values);
+                $rule = $this->rules->get($spec['rule']);
+
+                if ($leftOut && ! $rule instanceof RuleForAbsentValue) {
+                    continue;
+                }
+
+                $error = $rule->validate($value, $spec['params'], $values);
 
                 if ($error !== null) {
                     $errors[$name] = $error;

@@ -183,8 +183,9 @@ export function useDataExplorer( config ) {
 				// that is registered, and `DataManagementControllerTest` holds it to that.
 				//
 				// This read the answer itself as the record, on the word of a comment about
-				// `DataController::show()`, which returns a record bare. That controller is
-				// bound and has not been registered since the other one arrived. So the
+				// `DataController::show()`, which returned a record bare. That controller was
+				// bound and had not been registered since the other one arrived; it is
+				// removed now (#313). So the
 				// detail showed one field, "Record", holding the whole record as a line of
 				// JSON, with a passing test: the test's transport answered what the comment
 				// said, and nothing compared either with the route that serves the screen.

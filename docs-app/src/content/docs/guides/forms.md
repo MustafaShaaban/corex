@@ -197,6 +197,32 @@ declares. A file field without `required` can be left empty.
 'cv' => ['type' => 'file', 'rules' => ['required', 'mime:application/pdf', 'max_size:2']],
 ```
 
+**A site can add a rule of its own.** It is a class that implements
+`Corex\Forms\Validation\Rule` and returns an error key, or `null` when the answer passes. Register
+it on the `RuleRegistry` from the container under a name no rule already has (lower-case letters,
+digits and underscores, starting with a letter), then use that name in `rules`. The server checks it; the
+browser skips a rule it does not know.
+
+An optional field that is left out of the request is skipped with every rule on it. A browser sends
+every field, so it is always present; a request written by hand may leave one out. A rule that
+looks at other fields ("give a phone number or an email address") has to be asked then too:
+implement `Corex\Forms\Validation\RuleForAbsentValue` instead of `Rule`, and it is handed `null`
+for the absent answer, with the whole request as the third argument.
+
+```php
+final class AWayToReply implements RuleForAbsentValue
+{
+    public function validate(mixed $value, array $params, array $allValues): ?string
+    {
+        return ($value ?? '') === '' && ($allValues['email'] ?? '') === '' ? 'reply' : null;
+    }
+}
+
+$container->make(RuleRegistry::class)->register('reply', new AWayToReply());
+
+'phone' => ['type' => 'tel', 'rules' => ['reply', 'phone']],
+```
+
 ## Place the block
 
 Add the **Corex Form** block and set its `formSlug` to your slug. It server-renders the

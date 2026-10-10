@@ -49,7 +49,6 @@ use Corex\Config\Jobs\WpJobRepository;
 use Corex\Config\Branding\AdminBranding;
 use Corex\Config\Branding\BrandingService;
 use Corex\Config\Data\DataAdminScreen;
-use Corex\Config\Data\DataController;
 use Corex\Config\Data\DataManagementController;
 use Corex\Config\Releases\InstalledRelease;
 use Corex\Config\Releases\ReleaseDesk;
@@ -540,7 +539,6 @@ final class ConfigServiceProvider extends ServiceProvider
 
             return $registry;
         });
-        $this->container->singleton(DataController::class);
         $this->container->singleton(DataAccessPolicy::class, static fn (): WpDataAccessPolicy => new WpDataAccessPolicy());
         $this->container->singleton(DataSourceService::class);
         $this->container->singleton(DataQueryService::class);

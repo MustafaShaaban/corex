@@ -70,7 +70,10 @@ export function blogReducer( state, action ) {
 				...state,
 				status: 'ready',
 				analytics: normalizeAnalytics( action.payload?.analytics ),
-				editorial: action.payload?.editorial || null,
+				// A refresh carries no editorial item, because no GET route returns one: the
+				// one a transition answered with stays. It was blanked here, and the panel
+				// then said the post had no editorial record (#313).
+				editorial: action.payload?.editorial ?? state.editorial,
 				comments: Array.isArray( action.payload?.comments )
 					? action.payload.comments
 					: [],

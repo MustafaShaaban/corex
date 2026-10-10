@@ -221,6 +221,30 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **The role matrix on CoreX → Access & Abilities can be saved** (#313). "Preview changes" was
+  a button with nothing behind it: an ability could be set to Allow or Deny for a role and
+  nothing sent it. It now shows each ability with what it is and what it would become, says
+  why the safety policy refuses a change that would lock somebody out, and applies what was
+  read. The reason a locked ability cannot be edited is said in words, where its code was
+  printed (DECISIONS #302).
+- **A failed action in an open submission says why in the pane** (#306). The reason was drawn
+  above the list, which the open pane covers: the button stopped working and nothing was said.
+  It is drawn in the pane, announced, and brought into view; above the list once the pane is
+  closed.
+- **A site's own form rule can be asked about a field left out of the request** (#323). An
+  optional field that a hand-written request leaves out was skipped with every rule on it, so
+  a rule about several fields ("a phone number or an email address") was never asked when all
+  of them were missing. A rule that implements `RuleForAbsentValue` is asked, with `null`. No
+  rule CoreX ships is of this kind, and no other rule is handed an absent value.
+- **Creating a flow cleared nothing and threw** (#313). The "New flow" form was reset after its
+  request through an event React had already let go of.
+- **Moving a post in Blog Pro, or moderating a comment, blanked its editorial panel** (#313),
+  which then said the post had no editorial record until the page was loaded again.
+- **Running a template's health checks emptied "Recent test sends"** on Email Studio's
+  overview (#313).
+- **The setup wizard said nothing when a plan could not be read or applied** (#313). The plan
+  step counted "0 pages", and "Apply plan" came back as if it had not been pressed. Both say
+  what the site answered.
 - **The Data screen no longer offers to delete a form submission.** The button was drawn
   because the source said it could delete, and pressing it was refused: the route needs a write
   adapter the source never had. A submission is removed in the inbox.
@@ -356,6 +380,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **`Corex\Config\Data\DataController` is removed.** It was bound in the container and
+  registered no route since `DataManagementController` took the Data screen's routes over;
+  nothing in CoreX called it. Code of your own that resolved it has to use the registered
+  controller's routes under `corex/v1/data`.
+- **A form rule of your own that looks at other fields** can implement
+  `Corex\Forms\Validation\RuleForAbsentValue` in place of `Rule` to be asked when its optional
+  field is left out of a request. Nothing changes for a rule that does not.
 - **On a site that sets `EMPTY_TRASH_DAYS` to 0, the retention panel's "Move to trash" no
   longer deletes on the spot.** The submissions go to the inbox's Trash and are deleted for
   good after **Keep in the trash for days** (30 unless the site set another). A site that

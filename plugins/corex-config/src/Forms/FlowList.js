@@ -61,11 +61,14 @@ function NewFlowForm( { busy, ownerId, onCreate } ) {
 	const pending = useContext( PendingControl );
 	const submit = async ( event ) => {
 		event.preventDefault();
-		const form = new FormData( event.currentTarget );
+		// Kept now: React clears `currentTarget` once this handler has returned, which is
+		// before the request is answered (#313).
+		const form = event.currentTarget;
+		const fields = new FormData( form );
 		const created = await onCreate( {
-			slug: form.get( 'slug' ),
-			name: form.get( 'name' ),
-			description: form.get( 'description' ),
+			slug: fields.get( 'slug' ),
+			name: fields.get( 'name' ),
+			description: fields.get( 'description' ),
 			ownerId,
 			successMessage: __(
 				'Thank you. Your submission was received.',
@@ -73,7 +76,7 @@ function NewFlowForm( { busy, ownerId, onCreate } ) {
 			),
 		} );
 		if ( created ) {
-			event.currentTarget.reset();
+			form.reset();
 		}
 	};
 

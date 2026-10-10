@@ -40,13 +40,30 @@
 		choices: {},
 		backupConfirmed: false,
 		plan: null,
+		// Why the plan could not be read, or could not be applied. Both used to fail without a
+		// word: the plan step said "0 pages", and "Apply plan" came back as if never pressed.
+		planError: '',
 		applied: null,
+		applyError: '',
 	};
 
 	function escape( s ) {
 		const d = document.createElement( 'div' );
 		d.textContent = s === null || s === undefined ? '' : String( s );
 		return d.innerHTML;
+	}
+
+	/**
+	 * The admin's error for an action that did not happen, written as markup: this screen is
+	 * not React.
+	 *
+	 * @param {string} message What to say.
+	 * @return {string} The error's HTML.
+	 */
+	function failure( message ) {
+		return `<div class="corex-error-state corex-error-state--action" role="alert"><p class="corex-error-state__message">${ escape(
+			message
+		) }</p></div>`;
 	}
 
 	function sectionUrl( page ) {
@@ -172,6 +189,9 @@
 			) }</p><div class="corex-setup__options">${ levelOptions() }</div>`;
 		}
 		if ( key === 'plan' ) {
+			if ( state.planError ) {
+				return failure( state.planError );
+			}
 			const pages = state.plan ? state.plan.plan.pages.length : 0;
 			return (
 				`<p>${ escape(
@@ -210,6 +230,7 @@
 				) }</p>`;
 			}
 			return (
+				( state.applyError ? failure( state.applyError ) : '' ) +
 				`<p>${ escape(
 					t( 'Apply the plan now with your choices.' )
 				) }</p>` +
@@ -335,6 +356,10 @@
 				{ nonce }
 			);
 			state.plan = res.envelope.ok ? res.envelope.data : null;
+			state.planError = res.envelope.ok
+				? ''
+				: res.envelope.message ||
+					t( 'The plan could not be read. Go back and try again.' );
 		}
 		state.index = Math.max( 0, Math.min( STEPS.length - 1, index ) );
 		render();
@@ -353,6 +378,10 @@
 			{ nonce }
 		).then( ( res ) => {
 			state.applied = res.envelope.ok ? res.envelope.data : null;
+			state.applyError = res.envelope.ok
+				? ''
+				: res.envelope.message ||
+					t( 'The plan could not be applied. Try again.' );
 			render();
 		} );
 	}

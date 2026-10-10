@@ -113,4 +113,21 @@ describe( 'Blog Pro client state', () => {
 			message: 'Blog update failed.',
 		} );
 	} );
+
+	it( 'keeps the editorial item through a refresh, which cannot carry one', () => {
+		// After a transition the screen reads everything else again. No GET route returns the
+		// editorial item, and the refresh used to blank it: the panel then said the post had
+		// no editorial record (#313).
+		const editorial = { editorial_state: 'ready_for_review' };
+		let state = blogReducer( initialBlogState(), {
+			type: 'transitioned',
+			editorial,
+		} );
+		state = blogReducer( state, {
+			type: 'loaded',
+			payload: { analytics: analyticsPayload, comments: [] },
+		} );
+
+		expect( state.editorial ).toBe( editorial );
+	} );
 } );
