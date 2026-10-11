@@ -350,7 +350,9 @@ it('says in the catalog whether the person may take personal data out', function
     [, , , $allowed] = exportService();
     [, , , $refused] = exportService(policy: managesDataOnly());
 
-    expect($allowed->describe(7, 'contacts')['permissions'])->toBe(['personal_data' => true])
+    // A source that does not say which group it belongs to is listed with the records.
+    expect($allowed->describe(7, 'contacts')['category'])->toBe('records')
+        ->and($allowed->describe(7, 'contacts')['permissions'])->toBe(['personal_data' => true])
         ->and($allowed->mayExportPersonalData(7))->toBeTrue()
         ->and($refused->describe(7, 'contacts')['permissions'])->toBe(['personal_data' => false])
         ->and($refused->mayExportPersonalData(7))->toBeFalse()

@@ -231,6 +231,10 @@ it('declares an answer once, however its key was written, and reads it under tha
         ->and($rows[2]['summary'])->toBe('date: next week');
 });
 
+it('is listed with the records a site keeps for its work', function () {
+    expect(answeredSubmissions()->category())->toBe('records');
+});
+
 it('marks every answer as personal data, as the Submissions inbox does, for the export to ask about', function () {
     // Spec 109, FR-018. A name and a list of topics were "none" here, guessed from the answer's
     // key, while the inbox's export withheld every answer from a person not allowed to export

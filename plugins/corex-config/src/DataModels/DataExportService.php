@@ -145,7 +145,8 @@ final readonly class DataExportService
 
         $file = $this->exports->file($runId);
         // Named for what it holds: the model, or how many models.
-        $subject = $run->isSeveral() ? sprintf('%d-models', count($run->parts)) : $run->sourceKey;
+        $written = count(array_filter($run->parts, static fn (DataExportPart $part): bool => ! $part->leftOut));
+        $subject = $run->isSeveral() ? sprintf('%d-models', $written) : $run->sourceKey;
         $name = sprintf('%s-%s', $subject, $run->createdAt->format('Y-m-d'));
         if ($file !== null) {
             return [

@@ -23,7 +23,7 @@ use Corex\Data\DataSourceCapabilities;
  * answers), the detail view's record (each answer, labelled) and the export's row (each answer
  * under the field declared for it). They are shaped in this class and nowhere else.
  */
-final class SubmissionsSource implements ExportableDataSource, SchemaAwareDataSource, TrendableDataSource, CapabilityAwareDataSource
+final class SubmissionsSource implements ExportableDataSource, SchemaAwareDataSource, TrendableDataSource, CapabilityAwareDataSource, CategorisedDataSource
 {
     /** The fields every submission has. An answer keyed like one of them gets no field of its own. */
     private const OWN_FIELDS = ['date', 'form', 'summary'];
@@ -43,6 +43,11 @@ final class SubmissionsSource implements ExportableDataSource, SchemaAwareDataSo
     public function label(): string
     {
         return __('Form submissions', 'corex');
+    }
+
+    public function category(): string
+    {
+        return self::RECORDS;
     }
 
     /**

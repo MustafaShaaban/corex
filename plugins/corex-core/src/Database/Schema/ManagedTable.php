@@ -42,6 +42,12 @@ final class ManagedTable
     /** @var list<string> */
     private const UNKNOWN_POLICIES = [self::UNKNOWN_REJECT, self::UNKNOWN_IGNORE];
 
+    /** What a site receives or keeps for its work: subscribers, applications, a site's own models. */
+    public const CATEGORY_RECORDS = 'records';
+
+    /** The site's own history: the activity log, login attempts, jobs, notifications. */
+    public const CATEGORY_LOG = 'log';
+
     /** @var list<array{id:string,type:string,required:bool,aliases:list<string>,validation:array<string,mixed>}> */
     private array $writable;
 
@@ -59,6 +65,11 @@ final class ManagedTable
      *                                                            personal-data classes of `DataField`.
      *                                                            Empty (the default) leaves every
      *                                                            column undeclared.
+     * @param string|null                         $category       One of the `CATEGORY_*`; which
+     *                                                            group the Data screen lists the
+     *                                                            table in. Null (the default) is
+     *                                                            records for a table that can be
+     *                                                            written to, and a log otherwise.
      */
     public function __construct(
         public readonly string $name,
@@ -70,6 +81,7 @@ final class ManagedTable
         public readonly array $migrations = [],
         public readonly array $insertDefaults = [],
         private readonly array $personalData = [],
+        private readonly ?string $category = null,
     ) {
         if (! in_array($this->unknownColumns, self::UNKNOWN_POLICIES, true)) {
             throw new InvalidArgumentException('Managed table unknown-column policy is invalid.');
@@ -82,6 +94,22 @@ final class ManagedTable
         }
 
         $this->assertPersonalData();
+
+        if ($this->category !== null && ! in_array($this->category, [self::CATEGORY_RECORDS, self::CATEGORY_LOG], true)) {
+            throw new InvalidArgumentException(sprintf('Managed table "%s" declares a category that is neither records nor a log.', $this->name));
+        }
+    }
+
+    /**
+     * Which group the Data screen lists the table in (spec 109, FR-003).
+     *
+     * Most tables say nothing and the answer follows from what they are: a table somebody can
+     * write to holds what the site works with, and one nobody can is a record of what happened.
+     * A table that is read-only and still the site's own records says so.
+     */
+    public function category(): string
+    {
+        return $this->category ?? ($this->isWritable() ? self::CATEGORY_RECORDS : self::CATEGORY_LOG);
     }
 
     /** The class the table declared for a column, or "undeclared" when it declared none. */
