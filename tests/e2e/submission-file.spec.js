@@ -95,8 +95,8 @@ test( 'opens a file sent with a form from its submission, by name, and gives it 
 
 	// Whoever reads the submission finds the file under the question, by its name.
 	await page.goto( '/wp-admin/admin.php?page=corex-submissions' );
-	// By its form: the search does not look in the answers of a form defined in code.
-	await page.getByLabel( 'Search' ).fill( FORM );
+	// By the email the visitor gave, as the person who was sent it would look for it.
+	await page.getByLabel( 'Search' ).fill( EMAIL );
 	const row = page
 		.locator( '.corex-inbox__table tbody tr' )
 		.filter( { hasText: EMAIL } )

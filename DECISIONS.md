@@ -10809,6 +10809,91 @@ not signed in is given none.
 
 **Verification.** Numbers are in the pull request, from the tree as committed.
 
+## #318 — The inbox's search looks for the sender where the row reads it
+
+**Date:** 2026-10-11. **Branch:** `fix/inbox-search-finds-code-form-sender`. **Spec:** 068,
+FR-046 (the inbox's search), with its tasks in spec 103 (T110 to T113), the spec the inbox is
+worked under now.
+
+**What was read first.** `SubmissionRepository::storeFlow()` writes a flow's submission with
+its sender twice: in the answers (`corex_field_name`, `corex_field_email`) and in two fields of
+their own (`corex_submitter_name`, `corex_submitter_email`). `store()`, which a form defined in
+code stores through, writes the form's name and the answers and nothing else. The inbox row
+shows a sender for both, because `WpSubmissionsReader::shapeInbox()` reads the two fields and,
+when they are empty, the answers named `name`, `full_name`, `first_name`, `email` and
+`email_address`. `searchClause()` read the two fields, the form's name and the flow's label. So
+a person saw an email in a row, searched for it, and was told "0 accessible submissions". The
+client sites' forms are defined in code.
+
+**The search looks in the answers the row reads.** `searchClause()` has five keys more, the
+`corex_field_*` of those five answers. The row and the search read the names from one list
+(`NAME_ANSWERS`, `EMAIL_ANSWERS`), so they cannot come apart again. Nothing is written to a
+submission, and a submission stored before this is found.
+
+**Writing the sender when the submission is stored was the other way, and costs the same.**
+`store()` would write the two fields as `storeFlow()` does, and the search would stay as it
+was. Submissions already stored would then need the fields written to them, on sites with no
+command line, or the search would need the answers as well for those, which is this change
+with a second change beside it. It was expected to be the cheaper search. It is not: the cost
+is in reading the sender's rows of a form defined in code, wherever they are kept. Measured on
+a WordPress of the worktree's own (MySQL 8.3, 5,000 submissions of a form defined in code and
+5,000 of a flow, the statement alone, median of nine runs):
+
+| | post meta rows | statement |
+|---|---|---|
+| the inbox with no search | 90,026 | 619 ms |
+| the search as it was (finds no form defined in code) | 90,026 | 108 ms |
+| this change: the answers searched | 90,026 | 346 ms |
+| the other way: the sender written for the 5,000, the search as it was | 100,026 | 334 ms |
+| this change, with 300,000 rows of other posts' meta in the table | 390,026 | 404 ms |
+| the search as it was, with the same 300,000 | 390,026 | 351 ms |
+
+The search as it was is quick in the first table because it does not look at half the
+submissions' senders. Both ways of looking at them take about a third of a second on 10,000
+submissions, and less than listing the inbox with no search.
+
+**It is one join, as it was.** WordPress gives the clauses of an OR group of a meta query one
+alias of the post meta table when they compare with `LIKE`, so nine keys are nine conditions on
+the join four keys had. The statement has three joins before and after (two are the test
+marker's). Read from the statement WordPress built, not from its source.
+
+**Every answer is not searched.** A search of every `corex_field_*` would find a word in a
+message, and would read every answer of every submission on each search. The search finds what
+the row shows: the sender and the form. The guide says so.
+
+**A form whose question has another name** (`work_email`, `your-name`) shows no sender in its
+row and is not found by one: the row and the search agree, and the form's name still finds
+it. Which answer is the sender, for a form that names it otherwise, is a thing a form would
+have to say; nothing asks for it yet.
+
+**The two fields stay in the search.** A flow's submission holds the same words in its
+answers, so the two fields could have been dropped and four keys kept. Submissions written by
+older code, or by a site's own, may hold the fields and no such answer. What it would have
+saved is about a fifth of the rows compared, by count on the data above; it was not timed.
+
+**Spec.** Spec 068's FR-046 gives the inbox a search and a row with the sender's name and
+email. Spec 103 rebuilt the row and the pane and leaves "what an inbox filter can filter by"
+out of scope. The search is not a filter there, and what it is for did not change: it was
+meant to find a sender and missed some. So this is a fix, with tasks under spec 103 and no
+requirement of either spec amended.
+
+**Seen while measuring, and not changed.** The inbox with no search is the slow statement:
+0.6 s on 10,000 submissions, and 1.2 s when the same 10,000 were stored a second time. It is
+the clause that leaves out submissions marked as tests (a submission with no marker, or a
+marker of 0): the same list without that clause took 18 ms. It is in `PROGRESS.md` under
+"Open, and not hidden".
+
+**For a client site.** Nothing to set, nothing to run and nothing to rebuild.
+
+**Tests.** Written first and seen to fail. `tests/Integration/Submissions/SubmissionInboxSearchTest.php`
+stores through `SubmissionRepository::store()` on real WordPress: six of its eight failed
+before the change (by email, by a part of the name, by each of the three other answers, from
+the Data screen), and two passed and are kept as limits (an answer that is not the sender
+finds nothing; a person's own scope holds under a search). In `tests/e2e/submissions-inbox.spec.js`
+a submission stored the same way is searched for by its email and by its name, and the inbox
+says "1 accessible submission"; before the change it said 0. `tests/e2e/submission-file.spec.js`
+searched by the form's name, with a comment saying why, and searches by the visitor's email.
+
 ## #319 — A form's notification email names its file and links to the submission; the file is not attached
 
 **Date:** 2026-10-11. **Branch:** `feat/notification-links-to-submission`. **Spec:** 081 (files,

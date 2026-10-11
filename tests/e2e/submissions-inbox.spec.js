@@ -110,6 +110,50 @@ test( 'spaces the inbox heading stack at every width, zoom, and direction', asyn
 		.evaluate( ( root ) => root.setAttribute( 'dir', 'ltr' ) );
 } );
 
+/**
+ * The search finds a submission by the sender its row shows (spec 068, FR-046; spec 103, T112).
+ *
+ * A form defined in code stores its answers and nothing else. The row read the sender from the
+ * answers and the search did not, so a person searched for an email that was in front of them and
+ * was told "0 accessible submissions". Stored the way such a form stores, through its repository.
+ */
+test( 'finds a submission of a form defined in code by the name and the email its row shows', async ( {
+	page,
+} ) => {
+	const stamp = Date.now();
+	const sender = {
+		name: `Salma Codeform${ stamp }`,
+		email: `corex-code-form-${ stamp }@example.com`,
+	};
+	const stored = wpEval(
+		`echo \\Corex\\Boot::app()->container()->make( \\Corex\\Forms\\Submission\\SubmissionRepository::class )` +
+			`->store( 'corex-e2e-code-form', [ 'name' => '${ sender.name }', 'email' => '${ sender.email }' ] )->id();`
+	);
+	test.skip(
+		stored === null,
+		'WP-CLI did not answer, so nothing was stored.'
+	);
+
+	try {
+		const rows = page.locator( '.corex-inbox__table tbody tr' );
+		const count = page.locator( '.corex-inbox__count' );
+
+		for ( const typed of [ sender.email, `Codeform${ stamp }` ] ) {
+			// From a search that finds nothing, so that the one row is this search's answer
+			// and not what the search before left on the page.
+			await page.getByLabel( 'Search' ).fill( `nobody-${ stamp }` );
+			await expect( count ).toHaveText( '0 accessible submissions' );
+			await page.getByLabel( 'Search' ).fill( typed );
+			await expect( count ).toHaveText( '1 accessible submission' );
+			await expect( rows ).toHaveCount( 1 );
+			await expect( rows.first() ).toContainText( sender.name );
+			await expect( rows.first() ).toContainText( sender.email );
+		}
+	} finally {
+		wpEval( `wp_delete_post( ${ Number( stored ) }, true );` );
+	}
+} );
+
 test( 'opens pre-filtered when Forms & Flows links to one form’s submissions', async ( {
 	page,
 } ) => {

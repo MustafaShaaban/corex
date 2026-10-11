@@ -24,6 +24,16 @@ All notable changes to Corex are documented here. The format follows
   `Corex\Forms\Submission\UploadedFileNames::in($slug, $values)` gives the name of each file
   sent with a form.
 
+### Fixed
+
+- **The inbox's search finds a submission by the sender its row shows** (spec 103, T110 to
+  T113; DECISIONS #318). A submission of a form defined in code showed its sender's name and
+  email in the row, and a search for either answered "0 accessible submissions": the search
+  read two fields only a flow's submission has. It now looks where the row reads the sender,
+  in the answers named `name`, `full_name`, `first_name`, `email` and `email_address`. The
+  search on CoreX → Data → Form submissions is the same one and finds them too. It does not
+  look in the other answers.
+
 ### Client impact
 
 - **A site that writes its own notification emails** (a form that lists its own listener) is
@@ -34,6 +44,13 @@ All notable changes to Corex are documented here. The format follows
 - **A routed email template that prints a file's answer** (`submission.<field>`) prints the
   file's name where it printed that number. The address is in the context as `submission_url`.
 - **Nothing to rebuild**: no script or stylesheet changed.
+- **The search finds submissions already stored**: nothing is written to them, and there is
+  nothing to run. A form whose name or email question has another name than the five above
+  shows no sender in its row, and is found by its form.
+- **A search does more work than it did**, because it now reads the senders of forms defined
+  in code, which it used to pass over. Measured on 10,000 submissions, the search's statement
+  took about a third of a second where it took a tenth; that is still less than listing the
+  inbox with no search (DECISIONS #318). It was not measured on a smaller site.
 
 ## [0.45.1] — 2026-10-11
 
