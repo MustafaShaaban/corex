@@ -55,6 +55,28 @@ function show( props = {} ) {
 	return { onClose, dialog: container.querySelector( 'dialog' ) };
 }
 
+/**
+ * A press of the mouse as the browser reports one: down where it began, up where it was let go,
+ * and a click on the nearest element that holds both. Between the backdrop and anything in the
+ * panel that element is the dialog, which is the backdrop.
+ *
+ * @param {Element} from Where the mouse went down.
+ * @param {Element} to   Where it came up.
+ */
+function press( from, to ) {
+	const event = ( type ) => new window.MouseEvent( type, { bubbles: true } );
+	let holdsBoth = from;
+	while ( ! holdsBoth.contains( to ) ) {
+		holdsBoth = holdsBoth.parentElement;
+	}
+
+	act( () => {
+		from.dispatchEvent( event( 'mousedown' ) );
+		to.dispatchEvent( event( 'mouseup' ) );
+		holdsBoth.dispatchEvent( event( 'click' ) );
+	} );
+}
+
 it( 'opens modally, inside the admin scope it was written in', () => {
 	const { dialog } = show();
 
@@ -86,19 +108,37 @@ it( 'asks to be closed on Escape, and does not close by itself', () => {
 
 it( 'asks to be closed by its close button and by a press outside its panel', () => {
 	const { dialog, onClose } = show();
+	const body = dialog.querySelector( '.corex-dialog__body' );
 
 	act( () => {
 		dialog.querySelector( '.corex-dialog__close' ).click();
 	} );
-	act( () => {
-		dialog.click();
-	} );
+	press( dialog, dialog );
 	// A press inside the panel is not a press outside it.
-	act( () => {
-		dialog.querySelector( '.corex-dialog__body' ).click();
-	} );
+	press( body, body );
 
 	expect( onClose ).toHaveBeenCalledTimes( 2 );
+} );
+
+// The pane of a submission closed, with the note being written in it, when a press on one of its
+// buttons was let go on the backdrop (2026-10-11). The browser test of the inbox has the mouse.
+it.each( [
+	[
+		'begun in its panel and let go on the backdrop',
+		'.corex-dialog__body',
+		'dialog',
+	],
+	[
+		'begun on the backdrop and let go in its panel',
+		'dialog',
+		'.corex-dialog__body',
+	],
+] )( 'is not left by a press %s', ( _, from, to ) => {
+	const { onClose } = show();
+
+	press( container.querySelector( from ), container.querySelector( to ) );
+
+	expect( onClose ).not.toHaveBeenCalled();
 } );
 
 it( 'refuses to be left while something is in progress', () => {
@@ -108,8 +148,8 @@ it( 'refuses to be left while something is in progress', () => {
 		dialog.dispatchEvent(
 			new window.Event( 'cancel', { cancelable: true } )
 		);
-		dialog.click();
 	} );
+	press( dialog, dialog );
 
 	expect( onClose ).not.toHaveBeenCalled();
 	expect( dialog.querySelector( '.corex-dialog__close' ).disabled ).toBe(

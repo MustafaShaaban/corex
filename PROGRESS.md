@@ -132,6 +132,13 @@ long: read it before a client site takes the release. In short:
   where it was printed as JSON. A client site carried that as a patch to a framework file and
   can drop it.
 
+**Unreleased on `main`, outside the specs above** (2026-10-11): a `CorexDialog` is left by a
+press on its backdrop only when the press starts and ends there. A press begun on a button in a
+submission's pane and let go on the backdrop closed the pane, with the note being written in it:
+the browser gives such a click to the dialog element, which is the backdrop.
+`tests/e2e/submissions-inbox.spec.js` makes the press with a mouse on the pane, on a
+confirmation asked over it and on the export dialog.
+
 **Unreleased on `main`, outside the specs above** (2026-10-11): the `corex/modal` and
 `corex/drawer` blocks are left by a press on the backdrop only when the press starts and ends
 outside the panel. Both closed on any click whose target was the `<dialog>` element. That is

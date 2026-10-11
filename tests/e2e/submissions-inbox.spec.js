@@ -523,6 +523,134 @@ test( 'reads a submission in the pane: the answer first, the parts evenly spaced
 } );
 
 /**
+ * The middle of what a locator finds, brought into view first.
+ *
+ * @param {import('@playwright/test').Locator} locator What to aim at.
+ * @return {Promise<{x: number, y: number}>} The point, in the window.
+ */
+async function middleOf( locator ) {
+	await locator.scrollIntoViewIfNeeded();
+	const box = await locator.boundingBox();
+
+	return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+/**
+ * A point on a dialog's backdrop: level with its middle, halfway to the window's edge.
+ *
+ * @param {import('@playwright/test').Locator} dialog The open dialog.
+ * @return {Promise<{x: number, y: number}>} The point, in the window.
+ */
+async function backdropOf( dialog ) {
+	const box = await dialog.boundingBox();
+
+	return { x: box.x / 2, y: box.y + box.height / 2 };
+}
+
+/**
+ * Presses the mouse at one point and lets it go at another.
+ *
+ * @param {import('@playwright/test').Page} page The page.
+ * @param {{x: number, y: number}}          from Where the button goes down.
+ * @param {{x: number, y: number}}          to   Where it comes up.
+ */
+async function pressAndLetGo( page, from, to ) {
+	await page.mouse.move( from.x, from.y );
+	await page.mouse.down();
+	await page.mouse.move( to.x, to.y, { steps: 4 } );
+	await page.mouse.up();
+}
+
+/**
+ * A press that crosses the edge of a dialog (spec 103, FR-035).
+ *
+ * The backdrop is the dialog element itself, outside its panel. When the mouse goes down on one
+ * element and comes up on another, the browser gives the click to the nearest element that holds
+ * both, and for a button in the pane and the backdrop that is the dialog. So a press taken back
+ * by sliding off the button was read as a click on the backdrop: the pane closed, and the note
+ * being written in it went with it (found 2026-10-11). jsdom has no pointer and no such rule,
+ * which is why this is asserted here.
+ */
+test( 'closes a dialog for a press that starts and ends on its backdrop, and for no press that crosses its edge', async ( {
+	page,
+} ) => {
+	await page.setViewportSize( { width: 1280, height: 720 } );
+	await page.getByLabel( 'Search' ).fill( EMAIL );
+	await page
+		.locator( '.corex-inbox__table tbody tr' )
+		.filter( { hasText: EMAIL } )
+		.first()
+		.getByRole( 'button' )
+		.click();
+	const pane = page.locator( '.corex-pane' );
+	// Opening it marks it read and draws the pane again: waited for, so nothing below is typed
+	// into a pane that is about to be replaced.
+	await expect(
+		pane.getByRole( 'button', { name: 'Mark unread' } )
+	).toBeVisible();
+
+	const note = pane.locator( 'textarea[id$="-note"]' );
+	await note.fill( 'Called her.' );
+	const trash = pane.getByRole( 'button', { name: 'Move to trash' } );
+	const asking = page.getByRole( 'dialog', { name: 'Move to the trash' } );
+	const besidePane = await backdropOf( pane );
+
+	// Pressed on a button and let go off it: the pane stays, and the button's own action, which
+	// is to ask before moving the submission, is not taken either.
+	await pressAndLetGo( page, await middleOf( trash ), besidePane );
+	await expect( note ).toHaveValue( 'Called her.' );
+	await expect( asking ).toHaveCount( 0 );
+
+	// The other way: begun on the backdrop and let go on the pane.
+	await pressAndLetGo(
+		page,
+		besidePane,
+		await middleOf( pane.locator( '.corex-dialog__title' ) )
+	);
+	await expect( note ).toHaveValue( 'Called her.' );
+
+	// A dialog asked over the pane has a backdrop of its own, which covers the pane. A press
+	// wholly on it leaves that dialog and not the pane under it.
+	await trash.click();
+	const besideAsking = await backdropOf( asking );
+	await pressAndLetGo(
+		page,
+		await middleOf( asking.getByRole( 'button', { name: 'Cancel' } ) ),
+		besideAsking
+	);
+	await expect( asking ).toBeVisible();
+	await page.mouse.click( besideAsking.x, besideAsking.y );
+	await expect( asking ).toBeHidden();
+	await expect( note ).toHaveValue( 'Called her.' );
+
+	// A press on the backdrop and nowhere else is still a way out.
+	await page.mouse.click( besidePane.x, besidePane.y );
+	await expect( pane ).toHaveCount( 0 );
+
+	// The same of a dialog in the middle of the window, which has backdrop on every side.
+	await page
+		.getByRole( 'button', { name: 'Export', exact: true } )
+		.dispatchEvent( 'click' );
+	const dialog = page.getByRole( 'dialog', { name: 'Export submissions' } );
+	await expect( dialog ).toBeVisible();
+	const besideDialog = await backdropOf( dialog );
+
+	await pressAndLetGo(
+		page,
+		await middleOf(
+			dialog
+				.locator( '.corex-dialog__footer' )
+				.getByRole( 'button', { name: 'Cancel' } )
+		),
+		besideDialog
+	);
+	await expect( dialog ).toBeVisible();
+
+	await page.mouse.click( besideDialog.x, besideDialog.y );
+	await expect( dialog ).toBeHidden();
+} );
+
+/**
  * What was exported before (spec 103, US9).
  *
  * The history was a date, a count and a link. It says now what each export covered, in what
