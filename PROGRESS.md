@@ -57,7 +57,7 @@ route and no screen, and the Releases screen says it installs nothing yet.
 | [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | the specification, and the line-break fix | planned on 2026-10-11 in seven slices, after the owner could not send a reply on a live site, tell whether it had gone, or read it afterwards; none is built | slice 1, T001: the reply box says when delivery is off, the pane says what happened to a reply, and the reply is kept on the submission |
 | [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | T048 to T056, then slices 5 and 6 | T048, `ReleaseTableCopies` |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
-| [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | nothing | a draft specification, written 2026-10-11, with five questions for the owner | his answers, then `/speckit-plan` |
+| [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | nothing | specified and planned on 2026-10-11 in six slices, the owner's five answers written in; no tasks and no code | `/speckit-tasks`, then slice 1: personal data marked on every model and asked about by one rule |
 
 What to know before resuming each:
 
@@ -76,13 +76,14 @@ What to know before resuming each:
   screen. Since DECISIONS #299 an add-on's table is created by the migration runner: read
   `Boot::providersForState()` and the schema registry before writing the finisher.
 - **Spec 109.** From the owner's report of 2026-10-11 on the first client site: Import, Export
-  and Migrations on CoreX → Data each take one model at a time. The spec also carries parts B
-  and C of the 2026-10-08 outline (data that flows one way, and production data pulled down)
-  for the Data screen's models; DECISIONS #282 had promised them as "the next two specs". It
-  is not to be planned before the owner answers its five questions. Reading for it found that
-  no column of a table model is marked as personal data, so subscribers and applicants are
-  exported with no confirmation, and that an import adds a row whether or not the record is
-  already there; both are in the spec and neither is fixed.
+  and Migrations on CoreX → Data each take one model at a time. He answered its five questions
+  "as recommended" (DECISIONS #306): "migrate" meant moving records between installs, so
+  several table changes together are not built; pages, templates and settings get a spec of
+  their own. The spec carries parts B and C of the 2026-10-08 outline for the Data screen's
+  models. Its plan puts personal data first: slice 1 changes who is offered personal columns
+  on the Data screen, which is a client impact to say to both client sites' sessions before
+  the release that carries it. Slice 5 splits `Releases/ReleaseUpload.php`, a file of spec 107:
+  tell that session before touching it.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 

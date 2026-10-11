@@ -605,10 +605,11 @@ answered "as recommended". Each is his to reopen.
 
 - **"Live" means the install's operations mode is anything other than Development or
   Staging.** Those two are the only modes that say an install is a copy; Production, Maintenance
-  and Coming soon are all states of a real site. An install nobody ever set a mode on is
-  treated as whatever CoreX takes it to be today, which planning reads; the receiving screen
-  states which it takes the install to be before anything is confirmed, because the protection
-  of User Story 4 hangs on it.
+  and Coming soon are all states of a real site. An install nobody ever set a mode on has the
+  mode CoreX reads from WordPress's own environment type, which is production unless the
+  install says otherwise, so the default protects. The receiving screen states which it takes
+  the install to be before anything is confirmed, because the protection of User Story 4 hangs
+  on it.
 - **Where each tool lives.** Export keeps its tab and gains the list. Import keeps its tab and
   takes several files. Making and receiving a package get a place of their own on the same
   screen, named "Move". Planning may place them differently; the three words stay apart.
@@ -642,8 +643,13 @@ answered "as recommended". Each is his to reopen.
 - **The trial run's limits per CSV file stay** (2 MB, 5,000 rows) unless planning finds them
   arbitrary. A package has no such ceiling: FR-050 to FR-053 govern it.
 - **The Export tab asks for the ability to manage data models while an export itself asks for
-  the ability to manage data.** Read from the code; planning decides which is meant and makes
-  the tab and the action agree.
+  the ability to manage data.** Read from the code. The plan makes the tab ask for what an
+  export asks for (its D16).
+- **A package's check finds damage, not forgery.** FR-029's "whole and unchanged" is checked
+  against what the package says of itself, which catches a broken upload or a damaged file.
+  Somebody able to rewrite the file can rewrite that too; refusing a forged package would need
+  a secret shared by two installs, which this spec keeps out. Everything read from a package
+  is therefore checked as if a stranger had typed it (the plan's D8).
 
 ## Out of scope
 
