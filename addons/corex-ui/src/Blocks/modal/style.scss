@@ -3,9 +3,15 @@
 /**
  * corex/modal — token-only, logical properties (RTL-correct). Consumes the 054 foundation
  * tokens: z-index (overlay stacking), radius, shadow, and the focus ring. No hardcoded values.
+ *
+ * The limits on the panel are on all of it, padding and border included (`border-box`): the one
+ * below, and the height the browser gives a modal dialog (the window less `6px + 2em`). Counted on
+ * top of them, the padding made a modal as wide as a phone's window, and would make it taller than
+ * the window on a site whose padding and border, both sides, come to more than that allowance.
  */
 /* stylelint-enable @stylistic/max-line-length */
 .corex-modal {
+	box-sizing: border-box;
 	margin: auto;
 	max-inline-size: min(32rem, 92vw);
 	padding: var(--wp--preset--spacing--40);

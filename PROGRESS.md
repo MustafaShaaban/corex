@@ -142,6 +142,18 @@ box and not by the click's target. `tests/e2e/block-dialogs.spec.js` makes the p
 mouse on a page holding all three (a modal, a drawer at each side); it is the first browser
 test these blocks have.
 
+The same two blocks now count their padding in their sizes (`box-sizing: border-box`, the one
+line changed in each stylesheet). A drawer was taller than the window by twice its padding, and
+one holding more than fits stopped scrolling with its last 16px below the window. A modal kept
+inside the window by 2px, which held only while its padding and border (34px) stayed under the
+`6px + 2em` the browser allows a modal dialog, and it was as wide as a phone's window. The same
+spec holds it on a second page whose dialogs hold more than fits: each is inside the window, no
+wider than 92% of it, and scrolled as far as its last line, at 1280x720 and 375x812, read left
+to right and right to left. Seen there and left alone: in both blocks the close button and the
+title scroll away with the content, and a dialog whose content has a link opens scrolled to
+it, because the close button comes last in the markup and the browser focuses the first thing
+that takes focus.
+
 Earlier releases are in [`CHANGELOG.md`](CHANGELOG.md), each with its decisions.
 
 ## Next
