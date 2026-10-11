@@ -25,6 +25,16 @@ interface SubmissionEmailGateway
 
     public function reply(string $recipient, string $subject, string $htmlBody): MailResult;
 
+    /**
+     * The email {@see reply()} would send for the same three values, and sends nothing.
+     *
+     * It must be built by what builds the sent one, so that what a person approves is what the
+     * recipient gets (spec 106, FR-005).
+     *
+     * @return array{html:string,text:string} The whole document, and its plain-text version.
+     */
+    public function preview(string $recipient, string $subject, string $htmlBody): array;
+
     /** @param array<string,mixed> $context */
     public function resend(string $attemptId, string $recipient, array $context): MailResult;
 

@@ -47,6 +47,61 @@ it('defaults to the end side and rejects an unknown side', function () {
         ->and($unknown)->not->toContain('diagonal');
 });
 
+it('puts the close button in the header and before the body, with a title and without one', function (string $title, string $heading) {
+    $html = $this->renderer->render(
+        ['title' => $title, 'content' => '<a href="#terms">The terms</a>'],
+        '',
+        (object) [],
+    );
+
+    // The first thing in the dialog to take focus is where a browser opens it: the close button,
+    // not the link in what it holds.
+    expect($html)->toMatch(
+        '~<dialog [^>]*><div class="corex-drawer__header">' . $heading
+        . '<button type="button" class="corex-drawer__close"[^>]*>&times;</button></div>'
+        . '<div class="corex-drawer__body"><a href="#terms">The terms</a></div></dialog>~',
+    );
+})->with([
+    'a title'  => ['Terms', '<h2 id="[^"]+" class="corex-drawer__title">Terms</h2>'],
+    'no title' => ['', ''],
+]);
+
+it('names a dialog that has a title by its heading, and by nothing else', function () {
+    $html = $this->renderer->render(
+        ['title' => 'Terms', 'triggerLabel' => 'Read terms', 'content' => 'Hello'],
+        '',
+        (object) [],
+    );
+
+    expect($html)->toMatch('~<dialog [^>]*aria-labelledby="([^"]+)"[^>]*>.*<h2 id="\1"~s')
+        ->and($html)->not->toMatch('~<dialog [^>]*aria-label=~');
+});
+
+it('names a dialog that has no title by the label of its trigger', function (string $triggerLabel, string $name) {
+    $html = $this->renderer->render(
+        ['triggerLabel' => $triggerLabel, 'content' => 'Hello'],
+        '',
+        (object) [],
+    );
+
+    // No heading to point at, so the name is written on the dialog.
+    expect($html)->toMatch('~<dialog [^>]*aria-label="' . $name . '"[^>]*>~')
+        ->and($html)->not->toContain('aria-labelledby=');
+})->with([
+    'the label the editor wrote'                    => ['Read terms', 'Read terms'],
+    'the label a trigger gets when none is written' => ['', 'Open'],
+]);
+
+it('escapes the trigger label where it names the dialog', function () {
+    $html = $this->renderer->render(
+        ['triggerLabel' => 'Terms" onclick="x', 'content' => 'ok'],
+        '',
+        (object) [],
+    );
+
+    expect($html)->toContain('aria-label="Terms&quot; onclick=&quot;x"');
+});
+
 it('escapes the title and trigger label', function () {
     $html = $this->renderer->render(
         ['title' => '<script>x</script>', 'triggerLabel' => '<b>y</b>', 'content' => 'ok'],
