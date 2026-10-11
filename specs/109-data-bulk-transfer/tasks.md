@@ -268,11 +268,12 @@ live install.
 made and one deleted for good, receive that package: the ten are unchanged, the deleted one is
 still gone, and the preview said so in numbers.
 
-- [ ] T080 [US3] Tell the spec 107 session, then split `Releases/ReleaseUpload.php` into
+- [ ] T080 [US3] Split `Releases/ReleaseUpload.php` into
       `plugins/corex-config/src/Upload/PartedUpload.php` and its release use, and
       `Releases/releaseClient.js` and `sha256.js` into `admin/upload/`, as one commit that
       changes no behaviour; that class's tests stay green. The spec 107 session agreed on
-      2026-10-11, once its #339 is merged, and named what the Releases side relies on:
+      2026-10-11 and has since merged all of spec 107 (#339 among it), so this task waits on
+      nobody. What the Releases side relies on, as that session named it:
       `releaseClient.js` also carries the installation's key (a header added in `ask()`/`once()`
       on every request after prepare) and the installation's steps, so only the upload part is
       lifted and those stay; every answer of the Releases routes carries the mark

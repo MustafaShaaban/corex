@@ -96,10 +96,11 @@ What to know before resuming each:
   none was running on 2026-10-11. Say it to both before the release that carries this is
   tagged. Slice 2 is the
   owner's report itself, several models in one export. Slice 5 splits
-  `Releases/ReleaseUpload.php`, a file of spec 107: tell that session before touching it.
-  Slice 1's browser test and its integration tests were run in CI and not on a development
-  install; the line a person without the right is shown was drawn in Jest and not walked in a
-  browser, because no fixture account manages data without being an administrator.
+  `Releases/ReleaseUpload.php`, a file of spec 107, which is finished; what the Releases side
+  relies on is written into task T080.
+  Slice 1's integration and browser tests ran in CI; its screens were looked at on the
+  development install. The line a person without the right is shown was drawn in Jest and not
+  walked in a browser, because no fixture account manages data without being an administrator.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 
