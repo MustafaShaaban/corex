@@ -773,6 +773,11 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Config\Submissions\WpSubmissionFiles::class,
         );
         $this->container->singleton(\Corex\Config\Submissions\SubmissionFileAnswers::class);
+        // Where an email about a submission points: the inbox, opened on that submission.
+        $this->container->singleton(
+            \Corex\Mail\SubmissionAddress::class,
+            \Corex\Config\Submissions\InboxSubmissionAddress::class,
+        );
         $this->container->singleton(\Corex\Config\Submissions\SubmissionFileDelivery::class);
         $this->container->singleton(\Corex\Config\Submissions\WpSubmissionReplyStore::class);
         $this->container->singleton(
