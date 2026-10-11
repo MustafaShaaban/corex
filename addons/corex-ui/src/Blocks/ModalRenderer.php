@@ -14,10 +14,21 @@ use Corex\Blocks\BlockRenderer;
 
 /**
  * Renders the corex/modal block (spec 054, US3) — the one justified new DLS component: a
- * trigger button + a native `<dialog>` (focus-trap + ESC + `::backdrop` for free) labelled by
- * its heading, with a close button. Token-only (radius/shadow/z-index/focus), escaped, i18n,
- * RTL. Without JS the dialog markup is still present and the close/trigger are inert anchors —
- * the content is never lost. Empty title + empty content render nothing.
+ * trigger button + a native `<dialog>` (focus-trap + ESC + `::backdrop` for free) with a close
+ * button. Token-only (radius/shadow/z-index/focus), escaped, i18n, RTL. Empty title + empty
+ * content render nothing.
+ *
+ * The dialog always has a name. With a title it is labelled by its heading. With none it carries
+ * the label of its trigger, which is never empty: a dialog with no name is announced as "dialog"
+ * and nothing more (DECISIONS #316).
+ *
+ * Only the view script answers the trigger and the close button. With scripting off the stylesheet
+ * shows the dialog in the page, where the block is, and hides the two buttons
+ * (shared/_dialog-parts.scss), so what it holds is not lost.
+ *
+ * The close button comes before the body, in a header with the title. The order is not for looks:
+ * a browser opening a dialog puts focus on the first thing in it that takes focus, and scrolls to
+ * it. With the button last that was the first link of the content, wherever in the content it was.
  */
 final class ModalRenderer implements BlockRenderer
 {
@@ -41,22 +52,25 @@ final class ModalRenderer implements BlockRenderer
         $id      = uniqid('corex-modal-');
         $titleId = $id . '-title';
 
-        $heading    = $title !== ''
+        $heading = $title !== ''
             ? sprintf('<h2 id="%s" class="corex-modal__title">%s</h2>', esc_attr($titleId), esc_html($title))
             : '';
-        $labelledBy = $title !== '' ? sprintf(' aria-labelledby="%s"', esc_attr($titleId)) : '';
+        $name    = $title !== ''
+            ? sprintf(' aria-labelledby="%s"', esc_attr($titleId))
+            : sprintf(' aria-label="%s"', esc_attr($triggerLabel));
 
         return sprintf(
             '<div class="corex-modal-wrap">'
             . '<button type="button" class="corex-modal__trigger" aria-haspopup="dialog" aria-controls="%1$s">%2$s</button>'
             . '<dialog id="%1$s" class="corex-modal"%3$s>'
-            . '%4$s'
-            . '<div class="corex-modal__body">%5$s</div>'
+            . '<div class="corex-modal__header">%4$s'
             . '<button type="button" class="corex-modal__close" data-corex-modal-close aria-label="%6$s">&times;</button>'
+            . '</div>'
+            . '<div class="corex-modal__body">%5$s</div>'
             . '</dialog></div>',
             esc_attr($id),
             esc_html($triggerLabel),
-            $labelledBy,
+            $name,
             $heading,
             // Inline-edited (RichText) body — safe inline HTML, scrubbed by wp_kses_post.
             wp_kses_post($body),

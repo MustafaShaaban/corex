@@ -75,21 +75,26 @@ Tests are written first and seen to fail. One slice per pull request. Decisions 
 
 ## Slice 3: the editor and the true preview (US1; FR-001 to FR-007)
 
-- [ ] T040 Jest: the editor's commands, shortcuts, toolbar keys and pressed states; paste is
+Built in two pull requests: the editor and the preview first, the draft after it.
+
+- [x] T040 Jest: the editor's commands, shortcuts, toolbar keys and pressed states; paste is
       reduced; the value given back is reduced
-- [ ] T041 `CorexRichText`, `richTextCommands.js`
-- [ ] T042 Pest unit and integration: the preview route answers what `reply()` then captures,
+- [x] T041 `CorexRichText`, `richTextCommands.js`; `replyHtml.js` moved beside them
+- [x] T042 Pest unit and integration: the preview route answers what `reply()` then captures,
       byte for byte; it is guarded as the reply route is
-- [ ] T043 `POST …/reply/preview`
+- [x] T043 `POST …/reply/preview`
 - [ ] T044 Pest unit and integration: a draft is one person's, for one submission; saved,
       read, discarded; removed when the reply is sent; gone with the submission
 - [ ] T045 `SubmissionReplyDrafts`, its routes
-- [ ] T046 Jest (rendered): the Reply section with the editor, the preview dialog at two
-      widths, the draft restored on reopening
-- [ ] T047 The Reply section on the editor; the preview; the draft
-- [ ] T048 Playwright: write a formatted reply with the keyboard only, preview, send; the
-      captured email is the preview; right to left; measured spacing of the toolbar
-- [ ] T049 Guards; guide; CHANGELOG; PROGRESS; DECISIONS
+- [x] T046 Jest (rendered): the Reply section with the editor, the preview dialog at two
+      widths. Not yet: the draft restored on reopening (with T044)
+- [x] T047 The Reply section on the editor; the preview. Not yet: the draft (with T045)
+- [x] T048 Playwright: write a formatted reply with the keyboard only, preview, send; the
+      captured email is the preview; an Arabic paragraph reads from the right; measured
+      spacing of the toolbar, light and dark, both directions
+- [x] T049 Guards; guide; CHANGELOG; PROGRESS; DECISIONS, for the editor and the preview.
+      The independent review ran the editor in a browser and named four defects and a dozen
+      lesser ones; each is fixed with a test, and what is left is in DECISIONS #313
 
 ## Slice 4: a client's own template (US3; FR-014 to FR-020) — built before slice 3
 

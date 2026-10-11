@@ -1,0 +1,116 @@
+/* stylelint-disable @stylistic/max-line-length -- module documentation */
+
+/**
+ * The parts of a dialog block, the same in `corex/modal` and `corex/drawer`: a header holding the
+ * title and the close button, and under it a body holding the content. Token-only, logical
+ * properties.
+ *
+ * The header stays and the body scrolls. Until 2026-10-11 the `<dialog>` itself scrolled, so the
+ * title and the close button went up out of view with the first lines, and on a phone a visitor at
+ * the last line had the backdrop left to close with and nothing else. A header made to stick
+ * inside a scrolling dialog was the other way to keep them, and was not taken: what scrolls
+ * passes under it, and a link under it is in view as far as the browser knows, so focus going
+ * back to that link leaves it hidden (WCAG 2.2, 2.4.11; DECISIONS #315).
+ *
+ * The padding is the header's and the body's, not the dialog's, so the body's scrollbar is at the
+ * panel's edge and the last line has the panel's padding under it.
+ *
+ * @param {string} $block The block's class: `corex-modal` or `corex-drawer`.
+ */
+/* stylelint-enable @stylistic/max-line-length */
+@mixin dialog-parts($block) {
+
+	// Only while it is open: closed, a dialog is `display: none` by the
+	// browser's own rule, and a `display` set on the class would be stronger
+	// than that rule and show it.
+	.#{$block}[open] {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.#{$block}__header {
+		display: flex;
+		flex: none;
+		align-items: center;
+		gap: var(--wp--preset--spacing--20);
+		padding-block: var(--wp--preset--spacing--40) var(--wp--preset--spacing--20);
+		padding-inline: var(--wp--preset--spacing--40);
+		border-block-end: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
+	}
+
+	.#{$block}__title {
+		min-inline-size: 0;
+		margin-block: 0;
+		overflow-wrap: anywhere;
+	}
+
+	// A square of the cross and its padding. Its line is as tall as its font
+	// (`line-height: 1`), so a side is one `em` and twice the padding: more
+	// than the 24 CSS pixels a target needs (WCAG 2.2, 2.5.8) at every size
+	// the tokens take. The margin draws that padding out into the header's,
+	// so it is the cross that sits on the header's edge, level with the
+	// middle of the title, and the header is as tall as its title.
+	.#{$block}__close {
+		display: grid;
+		flex: none;
+		place-items: center;
+		inline-size: calc(1em + 2 * var(--wp--preset--spacing--20));
+		margin: calc(-1 * var(--wp--preset--spacing--20));
+		margin-inline-start: auto;
+		padding: var(--wp--preset--spacing--20);
+		border: 0;
+		background: transparent;
+		font-size: var(--wp--preset--font-size--base);
+		line-height: 1;
+		cursor: pointer;
+		color: inherit;
+	}
+
+	.#{$block}__body {
+		flex: 1 1 auto;
+		min-block-size: 0;
+		overflow: auto;
+		padding-block: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40);
+		padding-inline: var(--wp--preset--spacing--40);
+	}
+
+	.#{$block}__trigger:focus-visible,
+	.#{$block}__close:focus-visible {
+		outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
+		outline-offset: var(--wp--custom--focus--offset);
+	}
+
+	// The body takes focus while it holds more than fits
+	// (shared/keyboard-scroll.js). Its ring is drawn inside it: outside, the
+	// dialog clips it.
+	.#{$block}__body:focus-visible {
+		outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
+		outline-offset: calc(-1 * var(--wp--custom--focus--width));
+	}
+
+	// With scripting off nothing answers the trigger or the close button,
+	// so neither is shown, and the dialog is in the page where the block is:
+	// its title and what it holds, in the flow, at the start of the line and
+	// as tall as they are.
+	// Closed, a dialog is `display: none` by the browser's own rule and,
+	// shown by force, absolute; both are undone. A header left with nothing
+	// in it is not shown either. A script that was to run and did not is not
+	// this case, and there the content is still out of reach (DECISIONS #316).
+	@media (scripting: none) {
+
+		.#{$block}:not([open]) {
+			display: flex;
+			flex-direction: column;
+			position: static;
+			margin-inline: 0;
+			block-size: auto;
+			max-block-size: none;
+		}
+
+		.#{$block}__trigger,
+		.#{$block}__close,
+		.#{$block}__header:not(:has(.#{$block}__title)) {
+			display: none;
+		}
+	}
+}

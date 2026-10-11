@@ -105,6 +105,13 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
         );
     }
 
+    public function preview(string $recipient, string $subject, string $htmlBody): array
+    {
+        $email = $this->composer->compose($recipient, $subject, $htmlBody);
+
+        return ['html' => $email->html, 'text' => $email->text];
+    }
+
     /**
      * The configured reply-to, or null.
      *

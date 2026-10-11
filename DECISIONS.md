@@ -10446,3 +10446,249 @@ and a `Set` does not come back.
 **Not run here.** The integration tests in `DataExportSetTest`: CI runs them, and they passed
 on its first run.
 
+
+## #313 — A reply is written in CoreX's own small editor, and its preview is the email
+
+**Date:** 2026-10-11. **Branch:** `feat/106-reply-editor`. **Spec:** 106, slice 3.
+
+"The reply emails from corex it should be a rich text, should have the same experience of the
+emails." The box was a `<textarea>`, and nothing showed the email before it left.
+
+**CoreX's own editor, over `contenteditable`.** A reply has paragraphs, bold, italic, two
+kinds of list and links. The block editor's rich text edits one block and a list is a block of
+its own, so the two together need the block editor's store; the classic editor draws in a
+frame with its own skin, which the admin's tokens, its dark and light and its direction do
+not reach; Tiptap, Lexical or Quill is a dependency with advisories to follow, for five
+buttons. `CorexRichText` is a text box and a toolbar of the admin's own buttons. Its commands
+go through `document.execCommand`, deprecated and with no replacement in any browser; they are
+in one module, `richTextCommands.js`, so the day there is one, one file changes.
+
+**The editor is how somebody writes, not the guard.** What it gives back is reduced by
+`cleanReplyHtml`, what is pasted is reduced before it is inserted, and the server reduces again
+whatever is posted (#305). A link is asked for in a form in the page and refused there when
+it goes anywhere but the web, a mailbox or a telephone; the server would remove it anyway.
+
+**What a browser writes is not what an email has, so both ends turn it into paragraphs.** A
+browser writes a line as a `<div>` and leaves the first line typed as bare text. The first
+was reduced to its words run together; the second was drawn at another size from the lines
+after it, which a screenshot showed and no test had. The editor asks the browser for
+paragraphs, makes the line being written one, and gives back paragraphs. `ReplyBody` ends a
+paragraph wherever a block a reply does not have begins or ends, for whatever posts without
+the editor; the two ends hold one list of those blocks.
+
+**A line end means two things, and the server is told which.** In lines somebody typed into
+a plain box it is a line, and stays one (slice 0). In markup it is how the markup was laid
+out: Word and Outlook wrap what they put on the clipboard, and a pasted paragraph reached
+the customer broken in the middle of its sentences. So a reply that is markup has its line
+ends read as the space a browser draws, in the browser's reduction and in `ReplyBody`, and
+a reply with no block of its own keeps them.
+
+**Emphasis or a link around blocks is moved inside each of them.** A page writes a card as
+a link around two blocks, and a word processor a whole document as one "bold" around its
+paragraphs. A paragraph cannot stand inside either; read again the markup came apart and the
+link had lost its address. Google Docs says that wrapper is not bold, and says real bold
+and italic with a style on a span: the wrapper is dropped and the style is read.
+
+**The box shows what will be sent.** Underline is Ctrl+U in every browser, and something
+dragged in arrives with its colours and pictures. Either would be drawn in the box and
+missing from the email, so the browser's own formatting other than bold and italic is
+refused, and what is dropped is reduced as a paste is. The value the editor is given is
+reduced before it is put on the page as well as on the way out: the next caller hands it a
+stored draft.
+
+**Each paragraph reads in the direction of what is written in it.** `dir="auto"` is on each
+block and not on the text box: on the box, the whole message would take the direction of its
+first line. It is the editor's own marking and is not in what is given back; the email gives
+each paragraph its direction itself (#308).
+
+**The preview is the email.** `POST …/reply/preview` answers the document and the plain text
+from the composer that `reply()` sends with, so the two cannot differ: a test sends what was
+previewed and compares the bytes, in an integration test and in the browser. A drawing of the
+email made in the admin would have been a second template to keep true. It is shown in an
+`<iframe sandbox="">` from `srcdoc`: nothing in it runs or reaches the admin. The seam
+`SubmissionEmailGateway` gained `preview()` for it, which a site that implements the seam
+itself has to add.
+
+**Escape in a dialog opened from another closed both.** The preview is a dialog opened from
+the pane, which is one. React hands a nested dialog's `cancel` to its ancestors' handlers,
+though the browser's own event does not bubble; the pane closed with the preview.
+`CorexDialog` now answers only its own. Every confirmation opened from a dialog had this.
+
+**A review that ran the editor in a browser found what reading had not.** A formatting
+button said "off" after it was turned on, until the next letter: a command moves no caret,
+so the browser announced nothing, and the browser test passed only because its keys came
+faster than a person's. Leaving the preview left the keyboard on the page itself, the button
+that opened it having been switched off while its request was out. A paragraph written
+after a list took no direction of its own, because a browser leaves it inside the paragraph
+the list was started in. The Link button made a link of whatever was selected anywhere on
+the page. A shortcut was matched by the character its key writes, which on an Arabic or a
+Russian keyboard is not a Latin letter; it is now matched by the key's place where the
+character is not one. Each has a test that fails without its fix, four of them checked by
+breaking the fix. A design that fails while a reply is only being previewed is reported as
+it is when one is sent, so the notification says CoreX used its standard design and no
+longer that an email was sent.
+
+**Not done here.** The draft kept between visits (FR-006, T044 and T045) is the next pull
+request: it is a store and three routes of its own, and the editor and the preview do not
+need it. The preview's width switch is two widths, 640 and 360, where the plan said 600 and
+360: the standard design is 600 wide with a margin each side, and a frame of 600 would draw
+it narrower than a wide screen does. Three things the review named are left: a space that
+does not break, which a browser puts beside an inserted link, is posted as it is; typing
+with an input method (Android, Chinese, Japanese, Korean) has not been tried on the first
+line; and the toolbar reads the page's direction from the `dir` attribute, which is how the
+admin states it, and not from the computed style.
+
+## #315 — A dialog block's header stays and its body scrolls, and it opens on its close button
+
+**Date:** 2026-10-11. **Branch:** `fix/block-dialog-header-stays-in-view`. **Spec:** 054, the
+`corex/modal` contract (amended), which `corex/drawer` follows.
+
+**What was measured first** (Chromium, Firefox and WebKit, a page read as a visitor, 1280x720
+and 375x812). A drawer holding 80 sentences and one link at the end opened with focus on that
+link and scrolled 909px of 909px, its close button 902px above the window; a modal the same,
+540px of 540px. With a link at the start as well, both opened at the top with focus on that
+link. With no link, focus was on the close button and the keys scrolled the dialog, taking the
+title and the button out of view. In every case the wheel took them out of view. The cause was
+two things: the close button came last in the markup, and a browser opening a dialog puts
+focus on the first thing in it that takes focus and scrolls to it; and the `<dialog>` was the
+element that scrolled, with the title and the absolutely placed button inside it.
+
+**The body scrolls, not the dialog under a sticky header.** A header made to stick inside a
+scrolling dialog would have kept the keys working from anywhere in the dialog with no script.
+It was tried, and not taken for what a keyboard user gets. The text passes under the header,
+and a link that is under it is in view as far as the browser knows, so focus going back to it
+scrolls nothing. In a drawer of 60 links, gone back through with Shift+Tab from the last,
+focus was on a link hidden whole under the header six times in Chromium and three in Firefox,
+and on one partly hidden three times in each (WCAG 2.2, 2.4.11). As built: never in Firefox,
+and in Chromium two links stood less than half a pixel above the body's edge. WebKit does not
+take Tab to a link as it is set up here, and was not measured. A link far from the one before
+it was brought to the middle and was clear either way. Keeping every link clear
+needs the header's height as a scroll padding, which a stylesheet cannot know: a title wraps.
+So the header is outside what scrolls, the `<dialog>` is a column that clips, and
+`.corex-modal__body` / `.corex-drawer__body` has `overflow: auto`.
+The padding moved from the dialog to the header and the body, so the scrollbar is at the
+panel's edge.
+
+**Focus opens on the close button, by the order of the markup.** The button is in the header,
+before the body, so it is the first thing that takes focus and no script and no `autofocus`
+decides it. The other candidates: `autofocus` on the `<dialog>` itself puts focus on something
+that is around the body and not in it, so the keys would scroll nothing and nothing would show
+where focus is; focus on the body reads a long text from its start and scrolls at once, but a
+short dialog would then open differently from a long one, and the ring would be drawn round
+the whole text. A dialog that informs is closed more often than anything else is done in it.
+
+**The cost, accepted.** From the close button the arrow keys and Page Down scroll nothing, in
+all three engines: the keys act on what has focus or is around it. So while the body holds
+more than fits, the view script makes it a stop for Tab (`tabindex="0"`, `role="group"`, named
+by the title), and takes that away while all of it fits. One press of Tab, then the keys
+scroll; before, they scrolled at once and took the header with them. Left to the browser
+(the attributes taken off, then Tab): Firefox makes the scrolling body a stop; Chromium does
+while it holds nothing that takes focus, and with a link at its end goes straight to that
+link; WebKit never does, and Page Down scrolled nothing there, so its keyboard could not read
+a long dialog at all. Forwarding the keys from the header to the body by script was
+considered and not written: it would be CoreX's own copy of how far each key scrolls.
+
+**The close button is a square, 30px a side here** (one `em` and twice the `spacing--20`
+token), where it was 21px by 18px. It passed 2.5.8 before only by standing alone in its corner.
+
+**A drawer's entrance moves a logical margin.** `translateX` is to the right whichever way the
+page reads. On a site switched to Arabic the end drawer, on the left there, began at 16px and
+moved to 0: from inside the window outwards. The build's right-to-left stylesheet had turned
+the start drawer's keyframes round and not the end drawer's. With a margin there is nothing to
+turn round, and the two built stylesheets are now the same file.
+
+**For a client site**: the markup of both blocks changed, so a page cache has to be cleared
+with this release, and a site that styles their classes should look once (CHANGELOG, Client
+impact). No client checkout on this machine styles them.
+
+**Tests.** `tests/e2e/block-dialogs.spec.js` was extended first and failed in 32 places on the
+blocks as they were. It turned the wheel once to reach a dialog's end; Firefox takes what
+scrolls no further than a page of itself for one turn, so the spec now turns it until the last
+line is in view. The order of the markup is held by both renderer tests, and the stop for Tab
+by `shared/keyboard-scroll.test.js`.
+
+**Verification.** Numbers are in the pull request, from the tree as committed.
+
+## #316 — A dialog block with no title is named by its trigger, and with scripting off it is in the page
+
+**Date:** 2026-10-11. **Branch:** `fix/untitled-block-dialog-name`. **Spec:** 054, the
+`corex/modal` contract (amended), which `corex/drawer` follows.
+
+**What was read first** (Chromium, Firefox and WebKit, a page of five blocks read as a
+visitor, with Playwright's `ariaSnapshot()`). A modal with a title is `dialog "Terms"`. A modal
+or a drawer with no title is `dialog`, with no name, in all three, and the body of a long one,
+while it is a stop for Tab, is `group` with no name. With scripts off, in all three, the five
+triggers were shown and none of the five dialogs: what they held could not be reached.
+
+**The name of a dialog with no title is the label of its trigger**, written on the `<dialog>`
+as `aria-label`. Both renderers set `aria-labelledby` when there was a title and nothing
+otherwise. The trigger's label is the one text the block always has (a trigger nobody labelled
+reads the translated "Open"), and it is what the visitor has just pressed, so the dialog is
+announced by the words that brought it. A dialog with a title is named by the title alone, as
+before.
+
+**The label is copied, not pointed at.** `aria-labelledby` with the trigger's id would have
+kept the words in one place, and `keyboard-scroll.js` would have needed no change. It was
+tried on a page of one button and one dialog. Playwright's snapshot named the dialog "Read the
+terms" in all three engines. Chromium's own accessibility tree, read over the DevTools
+protocol, gave it an empty name, from `aria-labelledby`: while a modal dialog is open
+everything outside it is inert, the trigger included. With `aria-label` the same tree names
+the dialog and the body's group. So the snapshot is not the browser's tree: it works the name
+out from the page by the ARIA rules. The spec therefore reads the names both ways, and the
+second, Chromium's own tree, is the one a screen reader there is given.
+
+**"Open" is a name, and not a good one.** A block with no title and no trigger label is
+named "Open". That says what the button did and nothing of what the dialog holds,
+and it is the same for every such dialog on a page. It is still more than "dialog", and the
+renderer has nothing truer to say: the other candidates were the first words of the content,
+which a screen reader reads next in any case, and a fixed word such as "Dialog", which repeats
+the role.
+
+**So the editor is asked for a title, and is not made to give one.** A dialog can be meant to
+show no heading, and a block saved without one may already be on a page. While the Title field is
+empty, the help under it says what a screen reader will announce in its place: the trigger
+label, or, when that is empty too, "Open", with the words "Give it a title". With a title the
+field says nothing. One function for both blocks, `shared/title-help.js`. A hidden title (a
+name that is not shown) was not built: nobody has asked for a dialog that shows no heading and
+is named something other than its trigger.
+
+**The body takes the dialog's name whichever way it is given.** `shared/keyboard-scroll.js`
+copied `aria-labelledby` to the body while it is a stop for Tab. It now copies `aria-label` as
+well, so the group in a dialog named "Read the terms" is "Read the terms", as the group in a
+dialog titled "Terms" is "Terms".
+
+**With scripting off the dialog is in the page.** The contract said the trigger is also an
+in-page anchor and the dialog is revealed by `:target`, and both renderers and both view
+scripts said the content is not lost without JavaScript. None of that was built. Spec 054
+requires it ("interactive components MUST degrade accessibly without JavaScript"), so it is
+made true and the wording corrected to what is done, not removed. Under
+`@media (scripting: none)` the closed dialog is shown where the block is, in the flow, at the
+start of the line and as tall as what it holds; the trigger and the close button, which only
+the view script answers, are not shown; a header left empty is not shown. It is seven
+declarations in `shared/_dialog-parts.scss` and no change to the markup. Playwright's
+`javaScriptEnabled: false` matches the media query in all three engines (tried on a page of
+two lines before it was relied on).
+
+**What that does not cover.** A browser with scripting on in which the view script did not run:
+blocked by an extension, or failed to load. There the query does not match, the trigger is
+shown and does nothing. Three ways to cover it were weighed. The trigger as a link to the
+dialog's id, with `:target` to show it: a link with a button's role, to be undone by the script
+when it does run, and a second look for every site that styles the trigger. Showing the dialog
+in the page until the script hides it: every visitor would see each dialog's content flash in
+the page on every load. `commandfor` with `command="show-modal"`, which opens a dialog with no
+script: only recent browsers have it, and the click and the command would both act on the
+dialog. None was built or tried, for a case taken to be rarer than the one covered. It is
+written in the contract as not covered.
+
+**For a client site**: nothing to do. No markup moved, and a dialog with a title is announced
+as it was. One with no title now has a name where it had none.
+
+**Tests.** Written first and seen to fail: both renderer tests (the name with a title, with a
+trigger label only, with neither, and escaped), `shared/keyboard-scroll.test.js` (the body
+named by a label), `shared/title-help.test.js`. `tests/e2e/block-dialogs.spec.js` has a fourth
+page, of two blocks with no title, read for the dialog's accessible name and the body's, in
+Chromium from its own tree as well, and reads the short page with scripts off: each dialog
+shown with its title and content, no button that does nothing, each under the one before it and
+none wider than the window.
+
+**Verification.** Numbers are in the pull request, from the tree as committed.
