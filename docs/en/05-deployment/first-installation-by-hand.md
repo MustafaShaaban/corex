@@ -123,9 +123,9 @@ screen like this. It does not have to be cleaned first.
 
 ### 1. Take the release that has the screen, the old way, one last time
 
-The Releases screen installs from CoreX 0.45.0. A site on an earlier release gets that release
-the way it got the others, once more, whatever clean-up that takes on the host. After it, the
-file manager is not needed for a release again.
+The Releases screen installs from the release after CoreX 0.44.0 on. A site on 0.44.0 or
+earlier gets that release the way it got the others, once more, whatever clean-up that takes
+on the host. After it, the file manager is not needed for a release again.
 
 ### 2. Add the line, if the site sets `DISALLOW_FILE_MODS`
 
