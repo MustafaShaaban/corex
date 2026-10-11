@@ -52,6 +52,13 @@ All notable changes to Corex are documented here. The format follows
 - **What happened here.** The screen lists each installation, refusal, return and installation
   that did not complete or was given up, newest first, with who did it and when.
 - **The screen says it is not a backup**, where the running release is stated.
+- **Two guides for a host with no command line** (spec 107, slice 6).
+  `docs/en/05-deployment/releases-from-the-admin.md`: building the package, a third-party
+  plugin in it, the line for a site that sets `DISALLOW_FILE_MODS` and what it gives, what is
+  replaced and what is not, the database step, the way back and what it does not undo, each
+  refusal, and what is left on the host. `first-installation-by-hand.md`: the one installation
+  that is still done by hand, and how a site that has been updated by unpacking zips moves to
+  the screen. The other deployment pages point to them.
 - **The reply box says, before anything is typed, when a reply will not be delivered, and where
   that is changed** (spec 106, slice 1). On a production site a reply is delivered only when
   CoreX → Settings → Mail has a delivery provider chosen and live delivery on. Nothing beside
@@ -115,6 +122,9 @@ All notable changes to Corex are documented here. The format follows
   runs this one. This release itself still has to reach the site the old way. After that:
   build with `npm run build:dist -- --client=<slug> --zip`, open CoreX → Releases, send the
   zip, read the statement, save the recovery link, type the version.
+  `docs/en/05-deployment/first-installation-by-hand.md`, "A site that is already live", is the
+  move step by step. **It has not been run on a shared host:** make the first one a release
+  that changes nothing important.
 - **A site that sets `DISALLOW_FILE_MODS` adds one line to `wp-config.php`** to use it:
   `define( 'COREX_ALLOW_RELEASE_INSTALL', true );`. Without it the screen reads and receives
   packages and refuses to install, as before, and says which line is missing. A package is not

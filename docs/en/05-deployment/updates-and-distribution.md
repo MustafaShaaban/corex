@@ -19,12 +19,13 @@ unless **you** configure a source (spec 034).
 
 ## Which update route applies to you
 
-There are two, and they are for different situations.
+There are three, and they are for different situations.
 
 | Your situation | Route |
 |---|---|
 | A **client repository under version control** — a copy of the framework with the site in `sites/<client>/`, the layout `wp corex make:site` generates | Merge the release. See [Updating CoreX in a client site](./updating-a-client-site.md). **Leave the endpoint on this page unconfigured.** |
 | A **deployed WordPress with no repository behind it**, where CoreX is installed as plugins | The in-admin updater described on this page. |
+| A **client site on a host with no command line**, built from its repository as one package | Build the package and install it from **CoreX → Releases**. See [Releases from the admin](./releases-from-the-admin.md). It replaces the whole release at once, the site's own code included, and downloads nothing. |
 
 The in-admin updater replaces plugin files inside a running WordPress. In a client repository the
 local `wp-content` is linked to the source, so that would rewrite tracked framework files outside

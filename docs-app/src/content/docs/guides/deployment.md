@@ -92,6 +92,20 @@ runs PR/code-quality gates; **Azure Pipelines** (`azure-pipelines.yml`) builds `
 release tags, with credentials in Azure secrets and production runtime files protected. Full guides:
 `docs/en/05-deployment/shared-host-dist.md` and `docs/en/05-deployment/azure-pipelines.md`.
 
+### A host with no command line (spec 107)
+
+On shared hosting where the only ways in are a file manager and wp-admin, a release is not uploaded over the
+running site. `npm run build:dist -- --client=acme --zip` writes one package, and the site installs it from
+**CoreX → Releases**: the package is checked against its own description, each folder the release owns is replaced
+whole, the database step runs before visitors are let back in, and the previous release is kept to go back to. A
+plugin that is neither CoreX's nor the site's own travels in the package when it is named with
+`--with-plugin=<folder>`. A site that sets `DISALLOW_FILE_MODS` allows it with
+`define( 'COREX_ALLOW_RELEASE_INSTALL', true );` in `wp-config.php`.
+
+It is not a backup and it downloads nothing. Full guides:
+`docs/en/05-deployment/releases-from-the-admin.md` and, for the one installation that is still done by hand,
+`docs/en/05-deployment/first-installation-by-hand.md`.
+
 > A WordPress-aware `wp corex package:site` wrapper (calling the same builder) is on the backlog; the framework-only
 > `package:update` command is documented under [Packaging a Corex update](#packaging-a-corex-update).
 

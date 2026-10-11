@@ -10,6 +10,10 @@ decisions made on that are under "Decided for the owner". [plan.md](./plan.md) a
 [tasks.md](./tasks.md) follow them. Five more, raised by him on 2026-10-11 after the first
 client site went public, are answered under "Clarifications".
 
+**Built**: all six slices, 2026-10-08 to 2026-10-11 (DECISIONS #282, #293, #294, #296, #300,
+#301, #304, #307, #310). Nothing of it has run on the shared host it was written for: the
+guide says so where an operator reads it.
+
 **Input**: The owner's instruction of 2026-10-08, "continue with the muva and peregos asked", and
 the outline that reached this spec from the session moving the first client site to shared
 hosting. That session sent the outline in full after the first draft was written; this draft
