@@ -138,6 +138,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A dialog in the CoreX admin is not closed by a press that began inside it.** Pressing the
+  mouse on a button in a submission's pane, sliding off it and letting go over the dimmed page
+  closed the pane, and a note being written in it was lost; the button's own action was not
+  taken. Every dialog the admin draws with `CorexDialog` did this: the inbox's pane and its
+  confirmations, the export dialogs, a record's detail on the Data screen and the changes to a
+  role on Access & Abilities. A dialog is now left by a press outside it when the press both
+  starts and ends outside. Escape and the close button are as they were.
 - **Email Studio lists its captured emails when one of them cannot be read.** One record
   whose contents had not survived being stored took the whole list with it, and the screen
   answered an error.
