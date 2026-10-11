@@ -113,6 +113,11 @@ export function normalizeCatalog( sources ) {
 		access: source.access || 'denied',
 		capabilities: source.capabilities || {},
 		actions: source.actions || {},
+		// Whether this person may take personal data out in a file. Silence is a no: the
+		// route refuses it either way, and a column must not be offered on a guess.
+		permissions: {
+			personal_data: source.permissions?.personal_data === true,
+		},
 		fields: Array.isArray( source.fields ) ? source.fields : [],
 	} ) );
 }

@@ -13,6 +13,7 @@ use Brain\Monkey\Functions;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityRepository;
 use Corex\Activity\ActivityService;
+use Corex\Access\CorexAbility;
 use Corex\Config\Data\CapabilityAwareDataSource;
 use Corex\Config\Data\DataAccessPolicy;
 use Corex\Config\Data\DataQuery;
@@ -22,6 +23,7 @@ use Corex\Config\Data\DataSource;
 use Corex\Config\Data\DataSourceService;
 use Corex\Config\Data\ExportableDataSource;
 use Corex\Config\Data\FieldAwareDataSource;
+use Corex\Config\Data\PersonalDataNotAllowed;
 use Corex\Config\Data\QueryableDataSource;
 use Corex\Config\Data\SubmissionsSource;
 use Corex\Config\DataModels\DataExportAbout;
@@ -122,11 +124,11 @@ function contactsSource(bool $xlsx = true): DataSource
 }
 
 /** @return array{DataExportService,DataExportStore,DataExportJobQueue,DataSourceService,ActivityRepository} */
-function exportService(bool $xlsx = true, ?DataSource $source = null): array
+function exportService(bool $xlsx = true, ?DataSource $source = null, ?DataAccessPolicy $policy = null): array
 {
     $registry = new DataRegistry();
     $registry->register($source ?? contactsSource($xlsx));
-    $policy = new class implements DataAccessPolicy {
+    $policy ??= new class implements DataAccessPolicy {
         public function allows(int $actorId, string $ability): bool { return $actorId === 7; }
     };
     $sources = new DataSourceService($registry, $policy);
@@ -277,6 +279,92 @@ it('requires personal-data acknowledgement and rejects undeclared columns or for
         ->toThrow(InvalidArgumentException::class, 'format')
         ->and(fn () => exportRequest(['separator' => 'pipe']))
         ->toThrow(InvalidArgumentException::class, 'separator');
+});
+
+/** A person who manages data and was never given the right to take personal data out. */
+function managesDataOnly(): DataAccessPolicy
+{
+    return new class implements DataAccessPolicy {
+        public function allows(int $actorId, string $ability): bool
+        {
+            return $actorId === 7 && $ability !== CorexAbility::EXPORT_PERSONAL_DATA;
+        }
+    };
+}
+
+it('refuses a personal column from a person not allowed to take personal data out, ticked or not', function () {
+    // Spec 109, FR-020. The acknowledgement was the only question asked: anybody who could
+    // export a model could export its people by ticking a box.
+    [$service, $store, $queue] = exportService(policy: managesDataOnly());
+
+    expect(fn () => $service->request(exportRequest(['columns' => ['name', 'status']])))
+        ->toThrow(PersonalDataNotAllowed::class)
+        ->and(fn () => $service->request(exportRequest(['columns' => ['email'], 'personal_data_acknowledged' => false])))
+        ->toThrow(DomainException::class, 'personal data')
+        ->and($store->runs)->toBe([])
+        ->and($queue->runs)->toBe([]);
+});
+
+it('lets that person export the columns that hold nothing personal, with nothing to acknowledge', function () {
+    [$service] = exportService(policy: managesDataOnly());
+
+    $run = $service->request(exportRequest(['columns' => ['status', 'joined'], 'personal_data_acknowledged' => false]));
+
+    expect($run->columns)->toBe(['status', 'joined'])
+        ->and($run->personalDataClasses)->toBe([]);
+});
+
+it('treats a column nobody classed as personal data, for the right and for the acknowledgement', function () {
+    $undeclared = new class implements DataSource, ExportableDataSource, CapabilityAwareDataSource {
+        public function key(): string { return 'invoices'; }
+        public function label(): string { return 'Invoices'; }
+        public function columns(): array { return [['id' => 'number', 'label' => 'Number']]; }
+        public function rows(int $page, int $perPage): array { return [['id' => 1, 'number' => 'A-1']]; }
+        public function total(): int { return 1; }
+        public function delete(int $id): bool { return false; }
+        public function query(DataQuery $query): array { return [['id' => 1, 'number' => 'A-1']]; }
+        public function count(DataQuery $query): int { return 1; }
+        public function record(int $id): ?array { return $id === 1 ? ['id' => 1, 'fields' => []] : null; }
+        public function exportRows(DataQuery $query): array { return $this->query($query); }
+        public function exportRowsOf(array $ids): array { return $this->query(DataQuery::from([])); }
+        public function capabilities(): DataSourceCapabilities
+        {
+            return new DataSourceCapabilities(
+                sourceKey: 'invoices', read: true, query: true, schema: true, detail: true,
+                create: false, update: false, delete: false, bulkUpdate: false, bulkDelete: false,
+                importDryRun: false, importCommit: false, exportCsv: true, exportXlsx: false,
+                migrations: false, rollback: false, maxPageSize: 100,
+                permissionMap: ['query' => 'corex_manage_data', 'detail' => 'corex_manage_data', 'export_csv' => 'corex_manage_data'],
+            );
+        }
+        public function fields(): array
+        {
+            return [new DataField('number', 'Number', DataField::TYPE_TEXT, false, true, true, [], true, DataField::PERSONAL_UNDECLARED, [], [])];
+        }
+    };
+    $request = ['source_key' => 'invoices', 'scope' => 'all', 'query' => [], 'columns' => ['number']];
+
+    [$withoutRight] = exportService(source: $undeclared, policy: managesDataOnly());
+    [$withRight] = exportService(source: $undeclared);
+
+    expect(fn () => $withoutRight->request(exportRequest($request)))
+        ->toThrow(DomainException::class, 'personal data')
+        ->and(fn () => $withRight->request(exportRequest($request + ['personal_data_acknowledged' => false])))
+        ->toThrow(DomainException::class, 'acknowledge')
+        ->and($withRight->request(exportRequest($request))->personalDataClasses)->toBe(['undeclared']);
+});
+
+it('says in the catalog whether the person may take personal data out', function () {
+    [, , , $allowed] = exportService();
+    [, , , $refused] = exportService(policy: managesDataOnly());
+
+    expect($allowed->describe(7, 'contacts')['permissions'])->toBe(['personal_data' => true])
+        ->and($allowed->mayExportPersonalData(7))->toBeTrue()
+        ->and($refused->describe(7, 'contacts')['permissions'])->toBe(['personal_data' => false])
+        ->and($refused->mayExportPersonalData(7))->toBeFalse()
+        // The fields are still described, with their classes: the screen says what is withheld.
+        ->and(array_column($refused->describe(7, 'contacts')['fields'], 'personal_data_class', 'key')['email'])
+        ->toBe('contact');
 });
 
 it('validates exact selected records and scopes history and downloads to the actor', function () {

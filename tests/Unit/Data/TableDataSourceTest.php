@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 use Corex\Config\Data\TableDataReader;
 use Corex\Config\Data\TableDataSource;
+use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 
 function tableReader(array $rows, int $total): TableDataReader
@@ -161,4 +162,35 @@ it('hands an export the row its table shows, for a query and for records asked f
         ])
         // In the order asked for; a record that is gone is left out.
         ->and($source->exportRowsOf([6, 404, 5]))->toBe([$rows[1], $rows[0]]);
+});
+
+// Spec 109, slice 1 (FR-016, FR-017): a source's fields carry what its table declared.
+
+it('gives each field the personal-data class its table declared', function () {
+    $table = new ManagedTable(
+        'subscribers',
+        'Subscribers',
+        [['id' => 'email', 'label' => 'Email'], ['id' => 'status', 'label' => 'Status'], ['id' => 'topics', 'label' => 'Topics']],
+        personalData: ['email' => DataField::PERSONAL_CONTACT, 'status' => DataField::PERSONAL_NONE],
+    );
+    $classes = [];
+    foreach ((new TableDataSource($table, tableReader([], 0)))->fields() as $field) {
+        $classes[$field->key] = $field->personalDataClass;
+    }
+
+    expect($classes)->toBe([
+        'email' => DataField::PERSONAL_CONTACT,
+        'status' => DataField::PERSONAL_NONE,
+        // Named by nobody: asked about and guarded like the address beside it.
+        'topics' => DataField::PERSONAL_UNDECLARED,
+    ]);
+});
+
+it('gives every field of a table that declared nothing the class undeclared', function () {
+    $table = new ManagedTable('invoices', 'Invoices', [['id' => 'number', 'label' => 'Number'], ['id' => 'total', 'label' => 'Total']]);
+    $fields = (new TableDataSource($table, tableReader([], 0)))->fields();
+
+    expect(array_map(static fn (DataField $field): string => $field->personalDataClass, $fields))
+        ->toBe([DataField::PERSONAL_UNDECLARED, DataField::PERSONAL_UNDECLARED])
+        ->and($fields[0]->holdsPersonalData())->toBeTrue();
 });

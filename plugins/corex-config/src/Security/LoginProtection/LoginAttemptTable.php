@@ -10,6 +10,7 @@ namespace Corex\Config\Security\LoginProtection;
 
 defined('ABSPATH') || exit;
 
+use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Database\Schema\Table;
 
@@ -46,6 +47,13 @@ final class LoginAttemptTable
             ['id' => 'reason_code', 'label' => 'Reason'],
             ['id' => 'user_id', 'label' => 'User'],
             ['id' => 'retention_until', 'label' => 'Retention until'],
-        ], 'corex');
+        ], 'corex', personalData: [
+            'occurred_at'     => DataField::PERSONAL_NONE,
+            'outcome'         => DataField::PERSONAL_NONE,
+            'reason_code'     => DataField::PERSONAL_NONE,
+            'user_id'         => DataField::PERSONAL_SECURITY,
+            'retention_until' => DataField::PERSONAL_NONE,
+        ],
+        );
     }
 }

@@ -46,6 +46,16 @@ final class DataField
     public const PERSONAL_BEHAVIORAL = 'behavioral';
     public const PERSONAL_SENSITIVE  = 'sensitive';
 
+    /**
+     * What a field is when its model said nothing about it (spec 109, FR-017).
+     *
+     * It is not "none". Every managed table's columns used to be given "none" by the source
+     * that read them, so a subscriber's address left the site with no confirmation. Silence is
+     * read the safe way: an undeclared field is asked about and guarded like one holding a name.
+     * A model cannot declare it; it is only ever the absence of a declaration.
+     */
+    public const PERSONAL_UNDECLARED = 'undeclared';
+
     private const TYPES = [
         self::TYPE_ID,
         self::TYPE_TEXT,
@@ -64,7 +74,8 @@ final class DataField
         self::TYPE_ATTACHMENT,
     ];
 
-    private const PERSONAL_CLASSES = [
+    /** The classes a model can declare a field to be. */
+    private const DECLARABLE_PERSONAL_CLASSES = [
         self::PERSONAL_NONE,
         self::PERSONAL_CONTACT,
         self::PERSONAL_IDENTITY,
@@ -73,6 +84,8 @@ final class DataField
         self::PERSONAL_BEHAVIORAL,
         self::PERSONAL_SENSITIVE,
     ];
+
+    private const PERSONAL_CLASSES = [...self::DECLARABLE_PERSONAL_CLASSES, self::PERSONAL_UNDECLARED];
 
     private const OPERATORS = [
         'equals',
@@ -128,6 +141,23 @@ final class DataField
                 throw new InvalidArgumentException('Data field filter operator is invalid.');
             }
         }
+    }
+
+    /** Whether a model may declare a field to be of this class. */
+    public static function isDeclarablePersonalClass(string $class): bool
+    {
+        return in_array($class, self::DECLARABLE_PERSONAL_CLASSES, true);
+    }
+
+    /** Whether a class is asked about and guarded: every class but "none". */
+    public static function classHoldsPersonalData(string $class): bool
+    {
+        return $class !== self::PERSONAL_NONE;
+    }
+
+    public function holdsPersonalData(): bool
+    {
+        return self::classHoldsPersonalData($this->personalDataClass);
     }
 
     /** @return array<string,mixed> */

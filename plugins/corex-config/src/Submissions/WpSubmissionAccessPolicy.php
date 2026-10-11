@@ -37,9 +37,11 @@ final class WpSubmissionAccessPolicy implements SubmissionAccessPolicy
                 current_user_can('manage_options'),
                 $actorId,
             ),
+            // The one right the Data screen asks for too, which Access & Abilities can give. It
+            // was an administrator and nobody else, short of this filter (spec 109, D3).
             canExportPersonalData: (bool) apply_filters(
                 'corex_submission_export_personal_data',
-                current_user_can('manage_options'),
+                current_user_can(CorexAbility::EXPORT_PERSONAL_DATA) || current_user_can('manage_options'),
                 $actorId,
             ),
             // Managing an inbox and destroying its records are different responsibilities. The

@@ -241,7 +241,9 @@ class TableDataSource implements ExportableDataSource, SchemaAwareDataSource, Ca
                     readOnly: $declared === null,
                     filterOperators: ['equals'],
                     sortable: true,
-                    personalDataClass: DataField::PERSONAL_NONE,
+                    // What the table said the column holds. It was "none" for every column of
+                    // every table, so nothing here was ever asked about (spec 109).
+                    personalDataClass: $this->table->personalDataClass($column['id']),
                     validation: (array) ($declared['validation'] ?? []),
                     importAliases: (array) ($declared['aliases'] ?? []),
                 );
