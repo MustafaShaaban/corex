@@ -2447,6 +2447,59 @@ body.corex-admin-screen .corex-admin__shell {
 	gap: var(--corex-admin-space-sm);
 }
 
+/*
+ * One model of an export of several (spec 109): its name, how many records it
+ * gives, and how many of its columns, with the columns themselves behind the
+ * browser's own disclosure.
+ */
+.corex-admin .corex-export__models {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-export__model {
+	margin: 0;
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-export__model summary {
+	padding: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+	cursor: pointer;
+}
+
+.corex-admin .corex-export__model summary:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+
+/* Beside the disclosure marker, which keeps the line's first few characters. */
+.corex-admin .corex-export__model-head {
+	display: inline-grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-sm);
+	inline-size: calc(100% - var(--corex-admin-space-lg));
+	vertical-align: top;
+}
+
+.corex-admin .corex-export__model-name {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.corex-admin .corex-export__model-head .corex-export__detail {
+	grid-column: 1 / -1;
+}
+
+.corex-admin .corex-export__model .corex-export__group {
+	padding: 0 var(--corex-admin-space-md) var(--corex-admin-space-md);
+}
+
 .corex-admin .corex-export__column {
 	display: grid;
 	grid-template-columns: auto minmax(0, 1fr);

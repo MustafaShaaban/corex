@@ -1,53 +1,65 @@
 import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
 import { Button } from '@wordpress/components';
-import { __, sprintf } from '@wordpress/i18n';
-import CorexTime from '../admin/components/CorexTime.js';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import DataExportDialog from './DataExportDialog.js';
-import { dataExportRequests, downloadArtifact } from './dataModelsApi.js';
-import { actionSources } from './modelClient.js';
-import SourceSelect from './SourceSelect.js';
-import { usePending, workingProps } from '../admin/components/working.js';
+import DataExportSetDialog from './DataExportSetDialog.js';
+import ExportHistory from './ExportHistory.js';
+import ModelChecklist from './ModelChecklist.js';
+import { dataExportSetRequests, downloadArtifact } from './dataModelsApi.js';
+import { exportableModels, modelsNotOffered } from './exportSetState.js';
 import CorexLoadable from '../admin/components/CorexLoadable.js';
 import HistorySkeleton, { loadingFrom } from './HistorySkeleton.js';
 
-function scopeName( scope ) {
-	const scopes = {
-		all: __( 'Everything', 'corex' ),
-		filtered: __( 'Current filters', 'corex' ),
-		selected: __( 'Selected rows', 'corex' ),
-	};
+/** Steps to take of an unfinished export before leaving the rest to the next press. */
+const STEPS_AT_A_TIME = 200;
 
-	return scopes[ scope ] || scope;
-}
+/**
+ * What the button that opens the dialog says: nothing to open, one model by its name, or how
+ * many models.
+ *
+ * @param {Array<Object>} chosen The ticked models.
+ * @return {string} The button's label.
+ */
+function openerLabel( chosen ) {
+	if ( chosen.length === 0 ) {
+		return __( 'Export…', 'corex' );
+	}
+	if ( chosen.length === 1 ) {
+		return sprintf(
+			/* translators: %s: the name of a data model, e.g. "Contacts". */
+			__( 'Export %s…', 'corex' ),
+			chosen[ 0 ].label
+		);
+	}
 
-function stateName( state ) {
-	const states = {
-		queued: __( 'Not finished', 'corex' ),
-		completed: __( 'Ready', 'corex' ),
-	};
-
-	return states[ state ] || state;
+	return sprintf(
+		/* translators: %s: a number of data models. */
+		_n( 'Export %s model…', 'Export %s models…', chosen.length, 'corex' ),
+		chosen.length.toLocaleString()
+	);
 }
 
 /**
- * The Export tab: a source to choose, the export dialog, and what was exported before.
+ * The Export tab: the models to tick, the export dialog, and what was exported before.
  *
- * It was a second export form of its own that queued a job and said to refresh the history. It
- * opens the dialog the Records tab opens (spec 103, D12c), over everything in the source, and its
- * history reloads when an export was made.
+ * It had one dropdown named "Model", so every model was the same dialog again and a file of its
+ * own. Any number of models are ticked and exported into one file (spec 109, slice 2). One
+ * ticked model opens the dialog the Records tab opens (spec 103, D12c), over everything in it.
  *
  * @param {Object}        props
- * @param {Object}        props.config  The screen's `{restUrl, nonce}`.
+ * @param {Object}        props.config  The screen's `{restUrl, exportsUrl, nonce}`.
  * @param {Array<Object>} props.sources The sources this person can see.
  * @return {import('react').ReactElement} The tab's panel.
  */
 export default function ExportPanel( { config, sources } ) {
-	const candidates = useMemo(
-		() => actionSources( sources, 'export_csv' ),
-		[ sources ]
+	const models = useMemo( () => exportableModels( sources ), [ sources ] );
+	const notOffered = modelsNotOffered( sources );
+	const requests = useMemo(
+		() => dataExportSetRequests( config ),
+		[ config ]
 	);
-	const [ sourceKey, setSourceKey ] = useState( candidates[ 0 ]?.key || '' );
-	const source = sources.find( ( item ) => item.key === sourceKey );
+	const [ ticked, setTicked ] = useState( [] );
+	const [ counts, setCounts ] = useState( null );
 	const [ exporting, setExporting ] = useState( false );
 	const [ history, setHistory ] = useState( [] );
 	const [ status, setStatus ] = useState( 'loading' );
@@ -55,46 +67,75 @@ export default function ExportPanel( { config, sources } ) {
 	// said where the list is, with a way to ask again; the notice above is for actions.
 	const [ loadFailure, setLoadFailure ] = useState( '' );
 	const [ notice, setNotice ] = useState( '' );
-	const requests = useMemo(
-		() => dataExportRequests( config, sourceKey ),
-		[ config, sourceKey ]
-	);
+	// In the list's order, whatever order they were ticked in: it is the order of the sheets.
+	const chosen = models.filter( ( source ) => ticked.includes( source.key ) );
 
 	const load = useCallback( async () => {
-		if ( ! sourceKey ) {
-			return;
-		}
 		setStatus( loadingFrom );
 		try {
 			setHistory( ( await requests.history() ).exports || [] );
-			setNotice( '' );
 			setStatus( 'ready' );
 		} catch ( error ) {
 			setLoadFailure( error.message );
 			setStatus( 'error' );
 		}
-	}, [ requests, sourceKey ] );
+	}, [ requests ] );
 
 	useEffect( () => {
 		load();
 	}, [ load ] );
 
-	const [ pending, during ] = usePending();
+	// How many records each model holds, for the list. Asked once: a count that is a few
+	// records behind is still what the dialog asks again before anything is exported.
+	useEffect( () => {
+		if ( models.length === 0 ) {
+			return;
+		}
+		requests
+			.preview( models.map( ( source ) => source.key ) )
+			.then( ( data ) => setCounts( data.counts ) )
+			.catch( ( error ) => setNotice( error.message ) );
+	}, [ models, requests ] );
 
-	const download = async ( run ) => {
+	const acting = async ( action ) => {
 		try {
-			downloadArtifact( ( await requests.download( run.id ) ).artifact );
+			await action();
 			setNotice( '' );
 		} catch ( error ) {
 			setNotice( error.message );
 		}
 	};
+	const download = ( id ) =>
+		acting( async () =>
+			downloadArtifact( ( await requests.download( id ) ).artifact )
+		);
+	const remove = ( id ) =>
+		acting( async () => {
+			await requests.remove( id );
+			await load();
+		} );
+	const takeOn = ( id ) =>
+		acting( async () => {
+			for ( let step = 0; step < STEPS_AT_A_TIME; step++ ) {
+				const { progress } = await requests.advance( id );
+				if ( progress.state === 'failed' ) {
+					throw new Error(
+						progress.error ||
+							__( 'The export could not be finished.', 'corex' )
+					);
+				}
+				if ( progress.state === 'completed' ) {
+					break;
+				}
+			}
+			await load();
+		} );
 
-	if ( ! candidates.length ) {
+	if ( ! models.length ) {
 		return (
 			<p className="corex-data-models__empty">
 				{ __(
-					'No registered model provides an export adapter.',
+					'No model on this site can be exported by you right now. The Models tab lists what each model supports.',
 					'corex'
 				) }
 			</p>
@@ -107,27 +148,44 @@ export default function ExportPanel( { config, sources } ) {
 				<h2>{ __( 'Model exports', 'corex' ) }</h2>
 				<p>
 					{ __(
-						'Export every record of a model here. To export the rows you ticked or the filters you set, use Export on the Records tab.',
+						'Tick the models to export; several are written into one file. To export the rows you ticked or the filters you set, use Export on the Records tab.',
 						'corex'
 					) }
 				</p>
 			</header>
-			<SourceSelect
-				sources={ candidates }
-				value={ sourceKey }
-				onChange={ setSourceKey }
+			<ModelChecklist
+				models={ models }
+				ticked={ ticked }
+				setTicked={ setTicked }
+				counts={ counts }
 			/>
-			<div>
+			{ notOffered > 0 && (
+				<p className="corex-data-models__checklist-note">
+					{ sprintf(
+						/* translators: %s: a number of data models. */
+						_n(
+							'%s model is not listed: it cannot be exported, or not by you. The Models tab says what each supports.',
+							'%s models are not listed: they cannot be exported, or not by you. The Models tab says what each supports.',
+							notOffered,
+							'corex'
+						),
+						notOffered.toLocaleString()
+					) }
+				</p>
+			) }
+			<div className="corex-data-models__export-action">
 				<Button
 					variant="primary"
+					disabled={ chosen.length === 0 }
 					onClick={ () => setExporting( true ) }
 				>
-					{ sprintf(
-						/* translators: %s: the name of a data source, e.g. "Contacts". */
-						__( 'Export %s…', 'corex' ),
-						source?.label || ''
-					) }
+					{ openerLabel( chosen ) }
 				</Button>
+				{ chosen.length === 0 && (
+					<span className="corex-data-models__checklist-note">
+						{ __( 'Tick at least one model.', 'corex' ) }
+					</span>
+				) }
 			</div>
 			{ notice && <p role="alert">{ notice }</p> }
 			<div className="corex-data-models__history-head">
@@ -145,56 +203,29 @@ export default function ExportPanel( { config, sources } ) {
 				onRetry={ load }
 			>
 				{ history.length ? (
-					<ul className="corex-data-models__history">
-						{ history.map( ( run ) => (
-							<li key={ run.id }>
-								<span>
-									{ sprintf(
-										/* translators: 1: what an export covered. 2: its format. 3: a number of records. 4: whether its file is ready. */
-										__(
-											'%1$s · %2$s · %3$s · %4$s',
-											'corex'
-										),
-										scopeName( run.scope ),
-										String( run.format ).toUpperCase(),
-										Number(
-											run.exported_rows ||
-												run.record_count
-										).toLocaleString(),
-										stateName( run.state )
-									) }
-									{ ' · ' }
-									<CorexTime value={ run.created_at } />
-								</span>
-								{ run.state === 'completed' && (
-									<Button
-										variant="link"
-										// A second press used to fetch, and save, the file again.
-										disabled={ pending !== '' }
-										onClick={ () =>
-											during(
-												`download:${ run.id }`,
-												() => download( run )
-											)
-										}
-										{ ...workingProps(
-											pending === `download:${ run.id }`
-										) }
-									>
-										{ __( 'Download', 'corex' ) }
-									</Button>
-								) }
-							</li>
-						) ) }
-					</ul>
+					<ExportHistory
+						entries={ history }
+						sources={ sources }
+						download={ download }
+						remove={ remove }
+						takeOn={ takeOn }
+					/>
 				) : (
 					<p>{ __( 'No exports yet.', 'corex' ) }</p>
 				) }
 			</CorexLoadable>
-			{ exporting && source && (
+			{ exporting && chosen.length === 1 && (
 				<DataExportDialog
 					config={ config }
-					source={ source }
+					source={ chosen[ 0 ] }
+					close={ () => setExporting( false ) }
+					onExported={ load }
+				/>
+			) }
+			{ exporting && chosen.length > 1 && (
+				<DataExportSetDialog
+					config={ config }
+					models={ chosen }
 					close={ () => setExporting( false ) }
 					onExported={ load }
 				/>

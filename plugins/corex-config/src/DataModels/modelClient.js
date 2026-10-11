@@ -20,7 +20,10 @@ export const DATA_MODEL_TABS = [
 	{ key: 'models', ability: 'models' },
 	{ key: 'records', ability: 'data' },
 	{ key: 'import', ability: 'models', operation: 'import_dry_run' },
-	{ key: 'export', ability: 'models', operation: 'export_csv' },
+	// An export asks for the ability to manage data (or submissions), which is what its
+	// sources are gated on. The tab asked for `models`, so a person who could export from the
+	// Records tab was not shown the tab made for exporting (spec 109, D16).
+	{ key: 'export', ability: 'data', operation: 'export_csv' },
 	{ key: 'migrations', ability: 'models', operation: 'migrations' },
 ];
 
