@@ -16,6 +16,11 @@ use Corex\Email\Driver\WpMailDriver;
 use Corex\Email\Capture\CapturedEmailRepository;
 use Corex\Email\Delivery\DeliveryPolicy;
 use Corex\Email\Delivery\EmailAttemptRepository;
+use Corex\Email\Design\EmailBrandSource;
+use Corex\Email\Design\EmailDesign;
+use Corex\Email\Design\ReplyComposer;
+use Corex\Email\Design\SiteEmailBrand;
+use Corex\Email\Design\StandardEmailDesign;
 use Corex\Email\Log\EmailLogRepository;
 use Corex\Email\Log\EmailLogStore;
 use Corex\Email\Recipients\RecipientResolver;
@@ -104,9 +109,23 @@ final class MailServiceProvider extends ServiceProvider
             },
         );
 
+        // What an email is drawn from, and in. One design and one source of the site's brand,
+        // for every email that is drawn through them (spec 106): a reply first.
+        $this->container->singleton(SiteEmailBrand::class);
+        $this->container->singleton(
+            EmailBrandSource::class,
+            static fn (ContainerInterface $c): SiteEmailBrand => $c->make(SiteEmailBrand::class),
+        );
+        $this->container->singleton(StandardEmailDesign::class);
+        $this->container->singleton(
+            EmailDesign::class,
+            static fn (ContainerInterface $c): StandardEmailDesign => $c->make(StandardEmailDesign::class),
+        );
+        $this->container->singleton(ReplyComposer::class);
+
         $this->container->singleton(
             Layout::class,
-            static fn (ContainerInterface $c): Layout => new Layout(self::brand()),
+            static fn (ContainerInterface $c): Layout => new Layout(self::brand($c->make(SiteEmailBrand::class)->logo())),
         );
 
         $this->container->singleton(
@@ -296,9 +315,11 @@ final class MailServiceProvider extends ServiceProvider
      * theme.json (which already includes any brand.json override via spec 006) — so
      * a rebrand flows into mail with no code change (FR-005).
      *
-     * @return array{name:string,color:string,dir:string}
+     * @param string $logo An absolute address of the site's mark, or ''.
+     *
+     * @return array{name:string,color:string,logo:string,dir:string}
      */
-    private static function brand(): array
+    private static function brand(string $logo): array
     {
         $palette = (array) wp_get_global_settings(['color', 'palette']);
         $entries = $palette['theme'] ?? $palette['default'] ?? [];
@@ -314,36 +335,9 @@ final class MailServiceProvider extends ServiceProvider
         return [
             'name'  => (string) get_bloginfo('name'),
             'color' => $color,
-            'logo'  => self::brandLogo(),
+            'logo'  => $logo,
             'dir'   => is_rtl() ? 'rtl' : 'ltr',
         ];
-    }
-
-    /**
-     * An absolute URL for the site's mark, or an empty string.
-     *
-     * {@see Layout::wrap()} has always rendered an `<img>` when this is set and fallen back to the
-     * site name in bold when it is not — but nothing ever set it, so the image branch could not
-     * execute and every framework-rendered email was text-branded (issue #138, item 5).
-     *
-     * The theme's custom logo first, because that is the mark a site owner chose for the site;
-     * the site icon second, because a site that set one has still expressed a preference. Both
-     * WordPress functions return absolute URLs, which matters more here than anywhere else: an
-     * email client has no page context and cannot resolve a relative path.
-     */
-    private static function brandLogo(): string
-    {
-        $customLogoId = (int) get_theme_mod('custom_logo');
-
-        if ($customLogoId > 0) {
-            $logo = wp_get_attachment_image_url($customLogoId, 'medium');
-
-            if (is_string($logo) && $logo !== '') {
-                return $logo;
-            }
-        }
-
-        return (string) get_site_icon_url(180);
     }
 
     /** @return array<string,mixed> */

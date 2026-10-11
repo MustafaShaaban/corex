@@ -17,7 +17,8 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
-use Corex\Guides\Support\SupportEmailPalette;
+use Corex\Email\Design\EmailBrand;
+use Corex\Email\Design\EmailPalette;
 use Corex\Guides\Support\SupportMessage;
 use Corex\Guides\Support\SupportRequestTemplate;
 
@@ -83,17 +84,17 @@ it('never emits a double quote inside a style attribute', function () {
     }
 
     // The specific regression: the font stack must use single quotes.
-    expect(SupportEmailPalette::FONT)->not->toContain('"');
+    expect(EmailBrand::FONT)->not->toContain('"');
 });
 
 it('carries the CoreX brass rather than the theme brand colour', function () {
     $body = (new SupportRequestTemplate())->body(new \Corex\Email\Template\MailContext([]));
 
     // #0B1F3B is theme.json's `primary`, which is what Layout injects as the accent. The owner
-    // asked for the admin's identity, which is the brass — see SupportEmailPalette's docblock for
-    // why that means literals here.
+    // asked for the admin's identity, which is the brass — see EmailPalette's docblock for why
+    // that means literals here.
     expect($body)
-        ->toContain(SupportEmailPalette::ACTION)
+        ->toContain(EmailPalette::light()->accent)
         ->and($body)->not->toContain('#0B1F3B');
 });
 

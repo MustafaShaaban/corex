@@ -10,6 +10,7 @@ namespace Corex\Email\Driver;
 
 defined('ABSPATH') || exit;
 
+use Closure;
 use Corex\Email\Message\AttachmentResolver;
 use Corex\Email\Message\EmailMessage;
 use Corex\Support\Config\ConfigInterface;
@@ -18,7 +19,7 @@ use Corex\Support\Config\ConfigInterface;
  * The default driver: delivers via `wp_mail`, honoring whatever SMTP/MTA the site
  * already has. The from-identity comes from the Config engine (`mail.from.*`) and is
  * sanitized before it becomes a header (defense-in-depth alongside the HeaderGuard).
- * Sends HTML email.
+ * Sends HTML email, with a plain-text alternative when the message brings one.
  */
 final class WpMailDriver implements MailDriver
 {
@@ -53,15 +54,52 @@ final class WpMailDriver implements MailDriver
             $headers[] = 'Bcc: ' . $bcc;
         }
 
-        // The fifth argument. `wp_mail()` has always taken `$attachments` and this driver has
-        // always passed four, so the mail stack could not send a file at all (spec 081, FR-010).
-        return wp_mail(
-            $message->to,
-            $message->subject,
-            $message->body,
-            $headers,
-            $this->attachments->resolve($message->attachments),
-        );
+        $alternative = $this->alternative($message->plainText);
+        if ($alternative !== null) {
+            add_action('phpmailer_init', $alternative);
+        }
+
+        try {
+            // The fifth argument. `wp_mail()` has always taken `$attachments` and this driver
+            // has always passed four, so the mail stack could not send a file at all (spec 081,
+            // FR-010).
+            return wp_mail(
+                $message->to,
+                $message->subject,
+                $message->body,
+                $headers,
+                $this->attachments->resolve($message->attachments),
+            );
+        } finally {
+            // For this message only. The hook takes itself off when it runs; this is for a
+            // send that never reached it.
+            if ($alternative !== null) {
+                remove_action('phpmailer_init', $alternative);
+            }
+        }
+    }
+
+    /**
+     * What hands WordPress's mailer the plain-text version, or null when the message has none.
+     *
+     * `wp_mail()` takes one body. Its mailer sends two as alternatives of one message when it
+     * is given the second, and the hook it fires before sending is where that is done.
+     */
+    private function alternative(?string $plainText): ?Closure
+    {
+        if ($plainText === null || trim($plainText) === '') {
+            return null;
+        }
+
+        // It takes itself off as it runs: `wp_mail()` fires other hooks before it returns, and
+        // an email one of their listeners sends must not leave with this one's words.
+        $once = null;
+        $once = static function (object $mailer) use ($plainText, &$once): void {
+            remove_action('phpmailer_init', $once);
+            $mailer->AltBody = $plainText;
+        };
+
+        return $once;
     }
 
     /**
