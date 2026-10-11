@@ -12,8 +12,8 @@ defined('ABSPATH') || exit;
 
 use Corex\Email\Delivery\DeliveryDecision;
 use Corex\Email\Delivery\DeliveryPolicy;
+use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Message\EmailMessage;
-use Corex\Email\Template\Layout;
 use Corex\Mail\MailResult;
 use Corex\Mail\ReplyReadiness;
 use Corex\Mail\SubmissionEmailGateway;
@@ -31,7 +31,7 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
         private EmailStudioService $studio,
         private EmailTemplateService $templates,
         private ConfigInterface $config,
-        private Layout $layout,
+        private ReplyComposer $composer,
     ) {
     }
 
@@ -82,12 +82,15 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
      * unstyled on the client's default background, ignoring the configured reply-to. Reported from
      * a real build (issue #138, item 3).
      *
-     * The body is wrapped in the same brand `Layout` the rest of the stack uses. It is not run
-     * through a template: there is no template for "whatever the operator typed", and inventing one
-     * would put a placeholder between the operator and their own words.
+     * The message is drawn in the site's email design, with the same words beside it as plain
+     * text (spec 106). It is not run through an Email Studio template: there is no template for
+     * "whatever the operator typed", and one would put a placeholder between the operator and
+     * their own words.
      */
     public function reply(string $recipient, string $subject, string $htmlBody): MailResult
     {
+        $email = $this->composer->compose($recipient, $subject, $htmlBody);
+
         return $this->studio->send(
             new EmailMessage(
                 [$recipient],
@@ -95,7 +98,8 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
                 [],
                 $this->replyToAddress(),
                 $subject,
-                $this->layout->wrap($subject, $htmlBody),
+                $email->html,
+                plainText: $email->text,
             ),
             $this->deliveryContext(),
         );

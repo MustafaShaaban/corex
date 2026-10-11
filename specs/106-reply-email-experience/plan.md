@@ -199,10 +199,12 @@ or discarded. Not `localStorage`: the same person on another machine has their d
 
 In the email add-on, `Corex\Email\Design`:
 
-- `EmailBrand`: the values a design is drawn from: site name, logo address, direction, accent,
-  text, muted text, canvas, surface, border, font, footer text. `EmailBrand::standard()` holds
-  CoreX's light palette, the one `SupportEmailPalette` holds today; the Guides add-on's support
-  email reads them from here, and `SupportEmailPalette` goes (FR-012).
+- `EmailPalette`: the colours, for one scheme. `light()` and `dark()` are the admin's two
+  palettes, the one `SupportEmailPalette` held; the Guides add-on's support email reads them
+  from here, and `SupportEmailPalette` is gone (FR-012).
+- `EmailBrand`: whose the email is (the site's name, address, logo, direction, language and
+  footer line) with its two palettes, and the type and shape constants. `EmailBrandSource`
+  says which brand an email is drawn with; `SiteEmailBrand` reads it from WordPress.
 - `EmailDesign` (interface): `render(EmailContent $content, EmailBrand $brand): string`.
   `EmailContent` holds the subject, the reduced message, and who is answered.
 - `StandardEmailDesign`: tables and inline styles, a header with the logo (its `alt` is the
@@ -227,10 +229,10 @@ The header carries the site's mark, not CoreX's (spec, Assumptions): the owner c
 - **Its own template** (FR-014): a filter `corex_email_design` receives the standard design and
   returns an `EmailDesign`. A filter and not a container binding, because it is asked at
   sending time and so does not depend on which provider booted first.
-- **A guard around it** (FR-017): the client's design is called inside a `try`; if it throws,
-  returns nothing, or returns a document without the message, the reply goes in the standard
-  design and an activity entry and a notification say which. The message is looked for as text,
-  so a design is free to restyle it.
+- **A guard around it** (FR-017): `SiteEmailDesign` calls the client's design inside a `try`;
+  if it throws, returns nothing, or returns a document without the message, the reply goes in
+  the standard design and a notification to the people who manage email says which design and
+  how. The message is looked for as its words, so a design is free to restyle it.
 - **A start** (FR-019): `wp corex make:email-design` writes a working copy of the standard
   design into the site's own plugin. **A guide** with it, and Client impact (FR-020).
 

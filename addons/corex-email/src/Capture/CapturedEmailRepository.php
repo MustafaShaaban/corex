@@ -15,6 +15,7 @@ use Corex\Email\Studio\EmailStudioStore;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
 use DomainException;
+use Exception;
 
 /**
  * Append-only repository for Development message capture.
@@ -46,7 +47,8 @@ final class CapturedEmailRepository
             'subject'     => $message->subject,
             'body'        => $message->body,
             'html_body'   => $message->body,
-            'plain_text'  => $this->plainText($message->body),
+            // What the message was sent with, where it brought its own.
+            'plain_text'  => $message->plainText ?? $this->plainText($message->body),
             'headers'     => $message->headers,
             'captured_at' => $capturedAt->format(DATE_ATOM),
             'retention_until' => $capturedAt->modify('+30 days')->format(DATE_ATOM),
@@ -60,10 +62,22 @@ final class CapturedEmailRepository
     public function latest(int $limit = 50): array
     {
         $limit    = max(1, min(100, $limit));
-        $records  = array_reverse($this->store->all(self::TYPE));
-        $records  = array_slice($records, 0, $limit);
+        $captures = [];
+        foreach (array_reverse($this->store->all(self::TYPE)) as $record) {
+            if (count($captures) === $limit) {
+                break;
+            }
+            // A record that cannot be read as an email, whatever is wrong with it, must not
+            // take the list of the others away: one did, on a development site, until it was
+            // found and removed by hand. The store no longer leaves such a record behind.
+            try {
+                $captures[] = $this->capturedEmail($record);
+            } catch (Exception) {
+                continue;
+            }
+        }
 
-        return array_map($this->capturedEmail(...), $records);
+        return $captures;
     }
 
     /** @param array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>} $record */

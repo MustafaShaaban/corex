@@ -29,6 +29,20 @@ it('rejects an invalid email, URL, and unknown select option (never saved)', fun
         ->and($sanitizer->sanitize('bogus', 'select', ['wp-mail' => 'wp_mail']))->toBeNull();
 });
 
+// Spec 106, FR-015: a colour is written into an email's style, so only one form of it is taken.
+it('takes a colour only as six-digit hex, and keeps it in one case', function (string $written, ?string $saved) {
+    expect((new SettingsSanitizer())->sanitize($written, 'hex-colour'))->toBe($saved);
+})->with([
+    ['#0B1F3B', '#0b1f3b'],
+    [' #ad8643 ', '#ad8643'],
+    ['#abc', null],
+    ['0B1F3B', null],
+    ['red', null],
+    ['rgb(1, 2, 3)', null],
+    ['#ad8643;background:url(x)', null],
+    ['', ''],
+]);
+
 it('accepts and sanitizes valid values', function () {
     $sanitizer = new SettingsSanitizer();
 

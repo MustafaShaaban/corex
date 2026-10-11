@@ -51,23 +51,27 @@ Tests are written first and seen to fail. One slice per pull request. Decisions 
 
 ## Slice 2: the standard template, with a plain-text version (US2; FR-008 to FR-013)
 
-- [ ] T020 Pest unit: `EmailBrand::standard()` holds the palette the support email uses;
+- [x] T020 Pest unit: `EmailBrand::standard()` holds the palette the support email uses;
       every text and background pair it offers has a contrast of 4.5 to 1, light and dark
-- [ ] T021 `Corex\Email\Design\EmailBrand`; the support email reads it; `SupportEmailPalette` removed
-- [ ] T022 Pest unit: `StandardEmailDesign` draws the logo with the site's name as its `alt`,
+- [x] T021 `Corex\Email\Design\EmailBrand`; the support email reads it; `SupportEmailPalette` removed
+- [x] T022 Pest unit: `StandardEmailDesign` draws the logo with the site's name as its `alt`,
       or the name; a footer naming the site; `dir`; the message once; no width over 600; no
       style outside the brand's values; escapes the subject and the site's name
-- [ ] T023 `EmailDesign`, `EmailContent`, `StandardEmailDesign`
-- [ ] T024 Pest unit: `PlainText::of()` writes paragraphs, list items and links out
-- [ ] T025 `PlainText`
-- [ ] T026 Pest unit: `ReplyComposer` answers the HTML and the text; the gateway sends both
-- [ ] T027 `ReplyComposer`; `EmailMessage::$plainText`; the gateway composes through it
-- [ ] T028 Pest integration: a reply sent through `wp_mail` is `multipart/alternative` with
+- [x] T023 `EmailDesign`, `EmailContent`, `StandardEmailDesign`
+- [x] T024 Pest unit: `PlainText::of()` writes paragraphs, list items and links out
+- [x] T025 `PlainText`
+- [x] T026 Pest unit: `ReplyComposer` answers the HTML and the text, in Arabic as in English;
+      the gateway sends both
+- [x] T027 `ReplyComposer` over an `EmailBrandSource`; `EmailMessage::$plainText`, carried by
+      `MailService`; the gateway composes through it
+- [x] T028 Pest integration: a reply sent through `wp_mail` is `multipart/alternative` with
       both parts; a message with no plain text is sent as before; the capture holds both
-- [ ] T029 `WpMailDriver` and the capture carry the plain text
-- [ ] T030 Playwright: the captured reply drawn at 600 and 320 pixels, light and dark, left to
-      right and right to left: no sideways scroll, measured contrast, the header and footer
-- [ ] T031 Guards; the email guide; CHANGELOG with Client impact; PROGRESS; DECISIONS
+- [x] T029 `WpMailDriver` and the capture carry the plain text
+- [x] T030 Playwright: the captured reply drawn at 320, 375 and 800 pixels, light and dark: no
+      sideways scroll, measured contrast, the header and footer, and an Arabic line starting
+      from the right beside an English one. A right-to-left site is the unit test's and was
+      looked at as a screenshot
+- [x] T031 Guards; the email guide; CHANGELOG with Client impact; PROGRESS; DECISIONS
 
 ## Slice 3: the editor and the true preview (US1; FR-001 to FR-007)
 
@@ -87,20 +91,23 @@ Tests are written first and seen to fail. One slice per pull request. Decisions 
       captured email is the preview; right to left; measured spacing of the toolbar
 - [ ] T049 Guards; guide; CHANGELOG; PROGRESS; DECISIONS
 
-## Slice 4: a client's own template (US3; FR-014 to FR-020)
+## Slice 4: a client's own template (US3; FR-014 to FR-020) — built before slice 3
 
-- [ ] T060 Pest unit: `corex_email_brand` and the Mail settings change the standard design's
+- [x] T060 Pest unit: `corex_email_brand` and the Mail settings change the standard design's
       accent, logo and footer; an invalid colour is refused when saved
-- [ ] T061 The settings fields; the filter
-- [ ] T062 Pest unit: `corex_email_design` replaces the design for the reply and the preview;
+- [x] T061 The settings fields; the filter
+- [x] T062 Pest unit: `corex_email_design` replaces the design for the reply and the preview;
       a design that throws, answers nothing or leaves the message out falls back to the
       standard one and is recorded
-- [ ] T063 `EmailDesigns` (the resolver and its guard); the activity entry and notification
-- [ ] T064 Pest unit: `make:email-design` writes a design that renders, in the site's plugin
-- [ ] T065 The generator and its stub
+- [x] T063 `EmailDesigns` (the resolver and its guard); the activity entry and notification
+- [x] T064 Pest unit: `make:email-design` writes a design that renders, in the site's plugin
+- [x] T065 The generator and its stub
 - [ ] T066 Client-layout check: a generated site with its own design sends in it and no
-      framework file is changed
-- [ ] T067 The developer guide, with the example that runs; CHANGELOG with Client impact;
+      framework file is changed. **Not added to the `client-site-layout` job.** The behaviour is
+      held by `ReplyEmailDesignTest` (a design registered through the filter from outside the
+      framework's classes) and by the generator's test, which loads what it wrote and draws
+      with it (DECISIONS #311)
+- [x] T067 The developer guide, with the example that runs; CHANGELOG with Client impact;
       guards; PROGRESS; DECISIONS
 
 ## Slice 5: "Send again", and the reply sender (US4.2, US5; FR-022, FR-024)

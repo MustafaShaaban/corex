@@ -1,0 +1,164 @@
+<?php
+
+/**
+ * @package {{ namespace }}
+ */
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+defined('ABSPATH') || exit;
+
+use Corex\Email\Design\EmailBrand;
+use Corex\Email\Design\EmailContent;
+use Corex\Email\Design\EmailDesign;
+
+/**
+ * {{ class }} — this site's own design for the emails CoreX sends for it.
+ *
+ * It starts as a copy of CoreX's standard design. Change anything in it: this file is yours and
+ * a CoreX update does not touch it.
+ *
+ * Register it once, from this plugin's service provider `boot()`:
+ *
+ *     add_filter('corex_email_design', static fn () => new {{ class }}());
+ *
+ * What you are handed:
+ *
+ * - `$content->subject`    plain text. Escape it before you print it.
+ * - `$content->bodyHtml`   the message, already cleaned: only `<p>`, `<br>`, `<strong>`, `<b>`,
+ *                          `<em>`, `<i>`, `<ul>`, `<ol>`, `<li>` and `<a href>`. Print it as it
+ *                          is. You may add attributes to its tags; you must not leave it out.
+ * - `$content->recipient`  the address the email is for.
+ * - `$brand`               the site's name, address, logo, direction (`ltr` or `rtl`), language,
+ *                          footer line, and its light and dark colours.
+ *
+ * If this design throws, answers nothing, or answers a document without the message, CoreX
+ * sends the email in its standard design and tells the site's email managers why.
+ *
+ * Mail clients lay out tables and inline styles, and little else: no style sheet for the
+ * message, no custom properties, no flexbox. Keep widths fluid up to 600 pixels. The cells are
+ * aligned `left` or `right` from the site's direction, because Outlook does not read `start`;
+ * each paragraph carries `dir="auto"` and `text-align:start`, which every client that is a
+ * browser reads, so a line in another language starts from its own side.
+ */
+final class {{ class }} implements EmailDesign
+{
+    public function render(EmailContent $content, EmailBrand $brand): string
+    {
+        $colours = $brand->light;
+        $align = $brand->direction === 'rtl' ? 'right' : 'left';
+        $font = EmailBrand::FONT;
+
+        // The logo's `alt` is the site's name, so a client that shows no images shows the name.
+        $logo = $this->webAddress($brand->logo);
+        $header = $logo === ''
+            ? $this->escaped($brand->name)
+            : sprintf(
+                '<img src="%s" alt="%s" style="display:block;max-width:180px;height:auto;border:0" />',
+                $logo,
+                $this->escaped($brand->name),
+            );
+
+        // The footer line the site set, or one naming the site. Translate the sentence with
+        // your own text domain if the site is not in English.
+        $footer = $brand->footer !== ''
+            ? $this->escaped($brand->footer)
+            : sprintf(
+                'This message was sent by <a class="own-muted" style="color:%s;text-decoration:underline" href="%s">%s</a>.',
+                $colours->muted,
+                $this->webAddress($brand->homeUrl),
+                $this->escaped($brand->name),
+            );
+
+        return '<!DOCTYPE html>'
+            . sprintf('<html lang="%s" dir="%s">', $this->escaped($brand->language), $brand->direction)
+            . '<head><meta charset="utf-8" />'
+            . '<meta name="viewport" content="width=device-width, initial-scale=1" />'
+            . '<meta name="color-scheme" content="light dark" />'
+            . '<meta name="supported-color-schemes" content="light dark" />'
+            . '<title>' . $this->escaped($content->subject) . '</title>'
+            . $this->darkScheme($brand)
+            . '</head>'
+            . sprintf('<body class="own-canvas" style="margin:0;padding:0;background:%s">', $colours->canvas)
+            . sprintf(
+                '<table role="presentation" class="own-canvas" width="100%%" cellpadding="0" cellspacing="0" style="background:%s">'
+                . '<tr><td align="center" style="padding:24px 12px">',
+                $colours->canvas,
+            )
+            . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px">'
+            . sprintf(
+                '<tr><td class="own-text" style="padding:0 0 16px;text-align:%s;color:%s;font-family:%s;font-size:18px;font-weight:600">%s</td></tr>',
+                $align,
+                $colours->text,
+                $font,
+                $header,
+            )
+            . sprintf(
+                '<tr><td class="own-surface" style="padding:24px 24px 8px;background:%s;border:1px solid %s;border-top:4px solid %s;border-radius:10px;text-align:%s">%s</td></tr>',
+                $colours->surface,
+                $colours->border,
+                $colours->accent,
+                $align,
+                $this->message($content->bodyHtml, $brand),
+            )
+            . sprintf(
+                '<tr><td class="own-muted" style="padding:16px 0 0;text-align:%s;color:%s;font-family:%s;font-size:12px;line-height:1.6">%s</td></tr>',
+                $align,
+                $colours->muted,
+                $font,
+                $footer,
+            )
+            . '</table></td></tr></table></body></html>';
+    }
+
+    /**
+     * The message, with a style written on each of its elements: a mail client reads no style
+     * sheet for them. `dir="auto"` lets each paragraph take the direction of its own language.
+     */
+    private function message(string $bodyHtml, EmailBrand $brand): string
+    {
+        $text = sprintf('color:%s;font-family:%s;font-size:16px;line-height:1.6', $brand->light->text, EmailBrand::FONT);
+
+        return strtr($bodyHtml, [
+            '<p>' => sprintf('<p dir="auto" class="own-text" style="margin:0 0 16px;text-align:start;%s">', $text),
+            '<ul>' => '<ul style="margin:0 0 16px;padding:0 24px">',
+            '<ol>' => '<ol style="margin:0 0 16px;padding:0 24px">',
+            '<li>' => sprintf('<li dir="auto" class="own-text" style="margin:0 0 6px;text-align:start;%s">', $text),
+            '<a href=' => sprintf('<a class="own-link" style="color:%s;text-decoration:underline" href=', $brand->light->link),
+        ]);
+    }
+
+    /**
+     * The dark colours, for a mail client that asks for them. The light ones are written on
+     * each element, for the client that honours nothing else.
+     */
+    private function darkScheme(EmailBrand $brand): string
+    {
+        $dark = $brand->dark;
+
+        return '<style>:root{color-scheme:light dark}'
+            . '@media (prefers-color-scheme: dark){'
+            . sprintf('.own-canvas{background:%s !important}', $dark->canvas)
+            . sprintf('.own-surface{background:%s !important;border-color:%s !important;border-top-color:%s !important}', $dark->surface, $dark->border, $dark->accent)
+            . sprintf('.own-text{color:%s !important}', $dark->text)
+            . sprintf('.own-muted{color:%s !important}', $dark->muted)
+            . sprintf('.own-link{color:%s !important}', $dark->link)
+            . '}</style>';
+    }
+
+    /**
+     * A whole web address, escaped for an attribute, or '' for anything else: a mail client has
+     * no page to resolve a path from.
+     */
+    private function webAddress(string $value): string
+    {
+        return preg_match('#^https?://#i', $value) === 1 ? $this->escaped($value) : '';
+    }
+
+    private function escaped(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}

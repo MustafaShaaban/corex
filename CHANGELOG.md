@@ -47,6 +47,26 @@ All notable changes to Corex are documented here. The format follows
   development site, and a staging site with live delivery off, it says a reply is kept in Email
   Studio and delivered to nobody. The statement comes from the decision the sending itself
   takes, so the two cannot disagree (DECISIONS #305).
+- **A reply arrives as a designed email, with a plain-text version beside it** (spec 106,
+  slice 2). The site's logo, or its name, above the message on a card with CoreX's brass edge,
+  and a footer naming the site and linking to it. It holds at phone width, has a dark palette
+  for a mail client that asks for one, reads right to left on a right-to-left site, and lets
+  each paragraph take its own direction, so an Arabic line in an English reply starts from the
+  right. The same words go with it as plain text, with links written out and list items
+  marked, as the alternative part of one message. The reply used to be wrapped in a bare shell
+  that set no type, no colour and no footer, and was sent as HTML alone (DECISIONS #308).
+- **A site gives its emails its own colours, logo and footer, or its own template** (spec 106,
+  slice 4), from its own settings or its own plugin and with no framework file changed.
+  CoreX → Settings → Mail has an **Email accent colour**, an **Email logo** and an **Email
+  footer line**. The filter `corex_email_brand` reaches the other colours. The filter
+  `corex_email_design` replaces the template, and `wp corex make:email-design <Name>` writes a
+  working copy of the standard one into the site's plugin to start from. A site's design that
+  throws, answers nothing or leaves the message out does not stop a reply: the email goes in
+  the standard design, and the people who manage email are told which design failed and how
+  (DECISIONS #311). The guide is "A site's own email design".
+- **The colours and type of a CoreX email are defined once**, in the email add-on
+  (`Corex\Email\Design\EmailPalette`, `EmailBrand`), for every email drawn from them. They
+  were inside the Guides add-on's support message.
 - **A reply is kept on its submission and listed there**: its subject, its text, who sent it,
   when, and what happened to it. The history held an action and a state and nothing of what was
   said. A reply that was not sent is listed as not sent, with the reason.
@@ -97,6 +117,9 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **Email Studio lists its captured emails when one of them cannot be read.** One record
+  whose contents had not survived being stored took the whole list with it, and the screen
+  answered an error.
 - **What somebody types between angle brackets in a reply is kept.** "Contact Sam
   <sam@example.com>" reached the customer as "Contact Sam", and "<500 EGP and >300 EGP" as
   "300 EGP": the text was read as markup and deleted.
@@ -162,6 +185,23 @@ All notable changes to Corex are documented here. The format follows
 - **A submission's detail (`GET corex/v1/submissions/{id}`) gains `replies` and
   `reply_delivery`.** Replies are stored as post meta `corex_submission_replies`, one row to a
   reply. Code of your own that copies or removes a submission's personal data has to include it.
+- **A reply's email looks different.** It was the site's name or logo over a line in the
+  theme's `primary` colour; it is now the standard design in CoreX's colours. To put a site's
+  own colour back, set **Email accent colour** in CoreX → Settings → Mail; for more than the
+  accent, or a template of the site's own, see the guide "A site's own email design".
+- **New for a client site, and nothing it has to do:** the filters `corex_email_brand` and
+  `corex_email_design`, the command `wp corex make:email-design`, and three settings
+  (`mail.brand.accent`, `mail.brand.logo`, `mail.brand.footer`). A site that sets none of them
+  sends the standard design.
+- **`Corex\Email\Design\SiteEmailBrand` takes a `ConfigInterface`.** Code that takes it from
+  the container is unaffected.
+- **`Corex\Email\Message\EmailMessage` has a new last argument, `plainText`**, and a message
+  that carries one is sent as `multipart/alternative`. Code that builds a message is unaffected.
+  A mail driver of your own receives the field and may ignore it.
+- **`Corex\Guides\Support\SupportEmailPalette` is removed.** Its values are
+  `Corex\Email\Design\EmailPalette::light()` and the constants of `EmailBrand`.
+- **`EmailStudioSubmissionGateway` takes a `ReplyComposer` where it took a `Layout`.** Code
+  that takes the gateway from the container is unaffected.
 - **The admin bundle changed**: rebuild `plugins/corex-config` after merging.
 - **A person who is not an administrator loses the personal columns in the Data export** until
   given "Export personal data" on CoreX → Access & Abilities. That is anybody with a role you
