@@ -74,6 +74,7 @@ final readonly class DataSourceService
         return [
             'key' => $source->key(),
             'label' => $source->label(),
+            'category' => $source instanceof CategorisedDataSource ? $source->category() : CategorisedDataSource::RECORDS,
             'access' => $readable ? 'allowed' : 'denied',
             'capabilities' => $capabilities->toArray(),
             'actions' => $actions,

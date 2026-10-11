@@ -205,3 +205,21 @@ it('refuses a class a table cannot declare', function (string $class) {
 it('refuses a personal-data class for a column the table does not have', function () {
     new ManagedTable('subscribers', 'Subscribers', subscriberColumns(), personalData: ['phone' => DataField::PERSONAL_CONTACT]);
 })->throws(InvalidArgumentException::class, 'not one of its columns');
+
+// Spec 109, slice 2 (FR-003): the Export tab lists models in two groups, the records a site
+// keeps for its work and the site's own logs. A table says which it is.
+
+it('is a log unless it can be written to, and what it says it is when it says', function () {
+    $readOnly = new ManagedTable('events', 'Events', subscriberColumns());
+    $writable = new ManagedTable('subscribers', 'Subscribers', subscriberColumns(), null, [['id' => 'email', 'type' => 'email']]);
+    $declared = new ManagedTable('orders', 'Orders', subscriberColumns(), category: ManagedTable::CATEGORY_RECORDS);
+
+    expect($readOnly->category())->toBe(ManagedTable::CATEGORY_LOG)
+        ->and($writable->category())->toBe(ManagedTable::CATEGORY_RECORDS)
+        // Read-only, and still what the site keeps for its work: orders nobody edits by hand.
+        ->and($declared->category())->toBe(ManagedTable::CATEGORY_RECORDS);
+});
+
+it('refuses a category that is neither', function () {
+    new ManagedTable('orders', 'Orders', subscriberColumns(), category: 'archive');
+})->throws(InvalidArgumentException::class, 'category');

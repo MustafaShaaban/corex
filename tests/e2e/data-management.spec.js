@@ -10,6 +10,18 @@ const fs = require( 'node:fs' );
 const { test, expect } = require( '@playwright/test' );
 const { collectConsoleErrors, pinAppearance } = require( './helpers' );
 
+/**
+ * Ticks the first model of the Export tab's list: the form submissions, which the suite seeds.
+ *
+ * @param {import('@playwright/test').Page} page A page showing the Export tab.
+ */
+async function tickFirstModel( page ) {
+	await page
+		.locator( '.corex-data-models__checklist li input[type="checkbox"]' )
+		.first()
+		.check();
+}
+
 test( 'redirects the retired Data address to the Records tab', async ( {
 	page,
 } ) => {
@@ -39,6 +51,9 @@ test( 'exports a whole model from the Export tab, and lists it without a refresh
 		page.getByRole( 'heading', { name: 'Model exports' } )
 	).toBeVisible();
 
+	// The tab is a list of models to tick (spec 109): the first is ticked, and its dialog is the
+	// one a single model always opened.
+	await tickFirstModel( page );
 	const opener = page.getByRole( 'button', { name: /^Export .+…$/ } );
 	await opener.click();
 	const dialog = page.getByRole( 'dialog' );
@@ -72,11 +87,15 @@ test( 'exports a whole model from the Export tab, and lists it without a refresh
 		.click();
 	await expect( dialog ).toBeHidden();
 
-	// The history has it already, ready to download: nothing was refreshed.
-	const newest = page.locator( '.corex-data-models__history li' ).first();
-	await expect( newest ).toContainText( 'Everything' );
+	// The history has it already, ready to download: nothing was refreshed. It says which
+	// model, in what format, and when its file expires.
+	const newest = page
+		.locator( '.corex-data-models__past .corex-export__entry' )
+		.first();
 	await expect( newest ).toContainText( 'CSV' );
-	await expect( newest ).toContainText( 'Ready' );
+	await expect( newest.locator( '.corex-export__entry-file' ) ).toHaveText(
+		/^Expires /
+	);
 	await expect(
 		newest.getByRole( 'button', { name: 'Download' } )
 	).toBeVisible();
@@ -126,6 +145,7 @@ test( 'says what a model holds about people, and names it before an export', asy
 	).toHaveCount( 0 );
 
 	await page.goto( '/wp-admin/admin.php?page=corex-data-models&tab=export' );
+	await tickFirstModel( page );
 	await page.getByRole( 'button', { name: /^Export .+…$/ } ).click();
 	const dialog = page.getByRole( 'dialog' );
 	const notice = dialog.locator( '.corex-export__notice' );
@@ -191,6 +211,204 @@ test( 'says what a model holds about people, and names it before an export', asy
 
 	await notice.click();
 	await expect( start ).toBeEnabled();
+
+	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
+} );
+
+/**
+ * Several models are exported in one go (spec 109, slice 2).
+ *
+ * The owner, on a live site: "the import/export/migrate model is using one by one, i can't do a
+ * bulk or multiselect". The tab had one dropdown named "Model".
+ */
+test( 'exports several ticked models into one file, lists the export once, and deletes its file', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+	await page.goto( '/wp-admin/admin.php?page=corex-data-models&tab=export' );
+
+	const list = page.locator( '.corex-data-models__checklist' );
+	const opener = page.locator( '.corex-data-models__export-action button' );
+	// Two groups, every model with its count, and nothing ticked for the person.
+	await expect( list.locator( 'legend' ) ).toHaveText( [
+		'Records',
+		'Logs',
+	] );
+	await expect( list.locator( '.corex-admin-skeleton' ) ).toHaveCount( 0 );
+	await expect( list.locator( 'li' ).first() ).toContainText(
+		/[\d,]+ records?$/
+	);
+	await expect( list.locator( 'input:checked' ) ).toHaveCount( 0 );
+	await expect( opener ).toBeDisabled();
+
+	// Measured, in both directions: every row one height, every box level with its name, every
+	// count ending on one edge.
+	for ( const direction of [ 'ltr', 'rtl' ] ) {
+		await pinAppearance( page, 'light', direction );
+		const measured = await list.evaluate( ( node ) => {
+			const box = ( element ) => element.getBoundingClientRect();
+			const middle = ( element ) =>
+				box( element ).top + box( element ).height / 2;
+			const rows = Array.from( node.querySelectorAll( 'li' ) );
+			const edge = ( element ) =>
+				Math.round(
+					node.ownerDocument.dir === 'rtl'
+						? box( element ).left
+						: box( element ).right
+				);
+
+			return {
+				heights: new Set(
+					rows.map( ( row ) => Math.round( box( row ).height ) )
+				).size,
+				offLevel: Math.max(
+					...rows.map( ( row ) =>
+						Math.abs(
+							middle( row.querySelector( 'input' ) ) -
+								middle(
+									row.querySelector(
+										'.corex-data-models__checklist-name'
+									)
+								)
+						)
+					)
+				),
+				countEdges: new Set(
+					rows.map( ( row ) =>
+						edge(
+							row.querySelector(
+								'.corex-data-models__checklist-count'
+							)
+						)
+					)
+				).size,
+				target: Math.min(
+					...rows.map( ( row ) =>
+						Math.round( box( row.querySelector( 'label' ) ).height )
+					)
+				),
+			};
+		} );
+		expect( measured.heights, `rows of one height, ${ direction }` ).toBe(
+			1
+		);
+		expect(
+			measured.offLevel,
+			`boxes level with names, ${ direction }`
+		).toBeLessThan( 1.5 );
+		expect(
+			measured.countEdges,
+			`counts on one edge, ${ direction }`
+		).toBe( 1 );
+		// The smallest target WCAG 2.2 accepts (2.5.8).
+		expect( measured.target ).toBeGreaterThanOrEqual( 24 );
+	}
+	await pinAppearance( page, 'light', 'ltr' );
+
+	// By keyboard alone: the form submissions, and the activity log, which this suite has
+	// already written to.
+	const submissions = list.getByLabel( 'Form submissions' );
+	await submissions.focus();
+	await page.keyboard.press( 'Space' );
+	await list.getByLabel( 'Activity events' ).focus();
+	await page.keyboard.press( 'Space' );
+	await expect( opener ).toHaveText( 'Export 2 models…' );
+	await opener.focus();
+	await page.keyboard.press( 'Enter' );
+
+	const dialog = page.getByRole( 'dialog', { name: 'Export 2 models' } );
+	await expect( dialog ).toBeVisible();
+	const models = dialog.locator( '.corex-export__model' );
+	await expect( models ).toHaveCount( 2 );
+	await expect(
+		dialog.locator( '.corex-export__count' ).filter( { hasText: '…' } )
+	).toHaveCount( 0 );
+	await expect(
+		dialog.getByText( 'One workbook, with a sheet for each model.' )
+	).toBeVisible();
+
+	// A model's columns are behind its own disclosure, and stay inside the dialog.
+	await models.first().locator( 'summary' ).click();
+	await expect(
+		models.first().locator( '.corex-export__column' ).first()
+	).toBeVisible();
+	const inside = await dialog.evaluate( ( node ) => {
+		const box = ( element ) => element.getBoundingClientRect();
+		const body = node.querySelector( '.corex-dialog__body' );
+		const parts = Array.from( body.children );
+
+		return {
+			models: Array.from(
+				node.querySelectorAll( '.corex-export__model' )
+			).every(
+				( row ) =>
+					box( row ).left >= box( body ).left - 0.5 &&
+					box( row ).right <= box( body ).right + 0.5
+			),
+			// As a list: a Set does not come back from the page.
+			gaps: Array.from(
+				new Set(
+					parts
+						.slice( 1 )
+						.map( ( part, index ) =>
+							Math.round(
+								box( part ).top - box( parts[ index ] ).bottom
+							)
+						)
+				)
+			),
+		};
+	} );
+	expect( inside.models ).toBe( true );
+	expect( inside.gaps, 'one distance between parts' ).toEqual( [ 24 ] );
+
+	const notice = dialog.locator( '.corex-export__notice' );
+	await expect( notice ).toContainText( 'contains personal data (' );
+	await notice.click();
+
+	const arriving = page.waitForEvent( 'download' );
+	await dialog
+		.getByRole( 'button', {
+			name: /^Export [\d,]+ records? from 2 models$/,
+		} )
+		.click();
+	const file = await arriving;
+	// One workbook for both: a zip, which begins with these two bytes.
+	expect( file.suggestedFilename() ).toMatch(
+		/-2-models-\d{4}-\d{2}-\d{2}\.xlsx$/
+	);
+	expect(
+		fs
+			.readFileSync( await file.path() )
+			.subarray( 0, 2 )
+			.toString( 'latin1' )
+	).toBe( 'PK' );
+	await dialog
+		.getByRole( 'button', { name: 'Close', exact: true } )
+		.last()
+		.click();
+	await expect( dialog ).toBeHidden();
+
+	// Listed once, with both models, and its file can be deleted after being asked again.
+	const newest = page
+		.locator( '.corex-data-models__past .corex-export__entry' )
+		.first();
+	await expect( newest.locator( '.corex-export__entry-what' ) ).toHaveText(
+		'Form submissions, Activity events'
+	);
+	await expect( newest ).toContainText( 'Excel' );
+	await expect( newest.locator( '.corex-export__entry-file' ) ).toHaveText(
+		/^Expires /
+	);
+	await newest.getByRole( 'button', { name: 'Delete' } ).click();
+	await expect( newest.getByText( 'Delete this file?' ) ).toBeVisible();
+	await newest.getByRole( 'button', { name: 'Delete file' } ).click();
+	await expect( newest.locator( '.corex-export__entry-file' ) ).toHaveText(
+		/^Deleted /
+	);
+	await expect(
+		newest.getByRole( 'button', { name: 'Download' } )
+	).toHaveCount( 0 );
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );

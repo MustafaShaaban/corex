@@ -113,6 +113,21 @@ All notable changes to Corex are documented here. The format follows
   it.
 - **Docs**: [Personal data in exports](docs/en/03-operations/personal-data-in-exports.md), with
   its Arabic page, and a step in the in-admin guide for the Data screen.
+- **Several data models are exported in one go** (spec 109, slice 2). CoreX → Data → Export
+  lists the models a person may export, in two groups, each with how many records it holds,
+  and ticks none. Two or more ticked models open one dialog and are written into one file: a
+  workbook with a sheet for each, an archive with a CSV file for each, or a PDF with a section
+  for each while their records together fit one. A model that holds no records is left out and
+  the dialog says so; a model that goes away while the export is written is left out and named,
+  and the rest are written. The tab had one dropdown named "Model" (DECISIONS #312).
+- **A Data export's history says what became of each file**: the models it covered, the
+  format, the records, the size, who made it, and when its file expires, expired or was
+  deleted and by whom. A file can be deleted, after being asked again, and an export that was
+  not finished can be taken on from where it stopped. A person sees their own exports and an
+  administrator everybody's.
+- **`ManagedTable` takes `category`**, `records` or `log`, for the two groups the Export tab
+  lists models in. Left out, a table that can be written to is records and any other a log.
+- **Docs**: [Exporting data](docs/en/03-operations/exporting-data.md), with its Arabic page.
 
 ### Changed
 
@@ -133,6 +148,14 @@ All notable changes to Corex are documented here. The format follows
 - **The Submissions inbox asks for the same right.** It let an administrator export personal
   columns and nobody else; it now lets whoever holds "Export personal data". The filter
   `corex_submission_export_personal_data` still has the last word.
+- **A Data export's file is removed 30 days after the export was made**, as a Submissions
+  export's is; the entry stays. Nothing removed one before, while the notification for a
+  finished export said the file "stays available until the export retention window ends".
+- **The notification for a finished Data export opens the Export tab.** It opened the Data
+  screen's first tab, with nothing to download in sight.
+- **The Export tab is shown to a person who manages data.** It asked for the ability to manage
+  data models, which no export asks for, so a person who could export from the Records tab was
+  not shown the tab made for exporting.
 
 ### Security
 
@@ -352,7 +375,23 @@ All notable changes to Corex are documented here. The format follows
   `undeclared`, and form submissions' answers are `content` or `contact` where some were `none`.
 - **The Data catalog (`GET corex/v1/data/sources`) answers `permissions.personal_data`** for
   each source. Nothing is removed from it.
-
+- **Data export files older than 30 days are removed** the first time the daily clean-up runs
+  after a site takes this release, and every later one 30 days after it was made. Their entries
+  stay in the history. Download anything older that is still wanted before updating.
+- **The Data catalog (`GET corex/v1/data/sources`) answers `category`** for each source, and a
+  Data export run answers `parts`, `file_bytes`, `removed_reason`, `removed_by` and
+  `removed_at`. `source_key` and `columns` are still answered, and are the first model's in an
+  export of several.
+- **New routes** under `corex/v1/data-exports`, guarded as the Data routes are. Nothing under
+  `corex/v1/data/{source}/exports` is removed; its list now also holds an export of several
+  models that covered that source, and its download refuses a file that was deleted or is past
+  its 30 days.
+- **Code of your own that implements `DataExportStore`** has three more methods to implement:
+  `leaveOut()`, `removeFile()` and `holdingFilesBefore()`. `DataExportAbout::facts()` and
+  `DataExportFiles::collect()` and `finish()` take a run's models where they took one source's
+  fields.
+- **The admin bundle and two stylesheets changed**: rebuild `plugins/corex-config` after
+  merging.
 
 ## [0.44.0] — 2026-10-10
 

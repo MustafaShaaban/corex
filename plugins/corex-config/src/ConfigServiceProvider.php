@@ -283,6 +283,7 @@ final class ConfigServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): \Corex\Config\Retention\RetentionSweep => new \Corex\Config\Retention\RetentionSweep([
                 $c->make(\Corex\Config\Retention\NotificationRetention::class),
                 $c->make(\Corex\Config\Submissions\SubmissionExportRetention::class),
+                $c->make(\Corex\Config\DataModels\DataExportRetention::class),
                 $c->make(\Corex\Config\Submissions\SubmissionTrashRetention::class),
             ]),
         );
@@ -918,17 +919,34 @@ final class ConfigServiceProvider extends ServiceProvider
             \Corex\Config\DataModels\DataExportAbout::class,
             static fn (): \Corex\Config\DataModels\DataExportAbout =>
                 new \Corex\Config\DataModels\DataExportAbout(
-                    static function (int $userId): string {
-                        $user = get_userdata($userId);
-
-                        return $user instanceof \WP_User ? (string) $user->display_name : '';
-                    },
+                    self::displayNameOf(...),
                     static fn (): \DateTimeZone => wp_timezone(),
                 ),
         );
         $this->container->singleton(\Corex\Config\DataModels\DataExportFiles::class);
         $this->container->singleton(DataExportService::class);
         $this->container->singleton(DataExportJobHandler::class);
+        // A Data export's file expires, is listed with what became of it, and several models
+        // are exported together (spec 109, slice 2).
+        $this->container->singleton(
+            \Corex\Config\DataModels\DataExportRetention::class,
+            static fn (ContainerInterface $c): \Corex\Config\DataModels\DataExportRetention =>
+                new \Corex\Config\DataModels\DataExportRetention(
+                    $c->make(DataExportStore::class),
+                    static fn (): \DateTimeImmutable => new \DateTimeImmutable('now'),
+                ),
+        );
+        $this->container->singleton(
+            \Corex\Config\DataModels\DataExportHistory::class,
+            static fn (ContainerInterface $c): \Corex\Config\DataModels\DataExportHistory =>
+                new \Corex\Config\DataModels\DataExportHistory(
+                    $c->make(DataExportStore::class),
+                    $c->make(\Corex\Config\DataModels\DataExportRetention::class),
+                    $c->make(\Corex\Activity\ActivityService::class),
+                    self::displayNameOf(...),
+                ),
+        );
+        $this->container->singleton(\Corex\Config\DataModels\DataExportSetController::class);
         $this->container->singleton(WpMigrationPreviewStore::class);
         $this->container->singleton(
             MigrationPreviewStore::class,
@@ -1145,6 +1163,7 @@ final class ConfigServiceProvider extends ServiceProvider
             $this->container->make(ActivityController::class)->register();
             $this->container->make(JobController::class)->register();
             $this->container->make(DataManagementController::class)->register();
+            $this->container->make(\Corex\Config\DataModels\DataExportSetController::class)->register();
             $this->container->make(ReleasesController::class)->register();
             $this->container->make(InsightsController::class)->register();
             $this->container->make(BlogProController::class)->register();
@@ -1173,5 +1192,13 @@ final class ConfigServiceProvider extends ServiceProvider
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\EmailDesignFailureNotificationProducer::class));
         $registry->add($this->container->make(\Corex\Config\Notifications\Producers\ReadinessNotificationProducer::class));
         $registry->register();
+    }
+
+    /** A person's display name by their id; '' when there is nobody by that id. */
+    private static function displayNameOf(int $userId): string
+    {
+        $user = get_userdata($userId);
+
+        return $user instanceof \WP_User ? (string) $user->display_name : '';
     }
 }

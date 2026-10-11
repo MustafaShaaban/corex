@@ -181,7 +181,8 @@ final readonly class DataManagementController
             $sourceKey = sanitize_key((string) $request->get_param('source'));
             $runs = array_filter(
                 $this->services->exports->history(get_current_user_id()),
-                static fn (DataExportRun $run): bool => $run->sourceKey === $sourceKey,
+                // An export of several models is listed under each model it covered.
+                static fn (DataExportRun $run): bool => $run->holds($sourceKey),
             );
 
             return Response::ok(['exports' => array_map(
@@ -220,9 +221,11 @@ final readonly class DataManagementController
     public function downloadExport(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->read($request, function () use ($request): Response {
+            // Refused with the reason when the file was deleted, or is past its thirty days.
+            $run = $this->services->exportHistory->downloadable(get_current_user_id(), false, RouteParam::int($request));
             $artifact = $this->services->exports->download(
                 get_current_user_id(),
-                RouteParam::int($request),
+                $run->id,
                 false,
                 sanitize_key((string) $request->get_param('source')),
             );

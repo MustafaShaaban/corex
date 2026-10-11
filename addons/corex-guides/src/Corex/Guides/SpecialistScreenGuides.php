@@ -224,8 +224,8 @@ final class SpecialistScreenGuides
                 '',
                 [
                     new GuideStep(
-                        __('Open the Export tab and choose what you want.', 'corex'),
-                        __('The export is queued rather than made immediately, so a large one does not time out.', 'corex'),
+                        __('Open the Export tab and tick the models you want.', 'corex'),
+                        __('One model opens its own dialog; several are written into one file, a sheet or a file for each. The export is made in steps, so a large one does not time out.', 'corex'),
                     ),
                     new GuideStep(
                         __('Choose the columns, and confirm what they hold.', 'corex'),
@@ -233,7 +233,7 @@ final class SpecialistScreenGuides
                     ),
                     new GuideStep(
                         __('Wait for the notification, then download it.', 'corex'),
-                        __('CoreX tells you when the file is ready and links straight to it.', 'corex'),
+                        __('The browser saves the file when it is ready. If you left the page, CoreX tells you when it is ready and opens the Export tab, where it is listed under Export history for 30 days.', 'corex'),
                         warning: __('An export of personal data is personal data. It is recorded in the audit log, and your privacy policy should account for where the file goes next.', 'corex'),
                     ),
                 ],

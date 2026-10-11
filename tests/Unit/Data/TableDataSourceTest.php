@@ -166,6 +166,17 @@ it('hands an export the row its table shows, for a query and for records asked f
 
 // Spec 109, slice 1 (FR-016, FR-017): a source's fields carry what its table declared.
 
+it('is in the group its table is in', function () {
+    $log = new TableDataSource(new ManagedTable('events', 'Events', [['id' => 'kind', 'label' => 'Kind']]), tableReader([], 0));
+    $records = new TableDataSource(
+        new ManagedTable('orders', 'Orders', [['id' => 'number', 'label' => 'Number']], category: ManagedTable::CATEGORY_RECORDS),
+        tableReader([], 0),
+    );
+
+    expect($log->category())->toBe('log')
+        ->and($records->category())->toBe('records');
+});
+
 it('gives each field the personal-data class its table declared', function () {
     $table = new ManagedTable(
         'subscribers',

@@ -69,7 +69,7 @@ important, by somebody who can watch it; then `last_verified` on those two pages
 | [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | the specification, and the line-break fix | slices 1, 2 and 4 of seven are built and unreleased, and slice 3 but for its draft. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites wait for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313). Planned on 2026-10-11, after the owner could not send a reply on a live site, tell whether it had gone, or read it afterwards | slice 3's draft, T044 and T045: a reply being written is kept for the person writing it; then slice 5, "Send again" and the reply sender |
 | [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | all six slices are built (DECISIONS #307, #310 for the last three) | a first installation on a shared host, watched |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
-| [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | nothing | slice 1 of six is built (personal data marked on every model and asked about by one rule); slices 2 to 6 have tasks and no code | T030, slice 2: several models in one export |
+| [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | nothing | slices 1 and 2 of six are built (personal data marked and asked about by one rule; several models in one export, with a history and a 30-day expiry); slices 3 to 6 have tasks and no code | T050, slice 3: an import knows a row that is already there, and takes several files |
 
 What to know before resuming each:
 
@@ -94,8 +94,12 @@ What to know before resuming each:
   their own. Slice 1 (DECISIONS #309) changes who is offered personal columns on the Data
   screen: a client impact, in the changelog. **Neither client site's session has been told**:
   none was running on 2026-10-11. Say it to both before the release that carries this is
-  tagged. Slice 2 is the
-  owner's report itself, several models in one export. Slice 5 splits
+  tagged. Slice 2
+  (DECISIONS #312) is the owner's report itself, several models in one export; it removes Data
+  export files older than 30 days on the first daily clean-up, which is in the changelog's
+  client impact too. Its screens were first drawn in a standalone page with made-up data, which
+  missed a defect CI's browser test then found (the list had one group); it was then looked at
+  and tested on a WordPress of the worktree's own. Slice 5 splits
   `Releases/ReleaseUpload.php`, a file of spec 107, which is finished; what the Releases side
   relies on is written into task T080.
   Slice 1's integration and browser tests ran in CI; its screens were looked at on the

@@ -27,7 +27,7 @@ use Corex\Data\DataSourceCapabilities;
  * to. Writes and migrations arrive through {@see WritableTableDataSource}, which is the subclass
  * the registry builds when — and only when — the declaration asks for them.
  */
-class TableDataSource implements ExportableDataSource, SchemaAwareDataSource, CapabilityAwareDataSource
+class TableDataSource implements ExportableDataSource, SchemaAwareDataSource, CapabilityAwareDataSource, CategorisedDataSource
 {
     public function __construct(
         protected readonly ManagedTable $table,
@@ -38,6 +38,12 @@ class TableDataSource implements ExportableDataSource, SchemaAwareDataSource, Ca
     public function key(): string
     {
         return 'table-' . str_replace('_', '-', $this->table->name);
+    }
+
+    /** The group its table is in: the table's two words are this interface's two. */
+    public function category(): string
+    {
+        return $this->table->category();
     }
 
     public function label(): string

@@ -29,24 +29,59 @@ final readonly class DataExportService
 
     public function request(DataExportRequest $request): DataExportRun
     {
-        $source = $this->sources->authorize($request->actorId, $request->sourceKey, self::operationFor($request->format));
-        if (! $source instanceof ExportableDataSource) {
-            throw new DomainException('The data source does not provide export rows and a field schema.');
-        }
-        $personal = $this->validateColumns($request, $source->fields());
+        $source = $this->exportable($request->actorId, $request->sourceKey, $request->format);
+        $personal = $this->personalClasses($request->columns, $source->fields());
+        $this->assertMayTakeOut($request->actorId, $personal, $request->personalDataAcknowledged);
         $count = $this->count($request);
         if ($count === 0) {
             throw new DomainException('There is nothing to export.');
         }
-        if ($request->format === ExportWriters::PDF && $count > ExportWriters::PDF_MOST_RECORDS) {
-            throw new DomainException(sprintf(
-                'A PDF holds up to %d records. Export fewer, or choose a workbook.',
-                ExportWriters::PDF_MOST_RECORDS,
-            ));
-        }
-        $run = $this->exports->create(DataExportRun::queued($request, $count, $personal));
+        $this->assertFits($request->format, $count);
 
-        return $this->exports->attachJob($run->id, $this->jobs->enqueue($run));
+        return $this->queue(DataExportRun::queued($request, $count, $personal));
+    }
+
+    /**
+     * One export of several models, every record of each (spec 109, slice 2).
+     *
+     * A model that holds no records, or of which this person may export no column, is left out
+     * of the run; an export in which that is every model makes no file.
+     */
+    public function requestSeveral(DataExportSetRequest $request): DataExportRun
+    {
+        $parts = [];
+        foreach ($request->parts as $asked) {
+            $part = $this->partOf($request, $asked['source'], $asked['columns']);
+            if ($part !== null) {
+                $parts[] = $part;
+            }
+        }
+        if ($parts === []) {
+            throw new DomainException('There is nothing to export.');
+        }
+        $run = DataExportRun::queuedSeveral($request, $parts);
+        $this->assertMayTakeOut($request->actorId, $run->personalDataClasses, $request->personalDataAcknowledged);
+        $this->assertFits($request->format, $run->recordCount);
+
+        return $this->queue($run);
+    }
+
+    /**
+     * How many records each model would give, before anything is exported.
+     *
+     * @param list<string> $sourceKeys
+     *
+     * @return array<string,int> By source key, in the order asked for.
+     */
+    public function previewSeveral(int $actorId, array $sourceKeys): array
+    {
+        $counts = [];
+        foreach ($sourceKeys as $sourceKey) {
+            $this->sources->authorize($actorId, $sourceKey, DataSourceCapabilities::EXPORT_CSV);
+            $counts[$sourceKey] = $this->total($actorId, $sourceKey, []);
+        }
+
+        return $counts;
     }
 
     /**
@@ -80,7 +115,7 @@ final readonly class DataExportService
     public function advance(int $actorId, int $runId, bool $manageAll, string $sourceKey): array
     {
         $run = $this->exports->find($runId);
-        if ($run === null || (! $manageAll && $run->actorId !== $actorId) || $run->sourceKey !== $sourceKey) {
+        if ($run === null || (! $manageAll && $run->actorId !== $actorId) || ($sourceKey !== '' && ! $run->holds($sourceKey))) {
             throw new DomainException('The data export is unavailable.');
         }
 
@@ -104,12 +139,15 @@ final readonly class DataExportService
         $run = $this->exports->find($runId);
         if ($run === null || $run->state !== DataExportRun::STATE_COMPLETED
             || (! $manageAll && $run->actorId !== $actorId)
-            || ($sourceKey !== '' && $run->sourceKey !== $sourceKey)) {
+            || ($sourceKey !== '' && ! $run->holds($sourceKey))) {
             throw new DomainException('The data export artifact is unavailable.');
         }
 
         $file = $this->exports->file($runId);
-        $name = sprintf('%s-%s', $run->sourceKey, $run->createdAt->format('Y-m-d'));
+        // Named for what it holds: the model, or how many models.
+        $written = count(array_filter($run->parts, static fn (DataExportPart $part): bool => ! $part->leftOut));
+        $subject = $run->isSeveral() ? sprintf('%d-models', $written) : $run->sourceKey;
+        $name = sprintf('%s-%s', $subject, $run->createdAt->format('Y-m-d'));
         if ($file !== null) {
             return [
                 'filename' => $name . '.' . $file['extension'],
@@ -142,15 +180,68 @@ final readonly class DataExportService
             : DataSourceCapabilities::EXPORT_CSV;
     }
 
-    /** @param list<DataField> $fields @return list<string> */
-    private function validateColumns(DataExportRequest $request, array $fields): array
+    private function exportable(int $actorId, string $sourceKey, string $format): ExportableDataSource
+    {
+        $source = $this->sources->authorize($actorId, $sourceKey, self::operationFor($format));
+        if (! $source instanceof ExportableDataSource) {
+            throw new DomainException('The data source does not provide export rows and a field schema.');
+        }
+
+        return $source;
+    }
+
+    /**
+     * One model of an export of several, or null when it would give nothing.
+     *
+     * @param list<string>|null $columns The columns asked for; null for every column this person
+     *                                   may export.
+     */
+    private function partOf(DataExportSetRequest $request, string $sourceKey, ?array $columns): ?DataExportPart
+    {
+        $fields = $this->exportable($request->actorId, $sourceKey, $request->format)->fields();
+        $columns ??= $this->offered($request->actorId, $fields);
+        $count = $this->total($request->actorId, $sourceKey, []);
+        if ($columns === [] || $count === 0) {
+            return null;
+        }
+
+        return new DataExportPart($sourceKey, $columns, $count, $this->personalClasses($columns, $fields));
+    }
+
+    /**
+     * Every column of a model this person may export: all of them, or the ones that hold nothing
+     * personal for a person not allowed to take personal data out.
+     *
+     * @param list<DataField> $fields
+     *
+     * @return list<string>
+     */
+    private function offered(int $actorId, array $fields): array
+    {
+        $mayTakePersonal = $this->sources->mayExportPersonalData($actorId);
+
+        return array_values(array_map(
+            static fn (DataField $field): string => $field->key,
+            array_filter($fields, static fn (DataField $field): bool => $mayTakePersonal || ! $field->holdsPersonalData()),
+        ));
+    }
+
+    /**
+     * The kinds of personal data among these columns.
+     *
+     * @param list<string>    $columns
+     * @param list<DataField> $fields
+     *
+     * @return list<string>
+     */
+    private function personalClasses(array $columns, array $fields): array
     {
         $fieldMap = [];
         foreach ($fields as $field) {
             $fieldMap[$field->key] = $field;
         }
         $personal = [];
-        foreach ($request->columns as $column) {
+        foreach ($columns as $column) {
             if (! isset($fieldMap[$column])) {
                 throw new InvalidArgumentException('The data export contains an undeclared column.');
             }
@@ -160,15 +251,40 @@ final readonly class DataExportService
         }
         $personal = array_values(array_unique($personal));
         sort($personal);
-        // Asked before the acknowledgement: ticking a box is not what allows it.
-        if ($personal !== [] && ! $this->sources->mayExportPersonalData($request->actorId)) {
-            throw PersonalDataNotAllowed::inAnExport();
-        }
-        if ($personal !== [] && ! $request->personalDataAcknowledged) {
-            throw new DomainException('The actor must acknowledge the personal data export warning.');
-        }
 
         return $personal;
+    }
+
+    /** @param list<string> $personal The kinds of personal data an export would hold. */
+    private function assertMayTakeOut(int $actorId, array $personal, bool $acknowledged): void
+    {
+        if ($personal === []) {
+            return;
+        }
+        // Asked before the acknowledgement: ticking a box is not what allows it.
+        if (! $this->sources->mayExportPersonalData($actorId)) {
+            throw PersonalDataNotAllowed::inAnExport();
+        }
+        if (! $acknowledged) {
+            throw new DomainException('The actor must acknowledge the personal data export warning.');
+        }
+    }
+
+    private function assertFits(string $format, int $count): void
+    {
+        if ($format === ExportWriters::PDF && $count > ExportWriters::PDF_MOST_RECORDS) {
+            throw new DomainException(sprintf(
+                'A PDF holds up to %d records. Export fewer, or choose a workbook.',
+                ExportWriters::PDF_MOST_RECORDS,
+            ));
+        }
+    }
+
+    private function queue(DataExportRun $run): DataExportRun
+    {
+        $run = $this->exports->create($run);
+
+        return $this->exports->attachJob($run->id, $this->jobs->enqueue($run));
     }
 
     private function count(DataExportRequest $request): int

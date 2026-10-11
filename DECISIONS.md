@@ -10368,6 +10368,85 @@ generator's test. Only replies are drawn through the design; the other emails ar
 
 **Verification.** Numbers are in the pull request, from the tree as committed.
 
+## #312 — Several models are parts of one export run, and a Data export's file has a fate
+
+Date: 2026-10-11 · Spec: 109, slice 2 (User Story 1) · Branch: `feat/109-several-models` · Status: Final
+
+**The report this answers.** "the import/export/migrate model is using one by one, i can't do a
+bulk or multiselect". The Export tab was a dropdown named "Model".
+
+**A run holds parts; there is no second kind of run.** An export of several models is the run
+that already existed, with a part for each model: its source, its columns, its count. A run of
+one part is the export a person always made, with its scope; a stored run from before reads as
+one part. The alternative, a "set" entity pointing at several runs, would have made the
+history, the job, the notification and the file each know two shapes. One job gathers part by
+part, and its place is read off how many records it has been through, so the job engine was
+not touched. The writers already wrote a document of several sheets as a workbook's sheets, a
+zip of CSV files and a PDF's sections: the Submissions export does that for several forms.
+
+**A model that goes away is left out, not a failure.** The job's total is fixed when the
+export is asked for. A part whose source can no longer be exported when its turn comes (its
+add-on switched off, the right taken back) is marked as left out, the job goes on past its
+records, and the document and the history name it. An export of one model has nothing else to
+write and fails as it did.
+
+**The routes are not under `/data/`.** `/data/{source}` matches any word, which is why
+`migrations` is registered before it. The new ones are `/data-exports`; `DataManagementController`
+has nineteen routes and was not given more. The per-source list now also holds an export of
+several models that covered the source, so DECISIONS #121's binding of a download to its
+source still holds, by `holds()` where it compared one key.
+
+**A Data export's file expires, and that reaches back.** `DataExportRetention` is the
+Submissions export's rule: thirty days from the day it was made, not stored, swept daily. The
+first sweep after a site takes this removes every Data export file older than that, since
+nothing ever removed one. It is in the changelog's client impact. The history then needed what
+the Submissions history has: size, state, who deleted, and a delete that asks again.
+
+**Whose exports.** A person sees their own; whoever manages the admin sees all. The per-source
+history never showed anybody another person's, so nothing is taken away.
+
+**The two groups are a table's to say.** `ManagedTable` takes `category`; left out, a table
+somebody can write to is records and any other a log. Form submissions say records. The plan
+had this declaration arrive with the move (slice 4); the list needs it now.
+
+**The tab asks for what an export asks for** (plan D16): managing data. It asked for managing
+data models.
+
+**What was run.**
+
+| Check | Result |
+|---|---|
+| Pest, unit suite | 2766 passed |
+| Jest, the whole suite | 98 suites, 1104 passed, 2 skipped as before |
+| `lint:js` on the changed files, `lint:css`, `php -l`, `npm run build` | clean |
+| The Export tab, both dialogs and the history, drawn in a standalone page with the real stylesheets and made-up data, in light and dark, both directions, at 1280 and 375 | looked at; measured: rows one height, boxes level with their names, counts on one edge, 24 pixels between the dialog's parts |
+
+**What the look changed.** The history's three lines stood three lines apart: WordPress gives
+every paragraph a margin, which the Submissions dialog resets and a tab does not. And the
+heading "Columns" inside a model's row was as loud as "What to export" above it.
+
+**What the browser test found on its first run in CI.** The list had one group. The server
+sent each model's `category`, and `normalizeCatalog()` in `admin/dataClient.js` kept a fixed set
+of a source's properties that did not include it, so every model was listed with the records
+and "Logs" never appeared. The standalone page gave the components made-up models past that
+function, and the Jest tests of the list did the same, so both were right about the list and
+wrong about the site. The function now keeps `category`, with a test, and the list no longer
+has a fallback of its own.
+
+**Then seen on a site.** After that, this worktree was given a WordPress of its own
+(`scripts/setup-wordpress.ps1` on `127.0.0.1`, its own database, seeded as CI's browser job
+seeds it). The Data screen's ten browser tests pass there, and so do the three loading-state
+tests of the Data records list. Looking at it found one more thing: with three models ticked
+and one of them empty, the button said "from 3 models" under a row that said the third "will
+be left out", and the notice named the kinds of personal data of the model that was left out.
+Both now speak of the models the file will hold (`modelsInFile()`), which is what the route
+does. One measurement of the browser test was wrong too: it returned a `Set` from the page,
+and a `Set` does not come back.
+
+**Not run here.** The integration tests in `DataExportSetTest`: CI runs them, and they passed
+on its first run.
+
+
 ## #313 — A reply is written in CoreX's own small editor, and its preview is the email
 
 **Date:** 2026-10-11. **Branch:** `feat/106-reply-editor`. **Spec:** 106, slice 3.

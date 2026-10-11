@@ -166,6 +166,9 @@ final class DataModelsScreen
 
         wp_localize_script('corex-data-models', 'corexDataModels', [
             'restUrl' => esc_url_raw(rest_url('corex/v1/data')),
+            // Exports of several models and the history of every export: outside `data/`, where
+            // any word after it is taken for a source (spec 109, slice 2).
+            'exportsUrl' => esc_url_raw(rest_url('corex/v1/data-exports')),
             'nonce' => wp_create_nonce('wp_rest'),
             'sources' => $sources,
             // Real form names for the records filter. NOTE: the explorer filters on the form SLUG

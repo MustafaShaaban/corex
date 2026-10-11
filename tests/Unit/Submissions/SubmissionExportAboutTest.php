@@ -103,9 +103,9 @@ it('says the same of a Data export, with a filter under its field’s label', fu
         'actor_id' => 7, 'source_key' => 'contacts', 'columns' => ['name'], 'selected_ids' => [], 'query' => [],
     ]), 3, []);
     $run = DataExportRun::from(['created_at' => '2026-10-08T12:30:00+00:00'] + $queued->toArray());
-    $facts = $about->facts($run, [
+    $facts = $about->facts($run, [['index' => 0, 'label' => 'Contacts', 'fields' => [
         new DataField('status', 'Status', DataField::TYPE_TEXT, false, true, true, [], true, DataField::PERSONAL_NONE, [], []),
-    ]);
+    ]]]);
 
     expect(factUnder($facts, 'What was exported'))->toBe($words)
         ->and(factUnder($facts, 'Records'))->toBe('3')
@@ -119,3 +119,32 @@ it('says the same of a Data export, with a filter under its field’s label', fu
     ],
     'filters, when none was on' => [['scope' => 'filtered'], 'Every record in view, with no filter on'],
 ]);
+
+it('says of an export of several models which they were, how many records each gave, and which was left out', function () {
+    // Spec 109, slice 2. A document of several models has one place to say what it holds.
+    Brain\Monkey\Functions\when('_n')->alias(static fn (string $one, string $many, int $count): string => $count === 1 ? $one : $many);
+    $about = new DataExportAbout(
+        static fn (int $userId): string => 'Salma Adel',
+        static fn (): DateTimeZone => new DateTimeZone('UTC'),
+    );
+    $run = DataExportRun::queuedSeveral(
+        Corex\Config\DataModels\DataExportSetRequest::from([
+            'actor_id' => 7, 'format' => 'xlsx',
+            'parts' => [['source' => 'contacts'], ['source' => 'table-invoices'], ['source' => 'table-orders']],
+        ]),
+        [
+            new Corex\Config\DataModels\DataExportPart('contacts', ['name'], 1, []),
+            new Corex\Config\DataModels\DataExportPart('table-invoices', ['number'], 40, []),
+            new Corex\Config\DataModels\DataExportPart('table-orders', ['number'], 9, []),
+        ],
+    )->leavingOut('table-orders');
+
+    $facts = $about->facts($run, [
+        ['index' => 0, 'label' => 'Contacts', 'fields' => []],
+        ['index' => 1, 'label' => 'Invoices', 'fields' => []],
+    ]);
+
+    expect(factUnder($facts, 'What was exported'))->toBe('Contacts: 1 record; Invoices: 40 records')
+        ->and(factUnder($facts, 'Left out, because it could not be read'))->toBe('table-orders')
+        ->and(factUnder($facts, 'Records'))->toBe('41');
+});

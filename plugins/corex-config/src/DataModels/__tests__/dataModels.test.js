@@ -37,24 +37,27 @@ const READ_ONLY = [
 ];
 
 describe( 'Data Models tab permissions and deep-linking', () => {
-	it( 'shows a data-only user records, and nothing that reshapes the models', () => {
+	it( 'shows a data-only user records and exports, and nothing that reshapes the models', () => {
 		// MANAGE_DATA and MANAGE_DATA_MODELS are independent abilities. This user could reach
-		// records through the retired Data screen; removing it must not take that away.
+		// records through the retired Data screen; removing it must not take that away. They
+		// could also export from the Records tab, and were not shown the tab made for
+		// exporting: an export asks for `data`, and the tab asked for `models` (spec 109, D16).
 		expect(
 			allowedTabs( { data: true, models: false }, CAPABLE ).map(
 				( t ) => t.key
 			)
-		).toEqual( [ 'records' ] );
+		).toEqual( [ 'records', 'export' ] );
 	} );
 
-	it( 'shows a models-only user everything except records', () => {
+	it( 'shows a models-only user everything except records and exports', () => {
 		// Records reads sources gated on `data`, so offering the tab would open an explorer that
-		// can read nothing — which is exactly what it used to do.
+		// can read nothing — which is exactly what it used to do. The Export tab is the same
+		// since spec 109: no model can be exported by a person who does not manage data.
 		expect(
 			allowedTabs( { data: false, models: true }, CAPABLE ).map(
 				( t ) => t.key
 			)
-		).toEqual( [ 'models', 'import', 'export', 'migrations' ] );
+		).toEqual( [ 'models', 'import', 'migrations' ] );
 	} );
 
 	it( 'shows nothing to a user with neither ability', () => {

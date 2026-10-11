@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Corex\Config\Data;
 defined('ABSPATH') || exit;
 
+use Corex\Config\DataModels\DataExportHistory;
 use Corex\Config\DataModels\DataExportService;
 use Corex\Config\DataModels\DataCsvParser;
 use Corex\Config\DataModels\DataImportService;
@@ -25,6 +26,7 @@ final readonly class DataManagementServices
         public DataImportStore $importRuns,
         public ImportReportWriter $importReports,
         public DataExportService $exports,
+        public DataExportHistory $exportHistory,
         public ExportWriters $exportFormats,
         public MigrationService $migrations,
     ) {

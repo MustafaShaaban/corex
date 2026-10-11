@@ -115,3 +115,13 @@ it('marks nothing as personal in a table that holds nothing about a person', fun
     'notifications' => [NotificationTable::NAME],
     'reading events' => [ReadingEventTable::NAME],
 ]);
+
+it('lists what a site keeps for its work as records, and its own history as logs', function () {
+    $categories = array_map(static fn (ManagedTable $table): string => $table->category(), shippedManagedTables());
+    $records = array_keys($categories, ManagedTable::CATEGORY_RECORDS, true);
+    sort($records);
+
+    // Spec 109, FR-003: the Export tab's two groups.
+    expect($records)->toBe([ApplicationTable::NAME, SubscriberTable::NAME])
+        ->and(array_keys($categories, ManagedTable::CATEGORY_LOG, true))->toHaveCount(8);
+});

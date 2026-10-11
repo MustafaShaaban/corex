@@ -148,42 +148,46 @@ export personal data is not offered that column, and the route refuses it.
 **Independent test**: tick three models that hold records, export as Excel, open the file:
 three sheets, each named for its model, each with the rows the dialog stated.
 
-- [ ] T030 [P] [US1] Pest unit, `tests/Unit/DataModels/DataExportRunTest.php`: a run holds
+- [x] T030 [P] [US1] Pest unit, `tests/Unit/DataModels/DataExportRunTest.php`: a run holds
       parts; a stored run with `source_key` and `columns` and no `parts` reads as one part;
       scope and selected rows are refused with more than one part
-- [ ] T031 [US1] `parts` in `plugins/corex-config/src/DataModels/DataExportRun.php` and
+- [x] T031 [US1] `parts` in `plugins/corex-config/src/DataModels/DataExportRun.php` and
       `DataExportRequest.php`
-- [ ] T032 [P] [US1] Pest unit, `tests/Unit/DataModels/DataExportServiceTest.php`: a request
+- [x] T032 [P] [US1] Pest unit, `tests/Unit/DataModels/DataExportServiceTest.php`: a request
       for several models authorises each, counts each, leaves an empty one out and says so,
       refuses when all are empty, refuses PDF over the limit across the parts, and applies
-      slice 1's rule to each part's columns
-- [ ] T033 [P] [US1] Pest unit, same file: the job gathers part by part into a working file
+      slice 1's rule to each part's columns. Also here, ahead of T060: `category` on
+      `ManagedTable` and `CategorisedDataSource`, which the list's two groups need
+- [x] T033 [P] [US1] Pest unit, same file: the job gathers part by part into a working file
       each, and the last step writes one document with a sheet per part and a fact per model;
       a model removed mid-run is left out and named
-- [ ] T034 [US1] `DataExportService`, `DataExportJobHandler`, `DataExportFiles`,
+- [x] T034 [US1] `DataExportService`, `DataExportJobHandler`, `DataExportFiles`,
       `DataExportAbout` and `WpDataExportStore` in `plugins/corex-config/src/DataModels/`
-- [ ] T035 [P] [US1] Pest unit, `tests/Unit/DataModels/DataExportRetentionTest.php`: a file is
+- [x] T035 [P] [US1] Pest unit, `tests/Unit/DataModels/DataExportRetentionTest.php`: a file is
       removed 30 days after its run was made and the entry stays; a deleted file's entry says
       who deleted it
-- [ ] T036 [US1] `DataExportRetention.php` registered with the sweep; `removeFile()` and
+- [x] T036 [US1] `DataExportRetention.php` registered with the sweep; `removeFile()` and
       `holdingFilesBefore()` on the store; the notification's link names the Export tab in
       `plugins/corex-config/src/Notifications/Producers/ExportReadyNotificationProducer.php`
-- [ ] T037 [US1] Pest integration, `tests/Integration/DataModels/DataExportSetTest.php`: the
+- [x] T037 [US1] Pest integration, `tests/Integration/DataModels/DataExportSetTest.php`: the
       six `/data-exports` routes of contracts/routes.md, each refusal, another person's run
       answering as absent, the per-source history listing a run that holds a part for it, the
       activity log entries with no value
-- [ ] T038 [US1] `plugins/corex-config/src/DataModels/DataExportSetController.php`, its
+- [x] T038 [US1] `plugins/corex-config/src/DataModels/DataExportSetController.php`, its
       binding and registration in `ConfigServiceProvider.php`
-- [ ] T039 [P] [US1] Jest, `plugins/corex-config/src/DataModels/__tests__/modelChecklist.test.js`
+- [x] T039 [P] [US1] Jest, `plugins/corex-config/src/DataModels/__tests__/modelChecklist.test.js`
       and `dataExportState.test.js`: the two groups, tick all of a group, nothing ticked at
       first, the counts, the line for models not offered; the payload for several models; the
       reason PDF is not offered; an unfinished run and "Continue"
-- [ ] T040 [US1] `ModelChecklist.js`; `ExportPanel.js` with the checklist, the history with
+- [x] T040 [US1] `ModelChecklist.js`; `ExportPanel.js` with the checklist, the history with
       size, expiry, delete and unfinished runs; `DataExportDialog.js` for several models;
       `modelClient.js`: the Export tab asks for what an export asks for (D16)
-- [ ] T041 [US1] Playwright, `tests/e2e/data-management.spec.js`: quickstart slice 2, steps 1
-      to 7; the checklist by keyboard alone; measured spacing, both directions, light and dark
-- [ ] T042 [US1] Guards; the export guide and its mirror; CHANGELOG, PROGRESS, DECISIONS
+- [x] T041 [US1] Playwright, `tests/e2e/data-management.spec.js`: two models ticked by keyboard
+      and exported into one workbook, the history entry, deleting its file; the list measured in
+      both directions. Written, and run in CI. The unfinished export and its "Continue" are
+      drawn in Jest (`ExportPanel.test.js`): a browser cannot be made to leave an export half
+      written without a seam the product does not have
+- [x] T042 [US1] Guards; the export guide and its mirror; CHANGELOG, PROGRESS, DECISIONS
 
 ## Slice 3: an import knows what is already there, and takes several files (US6; FR-042 to FR-047; D15)
 
