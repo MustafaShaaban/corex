@@ -10,9 +10,12 @@ namespace Corex\Email\Studio;
 
 defined('ABSPATH') || exit;
 
+use Corex\Email\Delivery\DeliveryDecision;
+use Corex\Email\Delivery\DeliveryPolicy;
 use Corex\Email\Message\EmailMessage;
 use Corex\Email\Template\Layout;
 use Corex\Mail\MailResult;
+use Corex\Mail\ReplyReadiness;
 use Corex\Mail\SubmissionEmailGateway;
 use Corex\Support\Config\ConfigInterface;
 use Corex\Support\Uuid;
@@ -30,6 +33,44 @@ final readonly class EmailStudioSubmissionGateway implements SubmissionEmailGate
         private ConfigInterface $config,
         private Layout $layout,
     ) {
+    }
+
+    public function readiness(): ReplyReadiness
+    {
+        $decision = $this->studio->decide($this->deliveryContext());
+        $mode = match ($decision->action) {
+            DeliveryDecision::ACTION_DELIVER => ReplyReadiness::DELIVER,
+            DeliveryDecision::ACTION_CAPTURE => ReplyReadiness::CAPTURE,
+            default => ReplyReadiness::REFUSE,
+        };
+
+        $reason = $this->reasonFor($decision->code);
+        // A refusal is never left unexplained: an outcome this class has no sentence for yet
+        // is said in the policy's own.
+        if ($reason === '' && $mode !== ReplyReadiness::DELIVER) {
+            $reason = $decision->reason;
+        }
+
+        return new ReplyReadiness($mode, $decision->code, $reason);
+    }
+
+    /**
+     * The policy's outcome, said to somebody about to answer a customer.
+     *
+     * The policy's own sentences are written for Email Studio's health panel ("Production live
+     * delivery must be deliberately enabled after provider setup"). The person at the reply box
+     * needs to know one thing, whether the customer will get this, and where that is changed.
+     */
+    private function reasonFor(string $code): string
+    {
+        return match ($code) {
+            DeliveryPolicy::NO_PROVIDER => __('Replies are not being delivered: no delivery provider is chosen in CoreX → Settings → Mail.', 'corex'),
+            DeliveryPolicy::LIVE_OFF => __('Replies are not being delivered: live delivery is switched off in CoreX → Settings → Mail.', 'corex'),
+            DeliveryPolicy::UNKNOWN_ENVIRONMENT => __('Replies are not being delivered: this site does not say whether it is a production, staging or development site, so its email is held back.', 'corex'),
+            DeliveryPolicy::DEVELOPMENT => __('This is a development site. A reply is kept in Email Studio and is not delivered to the person who wrote.', 'corex'),
+            DeliveryPolicy::STAGING_CAPTURE => __('This is a staging site with live delivery off. A reply is kept in Email Studio and is not delivered to the person who wrote.', 'corex'),
+            default => '',
+        };
     }
 
     /**

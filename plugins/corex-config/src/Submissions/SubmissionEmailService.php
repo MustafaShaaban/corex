@@ -23,17 +23,48 @@ final readonly class SubmissionEmailService
         private SubmissionWorkflowStore $submissions,
         private SubmissionEmailGateway $email,
         private SubmissionTimelineStore $timeline,
+        private SubmissionReplyStore $replies,
     ) {
     }
 
-    public function reply(SubmissionAccessScope $scope, int $submissionId, SubmissionReply $reply): MailResult
+    /**
+     * Sends a reply and keeps it with the submission, whatever happened to it: a reply that
+     * was not delivered is on record as not delivered, for whoever picks the lead up next.
+     *
+     * Where a reply is certain to be refused none is sent and none is kept: the reply box said
+     * so before anything was written (spec 106, FR-028), and this is the same answer.
+     */
+    public function reply(SubmissionAccessScope $scope, int $submissionId, SubmissionReply $reply): SentReply
     {
         $record = $this->accessible($scope, $submissionId);
         $recipient = $this->recipient($record);
+        $readiness = $this->email->readiness();
+        if (! $readiness->sendable()) {
+            throw new DomainException($readiness->reason);
+        }
         $result = $this->email->reply($recipient, $reply->subject, $reply->htmlBody);
-        $this->recordOutcome($scope, $submissionId, 'reply', $result);
 
-        return $result;
+        return new SentReply($result, $this->kept($scope, $submissionId, $reply, $result));
+    }
+
+    /**
+     * Writes the reply and its history entry down, and says whether that was done.
+     *
+     * By now the email has gone or been refused. A submission deleted for good in that moment,
+     * or a row the database will not take, must not become an error: the person would send
+     * again, and the customer would be answered twice.
+     */
+    private function kept(SubmissionAccessScope $scope, int $submissionId, SubmissionReply $reply, MailResult $result): bool
+    {
+        try {
+            $kept = SubmissionReplyRecord::sent($reply, $scope->actorId, $result);
+            $this->replies->add($submissionId, $kept);
+            $this->recordOutcome($scope, $submissionId, 'reply', $result, $kept->id);
+
+            return true;
+        } catch (DomainException) {
+            return false;
+        }
     }
 
     public function resend(SubmissionAccessScope $scope, int $submissionId, string $attemptId): MailResult
@@ -100,12 +131,14 @@ final readonly class SubmissionEmailService
         int $submissionId,
         string $action,
         MailResult $result,
+        ?string $replyId = null,
     ): void {
+        // The history says that a reply was sent and which one. What it said is with the reply.
         $this->timeline->append($submissionId, 'email', $result->successful() ? 'success' : 'failure', [
             'action' => $action,
             'attempt_id' => $result->attemptId,
             'state' => $result->state,
             'actor_id' => $scope->actorId,
-        ]);
+        ] + ($replyId === null ? [] : ['reply_id' => $replyId]));
     }
 }

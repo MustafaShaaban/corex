@@ -65,6 +65,21 @@ final class EmailStudioService
         );
     }
 
+    /**
+     * What a message sent in this context would meet: delivery, capture, or a refusal.
+     *
+     * Public so that whoever is about to offer a send can say what it will do, from the decision
+     * the send itself takes (spec 106, FR-029).
+     */
+    public function decide(EmailDeliveryContext $delivery): DeliveryDecision
+    {
+        return $this->policy->evaluate(
+            $delivery->environment,
+            $delivery->providerConfigured,
+            $delivery->liveDeliveryEnabled,
+        );
+    }
+
     public function supportsProvider(string $configuredProvider): bool
     {
         return $configuredProvider !== '' && hash_equals($this->providerName, $configuredProvider);
@@ -135,11 +150,7 @@ final class EmailStudioService
             return $this->announce($this->missingRecipientResult($delivery, $metadata), $metadata);
         }
 
-        $decision = $this->policy->evaluate(
-            $delivery->environment,
-            $delivery->providerConfigured,
-            $delivery->liveDeliveryEnabled,
-        );
+        $decision = $this->decide($delivery);
         $attemptIds = array_map(static fn (): string => Uuid::v4(), $recipients);
         $outcome    = $this->execute($decision, $message, $attemptIds[0]);
         $attempt    = $this->recordAttempts(

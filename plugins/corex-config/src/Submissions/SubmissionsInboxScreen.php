@@ -80,14 +80,29 @@ final class SubmissionsInboxScreen
             ['corex-admin-shell'],
             ScreenAsset::version($base . '/assets/submissions-admin.css'),
         );
-        wp_localize_script('corex-submissions-inbox', 'corexSubmissions', [
+        wp_localize_script('corex-submissions-inbox', 'corexSubmissions', $this->configuration());
+        wp_set_script_translations('corex-submissions-inbox', 'corex', $base . '/languages');
+    }
+
+    /**
+     * What the inbox's script is told about this site and this person.
+     *
+     * @return array{restUrl:string,nonce:string,flows:array<int|string,mixed>,mailSettingsUrl:string}
+     */
+    public function configuration(): array
+    {
+        return [
             'restUrl' => esc_url_raw(rest_url('corex/v1/submissions')),
             'nonce' => wp_create_nonce('wp_rest'),
             // Real form names to filter by. The inbox asked for a numeric flow ID, which nobody
             // knows. Empty when the forms add-on is absent — the filter drops, the screen works.
             'flows' => $this->flows->all(),
-        ]);
-        wp_set_script_translations('corex-submissions-inbox', 'corex', $base . '/languages');
+            // Where delivery is switched on, for a person who may switch it. The reply box links
+            // there when replies are not being delivered; anybody else is told who can (spec 106).
+            'mailSettingsUrl' => $this->guard->authorized(CorexAbility::MANAGE_SETTINGS)
+                ? esc_url_raw(admin_url('admin.php?page=corex-settings-config&corex_tab=mail'))
+                : '',
+        ];
     }
 
     public function render(): void

@@ -160,3 +160,18 @@ it('persists immutable typed attempts and retry relationships', function () {
         ->and($saved->recipient)->toBe('s***@example.com')
         ->and($saved->recipientHash)->toMatch('/^[0-9a-f]{64}$/');
 });
+
+it('names each of its outcomes, so a caller can word the reason for its own reader', function () {
+    $policy = new DeliveryPolicy();
+    $codeOf = static fn (string $environment, bool $provider, bool $live): string =>
+        $policy->evaluate($environment, $provider, $live)->code;
+
+    expect($codeOf('development', true, true))->toBe('development')
+        ->and($codeOf('local', false, false))->toBe('development')
+        ->and($codeOf('staging', true, true))->toBe('staging_live')
+        ->and($codeOf('staging', true, false))->toBe('staging_capture')
+        ->and($codeOf('mystery', true, true))->toBe('unknown_environment')
+        ->and($codeOf('production', false, true))->toBe('no_provider')
+        ->and($codeOf('production', true, false))->toBe('live_off')
+        ->and($codeOf('production', true, true))->toBe('live');
+});

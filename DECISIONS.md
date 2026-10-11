@@ -9817,3 +9817,91 @@ longer escaped: Arabic reads as Arabic, where it read a `\\u` escape for every l
 **Verification.** Pest, unit suite: 2566 passed. One existing expectation held the JSON form of
 a summary and was changed with the behaviour.
 
+## #305 — A reply says what will happen to it and what did, and is kept with its submission
+
+**Date:** 2026-10-11. **Branch:** `feat/106-reply-says-what-happened`. **Spec:** 106, slice 1.
+
+The owner used Reply on a client's live site and met three things in a row. A reply was not
+delivered until CoreX → Settings → Mail had a provider and live delivery, and nothing beside the
+box said so. The pane then said "Reply processed by Email Studio." whatever had happened. And
+what he had written was nowhere: the history held an action and a state. Spec 106 was written
+for the look of the email; these come first, because each makes the reply box untrustworthy
+whatever the email looks like. The spec was amended before the code (user story 0, FR-028 to
+FR-031) and its slices reordered.
+
+**The pane reads the decision the sending takes.** `DeliveryPolicy` already decides between
+delivery, capture and refusal. Its decision now carries a code, `EmailStudioService::decide()`
+is the one place it is asked, and the gateway's `readiness()` and its `reply()` build the same
+context. Reading `mail.provider` and `mail.live_delivery` in the inbox was refused: a second
+copy of the policy, in the wrong plugin, wrong the day the policy changes. The answer crosses
+the seam as `Corex\Mail\ReplyReadiness`, so the inbox still knows nothing of providers. The
+sentence in it is written for somebody about to answer a customer; the policy's own sentences
+stay as they are for Email Studio's health panel.
+
+**Where a reply is certain to be refused, none is sent and none is kept.** Send is off and the
+route answers 422 with the reason. It answered 200 and recorded a rejected attempt, which also
+raised a "delivery failed" notification for a reply nobody could have delivered. The fields stay
+usable, so what somebody started is not lost while an administrator switches delivery on.
+
+**A reply is post meta of its submission, one row to a reply.** With the submission, because
+the trash, a restore and a permanent delete of spec 105 already carry a submission's meta, and
+a permanent delete already finds the email copy through the history's attempt ids: a table
+would need its own removal in each. One row to a reply and not a list in one row, because two
+people answering at the same moment would each read the list, add theirs and write it back, and
+one reply would be lost. `add_post_meta()` reads nothing first.
+
+**A reply that was not sent is kept too.** The next person to open the submission needs to
+know the lead was not answered more than they need a tidy list.
+
+**What is posted is reduced, not refused.** The route refused a body holding `<script`, an
+`on…=` attribute or `javascript:`. It is now reduced to a reply's formatting by
+`ReplyBody::reduce()`, declared as the route's sanitizer: an allowlist of ten elements and four
+schemes, a script and a style sheet removed with their contents, a link to anywhere else kept
+as its text. An allowlist is the stronger rule, and the person sees what remains. Found by
+testing through the route and not in isolation: the route ran `wp_kses_post()` first, which
+removes a `<script>` tag and leaves its source in the message as text, so the reduction has to
+be the route's only sanitizer. The same rule is applied in the browser to a stored reply before
+it is drawn.
+
+**The first version of the reduction let four things through, and a review that ran inputs
+found them; reading the code had not.** An HTML comment survived the allowlist whole, and one
+unclosed `<!--` hid the rest of a reply from the person it was sent to. A link written inside
+`<xmp>`, `<textarea>` or `<title>` kept an address of `alert(1)`: the links were checked with
+WordPress's tag reader before the allowlist, and the two read markup differently there, so the
+check now reads the allowlist's own output. `Sam <sam@example.com>` and `<500 EGP` were deleted
+as if they were tags, as `wp_kses_post()` had always done to a reply: a `<` that does not begin
+a tag is now text. And a relative link became `https://pricing`: a link with no host is left as
+its text. Each is a test in `ReplyBodyTest`, with the input that showed it.
+
+**An email that went and could not then be written down is answered as sent.** Storing the
+reply can fail after the provider has taken the message: the submission deleted for good in
+that moment, a row the database will not take. The route answered an error there, which a
+person answers by sending again. It now answers what happened to the email with
+`recorded: false`, and the pane says the reply went, is not listed, and is not to be sent again.
+
+**Anonymizing removes the replies.** A reply quotes the person it answers. Spec 105's slices 5
+and 6 are not built; when they are, `corex_submission_replies` belongs in their lists.
+
+**Not decided here.** Whether replies belong in an export of submissions. The template, the
+editor, the preview, "Send again" and the sender are the later slices.
+
+**Two mistakes of mine on the way, on the development site.** To run the browser against this
+branch I put a header-gated must-use plugin on corex.local. Its first copy was written through
+a shell heredoc, which dropped a backslash, and the site answered 500 to every request for
+about twenty seconds until I removed the file. The second copy was written as a file and
+linted before it was copied. It is removed again.
+
+The second is worse. corex.local is set as a production site with the `wp-mail` provider and
+live delivery on, and an SMTP plugin with a real mailbox behind it replaces `wp_mail()`. My
+first route test sent its reply on whatever the install was set to, so four runs of it each
+handed one message to that mailbox's relay, addressed to a made-up `salma.…@example.com`
+(the plugin's log rows 53 to 56, 2026-10-11). `example.com` accepts no mail, so they reach
+nobody; a bounce may come back to the sender. The tests now answer the three settings a
+delivery is decided from for their own process, as a development site, and send nothing: the
+route tests through `pre_option_` filters, the browser tests through the fixture
+`tests/e2e/fixtures/corex-e2e-mail-delivery.php`. A test that sends on the machine's own
+settings is the defect. A row of 2026-10-09 in the same log, addressed to a browser test's
+made-up address, suggests it was not the first.
+
+**Verification.** Numbers are in the pull request, from the tree as committed. CI is the
+authority for the integration and browser suites.

@@ -730,6 +730,122 @@
 	white-space: normal;
 }
 
+/*
+ * Replying (spec 106). What was already answered, then what will happen to an
+ * answer sent now, then the answer, then what happened to it. One distance
+ * between the parts of each, none of it from a paragraph's own margin.
+ */
+.corex-admin .corex-pane__replies {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-pane__reply {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	margin: 0;
+	padding: var(--corex-admin-space-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	background: var(--corex-admin-surface);
+}
+
+/* The subject, and beside it what happened to the reply. */
+.corex-admin .corex-pane__reply-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-md);
+	overflow-wrap: anywhere;
+}
+
+/* Who sent it, and when. */
+.corex-admin .corex-pane__reply-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-sm);
+	margin: 0;
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+/* What was written, as a reply is formatted: paragraphs, lists, links. */
+.corex-admin .corex-pane__reply-body {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	padding-block-start: var(--corex-admin-space-xs);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-md);
+	line-height: var(--corex-admin-line-normal);
+	overflow-wrap: anywhere;
+}
+
+.corex-admin .corex-pane__reply-body p,
+.corex-admin .corex-pane__reply-body ul,
+.corex-admin .corex-pane__reply-body ol,
+.corex-admin .corex-pane__reply-body li,
+.corex-admin .corex-pane__reply .corex-pane__muted {
+	margin: 0;
+}
+
+.corex-admin .corex-pane__reply-body ul,
+.corex-admin .corex-pane__reply-body ol {
+	padding-inline-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-pane__reply-body ul {
+	list-style: disc;
+}
+
+.corex-admin .corex-pane__reply-body ol {
+	list-style: decimal;
+}
+
+/* Why a reply did not go: apart from the reply's own last line. */
+.corex-admin .corex-pane__reply > .corex-pane__muted {
+	padding-block-start: var(--corex-admin-space-xs);
+}
+
+/* Said before anything is typed, and after a reply is sent. */
+.corex-admin .corex-pane__reply-notice,
+.corex-admin .corex-pane__reply-outcome {
+	display: grid;
+	justify-items: start;
+	gap: var(--corex-admin-space-xs);
+	padding: var(--corex-admin-space-md);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-info);
+	border-radius: var(--corex-admin-radius-sm);
+	background: var(--corex-admin-surface);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+}
+
+.corex-admin .corex-pane__reply-notice.is-warning {
+	border-inline-start-color: var(--corex-admin-warning);
+}
+
+.corex-admin .corex-pane__reply-outcome.is-success {
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-pane__reply-notice p,
+.corex-admin .corex-pane__reply-outcome p {
+	margin: 0;
+}
+
+.corex-admin .corex-pane__reply-notice a {
+	color: var(--corex-admin-action);
+	font-weight: 600;
+}
+
 /* The line a trashed submission's pane opens with. */
 .corex-admin .corex-pane__trash {
 	display: grid;

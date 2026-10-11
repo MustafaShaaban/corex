@@ -26,6 +26,11 @@ final class DeliveryDecision
         public readonly string $reason,
         public readonly bool $providerRequired,
         public readonly ?string $setupPath = null,
+        /**
+         * Which of the policy's outcomes this is, for a caller that words the reason for its own
+         * reader (spec 106): the reply box does not say what Email Studio's health panel says.
+         */
+        public readonly string $code = '',
     ) {
         if (! in_array($this->action, [self::ACTION_CAPTURE, self::ACTION_DELIVER, self::ACTION_BLOCK], true)) {
             throw new InvalidArgumentException(__('Email delivery action is invalid.', 'corex'));

@@ -158,12 +158,17 @@ final readonly class SubmissionsController
     {
         return $this->gateway->mutate($request, [
             'subject' => 'sanitize_text_field',
-            'body' => 'wp_kses_post',
-        ], fn (Request $safe): Response => Response::ok(['result' => $this->services->email->reply(
-            $this->scope(),
-            $this->changeable($request),
-            new SubmissionReply((string) ($safe->input['subject'] ?? ''), (string) ($safe->input['body'] ?? '')),
-        )->toArray()]));
+            // To a reply's own formatting, which is narrower than a post's (spec 106, FR-004).
+            'body' => [ReplyBody::class, 'reduce'],
+        ], function (Request $safe) use ($request): Response {
+            $sent = $this->services->email->reply(
+                $this->scope(),
+                $this->changeable($request),
+                new SubmissionReply((string) ($safe->input['subject'] ?? ''), (string) ($safe->input['body'] ?? '')),
+            );
+
+            return Response::ok(['result' => $sent->result->toArray(), 'recorded' => $sent->recorded]);
+        });
     }
 
     public function resend(WP_REST_Request $request): WP_REST_Response
