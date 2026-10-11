@@ -4,12 +4,16 @@
 
 **Created**: 2026-10-08
 
-**Status**: Draft
+**Status**: Planned 2026-10-11 ([plan.md](plan.md), [tasks.md](tasks.md)); slice 0 is in v0.44.0
 
 **Input**: Owner requirement, 2026-10-08 — "the reply emails from corex it should be a rich text,
 should have the same experience of the emails. also should create a standard sytled email template
 for this, the standard one should have the corex theme and colors and so on, and give the option
 to developer to replace it with his custom template as we need this for muva and perego".
+
+**Added 2026-10-11**: the owner used Reply on a live client site (Muva, CoreX v0.44.0) and
+reported what is under "Reported from a live site" below. It adds user story 0 and FR-028 to
+FR-031, and changes the order of the slices.
 
 ## What is there today *(read from the code on 2026-10-08)*
 
@@ -32,7 +36,51 @@ to developer to replace it with his custom template as we need this for muva and
 - A client site has no way to replace an email's template or shell: no setting, no hook, no file
   it can supply.
 
+## Reported from a live site *(owner, 2026-10-11; each confirmed in the code)*
+
+- A reply was not delivered until CoreX → Settings → Mail had a delivery provider chosen and
+  "Enable live delivery" ticked. Nothing beside the reply box says so. He could not send a reply
+  until he was told.
+- After sending, the pane says "Reply processed by Email Studio." whether the message was
+  delivered, captured or refused. He could not tell whether his first reply had gone.
+- The reply's text is not kept or shown: the history holds an action, an attempt and a state.
+- The box is a plain text box; the email is CoreX's bare shell (stories 1 to 3 below).
+
 ## User Scenarios & Testing *(mandatory)*
+
+### User Story 0 - A reply says what will happen to it, and what did (Priority: P1)
+
+Somebody answering a lead is told, before they type, when a reply from this site will not be
+delivered and where that is changed. After sending they are told what happened to this reply:
+delivered, kept on the site and not delivered, or not sent and why. What they wrote is on the
+submission.
+
+**Why this priority**: a reply that silently goes nowhere is worse than no reply box. It
+happened to the owner on a client's live site.
+
+**Independent Test**: on a site where live delivery is off, open a submission: the Reply section
+says replies are not being delivered and links to the Mail settings, and nothing can be sent.
+Switch delivery on, reopen, send: the pane says the reply was sent to the lead's address and
+lists it with its text, who sent it, when, and "Sent".
+
+**Acceptance Scenarios**:
+
+1. **Given** a production site with no delivery provider or with live delivery off, **When** a
+   submission is opened, **Then** the Reply section says replies are not being delivered and why,
+   before anything is typed, and nothing can be sent from it.
+2. **Given** that notice and a person who may change settings, **When** they read it, **Then** it
+   links to the Mail settings; anybody else is told who can change it.
+3. **Given** a development or staging site, **When** a submission is opened, **Then** the Reply
+   section says a reply will be kept on the site and not delivered to the lead.
+4. **Given** a reply is sent, **When** the answer comes back, **Then** the pane says which of
+   the three happened, in words, with the reason when it was not delivered.
+5. **Given** a reply was not sent, **When** the pane says so, **Then** what was written is still
+   in the box.
+6. **Given** a reply was sent, kept or refused, **When** the submission is read by anybody on the
+   team, **Then** the reply is listed on it with its subject, its text, who sent it, when, and
+   its state.
+
+---
 
 ### User Story 1 - Write a reply as it will be read (Priority: P1)
 
@@ -298,6 +346,17 @@ and answer it; both emails are in that template.
 - **FR-025**: A reply MUST follow the same delivery rules as now: captured in development,
   delivered only where live delivery is allowed.
 
+**What a reply says about itself** *(added 2026-10-11)*
+
+- **FR-028**: Before anything is typed, the reply box MUST say when a reply from this site will
+  not be delivered, with the reason, and MUST link a person who may change settings to the
+  setting; it MUST say when a reply will be kept on the site and not delivered.
+- **FR-029**: That statement MUST come from the same decision the sending makes, so that the two
+  cannot disagree.
+- **FR-030**: After a reply is sent, the pane MUST say what happened to it: delivered, kept and
+  not delivered, or not sent, with the reason. It MUST NOT say a reply was sent when it was not.
+- **FR-031**: A reply that was not sent MUST leave what was written in the box.
+
 **Later stories**
 
 - **FR-026**: A person MUST be able to save a reply for reuse and start a reply from a saved one,
@@ -360,7 +419,9 @@ and answer it; both emails are in that template.
 - **Other sessions' work**: the open issue about messages that cannot name their sender (#150)
   is answered for replies by story 5. If the mail queue or the routes that send change first,
   this spec's plan follows them.
-- **Slices, each its own pull request**: (0) a reply keeps its line breaks; (1) the standard
-  template and its brand values, for replies, with a plain-text version; (2) the editor and the
-  true preview; (3) a client's own template, with the generator and the guide; (4) the record and
-  "Send again"; (5) the reply sender; (6) saved replies; (7) every email in the template.
+- **Slices, each its own pull request** *(reordered 2026-10-11, after the owner's report)*: (0)
+  a reply keeps its line breaks; (1) a reply says what will happen to it and what did, and is
+  kept on the submission; (2) the standard template and its brand values, for replies, with a
+  plain-text version; (3) the editor and the true preview; (4) a client's own template, with the
+  generator and the guide; (5) "Send again" and the reply sender; (6) saved replies; (7) every
+  email in the template.

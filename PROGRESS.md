@@ -40,6 +40,12 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
+**Spec 106 is being built, slice by slice** (2026-10-11). Everything else is parked: on
+2026-10-10 no pull request and no issue was open, and v0.44.0 holds everything on `main` but
+spec 106's plan. The owner asked for the framework to be left stable so the client sites
+can take one release and be worked on without it; this section says where each unfinished spec
+stops, so work resumes from here and not from a transcript.
+
 **Spec 107 is being finished** (2026-10-11). The first client site on shared hosting went
 public that day, updated by extracting a zip over the release before it, and files the new
 release no longer shipped broke its Site Editor. The owner asked for Releases to be what that
@@ -57,9 +63,10 @@ route and no screen, and the Releases screen says it installs nothing yet.
 | [103](specs/103-submissions-inbox-export/spec.md), the submissions inbox and its exports | every slice | three tasks: T045, T043b, and T074b (to whom a notification went, which the server does not record) | the tasks file |
 | [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
 | [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
-| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | the specification, and the line-break fix | not planned | `/speckit-plan` |
+| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | the specification, and the line-break fix | planned on 2026-10-11 in seven slices, after the owner could not send a reply on a live site, tell whether it had gone, or read it afterwards; none is built | slice 1, T001: the reply box says when delivery is off, the pane says what happened to a reply, and the reply is kept on the submission |
 | [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | T042b to T056, then slices 5 and 6 | T042b, T047b, T047c, then T048, `ReleaseTableCopies` |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
+| [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | nothing | specified and planned on 2026-10-11 in six slices, the owner's five answers written in; no tasks and no code | `/speckit-tasks`, then slice 1: personal data marked on every model and asked about by one rule |
 
 What to know before resuming each:
 
@@ -77,6 +84,15 @@ What to know before resuming each:
   installation that ties the steps together with its routes (`ReleaseInstallation`), and the
   screen. Since DECISIONS #299 an add-on's table is created by the migration runner: read
   `Boot::providersForState()` and the schema registry before writing the finisher.
+- **Spec 109.** From the owner's report of 2026-10-11 on the first client site: Import, Export
+  and Migrations on CoreX → Data each take one model at a time. He answered its five questions
+  "as recommended" (DECISIONS #306): "migrate" meant moving records between installs, so
+  several table changes together are not built; pages, templates and settings get a spec of
+  their own. The spec carries parts B and C of the 2026-10-08 outline for the Data screen's
+  models. Its plan puts personal data first: slice 1 changes who is offered personal columns
+  on the Data screen, which is a client impact to say to both client sites' sessions before
+  the release that carries it. Slice 5 splits `Releases/ReleaseUpload.php`, a file of spec 107:
+  tell that session before touching it.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 
@@ -126,6 +142,12 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   "Anonymize" removes the answers, which are what name the files, and not the files. Nothing can
   find them afterwards. It is spec 105's fifth slice, not started; deleting a submission for good
   from the trash does remove its files.
+- **No column of a table model is marked as personal data.** `TableDataSource::fields()` declares
+  every column of every managed table as holding none, so newsletter subscribers, job
+  applications and login attempts are exported from CoreX → Data with no confirmation. And the
+  Data screen exports a submission's personal columns to anybody who manages submissions, where
+  the Submissions inbox offers them to an administrator. Read from the code on 2026-10-11, not
+  exercised; spec 109's second user story, not started.
 - **A release cannot be installed from the admin yet.** CoreX → Releases receives a package and
   says what it is. A site on a host with no command line is still updated by hand, by unpacking
   the shared-host package over the old one (spec 107, from its fourth slice).

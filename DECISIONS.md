@@ -9861,3 +9861,66 @@ copied and listed with the rest.
 **Not decided here.** Whether a package should be signed. Whether the previous release should
 leave the host after a time and not only at the next installation; the account's file allowance
 is shared by two sites.
+
+## #306 — Several data models at once: three words kept apart, and five answers from the owner
+
+Date: 2026-10-11 · Spec: 109 (several data models exported, imported and moved together), the spec and its plan · Status: Final for the spec and plan; nothing is built
+
+**The report.** The owner, from the first client site: "the import/export/migrate model is
+using one by one, i can't do a bulk or multiselect". On CoreX → Data, Import, Export and
+Migrations each begin with one "Model" dropdown.
+
+**The reading.** His sentence has three words and the screen gives them two meanings. The spec
+keeps three apart. An export is a file for a person and can hold several models; it cannot be
+given back. An import brings records from elsewhere through a trial run, several files in one
+review. A move carries whole records between installs in a file made for CoreX, and is not an
+export followed by an import: an import sets a subscriber to "pending" whatever they were, and
+form submissions accept none.
+
+**The five answers.** Five questions went to him with a recommendation each; he answered "as
+recommended". They are in the spec under "Decided by the owner", each with its cost, and are
+his to reopen:
+
+1. "Migrate" meant moving records. The Migrations tab stays one model at a time.
+2. A move does not include pages, templates, patterns, form definitions or settings. They get
+   a spec of their own once spec 107 can install a release. With this, parts B and C of the
+   2026-10-08 outline (#282) are specified for the Data screen's models, and B's content half
+   is still owed.
+3. One rule for taking personal data out in a file, the Submissions inbox's, as an ability of
+   its own that Access & Abilities can give.
+4. On an install that is not live, receiving may bring records up to date, per model, off
+   unless ticked. A live install is add-only.
+5. A package carries uploaded files only when asked.
+
+**What the plan decided, and why** (plan.md, D1 to D18). The ones that would be argued with:
+
+- **A model states its own personal data, and one that states nothing is treated as all
+  personal** (D1). Today every column of every managed table is declared as holding none, so
+  subscribers and applicants are exported unasked. The safe default has a cost: the eight
+  tables CoreX ships have to declare theirs in the same slice.
+- **A record is known by an identifier of its own, in one ledger table** (D6), not by the
+  install and its number there, and not by a column on every table. A database copied to
+  another host carries the install's identifier with it; the identifier is derived so that two
+  copies of one database agree on their old records, and an install that finds its address
+  changed takes a new identity for its new ones. The inbox reader projects a `uuid` from a meta
+  key nothing ever wrote; it is left as it is.
+- **A package is checked for damage and is not signed** (D8). Refusing a forged package would
+  need a secret two installs share. Everything read from one is validated as input instead,
+  and the spec says so.
+- **The upload in parts is split out of the release installer** (D10) and not copied. That
+  touches a file of spec 107, which is in flight; it is announced to that session first.
+- **Several import files are several runs, not a new entity** (D15). The one thing the server
+  learns is that a trial run may count an earlier run's rows as present.
+- **Personal data goes first** (slice 1), ahead of the export the owner asked for, because a
+  file of several models on today's marking is a larger leak than a file of one.
+
+**Corrections made on the way.** The brief said the screen has no import; it has. The first
+draft of the spec said no notification is sent for a finished export; one is
+(`ExportReadyNotificationProducer`), found by the docs guard before the commit. The first
+draft of the quickstart had a person without the personal-data right making a package before
+the slice that replaces personal data exists; they are refused until it does.
+
+**Not done.** No tasks, no code. The numbers a package is promised for are a target until
+slice 5 measures them, on a development machine held to a shared host's limits and not on the
+host. How a flow is recognised on another install was not read (research.md).
+
