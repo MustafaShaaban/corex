@@ -57,16 +57,22 @@ final readonly class SiteEmailDesign implements EmailDesign
         try {
             $html = $given->render($content, $brand);
         } catch (Throwable $error) {
-            return $this->standardAfter($content, $brand, $given::class, EmailDesignFailedEvent::THREW, $error->getMessage());
+            return $this->standardAfter($content, $brand, $this->named($given), EmailDesignFailedEvent::THREW, $error->getMessage());
         }
         if (trim($html) === '') {
-            return $this->standardAfter($content, $brand, $given::class, EmailDesignFailedEvent::EMPTY);
+            return $this->standardAfter($content, $brand, $this->named($given), EmailDesignFailedEvent::EMPTY);
         }
         if (! $this->holds($html, $content->bodyHtml)) {
-            return $this->standardAfter($content, $brand, $given::class, EmailDesignFailedEvent::WITHOUT_MESSAGE);
+            return $this->standardAfter($content, $brand, $this->named($given), EmailDesignFailedEvent::WITHOUT_MESSAGE);
         }
 
         return $html;
+    }
+
+    /** The design's class, to find it by. An anonymous class is named up to where PHP's own name stops being text. */
+    private function named(EmailDesign $design): string
+    {
+        return (string) strtok($design::class, "\0");
     }
 
     private function standardAfter(

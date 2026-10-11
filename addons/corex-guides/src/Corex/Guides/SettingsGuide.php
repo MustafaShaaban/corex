@@ -155,6 +155,11 @@ final class SettingsGuide
                     __('Off by default, deliberately. Until both this and a provider are set, the site composes email without sending it, which is what you want while building.', 'corex'),
                     warning: __('Turn this on only after you have sent yourself a test and it arrived. Switching it on with a misconfigured sender means real people get nothing and nobody tells you.', 'corex'),
                 ),
+                new GuideStep(
+                    __('Email accent colour, Email logo and Email footer line — how an email from this site looks.', 'corex'),
+                    __('A reply sent from Submissions is drawn with these: the colour of the edge along the top, the mark above the message, and the line under it. Leave any of them blank for CoreX\'s colour, the site\'s own logo, and a line naming the site.', 'corex'),
+                    warning: __('The colour has to be six-digit hex, such as #0B1F3B. Anything else is not saved and the field keeps what it had.', 'corex'),
+                ),
             ],
         );
     }
