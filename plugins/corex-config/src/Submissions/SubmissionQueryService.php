@@ -27,6 +27,7 @@ final readonly class SubmissionQueryService
         private ?SubmissionQuestions $questions = null,
         private ?SubmissionOwnerNames $owners = null,
         private ?SubmissionTrashRetention $trash = null,
+        private ?SubmissionReplyView $replies = null,
     ) {
     }
 
@@ -74,7 +75,8 @@ final readonly class SubmissionQueryService
                 (string) ($record['owner_key'] ?? ''),
             ) ?? '',
             'owners' => $this->owners?->people() ?? [],
-        ];
+            // What was answered, and what would happen to an answer sent now (spec 106).
+        ] + ($this->replies?->of((int) ($record['id'] ?? 0)) ?? []);
     }
 
     private function scope(int $actorId): SubmissionAccessScope

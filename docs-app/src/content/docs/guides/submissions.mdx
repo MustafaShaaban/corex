@@ -116,13 +116,53 @@ was attempted. The states are distinguished by text and icon, never colour alone
 A saved submission with a failed notification is still saved and still readable — the failure is surfaced, never hidden.
 The timeline records a **notification** event alongside the submission event, so the outcome is visible in the history.
 
-## Reply and inspect delivery
+## Reply
 
-When the submission contains a valid email address and Email Studio is active, the pane can send a reply. The reply is
-typed as plain text: a blank line starts a new paragraph, and a line break is kept. A related
-retryable template attempt can be resent from its immutable template version and current submission context. **Open
-log** returns the redacted delivery record only when that attempt belongs to the open submission. Development captures
-these messages; Staging and Production still follow Email Studio's provider and live-delivery gates.
+When the submission holds an email address, the pane's **Reply** section sends an answer to it. The reply is typed as
+plain text: a blank line starts a new paragraph, and a line break is kept.
+
+### Whether a reply is delivered
+
+The section says, before anything is typed, when a reply from this site will not reach the person who wrote:
+
+- **Replies are not being delivered.** A production site delivers a reply only when **CoreX → Settings → Mail** has a
+  **Delivery provider** chosen and **Enable live delivery** ticked. Until both are set the section says which is
+  missing and **Send reply** is off. Somebody who may change CoreX settings gets a link, **Open Mail settings**;
+  anybody else is told who can change it. What was typed stays in the box.
+- **A reply is kept and not delivered.** A development site, and a staging site with live delivery off, keeps a reply
+  in Email Studio's captures and delivers it to nobody. The section says so, and the reply can still be sent.
+- **Replies need the CoreX Email add-on.** Without the add-on there is no box.
+
+The section says nothing where a reply is simply delivered.
+
+### What happened to a reply
+
+After **Send reply** the section says which of these happened:
+
+- **Reply sent to** the address: the mail provider accepted it. That is not proof it reached an inbox.
+- **Reply kept on this site, not delivered**: the site captured it (see above).
+- **The reply was not sent**, with the mail system's reason. What was written stays in the box.
+
+### What was already answered
+
+Every reply is listed at the top of the section, oldest first: its subject, who sent it, when, its state in words
+(**Sent**, **Kept, not delivered**, **Not sent**, **Waiting to be sent**, **Returned undelivered**) and its text.
+A reply that was not sent is listed too, with the reason, so the next person to open the submission knows the lead
+has not been answered. **History** records that a reply was sent and what happened to it, without its text.
+
+A reply holds paragraphs, line breaks, bold, italic, lists, and links to the web, a mailbox or a telephone. Anything
+else that is posted is removed before the reply is kept or sent, and its words are kept. What is typed between angle
+brackets, such as an address written `<sam@example.com>`, is text and is kept as it was typed.
+
+If a reply is sent and cannot then be kept on the submission, the section says so: the reply went, it is not listed,
+and it is not to be sent again.
+
+The replies are removed with the submission when it is deleted for good, and when retention anonymizes it.
+
+## Inspect a notification's delivery
+
+A related retryable template attempt can be resent from its immutable template version and current submission context.
+**Open log** returns the redacted delivery record only when that attempt belongs to the open submission.
 
 ## Export personal data
 

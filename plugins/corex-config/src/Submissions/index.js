@@ -233,6 +233,7 @@ export function InboxApp() {
 					onDelete={ () =>
 						setDeleting( [ inbox.state.drawer.record.id ] )
 					}
+					mailSettingsUrl={ config.mailSettingsUrl || '' }
 				/>
 			) }
 			{ preview && (

@@ -98,6 +98,8 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
                 'corex_values_json', 'corex_submitter_name', 'corex_submitter_email',
                 'corex_hidden_metadata_json', 'corex_utm_json', 'corex_consent_snapshot_json',
                 'corex_submission_notes',
+                // What the team wrote back quotes the person it answers (spec 106, FR-023).
+                'corex_submission_replies',
             ], true)) {
                 delete_post_meta($id, (string) $key);
             }

@@ -17,6 +17,15 @@ use DomainException;
  */
 final class UnavailableSubmissionEmailGateway implements SubmissionEmailGateway
 {
+    public function readiness(): ReplyReadiness
+    {
+        return new ReplyReadiness(
+            ReplyReadiness::UNAVAILABLE,
+            'no_email_addon',
+            __('Replies need the CoreX Email add-on, which is not active on this site.', 'corex'),
+        );
+    }
+
     public function reply(string $recipient, string $subject, string $htmlBody): MailResult
     {
         throw new DomainException(__('Email Studio is required for submission replies.', 'corex'));

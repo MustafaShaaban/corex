@@ -12,24 +12,31 @@ defined('ABSPATH') || exit;
 
 use InvalidArgumentException;
 
+/**
+ * A reply to the person who sent a submission: a subject, and a message in the formatting a
+ * reply has.
+ */
 final readonly class SubmissionReply
 {
     public string $subject;
     public string $htmlBody;
 
+    /**
+     * @param string $htmlBody The message as {@see ReplyBody::reduce()} leaves it. The reply
+     *                         route reduces what is posted before it gets here.
+     */
     public function __construct(string $subject, string $htmlBody)
     {
         $this->subject = trim($subject);
-        // The reply is typed in a plain text box and sent as HTML. Without this a line break
-        // was not markup, and three paragraphs reached the recipient as one block.
-        $this->htmlBody = trim(wpautop(trim($htmlBody)));
-        if ($this->subject === '' || $this->htmlBody === '') {
-            throw new InvalidArgumentException('A submission reply requires a subject and body.');
+        $this->htmlBody = trim($htmlBody);
+        if ($this->subject === '') {
+            throw new InvalidArgumentException(__('Give the reply a subject before sending.', 'corex'));
         }
-        if (preg_match('/[\x00-\x1F\x7F]/', $this->subject) === 1
-            || preg_match('/<\s*(?:script|iframe|object|embed|form)\b|\son[a-z]+\s*=|javascript\s*:/i', $this->htmlBody) === 1
-        ) {
-            throw new InvalidArgumentException('The submission reply contains unsafe content.');
+        if ($this->htmlBody === '') {
+            throw new InvalidArgumentException(__('Write a message before sending.', 'corex'));
+        }
+        if (preg_match('/[\x00-\x1F\x7F]/', $this->subject) === 1) {
+            throw new InvalidArgumentException(__('The subject holds characters an email cannot carry.', 'corex'));
         }
     }
 }
