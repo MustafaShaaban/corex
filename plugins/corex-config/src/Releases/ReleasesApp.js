@@ -510,7 +510,8 @@ export default function ReleasesApp( { client } ) {
 					} }
 				/>
 			) }
-			{ overview?.record && (
+			{ /* An installation that was just asked for has the screen to itself. */ }
+			{ overview?.record && ! prepared && (
 				<ReleaseHistory record={ overview.record } />
 			) }
 		</>

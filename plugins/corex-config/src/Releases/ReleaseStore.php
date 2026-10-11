@@ -102,7 +102,10 @@ final class ReleaseStore
     {
         $removed = 0;
 
-        foreach (glob($this->place() . '/incoming/*.{zip,part}', GLOB_BRACE) ?: [] as $file) {
+        // Two patterns, not one with braces: PHP has no GLOB_BRACE on every system it runs on.
+        $received = [...(glob($this->place() . '/incoming/*.zip') ?: []), ...(glob($this->place() . '/incoming/*.part') ?: [])];
+
+        foreach ($received as $file) {
             if (basename($file) !== $except && (int) filemtime($file) < $before) {
                 unlink($file);
                 $removed++;

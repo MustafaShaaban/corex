@@ -24,7 +24,6 @@ const PREVIOUS = {
 	version: '0.44.0',
 	replaced_by: '0.45.0',
 	at: '2026-10-11T12:00:00+00:00',
-	by: 7,
 	phrase: '0.44.0',
 	copies: [
 		{
@@ -159,7 +158,7 @@ describe( 'the release before', () => {
 		await openTheScreen();
 
 		expect( kept().textContent ).toContain(
-			'A copy of each of 2 of CoreX’s tables'
+			'Copies of 2 of CoreX’s tables as they were before that installation'
 		);
 		expect( kept().textContent ).toContain( COPY );
 		expect( kept().textContent ).toContain( 'are kept 14 days' );

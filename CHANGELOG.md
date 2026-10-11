@@ -38,6 +38,20 @@ All notable changes to Corex are documented here. The format follows
 - **A copy of CoreX's tables before a release changes them**, one for each table in the schema
   registry, named `<table>_cxrel_<yyyymmddhhmm>`. Kept for a person to read from; nothing puts
   one back. One set is kept: an installation removes the copies of the one before it.
+- **Going back to the release before, from the screen** (spec 107, slice 5). CoreX → Releases
+  shows which release is kept and which replaced it, says what going back does not undo, and
+  puts the previous release's folders back in one action confirmed by typing its version. No
+  change to the database is reversed, and the answer says so (DECISIONS #%(n)s).
+- **A return made through the recovery link is found.** The link works without CoreX, so CoreX
+  cannot hear of it. When the Releases screen is next opened it finds the folders were put back,
+  records the return as one nobody is known to have made, sets the site's record of its release
+  right, and removes the newer release's folders and the recovery file.
+- **What is kept goes after its time, when the screen is opened.** A copy of the tables after
+  14 days; a package, or part of one, that was sent and never installed after 7. No scheduled
+  job does this: it happens when somebody opens Releases.
+- **What happened here.** The screen lists each installation, refusal, return and installation
+  that did not complete or was given up, newest first, with who did it and when.
+- **The screen says it is not a backup**, where the running release is stated.
 
 ### Client impact
 
@@ -72,9 +86,16 @@ All notable changes to Corex are documented here. The format follows
 - **New in `wp-content/`:** `mu-plugins/corex-release-recovery.php`, written just before a
   release's folders are moved and kept while there is a release to go back to; `corex-releases/`
   holds the previous release's folders, which count against a host's file allowance until the
-  next installation replaces them. Tables named `…_cxrel_<minute>` appear in the database.
-  Going back from the screen, and the removal of old copies, come with the next slice; until
-  then the recovery link is the way back.
+  next installation replaces them. Tables named `…_cxrel_<minute>` appear in the database and
+  are removed 14 days later, the next time somebody opens Releases.
+- **Going back does not undo a release's database changes.** The previous release then runs on
+  the tables as the newer one left them, and records its own schema version again on its first
+  admin page, which adds what is missing and removes nothing. A release whose database changes
+  the release before cannot run on has to say so in its notes. Going back removes the newer
+  release from the site: to install it again, send its package again.
+- **A package left in `wp-content/corex-releases/incoming/` for more than 7 days without being
+  installed is removed** the next time Releases is opened, whether it was uploaded or put there
+  by hand. Keep your own copy.
 - **On a network the table copies are of the main site's tables only.** Every site's database
   is still brought to the release.
 - **Code of your own that built `ReleaseDesk` or called `ReleaseHostFacts::ofThisHost()`**:

@@ -79,7 +79,7 @@ final class ReleaseRecord
             $this->activity->record(
                 actorId: $actorId,
                 actorKind: $actorId > 0 ? ActivityEvent::ACTOR_USER : ActivityEvent::ACTOR_SYSTEM,
-                actorLabel: $actorId > 0 ? ($this->nameOf)($actorId) : 'recovery link',
+                actorLabel: $actorId > 0 ? ($this->nameOf)($actorId) : __('The recovery link', 'corex'),
                 area: ActivityEvent::AREA_OPERATIONS,
                 kind: 'release.' . $event->kind,
                 targetType: 'release',

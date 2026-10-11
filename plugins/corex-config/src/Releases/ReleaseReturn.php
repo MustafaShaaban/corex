@@ -49,7 +49,7 @@ final class ReleaseReturn
     /**
      * The release that can be gone back to, or none.
      *
-     * @return array{status:string,version:?string,replaced_by:string,at:string,by:int,phrase:string,copies:list<array{table:string,copy:string,made_at:string,goes_at:string}>,copies_days:int}|null
+     * @return array{status:string,version:?string,replaced_by:string,at:string,phrase:string,copies:list<array{table:string,copy:string,made_at:string,goes_at:string}>,copies_days:int}|null
      *         `status` is `kept`, or `stuck` when an earlier attempt left folders where they do
      *         not belong. `version` is null for a release the site could not name. `phrase` is
      *         what is typed to confirm going back.
@@ -76,7 +76,6 @@ final class ReleaseReturn
             'version'     => $version,
             'replaced_by' => $replacedBy,
             'at'          => (string) ($about['at'] ?? ''),
-            'by'          => (int) ($about['by'] ?? 0),
             // The release gone back to, where the site can name it; else the one being left.
             'phrase'      => $version ?? $replacedBy,
             'copies'      => $this->copies->kept(),

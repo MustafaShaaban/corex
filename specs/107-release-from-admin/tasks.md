@@ -75,13 +75,13 @@ files before slice 4.
 
 ## Slice 5 — Going back, and what happened (US4, US5)
 
-- [ ] T060 Pest integration: going back from the admin puts the previous folders back, records it, and says no database change was reversed
-- [ ] T060b Pest integration: a return made through the recovery link is found when the screen is next opened, recorded as one, and the site's record of its release put back (FR-045)
-- [ ] T061 The route and the screen's action, with its own confirmation
-- [ ] T062 [P] Pest unit: one previous release is kept; installing again discards the one before; table copies and unused packages older than their time are removed when the screen is opened
-- [ ] T063 Retention without a scheduled job
-- [ ] T064 The record on the screen: each installation, refusal and return
-- [ ] T065 Playwright; guards; UI/UX gate; notes
+- [x] T060 Pest integration: going back from the admin puts the previous folders back, records it, and says no database change was reversed
+- [x] T060b Pest integration: a return made through the recovery link is found when the screen is next opened, recorded as one, and the site's record of its release put back (FR-045)
+- [x] T061 The route and the screen's action, with its own confirmation
+- [x] T062 [P] Pest unit: one previous release is kept; installing again discards the one before; table copies and unused packages older than their time are removed when the screen is opened
+- [x] T063 Retention without a scheduled job
+- [x] T064 The record on the screen: each installation, refusal and return
+- [x] T065 Playwright; guards; UI/UX gate; notes
 
 ## Slice 6 — Said where an operator reads it
 

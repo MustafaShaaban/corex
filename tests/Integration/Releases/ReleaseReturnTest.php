@@ -107,7 +107,6 @@ it('goes back from the screen: the folders as they were, on record, and no chang
         'status'      => 'kept',
         'version'     => '0.44.0',
         'replaced_by' => '0.45.0',
-        'by'          => $this->admin,
         'phrase'      => '0.44.0',
     ]);
 

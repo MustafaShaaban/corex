@@ -60,7 +60,7 @@ function Copies( { copies, days } ) {
 				/* translators: 1: a number of database tables. 2: a number of days. 3: the name of one of the copies. 4: a date. */
 				_n(
 					'A copy of %1$d of CoreX’s tables as it was before that installation is in the database, for a person to read from. It is named %3$s, is kept %2$d days, and is removed on %4$s.',
-					'A copy of each of %1$d of CoreX’s tables as it was before that installation is in the database, for a person to read from. They are named like %3$s, are kept %2$d days, and are removed on %4$s.',
+					'Copies of %1$d of CoreX’s tables as they were before that installation are in the database, for a person to read from. They are named like %3$s, are kept %2$d days, and are removed on %4$s.',
 					copies.length,
 					'corex'
 				),
