@@ -106,10 +106,10 @@ final class StandardEmailDesign implements EmailDesign
         $text = sprintf('color:%s;font-family:%s;font-size:16px;line-height:%s', $light->text, EmailBrand::FONT, EmailBrand::LINE_HEIGHT);
 
         return strtr($bodyHtml, [
-            '<p>' => sprintf('<p dir="auto" class="cx-text" style="margin:0 0 16px;%s">', $text),
+            '<p>' => sprintf('<p dir="auto" class="cx-text" style="margin:0 0 16px;text-align:start;%s">', $text),
             '<ul>' => sprintf('<ul style="margin:0 0 16px;padding:0 %s">', EmailBrand::SPACE),
             '<ol>' => sprintf('<ol style="margin:0 0 16px;padding:0 %s">', EmailBrand::SPACE),
-            '<li>' => sprintf('<li dir="auto" class="cx-text" style="margin:0 0 6px;%s">', $text),
+            '<li>' => sprintf('<li dir="auto" class="cx-text" style="margin:0 0 6px;text-align:start;%s">', $text),
             '<a href=' => sprintf('<a class="cx-link" style="color:%s;text-decoration:underline" href=', $light->link),
         ]);
     }

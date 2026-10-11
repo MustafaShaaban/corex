@@ -88,6 +88,14 @@ it('turns lines typed in a plain box into paragraphs and line breaks', function 
         ->toContain("<p>Thank you for writing.<br />\nWe will call you tomorrow.</p>");
 });
 
+it('keeps an Arabic reply as it was written', function () {
+    $reduced = ReplyBody::reduce("مرحبا سلمى،\n\nسنتصل بك <strong>غدا</strong>.\nمع التحية");
+
+    expect(mb_check_encoding($reduced, 'UTF-8'))->toBeTrue()
+        ->and($reduced)->toContain('<p>مرحبا سلمى،</p>')
+        ->and($reduced)->toContain("<p>سنتصل بك <strong>غدا</strong>.<br />\nمع التحية</p>");
+});
+
 it('answers nothing for a reply with no words in it', function (mixed $posted) {
     expect(ReplyBody::reduce($posted))->toBe('');
 })->with([

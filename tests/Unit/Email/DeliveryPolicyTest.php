@@ -133,6 +133,19 @@ it('captures the full local message without invoking a transport', function () {
         ->and($captures[0]->capturedAt)->toBeInstanceOf(DateTimeImmutable::class);
 });
 
+it('lists the captures it can read when one record cannot be', function () {
+    $store      = deliveryPolicyStore();
+    $repository = new CapturedEmailRepository($store);
+    $repository->capture(new EmailMessage(['sam@example.com'], [], [], null, 'Kept', '<p>Hello Sam</p>'));
+    // What a payload the database would not take whole leaves behind: a record, and nothing in it.
+    $store->create('captured_email', '0f8fad5b-d9cb-469f-a165-70867728950e', 'Unreadable', 0, []);
+
+    $captures = $repository->latest();
+
+    expect($captures)->toHaveCount(1)
+        ->and($captures[0]->subject)->toBe('Kept');
+});
+
 it('persists immutable typed attempts and retry relationships', function () {
     $repository = new EmailAttemptRepository(deliveryPolicyStore());
     $occurredAt = new DateTimeImmutable('2026-07-03T11:00:00+00:00');

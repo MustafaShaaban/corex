@@ -17,6 +17,7 @@ use Corex\Config\Data\WpSubmissionsReader;
 use Corex\Config\Submissions\SubmissionReplyStore;
 use Corex\Config\Submissions\SubmissionsController;
 use Corex\Config\Submissions\WpSubmissionReplyStore;
+use Corex\Tests\Support\MailDelivery;
 
 function replyRecordRequest(string $method, string $route, array $payload = []): WP_REST_Request
 {
@@ -30,32 +31,8 @@ function replyRecordRequest(string $method, string $route, array $payload = []):
     return $request;
 }
 
-/**
- * Answers the three settings a delivery is decided from, for this process, without storing
- * them: a development site keeps its email, and a production site with live delivery off
- * refuses it. Neither hands a message to the machine's mail transport, which a reply sent on
- * a development install set to deliver would.
- *
- * @return list<array{0:string,1:callable}> Each filter with its hook, to be removed afterwards.
- */
-function replySiteTreatsEmailAs(string $mode): array
-{
-    $settings = [
-        'capture' => ['corex_app_env' => 'development'],
-        'refuse' => ['corex_app_env' => 'production', 'corex_mail_provider' => 'wp-mail', 'corex_mail_live_delivery' => '0'],
-    ][$mode];
-    $filters = [];
-    foreach ($settings as $option => $value) {
-        $filter = static fn (): string => $value;
-        add_filter('pre_option_' . $option, $filter);
-        $filters[] = ['pre_option_' . $option, $filter];
-    }
-
-    return $filters;
-}
-
 beforeEach(function () {
-    $this->mailSettings = replySiteTreatsEmailAs('capture');
+    $this->mailSettings = MailDelivery::answerAs(MailDelivery::CAPTURE);
     if (! post_type_exists('corex_submission')) {
         register_post_type('corex_submission', ['public' => false]);
     }
@@ -78,9 +55,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    foreach ($this->mailSettings as [$hook, $filter]) {
-        remove_filter($hook, $filter);
-    }
+    MailDelivery::stop($this->mailSettings);
     wp_delete_post($this->replySubmission, true);
 });
 
@@ -114,7 +89,7 @@ it('lists a sent reply on the submission with its text, who sent it, when, and w
 
 it('refuses a reply on a site with live delivery off, with the reason, and keeps nothing', function () {
     // Asked later, so answered first: these stand in front of the development answer.
-    array_push($this->mailSettings, ...replySiteTreatsEmailAs('refuse'));
+    array_push($this->mailSettings, ...MailDelivery::answerAs(MailDelivery::REFUSE));
     $request = new WP_REST_Request('GET', '/corex/v1/submissions/' . $this->replySubmission);
     $request->set_url_params(['id' => (string) $this->replySubmission]);
     $before = $this->replyController->show($request)->get_data()['data']['submission']['reply_delivery'];

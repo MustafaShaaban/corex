@@ -193,6 +193,15 @@ it('leaves no markup and no entity in the plain text', function () {
     expect($text)->toBe("5 < 6  and  so on\n\n© Acme");
 });
 
+// Found in the browser, not here: the first version read the text as bytes, took the second byte
+// of "م" for a line ending, and a development site then failed to keep the email at all.
+it('writes Arabic out as the text it was', function () {
+    $text = PlainText::of("<p>مرحبا سلمى، سنتصل بك غدا.</p>\n<ul><li>أولا</li><li>ثانيا</li></ul><p>م</p>");
+
+    expect(mb_check_encoding($text, 'UTF-8'))->toBeTrue()
+        ->and($text)->toBe("مرحبا سلمى، سنتصل بك غدا.\n\n- أولا\n- ثانيا\n\nم");
+});
+
 it('composes a reply as the designed document and the same words in plain text', function () {
     // The site's own values are read from WordPress in SiteEmailBrandTest, against WordPress.
     $site = new class() implements EmailBrandSource {

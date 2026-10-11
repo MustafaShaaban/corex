@@ -15,6 +15,7 @@ use Corex\Email\Studio\EmailStudioStore;
 use Corex\Support\Uuid;
 use DateTimeImmutable;
 use DomainException;
+use InvalidArgumentException;
 
 /**
  * Append-only repository for Development message capture.
@@ -63,8 +64,19 @@ final class CapturedEmailRepository
         $limit    = max(1, min(100, $limit));
         $records  = array_reverse($this->store->all(self::TYPE));
         $records  = array_slice($records, 0, $limit);
+        $captures = [];
+        foreach ($records as $record) {
+            // A record whose payload did not survive being stored is not an email, and one of
+            // them must not take the list of the others away: it did, on a development site,
+            // until the record was found and removed by hand.
+            try {
+                $captures[] = $this->capturedEmail($record);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+        }
 
-        return array_map($this->capturedEmail(...), $records);
+        return $captures;
     }
 
     /** @param array{id:int,type:string,slug:string,name:string,parentId:int,payload:array<string,mixed>} $record */

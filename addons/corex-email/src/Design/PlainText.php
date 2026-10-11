@@ -22,17 +22,20 @@ final class PlainText
 {
     public static function of(string $html): string
     {
-        $text = (string) preg_replace('/\s*\R\s*/', ' ', $html);
-        $text = (string) preg_replace_callback('#<ol\b[^>]*>(.*?)</ol>#is', self::numbered(...), $text);
-        $text = (string) preg_replace('#<li\b[^>]*>(.*?)</li>#is', "- $1\n", $text);
-        $text = (string) preg_replace_callback('#<a\b[^>]*\bhref="([^"]*)"[^>]*>(.*?)</a>#is', self::link(...), $text);
-        $text = (string) preg_replace('#<br\s*/?>\s*#i', "\n", $text);
-        $text = (string) preg_replace('#</(p|ul|ol)>\s*#i', "\n\n", $text);
+        // Every pattern reads the text as UTF-8 (`u`). Read as bytes, `\R` takes the second byte
+        // of an Arabic letter for a line ending and `\s` may take one for a space: the first
+        // version did, and what it wrote for an Arabic reply was not text any more.
+        $text = (string) preg_replace('/\s*\R\s*/u', ' ', $html);
+        $text = (string) preg_replace_callback('#<ol\b[^>]*>(.*?)</ol>#isu', self::numbered(...), $text);
+        $text = (string) preg_replace('#<li\b[^>]*>(.*?)</li>#isu', "- $1\n", $text);
+        $text = (string) preg_replace_callback('#<a\b[^>]*\bhref="([^"]*)"[^>]*>(.*?)</a>#isu', self::link(...), $text);
+        $text = (string) preg_replace('#<br\s*/?>\s*#iu', "\n", $text);
+        $text = (string) preg_replace('#</(p|ul|ol)>\s*#iu', "\n\n", $text);
         $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = str_replace("\u{00A0}", ' ', $text);
-        $text = (string) preg_replace('/[ \t]+\n/', "\n", $text);
+        $text = (string) preg_replace('/[ \t]+\n/u', "\n", $text);
 
-        return trim((string) preg_replace('/\n{3,}/', "\n\n", $text));
+        return trim((string) preg_replace('/\n{3,}/u', "\n\n", $text));
     }
 
     /** @param array<int,string> $list */
@@ -41,7 +44,7 @@ final class PlainText
         $number = 0;
 
         return (string) preg_replace_callback(
-            '#<li\b[^>]*>(.*?)</li>#is',
+            '#<li\b[^>]*>(.*?)</li>#isu',
             static function (array $item) use (&$number): string {
                 return ++$number . '. ' . $item[1] . "\n";
             },
