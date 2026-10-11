@@ -41,7 +41,7 @@ All notable changes to Corex are documented here. The format follows
 - **Going back to the release before, from the screen** (spec 107, slice 5). CoreX → Releases
   shows which release is kept and which replaced it, says what going back does not undo, and
   puts the previous release's folders back in one action confirmed by typing its version. No
-  change to the database is reversed, and the answer says so (DECISIONS #%(n)s).
+  change to the database is reversed, and the answer says so (DECISIONS #310).
 - **A return made through the recovery link is found.** The link works without CoreX, so CoreX
   cannot hear of it. When the Releases screen is next opened it finds the folders were put back,
   records the return as one nobody is known to have made, sets the site's record of its release
