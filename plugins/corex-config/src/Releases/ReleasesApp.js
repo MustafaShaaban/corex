@@ -17,7 +17,10 @@ import CorexLoadable from '../admin/components/CorexLoadable.js';
 import { usePending, workingProps } from '../admin/components/working.js';
 import { sizeOf } from '../Submissions/export/exportState.js';
 import { ReleaseRefusedError } from './releaseClient.js';
+import ReleaseHistory from './ReleaseHistory.js';
 import ReleaseInstall from './ReleaseInstall.js';
+import ReleaseKept from './ReleaseKept.js';
+import { ArrivingHeading } from './ReleaseRun.js';
 import ReleaseStatement from './ReleaseStatement.js';
 import ReleasesSkeleton from './ReleasesSkeleton.js';
 
@@ -118,7 +121,10 @@ function Running( { installed, blockers } ) {
 				{ runningSentence( installed ) }
 			</p>
 			{ blockers.length === 0 ? (
-				<p className="corex-releases__line corex-releases__line--quiet">
+				<p
+					className="corex-releases__line corex-releases__line--quiet"
+					data-corex-host="clear"
+				>
 					{ __(
 						'Nothing on this host stands in the way of installing a release.',
 						'corex'
@@ -132,14 +138,65 @@ function Running( { installed, blockers } ) {
 							'corex'
 						) }
 					</p>
-					<ul className="corex-releases__cautions">
+					<ul
+						className="corex-releases__cautions"
+						data-corex-host="blocked"
+					>
 						{ blockers.map( ( blocker ) => (
 							<li key={ blocker.message }>{ blocker.message }</li>
 						) ) }
 					</ul>
 				</>
 			) }
+			<p className="corex-releases__line corex-releases__line--quiet">
+				{ __(
+					'Releases replaces the site’s code. It does not back the site up: a backup plugin or the host’s backups are what restore a broken site.',
+					'corex'
+				) }
+			</p>
 		</Panel>
+	);
+}
+
+/**
+ * The site is back on the release before: said where the panel that offered it was.
+ *
+ * @param {Object}     props          Component props.
+ * @param {Object}     props.returned The site's answer: `{ version, left }`.
+ * @param {() => void} props.onClose  Called when the administrator has read it.
+ * @return {Element} The panel.
+ */
+function WentBack( { returned, onClose } ) {
+	return (
+		<section
+			className="corex-releases__panel corex-releases__returned"
+			aria-labelledby="corex-releases-returned"
+		>
+			<ArrivingHeading id="corex-releases-returned">
+				{ returned.version
+					? sprintf(
+							/* translators: %s: a CoreX version number. */
+							__( 'The site is back on CoreX %s', 'corex' ),
+							returned.version
+						)
+					: __( 'The site is back on the release before', 'corex' ) }
+			</ArrivingHeading>
+			<p className="corex-releases__line">
+				{ sprintf(
+					/* translators: %s: the version the site left. */
+					__(
+						'The files of CoreX %s were moved out and the previous release’s put back. No change to the database was reversed.',
+						'corex'
+					),
+					returned.left
+				) }
+			</p>
+			<div className="corex-releases__actions">
+				<button type="button" className="button" onClick={ onClose }>
+					{ __( 'Done', 'corex' ) }
+				</button>
+			</div>
+		</section>
 	);
 }
 
@@ -226,7 +283,7 @@ function Send( { file, sending, problem, pending, onChoose, onSend } ) {
 	);
 }
 
-function Packages( { packages, pending, onRead } ) {
+function Packages( { packages, days, pending, onRead } ) {
 	return (
 		<Panel
 			id="corex-releases-packages"
@@ -237,6 +294,18 @@ function Packages( { packages, pending, onRead } ) {
 					{ __( 'The site holds no package yet.', 'corex' ) }
 				</p>
 			) : (
+				<p className="corex-releases__line corex-releases__line--quiet">
+					{ sprintf(
+						/* translators: %d: a number of days. */
+						__(
+							'A package that is not installed is removed from the site after %d days. One that is installed, or refused, is removed at once.',
+							'corex'
+						),
+						days
+					) }
+				</p>
+			) }
+			{ packages.length > 0 && (
 				<ul className="corex-releases__packages">
 					{ packages.map( ( { name, bytes } ) => (
 						<li className="corex-releases__held" key={ name }>
@@ -284,6 +353,8 @@ export default function ReleasesApp( { client } ) {
 	// What the site answered when asked to install the package that was read. While it is
 	// there, the screen is the installation's.
 	const [ prepared, setPrepared ] = useState( null );
+	// The site's answer once it has gone back to the release before, until it has been read.
+	const [ returned, setReturned ] = useState( null );
 
 	// An installation somebody's browser went away from, which this one can go on with. One
 	// that was only prepared is not shown: its key went with the page that asked for it.
@@ -374,6 +445,7 @@ export default function ReleasesApp( { client } ) {
 								/>
 								<Packages
 									packages={ overview.packages }
+									days={ overview.package_days }
 									pending={ pending }
 									onRead={ ( name ) =>
 										during( `read:${ name }`, () =>
@@ -420,6 +492,26 @@ export default function ReleasesApp( { client } ) {
 					}
 					message={ outcome.problem.message }
 				/>
+			) }
+			{ returned && (
+				<WentBack
+					returned={ returned }
+					onClose={ () => setReturned( null ) }
+				/>
+			) }
+			{ overview?.previous && ! prepared && (
+				<ReleaseKept
+					previous={ overview.previous }
+					client={ client }
+					onReturned={ ( answer ) => {
+						setReturned( answer );
+						setOutcome( null );
+						load();
+					} }
+				/>
+			) }
+			{ overview?.record && (
+				<ReleaseHistory record={ overview.record } />
 			) }
 		</>
 	);

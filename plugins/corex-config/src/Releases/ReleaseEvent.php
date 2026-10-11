@@ -21,6 +21,7 @@ final readonly class ReleaseEvent
     public const INSTALLED = 'installed';
     public const FAILED    = 'failed';
     public const CANCELLED = 'cancelled';
+    public const RETURNED  = 'returned';
 
     /**
      * @param string               $kind    One of this class's kinds.

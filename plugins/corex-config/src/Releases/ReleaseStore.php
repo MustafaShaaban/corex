@@ -83,6 +83,35 @@ final class ReleaseStore
         return $root;
     }
 
+    /** Whether the place has been made. Asking makes nothing. */
+    public function exists(): bool
+    {
+        return is_dir($this->place());
+    }
+
+    /**
+     * Remove what was received and never installed: every package, and every part of one, in
+     * `incoming/` that was last written before the time given (spec 107, FR-003).
+     *
+     * @param int    $before A Unix time.
+     * @param string $except The name of a package to leave whatever its age: the one an installation in progress is of.
+     *
+     * @return int How many files were removed.
+     */
+    public function discardUnused(int $before, string $except): int
+    {
+        $removed = 0;
+
+        foreach (glob($this->place() . '/incoming/*.{zip,part}', GLOB_BRACE) ?: [] as $file) {
+            if (basename($file) !== $except && (int) filemtime($file) < $before) {
+                unlink($file);
+                $removed++;
+            }
+        }
+
+        return $removed;
+    }
+
     /** Where the place is, whether or not it has been made. */
     private function place(): string
     {

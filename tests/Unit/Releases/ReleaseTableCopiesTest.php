@@ -173,3 +173,14 @@ it('names a copy within what MySQL allows for a name, and still finds it', funct
         ->and($kept[0]['copy'])->toEndWith('_cxrel_202610111530')
         ->and($this->database->tables[$kept[0]['copy']])->toBe(['a row']);
 });
+
+it('removes the copies whose time has passed, and leaves the rest', function (string $now, int $removed, int $kept) {
+    ($this->copyAll)();
+
+    expect(($this->copies)()->discardExpired(new DateTimeImmutable($now, new DateTimeZone('UTC'))))->toBe($removed)
+        ->and(($this->copies)()->kept())->toHaveCount($kept)
+        ->and(array_intersect_key($this->database->tables, THE_LIVE_TABLES))->toBe(THE_LIVE_TABLES);
+})->with([
+    'a minute before fourteen days' => ['2026-10-25 15:29:00', 0, 2],
+    'fourteen days to the minute'   => ['2026-10-25 15:30:00', 2, 0],
+]);
