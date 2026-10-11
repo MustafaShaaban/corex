@@ -138,7 +138,8 @@ export personal data is not offered that column, and the route refuses it.
 - [x] T025 [US2] `CHANGELOG.md` under Unreleased with Client impact (who loses the personal
       columns on the Data screen, and that a site's own table counts as personal data until it
       declares); `PROGRESS.md` (the row, and the item under "Open, and not hidden" removed);
-      `DECISIONS.md`; the two client sites' sessions told of the client impact
+      `DECISIONS.md`. Still owed: the two client sites' sessions told of the client impact;
+      neither was running when the slice was built
 
 ## Slice 2: several models are exported in one go (US1; FR-001 to FR-015a; D4, D5, D16)
 

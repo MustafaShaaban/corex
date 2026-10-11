@@ -90,8 +90,9 @@ What to know before resuming each:
   "as recommended" (DECISIONS #306): "migrate" meant moving records between installs, so
   several table changes together are not built; pages, templates and settings get a spec of
   their own. Slice 1 (DECISIONS #309) changes who is offered personal columns on the Data
-  screen: a client impact, in the changelog, that both client sites' sessions were told of on
-  2026-10-11. Slice 2 is the
+  screen: a client impact, in the changelog. **Neither client site's session has been told**:
+  none was running on 2026-10-11. Say it to both before the release that carries this is
+  tagged. Slice 2 is the
   owner's report itself, several models in one export. Slice 5 splits
   `Releases/ReleaseUpload.php`, a file of spec 107: tell that session before touching it.
   Slice 1's browser test and its integration tests were run in CI and not on a development
