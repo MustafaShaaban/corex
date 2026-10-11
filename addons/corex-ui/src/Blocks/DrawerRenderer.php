@@ -14,10 +14,17 @@ use Corex\Blocks\BlockRenderer;
 
 /**
  * Renders the corex/drawer block (spec 068, US9) — a slide-in panel: a trigger button + a native
- * `<dialog>` (focus-trap + ESC + `::backdrop` for free) labelled by its heading, sliding from the
- * start or end edge (logical, RTL-correct), with a close button. Token-only (radius/shadow/z-index/
- * focus), escaped, i18n. Without JS the dialog markup is still present and the content is never lost.
- * Empty title + empty content render nothing.
+ * `<dialog>` (focus-trap + ESC + `::backdrop` for free), sliding from the start or end edge
+ * (logical, RTL-correct), with a close button. Token-only (radius/shadow/z-index/focus), escaped,
+ * i18n. Empty title + empty content render nothing.
+ *
+ * The dialog always has a name. With a title it is labelled by its heading. With none it carries
+ * the label of its trigger, which is never empty: a dialog with no name is announced as "dialog"
+ * and nothing more (DECISIONS #316).
+ *
+ * Only the view script answers the trigger and the close button. With scripting off the stylesheet
+ * shows the dialog in the page, where the block is, and hides the two buttons
+ * (shared/_dialog-parts.scss), so what it holds is not lost.
  *
  * The close button comes before the body, in a header with the title. The order is not for looks:
  * a browser opening a dialog puts focus on the first thing in it that takes focus, and scrolls to
@@ -47,10 +54,12 @@ final class DrawerRenderer implements BlockRenderer
         $id      = uniqid('corex-drawer-');
         $titleId = $id . '-title';
 
-        $heading    = $title !== ''
+        $heading = $title !== ''
             ? sprintf('<h2 id="%s" class="corex-drawer__title">%s</h2>', esc_attr($titleId), esc_html($title))
             : '';
-        $labelledBy = $title !== '' ? sprintf(' aria-labelledby="%s"', esc_attr($titleId)) : '';
+        $name    = $title !== ''
+            ? sprintf(' aria-labelledby="%s"', esc_attr($titleId))
+            : sprintf(' aria-label="%s"', esc_attr($triggerLabel));
 
         return sprintf(
             '<div class="corex-drawer-wrap">'
@@ -63,7 +72,7 @@ final class DrawerRenderer implements BlockRenderer
             . '</dialog></div>',
             esc_attr($id),
             esc_html($triggerLabel),
-            $labelledBy,
+            $name,
             $heading,
             // Inline-edited (RichText) body — safe inline HTML, scrubbed by wp_kses_post.
             wp_kses_post($body),

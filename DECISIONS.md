@@ -10529,3 +10529,87 @@ line is in view. The order of the markup is held by both renderer tests, and the
 by `shared/keyboard-scroll.test.js`.
 
 **Verification.** Numbers are in the pull request, from the tree as committed.
+
+## #316 — A dialog block with no title is named by its trigger, and with scripting off it is in the page
+
+**Date:** 2026-10-11. **Branch:** `fix/untitled-block-dialog-name`. **Spec:** 054, the
+`corex/modal` contract (amended), which `corex/drawer` follows.
+
+**What was read first** (Chromium, Firefox and WebKit, a page of five blocks read as a
+visitor, with Playwright's `ariaSnapshot()`). A modal with a title is `dialog "Terms"`. A modal
+or a drawer with no title is `dialog`, with no name, in all three, and the body of a long one,
+while it is a stop for Tab, is `group` with no name. With scripts off, in all three, the five
+triggers were shown and none of the five dialogs: what they held could not be reached.
+
+**The name of a dialog with no title is the label of its trigger**, written on the `<dialog>`
+as `aria-label`. Both renderers set `aria-labelledby` when there was a title and nothing
+otherwise. The trigger's label is the one text the block always has (a trigger nobody labelled
+reads the translated "Open"), and it is what the visitor has just pressed, so the dialog is
+announced by the words that brought it. A dialog with a title is named by the title alone, as
+before.
+
+**The label is copied, not pointed at.** `aria-labelledby` with the trigger's id would have
+kept the words in one place, and `keyboard-scroll.js` would have needed no change. It was
+tried on a page of one button and one dialog. Playwright's snapshot named the dialog "Read the
+terms" in all three engines. Chromium's own accessibility tree, read over the DevTools
+protocol, gave it an empty name, from `aria-labelledby`: while a modal dialog is open
+everything outside it is inert, the trigger included. With `aria-label` the same tree names
+the dialog and the body's group. So the snapshot is not the browser's tree: it works the name
+out from the page by the ARIA rules. The spec therefore reads the names both ways, and the
+second, Chromium's own tree, is the one a screen reader there is given.
+
+**"Open" is a name, and not a good one.** A block with no title and no trigger label is
+named "Open". That says what the button did and nothing of what the dialog holds,
+and it is the same for every such dialog on a page. It is still more than "dialog", and the
+renderer has nothing truer to say: the other candidates were the first words of the content,
+which a screen reader reads next in any case, and a fixed word such as "Dialog", which repeats
+the role.
+
+**So the editor is asked for a title, and is not made to give one.** A dialog can be meant to
+show no heading, and a block saved without one may already be on a page. While the Title field is
+empty, the help under it says what a screen reader will announce in its place: the trigger
+label, or, when that is empty too, "Open", with the words "Give it a title". With a title the
+field says nothing. One function for both blocks, `shared/title-help.js`. A hidden title (a
+name that is not shown) was not built: nobody has asked for a dialog that shows no heading and
+is named something other than its trigger.
+
+**The body takes the dialog's name whichever way it is given.** `shared/keyboard-scroll.js`
+copied `aria-labelledby` to the body while it is a stop for Tab. It now copies `aria-label` as
+well, so the group in a dialog named "Read the terms" is "Read the terms", as the group in a
+dialog titled "Terms" is "Terms".
+
+**With scripting off the dialog is in the page.** The contract said the trigger is also an
+in-page anchor and the dialog is revealed by `:target`, and both renderers and both view
+scripts said the content is not lost without JavaScript. None of that was built. Spec 054
+requires it ("interactive components MUST degrade accessibly without JavaScript"), so it is
+made true and the wording corrected to what is done, not removed. Under
+`@media (scripting: none)` the closed dialog is shown where the block is, in the flow, at the
+start of the line and as tall as what it holds; the trigger and the close button, which only
+the view script answers, are not shown; a header left empty is not shown. It is seven
+declarations in `shared/_dialog-parts.scss` and no change to the markup. Playwright's
+`javaScriptEnabled: false` matches the media query in all three engines (tried on a page of
+two lines before it was relied on).
+
+**What that does not cover.** A browser with scripting on in which the view script did not run:
+blocked by an extension, or failed to load. There the query does not match, the trigger is
+shown and does nothing. Three ways to cover it were weighed. The trigger as a link to the
+dialog's id, with `:target` to show it: a link with a button's role, to be undone by the script
+when it does run, and a second look for every site that styles the trigger. Showing the dialog
+in the page until the script hides it: every visitor would see each dialog's content flash in
+the page on every load. `commandfor` with `command="show-modal"`, which opens a dialog with no
+script: only recent browsers have it, and the click and the command would both act on the
+dialog. None was built or tried, for a case taken to be rarer than the one covered. It is
+written in the contract as not covered.
+
+**For a client site**: nothing to do. No markup moved, and a dialog with a title is announced
+as it was. One with no title now has a name where it had none.
+
+**Tests.** Written first and seen to fail: both renderer tests (the name with a title, with a
+trigger label only, with neither, and escaped), `shared/keyboard-scroll.test.js` (the body
+named by a label), `shared/title-help.test.js`. `tests/e2e/block-dialogs.spec.js` has a fourth
+page, of two blocks with no title, read for the dialog's accessible name and the body's, in
+Chromium from its own tree as well, and reads the short page with scripts off: each dialog
+shown with its title and content, no button that does nothing, each under the one before it and
+none wider than the window.
+
+**Verification.** Numbers are in the pull request, from the tree as committed.

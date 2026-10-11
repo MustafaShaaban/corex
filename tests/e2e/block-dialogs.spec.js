@@ -21,6 +21,17 @@
  * and one whose dialogs begin with one as well. A drawer is also watched coming in, from the edge
  * it is on, in both directions.
  *
+ * And it holds the name a dialog is announced by: its title, or, on a fourth page whose blocks
+ * were given no title, the label of the button that opened it. The body of a dialog takes the same
+ * name while it is a stop for Tab. The name is read twice. Playwright works one out from the page
+ * by the ARIA rules, in every browser. That is not the browser's own accessibility tree, which is
+ * what a screen reader is given, and the two can differ: a dialog labelled by the button that
+ * opened it has a name by the rules and none in Chromium's tree, where that button is inert while
+ * the dialog is open (DECISIONS #316). So in Chromium the tree itself is read as well.
+ *
+ * Last, the short page is read with scripts off, where nothing answers a button: each dialog is
+ * then in the page, its title and what it holds, and the buttons that would do nothing are not.
+ *
  * The pages are provisioned through the REST API (admin session) and read as a visitor.
  *
  * ENVIRONMENT-GATED: needs the site at COREX_BASE_URL + `npx playwright install`.
@@ -92,6 +103,27 @@ const BLOCKS = [
 ];
 
 /**
+ * Blocks given no title, each with the name its dialog is to have: the label of its trigger, which
+ * for the drawer is the one a trigger gets when the editor writes none.
+ */
+const UNTITLED = [
+	{
+		label: 'modal with no title',
+		name: 'corex/modal',
+		attributes: { triggerLabel: 'Read the terms' },
+		dialog: 'dialog.corex-modal',
+		named: 'Read the terms',
+	},
+	{
+		label: 'drawer with no title and no trigger label',
+		name: 'corex/drawer',
+		attributes: {},
+		dialog: 'dialog.corex-drawer',
+		named: 'Open',
+	},
+];
+
+/**
  * The presses that leave a dialog open, as `[ scenario, where the press begins, where it is let
  * go ]`. The places are those `places()` measures.
  */
@@ -139,7 +171,12 @@ function blockComment( name, attributes ) {
  * @return {Promise<{context: import('@playwright/test').BrowserContext, page: import('@playwright/test').Page, nonce: string}>} The session.
  */
 async function adminSession( browser ) {
-	const context = await browser.newContext( { storageState: STORAGE_STATE } );
+	// Scripts on, said here: a context made in a hook takes the options of the test the hook runs
+	// beside, some of these tests turn scripts off, and the nonce is read from a script.
+	const context = await browser.newContext( {
+		storageState: STORAGE_STATE,
+		javaScriptEnabled: true,
+	} );
 	const page = await context.newPage();
 	await page.goto( '/wp-admin/' );
 	const nonce = await page.evaluate( () => window.wpApiSettings.nonce );
@@ -169,7 +206,8 @@ async function visit( page, block, { path, direction } ) {
 	}
 
 	return page.getByRole( 'button', {
-		name: block.attributes.triggerLabel,
+		name: block.attributes.triggerLabel ?? block.named,
+		exact: true,
 	} );
 }
 
@@ -181,6 +219,30 @@ async function visit( page, block, { path, direction } ) {
  */
 function closeButton( dialog ) {
 	return dialog.getByRole( 'button', { name: 'Close' } );
+}
+
+/** Why a spec that reads the browser's own accessibility tree is skipped outside Chromium. */
+const CHROMIUM_ONLY =
+	'The accessibility tree is read over the DevTools protocol, which only Chromium speaks.';
+
+/**
+ * The names Chromium itself gives the elements of one role that it presents, read from its own
+ * accessibility tree. An element it does not present (a closed dialog, anything outside an open
+ * modal one) is left out.
+ *
+ * @param {import('@playwright/test').Page} page The page.
+ * @param {string}                          role The role: `dialog`, `group`.
+ * @return {Promise<string[]>} Their names. An element with no name gives an empty one.
+ */
+async function namesInChromiumsTree( page, role ) {
+	const session = await page.context().newCDPSession( page );
+	await session.send( 'Accessibility.enable' );
+	const { nodes } = await session.send( 'Accessibility.getFullAXTree' );
+	await session.detach();
+
+	return nodes
+		.filter( ( node ) => ! node.ignored && node.role?.value === role )
+		.map( ( node ) => node.name?.value ?? '' );
 }
 
 /**
@@ -295,26 +357,29 @@ async function press( page, from, to ) {
 }
 
 /**
- * Publish a page holding every block of BLOCKS, each with the same content.
+ * Publish a page of blocks, each with the same content.
  *
- * @param {import('@playwright/test').Page} page  A page on the admin's session.
- * @param {string}                          nonce Its REST nonce.
- * @param {string}                          title The page's title.
- * @param {string}                          body  What each dialog holds.
+ * @param {import('@playwright/test').Page} page     A page on the admin's session.
+ * @param {string}                          nonce    Its REST nonce.
+ * @param {string}                          title    The page's title.
+ * @param {string}                          body     What each dialog holds.
+ * @param {Object[]}                        [blocks] The blocks. BLOCKS when left out.
  * @return {Promise<number>} The page's id.
  */
-async function publish( page, nonce, title, body ) {
+async function publish( page, nonce, title, body, blocks = BLOCKS ) {
 	const response = await page.request.post( '/wp-json/wp/v2/pages', {
 		headers: { 'X-WP-Nonce': nonce },
 		data: {
 			title,
 			status: 'publish',
-			content: BLOCKS.map( ( block ) =>
-				blockComment( block.name, {
-					...block.attributes,
-					content: body,
-				} )
-			).join( '\n\n' ),
+			content: blocks
+				.map( ( block ) =>
+					blockComment( block.name, {
+						...block.attributes,
+						content: body,
+					} )
+				)
+				.join( '\n\n' ),
 		},
 	} );
 	expect( response.ok() ).toBe( true );
@@ -325,6 +390,7 @@ async function publish( page, nonce, title, body ) {
 let pagePath = '';
 let longPagePath = '';
 let linkFirstPagePath = '';
+let untitledPagePath = '';
 
 /** The long pages, by what their dialogs hold. Read when a test runs: the paths are made first. */
 const LONG_PAGES = [
@@ -353,6 +419,16 @@ test.beforeAll( async ( { browser } ) => {
 		)
 	);
 	linkFirstPagePath = `/?page_id=${ pageIds[ 2 ] }`;
+	pageIds.push(
+		await publish(
+			page,
+			nonce,
+			'Dialog blocks E2E, long, no titles',
+			LONG_BODY,
+			UNTITLED
+		)
+	);
+	untitledPagePath = `/?page_id=${ pageIds[ 3 ] }`;
 	await context.close();
 } );
 
@@ -418,6 +494,26 @@ for ( const block of BLOCKS ) {
 			await expect( trigger ).toBeFocused();
 		} );
 
+		test( 'is named by its title', async ( { page } ) => {
+			const { dialog } = await open( page, block );
+
+			await expect( dialog ).toHaveAccessibleName(
+				block.attributes.title
+			);
+		} );
+
+		test( 'is given its title as its name by Chromium’s own accessibility tree', async ( {
+			page,
+			browserName,
+		} ) => {
+			test.skip( browserName !== 'chromium', CHROMIUM_ONLY );
+			await open( page, block );
+
+			expect( await namesInChromiumsTree( page, 'dialog' ) ).toEqual( [
+				block.attributes.title,
+			] );
+		} );
+
 		test( 'opens on its close button, and Tab goes on to what it holds', async ( {
 			page,
 		} ) => {
@@ -458,6 +554,30 @@ for ( const block of BLOCKS ) {
 
 				expect( box.width ).toBeGreaterThanOrEqual( SMALLEST_TARGET );
 				expect( box.height ).toBeGreaterThanOrEqual( SMALLEST_TARGET );
+			} );
+		} );
+
+		test.describe( 'with scripts off', () => {
+			test.use( { javaScriptEnabled: false } );
+
+			test( 'is in the page, its title and what it holds, without the buttons nothing answers', async ( {
+				page,
+			} ) => {
+				await page.goto( pagePath );
+				const dialog = page.locator( block.dialog );
+
+				await expect(
+					dialog.getByRole( 'heading', {
+						name: block.attributes.title,
+					} )
+				).toBeVisible();
+				await expect(
+					dialog.getByRole( 'button', { name: 'Agree' } )
+				).toBeVisible();
+				await expect(
+					page.getByText( block.attributes.triggerLabel )
+				).toBeHidden();
+				await expect( dialog.getByText( '×' ) ).toBeHidden();
 			} );
 		} );
 
@@ -611,3 +731,83 @@ for ( const block of BLOCKS ) {
 		}
 	} );
 }
+
+for ( const block of UNTITLED ) {
+	test.describe( `the ${ block.label }`, () => {
+		test( 'is named by the label of the button that opened it', async ( {
+			page,
+		} ) => {
+			const { dialog } = await open( page, block, {
+				path: untitledPagePath,
+			} );
+
+			await expect( dialog ).toHaveAccessibleName( block.named );
+		} );
+
+		test( 'is given that name, and its body the same, by Chromium’s own accessibility tree', async ( {
+			page,
+			browserName,
+		} ) => {
+			test.skip( browserName !== 'chromium', CHROMIUM_ONLY );
+			await open( page, block, { path: untitledPagePath } );
+
+			expect( await namesInChromiumsTree( page, 'dialog' ) ).toEqual( [
+				block.named,
+			] );
+			expect( await namesInChromiumsTree( page, 'group' ) ).toEqual( [
+				block.named,
+			] );
+		} );
+
+		test( 'gives its body the same name while that is a stop for Tab', async ( {
+			page,
+		} ) => {
+			const { dialog } = await open( page, block, {
+				path: untitledPagePath,
+			} );
+
+			// To what the dialog holds, which takes focus while it holds more than fits.
+			await page.keyboard.press( 'Tab' );
+
+			await expect(
+				dialog.getByRole( 'group', { name: block.named, exact: true } )
+			).toBeFocused();
+		} );
+	} );
+}
+
+test.describe( 'the page of dialogs with scripts off', () => {
+	test.use( { javaScriptEnabled: false } );
+
+	for ( const size of WINDOWS ) {
+		test.describe( `in a ${ size.width }x${ size.height } window`, () => {
+			test.use( { viewport: size } );
+
+			test( 'has each dialog under the one before it, and none wider than the window', async ( {
+				page,
+			} ) => {
+				await page.goto( pagePath );
+
+				const boxes = [];
+				for ( const block of BLOCKS ) {
+					boxes.push(
+						await page.locator( block.dialog ).boundingBox()
+					);
+				}
+
+				boxes.forEach( ( box ) => {
+					expect( box.x ).toBeGreaterThanOrEqual( 0 );
+					expect( box.x + box.width ).toBeLessThanOrEqual(
+						size.width
+					);
+				} );
+				boxes.slice( 1 ).forEach( ( box, index ) => {
+					const before = boxes[ index ];
+					expect( box.y ).toBeGreaterThanOrEqual(
+						before.y + before.height
+					);
+				} );
+			} );
+		} );
+	}
+} );

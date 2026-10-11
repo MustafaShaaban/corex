@@ -166,16 +166,31 @@ window and moved outwards. The spec holds all of it on three pages (a short one,
 ending in a link, a long one beginning with a link as well), and it passes in Firefox and
 WebKit too, run by hand; CI runs Chromium.
 
+The same two blocks now always have a name, and are in the page with scripts off (DECISIONS
+#316). A dialog given no title had no name: "dialog" and nothing more. It now carries the label
+of its trigger as `aria-label`, and its body, while it is a stop for Tab, takes the same name.
+It is written on the dialog and not pointed at with `aria-labelledby`, because the trigger is
+inert while a modal dialog is open: pointed at, Chromium's own accessibility tree gave the
+dialog no name. A block with neither a title nor a trigger label is named "Open", so the
+editor's Title field says, while it is empty, what will be announced in its place. With
+scripting off the trigger was shown, did nothing, and the content was out of reach, in all
+three engines, though the contract and four comments said otherwise. The stylesheet now shows
+the dialog in the page there and hides the two buttons nothing answers
+(`@media (scripting: none)` in `shared/_dialog-parts.scss`); the contract and the comments say
+what is done. The spec has a fourth page, of blocks with no title, and reads the short page
+with scripts off.
+
 Seen in these two blocks and left alone, each small:
 
-- A dialog with no title has no name: a screen reader is told "dialog" and nothing else
-  (read off the accessibility tree). The trigger's label is the likely name for it.
-- The contract (`specs/054-corex-full-dls/contracts/modal-block.md`) and both renderers'
-  comments say the content is reachable without JavaScript. The trigger is a `<button>` that
-  only the view script answers, and a closed `<dialog>` is not shown. Read off the code, not
-  tried in a browser with scripts off.
-- No screen reader was listened to. What one is told on opening is read from the accessibility
-  tree and from where focus is: the dialog by its title, then "Close, button".
+- A browser with scripting on in which a block's view script did not run (blocked, or failed
+  to load) still shows a trigger that does nothing, and the content is out of reach. Three ways
+  to cover it are weighed in DECISIONS #316 and none was taken.
+- No screen reader was listened to. What one is told on opening is read from where focus is and
+  from the name: Playwright's reading of it, which is worked out from the page by the ARIA
+  rules, and for the names, Chromium's own accessibility tree. Firefox's and WebKit's own trees
+  were not read.
+- The contract calls the dialog's content "inner blocks". It is the block's `content`
+  attribute, a text box in the sidebar.
 
 Earlier releases are in [`CHANGELOG.md`](CHANGELOG.md), each with its decisions.
 
