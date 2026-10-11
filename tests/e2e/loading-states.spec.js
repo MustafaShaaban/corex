@@ -640,9 +640,11 @@ test.describe( 'the Data records list', () => {
 		page,
 	} ) => {
 		const held = [];
+		// The history of every Data export, which is one list since spec 109: it was one list
+		// for each model, under `data/<model>/exports`.
 		await page.route(
 			( url ) =>
-				/corex\/v1\/data\/[a-z0-9_-]+\/exports(\?|$)/.test(
+				/corex\/v1\/data-exports(\?|$)/.test(
 					decodeURIComponent( url.href )
 				),
 			( route ) =>

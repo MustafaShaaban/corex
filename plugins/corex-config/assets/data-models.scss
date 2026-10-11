@@ -584,3 +584,16 @@
 	align-items: center;
 	gap: var(--corex-admin-space-sm) var(--corex-admin-space-md);
 }
+
+/* The history's lines are an entry's own; WordPress gives every paragraph a
+   margin of a line above and below, which set them three lines apart. In the
+   Submissions dialog the same lines sit in a dialog that resets it. */
+.corex-admin .corex-data-models__past p {
+	margin: 0;
+}
+
+.corex-admin .corex-data-models__past:focus-visible {
+	outline: var(--corex-admin-focus-width) solid var(--corex-admin-focus);
+	outline-offset: var(--corex-admin-focus-offset);
+}
+

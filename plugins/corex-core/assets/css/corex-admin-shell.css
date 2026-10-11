@@ -2500,6 +2500,14 @@ body.corex-admin-screen .corex-admin__shell {
 	padding: 0 var(--corex-admin-space-md) var(--corex-admin-space-md);
 }
 
+/* Inside a model the columns are a part of its row, not a part of the dialog:
+   their heading is said quieter than "What to export" above them. */
+.corex-admin .corex-export__model .corex-export__group > legend {
+	margin-block-end: var(--corex-admin-space-xs);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
 .corex-admin .corex-export__column {
 	display: grid;
 	grid-template-columns: auto minmax(0, 1fr);

@@ -53,18 +53,6 @@ final readonly class DataExportSetRequest
         return array_column($this->parts, 'source');
     }
 
-    /** @return array<string,mixed> */
-    public function toArray(): array
-    {
-        return [
-            'actor_id' => $this->actorId,
-            'parts' => $this->parts,
-            'format' => $this->format,
-            'separator' => $this->separator,
-            'personal_data_acknowledged' => $this->personalDataAcknowledged,
-        ];
-    }
-
     private function validate(): void
     {
         if ($this->actorId < 1) {
