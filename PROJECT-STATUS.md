@@ -1,6 +1,6 @@
 # Corex — what works, what is partial, what is not built
 
-**Version 0.44.0** · updated 2026-10-10
+**Version 0.45.0** · updated 2026-10-11
 
 This page exists so you do not have to read the git history to find out what you are adopting.
 Everything below is traceable to something in this repository — a spec, a policy file, a test
@@ -29,7 +29,7 @@ the same reason — so the next such gap is found by a reader, not by a customer
 | Module | Status | Notes |
 |---|---|---|
 | `corex-core` | **Stable** | Container (PSR-11), layered config (`.env` → options → defaults), routing, middleware, security, cache, jobs, notifications, mail seams, admin shell. |
-| `corex-config` | **Stable** | The admin product: settings, data models, submissions inbox, access, operations, notifications, insights, blog tools. Operations has five modes; Coming soon serves a launch page the theme owns, with a preview link for people without an account (spec 101). A submission can be moved to a trash, restored and deleted for good (spec 105, four of six slices). Exports are CSV, Excel or PDF (spec 103). The role matrix can be previewed and applied. A release package is installed from the Releases screen on a site that runs CoreX, step by step, with the recovery link given first; the site can go back to the release before, and the screen shows what happened (spec 107). **Not verified on its target:** it has not been run on a shared host. |
+| `corex-config` | **Stable** | The admin product: settings, data models, submissions inbox, access, operations, notifications, insights, blog tools. Operations has five modes; Coming soon serves a launch page the theme owns, with a preview link for people without an account (spec 101). A submission can be moved to a trash, restored and deleted for good (spec 105, four of six slices). Exports are CSV, Excel or PDF (spec 103). A reply from the inbox is written in an editor, previewed as the email it will be, and kept on its submission (spec 106, slices 1 to 4 of seven; a reply being written is not kept as a draft yet). On the Data screen several models are exported in one go, and a column that holds personal data is exported only by a person who holds "Export personal data" (spec 109, two of six slices; importing and moving several models are not built). The role matrix can be previewed and applied. A release package is installed from the Releases screen on a site that runs CoreX, step by step, with the recovery link given first; the site can go back to the release before, and the screen shows what happened (spec 107). **Not verified on its target:** it has not been run on a shared host. |
 | `corex-forms` | **Stable** | Schema, validation, flow builder, submission pipeline, routing, delivery. File uploads closed in spec 081. A form defined in code states its wording, can be drawn with a site's own markup, and is challenged by reCAPTCHA, Turnstile or hCaptcha (spec 104); the two widget providers were not submitted through on a real site. |
 | `corex-blocks` | **Stable** | Server-rendered blocks with the shared provider/renderer split. |
 | `theme/` | **Stable** | FSE block theme. Presentation only — deactivating it breaks presentation, never data. |
@@ -39,11 +39,11 @@ the same reason — so the next such gap is found by a reader, not by a customer
 
 | Add-on | Status | What is missing |
 |---|---|---|
-| `corex-email` (Corex Mail) | **Stable** | Templates, routes, queue, attempt log, Email Studio. Live delivery is fail-closed by default — that is deliberate, not a gap. |
+| `corex-email` (Corex Mail) | **Stable** | Templates, routes, queue, attempt log, Email Studio. A reply leaves in a standard design with a plain-text version beside it, and a site gives its emails its own colours, logo and footer, or its own template, from its own code (spec 106). Live delivery is fail-closed by default — that is deliberate, not a gap. |
 | `corex-guides` | **Stable** | Extendable guide registry + support contact (specs 084, 087). |
 | `corex-media` | **Stable** | WebP pipeline behind an activation gate that only serves the converted file when it passes. |
 | `corex-captcha` | **Stable** | Honeypot, reCAPTCHA, Turnstile, hCaptcha. |
-| `corex-ui` | **Stable** | Modal, drawer, tabs, accordion and layout blocks. |
+| `corex-ui` | **Stable** | Modal, drawer, tabs, accordion and layout blocks. The modal and the drawer have a browser test of their own (`tests/e2e/block-dialogs.spec.js`); no screen reader was listened to. |
 | `corex-careers` | **Stable** | Job posts, applications, CV upload through the protected store (spec 081). |
 | `corex-profile` | **Partial** | Registration, an auth gateway and session listing (`src/Account`, `src/Session`). The full profile system is explicitly deferred — `ROADMAP.md` §15. |
 | `corex-newsletter` | **Partial** | Signed-token subscribe/confirm, a subscriber store, and a notifier that mails the list on publish (`src/Subscriber`, `src/Subscription`). No campaign composer, no scheduling, no segmentation. |
