@@ -173,3 +173,42 @@ it('lets the next request in once the first is over, however it ended', function
 
     expect($this->store->exclusively(static fn (): string => 'the next one'))->toBe('the next one');
 });
+
+it('removes what was received and never installed once it is old, and nothing else', function () {
+    $incoming = $this->store->folder('incoming');
+    $longAgo  = time() - 8 * 86400;
+
+    foreach ([
+        'corex-release-acme-0.43.0-20260901-090000.zip' => $longAgo,
+        str_repeat('a', 64) . '.part'                    => $longAgo,
+        'corex-release-acme-0.44.0-20261001-090000.zip' => $longAgo,
+        'corex-release-acme-0.45.0-20261011-120000.zip' => time(),
+        'notes.txt'                                     => $longAgo,
+    ] as $name => $written) {
+        file_put_contents("$incoming/$name", 'x');
+        touch("$incoming/$name", $written);
+    }
+
+    // The package an installation in progress is of stays, however long it has waited.
+    $removed = $this->store->discardUnused(time() - 7 * 86400, 'corex-release-acme-0.44.0-20261001-090000.zip');
+
+    $left = array_map('basename', glob("$incoming/*") ?: []);
+    sort($left);
+
+    expect($removed)->toBe(2)
+        ->and($left)->toBe([
+            'corex-release-acme-0.44.0-20261001-090000.zip',
+            'corex-release-acme-0.45.0-20261011-120000.zip',
+            // Not a package and not a part of one: not the installer's to remove.
+            'notes.txt',
+        ]);
+});
+
+it('says whether its place has been made, without making it', function () {
+    expect($this->store->exists())->toBeFalse()
+        ->and(is_dir($this->content . '/corex-releases'))->toBeFalse();
+
+    $this->store->root();
+
+    expect($this->store->exists())->toBeTrue();
+});

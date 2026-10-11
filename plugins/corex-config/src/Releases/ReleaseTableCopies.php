@@ -119,6 +119,25 @@ final class ReleaseTableCopies
     }
 
     /**
+     * Remove the copies that have been kept their time.
+     *
+     * @return int How many were removed.
+     */
+    public function discardExpired(DateTimeImmutable $now): int
+    {
+        $removed = 0;
+
+        foreach ($this->found() as $copy => $madeAt) {
+            if ($now >= $this->goesAt($madeAt)) {
+                $this->database->drop($copy);
+                $removed++;
+            }
+        }
+
+        return $removed;
+    }
+
+    /**
      * @throws ReleaseRefused
      */
     private function copyOne(string $table, DateTimeImmutable $at): void

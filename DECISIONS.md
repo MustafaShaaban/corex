@@ -10174,6 +10174,60 @@ own design are slice 4.
 
 **Verification.** Numbers are in the pull request, from the tree as committed.
 
+## #310 — Going back is the journal read backwards, by the screen or by the link, and ends the same either way
+
+**Date:** 2026-10-11. **Spec:** 107, slice 5 (T060 to T065). **Branch:** `feat/107-going-back`.
+
+**One route, one confirmation.** `POST corex/v1/releases/return` with what was typed: the
+version of the release gone back to, or, on a site that could not name it, the version being
+left. The swap's journal is read backwards, as the recovery plugin reads it. Then everything
+else is made to say the same: visitors are let in, the recovery file is removed because there
+is nothing left to go back to, the site's record of its release is the previous one's again,
+the newer release's folders are removed from staging, and what stood of its installation is
+cleared. So going back is also how an installation whose database step failed is left.
+
+**No change to the database is reversed, and the answer carries that as a number.**
+`database_changes_reversed: 0`. No schema change CoreX makes declares a way back. When one
+does, this is where its count goes; until then the screen's sentence is not left to be
+forgotten by whoever adds the first.
+
+**A return through the link is recognised by what it leaves.** The link's plugin marks the
+journal undone and can do no more. A journal that says undone beside a recovery file that is
+still there is a return CoreX has not heard of: a return from the screen removes the file.
+`ReleaseUpkeep` takes it in when the screen is opened, once. It is recorded with no person
+against it (`by: 0`, `through: recovery_link`, and the activity entry's actor is the system):
+the link asks for a key, not a name.
+
+**Tidying happens when somebody looks.** The owner's rule on the host this is for is no new
+scheduled job. Opening Releases removes table copies past fourteen days and packages or parts
+past seven, under the installer's lock; if a request of an installation holds the lock, it is
+left for next time. On a host where the installer's folder cannot be made, nothing is tidied
+and the screen still opens.
+
+**An installation that has moved nothing is in the way of going back, and says so.** Its
+staged folders are where a return puts the release it moves out. It is given up first.
+
+**The record on the screen is the installer's own log,** the file beside the releases, with a
+name looked up for each entry. Twenty entries, newest first. A refusal's and a failure's reason
+is shown as the word the site keeps for it.
+
+**Left as it is, and the owner's to change:** the previous release stays until the next
+installation, with no time limit. On an account whose file allowance is shared by two sites it
+counts against it. FR-043 asks for kept releases to be bounded in number, which one is.
+
+**Verification.**
+
+| What | Result |
+|---|---|
+| Pest, unit, `tests/Unit/Releases` | 178 passed (449 assertions) |
+| Pest, integration, `tests/Integration/Releases` | 36 passed (346 assertions). Going back from the screen puts every file back, the dropped plugin and the file the newer release did not ship among them, and leaves the table the release made; going back from a failed database step; a return through the recovery link, run in a PHP process with nothing of CoreX loaded, found on the next opening and written down once; nothing to go back to; an installation in the way; a package and a table copy past their time removed |
+| Jest, `plugins/corex-config/src/Releases` | 107 passed |
+| Playwright, `releases-install.spec.js`, locally on PHP's own server | 6 passed: after a real installation the site goes back from the screen, the file the newer release did not ship is on the site again, the recovery file is gone, and both events are read off the record |
+| Looked at | the release before, the confirmation to go back and the record, in both themes and both directions, at 1280 and 782 |
+
+**Not run.** A return on a shared host. A journal that could not be wholly undone, in a browser:
+the screen's words for it are covered by a Jest test and the server's by the swap's unit tests.
+
 ## #311 — A client site gives its emails their own colours, logo and footer, or its own template, from its own code
 
 **Date:** 2026-10-11. **Branch:** `feat/106-site-email-design`. **Spec:** 106, slice 4.
