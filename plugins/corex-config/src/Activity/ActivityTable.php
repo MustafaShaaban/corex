@@ -63,7 +63,8 @@ final class ActivityTable
             'area'         => DataField::PERSONAL_NONE,
             'kind'         => DataField::PERSONAL_NONE,
             'actor_label'  => DataField::PERSONAL_IDENTITY,
-            'target_label' => DataField::PERSONAL_CONTENT,
+            // What was acted on, by its name: often a person (an account, somebody's request).
+            'target_label' => DataField::PERSONAL_IDENTITY,
             'outcome'      => DataField::PERSONAL_NONE,
         ],
         );

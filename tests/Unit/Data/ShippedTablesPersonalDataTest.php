@@ -95,7 +95,7 @@ it('marks the columns that hold something about a person', function (string $tab
     ]],
     'an activity event' => [ActivityTable::NAME, [
         'actor_label' => DataField::PERSONAL_IDENTITY,
-        'target_label' => DataField::PERSONAL_CONTENT,
+        'target_label' => DataField::PERSONAL_IDENTITY,
     ]],
     'an access request' => [AccessTables::REQUESTS, [
         'requester_id' => DataField::PERSONAL_IDENTITY,

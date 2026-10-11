@@ -10236,14 +10236,21 @@ personal data is written once. Five tests were merged or dropped: three that dif
 value, one that counted the list it had written, one that walked the same path as its
 neighbour.
 
-**Not run here.** The integration tests added to `DataManagementControllerTest` and the browser
-test added to `data-management.spec.js`: both need an install serving this branch, and the
-development install serves the root checkout, which other sessions were using. CI runs them.
-Nothing was looked at in a browser. The change to what is drawn is one line in a slot the
-inbox's dialog already fills the same way, a longer sentence in the confirmation, and words in
-place of a key on the Models tab; the browser test measures the confirmation in both directions
-at two widths. The line shown to a person without the right is drawn in Jest and not in a
-browser: no fixture account manages data without being an administrator.
+**What CI's first run found.** One of the new integration tests asked for the source
+`activity-events`; a table's source is keyed `table-activity-events`. The test was wrong and the
+code was not. The browser test passed on its first run.
+
+**Looked at in a browser, afterwards.** The Models tab and the export dialog were drawn from
+this branch on the development install, for requests carrying one header and for no other, by a
+must-use plugin that was removed the same hour: light and dark, both directions, at 1280 and
+375 pixels. The confirmation wraps to two lines at 1280 and four at 375, stays inside the
+dialog, and its box stays beside its first line in both directions. Seeing the Models tab say
+"what people wrote" of the activity log's target changed that column's class to names and
+identities: a target is named, and is often a person.
+
+**Not walked in a browser.** The line shown to a person without the right is drawn in Jest: no
+fixture account manages data without being an administrator, and the development install's
+saved session is an administrator's.
 
 ## #311 — A client site gives its emails their own colours, logo and footer, or its own template, from its own code
 
