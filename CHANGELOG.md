@@ -6,6 +6,17 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.45.1] — 2026-10-11
+
+One fix, reported from a client site on v0.45.0: a file sent with a form could not be opened
+from its submission. Under "Answers" in the Submissions inbox there was the number the file is
+stored under and nothing to press. The pane now shows the file's name as a link, an export
+names the file, and who may open it is who may read the submission.
+
+Nothing to set and nothing to rebuild. Two things are not changed by it and are still wrong:
+the notification email of a form with a file prints that number and carries no file, and
+CoreX → Data → Form submissions prints it too.
+
 ### Fixed
 
 - **A file sent with a form is opened from its submission** (spec 081, Phase F; DECISIONS #317).
