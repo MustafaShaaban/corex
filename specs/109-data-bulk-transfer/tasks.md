@@ -271,7 +271,15 @@ still gone, and the preview said so in numbers.
 - [ ] T080 [US3] Tell the spec 107 session, then split `Releases/ReleaseUpload.php` into
       `plugins/corex-config/src/Upload/PartedUpload.php` and its release use, and
       `Releases/releaseClient.js` and `sha256.js` into `admin/upload/`, as one commit that
-      changes no behaviour; that class's tests stay green
+      changes no behaviour; that class's tests stay green. The spec 107 session agreed on
+      2026-10-11, once its #339 is merged, and named what the Releases side relies on:
+      `releaseClient.js` also carries the installation's key (a header added in `ask()`/`once()`
+      on every request after prepare) and the installation's steps, so only the upload part is
+      lifted and those stay; every answer of the Releases routes carries the mark
+      `corex_release`; a kept package's name matches
+      `/^corex-release-[A-Za-z0-9][A-Za-z0-9._-]*\.zip$/`; and `ReleaseStore::discardUnused()`
+      removes `*.zip` and `*.part` from its `incoming/` after seven days, so a data package
+      does not share that folder
 - [ ] T081 [P] [US4] Pest unit, `tests/Unit/Transfer/ReceivePolicyTest.php`: every combination
       of this install live or not, the package's install live or not, personal data replaced
       or not, the model's kind, the record new, same, different, deleted here or anonymised
