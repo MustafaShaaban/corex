@@ -49,6 +49,11 @@ final class EmailMessage
          * @var list<int>
          */
         public readonly array $attachments = [],
+        /**
+         * The same words as plain text, sent beside the HTML as its alternative (spec 106,
+         * FR-013). Null for a message that has none: it is sent as HTML alone, as before.
+         */
+        public readonly ?string $plainText = null,
     ) {
     }
 }

@@ -350,3 +350,175 @@ test( 'sends a reply on a site that keeps its email, says what happened, and lis
 
 	expect( errors ).toEqual( [] );
 } );
+
+/**
+ * The email a reply left as, read from where a development site keeps it.
+ *
+ * @param {import('@playwright/test').Page} page  A page showing the inbox.
+ * @param {string}                          email Who the reply was for.
+ * @return {Promise<{html_body:string,plain_text:string,subject:string}>} The kept email.
+ */
+function keptEmailFor( page, email ) {
+	return page.evaluate( async ( recipient ) => {
+		const config = window.corexSubmissions;
+		const studio = await window.Corex.api.get(
+			config.restUrl.replace( /\/submissions$/, '/email-studio' ),
+			{ nonce: config.nonce }
+		);
+
+		return studio.envelope.data.captures.find( ( capture ) =>
+			capture.to.includes( recipient )
+		);
+	}, email );
+}
+
+/**
+ * What a mail client that is a browser draws of an email: read off the page.
+ *
+ * @param {import('@playwright/test').Page} letter A page holding the email.
+ * @return {Promise<Object>} The measurements.
+ */
+function measuredEmail( letter ) {
+	return letter.evaluate( () => {
+		const colours = ( node ) => {
+			let ground = node;
+			while (
+				ground &&
+				window.getComputedStyle( ground ).backgroundColor ===
+					'rgba(0, 0, 0, 0)'
+			) {
+				ground = ground.parentElement;
+			}
+			return [
+				window.getComputedStyle( node ).color,
+				window.getComputedStyle( ground || document.body )
+					.backgroundColor,
+			];
+		};
+		const box = ( node ) => node.getBoundingClientRect();
+		const paragraphs = Array.from( document.querySelectorAll( 'p' ) );
+		const card = document.querySelector( '.cx-surface' );
+		const header = document.querySelector( 'td.cx-text' );
+		const footer = document.querySelector( 'td.cx-muted' );
+		const edgeOf = ( paragraph ) => {
+			const range = document.createRange();
+			range.selectNodeContents( paragraph );
+			const text = range.getBoundingClientRect();
+			return {
+				fromLeft: Math.round( text.left - box( card ).left ),
+				fromRight: Math.round( box( card ).right - text.right ),
+			};
+		};
+
+		return {
+			sideways:
+				document.documentElement.scrollWidth -
+				document.documentElement.clientWidth,
+			cardWidth: Math.round( box( card ).width ),
+			fontSize: parseFloat(
+				window.getComputedStyle( paragraphs[ 0 ] ).fontSize
+			),
+			header:
+				header.textContent.trim() || header.querySelector( 'img' )?.alt,
+			footer: footer.textContent.trim(),
+			order: [ header, card, footer ].map( ( part ) =>
+				Math.round( box( part ).top )
+			),
+			message: colours( paragraphs[ 0 ] ),
+			link: colours( card.querySelector( 'a' ) ),
+			foot: colours( footer ),
+			head: colours( header ),
+			english: edgeOf( paragraphs[ 0 ] ),
+			arabic: edgeOf( paragraphs[ 1 ] ),
+		};
+	} );
+}
+
+test( 'sends the reply as a designed email that holds on a phone, in a dark mail client, and for an Arabic line', async ( {
+	page,
+	context,
+} ) => {
+	await openPaneOn( page, 'capture' );
+	// Posted to the route as the editor of the next slice will post it: a link cannot be typed
+	// into today's plain box, and the design has to be seen drawing one.
+	const sent = await page.evaluate( async ( recipient ) => {
+		const config = window.corexSubmissions;
+		const list = await window.Corex.api.get(
+			`${ config.restUrl }?search=${ encodeURIComponent( recipient ) }`,
+			{ nonce: config.nonce }
+		);
+		const answer = await window.Corex.api.post(
+			`${ config.restUrl }/${ list.envelope.data.items[ 0 ].id }/reply`,
+			{
+				subject: 'Re: your message',
+				body:
+					'<p>Hello Salma, thank you for writing to us about the offer.</p>' +
+					'<p>مرحبا سلمى، سنتصل بك غدا.</p>' +
+					'<p>See <a href="https://example.com/offer">the offer</a>.</p>',
+			},
+			{ nonce: config.nonce }
+		);
+		return answer.envelope.data.result.state;
+	}, EMAIL );
+	expect( sent ).toBe( 'captured' );
+
+	const kept = await keptEmailFor( page, EMAIL );
+	expect( kept.subject ).toBe( 'Re: your message' );
+	// The same words beside the design, for a client that shows no HTML.
+	expect( kept.plain_text ).toContain( 'Hello Salma, thank you' );
+	expect( kept.plain_text ).toContain( 'مرحبا سلمى' );
+	expect( kept.plain_text ).not.toContain( '<' );
+
+	// What a mail client shows is the document alone, with nothing of the admin around it.
+	const letter = await context.newPage();
+	await letter.setContent( kept.html_body );
+
+	for ( const width of [ 320, 375, 800 ] ) {
+		for ( const colorScheme of [ 'light', 'dark' ] ) {
+			await letter.setViewportSize( { width, height: 700 } );
+			await letter.emulateMedia( { colorScheme } );
+			const measured = await measuredEmail( letter );
+			const where = `${ width }px ${ colorScheme }`;
+
+			expect( measured.sideways, `${ where }: no sideways scroll` ).toBe(
+				0
+			);
+			expect(
+				measured.cardWidth,
+				`${ where }: never wider than the measure`
+			).toBeLessThanOrEqual( 600 );
+			expect(
+				measured.fontSize,
+				`${ where }: text at a size that is read`
+			).toBeGreaterThanOrEqual( 16 );
+			expect( measured.header, `${ where }: the site is named` ).not.toBe(
+				''
+			);
+			expect( measured.footer, `${ where }: the footer` ).toContain(
+				'This message was sent by'
+			);
+			expect(
+				measured.order,
+				`${ where }: header, message, footer, in that order`
+			).toEqual( [ ...measured.order ].sort( ( a, b ) => a - b ) );
+			for ( const part of [ 'message', 'link', 'foot', 'head' ] ) {
+				expect(
+					contrast( ...measured[ part ] ),
+					`${ where }: the ${ part }'s contrast`
+				).toBeGreaterThanOrEqual( 4.5 );
+			}
+			// Each paragraph starts from its own side: the English one from the left of
+			// the card, the Arabic one from the right.
+			expect(
+				measured.english.fromLeft,
+				`${ where }: the English line starts at the left`
+			).toBeLessThan( measured.english.fromRight + 1 );
+			expect(
+				measured.arabic.fromRight,
+				`${ where }: the Arabic line starts at the right`
+			).toBeLessThan( measured.arabic.fromLeft );
+		}
+	}
+
+	await letter.close();
+} );

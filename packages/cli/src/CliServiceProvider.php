@@ -53,6 +53,7 @@ use Corex\Cli\Generators\ControllerGenerator;
 use Corex\Cli\Generators\GeneratorContext;
 use Corex\Cli\Generators\GeneratorEngine;
 use Corex\Cli\Generators\ModelGenerator;
+use Corex\Cli\Generators\EmailDesignGenerator;
 use Corex\Cli\Generators\GuideGenerator;
 use Corex\Cli\Generators\OptionPageGenerator;
 use Corex\Cli\Generators\RepositoryGenerator;
@@ -184,7 +185,7 @@ final class CliServiceProvider extends ServiceProvider
         ];
         $registrations = [];
 
-        foreach (['model', 'repository', 'controller', 'service', 'option-page', 'guide', 'block', 'api-resource', 'site'] as $type) {
+        foreach (['model', 'repository', 'controller', 'service', 'option-page', 'guide', 'email-design', 'block', 'api-resource', 'site'] as $type) {
             $registrations["corex make:{$type}"] = [
                 'handler' => function (array $args, array $assoc) use ($type): void {
                     $this->makeCommand()->run($type, $args, $assoc);
@@ -504,6 +505,7 @@ final class CliServiceProvider extends ServiceProvider
                 'service'     => new ServiceGenerator(),
                 'option-page' => new OptionPageGenerator(),
                 'guide'       => new GuideGenerator(),
+                'email-design' => new EmailDesignGenerator(),
             ],
             $this->container->make(BlockScaffolder::class),
             $this->container->make(GeneratorContext::class),

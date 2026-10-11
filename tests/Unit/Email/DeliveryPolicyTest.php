@@ -133,6 +133,25 @@ it('captures the full local message without invoking a transport', function () {
         ->and($captures[0]->capturedAt)->toBeInstanceOf(DateTimeImmutable::class);
 });
 
+it('lists the captures it can read when one record cannot be', function () {
+    $store      = deliveryPolicyStore();
+    $repository = new CapturedEmailRepository($store);
+    $repository->capture(new EmailMessage(['sam@example.com'], [], [], null, 'Kept', '<p>Hello Sam</p>'));
+    // Two records that are not emails, newer than the one that is: one with nothing in it, and
+    // one whose date is not a date.
+    $store->create('captured_email', '0f8fad5b-d9cb-469f-a165-70867728950e', 'Unreadable', 0, []);
+    $store->create('captured_email', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'Undated', 0, [
+        'capture_id' => '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        'captured_at' => 'the day before yesterday-ish',
+    ]);
+
+    // Asked for one: the newest that can be read, not nothing because the newest cannot.
+    $captures = $repository->latest(1);
+
+    expect($captures)->toHaveCount(1)
+        ->and($captures[0]->subject)->toBe('Kept');
+});
+
 it('persists immutable typed attempts and retry relationships', function () {
     $repository = new EmailAttemptRepository(deliveryPolicyStore());
     $occurredAt = new DateTimeImmutable('2026-07-03T11:00:00+00:00');

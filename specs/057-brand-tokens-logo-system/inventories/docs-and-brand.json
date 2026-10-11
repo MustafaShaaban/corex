@@ -197,7 +197,7 @@
     {
       "path": "docs-app/src/content/docs/guides/cli.md",
       "lines": [
-        60
+        61
       ],
       "topics": [
         "brand.json"

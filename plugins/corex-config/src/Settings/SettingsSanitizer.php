@@ -34,6 +34,8 @@ final class SettingsSanitizer
             'email'        => is_email(sanitize_email($raw)) ? sanitize_email($raw) : null,
             'url', 'media' => esc_url_raw($raw) !== '' ? esc_url_raw($raw) : null,
             'select'       => in_array($raw, array_keys($options), true) ? $raw : null,
+            // Written into a style attribute of an email, so one form only (spec 106).
+            'hex-colour'   => preg_match('/^#[0-9a-f]{6}$/i', trim($raw)) === 1 ? strtolower(trim($raw)) : null,
             default        => sanitize_text_field($raw),
         };
     }

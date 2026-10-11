@@ -309,6 +309,9 @@ final class SettingsForm
             'checkbox' => $this->checkbox($name, $value, $disabled),
             'password' => $this->secret($name, $value !== '', $disabled),
             'info'     => $this->info($value),
+            // A text box, not the browser's colour picker: a picker cannot be left empty, and
+            // empty is how a site says "CoreX's own".
+            'hex-colour' => $this->input($name, 'text', $value, $disabled),
             default    => $this->input($name, $field['type'], $value, $disabled),
         };
     }

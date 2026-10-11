@@ -10,6 +10,8 @@ namespace Corex\Guides\Support;
 
 defined('ABSPATH') || exit;
 
+use Corex\Email\Design\EmailBrand;
+use Corex\Email\Design\EmailPalette;
 use Corex\Email\Template\EmailTemplate;
 use Corex\Email\Template\MailContext;
 
@@ -29,8 +31,8 @@ use Corex\Email\Template\MailContext;
  * concatenating their text into HTML.
  *
  * Styling is inline and table-based because that is what mail clients support — no stylesheet, no
- * custom properties, no flexbox. The colours come from {@see SupportEmailPalette}, which explains
- * why they are literals at all.
+ * custom properties, no flexbox. The colours come from {@see EmailPalette}, the one place every
+ * CoreX email takes them from, which explains why they are literals at all.
  *
  * `Layout` still wraps the result: the 600px shell, the direction, and the site logo are its job.
  * This is the card inside it.
@@ -77,10 +79,10 @@ final class SupportRequestTemplate extends EmailTemplate
     {
         return sprintf(
             '<p style="margin:0 0 %1$s;color:%2$s;font-family:%3$s;font-size:16px;line-height:%4$s">%5$s</p>',
-            SupportEmailPalette::SPACE,
-            SupportEmailPalette::TEXT,
-            SupportEmailPalette::FONT,
-            SupportEmailPalette::LINE_HEIGHT,
+            EmailBrand::SPACE,
+            EmailPalette::light()->text,
+            EmailBrand::FONT,
+            EmailBrand::LINE_HEIGHT,
             esc_html__('Somebody read the guides on your site and could not find what they needed.', 'corex'),
         );
     }
@@ -108,10 +110,10 @@ final class SupportRequestTemplate extends EmailTemplate
                 . 'color:%1$s;font-family:%2$s;font-size:13px;font-weight:600;white-space:nowrap">%3$s</th>'
                 . '<td style="padding:6px 0;text-align:start;color:%4$s;font-family:%2$s;font-size:14px">%5$s</td>'
                 . '</tr>',
-                SupportEmailPalette::TEXT_MUTED,
-                SupportEmailPalette::FONT,
+                EmailPalette::light()->muted,
+                EmailBrand::FONT,
                 esc_html($label),
-                SupportEmailPalette::TEXT,
+                EmailPalette::light()->text,
                 $value,
             );
         }
@@ -119,7 +121,7 @@ final class SupportRequestTemplate extends EmailTemplate
         return sprintf(
             '<table role="presentation" cellpadding="0" cellspacing="0" '
             . 'style="width:100%%;margin:0 0 %1$s;text-align:start">%2$s</table>',
-            SupportEmailPalette::SPACE,
+            EmailBrand::SPACE,
             $markup,
         );
     }
@@ -142,16 +144,16 @@ final class SupportRequestTemplate extends EmailTemplate
             . '<div style="margin:0;color:%9$s;font-family:%7$s;font-size:15px;line-height:%10$s;'
             . 'white-space:pre-wrap">{{ support.message }}</div>'
             . '</td></tr></table>',
-            SupportEmailPalette::SPACE,
-            SupportEmailPalette::SURFACE,
-            SupportEmailPalette::BORDER,
-            SupportEmailPalette::ACTION,
-            SupportEmailPalette::RADIUS,
-            SupportEmailPalette::TEXT_MUTED,
-            SupportEmailPalette::FONT,
+            EmailBrand::SPACE,
+            EmailPalette::light()->surface,
+            EmailPalette::light()->border,
+            EmailPalette::light()->accent,
+            EmailBrand::RADIUS,
+            EmailPalette::light()->muted,
+            EmailBrand::FONT,
             esc_html__('Their message', 'corex'),
-            SupportEmailPalette::TEXT,
-            SupportEmailPalette::LINE_HEIGHT,
+            EmailPalette::light()->text,
+            EmailBrand::LINE_HEIGHT,
         );
     }
 
@@ -160,11 +162,11 @@ final class SupportRequestTemplate extends EmailTemplate
         return sprintf(
             '<p style="margin:0;padding-block-start:%1$s;border-block-start:1px solid %2$s;'
             . 'color:%3$s;font-family:%4$s;font-size:12px;line-height:%5$s;text-align:start">%6$s</p>',
-            SupportEmailPalette::SPACE,
-            SupportEmailPalette::BORDER,
-            SupportEmailPalette::TEXT_MUTED,
-            SupportEmailPalette::FONT,
-            SupportEmailPalette::LINE_HEIGHT,
+            EmailBrand::SPACE,
+            EmailPalette::light()->border,
+            EmailPalette::light()->muted,
+            EmailBrand::FONT,
+            EmailBrand::LINE_HEIGHT,
             esc_html__('Sent from the Guides screen in your CoreX admin. Reply to this email to answer directly.', 'corex'),
         );
     }

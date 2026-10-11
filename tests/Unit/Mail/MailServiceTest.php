@@ -140,6 +140,7 @@ it('hands the driver every field the message carried, the sender and the attachm
         'headers'     => ['X-Campaign' => 'spring'],
         'from'        => 'info@example.com',
         'attachments' => [42, 43],
+        'plainText'   => 'x',
     ];
     $parameters = array_map(
         static fn (ReflectionParameter $parameter): string => $parameter->getName(),

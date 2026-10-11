@@ -106,6 +106,22 @@ final class SettingsRegistry implements FieldSections
                         'type'  => 'checkbox',
                         'help'  => __('Production mail remains blocked unless a matching provider is also selected.', 'corex'),
                     ],
+                    // What a designed email is drawn from (spec 106). Left blank, CoreX's own.
+                    'mail.brand.accent' => [
+                        'label' => __('Email accent colour', 'corex'),
+                        'type'  => 'hex-colour',
+                        'help'  => __('The edge along the top of an email. Six-digit hex, such as #0B1F3B. Leave blank for CoreX\'s.', 'corex'),
+                    ],
+                    'mail.brand.logo' => [
+                        'label' => __('Email logo', 'corex'),
+                        'type'  => 'media',
+                        'help'  => __('Shown at the top of an email, up to 180 pixels wide. Leave blank for the site\'s logo.', 'corex'),
+                    ],
+                    'mail.brand.footer' => [
+                        'label' => __('Email footer line', 'corex'),
+                        'type'  => 'text',
+                        'help'  => __('The line under an email. Leave blank for "This message was sent by" and the site\'s name.', 'corex'),
+                    ],
                 ],
             ],
             'forms' => [

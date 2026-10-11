@@ -27,7 +27,10 @@ use Corex\Email\Studio\EmailStudioService;
 use Corex\Email\Studio\EmailStudioStore;
 use Corex\Email\Studio\EmailStudioSubmissionGateway;
 use Corex\Email\Studio\EmailTemplateRepository;
-use Corex\Email\Template\Layout;
+use Corex\Email\Design\EmailBrand;
+use Corex\Email\Design\EmailBrandSource;
+use Corex\Email\Design\ReplyComposer;
+use Corex\Email\Design\StandardEmailDesign;
 use Corex\Mail\UnavailableSubmissionEmailGateway;
 use Corex\Email\Studio\EmailDeliveryContext;
 use Corex\Email\Studio\EmailHealthContext;
@@ -381,11 +384,12 @@ it('reports actionable template provider reply-to and subscription health failur
 /**
  * The gateway a reply from the Submissions inbox goes through, over the service above.
  *
- * @param array<string,mixed> $settings
+ * @param array<string,mixed>                                                                $settings
+ * @param array{0:EmailStudioService,1:CapturedEmailRepository,2:EmailAttemptRepository,3:MailDriver}|null $studio The service to send through, for a test that reads what it kept.
  */
-function replyGateway(array $settings): EmailStudioSubmissionGateway
+function replyGateway(array $settings, ?array $studio = null): EmailStudioSubmissionGateway
 {
-    [$service] = emailStudioService();
+    [$service] = $studio ?? emailStudioService();
     $store = emailStudioServiceStore();
     $config = new class($settings) implements ConfigInterface {
         /** @param array<string,mixed> $settings */
@@ -416,7 +420,12 @@ function replyGateway(array $settings): EmailStudioSubmissionGateway
         $service,
         new EmailTemplateService([]),
         $config,
-        new Layout(['name' => 'Acme']),
+        new ReplyComposer(new StandardEmailDesign(), new class() implements EmailBrandSource {
+            public function brand(): EmailBrand
+            {
+                return EmailBrand::standard('Acme', 'https://acme.test/');
+            }
+        }),
     );
 }
 
@@ -469,6 +478,24 @@ it('names the Mail settings when a reply will not be delivered, and says nothing
         ->and($off->sendable())->toBeFalse()
         ->and($live->reason)->toBe('')
         ->and($live->sendable())->toBeTrue();
+});
+
+// Spec 106, FR-008 and FR-013: what the reply leaves as, read from where a development site keeps it.
+it('sends a reply in the site design with the same words as plain text beside it', function () {
+    Functions\when('sanitize_key')->returnArg();
+    Functions\when('is_email')->justReturn(false);
+    $studio = emailStudioService();
+
+    replyGateway(['app.env' => 'development'], $studio)
+        ->reply('sam@example.com', 'Re: Contact', '<p>Thanks, Sam.</p><ul><li>One</li></ul>');
+    $captured = $studio[1]->latest(1)[0];
+
+    expect($captured->body)->toStartWith('<!DOCTYPE html>')
+        ->and($captured->body)->toContain('Thanks, Sam.')
+        ->and($captured->body)->toContain('Acme')
+        ->and($captured->body)->toContain('border-top:4px solid')
+        ->and($captured->plainText)->toStartWith("Thanks, Sam.\n\n- One\n\n-- \n")
+        ->and($captured->plainText)->toContain('Acme');
 });
 
 it('says replies need the email add-on where it is absent', function () {

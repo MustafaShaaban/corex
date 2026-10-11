@@ -10113,6 +10113,67 @@ an existing test of exactly that host caught.
   allowance shared by two sites that may want a time limit.
 - A package is not signed.
 
+## #308 — A reply leaves as a designed email with its words as plain text, and an email's colours are written once
+
+**Date:** 2026-10-11. **Branch:** `feat/106-standard-template`. **Spec:** 106, slice 2.
+
+A reply was wrapped in the one shell CoreX had: the site's name or logo, a line in the theme's
+`primary`, the text. It set no type, no colour, no background and no footer, and it was sent as
+HTML alone. The owner asked for "a standard styled email template" in "the corex theme and
+colors".
+
+**The design is a document, drawn from values.** `StandardEmailDesign` draws a whole email from
+an `EmailContent` (the subject, the reduced message, who it is for) and an `EmailBrand` (whose
+it is, and in which colours). Tables and inline styles, fluid up to 600 pixels. Light colours
+are written inline, for the client that honours nothing else; a client that asks for a dark
+scheme gets the dark palette by class from one style block. Physical `left` and `right`,
+chosen from the site's direction, because Outlook's engine does not read `start`; each
+paragraph carries `dir="auto"` and `text-align: start`, which every client that is a browser
+reads, so an Arabic line in an English reply starts from the right.
+
+**The header is the site's, the colours are CoreX's.** The email is from the site to its
+customer, so the header shows the site's logo or name, never CoreX's mark. This is the spec's
+reading of "the corex theme and colors" and the owner's to overrule. The accent is the admin's
+brass, not the theme's `primary` that the old shell used: a site's own colours, logo and footer
+are slice 4, and until that is released every site's replies wear CoreX's. That is said under
+Client impact.
+
+**An email's colours are literals in one class.** An email cannot read a custom property, so a
+token has to arrive as a value somewhere. `EmailPalette` is where, for every email drawn from
+it; spec 093 had the same values inside the Guides add-on, and `SupportEmailPalette` is removed.
+A colour is `#rrggbb` or it is refused, because it is written into a `style` attribute. The
+link colour is the admin's link token, not its action colour: brass on white is 3.35 to 1 and
+is used only for the card's edge. A unit test holds every text on every ground to 4.5 to 1 in
+both palettes.
+
+**The plain-text version is sent as the alternative of one message.** `EmailMessage` gains
+`plainText`. `wp_mail()` takes one body; its mailer sends two when it is handed the second, so
+`WpMailDriver` hands it over on `phpmailer_init` for that one send and takes the hook off
+again in a `finally`. `MailService` rebuilds every message to drop bad recipients and had
+dropped two fields that way before (#150); its own test failed on the new one until it was
+carried, which is what that test is for.
+
+**Found in the browser, and nowhere else.** The first `PlainText` read its input as bytes.
+Read that way `\R` matches the second byte of the Arabic letter meem as a line ending, so the
+plain text of an Arabic reply was not valid text, the database would not take the capture's
+payload, and the development site failed to keep the email: "captured" came back "failed".
+Every pattern now reads UTF-8, and a unit test holds an Arabic reply. The two unreadable capture
+records that the failure left on corex.local then made Email Studio's list throw; I found them
+by reading every capture's payload and removed those two. `CapturedEmailRepository::latest()`
+now passes over a record it cannot read.
+
+**A test that could have sent mail is written so that it cannot.** The plain-text test has to
+run WordPress's own mailer to see the two parts. It reads the message at the last hook before
+sending and throws there, and it is skipped on an install whose `wp_mail()` is not WordPress's
+own: corex.local's is an SMTP plugin's, with a mailbox behind it. So those two tests were not
+run on the development site at all; CI is where they run.
+
+**Not in this slice.** Only a reply is drawn this way. Form notifications, routed emails and
+Email Studio's templates still go through `Layout` (slice 7). A site's own values and a site's
+own design are slice 4.
+
+**Verification.** Numbers are in the pull request, from the tree as committed.
+
 ## #310 — Going back is the journal read backwards, by the screen or by the link, and ends the same either way
 
 **Date:** 2026-10-11. **Spec:** 107, slice 5 (T060 to T065). **Branch:** `feat/107-going-back`.
@@ -10167,3 +10228,64 @@ counts against it. FR-043 asks for kept releases to be bounded in number, which 
 **Not run.** A return on a shared host. A journal that could not be wholly undone, in a browser:
 the screen's words for it are covered by a Jest test and the server's by the swap's unit tests.
 
+## #311 — A client site gives its emails their own colours, logo and footer, or its own template, from its own code
+
+**Date:** 2026-10-11. **Branch:** `feat/106-site-email-design`. **Spec:** 106, slice 4.
+
+"Give the option to developer to replace it with his custom template as we need this for muva
+and perego." Slice 2 made the standard design; this is how a site stops wearing it. It was built
+before slice 3 (the editor), which the plan had first: a site can take its own brand without the
+editor, the two do not touch, and this is the one the client sites are waiting for.
+
+**Two depths, and neither is a framework file.** Only values: three settings under CoreX →
+Settings → Mail (the accent colour, a logo, the footer line), and a filter `corex_email_brand`
+for the colours a setting does not reach. A whole template: a filter `corex_email_design`
+returning the site's own `EmailDesign`. A filter and not a container binding, because it is
+asked when an email is drawn and so does not depend on which plugin booted first; a site's
+plugin is updated apart from CoreX and nothing of the site's is overwritten by it.
+
+**A site's design runs inside a guard.** It is code CoreX did not write, running at the moment
+a customer is being answered. `SiteEmailDesign` asks the filter, and if what comes back throws,
+answers nothing, or answers a document that does not hold the message, the email goes in the
+standard design and `EmailDesignFailedEvent` is dispatched; the config plugin turns it into one
+notification for the people who manage email, keyed by the design, saying which design and how
+it failed. A reply is never sent without its words and a broken template never stops one. The
+alternative, refusing the reply, was not taken: the person at the reply box cannot mend a PHP
+class, and the customer would wait for somebody who can.
+
+**"Holds the message" is its words, whole and in order, in what the document shows.** Words
+and not markup, so that a design may restyle a paragraph or a link, which it has to: a mail
+client reads no style sheet for them. In what it shows, so that a title, a style sheet or a
+comment that repeats a word does not count. A design that rewrites the message (curls its
+quotes, puts an address after a link) is sent as the standard design; the guide says so.
+
+**The guard's first version had holes, and a review that ran inputs found them.** The filter's
+own callback was outside the `try`: the registration line the guide gives throws when a class
+is renamed, and a reply would have answered 500. A `<` in a template's style sheet made the
+check lose everything after it, so a good template was discarded on every reply. A design that
+printed its markup wrote into the answer of the request sending the reply. A design that asked
+for the email design again while drawing asked for itself, to the memory limit. All four are
+inside the guard now, each with a test. An error's message is passed on as one short line with
+its kind, not whole: it is shown to everybody who manages email. A brand filter that throws is
+announced too, where it had been silent. The generated design gained what the standard one
+gives a reader: the dark colours, the footer sentence, and no address but a web one.
+
+**The setting's colour is the edge only.** The accent is never text, so it has no contrast to
+keep and one value serves both colour schemes. Text, link and ground colours are reachable
+only from code, where a developer can be held to 4.5 to 1; nothing checks a site's palette, and
+the guide says so. A colour is `#rrggbb` or it is not saved; one that reaches the store some
+other way is passed over when an email is drawn, not thrown at somebody sending a reply. A
+filter that throws leaves the brand the settings gave.
+
+**The generator writes a copy, not a subclass.** `wp corex make:email-design Acme` writes
+`src/Mail/AcmeEmailDesign.php` into the site's plugin: a working design with a comment saying
+what it is handed. The standard design is final, and a site's template is the one thing about
+its emails that should not move when CoreX is updated. Its test loads the generated file and
+draws an email with it: a starting point that does not render is worse than none.
+
+**Not done here.** The plan's T066, a generated client site sending in its own design inside
+the `client-site-layout` job, is not added: the behaviour is held by an integration test that
+registers a design through the filter from outside the framework's classes, and by the
+generator's test. Only replies are drawn through the design; the other emails are slice 7.
+
+**Verification.** Numbers are in the pull request, from the tree as committed.
