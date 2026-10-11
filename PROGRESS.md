@@ -136,6 +136,13 @@ long: read it before a client site takes the release. In short:
   where it was printed as JSON. A client site carried that as a patch to a framework file and
   can drop it.
 
+**Unreleased on `main`, outside the specs above** (2026-10-11): a `CorexDialog` is left by a
+press on its backdrop only when the press starts and ends there. A press begun on a button in a
+submission's pane and let go on the backdrop closed the pane, with the note being written in it:
+the browser gives such a click to the dialog element, which is the backdrop.
+`tests/e2e/submissions-inbox.spec.js` makes the press with a mouse on the pane, on a
+confirmation asked over it and on the export dialog.
+
 **Unreleased on `main`, outside the specs above** (2026-10-11): the `corex/modal` and
 `corex/drawer` blocks are left by a press on the backdrop only when the press starts and ends
 outside the panel. Both closed on any click whose target was the `<dialog>` element. That is
@@ -195,6 +202,14 @@ Seen in these two blocks and left alone, each small:
   were not read.
 - The contract calls the dialog's content "inner blocks". It is the block's `content`
   attribute, a text box in the sidebar.
+
+**Unreleased on `main`, outside the specs above** (2026-10-11): a secondary Gutenberg button in
+the CoreX admin has one border, CoreX's. WordPress's own border on it, in the admin accent, was
+drawn outside CoreX's line on every screen. `tests/e2e/admin-controls.spec.js` measures the
+border in each state WordPress colours it in, in both themes. Found on the way and not fixed: a
+press that starts on a button in the submission pane and is let go on the backdrop closes the
+pane, with whatever was being written in it (`CorexDialog` reads the click as one on the
+backdrop). A text selection dragged out of the pane does not.
 
 Earlier releases are in [`CHANGELOG.md`](CHANGELOG.md), each with its decisions.
 

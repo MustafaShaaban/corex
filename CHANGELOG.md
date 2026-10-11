@@ -211,6 +211,13 @@ All notable changes to Corex are documented here. The format follows
   though the block's contract said it could. The dialog is now shown in the page where the
   block is, with its title, and the two buttons nothing answers are not shown. Not covered: a
   browser with scripting on in which the block's script was blocked or did not load.
+- **A dialog in the CoreX admin is not closed by a press that began inside it.** Pressing the
+  mouse on a button in a submission's pane, sliding off it and letting go over the dimmed page
+  closed the pane, and a note being written in it was lost; the button's own action was not
+  taken. Every dialog the admin draws with `CorexDialog` did this: the inbox's pane and its
+  confirmations, the export dialogs, a record's detail on the Data screen and the changes to a
+  role on Access & Abilities. A dialog is now left by a press outside it when the press both
+  starts and ends outside. Escape and the close button are as they were.
 - **Email Studio lists its captured emails when one of them cannot be read.** One record
   whose contents had not survived being stored took the whole list with it, and the screen
   answered an error.
@@ -230,6 +237,12 @@ All notable changes to Corex are documented here. The format follows
   had gone.
 - **The history says "Reply kept on this site, not delivered"** for a captured reply, where it
   said "Reply sent", and "Email sent again" for a resent notification, where it said "Reply sent".
+- **A secondary button in the CoreX admin has one border, in the CoreX palette.** WordPress
+  draws a border of its own on these buttons in its admin accent: blue, red on a destructive
+  button, pale grey on a disabled one. CoreX drew its line inside that one and left it alone, so
+  "Add note", "Move to trash" and "Send reply" in a submission's pane, and the secondary buttons
+  of the Data screen, Data Models and the export dialog, were outlined in a colour that is not
+  CoreX's, in the light theme and the dark. No button changes size.
 
 
 ### Client impact

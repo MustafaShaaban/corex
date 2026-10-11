@@ -21,7 +21,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * @param {Object}                    props
  * @param {string}                    props.title       Names the dialog, visibly and to assistive technology.
- * @param {Function}                  props.onClose     Called when the person asks to leave: Escape, the close button, or a click outside.
+ * @param {Function}                  props.onClose     Called when the person asks to leave: Escape, the close button, or a press that starts and ends outside the panel.
  * @param {import('react').ReactNode} props.children    The dialog's content.
  * @param {import('react').ReactNode} [props.footer]    Actions, kept in view under content that scrolls.
  * @param {string}                    [props.className] An extra class for the surface that uses it.
@@ -43,6 +43,9 @@ export default function CorexDialog( {
 	id,
 } ) {
 	const dialog = useRef( null );
+	// Whether the press of the mouse now in progress began on the backdrop and, once it is let
+	// go, ended there too.
+	const pressOnBackdrop = useRef( false );
 	const titleId = useId();
 
 	// A layout effect, for its cleanup: that runs while the dialog is still in the document. The
@@ -67,9 +70,16 @@ export default function CorexDialog( {
 		}
 	};
 
+	// The backdrop is the dialog element itself, outside its panel.
+	const isOnBackdrop = ( event ) => event.target === dialog.current;
+
 	return (
-		// Escape is the keyboard's way out and arrives as `cancel`. The click handler is for a
-		// press on the backdrop, which is the dialog element itself, outside its panel.
+		// Escape is the keyboard's way out and arrives as `cancel`. The mouse handlers are for a
+		// press on the backdrop, and a click there is not enough to know one by: when the mouse
+		// goes down on one element and comes up on another, the browser gives the click to the
+		// nearest element holding both, which between the backdrop and anything in the panel is
+		// this one. So both ends of the press are read, as they happen and before anything in the
+		// panel can stop them: a press slid off a button and let go outside is not a way out.
 		// eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
 		<dialog
 			ref={ dialog }
@@ -93,8 +103,15 @@ export default function CorexDialog( {
 				event.preventDefault();
 				leave();
 			} }
+			onMouseDownCapture={ ( event ) => {
+				pressOnBackdrop.current = isOnBackdrop( event );
+			} }
+			onMouseUpCapture={ ( event ) => {
+				pressOnBackdrop.current =
+					pressOnBackdrop.current && isOnBackdrop( event );
+			} }
 			onClick={ ( event ) => {
-				if ( event.target === dialog.current ) {
+				if ( pressOnBackdrop.current && isOnBackdrop( event ) ) {
 					leave();
 				}
 			} }
