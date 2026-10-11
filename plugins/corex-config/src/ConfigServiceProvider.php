@@ -763,8 +763,17 @@ final class ConfigServiceProvider extends ServiceProvider
                 $c->make(\Corex\Config\Submissions\SubmissionOwnerNames::class),
                 $c->make(\Corex\Config\Submissions\SubmissionTrashRetention::class),
                 $c->make(\Corex\Config\Submissions\SubmissionReplyView::class),
+                $c->make(\Corex\Config\Submissions\SubmissionFileAnswers::class),
             ),
         );
+        // A file uploaded with a submission, wherever a submission is read: the pane, an export,
+        // and the address the file is opened at (spec 081, Phase F).
+        $this->container->singleton(
+            \Corex\Config\Submissions\SubmissionFiles::class,
+            \Corex\Config\Submissions\WpSubmissionFiles::class,
+        );
+        $this->container->singleton(\Corex\Config\Submissions\SubmissionFileAnswers::class);
+        $this->container->singleton(\Corex\Config\Submissions\SubmissionFileDelivery::class);
         $this->container->singleton(\Corex\Config\Submissions\WpSubmissionReplyStore::class);
         $this->container->singleton(
             \Corex\Config\Submissions\SubmissionReplyStore::class,
@@ -866,6 +875,7 @@ final class ConfigServiceProvider extends ServiceProvider
                 new \Corex\Config\Submissions\SubmissionExportTable(
                     $c->make(\Corex\Config\Submissions\SubmissionOwnerNames::class),
                     static fn (): \DateTimeZone => wp_timezone(),
+                    $c->make(\Corex\Config\Submissions\SubmissionFileAnswers::class),
                 ),
         );
         $this->container->singleton(\Corex\Config\Submissions\SubmissionExportFiles::class);
@@ -1137,6 +1147,7 @@ final class ConfigServiceProvider extends ServiceProvider
         // refusal that used to reach WordPress's white box (spec 083).
         $this->container->make(\Corex\Admin\Errors\AdminDieHandler::class)->register();
         $this->container->make(\Corex\Security\Upload\AttachmentDelivery::class)->register();
+        $this->container->make(\Corex\Config\Submissions\SubmissionFileDelivery::class)->register();
         $this->container->make(\Corex\Config\Access\AccessScreen::class)->register();
         $this->container->make(\Corex\Config\Blog\BlogProScreen::class)->register();
         $this->container->make(\Corex\Config\Operations\OperationsModeController::class)->register();

@@ -155,3 +155,75 @@ it('still answers a detail with nobody to ask about questions or owners', functi
 
     expect($service->detail(7, 4))->toMatchArray(['questions' => [], 'owner_name' => '', 'owners' => []]);
 });
+
+/**
+ * A submission with an uploaded file showed the number its file is stored under (spec 081,
+ * SC-002; reported 2026-10-11). The pane draws a described file as a link; this is what
+ * describes one for it.
+ */
+function applicationQuestions(): Corex\Config\Submissions\SubmissionQuestions
+{
+    return new class implements Corex\Config\Submissions\SubmissionQuestions {
+        public function for(string $form): array
+        {
+            return $form === 'apply' ? [
+                ['key' => 'name', 'label' => 'Name', 'type' => 'text'],
+                ['key' => 'cv', 'label' => 'Your CV', 'type' => 'file'],
+            ] : [];
+        }
+    };
+}
+
+function inboxOfOneApplication(?SubmissionAccessScope $scope): SubmissionQueryService
+{
+    $reader = queryReader([[
+        'id' => 41, 'form' => 'apply', 'owner_type' => 'user', 'owner_key' => '7', 'is_test' => false,
+        'values' => ['name' => 'Salma', 'cv' => '224'],
+    ]], 1);
+
+    return new SubmissionQueryService(
+        $reader,
+        queryPolicy($scope),
+        applicationQuestions(),
+        files: new Corex\Config\Submissions\SubmissionFileAnswers(new Corex\Tests\Support\HeldUploads([
+            'cv' => [224 => ['name' => 'salma-cv.pdf', 'missing' => false]],
+        ])),
+    );
+}
+
+it('hands the detail pane an uploaded file by its name, with the address to open it', function () {
+    $detail = inboxOfOneApplication(new SubmissionAccessScope(7, true))->detail(7, 41);
+
+    expect($detail['values'])->toBe([
+        'name' => 'Salma',
+        'cv' => [
+            'id' => 224,
+            'name' => 'salma-cv.pdf',
+            'missing' => false,
+            'url' => 'https://example.test/file?submission=41&field=cv',
+        ],
+    ]);
+});
+
+it('names the file of one answer for a person their scope lets read the submission', function () {
+    $service = inboxOfOneApplication(new SubmissionAccessScope(actorId: 7, manageAll: false));
+
+    expect($service->file(7, 41, 'cv'))->toBe(['id' => 224, 'name' => 'salma-cv.pdf', 'missing' => false])
+        // An answer that is not a file, a question the form never asked, a submission that is not there.
+        ->and($service->file(7, 41, 'name'))->toBeNull()
+        ->and($service->file(7, 41, 'passport'))->toBeNull()
+        ->and($service->file(7, 99, 'cv'))->toBeNull();
+});
+
+it('names no file for a person whose scope leaves the submission out', function () {
+    // Assigned to user 7; this person manages only what is assigned to them.
+    $service = inboxOfOneApplication(new SubmissionAccessScope(actorId: 8, manageAll: false));
+
+    expect($service->file(8, 41, 'cv'))->toBeNull()
+        ->and($service->detail(8, 41))->toBeNull();
+});
+
+it('refuses to name a file for a person who cannot manage submissions at all', function () {
+    expect(fn () => inboxOfOneApplication(null)->file(23, 41, 'cv'))
+        ->toThrow(DomainException::class, 'not allowed');
+});

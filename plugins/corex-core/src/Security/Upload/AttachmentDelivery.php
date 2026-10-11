@@ -82,6 +82,19 @@ final class AttachmentDelivery
             wp_die(esc_html__('You don’t have permission to open this file.', 'corex'), 403);
         }
 
+        $this->deliver($attachmentId);
+    }
+
+    /**
+     * Send a protected file to the person asking, whom the caller has found may read it.
+     *
+     * The one place a protected file leaves from. {@see serve()} asks WordPress whether this
+     * person may read the attachment. A file that belongs to something with a rule of its own (a
+     * submission, which has the inbox's) is checked by that rule and then sent from here, so
+     * what is sent, and under which headers, is decided once.
+     */
+    public function deliver(int $attachmentId): never
+    {
         if (get_post_meta($attachmentId, '_corex_protected', true) !== '1') {
             // Not ours to serve. Anything else in the media library has its own URL and its own
             // rules, and turning this into a general file reader is how it becomes an LFI.

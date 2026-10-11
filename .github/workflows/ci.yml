@@ -240,6 +240,15 @@ jobs:
           mkdir -p wp/wp-content/corex-releases
           chmod -R a+rwx wp/wp-content/corex-releases
 
+      # A browser test sends a form with a file (submission-file.spec.js), and the site keeps it
+      # in wp-content/uploads/corex-private. The uploads folder does not exist on a new install,
+      # and php-fpm cannot make it. Without this the form answers "The file could not be
+      # stored", which is the right answer on such a host and not what the test is about.
+      - name: Give the site a folder to keep uploaded files in
+        run: |
+          mkdir -p wp/wp-content/uploads
+          chmod -R a+rwx wp/wp-content/uploads
+
       - name: Seed browser-test fixtures
         run: |
           # /contact/ carrying the registered contact form. corex/form with no flowId or flowSlug
