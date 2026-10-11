@@ -134,6 +134,13 @@ After 7b, a defect found in a real export of Form submissions (D12e):
 - [x] T107 `ExportableDataSource`, implemented by the submissions source and the managed-table source; the job and the service read export rows only; the export capabilities need it as their adapter
 - [x] T108 Guards; the guide, the changelog and its Client impact; notes
 
+After slice 7, a defect in the inbox's search, met on 2026-10-11 (spec 068, FR-046; DECISIONS #318). No requirement of this spec changes: the search already says it finds a sender, and it did not find the sender of a form defined in code, which the row shows.
+
+- [x] T110 Failing tests first, Pest integration, on a submission stored by the repository a form defined in code stores through: found by the sender's email, by a part of the name, and by each answer the row reads the sender from; an answer the row does not show as the sender finds nothing; a person's own scope holds under a search; the Data screen's search finds it (`tests/Integration/Submissions/SubmissionInboxSearchTest.php`)
+- [x] T111 `WpSubmissionsReader::searchClause()` looks in the answers the row reads the sender from; the row and the search read one list (`NAME_ANSWERS`, `EMAIL_ANSWERS`)
+- [x] T112 Playwright: the inbox finds such a submission by the email and by the name in its row, and says "1 accessible submission" (`submissions-inbox.spec.js`); `submission-file.spec.js` searches by the email the visitor gave, where it searched by the form
+- [x] T113 The cost measured on 10,000 submissions, against writing the sender when the submission is stored (DECISIONS #318); guards; the guide, the changelog; notes
+
 ## Dependencies
 
 - Slice 1 depends on nothing.

@@ -40,9 +40,11 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**One change is on `main` after v0.45.1, unreleased** (2026-10-11): a form's notification
+**Two changes are on `main` after v0.45.1, unreleased** (2026-10-11): a form's notification
 email names the file it was sent with and links to the submission in the inbox, and does not
-attach it (spec 081, Phase G; DECISIONS #319; the owner's decision). v0.45.1 holds the rest:
+attach it (spec 081, Phase G; DECISIONS #319; the owner's decision); and the inbox's search
+finds a submission of a form defined in code by the sender its row shows (spec 103, T110 to
+T113; DECISIONS #318). v0.45.1 holds the rest:
 v0.45.0, and the fix that opens a submission's file from the inbox (DECISIONS #317). The owner asked for the framework to be left
 stable so the client sites can take one release and be worked on without it; this section says
 where each unfinished spec stops, so work resumes from here and not from a transcript.
@@ -141,10 +143,11 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 - **CoreX → Data → Form submissions prints that number too**, in its record view and in its
   own export. The Submissions inbox and its export name the file. Read from
   `SubmissionsSource`, not looked at in a browser.
-- **The inbox's search does not find a submission of a form defined in code by its sender's
-  name or email.** It looks in two fields only a flow's submission has
-  (`WpSubmissionsReader::searchClause()`). The form's slug is found. Read from the code and
-  met in a browser on 2026-10-11; not fixed.
+- **The inbox's list is slow on a site with many thousands of submissions.** Measured on
+  2026-10-11 with 10,000 of them: the statement that lists the inbox with no search took
+  0.6 s, and 1.2 s on a second seeding; without the clause that leaves out submissions marked
+  as tests it took 18 ms. A search is quicker than no search. Whether a client site holds
+  anything near that number was not read. Measured for DECISIONS #318, not changed.
 
 - **Anonymizing a submission leaves its uploaded files on disk.** The retention panel's
   "Anonymize" removes the answers, which are what name the files, and not the files. Nothing can

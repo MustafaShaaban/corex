@@ -26,6 +26,14 @@ use WP_Query;
 final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflowStore, SubmissionExportSource, SubmissionRetentionStore
 {
     /**
+     * The answers a row reads the sender from when the submission holds no projection of them:
+     * a form defined in code stores its answers and nothing else. The search looks in the same
+     * answers, so what a row shows is what finds it.
+     */
+    private const NAME_ANSWERS = ['name', 'full_name', 'first_name'];
+    private const EMAIL_ANSWERS = ['email', 'email_address'];
+
+    /**
      * @return list<array{id:int,date:string,form:string,fields:array<string,mixed>}>
      */
     public function page(int $page, int $perPage): array
@@ -317,9 +325,9 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
 
     /**
      * Build the WP_Query args for a DataQuery: a `form` filter via the slug meta, a date
-     * sort, and pagination. The free-text search uses WP_Query's `s` (post fields); meta
-     * value search is a documented limitation of the post-meta driver (a custom-table
-     * driver would index it). All values are passed as args (no SQL string-building).
+     * sort, and pagination. The free-text search is the inbox's ({@see searchClause()}): the
+     * sender, the form and the flow, and no other answer. All values are passed as args (no
+     * SQL string-building).
      *
      * @return array<string,mixed>
      */
@@ -446,15 +454,28 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
         ];
     }
 
-    /** @return array<string,mixed> */
+    /**
+     * A submission is found by what its row shows: the sender, the form and the flow. The sender
+     * is looked for where the row reads it ({@see submitter()}): in the projection a flow's
+     * submission holds, and in the answers, which are all a form defined in code stores.
+     *
+     * A key more is a condition more on one join, and not a join more: WordPress gives the
+     * clauses of an OR group one alias. Every answer is not searched, because that reads every
+     * answer of every submission.
+     *
+     * @return array<string,mixed>
+     */
     private function searchClause(string $search): array
     {
-        return ['relation' => 'OR',
-            ['key' => 'corex_submitter_name', 'value' => $search, 'compare' => 'LIKE'],
-            ['key' => 'corex_submitter_email', 'value' => $search, 'compare' => 'LIKE'],
-            ['key' => 'corex_form_slug', 'value' => $search, 'compare' => 'LIKE'],
-            ['key' => 'corex_flow_label_snapshot', 'value' => $search, 'compare' => 'LIKE'],
-        ];
+        $keys = ['corex_submitter_name', 'corex_submitter_email', 'corex_form_slug', 'corex_flow_label_snapshot'];
+        foreach ([...self::NAME_ANSWERS, ...self::EMAIL_ANSWERS] as $answer) {
+            $keys[] = 'corex_field_' . $answer;
+        }
+
+        return ['relation' => 'OR', ...array_map(
+            static fn (string $key): array => ['key' => $key, 'value' => $search, 'compare' => 'LIKE'],
+            $keys,
+        )];
     }
 
     /** @return array<string,mixed> */
@@ -522,8 +543,8 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
             'read_by' => $this->nullableInt($meta, 'corex_read_by'),
             'owner_type' => (string) ($this->metaValue($meta, 'corex_owner_type') ?: ($inbox['owner_type'] ?? 'none')),
             'owner_key' => (string) ($this->metaValue($meta, 'corex_owner_key') ?: ($inbox['owner_key'] ?? '')),
-            'submitter_name' => $this->submitter($meta, $values, ['name', 'full_name', 'first_name']),
-            'submitter_email' => $this->submitter($meta, $values, ['email', 'email_address']),
+            'submitter_name' => $this->submitter($meta, $values, 'corex_submitter_name', self::NAME_ANSWERS),
+            'submitter_email' => $this->submitter($meta, $values, 'corex_submitter_email', self::EMAIL_ANSWERS),
             'values' => $values,
             'hidden_metadata' => $this->metaArray($meta, 'corex_hidden_metadata_json'),
             'utm' => $this->metaArray($meta, 'corex_utm_json'),
@@ -608,15 +629,15 @@ final class WpSubmissionsReader implements SubmissionsReader, SubmissionWorkflow
     /**
      * @param array<string,list<mixed>> $meta
      * @param array<string,mixed> $values
-     * @param list<string> $keys
+     * @param list<string> $answers
      */
-    private function submitter(array $meta, array $values, array $keys): string
+    private function submitter(array $meta, array $values, string $projectionKey, array $answers): string
     {
-        $projection = (string) $this->metaValue($meta, $keys[0] === 'email' ? 'corex_submitter_email' : 'corex_submitter_name');
+        $projection = (string) $this->metaValue($meta, $projectionKey);
         if ($projection !== '') {
             return $projection;
         }
-        foreach ($keys as $key) {
+        foreach ($answers as $key) {
             if (is_scalar($values[$key] ?? null)) {
                 return (string) $values[$key];
             }
