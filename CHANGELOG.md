@@ -115,6 +115,12 @@ All notable changes to Corex are documented here. The format follows
   had gone.
 - **The history says "Reply kept on this site, not delivered"** for a captured reply, where it
   said "Reply sent", and "Email sent again" for a resent notification, where it said "Reply sent".
+- **A secondary button in the CoreX admin has one border, in the CoreX palette.** WordPress
+  draws a border of its own on these buttons in its admin accent: blue, red on a destructive
+  button, pale grey on a disabled one. CoreX drew its line inside that one and left it alone, so
+  "Add note", "Move to trash" and "Send reply" in a submission's pane, and the secondary buttons
+  of the Data screen, Data Models and the export dialog, were outlined in a colour that is not
+  CoreX's, in the light theme and the dark. No button changes size.
 
 ### Client impact
 

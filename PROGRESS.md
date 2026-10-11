@@ -127,6 +127,14 @@ long: read it before a client site takes the release. In short:
   where it was printed as JSON. A client site carried that as a patch to a framework file and
   can drop it.
 
+**Unreleased on `main`, outside the specs above** (2026-10-11): a secondary Gutenberg button in
+the CoreX admin has one border, CoreX's. WordPress's own border on it, in the admin accent, was
+drawn outside CoreX's line on every screen. `tests/e2e/admin-controls.spec.js` measures the
+border in each state WordPress colours it in, in both themes. Found on the way and not fixed: a
+press that starts on a button in the submission pane and is let go on the backdrop closes the
+pane, with whatever was being written in it (`CorexDialog` reads the click as one on the
+backdrop). A text selection dragged out of the pane does not.
+
 Earlier releases are in [`CHANGELOG.md`](CHANGELOG.md), each with its decisions.
 
 ## Next

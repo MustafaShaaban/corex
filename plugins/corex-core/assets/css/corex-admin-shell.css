@@ -955,23 +955,42 @@ body.corex-admin-screen .corex-admin__shell {
 	border-color: var(--corex-admin-action-hover);
 }
 
+/* Every Gutenberg button has a real border, transparent until a variant
+   colours it, and Gutenberg colours this variant's with the admin accent:
+   blue, red on a destructive button, pale grey on a disabled one. This rule
+   used to draw the CoreX border as an inset shadow and leave that one alone,
+   so a secondary button had two lines, the outer one off the palette. The
+   real border is the one drawn now, as on `.button` and `.is-primary`. */
 .corex-admin .components-button.is-secondary {
 	color: var(--corex-admin-text);
 	background: var(--corex-admin-surface-raised);
-	box-shadow: inset 0 0 0 var(--corex-admin-border-width) var(--corex-admin-border);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
 }
 
 .corex-admin .components-button.is-secondary:hover:not(:disabled) {
 	color: var(--corex-admin-text);
 	background: var(--corex-admin-surface-alt);
-	box-shadow: inset 0 0 0 var(--corex-admin-border-width) var(--corex-admin-border-strong);
 }
 
-/* This variant draws its border with an inset shadow, so the blanket
-   `box-shadow: none` above would erase the border along with the ring.
-   Restated at the specificity the reset has to be undone at. */
-.corex-admin .components-button.is-secondary:focus:not(:active) {
-	box-shadow: inset 0 0 0 var(--corex-admin-border-width) var(--corex-admin-border);
+/* Gutenberg colours the border again in a rule for each state, up to
+   `.is-secondary[aria-disabled="true"]:hover:not(:focus)` at (0,5,0), and the
+   resting rule here is (0,3,0). The first four selectors are Gutenberg's with
+   the shell in front. The last has none to mirror: held down, Gutenberg makes
+   the border transparent, and a button that is disabled and still focusable
+   would lose its edge. */
+.corex-admin .components-button.is-secondary:focus:not(:active),
+.corex-admin .components-button.is-secondary:disabled:not(:focus),
+.corex-admin .components-button.is-secondary[aria-disabled="true"]:not(:focus),
+.corex-admin .components-button.is-secondary[aria-disabled="true"]:hover:not(:focus),
+.corex-admin .components-button.is-secondary[aria-disabled="true"]:active {
+	border-color: var(--corex-admin-border);
+}
+
+/* After the group above, which it ties with: a button that keeps focus after
+   a click still answers the pointer. */
+.corex-admin .components-button.is-secondary:hover:not(:disabled, [aria-disabled="true"]),
+.corex-admin .components-button.is-secondary:active:not(:disabled, [aria-disabled="true"]) {
+	border-color: var(--corex-admin-border-strong);
 }
 
 .corex-admin .components-button.is-link {
