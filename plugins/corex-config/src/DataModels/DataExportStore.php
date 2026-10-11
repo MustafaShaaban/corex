@@ -4,6 +4,8 @@
 declare(strict_types=1);
 namespace Corex\Config\DataModels;
 defined('ABSPATH') || exit;
+
+use DateTimeImmutable;
 interface DataExportStore
 {
     public function create(DataExportRun $run): DataExportRun;
@@ -13,7 +15,12 @@ interface DataExportStore
     /** @return list<DataExportRun> */
     public function history(int $actorId, bool $manageAll, int $limit): array;
     /**
-     * Records where a finished export's file is.
+     * Marks one model of a run as not read: it could not be, when its turn came.
+     */
+    public function leaveOut(int $id, string $sourceKey): DataExportRun;
+
+    /**
+     * Records where a finished export's file is, and how large it is.
      *
      * @param array{path:string,extension:string,content_type:string} $file
      */
@@ -32,4 +39,19 @@ interface DataExportStore
      */
     public function artifact(int $id): ?string;
     public function finish(int $id, int $rows): void;
+
+    /**
+     * Removes a run's file and keeps its entry, which then says why the file is gone.
+     *
+     * @param string $reason  One of `DataExportRun::REMOVED_*`.
+     * @param int    $actorId Who deleted it; 0 when it expired.
+     */
+    public function removeFile(int $id, string $reason, int $actorId): DataExportRun;
+
+    /**
+     * The runs made before a moment that still hold a file, oldest first.
+     *
+     * @return list<DataExportRun>
+     */
+    public function holdingFilesBefore(DateTimeImmutable $cutoff, int $limit): array;
 }

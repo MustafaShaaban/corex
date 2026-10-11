@@ -30,20 +30,59 @@ final readonly class DataExportAbout
     }
 
     /**
-     * @param list<DataField> $fields Every field the source declares, for the label a filter is shown under.
+     * @param list<array{index:int,label:string,fields:list<DataField>}> $models The parts that
+     *        were written: which part of the run, the source's name, and every field it declares
+     *        (for the label a filter is shown under).
      *
      * @return list<array{0:string,1:string}> A label and what it says, in reading order.
      */
-    public function facts(DataExportRun $run, array $fields): array
+    public function facts(DataExportRun $run, array $models): array
     {
         return [
-            [__('What was exported', 'corex'), $this->scope($run, $fields)],
+            [__('What was exported', 'corex'), $run->isSeveral() ? $this->models($run, $models) : $this->scope($run, $models[0]['fields'])],
+            ...$this->leftOut($run),
             [__('Records', 'corex'), (string) ($run->exportedRows ?: $run->recordCount)],
             [__('Exported by', 'corex'), ExportAttribution::line(
                 ($this->nameOf)($run->actorId),
                 $run->createdAt->setTimezone(($this->siteTimezone)()),
             )],
         ];
+    }
+
+    /**
+     * Each model that was written, by name, with how many records it gave.
+     *
+     * @param list<array{index:int,label:string,fields:list<DataField>}> $models
+     */
+    private function models(DataExportRun $run, array $models): string
+    {
+        return implode('; ', array_map(
+            static fn (array $model): string => sprintf(
+                /* translators: 1: the name of a data model, e.g. "Contacts". 2: how many records it gave. */
+                _n('%1$s: %2$d record', '%1$s: %2$d records', $run->parts[$model['index']]->recordCount, 'corex'),
+                $model['label'],
+                $run->parts[$model['index']]->recordCount,
+            ),
+            $models,
+        ));
+    }
+
+    /**
+     * The models that could not be read when their turn came. Named by key: a model that is
+     * gone has nobody left to say its name.
+     *
+     * @return list<array{0:string,1:string}> One fact, or none when every model was written.
+     */
+    private function leftOut(DataExportRun $run): array
+    {
+        $keys = [];
+        foreach ($run->parts as $part) {
+            if ($part->leftOut) {
+                $keys[] = $part->sourceKey;
+            }
+        }
+
+        return $keys === [] ? [] : [[__('Left out, because it could not be read', 'corex'), implode(', ', $keys)]];
     }
 
     /** @param list<DataField> $fields */

@@ -6,6 +6,7 @@ namespace Corex\Config\DataModels;
 defined('ABSPATH') || exit;
 
 use Corex\Config\Export\ExportDirectory;
+use DateTimeImmutable;
 use RuntimeException;
 
 /** Private WordPress export history, and where each export's file is. */
@@ -98,6 +99,57 @@ final class WpDataExportStore implements DataExportStore
         // backslashes from stored meta, which is every separator of a Windows path, and an
         // absolute path stops being true the day a site is moved.
         update_post_meta($id, self::FILE, ['name' => basename($file['path'])] + array_diff_key($file, ['path' => true]));
+        // Kept on the run, so the history can still say how large a file was once it is gone.
+        $this->persist($this->find($id)->withFileOf(is_file($file['path']) ? (int) filesize($file['path']) : 0));
+    }
+
+    public function leaveOut(int $id, string $sourceKey): DataExportRun
+    {
+        $run = $this->find($id) ?? throw new RuntimeException(__('Data export was not found.', 'corex'));
+        $run = $run->leavingOut($sourceKey);
+        $this->persist($run);
+
+        return $run;
+    }
+
+    public function removeFile(int $id, string $reason, int $actorId): DataExportRun
+    {
+        $run = $this->find($id) ?? throw new RuntimeException(__('Data export was not found.', 'corex'));
+        $file = $this->file($id);
+        if ($file !== null) {
+            wp_delete_file($file['path']);
+        }
+        delete_post_meta($id, self::FILE);
+        delete_post_meta($id, self::ARTIFACT);
+
+        $run = $run->withoutFile($reason, $actorId, new DateTimeImmutable('now'));
+        $this->persist($run);
+
+        return $run;
+    }
+
+    public function holdingFilesBefore(DateTimeImmutable $cutoff, int $limit): array
+    {
+        $ids = get_posts([
+            'post_type' => self::POST_TYPE,
+            'post_status' => 'private',
+            'posts_per_page' => max(1, $limit),
+            'fields' => 'ids',
+            'orderby' => 'date',
+            'order' => 'ASC',
+            'no_found_rows' => true,
+            'date_query' => [['before' => $cutoff->format('Y-m-d H:i:s'), 'column' => 'post_date_gmt']],
+            'meta_query' => [
+                'relation' => 'OR',
+                ['key' => self::FILE, 'compare' => 'EXISTS'],
+                ['key' => self::ARTIFACT, 'compare' => 'EXISTS'],
+            ],
+        ]);
+
+        return array_values(array_filter(array_map(
+            fn (int $id): ?DataExportRun => $this->find($id),
+            array_map('intval', $ids),
+        )));
     }
 
     public function file(int $id): ?array

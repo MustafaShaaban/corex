@@ -33,6 +33,7 @@ use Corex\Config\DataModels\DataExportJobQueue;
 use Corex\Config\DataModels\DataExportRequest;
 use Corex\Config\DataModels\DataExportRun;
 use Corex\Config\DataModels\DataExportService;
+use Corex\Config\DataModels\DataExportSetRequest;
 use Corex\Config\DataModels\DataExportStore;
 use Corex\Config\DataModels\DataExportTable;
 use Corex\Config\Export\ExportDirectory;
@@ -124,10 +125,13 @@ function contactsSource(bool $xlsx = true): DataSource
 }
 
 /** @return array{DataExportService,DataExportStore,DataExportJobQueue,DataSourceService,ActivityRepository} */
-function exportService(bool $xlsx = true, ?DataSource $source = null, ?DataAccessPolicy $policy = null): array
+function exportService(bool $xlsx = true, ?DataSource $source = null, ?DataAccessPolicy $policy = null, array $more = []): array
 {
     $registry = new DataRegistry();
     $registry->register($source ?? contactsSource($xlsx));
+    foreach ($more as $another) {
+        $registry->register($another);
+    }
     $policy ??= new class implements DataAccessPolicy {
         public function allows(int $actorId, string $ability): bool { return $actorId === 7; }
     };
@@ -143,6 +147,9 @@ function exportService(bool $xlsx = true, ?DataSource $source = null, ?DataAcces
         public function findByHash(string $hash): ?DataExportRun { foreach ($this->runs as $run) if ($run->inputHash === $hash) return $run; return null; }
         public function history(int $actorId, bool $manageAll, int $limit): array { return array_slice(array_values(array_filter($this->runs, static fn (DataExportRun $run): bool => $manageAll || $run->actorId === $actorId)), 0, $limit); }
         public function saveFile(int $id, array $file): void { $this->files[$id] = $file; }
+        public function leaveOut(int $id, string $sourceKey): DataExportRun { return $this->runs[$id] = $this->runs[$id]->leavingOut($sourceKey); }
+        public function removeFile(int $id, string $reason, int $actorId): DataExportRun { unset($this->files[$id]); return $this->runs[$id] = $this->runs[$id]->withoutFile($reason, $actorId, new DateTimeImmutable('now')); }
+        public function holdingFilesBefore(DateTimeImmutable $cutoff, int $limit): array { return array_values(array_filter($this->runs, fn (DataExportRun $run): bool => isset($this->files[$run->id]) && $run->createdAt < $cutoff)); }
         public function file(int $id): ?array { return $this->files[$id] ?? null; }
         public function artifact(int $id): ?string { return $this->artifacts[$id] ?? null; }
         public function finish(int $id, int $rows): void { $this->runs[$id] = $this->runs[$id]->completed($rows); }
@@ -598,4 +605,229 @@ it('refuses a PDF of more records than a PDF is written for, and says what to do
         ->and($store->runs)->toBe([])
         // The same export as a workbook is taken.
         ->and($service->request(exportRequest($everything + ['format' => 'xlsx']))->recordCount)->toBe(501);
+});
+
+// Spec 109, slice 2: several models in one export. A run holds a part for each; one job gathers
+// them and the writers that already write several sheets write one file.
+
+/**
+ * A second model beside the contacts: invoices, with a number and a customer's name.
+ *
+ * `withdraw()` is the model going away while an export is being written: its add-on switched
+ * off, or the right to export it taken back.
+ */
+function invoicesSource(int $count = 2): DataSource
+{
+    return new class($count) implements DataSource, ExportableDataSource, CapabilityAwareDataSource {
+        private bool $withdrawn = false;
+        public function __construct(private int $count) {}
+        public function withdraw(): void { $this->withdrawn = true; }
+        public function key(): string { return 'table-invoices'; }
+        public function label(): string { return 'Invoices'; }
+        public function columns(): array { return [['id' => 'number', 'label' => 'Number'], ['id' => 'customer', 'label' => 'Customer']]; }
+        public function rows(int $page, int $perPage): array { return array_slice($this->all(), ($page - 1) * $perPage, $perPage); }
+        public function total(): int { return $this->count; }
+        public function delete(int $id): bool { return false; }
+        public function query(DataQuery $query): array { return $this->rows($query->page, $query->perPage); }
+        public function count(DataQuery $query): int { return $this->count; }
+        public function record(int $id): ?array { return null; }
+        public function exportRows(DataQuery $query): array { return $this->query($query); }
+        public function exportRowsOf(array $ids): array { return []; }
+        public function capabilities(): DataSourceCapabilities
+        {
+            return new DataSourceCapabilities(
+                sourceKey: 'table-invoices', read: true, query: true, schema: true, detail: true,
+                create: false, update: false, delete: false, bulkUpdate: false, bulkDelete: false,
+                importDryRun: false, importCommit: false, exportCsv: ! $this->withdrawn, exportXlsx: ! $this->withdrawn,
+                migrations: false, rollback: false, maxPageSize: 100,
+                permissionMap: ['query' => 'corex_manage_data', 'detail' => 'corex_manage_data', 'export_csv' => 'corex_manage_data', 'export_xlsx' => 'corex_manage_data'],
+            );
+        }
+        public function fields(): array
+        {
+            return [
+                new DataField('number', 'Number', DataField::TYPE_TEXT, false, true, true, [], true, DataField::PERSONAL_NONE, [], []),
+                new DataField('customer', 'Customer', DataField::TYPE_TEXT, false, true, true, [], true, DataField::PERSONAL_IDENTITY, [], []),
+            ];
+        }
+        private function all(): array
+        {
+            return array_map(
+                static fn (int $n): array => ['id' => $n, 'number' => 'INV-' . $n, 'customer' => 'Customer ' . $n],
+                $this->count === 0 ? [] : range(1, $this->count),
+            );
+        }
+    };
+}
+
+function severalRequest(array $changes = []): DataExportSetRequest
+{
+    return DataExportSetRequest::from($changes + [
+        'actor_id' => 7,
+        'parts' => [['source' => 'contacts'], ['source' => 'table-invoices']],
+        'format' => 'xlsx',
+        'personal_data_acknowledged' => true,
+    ]);
+}
+
+it('queues one export of several models, each counted, with every column the person may export', function () {
+    [$service, , $queue] = exportService(more: [invoicesSource(40)]);
+
+    $run = $service->requestSeveral(severalRequest());
+
+    expect($run->sourceKeys())->toBe(['contacts', 'table-invoices'])
+        ->and($run->parts[0]->recordCount)->toBe(3)
+        ->and($run->parts[0]->columns)->toBe(['id', 'name', 'email', 'status', 'joined', 'tags'])
+        ->and($run->parts[1]->recordCount)->toBe(40)
+        ->and($run->recordCount)->toBe(43)
+        ->and($run->personalDataClasses)->toBe(['contact', 'identity'])
+        ->and($run->scope)->toBe('all')
+        ->and($queue->runs)->toHaveCount(1);
+});
+
+it('says how many records each model would give, before anything is exported', function () {
+    [$service] = exportService(more: [invoicesSource(40)]);
+
+    expect($service->previewSeveral(7, ['contacts', 'table-invoices']))
+        ->toBe(['contacts' => 3, 'table-invoices' => 40]);
+});
+
+it('leaves a model with no records out of the export, and makes none when every model is empty', function () {
+    [$service] = exportService(more: [invoicesSource(0)]);
+    [$empty] = exportService(source: invoicesSource(0));
+
+    expect($service->requestSeveral(severalRequest())->sourceKeys())->toBe(['contacts'])
+        ->and(fn () => $empty->requestSeveral(severalRequest(['parts' => [['source' => 'table-invoices']]])))
+        ->toThrow(DomainException::class, 'nothing to export');
+});
+
+it('gives a person who may not take personal data out the other columns of each model', function () {
+    [$service] = exportService(more: [invoicesSource()], policy: managesDataOnly());
+
+    $run = $service->requestSeveral(severalRequest(['personal_data_acknowledged' => false]));
+
+    expect($run->parts[0]->columns)->toBe(['id', 'status', 'joined', 'tags'])
+        ->and($run->parts[1]->columns)->toBe(['number'])
+        ->and($run->personalDataClasses)->toBe([]);
+});
+
+it('refuses several models for the reasons it refuses one', function (array $changes, ?DataAccessPolicy $policy, string $exception, string $reason) {
+    [$service, $store] = exportService(more: [invoicesSource(600)], policy: $policy);
+
+    expect(fn () => $service->requestSeveral(severalRequest($changes)))->toThrow($exception, $reason)
+        ->and($store->runs)->toBe([]);
+})->with([
+    'personal data, not acknowledged' => [['personal_data_acknowledged' => false], null, DomainException::class, 'acknowledge'],
+    'a personal column named by a person without the right' => [
+        ['parts' => [['source' => 'table-invoices', 'columns' => ['customer']]]],
+        managesDataOnly(),
+        PersonalDataNotAllowed::class,
+        'personal data',
+    ],
+    'a column the model does not have' => [
+        ['parts' => [['source' => 'contacts', 'columns' => ['secret']]]], null, InvalidArgumentException::class, 'column',
+    ],
+    'more records between them than a PDF holds' => [['format' => 'pdf'], null, DomainException::class, 'PDF holds up to 500'],
+    'a model that is not there' => [['parts' => [['source' => 'nowhere']]], null, DomainException::class, 'unavailable'],
+]);
+
+/**
+ * Runs an export of several models to the end, as the runner would.
+ *
+ * @param callable(int):void|null $betweenSteps Called after each step with the number of steps taken.
+ *
+ * @return array{download:array{filename:string,mime:string,content:string},run:DataExportRun,directory:string,events:list<ActivityEvent>}
+ */
+function runSeveral(array $request, array $more, int $batchSize = 25, ?callable $betweenSteps = null): array
+{
+    [$service, $store, , $sources, $activity] = exportService(more: $more);
+    [$files, $directory] = dataExportFiles();
+    $run = $service->requestSeveral(severalRequest($request));
+    $now = new DateTimeImmutable('2026-07-04T12:00:00+00:00');
+    $job = BoundedJob::queued(DataExportJobHandler::KIND, 7, $run->recordCount, $run->inputHash, $now)->withId(52)->start($now);
+    $handler = new DataExportJobHandler($sources, $store, $files, new ActivityService($activity));
+    $steps = 0;
+    do {
+        $job = $handler->handle($job, $batchSize);
+        $steps++;
+        if ($betweenSteps !== null) {
+            $betweenSteps($steps);
+        }
+    } while ($job->state !== BoundedJob::STATE_COMPLETED && $steps < 20);
+
+    return [
+        'download' => $service->download(7, $run->id, false),
+        'run' => $store->find($run->id),
+        'directory' => $directory->path(),
+        'events' => $activity->events,
+    ];
+}
+
+/** @return array<string,string> Every member of a zip, by name. */
+function zipMembers(string $bytes): array
+{
+    $path = tempnam(sys_get_temp_dir(), 'corex-zip-test-');
+    file_put_contents($path, $bytes);
+    $zip = new ZipArchive();
+    $zip->open($path);
+    $members = [];
+    for ($index = 0; $index < $zip->numFiles; $index++) {
+        $members[$zip->getNameIndex($index)] = (string) $zip->getFromIndex($index);
+    }
+    $zip->close();
+    unlink($path);
+
+    return $members;
+}
+
+it('writes several models into one workbook, a sheet for each, named for its model', function () {
+    $made = runSeveral(['parts' => [['source' => 'contacts', 'columns' => ['name', 'status']], ['source' => 'table-invoices']]], [invoicesSource(40)], 25);
+    $workbook = zipMembers($made['download']['content']);
+
+    expect($made['download']['filename'])->toEndWith('.xlsx')
+        ->and($workbook['xl/workbook.xml'])->toContain('name="Contacts"')->toContain('name="Invoices"')
+        ->and($workbook)->toHaveKeys(['xl/worksheets/sheet1.xml', 'xl/worksheets/sheet2.xml'])
+        // Forty invoices gathered over two steps, and none of them on the contacts' sheet.
+        ->and($workbook['xl/worksheets/sheet2.xml'])->toContain('INV-1')->toContain('INV-40')
+        ->and($workbook['xl/worksheets/sheet1.xml'])->not->toContain('INV-')
+        ->and($made['run']->state)->toBe(DataExportRun::STATE_COMPLETED)
+        ->and($made['run']->exportedRows)->toBe(43)
+        ->and(glob($made['directory'] . '/*.ndjson'))->toBe([]);
+});
+
+it('writes several models as text into one archive, a file for each', function () {
+    $made = runSeveral(['format' => 'csv'], [invoicesSource(3)]);
+    $files = zipMembers($made['download']['content']);
+
+    expect($made['download']['filename'])->toEndWith('.zip')
+        ->and(array_keys($files))->toBe(['Contacts.csv', 'Invoices.csv'])
+        ->and($files['Invoices.csv'])->toContain('INV-3')
+        ->and($files['Contacts.csv'])->toContain('Grace');
+});
+
+it('leaves out a model that went away while the export was written, says so, and writes the rest', function () {
+    $invoices = invoicesSource(40);
+    $made = runSeveral(['format' => 'csv'], [$invoices], 25, static function (int $steps) use ($invoices): void {
+        // After the contacts are gathered and before the invoices' turn.
+        if ($steps === 1) {
+            $invoices->withdraw();
+        }
+    });
+
+    expect($made['run']->state)->toBe(DataExportRun::STATE_COMPLETED)
+        ->and($made['run']->parts[1]->leftOut)->toBeTrue()
+        ->and($made['run']->exportedRows)->toBe(3)
+        // One model is one file, not an archive of one.
+        ->and($made['download']['filename'])->toEndWith('.csv')
+        ->and($made['download']['content'])->toContain('Grace')->not->toContain('INV-');
+});
+
+it('records an export of several models once, with its models and no value of any record', function () {
+    $made = runSeveral(['format' => 'csv'], [invoicesSource(3)]);
+    $event = $made['events'][0];
+
+    expect($made['events'])->toHaveCount(1)
+        ->and($event->context['sources'])->toBe(['contacts', 'table-invoices'])
+        ->and($event->context['row_count'])->toBe(6)
+        ->and(json_encode($event->context))->not->toContain('Grace')->not->toContain('INV-');
 });
