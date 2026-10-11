@@ -6,6 +6,40 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.45.0] — 2026-10-11
+
+Everything on `main` since v0.44.0, again with no pull request left open behind it: three things
+built, and a run of fixes.
+
+**A release is installed from the admin.** On CoreX → Releases a site on a host with no command
+line installs its next release, and goes back to the one before. **It has not been run on a
+shared host yet**: make the first one a release that changes nothing important, with somebody
+watching. This release itself still has to reach a site the old way.
+
+**A reply is a designed email.** It is written in an editor, previewed as the email it will be,
+sent with a plain-text version beside it, in the site's own colours, logo and footer or its own
+template, and kept on its submission. The reply box says, before anything is typed, when a reply
+will not be delivered.
+
+**Several data models are exported in one go**, and a column that holds personal data leaves the
+site in a file only with a person allowed to export personal data. Until now subscribers, job
+applicants, login attempts and the activity log's actors were exported with no confirmation and
+no right asked (Security, below).
+
+**Fixed**, mostly in dialogs: the `corex/modal` and `corex/drawer` blocks (closed by a press that
+began inside them, larger than the window, title and close button scrolled away, no name without
+a title, nothing to read with scripts off), the admin's own dialogs closed the same way, and a
+secondary button drawn with two borders.
+
+Read Client impact before a site takes this. What acts on a running site without being asked: a
+person who is not an administrator loses the personal columns in a Data export until given
+"Export personal data"; Data export files older than 30 days are removed at the first daily
+clean-up; on a production site with no delivery provider, or with live delivery off, Send reply
+is switched off; a reply's email looks different; and a cached page holding a `corex/modal` or a
+`corex/drawer` has its old markup under the new stylesheet until the cache is cleared. A site
+that implements `SubmissionEmailGateway` or `DataExportStore` itself has methods to add. Building
+needs a rebuild of `plugins/corex-config` and of `addons/corex-ui`.
+
 ### Added
 
 - **A release is installed from the admin** (spec 107, slice 4). On CoreX → Releases a package
