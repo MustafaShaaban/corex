@@ -322,3 +322,89 @@ describe( 'sending a package', () => {
 		);
 	} );
 } );
+
+describe( 'an installation', () => {
+	const KEY = 'a'.repeat( 64 );
+	const prepared = marked( { version: '0.45.0', key: KEY } );
+	const standing = marked( { step: 'verify', cursor: 0, of: 3 } );
+	const keyOf = ( request ) => request.headers[ 'X-Corex-Release-Key' ];
+
+	it( 'carries the installation’s key on every request once the site has given one', async () => {
+		const { client, sent } = scripted( [
+			marked( { packages: [] } ),
+			prepared,
+			standing,
+			standing,
+			marked( { done: true, version: '0.45.0', changes: [] } ),
+		] );
+
+		await client.overview();
+		await client.prepare( 'corex-release-acme-0.45.0.zip' );
+		await client.confirm( '0.45.0', { older: false } );
+		await client.step();
+		await client.finish();
+
+		// WordPress's maintenance answer lets through the request that carries it, and no other.
+		expect( sent.map( keyOf ) ).toEqual( [
+			undefined,
+			undefined,
+			KEY,
+			KEY,
+			KEY,
+		] );
+		expect( sent.map( ( request ) => request.url ) ).toEqual( [
+			REST,
+			`${ REST }/install/prepare`,
+			`${ REST }/install/confirm`,
+			`${ REST }/install/step`,
+			`${ REST }/install/finish`,
+		] );
+	} );
+
+	it( 'sends what was typed, and what else the confirmation needs', async () => {
+		const { client, sent } = scripted( [ prepared, standing ] );
+
+		await client.prepare( 'corex-release-acme-0.45.0.zip' );
+		await client.confirm( '0.45.0', { client: 'acme', older: true } );
+
+		expect( JSON.parse( sent[ 0 ].body ) ).toEqual( {
+			package: 'corex-release-acme-0.45.0.zip',
+		} );
+		expect( JSON.parse( sent[ 1 ].body ) ).toEqual( {
+			phrase: '0.45.0',
+			client: 'acme',
+			older: true,
+		} );
+	} );
+
+	it( 'lets go of the key when the installation is given up', async () => {
+		const { client, sent } = scripted( [
+			prepared,
+			marked( { cancelled: true } ),
+			marked( { packages: [] } ),
+		] );
+
+		await client.prepare( 'corex-release-acme-0.45.0.zip' );
+		await client.cancel();
+		await client.overview();
+
+		expect( keyOf( sent[ 2 ] ) ).toBeUndefined();
+	} );
+
+	it( 'asks for the next piece again when a host’s own page comes back in its place', async () => {
+		const { client, waited } = scripted( [
+			prepared,
+			challengePage,
+			standing,
+		] );
+
+		await client.prepare( 'corex-release-acme-0.45.0.zip' );
+
+		await expect( client.step() ).resolves.toEqual( {
+			step: 'verify',
+			cursor: 0,
+			of: 3,
+		} );
+		expect( waited ).toHaveLength( 1 );
+	} );
+} );

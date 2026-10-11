@@ -32,7 +32,27 @@ npm run build:dist -- --client=acme --pdf-fonts=all
 
 # also write the package as one zip, beside dist/
 npm run build:dist -- --client=acme --zip
+
+# carry a plugin that is neither CoreX's nor the site's own (repeat for each)
+npm run build:dist -- --client=acme --with-plugin=wp/wp-content/plugins/fluent-smtp --zip
 ```
+
+### A third-party plugin in the package
+
+`--with-plugin=<folder>` copies a plugin's folder into the package's `wp-content/plugins/`, under the folder's
+own name. The folder is given absolute or relative to the repository root. It is copied as its author shipped
+it, less the [forbidden path parts](#what-is-excluded) (a `tests` or `.github` folder of its own), which a site
+refuses in any package.
+
+The plugin is then a folder of the release like CoreX's own: it is in `plugins`, `third_party_plugins`,
+`release_paths` and `contents`, and a site that installs the package from its admin checks it against that
+measure and replaces it whole. The build stops, saying why, when the folder is not there, when no PHP file at
+its top has a `Plugin Name:` header, when its name is one the package already holds, or when its name has
+anything but letters, digits, dots, dashes and underscores in it.
+
+Name the plugin to the builder; do not copy it into `dist/` afterwards. A plugin added after the build is in
+no `release_paths`, so a site that installs the package from its admin neither unpacks nor replaces it, and
+the copy on the site stays as it is.
 
 ### The zip, and what a package says about itself
 
@@ -50,6 +70,7 @@ it the package is still built and verified, and the command says what the zip ne
 | `wordpress_version` | the WordPress the package was built with, or `null` when it holds none |
 | `release_paths` | the folders the release owns: each `wp-content/plugins/<name>`, each `wp-content/themes/<name>`, `wp-content/packages`, `wp-content/vendor` |
 | `contents` | for each of those, its `files`, its `bytes`, and a `hash` of both |
+| `third_party_plugins` | the plugins named with `--with-plugin`; each is also in `plugins` and `release_paths` |
 | `plugins`, `themes`, `autoload`, `pdf_fonts` | as before |
 
 `verify:dist` measures the folders again and refuses a package that is no longer what it says. Change a package

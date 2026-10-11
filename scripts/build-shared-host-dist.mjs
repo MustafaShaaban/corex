@@ -5,7 +5,7 @@
  * Assembles a flat, deployable WordPress tree in `dist/` from repo SOURCE — never from the local
  * symlinked/junctioned `wp/wp-content/`. The result is what a shared host / cPanel / Azure SFTP deploy receives.
  *
- * Build entry: `npm run build:dist [-- --client=acme] [--pdf-fonts=all] [--dry-run]`
+ * Build entry: `npm run build:dist [-- --client=acme] [--with-plugin=<folder>]… [--pdf-fonts=all] [--zip] [--dry-run]`
  * Verify:      `npm run verify:dist`
  *
  * Design: the planning logic (`buildPlan`) and the verifier (`verifyDist`) are pure and exported so they can be
@@ -41,7 +41,7 @@ import {
 	readdirSync,
 	statSync,
 } from 'node:fs';
-import { join, basename, relative, sep } from 'node:path';
+import { join, basename, relative, resolve, sep } from 'node:path';
 import { describeFolder } from './release-content-hash.mjs';
 import {
 	PACKAGE_ROOT,
@@ -119,14 +119,58 @@ const isForbidden = ( absPath ) => {
 	);
 };
 
+/** What a site takes for the name of a plugin's or a theme's folder (`ReleaseManifest::OWNED`). */
+const A_FOLDER_OF_A_RELEASE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+/**
+ * Refuse a folder that cannot travel in a package as a plugin (spec 107, plan D17).
+ *
+ * @param {string}   folder  The folder named to the builder.
+ * @param {string}   name    The name it would have in `wp-content/plugins`.
+ * @param {string[]} already The plugins the package holds without it.
+ */
+function refuseWhatIsNotAPluginToCarry( folder, name, already ) {
+	if ( ! existsSync( folder ) || ! statSync( folder ).isDirectory() ) {
+		throw new Error( `--with-plugin: ${ folder } is not a folder.` );
+	}
+	if ( ! A_FOLDER_OF_A_RELEASE.test( name ) ) {
+		throw new Error(
+			`--with-plugin: "${ name }" is not a name a site takes for a plugin's folder (letters, digits, dots, dashes and underscores).`
+		);
+	}
+	if ( already.includes( name ) ) {
+		throw new Error(
+			`--with-plugin: the package already holds a plugin named ${ name }.`
+		);
+	}
+	const isAPlugin = readdirSync( folder )
+		.filter( ( entry ) => entry.endsWith( '.php' ) )
+		.some( ( entry ) =>
+			/^[ \t/*#@]*Plugin Name:/im.test(
+				readFileSync( join( folder, entry ), 'utf8' )
+			)
+		);
+	if ( ! isAPlugin ) {
+		throw new Error(
+			`--with-plugin: no PHP file at the top of ${ name } has a "Plugin Name:" header, so WordPress would not see a plugin there.`
+		);
+	}
+}
+
 /**
  * Compute the build plan: the list of {from, to, kind} copy operations + the manifest. Pure — no filesystem writes.
  *
- * @param {{repoRoot:string, distDir:string, client?:string|null, version?:string, pdfFonts?:string}} cfg The build inputs.
+ * @param {{repoRoot:string, distDir:string, client?:string|null, version?:string, pdfFonts?:string, withPlugins?:string[]}} cfg The build inputs. `withPlugins` are folders of plugins that are neither CoreX's nor the site's own, absolute or relative to the repository.
  * @return {{copies:Array<{from:string,to:string,kind:string}>, autoload:Object, manifest:Object, warnings:string[]}} The plan.
  */
 export function buildPlan( cfg ) {
-	const { repoRoot, distDir, client = null, pdfFonts = 'lean' } = cfg;
+	const {
+		repoRoot,
+		distDir,
+		client = null,
+		pdfFonts = 'lean',
+		withPlugins = [],
+	} = cfg;
 	if ( ! PDF_FONT_SETS.includes( pdfFonts ) ) {
 		throw new Error(
 			`--pdf-fonts is ${ PDF_FONT_SETS.join( ' or ' ) }, not "${ pdfFonts }".`
@@ -237,6 +281,22 @@ export function buildPlan( cfg ) {
 		}
 	}
 
+	// 4b. Plugins that are neither CoreX's nor the site's own, named to the builder. Each becomes a folder
+	// of the release: measured here, and checked and replaced whole on the site (spec 107, FR-028).
+	const thirdPartyNames = [];
+	for ( const given of withPlugins ) {
+		const src = resolve( repoRoot, given );
+		const name = basename( src );
+		refuseWhatIsNotAPluginToCarry( src, name, pluginNames );
+		copies.push( {
+			from: src,
+			to: join( distDir, 'wp-content', 'plugins', name ),
+			kind: 'third-party-plugin',
+		} );
+		pluginNames.push( name );
+		thirdPartyNames.push( name );
+	}
+
 	// 5. The CLI package, where its own idea of the project root is the package's.
 	if ( existsSync( p( 'packages', 'cli' ) ) ) {
 		copies.push( {
@@ -258,6 +318,7 @@ export function buildPlan( cfg ) {
 		client: client ?? null,
 		requires: readRequirements( repoRoot ),
 		plugins: pluginNames.sort(),
+		third_party_plugins: thirdPartyNames.sort(),
 		themes: themeNames.sort(),
 		release_paths: releasePaths( copies, distDir ),
 		autoload: autoload.manifest,
@@ -375,14 +436,21 @@ function readCorexVersion( repoRoot ) {
  * Filter for cpSync: skip dev-excluded names, any forbidden path, and, outside WordPress core, the
  * files that only describe the source.
  *
- * @param {string} kind What is being copied: `core`, or one of CoreX's or the site's trees.
+ * A third-party plugin is copied as its author shipped it, less the forbidden paths: a site refuses a
+ * package that holds one, and what else the plugin reads of its own files is not the builder's to guess.
+ *
+ * @param {string} kind What is being copied: `core`, `third-party-plugin`, or one of CoreX's or the site's trees.
  * @return {(src: string) => boolean} Whether a path cpSync is about to copy belongs in the bundle.
  */
-function copyFilter( kind ) {
-	const leftOut =
-		kind === 'core'
-			? DEV_EXCLUDES
-			: [ ...DEV_EXCLUDES, ...SOURCE_DESCRIPTIONS ];
+export function copyFilter( kind ) {
+	const leftOutByKind = {
+		core: DEV_EXCLUDES,
+		'third-party-plugin': [],
+	};
+	const leftOut = leftOutByKind[ kind ] ?? [
+		...DEV_EXCLUDES,
+		...SOURCE_DESCRIPTIONS,
+	];
 
 	return ( src ) =>
 		! leftOut.includes( basename( src ) ) && ! isForbidden( src );
@@ -718,12 +786,21 @@ if ( isMain ) {
 	const client = clientArg ? clientArg.split( '=' )[ 1 ] : null;
 	const fontsArg = args.find( ( a ) => a.startsWith( '--pdf-fonts=' ) );
 	const pdfFonts = fontsArg ? fontsArg.split( '=' )[ 1 ] : undefined;
+	const withPlugins = args
+		.filter( ( a ) => a.startsWith( '--with-plugin=' ) )
+		.map( ( a ) => a.slice( '--with-plugin='.length ) );
 	const repoRoot = process.cwd();
 	const distDir = join( repoRoot, 'dist' );
 
 	let plan;
 	try {
-		plan = buildPlan( { repoRoot, distDir, client, pdfFonts } );
+		plan = buildPlan( {
+			repoRoot,
+			distDir,
+			client,
+			pdfFonts,
+			withPlugins,
+		} );
 	} catch ( error ) {
 		console.error( 'build:dist cannot plan the package:', error.message );
 		process.exit( 1 );

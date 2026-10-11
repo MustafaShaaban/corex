@@ -10,19 +10,31 @@ namespace Corex\Config\Releases;
 
 defined('ABSPATH') || exit;
 
+use DateTimeImmutable;
 use WP_REST_Request;
 use WP_REST_Response;
 
 /**
- * The Releases screen's routes, up to the point of knowing what a package is (spec 107, slice 3).
+ * The Releases screen's routes (spec 107, slices 3 and 4).
  *
- *     GET  releases                         what is installed, what the host cannot do, the packages here
+ *     GET  releases                         what is installed, what the host cannot do, the packages here,
+ *                                           and an installation in progress
  *     GET  releases/uploads/{hash}          how much of an upload the site holds
  *     POST releases/uploads/{hash}          a part of a package, as the request's body
  *     POST releases/uploads/{hash}/complete all of it has been sent: keep it, if it is what was sent
  *     POST releases/inspect                 what a package on the site is, or why it is refused
+ *     POST releases/install/prepare         what installing a package would do, and the way back
+ *     POST releases/install/confirm         the version, typed
+ *     POST releases/install/step            the next piece: unpack, verify, copy tables, swap
+ *     POST releases/install/finish          the database step, answered by the release just installed
+ *     POST releases/install/cancel          give up an installation that has moved nothing
  *
- * None of them changes a file of the site outside `wp-content/corex-releases/`.
+ * Only `step` and `finish` change a file of the site outside `wp-content/corex-releases/`.
+ *
+ * `install/finish` is a contract between releases: the release that asks for it is not the
+ * release that answers. Its path, that it takes no argument, and the shape of its answer
+ * (`done`, `version`, `changes`, or where the installation stands) stay as they are for as
+ * long as a release that speaks `ReleaseProgress::PROTOCOL` 1 can be installed over.
  */
 final class ReleasesController
 {
@@ -32,6 +44,8 @@ final class ReleasesController
         private readonly ReleaseRestGateway $gateway,
         private readonly ReleaseDesk $desk,
         private readonly ReleaseUpload $upload,
+        private readonly ReleaseInstallation $installation,
+        private readonly ReleaseCompletion $completion,
     ) {
     }
 
@@ -42,6 +56,11 @@ final class ReleasesController
         $this->route('/releases/uploads/' . self::HASH, 'POST', 'append');
         $this->route('/releases/uploads/' . self::HASH . '/complete', 'POST', 'complete');
         $this->route('/releases/inspect', 'POST', 'inspect');
+        $this->route('/releases/install/prepare', 'POST', 'prepare');
+        $this->route('/releases/install/confirm', 'POST', 'confirm');
+        $this->route('/releases/install/step', 'POST', 'step');
+        $this->route('/releases/install/finish', 'POST', 'finish');
+        $this->route('/releases/install/cancel', 'POST', 'cancel');
     }
 
     public function overview(WP_REST_Request $request): WP_REST_Response
@@ -86,6 +105,53 @@ final class ReleasesController
             sanitize_file_name((string) $request->get_param('package')),
             get_current_user_id(),
         ));
+    }
+
+    public function prepare(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->answer($request, fn (): array => $this->installation->prepare(
+            sanitize_file_name((string) $request->get_param('package')),
+            get_current_user_id(),
+            new DateTimeImmutable('now'),
+        ));
+    }
+
+    public function confirm(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->answer($request, fn (): array => $this->installation->confirm(
+            new ReleaseConfirmationGiven(
+                sanitize_text_field((string) $request->get_param('phrase')),
+                $request->get_param('client') === null ? null : sanitize_text_field((string) $request->get_param('client')),
+                rest_sanitize_boolean($request->get_param('older') ?? false),
+            ),
+            get_current_user_id(),
+            new DateTimeImmutable('now'),
+        ));
+    }
+
+    public function step(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->answer($request, fn (): array => $this->installation->step(
+            get_current_user_id(),
+            new DateTimeImmutable('now'),
+        ));
+    }
+
+    public function finish(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->answer($request, fn (): array => $this->completion->finish(
+            get_current_user_id(),
+            new DateTimeImmutable('now'),
+        ));
+    }
+
+    public function cancel(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->answer($request, function (): array {
+            $this->installation->cancel(get_current_user_id(), new DateTimeImmutable('now'));
+
+            return ['cancelled' => true];
+        });
     }
 
     private function route(string $path, string $method, string $callback): void

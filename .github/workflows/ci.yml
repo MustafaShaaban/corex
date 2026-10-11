@@ -418,6 +418,27 @@ jobs:
           COREX_E2E_FRESH_INSTALL: '1'
         run: npm run test:e2e
 
+      # A release installed from the Releases screen, on this server (spec 107, slice 4).
+      #
+      # Until here php-fpm could write nowhere under wp-content but the folder for releases, and
+      # the Releases specs above read the screen's list of what stands in the way. An installation
+      # moves a plugin's folder, writes a must-use plugin and writes WordPress's .maintenance file,
+      # so the five folders the screen asks about are opened to the server now, and the one project
+      # that installs is run again by name. In the run above it skipped itself.
+      #
+      # COREX_E2E_MUST_INSTALL turns "skip where the host cannot install" into a failure, so this
+      # step cannot pass without an installation having been made.
+      - name: A release is installed from the admin
+        env:
+          COREX_BASE_URL: http://127.0.0.1:8080
+          COREX_ADMIN_USER: admin
+          COREX_ADMIN_PASS: changeme
+          COREX_E2E_FRESH_INSTALL: '1'
+          COREX_E2E_MUST_INSTALL: '1'
+        run: |
+          chmod a+rwx wp wp/wp-content wp/wp-content/plugins wp/wp-content/themes wp/wp-content/mu-plugins
+          npx playwright test --config=tests/e2e/playwright.config.js --project=release-install --no-deps
+
       # What the server said, for the failures a screenshot cannot explain.
       #
       # CoreX answers a throw behind a REST route with "Request could not be processed." and

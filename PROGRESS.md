@@ -55,8 +55,9 @@ site uses. The spec was amended first with five answers a client on such a host 
 first installation as a runbook); then slice 4 from T042b, slice 5 and slice 6, one pull request
 each. For the other specs this section still says where each stops.
 
-**Nothing half-built can be reached.** The classes of spec 107's fourth slice are bound to no
-route and no screen, and the Releases screen says it installs nothing yet.
+**What is half-built and can be reached.** The Releases screen installs (spec 107, slice 4).
+Going back from the screen is slice 5: until it lands, the way back is the recovery link, and a
+return made with it leaves the site recording the newer release.
 
 | Spec | In v0.44.0 | Where it stops | Resume with |
 |---|---|---|---|
@@ -64,7 +65,7 @@ route and no screen, and the Releases screen says it installs nothing yet.
 | [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
 | [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
 | [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | the specification, and the line-break fix | slice 1 of seven is built and unreleased: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Planned on 2026-10-11, after the owner could not send a reply on a live site, tell whether it had gone, or read it afterwards | slice 2, T020: the standard template and a plain-text version |
-| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | T042b to T056, then slices 5 and 6 | T042b, T047b, T047c, then T048, `ReleaseTableCopies` |
+| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | slice 4 is built (DECISIONS #307); slices 5 and 6 are owed | T060, going back from the screen |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
 | [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | nothing | specified and planned on 2026-10-11 in six slices, the owner's five answers written in; no tasks and no code | `/speckit-tasks`, then slice 1: personal data marked on every model and asked about by one rule |
 
