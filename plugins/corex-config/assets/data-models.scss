@@ -495,3 +495,92 @@
 		gap: var(--corex-admin-space-2xs);
 	}
 }
+
+/*
+ * The models to export, as a list to tick, in two groups (spec 109, slice 2).
+ * A row is a model's name with its box, and how many records it holds at the
+ * end of the line.
+ */
+.corex-admin .corex-data-models__checklist {
+	display: grid;
+	gap: var(--corex-admin-space-md);
+}
+
+.corex-admin .corex-data-models__checklist-group {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	min-inline-size: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.corex-admin .corex-data-models__checklist-group > legend {
+	margin-block-end: var(--corex-admin-space-xs);
+	padding: 0;
+	color: var(--corex-admin-text);
+	font-weight: 600;
+}
+
+.corex-admin .corex-data-models__checklist-group ul {
+	display: grid;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-data-models__checklist-group li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-2xs) var(--corex-admin-space-md);
+	margin: 0;
+	padding-block: var(--corex-admin-space-xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+/* A name and its box are one target, as tall as the smallest WCAG 2.2 accepts
+   (2.5.8). */
+.corex-admin .corex-data-models__checklist label {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--corex-admin-space-sm);
+	min-block-size: var(--corex-admin-space-lg);
+	cursor: pointer;
+}
+
+/* WordPress gives a checkbox a negative top margin, for sitting in a line of
+   text. In a flex row that lifts it off the line it belongs to. */
+.corex-admin .corex-data-models__checklist input[type="checkbox"] {
+	margin: 0;
+}
+
+.corex-admin .corex-data-models__checklist-all,
+.corex-admin .corex-data-models__checklist-count,
+.corex-admin .corex-data-models__checklist-note {
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-data-models__checklist-count {
+	font-variant-numeric: tabular-nums;
+}
+
+/* A count that has not arrived: the bar has no number to take a width from. */
+.corex-admin .corex-data-models__checklist-count .corex-admin-skeleton {
+	display: inline-block;
+	inline-size: var(--corex-admin-space-xl);
+	vertical-align: bottom;
+}
+
+.corex-admin .corex-data-models__checklist-note {
+	margin: 0;
+}
+
+.corex-admin .corex-data-models__export-action {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--corex-admin-space-sm) var(--corex-admin-space-md);
+}
