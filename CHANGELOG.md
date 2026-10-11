@@ -6,6 +6,22 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.45.2] — 2026-10-11
+
+Two changes on top of v0.45.1, both for a form defined in code.
+
+**A form's notification email names the file it was sent with and links to the submission.**
+The email printed the number the file is stored under. It prints the file's name, and a line
+under the answers links to the submission in the inbox, where whoever may read it opens the
+file. The file is not attached.
+
+**The inbox's search finds a submission by the sender its row shows.** A search for the name or
+the email shown in a row answered "0 accessible submissions" for every form defined in code.
+
+Nothing to set and nothing to rebuild. Read Client impact if a site writes its own notification
+emails: CoreX's email is not the one such a site sends, and its listener is handed what it
+needs to add the same link. A search does more work than it did; the measure is below.
+
 ### Changed
 
 - **A form's notification email names the file it was sent with, and links to the submission**
