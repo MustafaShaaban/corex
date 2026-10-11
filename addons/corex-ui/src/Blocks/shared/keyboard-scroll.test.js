@@ -30,17 +30,23 @@ function measureAs( heights ) {
 /**
  * What the body is to the keyboard and to a screen reader.
  *
- * @return {{tabindex: ?string, role: ?string, labelledBy: ?string}} Its attributes.
+ * @return {{tabindex: ?string, role: ?string, labelledBy: ?string, label: ?string}} Its attributes.
  */
 function stop() {
 	return {
 		tabindex: body.getAttribute( 'tabindex' ),
 		role: body.getAttribute( 'role' ),
 		labelledBy: body.getAttribute( 'aria-labelledby' ),
+		label: body.getAttribute( 'aria-label' ),
 	};
 }
 
-const NOT_A_STOP = { tabindex: null, role: null, labelledBy: null };
+const NOT_A_STOP = {
+	tabindex: null,
+	role: null,
+	labelledBy: null,
+	label: null,
+};
 
 beforeEach( () => {
 	document.body.innerHTML =
@@ -77,6 +83,7 @@ describe( 'the body of a dialog block', () => {
 			tabindex: '0',
 			role: 'group',
 			labelledBy: 'terms-title',
+			label: null,
 		} );
 	} );
 
@@ -88,8 +95,9 @@ describe( 'the body of a dialog block', () => {
 		expect( stop() ).toEqual( NOT_A_STOP );
 	} );
 
-	it( 'is a stop with no name when the dialog has no title', () => {
+	it( 'is a stop named by the dialog’s own label when the dialog has no title', () => {
 		dialog.removeAttribute( 'aria-labelledby' );
+		dialog.setAttribute( 'aria-label', 'Read the terms' );
 		measureAs( OVERFLOWS );
 
 		keepInReachOfTheKeyboard( dialog, body )();
@@ -98,7 +106,20 @@ describe( 'the body of a dialog block', () => {
 			tabindex: '0',
 			role: 'group',
 			labelledBy: null,
+			label: 'Read the terms',
 		} );
+	} );
+
+	it( 'gives the label up with the stop, when all of what it holds fits again', () => {
+		dialog.removeAttribute( 'aria-labelledby' );
+		dialog.setAttribute( 'aria-label', 'Read the terms' );
+		measureAs( OVERFLOWS );
+		keepInReachOfTheKeyboard( dialog, body )();
+
+		measureAs( FITS );
+		boxChanged();
+
+		expect( stop() ).toEqual( NOT_A_STOP );
 	} );
 
 	it( 'becomes a stop when its box changes and it no longer fits what it holds', () => {

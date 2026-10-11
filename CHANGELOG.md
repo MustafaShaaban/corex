@@ -166,6 +166,18 @@ All notable changes to Corex are documented here. The format follows
   by 18px, and a long title wraps beside it where it ran under it.
 - **A drawer block comes in from its own edge on a site read right to left.** There the drawer
   at the end, which is on the left, began 16px inside the window and moved out to its edge.
+- **A modal or drawer block with no title has a name.** A `corex/modal` or `corex/drawer` given
+  no title had no name for a screen reader to give: it was a dialog and nothing more. It now has
+  the label of the button that opened it as its name, so the dialog opened by "Read the terms"
+  is the dialog "Read the terms". One with a title is named by its title, as before. A block
+  with no title and no trigger label is named "Open", which is a name and a poor one, so in the
+  editor the Title field now says, while it is empty, what the dialog will be named in its
+  place, and asks for a title when the trigger has no label either (DECISIONS #316).
+- **What a modal or drawer block holds can be read with scripts off.** With scripting off in the
+  browser the block's button was shown and did nothing, and its content could not be reached,
+  though the block's contract said it could. The dialog is now shown in the page where the
+  block is, with its title, and the two buttons nothing answers are not shown. Not covered: a
+  browser with scripting on in which the block's script was blocked or did not load.
 - **Email Studio lists its captured emails when one of them cannot be read.** One record
   whose contents had not survived being stored took the whole list with it, and the screen
   answered an error.

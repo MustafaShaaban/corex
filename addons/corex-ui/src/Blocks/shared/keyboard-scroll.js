@@ -7,14 +7,18 @@
  * keys would scroll nothing.
  *
  * So while the body holds more than fits it takes focus itself: a stop for Tab between the close
- * button and the first thing in it, a group named by the dialog's title. While all of it fits it
- * is not a stop, and Tab goes from the button to the first thing in it. Left to themselves the
+ * button and the first thing in it, a group named as the dialog is: by its title, or, where it
+ * has none, by the label written on it (DECISIONS #316). While all of it fits it is not a stop,
+ * and Tab goes from the button to the first thing in it. Left to themselves the
  * browsers differ: Firefox makes a scrolling element a stop, Chromium only while it holds nothing
  * that takes focus, WebKit never (DECISIONS #315).
  */
 
 /** What makes the body a stop, and what it is to a screen reader while it is one. */
 const AS_A_STOP = { tabindex: '0', role: 'group' };
+
+/** What a dialog is named by: its heading, or a label of its own. The body takes the same. */
+const NAMED_BY = [ 'aria-labelledby', 'aria-label' ];
 
 /**
  * Keep a dialog's body a stop for Tab for as long as it holds more than fits.
@@ -25,10 +29,13 @@ const AS_A_STOP = { tabindex: '0', role: 'group' };
  *                      call this when the dialog opens, for where it cannot.
  */
 export function keepInReachOfTheKeyboard( dialog, body ) {
-	const title = dialog.getAttribute( 'aria-labelledby' );
-	const whileItScrolls = title
-		? { ...AS_A_STOP, 'aria-labelledby': title }
-		: AS_A_STOP;
+	const whileItScrolls = { ...AS_A_STOP };
+	NAMED_BY.forEach( function ( attribute ) {
+		const name = dialog.getAttribute( attribute );
+		if ( name ) {
+			whileItScrolls[ attribute ] = name;
+		}
+	} );
 
 	function read() {
 		const scrolls = body.scrollHeight > body.clientHeight;

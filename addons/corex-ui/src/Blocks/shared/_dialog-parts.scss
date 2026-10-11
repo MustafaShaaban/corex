@@ -87,4 +87,30 @@
 		outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
 		outline-offset: calc(-1 * var(--wp--custom--focus--width));
 	}
+
+	// With scripting off nothing answers the trigger or the close button,
+	// so neither is shown, and the dialog is in the page where the block is:
+	// its title and what it holds, in the flow, at the start of the line and
+	// as tall as they are.
+	// Closed, a dialog is `display: none` by the browser's own rule and,
+	// shown by force, absolute; both are undone. A header left with nothing
+	// in it is not shown either. A script that was to run and did not is not
+	// this case, and there the content is still out of reach (DECISIONS #316).
+	@media (scripting: none) {
+
+		.#{$block}:not([open]) {
+			display: flex;
+			flex-direction: column;
+			position: static;
+			margin-inline: 0;
+			block-size: auto;
+			max-block-size: none;
+		}
+
+		.#{$block}__trigger,
+		.#{$block}__close,
+		.#{$block}__header:not(:has(.#{$block}__title)) {
+			display: none;
+		}
+	}
 }

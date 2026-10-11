@@ -8,6 +8,7 @@ import { PanelBody, TextControl, TextareaControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import ServerSideRender from '@wordpress/server-side-render';
 import metadata from './block.json';
+import { titleHelp } from '../shared/title-help';
 import './style.scss';
 
 function Edit( { attributes, setAttributes } ) {
@@ -19,6 +20,7 @@ function Edit( { attributes, setAttributes } ) {
 				<PanelBody title={ __( 'Modal', 'corex' ) }>
 					<TextControl
 						label={ __( 'Title', 'corex' ) }
+						help={ titleHelp( attributes ) }
 						value={ attributes.title }
 						onChange={ ( title ) => setAttributes( { title } ) }
 					/>

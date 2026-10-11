@@ -6,8 +6,10 @@
  */
 import { registerBlockType } from '@wordpress/blocks';
 import metadata from './block.json';
+import { titleHelp } from '../shared/title-help';
 
 const ServerSideRenderMock = () => null;
+const TextControlMock = () => null;
 
 jest.mock( './style.scss', () => ( {} ), { virtual: true } );
 jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), {
@@ -25,7 +27,7 @@ jest.mock(
 	'@wordpress/components',
 	() => ( {
 		PanelBody: ( { children } ) => children,
-		TextControl: () => null,
+		TextControl: TextControlMock,
 		TextareaControl: () => null,
 	} ),
 	{ virtual: true }
@@ -75,5 +77,21 @@ describe( 'corex/modal block registration', () => {
 			setAttributes: () => {},
 		} );
 		expect( findByType( tree, ServerSideRenderMock ) ).not.toBeNull();
+	} );
+
+	it( 'asks for a title, under the Title field, while the block has none', () => {
+		const settings = registerBlockType.mock.calls[ 0 ][ 1 ];
+		const tree = settings.edit( {
+			attributes: { title: '', triggerLabel: '', content: 'Hello' },
+			setAttributes: () => {},
+		} );
+
+		// The Title field is the first of the block's text fields.
+		const titleField = findByType( tree, TextControlMock );
+
+		expect( titleField.props.label ).toBe( 'Title' );
+		expect( titleField.props.help ).toBe(
+			titleHelp( { title: '', triggerLabel: '' } )
+		);
 	} );
 } );
