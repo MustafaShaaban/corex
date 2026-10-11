@@ -6,13 +6,20 @@
  * because a click is not enough to know a press on the backdrop by: when the mouse goes down on
  * one element and comes up on another, the browser gives the click to the nearest element holding
  * both, and between the backdrop and anything in the dialog that is the dialog element. The
- * dialog element is also its own padded box, so a click whose target is the dialog can be a click
- * on the box. The specs below place the mouse in all three: on the content, on the box's own
- * padding, and on the backdrop outside the box.
+ * dialog element is also a box of its own, so a click whose target is the dialog can be a click on
+ * the box. The specs below place the mouse in all three: on the content, on the padding the box
+ * keeps round it, and on the backdrop outside the box.
  *
  * It also holds where an open dialog is: inside the window, with backdrop left beside it, and
  * scrolled by the visitor as far as its last line. Those are read off a second page whose dialogs
  * hold more than any window here fits, at a desktop's size and a phone's, in both directions.
+ *
+ * And it holds what a visitor is given on opening one, and keeps while reading it: the dialog at
+ * its first line, focus on its close button, and its title and that button in view as far as the
+ * last line, by the wheel or by the keyboard. A browser puts focus on the first thing in a dialog
+ * that takes it and scrolls to it, so two long pages are read: one whose dialogs end in a link,
+ * and one whose dialogs begin with one as well. A drawer is also watched coming in, from the edge
+ * it is on, in both directions.
  *
  * The pages are provisioned through the REST API (admin session) and read as a visitor.
  *
@@ -38,6 +45,14 @@ const LONG_BODY =
 		( _, index ) => `Sentence ${ index + 1 } of what a visitor reads.`
 	).join( ' ' ) + ` <a href="#last-line">${ LAST_LINE }</a>`;
 
+/** The words the third page's dialogs begin with, as a link: the first thing in them to take focus. */
+const FIRST_LINE = 'The first line';
+
+const LONG_BODY_LINK_FIRST = `<a href="#first-line">${ FIRST_LINE }</a> ${ LONG_BODY }`;
+
+/** The smallest side, in CSS pixels, of something meant to be pressed (WCAG 2.2, 2.5.8). */
+const SMALLEST_TARGET = 24;
+
 /** The share of the window's width a dialog may take: `92vw` in both stylesheets. */
 const WIDEST = 0.92;
 
@@ -48,7 +63,7 @@ const WINDOWS = [
 
 const DIRECTIONS = [ 'ltr', 'rtl' ];
 
-/** A turn of the wheel longer than any dialog here: it ends where the dialog stops scrolling. */
+/** A turn of the wheel longer than any dialog here. */
 const FAR = 100000;
 
 const BLOCKS = [
@@ -133,6 +148,56 @@ async function adminSession( browser ) {
 }
 
 /**
+ * Go to a page of dialogs and find the button that opens one of them.
+ *
+ * @param {import('@playwright/test').Page} page              The page.
+ * @param {Object}                          block             One of BLOCKS.
+ * @param {Object}                          where             Where it is.
+ * @param {string}                          where.path        The page's path.
+ * @param {string}                          [where.direction] `rtl` to read the page right to left.
+ * @return {Promise<import('@playwright/test').Locator>} The button.
+ */
+async function visit( page, block, { path, direction } ) {
+	await page.goto( path );
+	if ( direction ) {
+		await page
+			.locator( 'html' )
+			.evaluate(
+				( root, dir ) => root.setAttribute( 'dir', dir ),
+				direction
+			);
+	}
+
+	return page.getByRole( 'button', {
+		name: block.attributes.triggerLabel,
+	} );
+}
+
+/**
+ * The button a dialog is closed by.
+ *
+ * @param {import('@playwright/test').Locator} dialog The dialog.
+ * @return {import('@playwright/test').Locator} Its close button.
+ */
+function closeButton( dialog ) {
+	return dialog.getByRole( 'button', { name: 'Close' } );
+}
+
+/**
+ * The parts of a dialog that are scrolled away from their start, the dialog itself among them.
+ *
+ * @param {import('@playwright/test').Locator} dialog The dialog.
+ * @return {Promise<string[]>} Their class names. Empty when the dialog is at its first line.
+ */
+function scrolledParts( dialog ) {
+	return dialog.evaluate( ( el ) =>
+		[ el, ...el.querySelectorAll( '*' ) ]
+			.filter( ( part ) => part.scrollTop !== 0 )
+			.map( ( part ) => part.className )
+	);
+}
+
+/**
  * Open one block's dialog and wait until it has stopped moving, so its box can be measured.
  *
  * @param {import('@playwright/test').Page} page              The page.
@@ -143,18 +208,7 @@ async function adminSession( browser ) {
  * @return {Promise<{dialog: import('@playwright/test').Locator, trigger: import('@playwright/test').Locator}>} The dialog and the button that opened it.
  */
 async function open( page, block, { path = pagePath, direction } = {} ) {
-	await page.goto( path );
-	if ( direction ) {
-		await page
-			.locator( 'html' )
-			.evaluate(
-				( root, dir ) => root.setAttribute( 'dir', dir ),
-				direction
-			);
-	}
-	const trigger = page.getByRole( 'button', {
-		name: block.attributes.triggerLabel,
-	} );
+	const trigger = await visit( page, block, { path, direction } );
 	await trigger.click();
 
 	const dialog = page.locator( block.dialog );
@@ -167,8 +221,8 @@ async function open( page, block, { path = pagePath, direction } = {} ) {
 }
 
 /**
- * Three places to put the mouse: on the dialog's content, on the dialog's own padding, and on the
- * backdrop outside its box.
+ * Three places to put the mouse: on the dialog's content, on the padding the dialog keeps round
+ * what it holds, and on the backdrop outside its box.
  *
  * @param {import('@playwright/test').Page}    page   The page.
  * @param {import('@playwright/test').Locator} dialog The open dialog.
@@ -179,9 +233,11 @@ async function places( page, dialog ) {
 	const button = await dialog
 		.getByRole( 'button', { name: 'Agree' } )
 		.boundingBox();
-	const paddingLeft = await dialog.evaluate( ( el ) =>
-		parseFloat( window.getComputedStyle( el ).paddingLeft )
-	);
+	const paddingLeft = await dialog
+		.locator( '[class$="__body"]' )
+		.evaluate( ( el ) =>
+			parseFloat( window.getComputedStyle( el ).paddingLeft )
+		);
 	const middle = box.y + box.height / 2;
 	const spaceBefore = box.x;
 	const backdropX =
@@ -197,6 +253,31 @@ async function places( page, dialog ) {
 		padding: { x: box.x + paddingLeft / 2, y: middle },
 		backdrop: { x: backdropX, y: middle },
 	};
+}
+
+/**
+ * Turn the wheel over a dialog until its last line is in view, all of it.
+ *
+ * Turned again until it is: one turn takes Firefox no further than a page of what scrolls, however
+ * long the turn, and Chromium to the end.
+ *
+ * @param {import('@playwright/test').Page}    page   The page.
+ * @param {import('@playwright/test').Locator} dialog The open dialog.
+ * @return {Promise<void>} Resolves at the last line, and fails if the wheel does not reach it.
+ */
+async function wheelToLastLine( page, dialog ) {
+	const box = await dialog.boundingBox();
+	await page.mouse.move(
+		box.x + box.width / 2,
+		page.viewportSize().height / 2
+	);
+
+	await expect( async () => {
+		await page.mouse.wheel( 0, FAR );
+		await expect(
+			dialog.getByRole( 'link', { name: LAST_LINE } )
+		).toBeInViewport( { ratio: 1, timeout: 1000 } );
+	} ).toPass( { timeout: 15000 } );
 }
 
 /**
@@ -243,6 +324,13 @@ async function publish( page, nonce, title, body ) {
 
 let pagePath = '';
 let longPagePath = '';
+let linkFirstPagePath = '';
+
+/** The long pages, by what their dialogs hold. Read when a test runs: the paths are made first. */
+const LONG_PAGES = [
+	[ 'ends in a link', () => longPagePath ],
+	[ 'begins with a link', () => linkFirstPagePath ],
+];
 const pageIds = [];
 
 // The visitor's view. The config's admin session is inherited unless it is emptied here.
@@ -256,6 +344,15 @@ test.beforeAll( async ( { browser } ) => {
 		await publish( page, nonce, 'Dialog blocks E2E, long', LONG_BODY )
 	);
 	longPagePath = `/?page_id=${ pageIds[ 1 ] }`;
+	pageIds.push(
+		await publish(
+			page,
+			nonce,
+			'Dialog blocks E2E, long, a link first',
+			LONG_BODY_LINK_FIRST
+		)
+	);
+	linkFirstPagePath = `/?page_id=${ pageIds[ 2 ] }`;
 	await context.close();
 } );
 
@@ -315,10 +412,25 @@ for ( const block of BLOCKS ) {
 		} ) => {
 			const { dialog, trigger } = await open( page, block );
 
-			await dialog.getByRole( 'button', { name: 'Close' } ).click();
+			await closeButton( dialog ).click();
 
 			await expect( dialog ).toHaveJSProperty( 'open', false );
 			await expect( trigger ).toBeFocused();
+		} );
+
+		test( 'opens on its close button, and Tab goes on to what it holds', async ( {
+			page,
+		} ) => {
+			const { dialog } = await open( page, block );
+
+			await expect( closeButton( dialog ) ).toBeFocused();
+
+			// All of it fits, so nothing stands between the button and the first thing in it.
+			await page.keyboard.press( 'Tab' );
+
+			await expect(
+				dialog.getByRole( 'button', { name: 'Agree' } )
+			).toBeFocused();
 		} );
 
 		test.describe( 'on a phone', () => {
@@ -336,7 +448,121 @@ for ( const block of BLOCKS ) {
 
 				await expect( dialog ).toHaveJSProperty( 'open', false );
 			} );
+
+			test( 'has a close button big enough to press', async ( {
+				page,
+			} ) => {
+				const { dialog } = await open( page, block );
+
+				const box = await closeButton( dialog ).boundingBox();
+
+				expect( box.width ).toBeGreaterThanOrEqual( SMALLEST_TARGET );
+				expect( box.height ).toBeGreaterThanOrEqual( SMALLEST_TARGET );
+			} );
 		} );
+
+		if ( block.name === 'corex/drawer' ) {
+			for ( const direction of DIRECTIONS ) {
+				test( `comes in from the edge it is on, ${ direction }`, async ( {
+					page,
+				} ) => {
+					// The end is the right of a page read left to right, and the left of one
+					// read right to left; the start is the other.
+					const onTheRight =
+						( block.attributes.side === 'start' ) ===
+						( direction === 'rtl' );
+					const trigger = await visit( page, block, {
+						path: pagePath,
+						direction,
+					} );
+					// Held at its first frame, where it begins.
+					await page.addStyleTag( {
+						content: `${ block.dialog } { animation-play-state: paused !important; }`,
+					} );
+					await trigger.click();
+					const dialog = page.locator( block.dialog );
+					await expect( dialog ).toHaveJSProperty( 'open', true );
+
+					const begins = await dialog.boundingBox();
+					await dialog.evaluate( ( el ) =>
+						el
+							.getAnimations()
+							.forEach( ( motion ) => motion.finish() )
+					);
+					const rests = await dialog.boundingBox();
+
+					const towardsItsEdge = onTheRight ? 1 : -1;
+					expect(
+						( begins.x - rests.x ) * towardsItsEdge
+					).toBeGreaterThan( 0 );
+				} );
+			}
+		}
+
+		for ( const size of WINDOWS ) {
+			test.describe( `holding more than fits a ${ size.width }x${ size.height } window`, () => {
+				test.use( { viewport: size } );
+
+				for ( const [ what, path ] of LONG_PAGES ) {
+					test( `opens at its first line, on its close button, when what it holds ${ what }`, async ( {
+						page,
+					} ) => {
+						const { dialog } = await open( page, block, {
+							path: path(),
+						} );
+
+						await expect( closeButton( dialog ) ).toBeFocused();
+						expect( await scrolledParts( dialog ) ).toEqual( [] );
+						await expect(
+							dialog.getByRole( 'heading' )
+						).toBeInViewport( { ratio: 1 } );
+						await expect( closeButton( dialog ) ).toBeInViewport( {
+							ratio: 1,
+						} );
+					} );
+				}
+
+				test( 'keeps its title and its close button in view at its last line, and is closed by that button', async ( {
+					page,
+				} ) => {
+					const { dialog } = await open( page, block, {
+						path: longPagePath,
+					} );
+
+					await wheelToLastLine( page, dialog );
+
+					await expect(
+						dialog.getByRole( 'heading' )
+					).toBeInViewport( { ratio: 1 } );
+					await expect( closeButton( dialog ) ).toBeInViewport( {
+						ratio: 1,
+					} );
+
+					await closeButton( dialog ).click();
+
+					await expect( dialog ).toHaveJSProperty( 'open', false );
+				} );
+
+				test( 'is scrolled by the keyboard from its close button as far as its last line', async ( {
+					page,
+				} ) => {
+					const { dialog } = await open( page, block, {
+						path: longPagePath,
+					} );
+
+					// To what the dialog holds, which takes focus while it holds more than fits.
+					await page.keyboard.press( 'Tab' );
+					await page.keyboard.press( 'End' );
+
+					await expect(
+						dialog.getByRole( 'link', { name: LAST_LINE } )
+					).toBeInViewport( { ratio: 1 } );
+					await expect( closeButton( dialog ) ).toBeInViewport( {
+						ratio: 1,
+					} );
+				} );
+			} );
+		}
 
 		for ( const size of WINDOWS ) {
 			for ( const direction of DIRECTIONS ) {
@@ -373,13 +599,8 @@ for ( const block of BLOCKS ) {
 							path: longPagePath,
 							direction,
 						} );
-						const box = await dialog.boundingBox();
 
-						await page.mouse.move(
-							box.x + box.width / 2,
-							size.height / 2
-						);
-						await page.mouse.wheel( 0, FAR );
+						await wheelToLastLine( page, dialog );
 
 						await expect(
 							dialog.getByRole( 'link', { name: LAST_LINE } )

@@ -19,7 +19,7 @@
     "docs-app/ (recorded in docs-and-brand.json)",
     "tests/ (recorded as fixtures)"
   ],
-  "count": 1186,
+  "count": 1184,
   "consumers": [
     {
       "path": "addons/corex-captcha/assets/captcha-admin.css",
@@ -1733,37 +1733,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 63: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);",
-      "property": "--wp--custom--focus--color",
-      "owner": "ui-addon",
-      "surface": "front-end",
-      "direction_context": "not-applicable",
-      "resolution": "valid",
-      "target_definition": "focus.color"
-    },
-    {
-      "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 64: outline-offset: var(--wp--custom--focus--offset);",
-      "property": "--wp--custom--focus--offset",
-      "owner": "ui-addon",
-      "surface": "front-end",
-      "direction_context": "not-applicable",
-      "resolution": "valid",
-      "target_definition": "focus.offset"
-    },
-    {
-      "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 63: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);",
-      "property": "--wp--custom--focus--width",
-      "owner": "ui-addon",
-      "surface": "front-end",
-      "direction_context": "not-applicable",
-      "resolution": "valid",
-      "target_definition": "focus.width"
-    },
-    {
-      "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 70, 74: animation: corex-drawer-in-end var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard); | animation: corex-drawer-in-start var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
+      "selector_or_context": "lines 60, 64: animation: corex-drawer-in-end var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard); | animation: corex-drawer-in-start var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
       "property": "--wp--custom--motion--duration--base",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -1773,7 +1743,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 70, 74: animation: corex-drawer-in-end var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard); | animation: corex-drawer-in-start var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
+      "selector_or_context": "lines 60, 64: animation: corex-drawer-in-end var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard); | animation: corex-drawer-in-start var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
       "property": "--wp--custom--motion--easing--standard",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -1783,7 +1753,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 31, 32, 37, 38: border-start-start-radius: var(--wp--custom--radius--lg); | border-end-start-radius: var(--wp--custom--radius--lg); | border-start-end-radius: var(--wp--custom--radius--lg);",
+      "selector_or_context": "lines 41, 42, 47, 48: border-start-start-radius: var(--wp--custom--radius--lg); | border-end-start-radius: var(--wp--custom--radius--lg); | border-start-end-radius: var(--wp--custom--radius--lg);",
       "property": "--wp--custom--radius--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -1793,7 +1763,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 26: z-index: var(--wp--custom--z--modal);",
+      "selector_or_context": "lines 36: z-index: var(--wp--custom--z--modal);",
       "property": "--wp--custom--z--modal",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -1803,7 +1773,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 25: color: var(--wp--preset--color--ink);",
+      "selector_or_context": "lines 35: color: var(--wp--preset--color--ink);",
       "property": "--wp--preset--color--ink",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -1813,7 +1783,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 42: background: var(--wp--preset--color--overlay);",
+      "selector_or_context": "lines 52: background: var(--wp--preset--color--overlay);",
       "property": "--wp--preset--color--overlay",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -1823,7 +1793,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 24: background: var(--wp--preset--color--surface);",
+      "selector_or_context": "lines 34: background: var(--wp--preset--color--surface);",
       "property": "--wp--preset--color--surface",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -1833,17 +1803,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 55: font-size: var(--wp--preset--font-size--base);",
-      "property": "--wp--preset--font-size--base",
-      "owner": "ui-addon",
-      "surface": "front-end",
-      "direction_context": "not-applicable",
-      "resolution": "valid",
-      "target_definition": "font-size.base"
-    },
-    {
-      "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 23: box-shadow: var(--wp--preset--shadow--lg);",
+      "selector_or_context": "lines 33: box-shadow: var(--wp--preset--shadow--lg);",
       "property": "--wp--preset--shadow--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -1853,21 +1813,11 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 46, 51, 52: margin-block: 0 var(--wp--preset--spacing--20); | inset-block-start: var(--wp--preset--spacing--20); | inset-inline-end: var(--wp--preset--spacing--20);",
-      "property": "--wp--preset--spacing--20",
-      "owner": "ui-addon",
-      "surface": "front-end",
-      "direction_context": "logical",
-      "resolution": "valid",
-      "target_definition": "spacing.20"
-    },
-    {
-      "path": "addons/corex-ui/src/Blocks/drawer/style.scss",
-      "selector_or_context": "lines 21, 82, 95: padding: var(--wp--preset--spacing--40); | transform: translateX(var(--wp--preset--spacing--40)); | transform: translateX(calc(-1 * var(--wp--preset--spacing--40)));",
+      "selector_or_context": "lines 73, 81: margin-inline-end: calc(-1 * var(--wp--preset--spacing--40)); | margin-inline-start: calc(-1 * var(--wp--preset--spacing--40));",
       "property": "--wp--preset--spacing--40",
       "owner": "ui-addon",
       "surface": "front-end",
-      "direction_context": "not-applicable",
+      "direction_context": "logical",
       "resolution": "valid",
       "target_definition": "spacing.40"
     },
@@ -2103,7 +2053,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 18: border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);",
+      "selector_or_context": "lines 23: border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);",
       "property": "--wp--custom--border--width--thin",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2113,37 +2063,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 48: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);",
-      "property": "--wp--custom--focus--color",
-      "owner": "ui-addon",
-      "surface": "front-end",
-      "direction_context": "not-applicable",
-      "resolution": "valid",
-      "target_definition": "focus.color"
-    },
-    {
-      "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 49: outline-offset: var(--wp--custom--focus--offset);",
-      "property": "--wp--custom--focus--offset",
-      "owner": "ui-addon",
-      "surface": "front-end",
-      "direction_context": "not-applicable",
-      "resolution": "valid",
-      "target_definition": "focus.offset"
-    },
-    {
-      "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 48: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);",
-      "property": "--wp--custom--focus--width",
-      "owner": "ui-addon",
-      "surface": "front-end",
-      "direction_context": "not-applicable",
-      "resolution": "valid",
-      "target_definition": "focus.width"
-    },
-    {
-      "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 55: animation: corex-modal-in var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
+      "selector_or_context": "lines 40: animation: corex-modal-in var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
       "property": "--wp--custom--motion--duration--base",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2153,7 +2073,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 55: animation: corex-modal-in var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
+      "selector_or_context": "lines 40: animation: corex-modal-in var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
       "property": "--wp--custom--motion--easing--standard",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2163,7 +2083,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 19: border-radius: var(--wp--custom--radius--lg);",
+      "selector_or_context": "lines 24: border-radius: var(--wp--custom--radius--lg);",
       "property": "--wp--custom--radius--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2173,7 +2093,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 23: z-index: var(--wp--custom--z--modal);",
+      "selector_or_context": "lines 28: z-index: var(--wp--custom--z--modal);",
       "property": "--wp--custom--z--modal",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2183,7 +2103,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 18: border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);",
+      "selector_or_context": "lines 23: border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);",
       "property": "--wp--preset--color--border",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2193,7 +2113,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 22: color: var(--wp--preset--color--ink);",
+      "selector_or_context": "lines 27: color: var(--wp--preset--color--ink);",
       "property": "--wp--preset--color--ink",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2203,7 +2123,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 27: background: var(--wp--preset--color--overlay);",
+      "selector_or_context": "lines 32: background: var(--wp--preset--color--overlay);",
       "property": "--wp--preset--color--overlay",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2213,7 +2133,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 21: background: var(--wp--preset--color--surface);",
+      "selector_or_context": "lines 26: background: var(--wp--preset--color--surface);",
       "property": "--wp--preset--color--surface",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2223,17 +2143,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 40: font-size: var(--wp--preset--font-size--base);",
-      "property": "--wp--preset--font-size--base",
-      "owner": "ui-addon",
-      "surface": "front-end",
-      "direction_context": "not-applicable",
-      "resolution": "valid",
-      "target_definition": "font-size.base"
-    },
-    {
-      "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 20: box-shadow: var(--wp--preset--shadow--lg);",
+      "selector_or_context": "lines 25: box-shadow: var(--wp--preset--shadow--lg);",
       "property": "--wp--preset--shadow--lg",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2243,23 +2153,13 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 31, 36, 37, 63: margin-block: 0 var(--wp--preset--spacing--20); | inset-block-start: var(--wp--preset--spacing--20); | inset-inline-end: var(--wp--preset--spacing--20);",
+      "selector_or_context": "lines 48: transform: translateY(var(--wp--preset--spacing--20));",
       "property": "--wp--preset--spacing--20",
-      "owner": "ui-addon",
-      "surface": "front-end",
-      "direction_context": "logical",
-      "resolution": "valid",
-      "target_definition": "spacing.20"
-    },
-    {
-      "path": "addons/corex-ui/src/Blocks/modal/style.scss",
-      "selector_or_context": "lines 17: padding: var(--wp--preset--spacing--40);",
-      "property": "--wp--preset--spacing--40",
       "owner": "ui-addon",
       "surface": "front-end",
       "direction_context": "not-applicable",
       "resolution": "valid",
-      "target_definition": "spacing.40"
+      "target_definition": "spacing.20"
     },
     {
       "path": "addons/corex-ui/src/Blocks/posts/style.scss",
@@ -2420,6 +2320,86 @@
       "direction_context": "logical",
       "resolution": "valid",
       "target_definition": "spacing.50"
+    },
+    {
+      "path": "addons/corex-ui/src/Blocks/shared/_dialog-parts.scss",
+      "selector_or_context": "lines 38: border-block-end: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);",
+      "property": "--wp--custom--border--width--thin",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "border.width.thin"
+    },
+    {
+      "path": "addons/corex-ui/src/Blocks/shared/_dialog-parts.scss",
+      "selector_or_context": "lines 79, 87: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);",
+      "property": "--wp--custom--focus--color",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "focus.color"
+    },
+    {
+      "path": "addons/corex-ui/src/Blocks/shared/_dialog-parts.scss",
+      "selector_or_context": "lines 80: outline-offset: var(--wp--custom--focus--offset);",
+      "property": "--wp--custom--focus--offset",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "focus.offset"
+    },
+    {
+      "path": "addons/corex-ui/src/Blocks/shared/_dialog-parts.scss",
+      "selector_or_context": "lines 79, 87, 88: outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color); | outline-offset: calc(-1 * var(--wp--custom--focus--width));",
+      "property": "--wp--custom--focus--width",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "focus.width"
+    },
+    {
+      "path": "addons/corex-ui/src/Blocks/shared/_dialog-parts.scss",
+      "selector_or_context": "lines 38: border-block-end: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);",
+      "property": "--wp--preset--color--border",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "color.border"
+    },
+    {
+      "path": "addons/corex-ui/src/Blocks/shared/_dialog-parts.scss",
+      "selector_or_context": "lines 63: font-size: var(--wp--preset--font-size--base);",
+      "property": "--wp--preset--font-size--base",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "not-applicable",
+      "resolution": "valid",
+      "target_definition": "font-size.base"
+    },
+    {
+      "path": "addons/corex-ui/src/Blocks/shared/_dialog-parts.scss",
+      "selector_or_context": "lines 35, 36, 57, 58, 60, 73: gap: var(--wp--preset--spacing--20); | padding-block: var(--wp--preset--spacing--40) var(--wp--preset--spacing--20); | inline-size: calc(1em + 2 * var(--wp--preset--spacing--20));",
+      "property": "--wp--preset--spacing--20",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.20"
+    },
+    {
+      "path": "addons/corex-ui/src/Blocks/shared/_dialog-parts.scss",
+      "selector_or_context": "lines 36, 37, 73, 74: padding-block: var(--wp--preset--spacing--40) var(--wp--preset--spacing--20); | padding-inline: var(--wp--preset--spacing--40); | padding-block: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40);",
+      "property": "--wp--preset--spacing--40",
+      "owner": "ui-addon",
+      "surface": "front-end",
+      "direction_context": "logical",
+      "resolution": "valid",
+      "target_definition": "spacing.40"
     },
     {
       "path": "addons/corex-ui/src/Blocks/stat/style.scss",

@@ -1,3 +1,5 @@
+@use "../shared/dialog-parts" as *;
+
 /* stylelint-disable @stylistic/max-line-length -- existing module documentation */
 
 /**
@@ -6,10 +8,17 @@
  * The panel is pinned to a block edge and spans the full block size; start/end are logical so it is
  * correct in RTL. No hardcoded values.
  *
- * The sizes below are the panel's, its padding included (`border-box`), and so is the width the
- * browser allows a modal dialog (the window less `6px + 2em`), which on a phone is the narrower.
- * Counted on top of them, the padding made the panel taller than the window by twice itself, so the
- * end of what it held could not be scrolled to, and left a phone 6px of backdrop beside it.
+ * The sizes below are the panel's, all of it (`border-box`), and so is the width the browser allows
+ * a modal dialog (the window less `6px + 2em`), which on a phone is the narrower. Counted on top of
+ * them, what is round the content made the panel taller than the window, so the end of what it held
+ * could not be scrolled to, and left a phone 6px of backdrop beside it.
+ *
+ * The panel is a column of a header and a body (shared/_dialog-parts.scss) and does not scroll:
+ * its body does. It clips, so the body's scrollbar keeps to the rounded corners.
+ *
+ * It comes in from the edge it is on by a logical margin. `translateX` is to the right whichever
+ * way the page reads, so on a page read right to left the end drawer, which is on the left there,
+ * began inside the window and moved out to its edge.
  */
 /* stylelint-enable @stylistic/max-line-length */
 .corex-drawer {
@@ -18,7 +27,8 @@
 	block-size: 100%;
 	max-block-size: 100%;
 	inline-size: min(24rem, 92vw);
-	padding: var(--wp--preset--spacing--40);
+	padding: 0;
+	overflow: hidden;
 	border: 0;
 	box-shadow: var(--wp--preset--shadow--lg);
 	background: var(--wp--preset--color--surface);
@@ -42,27 +52,7 @@
 	background: var(--wp--preset--color--overlay);
 }
 
-.corex-drawer__title {
-	margin-block: 0 var(--wp--preset--spacing--20);
-}
-
-.corex-drawer__close {
-	position: absolute;
-	inset-block-start: var(--wp--preset--spacing--20);
-	inset-inline-end: var(--wp--preset--spacing--20);
-	border: 0;
-	background: transparent;
-	font-size: var(--wp--preset--font-size--base);
-	line-height: 1;
-	cursor: pointer;
-	color: inherit;
-}
-
-.corex-drawer__trigger:focus-visible,
-.corex-drawer__close:focus-visible {
-	outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
-	outline-offset: var(--wp--custom--focus--offset);
-}
+@include dialog-parts("corex-drawer");
 
 @media (prefers-reduced-motion: no-preference) {
 
@@ -75,16 +65,12 @@
 	}
 }
 
+// Each ends where the panel rests: on its edge (a margin of none) and opaque.
 @keyframes corex-drawer-in-end {
 
 	from {
 		opacity: 0;
-		transform: translateX(var(--wp--preset--spacing--40));
-	}
-
-	to {
-		opacity: 1;
-		transform: translateX(0);
+		margin-inline-end: calc(-1 * var(--wp--preset--spacing--40));
 	}
 }
 
@@ -92,11 +78,6 @@
 
 	from {
 		opacity: 0;
-		transform: translateX(calc(-1 * var(--wp--preset--spacing--40)));
-	}
-
-	to {
-		opacity: 1;
-		transform: translateX(0);
+		margin-inline-start: calc(-1 * var(--wp--preset--spacing--40));
 	}
 }

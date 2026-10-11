@@ -1,20 +1,25 @@
+@use "../shared/dialog-parts" as *;
+
 /* stylelint-disable @stylistic/max-line-length -- existing module documentation */
 
 /**
  * corex/modal — token-only, logical properties (RTL-correct). Consumes the 054 foundation
  * tokens: z-index (overlay stacking), radius, shadow, and the focus ring. No hardcoded values.
  *
- * The limits on the panel are on all of it, padding and border included (`border-box`): the one
- * below, and the height the browser gives a modal dialog (the window less `6px + 2em`). Counted on
- * top of them, the padding made a modal as wide as a phone's window, and would make it taller than
- * the window on a site whose padding and border, both sides, come to more than that allowance.
+ * The limits on the panel are on all of it, border included (`border-box`): the one below, and the
+ * height the browser gives a modal dialog (the window less `6px + 2em`). Counted on top of them,
+ * what is round the content made a modal as wide as a phone's window.
+ *
+ * The panel is a column of a header and a body (shared/_dialog-parts.scss) and does not scroll:
+ * its body does. It clips, so the body's scrollbar keeps to the rounded corners.
  */
 /* stylelint-enable @stylistic/max-line-length */
 .corex-modal {
 	box-sizing: border-box;
 	margin: auto;
 	max-inline-size: min(32rem, 92vw);
-	padding: var(--wp--preset--spacing--40);
+	padding: 0;
+	overflow: hidden;
 	border: var(--wp--custom--border--width--thin) solid var(--wp--preset--color--border);
 	border-radius: var(--wp--custom--radius--lg);
 	box-shadow: var(--wp--preset--shadow--lg);
@@ -27,27 +32,7 @@
 	background: var(--wp--preset--color--overlay);
 }
 
-.corex-modal__title {
-	margin-block: 0 var(--wp--preset--spacing--20);
-}
-
-.corex-modal__close {
-	position: absolute;
-	inset-block-start: var(--wp--preset--spacing--20);
-	inset-inline-end: var(--wp--preset--spacing--20);
-	border: 0;
-	background: transparent;
-	font-size: var(--wp--preset--font-size--base);
-	line-height: 1;
-	cursor: pointer;
-	color: inherit;
-}
-
-.corex-modal__trigger:focus-visible,
-.corex-modal__close:focus-visible {
-	outline: var(--wp--custom--focus--width) solid var(--wp--custom--focus--color);
-	outline-offset: var(--wp--custom--focus--offset);
-}
+@include dialog-parts("corex-modal");
 
 @media (prefers-reduced-motion: no-preference) {
 

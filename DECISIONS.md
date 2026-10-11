@@ -10458,3 +10458,74 @@ does not break, which a browser puts beside an inserted link, is posted as it is
 with an input method (Android, Chinese, Japanese, Korean) has not been tried on the first
 line; and the toolbar reads the page's direction from the `dir` attribute, which is how the
 admin states it, and not from the computed style.
+
+## #315 — A dialog block's header stays and its body scrolls, and it opens on its close button
+
+**Date:** 2026-10-11. **Branch:** `fix/block-dialog-header-stays-in-view`. **Spec:** 054, the
+`corex/modal` contract (amended), which `corex/drawer` follows.
+
+**What was measured first** (Chromium, Firefox and WebKit, a page read as a visitor, 1280x720
+and 375x812). A drawer holding 80 sentences and one link at the end opened with focus on that
+link and scrolled 909px of 909px, its close button 902px above the window; a modal the same,
+540px of 540px. With a link at the start as well, both opened at the top with focus on that
+link. With no link, focus was on the close button and the keys scrolled the dialog, taking the
+title and the button out of view. In every case the wheel took them out of view. The cause was
+two things: the close button came last in the markup, and a browser opening a dialog puts
+focus on the first thing in it that takes focus and scrolls to it; and the `<dialog>` was the
+element that scrolled, with the title and the absolutely placed button inside it.
+
+**The body scrolls, not the dialog under a sticky header.** A header made to stick inside a
+scrolling dialog would have kept the keys working from anywhere in the dialog with no script.
+It was tried, and not taken for what a keyboard user gets. The text passes under the header,
+and a link that is under it is in view as far as the browser knows, so focus going back to it
+scrolls nothing. In a drawer of 60 links, gone back through with Shift+Tab from the last,
+focus was on a link hidden whole under the header six times in Chromium and three in Firefox,
+and on one partly hidden three times in each (WCAG 2.2, 2.4.11). As built: never in Firefox,
+and in Chromium two links stood less than half a pixel above the body's edge. WebKit does not
+take Tab to a link as it is set up here, and was not measured. A link far from the one before
+it was brought to the middle and was clear either way. Keeping every link clear
+needs the header's height as a scroll padding, which a stylesheet cannot know: a title wraps.
+So the header is outside what scrolls, the `<dialog>` is a column that clips, and
+`.corex-modal__body` / `.corex-drawer__body` has `overflow: auto`.
+The padding moved from the dialog to the header and the body, so the scrollbar is at the
+panel's edge.
+
+**Focus opens on the close button, by the order of the markup.** The button is in the header,
+before the body, so it is the first thing that takes focus and no script and no `autofocus`
+decides it. The other candidates: `autofocus` on the `<dialog>` itself puts focus on something
+that is around the body and not in it, so the keys would scroll nothing and nothing would show
+where focus is; focus on the body reads a long text from its start and scrolls at once, but a
+short dialog would then open differently from a long one, and the ring would be drawn round
+the whole text. A dialog that informs is closed more often than anything else is done in it.
+
+**The cost, accepted.** From the close button the arrow keys and Page Down scroll nothing, in
+all three engines: the keys act on what has focus or is around it. So while the body holds
+more than fits, the view script makes it a stop for Tab (`tabindex="0"`, `role="group"`, named
+by the title), and takes that away while all of it fits. One press of Tab, then the keys
+scroll; before, they scrolled at once and took the header with them. Left to the browser
+(the attributes taken off, then Tab): Firefox makes the scrolling body a stop; Chromium does
+while it holds nothing that takes focus, and with a link at its end goes straight to that
+link; WebKit never does, and Page Down scrolled nothing there, so its keyboard could not read
+a long dialog at all. Forwarding the keys from the header to the body by script was
+considered and not written: it would be CoreX's own copy of how far each key scrolls.
+
+**The close button is a square, 30px a side here** (one `em` and twice the `spacing--20`
+token), where it was 21px by 18px. It passed 2.5.8 before only by standing alone in its corner.
+
+**A drawer's entrance moves a logical margin.** `translateX` is to the right whichever way the
+page reads. On a site switched to Arabic the end drawer, on the left there, began at 16px and
+moved to 0: from inside the window outwards. The build's right-to-left stylesheet had turned
+the start drawer's keyframes round and not the end drawer's. With a margin there is nothing to
+turn round, and the two built stylesheets are now the same file.
+
+**For a client site**: the markup of both blocks changed, so a page cache has to be cleared
+with this release, and a site that styles their classes should look once (CHANGELOG, Client
+impact). No client checkout on this machine styles them.
+
+**Tests.** `tests/e2e/block-dialogs.spec.js` was extended first and failed in 32 places on the
+blocks as they were. It turned the wheel once to reach a dialog's end; Firefox takes what
+scrolls no further than a page of itself for one turn, so the spec now turns it until the last
+line is in view. The order of the markup is held by both renderer tests, and the stop for Tab
+by `shared/keyboard-scroll.test.js`.
+
+**Verification.** Numbers are in the pull request, from the tree as committed.

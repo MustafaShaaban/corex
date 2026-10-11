@@ -149,10 +149,33 @@ inside the window by 2px, which held only while its padding and border (34px) st
 `6px + 2em` the browser allows a modal dialog, and it was as wide as a phone's window. The same
 spec holds it on a second page whose dialogs hold more than fits: each is inside the window, no
 wider than 92% of it, and scrolled as far as its last line, at 1280x720 and 375x812, read left
-to right and right to left. Seen there and left alone: in both blocks the close button and the
-title scroll away with the content, and a dialog whose content has a link opens scrolled to
-it, because the close button comes last in the markup and the browser focuses the first thing
-that takes focus.
+to right and right to left.
+
+The same two blocks now keep their title and close button in view and open at their first line
+(DECISIONS #315). The close button came last in the markup, and a browser opening a dialog
+puts focus on the first thing in it that takes focus and scrolls to it: a drawer holding 80
+sentences and one link at the end opened scrolled 909px of 909px, its close button 902px above
+the window. And the `<dialog>` was what scrolled, so the title and the button went with the
+text. Now the title and the button are in a header, the button before the body in the markup,
+and the body scrolls under the header. The keys that scroll act on what has focus or is around
+it, and the close button is outside the body, so while the body holds more than fits it is a
+stop for Tab (`addons/corex-ui/src/Blocks/shared/keyboard-scroll.js`). The parts are written
+once for both blocks, in `shared/_dialog-parts.scss`. A drawer's entrance moves a logical
+margin and not `translateX`: on a site switched to Arabic the end drawer began 16px inside the
+window and moved outwards. The spec holds all of it on three pages (a short one, a long one
+ending in a link, a long one beginning with a link as well), and it passes in Firefox and
+WebKit too, run by hand; CI runs Chromium.
+
+Seen in these two blocks and left alone, each small:
+
+- A dialog with no title has no name: a screen reader is told "dialog" and nothing else
+  (read off the accessibility tree). The trigger's label is the likely name for it.
+- The contract (`specs/054-corex-full-dls/contracts/modal-block.md`) and both renderers'
+  comments say the content is reachable without JavaScript. The trigger is a `<button>` that
+  only the view script answers, and a closed `<dialog>` is not shown. Read off the code, not
+  tried in a browser with scripts off.
+- No screen reader was listened to. What one is told on opening is read from the accessibility
+  tree and from where focus is: the dialog by its title, then "Close, button".
 
 Earlier releases are in [`CHANGELOG.md`](CHANGELOG.md), each with its decisions.
 
