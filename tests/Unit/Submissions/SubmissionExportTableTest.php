@@ -16,7 +16,9 @@ use Brain\Monkey\Functions;
 use Corex\Config\Export\ExportCell;
 use Corex\Config\Export\ExportSheet;
 use Corex\Config\Submissions\SubmissionExportTable;
+use Corex\Config\Submissions\SubmissionFileAnswers;
 use Corex\Config\Submissions\SubmissionOwnerNames;
+use Corex\Tests\Support\HeldUploads;
 
 const EXPORT_TABLE_QUESTIONS = [
     ['key' => 'name', 'label' => 'Name', 'type' => 'text'],
@@ -63,7 +65,14 @@ function exportTable(string $timezone = 'UTC'): SubmissionExportTable
         }
     };
 
-    return new SubmissionExportTable($owners, static fn (): DateTimeZone => new DateTimeZone($timezone));
+    return new SubmissionExportTable(
+        $owners,
+        static fn (): DateTimeZone => new DateTimeZone($timezone),
+        new SubmissionFileAnswers(new HeldUploads(['brief' => [
+            224 => ['name' => 'salma-brief.pdf', 'missing' => false],
+            230 => ['name' => 'gone.pdf', 'missing' => true],
+        ]])),
+    );
 }
 
 /**
@@ -237,3 +246,21 @@ it('names the sheet for the form', function () {
         ->toBeInstanceOf(ExportSheet::class)
         ->name->toBe('Lead form');
 });
+
+/**
+ * A form's file is stored on its submission as the id of an attachment (spec 081), and spec 103
+ * says the cell holds the file's name. It held the id: `224`, in a column headed "Your brief".
+ */
+it('writes the name of an uploaded file, not the number it is stored under', function (mixed $stored, string $cell) {
+    $questions = [['key' => 'brief', 'label' => 'Your brief', 'type' => 'file']];
+    $sheet = readSheet([exportedLead(['values' => array_filter(['brief' => $stored], static fn (mixed $value): bool => $value !== null)])], ['answers'], $questions);
+
+    expect($sheet['headings'])->toBe(['Your brief'])
+        ->and($sheet['rows'][0])->toBe([$cell])
+        ->and($sheet['cells'][0][0]->type)->toBe(ExportCell::TEXT);
+})->with([
+    'a file that is there' => ['224', 'salma-brief.pdf'],
+    'a file that is gone' => ['230', 'File missing'],
+    'an id that names no file' => ['999', 'File missing'],
+    'no file sent' => [null, ''],
+]);

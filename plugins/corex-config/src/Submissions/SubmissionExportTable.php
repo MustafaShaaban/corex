@@ -44,9 +44,14 @@ final readonly class SubmissionExportTable
      * @param Closure():DateTimeZone $siteTimezone Asked each time a date is written, not once: the
      *                                             table outlives a request under WP-CLI and in a
      *                                             test, and a site's timezone is a setting.
+     * @param SubmissionFileAnswers|null $files    Asked which answer is an uploaded file, so its
+     *                                             cell holds the file's name.
      */
-    public function __construct(private SubmissionOwnerNames $owners, private Closure $siteTimezone)
-    {
+    public function __construct(
+        private SubmissionOwnerNames $owners,
+        private Closure $siteTimezone,
+        private ?SubmissionFileAnswers $files = null,
+    ) {
     }
 
     /**
@@ -63,19 +68,23 @@ final readonly class SubmissionExportTable
         return new ExportSheet(
             $name,
             array_column($layout, 'heading'),
-            $this->rows($records, $layout),
+            $this->rows($records, $layout, $questions),
         );
     }
 
     /**
      * @param iterable<array<string,mixed>>                        $records
      * @param list<array{heading:string,source:string,key:string,type:string}> $layout
+     * @param list<array{key:string,label:string,type:string}>                 $questions
      *
      * @return iterable<list<ExportCell>>
      */
-    private function rows(iterable $records, array $layout): iterable
+    private function rows(iterable $records, array $layout, array $questions): iterable
     {
         foreach ($records as $record) {
+            // A file is stored as a number, and a person calls it by its name (spec 081, FR-007).
+            $record = $this->files?->namedIn($record, $questions) ?? $record;
+
             yield array_map(fn (array $column): ExportCell => $this->cell($record, $column), $layout);
         }
     }
@@ -333,7 +342,12 @@ final readonly class SubmissionExportTable
             return (string) ($value ?? '');
         }
 
-        // An uploaded file is stored as its details; its name is what a person calls it.
+        // "Nobody sent a file" is an empty cell. A file that was sent and is gone is not.
+        if (($value['missing'] ?? false) === true) {
+            return __('File missing', 'corex');
+        }
+
+        // An uploaded file arrives as its details; its name is what a person calls it.
         if (isset($value['name']) && is_scalar($value['name'])) {
             return (string) $value['name'];
         }

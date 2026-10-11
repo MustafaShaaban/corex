@@ -40,8 +40,10 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Nothing is in flight** (2026-10-11). v0.45.0 holds everything on `main`, and no pull request
-and no issue is open. The owner asked for the framework to be left stable so the client sites can
+**One fix is on `main` after v0.45.0, unreleased** (2026-10-11): a file sent with a form is
+opened from its submission in the inbox (spec 081, Phase F; DECISIONS #317). It is a patch
+release's worth, v0.45.1, and cutting it is the owner's to ask for. Apart from it, v0.45.0
+holds everything on `main`, and no pull request is open. The owner asked for the framework to be left stable so the client sites can
 take one release and be worked on without it; this section says where each unfinished spec
 stops, so work resumes from here and not from a transcript.
 
@@ -87,6 +89,11 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
+**After v0.45.0, unreleased.** A submission that carried a file showed `224` under "Answers".
+The pane shows the file's name as a link to an address of the submission's own, which gives
+the file to whoever the inbox lets read that submission; an export names the file
+(DECISIONS #317). `tests/e2e/submission-file.spec.js` is the first test that uploads a file.
+
 **v0.45.0, 2026-10-11.** [`CHANGELOG.md`](CHANGELOG.md) has the entry. Read its Client impact
 before a client site takes the release. In short:
 
@@ -122,6 +129,20 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 ## Open, and not hidden
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
+
+- **A form's notification email prints the number its file is stored under, and carries no
+  file.** `SendEmailListener` builds the body from the stored answers and gives the mail
+  request no attachments. Spec 081's US3 says the file is "attached, or linked" by a size
+  threshold (FR-011), and the threshold was never built. The inbox shows the file now
+  (DECISIONS #317); the email does not. Whether a visitor's file is sent to a mailbox is the
+  owner's decision, because it cannot be taken back.
+- **CoreX → Data → Form submissions prints that number too**, in its record view and in its
+  own export. The Submissions inbox and its export name the file. Read from
+  `SubmissionsSource`, not looked at in a browser.
+- **The inbox's search does not find a submission of a form defined in code by its sender's
+  name or email.** It looks in two fields only a flow's submission has
+  (`WpSubmissionsReader::searchClause()`). The form's slug is found. Read from the code and
+  met in a browser on 2026-10-11; not fixed.
 
 - **Anonymizing a submission leaves its uploaded files on disk.** The retention panel's
   "Anonymize" removes the answers, which are what name the files, and not the files. Nothing can

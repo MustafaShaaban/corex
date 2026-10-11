@@ -203,6 +203,16 @@ The person notified of a submission gets the document with it, or a link they ca
   It should be settled in the plan and not discovered during implementation.
 - **Multi-file is out of scope** unless the plan says otherwise, and the spec should say so rather
   than leave it ambiguous.
+- **Who may open a submission's file is who may read the submission** (added 2026-10-11,
+  DECISIONS #317). FR-009 says access respects the viewer's permission to the file and did not
+  say which permission that is. For a file uploaded with a form it is the Submissions inbox's
+  own rule: the person manages submissions and their scope allows that one. WordPress's rule
+  for a private attachment (`read_private_posts`) is a different one, held by editors and
+  administrators and not by every role that can be given the inbox. A file in a managed table
+  (a careers CV) keeps the attachment's own rule, as built.
+- **An answer is a file when the form asks it as one**, or when the form no longer asks that
+  question and the answer is the id of a file uploaded through a field of that name. An answer
+  the form asks as anything else is never read as a file, whatever number it holds.
 
 ## Dependencies
 

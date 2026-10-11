@@ -6,6 +6,31 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **A file sent with a form is opened from its submission** (spec 081, Phase F; DECISIONS #317).
+  Reported from a client site on v0.45.0: under "Answers" in the Submissions inbox, a
+  submission that carried a file showed the number the file is stored under (`224`) and
+  nothing to press. The pane now shows the file's name as a link, and pressing it downloads
+  the file. It says "File missing" when the file is gone, and a file question nobody answered
+  is not listed. The same in the trash, until the submission is deleted for good.
+- **Who may open it is who may read the submission.** The link is to an address of the
+  submission's own, checked on every request against the inbox's rule: the person manages
+  submissions and their scope allows that one. A role that was given the inbox and is not an
+  editor opens the file; an editor who was not given the inbox does not. Signed out, or with a
+  link made for somebody else, no file is given.
+- **A submissions export names the file.** A file's column held the same number. It holds the
+  file's name, or "File missing".
+
+### Client impact
+
+- **Nothing to set, and nothing to rebuild**: no script or stylesheet changed.
+- **A site whose own code reads `GET corex/v1/submissions/{id}`** finds, for a file's answer,
+  an object (`id`, `name`, `url`, `missing`) where there was a number.
+- **Not changed by this, and still wrong**: the notification email of a form with a file prints
+  that number and carries no file, and CoreX → Data → Form submissions prints it too. Both are
+  in `PROGRESS.md` under "Open, and not hidden".
+
 ## [0.45.0] — 2026-10-11
 
 Everything on `main` since v0.44.0, again with no pull request left open behind it: three things

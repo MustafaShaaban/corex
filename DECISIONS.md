@@ -10692,3 +10692,119 @@ shown with its title and content, no button that does nothing, each under the on
 none wider than the window.
 
 **Verification.** Numbers are in the pull request, from the tree as committed.
+
+## #317 — A file uploaded with a submission is opened by whoever may read the submission
+
+**Date:** 2026-10-11. **Branch:** `fix/submission-file-answer-opens`. **Spec:** 081 (files,
+end to end), Phase F; an assumption added to its spec. No new spec: US2, FR-007 to FR-009 and
+SC-002 already say a stored file is "openable from the Submissions inbox … in one click".
+
+**The report.** The owner, from the first client site, on v0.45.0: "where is the attachment
+!!!". A submission that carried a file showed `224` under "Answers" in the inbox pane, with
+nothing to press.
+
+**What was read first.** The file was where it should be: a private attachment in
+`uploads/corex-private/`, marked `_corex_protected` and `_corex_upload_context` = `form-<field>`
+by `AttachmentStore`, since the first release that took uploads (v0.38.0). The pane was not at
+fault either: `DetailPane.js` hands a described file (`{ id, name, url, missing }`) to
+`FieldValue`, which draws a link, as spec 081's T024 says. Nothing described one. A form
+defined in code stores the attachment's id as the answer, `WpSubmissionsReader` reads the
+answers back as they are stored, and `SubmissionQueryService::detail()` passed them on. The
+only code that turned an id into a file was `TableDataSource`, for a managed table's column.
+So the client half of T024 was built and tested with a value the server never sent.
+
+**One class says which answer is a file**, `SubmissionFileAnswers`, and the pane, the export
+and the address a file is opened at all ask it. An answer is a file when the form asks its
+question as a `file`. When the form no longer asks that question (it was removed, or the forms
+plugin is off), an answer is a file only if it is the id of a protected upload recorded as
+having come through a field of that name. An answer the form asks as anything else is never a
+file. The second rule is there so that changing a form does not turn its old submissions'
+files back into numbers. The third is there because the answers are a visitor's: a number typed
+into a number field must not become a link to the file that happens to have that number.
+
+**The permission is the submission's, so the address names the submission.** The existing
+address, `AttachmentDelivery::url($attachmentId)`, asks WordPress `read_post` on the
+attachment, which for a private attachment is `read_private_posts`: editors and
+administrators. The inbox asks something else: `corex_manage_submissions`, which Access &
+Abilities can give to any role, and a scope that a site can narrow to what is assigned to a
+person. A link to the attachment's own address would have refused an author who was given the
+inbox, and would have been no tighter than "any editor" for a file whose submission the scope
+keeps from that editor. So a submission's file has its own address,
+`admin-post.php?action=corex_submission_file&submission=…&field=…&_wpnonce=…`
+(`SubmissionFileDelivery`), which asks `SubmissionQueryService::file()` on every request: the
+person's scope, the submission through it, then the file of that one answer. The nonce is for
+that person, that submission and that field. Shown in an integration test with an author who
+holds the inbox: `current_user_can('read_post', $attachment)` is false and the file is theirs
+to open; and with an editor who does not hold it: WordPress would show them the attachment and
+the address refuses.
+
+**What the address answers.** A link that fails its nonce: 403, "That link is no longer
+valid." Signed out: 401, "Sign in to open this file." Signed in and not a person who manages
+submissions: 403. A submission the person's scope leaves out, a submission that is not there,
+and an answer that is not a file all answer the same 404, so the address does not say which
+submissions exist. A file whose record is there and whose file is not: 404, "That file is
+missing", and the pane has already said so and offered no link.
+
+**Rejected: a filter on the attachment's own address** that lets a submissions manager
+through. It would need to find the submission from the attachment, and nothing records that:
+the attachment has no parent and its context names the field, not the submission. Searching
+every submission's answers for a number on each download is slow and is the loose match the
+third rule above exists to avoid.
+
+**The bytes still leave from one place.** `AttachmentDelivery::serve()` was split:
+`deliver(int $attachmentId): never` checks the protected marker and that the file exists, and
+sends it under the headers decided there (always `Content-Disposition: attachment`). `serve()`
+calls it after its own check, and `SubmissionFileDelivery` after the inbox's. It is public, and
+a caller that has not decided who is asking must not call it; its docblock says so.
+
+**An admin-post handler, with its checks in a service.** Principle VII's middleware is for
+routes, and a file cannot be sent through the JSON envelope the routes answer with.
+`AttachmentDelivery` is the precedent. The rule itself (who may read which submission) is not
+in the handler: it is `SubmissionQueryService`, which the detail route already asks.
+
+**In the trash** a submission is read and nothing else, and its files are kept until it is
+deleted for good (spec 105). `findInbox()` answers for a trashed submission, so the pane there
+shows the same link and the address opens it. After a permanent deletion both are gone.
+
+**The export holds the file's name** (spec 103's edge case: "the cell holds the file's name,
+not its contents"). It held the id. `SubmissionExportTable` asks the same class and writes the
+name, or "File missing". No address is written into a file: an address is for one signed-in
+person and stops working with their session.
+
+**Checked and not changed, each written under "Open, and not hidden" in PROGRESS.md:**
+
+- **A form's notification email.** `SendEmailListener` builds its body from the stored answers,
+  so it prints the id, and it gives `MailRequest` no attachments, so the file is not carried.
+  Spec 081's US3 says "attached, or linked", by a size threshold that was never built (FR-011).
+  Sending a visitor's file to a mailbox cannot be taken back, so whether CoreX does it is the
+  owner's to say; it is not decided inside a fix.
+- **A reply** does not quote the answers, so there is nothing to show there. "Send again" hands
+  the answers to a flow's template, and a flow takes no file.
+- **CoreX → Data → Form submissions** prints the id in its record view and in its own export.
+  It has its own three shapes of a submission and asks for the ability and no scope.
+- **The inbox's search** does not find a submission of a form defined in code by its sender's
+  name or email: it looks in `corex_submitter_name` and `corex_submitter_email`, which only a
+  flow's submission has. Met while writing the browser test, which searches by the form.
+
+**Two definitions of "a form's upload" remain.** `WpSubmissionTrashStore::isFormUpload()`
+asks for the protected marker and a context that begins `form-`; `WpSubmissionFiles` asks for
+the context of that exact field. They answer different questions (what to delete with a
+submission; what to show as one answer), and the first is in released code that removes files.
+It was left as it is.
+
+**For a client site.** Nothing to set and nothing to rebuild: no script changed. A site whose
+own code reads `GET corex/v1/submissions/{id}` finds an object where a file's answer was a
+number. A file that was uploaded before this release is found: the marks it is recognised by
+have been written since uploads were first taken.
+
+**Tests.** Written first. Without the two lines that describe a file, three of
+`SubmissionQueryServiceTest`, three of `SubmissionExportTableTest` and the browser test fail;
+with them they pass. `SubmissionFileAnswersTest` (which answer is a file),
+`tests/Integration/Submissions/SubmissionFileAnswerTest.php` (a real protected upload on a real
+submission, in the trash, missing, and the address's five answers), `fileAnswer.test.js` (what
+the pane draws; it passed before the fix, because the pane was never at fault), and
+`tests/e2e/submission-file.spec.js`, the first test that uploads: a visitor sends a form with a
+PDF, the pane shows it by name, the address gives back the same bytes, and a browser that is
+not signed in is given none.
+
+**Verification.** Numbers are in the pull request, from the tree as committed.

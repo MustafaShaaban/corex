@@ -63,6 +63,38 @@ first, because it was the cheapest end-to-end proof the store worked at all.
 - [x] **T041** Guards: `wp-guard`, `clean-code-guard`, `test-guard`, `docs-guard`.
 - [x] **T042** `PROGRESS.md`, `DECISIONS.md`, PR, close #138.
 
+## Phase F — a submission's file, where a submission is read (reported 2026-10-11)
+
+T024 says the Submissions drawer stopped stringifying, and it did: the pane draws a described
+file as a link. Nothing describes one for it. The detail route answers a `file` question with
+the attachment's id, so the pane printed `224` (SC-002, unmet for the inbox). The export wrote
+the same number where spec 103 says the cell holds the file's name. Tests first.
+
+- [x] **T050** Pest, unit: `SubmissionFileAnswers` says which answer is a file, which file is
+      missing, and which answer is not a file at all.
+- [x] **T051** Pest, unit: the detail payload describes a file answer; `SubmissionQueryService::file()`
+      answers within the actor's scope and for nobody else.
+- [x] **T052** Pest, unit: an export's file column holds the file's name, or says it is missing.
+- [x] **T053** Pest, integration, on real WordPress: an upload is described, in the inbox and in
+      the trash; the delivery address refuses a bad link, a signed-out request, a person the
+      scope leaves out, and a field that holds no file.
+- [x] **T054** Jest: the pane draws the file's name as a link, says a missing file is missing,
+      and leaves out a file question nobody answered.
+- [x] **T055** Playwright: in the inbox walk the file is opened from the pane and its bytes
+      arrive; signed out, they do not.
+- [x] **T056** `SubmissionFiles` (the port), `WpSubmissionFiles`, `SubmissionFileAnswers`.
+- [x] **T057** `SubmissionQueryService::detail()` describes file answers; `file()`.
+- [x] **T058** `SubmissionFileDelivery`, the address a person allowed to read the submission
+      opens; `AttachmentDelivery::deliver()` is the one place a protected file is sent from.
+- [x] **T059** `SubmissionExportTable` names the file.
+- [x] **T060** Guards, `PROGRESS.md`, DECISIONS #317, `CHANGELOG.md`. No guide describes the
+      inbox's pane, so none was changed.
+
+Not in this phase, and written under "Open, and not hidden" in `PROGRESS.md`: a code-defined
+form's notification email prints the attachment's id and carries no file (US3, SC-004: the mail
+stack carries attachments, and `SendEmailListener` gives it none); CoreX → Data → Form
+submissions prints the id as well.
+
 ## Deliberately not done
 
 - **Multi-file per field.** One file per field is the decided scope: a field that sometimes holds
