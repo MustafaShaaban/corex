@@ -4,9 +4,8 @@
 
 **Created**: 2026-10-11
 
-**Status**: Draft, waiting for the owner. Five questions are his to answer before this is planned;
-they are under "Questions for the owner", each with a recommendation. Nothing here is planned or
-built.
+**Status**: Decided. The owner answered the five questions on 2026-10-11 with "as recommended";
+what that decided is under "Decided by the owner". [plan.md](./plan.md) follows it.
 
 **Input**: The owner's report of 2026-10-11, from using the first client site: "the
 import/export/migrate model is using one by one, i can't do a bulk or multiselect". The client
@@ -76,8 +75,8 @@ one way, so a push never writes what production received; C, pull production dat
 optionally anonymised. A became spec 107. B
 and C were recorded as "the next two specs" (DECISIONS #282) and were not written. Moving several
 models at once is where B's rule has to hold, so this spec states it for the Data screen's
-models and carries C for them. What it leaves of B, and why, is the second question for the
-owner.
+models and carries C for them. What it leaves of B, and why, is the second of the owner's
+decisions.
 
 ## Three words, kept apart
 
@@ -98,27 +97,27 @@ The owner's sentence uses three words. This spec gives each one meaning:
   4. It knows which way each kind of data may travel.
   5. It can be made with the personal data replaced, for a development copy.
 
-"Migrations", the tab, keeps its meaning: a change to a model's table. Whether the owner meant
-that tab as well is the first question.
+"Migrations", the tab, keeps its meaning: a change to a model's table. The owner meant the move,
+not the tab (the first decision); the tab stays one model at a time.
 
 ## Clarifications
 
 ### Session 2026-10-11
 
-Five questions were put to the owner and none is answered yet. Each is written out, with its
-options and the reason for the recommendation, under "Questions for the owner". The spec is
-written as if each recommendation holds, and says where an answer would change it.
+Five questions were put to the owner, each with a recommendation. He answered all five on
+2026-10-11 with "as recommended". Each is written out under "Decided by the owner".
 
 - Q: What did "migrate" mean: moving records to another install, the Migrations tab, or both? →
-  A: not answered. Recommended: moving records. Changes User Story 7 and FR-048.
-- Q: Does a move include pages, templates, patterns, form definitions and settings? → A: not
-  answered. Recommended: no, a spec of their own. Changes FR-023, FR-024 and Out of scope.
-- Q: Who may take personal data out in a file? → A: not answered. Recommended: the Submissions
-  inbox's rule, everywhere. Changes FR-020 and FR-055.
+  A: Moving records. The Migrations tab stays one model at a time (User Story 7 and FR-048
+  withdrawn).
+- Q: Does a move include pages, templates, patterns, form definitions and settings? → A: No. A
+  spec of their own, after spec 107 can install a release (FR-024, Out of scope).
+- Q: Who may take personal data out in a file? → A: Only a person given that right, by the
+  Submissions inbox's rule, on the Data screen too (FR-020, FR-055).
 - Q: On a copy that is not live, may receiving update records that changed since the last
-  package? → A: not answered. Recommended: yes, per model, off unless ticked. Changes FR-035.
-- Q: Does a package carry uploaded files? → A: not answered. Recommended: only when asked.
-  Changes FR-027.
+  package? → A: Yes, per model, off unless ticked. A live site is add-only (FR-034, FR-035).
+- Q: Does a package carry uploaded files? → A: Only when asked, off by default, with the size
+  stated first (FR-027).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -320,29 +319,6 @@ action, then give the same two again: the second trial run reports every row as 
 
 ---
 
-### User Story 7 — Every waiting table change, previewed and applied together (Priority: P3, only if the first question is answered that way)
-
-On Migrations, the owner sees every change that is waiting across all models, ticks the ones to
-apply, reads one preview and confirms once. Each is applied in turn, each after its own copy of
-its table, and the run stops at the first that fails.
-
-**Why this priority**: It is the third dropdown. One model ships one change today, so nothing
-is saved yet; it is here so that the answer to the first question has somewhere to go.
-
-**Independent Test**: With two models each shipping a waiting change, tick both, confirm once,
-and find both applied and each listed in its model's history with its own way back.
-
-**Acceptance Scenarios**:
-
-1. **Given** changes waiting on two models, **When** the tab opens, **Then** both are listed
-   without choosing a model first.
-2. **Given** both are ticked and confirmed, **When** the first fails, **Then** the second is
-   not started and the screen says which failed, why, and that the other was not run.
-3. **Given** both were applied, **When** the history is read, **Then** each can be put back
-   alone.
-
----
-
 ### Edge Cases
 
 - A model is ticked and removed (its add-on switched off) before the export or package is made:
@@ -432,10 +408,10 @@ and find both applied and each listed in its model's history with its own way ba
 - **FR-019**: Every export and every package that includes personal data MUST require a
   confirmation that names the kinds included.
 - **FR-020**: Columns holding personal data MUST be offered only to a person allowed to export
-  personal data, by the same rule on the Data screen as in the Submissions inbox.
-  [NEEDS CLARIFICATION: who may take personal data out of the site in a file: anybody who may
-  export each model, as on the Data screen today, or only a person given that right
-  separately, as in the Submissions inbox? Question 3.]
+  personal data, by the same rule on the Data screen as in the Submissions inbox. That right
+  is its own: managing a model does not carry it, administrators hold it, and it MUST be
+  something Access & Abilities can give to somebody else. A person without it still exports,
+  without those columns.
 - **FR-021**: Making, downloading, deleting and receiving an export or a package MUST each be
   written to the activity log with who, which models and how many records, and with no value
   of any record.
@@ -449,16 +425,14 @@ and find both applied and each listed in its model's history with its own way ba
   released). A site's own logs are neither and MUST NOT be offered for a move.
 - **FR-024**: Form submissions, newsletter subscribers and job applications MUST be movable,
   and MUST be declared as born in production. No model CoreX ships is declared as built in
-  development by this spec. [NEEDS CLARIFICATION: are the kinds built in development (pages,
-  templates, patterns, form definitions, settings) part of this move, or a spec of their own?
-  Question 2.]
+  development by this spec: the kinds that are (pages, templates, patterns, form definitions,
+  settings) get a spec of their own.
 - **FR-025**: A package MUST be one file. It MUST hold, for each record, every field the model
   keeps, and MUST record the install it was made on, whether that install was live, when, by
   whom, the CoreX release, each model's shape, and whether personal data was replaced.
 - **FR-026**: A package MUST NOT hold a password, a key, a token or any setting.
 - **FR-027**: Uploaded files that records point to MUST be included only when the person asks
-  for them, and the screen MUST state their number and size before the package is made
-  (question 5).
+  for them, and the screen MUST state their number and size before the package is made.
 - **FR-028**: Making a package with personal data replaced MUST replace every value of a column
   marked as personal data with a made-up value of the same kind, the same original always by
   the same replacement within one package, and MUST NOT include uploaded files.
@@ -481,7 +455,7 @@ and find both applied and each listed in its model's history with its own way ba
 - **FR-034**: On a live install, receiving MUST NOT change any record that is already here, and
   MUST NOT offer to.
 - **FR-035**: On an install that is not live, the person MAY choose per model to bring records
-  that differ up to date. Nothing is brought up to date unless they choose it (question 4).
+  that differ up to date. Nothing is brought up to date unless they choose it.
 - **FR-036**: A record deleted for good on an install MUST NOT be brought back by a package.
   What the install keeps in order to know this MUST NOT hold personal data.
 - **FR-037**: A record whose personal data was removed here by retention or by an erasure MUST
@@ -512,13 +486,8 @@ and find both applied and each listed in its model's history with its own way ba
 - **FR-047**: The limits on one CSV file stay as they are and MUST be stated on the tab before
   a file is chosen.
 
-**Table changes together** *(only if question 1 is answered that way)*
-
-- **FR-048**: The Migrations tab MUST list every waiting change across all models, let several
-  be previewed and confirmed together, apply them one at a time each after its own copy of its
-  table, stop at the first failure, and leave each applied change with its own way back.
-  [NEEDS CLARIFICATION: did "migrate" mean this tab, moving records to another install, or
-  both? Question 1.]
+- **FR-048**: Withdrawn. It asked for several table changes applied together on the Migrations
+  tab; the owner meant the move. The number is kept so that no other requirement is renumbered.
 
 **Size, and a host with no command line**
 
@@ -602,36 +571,35 @@ and find both applied and each listed in its model's history with its own way ba
 - **SC-012**: Every action in this spec can be completed with the keyboard alone, and no label
   is shown in English on a translated site because it was not translatable.
 
-## Questions for the owner
+## Decided by the owner
 
-Each has a recommendation. Answering "as recommended" to all five is enough to plan.
+He was asked five questions on 2026-10-11, each with a recommendation and its reason, and
+answered "as recommended". Each is his to reopen.
 
-1. **What did "migrate" mean?** The Migrations tab applies changes to a model's table. It does
-   not move records. Did you mean (a) moving records to another install, (b) that tab, one
-   model at a time, or (c) both? **Recommended: (a).** User Stories 3 to 5 are the move. User
-   Story 7 is the tab, and is built only if you say (b) or (c): one model ships one change
-   today, so it would save nothing yet.
-2. **Does a move include pages, templates, patterns, form definitions and settings?** They were
-   the "built in development" half of part B of the 2026-10-08 outline. **Recommended: no, not
-   in this spec.** They are not models on the Data screen; pages and templates reach a site
-   with a release, which is spec 107 and is not finished; and settings hold keys, which a file
-   that travels should not. This spec builds the rule they would follow (which way each kind
-   travels) and applies it to the models the Data screen has. The content half becomes its own
-   spec after spec 107 can install a release.
-3. **Who may take personal data out in a file?** Today the Submissions inbox offers personal
-   columns to an administrator only, and the Data screen offers the same records to anybody
-   who manages submissions. **Recommended: one rule, the inbox's.** A person without the right
-   still exports, without the personal columns, and still makes a package, with the personal
-   data replaced. Administrators have the right. Today only code can give it to anybody else;
-   this spec would make it something Access & Abilities can give.
-4. **On a development or staging copy, may receiving update records that changed in production
-   since the last package?** A live site is add-only whatever you answer. **Recommended: yes,
-   as a choice per model, off unless ticked.** Without it a development copy shows a lead as
-   "new" that production closed a week ago.
-5. **Does a package carry uploaded files (a lead's attachment, an applicant's CV)?**
-   **Recommended: only when asked, off by default, with the size stated first.** A host move
-   ticks it. A development copy does not need it, and a package with personal data replaced
-   never has them.
+1. **"Migrate" meant moving records to another install.** The Migrations tab applies changes to
+   a model's table and does not move records; it stays one model at a time. One model ships one
+   change today, so applying several together would have saved nothing yet. *Cost*: the third
+   dropdown he met is still a dropdown.
+2. **A move does not include pages, templates, patterns, form definitions or settings.** They
+   were the "built in development" half of part B of the 2026-10-08 outline. They are not
+   models on the Data screen; pages and templates reach a site with a release, which is spec
+   107 and is not finished; and settings hold keys, which a file that travels should not. This
+   spec builds the rule they would follow (which way each kind travels) and applies it to the
+   models the Data screen has. *Cost*: a site's content still reaches a host by hand until that
+   spec is written.
+3. **One rule for taking personal data out in a file: the Submissions inbox's.** The right is
+   its own, administrators hold it, and Access & Abilities can give it to others. A person
+   without it still exports, without the personal columns, and still makes a package, with the
+   personal data replaced. *Cost*: somebody who manages submissions and exported them from the
+   Data screen loses the personal columns there until given the right. A client site that
+   relies on that has to give it.
+4. **On an install that is not live, receiving may bring records that differ up to date**, as a
+   choice per model, off unless ticked. Without it a development copy shows a lead as "new"
+   that production closed a week ago. A live site is add-only and is offered no such choice.
+5. **A package carries uploaded files only when asked**, off by default, with their number and
+   size stated first. A host move ticks it. A package with personal data replaced never has
+   them. *Cost*: a host move made without ticking it arrives with records whose files are
+   missing; each such record says so.
 
 ## Assumptions
 
@@ -648,7 +616,7 @@ Each has a recommendation. Answering "as recommended" to all five is enough to p
   attempts, background jobs, notifications and their read state, reading events, access
   requests and role grants. A log is the history of one install, and several of them point at
   accounts and posts by numbers that mean something else elsewhere. Role grants are a setting
-  and fall under question 2.
+  and fall under the second decision.
 - **A client site's own models take part by declaring the same things** as CoreX's. One that
   declares nothing stays exportable to read, with every column treated as personal data, and
   is not offered for a move.
@@ -680,7 +648,7 @@ Each has a recommendation. Answering "as recommended" to all five is enough to p
 ## Out of scope
 
 - Pages, posts, templates, patterns, menus, media library items, form definitions and settings
-  (question 2).
+  (the second decision).
 - Sending a package from one install to another over the network. A package is a file a person
   carries. Two installs that talk to each other need credentials kept on both, which is a
   larger decision.
@@ -691,6 +659,7 @@ Each has a recommendation. Answering "as recommended" to all five is enough to p
 - User accounts. No account is created, changed or moved.
 - Importing from a format other than CSV, and importing form submissions from a CSV.
 - Merging two differing copies of one record field by field.
+- Applying several table changes together on the Migrations tab (the first decision).
 - The reply emails and the release installer (specs 106 and 107), which the same report named.
 
 ## Delivery
@@ -705,4 +674,3 @@ In slices, each its own pull request, in this order. Each is useful alone.
 4. A model's declarations for a move, and making a package (User Story 3, first half).
 5. Receiving a package, with the live-site rule from its first day (User Stories 3 and 4).
 6. Personal data replaced (User Story 5).
-7. Table changes together, if asked for (User Story 7).

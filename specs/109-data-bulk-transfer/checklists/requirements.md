@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,12 +31,10 @@
 
 ## Notes
 
-- Three markers remain, on FR-020 (who may take personal data out in a file), FR-024 (whether
-  pages, templates and settings are part of a move) and FR-048 (what "migrate" meant). They are
-  questions 3, 2 and 1 under "Questions for the owner". Questions 4 and 5 carry no marker: the
-  spec states the recommended answer for each and says so. `/speckit-clarify` ran on 2026-10-11
-  with nobody to answer; the session is recorded in the spec with every answer open. This
-  spec is not to be planned until the owner has answered.
+- Three markers stood on FR-020, FR-024 and FR-048 in the first draft, with two more questions
+  stated as recommendations. The owner answered all five on 2026-10-11 with "as recommended";
+  the decisions are in the spec under "Decided by the owner", each with its reason and its
+  cost, and are his to reopen. User Story 7 and FR-048 were withdrawn by the first answer.
 - "Why this spec exists" and the three bullets above it say what the code does today, read at
   `21fb2dd9`. One statement in the first draft was wrong and was corrected against the source
   before this was committed: it said no notification is sent for a finished export. One is,
