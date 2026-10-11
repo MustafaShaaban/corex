@@ -10425,6 +10425,14 @@ data models.
 every paragraph a margin, which the Submissions dialog resets and a tab does not. And the
 heading "Columns" inside a model's row was as loud as "What to export" above it.
 
+**What the browser test found on its first run in CI.** The list had one group. The server
+sent each model's `category`, and `normalizeCatalog()` in `admin/dataClient.js` kept a fixed set
+of a source's properties that did not include it, so every model was listed with the records
+and "Logs" never appeared. The standalone page gave the components made-up models past that
+function, and the Jest tests of the list did the same, so both were right about the list and
+wrong about the site. The function now keeps `category`, with a test, and the list no longer
+has a fallback of its own.
+
 **Not run here.** The integration tests in `DataExportSetTest` and the browser tests in
 `data-management.spec.js`: CI runs them. **Not seen on a real site.** The development install's
 saved administrator session had expired, and this session does not type credentials into that

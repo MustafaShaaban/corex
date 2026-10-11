@@ -111,6 +111,9 @@ export function normalizeCatalog( sources ) {
 		key: String( source.key || '' ),
 		label: String( source.label || source.key || '' ),
 		access: source.access || 'denied',
+		// What a site keeps for its work, or one of its own logs: the two groups a list of
+		// models is in.
+		category: source.category === 'log' ? 'log' : 'records',
 		capabilities: source.capabilities || {},
 		actions: source.actions || {},
 		// Whether this person may take personal data out in a file. Silence is a no: the

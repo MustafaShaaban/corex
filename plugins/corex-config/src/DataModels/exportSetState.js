@@ -65,8 +65,7 @@ export function groupedModels( models ) {
 		.map( ( group ) => ( {
 			...group,
 			models: models.filter(
-				// A model that does not say is listed with the records.
-				( source ) => ( source.category || 'records' ) === group.key
+				( source ) => source.category === group.key
 			),
 		} ) )
 		.filter( ( group ) => group.models.length > 0 );

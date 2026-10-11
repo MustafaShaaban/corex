@@ -166,6 +166,18 @@ describe( 'Spec 068 data management state', () => {
 		expect( silent.permissions ).toEqual( { personal_data: false } );
 	} );
 
+	// Spec 109, slice 2: the catalog dropped it, so on a site every model was listed with the
+	// records and the Logs group never appeared. The browser test found it.
+	it( 'keeps whether a model is records or a log, and reads silence as records', () => {
+		const [ log, silent ] = normalizeCatalog( [
+			{ key: 'table-activity-events', category: 'log' },
+			{ key: 'contacts' },
+		] );
+
+		expect( log.category ).toBe( 'log' );
+		expect( silent.category ).toBe( 'records' );
+	} );
+
 	it( 'reduces query selection request and preview state without stale cross-source data', () => {
 		let state = initialDataState( 'contacts' );
 		state = dataReducer( state, {
