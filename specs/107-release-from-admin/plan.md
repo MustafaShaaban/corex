@@ -192,8 +192,8 @@ contract between releases, versioned in `state.json`, and documented as one.
 
 ### D9. The way back that needs no admin
 
-When an installation starts, CoreX writes `wp-content/mu-plugins/corex-release-recovery.php`. It
-uses nothing of CoreX. Asked with the installation's key, it reads the journal in `previous/`,
+Before an installation moves any folder, CoreX writes
+`wp-content/mu-plugins/corex-release-recovery.php`. It uses nothing of CoreX. Asked with the installation's key, it reads the journal in `previous/`,
 renames each replaced folder back, removes `.maintenance`, and says what it did in plain text.
 WordPress loads must-use plugins before ordinary ones, so it runs when the new release cannot.
 The link is shown, and offered as a text file, before the administrator confirms. If the
@@ -445,5 +445,12 @@ slice 4.
   the old release's autoloader. If that request does not answer, the browser asks again, and the
   next request, which is the new release's, reads from the journal that the swap was made.
   `state.json` is therefore read by two releases, and is versioned as the finishing route is.
+- **A network's table copies.** The copies of FR-034 are of the tables of the site the Releases
+  screen is on, which on a network is the main site. Every site's database is still brought to
+  the release (FR-033). Copying every site's tables is left unbuilt until a network needs it.
+- **A site that is not laid out as a package is.** The swap puts folders at
+  `wp-content/plugins/<name>` and `wp-content/themes/<name>` beside wp-content's parent. A site
+  that moved its plugins, its themes or its content folder is refused in words when the screen
+  opens (`ReleaseHostFacts::LAYOUT_DIFFERS`).
 - **Nothing here has run on the host it is for.** Each slice says what was and was not seen.
   The first installation on that host should be of a release that changes nothing important.

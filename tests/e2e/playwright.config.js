@@ -75,6 +75,9 @@ const CANNOT_RUN_ON_A_FRESH_INSTALL = [
 /** The one spec that changes what the whole site serves, and so runs in a project of its own. */
 const COMING_SOON_SPEC = /coming-soon\.spec\.js$/;
 
+/** The one spec that installs a release, which holds the whole site in maintenance while it does. */
+const RELEASE_INSTALL_SPEC = /releases-install\.spec\.js$/;
+
 const freshInstallExclusions = () => {
 	if (
 		! process.env.COREX_E2E_FRESH_INSTALL ||
@@ -124,7 +127,7 @@ module.exports = defineConfig( {
 		{
 			name: 'chromium',
 			use: { ...devices[ 'Desktop Chrome' ] },
-			testIgnore: COMING_SOON_SPEC,
+			testIgnore: [ COMING_SOON_SPEC, RELEASE_INSTALL_SPEC ],
 		},
 		// Coming soon mode (spec 101), after everything else and alone.
 		//
@@ -138,6 +141,23 @@ module.exports = defineConfig( {
 			use: { ...devices[ 'Desktop Chrome' ] },
 			testMatch: COMING_SOON_SPEC,
 			dependencies: [ 'chromium' ],
+		},
+		// A release installed from the admin (spec 107), last and alone.
+		//
+		// While a release's files are in place and its database step has not run, WordPress
+		// answers every request but the installation's own with "briefly unavailable". For
+		// those seconds any other spec would fail on a 503 it had nothing to do with. It
+		// follows coming-soon, which restores the mode it found, so the site this meets is
+		// serving visitors: the spec asks for the front page before and after.
+		//
+		// On a site whose server cannot write its own folders the spec skips itself: the
+		// browser job in CI is such a site until its last step, which lifts that and runs this
+		// project again by name.
+		{
+			name: 'release-install',
+			use: { ...devices[ 'Desktop Chrome' ] },
+			testMatch: RELEASE_INSTALL_SPEC,
+			dependencies: [ 'coming-soon' ],
 		},
 	],
 } );

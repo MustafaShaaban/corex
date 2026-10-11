@@ -35,6 +35,11 @@ final class ReleaseStore
 {
     public const DIRECTORY = 'corex-releases';
 
+    /** Another request of an installation is at work. */
+    public const BUSY = 'installation_busy';
+
+    private const LOCK = 'lock';
+
     private const AREAS = ['incoming', 'staging', 'previous'];
 
     private const STATE = 'state.json';
@@ -154,6 +159,45 @@ final class ReleaseStore
     }
 
     /**
+     * Do a piece of an installation while no other request does one (spec 107, FR-023).
+     *
+     * The lock is asked for and not waited for: a request that finds it held is a second tab,
+     * a double press or a retry that came too soon, and is told so. It is a lock on a file, so
+     * it goes when its request ends, however that request ends.
+     *
+     * @template T
+     *
+     * @param callable():T $work
+     *
+     * @return T
+     *
+     * @throws ReleaseRefused When another request holds it, or the host will not let the place be made.
+     */
+    public function exclusively(callable $work): mixed
+    {
+        // The path is this class's own, under the installer's folder.
+        $lock = fopen($this->root() . '/' . self::LOCK, 'c'); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+
+        if ($lock === false || ! flock($lock, LOCK_EX | LOCK_NB)) {
+            if ($lock !== false) {
+                fclose($lock); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+            }
+
+            throw new ReleaseRefused(
+                self::BUSY,
+                __('Another request of this installation is still at work. Wait a moment and try again.', 'corex'),
+            );
+        }
+
+        try {
+            return $work();
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+        }
+    }
+
+    /**
      * The installation in progress, or nothing.
      *
      * @return array<string,mixed>
@@ -201,11 +245,14 @@ final class ReleaseStore
     /**
      * A file that is missing, or cut off mid-write by a request that died, holds nothing.
      *
+     * Reading makes nothing: the screen asks what is in progress when it opens, and has to
+     * open on a host where the place cannot be made, to say so.
+     *
      * @return array<int|string,mixed>
      */
     private function read(string $name): array
     {
-        $file = $this->root() . '/' . $name;
+        $file = $this->place() . '/' . $name;
 
         if (! is_file($file)) {
             return [];

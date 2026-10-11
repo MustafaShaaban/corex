@@ -86,6 +86,7 @@ final class ReleasePackageInspector
             $running !== null && version_compare($manifest->version, $running, '<'),
             ! $this->installed->isKnown(),
             ...$this->measure($manifest),
+            siteWordPress: $this->wordPressVersion,
         );
     }
 
