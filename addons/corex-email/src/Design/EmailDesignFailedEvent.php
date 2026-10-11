@@ -31,10 +31,13 @@ final class EmailDesignFailedEvent implements Event
     /** What the site gave is not an email design. */
     public const NOT_A_DESIGN = 'not_a_design';
 
+    /** The site's filter of the brand threw; the email was drawn from the brand it had before. */
+    public const BRAND_THREW = 'brand_threw';
+
     /**
-     * @param string $design The class of what the site gave, to find it by.
+     * @param string $design The class of what the site gave, or the filter that failed, to find it by.
      * @param string $reason One of this class's constants.
-     * @param string $detail What a thrown error said, or ''. Never the message of the email.
+     * @param string $detail One short line of what a thrown error said, or ''. Never the message of the email.
      */
     public function __construct(
         public readonly string $design,

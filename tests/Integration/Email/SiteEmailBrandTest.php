@@ -84,6 +84,14 @@ it('draws the email from the accent, the logo and the footer line the site set',
         ->and($brand->footer)->toBe('Acme Design · Cairo');
 });
 
+it('passes over a logo setting that is not a whole web address, and keeps the site\'s own', function (string $stored) {
+    ($this->answer)('pre_option_corex_mail_brand_logo', static fn (): string => $stored);
+    ($this->answer)('theme_mod_custom_logo', static fn (): int => 0);
+    ($this->answer)('get_site_icon_url', static fn (): string => 'https://acme.test/icon.png');
+
+    expect(siteEmailBrand()->logo)->toBe('https://acme.test/icon.png');
+})->with(['/wp-content/uploads/logo.png', '//cdn.acme.test/logo.png', 'ftp://acme.test/logo.png']);
+
 it('passes over a stored accent that is not a colour an email can carry', function () {
     ($this->answer)('pre_option_corex_mail_brand_accent', static fn (): string => 'red;background:url(x)');
 
@@ -100,6 +108,23 @@ it('takes the brand a site plugin returns from the filter', function () {
 
     expect($brand->light->link)->toBe('#0b1f3b')
         ->and($brand->footer)->toBe('From the filter');
+});
+
+it('tells the email managers when a site brand filter throws, and what it said', function () {
+    $announced = [];
+    Boot::app()->container()->make(\Corex\Events\ListenerProvider::class)->listen(
+        \Corex\Email\Design\EmailDesignFailedEvent::class,
+        static function (object $event) use (&$announced): void {
+            $announced[] = [$event->design, $event->reason, $event->detail];
+        },
+    );
+    ($this->answer)(SiteEmailBrand::FILTER, static fn (EmailBrand $brand): EmailBrand => $brand->withPalettes($brand->light->with(['text' => 'navy']), $brand->dark));
+
+    siteEmailBrand();
+    Boot::app()->container()->make(\Corex\Notifications\NotificationService::class)
+        ->resolve('email.design_failed:corex_email_brand', 'The test that raised it is over.');
+
+    expect($announced)->toBe([['corex_email_brand', 'brand_threw', 'The email colour "text" must be written as #rrggbb.']]);
 });
 
 it('keeps the brand it had when a site filter fails', function (callable $filter) {

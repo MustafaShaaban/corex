@@ -28,6 +28,16 @@ function generatedEmailDesign(string $className, string $namespace): array
 {
     $base = sys_get_temp_dir() . '/corex_email_design_' . uniqid('', true);
     mkdir($base);
+    // What a test writes is taken away again when the run ends.
+    register_shutdown_function(static function () use ($base): void {
+        foreach (new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
+        ) as $entry) {
+            $entry->isDir() ? rmdir($entry->getPathname()) : unlink($entry->getPathname());
+        }
+        rmdir($base);
+    });
     $engine = new GeneratorEngine(
         new StubRenderer(),
         new Naming(),
@@ -74,4 +84,22 @@ it('writes a design that draws an email as it is, holding the message', function
         ->and($html)->toContain('href="https://example.com">here</a>')
         ->and($html)->toContain('text-align:right')
         ->and(substr_count($html, '<table'))->toBe(substr_count($html, '</table>'));
+});
+
+// "A working copy of the standard design": what the standard one does for a reader, this does.
+it('starts with what the standard design gives a reader: a dark scheme, a footer that names the site, the web only', function () {
+    $written = generatedEmailDesign('Parity', 'GeneratedDesignParity');
+    require_once $written['path'];
+    $class = 'GeneratedDesignParity\\Mail\\ParityEmailDesign';
+    $content = new EmailContent('Re: your message', '<p>Thanks, Sam.</p>', 'sam@example.com');
+    $dark = EmailBrand::standard('Acme', 'https://acme.test/')->dark;
+
+    $own = (new $class())->render($content, EmailBrand::standard('Acme', 'https://acme.test/', '/wp-content/uploads/logo.png'));
+
+    expect($own)->toContain('@media (prefers-color-scheme: dark)')
+        ->and($own)->toContain($dark->surface)->toContain($dark->text)
+        ->and($own)->toMatch('#This message was sent by <a [^>]*href="https://acme.test/">Acme</a>\\.#')
+        // A path is not a logo a mail client can load: the name stands instead.
+        ->and($own)->not->toContain('<img')
+        ->and($own)->not->toContain('/wp-content/uploads/logo.png');
 });

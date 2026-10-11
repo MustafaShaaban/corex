@@ -10,6 +10,7 @@ namespace Corex\Email\Design;
 
 defined('ABSPATH') || exit;
 
+use Corex\Events\EventDispatcher;
 use Corex\Support\Config\ConfigInterface;
 use Throwable;
 
@@ -28,8 +29,10 @@ final readonly class SiteEmailBrand implements EmailBrandSource
 {
     public const FILTER = 'corex_email_brand';
 
-    public function __construct(private ConfigInterface $config)
-    {
+    public function __construct(
+        private ConfigInterface $config,
+        private EventDispatcher $events,
+    ) {
     }
 
     public function brand(): EmailBrand
@@ -38,7 +41,9 @@ final readonly class SiteEmailBrand implements EmailBrandSource
 
         // A site's filter is code CoreX did not write, running while a customer is answered.
         // If it throws (a colour that is not #rrggbb does) or answers something that is not a
-        // brand, the email is drawn from the brand the site's settings gave.
+        // brand, the email is drawn from the brand the site's settings gave, and whoever
+        // manages email is told: a typing mistake in a colour would otherwise show as CoreX's
+        // colours and nothing else.
         try {
             /**
              * What this site's emails are drawn from.
@@ -46,7 +51,13 @@ final readonly class SiteEmailBrand implements EmailBrandSource
              * @param EmailBrand $brand The site's brand, with its Mail settings applied.
              */
             $given = apply_filters(self::FILTER, $brand);
-        } catch (Throwable) {
+        } catch (Throwable $error) {
+            $this->events->dispatch(new EmailDesignFailedEvent(
+                self::FILTER,
+                EmailDesignFailedEvent::BRAND_THREW,
+                mb_substr(trim((string) strtok(strip_tags($error->getMessage()), "\r\n")), 0, 200),
+            ));
+
             return $brand;
         }
 
@@ -79,7 +90,9 @@ final readonly class SiteEmailBrand implements EmailBrandSource
         $home = (string) home_url('/');
         // WordPress stores the name with its entities encoded; a design escapes it itself.
         $name = trim(wp_specialchars_decode((string) get_bloginfo('name'), ENT_QUOTES));
+        // A mail client has no page to resolve a path from: only a whole web address is a logo.
         $ownLogo = trim((string) $this->config->get('mail.brand.logo', ''));
+        $ownLogo = preg_match('#^https?://#i', $ownLogo) === 1 ? $ownLogo : '';
         $brand = EmailBrand::standard(
             // A site with no title is still named in its emails, by where it is.
             $name !== '' ? $name : (string) wp_parse_url($home, PHP_URL_HOST),

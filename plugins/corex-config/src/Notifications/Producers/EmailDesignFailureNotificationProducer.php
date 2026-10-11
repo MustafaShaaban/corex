@@ -67,14 +67,10 @@ final class EmailDesignFailureNotificationProducer implements NotificationProduc
             messageKey: 'notifications.email.design_failed.body',
             rendered: [
                 'title' => __('This site\'s email design could not be used', 'corex'),
-                'body'  => sprintf(
-                    /* translators: 1: what went wrong with the design. 2: the PHP class of the design. */
-                    __('%1$s The email was sent in the standard CoreX design instead. The design is %2$s.', 'corex'),
-                    $this->said($event),
-                    $event->design,
-                ),
+                'body'  => $this->said($event),
             ],
-            dedupKey: 'email.design_failed:' . $event->design,
+            // The key's column is 191 characters wide; a class name can be longer.
+            dedupKey: 'email.design_failed:' . mb_substr($event->design, 0, 150),
             recipient: NotificationRecipient::forAbility(CorexAbility::MANAGE_EMAIL),
             occurredAt: new DateTimeImmutable('now'),
             sourceType: 'email_design',
@@ -89,18 +85,39 @@ final class EmailDesignFailureNotificationProducer implements NotificationProduc
         );
     }
 
-    /** What went wrong, for somebody who did not write the design and has to ask who did. */
+    /**
+     * What went wrong and what was done about it, for somebody who did not write the design and
+     * has to ask who did.
+     */
     private function said(EmailDesignFailedEvent $event): string
     {
-        return match ($event->reason) {
-            EmailDesignFailedEvent::THREW => sprintf(
-                /* translators: %s: the error message the design's code raised. */
-                __('It stopped with an error: %s', 'corex'),
-                rtrim($event->detail, '.') . '.',
-            ),
+        if ($event->reason === EmailDesignFailedEvent::BRAND_THREW) {
+            return sprintf(
+                /* translators: 1: the name of a WordPress filter. 2: one line of an error message, or nothing. */
+                __('The site\'s filter %1$s stopped with an error, so the email was drawn in the colours and logo from Settings instead. %2$s', 'corex'),
+                $event->design,
+                $event->detail,
+            );
+        }
+
+        $wrong = match ($event->reason) {
+            EmailDesignFailedEvent::THREW => $event->detail === ''
+                ? __('It stopped with an error.', 'corex')
+                : sprintf(
+                    /* translators: %s: one line of the error the design's code raised. */
+                    __('It stopped with an error: %s', 'corex'),
+                    $event->detail,
+                ),
             EmailDesignFailedEvent::EMPTY => __('It answered with an empty email.', 'corex'),
             EmailDesignFailedEvent::WITHOUT_MESSAGE => __('It answered with an email that did not hold the message.', 'corex'),
             default => __('What the site supplied is not an email design.', 'corex'),
         };
+
+        return sprintf(
+            /* translators: 1: what went wrong with the design. 2: the PHP class of the design, or the filter it came through. */
+            __('%1$s The email was sent in the standard CoreX design instead. The design is %2$s.', 'corex'),
+            $wrong,
+            $event->design,
+        );
     }
 }

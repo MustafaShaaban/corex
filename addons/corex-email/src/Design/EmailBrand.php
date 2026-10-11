@@ -59,12 +59,6 @@ final readonly class EmailBrand
         }
     }
 
-    /** This brand with another mark: an absolute address of an image, or '' for none. */
-    public function withLogo(string $logo): self
-    {
-        return new self($this->name, $this->homeUrl, $logo, $this->direction, $this->language, $this->footer, $this->light, $this->dark);
-    }
-
     /** This brand with another footer line, or '' for the standard one naming the site. */
     public function withFooter(string $footer): self
     {

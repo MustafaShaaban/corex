@@ -10099,9 +10099,22 @@ it failed. A reply is never sent without its words and a broken template never s
 alternative, refusing the reply, was not taken: the person at the reply box cannot mend a PHP
 class, and the customer would wait for somebody who can.
 
-**"Holds the message" is its words, whole and in order, with spacing left out.** Words and not
-markup, so that a design may restyle a paragraph or a link, which it has to: a mail client
-reads no style sheet for them.
+**"Holds the message" is its words, whole and in order, in what the document shows.** Words
+and not markup, so that a design may restyle a paragraph or a link, which it has to: a mail
+client reads no style sheet for them. In what it shows, so that a title, a style sheet or a
+comment that repeats a word does not count. A design that rewrites the message (curls its
+quotes, puts an address after a link) is sent as the standard design; the guide says so.
+
+**The guard's first version had holes, and a review that ran inputs found them.** The filter's
+own callback was outside the `try`: the registration line the guide gives throws when a class
+is renamed, and a reply would have answered 500. A `<` in a template's style sheet made the
+check lose everything after it, so a good template was discarded on every reply. A design that
+printed its markup wrote into the answer of the request sending the reply. A design that asked
+for the email design again while drawing asked for itself, to the memory limit. All four are
+inside the guard now, each with a test. An error's message is passed on as one short line with
+its kind, not whole: it is shown to everybody who manages email. A brand filter that throws is
+announced too, where it had been silent. The generated design gained what the standard one
+gives a reader: the dark colours, the footer sentence, and no address but a web one.
 
 **The setting's colour is the edge only.** The accent is never text, so it has no contrast to
 keep and one value serves both colour schemes. Text, link and ground colours are reachable

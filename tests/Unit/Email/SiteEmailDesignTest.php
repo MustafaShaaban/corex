@@ -106,7 +106,92 @@ it('carries what a thrown error said, for whoever has to mend the design', funct
 
     $this->design->render($this->content, $this->brand);
 
-    expect($this->failures[0]->detail)->toBe('Undefined variable $logo');
+    expect($this->failures[0]->detail)->toBe('RuntimeException: Undefined variable $logo');
+});
+
+// One line, with its kind, and no more: it is shown to everybody who manages email.
+it('passes on one short line of an error, whatever the error holds', function () {
+    $long = "Access denied <b>for</b> user 'root'\nin /home/acme/public_html/wp-content/plugins/acme-site/src/Mail/AcmeEmailDesign.php " . str_repeat('x', 400);
+    Filters\expectApplied('corex_email_design')->andReturn(siteDesign(fn () => throw new LogicException($long)));
+
+    $this->design->render($this->content, $this->brand);
+    $detail = $this->failures[0]->detail;
+
+    expect($detail)->toBe("LogicException: Access denied for user 'root'")
+        ->and(mb_strlen($detail))->toBeLessThanOrEqual(200);
+});
+
+// The registration a site writes is itself code that can fail: a class renamed, a constructor
+// that throws. It runs inside the guard too, or a reply would answer an error.
+it('falls back when the site filter itself throws, before any design exists', function () {
+    Filters\expectApplied('corex_email_design')->andReturnUsing(fn () => throw new Error('Class "AcmeSite\Mail\AcmeEmailDesign" not found'));
+
+    $html = $this->design->render($this->content, $this->brand);
+
+    expect($html)->toBe((new StandardEmailDesign())->render($this->content, $this->brand))
+        ->and($this->failures[0]->reason)->toBe(EmailDesignFailedEvent::THREW)
+        ->and($this->failures[0]->design)->toBe('corex_email_design')
+        ->and($this->failures[0]->detail)->toContain('not found');
+});
+
+it('reads what a document shows, so a good template is not discarded for what is in its head', function (string $before) {
+    Filters\expectApplied('corex_email_design')->andReturn(siteDesign(
+        fn (EmailContent $content): string => '<html><head><title>Acme</title>' . $before . '</head><body><p>We &lt;3 you</p>' . $content->bodyHtml . '</body></html>',
+    ));
+
+    $this->design->render($this->content, $this->brand);
+
+    expect($this->failures)->toBe([]);
+})->with([
+    'a style rule with a less-than sign' => ['<style>@media (width<=600px){.card{padding:8px}}</style>'],
+    'a comment' => ['<!-- Thanks, Sam. One & two -->'],
+    'a byte that is not text' => ["<meta name=\"author\" content=\"Caf\xE9\" />"],
+]);
+
+it('does not take a word in the title, a comment or a longer word for the message', function (string $document) {
+    $this->content = new EmailContent('Re: your message', '<p>Yes</p>', 'sam@example.com');
+    Filters\expectApplied('corex_email_design')->andReturn(siteDesign(fn (): string => $document));
+
+    $this->design->render($this->content, $this->brand);
+
+    expect($this->failures)->toHaveCount(1)
+        ->and($this->failures[0]->reason)->toBe(EmailDesignFailedEvent::WITHOUT_MESSAGE);
+})->with([
+    'in the title only' => ['<html><head><title>Yes</title></head><body><p>Thank you.</p></body></html>'],
+    'in a comment only' => ['<html><body><!-- Yes --><p>Thank you.</p></body></html>'],
+    'inside a longer word' => ['<html><body><p>Yesterday we wrote.</p></body></html>'],
+]);
+
+// A template written as an include prints its markup and returns nothing. What it printed must
+// not be written into the answer of the request that is sending the reply.
+it('discards what a design prints, and treats one that only prints as answering nothing', function () {
+    Filters\expectApplied('corex_email_design')->andReturn(siteDesign(function (EmailContent $content): string {
+        echo '<html><body>' . $content->bodyHtml . '</body></html>';
+
+        return '';
+    }));
+
+    ob_start();
+    $html = $this->design->render($this->content, $this->brand);
+    $printed = ob_get_clean();
+
+    expect($printed)->toBe('')
+        ->and($html)->toBe((new StandardEmailDesign())->render($this->content, $this->brand))
+        ->and($this->failures[0]->reason)->toBe(EmailDesignFailedEvent::EMPTY);
+});
+
+// A site design that builds on "the email design" by asking for it again would ask for itself.
+it('hands the standard design to a site design that asks for the design again while drawing', function () {
+    $again = $this->design;
+    Filters\expectApplied('corex_email_design')->andReturn(siteDesign(
+        fn (EmailContent $content, EmailBrand $brand): string => '<div class="acme-banner">Acme</div>' . $again->render($content, $brand),
+    ));
+
+    $html = $this->design->render($this->content, $this->brand);
+
+    expect(substr_count($html, 'acme-banner'))->toBe(1)
+        ->and($html)->toContain((new StandardEmailDesign())->render($this->content, $this->brand))
+        ->and($this->failures)->toBe([]);
 });
 
 it('passes over something that is not a design', function () {

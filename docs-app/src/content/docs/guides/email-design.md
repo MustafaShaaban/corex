@@ -17,8 +17,8 @@ No code. In **CoreX → Settings → Mail**:
 
 | Setting | What it changes | Left blank |
 |---|---|---|
-| **Email accent colour** | The edge along the top of the email's card. Six-digit hex, such as `#0B1F3B`. | CoreX's brass |
-| **Email logo** | The mark at the top of the email. Use an image at least 360 pixels wide; it is shown at up to 180. | The site's logo, then its icon, then its name |
+| **Email accent colour** | The edge along the top of the email's card, in light and dark mail clients alike: choose one that shows on both white and near-black. Six-digit hex, such as `#0B1F3B`. | CoreX's brass |
+| **Email logo** | The mark at the top of the email. A whole web address (`https://…`) of an image at least 360 pixels wide; it is shown at up to 180. Anything else is passed over. | The site's logo, then its icon, then its name |
 | **Email footer line** | The line under the card. | "This message was sent by" and the site's name, linked to the site |
 
 A colour that is not six-digit hex is not saved: the field keeps the value it had.
@@ -38,7 +38,8 @@ add_filter('corex_email_brand', static function (EmailBrand $brand): EmailBrand 
 ```
 
 Each colour is written into a `style` attribute, so it has to be `#rrggbb`; anything else throws
-where the filter runs, and CoreX then draws the email from the brand it had before the filter.
+where the filter runs. CoreX then draws the email from the brand the settings gave, and tells
+the people who manage email that the filter failed and what it said.
 Keep a contrast of 4.5 to 1 between `text`, `muted` and `link` and the two grounds, `surface`
 and `canvas`: the standard palettes do, and nothing checks yours.
 
@@ -75,8 +76,10 @@ and `canvas`: the standard palettes do, and nothing checks yours.
 | `$brand->footer` | The footer line the site set, or `''`. |
 | `$brand->light`, `->dark` | The colours: `canvas`, `surface`, `border`, `text`, `muted`, `accent`, `link`. |
 
-A design may add attributes to the message's tags, to style them. It must not leave the message
-out, shorten it or reorder it.
+A design may add attributes to the message's tags, to style them. It must print the message as
+it was handed: not left out, shortened or reordered, and not rewritten either. Curling its
+quotes, putting an address after a link or changing its case makes it another text, and CoreX
+then sends the standard design.
 
 ### When a design fails
 
@@ -85,13 +88,28 @@ or answers a document that does not hold the message, CoreX sends the email in t
 design and tells everybody who manages email, in the notification centre, which design failed
 and how. The reply is not stopped and is never sent without its words.
 
-"Holds the message" means its words, whole and in order, with spacing ignored.
+"Holds the message" means its words, whole and in order, in what the document shows: its
+title, style sheets and comments do not count, and spacing is ignored.
+
+The filter itself is inside the same guard. If the line that registers the design throws (a
+class renamed, a constructor that fails), the reply still goes, in the standard design.
+
+A design that prints its markup and returns nothing is treated as answering nothing: return the
+document. To build on CoreX's design, give your class a constructor that takes it, and wrap
+the one the filter hands you:
+
+```php
+add_filter('corex_email_design', static fn ($standard) => new \AcmeSite\Mail\AcmeEmailDesign($standard));
+```
 
 ### What mail clients lay out
 
 Tables and inline styles, and little else. No style sheet is read for the message, no custom
-property, no flexbox. Keep widths fluid up to 600 pixels. Use `left` and `right` chosen from
-`$brand->direction`: Outlook does not read `start`. The generated file does all of this.
+property, no flexbox. Keep widths fluid up to 600 pixels. Align the cells `left` or `right`
+from `$brand->direction`: Outlook does not read `start`. Give each paragraph `dir="auto"` and
+`text-align:start`, which every client that is a browser reads, so that a line in another
+language starts from its own side. The generated file does all of this, and has the dark
+colours for a client that asks for them.
 
 ### Seeing it
 

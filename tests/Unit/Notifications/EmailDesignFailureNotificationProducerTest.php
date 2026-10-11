@@ -54,13 +54,30 @@ it('tells the email managers which design failed and that the email still went',
         ->and($note->recipient->canBeSeenBy(9, fn (string $ability): bool => false))->toBeFalse();
 });
 
-it('says what the design raised when it stopped with an error', function () {
-    $note = designFailureNotes(new EmailDesignFailedEvent('Acme', EmailDesignFailedEvent::THREW, 'Undefined variable $logo'))[0];
+it('says what the design raised when it stopped with an error, and does not trail off when it said nothing', function () {
+    $said = designFailureNotes(new EmailDesignFailedEvent('Acme', EmailDesignFailedEvent::THREW, 'RuntimeException: Undefined variable $logo'))[0];
+    $silent = designFailureNotes(new EmailDesignFailedEvent('Acme', EmailDesignFailedEvent::THREW))[0];
 
-    expect($note->rendered['body'])->toContain('It stopped with an error: Undefined variable $logo.');
+    expect($said->rendered['body'])->toStartWith('It stopped with an error: RuntimeException: Undefined variable $logo The email was sent')
+        ->and($silent->rendered['body'])->toStartWith('It stopped with an error. The email was sent');
 });
 
-it('is one notification for one failing design, however many emails it fails', function () {
+it('says a failing brand filter left the colours from Settings, not that a design failed', function () {
+    $note = designFailureNotes(new EmailDesignFailedEvent('corex_email_brand', EmailDesignFailedEvent::BRAND_THREW, 'The email colour "text" must be written as #rrggbb.'))[0];
+
+    expect($note->rendered['body'])->toContain('corex_email_brand')
+        ->and($note->rendered['body'])->toContain('colours and logo from Settings')
+        ->and($note->rendered['body'])->toContain('must be written as #rrggbb')
+        ->and($note->rendered['body'])->not->toContain('standard CoreX design');
+});
+
+it('keeps its key within what the store holds, however long a class is named', function () {
+    $note = designFailureNotes(new EmailDesignFailedEvent(str_repeat('VeryLongNamespace\\', 20) . 'Design', EmailDesignFailedEvent::EMPTY))[0];
+
+    expect(strlen($note->dedupKey))->toBeLessThanOrEqual(191);
+});
+
+it('keys a failing design by the design, so that it is one condition however many emails it fails', function () {
     $notes = designFailureNotes(
         new EmailDesignFailedEvent('Acme', EmailDesignFailedEvent::EMPTY),
         new EmailDesignFailedEvent('Acme', EmailDesignFailedEvent::EMPTY),

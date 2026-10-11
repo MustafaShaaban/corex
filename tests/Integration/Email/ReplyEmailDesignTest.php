@@ -39,6 +39,8 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    // Whatever a test gave the site as its design is taken back, even when the test failed.
+    remove_all_filters('corex_email_design');
     MailDelivery::stop($this->mailSettings);
     // Deleting the submission takes the email kept for it with it (spec 105).
     wp_delete_post($this->designSubmission, true);
@@ -107,11 +109,9 @@ function keptReplyFor(object $test, string $body): object
 
 // Spec 106, FR-014: from the site's own code, through a filter, with no framework file changed.
 it('sends the reply in the design a site gives', function () {
-    $own = static fn (): AcmeSiteEmailDesign => new AcmeSiteEmailDesign();
-    add_filter('corex_email_design', $own);
+    add_filter('corex_email_design', static fn (): AcmeSiteEmailDesign => new AcmeSiteEmailDesign());
 
     $email = keptReplyFor($this, "Hello Salma,\n\nWe will call you tomorrow.");
-    remove_filter('corex_email_design', $own);
 
     expect($email->body)->toContain('<h1 class="acme">')
         ->and($email->body)->toContain('<p>We will call you tomorrow.</p>')
@@ -128,11 +128,9 @@ it('sends the reply in the standard design when the site design leaves the messa
             $announced[] = [$event->design, $event->reason];
         },
     );
-    $broken = static fn (): AcmeSiteEmailDesign => new AcmeSiteEmailDesign(keepsTheMessage: false);
-    add_filter('corex_email_design', $broken);
+    add_filter('corex_email_design', static fn (): AcmeSiteEmailDesign => new AcmeSiteEmailDesign(keepsTheMessage: false));
 
     $email = keptReplyFor($this, 'We will call you tomorrow.');
-    remove_filter('corex_email_design', $broken);
     // The notification its managers get is the producer's own test; here, that it is listening.
     Boot::app()->container()->make(\Corex\Notifications\NotificationService::class)
         ->resolve('email.design_failed:AcmeSiteEmailDesign', 'The test that raised it is over.');
