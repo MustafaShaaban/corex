@@ -58,19 +58,25 @@ files before slice 4.
 - [x] T045 `ReleaseMaintenance`
 - [x] T046 [P] Pest unit: the recovery plugin, included in a process with no CoreX — with the key it puts every folder back and removes `.maintenance`; without it, or with a wrong one, it does nothing and says nothing
 - [x] T047 The stub; `ReleaseRecoveryPlugin` writes and removes it; an installation is refused when it cannot be written
-- [ ] T048 [P] Pest unit: `ReleaseTableCopies` — one copy per registered table, named so it can be found and dated; nothing is renamed over a live table
-- [ ] T049 `ReleaseTableCopies`
-- [ ] T050 Pest integration: `ReleaseFinisher` — a component behind its version is migrated and listed with from and to; one already current says no change was needed; a failure is named, the release is not recorded as installed, and `.maintenance` stays until going back
-- [ ] T051 `ReleaseFinisher`
-- [ ] T052 Pest integration, on real WordPress: a whole installation of a fixture release that replaces one real plugin folder and adds a table — every step in order, the confirmation required and bound to the package, one installation at a time, the record written, an activity event recorded with no key in it
-- [ ] T053 `ReleaseInstallation`; the routes for each step; OPcache cleared after the swap where it can be
-- [ ] T054 The screen: confirm with the version typed, progress by step, the recovery link shown and downloadable before confirming, the outcome
-- [ ] T055 Playwright: an installation of the fixture release from the screen to "installed"; a visitor's request during it gets the maintenance answer
-- [ ] T056 Guards; UI/UX gate; notes
+- [x] T042b [P] Pest unit: a file the running release holds in a folder and the package does not is gone from the site after the swap and is in `previous/`; a file beside the release's folders is still there (FR-027: the fault of 2026-10-11)
+- [x] T047b [P] Pest unit, then `ReleaseHostFacts`: on a site set not to change its files, `COREX_ALLOW_RELEASE_INSTALL` allows a release and nothing else is asked; without it the blocker names the line (FR-018, plan D16)
+- [x] T047c [P] Jest, then the builder: `--with-plugin=<folder>` — the folder is in `wp-content/plugins`, in `plugins`, `release_paths` and `contents`; refused when it is missing, is not a plugin, or is a name the package already holds (FR-028, plan D17); `shared-host-dist.md`
+- [x] T047d [P] Pest unit, then `ReleaseHostFacts`: a site whose plugins and themes are not where a package holds them is told it cannot install (found while binding the swap to a site; DECISIONS #307)
+- [x] T048 [P] Pest unit: `ReleaseTableCopies` — one copy per registered table, named so it can be found and dated; nothing is renamed over a live table
+- [x] T049 `ReleaseTableCopies`
+- [x] T050 Pest integration: `ReleaseFinisher` — a component behind its version is migrated and listed with from and to; one already current says no change was needed; a failure is named, the release is not recorded as installed, and `.maintenance` stays until going back
+- [x] T051 `ReleaseFinisher`
+- [x] T052 Pest integration, on real WordPress: a whole installation of a fixture release that replaces one real plugin folder and adds a table — every step in order, the confirmation required and bound to the package, one installation at a time, the record written, an activity event recorded with no key in it
+- [x] T052b Pest integration: an installation is refused where it starts when the host has a blocker (FR-018); the folders the running release holds and the package does not are named before the confirmation (FR-028); a second installation, and a second request of the same one, are told one is running; an installation left after the swap is reported unfinished and finished from the screen without its key (FR-035); one left before the swap can be cancelled
+- [x] T053 `ReleaseInstallation`; the routes for each step; OPcache cleared after the swap where it can be
+- [x] T054 The screen: confirm with the version typed, progress by step, the recovery link shown and downloadable before confirming, the outcome
+- [x] T055 Playwright: an installation of the fixture release from the screen to "installed"; a visitor's request during it gets the maintenance answer
+- [x] T056 Guards; UI/UX gate; notes
 
 ## Slice 5 — Going back, and what happened (US4, US5)
 
 - [ ] T060 Pest integration: going back from the admin puts the previous folders back, records it, and says no database change was reversed
+- [ ] T060b Pest integration: a return made through the recovery link is found when the screen is next opened, recorded as one, and the site's record of its release put back (FR-045)
 - [ ] T061 The route and the screen's action, with its own confirmation
 - [ ] T062 [P] Pest unit: one previous release is kept; installing again discards the one before; table copies and unused packages older than their time are removed when the screen is opened
 - [ ] T063 Retention without a scheduled job
@@ -79,6 +85,6 @@ files before slice 4.
 
 ## Slice 6 — Said where an operator reads it
 
-- [ ] T070 `docs/en/05-deployment/releases-from-the-admin.md`: building the zip, installing, what is and is not replaced, the recovery link, what going back does not undo, that this is not a backup
-- [ ] T071 The first installation, still by hand, as its own short runbook
+- [ ] T070 `docs/en/05-deployment/releases-from-the-admin.md`: building the zip, a third-party plugin in it (D17), the configuration line and what it does not give (D16), installing, what is and is not replaced (D18), the recovery link, the database step and what going back does not undo (D19), that this is not a backup
+- [ ] T071 `docs/en/05-deployment/first-installation-by-hand.md`: the first installation, still by hand, and the move of a site updated by extraction to the screen (D20)
 - [ ] T072 `updates-and-distribution.md` and `updating-a-client-site.md` point to it; the docs site; guards; notes

@@ -201,3 +201,134 @@
 	font-weight: 600;
 	overflow-wrap: anywhere;
 }
+
+/* An installation: its panels are groups of a few lines each, under a small
+   heading, so the way back, what installing does and the confirmation read
+   as three things and not one long one. */
+.corex-admin .corex-releases__group {
+	display: grid;
+	gap: var(--corex-admin-space-sm);
+	margin: 0;
+	padding-block-start: var(--corex-admin-space-md);
+	border-block-start: var(--corex-admin-border-width) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-releases__subheading {
+	margin: 0;
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-md);
+	font-weight: 600;
+	line-height: var(--corex-admin-line-tight);
+}
+
+/* In a group a label is a line of its own without being asked to be. */
+.corex-admin .corex-releases__group > .corex-releases__label {
+	max-inline-size: var(--corex-admin-measure);
+}
+
+/* What is typed to confirm is short: a version, a client's name. */
+.corex-admin .corex-releases__field {
+	inline-size: 100%;
+	max-inline-size: 16rem;
+	min-block-size: var(--corex-admin-control-height);
+	font-family: var(--corex-admin-font-mono);
+}
+
+/* The recovery link is long, and is read and copied, not typed. */
+.corex-admin .corex-releases__field--wide {
+	flex: 1;
+	min-inline-size: 0;
+	max-inline-size: none;
+}
+
+.corex-admin .corex-releases__check {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--corex-admin-space-xs);
+	max-inline-size: var(--corex-admin-measure);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+}
+
+.corex-admin .corex-releases__check input {
+	flex: none;
+	margin: var(--corex-admin-space-2xs) 0 0;
+}
+
+.corex-admin .corex-releases__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-sm);
+}
+
+/* A folder path: it breaks where it must, and reads left to right. */
+.corex-admin .corex-releases__cautions code {
+	padding: 0;
+	font-family: var(--corex-admin-font-mono);
+	font-size: inherit;
+	direction: ltr;
+	unicode-bidi: isolate;
+	overflow-wrap: anywhere;
+	background: none;
+}
+
+/* The steps of an installation. Which one is being done is said by a word
+   at the end of its row; the weight and the rule beside it only repeat it. */
+.corex-admin .corex-releases__steps {
+	display: grid;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.corex-admin .corex-releases__step {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--corex-admin-space-md);
+	margin: 0;
+	padding-block: var(--corex-admin-space-xs);
+	padding-inline: var(--corex-admin-space-md);
+	color: var(--corex-admin-text-muted);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+	border-inline-start: var(--corex-admin-state-border) solid var(--corex-admin-border-soft);
+}
+
+.corex-admin .corex-releases__step[data-corex-step="done"] {
+	color: var(--corex-admin-text);
+	border-inline-start-color: var(--corex-admin-success);
+}
+
+.corex-admin .corex-releases__step[data-corex-step="now"] {
+	color: var(--corex-admin-text);
+	font-weight: 600;
+	background: var(--corex-admin-action-subtle);
+	border-inline-start-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-releases__step-state {
+	flex: none;
+	color: var(--corex-admin-text-subtle);
+	font-family: var(--corex-admin-font-mono);
+	font-size: var(--corex-admin-font-xs);
+	font-weight: 600;
+	letter-spacing: var(--corex-admin-letter-wide);
+	text-transform: uppercase;
+}
+
+.corex-admin .corex-releases__changes {
+	display: grid;
+	gap: var(--corex-admin-space-2xs);
+	max-inline-size: var(--corex-admin-measure);
+	margin: 0;
+	padding-inline-start: var(--corex-admin-space-lg);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+}
+
+.corex-admin .corex-releases__changes li {
+	margin: 0;
+}

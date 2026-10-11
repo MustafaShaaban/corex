@@ -46,8 +46,18 @@ spec 106's plan. The owner asked for the framework to be left stable so the clie
 can take one release and be worked on without it; this section says where each unfinished spec
 stops, so work resumes from here and not from a transcript.
 
-**Nothing half-built can be reached.** The classes of spec 107's fourth slice are bound to no
-route and no screen, and the Releases screen says it installs nothing yet.
+**Spec 107 is being finished** (2026-10-11). The first client site on shared hosting went
+public that day, updated by extracting a zip over the release before it, and files the new
+release no longer shipped broke its Site Editor. The owner asked for Releases to be what that
+site uses. The spec was amended first with five answers a client on such a host needs
+(DECISIONS #304: the configuration line where `DISALLOW_FILE_MODS` is set, one builder and
+`--with-plugin`, a folder replaced whole, the database step beside the automatic check, the
+first installation as a runbook); then slice 4 from T042b, slice 5 and slice 6, one pull request
+each. For the other specs this section still says where each stops.
+
+**What is half-built and can be reached.** The Releases screen installs (spec 107, slice 4).
+Going back from the screen is slice 5: until it lands, the way back is the recovery link, and a
+return made with it leaves the site recording the newer release.
 
 | Spec | In v0.44.0 | Where it stops | Resume with |
 |---|---|---|---|
@@ -55,7 +65,7 @@ route and no screen, and the Releases screen says it installs nothing yet.
 | [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
 | [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
 | [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | the specification, and the line-break fix | planned on 2026-10-11 in seven slices, after the owner could not send a reply on a live site, tell whether it had gone, or read it afterwards; none is built | slice 1, T001: the reply box says when delivery is off, the pane says what happened to a reply, and the reply is kept on the submission |
-| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | T048 to T056, then slices 5 and 6 | T048, `ReleaseTableCopies` |
+| [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | slice 4 is built (DECISIONS #307); slices 5 and 6 are owed | T060, going back from the screen |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
 | [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | nothing | slice 1 of six is built (personal data marked on every model and asked about by one rule); slices 2 to 6 have tasks and no code | T030, slice 2: several models in one export |
 

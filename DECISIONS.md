@@ -9817,6 +9817,51 @@ longer escaped: Arabic reads as Arabic, where it read a `\\u` escape for every l
 **Verification.** Pest, unit suite: 2566 passed. One existing expectation held the JSON form of
 a summary and was changed with the behaviour.
 
+## #304 — Five answers a release from the admin owes a client on a host with no command line
+
+**Date:** 2026-10-11. **Branch:** `spec/107-client-host-answers`. Spec 107, its clarification
+session of this date; plan D16 to D20.
+
+The first client site on shared hosting went public on 2026-10-11, updated by extracting a zip
+over the release before it. Four pattern files of the earlier theme stayed, and the Site Editor
+answered with a critical error until they were deleted by hand. The owner asked why Releases is
+not what that site uses and put five questions. He asked for answers, not to be asked back.
+
+**1. A site that sets `DISALLOW_FILE_MODS` allows releases with one line of its own.**
+`define( 'COREX_ALLOW_RELEASE_INSTALL', true );` in `wp-config.php`. Rejected: asking for the
+setting to be lifted at each release (work in the file manager every time, and WordPress's
+installers open while it is lifted), and CoreX ignoring the setting (it says nobody signed in to
+the admin puts code on the site; only whoever can write the configuration file may say
+otherwise). What it does not give is said with it: a package is not signed, so the line trusts
+whoever holds `corex_manage_releases`.
+
+**2. One builder.** A client's package is `npm run build:dist -- --client=<slug> --zip`. A
+third-party plugin is named to it with `--with-plugin=<folder>`, and is then a folder of the
+release like any other: measured, checked on the site, replaced whole. A zip a client makes
+itself from `dist/` with a plugin copied in afterwards installs, and leaves that plugin as the
+site has it, because nothing measured it.
+
+**3. A folder is replaced whole.** Already how the swap works; now a requirement (FR-027) with a
+test named for the fault. It ends at the folders a release owns.
+
+**4. One runner, three callers.** The installation's finishing step, the automatic check and
+`wp corex migrate` all run `SiteMigrationRunner`. During an installation only the first can.
+An installation whose finishing step never ran is finished from the screen when it is next
+opened. Going back reverses nothing in the database, and the release gone back to records its
+own schema version again, which removes nothing.
+
+**5. The first installation is a runbook**, with a second part for a site already live and
+updated by extraction: the line, a package from the builder, and the screen.
+
+**Corrected with it.** The spec said the production site does not set `DISALLOW_FILE_MODS`; the
+configuration the client's repository writes for that host does. The plan said three add-ons
+make their own tables outside the schema registry; since #299 they do not, so their tables are
+copied and listed with the rest.
+
+**Not decided here.** Whether a package should be signed. Whether the previous release should
+leave the host after a time and not only at the next installation; the account's file allowance
+is shared by two sites.
+
 ## #306 — Several data models at once: three words kept apart, and five answers from the owner
 
 Date: 2026-10-11 · Spec: 109 (several data models exported, imported and moved together), the spec and its plan · Status: Final for the spec and plan; nothing is built
@@ -9878,6 +9923,106 @@ the slice that replaces personal data exists; they are refused until it does.
 **Not done.** No tasks, no code. The numbers a package is promised for are a target until
 slice 5 measures them, on a development machine held to a shared host's limits and not on the
 host. How a flow is recognised on another install was not read (research.md).
+
+## #307 — An installation is requests that each do a piece, and the last is answered by the release it installed
+
+**Date:** 2026-10-11. **Spec:** 107, slice 4, the rest of it (T042b to T056). **Branch:** `feat/107-release-installed`.
+
+Everything slice 4 had built (unpack and verify, the swap, the maintenance answer, the recovery
+plugin) was bound to nothing. This ties it together, adds the two steps that were missing, and
+puts it on the screen.
+
+**Five routes, one installation at a time.** `prepare` states what installing would do and
+answers the installation's key and the recovery link, once; `confirm` takes the version typed;
+`step` does the next piece of unpack, verify, copy tables or swap; `finish` is the database
+step; `cancel` gives up one that has moved nothing. Each holds a lock on a file in the
+installer's place, asked for and not waited for, so a second tab or a retry that came too soon
+is told to wait and does nothing. A prepared or running installation refuses another.
+
+**Where an installation stands is `state.json`, and it is a contract between releases.** The
+requests after the swap are answered by the code just installed, which reads what the release
+before it wrote. `ReleaseProgress` is that shape and carries `PROTOCOL` 1; a record with another
+number is refused in words, not guessed at. The finishing route's path and answer are the other
+half of the contract and are documented on the controller.
+
+**The key opens two things and nothing else.** WordPress's maintenance answer, which stops
+asking for it after ten minutes, and the recovery plugin. No route of the installer asks for it:
+what they ask for is the ability and the nonce. So an installation whose browser went away, key
+and all, is finished by whoever next opens the screen. The browser sends the key as a header on
+every request from `prepare` on, because from the swap until the finish WordPress turns away any
+request without it.
+
+**The confirmation is `Corex\Operations\Confirmation`**, bound to the administrator who
+prepared, to the package's SHA-256 as it was then, and to the version typed, for fifteen
+minutes. The package is hashed again when it is confirmed. An older release needs saying so as
+well; a site that cannot say whose it is needs the client typed.
+
+**The swap's request may not live to say it finished.** It ends on a release that has just
+been moved out. The journal says which installation a swap is of, so the next request, whoever
+answers it, reads that the swap was made and goes on, or settles one that was cut off between
+two renames. A browser test and an integration test each cut one off.
+
+**The database step runs the runner the automatic check runs** and adds what an installation
+owes: each component with the version it was at and is at, and a failure named when it happens.
+A failure leaves the installation standing at its last step with the reason, the release not
+recorded, and visitors held off; the screen says so when it is opened again.
+
+**Table copies are found by their names.** `<table>_cxrel_<yyyymmddhhmm>`, shortened with a
+piece of the table's hash where MySQL's sixty-four characters would be passed. No list of them
+is kept anywhere a release replaces or migrates. The boundary they are made through
+(`ReleaseTableCopier`) can copy and drop and has no way to rename: nothing can put a copy over a
+live table.
+
+**Decided on the way, each the owner's to overrule:**
+
+- *A site not laid out as a package is cannot install.* A release's folders are moved to
+  `wp-content/plugins/<name>` and `wp-content/themes/<name>` beside wp-content's parent. A site
+  that moved or renamed those would have had folders put where WordPress does not look. It is
+  a blocker now, in words.
+- *On a network the copies are of the main site's tables.* Copying every site's on a large
+  network is hundreds of requests before anything is installed. Every site's database is still
+  brought to the release. Said on the screen's confirmation by what it does not claim, and in
+  the guide.
+- *Cancelling keeps the installation before's way back and table copies* unless this one had
+  begun making its own.
+- *A refusal where an installation starts does not remove the package.* A package the host
+  cannot install today may be installed tomorrow.
+
+**Changed for the screen to open where it must.** Reading `state.json` and `log.json` makes
+nothing. The overview now reads an installation in progress, and it is asked on a host where the
+installer's folder cannot be made; the first version of this made that request a refusal, which
+an existing test of exactly that host caught.
+
+**Verification.**
+
+| What | Result |
+|---|---|
+| Pest, unit, `tests/Unit/Releases` | 174 passed (438 assertions) |
+| Pest, integration, `tests/Integration/Releases`, on a WordPress of this branch's own | 30 passed (253 assertions). A whole installation through the REST routes over a site in the temp folder: every step in order, a table added and listed, a copy of the table as it was, the record and the activity entry with no key in either; refused on a site set not to change its files and allowed with the configuration line; a second installation and a second request told to wait; one finished without its key; one cancelled; a failed database change; an older release and an unknown client; a folder that will not move; a swap cut off at its third rename |
+| Jest | 85 passed in `plugins/corex-config/src/Releases` (the client's key, the loop that drives the steps, the screen from the statement to each way it ends); 8 for the builder's `--with-plugin` |
+| Playwright, `releases-install.spec.js`, on PHP's own server | 5 passed. A real installation from the screen: the fixture release replaces a plugin folder that held a file it does not ship, a signed-out visitor gets 503 while the finishing request is held and 200 after, and the file is gone from the site and in the kept release |
+| Looked at | the confirmation, the progress and the outcome, in both themes and both directions, at 1280 and 782 |
+
+**Not run.**
+
+- **Nothing here has run on the host it is for.** No LiteSpeed, no shared-host limits, no
+  real release's thousands of files in one installation. The first installation there should
+  be of a release that changes nothing important, with the recovery link saved.
+- The browser test ran on PHP's built-in server locally. CI runs it on nginx with php-fpm in a
+  step of its own after the folders are opened to the server; that step has not run yet when
+  this is written.
+- A table too large to copy in one request. The copy is checked by its row count and the
+  installation refused when it is short; what a host does to the request is not known.
+- A network: the finisher's batches are read, not run on one.
+
+**Left open.**
+
+- Going back from the screen, the removal of copies and packages past their time, and the
+  record shown on the screen: slice 5. Until then a return made through the recovery link
+  leaves the site recording the newer release.
+- The previous release's folders stay until the next installation. On an account with a file
+  allowance shared by two sites that may want a time limit.
+- A package is not signed.
 
 ## #309 — A column is personal data unless its model says otherwise, and one right is asked wherever it leaves
 

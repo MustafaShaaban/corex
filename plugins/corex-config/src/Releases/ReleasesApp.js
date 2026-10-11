@@ -1,13 +1,14 @@
 /**
- * ReleasesApp — the CoreX → Releases screen (spec 107, slice 3).
+ * ReleasesApp — the CoreX → Releases screen (spec 107, slices 3 and 4).
  *
  * What a person is told before anything on the site changes: which release is running, what on
  * this host stands in the way of installing one, the packages the site holds, and for a package
  * that is read, what it is or why it is refused, in the site's own words.
  *
  * A package is sent in parts and its progress is the number of bytes the site says it holds,
- * not the number the browser has let go of. Nothing here installs: that is the next slice, and
- * until it is built the statement says so in a sentence where a button would otherwise be.
+ * not the number the browser has let go of. A package that was read and not refused can be
+ * installed: `ReleaseInstall` takes the screen from there, and while an installation is in
+ * hand nothing else on the screen can be started.
  */
 import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
@@ -16,6 +17,7 @@ import CorexLoadable from '../admin/components/CorexLoadable.js';
 import { usePending, workingProps } from '../admin/components/working.js';
 import { sizeOf } from '../Submissions/export/exportState.js';
 import { ReleaseRefusedError } from './releaseClient.js';
+import ReleaseInstall from './ReleaseInstall.js';
 import ReleaseStatement from './ReleaseStatement.js';
 import ReleasesSkeleton from './ReleasesSkeleton.js';
 
@@ -279,6 +281,33 @@ export default function ReleasesApp( { client } ) {
 	// What the last package read turned out to be: `{ statement }`, or `{ problem }`, the
 	// error that was the answer.
 	const [ outcome, setOutcome ] = useState( null );
+	// What the site answered when asked to install the package that was read. While it is
+	// there, the screen is the installation's.
+	const [ prepared, setPrepared ] = useState( null );
+
+	// An installation somebody's browser went away from, which this one can go on with. One
+	// that was only prepared is not shown: its key went with the page that asked for it.
+	const standing =
+		overview?.installation && overview.installation.step !== 'awaiting'
+			? overview.installation
+			: null;
+	const installing = prepared !== null || standing !== null;
+
+	const prepare = async () => {
+		try {
+			setPrepared( await client.prepare( outcome.statement.package ) );
+		} catch ( failure ) {
+			setOutcome( { problem: failure } );
+			// A package refused here is gone from the site, as one refused when read is.
+			load();
+		}
+	};
+
+	const leaveTheInstallation = () => {
+		setPrepared( null );
+		setOutcome( null );
+		load();
+	};
 
 	const read = async ( name ) => {
 		setOutcome( null );
@@ -333,28 +362,49 @@ export default function ReleasesApp( { client } ) {
 							installed={ overview.installed }
 							blockers={ overview.blockers }
 						/>
-						<Send
-							file={ file }
-							sending={ sending }
-							problem={ sendProblem }
-							pending={ pending }
-							onChoose={ setFile }
-							onSend={ () => during( 'send', send ) }
-						/>
-						<Packages
-							packages={ overview.packages }
-							pending={ pending }
-							onRead={ ( name ) =>
-								during( `read:${ name }`, () => read( name ) )
-							}
-						/>
+						{ ! installing && (
+							<>
+								<Send
+									file={ file }
+									sending={ sending }
+									problem={ sendProblem }
+									pending={ pending }
+									onChoose={ setFile }
+									onSend={ () => during( 'send', send ) }
+								/>
+								<Packages
+									packages={ overview.packages }
+									pending={ pending }
+									onRead={ ( name ) =>
+										during( `read:${ name }`, () =>
+											read( name )
+										)
+									}
+								/>
+							</>
+						) }
 					</>
 				) }
 			</CorexLoadable>
-			{ outcome?.statement && (
-				<ReleaseStatement statement={ outcome.statement } />
+			{ installing && (
+				<ReleaseInstall
+					// A standing installation that is gone on with is the same one when
+					// the screen asks the site again.
+					key={ prepared ? 'prepared' : 'standing' }
+					client={ client }
+					prepared={ prepared }
+					standing={ standing }
+					onClose={ leaveTheInstallation }
+				/>
 			) }
-			{ outcome?.problem && (
+			{ ! installing && outcome?.statement && (
+				<ReleaseStatement
+					statement={ outcome.statement }
+					pending={ pending }
+					onInstall={ () => during( 'prepare', prepare ) }
+				/>
+			) }
+			{ ! installing && outcome?.problem && (
 				<CorexErrorState
 					scale="panel"
 					title={

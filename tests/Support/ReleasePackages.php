@@ -107,14 +107,16 @@ final class ReleasePackages
      * checks them with.
      *
      * @param array<string,string> $files Each file's path in the package, under a release path, and what it holds.
-     * @param array<string,string> $more  Entries the description says nothing of: WordPress's own files, say.
+     * @param array<string,string> $more    Entries the description says nothing of: WordPress's own files, say.
+     * @param array<string,mixed>  $changes Changes to the rest of the description: another version, another client.
      */
-    public static function faithful(array $files, array $more = []): string
+    public static function faithful(array $files, array $more = [], array $changes = []): string
     {
         $paths = array_values(array_filter(self::PATHS, static fn (string $path): bool => self::under($path, $files) !== []));
 
         return self::zip(array_merge(
             ['corex-release.json' => (string) json_encode(self::description([
+                ...$changes,
                 'release_paths' => $paths,
                 'contents'      => array_combine($paths, array_map(
                     static fn (string $path): array => self::holds(self::under($path, $files)),
