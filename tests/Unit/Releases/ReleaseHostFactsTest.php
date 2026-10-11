@@ -24,6 +24,7 @@ beforeEach(function () {
         'canOpenZips'        => true,
         'unwritable'         => [],
         'freeBytes'          => 500 * 1048576,
+        'laidOutAsAPackage'  => true,
     ], $changes));
 
     $this->reasons = static fn (ReleaseHostFacts $host, int $needed = 100 * 1048576): array => array_column($host->blockers($needed), 'reason');
@@ -43,6 +44,7 @@ it('names each thing that prevents an installation', function (array $changes, s
     'PHP cannot open a zip'                       => [['canOpenZips' => false], 'no_zip', 'zip'],
     'a folder it has to replace cannot be written' => [['unwritable' => ['/home/acme/public_html/wp-content/plugins']], 'not_writable', '/home/acme/public_html/wp-content/plugins'],
     'there is not the room'                       => [['freeBytes' => 40 * 1048576], 'no_space', '40 MB'],
+    'its folders are not where a package puts them' => [['laidOutAsAPackage' => false], 'layout_differs', 'wp-content/plugins'],
 ]);
 
 it('names every folder that cannot be written, not only the first', function () {
@@ -60,3 +62,32 @@ it('says all of what is in the way at once', function () {
 
     expect(($this->reasons)($host))->toBe(['file_changes_off', 'no_zip', 'no_space']);
 });
+
+it('tells a site set not to change its files the one line that allows releases', function () {
+    $blockers = ($this->host)(['fileChangesAllowed' => false])->blockers(0);
+
+    // The line as it is written in wp-config.php, so it can be copied from the screen.
+    expect($blockers[0]['message'])->toContain("define( 'COREX_ALLOW_RELEASE_INSTALL', true );")
+        ->and($blockers[0]['message'])->toContain('wp-config.php');
+});
+
+it('lets a release in on a site set not to change its files, when its configuration says so', function (bool $wordPressAllows, bool $configurationAllows, bool $allowed) {
+    Functions\when('wp_is_writable')->justReturn(true);
+    // What is asked of WordPress is asked for a release, and for nothing wider.
+    Functions\expect('wp_is_file_mod_allowed')->with('corex_release_install')->andReturn($wordPressAllows);
+
+    $host = ReleaseHostFacts::ofThisHost([sys_get_temp_dir()], $configurationAllows);
+
+    expect($host->fileChangesAllowed)->toBe($allowed);
+})->with([
+    'WordPress allows it'                         => [true, false, true],
+    'WordPress does not, the configuration does'  => [false, true, true],
+    'neither does'                                => [false, false, false],
+]);
+
+it('is told, and does not work out, whether the site is laid out as a package is', function (bool $laidOut) {
+    Functions\when('wp_is_writable')->justReturn(true);
+    Functions\when('wp_is_file_mod_allowed')->justReturn(true);
+
+    expect(ReleaseHostFacts::ofThisHost([sys_get_temp_dir()], laidOutAsAPackage: $laidOut)->laidOutAsAPackage)->toBe($laidOut);
+})->with([true, false]);
