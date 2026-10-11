@@ -132,6 +132,16 @@ long: read it before a client site takes the release. In short:
   where it was printed as JSON. A client site carried that as a patch to a framework file and
   can drop it.
 
+**Unreleased on `main`, outside the specs above** (2026-10-11): the `corex/modal` and
+`corex/drawer` blocks are left by a press on the backdrop only when the press starts and ends
+outside the panel. Both closed on any click whose target was the `<dialog>` element. That is
+what the browser gives a press begun inside and let go outside, and it is also the panel's own
+padding, because in these two blocks the dialog element is the panel. The rule is in one file,
+`addons/corex-ui/src/Blocks/shared/backdrop-press.js`, and knows the backdrop by the dialog's
+box and not by the click's target. `tests/e2e/block-dialogs.spec.js` makes the presses with a
+mouse on a page holding all three (a modal, a drawer at each side); it is the first browser
+test these blocks have.
+
 Earlier releases are in [`CHANGELOG.md`](CHANGELOG.md), each with its decisions.
 
 ## Next
