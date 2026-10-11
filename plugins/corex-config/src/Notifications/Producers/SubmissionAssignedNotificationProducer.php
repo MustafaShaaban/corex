@@ -10,6 +10,7 @@ namespace Corex\Config\Notifications\Producers;
 
 defined('ABSPATH') || exit;
 
+use Corex\Config\Submissions\InboxSubmissionAddress;
 use Corex\Config\Submissions\SubmissionAssignedEvent;
 use Corex\Events\ListenerProvider;
 use Corex\Access\CorexAbility;
@@ -84,13 +85,7 @@ final class SubmissionAssignedNotificationProducer implements NotificationProduc
             // assignee then has to search (spec 087, FR-014).
             action: NotificationAction::to(
                 'notifications.submission.assigned.action',
-                add_query_arg(
-                    [
-                        'page'             => 'corex-submissions',
-                        'corex_submission' => (string) $event->submissionId,
-                    ],
-                    admin_url('admin.php'),
-                ),
+                InboxSubmissionAddress::to($event->submissionId),
                 CorexAbility::MANAGE_SUBMISSIONS,
                 __('Open the submission', 'corex'),
             ),

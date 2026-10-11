@@ -40,11 +40,10 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Nothing of this release is in flight** (2026-10-11). v0.45.1 holds everything on `main`:
-v0.45.0, and one fix after it (a file sent with a form is opened from its submission in the
-inbox; spec 081, Phase F; DECISIONS #317). The owner has since decided that a form's
-notification email links to the submission in the inbox and does not attach the file; that is
-not built yet (see "Open, and not hidden"). The owner asked for the framework to be left
+**One change is on `main` after v0.45.1, unreleased** (2026-10-11): a form's notification
+email names the file it was sent with and links to the submission in the inbox, and does not
+attach it (spec 081, Phase G; DECISIONS #319; the owner's decision). v0.45.1 holds the rest:
+v0.45.0, and the fix that opens a submission's file from the inbox (DECISIONS #317). The owner asked for the framework to be left
 stable so the client sites can take one release and be worked on without it; this section says
 where each unfinished spec stops, so work resumes from here and not from a transcript.
 
@@ -131,13 +130,14 @@ Roadmap presence does not authorize implementation (`ROADMAP.md` §16).
 
 Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-STATUS.md):
 
-- **A form's notification email prints the number its file is stored under, and carries no
-  file.** `SendEmailListener` builds the body from the stored answers and gives the mail
-  request no attachments. Spec 081's US3 says the file is "attached, or linked" by a size
-  threshold (FR-011), and the threshold was never built. The inbox shows the file now
-  (DECISIONS #317); the email does not. The owner decided on 2026-10-11: the email links to
-  the submission in the inbox, and the file is not attached. Not built yet. A client site
-  that writes its own emails needs the stored submission's id from the event to do the same.
+- **A client site's own notification email does not link to the submission yet.** CoreX's
+  email names a form's file and links to the submission in the inbox (DECISIONS #319,
+  unreleased). A site that writes its own emails, as MUVA does, is handed what it needs
+  (`FormSubmittedEvent::submissionId()`, `Corex\Mail\SubmissionAddress`) and has to use it
+  in its own listener: that is the site's change, not the framework's.
+- **The notification email's link was not followed from a mailbox.** What it holds was read in
+  tests, and the address is the one the inbox already opens a submission from. Nobody has
+  received the email and pressed the link, signed in and signed out.
 - **CoreX → Data → Form submissions prints that number too**, in its record view and in its
   own export. The Submissions inbox and its export name the file. Read from
   `SubmissionsSource`, not looked at in a browser.

@@ -10808,3 +10808,81 @@ PDF, the pane shows it by name, the address gives back the same bytes, and a bro
 not signed in is given none.
 
 **Verification.** Numbers are in the pull request, from the tree as committed.
+
+## #319 — A form's notification email names its file and links to the submission; the file is not attached
+
+**Date:** 2026-10-11. **Branch:** `feat/notification-links-to-submission`. **Spec:** 081 (files,
+end to end), Phase G; US3 and FR-010/FR-011 amended. (#318 is the number of the session that
+is making the inbox's search find a form defined in code.)
+
+**The owner's decision.** #317 left one thing to him: a form's notification email printed the
+number its file is stored under ("Cv: 224") and carried no file, where spec 081's US3 said
+"attached, or linked when attaching would be inappropriate", by a size threshold nobody built.
+Asked on 2026-10-11 whether the email should attach the file, link to the submission in the
+inbox, or only name it, with the link recommended because a file sent to a mailbox cannot be
+taken back and the inbox's link is checked against who is asking, he answered: "use the link
+for the email".
+
+**So the spec changes, and says so.** US3 read "attached, or linked", and FR-011 asked for a
+threshold to choose. For a form's notification there is nothing to choose now: the file is
+named and the submission is linked, whatever the file's size. The mail stack still carries an
+attachment a caller gives it (FR-010, built in Phase D); a form's notification gives it none.
+
+**What the email says.** Each file's answer is the file's name. Under the answers, when the
+submission has a file and was stored: "The file is opened from the submission, after signing
+in to the site." and a link, "Open the submission", to
+`admin.php?page=corex-submissions&corex_submission=<id>`, which is the address the inbox
+already opens one submission from (the assignment notification inside the admin uses it). The
+link goes to the submission and not to the file: the file's own address is made for one
+signed-in person and stops working with their session, so it cannot be put in an email.
+
+**"After signing in" is in the sentence on purpose.** On a site that hides its login address
+a signed-out visitor to `/wp-admin/` is shown "not found", not a way in. The recipient of the
+email has to be signed in before the link takes them anywhere, and the email says so, where
+"Open the submission" alone would have looked broken on exactly the sites that hide their
+login.
+
+**The link is given only with a file.** A link to the submission would be of use in every
+notification. That is a change to every form's email on every site, which nobody asked for;
+the address is in the email's context (`submission_url`) for a template that wants it.
+
+**How a listener learns which submission it is.** `FormSubmittedEvent` carried the form and
+the answers and was documented as immutable. The listener that stores the submission got an
+id back and dropped it, so the listener that writes the email could not point at anything.
+The event now has `storedAs(int)` and `submissionId(): ?int`: whatever stores the submission
+says which one it became, once, and a listener that runs after it reads it. The form and the
+answers still do not change. Considered and not taken: a separate service that remembers the
+id per event (one more thing for a site's listener to be handed, for the same fact), and
+storing before the event is dispatched (a form chooses whether it is stored by listing the
+listener, and that would take the choice away).
+
+**Where a submission is read is the admin plugin's to say.** `corex-forms` writes the email
+and does not know the inbox's screen. `Corex\Mail\SubmissionAddress` is the question, in
+`corex-core` beside the other contracts the mail and the inbox share;
+`InboxSubmissionAddress` in `corex-config` answers it and is now the one place the address is
+written (`SubmissionAssignedNotificationProducer` built the same address inline, and calls it
+now). Without the admin plugin the listener is handed no address and the email names the file
+with no link.
+
+**For a client site that writes its own emails.** MUVA's forms have email listeners of their own
+(`SendBriefEmails`, `SendLeadEmails`), so CoreX's own email is not the one its team receives.
+What such a listener needs is the same two things: `$event->submissionId()`, which is there
+when `StoreSubmissionListener` is listed before it, and `Corex\Mail\SubmissionAddress` from
+the container, whose `of($id)` is the address. `FormSubmittedEvent`'s constructor and its
+`values` are as they were: a listener still receives a file as the number it is stored under,
+and `Corex\Forms\Submission\UploadedFileNames::in($slug, $values)` gives the names.
+
+**A template that printed the number prints the name.** The email's context held the answers
+as stored. It holds a file's name where it held the number, so a routed template that prints
+`submission.cv` says "salma-cv.pdf". A site whose template or code read that context value as
+an attachment id has to read the event instead; none is known.
+
+**Not built.** The email of a flow built in the admin: a flow takes no file. A notification
+for a form that does not store its submission names the file and has nowhere to link.
+
+**Tests.** Written first: `tests/Unit/Forms/NotificationFileLinkTest.php` (the name in place
+of the number, the link, no link without a file or without a stored submission, the id told
+to the event) and `tests/Integration/Forms/NotificationFileLinkTest.php`, where the submission
+the email points at is the one WordPress stored and the name is the file's on disk.
+
+**Verification.** Numbers are in the pull request, from the tree as committed.

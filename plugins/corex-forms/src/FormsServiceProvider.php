@@ -233,8 +233,12 @@ final class FormsServiceProvider extends ServiceProvider
             static fn (ContainerInterface $c): SendEmailListener => new SendEmailListener(
                 $c->make(NotificationDispatcher::class),
                 $c->make(ConfigInterface::class),
+                $c->make(\Corex\Forms\Submission\UploadedFileNames::class),
+                // The inbox is the admin plugin's. Without it there is nowhere to point.
+                $c->has(\Corex\Mail\SubmissionAddress::class) ? $c->make(\Corex\Mail\SubmissionAddress::class) : null,
             ),
         );
+        $this->container->singleton(\Corex\Forms\Submission\UploadedFileNames::class);
         // The attachment store is built here rather than autowired: it needs an UploadValidator,
         // and that needs an allow-list and a size cap, which are policy rather than dependencies.
         // The list is deliberately narrow, and it is the outer limit: a field's `mime:` narrows it

@@ -101,10 +101,14 @@ The person notified of a submission gets the document with it, or a link they ca
 
 **Acceptance Scenarios**:
 
-1. **Given** a submission with a file, **When** the notification is sent, **Then** the file is
-   attached, or linked when attaching would be inappropriate.
-2. **Given** a file over the attachment size threshold, **When** the notification is sent, **Then**
-   it is linked instead, and says why.
+1. **Given** a submission with a file, **When** the notification is sent, **Then** the email
+   names the file and links to the submission, where the file is opened by whoever may read it.
+   The file is not attached. *(Amended 2026-10-11, DECISIONS #319. It read "the file is
+   attached, or linked when attaching would be inappropriate".)*
+2. **Given** a submission with a file that was not stored, or a site with no inbox, **When** the
+   notification is sent, **Then** the email names the file and offers no link. *(Amended with
+   scenario 1. It read "a file over the attachment size threshold is linked instead, and says
+   why": there is no threshold, because nothing is attached.)*
 3. **Given** a send that fails, **When** it is recorded, **Then** the failure is about the send, not
    a fatal about a missing file.
 
@@ -162,8 +166,12 @@ The person notified of a submission gets the document with it, or a link they ca
 
 - **FR-010**: The mail stack MUST carry attachments end to end, and `WpMailDriver` MUST pass them to
   `wp_mail()`.
-- **FR-011**: A size threshold MUST decide attach-versus-link, and the message MUST say which
-  happened.
+- **FR-011**: A form's notification MUST name each file sent with the form and MUST link to the
+  stored submission; it MUST NOT attach the file. The link MUST be to the submission and not to
+  the file, and the email MUST say that the reader has to be signed in. *(Amended 2026-10-11,
+  DECISIONS #319: the owner's decision. It read "a size threshold MUST decide
+  attach-versus-link, and the message MUST say which happened". FR-010 stands: the mail stack
+  carries an attachment a caller gives it.)*
 - **FR-012**: `COREX-EMAIL-ADDON.md` MUST describe what exists. Either `attach()`/`attachMedia()`/
   `attachGenerated()`/`AttachmentResolver` are built, or the document is corrected.
 
@@ -183,7 +191,8 @@ The person notified of a submission gets the document with it, or a link they ca
   one click. It currently displays as an integer.
 - **SC-003**: A disallowed type, an over-size file, and a content/extension mismatch are each refused
   with a message naming the constraint, and store nothing.
-- **SC-004**: A notification for a submission with a file arrives with the file attached or linked.
+- **SC-004**: A notification for a submission with a file arrives naming the file and linking to
+  the submission it is opened from. *(Amended 2026-10-11; it read "attached or linked".)*
 - **SC-005**: A careers application stores a `cv_attachment` that resolves. It is currently always
   `0`.
 - **SC-006**: No form without a file field changes behaviour, and no existing test regresses.

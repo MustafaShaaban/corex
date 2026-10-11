@@ -6,6 +6,35 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **A form's notification email names the file it was sent with, and links to the submission**
+  (spec 081, Phase G; DECISIONS #319). The email printed the number the file is stored under
+  ("Cv: 224"). It prints the file's name, and under the answers a line says the file is opened
+  from the submission, after signing in to the site, with a link that opens the Submissions
+  inbox on that submission. The file is not attached: that is the owner's decision, because a
+  file sent to a mailbox cannot be taken back, and the inbox gives it only to whoever may read
+  the submission. An email of a submission with no file is as it was.
+
+### Added
+
+- **A form's listener can point at the stored submission.** `FormSubmittedEvent::submissionId()`
+  is the id of the submission, once the listener that stores it has run, and
+  `Corex\Mail\SubmissionAddress::of($id)` is where it is read in the admin.
+  `Corex\Forms\Submission\UploadedFileNames::in($slug, $values)` gives the name of each file
+  sent with a form.
+
+### Client impact
+
+- **A site that writes its own notification emails** (a form that lists its own listener) is
+  not changed by this: CoreX's email is not the one it sends. To link its own email to the
+  submission, list `StoreSubmissionListener` before its listener, read
+  `$event->submissionId()`, and ask the container for `Corex\Mail\SubmissionAddress`.
+  `$event->values` still holds a file as the number it is stored under.
+- **A routed email template that prints a file's answer** (`submission.<field>`) prints the
+  file's name where it printed that number. The address is in the context as `submission_url`.
+- **Nothing to rebuild**: no script or stylesheet changed.
+
 ## [0.45.1] — 2026-10-11
 
 One fix, reported from a client site on v0.45.0: a file sent with a form could not be opened

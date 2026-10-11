@@ -95,6 +95,24 @@ form's notification email prints the attachment's id and carries no file (US3, S
 stack carries attachments, and `SendEmailListener` gives it none); CoreX → Data → Form
 submissions prints the id as well.
 
+## Phase G — the notification email of a form with a file (decided 2026-10-11)
+
+Phase F left this to the owner: the email printed the number the file is stored under and
+carried no file. His decision: link to the submission, do not attach (DECISIONS #319). US3,
+FR-011 and SC-004 are amended to say so. Tests first.
+
+- [x] **T070** Pest, unit: the email names the file in place of the number, links to the
+      stored submission, and offers no link without a file or without a stored submission.
+- [x] **T071** Pest, unit: whatever stores a submission tells the event which one it became.
+- [x] **T072** Pest, integration: the submission the email points at is the one WordPress
+      stored, at the address the inbox opens a submission from; nothing is attached.
+- [x] **T073** `FormSubmittedEvent::storedAs()` / `submissionId()`; `StoreSubmissionListener`
+      says it.
+- [x] **T074** `Corex\Mail\SubmissionAddress` (core), `InboxSubmissionAddress` (config), the
+      one place that address is written.
+- [x] **T075** `UploadedFileNames`; `SendEmailListener` names the files and adds the link.
+- [x] **T076** Guards, `PROGRESS.md`, DECISIONS #319, `CHANGELOG.md`.
+
 ## Deliberately not done
 
 - **Multi-file per field.** One file per field is the decided scope: a field that sometimes holds
