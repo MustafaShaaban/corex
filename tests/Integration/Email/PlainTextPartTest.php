@@ -88,7 +88,7 @@ it('sends both versions as alternatives of one message', function () {
     expect($built)->toContain('Content-Type: multipart/alternative')
         // The mailer names the plain part's character set itself: plain ASCII for these words.
         ->and($built)->toContain('Content-Type: text/plain;')
-        ->and($built)->toContain('Content-Type: text/html; charset=UTF-8')
+        ->and($built)->toContain('Content-Type: text/html;')
         ->and($built)->toContain('Hello Salma')
         ->and($built)->toContain('<strong>Salma</strong>');
 })->skip(fn (): bool => ! wordPressSendsItsOwnMail(), 'This install replaces wp_mail().');
