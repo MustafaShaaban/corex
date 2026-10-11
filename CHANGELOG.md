@@ -6,6 +6,62 @@ All notable changes to Corex are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **A model says which of its columns hold personal data, and of which kind** (spec 109, slice
+  1). `ManagedTable` takes `personalData`, a column's id to one of the kinds `DataField` has:
+  contact details, names and identities, what people wrote, sign-in and security records,
+  interests and behaviour, sensitive details, or none. The ten tables CoreX and its add-ons
+  ship declare theirs. CoreX → Data → Models says in words what each field holds, where it
+  printed a key (DECISIONS #309).
+- **One right to take personal data out of the site in a file**: "Export personal data"
+  (`corex_export_personal_data`), an ability of its own that an administrator holds and
+  CoreX → Access & Abilities can give. Managing data, data models or submissions does not carry
+  it.
+- **Docs**: [Personal data in exports](docs/en/03-operations/personal-data-in-exports.md), with
+  its Arabic page, and a step in the in-admin guide for the Data screen.
+
+### Changed
+
+- **The Data export offers a column that holds personal data only to a person allowed to export
+  personal data**, says how many columns it is not offering, and refuses one from anybody else
+  with a 403 whatever was sent. Its confirmation names the kinds of personal data in the
+  columns chosen; it said "contains personal data" and named nothing.
+- **Every answer of a form submission is personal data on the Data screen**, as it always was in
+  the Submissions inbox. The Data screen guessed from an answer's key, so a name, a company and
+  a budget were exported with no confirmation.
+- **The Submissions inbox asks for the same right.** It let an administrator export personal
+  columns and nobody else; it now lets whoever holds "Export personal data". The filter
+  `corex_submission_export_personal_data` still has the last word.
+
+### Security
+
+- **Subscribers, job applicants, login attempts and the activity log's actors were exported from
+  CoreX → Data with no confirmation and no right asked.** Every column of every managed table
+  was declared as holding no personal data, by the code that read the table and not by the
+  table. A column is now what its table declared, and a column nothing was said about is
+  treated as personal data. Read from the code on 2026-10-11 while specifying spec 109; nobody
+  reported a file taken this way.
+- **The Data screen exported a submission's personal columns to anybody who managed
+  submissions**, where the Submissions inbox withheld the same records from everybody but an
+  administrator. One rule now holds in both.
+
+### Client impact
+
+- **A person who is not an administrator loses the personal columns in the Data export** until
+  given "Export personal data" on CoreX → Access & Abilities. That is anybody with a role you
+  gave "Manage data" or "Manage submissions". They still export the other columns. Decide who
+  on the site should hold the right, and give it, when the site takes this release.
+- **A table your site registers with `ManagedTable` counts as personal data in every column**
+  until it passes `personalData`. Nothing breaks: an administrator exports it as before, after
+  a confirmation that now says "data nobody has classified yet", and anybody else is offered
+  none of its columns. Declare each column to end that; a column that holds nothing about a
+  person is `DataField::PERSONAL_NONE`.
+- **Code of your own that read `personal_data_class` from the Data catalog** meets a new value,
+  `undeclared`, and form submissions' answers are `content` or `contact` where some were `none`.
+- **The Data catalog (`GET corex/v1/data/sources`) answers `permissions.personal_data`** for
+  each source. Nothing is removed from it.
+
 ## [0.44.0] — 2026-10-10
 
 A release to stand on: everything built since v0.43.5, with no pull request and no issue left

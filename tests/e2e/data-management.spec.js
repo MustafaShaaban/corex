@@ -8,7 +8,7 @@
 
 const fs = require( 'node:fs' );
 const { test, expect } = require( '@playwright/test' );
-const { collectConsoleErrors } = require( './helpers' );
+const { collectConsoleErrors, pinAppearance } = require( './helpers' );
 
 test( 'redirects the retired Data address to the Records tab', async ( {
 	page,
@@ -86,6 +86,120 @@ test( 'exports a whole model from the Export tab, and lists it without a refresh
 
 	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
 } );
+/**
+ * Personal data is marked where it is, and asked about by name (spec 109, slice 1).
+ *
+ * Every column of every table model was declared as holding nothing personal, so the Models tab
+ * said nothing of an actor's name and an export of it asked for no confirmation. Where a
+ * confirmation was asked, it named nothing.
+ *
+ * Walked as an administrator, who holds the right to export personal data. The line a person
+ * without that right is shown is drawn in Jest (`DataExportDialog.test.js`) and its refusal is
+ * held on real WordPress (`DataManagementControllerTest`): no fixture account manages data
+ * without being an administrator.
+ */
+test( 'says what a model holds about people, and names it before an export', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+	await page.goto( '/wp-admin/admin.php?page=corex-data-models&tab=models' );
+
+	const activity = page.locator( '.corex-data-models__card' ).filter( {
+		has: page.getByRole( 'heading', { name: 'Activity events' } ),
+	} );
+	if ( ( await activity.getAttribute( 'open' ) ) === null ) {
+		await activity.locator( 'summary' ).click();
+	}
+	const fieldRow = ( key ) =>
+		activity.locator( 'tbody tr' ).filter( {
+			has: page.locator( 'code', {
+				hasText: new RegExp( `^${ key }$` ),
+			} ),
+		} );
+	await expect( fieldRow( 'actor_label' ) ).toContainText(
+		'Personal data: names and identities'
+	);
+	await expect( fieldRow( 'outcome' ) ).not.toContainText( 'Personal data' );
+	// No shipped model leaves a column unclassified.
+	await expect(
+		page.getByText( 'data nobody has classified yet' )
+	).toHaveCount( 0 );
+
+	await page.goto( '/wp-admin/admin.php?page=corex-data-models&tab=export' );
+	await page.getByRole( 'button', { name: /^Export .+…$/ } ).click();
+	const dialog = page.getByRole( 'dialog' );
+	const notice = dialog.locator( '.corex-export__notice' );
+	const start = dialog.getByRole( 'button', {
+		name: /^Export [\d,]+ records?$/,
+	} );
+
+	// The confirmation says what it is confirming, and the export waits for it.
+	await expect( notice ).toContainText(
+		/contains personal data \(.*what people wrote.*\) and will handle it/
+	);
+	await expect( start ).toBeDisabled();
+	await expect( dialog.locator( '.corex-export__summary' ) ).toHaveText(
+		'Confirm the personal-data notice to export these columns.'
+	);
+	// An administrator is offered every column: nothing is withheld, and nothing says so.
+	await expect( dialog.getByText( /not offered/ ) ).toHaveCount( 0 );
+
+	// The longer sentence stays inside the dialog and its box stays beside its first line, in
+	// both directions and at a narrow width, where it wraps.
+	for ( const [ direction, width ] of [
+		[ 'ltr', 1280 ],
+		[ 'rtl', 1280 ],
+		[ 'ltr', 375 ],
+		[ 'rtl', 375 ],
+	] ) {
+		await page.setViewportSize( { width, height: 900 } );
+		await pinAppearance( page, 'light', direction );
+		const measured = await dialog.evaluate( ( node ) => {
+			const box = ( element ) => element.getBoundingClientRect();
+			const check = node.querySelector( '.corex-export__notice' );
+			const body = node.querySelector( '.corex-dialog__body' );
+			const input = check.querySelector( 'input' );
+			// The first line as it was drawn, not as the stylesheet says a line should be.
+			const range = node.ownerDocument.createRange();
+			range.selectNodeContents(
+				check.querySelector( 'span:last-child' )
+			);
+			const firstLine = range.getClientRects()[ 0 ];
+
+			return {
+				insideStart: box( check ).left >= box( body ).left - 0.5,
+				insideEnd: box( check ).right <= box( body ).right + 0.5,
+				bodyScrollsSideways: body.scrollWidth > body.clientWidth,
+				offCentre: Math.abs(
+					box( input ).top +
+						box( input ).height / 2 -
+						( firstLine.top + firstLine.height / 2 )
+				),
+			};
+		} );
+		const where = `${ direction } at ${ width }px`;
+		expect( measured.insideStart, `notice starts inside, ${ where }` ).toBe(
+			true
+		);
+		expect( measured.insideEnd, `notice ends inside, ${ where }` ).toBe(
+			true
+		);
+		expect(
+			measured.bodyScrollsSideways,
+			`no sideways scroll, ${ where }`
+		).toBe( false );
+		expect(
+			measured.offCentre,
+			`box beside the first line, ${ where }`
+		).toBeLessThan( 3 );
+	}
+
+	await notice.click();
+	await expect( start ).toBeEnabled();
+
+	expect( errors, `console errors:\n${ errors.join( '\n' ) }` ).toEqual( [] );
+} );
+
 test( 'opens a tab directly from its address', async ( { page } ) => {
 	// Tabs were component state only, so no view here could be linked to or reopened.
 	await page.goto(

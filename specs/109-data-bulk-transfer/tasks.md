@@ -22,79 +22,80 @@ export personal data is not offered that column, and the route refuses it.
 
 **The declaration (corex-core)**
 
-- [ ] T001 [P] [US2] Pest unit, `tests/Unit/Data/ManagedTableDeclarationTest.php`: a table
+- [x] T001 [P] [US2] Pest unit, `tests/Unit/Data/ManagedTableDeclarationTest.php`: a table
       with no `personalData` answers `undeclared` for every column; one that names some
       columns answers the declared class for those and `undeclared` for the rest; a class that
       is not one of `DataField`'s, and a column that is not the table's, are refused when the
       table is constructed; `declaresPersonalData()` is false only when nothing was declared
-- [ ] T002 [P] [US2] Pest unit, `tests/Unit/Data/DataFieldPersonalDataTest.php`:
+- [x] T002 [P] [US2] Pest unit, `tests/Unit/Data/DataFieldPersonalDataTest.php`:
       `DataField` accepts the class `undeclared`; `DataField::holdsPersonalData()` is false
       for `none` and true for every other class, `undeclared` among them
-- [ ] T003 [US2] `DataField::PERSONAL_UNDECLARED` and `holdsPersonalData()` in
+- [x] T003 [US2] `DataField::PERSONAL_UNDECLARED` and `holdsPersonalData()` in
       `plugins/corex-core/src/Data/DataField.php`; the named argument `personalData`,
       `personalDataClass(string $column)` and `declaresPersonalData()` in
       `plugins/corex-core/src/Database/Schema/ManagedTable.php`
 
 **The right (corex-core)**
 
-- [ ] T004 [P] [US2] Pest unit, `tests/Unit/Access/CorexAbilityCatalogTest.php`:
+- [x] T004 [P] [US2] Pest unit, `tests/Unit/Access/CorexAbilityCatalogTest.php`:
       `corex_export_personal_data` is in the data group, rated sensitive, not locked; whoever
       manages the admin holds it; managing data, data models or submissions does not carry it
-- [ ] T005 [US2] `CorexAbility::EXPORT_PERSONAL_DATA` in
+- [x] T005 [US2] `CorexAbility::EXPORT_PERSONAL_DATA` in
       `plugins/corex-core/src/Access/CorexAbility.php` and its entry in
       `plugins/corex-core/src/Access/CorexAbilityCatalog.php`, implied by the admin ability only
 
 **What each shipped model declares**
 
-- [ ] T006 [P] [US2] Pest unit, `tests/Unit/Data/ShippedTablesPersonalDataTest.php`: each of
+- [x] T006 [P] [US2] Pest unit, `tests/Unit/Data/ShippedTablesPersonalDataTest.php`: each of
       the ten managed tables CoreX and its add-ons ship declares a class for every one of its
       columns (none is `undeclared`); subscribers' `email` is contact; an application's `name`
       is identity, its `email` contact and its `cv_attachment` sensitive; a login attempt's
       `user_id` is security; the activity log's `actor_label` is identity
-- [ ] T007 [US2] `personalData` on the eight tables of `plugins/corex-config/src/`:
+- [x] T007 [US2] `personalData` on the eight tables of `plugins/corex-config/src/`:
       `Access/AccessTables.php` (both), `Activity/ActivityTable.php`,
       `Blog/ReadingEventTable.php`, `Jobs/JobTable.php`,
       `Notifications/NotificationTable.php`, `Notifications/NotificationUserStateTable.php`,
       `Security/LoginProtection/LoginAttemptTable.php`; classes as in data-model.md
-- [ ] T008 [P] [US2] `personalData` on
+- [x] T008 [P] [US2] `personalData` on
       `addons/corex-newsletter/src/Subscriber/SubscriberTable.php` and
       `addons/corex-careers/src/Application/ApplicationTable.php`
 
 **The sources read it (corex-config)**
 
-- [ ] T009 [P] [US2] Pest unit, `tests/Unit/Data/TableDataSourceTest.php`: a source's fields
+- [x] T009 [P] [US2] Pest unit, `tests/Unit/Data/TableDataSourceTest.php`: a source's fields
       carry the table's declared classes; a table that declares nothing gives every field
       `undeclared`; the same for a writable table's source
-- [ ] T010 [P] [US2] Pest unit, `tests/Unit/Data/SubmissionsSourcePersonalDataTest.php`: every
-      answer field is personal data: an answer keyed like an email address or a phone number
-      is contact, any other answer content, none is `none`; `date` and `form` are `none`
-- [ ] T011 [US2] `plugins/corex-config/src/Data/TableDataSource.php` `fields()` reads
+- [x] T010 [P] [US2] Pest unit, `tests/Unit/Config/SubmissionsSourceTest.php` (the test that
+      held the old guess, changed in place): every answer field is personal data: an answer
+      keyed like an email address or a phone number is contact, any other answer content, none
+      is `none`; `date` and `form` are `none`
+- [x] T011 [US2] `plugins/corex-config/src/Data/TableDataSource.php` `fields()` reads
       `ManagedTable::personalDataClass()`; `plugins/corex-config/src/Data/SubmissionsSource.php`
       classes every answer as contact or content
 
 **One rule where data leaves**
 
-- [ ] T012 [P] [US2] Pest unit, `tests/Unit/Data/DataSourceServiceTest.php` (new) or the
-      catalog cases of `DataRegistryCapabilitiesTest.php`: a described source carries
+- [x] T012 [P] [US2] Pest unit, `tests/Unit/DataModels/DataExportServiceTest.php`, beside the
+      service that asks it: a described source carries
       `permissions.personal_data`, true for a person holding the right and false for one who
       only manages data; `mayExportPersonalData()` answers the same
-- [ ] T013 [P] [US2] Pest unit, `tests/Unit/DataModels/DataExportServiceTest.php`: a request
+- [x] T013 [P] [US2] Pest unit, `tests/Unit/DataModels/DataExportServiceTest.php`: a request
       that names a personal column from a person without the right is refused, acknowledged
       or not, and nothing is stored or queued; the same person exports the other columns with
       no acknowledgement; a person with the right is still asked to acknowledge; an
       `undeclared` column is treated as personal in each of these
-- [ ] T014 [US2] `DataSourceService::mayExportPersonalData()` and `permissions` in
+- [x] T014 [US2] `DataSourceService::mayExportPersonalData()` and `permissions` in
       `describe()` (`plugins/corex-config/src/Data/DataSourceService.php`);
       `DataExportService::validateColumns()` asks it before the acknowledgement
       (`plugins/corex-config/src/DataModels/DataExportService.php`), with a translated reason
-- [ ] T015 [P] [US2] Pest unit, `tests/Unit/Submissions/WpSubmissionAccessPolicyTest.php` (or
+- [x] T015 [P] [US2] Pest unit, `tests/Unit/Submissions/WpSubmissionAccessPolicyTest.php` (or
       the existing policy test): `canExportPersonalData` is true for a person given
       `corex_export_personal_data` and for an administrator, false for one who only manages
       submissions; the filter `corex_submission_export_personal_data` still has the last word
-- [ ] T016 [US2] `plugins/corex-config/src/Submissions/WpSubmissionAccessPolicy.php`: the
+- [x] T016 [US2] `plugins/corex-config/src/Submissions/WpSubmissionAccessPolicy.php`: the
       default of `canExportPersonalData` is the ability. The spec 106 session is told before
       this file is touched
-- [ ] T017 [US2] Pest integration, `tests/Integration/Data/DataManagementControllerTest.php`:
+- [x] T017 [US2] Pest integration, `tests/Integration/Data/DataManagementControllerTest.php`:
       as a person who manages data and submissions and is not an administrator,
       `POST /data/newsletter-subscribers/exports` with `email` answers a refusal and makes no
       run; without `email` it makes one; after the role is given the ability, with `email`
@@ -103,36 +104,38 @@ export personal data is not offered that column, and the route refuses it.
 
 **The screen**
 
-- [ ] T018 [P] [US2] Jest, `plugins/corex-config/src/DataModels/__tests__/dataExportState.test.js`:
+- [x] T018 [P] [US2] Jest, `plugins/corex-config/src/DataModels/__tests__/dataExportState.test.js`:
       `dataColumnChoices(fields, mayExportPersonal)` leaves personal columns out for a person
       without the right and says how many were left out; `personalKinds()` names, in words and
       once each, the kinds among the chosen columns, `undeclared` as "not yet classified";
       `personalDataLabel()` words every class
-- [ ] T019 [US2] `plugins/corex-config/src/DataModels/dataExportState.js` (`dataColumnChoices`,
+- [x] T019 [US2] `plugins/corex-config/src/DataModels/dataExportState.js` (`dataColumnChoices`,
       `withheldColumns`, `personalKinds`, `personalDataLabel`);
       `plugins/corex-config/src/DataModels/DataExportDialog.js`: the columns offered, the line
       saying columns were withheld and why, the acknowledgement naming the kinds
-- [ ] T020 [P] [US2] Jest (rendered), `plugins/corex-config/src/DataModels/__tests__/DataExportDialog.test.js`:
+- [x] T020 [P] [US2] Jest (rendered), `plugins/corex-config/src/DataModels/__tests__/DataExportDialog.test.js`:
       without the right the personal columns are absent and the line is shown; with it the
       acknowledgement lists the kinds and the export is blocked until it is ticked; a source
       with no personal column shows neither
-- [ ] T021 [P] [US2] `plugins/corex-config/src/DataModels/ModelsPanel.js` and
+- [x] T021 [P] [US2] `plugins/corex-config/src/DataModels/ModelsPanel.js` and
       `plugins/corex-config/src/admin/data/FieldControl.js` word a field's class through
       `personalDataLabel()` where they printed its key; Jest for both in their `__tests__`
-- [ ] T022 [US2] Playwright, `tests/e2e/data-management.spec.js`: the Models tab words
-      subscribers' `email` as contact details; the export dialog for subscribers names the
-      kinds and holds the export until the box is ticked; measured spacing of the withheld
-      line and the acknowledgement, both directions, light and dark
+- [x] T022 [US2] Playwright, `tests/e2e/data-management.spec.js`: the Models tab words the
+      activity log's `actor_label` as names and identities (subscribers need an add-on CI may
+      not have on); the export dialog names the kinds and holds the export until the box is
+      ticked; the confirmation measured inside the dialog and beside its first line, both
+      directions, at 1280 and 375. Written, and run in CI, not on a development install. The
+      withheld line is drawn in Jest (T020): no fixture account manages data without being an
+      administrator
 
 **Closing the slice**
 
-- [ ] T023 [US2] Guards on the diff: `clean-code-guard`, `wp-guard`, `test-guard`,
+- [x] T023 [US2] Guards on the diff: `clean-code-guard`, `wp-guard`, `test-guard`,
       `docs-guard`; the UI/UX gate on the dialog
-- [ ] T024 [US2] Docs: a page on the Data screen's exports and personal data in
-      `docs/en/03-operations/` with its mirror in `docs/ar/03-operations/`; how a table
-      declares `personalData` in `docs/en/06-cookbooks/` with its mirror; the in-admin guide
-      if one covers the Data screen
-- [ ] T025 [US2] `CHANGELOG.md` under Unreleased with Client impact (who loses the personal
+- [x] T024 [US2] Docs: `docs/en/03-operations/personal-data-in-exports.md` with its Arabic
+      page, which also holds how a table declares `personalData` (one page, not a cookbook of
+      its own); a step in the in-admin guide for the Data screen
+- [x] T025 [US2] `CHANGELOG.md` under Unreleased with Client impact (who loses the personal
       columns on the Data screen, and that a site's own table counts as personal data until it
       declares); `PROGRESS.md` (the row, and the item under "Open, and not hidden" removed);
       `DECISIONS.md`; the two client sites' sessions told of the client impact

@@ -5,7 +5,7 @@
  * A column that holds personal data is offered only to a person allowed to take personal data
  * out, and the confirmation says what it is confirming.
  *
- * No @testing-library in this repo; the dialog is driven through a real jsdom root, as
+ * The repository has no Testing Library; the dialog is driven through a real jsdom root, as
  * protectionTab.test.js is.
  */
 import { createRoot } from '@wordpress/element';
@@ -56,7 +56,7 @@ const SUBSCRIBERS = {
  * Opens the dialog over a source and waits for its counts.
  *
  * @param {Object} source The source, with `permissions`.
- * @return {Promise<{dialog:Element,cleanup:Function}>} The open dialog.
+ * @return {Promise<{dialog:Element,cleanup:() => Promise<void>}>} The open dialog.
  */
 async function open( source ) {
 	const container = document.createElement( 'div' );

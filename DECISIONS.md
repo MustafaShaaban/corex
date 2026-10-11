@@ -9879,3 +9879,66 @@ the slice that replaces personal data exists; they are refused until it does.
 slice 5 measures them, on a development machine held to a shared host's limits and not on the
 host. How a flow is recognised on another install was not read (research.md).
 
+## #309 — A column is personal data unless its model says otherwise, and one right is asked wherever it leaves
+
+Date: 2026-10-11 · Spec: 109, slice 1 (User Story 2) · Branch: `feat/109-personal-data` · Status: Final
+
+**What was wrong.** `TableDataSource::fields()` gave every column of every managed table the
+personal-data class "none". The class was the source's to invent because a table had no way to
+say it. So newsletter subscribers, job applicants, login attempts and the activity log's actors
+were exported from CoreX → Data with no confirmation. Separately, the Data export's only
+question about personal data was a tick box, asked of anybody who could export the model, while
+the Submissions inbox withheld the same submissions' personal columns from everybody but an
+administrator.
+
+**Silence is read as personal data.** `ManagedTable` takes `personalData`. A column it names is
+what it says; a column it does not name is `undeclared`, a class a table cannot declare and
+every check treats as personal. The other default, "none unless declared", is what was there:
+it is the one that leaks when a table is added and nobody thinks of it. The cost is that the
+tables CoreX ships had to answer for every column in the same change, or the jobs log would ask
+for a right to export personal data. They do, and a test holds all ten to it.
+
+**Every answer of a submission is personal data on the Data screen.** The spec said "unless the
+form states that the field holds none" and the plan had the Data source read each form field's
+class. Reading the code for the tasks found two things: the flow builder stores "none" for
+every field nobody set, so a stored "none" is not a statement; and the inbox's export already
+counts every answer as personal whatever its field says. FR-018 was changed to the inbox's
+rule before the code was written. An address or a number is contact details; any other answer
+is what a person wrote. A name, a company and a budget were "none".
+
+**One ability, not implied by managing anything.** `corex_export_personal_data`, in the data
+group, rated sensitive, implied only by the admin ability. The Data export asks it before the
+acknowledgement, and the inbox's `canExportPersonalData` defaults to it. The inbox's filter
+keeps the last word, so a site that decides this in code is not changed. An administrator is
+not changed either. Who is: a person given "Manage data" or "Manage submissions" and not this,
+who loses the personal columns on the Data screen. That is the owner's third answer (#306) and
+is in the changelog's client impact.
+
+**A refusal has a type.** `DataRestGateway` reads a refusal's status from English words in its
+message ("permission" is 403). This message is translated, so it would have been a 422 on an
+Arabic site and a 403 on none. `PersonalDataNotAllowed` is caught before the words are read.
+The gateway's reading of words is left as it is; it is wrong for every translated message and
+is not this slice's.
+
+**The list of kinds is not joined by a translated comma.** The confirmation names the kinds in
+the chosen columns. The linter refuses a translation that is only a separator, rightly: how a
+language lists things is the browser's to know (`Intl.ListFormat`), and Arabic joins two items
+with a word, not a mark. The first test written for it expected an Arabic comma and was wrong.
+
+**What was run.**
+
+| Check | Result |
+|---|---|
+| Pest, unit suite, in the worktree with the root's `vendor/` copied in | 2602 passed |
+| Jest, the whole suite (`npm run test:js`) | 90 suites, 948 passed, 2 skipped as before |
+| `wp-scripts lint-js` on the changed files; `php -l` on the changed PHP | clean |
+| `tests/docs-links.test.js`, `repo-hygiene`, `product-completion-audit` | passed |
+
+**Not run here.** The integration tests added to `DataManagementControllerTest` and the browser
+test added to `data-management.spec.js`: both need an install serving this branch, and the
+development install serves the root checkout, which other sessions were using. CI runs them.
+Nothing was looked at in a browser. The change to what is drawn is one line in a slot the
+inbox's dialog already fills the same way, a longer sentence in the confirmation, and words in
+place of a key on the Models tab; the browser test measures the confirmation in both directions
+at two widths. The line shown to a person without the right is drawn in Jest and not in a
+browser: no fixture account manages data without being an administrator.
