@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.45.0** — tag `v0.45.0`, reachable from `main`.
+- **Latest published release: v0.45.1** — tag `v0.45.1`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -40,12 +40,13 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**One fix is on `main` after v0.45.0, unreleased** (2026-10-11): a file sent with a form is
-opened from its submission in the inbox (spec 081, Phase F; DECISIONS #317). It is a patch
-release's worth, v0.45.1, and cutting it is the owner's to ask for. Apart from it, v0.45.0
-holds everything on `main`, and no pull request is open. The owner asked for the framework to be left stable so the client sites can
-take one release and be worked on without it; this section says where each unfinished spec
-stops, so work resumes from here and not from a transcript.
+**Nothing of this release is in flight** (2026-10-11). v0.45.1 holds everything on `main`:
+v0.45.0, and one fix after it (a file sent with a form is opened from its submission in the
+inbox; spec 081, Phase F; DECISIONS #317). The owner has since decided that a form's
+notification email links to the submission in the inbox and does not attach the file; that is
+not built yet (see "Open, and not hidden"). The owner asked for the framework to be left
+stable so the client sites can take one release and be worked on without it; this section says
+where each unfinished spec stops, so work resumes from here and not from a transcript.
 
 **Spec 107 is built and released, and has not run on the host it is for.** The Releases screen
 installs and goes back, and the operator's guide and the first-installation runbook are written
@@ -89,7 +90,7 @@ older Node 22 prints a warning and builds.
 
 ## Recently landed
 
-**After v0.45.0, unreleased.** A submission that carried a file showed `224` under "Answers".
+**v0.45.1, 2026-10-11.** A submission that carried a file showed `224` under "Answers".
 The pane shows the file's name as a link to an address of the submission's own, which gives
 the file to whoever the inbox lets read that submission; an export names the file
 (DECISIONS #317). `tests/e2e/submission-file.spec.js` is the first test that uploads a file.
@@ -134,8 +135,9 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   file.** `SendEmailListener` builds the body from the stored answers and gives the mail
   request no attachments. Spec 081's US3 says the file is "attached, or linked" by a size
   threshold (FR-011), and the threshold was never built. The inbox shows the file now
-  (DECISIONS #317); the email does not. Whether a visitor's file is sent to a mailbox is the
-  owner's decision, because it cannot be taken back.
+  (DECISIONS #317); the email does not. The owner decided on 2026-10-11: the email links to
+  the submission in the inbox, and the file is not attached. Not built yet. A client site
+  that writes its own emails needs the stored submission's id from the event to do the same.
 - **CoreX → Data → Form submissions prints that number too**, in its record view and in its
   own export. The Submissions inbox and its export name the file. Read from
   `SubmissionsSource`, not looked at in a browser.
