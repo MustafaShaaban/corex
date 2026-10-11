@@ -22,7 +22,7 @@ sources above — usually better, and always somewhere a reader could find it. (
 
 ## Baseline
 
-- **Latest published release: v0.45.1** — tag `v0.45.1`, reachable from `main`.
+- **Latest published release: v0.45.2** — tag `v0.45.2`, reachable from `main`.
 - **`main` is green** on all six required checks, verified against **WordPress 7.1**.
 
 **`main` can go red without a commit, and that is the design.** CI provisions WordPress with
@@ -40,14 +40,14 @@ additionally segfaults at shutdown on Windows/PHP 8.3 ZTS — it does so on an u
 
 ## In flight
 
-**Two changes are on `main` after v0.45.1, unreleased** (2026-10-11): a form's notification
-email names the file it was sent with and links to the submission in the inbox, and does not
-attach it (spec 081, Phase G; DECISIONS #319; the owner's decision); and the inbox's search
-finds a submission of a form defined in code by the sender its row shows (spec 103, T110 to
-T113; DECISIONS #318). v0.45.1 holds the rest:
-v0.45.0, and the fix that opens a submission's file from the inbox (DECISIONS #317). The owner asked for the framework to be left
-stable so the client sites can take one release and be worked on without it; this section says
-where each unfinished spec stops, so work resumes from here and not from a transcript.
+**Nothing is in flight** (2026-10-11). v0.45.2 holds everything on `main`, and no pull
+request is open. It is v0.45.1 and two changes after it: a form's notification email names
+the file it was sent with and links to the submission in the inbox, and does not attach it
+(spec 081, Phase G; DECISIONS #319; the owner's decision); and the inbox's search finds a
+submission of a form defined in code by the sender its row shows (spec 103, T110 to T113;
+DECISIONS #318). The owner asked for the framework to be left stable so the client sites can
+take one release and be worked on without it; this section says where each unfinished spec
+stops, so work resumes from here and not from a transcript.
 
 **Spec 107 is built and released, and has not run on the host it is for.** The Releases screen
 installs and goes back, and the operator's guide and the first-installation runbook are written
@@ -90,6 +90,12 @@ No dependency pull request is open. **Node 22.22 is the floor** for building (DE
 older Node 22 prints a warning and builds.
 
 ## Recently landed
+
+**v0.45.2, 2026-10-11.** Two changes for a form defined in code. Its notification email names
+the file it was sent with and links to the submission in the inbox, where the file is opened;
+nothing is attached (DECISIONS #319). A site that writes its own emails is handed the stored
+submission's id and the inbox's address to do the same. And the inbox's search finds a
+submission by the sender its row shows (DECISIONS #318); a search does more work than it did.
 
 **v0.45.1, 2026-10-11.** A submission that carried a file showed `224` under "Answers".
 The pane shows the file's name as a link to an address of the submission's own, which gives
@@ -134,7 +140,7 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
 
 - **A client site's own notification email does not link to the submission yet.** CoreX's
   email names a form's file and links to the submission in the inbox (DECISIONS #319,
-  unreleased). A site that writes its own emails, as MUVA does, is handed what it needs
+  v0.45.2). A site that writes its own emails, as MUVA does, is handed what it needs
   (`FormSubmittedEvent::submissionId()`, `Corex\Mail\SubmissionAddress`) and has to use it
   in its own listener: that is the site's change, not the framework's.
 - **The notification email's link was not followed from a mailbox.** What it holds was read in
