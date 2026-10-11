@@ -33,6 +33,7 @@ import {
 import {
 	buildSetPayload,
 	columnsOf,
+	modelsInFile,
 	setBlockedReason,
 	setExportLabel,
 	setFormatDetail,
@@ -187,7 +188,10 @@ export default function DataExportSetDialog( {
 	}, [] );
 
 	const total = setTotal( models, counts );
-	const kinds = setKinds( models, columns );
+	// What is asked and what the button says are about the models the file will hold: one
+	// with no record is left out of it.
+	const held = modelsInFile( models, counts );
+	const kinds = setKinds( held, columns );
 	const blocked = setBlockedReason( {
 		models,
 		counts,
@@ -274,7 +278,7 @@ export default function DataExportSetDialog( {
 				<ExportFooter
 					blocked={ blocked }
 					run={ run }
-					label={ setExportLabel( total, models.length ) }
+					label={ setExportLabel( total, held.length ) }
 					close={ close }
 					start={ start }
 				/>

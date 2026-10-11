@@ -13,6 +13,7 @@ import {
 	entryModels,
 	exportableModels,
 	groupedModels,
+	modelsInFile,
 	modelsNotOffered,
 	setBlockedReason,
 	setExportLabel,
@@ -118,6 +119,26 @@ describe( 'what several models would export', () => {
 		expect( setTotal( [ LEADS, JOBS ], null ) ).toBeNull();
 	} );
 
+	// Seen on a site: three models ticked, one of them empty, and the button said "from 3
+	// models" while the row above it said the third "will be left out".
+	it( 'holds the models that have a record, and every ticked model while they are counted', () => {
+		const keys = ( models ) => models.map( ( source ) => source.key );
+
+		expect(
+			keys(
+				modelsInFile( [ LEADS, SUBSCRIBERS, JOBS ], {
+					submissions: 3,
+					'table-subscribers': 0,
+					'table-bounded-jobs': 9,
+				} )
+			)
+		).toEqual( [ 'submissions', 'table-bounded-jobs' ] );
+		expect( keys( modelsInFile( [ LEADS, JOBS ], null ) ) ).toEqual( [
+			'submissions',
+			'table-bounded-jobs',
+		] );
+	} );
+
 	it( 'names the kinds of personal data across the models, once each', () => {
 		expect( setKinds( [ LEADS, SUBSCRIBERS, JOBS ], {} ) ).toEqual( [
 			'names and identities',
@@ -214,6 +235,18 @@ describe( 'whether several models can be exported', () => {
 			setBlockedReason( {
 				...ready,
 				models: [ JOBS ],
+				acknowledged: false,
+			} )
+		).toBe( '' );
+	} );
+
+	it( 'asks nothing about a model that holds no record: it is not in the file', () => {
+		expect(
+			setBlockedReason( {
+				...ready,
+				models: [ LEADS, JOBS ],
+				counts: { submissions: 0, 'table-bounded-jobs': 3 },
+				columns: { submissions: [] },
 				acknowledged: false,
 			} )
 		).toBe( '' );

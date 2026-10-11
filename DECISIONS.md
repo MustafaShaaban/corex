@@ -10433,8 +10433,16 @@ function, and the Jest tests of the list did the same, so both were right about 
 wrong about the site. The function now keeps `category`, with a test, and the list no longer
 has a fallback of its own.
 
-**Not run here.** The integration tests in `DataExportSetTest` and the browser tests in
-`data-management.spec.js`: CI runs them. **Not seen on a real site.** The development install's
-saved administrator session had expired, and this session does not type credentials into that
-host. The standalone page is the components and the stylesheets, not the admin around them.
+**Then seen on a site.** After that, this worktree was given a WordPress of its own
+(`scripts/setup-wordpress.ps1` on `127.0.0.1`, its own database, seeded as CI's browser job
+seeds it). The Data screen's ten browser tests pass there, and so do the three loading-state
+tests of the Data records list. Looking at it found one more thing: with three models ticked
+and one of them empty, the button said "from 3 models" under a row that said the third "will
+be left out", and the notice named the kinds of personal data of the model that was left out.
+Both now speak of the models the file will hold (`modelsInFile()`), which is what the route
+does. One measurement of the browser test was wrong too: it returned a `Set` from the page,
+and a `Set` does not come back.
+
+**Not run here.** The integration tests in `DataExportSetTest`: CI runs them, and they passed
+on its first run.
 

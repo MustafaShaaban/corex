@@ -97,8 +97,9 @@ What to know before resuming each:
   tagged. Slice 2
   (DECISIONS #312) is the owner's report itself, several models in one export; it removes Data
   export files older than 30 days on the first daily clean-up, which is in the changelog's
-  client impact too. Its screens were drawn in a standalone page with the real stylesheets and
-  made-up data, and not on a real site: the development install's saved sign-in had expired. Slice 5 splits
+  client impact too. Its screens were first drawn in a standalone page with made-up data, which
+  missed a defect CI's browser test then found (the list had one group); it was then looked at
+  and tested on a WordPress of the worktree's own. Slice 5 splits
   `Releases/ReleaseUpload.php`, a file of spec 107, which is finished; what the Releases side
   relies on is written into task T080.
   Slice 1's integration and browser tests ran in CI; its screens were looked at on the

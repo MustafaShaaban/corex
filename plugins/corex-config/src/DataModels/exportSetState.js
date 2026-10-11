@@ -123,6 +123,22 @@ export function setTotal( models, counts ) {
 }
 
 /**
+ * The ticked models an export will hold: the ones that hold a record, and every one of them
+ * while they are being counted. The route leaves a model with no record out of the file.
+ *
+ * @param {Array<Object>}              models The ticked models.
+ * @param {Object<string,number>|null} counts Records by model key; null while unknown.
+ * @return {Array<Object>} The models the file will hold.
+ */
+export function modelsInFile( models, counts ) {
+	if ( setTotal( models, counts ) === null ) {
+		return models;
+	}
+
+	return models.filter( ( source ) => Number( counts[ source.key ] ) > 0 );
+}
+
+/**
  * The kinds of personal data across the models' chosen columns, in words, once each.
  *
  * @param {Array<Object>}           models  The ticked models.
@@ -226,7 +242,8 @@ export function setBlockedReason( {
 			Number( pdfMost ).toLocaleString()
 		);
 	}
-	const bare = models.find(
+	const held = modelsInFile( models, counts );
+	const bare = held.find(
 		( source ) => columnsOf( source, columns ).length === 0
 	);
 	if ( bare ) {
@@ -236,7 +253,7 @@ export function setBlockedReason( {
 			bare.label
 		);
 	}
-	if ( setKinds( models, columns ).length > 0 && ! acknowledged ) {
+	if ( setKinds( held, columns ).length > 0 && ! acknowledged ) {
 		return __(
 			'Confirm the personal-data notice to export these columns.',
 			'corex'
@@ -250,7 +267,7 @@ export function setBlockedReason( {
  * The primary action, which says how much it will export and from how many models.
  *
  * @param {number|null} total      Records the models hold between them; null while unknown.
- * @param {number}      modelCount How many models are ticked.
+ * @param {number}      modelCount How many models the file will hold.
  * @return {string} The button's label.
  */
 export function setExportLabel( total, modelCount ) {
