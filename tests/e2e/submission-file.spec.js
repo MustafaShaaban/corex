@@ -57,18 +57,10 @@ async function wordpress( page, method, route, data ) {
 	return response.json();
 }
 
-test.afterEach( async ( { page } ) => {
-	if ( pageId ) {
-		await page.goto( '/wp-admin/' );
-		await wordpress(
-			page,
-			'DELETE',
-			`/wp/v2/pages/${ pageId }&force=true`
-		);
-	}
-	// The submission and its file. Left on the install when WP-CLI does not answer.
+test.afterEach( () => {
+	// The page, the submission and its file. Left on the install when WP-CLI does not answer.
 	wpEval(
-		`foreach ( get_posts( [ 'post_type' => 'corex_submission', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids', 'meta_key' => 'corex_field_email', 'meta_value' => '${ EMAIL }' ] ) as $id ) {` +
+		`wp_delete_post( ${ pageId }, true ); foreach ( get_posts( [ 'post_type' => 'corex_submission', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids', 'meta_key' => 'corex_field_email', 'meta_value' => '${ EMAIL }' ] ) as $id ) {` +
 			` wp_delete_attachment( (int) get_post_meta( $id, 'corex_field_cv', true ), true ); wp_delete_post( $id, true ); }`
 	);
 } );
@@ -96,9 +88,10 @@ test( 'opens a file sent with a form from its submission, by name, and gives it 
 		buffer: PDF,
 	} );
 	await form.getByRole( 'button', { name: /send|submit/i } ).click();
-	await expect(
-		page.locator( '.corex-form__status, [role="status"]' ).first()
-	).toBeVisible();
+	// Accepted, and not only answered: a file the site could not keep is answered too.
+	await expect( form.locator( '.corex-form__status' ) ).toHaveClass(
+		/is-success/
+	);
 
 	// Whoever reads the submission finds the file under the question, by its name.
 	await page.goto( '/wp-admin/admin.php?page=corex-submissions' );

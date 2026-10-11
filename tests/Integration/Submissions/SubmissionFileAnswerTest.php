@@ -19,10 +19,13 @@ declare(strict_types=1);
 
 use Corex\Access\CorexAbility;
 use Corex\Boot;
+use Corex\Config\Submissions\SubmissionAccessPolicy;
+use Corex\Config\Submissions\SubmissionFileAnswers;
 use Corex\Config\Submissions\SubmissionFileDelivery;
+use Corex\Config\Submissions\SubmissionInboxReader;
 use Corex\Config\Submissions\SubmissionQueryService;
-use Corex\Forms\Form;
-use Corex\Forms\FormRegistry;
+use Corex\Config\Submissions\SubmissionQuestions;
+use Corex\Security\Upload\AttachmentDelivery;
 use Corex\Security\Upload\ProtectedUploads;
 
 const FILE_ANSWER_FORM = 'corex-file-answer-probe';
@@ -37,19 +40,31 @@ beforeEach(function () {
         register_post_type('corex_submission', ['public' => false]);
     }
 
-    Boot::app()->container()->make(FormRegistry::class)->register(new class extends Form {
-        public string $slug = FILE_ANSWER_FORM;
-
-        protected array $fields = [
-            'name' => ['type' => 'text'],
-            'years' => ['type' => 'number'],
-            'cv' => ['type' => 'file'],
-        ];
-    });
+    // What the form asks is given here, and the form is not registered. In a run of the whole
+    // suite another file replaces the registry in the container after the forms service was
+    // built with the first one, and a form registered from a test is then asked of a registry
+    // nothing reads. Everything else is the site's own: the reader, the policy, the files.
+    $container = Boot::app()->container();
+    $questions = new class implements SubmissionQuestions {
+        public function for(string $form): array
+        {
+            return $form === FILE_ANSWER_FORM ? [
+                ['key' => 'name', 'label' => 'Name', 'type' => 'text'],
+                ['key' => 'years', 'label' => 'Years of experience', 'type' => 'number'],
+                ['key' => 'cv', 'label' => 'Your CV', 'type' => 'file'],
+            ] : [];
+        }
+    };
 
     $this->made    = [];
     $this->people  = [];
-    $this->queries = Boot::app()->container()->make(SubmissionQueryService::class);
+    $this->queries = new SubmissionQueryService(
+        $container->make(SubmissionInboxReader::class),
+        $container->make(SubmissionAccessPolicy::class),
+        $questions,
+        files: $container->make(SubmissionFileAnswers::class),
+    );
+    $this->address = new SubmissionFileDelivery($this->queries, $container->make(AttachmentDelivery::class));
     $this->administrator = (int) get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID'])[0];
     wp_set_current_user($this->administrator);
 
@@ -129,7 +144,7 @@ function personWhoIs(string $role, bool $managesSubmissions): int
  *
  * @return array{0:int,1:string} The status and the sentence.
  */
-function askForFile(int $submissionId, string $field, ?string $nonce = null): array
+function askForFile(SubmissionFileDelivery $address, int $submissionId, string $field, ?string $nonce = null): array
 {
     parse_str((string) wp_parse_url(SubmissionFileDelivery::url($submissionId, $field), PHP_URL_QUERY), $_GET);
     if ($nonce !== null) {
@@ -137,7 +152,7 @@ function askForFile(int $submissionId, string $field, ?string $nonce = null): ar
     }
 
     try {
-        Boot::app()->container()->make(SubmissionFileDelivery::class)->serve();
+        $address->serve();
     } catch (FileAddressRefused $refused) {
         return [$refused->getCode(), $refused->getMessage()];
     }
@@ -181,7 +196,7 @@ it('says a file is missing when it has gone from disk, and gives no address for 
 
     expect($answer['missing'])->toBeTrue()
         ->and($answer['url'])->toBe('')
-        ->and(askForFile($id, 'cv'))->toBe([404, 'That file is missing.']);
+        ->and(askForFile($this->address, $id, 'cv'))->toBe([404, 'That file is missing.']);
 });
 
 it('says a file is missing when its record is gone altogether', function () {
@@ -202,7 +217,7 @@ it('does not take a number in another answer for a file, whatever file has that 
     $this->made[] = $id = submissionWithAnswers(['corex_field_years' => (string) $cv]);
 
     expect($this->queries->detail($this->administrator, $id)['values']['years'])->toBe((string) $cv)
-        ->and(askForFile($id, 'years'))->toBe([404, 'That file is not available here.']);
+        ->and(askForFile($this->address, $id, 'years'))->toBe([404, 'That file is not available here.']);
 });
 
 it('refuses a link that was not made for this person, this submission and this field', function () {
@@ -210,8 +225,8 @@ it('refuses a link that was not made for this person, this submission and this f
     $this->made[] = $id = submissionWithAnswers(['corex_field_cv' => (string) $cv]);
     $this->made[] = $other = submissionWithAnswers(['corex_field_cv' => (string) $cv]);
 
-    expect(askForFile($id, 'cv', 'not-a-nonce'))->toBe([403, 'That link is no longer valid.'])
-        ->and(askForFile($id, 'cv', wp_create_nonce(SubmissionFileDelivery::ACTION . '_' . $other . '_cv')))
+    expect(askForFile($this->address, $id, 'cv', 'not-a-nonce'))->toBe([403, 'That link is no longer valid.'])
+        ->and(askForFile($this->address, $id, 'cv', wp_create_nonce(SubmissionFileDelivery::ACTION . '_' . $other . '_cv')))
         ->toBe([403, 'That link is no longer valid.']);
 });
 
@@ -220,7 +235,7 @@ it('tells somebody who is signed out to sign in', function () {
     $this->made[] = $id = submissionWithAnswers(['corex_field_cv' => (string) $cv]);
     wp_set_current_user(0);
 
-    expect(askForFile($id, 'cv'))->toBe([401, 'Sign in to open this file.']);
+    expect(askForFile($this->address, $id, 'cv'))->toBe([401, 'Sign in to open this file.']);
 });
 
 it('refuses a signed-in person who does not manage submissions', function () {
@@ -230,7 +245,7 @@ it('refuses a signed-in person who does not manage submissions', function () {
 
     // An editor may read a private attachment. The file is a submission's, and that is not enough.
     expect(current_user_can('read_post', $cv))->toBeTrue()
-        ->and(askForFile($id, 'cv'))->toBe([403, 'You don’t have permission to open this file.']);
+        ->and(askForFile($this->address, $id, 'cv'))->toBe([403, 'You don’t have permission to open this file.']);
 });
 
 it('answers a person whose scope leaves the submission out as it answers for one that is not there', function () {
@@ -245,8 +260,8 @@ it('answers a person whose scope leaves the submission out as it answers for one
     add_filter('corex_submission_manage_all', '__return_false');
 
     expect($this->queries->detail($person, $id))->toBeNull()
-        ->and(askForFile($id, 'cv'))->toBe([404, 'That file is not available here.'])
-        ->and(askForFile(99999999, 'cv'))->toBe([404, 'That file is not available here.']);
+        ->and(askForFile($this->address, $id, 'cv'))->toBe([404, 'That file is not available here.'])
+        ->and(askForFile($this->address, 99999999, 'cv'))->toBe([404, 'That file is not available here.']);
 });
 
 it('lets a person who was given the inbox open its files, though WordPress would not show them the attachment', function () {
