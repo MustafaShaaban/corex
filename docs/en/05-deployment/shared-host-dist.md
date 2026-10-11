@@ -199,6 +199,10 @@ database and runs `wp eval` and `wp corex routes:list` from the package.
 
 ## First deploy checklist
 
+On a host with no command line, [The first installation, by hand](./first-installation-by-hand.md)
+is this list written out for a file manager, and leaves the site ready to take every later
+release from its admin.
+
 1. `npm ci && npm run build`, and build the client theme (see above).
 2. `npm run build:dist -- --client=acme` then `npm run verify:dist`.
 3. Upload **the contents of `dist/`** to the host (see [Azure Pipelines](./azure-pipelines.md) for the automated path).
@@ -217,6 +221,13 @@ are there as soon as the upload is complete and the plugins are active.
 
 ## Update deploy checklist
 
+> **On a host with no command line, do not upload over the running site.** Extracting or
+> copying a package over the release before it adds and overwrites and removes nothing, so
+> files the new release no longer ships stay on the site. Build with `--zip` and install the
+> package from **CoreX → Releases**, which replaces each folder whole, runs the database step
+> and keeps the previous release: [Releases from the admin](./releases-from-the-admin.md). The
+> list below is for a host that is deployed to by a pipeline or over SFTP.
+
 1. Rebuild + verify `dist/` from the release tag.
 2. Deploy `dist/` **excluding** runtime files (see protection list below).
 3. Run any pending DB migrations (`wp corex migrate`); clear caches.
@@ -227,6 +238,9 @@ are there as soon as the upload is complete and the plugins are active.
 > the site root on the host. The current layout has no root `vendor/`.
 
 ## Rollback checklist
+
+A release installed from **CoreX → Releases** is left from the same screen, or through its
+recovery link: [the way back](./releases-from-the-admin.md#the-way-back). Otherwise:
 
 1. Re-deploy the previous release's `dist/` artifact (excluding runtime files).
 2. Restore the DB snapshot taken before the deploy if schema/content changed.

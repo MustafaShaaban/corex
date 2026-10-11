@@ -28,8 +28,9 @@ use WP_REST_Response;
  *     POST releases/install/step            the next piece: unpack, verify, copy tables, swap
  *     POST releases/install/finish          the database step, answered by the release just installed
  *     POST releases/install/cancel          give up an installation that has moved nothing
+ *     POST releases/return                  go back to the release before, with what confirms it typed
  *
- * Only `step` and `finish` change a file of the site outside `wp-content/corex-releases/`.
+ * Only `step`, `finish` and `return` change a file of the site outside `wp-content/corex-releases/`.
  *
  * `install/finish` is a contract between releases: the release that asks for it is not the
  * release that answers. Its path, that it takes no argument, and the shape of its answer
@@ -46,6 +47,8 @@ final class ReleasesController
         private readonly ReleaseUpload $upload,
         private readonly ReleaseInstallation $installation,
         private readonly ReleaseCompletion $completion,
+        private readonly ReleaseOverview $opening,
+        private readonly ReleaseReturn $return,
     ) {
     }
 
@@ -61,11 +64,12 @@ final class ReleasesController
         $this->route('/releases/install/step', 'POST', 'step');
         $this->route('/releases/install/finish', 'POST', 'finish');
         $this->route('/releases/install/cancel', 'POST', 'cancel');
+        $this->route('/releases/return', 'POST', 'goBack');
     }
 
     public function overview(WP_REST_Request $request): WP_REST_Response
     {
-        return $this->gateway->answer($request, fn (): array => $this->desk->overview());
+        return $this->gateway->answer($request, fn (): array => $this->opening->whenOpened(new DateTimeImmutable('now')));
     }
 
     public function received(WP_REST_Request $request): WP_REST_Response
@@ -152,6 +156,15 @@ final class ReleasesController
 
             return ['cancelled' => true];
         });
+    }
+
+    public function goBack(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->answer($request, fn (): array => $this->return->goBack(
+            sanitize_text_field((string) $request->get_param('phrase')),
+            get_current_user_id(),
+            new DateTimeImmutable('now'),
+        ));
     }
 
     private function route(string $path, string $method, string $callback): void

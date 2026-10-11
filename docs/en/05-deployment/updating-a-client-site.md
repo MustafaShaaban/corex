@@ -380,8 +380,14 @@ plugin files inside a running WordPress; in a repository whose `wp-content` is l
 source, that would change tracked framework files outside git. Leave its endpoint unconfigured
 there.
 
+This page ends with the release merged and verified in the repository. Getting it onto the
+host is the next step and a separate one. On a host with no command line that is
+[Releases from the admin](./releases-from-the-admin.md): build the package from the repository
+and install it from the site's own admin.
+
 ## See also
 
 - [Client-site workflow](../04-team-workflow/client-site-workflow.md) — working inside `sites/<client>/`.
 - [Shared-host dist artifact](./shared-host-dist.md) — building what is deployed.
+- [Releases from the admin](./releases-from-the-admin.md) — installing it on a host with no command line.
 - [`scripts/README.md`](../../../scripts/README.md) — `verify-framework.mjs` in full.

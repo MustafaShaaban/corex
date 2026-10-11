@@ -202,3 +202,22 @@ it.each( [
 	// From the swap on, the way out is the way back, and the screen has to offer it.
 	expect( failure.filesInPlace ).toBe( true );
 } );
+
+it( 'says the site is as it was when the swap is refused: every folder was put back', async () => {
+	const { client } = scripted( {
+		step: [
+			standing( 'swap' ),
+			new ReleaseRefusedError(
+				'swap_failed',
+				'A folder could not be moved, so the release was not installed.'
+			),
+		],
+	} );
+
+	const failure = await runInstallation( client, noWaiting ).catch(
+		( caught ) => caught
+	);
+
+	// The site answered, and its answer is that nothing is where it was not before.
+	expect( failure.filesInPlace ).toBe( false );
+} );

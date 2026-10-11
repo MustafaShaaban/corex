@@ -9,7 +9,7 @@ last_verified: null
 # Deployment
 
 Complete, step-by-step recipes for running and shipping Corex. Every recipe deploys a **release tag** (per
-[`../../internal/COREX-FRAMEWORK.md §19`](../../../COREX-FRAMEWORK.md)) and covers secrets, backups, rollback, zero-downtime,
+[`../../internal/COREX-FRAMEWORK.md §19`](../../internal/COREX-FRAMEWORK.md)) and covers secrets, backups, rollback, zero-downtime,
 and CI/CD — with a Mermaid topology diagram.
 
 > **Status:** ✅ authored (phases D3–D6).
@@ -56,6 +56,8 @@ Each profile records its package shape, build commands, dependencies, secrets, a
 | [`aws-beanstalk.md`](./aws-beanstalk.md) | AWS Elastic Beanstalk (+ RDS, S3, CloudFront) | ✅ D5 |
 | [`aws-ec2-rds.md`](./aws-ec2-rds.md) | AWS EC2 + RDS (manual) | ✅ D5 |
 | [`cpanel-shared-hosting.md`](./cpanel-shared-hosting.md) | cPanel shared hosting (no-symlink strategy) | ✅ D6 |
+| [`first-installation-by-hand.md`](./first-installation-by-hand.md) | A host with no command line: the one installation done by hand | ✅ spec 107 |
+| [`releases-from-the-admin.md`](./releases-from-the-admin.md) | A host with no command line: every release after it, from CoreX → Releases | ✅ spec 107 |
 | [`ci-cd.md`](./ci-cd.md) | CI/CD wiring per target | ✅ D6 |
 | [`secrets-backups-zero-downtime.md`](./secrets-backups-zero-downtime.md) | Cross-cutting operations | ✅ D6 |
 | [`updates-and-distribution.md`](./updates-and-distribution.md) | Self-update, manifests, and the safe-edit boundary | ✅ spec 034 |

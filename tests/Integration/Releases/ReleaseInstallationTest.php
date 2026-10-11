@@ -29,27 +29,12 @@ use Corex\Database\Schema\SchemaComponent;
 use Corex\Database\Schema\SchemaMigrator;
 use Corex\Database\Schema\Table;
 use Corex\Tests\Support\ReleaseInstaller;
-use Corex\Tests\Support\ReleasePackages;
 
 const INSTALLED_VERSION_OPTION = 'corex_release_install_fixture_schema_version';
 
-const THE_PACKAGE = 'corex-release-acme-0.45.0-20261011-120000.zip';
+const THE_PACKAGE = ReleaseInstaller::THE_PACKAGE;
 
-/** The site as it runs 0.44.0: extracted by hand, with a file no release holds any more. */
-const RUNNING_0_44 = [
-    'wp-content/plugins/acme-site/acme-site.php'   => '<?php // acme 0.44',
-    'wp-content/plugins/acme-site/src/Removed.php' => '<?php // left by an earlier release',
-    'wp-content/plugins/corex-legacy/legacy.php'   => '<?php // 0.45 does not hold this plugin',
-    'wp-content/plugins/akismet/akismet.php'       => '<?php // not CoreX',
-    'wp-content/themes/corex/style.css'            => '/* 0.44 */',
-    'wp-config.php'                                => '<?php // the site\'s own',
-    'corex-release.json'                           => '{"corex_version":"0.44.0","client":"acme","release_paths":["wp-content/plugins/acme-site","wp-content/plugins/corex-legacy","wp-content/themes/corex"]}',
-];
-
-const RELEASE_0_45 = [
-    'wp-content/plugins/acme-site/acme-site.php' => '<?php // acme 0.45',
-    'wp-content/themes/corex/style.css'          => '/* 0.45 */',
-];
+const RUNNING_0_44 = ReleaseInstaller::RUNNING_0_44;
 
 /** The request died: nothing after this line of it ran. */
 final class InstallationRequestCutOff extends Error
@@ -61,39 +46,15 @@ final class InstallationRequestCutOff extends Error
  */
 function askTheInstaller(string $method, string $route, array $params = []): WP_REST_Response
 {
-    $request = new WP_REST_Request($method, '/corex/v1' . $route);
-    $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
-    $method === 'GET' ? $request->set_query_params($params) : $request->set_body_params($params);
-
-    return rest_get_server()->dispatch($request);
+    return ReleaseInstaller::ask($method, $route, $params);
 }
 
 /**
- * Ask for the next step until the installation stands at the one given.
- *
- * @return list<string> Each step it stood at on the way, once.
+ * @return list<string> Each step the installation stood at on the way, once.
  */
 function stepUntil(string $step): array
 {
-    $stoodAt = [];
-
-    for ($asked = 0; $asked < 40; $asked++) {
-        $answer = askTheInstaller('POST', '/releases/install/step')->get_data();
-
-        if (($answer['ok'] ?? false) !== true) {
-            throw new RuntimeException('The installation stopped: ' . wp_json_encode($answer));
-        }
-
-        $at = $answer['data']['step'];
-        if (end($stoodAt) !== $at) {
-            $stoodAt[] = $at;
-        }
-        if ($at === $step) {
-            return $stoodAt;
-        }
-    }
-
-    throw new RuntimeException('The installation did not reach ' . $step . ': ' . implode(', ', $stoodAt));
+    return ReleaseInstaller::stepUntil($step);
 }
 
 beforeEach(function () {
@@ -127,17 +88,11 @@ beforeEach(function () {
         ));
     };
 
-    $this->given = function (ReleaseInstaller $site, array $changes = ['corex_version' => '0.45.0']): void {
-        $site->give(ReleasePackages::faithful(RELEASE_0_45, ['wp-includes/version.php' => '<?php // WordPress, which is not replaced'], $changes), THE_PACKAGE);
+    $this->given = static function (ReleaseInstaller $site): void {
+        $site->giveTheRelease();
     };
 
-    $this->confirmed = function (ReleaseInstaller $site): array {
-        ($this->given)($site);
-        $prepared = askTheInstaller('POST', '/releases/install/prepare', ['package' => THE_PACKAGE])->get_data()['data'];
-        askTheInstaller('POST', '/releases/install/confirm', ['phrase' => '0.45.0']);
-
-        return $prepared;
-    };
+    $this->confirmed = static fn (ReleaseInstaller $site): array => $site->confirmTheRelease();
 
     delete_option(InstalledRelease::OPTION);
     delete_option(INSTALLED_VERSION_OPTION);

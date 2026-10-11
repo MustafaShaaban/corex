@@ -6,7 +6,8 @@
  * was just installed to finish: its database step, across as many requests as it needs.
  *
  * From the swap on, the files may be the new release's. A failure there carries
- * `filesInPlace`, so the screen offers the way back and not "try again".
+ * `filesInPlace`, so the screen offers the way back and not "try again". The one failure there
+ * that does not is the site saying a folder would not move and every folder is back.
  */
 
 /** The pause before each request after the first: a host answers a burst with a challenge page. */
@@ -22,6 +23,9 @@ const BUSY = 'installation_busy';
 
 /** The steps from which the site's folders may be the new release's. */
 const FILES_MAY_BE_IN_PLACE = [ 'swap', 'finish', 'stuck' ];
+
+/** The site's answer when a folder would not move and every folder was put back (`ReleaseSwap::FAILED`). */
+const EVERY_FOLDER_IS_BACK = 'swap_failed';
 
 const sleep = ( ms ) => new Promise( ( resolve ) => setTimeout( resolve, ms ) );
 
@@ -82,7 +86,9 @@ export async function runInstallation(
 			onStand( stand );
 		}
 	} catch ( failure ) {
-		failure.filesInPlace = FILES_MAY_BE_IN_PLACE.includes( step );
+		failure.filesInPlace =
+			FILES_MAY_BE_IN_PLACE.includes( step ) &&
+			failure.reason !== EVERY_FOLDER_IS_BACK;
 		throw failure;
 	}
 }

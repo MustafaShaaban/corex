@@ -207,11 +207,7 @@ for ( const width of [ 1280, 782 ] ) {
 				// the way, or a list of what does. A site whose server cannot write its own
 				// folders, as the one these tests meet in CI cannot, shows the list.
 				await expect(
-					panels
-						.nth( 0 )
-						.locator(
-							'.corex-releases__line--quiet, .corex-releases__cautions'
-						)
+					panels.nth( 0 ).locator( '[data-corex-host]' )
 				).toHaveCount( 1 );
 
 				// The words can be read on the panel they are on, the quiet ones too.
