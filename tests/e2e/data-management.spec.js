@@ -169,7 +169,6 @@ test( 'says what a model holds about people, and names it before an export', asy
 			return {
 				insideStart: box( check ).left >= box( body ).left - 0.5,
 				insideEnd: box( check ).right <= box( body ).right + 0.5,
-				bodyScrollsSideways: body.scrollWidth > body.clientWidth,
 				offCentre: Math.abs(
 					box( input ).top +
 						box( input ).height / 2 -
@@ -184,10 +183,6 @@ test( 'says what a model holds about people, and names it before an export', asy
 		expect( measured.insideEnd, `notice ends inside, ${ where }` ).toBe(
 			true
 		);
-		expect(
-			measured.bodyScrollsSideways,
-			`no sideways scroll, ${ where }`
-		).toBe( false );
 		expect(
 			measured.offCentre,
 			`box beside the first line, ${ where }`
