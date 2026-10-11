@@ -47,6 +47,10 @@ All notable changes to Corex are documented here. The format follows
 - **The search finds submissions already stored**: nothing is written to them, and there is
   nothing to run. A form whose name or email question has another name than the five above
   shows no sender in its row, and is found by its form.
+- **A search does more work than it did**, because it now reads the senders of forms defined
+  in code, which it used to pass over. Measured on 10,000 submissions, the search's statement
+  took about a third of a second where it took a tenth; that is still less than listing the
+  inbox with no search (DECISIONS #318). It was not measured on a smaller site.
 
 ## [0.45.1] — 2026-10-11
 
