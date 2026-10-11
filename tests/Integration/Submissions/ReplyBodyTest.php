@@ -88,6 +88,51 @@ it('turns lines typed in a plain box into paragraphs and line breaks', function 
         ->toContain("<p>Thank you for writing.<br />\nWe will call you tomorrow.</p>");
 });
 
+// What a browser's editor or a page writes where a reply has paragraphs. The editor turns these
+// into paragraphs before posting; this is for whatever posts without it.
+it('keeps the lines of blocks a reply does not have apart, as paragraphs', function () {
+    expect(reducedReply('<div>First line</div><div>Second line</div><h2>A heading</h2><blockquote>Quoted</blockquote>'))
+        ->toBe('<p>First line</p> <p>Second line</p> <p>A heading</p> <p>Quoted</p>');
+});
+
+// A browser leaves the first line typed outside any block, and writes the next ones as blocks.
+it('keeps a bare first line apart from the block after it', function () {
+    expect(reducedReply('One<div>Two</div><div>Three</div>'))
+        ->toBe('<p>One</p> <p>Two</p> <p>Three</p>');
+});
+
+it('reads a block however its tag is written', function (string $posted) {
+    expect(reducedReply($posted))->toBe('<p>One</p> <p>Two</p>');
+})->with([
+    'upper case' => ['<DIV>One</DIV><DIV>Two</DIV>'],
+    'a space before the bracket' => ['<div >One</div ><div >Two</div >'],
+    'with attributes' => ['<div class="a" style="color:red">One</div><div id="b">Two</div>'],
+    'a section and an article' => ['<section>One</section><article>Two</article>'],
+    'cells of a table' => ['<table><tr><td>One</td><td>Two</td></tr></table>'],
+    'a rule between two lines' => ['One<hr>Two'],
+    'an aside and a figure' => ['<aside>One</aside><figure>Two</figure>'],
+]);
+
+it('leaves whole markup when emphasis was written around a block', function () {
+    $reduced = reducedReply('<strong><div>One</div><div>Two</div></strong>');
+
+    expect($reduced)->toContain('One')->toContain('Two')
+        ->and($reduced)->not->toMatch('#<p>\s*</p>#')
+        ->and($reduced)->not->toMatch('#<p>\s*</?(?:strong|b|em|i)>\s*</p>#')
+        ->and(substr_count($reduced, '<strong>'))->toBe(substr_count($reduced, '</strong>'));
+});
+
+// Word and Outlook wrap the markup they put on the clipboard: a line end inside a paragraph
+// of markup is how the markup was laid out, and a browser draws it as a space.
+it('reads a line end inside markup as the space a browser draws', function () {
+    expect(ReplyBody::reduce("<p>Dear Salma,\nthank you for\r\nwriting to us.</p>\n<p>Regards</p>"))
+        ->toBe("<p>Dear Salma, thank you for writing to us.</p>\n<p>Regards</p>");
+});
+
+it('keeps the lines of preformatted text as lines', function () {
+    expect(reducedReply("<pre>First\nSecond</pre>"))->toBe('<p>First<br />Second</p>');
+});
+
 it('keeps an Arabic reply as it was written', function () {
     $reduced = ReplyBody::reduce("مرحبا سلمى،\n\nسنتصل بك <strong>غدا</strong>.\nمع التحية");
 

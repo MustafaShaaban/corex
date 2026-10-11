@@ -48,7 +48,7 @@ it('tells the email managers which design failed and that the email still went',
         ->and($note->type)->toBe('email.design_failed')
         ->and($note->category)->toBe(NotificationCategory::EMAIL)
         ->and($note->rendered['body'])->toContain('did not hold the message')
-        ->and($note->rendered['body'])->toContain('sent in the standard CoreX design')
+        ->and($note->rendered['body'])->toContain('CoreX used its standard design for the email instead')
         ->and($note->rendered['body'])->toContain('AcmeSite\Mail\AcmeEmailDesign')
         ->and($note->recipient->canBeSeenBy(9, fn (string $ability): bool => $ability === CorexAbility::MANAGE_EMAIL))->toBeTrue()
         ->and($note->recipient->canBeSeenBy(9, fn (string $ability): bool => false))->toBeFalse();
@@ -58,8 +58,8 @@ it('says what the design raised when it stopped with an error, and does not trai
     $said = designFailureNotes(new EmailDesignFailedEvent('Acme', EmailDesignFailedEvent::THREW, 'RuntimeException: Undefined variable $logo'))[0];
     $silent = designFailureNotes(new EmailDesignFailedEvent('Acme', EmailDesignFailedEvent::THREW))[0];
 
-    expect($said->rendered['body'])->toStartWith('It stopped with an error: RuntimeException: Undefined variable $logo The email was sent')
-        ->and($silent->rendered['body'])->toStartWith('It stopped with an error. The email was sent');
+    expect($said->rendered['body'])->toStartWith('It stopped with an error: RuntimeException: Undefined variable $logo CoreX used its standard design')
+        ->and($silent->rendered['body'])->toStartWith('It stopped with an error. CoreX used its standard design');
 });
 
 it('says a failing brand filter left the colours from Settings, not that a design failed', function () {

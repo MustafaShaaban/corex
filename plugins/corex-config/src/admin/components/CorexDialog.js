@@ -83,6 +83,12 @@ export default function CorexDialog( {
 				.join( ' ' ) }
 			aria-labelledby={ titleId }
 			onCancel={ ( event ) => {
+				// A dialog opened inside this one has its own Escape. The browser sends
+				// `cancel` to that dialog alone; React hands it on to this one as well, and
+				// without this the dialog behind closed with the one in front.
+				if ( event.target !== dialog.current ) {
+					return;
+				}
 				// The caller decides whether it closes; the browser must not close it first.
 				event.preventDefault();
 				leave();

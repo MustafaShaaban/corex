@@ -29,6 +29,9 @@ test.beforeEach( () => {
 	EMAIL = `corex-reply-e2e-${ Date.now() }@example.com`;
 } );
 
+/** Long enough for a browser to have said everything about the last key. */
+const SETTLED = 400;
+
 const APPEARANCES = [
 	[ 'dark', 'ltr' ],
 	[ 'light', 'ltr' ],
@@ -177,14 +180,14 @@ test( 'says before anything is typed that replies are not being delivered, and w
 	).toHaveAttribute( 'href', /page=corex-settings-config&corex_tab=mail/ );
 	await expect( send ).toBeDisabled();
 	// A button that is off is not reached by keyboard, so the fields carry the reason.
-	await expect( pane.getByLabel( 'Message' ) ).toHaveAttribute(
-		'aria-describedby',
-		await notice.getAttribute( 'id' )
-	);
+	await expect(
+		pane.getByRole( 'textbox', { name: 'Message' } )
+	).toHaveAttribute( 'aria-describedby', await notice.getAttribute( 'id' ) );
 
 	// What somebody started is not lost while delivery is switched on; it still cannot be sent.
 	await pane.getByLabel( 'Subject' ).fill( 'Re: your message' );
-	await pane.getByLabel( 'Message' ).fill( 'Hello' );
+	await pane.getByRole( 'textbox', { name: 'Message' } ).click();
+	await page.keyboard.type( 'Hello' );
 	await expect( send ).toBeDisabled();
 
 	// The server gives the same answer to anything that posts to the route anyway.
@@ -267,9 +270,24 @@ test( 'sends a reply on a site that keeps its email, says what happened, and lis
 	await expect( pane.locator( '.corex-pane__reply' ) ).toHaveCount( 0 );
 
 	await pane.getByLabel( 'Subject' ).fill( 'Re: your message' );
-	await pane
-		.getByLabel( 'Message' )
-		.fill( 'Hello Salma,\n\nWe will call you tomorrow.\nRegards' );
+	await pane.getByRole( 'textbox', { name: 'Message' } ).click();
+	await page.keyboard.type( 'Hello Salma,' );
+	await page.keyboard.press( 'Enter' );
+	await page.keyboard.type( 'We will call you tomorrow.' );
+	await page.keyboard.press( 'Shift+Enter' );
+	await page.keyboard.type( 'Regards' );
+	// Entered by a click, not the keyboard: the first line is a paragraph all the same, and
+	// is drawn at the size of the one after it.
+	const written = pane.getByRole( 'textbox', { name: 'Message' } );
+	await expect( written.locator( 'p' ) ).toHaveCount( 2 );
+	const sizes = await written.evaluate( ( box ) =>
+		[ box, ...box.querySelectorAll( 'p' ) ].map(
+			( drawn ) => window.getComputedStyle( drawn ).fontSize
+		)
+	);
+	expect( new Set( sizes ).size, `one size of text, got ${ sizes }` ).toBe(
+		1
+	);
 	await pane.getByRole( 'button', { name: 'Send reply' } ).click();
 
 	// What happened, in words, where the button was pressed.
@@ -283,7 +301,9 @@ test( 'sends a reply on a site that keeps its email, says what happened, and lis
 	await expect( pane.getByLabel( 'Subject' ) ).toBeFocused();
 	await expect( pane ).not.toContainText( 'Reply processed by Email Studio' );
 	await expect( pane.getByLabel( 'Subject' ) ).toHaveValue( '' );
-	await expect( pane.getByLabel( 'Message' ) ).toHaveValue( '' );
+	await expect( pane.getByRole( 'textbox', { name: 'Message' } ) ).toHaveText(
+		''
+	);
 
 	// And what was said, on the submission.
 	const reply = pane.locator( '.corex-pane__reply' );
@@ -521,4 +541,285 @@ test( 'sends the reply as a designed email that holds on a phone, in a dark mail
 	}
 
 	await letter.close();
+} );
+
+/**
+ * The editor's toolbar and field, read off the page.
+ *
+ * @param {import('@playwright/test').Locator} pane The pane.
+ * @return {Promise<Object>} The measurements.
+ */
+function measuredEditor( pane ) {
+	return pane.evaluate( ( dialog ) => {
+		const box = ( node ) => node.getBoundingClientRect();
+		const editor = dialog.querySelector( '.corex-richtext' );
+		const tools = Array.from(
+			editor.querySelectorAll( '.corex-richtext__tool' )
+		);
+		const subject = dialog.querySelector(
+			'.corex-pane__section input[type="text"]'
+		);
+		const ground = ( node ) => {
+			let current = node;
+			while (
+				current &&
+				window.getComputedStyle( current ).backgroundColor ===
+					'rgba(0, 0, 0, 0)'
+			) {
+				current = current.parentElement;
+			}
+			return window.getComputedStyle( current ).backgroundColor;
+		};
+
+		return {
+			sizes: tools.map( ( tool ) => [
+				Math.round( box( tool ).width ),
+				Math.round( box( tool ).height ),
+			] ),
+			gaps: tools
+				.slice( 1 )
+				.map( ( tool, index ) =>
+					Math.round(
+						Math.abs(
+							box( tool ).left - box( tools[ index ] ).left
+						) - box( tool ).width
+					)
+				),
+			level: new Set(
+				tools.map( ( tool ) => Math.round( box( tool ).top ) )
+			).size,
+			// The field sits where the field above it sits, edge for edge.
+			edges: [
+				Math.round( box( editor ).left - box( subject ).left ),
+				Math.round( box( editor ).right - box( subject ).right ),
+			],
+			icon: [
+				window.getComputedStyle( tools[ 1 ] ).color,
+				ground( tools[ 1 ] ),
+			],
+			text: [
+				window.getComputedStyle(
+					editor.querySelector( '.corex-richtext__text' )
+				).color,
+				ground( editor.querySelector( '.corex-richtext__text' ) ),
+			],
+			firstToolFromStart: Math.round(
+				window.getComputedStyle( dialog ).direction === 'rtl'
+					? box( editor ).right - box( tools[ 0 ] ).right
+					: box( tools[ 0 ] ).left - box( editor ).left
+			),
+			pageOverflows:
+				document.documentElement.scrollWidth -
+					document.documentElement.clientWidth >
+				1,
+		};
+	} );
+}
+
+test( 'writes a formatted reply with the keyboard alone, previews the email, and sends what was previewed', async ( {
+	page,
+} ) => {
+	const errors = collectConsoleErrors( page );
+	const pane = await openPaneOn( page, 'capture' );
+	const message = pane.getByRole( 'textbox', { name: 'Message' } );
+	const tool = ( name ) =>
+		pane
+			.getByRole( 'toolbar', { name: 'Formatting' } )
+			.getByRole( 'button', {
+				name,
+				exact: true,
+			} );
+
+	await pane.getByLabel( 'Subject' ).fill( 'Re: your message' );
+	await expect(
+		pane.getByRole( 'button', { name: 'Preview' } )
+	).toBeDisabled();
+
+	// From the subject: the toolbar is one stop, the text the next.
+	await pane.getByLabel( 'Subject' ).focus();
+	await page.keyboard.press( 'Tab' );
+	await expect( tool( 'Bold' ) ).toBeFocused();
+	await page.keyboard.press( 'ArrowRight' );
+	await expect( tool( 'Italic' ) ).toBeFocused();
+	await page.keyboard.press( 'Tab' );
+	await expect( message ).toBeFocused();
+
+	await page.keyboard.type( 'Hello Salma,' );
+	await page.keyboard.press( 'Enter' );
+	await page.keyboard.type( 'We will ' );
+	// A person pauses before a shortcut. Without the pause the button's state was set by
+	// the last letter's change of selection arriving late, and not by the command.
+	await page.waitForTimeout( SETTLED );
+	await page.keyboard.press( 'Control+b' );
+	await expect( tool( 'Bold' ) ).toHaveAttribute( 'aria-pressed', 'true' );
+	await page.keyboard.type( 'call' );
+	await page.waitForTimeout( SETTLED );
+	await page.keyboard.press( 'Control+b' );
+	await expect( tool( 'Bold' ) ).toHaveAttribute( 'aria-pressed', 'false' );
+	await page.keyboard.type( ' you tomorrow.' );
+	await page.keyboard.press( 'Enter' );
+	await page.keyboard.press( 'Control+Shift+8' );
+	await expect( tool( 'Bulleted list' ) ).toHaveAttribute(
+		'aria-pressed',
+		'true'
+	);
+	await page.keyboard.type( 'By telephone' );
+	await page.keyboard.press( 'Enter' );
+	await page.keyboard.type( 'In the morning' );
+	await page.keyboard.press( 'Enter' );
+	await page.keyboard.press( 'Enter' );
+	await page.keyboard.type( 'The details: ' );
+	await page.keyboard.press( 'Control+k' );
+	const address = pane.getByRole( 'textbox', { name: 'Link address' } );
+	await expect( address ).toBeFocused();
+	await page.keyboard.type( 'javascript:alert(1)' );
+	await page.keyboard.press( 'Enter' );
+	await expect( pane.getByRole( 'alert' ) ).toContainText( 'web address' );
+	await address.fill( 'example.com/offer' );
+	await page.keyboard.press( 'Enter' );
+	await expect( address ).toHaveCount( 0 );
+	await expect( message ).toBeFocused();
+
+	// What was written is what a reply has: paragraphs, emphasis, a list, a link.
+	await expect( message.locator( 'p' ).first() ).toHaveText( 'Hello Salma,' );
+	await expect( message.locator( 'b, strong' ) ).toHaveText( 'call' );
+	await expect( message.locator( 'ul li' ) ).toHaveText( [
+		'By telephone',
+		'In the morning',
+	] );
+	await expect( message.locator( 'a' ) ).toHaveAttribute(
+		'href',
+		'https://example.com/offer'
+	);
+
+	for ( const [ theme, direction ] of APPEARANCES ) {
+		await pinAppearance( page, theme, direction );
+		await message.scrollIntoViewIfNeeded();
+		const measured = await measuredEditor( pane );
+		const where = `${ theme } ${ direction }`;
+
+		for ( const [ width, height ] of measured.sizes ) {
+			// WCAG 2.2, 2.5.8: a target of at least 24 by 24.
+			expect(
+				width,
+				`${ where }: a tool's width`
+			).toBeGreaterThanOrEqual( 24 );
+			expect( height, `${ where }: a tool is square` ).toBe( width );
+		}
+		expect(
+			new Set( measured.gaps ).size,
+			`${ where }: one distance between the tools, got ${ measured.gaps }`
+		).toBe( 1 );
+		expect( measured.level, `${ where }: the tools on one line` ).toBe( 1 );
+		expect(
+			measured.edges,
+			`${ where }: the editor's edges are the subject field's`
+		).toEqual( [ 0, 0 ] );
+		expect(
+			measured.firstToolFromStart,
+			`${ where }: the toolbar starts where the line starts`
+		).toBeLessThan( 12 );
+		expect(
+			contrast( ...measured.icon ),
+			`${ where }: a tool's icon`
+		).toBeGreaterThanOrEqual( 3 );
+		expect(
+			contrast( ...measured.text ),
+			`${ where }: the text being written`
+		).toBeGreaterThanOrEqual( 4.5 );
+		expect( measured.pageOverflows, `${ where }: no sideways scroll` ).toBe(
+			false
+		);
+	}
+	await pinAppearance( page, 'dark', 'ltr' );
+
+	// The preview is the email, built by the server from what is written now.
+	await pane.getByRole( 'button', { name: 'Preview' } ).click();
+	const preview = page.getByRole( 'dialog', {
+		name: 'Preview of the reply',
+	} );
+	await expect( preview ).toBeVisible();
+	const frame = preview.locator( 'iframe' );
+	await expect( frame ).toHaveAttribute( 'sandbox', '' );
+	const letter = preview.frameLocator( 'iframe' );
+	await expect( letter.locator( 'p' ).first() ).toHaveText( 'Hello Salma,' );
+	await expect( letter.locator( 'b, strong' ) ).toHaveText( 'call' );
+	await expect( letter.locator( 'ul li' ) ).toHaveCount( 2 );
+	await expect(
+		letter.locator( 'td a[href="https://example.com/offer"]' )
+	).toHaveText( 'example.com/offer' );
+	const previewed = await frame.getAttribute( 'srcdoc' );
+
+	const wide = ( await frame.boundingBox() ).width;
+	await preview.getByRole( 'button', { name: 'Phone' } ).click();
+	const narrow = ( await frame.boundingBox() ).width;
+	expect( narrow, "the phone width is a phone's" ).toBeLessThanOrEqual( 360 );
+	expect( wide, 'the wide width is wider' ).toBeGreaterThan( narrow );
+	await expect(
+		preview.getByRole( 'button', { name: 'Phone' } )
+	).toHaveAttribute( 'aria-pressed', 'true' );
+
+	// Leaving the preview leaves the pane, and what was written, as they were.
+	await page.keyboard.press( 'Escape' );
+	await expect( preview ).toHaveCount( 0 );
+	await expect( pane ).toBeVisible();
+	// And the keyboard is back on the button that opened it, not on the page.
+	await expect(
+		pane.getByRole( 'button', { name: 'Preview' } )
+	).toBeFocused();
+	await expect( message.locator( 'ul li' ) ).toHaveCount( 2 );
+
+	await pane.getByRole( 'button', { name: 'Send reply' } ).click();
+	await expect( pane.locator( '.corex-pane__reply' ) ).toHaveCount( 1 );
+	await expect( message ).toHaveText( '' );
+
+	// SC-002: the email that was kept is the one that was previewed, to the byte.
+	const kept = await keptEmailFor( page, EMAIL );
+	expect( kept.html_body ).toBe( previewed );
+	expect( kept.plain_text ).toContain( '- By telephone\n- In the morning' );
+	// Its text is its address, so the plain text says it once.
+	expect( kept.plain_text ).toContain( 'The details: example.com/offer\n' );
+
+	// And it is on the submission as it was written.
+	const listed = pane.locator( '.corex-pane__reply-body' );
+	await expect( listed.locator( 'li' ) ).toHaveCount( 2 );
+	await expect( listed.locator( 'a' ) ).toHaveAttribute(
+		'href',
+		'https://example.com/offer'
+	);
+
+	// A paragraph reads in the direction of what is written in it, as it will in the email:
+	// an Arabic line in an English reply starts from the right.
+	// After a list too: a browser leaves what is written after one inside the paragraph the
+	// list was started in, where a mark on the outermost blocks alone did not reach it.
+	await message.click();
+	await page.keyboard.type( 'Hello Salma,' );
+	await page.keyboard.press( 'Enter' );
+	await page.keyboard.press( 'Control+Shift+8' );
+	await page.keyboard.type( 'One' );
+	await page.keyboard.press( 'Enter' );
+	await page.keyboard.press( 'Enter' );
+	await page.keyboard.insertText( 'مرحبا سلمى، سنتصل بك غدا' );
+	const directions = await message.evaluate( ( box ) =>
+		Array.from( box.querySelectorAll( 'p' ) )
+			.filter( ( paragraph ) => ! paragraph.querySelector( 'p, ul' ) )
+			.map( ( paragraph ) => [
+				paragraph.textContent.slice( 0, 5 ),
+				window.getComputedStyle( paragraph ).direction,
+			] )
+	);
+	expect( directions ).toEqual( [
+		[ 'Hello', 'ltr' ],
+		[ 'مرحبا', 'rtl' ],
+	] );
+
+	// What the browser offers by its own keys and a reply does not have is not drawn: the
+	// box shows what will be sent.
+	await page.keyboard.press( 'Enter' );
+	await page.keyboard.press( 'Control+u' );
+	await page.keyboard.type( 'plain' );
+	await expect( message ).toContainText( 'plain' );
+	await expect( message.locator( 'u' ) ).toHaveCount( 0 );
+
+	expect( errors ).toEqual( [] );
 } );

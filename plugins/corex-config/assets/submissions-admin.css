@@ -846,6 +846,68 @@
 	font-weight: 600;
 }
 
+/* WordPress sets a field one pixel in from each side. In the pane a field
+   stands under a heading and above an editor that are not, and the pixel
+   shows. */
+.corex-admin .corex-pane .corex-field input:not([type="checkbox"], [type="radio"]),
+.corex-admin .corex-pane .corex-field textarea {
+	margin-inline: 0;
+
+	/* The label above it is bold; what is typed is not. */
+	font-weight: 400;
+}
+
+/*
+ * The preview of a reply (spec 106): the email itself in a frame, at the width
+ * of a wide screen or of a phone, and its plain-text version.
+ */
+.corex-admin .corex-dialog.corex-reply-preview {
+	inline-size: min(46rem, calc(100vw - 2 * var(--corex-admin-space-md)));
+}
+
+.corex-admin .corex-reply-preview__widths {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs);
+}
+
+/* Which width is shown: said by the edge as well as the colour. */
+.corex-admin .corex-reply-preview__widths .button[aria-pressed="true"] {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-action-subtle);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-reply-preview__frame {
+	display: grid;
+	justify-items: center;
+	padding: var(--corex-admin-space-sm);
+	background: var(--corex-admin-surface-alt);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+}
+
+.corex-admin .corex-reply-preview__frame iframe {
+	inline-size: 100%;
+	max-inline-size: 40rem;
+	block-size: 60vh;
+	border: 0;
+}
+
+.corex-admin .corex-reply-preview__frame[data-width="narrow"] iframe {
+	max-inline-size: 22.5rem;
+}
+
+.corex-admin .corex-reply-preview__text {
+	margin: 0;
+	padding: var(--corex-admin-space-sm);
+	color: var(--corex-admin-text);
+	font-size: var(--corex-admin-font-sm);
+	line-height: var(--corex-admin-line-normal);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
 /* The line a trashed submission's pane opens with. */
 .corex-admin .corex-pane__trash {
 	display: grid;
