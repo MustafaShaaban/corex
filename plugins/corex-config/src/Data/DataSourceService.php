@@ -77,11 +77,25 @@ final readonly class DataSourceService
             'access' => $readable ? 'allowed' : 'denied',
             'capabilities' => $capabilities->toArray(),
             'actions' => $actions,
+            // The fields below still carry their classes for a person without this: the screen
+            // says which columns it is withholding, and the export refuses them either way.
+            'permissions' => ['personal_data' => $this->mayExportPersonalData($actorId)],
             'fields' => $readable ? array_map(
                 static fn (DataField $field): array => $field->toArray(),
                 $this->registry->fields($sourceKey),
             ) : [],
         ];
+    }
+
+    /**
+     * Whether this person may take personal data out of the site in a file (spec 109, D3).
+     *
+     * It is asked apart from what a source's operations ask. Being allowed to export a model is
+     * being allowed to export what in it is not about a person.
+     */
+    public function mayExportPersonalData(int $actorId): bool
+    {
+        return $this->access->allows($actorId, CorexAbility::EXPORT_PERSONAL_DATA);
     }
 
     public function authorize(int $actorId, string $sourceKey, string $operation): DataSource

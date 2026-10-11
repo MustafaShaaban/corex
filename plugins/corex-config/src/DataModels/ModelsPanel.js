@@ -1,5 +1,6 @@
 import { useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
+import { holdsPersonalData, personalDataLabel } from '../admin/personalData.js';
 import { capabilitySummary } from './modelClient.js';
 
 function actionLabel( action ) {
@@ -84,8 +85,17 @@ function ModelEntry( { source, open, onToggle } ) {
 										{ field.read_only
 											? __( 'Read only', 'corex' )
 											: __( 'Writable', 'corex' ) }
-										{ field.personal_data_class !== 'none'
-											? ` · ${ field.personal_data_class }`
+										{ holdsPersonalData( field )
+											? ` · ${ sprintf(
+													/* translators: %s: a kind of personal data, e.g. "contact details". */
+													__(
+														'Personal data: %s',
+														'corex'
+													),
+													personalDataLabel(
+														field.personal_data_class
+													)
+												) }`
 											: '' }
 									</td>
 								</tr>

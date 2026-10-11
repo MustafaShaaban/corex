@@ -10,6 +10,7 @@ namespace Corex\Config\Notifications;
 
 defined('ABSPATH') || exit;
 
+use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Database\Schema\Table;
 
@@ -46,6 +47,12 @@ final class NotificationUserStateTable
             ['id' => 'user_id', 'label' => 'User'],
             ['id' => 'read_at', 'label' => 'Read'],
             ['id' => 'dismissed_at', 'label' => 'Dismissed'],
-        ], 'corex');
+        ], 'corex', personalData: [
+            'notification_id' => DataField::PERSONAL_NONE,
+            'user_id'         => DataField::PERSONAL_IDENTITY,
+            'read_at'         => DataField::PERSONAL_NONE,
+            'dismissed_at'    => DataField::PERSONAL_NONE,
+        ],
+        );
     }
 }

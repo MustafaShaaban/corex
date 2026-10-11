@@ -9,6 +9,7 @@ import {
 	offeredFormats,
 	tooManyForPdf,
 } from '../admin/components/export/exportFormats.js';
+import { holdsPersonalData, personalDataLabel } from '../admin/personalData.js';
 
 /** The most rows one selected export may hold; the route refuses more. */
 export const SELECTION_LIMIT = 500;
@@ -146,16 +147,55 @@ export function defaultDataScope( selectedCount, withRows ) {
 /**
  * The source's fields as columns to choose from.
  *
- * @param {Array<Object>} fields The source's fields.
- * @return {Array<{id:string,label:string,personal:boolean,hint:string}>} One choice per field.
+ * A column that holds personal data is offered only to a person allowed to take personal data
+ * out of the site (spec 109, FR-020). The route refuses it from anybody else; leaving it out
+ * here is so that nobody is offered what they will be refused.
+ *
+ * @param {Array<Object>} fields            The source's fields.
+ * @param {boolean}       mayExportPersonal Whether this person may export personal data.
+ * @return {Array<{id:string,label:string,personal:boolean,hint:string}>} One choice per field offered.
  */
-export function dataColumnChoices( fields ) {
-	return fields.map( ( field ) => ( {
-		id: field.key,
-		label: field.label,
-		personal: field.personal_data_class !== 'none',
-		hint: '',
-	} ) );
+export function dataColumnChoices( fields, mayExportPersonal = true ) {
+	return fields
+		.filter(
+			( field ) => mayExportPersonal || ! holdsPersonalData( field )
+		)
+		.map( ( field ) => ( {
+			id: field.key,
+			label: field.label,
+			personal: holdsPersonalData( field ),
+			hint: '',
+		} ) );
+}
+
+/**
+ * How many of a source's columns are not offered to this person.
+ *
+ * @param {Array<Object>} fields            The source's fields.
+ * @param {boolean}       mayExportPersonal Whether this person may export personal data.
+ * @return {number} The count; 0 for a person who may.
+ */
+export function withheldColumns( fields, mayExportPersonal ) {
+	return mayExportPersonal ? 0 : fields.filter( holdsPersonalData ).length;
+}
+
+/**
+ * The kinds of personal data among the chosen columns, in words, once each, in the order of
+ * the source's fields. It is what the confirmation names.
+ *
+ * @param {Array<Object>} fields The source's fields.
+ * @param {string[]}      chosen The keys of the chosen columns.
+ * @return {string[]} The kinds; empty when no chosen column holds personal data.
+ */
+export function personalKinds( fields, chosen ) {
+	const kinds = fields
+		.filter(
+			( field ) =>
+				chosen.includes( field.key ) && holdsPersonalData( field )
+		)
+		.map( ( field ) => personalDataLabel( field.personal_data_class ) );
+
+	return [ ...new Set( kinds ) ];
 }
 
 /**

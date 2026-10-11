@@ -8,6 +8,7 @@
 
 declare(strict_types=1);
 
+use Corex\Access\CorexAbility;
 use Corex\Boot;
 use Corex\Config\Activity\ActivityTable;
 use Corex\Config\Data\CapabilityAwareDataSource;
@@ -328,4 +329,121 @@ it('offers Excel for the submissions source CoreX ships, to the people who may e
 
     expect($actions['export_csv']['visible'])->toBeTrue()
         ->and($actions['export_xlsx'])->toBe($actions['export_csv']);
+});
+
+// Spec 109, slice 1 (FR-016 to FR-020): personal data is marked on what CoreX ships, and one
+// right is asked for a personal column wherever it leaves.
+
+const DATA_PERSONAL_TEST_LOGIN = 'corex-data-personal-test';
+
+/**
+ * Signs in a person who manages data and is not an administrator, for the rest of a test.
+ * No role: a role is a door, and the install may have granted a role any ability.
+ *
+ * @return int The account's id, for the test to remove.
+ */
+function signInAsDataManager(): int
+{
+    // A run that died before its clean-up leaves the account; take it over.
+    $leftover = get_user_by('login', DATA_PERSONAL_TEST_LOGIN);
+    $id = $leftover instanceof WP_User ? (int) $leftover->ID : (int) wp_insert_user([
+        'user_login' => DATA_PERSONAL_TEST_LOGIN,
+        'user_pass'  => wp_generate_password(20, true, true),
+        'user_email' => DATA_PERSONAL_TEST_LOGIN . '@example.com',
+        'role'       => '',
+    ]);
+    wp_set_current_user($id);
+    wp_get_current_user()->add_cap(CorexAbility::MANAGE_DATA);
+
+    return $id;
+}
+
+function removeDataManager(int $id): void
+{
+    wp_set_current_user(0);
+    require_once ABSPATH . 'wp-admin/includes/user.php';
+    wp_delete_user($id);
+}
+
+it('refuses a personal column to a person who manages data and was not given the right, and makes no export', function () {
+    $manager = signInAsDataManager();
+
+    try {
+        $refused = $this->controller->createExport(dataExportRoute('POST', 'exports', [
+            'scope' => 'all', 'selected_ids' => [], 'query' => [],
+            'columns' => ['email', 'status'], 'format' => 'csv',
+            'personal_data_acknowledged' => true,
+        ]));
+        $allowed = $this->controller->createExport(dataExportRoute('POST', 'exports', [
+            'scope' => 'all', 'selected_ids' => [], 'query' => [],
+            'columns' => ['status'], 'format' => 'csv',
+        ]));
+
+        expect($refused->get_status())->toBe(403)
+            ->and($refused->get_data()['ok'])->toBeFalse()
+            ->and($refused->get_data()['message'])->toContain('personal data')
+            // The one export made is the one without a personal column.
+            ->and($allowed->get_data()['ok'])->toBeTrue()
+            ->and($allowed->get_data()['data']['export']['columns'])->toBe(['status'])
+            ->and($this->runs->ids())->toHaveCount(1);
+    } finally {
+        removeDataManager($manager);
+    }
+});
+
+it('exports a personal column for that person once they are given the right, and still asks them to confirm', function () {
+    $manager = signInAsDataManager();
+    wp_get_current_user()->add_cap(CorexAbility::EXPORT_PERSONAL_DATA);
+    $request = [
+        'scope' => 'all', 'selected_ids' => [], 'query' => [],
+        'columns' => ['email'], 'format' => 'csv',
+    ];
+
+    try {
+        $unconfirmed = $this->controller->createExport(dataExportRoute('POST', 'exports', $request));
+        $confirmed = $this->controller->createExport(
+            dataExportRoute('POST', 'exports', $request + ['personal_data_acknowledged' => true])
+        );
+
+        expect($unconfirmed->get_status())->toBe(422)
+            ->and($confirmed->get_data()['ok'])->toBeTrue()
+            ->and($confirmed->get_data()['data']['export']['personal_data_classes'])->toBe(['contact']);
+    } finally {
+        removeDataManager($manager);
+    }
+});
+
+it('tells the screen whether the person may take personal data out, and still what each field holds', function () {
+    $catalog = static function (): array {
+        $sources = Boot::app()->container()->make(DataSourceService::class)->catalog(get_current_user_id());
+
+        return array_column($sources, null, 'key')['rest-contacts'];
+    };
+    $asAdministrator = $catalog();
+    $manager = signInAsDataManager();
+
+    try {
+        $asManager = $catalog();
+    } finally {
+        removeDataManager($manager);
+    }
+
+    expect($asAdministrator['permissions'])->toBe(['personal_data' => true])
+        ->and($asManager['permissions'])->toBe(['personal_data' => false])
+        ->and(array_column($asManager['fields'], 'personal_data_class', 'key'))
+        ->toBe(['name' => 'identity', 'email' => 'contact', 'status' => 'none']);
+});
+
+it('marks what CoreX ships: an activity event names a person, a job does not, and a submission answer always does', function () {
+    $fields = static function (string $source): array {
+        $described = Boot::app()->container()->make(DataSourceService::class)->describe(get_current_user_id(), $source);
+
+        return array_column($described['fields'], 'personal_data_class', 'key');
+    };
+
+    expect($fields('table-activity-events')['actor_label'])->toBe('identity')
+        ->and($fields('table-activity-events')['outcome'])->toBe('none')
+        ->and(array_unique(array_values($fields('table-bounded-jobs'))))->toBe(['none'])
+        ->and($fields('submissions')['summary'])->toBe('content')
+        ->and($fields('submissions'))->not->toContain('undeclared');
 });

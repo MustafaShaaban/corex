@@ -231,7 +231,11 @@ it('declares an answer once, however its key was written, and reads it under tha
         ->and($rows[2]['summary'])->toBe('date: next week');
 });
 
-it('marks an answer as the personal data its kind is, for the export to ask about', function () {
+it('marks every answer as personal data, as the Submissions inbox does, for the export to ask about', function () {
+    // Spec 109, FR-018. A name and a list of topics were "none" here, guessed from the answer's
+    // key, while the inbox's export withheld every answer from a person not allowed to export
+    // personal data. Two rules for one record. An address or a number is contact details; any
+    // other answer is what a person wrote.
     $classes = [];
     foreach (answeredSubmissions()->fields() as $field) {
         $classes[$field->key] = $field->personalDataClass;
@@ -242,9 +246,9 @@ it('marks an answer as the personal data its kind is, for the export to ask abou
         'form' => DataField::PERSONAL_NONE,
         'summary' => DataField::PERSONAL_CONTENT,
         'email' => DataField::PERSONAL_CONTACT,
-        'name' => DataField::PERSONAL_NONE,
+        'name' => DataField::PERSONAL_CONTENT,
         'message' => DataField::PERSONAL_CONTENT,
-        'topics' => DataField::PERSONAL_NONE,
+        'topics' => DataField::PERSONAL_CONTENT,
         'phone' => DataField::PERSONAL_CONTACT,
     ]);
 });

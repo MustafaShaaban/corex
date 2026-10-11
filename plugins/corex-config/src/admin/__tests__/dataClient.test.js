@@ -156,6 +156,16 @@ describe( 'Spec 068 data management state', () => {
 		expect( catalog[ 0 ].fields[ 0 ].key ).toBe( 'name' );
 	} );
 
+	it( 'keeps whether the person may take personal data out, and reads silence as no', () => {
+		const [ allowed, silent ] = normalizeCatalog( [
+			{ key: 'contacts', permissions: { personal_data: true } },
+			{ key: 'invoices' },
+		] );
+
+		expect( allowed.permissions ).toEqual( { personal_data: true } );
+		expect( silent.permissions ).toEqual( { personal_data: false } );
+	} );
+
 	it( 'reduces query selection request and preview state without stale cross-source data', () => {
 		let state = initialDataState( 'contacts' );
 		state = dataReducer( state, {

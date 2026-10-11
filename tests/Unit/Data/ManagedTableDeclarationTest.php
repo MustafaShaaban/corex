@@ -13,6 +13,7 @@
 
 declare(strict_types=1);
 
+use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 
 function subscriberColumns(): array
@@ -162,3 +163,45 @@ it('keeps its existing constructor working for every read-only caller', function
         ->and($table->isWritable())->toBeFalse()
         ->and($table->unknownColumns)->toBe(ManagedTable::UNKNOWN_REJECT);
 });
+
+// Spec 109, slice 1 (FR-016, FR-017): a table says which of its columns hold personal data.
+// Every column of every managed table was given the class "none" by the source that read it,
+// so a subscriber's email address was exported with no confirmation and no right asked.
+
+it('counts every column as undeclared until the table says what it holds', function () {
+    $table = new ManagedTable('invoices', 'Invoices', subscriberColumns());
+
+    expect($table->personalDataClass('email'))->toBe(DataField::PERSONAL_UNDECLARED)
+        ->and($table->personalDataClass('created_at'))->toBe(DataField::PERSONAL_UNDECLARED);
+});
+
+it('answers the declared class for a column, and undeclared for one it left out', function () {
+    $table = new ManagedTable(
+        'subscribers',
+        'Subscribers',
+        subscriberColumns(),
+        personalData: [
+            'email' => DataField::PERSONAL_CONTACT,
+            'name' => DataField::PERSONAL_IDENTITY,
+            'consent' => DataField::PERSONAL_NONE,
+        ],
+    );
+
+    expect($table->personalDataClass('email'))->toBe(DataField::PERSONAL_CONTACT)
+        ->and($table->personalDataClass('name'))->toBe(DataField::PERSONAL_IDENTITY)
+        ->and($table->personalDataClass('consent'))->toBe(DataField::PERSONAL_NONE)
+        ->and($table->personalDataClass('topics'))->toBe(DataField::PERSONAL_UNDECLARED);
+});
+
+it('refuses a class a table cannot declare', function (string $class) {
+    new ManagedTable('subscribers', 'Subscribers', subscriberColumns(), personalData: ['email' => $class]);
+})->throws(InvalidArgumentException::class, 'personal-data class')->with([
+    'one nothing knows' => ['private'],
+    // "Undeclared" is what a column is when nothing was said. Saying it would be a way to look
+    // as if the question had been answered.
+    'the one that means nothing was said' => [DataField::PERSONAL_UNDECLARED],
+]);
+
+it('refuses a personal-data class for a column the table does not have', function () {
+    new ManagedTable('subscribers', 'Subscribers', subscriberColumns(), personalData: ['phone' => DataField::PERSONAL_CONTACT]);
+})->throws(InvalidArgumentException::class, 'not one of its columns');

@@ -9,6 +9,7 @@ use Corex\Config\Data\DataQuery;
 use Corex\Config\Data\DataQueryService;
 use Corex\Config\Data\DataSourceService;
 use Corex\Config\Data\ExportableDataSource;
+use Corex\Config\Data\PersonalDataNotAllowed;
 use Corex\Config\Export\ExportWriters;
 use Corex\Data\DataField;
 use Corex\Data\DataSourceCapabilities;
@@ -153,12 +154,16 @@ final readonly class DataExportService
             if (! isset($fieldMap[$column])) {
                 throw new InvalidArgumentException('The data export contains an undeclared column.');
             }
-            if ($fieldMap[$column]->personalDataClass !== DataField::PERSONAL_NONE) {
+            if ($fieldMap[$column]->holdsPersonalData()) {
                 $personal[] = $fieldMap[$column]->personalDataClass;
             }
         }
         $personal = array_values(array_unique($personal));
         sort($personal);
+        // Asked before the acknowledgement: ticking a box is not what allows it.
+        if ($personal !== [] && ! $this->sources->mayExportPersonalData($request->actorId)) {
+            throw PersonalDataNotAllowed::inAnExport();
+        }
         if ($personal !== [] && ! $request->personalDataAcknowledged) {
             throw new DomainException('The actor must acknowledge the personal data export warning.');
         }
