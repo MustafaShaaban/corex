@@ -56,6 +56,7 @@ route and no screen, and the Releases screen says it installs nothing yet.
 | [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | the specification, and the line-break fix | not planned | `/speckit-plan` |
 | [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | T048 to T056, then slices 5 and 6 | T048, `ReleaseTableCopies` |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
+| [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | nothing | a draft specification, written 2026-10-11, with five questions for the owner | his answers, then `/speckit-plan` |
 
 What to know before resuming each:
 
@@ -73,6 +74,14 @@ What to know before resuming each:
   installation that ties the steps together with its routes (`ReleaseInstallation`), and the
   screen. Since DECISIONS #299 an add-on's table is created by the migration runner: read
   `Boot::providersForState()` and the schema registry before writing the finisher.
+- **Spec 109.** From the owner's report of 2026-10-11 on the first client site: Import, Export
+  and Migrations on CoreX → Data each take one model at a time. The spec also carries parts B
+  and C of the 2026-10-08 outline (data that flows one way, and production data pulled down)
+  for the Data screen's models; DECISIONS #282 had promised them as "the next two specs". It
+  is not to be planned before the owner answers its five questions. Reading for it found that
+  no column of a table model is marked as personal data, so subscribers and applicants are
+  exported with no confirmation, and that an import adds a row whether or not the record is
+  already there; both are in the spec and neither is fixed.
 - **Specs 105 and 108 carry readings that are the owner's to overrule**, under each spec's
   Assumptions; so does spec 103 (opening a submission marks it read) and spec 104.
 
@@ -122,6 +131,12 @@ Each is stated with the file that records it in [`PROJECT-STATUS.md`](PROJECT-ST
   "Anonymize" removes the answers, which are what name the files, and not the files. Nothing can
   find them afterwards. It is spec 105's fifth slice, not started; deleting a submission for good
   from the trash does remove its files.
+- **No column of a table model is marked as personal data.** `TableDataSource::fields()` declares
+  every column of every managed table as holding none, so newsletter subscribers, job
+  applications and login attempts are exported from CoreX → Data with no confirmation. And the
+  Data screen exports a submission's personal columns to anybody who manages submissions, where
+  the Submissions inbox offers them to an administrator. Read from the code on 2026-10-11, not
+  exercised; spec 109's second user story, not started.
 - **A release cannot be installed from the admin yet.** CoreX → Releases receives a package and
   says what it is. A site on a host with no command line is still updated by hand, by unpacking
   the shared-host package over the old one (spec 107, from its fourth slice).
