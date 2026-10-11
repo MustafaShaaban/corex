@@ -184,12 +184,20 @@ follows the admin, and `dir="auto"` on each block lets an Arabic reply in an Eng
 right to left. Paste is read as HTML, reduced by `replyHtml.js`, and inserted. The server reduces
 again whatever arrives (D5): the editor is a convenience, not the guard.
 
+As built: `replyHtml.js` moved to `admin/components/` beside the editor, since the editor is
+the admin's and not the inbox's. A browser writes a line as a `<div>`, and leaves the first
+line somebody types as bare text; the editor asks for paragraphs, makes the line being written
+one, and the reduction it gives back turns what is left into paragraphs, so that what is
+posted is what an email has. `ReplyBody` does the same for whatever posts without the editor.
+
 ### D7. The preview is the email (slice 3)
 
 `POST …/submissions/{id}/reply/preview` answers the HTML and the plain text that `reply()` would
 send for that subject and message, from the same `ReplyComposer` (slice 2). It is shown in a
-sandboxed `<iframe srcdoc>` at 600 and 360 pixels. SC-002 is a test: the preview's HTML equals
-the captured message's body.
+sandboxed `<iframe srcdoc>` at 640 and 360 pixels. SC-002 is a test: the preview's HTML equals
+the captured message's body, in an integration test and again in the browser.
+
+The draft below is not built with the editor and the preview: it is its own pull request.
 
 A draft (FR-006) is the person's own, for that submission: user meta
 `corex_reply_draft_{submission}`, saved after a pause in typing, removed when the reply is sent
@@ -294,5 +302,5 @@ Later slices add: `POST …/reply/preview` and `GET|PUT|DELETE …/reply/draft` 
 ## What later slices need from slice 1
 
 - The reply record is where a second attempt is added (5) and what a saved reply is made from (6).
-- `replyHtml.js` is the paste filter of the editor (3).
+- `replyHtml.js` is the paste filter of the editor (3), and moved to `admin/components/` with it.
 - `ReplyReadiness` is what the preview's "this will be captured" line reads (3).

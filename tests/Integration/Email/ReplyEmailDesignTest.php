@@ -101,10 +101,16 @@ function keptReplyFor(object $test, string $body): object
     $request->set_body_params(['subject' => 'Re: your message', 'body' => $body]);
     Boot::app()->container()->make(SubmissionsController::class)->reply($request);
 
+    return keptFor($test)[0];
+}
+
+/** @return list<object> The emails kept for this test's own recipient, newest first. */
+function keptFor(object $test): array
+{
     return array_values(array_filter(
         Boot::app()->container()->make(CapturedEmailRepository::class)->latest(20),
         static fn ($capture): bool => $capture->to === [$test->recipient],
-    ))[0];
+    ));
 }
 
 // Spec 106, FR-014: from the site's own code, through a filter, with no framework file changed.
@@ -143,3 +149,52 @@ it('sends the reply in the standard design when the site design leaves the messa
         ->and(Boot::app()->container()->make(\Corex\Notifications\NotificationProducerRegistry::class)->registeredKeys())
         ->toContain('email.design_failures');
 });
+
+// SC-002: what is previewed and what is sent are one document, byte for byte.
+it('previews the email that is then sent, to the byte', function () {
+    $body = "Hello Salma,\n\nSee <a href=\"https://example.com/offer\">the offer</a>.\n<ul><li>One</li></ul>";
+    $request = new WP_REST_Request('POST', '/corex/v1/submissions/' . $this->designSubmission . '/reply/preview');
+    $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
+    $request->set_url_params(['id' => (string) $this->designSubmission]);
+    $request->set_body_params(['subject' => 'Re: your message', 'body' => $body]);
+
+    $preview = Boot::app()->container()->make(SubmissionsController::class)->previewReply($request)->get_data()['data']['preview'];
+    // To this test's own address, which nothing else writes to: a count of every email kept
+    // on the site stops moving once the site holds more than is counted.
+    $keptByThePreview = keptFor($this);
+    $email = keptReplyFor($this, $body);
+
+    expect($keptByThePreview)->toBe([])
+        ->and(get_post_meta($this->designSubmission, 'corex_submission_replies'))->toHaveCount(1)
+        ->and($preview['subject'])->toBe('Re: your message')
+        ->and($preview['html'])->toBe($email->body)
+        ->and($preview['text'])->toBe($email->plainText)
+        ->and($preview['html'])->toContain('<li')->toContain('the offer</a>');
+});
+
+it('answers the preview route only to somebody with the request\'s own proof', function () {
+    $request = new WP_REST_Request('POST', '/corex/v1/submissions/' . $this->designSubmission . '/reply/preview');
+    $request->set_url_params(['id' => (string) $this->designSubmission]);
+    $request->set_body_params(['subject' => 'Re: your message', 'body' => 'Hello']);
+
+    $answer = Boot::app()->container()->make(SubmissionsController::class)->previewReply($request);
+
+    expect($answer->get_status())->toBe(403)
+        ->and($answer->get_data()['data'] ?? null)->toBeNull();
+});
+
+// A submission in the trash is not answered, so there is no email of it to read either.
+it('previews nothing of a submission in the trash', function () {
+    wp_trash_post($this->designSubmission);
+    $request = new WP_REST_Request('POST', '/corex/v1/submissions/' . $this->designSubmission . '/reply/preview');
+    $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
+    $request->set_url_params(['id' => (string) $this->designSubmission]);
+    $request->set_body_params(['subject' => 'Re: your message', 'body' => 'Hello']);
+
+    $answer = Boot::app()->container()->make(SubmissionsController::class)->previewReply($request);
+
+    expect($answer->get_status())->toBeGreaterThanOrEqual(400)
+        ->and($answer->get_data()['data'] ?? null)->toBeNull()
+        ->and(wp_json_encode($answer->get_data()))->toContain('in the trash');
+});
+

@@ -2786,3 +2786,145 @@ body.corex-admin-screen .corex-admin__shell {
 		padding-inline: var(--corex-admin-space-lg);
 	}
 }
+
+/*
+ * CorexRichText: the editor for a message somebody writes to a person. A
+ * toolbar, sometimes a line asking where a link goes, and the text. It is drawn
+ * as one field: one edge, one focus ring around all of it.
+ */
+.corex-admin .corex-richtext {
+	display: grid;
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface);
+	border: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	border-radius: var(--corex-admin-radius-sm);
+	font-weight: 400;
+}
+
+.corex-admin .corex-richtext:focus-within {
+	border-color: var(--corex-admin-action);
+	box-shadow: 0 0 0 3px var(--corex-admin-action-subtle);
+}
+
+.corex-admin .corex-richtext__tools {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-2xs);
+	padding: var(--corex-admin-space-2xs);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+}
+
+.corex-admin .corex-richtext__tool {
+	display: inline-grid;
+	place-items: center;
+	inline-size: var(--corex-admin-space-xl);
+	block-size: var(--corex-admin-space-xl);
+	padding: 0;
+	color: var(--corex-admin-text-muted);
+	background: transparent;
+	border: var(--corex-admin-border-width) solid transparent;
+	border-radius: var(--corex-admin-radius-sm);
+	cursor: pointer;
+}
+
+.corex-admin .corex-richtext__tool:hover:not(:disabled) {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-surface-alt);
+}
+
+/* On: said by its edge and its ground as well as its colour. */
+.corex-admin .corex-richtext__tool[aria-pressed="true"] {
+	color: var(--corex-admin-text);
+	background: var(--corex-admin-action-subtle);
+	border-color: var(--corex-admin-action);
+}
+
+.corex-admin .corex-richtext__text {
+	min-block-size: calc(var(--corex-admin-control-height) * 3);
+	max-block-size: 40vh;
+	padding-block: var(--corex-admin-space-sm);
+	padding-inline: var(--corex-admin-space-md);
+	overflow-y: auto;
+	font-size: var(--corex-admin-font-md);
+	line-height: var(--corex-admin-line-normal);
+	overflow-wrap: anywhere;
+}
+
+/* The ring is drawn around the whole field. */
+.corex-admin .corex-richtext__text:focus,
+.corex-admin .corex-richtext__text:focus-visible {
+	outline: none;
+}
+
+.corex-admin .corex-richtext__text p,
+.corex-admin .corex-richtext__text ul,
+.corex-admin .corex-richtext__text ol {
+	margin-block: 0 var(--corex-admin-space-xs);
+}
+
+/* wp-admin gives a paragraph and a list item a size of their own. What is
+   written is one size, the text box's. */
+.corex-admin .corex-richtext__text p,
+.corex-admin .corex-richtext__text li {
+	font-size: inherit;
+	line-height: inherit;
+}
+
+.corex-admin .corex-richtext__text > :last-child {
+	margin-block-end: 0;
+}
+
+.corex-admin .corex-richtext__text ul,
+.corex-admin .corex-richtext__text ol {
+	padding-inline-start: var(--corex-admin-space-lg);
+}
+
+.corex-admin .corex-richtext__text ul {
+	list-style: disc;
+}
+
+.corex-admin .corex-richtext__text ol {
+	list-style: decimal;
+}
+
+.corex-admin .corex-richtext__text li {
+	margin: 0;
+}
+
+.corex-admin .corex-richtext__text a {
+	color: var(--corex-admin-link);
+	text-decoration: underline;
+}
+
+.corex-admin .corex-richtext[data-disabled="true"] {
+	opacity: var(--corex-admin-disabled-opacity);
+}
+
+/* Where a link goes, asked for between the toolbar and the text. */
+.corex-admin .corex-richtext__link {
+	display: grid;
+	gap: var(--corex-admin-space-xs);
+	padding: var(--corex-admin-space-sm);
+	background: var(--corex-admin-surface-alt);
+	border-block-end: var(--corex-admin-border-width) solid var(--corex-admin-border);
+	font-size: var(--corex-admin-font-sm);
+}
+
+.corex-admin .corex-richtext__link label {
+	font-weight: 600;
+}
+
+.corex-admin .corex-richtext__link input {
+	inline-size: 100%;
+}
+
+.corex-admin .corex-richtext__link-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--corex-admin-space-xs);
+}
+
+.corex-admin .corex-richtext__refused {
+	margin: 0;
+	color: var(--corex-admin-error);
+}

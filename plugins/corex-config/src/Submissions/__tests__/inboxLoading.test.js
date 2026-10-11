@@ -18,13 +18,20 @@ import {
 } from '../../../../../tests/Support/adminDateTimeConfig.js';
 
 // `@wordpress/components` does not load under Jest here; its Button is a button.
-jest.mock( '@wordpress/components', () => ( {
-	Button: ( { variant, isDestructive, children, ...rest } ) => (
-		<button type="button" { ...rest }>
-			{ children }
-		</button>
-	),
-} ) );
+jest.mock( '@wordpress/components', () => {
+	const { forwardRef } = require( '@wordpress/element' );
+
+	return {
+		// As the real one does, it hands a ref on to its button.
+		Button: forwardRef(
+			( { variant, isDestructive, children, ...rest }, ref ) => (
+				<button ref={ ref } type="button" { ...rest }>
+					{ children }
+				</button>
+			)
+		),
+	};
+} );
 
 const row = ( id, name ) => ( {
 	id,
