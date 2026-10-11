@@ -20,8 +20,15 @@ use Corex\Email\Routing\EmailRouteMessageFactory;
 use Corex\Email\Routing\EmailRouteRepository;
 use Corex\Email\Routing\EmailRouteService;
 use Corex\Email\Routing\EmailRoute;
+use Corex\Email\Studio\EmailLayoutRepository;
+use Corex\Email\Studio\EmailPartialRepository;
+use Corex\Email\Studio\EmailStudioRepositories;
 use Corex\Email\Studio\EmailStudioService;
 use Corex\Email\Studio\EmailStudioStore;
+use Corex\Email\Studio\EmailStudioSubmissionGateway;
+use Corex\Email\Studio\EmailTemplateRepository;
+use Corex\Email\Template\Layout;
+use Corex\Mail\UnavailableSubmissionEmailGateway;
 use Corex\Email\Studio\EmailDeliveryContext;
 use Corex\Email\Studio\EmailHealthContext;
 use Corex\Email\Studio\EmailTemplateService;
@@ -369,4 +376,105 @@ it('reports actionable template provider reply-to and subscription health failur
     );
 
     expect($health)->toHaveKeys(['plainText', 'unsubscribe', 'preferences', 'replyTo', 'provider']);
+});
+
+/**
+ * The gateway a reply from the Submissions inbox goes through, over the service above.
+ *
+ * @param array<string,mixed> $settings
+ */
+function replyGateway(array $settings): EmailStudioSubmissionGateway
+{
+    [$service] = emailStudioService();
+    $store = emailStudioServiceStore();
+    $config = new class($settings) implements ConfigInterface {
+        /** @param array<string,mixed> $settings */
+        public function __construct(private readonly array $settings)
+        {
+        }
+
+        public function get(string $key, mixed $default = null): mixed
+        {
+            return $this->settings[$key] ?? $default;
+        }
+
+        public function has(string $key): bool
+        {
+            return array_key_exists($key, $this->settings);
+        }
+    };
+
+    return new EmailStudioSubmissionGateway(
+        new EmailStudioRepositories(
+            new EmailTemplateRepository($store),
+            new EmailLayoutRepository($store),
+            new EmailPartialRepository($store),
+            new EmailRouteRepository($store),
+            new CapturedEmailRepository($store),
+            new EmailAttemptRepository($store),
+        ),
+        $service,
+        new EmailTemplateService([]),
+        $config,
+        new Layout(['name' => 'Acme']),
+    );
+}
+
+dataset('reply delivery settings', [
+    'production, no provider' => [
+        ['app.env' => 'production', 'mail.live_delivery' => true], 'refuse', 'no_provider', MailResult::STATE_REJECTED,
+    ],
+    'production, a provider that is not the bound one' => [
+        ['app.env' => 'production', 'mail.provider' => 'wp-mail', 'mail.live_delivery' => true], 'refuse', 'no_provider', MailResult::STATE_REJECTED,
+    ],
+    'production, live delivery off' => [
+        ['app.env' => 'production', 'mail.provider' => 'postmark'], 'refuse', 'live_off', MailResult::STATE_REJECTED,
+    ],
+    'production, both set' => [
+        ['app.env' => 'production', 'mail.provider' => 'postmark', 'mail.live_delivery' => '1'], 'deliver', 'live', MailResult::STATE_SENT,
+    ],
+    'development' => [
+        ['app.env' => 'development', 'mail.provider' => 'postmark', 'mail.live_delivery' => true], 'capture', 'development', MailResult::STATE_CAPTURED,
+    ],
+    'staging, live delivery off' => [
+        ['app.env' => 'staging', 'mail.provider' => 'postmark'], 'capture', 'staging_capture', MailResult::STATE_CAPTURED,
+    ],
+    'an environment CoreX does not know' => [
+        ['app.env' => 'mystery', 'mail.provider' => 'postmark', 'mail.live_delivery' => true], 'refuse', 'unknown_environment', MailResult::STATE_REJECTED,
+    ],
+]);
+
+// Spec 106, FR-028 and FR-029: what the reply box is told, and what the sending then does.
+it('says before a reply is written what will happen to it, and then does that', function (array $settings, string $mode, string $code, string $state) {
+    Functions\when('sanitize_key')->returnArg();
+    Functions\when('is_email')->justReturn(false);
+    $gateway = replyGateway($settings);
+
+    $readiness = $gateway->readiness();
+    $result = $gateway->reply('sam@example.com', 'Re: Contact', '<p>Thanks, Sam.</p>');
+
+    expect($readiness->mode)->toBe($mode)
+        ->and($readiness->code)->toBe($code)
+        ->and($result->state)->toBe($state);
+})->with('reply delivery settings');
+
+it('names the Mail settings when a reply will not be delivered, and says nothing when it will', function () {
+    Functions\when('sanitize_key')->returnArg();
+    $off = replyGateway(['app.env' => 'production', 'mail.provider' => 'postmark'])->readiness();
+    $none = replyGateway(['app.env' => 'production'])->readiness();
+    $live = replyGateway(['app.env' => 'production', 'mail.provider' => 'postmark', 'mail.live_delivery' => true])->readiness();
+
+    expect($off->reason)->toContain('live delivery is switched off')->toContain('Settings')
+        ->and($none->reason)->toContain('no delivery provider')->toContain('Settings')
+        ->and($off->sendable())->toBeFalse()
+        ->and($live->reason)->toBe('')
+        ->and($live->sendable())->toBeTrue();
+});
+
+it('says replies need the email add-on where it is absent', function () {
+    $readiness = (new UnavailableSubmissionEmailGateway())->readiness();
+
+    expect($readiness->mode)->toBe('unavailable')
+        ->and($readiness->sendable())->toBeFalse()
+        ->and($readiness->reason)->toContain('Email add-on');
 });

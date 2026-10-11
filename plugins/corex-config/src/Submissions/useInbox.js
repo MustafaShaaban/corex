@@ -7,6 +7,7 @@ import {
 	initialInboxState,
 	trashNotice,
 } from './inbox.js';
+import { replyOutcome } from './detail/replyState.js';
 
 function message( result ) {
 	return (
@@ -156,15 +157,25 @@ export function useInbox( config, filters ) {
 			}
 			return result;
 		},
-		reply: async ( id, data ) => {
+		// Answers what happened to the reply, in words: sent, kept and not delivered, or not
+		// sent and why (spec 106, FR-030). Null when the request itself was refused.
+		reply: async ( id, data, address ) => {
 			const result = await mutate( `/${ id }/reply`, data );
-			if ( result ) {
-				await refreshRecord(
-					id,
-					__( 'Reply processed by Email Studio.', 'corex' )
-				);
+			if ( ! result ) {
+				return null;
 			}
-			return result;
+			const outcome = replyOutcome(
+				result.result,
+				address,
+				result.recorded !== false
+			);
+			// The inbox's own notice is for what did happen; a reply that was not sent is
+			// said in the pane, beside what was written.
+			await refreshRecord(
+				id,
+				outcome.tone === 'failure' ? '' : outcome.text
+			);
+			return outcome;
 		},
 		resend: async ( id, attemptId ) => {
 			const result = await mutate( `/${ id }/resend`, {

@@ -16,6 +16,8 @@ import CorexErrorState from '../../admin/components/CorexErrorState.js';
 import CorexLoadable from '../../admin/components/CorexLoadable.js';
 import { usePending, workingProps } from '../../admin/components/working.js';
 import PaneSkeleton from './PaneSkeleton.js';
+import Reply from './Reply.js';
+import Section from './Section.js';
 import CorexSelect from '../../admin/components/CorexSelect.js';
 import CorexTime from '../../admin/components/CorexTime.js';
 import FieldValue from '../../admin/components/FieldValue.js';
@@ -81,12 +83,13 @@ function Fields( { entries } ) {
 
 /**
  * @param {Object}   props
- * @param {Object}   props.drawer      The pane's state: which submission, loading or not, and the record.
- * @param {Object}   props.inbox       The inbox's data and requests.
- * @param {string}   props.id          The id the row's button says it controls.
- * @param {Function} props.onTrash     Called when somebody wants the open submission in the trash.
- * @param {boolean}  [props.mayDelete] Whether this person may delete a submission for good.
- * @param {Function} props.onDelete    Called when somebody wants the open submission deleted for good.
+ * @param {Object}   props.drawer            The pane's state: which submission, loading or not, and the record.
+ * @param {Object}   props.inbox             The inbox's data and requests.
+ * @param {string}   props.id                The id the row's button says it controls.
+ * @param {Function} props.onTrash           Called when somebody wants the open submission in the trash.
+ * @param {boolean}  [props.mayDelete]       Whether this person may delete a submission for good.
+ * @param {Function} props.onDelete          Called when somebody wants the open submission deleted for good.
+ * @param {string}   [props.mailSettingsUrl] The Mail settings, for a person who may change them.
  * @return {import('react').ReactElement} The pane.
  */
 export default function DetailPane( {
@@ -96,6 +99,7 @@ export default function DetailPane( {
 	onTrash,
 	mayDelete = false,
 	onDelete,
+	mailSettingsUrl = '',
 } ) {
 	const record = drawer.record;
 	// The pane's control whose request is out. One at a time: each change names the state of the
@@ -154,7 +158,12 @@ export default function DetailPane( {
 			) }
 			<Answers record={ record } />
 			{ ! record.trashed && (
-				<Reply record={ record } inbox={ inbox } work={ work } />
+				<Reply
+					record={ record }
+					inbox={ inbox }
+					work={ work }
+					mailSettingsUrl={ mailSettingsUrl }
+				/>
 			) }
 			<Notes
 				record={ record }
@@ -336,22 +345,6 @@ function PaneHeader( { record, inbox, work } ) {
 	);
 }
 
-function Section( { title, children, className = '' } ) {
-	const headingId = useId();
-
-	return (
-		<section
-			className={ [ 'corex-pane__section', className ]
-				.filter( Boolean )
-				.join( ' ' ) }
-			aria-labelledby={ headingId }
-		>
-			<h3 id={ headingId }>{ title }</h3>
-			{ children }
-		</section>
-	);
-}
-
 function Answers( { record } ) {
 	const answers = answersOf( record );
 
@@ -363,145 +356,6 @@ function Answers( { record } ) {
 				</p>
 			) : (
 				<Fields entries={ answers } />
-			) }
-		</Section>
-	);
-}
-
-function Reply( { record, inbox, work } ) {
-	const fieldId = useId();
-	const [ reply, setReply ] = useState( { subject: '', body: '' } );
-	const [ log, setLog ] = useState( null );
-	const contact = contactOf( record );
-	const emails = Object.values(
-		record.related_emails?.bindings || {}
-	).filter( ( item ) => item?.attempt_id );
-
-	return (
-		<Section title={ __( 'Reply', 'corex' ) }>
-			{ ! contact.email ? (
-				<p className="corex-pane__muted">
-					{ __(
-						'This submission has no email address to reply to.',
-						'corex'
-					) }
-				</p>
-			) : (
-				<>
-					<div className="corex-field">
-						<label htmlFor={ `${ fieldId }-subject` }>
-							{ __( 'Subject', 'corex' ) }
-						</label>
-						<input
-							id={ `${ fieldId }-subject` }
-							type="text"
-							value={ reply.subject }
-							onChange={ ( event ) =>
-								setReply( {
-									...reply,
-									subject: event.target.value,
-								} )
-							}
-						/>
-					</div>
-					<div className="corex-field">
-						<label htmlFor={ `${ fieldId }-body` }>
-							{ __( 'Message', 'corex' ) }
-						</label>
-						<textarea
-							id={ `${ fieldId }-body` }
-							value={ reply.body }
-							onChange={ ( event ) =>
-								setReply( {
-									...reply,
-									body: event.target.value,
-								} )
-							}
-						/>
-					</div>
-					<div className="corex-pane__actions">
-						<Button
-							variant="secondary"
-							disabled={
-								! reply.subject ||
-								! reply.body ||
-								work.pending !== ''
-							}
-							onClick={ () =>
-								work.during( 'reply', () =>
-									inbox.reply( record.id, reply )
-								)
-							}
-							{ ...workingProps( work.pending === 'reply' ) }
-						>
-							{ __( 'Send reply', 'corex' ) }
-						</Button>
-					</div>
-				</>
-			) }
-			{ emails.length > 0 && (
-				<ul className="corex-pane__emails">
-					{ emails.map( ( email ) => (
-						<li key={ email.attempt_id }>
-							<span>{ email.state }</span>
-							<span className="corex-pane__actions">
-								<Button
-									variant="link"
-									onClick={ () =>
-										work.during(
-											`resend:${ email.attempt_id }`,
-											() =>
-												inbox.resend(
-													record.id,
-													email.attempt_id
-												)
-										)
-									}
-									disabled={
-										! email.retryable || work.pending !== ''
-									}
-									{ ...workingProps(
-										work.pending ===
-											`resend:${ email.attempt_id }`
-									) }
-								>
-									{ __( 'Resend', 'corex' ) }
-								</Button>
-								<Button
-									variant="link"
-									disabled={ work.pending !== '' }
-									onClick={ () =>
-										work.during(
-											`log:${ email.attempt_id }`,
-											async () => {
-												const result = await inbox.log(
-													record.id,
-													email.attempt_id
-												);
-												if ( result.envelope.ok ) {
-													setLog(
-														result.envelope.data.log
-													);
-												}
-											}
-										)
-									}
-									{ ...workingProps(
-										work.pending ===
-											`log:${ email.attempt_id }`
-									) }
-								>
-									{ __( 'Open log', 'corex' ) }
-								</Button>
-							</span>
-						</li>
-					) ) }
-				</ul>
-			) }
-			{ log && (
-				<pre className="corex-pane__log">
-					{ JSON.stringify( log, null, 2 ) }
-				</pre>
 			) }
 		</Section>
 	);

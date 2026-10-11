@@ -38,6 +38,18 @@ All notable changes to Corex are documented here. The format follows
 - **A copy of CoreX's tables before a release changes them**, one for each table in the schema
   registry, named `<table>_cxrel_<yyyymmddhhmm>`. Kept for a person to read from; nothing puts
   one back. One set is kept: an installation removes the copies of the one before it.
+- **The reply box says, before anything is typed, when a reply will not be delivered, and where
+  that is changed** (spec 106, slice 1). On a production site a reply is delivered only when
+  CoreX → Settings → Mail has a delivery provider chosen and live delivery on. Nothing beside
+  the box said so: a reply written on a site without them was refused. The Reply section now
+  says which of the two is missing, links somebody who may change settings to the Mail
+  settings, tells anybody else who can, and switches **Send reply** off until it is set. On a
+  development site, and a staging site with live delivery off, it says a reply is kept in Email
+  Studio and delivered to nobody. The statement comes from the decision the sending itself
+  takes, so the two cannot disagree (DECISIONS #305).
+- **A reply is kept on its submission and listed there**: its subject, its text, who sent it,
+  when, and what happened to it. The history held an action and a state and nothing of what was
+  said. A reply that was not sent is listed as not sent, with the reason.
 - **A model says which of its columns hold personal data, and of which kind** (spec 109, slice
   1). `ManagedTable` takes `personalData`, a column's id to one of the kinds `DataField` has:
   contact details, names and identities, what people wrote, sign-in and security records,
@@ -53,6 +65,13 @@ All notable changes to Corex are documented here. The format follows
 
 ### Changed
 
+- **The pane says what happened to a reply**: sent, and to which address; kept on the site and
+  not delivered; or not sent, with the reason, and what was written left in the box. It said
+  "Reply processed by Email Studio." for all three.
+- **What is posted as a reply is reduced to the formatting a reply has**: paragraphs, line
+  breaks, bold, italic, lists, and links to the web, a mailbox or a telephone. Anything else is
+  removed and its words kept. The route used to refuse a body holding a script, an event
+  attribute or a `javascript:` address; it removes them now.
 - **The Data export offers a column that holds personal data only to a person allowed to export
   personal data**, says how many columns it is not offering, and refuses one from anybody else
   with a 403 whatever was sent. Its confirmation names the kinds of personal data in the
@@ -75,6 +94,18 @@ All notable changes to Corex are documented here. The format follows
 - **The Data screen exported a submission's personal columns to anybody who managed
   submissions**, where the Submissions inbox withheld the same records from everybody but an
   administrator. One rule now holds in both.
+
+### Fixed
+
+- **What somebody types between angle brackets in a reply is kept.** "Contact Sam
+  <sam@example.com>" reached the customer as "Contact Sam", and "<500 EGP and >300 EGP" as
+  "300 EGP": the text was read as markup and deleted.
+- **A reply that went and could not then be recorded is answered as sent**, with a line saying
+  it is not listed and is not to be sent again. The route could answer an error after the email
+  had gone.
+- **The history says "Reply kept on this site, not delivered"** for a captured reply, where it
+  said "Reply sent", and "Email sent again" for a resent notification, where it said "Reply sent".
+
 
 ### Client impact
 
@@ -118,6 +149,20 @@ All notable changes to Corex are documented here. The format follows
   `ReleaseDesk` takes a function that answers the host's facts in place of the list of
   folders; `ofThisHost()` takes two more arguments, both optional. `ReleasesController` takes
   two more collaborators. Nothing outside CoreX is known to build either.
+- **On a production site with no delivery provider or with live delivery off, Send reply is
+  now switched off**, with the reason beside it. Before, the reply was accepted and refused
+  without a word. To deliver replies: CoreX → Settings → Mail, **Delivery provider**: WordPress
+  wp_mail, and tick **Enable live delivery**.
+- **`Corex\Mail\SubmissionEmailGateway` has a new method, `readiness(): ReplyReadiness`.** A site
+  that implements this seam itself has to add it. A site that uses CoreX's email add-on, or
+  none, has nothing to do.
+- **`POST corex/v1/submissions/{id}/reply` answers 422 where a reply would be refused**, with
+  the reason, and sends nothing. It answered 200 with a result whose state was `rejected`. Its
+  answer gains `recorded`, false when the email went and the reply could not be kept.
+- **A submission's detail (`GET corex/v1/submissions/{id}`) gains `replies` and
+  `reply_delivery`.** Replies are stored as post meta `corex_submission_replies`, one row to a
+  reply. Code of your own that copies or removes a submission's personal data has to include it.
+- **The admin bundle changed**: rebuild `plugins/corex-config` after merging.
 - **A person who is not an administrator loses the personal columns in the Data export** until
   given "Export personal data" on CoreX → Access & Abilities. That is anybody with a role you
   gave "Manage data" or "Manage submissions". They still export the other columns. Decide who
