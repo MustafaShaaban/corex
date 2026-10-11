@@ -45,6 +45,11 @@ The build verifies the package and stops if it does not load. It writes
 CoreX, the site's own plugin and theme, and `corex-release.json`, which says what the package
 is. It holds no `wp-config.php` and no `.htaccess`.
 
+WordPress is in the zip when the repository has it in `./wp`, which is where the builder takes
+it from. On a machine that has none, download it first, as step 1 of the cPanel guide shows.
+For this one installation it has to be there; a later release does not replace WordPress, so
+for those it does not matter.
+
 ### 2. Prepare the host
 
 The database and PHP 8.3 with the `zip` extension: steps 2 and 3 of

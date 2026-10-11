@@ -85,6 +85,6 @@ files before slice 4.
 
 ## Slice 6 — Said where an operator reads it
 
-- [ ] T070 `docs/en/05-deployment/releases-from-the-admin.md`: building the zip, a third-party plugin in it (D17), the configuration line and what it does not give (D16), installing, what is and is not replaced (D18), the recovery link, the database step and what going back does not undo (D19), that this is not a backup
-- [ ] T071 `docs/en/05-deployment/first-installation-by-hand.md`: the first installation, still by hand, and the move of a site updated by extraction to the screen (D20)
-- [ ] T072 `updates-and-distribution.md` and `updating-a-client-site.md` point to it; the docs site; guards; notes
+- [x] T070 `docs/en/05-deployment/releases-from-the-admin.md`: building the zip, a third-party plugin in it (D17), the configuration line and what it does not give (D16), installing, what is and is not replaced (D18), the recovery link, the database step and what going back does not undo (D19), that this is not a backup
+- [x] T071 `docs/en/05-deployment/first-installation-by-hand.md`: the first installation, still by hand, and the move of a site updated by extraction to the screen (D20)
+- [x] T072 `updates-and-distribution.md` and `updating-a-client-site.md` point to it; the docs site; guards; notes

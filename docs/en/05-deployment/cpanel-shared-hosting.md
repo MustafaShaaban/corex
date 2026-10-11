@@ -143,6 +143,12 @@ UPDATE cx_options SET option_value='https://corex.example.com' WHERE option_name
 > Shared hosting has **no atomic swap**. Deploy during low traffic, and keep the previous tree + a DB backup so
 > a rollback is "repoint + restore", not a rebuild.
 
+> **After the first deploy, a release does not have to be uploaded this way again.** A site that runs CoreX
+> installs its next release from **CoreX → Releases**: the package is checked, each folder is replaced whole, the
+> database step runs, and the previous release is kept to go back to. See
+> [Releases from the admin](./releases-from-the-admin.md); [The first installation, by hand](./first-installation-by-hand.md)
+> is this page's steps arranged to end there.
+
 ## Step 8 — CI/CD (build + SFTP)
 
 ```yaml
