@@ -37,19 +37,13 @@ function inboxScopeOf(array $capabilities, ?array $filtered = null): ?\Corex\Con
     return (new WpSubmissionAccessPolicy())->scopeFor(7);
 }
 
-it('withholds personal data from a person who only manages submissions', function () {
-    expect(inboxScopeOf([CorexAbility::MANAGE_SUBMISSIONS])->canExportPersonalData)->toBeFalse();
-});
-
-it('lets a person given the right take personal data out', function () {
-    $scope = inboxScopeOf([CorexAbility::MANAGE_SUBMISSIONS, CorexAbility::EXPORT_PERSONAL_DATA]);
-
-    expect($scope->canExportPersonalData)->toBeTrue();
-});
-
-it('still lets an administrator', function () {
-    expect(inboxScopeOf(['manage_options'])->canExportPersonalData)->toBeTrue();
-});
+it('lets a person take personal data out when they were given the right, or administer the site', function (array $capabilities, bool $may) {
+    expect(inboxScopeOf($capabilities)->canExportPersonalData)->toBe($may);
+})->with([
+    'only manages submissions' => [[CorexAbility::MANAGE_SUBMISSIONS], false],
+    'was given the right' => [[CorexAbility::MANAGE_SUBMISSIONS, CorexAbility::EXPORT_PERSONAL_DATA], true],
+    'an administrator, as before' => [['manage_options'], true],
+]);
 
 it('leaves the last word to a site that filters it', function () {
     $refused = inboxScopeOf(['manage_options'], ['corex_submission_export_personal_data' => false]);

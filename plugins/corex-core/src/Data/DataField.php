@@ -149,15 +149,10 @@ final class DataField
         return in_array($class, self::DECLARABLE_PERSONAL_CLASSES, true);
     }
 
-    /** Whether a class is asked about and guarded: every class but "none". */
-    public static function classHoldsPersonalData(string $class): bool
-    {
-        return $class !== self::PERSONAL_NONE;
-    }
-
+    /** Whether the field is asked about and guarded: every class but "none", undeclared among them. */
     public function holdsPersonalData(): bool
     {
-        return self::classHoldsPersonalData($this->personalDataClass);
+        return $this->personalDataClass !== self::PERSONAL_NONE;
     }
 
     /** @return array<string,mixed> */

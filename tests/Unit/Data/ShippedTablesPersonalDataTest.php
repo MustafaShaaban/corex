@@ -60,10 +60,6 @@ function declaredClasses(ManagedTable $table): array
     return $classes;
 }
 
-it('ships ten managed tables', function () {
-    expect(shippedManagedTables())->toHaveCount(10);
-});
-
 it('leaves no column of a shipped table undeclared', function () {
     $undeclared = [];
     foreach (shippedManagedTables() as $name => $table) {
@@ -80,7 +76,7 @@ it('leaves no column of a shipped table undeclared', function () {
 it('marks the columns that hold something about a person', function (string $table, array $personal) {
     $classes = array_filter(
         declaredClasses(shippedManagedTables()[$table]),
-        static fn (string $class): bool => DataField::classHoldsPersonalData($class),
+        static fn (string $class): bool => $class !== DataField::PERSONAL_NONE,
     );
 
     expect($classes)->toBe($personal);

@@ -171,8 +171,7 @@ it('keeps its existing constructor working for every read-only caller', function
 it('counts every column as undeclared until the table says what it holds', function () {
     $table = new ManagedTable('invoices', 'Invoices', subscriberColumns());
 
-    expect($table->declaresPersonalData())->toBeFalse()
-        ->and($table->personalDataClass('email'))->toBe(DataField::PERSONAL_UNDECLARED)
+    expect($table->personalDataClass('email'))->toBe(DataField::PERSONAL_UNDECLARED)
         ->and($table->personalDataClass('created_at'))->toBe(DataField::PERSONAL_UNDECLARED);
 });
 
@@ -188,23 +187,21 @@ it('answers the declared class for a column, and undeclared for one it left out'
         ],
     );
 
-    expect($table->declaresPersonalData())->toBeTrue()
-        ->and($table->personalDataClass('email'))->toBe(DataField::PERSONAL_CONTACT)
+    expect($table->personalDataClass('email'))->toBe(DataField::PERSONAL_CONTACT)
         ->and($table->personalDataClass('name'))->toBe(DataField::PERSONAL_IDENTITY)
         ->and($table->personalDataClass('consent'))->toBe(DataField::PERSONAL_NONE)
         ->and($table->personalDataClass('topics'))->toBe(DataField::PERSONAL_UNDECLARED);
 });
 
-it('refuses a personal-data class nothing knows', function () {
-    new ManagedTable('subscribers', 'Subscribers', subscriberColumns(), personalData: ['email' => 'private']);
-})->throws(InvalidArgumentException::class, 'personal-data class');
+it('refuses a class a table cannot declare', function (string $class) {
+    new ManagedTable('subscribers', 'Subscribers', subscriberColumns(), personalData: ['email' => $class]);
+})->throws(InvalidArgumentException::class, 'personal-data class')->with([
+    'one nothing knows' => ['private'],
+    // "Undeclared" is what a column is when nothing was said. Saying it would be a way to look
+    // as if the question had been answered.
+    'the one that means nothing was said' => [DataField::PERSONAL_UNDECLARED],
+]);
 
 it('refuses a personal-data class for a column the table does not have', function () {
     new ManagedTable('subscribers', 'Subscribers', subscriberColumns(), personalData: ['phone' => DataField::PERSONAL_CONTACT]);
 })->throws(InvalidArgumentException::class, 'not one of its columns');
-
-it('does not let a table declare a column as undeclared', function () {
-    // "Undeclared" is what a column is when nothing was said. Saying it would be a way to look
-    // as if the question had been answered.
-    new ManagedTable('subscribers', 'Subscribers', subscriberColumns(), personalData: ['email' => DataField::PERSONAL_UNDECLARED]);
-})->throws(InvalidArgumentException::class, 'personal-data class');

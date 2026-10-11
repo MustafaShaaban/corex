@@ -84,12 +84,6 @@ final class ManagedTable
         $this->assertPersonalData();
     }
 
-    /** Whether the table said anything about personal data. One that did not is all undeclared. */
-    public function declaresPersonalData(): bool
-    {
-        return $this->personalData !== [];
-    }
-
     /** The class the table declared for a column, or "undeclared" when it declared none. */
     public function personalDataClass(string $columnId): string
     {

@@ -54,42 +54,30 @@ function behaviours( fields ) {
 	return said;
 }
 
-it( 'says in words what a field holds about a person, and nothing of one that holds none', () => {
+it.each( [
+	[
+		'a field that holds contact details',
+		'contact',
+		false,
+		'Writable · Personal data: contact details',
+	],
+	[ 'a field that holds nothing about a person', 'none', true, 'Read only' ],
+	[
+		'a field nobody classed, which is treated as personal data',
+		'undeclared',
+		true,
+		'Read only · Personal data: data nobody has classified yet',
+	],
+] )( 'says in words what %s holds', ( _, className, readOnly, said ) => {
 	expect(
 		behaviours( [
 			{
 				key: 'email',
 				label: 'Email',
-				type: 'email',
-				read_only: false,
-				personal_data_class: 'contact',
-			},
-			{
-				key: 'status',
-				label: 'Status',
 				type: 'text',
-				read_only: true,
-				personal_data_class: 'none',
+				read_only: readOnly,
+				personal_data_class: className,
 			},
 		] )
-	).toEqual( {
-		email: 'Writable · Personal data: contact details',
-		status: 'Read only',
-	} );
-} );
-
-it( 'says that a field nobody classed is treated as personal data', () => {
-	expect(
-		behaviours( [
-			{
-				key: 'notes',
-				label: 'Notes',
-				type: 'text',
-				read_only: true,
-				personal_data_class: 'undeclared',
-			},
-		] )
-	).toEqual( {
-		notes: 'Read only · Personal data: data nobody has classified yet',
-	} );
+	).toEqual( { email: said } );
 } );

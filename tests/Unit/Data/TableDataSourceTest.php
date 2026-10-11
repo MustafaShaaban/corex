@@ -185,12 +185,3 @@ it('gives each field the personal-data class its table declared', function () {
         'topics' => DataField::PERSONAL_UNDECLARED,
     ]);
 });
-
-it('gives every field of a table that declared nothing the class undeclared', function () {
-    $table = new ManagedTable('invoices', 'Invoices', [['id' => 'number', 'label' => 'Number'], ['id' => 'total', 'label' => 'Total']]);
-    $fields = (new TableDataSource($table, tableReader([], 0)))->fields();
-
-    expect(array_map(static fn (DataField $field): string => $field->personalDataClass, $fields))
-        ->toBe([DataField::PERSONAL_UNDECLARED, DataField::PERSONAL_UNDECLARED])
-        ->and($fields[0]->holdsPersonalData())->toBeTrue();
-});

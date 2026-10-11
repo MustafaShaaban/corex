@@ -10074,10 +10074,17 @@ with a word, not a mark. The first test written for it expected an Arabic comma 
 
 | Check | Result |
 |---|---|
-| Pest, unit suite, in the worktree with the root's `vendor/` copied in | 2602 passed |
-| Jest, the whole suite (`npm run test:js`) | 90 suites, 948 passed, 2 skipped as before |
+| Pest, unit suite, in the worktree with the root's `vendor/` copied in, after merging main | 2634 passed |
+| Jest, the whole suite (`npm run test:js`), after merging main | 93 suites, 992 passed, 2 skipped as before |
 | `wp-scripts lint-js` on the changed files; `php -l` on the changed PHP | clean |
 | `tests/docs-links.test.js`, `repo-hygiene`, `product-completion-audit` | passed |
+
+**What the guards changed.** Two methods only their tests called were removed
+(`ManagedTable::declaresPersonalData()`, a static twin of `DataField::holdsPersonalData()`), and
+the import planner asks the field where it compared with "none" itself, so what counts as
+personal data is written once. Five tests were merged or dropped: three that differed by one
+value, one that counted the list it had written, one that walked the same path as its
+neighbour.
 
 **Not run here.** The integration tests added to `DataManagementControllerTest` and the browser
 test added to `data-management.spec.js`: both need an install serving this branch, and the

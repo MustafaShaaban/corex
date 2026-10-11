@@ -26,13 +26,13 @@ export personal data is not offered that column, and the route refuses it.
       with no `personalData` answers `undeclared` for every column; one that names some
       columns answers the declared class for those and `undeclared` for the rest; a class that
       is not one of `DataField`'s, and a column that is not the table's, are refused when the
-      table is constructed; `declaresPersonalData()` is false only when nothing was declared
+      table is constructed
 - [x] T002 [P] [US2] Pest unit, `tests/Unit/Data/DataFieldPersonalDataTest.php`:
       `DataField` accepts the class `undeclared`; `DataField::holdsPersonalData()` is false
       for `none` and true for every other class, `undeclared` among them
 - [x] T003 [US2] `DataField::PERSONAL_UNDECLARED` and `holdsPersonalData()` in
       `plugins/corex-core/src/Data/DataField.php`; the named argument `personalData`,
-      `personalDataClass(string $column)` and `declaresPersonalData()` in
+      `personalDataClass(string $column)` in
       `plugins/corex-core/src/Database/Schema/ManagedTable.php`
 
 **The right (corex-core)**

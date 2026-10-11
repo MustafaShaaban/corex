@@ -176,9 +176,8 @@ final class DataImportPlanner
     {
         $classes = [];
         foreach ($mapping as $fieldKey) {
-            $class = $fields[$fieldKey]->personalDataClass;
-            if ($class !== DataField::PERSONAL_NONE) {
-                $classes[] = $class;
+            if ($fields[$fieldKey]->holdsPersonalData()) {
+                $classes[] = $fields[$fieldKey]->personalDataClass;
             }
         }
         $classes = array_values(array_unique($classes));
