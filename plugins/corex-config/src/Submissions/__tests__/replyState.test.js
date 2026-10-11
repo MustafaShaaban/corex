@@ -1,7 +1,7 @@
 /**
  * What the pane says about replying, as plain functions (spec 106, slice 1).
  */
-import { cleanReplyHtml } from '../detail/replyHtml.js';
+import { cleanReplyHtml } from '../../admin/components/replyHtml.js';
 import {
 	canSendReply,
 	readinessNotice,
@@ -74,6 +74,43 @@ describe( 'what a reply may hold', () => {
 		).toBe(
 			'<a href="https://example.com" target="_blank" rel="noopener noreferrer">go</a>'
 		);
+	} );
+
+	// A page lays its text out in blocks a reply does not have. Unwrapped, two of them run
+	// together as one line; where the text comes from an editor or a paste, each is a paragraph.
+	it( 'keeps the blocks of a paste or an editor as paragraphs when asked to', () => {
+		const pasted =
+			'<div><h2>Our offer</h2><div>First line</div><div>Second line</div>' +
+			'<blockquote>Quoted</blockquote><div><p>Already a paragraph</p><ul><li>One</li></ul></div><div> </div></div>';
+
+		expect( cleanReplyHtml( pasted, { blocksAsParagraphs: true } ) ).toBe(
+			'<p>Our offer</p><p>First line</p><p>Second line</p><p>Quoted</p>' +
+				'<p>Already a paragraph</p><ul><li>One</li></ul>'
+		);
+		expect( cleanReplyHtml( '<div>First</div><div>Second</div>' ) ).toBe(
+			'FirstSecond'
+		);
+	} );
+
+	// The first line somebody types is bare text to a browser; the email will have a paragraph.
+	it( 'puts what an editor holds outside any paragraph into paragraphs', () => {
+		expect(
+			cleanReplyHtml(
+				'Hello Salma,<p>Second</p> then <b>bold</b> text<ul><li>One</li></ul> ',
+				{
+					blocksAsParagraphs: true,
+					wholeMessage: true,
+				}
+			)
+		).toBe(
+			'<p>Hello Salma,</p><p>Second</p><p> then <b>bold</b> text</p><ul><li>One</li></ul>'
+		);
+	} );
+
+	it( 'leaves a piece being pasted into a sentence as a piece', () => {
+		expect(
+			cleanReplyHtml( 'a <b>word</b>', { blocksAsParagraphs: true } )
+		).toBe( 'a <b>word</b>' );
 	} );
 
 	it( 'answers nothing for nothing', () => {

@@ -115,7 +115,7 @@ final class EmailDesignFailureNotificationProducer implements NotificationProduc
 
         return sprintf(
             /* translators: 1: what went wrong with the design. 2: the PHP class of the design, or the filter it came through. */
-            __('%1$s The email was sent in the standard CoreX design instead. The design is %2$s.', 'corex'),
+            __('%1$s CoreX used its standard design for the email instead. The design is %2$s.', 'corex'),
             $wrong,
             $event->design,
         );
