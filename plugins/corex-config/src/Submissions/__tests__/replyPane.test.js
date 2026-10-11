@@ -65,12 +65,12 @@ const button = ( name ) =>
 	[ ...container.querySelectorAll( 'button' ) ].find(
 		( candidate ) => candidate.textContent.trim() === name
 	);
+// By id and not by selector: React's ids hold colons, which a selector would have to escape.
 const field = ( label ) =>
-	container.querySelector(
-		`#${ [ ...container.querySelectorAll( 'label' ) ]
+	document.getElementById(
+		[ ...container.querySelectorAll( 'label' ) ]
 			.find( ( candidate ) => candidate.textContent === label )
 			.getAttribute( 'for' )
-			.replace( /:/g, '\\:' ) }`
 	);
 
 function type( control, text ) {
