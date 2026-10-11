@@ -59,6 +59,18 @@ final readonly class EmailBrand
         }
     }
 
+    /** This brand with another footer line, or '' for the standard one naming the site. */
+    public function withFooter(string $footer): self
+    {
+        return new self($this->name, $this->homeUrl, $this->logo, $this->direction, $this->language, $footer, $this->light, $this->dark);
+    }
+
+    /** This brand in other colours. */
+    public function withPalettes(EmailPalette $light, EmailPalette $dark): self
+    {
+        return new self($this->name, $this->homeUrl, $this->logo, $this->direction, $this->language, $this->footer, $light, $dark);
+    }
+
     /** A site's emails in CoreX's own colours. */
     public static function standard(
         string $name,

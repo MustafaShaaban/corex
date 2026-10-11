@@ -20,6 +20,7 @@ use Corex\Email\Design\EmailBrandSource;
 use Corex\Email\Design\EmailDesign;
 use Corex\Email\Design\ReplyComposer;
 use Corex\Email\Design\SiteEmailBrand;
+use Corex\Email\Design\SiteEmailDesign;
 use Corex\Email\Design\StandardEmailDesign;
 use Corex\Email\Log\EmailLogRepository;
 use Corex\Email\Log\EmailLogStore;
@@ -116,10 +117,12 @@ final class MailServiceProvider extends ServiceProvider
             EmailBrandSource::class,
             static fn (ContainerInterface $c): SiteEmailBrand => $c->make(SiteEmailBrand::class),
         );
+        // The site's own design where it gives one that works, the standard one otherwise.
         $this->container->singleton(StandardEmailDesign::class);
+        $this->container->singleton(SiteEmailDesign::class);
         $this->container->singleton(
             EmailDesign::class,
-            static fn (ContainerInterface $c): StandardEmailDesign => $c->make(StandardEmailDesign::class),
+            static fn (ContainerInterface $c): SiteEmailDesign => $c->make(SiteEmailDesign::class),
         );
         $this->container->singleton(ReplyComposer::class);
 

@@ -55,6 +55,15 @@ All notable changes to Corex are documented here. The format follows
   right. The same words go with it as plain text, with links written out and list items
   marked, as the alternative part of one message. The reply used to be wrapped in a bare shell
   that set no type, no colour and no footer, and was sent as HTML alone (DECISIONS #308).
+- **A site gives its emails its own colours, logo and footer, or its own template** (spec 106,
+  slice 4), from its own settings or its own plugin and with no framework file changed.
+  CoreX → Settings → Mail has an **Email accent colour**, an **Email logo** and an **Email
+  footer line**. The filter `corex_email_brand` reaches the other colours. The filter
+  `corex_email_design` replaces the template, and `wp corex make:email-design <Name>` writes a
+  working copy of the standard one into the site's plugin to start from. A site's design that
+  throws, answers nothing or leaves the message out does not stop a reply: the email goes in
+  the standard design, and the people who manage email are told which design failed and how
+  (DECISIONS #311). The guide is "A site's own email design".
 - **The colours and type of a CoreX email are defined once**, in the email add-on
   (`Corex\Email\Design\EmailPalette`, `EmailBrand`), for every email drawn from them. They
   were inside the Guides add-on's support message.
@@ -142,9 +151,15 @@ All notable changes to Corex are documented here. The format follows
   `reply_delivery`.** Replies are stored as post meta `corex_submission_replies`, one row to a
   reply. Code of your own that copies or removes a submission's personal data has to include it.
 - **A reply's email looks different.** It was the site's name or logo over a line in the
-  theme's `primary` colour; it is now the standard design in CoreX's colours. A site's own
-  colours, logo and footer line, and a site's own template, are the next slices of spec 106:
-  until they are released, replies from every site wear CoreX's brass.
+  theme's `primary` colour; it is now the standard design in CoreX's colours. To put a site's
+  own colour back, set **Email accent colour** in CoreX → Settings → Mail; for more than the
+  accent, or a template of the site's own, see the guide "A site's own email design".
+- **New for a client site, and nothing it has to do:** the filters `corex_email_brand` and
+  `corex_email_design`, the command `wp corex make:email-design`, and three settings
+  (`mail.brand.accent`, `mail.brand.logo`, `mail.brand.footer`). A site that sets none of them
+  sends the standard design.
+- **`Corex\Email\Design\SiteEmailBrand` takes a `ConfigInterface`.** Code that takes it from
+  the container is unaffected.
 - **`Corex\Email\Message\EmailMessage` has a new last argument, `plainText`**, and a message
   that carries one is sent as `multipart/alternative`. Code that builds a message is unaffected.
   A mail driver of your own receives the field and may ignore it.

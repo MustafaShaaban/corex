@@ -10173,3 +10173,65 @@ Email Studio's templates still go through `Layout` (slice 7). A site's own value
 own design are slice 4.
 
 **Verification.** Numbers are in the pull request, from the tree as committed.
+
+## #311 — A client site gives its emails their own colours, logo and footer, or its own template, from its own code
+
+**Date:** 2026-10-11. **Branch:** `feat/106-site-email-design`. **Spec:** 106, slice 4.
+
+"Give the option to developer to replace it with his custom template as we need this for muva
+and perego." Slice 2 made the standard design; this is how a site stops wearing it. It was built
+before slice 3 (the editor), which the plan had first: a site can take its own brand without the
+editor, the two do not touch, and this is the one the client sites are waiting for.
+
+**Two depths, and neither is a framework file.** Only values: three settings under CoreX →
+Settings → Mail (the accent colour, a logo, the footer line), and a filter `corex_email_brand`
+for the colours a setting does not reach. A whole template: a filter `corex_email_design`
+returning the site's own `EmailDesign`. A filter and not a container binding, because it is
+asked when an email is drawn and so does not depend on which plugin booted first; a site's
+plugin is updated apart from CoreX and nothing of the site's is overwritten by it.
+
+**A site's design runs inside a guard.** It is code CoreX did not write, running at the moment
+a customer is being answered. `SiteEmailDesign` asks the filter, and if what comes back throws,
+answers nothing, or answers a document that does not hold the message, the email goes in the
+standard design and `EmailDesignFailedEvent` is dispatched; the config plugin turns it into one
+notification for the people who manage email, keyed by the design, saying which design and how
+it failed. A reply is never sent without its words and a broken template never stops one. The
+alternative, refusing the reply, was not taken: the person at the reply box cannot mend a PHP
+class, and the customer would wait for somebody who can.
+
+**"Holds the message" is its words, whole and in order, in what the document shows.** Words
+and not markup, so that a design may restyle a paragraph or a link, which it has to: a mail
+client reads no style sheet for them. In what it shows, so that a title, a style sheet or a
+comment that repeats a word does not count. A design that rewrites the message (curls its
+quotes, puts an address after a link) is sent as the standard design; the guide says so.
+
+**The guard's first version had holes, and a review that ran inputs found them.** The filter's
+own callback was outside the `try`: the registration line the guide gives throws when a class
+is renamed, and a reply would have answered 500. A `<` in a template's style sheet made the
+check lose everything after it, so a good template was discarded on every reply. A design that
+printed its markup wrote into the answer of the request sending the reply. A design that asked
+for the email design again while drawing asked for itself, to the memory limit. All four are
+inside the guard now, each with a test. An error's message is passed on as one short line with
+its kind, not whole: it is shown to everybody who manages email. A brand filter that throws is
+announced too, where it had been silent. The generated design gained what the standard one
+gives a reader: the dark colours, the footer sentence, and no address but a web one.
+
+**The setting's colour is the edge only.** The accent is never text, so it has no contrast to
+keep and one value serves both colour schemes. Text, link and ground colours are reachable
+only from code, where a developer can be held to 4.5 to 1; nothing checks a site's palette, and
+the guide says so. A colour is `#rrggbb` or it is not saved; one that reaches the store some
+other way is passed over when an email is drawn, not thrown at somebody sending a reply. A
+filter that throws leaves the brand the settings gave.
+
+**The generator writes a copy, not a subclass.** `wp corex make:email-design Acme` writes
+`src/Mail/AcmeEmailDesign.php` into the site's plugin: a working design with a comment saying
+what it is handed. The standard design is final, and a site's template is the one thing about
+its emails that should not move when CoreX is updated. Its test loads the generated file and
+draws an email with it: a starting point that does not render is worse than none.
+
+**Not done here.** The plan's T066, a generated client site sending in its own design inside
+the `client-site-layout` job, is not added: the behaviour is held by an integration test that
+registers a design through the filter from outside the framework's classes, and by the
+generator's test. Only replies are drawn through the design; the other emails are slice 7.
+
+**Verification.** Numbers are in the pull request, from the tree as committed.
