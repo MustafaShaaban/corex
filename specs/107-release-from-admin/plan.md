@@ -7,6 +7,11 @@
 **How this was written**: by hand to the Spec Kit plan template, from a map of the source at
 `9302016f`. `/speckit-plan` was not run.
 
+**Amended 2026-10-11** after the spec's clarification session of that day, against the source
+at `21fb2dd9` (v0.44.0): decisions D16 to D20 are new, D8, D10, D11 and D15 are changed where
+they say so, and a row of "What the source does today" that DECISIONS #299 made untrue is
+corrected.
+
 ## Summary
 
 The package a site's repository builds becomes a zip that says enough about itself to be checked
@@ -63,7 +68,8 @@ shared by two sites
 | Nothing on a running site reads `corex-release.json`, and a site has no record of which client it is | `git grep` over `plugins`, `addons`, `packages`, `theme` |
 | The version is the constant `COREX_CORE_VERSION`, fixed when the file is included; requirements are plugin headers | `plugins/corex-core/corex-core.php` |
 | The schema follows the code on the first admin or cron request, one site at a time; REST does not trigger it. There is one registered component. No migration can be reversed | `Database/Schema/SchemaSelfHeal.php`, `SiteMigrationRunner.php` |
-| Three add-ons create their tables on every `init`, outside the registry | bookings, careers, newsletter providers |
+| Three add-ons register their tables as schema components of their own, and the runner creates them (since DECISIONS #299; they created them on every `init`, outside the registry, when this plan was first written) | bookings, careers, newsletter providers |
+| A client's own packaging script runs the builder, then copies a third-party plugin into `dist/` and makes the zip itself, under a name of its own | `sites/muva/deploy/package.mjs` in that client's repository, read 2026-10-11 |
 | A table can be copied (`CREATE TABLE … LIKE`, `INSERT … SELECT`) and the copy discarded; the same class's `restore()` drops the live table | `DataModels/WpMigrationTableRunner.php` |
 | CoreX's maintenance mode answers at `template_redirect`, after every plugin has loaded, and lets admin, REST, AJAX, cron and administrators through. WordPress's own `.maintenance` file is not used anywhere | `Operations/MaintenanceGuard.php` |
 | Bounded jobs keep their state in a table of the component a release migrates, and always hand themselves to a scheduler | `Jobs/JobRunner.php`, `JobService.php` |
@@ -165,6 +171,22 @@ undone.
 Between inspect and unpack the administrator confirms, with a `Confirmation` bound to them and
 to the package's hash, typing the version being installed.
 
+The routes, as built (amended 2026-10-11). `prepare` answers what the confirmation needs: the
+statement again, the folders the running release holds and the package does not (FR-028), the
+installation's key and the recovery link, shown once and never stored. `confirm` takes the
+typed version. `step` does the next piece of unpack, verify, copy tables or swap and answers
+where it stands. `finish` is the database step. `cancel` gives up an installation that has not
+reached the swap. One installation at a time is held by a lock file in the installer's place,
+taken without waiting, so a second request is told one is running instead of running beside
+it.
+
+What an installation leaves when its browser goes away (FR-022, FR-035) is read from
+`state.json` and the journal when the screen is next opened: before the swap, it can be
+continued or cancelled; cut off during the swap, the journal is settled and the screen says
+whether the site is the old release or the new; after the swap, the screen finishes it. None
+of that needs the key. The key opens two things only: WordPress's maintenance answer, which
+stops asking for it after ten minutes, and the recovery plugin.
+
 The finishing request is answered by the release just installed. Its route and its answer are a
 contract between releases, versioned in `state.json`, and documented as one.
 
@@ -183,8 +205,15 @@ Going back from the Releases screen runs the same reversal through CoreX's own c
 
 No schema change CoreX makes can be reversed today, and the screen says exactly that. The copy
 of FR-034 is made of the tables in the schema registry, kept fourteen days, and removed when the
-screen is next opened after that (no scheduled job). It is never renamed over a live table. Not
-in it, and said on the screen: the three add-ons' own tables, and submissions, which are posts.
+screen is next opened after that (no scheduled job). It is never renamed over a live table. The
+add-ons' tables are in the registry since DECISIONS #299, so they are copied with the rest. Not
+in it, and said on the screen: what is kept as posts or options (submissions, form definitions,
+settings), and a table a site makes outside the registry.
+
+A copy is named for the table and the minute it was made, `<table>_cxrel_<yyyymmddhhmm>`,
+shortened with a hash of the table's name where that would pass MySQL's sixty-four characters,
+so copies are found by name and need no list kept anywhere a release replaces. An installation
+discards the copies of the one before it: one previous release is kept, and one set of copies.
 
 ### D11. The database step
 
@@ -193,6 +222,11 @@ the site (on a network, for the next batch of sites, resumable by offset), and w
 each component with the version it moved from and to. Tables an add-on creates for itself are
 named as created outside the list. Under D7 no other request can start the schema's own
 self-heal in the meantime.
+
+Since DECISIONS #299 no add-on creates a table for itself: every table is a component's, and
+the list is whole. What the finishing request runs is `SiteMigrationRunner`, the one the
+automatic check (`SchemaSelfHeal`) and `wp corex migrate` run, so there is one way a schema
+changes and three callers of it (D19).
 
 ### D12. Receiving a package
 
@@ -220,9 +254,105 @@ an activity event beside it when the activity log can take one.
 ### D15. What the host can do, said first
 
 `ReleaseHostFacts` reads, when the screen is opened: whether file changes are allowed
-(`wp_is_file_mod_allowed`), whether `ZipArchive` is there, whether the plugins, themes,
+(`wp_is_file_mod_allowed`, or the configuration line of D16), whether `ZipArchive` is there, whether the plugins, themes,
 must-use, content and root folders are writable, the upload and time limits, and free space
 where the host reports it. Each fact that prevents an installation is named with what to do.
+
+### D16. A site set not to change its files says so for releases, in its configuration
+
+`DISALLOW_FILE_MODS` is how a site says nobody signed in to the admin puts code on it. A
+release is code, so CoreX does not pass over the setting by itself, and does not ask for it to
+be lifted either: lifting it is an edit in the host's file manager at every release, and while
+it is lifted WordPress's plugin and theme installers are open too.
+
+`define( 'COREX_ALLOW_RELEASE_INSTALL', true );` in `wp-config.php` allows installing a release
+from the Releases screen and nothing else. Only somebody with the host's file access can write
+it, which is the same person `DISALLOW_FILE_MODS` trusts. `ReleaseHostFacts` reads it beside
+`wp_is_file_mod_allowed( 'corex_release_install' )`; with neither, the blocker names the line.
+The start of an installation asks `ReleaseHostFacts` again and refuses on any blocker, so the
+rule does not depend on the screen having shown it (FR-018).
+
+What this does not give: a package is not signed. With the line in place, whoever holds
+`corex_manage_releases` on the site can replace its code with a zip that describes itself as
+the client's. The ability is critical and can be denied to a role, the confirmation is typed,
+and each installation is on record with who made it. The guide says this where it gives the
+line.
+
+### D17. One builder, and a third-party plugin is named to it
+
+A client's package is made by `npm run build:dist -- --client=<slug> --zip` in the client's
+repository, and by nothing else. `--with-plugin=<folder>` may be given any number of times: the
+folder is copied to `wp-content/plugins/<its name>` with the copy's forbidden names left out,
+listed in `plugins`, and is a release path like the others, so it is measured by the builder
+and held to that measure on the site. The builder refuses a folder that is not there, one with
+no PHP file carrying a `Plugin Name` header in its top level, and a name the package already
+holds.
+
+Nothing else is needed for a plugin such as FluentSMTP. Its settings are in the database and
+are not a release's. On a site where file changes are off it cannot be updated from WordPress's
+own screen, so the release is how it changes: the client's repository decides which copy goes
+out, as it does today.
+
+A package made the older way (the builder's `dist/`, a plugin copied in afterwards, zipped by
+hand with the description at the root) is not refused for that: the description still measures
+what it names. The plugin copied in afterwards is in no release path, so it is neither unpacked
+nor replaced. Its name has to be `corex-release-*.zip` to be kept. This is said in the guide so
+nobody takes "it installed" for "FluentSMTP was updated".
+
+### D18. A folder is replaced whole
+
+Already true of D6, and now a requirement with a test of its own (FR-027): a release path is
+never written into. The live folder is renamed out and the staged one renamed in, so the live
+folder afterwards holds what the package measured and nothing else. The fault of 2026-10-11,
+pattern files of the theme before left beside the new theme's, cannot happen inside a release
+path. The first installation from the screen on a site that has been updated by extraction
+clears what extraction left, for the same reason.
+
+Outside the release paths nothing is removed: `corex-release.json` in the site's root, written
+by a package unpacked by hand, stays and goes stale, and is not read once the site has recorded
+an installation (D4).
+
+`prepare` names every folder the running release recorded as its own that the package does not
+hold (FR-028). Those are moved to `previous/` with the rest. A plugin that goes this way is
+found missing by WordPress and switched off.
+
+### D19. The database step and the automatic check
+
+One runner (`SiteMigrationRunner`), three callers.
+
+- **During an installation** only the finishing request can call it: `.maintenance` turns away
+  every admin page and every scheduled run, which are the automatic check's only two triggers.
+  The finisher reads each component's stored version, runs the runner, and lists what moved.
+- **After it** the automatic check runs on every admin page as before, compares versions, and
+  does nothing.
+- **When the finishing request never comes** (the tab was closed, the new release could not
+  answer), `.maintenance` stops applying after WordPress's ten minutes. The site then serves the
+  new release on the old schema until the first admin page or scheduled run, exactly as a
+  release unpacked by hand does today. `state.json` still says the installation stands at its
+  last step, so the Releases screen, when opened, runs the finishing step: by then usually to
+  find nothing to change, record the installation and remove what it left.
+- **When a change fails** in the finishing request, the release is not recorded as installed,
+  the failure is named, and the screen offers the way back. `.maintenance` is left in place,
+  and WordPress stops honouring it after ten minutes as it always does; the screen says the
+  site is then serving the new release on a database that did not finish changing.
+
+Going back (D10) reverses none of it. The release returned to finds its components' stored
+versions are not its own, and its automatic check runs the runner once more: `dbDelta` adds
+what is missing, never drops a table or a column, and may change a column's type back to the
+older definition. The stored versions are then the older release's again, and installing the
+newer release later migrates again. The screen says, before going back is confirmed, that no
+database change is reversed and where the copies are.
+
+### D20. The first installation is a runbook
+
+`docs/en/05-deployment/first-installation-by-hand.md` (slice 6): build the package with the
+builder; put its contents on the host; the configuration file, with the line of D16 where the
+site sets `DISALLOW_FILE_MODS`; open the admin once so the schema is made; open Releases and
+read that the site knows its version and its client (from `corex-release.json` in its root,
+D4) and that nothing stands in the way. From then on a release is one upload.
+
+It has a second part for a site that is already live and updated by extraction: add the line,
+build with `--zip`, and install from the screen. There is nothing to clean first (D18).
 
 ## Constitution Check
 
@@ -306,8 +436,14 @@ slice 4.
 - **Space.** Staging and the kept release are each a second copy of the release's folders.
   `ReleaseHostFacts` refuses when the host reports too little; many shared hosts report
   nothing, and the file allowance is not readable from PHP.
-- **Three add-ons migrate themselves.** Their tables are outside the registry, so they are not
-  copied and not listed. Moving them into the registry is their own change, noted here and not
-  made.
+- **A table too large to copy in one request.** A copy is one `INSERT … SELECT`, and a host
+  that cuts the request off leaves a copy with part of the rows. The step checks the row counts
+  agree before it goes on and refuses the installation when they do not, with nothing of the
+  site changed. It has not been tried on a table of a size that would do this.
+- **The swap's request ends on a release that is gone.** Whatever WordPress runs after the last
+  rename (its shutdown hooks, a class not loaded yet) is read from the new release's files by
+  the old release's autoloader. If that request does not answer, the browser asks again, and the
+  next request, which is the new release's, reads from the journal that the swap was made.
+  `state.json` is therefore read by two releases, and is versioned as the finishing route is.
 - **Nothing here has run on the host it is for.** Each slice says what was and was not seen.
   The first installation on that host should be of a release that changes nothing important.

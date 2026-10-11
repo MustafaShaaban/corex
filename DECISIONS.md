@@ -9817,6 +9817,51 @@ longer escaped: Arabic reads as Arabic, where it read a `\\u` escape for every l
 **Verification.** Pest, unit suite: 2566 passed. One existing expectation held the JSON form of
 a summary and was changed with the behaviour.
 
+## #304 — Five answers a release from the admin owes a client on a host with no command line
+
+**Date:** 2026-10-11. **Branch:** `spec/107-client-host-answers`. Spec 107, its clarification
+session of this date; plan D16 to D20.
+
+The first client site on shared hosting went public on 2026-10-11, updated by extracting a zip
+over the release before it. Four pattern files of the earlier theme stayed, and the Site Editor
+answered with a critical error until they were deleted by hand. The owner asked why Releases is
+not what that site uses and put five questions. He asked for answers, not to be asked back.
+
+**1. A site that sets `DISALLOW_FILE_MODS` allows releases with one line of its own.**
+`define( 'COREX_ALLOW_RELEASE_INSTALL', true );` in `wp-config.php`. Rejected: asking for the
+setting to be lifted at each release (work in the file manager every time, and WordPress's
+installers open while it is lifted), and CoreX ignoring the setting (it says nobody signed in to
+the admin puts code on the site; only whoever can write the configuration file may say
+otherwise). What it does not give is said with it: a package is not signed, so the line trusts
+whoever holds `corex_manage_releases`.
+
+**2. One builder.** A client's package is `npm run build:dist -- --client=<slug> --zip`. A
+third-party plugin is named to it with `--with-plugin=<folder>`, and is then a folder of the
+release like any other: measured, checked on the site, replaced whole. A zip a client makes
+itself from `dist/` with a plugin copied in afterwards installs, and leaves that plugin as the
+site has it, because nothing measured it.
+
+**3. A folder is replaced whole.** Already how the swap works; now a requirement (FR-027) with a
+test named for the fault. It ends at the folders a release owns.
+
+**4. One runner, three callers.** The installation's finishing step, the automatic check and
+`wp corex migrate` all run `SiteMigrationRunner`. During an installation only the first can.
+An installation whose finishing step never ran is finished from the screen when it is next
+opened. Going back reverses nothing in the database, and the release gone back to records its
+own schema version again, which removes nothing.
+
+**5. The first installation is a runbook**, with a second part for a site already live and
+updated by extraction: the line, a package from the builder, and the screen.
+
+**Corrected with it.** The spec said the production site does not set `DISALLOW_FILE_MODS`; the
+configuration the client's repository writes for that host does. The plan said three add-ons
+make their own tables outside the schema registry; since #299 they do not, so their tables are
+copied and listed with the rest.
+
+**Not decided here.** Whether a package should be signed. Whether the previous release should
+leave the host after a time and not only at the next installation; the account's file allowance
+is shared by two sites.
+
 ## #305 — A reply says what will happen to it and what did, and is kept with its submission
 
 **Date:** 2026-10-11. **Branch:** `feat/106-reply-says-what-happened`. **Spec:** 106, slice 1.
