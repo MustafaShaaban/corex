@@ -85,6 +85,16 @@ All notable changes to Corex are documented here. The format follows
   throws, answers nothing or leaves the message out does not stop a reply: the email goes in
   the standard design, and the people who manage email are told which design failed and how
   (DECISIONS #311). The guide is "A site's own email design".
+- **A reply is written in an editor, and previewed as the email it will be** (spec 106,
+  slice 3). The message box has bold, italic, bulleted and numbered lists and links, from a
+  toolbar or from the keyboard (Ctrl or Cmd with B, I and K; with Shift and 8 or 7 for the
+  lists). A link is asked for in the page, and one that goes anywhere but the web, a mailbox
+  or a telephone is refused there. What is pasted keeps that formatting and loses the rest.
+  Each paragraph reads in the direction of what is written in it. **Preview** shows the email
+  the server will send, in the site's design, at the width of a wide screen or of a phone,
+  with its plain-text version; the email that is then sent is that one, to the byte. The box
+  was a plain text area and there was no preview (DECISIONS #313). A draft kept between
+  visits is not built yet.
 - **The colours and type of a CoreX email are defined once**, in the email add-on
   (`Corex\Email\Design\EmailPalette`, `EmailBrand`), for every email drawn from them. They
   were inside the Guides add-on's support message.
@@ -138,6 +148,46 @@ All notable changes to Corex are documented here. The format follows
 
 ### Fixed
 
+- **A modal or drawer block is not closed by a press that began inside it, or by a click on
+  its own panel.** On a page, pressing the mouse on a button inside a `corex/modal` or
+  `corex/drawer`, sliding off it and letting go over the dimmed page closed the dialog, and so
+  did a press begun on the dimmed page and let go inside. A click on the panel's own padding
+  closed it as well, which in a drawer is all the height its content does not fill. Both blocks
+  are now left by a press that starts and ends outside the panel. A click or a tap on the
+  dimmed page, Escape and the close button close them as before, and focus goes back to the
+  button that opened them.
+- **A drawer block fits the window, and the end of what it holds can be read.** A
+  `corex/drawer` was taller than the window by twice its padding (752px in a 720px window), so
+  a drawer holding more than fits stopped scrolling with its last 16px below the window's
+  edge: most of the last line of text, or of a link reached with Tab. Its sizes now count its
+  padding. On a desktop it is 384px wide where it was 416px, and on a phone it leaves 38px of
+  the dimmed page beside it where it left 6px. A `corex/modal` counts its padding and border the same
+  way: it kept inside the window by 2px, and on a phone a modal holding a paragraph was as
+  wide as the window, with nothing beside it to tap. It is now at most 512px wide where it was
+  546px, 92% of a narrow window, and 19px clear of the window's top and bottom.
+- **A modal or drawer block opens at its first line, and its title and close button stay in
+  view.** A `corex/modal` or `corex/drawer` whose content held a link opened with focus on that
+  link and scrolled to it: with the link at the end of a long text, a visitor was shown the last
+  lines and never the title or the first ones. Scrolled by hand, the title and the close button
+  went up with the text, and on a phone a visitor at the last line had the strip of dimmed page
+  beside the dialog to close it with and nothing else. The title and the close button are now
+  in a header that does not scroll, and the content scrolls under it. A dialog opens at its
+  first line with focus on the close button. The close button is 30px square where it was 21px
+  by 18px, and a long title wraps beside it where it ran under it.
+- **A drawer block comes in from its own edge on a site read right to left.** There the drawer
+  at the end, which is on the left, began 16px inside the window and moved out to its edge.
+- **A modal or drawer block with no title has a name.** A `corex/modal` or `corex/drawer` given
+  no title had no name for a screen reader to give: it was a dialog and nothing more. It now has
+  the label of the button that opened it as its name, so the dialog opened by "Read the terms"
+  is the dialog "Read the terms". One with a title is named by its title, as before. A block
+  with no title and no trigger label is named "Open", which is a name and a poor one, so in the
+  editor the Title field now says, while it is empty, what the dialog will be named in its
+  place, and asks for a title when the trigger has no label either (DECISIONS #316).
+- **What a modal or drawer block holds can be read with scripts off.** With scripting off in the
+  browser the block's button was shown and did nothing, and its content could not be reached,
+  though the block's contract said it could. The dialog is now shown in the page where the
+  block is, with its title, and the two buttons nothing answers are not shown. Not covered: a
+  browser with scripting on in which the block's script was blocked or did not load.
 - **A dialog in the CoreX admin is not closed by a press that began inside it.** Pressing the
   mouse on a button in a submission's pane, sliding off it and letting go over the dimmed page
   closed the pane, and a note being written in it was lost; the button's own action was not
@@ -148,6 +198,14 @@ All notable changes to Corex are documented here. The format follows
 - **Email Studio lists its captured emails when one of them cannot be read.** One record
   whose contents had not survived being stored took the whole list with it, and the screen
   answered an error.
+- **Escape in a dialog opened from another closes that one only.** It closed both: leaving
+  a confirmation or a preview opened from the submission's pane took the pane with it.
+- **Lines posted as blocks a reply does not have stay apart.** `<div>One</div><div>Two</div>`,
+  which is what a browser's editor and many pasted pages write, was reduced to "OneTwo" in one
+  paragraph; each is now a paragraph, and so is each cell of a pasted table.
+- **A paragraph pasted from a word processor is not broken in the middle of its sentences.**
+  A line end inside markup is how the markup was laid out, and is read as a space. Lines
+  typed with no markup of their own stay lines, as before.
 - **What somebody types between angle brackets in a reply is kept.** "Contact Sam
   <sam@example.com>" reached the customer as "Contact Sam", and "<500 EGP and >300 EGP" as
   "300 EGP": the text was read as markup and deleted.
@@ -160,6 +218,30 @@ All notable changes to Corex are documented here. The format follows
 
 ### Client impact
 
+- **Clear the page cache after taking this release, on a site that uses a `corex/modal` or a
+  `corex/drawer`.** Their markup changed and their stylesheet with it. A cached page holds the
+  markup from before, and with the new stylesheet its title sits against the panel's edge and
+  its close button under the content.
+- **A site that styles these two blocks should look at them once.** What changed:
+  - The title and the close button are in a new `<div class="corex-modal__header">` (or
+    `corex-drawer__header`), and the close button comes before `.corex-modal__body`, not after
+    it. A selector that reaches them as children of the `<dialog>` no longer matches.
+  - The `<dialog>` has no padding and does not scroll. The padding is the header's and the
+    body's, and the body scrolls. Padding a site put on `.corex-modal` or `.corex-drawer` is now
+    added round both, outside the scrollbar: put it on the header and the body.
+  - The close button is laid out in the header and is not positioned. `inset`, `top` or `right`
+    set on `.corex-modal__close` or `.corex-drawer__close` do nothing now.
+  - The title has no margin under it, and there is a line under the header. The text starts 8px
+    lower than it did.
+- **By the keyboard, a long dialog is scrolled after one press of Tab.** Focus opens on the
+  close button, which is outside what scrolls, so the arrow keys and Page Down do nothing from
+  there. Tab goes to the content, which takes focus while it holds more than fits, and the keys
+  scroll it. Until now they scrolled at once, and took the title and the close button away.
+- **A `corex/drawer` and a `corex/modal` are narrower by their own padding**: the text column
+  of each is 32px narrower on a desktop (34px in a modal, with its border), and a modal that
+  fills its height is 34px shorter. A site that set a width or a height on `.corex-drawer` or
+  `.corex-modal` in its own stylesheet now sets the panel's, padding included, and should look
+  at the result once.
 - **A site on a host with no command line can take its next release from the admin**, once it
   runs this one. This release itself still has to reach the site the old way. After that:
   build with `npm run build:dist -- --client=<slug> --zip`, open CoreX → Releases, send the
@@ -217,6 +299,16 @@ All notable changes to Corex are documented here. The format follows
 - **`Corex\Mail\SubmissionEmailGateway` has a new method, `readiness(): ReplyReadiness`.** A site
   that implements this seam itself has to add it. A site that uses CoreX's email add-on, or
   none, has nothing to do.
+- **`Corex\Mail\SubmissionEmailGateway` has a second new method,
+  `preview(string $recipient, string $subject, string $htmlBody): array`**, answering
+  `['html' => …, 'text' => …]`. A site that implements this seam itself has to add it, as it
+  does `readiness()`.
+- **New route: `POST corex/v1/submissions/{id}/reply/preview`**, taking `subject` and `body`
+  as the reply route does, guarded as it is, and answering `{ preview: { subject, html, text } }`.
+  It sends nothing and keeps nothing of the reply.
+- **The notification about a site's email design that failed now reads "CoreX used its
+  standard design for the email instead"**, where it said the email was sent: a design can
+  fail while a reply is only being previewed.
 - **`POST corex/v1/submissions/{id}/reply` answers 422 where a reply would be refused**, with
   the reason, and sends nothing. It answered 200 with a result whose state was `rejected`. Its
   answer gains `recorded`, false when the email went and the reply could not be kept.

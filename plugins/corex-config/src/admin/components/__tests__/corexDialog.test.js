@@ -174,3 +174,33 @@ it( 'keeps its actions in a footer of their own', () => {
 		dialog.querySelector( '.corex-dialog__footer button' ).textContent
 	).toBe( 'Export' );
 } );
+
+// A preview opened from the submission's pane is a dialog inside a dialog. React hands an
+// inner dialog's `cancel` on to the outer one, where the browser would not: Escape in the
+// preview closed the pane behind it, with what had been written.
+it( 'is not closed by Escape in a dialog opened inside it', () => {
+	const outerClose = jest.fn();
+	const innerClose = jest.fn();
+	act( () => {
+		root.render(
+			<CorexDialog title="A submission" onClose={ outerClose }>
+				<CorexDialog
+					title="Preview of the reply"
+					onClose={ innerClose }
+				>
+					<p>The email</p>
+				</CorexDialog>
+			</CorexDialog>
+		);
+	} );
+	const inner = document.querySelectorAll( 'dialog' )[ 1 ];
+
+	act( () => {
+		inner.dispatchEvent(
+			new window.Event( 'cancel', { cancelable: true, bubbles: false } )
+		);
+	} );
+
+	expect( innerClose ).toHaveBeenCalledTimes( 1 );
+	expect( outerClose ).not.toHaveBeenCalled();
+} );

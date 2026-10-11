@@ -1,9 +1,14 @@
 /**
  * corex/modal front-end behavior. The native <dialog> gives the focus trap, ::backdrop, and
- * ESC-to-close for free; this only opens it, closes on the close button + a backdrop click,
- * and returns focus to the trigger. Loaded only where the block renders (viewScript). Without
- * JS the trigger/close are inert and the dialog content stays in the DOM — nothing is lost.
+ * ESC-to-close for free; this only opens it, closes on the close button + a press on the
+ * backdrop, returns focus to the trigger, and keeps what the dialog holds in reach of the keyboard
+ * while that is more than fits. Loaded only where the block renders (viewScript).
+ * With scripting off this does not run and nothing answers the trigger or the close button: the
+ * stylesheet then shows the dialog in the page and hides both (shared/_dialog-parts.scss).
  */
+import { onBackdropPress } from '../shared/backdrop-press';
+import { keepInReachOfTheKeyboard } from '../shared/keyboard-scroll';
+
 ( function () {
 	function wire( wrap ) {
 		const trigger = wrap.querySelector( '.corex-modal__trigger' );
@@ -12,19 +17,22 @@
 			return;
 		}
 
+		const readBody = keepInReachOfTheKeyboard(
+			dialog,
+			dialog.querySelector( '.corex-modal__body' )
+		);
+
 		trigger.addEventListener( 'click', function () {
 			if ( typeof dialog.showModal === 'function' ) {
 				dialog.showModal();
 			} else {
 				dialog.setAttribute( 'open', '' ); // very old browsers: inline fallback
 			}
+			readBody();
 		} );
 
-		// Backdrop click (the click lands on the <dialog> element itself).
-		dialog.addEventListener( 'click', function ( event ) {
-			if ( event.target === dialog ) {
-				close( dialog );
-			}
+		onBackdropPress( dialog, function () {
+			close( dialog );
 		} );
 
 		const closeBtn = dialog.querySelector( '[data-corex-modal-close]' );

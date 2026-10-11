@@ -48,6 +48,19 @@ final readonly class SubmissionEmailService
     }
 
     /**
+     * The email a reply would be sent as, for the person writing it to read first. Nothing is
+     * sent and nothing is kept; the same scope and the same address as a reply.
+     *
+     * @return array{html:string,text:string}
+     */
+    public function preview(SubmissionAccessScope $scope, int $submissionId, SubmissionReply $reply): array
+    {
+        $record = $this->accessible($scope, $submissionId);
+
+        return $this->email->preview($this->recipient($record), $reply->subject, $reply->htmlBody);
+    }
+
+    /**
      * Writes the reply and its history entry down, and says whether that was done.
      *
      * By now the email has gone or been refused. A submission deleted for good in that moment,

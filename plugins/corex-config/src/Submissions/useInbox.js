@@ -177,6 +177,12 @@ export function useInbox( config, filters ) {
 			);
 			return outcome;
 		},
+		// The email a reply would be sent as, built by what builds the sent one (FR-005).
+		previewReply: async ( id, data ) => {
+			const result = await mutate( `/${ id }/reply/preview`, data );
+
+			return result ? result.preview : null;
+		},
 		resend: async ( id, attemptId ) => {
 			const result = await mutate( `/${ id }/resend`, {
 				attempt_id: attemptId,

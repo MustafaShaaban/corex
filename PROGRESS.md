@@ -66,7 +66,7 @@ important, by somebody who can watch it; then `last_verified` on those two pages
 | [103](specs/103-submissions-inbox-export/spec.md), the submissions inbox and its exports | every slice | three tasks: T045, T043b, and T074b (to whom a notification went, which the server does not record) | the tasks file |
 | [104](specs/104-form-contract-and-protection/spec.md), a code-defined form's wording, markup and protection | all four slices | complete | nothing |
 | [105](specs/105-submission-trash-restore-delete/spec.md), trash, restore and delete a submission | slices 1 to 4 of six | slices 5 and 6 have a heading in `tasks.md` and no tasks | `/speckit-tasks` for slice 5: anonymizing removes the files and the second copy of the answers |
-| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | the specification, and the line-break fix | slices 1, 2 and 4 of seven are built and unreleased. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites wait for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Planned on 2026-10-11, after the owner could not send a reply on a live site, tell whether it had gone, or read it afterwards | slice 3, T040: the editor and the true preview; then slice 5, "Send again" and the reply sender |
+| [106](specs/106-reply-email-experience/spec.md), replies sent as designed emails | the specification, and the line-break fix | slices 1, 2 and 4 of seven are built and unreleased, and slice 3 but for its draft. Slice 1: the reply box says when delivery is off and where to switch it on, the pane says what happened to a reply, and the reply is kept on the submission (DECISIONS #305). Slice 2: a reply leaves in the standard design with a plain-text version (#308). Slice 4, built before 3 because the client sites wait for it: a site gives its emails its own colours, logo and footer, or its own template (#311). Slice 3: the reply is written in an editor with bold, italic, lists and links, and Preview shows the email the server will send (#313). Planned on 2026-10-11, after the owner could not send a reply on a live site, tell whether it had gone, or read it afterwards | slice 3's draft, T044 and T045: a reply being written is kept for the person writing it; then slice 5, "Send again" and the reply sender |
 | [107](specs/107-release-from-admin/spec.md), a release installed from the admin | slices 1 to 3; of slice 4, T040 to T047 | all six slices are built (DECISIONS #307, #310 for the last three) | a first installation on a shared host, watched |
 | [108](specs/108-loading-states/spec.md), the admin shows what is coming while it loads | all six slices | complete | nothing |
 | [109](specs/109-data-bulk-transfer/spec.md), several data models exported, imported and moved together | nothing | slice 1 of six is built (personal data marked on every model and asked about by one rule); slices 2 to 6 have tasks and no code | T030, slice 2: several models in one export |
@@ -138,6 +138,66 @@ submission's pane and let go on the backdrop closed the pane, with the note bein
 the browser gives such a click to the dialog element, which is the backdrop.
 `tests/e2e/submissions-inbox.spec.js` makes the press with a mouse on the pane, on a
 confirmation asked over it and on the export dialog.
+
+**Unreleased on `main`, outside the specs above** (2026-10-11): the `corex/modal` and
+`corex/drawer` blocks are left by a press on the backdrop only when the press starts and ends
+outside the panel. Both closed on any click whose target was the `<dialog>` element. That is
+what the browser gives a press begun inside and let go outside, and it is also the panel's own
+padding, because in these two blocks the dialog element is the panel. The rule is in one file,
+`addons/corex-ui/src/Blocks/shared/backdrop-press.js`, and knows the backdrop by the dialog's
+box and not by the click's target. `tests/e2e/block-dialogs.spec.js` makes the presses with a
+mouse on a page holding all three (a modal, a drawer at each side); it is the first browser
+test these blocks have.
+
+The same two blocks now count their padding in their sizes (`box-sizing: border-box`, the one
+line changed in each stylesheet). A drawer was taller than the window by twice its padding, and
+one holding more than fits stopped scrolling with its last 16px below the window. A modal kept
+inside the window by 2px, which held only while its padding and border (34px) stayed under the
+`6px + 2em` the browser allows a modal dialog, and it was as wide as a phone's window. The same
+spec holds it on a second page whose dialogs hold more than fits: each is inside the window, no
+wider than 92% of it, and scrolled as far as its last line, at 1280x720 and 375x812, read left
+to right and right to left.
+
+The same two blocks now keep their title and close button in view and open at their first line
+(DECISIONS #315). The close button came last in the markup, and a browser opening a dialog
+puts focus on the first thing in it that takes focus and scrolls to it: a drawer holding 80
+sentences and one link at the end opened scrolled 909px of 909px, its close button 902px above
+the window. And the `<dialog>` was what scrolled, so the title and the button went with the
+text. Now the title and the button are in a header, the button before the body in the markup,
+and the body scrolls under the header. The keys that scroll act on what has focus or is around
+it, and the close button is outside the body, so while the body holds more than fits it is a
+stop for Tab (`addons/corex-ui/src/Blocks/shared/keyboard-scroll.js`). The parts are written
+once for both blocks, in `shared/_dialog-parts.scss`. A drawer's entrance moves a logical
+margin and not `translateX`: on a site switched to Arabic the end drawer began 16px inside the
+window and moved outwards. The spec holds all of it on three pages (a short one, a long one
+ending in a link, a long one beginning with a link as well), and it passes in Firefox and
+WebKit too, run by hand; CI runs Chromium.
+
+The same two blocks now always have a name, and are in the page with scripts off (DECISIONS
+#316). A dialog given no title had no name: "dialog" and nothing more. It now carries the label
+of its trigger as `aria-label`, and its body, while it is a stop for Tab, takes the same name.
+It is written on the dialog and not pointed at with `aria-labelledby`, because the trigger is
+inert while a modal dialog is open: pointed at, Chromium's own accessibility tree gave the
+dialog no name. A block with neither a title nor a trigger label is named "Open", so the
+editor's Title field says, while it is empty, what will be announced in its place. With
+scripting off the trigger was shown, did nothing, and the content was out of reach, in all
+three engines, though the contract and four comments said otherwise. The stylesheet now shows
+the dialog in the page there and hides the two buttons nothing answers
+(`@media (scripting: none)` in `shared/_dialog-parts.scss`); the contract and the comments say
+what is done. The spec has a fourth page, of blocks with no title, and reads the short page
+with scripts off.
+
+Seen in these two blocks and left alone, each small:
+
+- A browser with scripting on in which a block's view script did not run (blocked, or failed
+  to load) still shows a trigger that does nothing, and the content is out of reach. Three ways
+  to cover it are weighed in DECISIONS #316 and none was taken.
+- No screen reader was listened to. What one is told on opening is read from where focus is and
+  from the name: Playwright's reading of it, which is worked out from the page by the ARIA
+  rules, and for the names, Chromium's own accessibility tree. Firefox's and WebKit's own trees
+  were not read.
+- The contract calls the dialog's content "inner blocks". It is the block's `content`
+  attribute, a text box in the sidebar.
 
 Earlier releases are in [`CHANGELOG.md`](CHANGELOG.md), each with its decisions.
 

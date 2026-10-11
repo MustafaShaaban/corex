@@ -15,13 +15,20 @@ import {
 } from '../../../../../tests/Support/adminDateTimeConfig.js';
 
 // `@wordpress/components` does not load under Jest here; its Button is a button.
-jest.mock( '@wordpress/components', () => ( {
-	Button: ( { variant, isDestructive, children, ...rest } ) => (
-		<button type="button" { ...rest }>
-			{ children }
-		</button>
-	),
-} ) );
+jest.mock( '@wordpress/components', () => {
+	const { forwardRef } = require( '@wordpress/element' );
+
+	return {
+		// As the real one does, it hands a ref on to its button.
+		Button: forwardRef(
+			( { variant, isDestructive, children, ...rest }, ref ) => (
+				<button ref={ ref } type="button" { ...rest }>
+					{ children }
+				</button>
+			)
+		),
+	};
+} );
 
 const SETTINGS = 'https://example.test/wp-admin/admin.php?page=corex-settings';
 
@@ -73,6 +80,18 @@ const field = ( label ) =>
 			.getAttribute( 'for' )
 	);
 
+// The message is written in the editor: a text box that is not a form field.
+const message = () => container.querySelector( '[role="textbox"]' );
+
+function typeMessage( html ) {
+	act( () => {
+		message().innerHTML = html;
+		message().dispatchEvent(
+			new window.Event( 'input', { bubbles: true } )
+		);
+	} );
+}
+
 function type( control, text ) {
 	const { set } = Object.getOwnPropertyDescriptor(
 		Object.getPrototypeOf( control ),
@@ -84,9 +103,9 @@ function type( control, text ) {
 	} );
 }
 
-async function write( subject, message ) {
+async function write( subject, said ) {
 	type( field( 'Subject' ), subject );
-	type( field( 'Message' ), message );
+	typeMessage( said );
 	await act( async () => {
 		button( 'Send reply' ).click();
 	} );
@@ -138,7 +157,7 @@ describe( 'before anything is typed', () => {
 		expect( field( 'Subject' ).getAttribute( 'aria-describedby' ) ).toBe(
 			notice.id
 		);
-		expect( field( 'Message' ).getAttribute( 'aria-describedby' ) ).toBe(
+		expect( message().getAttribute( 'aria-describedby' ) ).toBe(
 			notice.id
 		);
 	} );
@@ -146,9 +165,9 @@ describe( 'before anything is typed', () => {
 	it( 'leaves the box usable while delivery is off, so what was started is not lost', () => {
 		show( submission( { reply_delivery: REFUSED } ) );
 		type( field( 'Subject' ), 'Re: your message' );
-		type( field( 'Message' ), 'Hello Salma' );
+		typeMessage( 'Hello Salma' );
 
-		expect( field( 'Message' ).value ).toBe( 'Hello Salma' );
+		expect( message().innerHTML ).toBe( 'Hello Salma' );
 		expect( button( 'Send reply' ).disabled ).toBe( true );
 	} );
 
@@ -187,7 +206,7 @@ describe( 'before anything is typed', () => {
 
 		expect( inbox.reply ).toHaveBeenCalledWith(
 			41,
-			{ subject: 'Re: your message', body: 'Hello Salma' },
+			{ subject: 'Re: your message', body: '<p>Hello Salma</p>' },
 			'salma@example.com'
 		);
 	} );
@@ -200,7 +219,7 @@ describe( 'before anything is typed', () => {
 		).toBeNull();
 		expect( button( 'Send reply' ).disabled ).toBe( true );
 		type( field( 'Subject' ), 'Re: your message' );
-		type( field( 'Message' ), 'Hello' );
+		typeMessage( 'Hello' );
 		expect( button( 'Send reply' ).disabled ).toBe( false );
 	} );
 
@@ -218,7 +237,7 @@ describe( 'before anything is typed', () => {
 		expect( container.textContent ).toContain(
 			'Replies need the CoreX Email add-on'
 		);
-		expect( container.querySelector( 'textarea' ) ).toBeNull();
+		expect( message() ).toBeNull();
 		expect( button( 'Send reply' ) ).toBeUndefined();
 	} );
 } );
@@ -242,7 +261,7 @@ describe( 'after a reply is sent', () => {
 			'Reply sent to salma@example.com.'
 		);
 		expect( field( 'Subject' ).value ).toBe( '' );
-		expect( field( 'Message' ).value ).toBe( '' );
+		expect( message().innerHTML ).toBe( '' );
 		// The pressed button is off again; focus goes where the next reply starts.
 		expect( document.activeElement ).toBe( field( 'Subject' ) );
 	} );
@@ -268,7 +287,7 @@ describe( 'after a reply is sent', () => {
 			''
 		);
 		expect( field( 'Subject' ).value ).toBe( 'Re: your message' );
-		expect( field( 'Message' ).value ).toBe( 'Hello Salma' );
+		expect( message().innerHTML ).toBe( 'Hello Salma' );
 	} );
 
 	it( 'says nothing of its own when the request itself was refused, and keeps what was written', async () => {
@@ -282,7 +301,7 @@ describe( 'after a reply is sent', () => {
 			container.querySelector( '.corex-pane__reply-outcome' )
 		).toBeNull();
 		expect( container.querySelector( '[role="alert"]' ) ).toBeNull();
-		expect( field( 'Message' ).value ).toBe( 'Hello Salma' );
+		expect( message().innerHTML ).toBe( 'Hello Salma' );
 	} );
 } );
 
@@ -352,6 +371,175 @@ describe( 'what was already answered', () => {
 		expect( container.textContent ).toContain(
 			'This submission has no email address to reply to.'
 		);
-		expect( container.querySelector( 'textarea' ) ).toBeNull();
+		expect( message() ).toBeNull();
+	} );
+} );
+
+// What is typed while a reply is on its way would be emptied with it when it has gone.
+it( 'cannot be written in while a reply is being sent, and can while anything else is', () => {
+	const during = ( pending ) => {
+		act( () => {
+			root.render(
+				<Reply
+					record={ submission() }
+					inbox={ inbox }
+					work={ { ...work, pending } }
+				/>
+			);
+		} );
+
+		return message().getAttribute( 'contenteditable' );
+	};
+
+	expect( during( '' ) ).toBe( 'true' );
+	expect( during( 'reply' ) ).toBe( 'false' );
+	expect( during( 'preview' ) ).toBe( 'true' );
+	expect( during( 'note' ) ).toBe( 'true' );
+} );
+
+// Spec 106, FR-005: read as it will be sent, before it is sent.
+describe( 'the preview', () => {
+	const EMAIL = {
+		html: '<!DOCTYPE html><html><body><p>Hello <strong>Salma</strong></p><script>steal()</script></body></html>',
+		text: 'Hello Salma\n\n-- \nThis message was sent by Acme.',
+	};
+	const frame = () => document.body.querySelector( 'iframe' );
+
+	async function preview() {
+		type( field( 'Subject' ), 'Re: your message' );
+		typeMessage( '<p>Hello <strong>Salma</strong></p>' );
+		await act( async () => {
+			button( 'Preview' ).click();
+		} );
+	}
+
+	it( 'is offered once there is a subject and a message that says something', () => {
+		show( submission() );
+		expect( button( 'Preview' ).disabled ).toBe( true );
+
+		type( field( 'Subject' ), 'Re: your message' );
+		typeMessage( '<p><br></p>' );
+		expect( button( 'Preview' ).disabled ).toBe( true );
+		expect( button( 'Send reply' ).disabled ).toBe( true );
+
+		typeMessage( '<p>Hello</p>' );
+		expect( button( 'Preview' ).disabled ).toBe( false );
+	} );
+
+	it( 'asks the server for the email of what is written now, and shows that document', async () => {
+		inbox.previewReply = jest.fn().mockResolvedValue( EMAIL );
+		show( submission() );
+
+		await preview();
+
+		expect( inbox.previewReply ).toHaveBeenCalledWith( 41, {
+			subject: 'Re: your message',
+			body: '<p>Hello <strong>Salma</strong></p>',
+		} );
+		expect( frame().getAttribute( 'srcdoc' ) ).toBe( EMAIL.html );
+		expect( frame().getAttribute( 'title' ) ).toBe(
+			'The email as it will be sent'
+		);
+		expect( inbox.reply ).not.toHaveBeenCalled();
+	} );
+
+	it( 'shows it in a frame that runs nothing and reaches nothing', async () => {
+		inbox.previewReply = jest.fn().mockResolvedValue( EMAIL );
+		show( submission() );
+
+		await preview();
+
+		// An empty sandbox: no script, no form, no way out to the page around it.
+		expect( frame().getAttribute( 'sandbox' ) ).toBe( '' );
+	} );
+
+	it( 'shows it at the width of a wide screen or of a phone, and says which', async () => {
+		inbox.previewReply = jest.fn().mockResolvedValue( EMAIL );
+		show( submission() );
+		await preview();
+		const width = () =>
+			document.body.querySelector( '.corex-reply-preview__frame' ).dataset
+				.width;
+		const choice = ( name ) =>
+			[ ...document.body.querySelectorAll( 'button' ) ].find(
+				( candidate ) => candidate.textContent === name
+			);
+
+		expect( width() ).toBe( 'wide' );
+		expect( choice( 'Wide screen' ).getAttribute( 'aria-pressed' ) ).toBe(
+			'true'
+		);
+
+		act( () => choice( 'Phone' ).click() );
+
+		expect( width() ).toBe( 'narrow' );
+		expect( choice( 'Phone' ).getAttribute( 'aria-pressed' ) ).toBe(
+			'true'
+		);
+		expect( choice( 'Wide screen' ).getAttribute( 'aria-pressed' ) ).toBe(
+			'false'
+		);
+	} );
+
+	it( 'shows the plain-text version, and what will happen to the reply where it is not simply delivered', async () => {
+		inbox.previewReply = jest.fn().mockResolvedValue( EMAIL );
+		show(
+			submission( {
+				reply_delivery: {
+					mode: 'capture',
+					code: 'development',
+					reason: 'This is a development site. A reply is kept in Email Studio.',
+				},
+			} )
+		);
+
+		await preview();
+		const dialog = document.body.querySelector( '.corex-reply-preview' );
+
+		expect( dialog.querySelector( 'pre' ).textContent ).toBe( EMAIL.text );
+		expect( dialog.textContent ).toContain( 'This is a development site.' );
+	} );
+
+	// The button is switched off while its request is out, so nothing has focus when the
+	// dialog opens and the browser has nowhere to put it back: it was left on the page itself.
+	it( 'puts the keyboard back on the button that opened it when it is left', async () => {
+		inbox.previewReply = jest.fn().mockResolvedValue( EMAIL );
+		show( submission() );
+		await preview();
+
+		act( () => {
+			document.body
+				.querySelector( '.corex-reply-preview .corex-dialog__close' )
+				.click();
+		} );
+
+		expect( frame() ).toBeNull();
+		expect( document.activeElement ).toBe( button( 'Preview' ) );
+	} );
+
+	it( 'says the subject as the server will send it, which is not always as typed', async () => {
+		inbox.previewReply = jest
+			.fn()
+			.mockResolvedValue( { ...EMAIL, subject: 'Re: your message' } );
+		show( submission() );
+		type( field( 'Subject' ), '  Re:   your <b>message</b>  ' );
+		typeMessage( '<p>Hello</p>' );
+		await act( async () => {
+			button( 'Preview' ).click();
+		} );
+
+		expect(
+			document.body.querySelector( '.corex-reply-preview bdi' )
+				.textContent
+		).toBe( 'Re: your message' );
+	} );
+
+	it( 'shows nothing when the server would not build it: the pane says why', async () => {
+		inbox.previewReply = jest.fn().mockResolvedValue( null );
+		show( submission() );
+
+		await preview();
+
+		expect( frame() ).toBeNull();
 	} );
 } );

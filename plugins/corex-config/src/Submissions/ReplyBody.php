@@ -26,12 +26,16 @@ defined('ABSPATH') || exit;
  *    unclosed `<!--` hid the rest of a reply from the person it was sent to.
  * 2. A `<` that does not begin a tag is text: "Sam <sam@example.com>" and "<500 EGP" are what
  *    people type in a reply, and the allowlist deleted them as if they were markup.
- * 3. The allowlist.
- * 4. Every link is read again from what the allowlist wrote, and kept only if it goes to the
+ * 3. A block a reply does not have (a `div`, a heading, a table's cell) ends a paragraph where
+ *    it begins and ends, and a line end inside markup is read as a space. Before the
+ *    allowlist, which takes those tags and would leave their lines run together.
+ * 4. The allowlist.
+ * 5. Every link is read again from what the allowlist wrote, and kept only if it goes to the
  *    web, a mailbox or a telephone. Read afterwards, not before: WordPress's two readers of
  *    markup disagree about what is a tag inside `<xmp>` or `<textarea>`, and the allowlist
  *    answers a refused scheme by deleting the scheme and keeping the rest as the address, so
  *    `javascript:alert(1)` was left as a link to `alert(1)`.
+ * 6. Paragraphs are made of what is left, no tag is left open, and nothing is left empty.
  */
 final class ReplyBody
 {
@@ -40,6 +44,17 @@ final class ReplyBody
         'p' => [], 'br' => [], 'strong' => [], 'b' => [], 'em' => [], 'i' => [],
         'ul' => [], 'ol' => [], 'li' => [], 'a' => ['href' => true],
     ];
+
+    /**
+     * Blocks a reply does not have. Each ends a paragraph where it begins and where it ends:
+     * the allowlist takes the tags, and without this two lines run together as one. The same
+     * list as the editor's (`replyHtml.js`), so that both ends read a paste the same way.
+     */
+    private const A_BLOCK_A_REPLY_DOES_NOT_HAVE = '#</?(?:div|h[1-6]|blockquote|section|article|header|footer|aside|main|nav'
+        . '|address|figure|figcaption|center|form|fieldset|details|summary|table|caption|tr|td|th|dl|dt|dd|hr)\b[^<>]*>#i';
+
+    /** A reply that is markup, where a line end is laid-out source and not a line somebody typed. */
+    private const MARKUP_OF_ITS_OWN = '#<(?:p|br|ul|ol|li|div|h[1-6]|blockquote|section|article|pre|table|tr|td)\b#i';
 
     /** A reply is a message somebody wrote. Beyond this it is something else, and is not read. */
     private const MOST_BYTES = 200_000;
@@ -58,11 +73,50 @@ final class ReplyBody
         $markup = (string) preg_replace('#<!--.*?(?:-->|$)#s', '', mb_scrub($posted, 'UTF-8'));
         $markup = (string) preg_replace('#<(script|style)\b[^>]*>.*?(?:</\1\s*>|$)#is', '', $markup);
         $markup = (string) preg_replace('#<(?!/?[a-z][a-z0-9]*(?:\s[^<>]*)?/?>)#i', '&lt;', $markup);
+        $markup = self::withBlocksAsParagraphs($markup);
         $markup = wp_kses($markup, self::ALLOWED, ['http', 'https', 'mailto', 'tel']);
         $markup = self::withLinksThatGoSomewhere($markup);
-        $markup = trim(wpautop(trim($markup)));
+        $markup = self::whole(wpautop(trim($markup)));
 
         return self::hasWords($markup) ? $markup : '';
+    }
+
+    /**
+     * Ends a paragraph wherever a block a reply does not have begins or ends.
+     *
+     * Where the reply is markup, a line end in it is first read as the space a browser draws:
+     * the next reader takes every line end for a line break, and a paragraph pasted from a
+     * word processor, which wraps its markup, was broken in the middle of its sentences. Where
+     * it is lines somebody typed, with no markup of their own, the line ends are theirs and stay.
+     */
+    private static function withBlocksAsParagraphs(string $markup): string
+    {
+        if (preg_match(self::MARKUP_OF_ITS_OWN, $markup) === 1) {
+            $markup = (string) preg_replace_callback(
+                '#<pre\b[^>]*>(.*?)</pre\s*>#is',
+                static fn (array $pre): string => '<p>' . str_replace(["\r\n", "\r", "\n"], '<br>', trim($pre[1], "\r\n")) . '</p>',
+                $markup,
+            );
+            $markup = (string) preg_replace('/[ \t]*[\r\n]+[ \t]*/', ' ', $markup);
+        }
+
+        return (string) preg_replace(self::A_BLOCK_A_REPLY_DOES_NOT_HAVE, "\n\n", $markup);
+    }
+
+    /**
+     * Leaves no tag open, and no paragraph or emphasis with nothing in it.
+     *
+     * Emphasis written around a block is cut in two when the block becomes a paragraph. The
+     * editor moves it inside before posting; this is for whatever posts without it.
+     */
+    private static function whole(string $markup): string
+    {
+        $markup = force_balance_tags($markup);
+        do {
+            $markup = (string) preg_replace('#<(strong|b|em|i|p|li|ul|ol)>\s*</\1>#i', '', $markup, -1, $removed);
+        } while ($removed > 0);
+
+        return trim($markup);
     }
 
     /**

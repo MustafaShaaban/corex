@@ -36,6 +36,7 @@ final readonly class SubmissionsController
         $this->route('/submissions/(?P<id>\d+)', 'PATCH', 'update');
         $this->route('/submissions/(?P<id>\d+)/notes', 'POST', 'addNote');
         $this->route('/submissions/(?P<id>\d+)/reply', 'POST', 'reply');
+        $this->route('/submissions/(?P<id>\d+)/reply/preview', 'POST', 'previewReply');
         $this->route('/submissions/(?P<id>\d+)/resend', 'POST', 'resend');
         $this->route('/submissions/(?P<id>\d+)/email-log', 'GET', 'emailLog');
         $this->route('/submissions/(?P<id>\d+)', 'DELETE', 'destroy');
@@ -156,18 +157,24 @@ final readonly class SubmissionsController
 
     public function reply(WP_REST_Request $request): WP_REST_Response
     {
-        return $this->gateway->mutate($request, [
-            'subject' => 'sanitize_text_field',
-            // To a reply's own formatting, which is narrower than a post's (spec 106, FR-004).
-            'body' => [ReplyBody::class, 'reduce'],
-        ], function (Request $safe) use ($request): Response {
-            $sent = $this->services->email->reply(
-                $this->scope(),
-                $this->changeable($request),
-                new SubmissionReply((string) ($safe->input['subject'] ?? ''), (string) ($safe->input['body'] ?? '')),
-            );
+        return $this->gateway->mutate($request, $this->replyShape(), function (Request $safe) use ($request): Response {
+            $sent = $this->services->email->reply($this->scope(), $this->changeable($request), $this->written($safe));
 
             return Response::ok(['result' => $sent->result->toArray(), 'recorded' => $sent->recorded]);
+        });
+    }
+
+    /**
+     * The email a reply would be sent as (spec 106, FR-005). It sends nothing and keeps nothing
+     * of the reply. The subject is answered as it would be sent, which is not always as typed.
+     */
+    public function previewReply(WP_REST_Request $request): WP_REST_Response
+    {
+        return $this->gateway->mutate($request, $this->replyShape(), function (Request $safe) use ($request): Response {
+            $reply = $this->written($safe);
+            $email = $this->services->email->preview($this->scope(), $this->changeable($request), $reply);
+
+            return Response::ok(['preview' => ['subject' => $reply->subject] + $email]);
         });
     }
 
@@ -333,6 +340,25 @@ final readonly class SubmissionsController
     {
         return $this->services->access->scopeFor(get_current_user_id())
             ?? throw new DomainException(__('You cannot manage submissions.', 'corex'));
+    }
+
+    /**
+     * What a reply is posted as, for sending and for previewing alike.
+     *
+     * @return array<string,callable|string>
+     */
+    private function replyShape(): array
+    {
+        return [
+            'subject' => 'sanitize_text_field',
+            // To a reply's own formatting, which is narrower than a post's (spec 106, FR-004).
+            'body' => [ReplyBody::class, 'reduce'],
+        ];
+    }
+
+    private function written(Request $safe): SubmissionReply
+    {
+        return new SubmissionReply((string) ($safe->input['subject'] ?? ''), (string) ($safe->input['body'] ?? ''));
     }
 
     /** @return array<string,callable|string> */
