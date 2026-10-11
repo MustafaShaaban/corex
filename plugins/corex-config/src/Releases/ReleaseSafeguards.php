@@ -75,6 +75,12 @@ final class ReleaseSafeguards
         $this->recovery->remove();
     }
 
+    /** Whether the way back that needs no admin is on the site. */
+    public function hasAWayBack(): bool
+    {
+        return $this->recovery->isWritten();
+    }
+
     /** The address that puts the previous release back without the admin, for an installation's key. */
     public function link(string $key): string
     {

@@ -16,7 +16,8 @@ known yet. The decisions taken from these facts are in [plan.md](./plan.md), D1 
 | A table declares its columns, its writable fields with aliases and validation, its policy for unknown CSV columns, its migrations and its insert defaults. Nothing else | `corex-core/src/Database/Schema/ManagedTable.php` |
 | Every column of every managed table is given the personal-data class `none` | `Data/TableDataSource.php` `fields()` |
 | A submission's answers are classed by guessing from the answer's type: email and phone as contact, long text as content, everything else as none | `Data/SubmissionsSource.php` `fields()` |
-| A form field can declare a personal-data class. It defaults to `none`, so an undeclared field and one declared as holding none read the same. The Data source does not read it | `corex-forms/src/Schema/FieldSchema.php`, `SchemaResolver.php` |
+| A form field can declare a personal-data class, from a list of its own (`none`, `contact`, `identity`, `consent`, `sensitive`, `custom`) that is not `DataField`'s. The flow builder stores `none` for a field nobody set, so an undeclared field and one declared as holding none read the same. The Data source does not read it | `corex-forms/src/Schema/FieldSchema.php`, `SchemaResolver.php`; `corex-config/src/Forms/components/FieldSettings.js`, `flowEditor.js` |
+| The Submissions inbox's export counts every answer as personal data, whatever its field says | `Submissions/SubmissionExportRequest::includesPersonalData()` |
 
 ### Export
 

@@ -1,10 +1,13 @@
 /**
- * Corex E2E — a release installed from the Releases screen (spec 107, slice 4; T055).
+ * Corex E2E — a release installed from the Releases screen, and left again (spec 107, slices 4
+ * and 5; T055, T065).
  *
  * A real installation, on a real server: a package is sent, read, confirmed with its version
  * typed, unpacked, checked, and put in the place of a plugin folder that is on the site. While
  * the files are in place and the database step has not run, a visitor gets WordPress's own
  * maintenance answer; afterwards the site is served again.
+ * Then the site goes back to the release before, from the same screen, and the record of both
+ * is read off it.
  *
  * The release is one made here. It owns a single plugin folder of its own, so nothing of CoreX
  * moves. The folder is put on the site first, as an earlier release would have left it, with a
@@ -424,4 +427,90 @@ test( 'a release is installed from the screen, and a visitor is held off while i
 	await expect(
 		page.locator( '.corex-releases__panel' ).first()
 	).toContainText( `This site is running CoreX ${ VERSION }` );
+} );
+
+test( 'the site goes back to the release before from the screen, and what happened is on it', async ( {
+	page,
+} ) => {
+	const overview = await openReleases( page );
+	onlyWhereTheHostCanInstall( overview );
+	// The test above installed the release; this one leaves it.
+	expect( overview.previous, 'a release to go back to' ).not.toBeNull();
+
+	const kept = page.locator( '.corex-releases__kept' );
+	const history = page.locator( '.corex-releases__history' );
+
+	// What is kept, and the two panels that say so, in the screen's one column.
+	await expect( kept ).toContainText( `CoreX ${ VERSION } replaced it on` );
+	const [ above, keptBox, historyBox ] = await Promise.all( [
+		box(
+			page
+				.locator(
+					'.corex-releases .corex-loadable__body > .corex-releases__panel'
+				)
+				.last()
+		),
+		box( kept ),
+		box( history ),
+	] );
+	expect( keptBox.left ).toBe( above.left );
+	expect( keptBox.right ).toBe( above.right );
+	expect( keptBox.top - above.bottom ).toBe( SPACE_LG );
+	expect( historyBox.left ).toBe( above.left );
+	expect( historyBox.top - keptBox.bottom ).toBe( SPACE_LG );
+
+	// The record says who installed it, and can be read on its panel.
+	const installed = history.locator( '.corex-releases__entry' ).first();
+	await expect( installed ).toContainText(
+		`CoreX ${ VERSION } was installed`
+	);
+	const { ground } = await paint( history );
+	for ( const words of [ '.corex-releases__what', '.corex-releases__who' ] ) {
+		const { ink } = await paint( installed.locator( words ) );
+		expect(
+			contrast( ink, ground ),
+			`${ words } on its panel`
+		).toBeGreaterThanOrEqual( READABLE );
+	}
+
+	// Going back: what it does not undo is said before the confirmation is asked for.
+	await kept.getByRole( 'button', { name: /^Go back to .*…$/ } ).click();
+	await expect( kept ).toContainText(
+		'It reverses no change to the database'
+	);
+	const goBack = kept.getByRole( 'button', { name: /^Go back to [^…]*$/ } );
+	await expect( goBack ).toBeDisabled();
+	await kept
+		.locator( '#corex-releases-return' )
+		.fill( overview.previous.phrase );
+	await goBack.click();
+
+	await expect(
+		page.getByRole( 'heading', { name: /^The site is back on / } )
+	).toBeFocused();
+	await expect( page.locator( '.corex-releases__returned' ) ).toContainText(
+		'No change to the database was reversed.'
+	);
+	await expect( page.locator( '.corex-releases__kept' ) ).toHaveCount( 0 );
+	await expect(
+		history.locator( '.corex-releases__entry' ).first()
+	).toContainText( 'The site went back' );
+
+	// The folder is as the release before left it, the file the newer one did not ship
+	// included, and there is no way back left on the site because there is nothing to go
+	// back to.
+	const after = wpEval(
+		THE_INSTALLER +
+			'echo wp_json_encode( [' +
+			"'files' => array_values( array_diff( scandir( $folder ), [ '.', '..' ] ) )," +
+			"'recovery' => is_file( WPMU_PLUGIN_DIR . '/corex-release-recovery.php' )," +
+			"'maintenance' => is_file( ABSPATH . '.maintenance' ) ] );"
+	);
+	if ( after !== null ) {
+		expect( JSON.parse( after ) ).toEqual( {
+			files: [ 'corex-e2e-released.php', 'left-behind.php' ],
+			recovery: false,
+			maintenance: false,
+		} );
+	}
 } );

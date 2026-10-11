@@ -67,6 +67,15 @@ final class ApplicationTable
             // likely a mis-picked export than a value worth guessing at, and this is the last place
             // to guess.
             ManagedTable::UNKNOWN_REJECT,
+            personalData: [
+                'name'          => DataField::PERSONAL_IDENTITY,
+                'email'         => DataField::PERSONAL_CONTACT,
+                'job_id'        => DataField::PERSONAL_NONE,
+                // A CV holds an address, a history and often a photograph.
+                'cv_attachment' => DataField::PERSONAL_SENSITIVE,
+                'status'        => DataField::PERSONAL_NONE,
+                'created_at'    => DataField::PERSONAL_NONE,
+            ],
         );
     }
 }

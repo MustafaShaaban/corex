@@ -118,7 +118,7 @@ async function sha256Of( file ) {
  * @param {typeof window.fetch}           [options.fetch] `fetch`, or what stands in for it.
  * @param {(ms: number) => Promise<void>} [options.wait]  Waits a number of milliseconds.
  * @param {number}                        [options.tries] How many times a request is made before giving up.
- * @return {Object} `{ overview, inspect, upload, prepare, confirm, step, finish, cancel }`.
+ * @return {Object} `{ overview, inspect, upload, prepare, confirm, step, finish, cancel, goBack }`.
  */
 export function createReleaseClient( {
 	restUrl,
@@ -305,6 +305,7 @@ export function createReleaseClient( {
 			data( '/install/confirm', json( { phrase, ...more } ) ),
 		step: () => data( '/install/step', json( {} ) ),
 		finish: () => data( '/install/finish', json( {} ) ),
+		goBack: ( phrase ) => data( '/return', json( { phrase } ) ),
 		cancel,
 	};
 }

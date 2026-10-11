@@ -171,11 +171,13 @@ final class SubmissionsSource implements ExportableDataSource, SchemaAwareDataSo
                 readOnly: true,
                 filterOperators: [],
                 sortable: false,
-                personalDataClass: match ($type) {
-                    DataField::TYPE_EMAIL, DataField::TYPE_TEL => DataField::PERSONAL_CONTACT,
-                    DataField::TYPE_TEXTAREA => DataField::PERSONAL_CONTENT,
-                    default => DataField::PERSONAL_NONE,
-                },
+                // Every answer is something a visitor said, and the Submissions inbox withholds
+                // every one of them from a person not allowed to export personal data. This
+                // guessed "none" for whatever did not look like an address or a message: a name,
+                // a company, a budget (spec 109, FR-018).
+                personalDataClass: in_array($type, [DataField::TYPE_EMAIL, DataField::TYPE_TEL], true)
+                    ? DataField::PERSONAL_CONTACT
+                    : DataField::PERSONAL_CONTENT,
                 validation: [],
                 importAliases: [],
             );

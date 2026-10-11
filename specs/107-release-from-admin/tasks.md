@@ -75,16 +75,16 @@ files before slice 4.
 
 ## Slice 5 — Going back, and what happened (US4, US5)
 
-- [ ] T060 Pest integration: going back from the admin puts the previous folders back, records it, and says no database change was reversed
-- [ ] T060b Pest integration: a return made through the recovery link is found when the screen is next opened, recorded as one, and the site's record of its release put back (FR-045)
-- [ ] T061 The route and the screen's action, with its own confirmation
-- [ ] T062 [P] Pest unit: one previous release is kept; installing again discards the one before; table copies and unused packages older than their time are removed when the screen is opened
-- [ ] T063 Retention without a scheduled job
-- [ ] T064 The record on the screen: each installation, refusal and return
-- [ ] T065 Playwright; guards; UI/UX gate; notes
+- [x] T060 Pest integration: going back from the admin puts the previous folders back, records it, and says no database change was reversed
+- [x] T060b Pest integration: a return made through the recovery link is found when the screen is next opened, recorded as one, and the site's record of its release put back (FR-045)
+- [x] T061 The route and the screen's action, with its own confirmation
+- [x] T062 [P] Pest unit: one previous release is kept; installing again discards the one before; table copies and unused packages older than their time are removed when the screen is opened
+- [x] T063 Retention without a scheduled job
+- [x] T064 The record on the screen: each installation, refusal and return
+- [x] T065 Playwright; guards; UI/UX gate; notes
 
 ## Slice 6 — Said where an operator reads it
 
-- [ ] T070 `docs/en/05-deployment/releases-from-the-admin.md`: building the zip, a third-party plugin in it (D17), the configuration line and what it does not give (D16), installing, what is and is not replaced (D18), the recovery link, the database step and what going back does not undo (D19), that this is not a backup
-- [ ] T071 `docs/en/05-deployment/first-installation-by-hand.md`: the first installation, still by hand, and the move of a site updated by extraction to the screen (D20)
-- [ ] T072 `updates-and-distribution.md` and `updating-a-client-site.md` point to it; the docs site; guards; notes
+- [x] T070 `docs/en/05-deployment/releases-from-the-admin.md`: building the zip, a third-party plugin in it (D17), the configuration line and what it does not give (D16), installing, what is and is not replaced (D18), the recovery link, the database step and what going back does not undo (D19), that this is not a backup
+- [x] T071 `docs/en/05-deployment/first-installation-by-hand.md`: the first installation, still by hand, and the move of a site updated by extraction to the screen (D20)
+- [x] T072 `updates-and-distribution.md` and `updating-a-client-site.md` point to it; the docs site; guards; notes

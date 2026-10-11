@@ -10,6 +10,7 @@ namespace Corex\Database\Schema;
 
 defined('ABSPATH') || exit;
 
+use Corex\Data\DataField;
 use InvalidArgumentException;
 
 /**
@@ -25,6 +26,10 @@ use InvalidArgumentException;
  *
  * Migrations are declared as plain arrays rather than `MigrationDefinition` objects because that
  * class lives in corex-config, and the schema layer must not depend on the admin layer.
+ *
+ * A table also says which of its columns hold personal data, and of which kind (spec 109). That
+ * one is not opt-in in its effect: a column the table says nothing about is "undeclared", and
+ * everything that lets a record leave the site treats an undeclared column as personal data.
  */
 final class ManagedTable
 {
@@ -50,6 +55,10 @@ final class ManagedTable
      * @param list<array<string,mixed>>           $writableFields Empty (the default) means read-only.
      * @param list<array<string,mixed>>           $migrations     Empty (the default) means no migrations.
      * @param array<string,scalar>                $insertDefaults Values for columns an import cannot write.
+     * @param array<string,string>                $personalData   A column's id to one of the
+     *                                                            personal-data classes of `DataField`.
+     *                                                            Empty (the default) leaves every
+     *                                                            column undeclared.
      */
     public function __construct(
         public readonly string $name,
@@ -60,6 +69,7 @@ final class ManagedTable
         public readonly string $unknownColumns = self::UNKNOWN_REJECT,
         public readonly array $migrations = [],
         public readonly array $insertDefaults = [],
+        private readonly array $personalData = [],
     ) {
         if (! in_array($this->unknownColumns, self::UNKNOWN_POLICIES, true)) {
             throw new InvalidArgumentException('Managed table unknown-column policy is invalid.');
@@ -70,6 +80,14 @@ final class ManagedTable
         foreach ($this->migrations as $migration) {
             self::assertMigration($migration);
         }
+
+        $this->assertPersonalData();
+    }
+
+    /** The class the table declared for a column, or "undeclared" when it declared none. */
+    public function personalDataClass(string $columnId): string
+    {
+        return $this->personalData[$columnId] ?? DataField::PERSONAL_UNDECLARED;
     }
 
     public function displayLabel(): string
@@ -236,6 +254,34 @@ final class ManagedTable
         }
 
         return $clean;
+    }
+
+    /**
+     * A class for a column the table does not have is a declaration about nothing, and a class
+     * nothing knows would be read as personal data forever without anybody learning why. Both
+     * are construction errors, like a writable field that is not a column.
+     */
+    private function assertPersonalData(): void
+    {
+        $columnIds = $this->columnIds();
+
+        foreach ($this->personalData as $columnId => $class) {
+            if (! in_array((string) $columnId, $columnIds, true)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Managed table "%s" declares personal data for "%s", which is not one of its columns.',
+                    $this->name,
+                    (string) $columnId,
+                ));
+            }
+
+            if (! is_string($class) || ! DataField::isDeclarablePersonalClass($class)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Managed table "%s" declares an unknown personal-data class for "%s".',
+                    $this->name,
+                    (string) $columnId,
+                ));
+            }
+        }
     }
 
     /** @param array<string,mixed> $migration */

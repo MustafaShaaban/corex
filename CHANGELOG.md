@@ -38,6 +38,27 @@ All notable changes to Corex are documented here. The format follows
 - **A copy of CoreX's tables before a release changes them**, one for each table in the schema
   registry, named `<table>_cxrel_<yyyymmddhhmm>`. Kept for a person to read from; nothing puts
   one back. One set is kept: an installation removes the copies of the one before it.
+- **Going back to the release before, from the screen** (spec 107, slice 5). CoreX → Releases
+  shows which release is kept and which replaced it, says what going back does not undo, and
+  puts the previous release's folders back in one action confirmed by typing its version. No
+  change to the database is reversed, and the answer says so (DECISIONS #310).
+- **A return made through the recovery link is found.** The link works without CoreX, so CoreX
+  cannot hear of it. When the Releases screen is next opened it finds the folders were put back,
+  records the return as one nobody is known to have made, sets the site's record of its release
+  right, and removes the newer release's folders and the recovery file.
+- **What is kept goes after its time, when the screen is opened.** A copy of the tables after
+  14 days; a package, or part of one, that was sent and never installed after 7. No scheduled
+  job does this: it happens when somebody opens Releases.
+- **What happened here.** The screen lists each installation, refusal, return and installation
+  that did not complete or was given up, newest first, with who did it and when.
+- **The screen says it is not a backup**, where the running release is stated.
+- **Two guides for a host with no command line** (spec 107, slice 6).
+  `docs/en/05-deployment/releases-from-the-admin.md`: building the package, a third-party
+  plugin in it, the line for a site that sets `DISALLOW_FILE_MODS` and what it gives, what is
+  replaced and what is not, the database step, the way back and what it does not undo, each
+  refusal, and what is left on the host. `first-installation-by-hand.md`: the one installation
+  that is still done by hand, and how a site that has been updated by unpacking zips moves to
+  the screen. The other deployment pages point to them.
 - **The reply box says, before anything is typed, when a reply will not be delivered, and where
   that is changed** (spec 106, slice 1). On a production site a reply is delivered only when
   CoreX → Settings → Mail has a delivery provider chosen and live delivery on. Nothing beside
@@ -80,6 +101,18 @@ All notable changes to Corex are documented here. The format follows
 - **A reply is kept on its submission and listed there**: its subject, its text, who sent it,
   when, and what happened to it. The history held an action and a state and nothing of what was
   said. A reply that was not sent is listed as not sent, with the reason.
+- **A model says which of its columns hold personal data, and of which kind** (spec 109, slice
+  1). `ManagedTable` takes `personalData`, a column's id to one of the kinds `DataField` has:
+  contact details, names and identities, what people wrote, sign-in and security records,
+  interests and behaviour, sensitive details, or none. The ten tables CoreX and its add-ons
+  ship declare theirs. CoreX → Data → Models says in words what each field holds, where it
+  printed a key (DECISIONS #309).
+- **One right to take personal data out of the site in a file**: "Export personal data"
+  (`corex_export_personal_data`), an ability of its own that an administrator holds and
+  CoreX → Access & Abilities can give. Managing data, data models or submissions does not carry
+  it.
+- **Docs**: [Personal data in exports](docs/en/03-operations/personal-data-in-exports.md), with
+  its Arabic page, and a step in the in-admin guide for the Data screen.
 
 ### Changed
 
@@ -90,6 +123,28 @@ All notable changes to Corex are documented here. The format follows
   breaks, bold, italic, lists, and links to the web, a mailbox or a telephone. Anything else is
   removed and its words kept. The route used to refuse a body holding a script, an event
   attribute or a `javascript:` address; it removes them now.
+- **The Data export offers a column that holds personal data only to a person allowed to export
+  personal data**, says how many columns it is not offering, and refuses one from anybody else
+  with a 403 whatever was sent. Its confirmation names the kinds of personal data in the
+  columns chosen; it said "contains personal data" and named nothing.
+- **Every answer of a form submission is personal data on the Data screen**, as it always was in
+  the Submissions inbox. The Data screen guessed from an answer's key, so a name, a company and
+  a budget were exported with no confirmation.
+- **The Submissions inbox asks for the same right.** It let an administrator export personal
+  columns and nobody else; it now lets whoever holds "Export personal data". The filter
+  `corex_submission_export_personal_data` still has the last word.
+
+### Security
+
+- **Subscribers, job applicants, login attempts and the activity log's actors were exported from
+  CoreX → Data with no confirmation and no right asked.** Every column of every managed table
+  was declared as holding no personal data, by the code that read the table and not by the
+  table. A column is now what its table declared, and a column nothing was said about is
+  treated as personal data. Read from the code on 2026-10-11 while specifying spec 109; nobody
+  reported a file taken this way.
+- **The Data screen exported a submission's personal columns to anybody who managed
+  submissions**, where the Submissions inbox withheld the same records from everybody but an
+  administrator. One rule now holds in both.
 
 ### Fixed
 
@@ -113,12 +168,16 @@ All notable changes to Corex are documented here. The format follows
 - **The history says "Reply kept on this site, not delivered"** for a captured reply, where it
   said "Reply sent", and "Email sent again" for a resent notification, where it said "Reply sent".
 
+
 ### Client impact
 
 - **A site on a host with no command line can take its next release from the admin**, once it
   runs this one. This release itself still has to reach the site the old way. After that:
   build with `npm run build:dist -- --client=<slug> --zip`, open CoreX → Releases, send the
   zip, read the statement, save the recovery link, type the version.
+  `docs/en/05-deployment/first-installation-by-hand.md`, "A site that is already live", is the
+  move step by step. **It has not been run on a shared host:** make the first one a release
+  that changes nothing important.
 - **A site that sets `DISALLOW_FILE_MODS` adds one line to `wp-config.php`** to use it:
   `define( 'COREX_ALLOW_RELEASE_INSTALL', true );`. Without it the screen reads and receives
   packages and refuses to install, as before, and says which line is missing. A package is not
@@ -146,9 +205,16 @@ All notable changes to Corex are documented here. The format follows
 - **New in `wp-content/`:** `mu-plugins/corex-release-recovery.php`, written just before a
   release's folders are moved and kept while there is a release to go back to; `corex-releases/`
   holds the previous release's folders, which count against a host's file allowance until the
-  next installation replaces them. Tables named `…_cxrel_<minute>` appear in the database.
-  Going back from the screen, and the removal of old copies, come with the next slice; until
-  then the recovery link is the way back.
+  next installation replaces them. Tables named `…_cxrel_<minute>` appear in the database and
+  are removed 14 days later, the next time somebody opens Releases.
+- **Going back does not undo a release's database changes.** The previous release then runs on
+  the tables as the newer one left them, and records its own schema version again on its first
+  admin page, which adds what is missing and removes nothing. A release whose database changes
+  the release before cannot run on has to say so in its notes. Going back removes the newer
+  release from the site: to install it again, send its package again.
+- **A package left in `wp-content/corex-releases/incoming/` for more than 7 days without being
+  installed is removed** the next time Releases is opened, whether it was uploaded or put there
+  by hand. Keep your own copy.
 - **On a network the table copies are of the main site's tables only.** Every site's database
   is still brought to the release.
 - **Code of your own that built `ReleaseDesk` or called `ReleaseHostFacts::ofThisHost()`**:
@@ -196,6 +262,20 @@ All notable changes to Corex are documented here. The format follows
 - **`EmailStudioSubmissionGateway` takes a `ReplyComposer` where it took a `Layout`.** Code
   that takes the gateway from the container is unaffected.
 - **The admin bundle changed**: rebuild `plugins/corex-config` after merging.
+- **A person who is not an administrator loses the personal columns in the Data export** until
+  given "Export personal data" on CoreX → Access & Abilities. That is anybody with a role you
+  gave "Manage data" or "Manage submissions". They still export the other columns. Decide who
+  on the site should hold the right, and give it, when the site takes this release.
+- **A table your site registers with `ManagedTable` counts as personal data in every column**
+  until it passes `personalData`. Nothing breaks: an administrator exports it as before, after
+  a confirmation that now says "data nobody has classified yet", and anybody else is offered
+  none of its columns. Declare each column to end that; a column that holds nothing about a
+  person is `DataField::PERSONAL_NONE`.
+- **Code of your own that read `personal_data_class` from the Data catalog** meets a new value,
+  `undeclared`, and form submissions' answers are `content` or `contact` where some were `none`.
+- **The Data catalog (`GET corex/v1/data/sources`) answers `permissions.personal_data`** for
+  each source. Nothing is removed from it.
+
 
 ## [0.44.0] — 2026-10-10
 

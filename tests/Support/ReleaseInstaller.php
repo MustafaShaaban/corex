@@ -27,10 +27,13 @@ use Corex\Config\Releases\ReleaseHostFacts;
 use Corex\Config\Releases\ReleaseInstallation;
 use Corex\Config\Releases\ReleaseJournal;
 use Corex\Config\Releases\ReleaseMaintenance;
+use Corex\Config\Releases\ReleaseOverview;
 use Corex\Config\Releases\ReleasePackageInspector;
+use Corex\Config\Releases\ReleaseProgress;
 use Corex\Config\Releases\ReleaseRecord;
 use Corex\Config\Releases\ReleaseRecoveryPlugin;
 use Corex\Config\Releases\ReleaseRestGateway;
+use Corex\Config\Releases\ReleaseReturn;
 use Corex\Config\Releases\ReleaseSafeguards;
 use Corex\Config\Releases\ReleasesController;
 use Corex\Config\Releases\ReleaseStaging;
@@ -38,6 +41,7 @@ use Corex\Config\Releases\ReleaseSteps;
 use Corex\Config\Releases\ReleaseStore;
 use Corex\Config\Releases\ReleaseSwap;
 use Corex\Config\Releases\ReleaseTableCopies;
+use Corex\Config\Releases\ReleaseUpkeep;
 use Corex\Config\Releases\ReleaseUpload;
 use Corex\Config\Releases\WpReleaseTableCopier;
 use Corex\Database\Schema\Migrator;
@@ -52,10 +56,32 @@ use Corex\Multisite\SiteScope;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use RuntimeException;
+use WP_REST_Request;
+use WP_REST_Response;
 
 final class ReleaseInstaller
 {
     public const HOME = 'https://acme.test';
+
+    /** The name the fixture release's package goes by on a site. */
+    public const THE_PACKAGE = 'corex-release-acme-0.45.0-20261011-120000.zip';
+
+    /** A site as it runs 0.44.0: extracted by hand, with a file no release holds any more. */
+    public const RUNNING_0_44 = [
+        'wp-content/plugins/acme-site/acme-site.php'   => '<?php // acme 0.44',
+        'wp-content/plugins/acme-site/src/Removed.php' => '<?php // left by an earlier release',
+        'wp-content/plugins/corex-legacy/legacy.php'   => '<?php // 0.45 does not hold this plugin',
+        'wp-content/plugins/akismet/akismet.php'       => '<?php // not CoreX',
+        'wp-content/themes/corex/style.css'            => '/* 0.44 */',
+        'wp-config.php'                                => '<?php // the site\'s own',
+        'corex-release.json'                           => '{"corex_version":"0.44.0","client":"acme","release_paths":["wp-content/plugins/acme-site","wp-content/plugins/corex-legacy","wp-content/themes/corex"]}',
+    ];
+
+    public const RELEASE_0_45 = [
+        'wp-content/plugins/acme-site/acme-site.php' => '<?php // acme 0.45',
+        'wp-content/themes/corex/style.css'          => '/* 0.45 */',
+    ];
 
     /** What the installer writes for itself, which is not the site: its place, its two files. */
     private const THE_INSTALLERS = ['wp-content/corex-releases/', 'wp-content/mu-plugins/corex-release-recovery.php', '.maintenance'];
@@ -100,6 +126,13 @@ final class ReleaseInstaller
         $this->activity    = new RecordingActivityRepository();
 
         $staging    = new ReleaseStaging($this->store, new ReleaseContentHash());
+        $swap       = new ReleaseSwap(
+            $this->store,
+            $staging,
+            $this->journal,
+            $this->root,
+            fn (string $from, string $to): bool => $this->rename === null ? @rename($from, $to) : ($this->rename)($from, $to),
+        );
         $safeguards = new ReleaseSafeguards($this->maintenance, $this->recovery, self::HOME);
         $record     = new ReleaseRecord($this->store, new ActivityService($this->activity), static fn (int $id): string => 'User ' . $id);
         $desk       = new ReleaseDesk(
@@ -111,6 +144,7 @@ final class ReleaseInstaller
                 $allowedByConfiguration,
             ),
         );
+        $return   = new ReleaseReturn($this->store, $swap, $this->journal, $staging, $safeguards, $this->installed, $this->copies, $record);
         $versions = $container->make(SchemaVersionStore::class);
         $scope    = $container->make(SiteScope::class);
         $network  = $container->make(NetworkContext::class);
@@ -127,13 +161,7 @@ final class ReleaseInstaller
                     $this->store,
                     $staging,
                     $this->copies,
-                    new ReleaseSwap(
-                        $this->store,
-                        $staging,
-                        $this->journal,
-                        $this->root,
-                        fn (string $from, string $to): bool => $this->rename === null ? @rename($from, $to) : ($this->rename)($from, $to),
-                    ),
+                    $swap,
                     $this->journal,
                     $safeguards,
                     $this->installed,
@@ -158,6 +186,8 @@ final class ReleaseInstaller
                 $this->journal,
                 $record,
             ),
+            new ReleaseOverview($desk, new ReleaseUpkeep($this->store, $return, $this->copies), $return, $record),
+            $return,
         );
     }
 
@@ -165,6 +195,89 @@ final class ReleaseInstaller
     public function give(string $zipFile, string $name): void
     {
         copy($zipFile, $this->store->fileIn('incoming', $name));
+    }
+
+    /**
+     * Give the site the fixture release: 0.45.0 for acme, unless the description is changed.
+     *
+     * @param array<string,mixed> $changes Changes to the package's description.
+     */
+    public function giveTheRelease(array $changes = ['corex_version' => '0.45.0']): void
+    {
+        $this->give(
+            ReleasePackages::faithful(self::RELEASE_0_45, ['wp-includes/version.php' => '<?php // WordPress, which is not replaced'], $changes),
+            self::THE_PACKAGE,
+        );
+    }
+
+    /**
+     * Ask one of the Releases routes, as the screen asks: signed, through the REST server.
+     *
+     * @param array<string,mixed> $params
+     */
+    public static function ask(string $method, string $route, array $params = []): WP_REST_Response
+    {
+        $request = new WP_REST_Request($method, '/corex/v1' . $route);
+        $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
+        $method === 'GET' ? $request->set_query_params($params) : $request->set_body_params($params);
+
+        return rest_get_server()->dispatch($request);
+    }
+
+    /**
+     * Ask for the next step until the installation stands at the one given.
+     *
+     * @return list<string> Each step it stood at on the way, once.
+     */
+    public static function stepUntil(string $step): array
+    {
+        $stoodAt = [];
+
+        for ($asked = 0; $asked < 40; $asked++) {
+            $answer = self::ask('POST', '/releases/install/step')->get_data();
+
+            if (($answer['ok'] ?? false) !== true) {
+                throw new RuntimeException('The installation stopped: ' . wp_json_encode($answer));
+            }
+
+            $at = $answer['data']['step'];
+            if (end($stoodAt) !== $at) {
+                $stoodAt[] = $at;
+            }
+            if ($at === $step) {
+                return $stoodAt;
+            }
+        }
+
+        throw new RuntimeException('The installation did not reach ' . $step . ': ' . implode(', ', $stoodAt));
+    }
+
+    /**
+     * Give the fixture release, prepare it and confirm it.
+     *
+     * @return array<string,mixed> What `prepare` answered: the statement, the key, the recovery link.
+     */
+    public function confirmTheRelease(): array
+    {
+        $this->giveTheRelease();
+        $prepared = self::ask('POST', '/releases/install/prepare', ['package' => self::THE_PACKAGE])->get_data()['data'];
+        self::ask('POST', '/releases/install/confirm', ['phrase' => '0.45.0']);
+
+        return $prepared;
+    }
+
+    /**
+     * Install the fixture release, from the package to the release being recorded.
+     *
+     * @return array<string,mixed> What `prepare` answered.
+     */
+    public function installTheRelease(): array
+    {
+        $prepared = $this->confirmTheRelease();
+        self::stepUntil(ReleaseProgress::FINISH);
+        self::ask('POST', '/releases/install/finish');
+
+        return $prepared;
     }
 
     /**

@@ -228,6 +228,10 @@ final class SpecialistScreenGuides
                         __('The export is queued rather than made immediately, so a large one does not time out.', 'corex'),
                     ),
                     new GuideStep(
+                        __('Choose the columns, and confirm what they hold.', 'corex'),
+                        __('A column that holds personal data is offered only if you are allowed to export personal data, a right an administrator gives on Access & Abilities. When you include one, the dialog names the kind of personal data and waits for you to confirm.', 'corex'),
+                    ),
+                    new GuideStep(
                         __('Wait for the notification, then download it.', 'corex'),
                         __('CoreX tells you when the file is ready and links straight to it.', 'corex'),
                         warning: __('An export of personal data is personal data. It is recorded in the audit log, and your privacy policy should account for where the file goes next.', 'corex'),

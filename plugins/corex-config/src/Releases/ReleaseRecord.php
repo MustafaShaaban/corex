@@ -32,7 +32,11 @@ final class ReleaseRecord
         ReleaseEvent::INSTALLED => ActivityEvent::OUTCOME_SUCCESS,
         ReleaseEvent::FAILED    => ActivityEvent::OUTCOME_FAILURE,
         ReleaseEvent::CANCELLED => ActivityEvent::OUTCOME_WARNING,
+        ReleaseEvent::RETURNED  => ActivityEvent::OUTCOME_REVERTED,
     ];
+
+    /** How many of the events the screen shows. */
+    private const SHOWN = 20;
 
     /**
      * @param Closure(int):string $nameOf The name an administrator goes by, for the activity log. Never empty.
@@ -44,6 +48,22 @@ final class ReleaseRecord
     ) {
     }
 
+    /**
+     * What happened here, newest first, each with the name of who did it.
+     *
+     * @return list<array<string,mixed>> `by_name` is empty for an event nobody is known to have made: a return through the recovery link.
+     */
+    public function entries(): array
+    {
+        return array_map(
+            fn (array $event): array => [...$event, 'by_name' => (int) ($event['by'] ?? 0) > 0 ? ($this->nameOf)((int) $event['by']) : ''],
+            array_slice(array_reverse($this->store->log()), 0, self::SHOWN),
+        );
+    }
+
+    /**
+     * @param int $actorId Who did it; 0 when nobody is known to have: the recovery link asks for a key, not a name.
+     */
     public function write(ReleaseEvent $event, int $actorId, DateTimeImmutable $at): void
     {
         $this->store->record([
@@ -58,8 +78,8 @@ final class ReleaseRecord
         try {
             $this->activity->record(
                 actorId: $actorId,
-                actorKind: ActivityEvent::ACTOR_USER,
-                actorLabel: ($this->nameOf)($actorId),
+                actorKind: $actorId > 0 ? ActivityEvent::ACTOR_USER : ActivityEvent::ACTOR_SYSTEM,
+                actorLabel: $actorId > 0 ? ($this->nameOf)($actorId) : __('The recovery link', 'corex'),
                 area: ActivityEvent::AREA_OPERATIONS,
                 kind: 'release.' . $event->kind,
                 targetType: 'release',

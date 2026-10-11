@@ -10174,6 +10174,138 @@ own design are slice 4.
 
 **Verification.** Numbers are in the pull request, from the tree as committed.
 
+## #309 — A column is personal data unless its model says otherwise, and one right is asked wherever it leaves
+
+Date: 2026-10-11 · Spec: 109, slice 1 (User Story 2) · Branch: `feat/109-personal-data` · Status: Final
+
+**What was wrong.** `TableDataSource::fields()` gave every column of every managed table the
+personal-data class "none". The class was the source's to invent because a table had no way to
+say it. So newsletter subscribers, job applicants, login attempts and the activity log's actors
+were exported from CoreX → Data with no confirmation. Separately, the Data export's only
+question about personal data was a tick box, asked of anybody who could export the model, while
+the Submissions inbox withheld the same submissions' personal columns from everybody but an
+administrator.
+
+**Silence is read as personal data.** `ManagedTable` takes `personalData`. A column it names is
+what it says; a column it does not name is `undeclared`, a class a table cannot declare and
+every check treats as personal. The other default, "none unless declared", is what was there:
+it is the one that leaks when a table is added and nobody thinks of it. The cost is that the
+tables CoreX ships had to answer for every column in the same change, or the jobs log would ask
+for a right to export personal data. They do, and a test holds all ten to it.
+
+**Every answer of a submission is personal data on the Data screen.** The spec said "unless the
+form states that the field holds none" and the plan had the Data source read each form field's
+class. Reading the code for the tasks found two things: the flow builder stores "none" for
+every field nobody set, so a stored "none" is not a statement; and the inbox's export already
+counts every answer as personal whatever its field says. FR-018 was changed to the inbox's
+rule before the code was written. An address or a number is contact details; any other answer
+is what a person wrote. A name, a company and a budget were "none".
+
+**One ability, not implied by managing anything.** `corex_export_personal_data`, in the data
+group, rated sensitive, implied only by the admin ability. The Data export asks it before the
+acknowledgement, and the inbox's `canExportPersonalData` defaults to it. The inbox's filter
+keeps the last word, so a site that decides this in code is not changed. An administrator is
+not changed either. Who is: a person given "Manage data" or "Manage submissions" and not this,
+who loses the personal columns on the Data screen. That is the owner's third answer (#306) and
+is in the changelog's client impact.
+
+**A refusal has a type.** `DataRestGateway` reads a refusal's status from English words in its
+message ("permission" is 403). This message is translated, so it would have been a 422 on an
+Arabic site and a 403 on none. `PersonalDataNotAllowed` is caught before the words are read.
+The gateway's reading of words is left as it is; it is wrong for every translated message and
+is not this slice's.
+
+**The list of kinds is not joined by a translated comma.** The confirmation names the kinds in
+the chosen columns. The linter refuses a translation that is only a separator, rightly: how a
+language lists things is the browser's to know (`Intl.ListFormat`), and Arabic joins two items
+with a word, not a mark. The first test written for it expected an Arabic comma and was wrong.
+
+**What was run.**
+
+| Check | Result |
+|---|---|
+| Pest, unit suite, in the worktree with the root's `vendor/` copied in, after merging main | 2634 passed |
+| Jest, the whole suite (`npm run test:js`), after merging main | 93 suites, 992 passed, 2 skipped as before |
+| `wp-scripts lint-js` on the changed files; `php -l` on the changed PHP | clean |
+| `tests/docs-links.test.js`, `repo-hygiene`, `product-completion-audit` | passed |
+
+**What the guards changed.** Two methods only their tests called were removed
+(`ManagedTable::declaresPersonalData()`, a static twin of `DataField::holdsPersonalData()`), and
+the import planner asks the field where it compared with "none" itself, so what counts as
+personal data is written once. Five tests were merged or dropped: three that differed by one
+value, one that counted the list it had written, one that walked the same path as its
+neighbour.
+
+**What CI's first run found.** One of the new integration tests asked for the source
+`activity-events`; a table's source is keyed `table-activity-events`. The test was wrong and the
+code was not. The browser test passed on its first run.
+
+**Looked at in a browser, afterwards.** The Models tab and the export dialog were drawn from
+this branch on the development install, for requests carrying one header and for no other, by a
+must-use plugin that was removed the same hour: light and dark, both directions, at 1280 and
+375 pixels. The confirmation wraps to two lines at 1280 and four at 375, stays inside the
+dialog, and its box stays beside its first line in both directions. Seeing the Models tab say
+"what people wrote" of the activity log's target changed that column's class to names and
+identities: a target is named, and is often a person.
+
+**Not walked in a browser.** The line shown to a person without the right is drawn in Jest: no
+fixture account manages data without being an administrator, and the development install's
+saved session is an administrator's.
+
+## #310 — Going back is the journal read backwards, by the screen or by the link, and ends the same either way
+
+**Date:** 2026-10-11. **Spec:** 107, slice 5 (T060 to T065). **Branch:** `feat/107-going-back`.
+
+**One route, one confirmation.** `POST corex/v1/releases/return` with what was typed: the
+version of the release gone back to, or, on a site that could not name it, the version being
+left. The swap's journal is read backwards, as the recovery plugin reads it. Then everything
+else is made to say the same: visitors are let in, the recovery file is removed because there
+is nothing left to go back to, the site's record of its release is the previous one's again,
+the newer release's folders are removed from staging, and what stood of its installation is
+cleared. So going back is also how an installation whose database step failed is left.
+
+**No change to the database is reversed, and the answer carries that as a number.**
+`database_changes_reversed: 0`. No schema change CoreX makes declares a way back. When one
+does, this is where its count goes; until then the screen's sentence is not left to be
+forgotten by whoever adds the first.
+
+**A return through the link is recognised by what it leaves.** The link's plugin marks the
+journal undone and can do no more. A journal that says undone beside a recovery file that is
+still there is a return CoreX has not heard of: a return from the screen removes the file.
+`ReleaseUpkeep` takes it in when the screen is opened, once. It is recorded with no person
+against it (`by: 0`, `through: recovery_link`, and the activity entry's actor is the system):
+the link asks for a key, not a name.
+
+**Tidying happens when somebody looks.** The owner's rule on the host this is for is no new
+scheduled job. Opening Releases removes table copies past fourteen days and packages or parts
+past seven, under the installer's lock; if a request of an installation holds the lock, it is
+left for next time. On a host where the installer's folder cannot be made, nothing is tidied
+and the screen still opens.
+
+**An installation that has moved nothing is in the way of going back, and says so.** Its
+staged folders are where a return puts the release it moves out. It is given up first.
+
+**The record on the screen is the installer's own log,** the file beside the releases, with a
+name looked up for each entry. Twenty entries, newest first. A refusal's and a failure's reason
+is shown as the word the site keeps for it.
+
+**Left as it is, and the owner's to change:** the previous release stays until the next
+installation, with no time limit. On an account whose file allowance is shared by two sites it
+counts against it. FR-043 asks for kept releases to be bounded in number, which one is.
+
+**Verification.**
+
+| What | Result |
+|---|---|
+| Pest, unit, `tests/Unit/Releases` | 178 passed (449 assertions) |
+| Pest, integration, `tests/Integration/Releases` | 36 passed (346 assertions). Going back from the screen puts every file back, the dropped plugin and the file the newer release did not ship among them, and leaves the table the release made; going back from a failed database step; a return through the recovery link, run in a PHP process with nothing of CoreX loaded, found on the next opening and written down once; nothing to go back to; an installation in the way; a package and a table copy past their time removed |
+| Jest, `plugins/corex-config/src/Releases` | 107 passed |
+| Playwright, `releases-install.spec.js`, locally on PHP's own server | 6 passed: after a real installation the site goes back from the screen, the file the newer release did not ship is on the site again, the recovery file is gone, and both events are read off the record |
+| Looked at | the release before, the confirmation to go back and the record, in both themes and both directions, at 1280 and 782 |
+
+**Not run.** A return on a shared host. A journal that could not be wholly undone, in a browser:
+the screen's words for it are covered by a Jest test and the server's by the swap's unit tests.
+
 ## #311 — A client site gives its emails their own colours, logo and footer, or its own template, from its own code
 
 **Date:** 2026-10-11. **Branch:** `feat/106-site-email-design`. **Spec:** 106, slice 4.

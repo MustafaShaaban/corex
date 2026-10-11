@@ -86,10 +86,12 @@ no `personalData` at all has every column classed `undeclared`, a new class that
 treats as personal (FR-017). The eight tables CoreX ships and the two add-ons' declare theirs
 in the same slice, or the activity log would start asking for the personal-data right.
 
-Form submissions are not a table. `SubmissionsSource` reads each answer's class from the
-form's field where the form declares one, and classes the rest `content` (FR-018). So that
-"declared as holding none" can be told from "not declared", the forms schema keeps the class
-as it was written and resolves an absent one to `undeclared`, not to `none`.
+Form submissions are not a table. Every answer is personal data (FR-018), which is what the
+Submissions inbox already holds: its export withholds every answer from a person without the
+right. `SubmissionsSource` classes an answer that reads as an email address or a phone number
+`contact` and every other answer `content`, never `none`. A form field's own class is not
+read: the flow builder stores `none` for every field nobody set, so a stored `none` says
+nothing, and the Data source pools answers by key across forms and has no single field to ask.
 
 *Left*: a second registry of declarations beside the tables. A table's statements about itself
 were put in one record on purpose (spec 074).
@@ -352,8 +354,6 @@ plugins/corex-core/src/
 ├── Data/DataField.php                        # the class "undeclared"
 ├── Data/DataSourceCapabilities.php           # transfer
 └── Access/CorexAbility.php, CorexAbilityCatalog.php   # corex_export_personal_data (D3)
-
-plugins/corex-forms/src/Schema/               # a field's class kept as written (D1)
 
 plugins/corex-config/src/
 ├── Data/

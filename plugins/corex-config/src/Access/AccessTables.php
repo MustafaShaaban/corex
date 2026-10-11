@@ -10,6 +10,7 @@ namespace Corex\Config\Access;
 
 defined('ABSPATH') || exit;
 
+use Corex\Data\DataField;
 use Corex\Database\Schema\ManagedTable;
 use Corex\Database\Schema\Table;
 
@@ -65,7 +66,14 @@ final class AccessTables
                 ['id' => 'effect', 'label' => 'Effect'],
                 ['id' => 'source', 'label' => 'Source'],
                 ['id' => 'updated_at', 'label' => 'Updated'],
-            ], 'corex'),
+            ], 'corex', personalData: [
+                'role_key'    => DataField::PERSONAL_NONE,
+                'ability_key' => DataField::PERSONAL_NONE,
+                'effect'      => DataField::PERSONAL_NONE,
+                'source'      => DataField::PERSONAL_NONE,
+                'updated_at'  => DataField::PERSONAL_NONE,
+            ],
+            ),
             new ManagedTable(self::REQUESTS, 'Access requests', [
                 ['id' => 'requester_id', 'label' => 'Requester'],
                 ['id' => 'ability_key', 'label' => 'Ability'],
@@ -73,7 +81,15 @@ final class AccessTables
                 ['id' => 'state', 'label' => 'State'],
                 ['id' => 'created_at', 'label' => 'Created'],
                 ['id' => 'expires_at', 'label' => 'Expires'],
-            ], 'corex'),
+            ], 'corex', personalData: [
+                'requester_id' => DataField::PERSONAL_IDENTITY,
+                'ability_key'  => DataField::PERSONAL_NONE,
+                'area_key'     => DataField::PERSONAL_NONE,
+                'state'        => DataField::PERSONAL_NONE,
+                'created_at'   => DataField::PERSONAL_NONE,
+                'expires_at'   => DataField::PERSONAL_NONE,
+            ],
+            ),
         ];
     }
 }

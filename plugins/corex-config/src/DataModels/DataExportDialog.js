@@ -14,8 +14,9 @@ import {
 	useRef,
 	useState,
 } from '@wordpress/element';
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import CorexDialog from '../admin/components/CorexDialog.js';
+import { listed } from '../admin/personalData.js';
 import {
 	ExportCheck,
 	ExportColumns,
@@ -37,12 +38,15 @@ import {
 	dataScopes,
 	defaultDataScope,
 	describeDataQuery,
+	personalKinds,
+	withheldColumns,
 } from './dataExportState.js';
 
 /**
  * @param {Object}      props
  * @param {Object}      props.config        The screen's `{restUrl, nonce}`.
- * @param {Object}      props.source        The source to export, with its fields and actions.
+ * @param {Object}      props.source        The source to export, with its fields, its actions and
+ *                                          whether this person may take personal data out.
  * @param {number[]}    [props.selectedIds] The rows ticked in the table behind the dialog.
  * @param {Object|null} [props.query]       The table's search and filters; null where the dialog
  *                                          is opened with no table behind it.
@@ -62,9 +66,16 @@ export default function DataExportDialog( {
 	const showing = useRef( true );
 	const withRows = query !== null;
 	const fields = useMemo( () => source?.fields || [], [ source ] );
-	const [ offered, setOffered ] = useState( null );
-	const formats = dataFormats( source, offered?.available );
-	const pdfMost = offered?.pdf_most_records ?? 0;
+	const mayExportPersonal = source?.permissions?.personal_data === true;
+	// What this person is offered, in the source's order: it is the order of the file's columns.
+	const offered = useMemo(
+		() => dataColumnChoices( fields, mayExportPersonal ),
+		[ fields, mayExportPersonal ]
+	);
+	const withheld = withheldColumns( fields, mayExportPersonal );
+	const [ writable, setWritable ] = useState( null );
+	const formats = dataFormats( source, writable?.available );
+	const pdfMost = writable?.pdf_most_records ?? 0;
 	const requests = useMemo(
 		() => dataExportRequests( config, source?.key ),
 		[ config, source?.key ]
@@ -73,7 +84,7 @@ export default function DataExportDialog( {
 		defaultDataScope( selectedIds.length, withRows )
 	);
 	const [ columns, setColumns ] = useState( () =>
-		fields.map( ( field ) => field.key )
+		offered.map( ( choice ) => choice.id )
 	);
 	const [ format, setFormat ] = useState( formats[ 0 ].value );
 	const [ separator, setSeparator ] = useState( 'comma' );
@@ -99,7 +110,7 @@ export default function DataExportDialog( {
 			.then( ( data ) => {
 				if ( showing.current ) {
 					setCounts( data.counts );
-					setOffered( data.formats || null );
+					setWritable( data.formats || null );
 				}
 			} )
 			.catch( ( error ) => {
@@ -110,10 +121,8 @@ export default function DataExportDialog( {
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- see the comment above.
 	}, [] );
 
-	const choices = dataColumnChoices( fields );
-	const personal = choices.some(
-		( choice ) => choice.personal && columns.includes( choice.id )
-	);
+	const kinds = personalKinds( fields, columns );
+	const personal = kinds.length > 0;
 	const options = dataScopes( {
 		counts,
 		selectedCount: selectedIds.length,
@@ -199,8 +208,8 @@ export default function DataExportDialog( {
 				? current.filter( ( item ) => item !== key )
 				: // Kept in the source's order, whatever order they were ticked in: that is the
 					// order of the file's columns.
-					fields
-						.map( ( field ) => field.key )
+					offered
+						.map( ( choice ) => choice.id )
 						.filter(
 							( item ) => item === key || current.includes( item )
 						)
@@ -235,11 +244,26 @@ export default function DataExportDialog( {
 
 			<ExportColumns
 				fieldId={ fieldId }
-				choices={ choices }
+				choices={ offered }
 				chosen={ columns }
 				toggle={ toggle }
 				disabled={ running }
-			/>
+			>
+				{ withheld > 0 && (
+					<p className="corex-export__detail">
+						{ sprintf(
+							/* translators: %d: a number of columns. */
+							_n(
+								'%d column that holds personal data is not offered: your role cannot export it.',
+								'%d columns that hold personal data are not offered: your role cannot export it.',
+								withheld,
+								'corex'
+							),
+							withheld
+						) }
+					</p>
+				) }
+			</ExportColumns>
 
 			<ExportFormat
 				format={ format }
@@ -259,9 +283,13 @@ export default function DataExportDialog( {
 					disabled={ running }
 					onChange={ setAcknowledged }
 				>
-					{ __(
-						'I understand this export contains personal data and will handle it according to policy.',
-						'corex'
+					{ sprintf(
+						/* translators: %s: the kinds of personal data in the export, e.g. "contact details, names and identities". */
+						__(
+							'I understand this export contains personal data (%s) and will handle it according to policy.',
+							'corex'
+						),
+						listed( kinds )
 					) }
 				</ExportCheck>
 			) }
