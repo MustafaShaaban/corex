@@ -14,9 +14,9 @@ defined('ABSPATH') || exit;
  * The `$wpdb` side of the release installer's table copies (spec 107, FR-034).
  *
  * The names that reach this are worked out by `ReleaseTableCopies` from tables the schema
- * registry declares, never from a request. An identifier cannot be bound in a `CREATE TABLE`
- * or a `DROP TABLE` as a value can, so each name is held to a strict pattern before it is
- * written into a statement, and a name that fails it does nothing.
+ * registry declares, never from a request. Each is still held to a strict pattern before it
+ * is used, and written into its statement as an identifier (`%i`), so a name that is not one
+ * does nothing.
  */
 final class WpReleaseTableCopier implements ReleaseTableCopier
 {
@@ -48,12 +48,12 @@ final class WpReleaseTableCopier implements ReleaseTableCopier
             return false;
         }
 
-        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- DDL cannot bind identifiers; both names are derived and pattern-checked above.
-        $whole = $wpdb->query("CREATE TABLE `{$to}` LIKE `{$from}`") !== false
-            && $wpdb->query("INSERT INTO `{$to}` SELECT * FROM `{$from}`") !== false
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- a copy of a table is made once an installation, and is a change to the schema on purpose.
+        $whole = $wpdb->query($wpdb->prepare('CREATE TABLE %i LIKE %i', $to, $from)) !== false
+            && $wpdb->query($wpdb->prepare('INSERT INTO %i SELECT * FROM %i', $to, $from)) !== false
             // A host that cuts the request off mid-copy is not here to answer. A copy that
             // came out short for any other reason is, and is not kept.
-            && (int) $wpdb->get_var("SELECT COUNT(*) FROM `{$to}`") === (int) $wpdb->get_var("SELECT COUNT(*) FROM `{$from}`");
+            && (int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM %i', $to)) === (int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM %i', $from));
         // phpcs:enable
 
         if (! $whole) {
@@ -71,8 +71,8 @@ final class WpReleaseTableCopier implements ReleaseTableCopier
             return;
         }
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- derived, pattern-checked identifier.
-        $wpdb->query("DROP TABLE IF EXISTS `{$table}`");
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- only ever a copy this class's caller named.
+        $wpdb->query($wpdb->prepare('DROP TABLE IF EXISTS %i', $table));
     }
 
     private static function isAName(string $name): bool

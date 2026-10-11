@@ -114,10 +114,7 @@ final class ReleaseCompletion
         $this->staging->clear();
         $this->removeThePackage($progress->package);
         $this->store->clearState();
-        $this->record->write(ReleaseRecord::INSTALLED, $manifest->version, $progress->replacedVersion(), $actorId, $now, [
-            'package' => $progress->package,
-            'changes' => count($progress->changes),
-        ]);
+        $this->record->write(ReleaseEvent::of(ReleaseEvent::INSTALLED, $progress, ['changes' => count($progress->changes)]), $actorId, $now);
 
         return ['done' => true, 'version' => $manifest->version, 'changes' => $progress->changes];
     }
@@ -139,10 +136,7 @@ final class ReleaseCompletion
     private function stopOn(ReleaseRefused $refused, ReleaseProgress $progress, int $actorId, DateTimeImmutable $now): void
     {
         if ($progress->failed === null) {
-            $this->record->write(ReleaseRecord::FAILED, $progress->manifest()->version, $progress->replacedVersion(), $actorId, $now, [
-                'package' => $progress->package,
-                'reason'  => $refused->reason,
-            ]);
+            $this->record->write(ReleaseEvent::of(ReleaseEvent::FAILED, $progress, ['reason' => $refused->reason]), $actorId, $now);
         }
 
         $progress->with(['step' => ReleaseProgress::FINISH, 'failed' => $refused->getMessage()])->save($this->store);

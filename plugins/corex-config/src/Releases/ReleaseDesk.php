@@ -134,6 +134,8 @@ final class ReleaseDesk
             'client_unconfirmed' => $inspection->clientUnconfirmed,
             'files'              => $inspection->files,
             'bytes'              => $inspection->bytes,
+            // WordPress is not replaced by a release (FR-026): the two are said where they differ.
+            'wordpress'          => ['package' => $inspection->manifest->wordPressVersion, 'site' => $inspection->siteWordPress],
             // A release is unpacked beside the one it replaces before either is moved.
             'blockers'           => $this->blockers($inspection->bytes),
         ];

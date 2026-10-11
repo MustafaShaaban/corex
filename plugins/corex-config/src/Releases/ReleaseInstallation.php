@@ -59,7 +59,7 @@ final class ReleaseInstallation
      *
      * @param string $package The package's name in `incoming/`.
      *
-     * @return array<string,mixed> The statement of FR-010; `drops`, the folders the running release holds and this one does not; `key` and `recovery_link`; `expires_at`.
+     * @return array<string,mixed> The statement of FR-010; `drops`, the folders the running release holds and this one does not; `key` and `recovery_link`; `copies_days`, how long the table copies are kept.
      *
      * @throws ReleaseRefused When the package is refused, the host cannot install, or an installation is in progress.
      */
@@ -70,12 +70,7 @@ final class ReleaseInstallation
 
             $inspection = $this->desk->examine($package, $actorId);
             $statement  = $this->desk->statementOf($package, $inspection);
-
-            // Asked again here, where an installation starts: what the screen showed when it
-            // opened is not what keeps a site that may not change its files from changing.
-            if ($statement['blockers'] !== []) {
-                throw new ReleaseRefused(self::BLOCKED, implode(' ', array_column($statement['blockers'], 'message')));
-            }
+            $this->refuseWhereTheHostCannot($statement['blockers']);
 
             $key      = bin2hex(random_bytes(32));
             $progress = new ReleaseProgress(
@@ -99,7 +94,6 @@ final class ReleaseInstallation
                 'drops'         => $this->dropped($inspection->manifest),
                 'key'           => $key,
                 'recovery_link' => $this->safeguards->link($key),
-                'expires_at'    => $progress->waitsUntil()->format(DATE_ATOM),
                 'copies_days'   => ReleaseTableCopies::DAYS,
             ];
         });
@@ -108,24 +102,20 @@ final class ReleaseInstallation
     /**
      * Take the administrator's confirmation: the version, typed.
      *
-     * @param string      $phrase        What was typed.
-     * @param string|null $client        The client's name, typed, on a site that could not say whose it is.
-     * @param bool        $olderAccepted That an older release than the one running is meant.
-     *
      * @return array<string,mixed> Where the installation stands.
      *
      * @throws ReleaseRefused When there is nothing to confirm, or it is not confirmed.
      */
-    public function confirm(string $phrase, ?string $client, bool $olderAccepted, int $actorId, DateTimeImmutable $now): array
+    public function confirm(ReleaseConfirmationGiven $given, int $actorId, DateTimeImmutable $now): array
     {
-        return $this->store->exclusively(function () use ($phrase, $client, $olderAccepted, $actorId, $now): array {
+        return $this->store->exclusively(function () use ($given, $actorId, $now): array {
             $progress = $this->standing();
 
             if ($progress->step !== ReleaseProgress::AWAITING) {
                 throw new ReleaseRefused(self::IN_PROGRESS, __('This installation was confirmed already and is under way.', 'corex'));
             }
 
-            $this->refuseUnlessConfirmed($progress, $phrase, $client, $olderAccepted, $actorId, $now);
+            $this->refuseUnlessConfirmed($progress, $given, $actorId, $now);
 
             $progress = $progress->at(ReleaseProgress::UNPACK);
             $progress->save($this->store);
@@ -186,7 +176,7 @@ final class ReleaseInstallation
 
             // One that was only ever looked at is not an event.
             if ($progress->step !== ReleaseProgress::AWAITING) {
-                $this->record->write(ReleaseRecord::CANCELLED, $progress->manifest()->version, $progress->replacedVersion(), $actorId, $now, ['package' => $progress->package]);
+                $this->record->write(ReleaseEvent::of(ReleaseEvent::CANCELLED, $progress), $actorId, $now);
             }
         });
     }
@@ -198,6 +188,21 @@ final class ReleaseInstallation
     {
         return ReleaseProgress::standing($this->store)
             ?? throw new ReleaseRefused(self::NONE, __('No installation is in progress on this site.', 'corex'));
+    }
+
+    /**
+     * Asked where an installation starts: what the screen showed when it opened is not what
+     * keeps a site that may not change its files from changing (FR-018).
+     *
+     * @param list<array{reason:string,message:string}> $blockers
+     *
+     * @throws ReleaseRefused
+     */
+    private function refuseWhereTheHostCannot(array $blockers): void
+    {
+        if ($blockers !== []) {
+            throw new ReleaseRefused(self::BLOCKED, implode(' ', array_column($blockers, 'message')));
+        }
     }
 
     /**
@@ -224,7 +229,7 @@ final class ReleaseInstallation
             /* translators: 1: a release's version. 2: a date and time. */
             __('An installation of %1$s is in progress on this site, started %2$s. Go on with it or cancel it from this screen before starting another.', 'corex'),
             $standing->manifest()->version,
-            $standing->preparedAt,
+            wp_date(get_option('date_format') . ' ' . get_option('time_format'), (new DateTimeImmutable($standing->preparedAt))->getTimestamp()),
         ));
     }
 
@@ -235,13 +240,14 @@ final class ReleaseInstallation
      *
      * @throws ReleaseRefused
      */
-    private function refuseUnlessConfirmed(ReleaseProgress $progress, string $phrase, ?string $client, bool $olderAccepted, int $actorId, DateTimeImmutable $now): void
+    private function refuseUnlessConfirmed(ReleaseProgress $progress, ReleaseConfirmationGiven $given, int $actorId, DateTimeImmutable $now): void
     {
         $manifest     = $progress->manifest();
         $confirmation = new Confirmation(self::OPERATION, $progress->packageHash, $progress->by, $progress->waitsUntil(), $manifest->version);
-        $packageNow   = (string) @hash_file('sha256', $this->store->fileIn('incoming', $progress->package)); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- a package that is gone is not the one that was stated.
+        // A package that is gone hashes to nothing, which is not the hash that was stated.
+        $packageNow = (string) @hash_file('sha256', $this->store->fileIn('incoming', $progress->package)); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 
-        if (preg_match('/^[0-9a-f]{64}$/', $packageNow) !== 1 || ! $confirmation->verify(self::OPERATION, $packageNow, $actorId, trim($phrase), $now)) {
+        if (! $confirmation->verify(self::OPERATION, $packageNow, $actorId, trim($given->phrase), $now)) {
             throw new ReleaseRefused(self::NOT_CONFIRMED, sprintf(
                 /* translators: %s: a release's version, e.g. 0.45.0. */
                 __('Not confirmed. Type the version being installed, %s, exactly. A confirmation is good for fifteen minutes and for the administrator who asked for it: if it has passed, choose the package again.', 'corex'),
@@ -249,11 +255,11 @@ final class ReleaseInstallation
             ));
         }
 
-        if ($progress->older && ! $olderAccepted) {
+        if ($progress->older && ! $given->olderAccepted) {
             throw new ReleaseRefused(self::NOT_CONFIRMED, __('This is an older release than the one the site runs. Say that an older release is meant, and confirm again.', 'corex'));
         }
 
-        if ($progress->clientUnconfirmed && $manifest->client !== null && trim((string) $client) !== $manifest->client) {
+        if ($progress->clientUnconfirmed && $manifest->client !== null && trim((string) $given->client) !== $manifest->client) {
             throw new ReleaseRefused(self::NOT_CONFIRMED, __('This site does not know which client it belongs to. Type the client the package was built for, exactly as the statement gives it, to confirm it is this site\'s.', 'corex'));
         }
     }
@@ -285,9 +291,6 @@ final class ReleaseInstallation
             $this->store->clearState();
         }
 
-        $this->record->write(ReleaseRecord::FAILED, $progress->manifest()->version, $progress->replacedVersion(), $actorId, $now, [
-            'package' => $progress->package,
-            'reason'  => $refused->reason,
-        ]);
+        $this->record->write(ReleaseEvent::of(ReleaseEvent::FAILED, $progress, ['reason' => $refused->reason]), $actorId, $now);
     }
 }

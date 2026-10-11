@@ -144,18 +144,6 @@ it('never touches a live table: what it removes is only ever a copy', function (
     expect(get_class_methods(ReleaseTableCopier::class))->toBe(['tablesStartingWith', 'exists', 'copy', 'drop']);
 });
 
-it('removes the copies whose time has passed, and leaves the rest', function () {
-    ($this->copyAll)();
-
-    $removed = ($this->copies)()->discardExpired(new DateTimeImmutable('2026-10-25 15:29:00', new DateTimeZone('UTC')));
-    expect($removed)->toBe(0)->and(($this->copies)()->kept())->toHaveCount(2);
-
-    $removed = ($this->copies)()->discardExpired(new DateTimeImmutable('2026-10-25 15:30:00', new DateTimeZone('UTC')));
-    expect($removed)->toBe(2)
-        ->and(($this->copies)()->kept())->toBe([])
-        ->and($this->database->tables)->toBe(THE_LIVE_TABLES);
-});
-
 it('refuses to go on when a table cannot be copied whole, and keeps nothing of the attempt', function () {
     $this->database->failsOn = 'wp_corex_notifications';
 

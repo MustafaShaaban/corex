@@ -14,7 +14,7 @@ use Closure;
 use Corex\Activity\ActivityEvent;
 use Corex\Activity\ActivityService;
 use DateTimeImmutable;
-use Throwable;
+use RuntimeException;
 
 /**
  * What happened to a site's release, written down twice (spec 107, US5; FR-051; plan D14).
@@ -28,20 +28,14 @@ use Throwable;
  */
 final class ReleaseRecord
 {
-    public const INSTALLED = 'installed';
-    public const FAILED    = 'failed';
-    public const CANCELLED = 'cancelled';
-    public const RETURNED  = 'returned';
-
     private const OUTCOMES = [
-        self::INSTALLED => ActivityEvent::OUTCOME_SUCCESS,
-        self::FAILED    => ActivityEvent::OUTCOME_FAILURE,
-        self::CANCELLED => ActivityEvent::OUTCOME_WARNING,
-        self::RETURNED  => ActivityEvent::OUTCOME_REVERTED,
+        ReleaseEvent::INSTALLED => ActivityEvent::OUTCOME_SUCCESS,
+        ReleaseEvent::FAILED    => ActivityEvent::OUTCOME_FAILURE,
+        ReleaseEvent::CANCELLED => ActivityEvent::OUTCOME_WARNING,
     ];
 
     /**
-     * @param Closure(int):string $nameOf The name an administrator goes by, for the activity log.
+     * @param Closure(int):string $nameOf The name an administrator goes by, for the activity log. Never empty.
      */
     public function __construct(
         private readonly ReleaseStore $store,
@@ -50,21 +44,15 @@ final class ReleaseRecord
     ) {
     }
 
-    /**
-     * @param string               $event   One of this class's four.
-     * @param string               $version The release it is about.
-     * @param string|null          $from    The release the site ran before, where it knew.
-     * @param array<string,scalar> $more    What else is worth keeping: a reason, a package's name. Never a key.
-     */
-    public function write(string $event, string $version, ?string $from, int $actorId, DateTimeImmutable $at, array $more = []): void
+    public function write(ReleaseEvent $event, int $actorId, DateTimeImmutable $at): void
     {
         $this->store->record([
-            'event'   => $event,
-            'version' => $version,
-            'from'    => $from,
+            'event'   => $event->kind,
+            'version' => $event->version,
+            'from'    => $event->from,
             'by'      => $actorId,
             'at'      => $at->format(DATE_ATOM),
-            ...$more,
+            ...$event->details,
         ]);
 
         try {
@@ -73,20 +61,21 @@ final class ReleaseRecord
                 actorKind: ActivityEvent::ACTOR_USER,
                 actorLabel: ($this->nameOf)($actorId),
                 area: ActivityEvent::AREA_OPERATIONS,
-                kind: 'release.' . $event,
+                kind: 'release.' . $event->kind,
                 targetType: 'release',
-                targetId: $version,
-                targetLabel: $version,
-                outcome: self::OUTCOMES[$event],
-                summary: ['key' => 'release.' . $event, 'args' => ['from' => (string) $from, 'to' => $version]],
-                context: $more,
+                targetId: $event->version,
+                targetLabel: $event->version,
+                outcome: self::OUTCOMES[$event->kind],
+                summary: ['key' => 'release.' . $event->kind, 'args' => ['from' => (string) $event->from, 'to' => $event->version]],
+                context: $event->details,
                 sensitivity: ActivityEvent::SENSITIVITY_SECURITY,
                 retentionUntil: $at->modify('+365 days'),
                 occurredAt: $at,
             );
-        } catch (Throwable) {
-            // The activity log is a table of the release being installed. When it cannot take
-            // an entry (its own change is the one that failed), the installer's log has it.
+        } catch (RuntimeException) {
+            // What the activity log throws when its table will not take a row. That table is
+            // one of the release being installed, so its own change may be the one that
+            // failed. The installer's log, written above, has the event either way.
         }
     }
 }

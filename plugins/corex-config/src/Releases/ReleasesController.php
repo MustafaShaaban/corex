@@ -119,9 +119,11 @@ final class ReleasesController
     public function confirm(WP_REST_Request $request): WP_REST_Response
     {
         return $this->gateway->answer($request, fn (): array => $this->installation->confirm(
-            sanitize_text_field((string) $request->get_param('phrase')),
-            $request->get_param('client') === null ? null : sanitize_text_field((string) $request->get_param('client')),
-            rest_sanitize_boolean($request->get_param('older') ?? false),
+            new ReleaseConfirmationGiven(
+                sanitize_text_field((string) $request->get_param('phrase')),
+                $request->get_param('client') === null ? null : sanitize_text_field((string) $request->get_param('client')),
+                rest_sanitize_boolean($request->get_param('older') ?? false),
+            ),
             get_current_user_id(),
             new DateTimeImmutable('now'),
         ));

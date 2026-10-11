@@ -657,7 +657,12 @@ final class ConfigServiceProvider extends ServiceProvider
         $this->container->singleton(ReleaseRecord::class, static fn (ContainerInterface $c): ReleaseRecord => new ReleaseRecord(
             $c->make(ReleaseStore::class),
             $c->make(ActivityService::class),
-            static fn (int $userId): string => (string) (get_userdata($userId)->display_name ?? ''),
+            // An activity entry refuses an empty name, and an account can have been removed.
+            static function (int $userId): string {
+                $user = get_userdata($userId);
+
+                return $user instanceof \WP_User && $user->display_name !== '' ? $user->display_name : '#' . $userId;
+            },
         ));
         $this->container->singleton(ReleaseFinisher::class);
         $this->container->singleton(ReleaseInstallation::class, static fn (ContainerInterface $c): ReleaseInstallation => new ReleaseInstallation(
