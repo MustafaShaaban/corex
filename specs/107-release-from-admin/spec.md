@@ -7,7 +7,8 @@
 **Status**: Decided and planned. Four questions the first drafts left to the owner were answered
 by him on 2026-10-08 with "decide the best for me regarding the 4 questions and continue"; the
 decisions made on that are under "Decided for the owner". [plan.md](./plan.md) and
-[tasks.md](./tasks.md) follow them.
+[tasks.md](./tasks.md) follow them. Five more, raised by him on 2026-10-11 after the first
+client site went public, are answered under "Clarifications".
 
 **Input**: The owner's instruction of 2026-10-08, "continue with the muva and peregos asked", and
 the outline that reached this spec from the session moving the first client site to shared
@@ -88,8 +89,11 @@ there unless it says otherwise:
   as "wait and retry", not as an answer.
 - The primary site's web root also holds the second site's folder. Anything that replaces or
   clears folders must leave what it does not own alone.
-- On the production site `DISALLOW_FILE_MODS` is not set. Whether WP-Cron's loopback request
-  works there is unverified.
+- `DISALLOW_FILE_MODS` is set there. The first draft said it was not, from the site as it stood
+  before the move; the configuration the client's repository writes for this host
+  (`wp-config.ultahost.php`) sets it with `DISALLOW_FILE_EDIT`, read on 2026-10-11. The first
+  clarification below is what follows from that. Whether WP-Cron's loopback request works there
+  is unverified.
 - 300,000 files and 100GB for the account; the previous release kept for going back counts
   against the first.
 - Sessions were refused file removal and DNS changes on this host, and the owner did those by
@@ -98,6 +102,63 @@ there unless it says otherwise:
 A bash script written for this site before the move does A's steps by hand order
 (`sites/muva/deploy/server/apply-release.sh` in that client's repository). It is the reference
 for the order of steps and for what is refused. It was not read for this draft.
+
+## Clarifications
+
+### Session 2026-10-11
+
+The client site went public on 2026-10-11, updated by extracting a zip over the release before
+it. Extracting removes nothing: four pattern files of the earlier theme stayed, WordPress read
+them when the Site Editor opened, and the editor answered with a critical error until they were
+deleted by hand. The owner asked why Releases is not what that site uses, and put five questions
+this spec has to answer for such a client. He asked for them to be answered here, not put back
+to him, so each answer is a decision made for him, with its reason, and his to overrule.
+
+- Q: The site's configuration sets `DISALLOW_FILE_MODS`, and the Releases screen refuses to
+  install while it is set. What does an operator do? → A: He adds one line to the site's
+  configuration file, once: `define( 'COREX_ALLOW_RELEASE_INSTALL', true );`.
+  `DISALLOW_FILE_MODS` stays as it is. With both, WordPress's own ways of changing code (plugin
+  and theme installers, updaters, editors) stay off and a release can still be installed from
+  the Releases screen. Not chosen: lifting `DISALLOW_FILE_MODS` for each installation, which is
+  work in the host's file manager at every release and opens every other way of changing code
+  while it is lifted; and CoreX passing over the setting by itself, because the setting exists
+  to say that nobody signed in to the admin puts code on the site, and only whoever owns the
+  configuration file may say otherwise (FR-018).
+- Q: The screen expects the framework builder's `corex-release-*.zip`. The client builds its own
+  zip from the shared-host `dist` and adds FluentSMTP. Which builder does a client use, and how
+  is a third-party plugin shipped with a release carried? → A: The framework's builder, with
+  `--client=<slug> --zip`: no client makes the zip itself. A third-party plugin is named to the
+  builder (`--with-plugin=<folder>`, as often as there are plugins); the builder copies it in
+  beside the others, lists it, and measures it, so the site checks and replaces it exactly as it
+  does CoreX's own. A plugin the builder was not told about is not in the release: installing
+  leaves the site's copy as it is (FR-026), which is what happens to a zip the client adds a
+  plugin to after the builder has measured it (FR-028).
+- Q: Must a file the new release no longer ships be gone after it is installed? → A: Yes, for
+  every folder the release owns, and it is so by construction: a folder is replaced whole, by a
+  rename, never written into. What the release before held and this one does not is in the kept
+  previous release, not on the site. This is the fault of 2026-10-11, and a test is named for
+  it. It does not reach outside the folders a release owns: the site's root, WordPress itself,
+  uploads, translations, and a plugin or theme no release named are left as they are (FR-027).
+- Q: Today a release's schema changes are applied by the first admin page or scheduled run
+  (`SchemaSelfHeal`). How do the installation and its finishing step relate to that, and what
+  does going back undo? → A: There is one thing that changes the schema, and three callers of
+  it: the installation's finishing step, the automatic check, and `wp corex migrate`. During an
+  installation only the finishing step can run it, because WordPress's maintenance answer turns
+  every other request away; afterwards the automatic check finds nothing to do. If the finishing
+  step never runs (the browser was closed), the maintenance answer ends by itself after ten
+  minutes and the automatic check applies the changes as it does today; the screen, when next
+  opened, says the installation was not finished and finishes it (FR-035). Going back puts the
+  files back and reverses no change to the database: a table or column the release added stays,
+  and the copy of CoreX's tables made before the installation is kept for a person to read from,
+  never put back over live tables. The release gone back to then records its own schema version
+  again on its first admin page, which removes nothing (FR-045).
+- Q: The first installation on a host is still by hand. What is written for it? → A: A runbook
+  of its own (tasks T071): what to put on the host and in which order, the line of
+  configuration, and the check that the site knows which release and whose it is, so that every
+  release after it is one upload on the Releases screen. It also says how a site that has been
+  updated by extracting zips moves to the screen: nothing more than that line and a package from the
+  builder, because its first installation from the screen replaces each folder the release owns
+  whole and so clears what extracting left behind in them.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -250,7 +311,18 @@ to the release that caused it.
 - Two people install at once: the second is told an installation is in progress.
 - The package holds a file the site's owner changed on the host by hand: the package wins, and
   the screen said, before the owner confirmed, that changes made on the host are replaced.
-- A release that removes a plugin or an add-on the site has active.
+- A release that removes a plugin or an add-on the site has active: the folder goes out with the
+  previous release, WordPress finds the plugin missing and switches it off, and the screen named
+  the folder before the owner confirmed (FR-028).
+- A site that has been updated by extracting zips, with files in its folders no release holds
+  any more: the first installation from the screen replaces each folder whole (FR-027).
+- The browser is closed after the files are swapped and before the database step: the
+  maintenance answer ends by itself, the automatic check applies the changes, and the screen
+  finishes and records the installation when it is next opened (FR-035).
+- The key of an installation is lost with the browser tab: nothing the screen does afterwards
+  needs it. It is asked for only by WordPress's maintenance answer, which stops asking after ten
+  minutes, and by the link that goes back without the admin, which the owner was given as a
+  file before he confirmed.
 - A multisite network: one set of files serves every site, and every site's database follows.
 - The uploaded package itself: where it is kept, who can read it, and when it is removed.
 - Caches that hold the old code after the files changed.
@@ -283,6 +355,10 @@ to the release that caused it.
 - **FR-016**: A refusal MUST leave every file and every database row of the site as it was.
 - **FR-017**: What the host cannot do (write files, hold the package and a previous release)
   MUST be stated when the screen is opened.
+- **FR-018**: On a site set not to change its own files, installing MUST be refused unless the
+  site's configuration file says in so many words that releases may be installed from the
+  admin. The screen MUST name that setting and say what it does and does not allow. The refusal
+  is made where an installation starts, not only shown on the screen.
 
 **Installing it**
 
@@ -303,6 +379,14 @@ to the release that caused it.
 - **FR-024**: While files are being replaced a visitor MUST get the site as it was or a
   maintenance answer.
 
+- **FR-027**: After an installation, a folder the release owns MUST hold exactly what the
+  package holds for it. A file the release before shipped and this one does not MUST NOT remain
+  in it. Nothing outside the folders a release owns is removed.
+- **FR-028**: A plugin that is not CoreX's or the site's own MUST be able to travel in a
+  package, named to the builder, and is then checked and replaced as every other folder of the
+  release is. Before the owner confirms, the screen MUST name every folder the running release
+  holds and this package does not, because installing moves each of those out of the site.
+
 **The database**
 
 - **FR-030**: After the files are in place, the release's pending database changes MUST be
@@ -319,6 +403,10 @@ to the release that caused it.
 - **FR-032**: A failed change MUST be named, MUST stop the release being reported as installed,
   and MUST leave the previous release available.
 - **FR-033**: On a network, every site's database MUST be brought to the release.
+- **FR-035**: The installation's database step and the schema's automatic check MUST be the
+  same work, done once. An installation whose finishing step did not run MUST be reported as
+  unfinished when the screen is next opened, and finished from there, whether or not the
+  automatic check has applied the changes in the meantime.
 
 **Going back**
 
@@ -332,6 +420,9 @@ to the release that caused it.
   the admin to load, and the screen MUST state it before an installation is confirmed.
 - **FR-043**: Kept releases MUST be bounded in number, and the screen MUST show which is running
   and which can be returned to.
+- **FR-045**: Going back MUST leave every table and column as the release being left made it,
+  and MUST say so. A return made through the link that needs no admin MUST be found and
+  recorded by the screen when it is next opened.
 
 **Who, and the record**
 
@@ -448,6 +539,14 @@ Written without asking; each is the owner's to overrule.
   being replaced; CoreX's answers after they have loaded (plan D7).
 - **No database change is reversed today.** CoreX's schema changes declare no way back, so story
   4's "which changes are reversed and which are not" reads, for now, "none are" (plan D10).
+  After going back, the release returned to runs on the newer tables. Its own automatic check
+  then records its schema version again; that check adds what is missing and never removes a
+  table or a column, though a column whose type the newer release changed may be changed back
+  to the older type.
+- **A package is not signed.** What stands between a site and a package somebody made to look
+  like the client's is who may reach the screen: the ability, the typed confirmation, and, on a
+  site set not to change its files, the line in its configuration that only somebody with the
+  host's file access can write (FR-018). A signature the site could check is not built here.
 - **The way back that does not need the admin** is a link he was given before he installed,
   not a command and not work in the host's file manager, which is the kind of step the move to
   this host showed does not fit.
